@@ -7,15 +7,15 @@ using namespace std;
 
 namespace utils {
   namespace rot_conv {
-    Quaterniond matrix_to_quat(Matrix3d mat) {
+    Quaterniond matrix_to_quat(Matrix3d& mat) {
       return Quaterniond(mat);
     }
 
-    Matrix3d quat_to_matrix(Quaterniond q) {
+    Matrix3d quat_to_matrix(Quaterniond& q) {
       return Matrix3d(q);
     }
 
-    Quaterniond exp_to_quat(Vector3d v) {
+    Quaterniond exp_to_quat(Vector3d& v) {
       double mag = v.norm();
       if(mag > 1e-10){
         Quaterniond q(AngleAxisd(mag, v / mag));
@@ -27,7 +27,7 @@ namespace utils {
       }
     }
 
-    Vector3d quat_to_exp(Quaterniond q) {
+    Vector3d quat_to_exp(Quaterniond& q) {
       AngleAxisd aa(q);
       Vector3d v = aa.axis();
       return v*aa.angle();
@@ -35,7 +35,7 @@ namespace utils {
 
 // Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
 // coordinate system transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-    Vector3d matrix_to_euler(Matrix3d m, RotationOrder order) {
+    Vector3d matrix_to_euler(Matrix3d& m, RotationOrder order) {
       double x, y, z;
 
       if(order==XYZ) {
@@ -155,7 +155,7 @@ namespace utils {
       return Vector3d(0.0, 0.0, 0.0);
     }
 
-    Matrix3d euler_to_matrix(Vector3d v, RotationOrder order) {
+    Matrix3d euler_to_matrix(Vector3d& v, RotationOrder order) {
       if(order==XYZ){
         return euler_to_matrixz(v[2])*euler_to_matrixy(v[1])*euler_to_matrixx(v[0]);
       }

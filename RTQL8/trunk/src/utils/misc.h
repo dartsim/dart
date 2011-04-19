@@ -20,8 +20,8 @@
 #define FUNCTION_NAME() (__PRETTY_FUNCTION__)
 #elif defined(__APPLE__)
 #error "Define your own FUNCTION_NAME() macro on Apple"
-#elif defined(__WINDOWS__)
-#error "Define your own FUNCTION_NAME() macro on Windows"
+#elif defined(_WIN32)
+#define FUNCTION_NAME() (__FUNCSIG__)
 #else
 #error "What's your operating system?"
 #endif
