@@ -1,10 +1,19 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-message(STATUS "Generate makefile for GroundZero")
-
+message(STATUS "Generate makefile/project file for GroundZero")
 
 ###############################################
-# User specific setting
+# SETTING: Global settings
+INCLUDE_DIRECTORIES("src")
+SET(CMAKE_CXX_WARNING_LEVEL 4)
+if (WIN32)
+  message(STATUS "Setup Visual Studio Specifig Flags")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /GL /Gy")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /GL /Gy")
+endif()
+
+###############################################
+# SETTING: User specific setting
 SET(user_info "Sehoon")
 message(STATUS "User profile information = [" ${user_info} "]")
 
@@ -30,22 +39,14 @@ if (user_info STREQUAL "Sehoon")
 ####
 elseif (user_info EQUAL "Yunfei")
   # If user is Yunfei
-
+elseif (user_info EQUAL "Kristin")
+  # If user is Yunfei
 ####
 else ()
   # Invalid user info?
   message(FATAL_ERROR "Invalid user information")
 endif ()
 
-###############################################
-# Global settings
-INCLUDE_DIRECTORIES("src")
-SET(CMAKE_CXX_WARNING_LEVEL 4)
-if (WIN32)
-  message(STATUS "Setup Visual Studio Specifig Flags")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /GL /Gy")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /GL /Gy")
-endif()
 
 
 ###############################################
@@ -60,17 +61,17 @@ FILE(GLOB utils_hdrs "src/utils/*.h")
 ADD_LIBRARY(utils ${utils_srcs} ${utils_hdrs})
 SET_TARGET_PROPERTIES(utils PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
-# ###############################################
-# # Model3d
-# PROJECT(model3d)
+###############################################
+# Model3d
+PROJECT(model3d)
 
-# # Search all header and source files
-# FILE(GLOB model3d_srcs "src/model3d/*.cpp")
-# FILE(GLOB model3d_hdrs "src/model3d/*.h")
+# Search all header and source files
+FILE(GLOB model3d_srcs "src/model3d/*.cpp")
+FILE(GLOB model3d_hdrs "src/model3d/*.h")
 
-# # Library 
-# ADD_LIBRARY(model3d ${model3d_srcs} ${model3d_hdrs})
-# SET_TARGET_PROPERTIES(model3d PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
+# Library 
+ADD_LIBRARY(model3d ${model3d_srcs} ${model3d_hdrs})
+SET_TARGET_PROPERTIES(model3d PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
 ###############################################
 # Unittests
@@ -80,10 +81,10 @@ FILE(GLOB unittests_srcs "src/unittests/*.cpp")
 FILE(GLOB unittests_hdrs "src/unittests/*.h")
 
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
-TARGET_LINK_LIBRARIES(unittests utils)
+TARGET_LINK_LIBRARIES(unittests utils model3d)
 TARGET_LINK_LIBRARIES(unittests gflags)
 if (UNIX)
-  TARGET_LINK_LIBRARIES(gtest pthread)
+  TARGET_LINK_LIBRARIES(unittests gtest pthread)
 endif()
 if (WIN32)
   TARGET_LINK_LIBRARIES(unittests debug gtestd optimized gtest)

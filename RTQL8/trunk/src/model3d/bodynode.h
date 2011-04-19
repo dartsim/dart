@@ -18,7 +18,7 @@ namespace model3d {
   class Skeleton;
   class Joint;
 
-  class BodyNode: public Node {
+  class BodyNode {
   public:
     BodyNode(char *_name = NULL);
     ~BodyNode();
@@ -57,12 +57,12 @@ namespace model3d {
     MatrixXd getWorldInvTransform();
     MatrixXd getLocalInvTransform();
 	
-    void draw(Vec4d _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
-    void drawHandles(Vec4d _color, bool _default);	// render the handles
+    void draw(Vector4d _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
+    void drawHandles(Vector4d _color, bool _default);	// render the handles
 
     inline char* getName();
-    inline Vec3d getOffset();
-    inline void setOffset(Vec3d _off);
+    inline Vector3d getOffset();
+    inline void setOffset(Vector3d _off);
     inline int getModelIndex();
     inline void setModelIndex(int _idx);
     inline BodyNode* getNodeIn();

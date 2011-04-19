@@ -5,6 +5,7 @@ using namespace std;
 #include <gtest/gtest.h>
 // Local headers
 #include "test_utils.h"
+#include "test_model3d.h"
 
 int main(int argc, char* argv[]) {
    ::testing::InitGoogleTest(&argc, argv);
