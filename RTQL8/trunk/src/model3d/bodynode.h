@@ -30,12 +30,12 @@ namespace model3d {
     void evalSecondOrder(VectorXd&);
     MatrixXd evalM(VectorXd&);
     VectorXd evalC(VectorXd&);
-    VectorXd evalWorldPos(VectorXd h);	// recursive function
-    MatrixXd evalDpDq(VectorXd lp);	
-    void evalSecDpDq(VectorXd, vector<MatrixXd>&);
-    VectorXd evalMomenta(VectorXd,VectorXd);
-    MatrixXd evalP(VectorXd);
-    MatrixXd evaldLdq(VectorXd, VectorXd);
+    VectorXd evalWorldPos(VectorXd& h);	// recursive function
+    MatrixXd evalDpDq(VectorXd& lp);	
+    void evalSecDpDq(VectorXd&, vector<MatrixXd>&);
+    VectorXd evalMomenta(VectorXd&,VectorXd&);
+    MatrixXd evalP(VectorXd&);
+    MatrixXd evaldLdq(VectorXd&, VectorXd&);
     double evalG();
     VectorXd evaldGdq();
 
@@ -57,12 +57,12 @@ namespace model3d {
     MatrixXd getWorldInvTransform();
     MatrixXd getLocalInvTransform();
 	
-    void draw(Vector4d _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
-    void drawHandles(Vector4d _color, bool _default);	// render the handles
+    void draw(Vector4d& _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
+    void drawHandles(Vector4d& _color, bool _default);	// render the handles
 
     inline char* getName();
     inline Vector3d getOffset();
-    inline void setOffset(Vector3d _off);
+    inline void setOffset(Vector3d& _off);
     inline int getModelIndex();
     inline void setModelIndex(int _idx);
     inline BodyNode* getNodeIn();
