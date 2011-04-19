@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 message(STATUS "Generate makefile for GroundZero")
 
+
 ###############################################
 # User specific setting
 SET(user_info "Sehoon")
@@ -17,6 +18,9 @@ if (user_info STREQUAL "Sehoon")
     INCLUDE_DIRECTORIES(/usr/local/include/eigen3)
   elseif (WIN32)
     message(STATUS "Operating system = WIN32")
+    INCLUDE_DIRECTORIES(c:/dev/external/include)
+    INCLUDE_DIRECTORIES(c:/dev/boost_1_46_1)
+    LINK_DIRECTORIES(c:/dev/external/lib)
   elseif (APPLE)
     message(STATUS "Operating system = APPLE")
   else()
@@ -37,6 +41,12 @@ endif ()
 # Global settings
 INCLUDE_DIRECTORIES("src")
 SET(CMAKE_CXX_WARNING_LEVEL 4)
+if (WIN32)
+  message(STATUS "Setup Visual Studio Specifig Flags")
+  SET(CMAKE_CXX_FLAGS_DEBUG " /MTd /Zi /GL /Gy")
+  SET(CMAKE_CXX_FLAGS_RELEASE " /MT /Zi /GL /Gy")
+endif()
+
 
 ###############################################
 # Utils
@@ -71,7 +81,14 @@ FILE(GLOB unittests_hdrs "src/unittests/*.h")
 
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
 TARGET_LINK_LIBRARIES(unittests utils)
-TARGET_LINK_LIBRARIES(unittests gflags gtest pthread)
+TARGET_LINK_LIBRARIES(unittests gflags)
+if (UNIX)
+  TARGET_LINK_LIBRARIES(gtest pthread)
+endif()
+if (WIN32)
+  TARGET_LINK_LIBRARIES(unittests debug gtestd optimized gtest)
+  TARGET_LINK_LIBRARIES(unittests debug gtest_maind optimized gtest_main)
+endif()
 
 # FIND_PACKAGE(wxWidgets REQUIRED base core gl)
 # INCLUDE(${wxWidgets_USE_FILE})
