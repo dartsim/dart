@@ -1,0 +1,147 @@
+%% editing comment
+
+%\newcommand{\cmt}[1]{\textcolor{red}{\textbf {#1}}}
+\newcommand{\cmt}[1]{}
+\newcommand{\note}[1]{\cmt{Note: #1}}
+\newcommand{\karen}[1]{\textcolor{red}{{Karen: #1}}}
+\newcommand{\vbz}[1]{\textcolor{blue}{{VBZ: #1}}}
+\newcommand{\newtext}[1]{#1}
+%\newcommand{\newtext}[1]{\textcolor{blue}{#1}}
+\newcommand{\eqnref}[1]{equation~(\ref{eq:#1})}
+
+%% ignore text
+\long\def\ignorethis#1{}
+
+%% abbreviations
+\newcommand{\etal}{{\em{et~al.}\ }}
+\newcommand{\eg}{e.g.\ }
+\newcommand{\ie}{i.e.\ }
+
+%% reference shortcuts
+\newcommand{\figtodo}[1]{\framebox[0.8\columnwidth]{\rule{0pt}{1in}#1}}
+\newcommand{\figref}[1]{Figure~\ref{fig:#1}}
+%\renewcommand{\eqref}[1]{Equation~(\ref{eq:#1})}
+\newcommand{\secref}[1]{Section~\ref{sec:#1}}
+
+%% frequently used mathematical structures
+\newcommand{\vc}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\pd}[2]{\ensuremath{\frac{\partial{#1}}{\partial{#2}}}}
+\newcommand{\pdd}[3]{\ensuremath{\frac{\partial^2{#1}}{\partial{#2}\,\partial{#3}}}}
+
+
+% math macros for phylter
+\newcommand{\mTrans}{\ensuremath{\vc{T}}}
+\newcommand{\vLinMom}{\ensuremath{\vc{P}}}
+\newcommand{\vAngMom}{\ensuremath{\vc{L}}}
+\newcommand{\vMomVar}{\ensuremath{\vc{u}}}
+\newcommand{\vLine}{\ensuremath{\vc{l}}}
+\newcommand{\vControlPoint}{\ensuremath{\vc{p}}}
+\newcommand{\vControlKnot}{\ensuremath{\vc{u}}}
+
+% math macros for style
+\newcommand{\vStyle}{\ensuremath{\mathbf{\theta}}}
+\newcommand{\sMusclePref}{\ensuremath{\alpha}}
+\newcommand{\sKinetics}{\ensuremath{T}}
+\newcommand{\sSpringCoef}{{\ensuremath{k_{s}}}}
+\newcommand{\sDamperCoef}{{\ensuremath{k_{d}}}}
+\newcommand{\sSpringCoefPos}{{\ensuremath{k_{s1}}}}
+\newcommand{\sSpringCoefNeg}{{\ensuremath{k_{s2}}}}
+\newcommand{\vLagrange}{\ensuremath{\vc{\lambda}}}
+\newcommand{\sLagrange}{\ensuremath{\lambda}}
+\newcommand{\sShoeRestLen}{\ensuremath{\bar{h}}}
+\newcommand{\sShoeDist}{\ensuremath{h}}
+\newcommand{\sShoeCoef}{{\ensuremath{k_{\mathit{shoe}}}}}
+\newcommand{\vHandle}{\ensuremath{\vc{h}}}
+\newcommand{\temp}{\ensuremath{\tau}}
+
+%% math macros for multi-char
+\newcommand{\vJointCoef}{{\ensuremath{\vc{h}_{q}}}}
+\newcommand{\vTimeCoef}{\ensuremath{\vc{h}_t}}
+\newcommand{\sTimeWarpFunc}{\ensuremath{F_t}}
+
+%% math macros for phoward
+%\newcommand{\vForce}{\ensuremath{\vc{f}}}
+\newcommand{\sObjFunc}{\ensuremath{E}}
+\newcommand{\vConeCoef}{\ensuremath{\vc{w}}}
+\newcommand{\sConeCoef}{\ensuremath{w}}
+
+%% frequently used symbols
+\newcommand{\mTransChain}{\ensuremath{\vc{W}}}
+\newcommand{\mRotateTrans}{\ensuremath{\vc{R}}}
+\newcommand{\sJoint}{\ensuremath{q}}
+\newcommand{\vJoint}{\ensuremath{\vc{q}}}
+\newcommand{\mJoint}{\ensuremath{\vc{Q}}}
+\newcommand{\mMass}{\ensuremath{\vc{M}}}
+\newcommand{\mUnknown}{\ensuremath{\vc{X}}}
+\newcommand{\sMass}{\ensuremath{{m}}}
+\newcommand{\sInfMass}{\ensuremath{\mathbf{\mu}}}
+\newcommand{\vGravity}{\ensuremath{\vc{g}}}
+\newcommand{\vConstr}{\ensuremath{\vc{C}}}
+\newcommand{\sConstr}{\ensuremath{C}}
+\newcommand{\mGeometry}{\ensuremath{\vc{V}}}
+\newcommand{\vCOM}{\ensuremath{\vc{c}}}
+\newcommand{\sNumJoint}{\ensuremath{n_j}}
+\newcommand{\sNumFrame}{\ensuremath{n_f}}
+\newcommand{\sNumConstr}{\ensuremath{n_c}}
+\newcommand{\sNumParticle}{\ensuremath{n_p}}
+\newcommand{\vGlobalPoint}{\ensuremath{\vc{r}}}
+\newcommand{\vLocalPoint}{\ensuremath{\vc{x}}}
+\newcommand{\sGeneralForce}[1]{\ensuremath{Q_{#1}}}
+\newcommand{\vForce}[1]{\ensuremath{\vc{f}_{#1}}}
+\newcommand{\sWork}{\ensuremath{W}}
+\newcommand{\vStateVar}{\ensuremath{\vc{y}}}
+\newcommand{\vControlVar}{\ensuremath{\vc{u}}}
+%\newcommand{\sObjFunc}{\ensuremath{F}}
+\newcommand{\sCurve}{\ensuremath{S}}
+\newcommand{\vCurve}{\ensuremath{\vc{S}}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+
+\newcommand{\tr}[1]{\ensuremath{\mathrm{tr}\left(#1\right)}}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Here are a bunch of macros, mostly for math.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\renewcommand{\choose}[2]{\ensuremath{\left(\begin{array}{c} #1 \\ #2 \end{array} \right )}}
+
+\newcommand{\gauss}[3]{\ensuremath{\mathcal{N}(#1 | #2 ; #3)}}
+
+\newcommand{\pctab}{\hspace{0.2in}}
+\newenvironment{pseudocode} {\begin{center} \begin{minipage}{\textwidth}
+                             \normalsize \vspace{-2\baselineskip} \begin{tabbing}
+                             \pctab \= \pctab \= \pctab \= \pctab \=
+                             \pctab \= \pctab \= \pctab \= \pctab \= \\}
+                            {\end{tabbing} \vspace{-2\baselineskip}
+                             \end{minipage} \end{center}}
+\newenvironment{items}      {\begin{list}{$\bullet$}
+                              {\setlength{\partopsep}{\parskip}
+                                \setlength{\parsep}{\parskip}
+                                \setlength{\topsep}{0pt}
+                                \setlength{\itemsep}{0pt}
+                                \settowidth{\labelwidth}{$\bullet$}
+                                \setlength{\labelsep}{1ex}
+                                \setlength{\leftmargin}{\labelwidth}
+                                \addtolength{\leftmargin}{\labelsep}
+                                }
+                              }
+                            {\end{list}}
+\newcommand{\newfun}[3]{\noindent\vspace{0pt}\fbox{\begin{minipage}{3.3truein}\vspace{#1}~ {#3}~\vspace{12pt}\end{minipage}}\vspace{#2}}
+
+
+
+\newcommand{\key}{\textbf}
+\newcommand{\fun}{\textsc}
+
+\def\shortcite{\def\citename##1{}\@internalcite}
+
+
+% Local Variables:
+% TeX-master: "paper"
+% End:
