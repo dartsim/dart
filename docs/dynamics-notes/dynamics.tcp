@@ -3,10 +3,10 @@ Type=TeXnicCenterProjectInformation
 Version=4
 
 [ProjectInfo]
-MainFile=content.tex
+MainFile=dynamics.tex
 UseBibTeX=1
 UseMakeIndex=0
 ActiveProfile=LaTeX => PS => PDF (SumatraPDF)
-ProjectLanguage=
-ProjectDialect=
+ProjectLanguage=en
+ProjectDialect=US
 
