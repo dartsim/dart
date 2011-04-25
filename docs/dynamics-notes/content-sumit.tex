@@ -198,7 +198,58 @@ simulation. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
 sequence, we can use these equations of motion to derive generalized
 forces for inverse dynamics. 
 
-\paragraph{Newton-Euler Equations for a Single Rigid Body.}
+\section{Rigid Body Dynamics: Newton-Euler equations}
+We describe the familiar Newton-Euler equations of rigid body dynamics. We start writing down the
+momenta of the rigid body whose mass, position of the center
+of mass (COM), orientation,
+linear velocity of the COM, and angular velocity are $m$, $\vc{x}$, $R$,
+$\vc{v}$, and $\bm{\omega}$ respectively (same as defined in Witkin and
+Baraff's course notes). The linear momentum \vc{p} is computed as:
+\begin{eqnarray}
+\vc{P} &=& \sum_i \vc{P}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
+    \times \vc{r}_i') \nonumber \\
+ &=& m \vc{v}
+\end{eqnarray}
+where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
+\vc{r}_i' = \vc{0}$, the second term vanishes. The angular momentum \vc{L} about the COM is computed as:
+\begin{eqnarray}
+\nonumber
+\vc{L} & = & \sum_i \vc{L}_i  = \sum_i \vc{r}_i' \times \vc{P}_i\\
+\nonumber
+& = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
+&= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
+\end{eqnarray}
+
+Recall the inertia tensor about the COM defined in Witkin and
+Baraff's course notes: $I_c = \sum_i \sInfMass ((\vc{r}_i'^T
+\vc{r}_i')\vc{I} - \vc{r}_i' \vc{r}_i'^T)$, where $\vc{I}$ is the
+identity matrix. We can easily show that
+$I_c = \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i']$ by verifying the
+identity $-[\vc{a}][\vc{a}] = (\vc{a}^T\vc{a}) \vc{I}  -
+\vc{a}\vc{a}^T$. As a result, we write the angular momentum of a rigid body as:
+\begin{equation}
+\vc{L} = I_c \bm{\omega}
+\end{equation}
+Note that the inertia tensor can be written as $I_c = RI_0R^T$, where $R$ is the rotation matrix corresponding to the orientation of the body and $I_0$ is the constant inertia tensor defined at zero rotation. The angular velocity in the skew-symmetric form is related to the rotation matrix $R$ as $[\bm{\omega}] = \dot{R}R^T$. Also $[\bm{\omega}]^T = -[\bm{\omega}]$.
+
+Now, the dynamics of a rigid body can be written as $\vc{F} = \dot{\vc{P}} \mbox{,\ } \bm{\tau} = \dot{\vc{L}}$. The equations corresponding to the linear force can be evaluated as:
+\begin{eqnarray}
+\label{eq:force}
+\vc{F} & = & \dot{\vc{P}} = m \dot{\vc{v}}
+\end{eqnarray}
+The equations corresponding to the torque can be evaluated as:
+\begin{eqnarray}
+\label{eq:torque}
+\nonumber
+\bm{\tau} & = & \dot{\vc{L}} = \dot{(I_c \bm{\omega})} \\
+\nonumber
+& = & I_c\dot{\bm{\omega}} + \dot{(RI_0 R^T)}\bm{\omega} = I_c\dot{\bm{\omega}} + \dot{R}I_0 R^T\bm{\omega} + R I_0 \dot{R}^T\bm{\omega}\\
+\nonumber
+& = & I_c\dot{\bm{\omega}} + \dot{R}R^T I_c \bm{\omega} + I_c (\dot{R}R^T)^T\bm{\omega} \\
+& = & I_c\dot{\bm{\omega}} + [\bm{\omega}]I_c \bm{\omega} - I_c[\bm{\omega}]\bm{\omega} = I_c\dot{\bm{\omega}} + \bm{\omega} \times I_c \bm{\omega}
+\end{eqnarray}
+
+Combining \eqnref{force} and \eqnref{torque}, we get:
 \begin{equation}
 \left(
 \begin{array}{cc}
@@ -209,75 +260,52 @@ m\vc{I} & \vc{0} \\
 \left(
 \begin{array}{c}
 \dot{\vc{v}} \\
-\dot{\omega} 
+\dot{\bm{\omega}} 
 \end{array}
 \right) +
 \left(
 \begin{array}{c}
 \vc{0}  \\
-\omega \times I_c \omega 
+\bm{\omega} \times I_c \bm{\omega} 
 \end{array}
 \right) = 
 \left(
 \begin{array}{c}
 \vc{F} \\
-\tau 
+\bm{\tau} 
 \end{array}
 \right)
 \end{equation}
-The familiar Newton-Euler equations for a rigid body can be viewed as
-a special case of Lagrangian dynamics. We start from writing down the
-kinetic energy of the rigid body, whose mass, position of the center
-of mass (COM), orientation,
-linear velocity, and angular velocity are $m$$, \vc{x}$, $R$,
-$\vc{v}$, and $\omega$ respectively (same as defined in Witkin and
-Baraff's course notes):
 
+\section{Rigid Body Dynamics: Generalized coordinates}
+\label{sec:rigidbodydyngen}
+The Newton-Euler equations are defined in terms of velocities instead of position and orientation. We now derive the equations in generalized coordinates \vc{q} that define the position and orientation. The first three coordinates are the same as the position of COM. The next three represent the rotation of the rigid body such as an exponential map or three Euler angles (or four coordinates can be used for a quaternion).
+
+We first start by computing the kinetic energy of the rigid body:
 \begin{eqnarray}
-\label{eqn:rigid_kinetic}
+\label{eq:rigid_kinetic}
 T &=& \sum_i T_i = \sum_i \frac{1}{2}  \sInfMass \dot{\vGlobalPoint}_i^{T}
-    \dot{\vGlobalPoint}_i = \sum_i \frac{1}{2}  \sInfMass (\vc{v} + \omega
-    \times \vc{r}_i')^T (\vc{v} + \boldsymbol{\omega}
+    \dot{\vGlobalPoint}_i = \sum_i \frac{1}{2}  \sInfMass (\vc{v} + \bm{\omega}
+    \times \vc{r}_i')^T (\vc{v} + \boldsymbol{\bm{\omega}}
     \times \vc{r}_i') \nonumber \\
  &=& \sum_i \frac{1}{2}  \sInfMass (\vc{v}^T\vc{v} +
-    \vc{v}^T [\omega] \vc{r}_i' + \vc{r}_i'^T [\omega]^T \vc{v} +
-    \vc{r}_i'^T [\omega]^T [\omega] \vc{r}_i')
+    \vc{v}^T [\bm{\omega}] \vc{r}_i' + \vc{r}_i'^T [\bm{\omega}]^T \vc{v} +
+    \vc{r}_i'^T [\bm{\omega}]^T [\bm{\omega}] \vc{r}_i')
 \end{eqnarray}
-where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
-\vc{r}_i' = \vc{0}$, the second term and the third term in Equation
-\ref{eqn:rigid_kinetic} vanish. Let us focus on the more interesting
-fourth term. Using the identity $[\omega]\vc{r}_i' =
--[\vc{r}_i']\omega$, we can rewrite Equation \ref{eqn:rigid_kinetic}
+Because $\sum_i \sInfMass
+\vc{r}_i' = \vc{0}$, the second term and the third term in \eqnref{rigid_kinetic} vanish. Using the identity $[\bm{\omega}]\vc{r}_i' =
+-[\vc{r}_i']\bm{\omega}$, we can rewrite \eqnref{rigid_kinetic}
 as:
-\begin{equation}
-T = \frac{1}{2} m \vc{v}^T\vc{v} - \frac{1}{2} \sum_i \sInfMass
-\omega^T [\vc{r}_i'][\vc{r}_i'] \omega
-\end{equation}
-
-Recall the inertia tensor defined in Witkin and
-Baraff's course notes: $I_c = \sum_i \sInfMass ((\vc{r}_i'^T
-\vc{r}_i')\vc{I} - \vc{r}_i' \vc{r}_i'^T)$, where $\vc{I}$ is the
-identity matrix. We can easily show that
-$I_c = \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i']$ by verifying the
-identity $-[\vc{a}][\vc{a}] = (\vc{a}^T\vc{a}) \vc{I}  -
-\vc{a}\vc{a}^T$. As a result, the kinetic energy of a rigid body can
-be shown in its vector form:
-
 \begin{eqnarray}
-T &=& \frac{1}{2} (\vc{v}^T \;\; \omega^T)
-\left(
-\begin{array}{cc}
-m\vc{I} & \vc{0} \\
-\vc{0} & \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i']
-\end{array}
-\right)
-\left(
-\begin{array}{c}
-\vc{v} \\
-\omega 
-\end{array}
-\right) \nonumber \\
-&=& \frac{1}{2} (\vc{v}^T \;\; \omega^T)
+\nonumber
+T & = & \frac{1}{2} m \vc{v}^T\vc{v} + \frac{1}{2} \bm{\omega}^T \left ( \sum_i -\sInfMass
+ [\vc{r}_i'][\vc{r}_i'] \right ) \bm{\omega}\\
+ & = & \frac{1}{2} m \vc{v}^T\vc{v} + \frac{1}{2} \bm{\omega}^T I_c \bm{\omega}
+\end{eqnarray}
+The kinetic energy of a rigid body can be written in its vector form:
+\begin{eqnarray}
+\label{eq:kinetic_vec}
+T &=& \frac{1}{2} (\vc{v}^T \;\; \bm{\omega}^T)
 \left(
 \begin{array}{cc}
 m\vc{I} & \vc{0} \\
@@ -287,105 +315,106 @@ m\vc{I} & \vc{0} \\
 \left(
 \begin{array}{c}
 \vc{v} \\
-\omega 
+\bm{\omega} 
 \end{array}
 \right)
+ = \frac{1}{2}\vc{V}^T M_c \vc{V}
 \end{eqnarray}
-
-Comparing the above equation with Equation
-\ref{eq:kinetic_vector}, we define $\dot{\vc{q}}^T = (\vc{v}^T \;\;
-\omega^T)$ and mass matrix $M(\vc{q}) =
-\left(\begin{array}{cc}m\vc{I} & \vc{0} \\ \vc{0} &
-    I_c \end{array}\right)$. Let us now compute the Coriolis and
-centrifugal term $C = \dot{M}
-\dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \frac{\partial M}{\partial
-  \vc{q}} \dot{\vc{q}}$. The first term is computed as
+where $\vc{V} \equiv (\vc{v}^T,\bm{\omega}^T)^T$. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{c}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
 \begin{eqnarray}
-\label{eqn:mdotqdot}
-\dot{M}\dot{\vc{q}} &=& \left(\begin{array}{cc}
-\vc{0} & \vc{0} \\ 
-\vc{0} &   \dot{I}_c 
-\end{array}\right)
-\left(\begin{array}{c}\vc{v} \\ \omega\end{array}\right) = 
-\left(\begin{array}{c}\vc{0} \\ \dot{I}_c \omega\end{array}\right)
-\nonumber \\
-& = & \left(\begin{array}{c}\vc{0} \\ \dot{(R I_b R^T)}
-    \omega\end{array}\right) = \left(\begin{array}{c}\vc{0} \\ \dot{R}
-    I_b R^T \omega + R I_b \dot{R}^T \omega \end{array}\right)
-\nonumber \\
-& = & \left(\begin{array}{c}\vc{0} \\ \;[\omega] R I_b R^T \omega + R
-    I_b R^T [\omega]^T \omega \end{array}\right) =
-\left(\begin{array}{c}\vc{0} \\ \;[\omega] I_c \omega - I_c\omega \times \omega \end{array}\right) \nonumber \\
-& = & \left(\begin{array}{c}\vc{0} \\ \omega \times I_c \omega \end{array}\right)
+\label{eq:vellin}
+\vc{v} \equiv \dot{\vc{c}}(\vc{q}) = \frac{\partial \vc{c}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
 \end{eqnarray}
-where $I_b$ is the inertia tensor defined in the local frame. The
-third line in Equation \ref{eqn:mdotqdot} uses the relation of angular
-velocity $\dot{R} = [\omega] R$ and the skew symmetric property
-$[\omega]^T = -[\omega]$.
+The angular velocity is computed as:
+\begin{eqnarray}
+\nonumber
+[\bm{\omega}] & \equiv & \dot{R}(\vc{q})R^T(\vc{q}) \\
+\nonumber
+& = & \sum_j \frac{\partial R}{\partial q_j}R^T \dot{q}_j
+\end{eqnarray}
+$\frac{\partial R}{\partial q_j}R^T$ is always a skew-symmetric matrix that we represent as $[\vc{j}_{j}]$. $\bm{\omega}$ can be now be represented in the vector form as:
+\begin{equation}
+\label{eq:velang}
+\bm{\omega} = J_{\omega} \dot{\vc{q}}
+\end{equation}
+where $\vc{j}_{j}$ is the $j^{th}$ column of the matrix $J_{\omega}$.
 
-The second term of the Coriolis and centrifugal term involves tensor
-multiplication due to the term $\frac{\partial M}{\partial
-  \vc{q}}$. We will demonstrate how it is computed using only one
-element of $\vc{q}$ for clarity. \karen{ Hmm, in my derivation this
-  term turns out to be -$\omega \times I_c \omega $ while I
-  expect it to be 0. Where
-  could it go wrong?}
+Using \eqnref{vellin} and \eqnref{velang}, we can write:
+\begin{equation}
+\vc{V} = \left(
+\begin{array}{c}
+J_v \\
+J_{\omega}
+\end{array}
+\right) \dot{\vc{q}} \equiv J(\vc{q})\dot{\vc{q}}
+\end{equation}
+Substituting the above in \eqnref{kinetic_vec}, we get:
+\begin{equation}
+T = \frac{1}{2}\dot{\vc{q}}^T J^T M_c J \dot{\vc{q}}
+\end{equation}
 
+Using the recipe of Lagrangian dynamics in \eqnref{lagrangian_dyn2}, we first compute $\frac{\partial T}{\partial \dot{q}_j}$ as:
+\begin{eqnarray}
+\nonumber
+\frac{\partial T}{\partial \dot{q}_j} & = & \frac{1}{2}\dot{\vc{q}}^T J^T M_c (J)_j + \frac{1}{2} (J)_j^T M_c J \dot{\vc{q}}\\
+ & = & (J)_j^T M_c J \dot{\vc{q}}
+\end{eqnarray}
+where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix A. The term $\frac{d}{dt} \left( \frac{\partial T}{\partial \dot{q}_j} \right )$ is computed as:
+\begin{eqnarray}
+\label{eq:lagterm1}
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} + \dot{(J)}_j^T M_c J \dot{\vc{q}}
+\end{eqnarray}
+Now we evaluate the term $\frac{\partial T}{\partial q_j}$:
+\begin{eqnarray}
+\nonumber
+\frac{\partial T}{\partial q_j} & = & \frac{1}{2}\dot{\vc{q}}^T J^T M_c \frac{\partial J}{\partial q_j} \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T \frac{\partial J^T}{\partial q_j} M_c J \dot{\vc{q}}\\
+\label{eq:lagterm2}
+& = & \dot{\vc{q}}^T \frac{\partial J^T}{\partial q_j} M_c J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}}
+\end{eqnarray}
+Using the above equations, we write:
+\begin{eqnarray}
+\nonumber
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) - \frac{\partial T}{\partial q_j} & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} + \dot{(J)}_j^T M_c J \dot{\vc{q}} \\ & & - \left( \dot{\vc{q}}^T \frac{\partial J^T}{\partial q_j} M_c J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} \right )
+\end{eqnarray}
 
-\section{Conversion between Cartesian and Generalized Coordinates}
-In practice, we often want to use third-party rigid body simulators
-rather than develop our own. There are a few widely used physics
-engines that provide efficient, robust, and fairly accurate rigid body
-simulation and collision handling. Open Dynamic Engine (ODE), PhysX, and
-Bullet are perhaps the most popular free choices among game developers and
-academic researchers. These commercial simulators use the maximal
-representation rather than generalized coordinates
-described above. That is, these simulators represent each link in the
-articulated rigid body system as six DOFs,
-leading to a redundant system with additional constraints between
-links. A common practice is to develop control algorithms in
-generalized coordinates and do forward simulation using a commercial
-physics engine, such as ODE. This requires some conversion between
-Cartesian and generalized coordinates.
+Writing the equations for all the $q_j$ in the vector form:
+\begin{eqnarray}
+\nonumber
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T}{\partial \vc{q}} & = & J^T M_c J \ddot{\vc{q}} + J^T M_c \dot{J} \dot{\vc{q}} + J^T \dot{M}_c J \dot{\vc{q}} + \dot{J}^T M_c J \dot{\vc{q}}\\
+& & - \left( \dot{\vc{q}}^T \frac{\partial J^T}{\partial \vc{q}} M_c J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial \vc{q}} J \dot{\vc{q}} \right )
+\end{eqnarray}
+
+\paragraph{Note.}
+In the above equation, we introduce tensor notations $\frac{\partial J}{\partial \vc{q}}$ and $\frac{\partial M_c}{\partial \vc{q}}$. For example, $j^{th}$ element of the tensor $\frac{\partial J}{\partial \vc{q}}$ is the matrix $\frac{\partial J}{\partial {q}_j}$. Note that the notation $\frac{\partial J}{\partial \vc{q}} \dot{\vc{q}}$ is \emph{not} the same as $\dot{J}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial J}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial J}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (J)_k}{\partial q_j} \dot{{q}_k}$. In contrast, the $j^{th}$ column of the matrix $\dot{J}$ is $\sum_k \frac{\partial (J)_j}{\partial q_k} \dot{{q}_k}$. To avoid any confusion, we explicitly represent $\dot{J}$ as $\sum_j \frac{\partial J}{\partial q_j} \dot{q}_j$.
+
+\section{Articulated Rigid Body Dynamics}
+We now derive the equations of motion for an articulated rigid body structure. We follow the derivation of rigid body dynamics in generalized coordinates from \secref{rigidbodydyngen}.
+
+An articulated rigid body system is represented as a set of rigid bodies connected through joints in a tree structure. The generalized coordinates are the six DOFs representing the global translation and rotation of the root link of the tree, and the joint angles corresponding to the admissible joint rotations for all the joints. 
 
 \subsection{Definitions}
-In the maximal coordinates, the state of an articulated rigid body
+The state of an articulated rigid body
 system can be expressed as $(\vc{x}_k, R_k, \vc{v}_k,
-\boldsymbol{\omega}_k)$, where $k = 1, \cdots, m$. Here $\vc{x}_k$ and
+\boldsymbol{\bm{\omega}}_k)$, where $k = 1, \cdots, m$ and $m$ is the number of rigid links. Here $\vc{x}_k$ and
 $R_k$ are the position and orientation of the rigid link $k$, and $(\vc{v}_k,
-\boldsymbol{\omega}_k)$ are the linear and angular velocity of the
+{\bm{\omega}}_k)$ are the linear and angular velocity of the
 rigid link $k$ viewed in the world frame. Similarly, we define the
 Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
-\boldsymbol{\tau}_k)$, both of which are expressed in the world
+{\tau}_k)$, both of which are expressed in the world
 frame.
 
 The same articulated rigid body system can be represented in
 generalized coordinates. We define the generalized state as $(q_j,
-\dot{q}_j)$, where $j = 1, \cdots, n$. The corresponding generalized
-forces are then defined as $(Q_1, \cdots, Q_n)$.
+\dot{q}_j)$, where $j = 1, \cdots, n$.
 
-\subsection{Velocity conversion}
-Let us first consider only one rigid body. From rigid body dynamics,
-we can write down the relation between the orientation and the angular
-velocity as $\dot{R} = [\omega] R$, where $[\boldsymbol{\omega}]$
-denotes the skew symmetric matrix of $\boldsymbol{\omega}$. We can
-then express the relation between the angular velocity and the
-generalized velocity as
+\subsection{Cartesian and Generalized velocities}
+We now describe how to express the Cartesian velocities in terms of generalized velocities for the articulated body system. 
+For a single rigid body, \eqnref{velang} describes the relation between the velocities as $[\bm{\omega}] = J_{\omega} \dot{\vc{q}}$,
+where each column $\vc{j}_j$ of the Jacobian matrix $J_{\omega}$ is defined as:
 \begin{equation}
-[\omega] = \dot{R} R^{T} = (\sum_j \frac{\partial R}{\partial q_j}
-\dot{q}_j) R^T = \sum_j\frac{\partial R}{\partial q_j} R^T
-\dot{q}_j = \sum_j [\vc{j}_j] \dot{q}_j
+[\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T
 \end{equation}
-Here $[\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T$ is a skew
-symmetric matrix because $R \in SO(3)$. We can also express the
-angular velocity as
-\begin{equation}
-\omega = ( \vc{j}_1 \cdots \vc{j}_n) \dot{\vc{q}} = J_{\omega} \dot{\vc{q}}
-\end{equation}
-where $ J_{\omega} \in \vc{R}^{3 \times n}$ is the Jacobian matrix
-that relates the generalized velocity to the angular velocity of the
-rigid body.
- 
+
 \begin{wrapfigure}{r}{0.4\textwidth}
  \vspace{-10pt}
 \begin{center}
@@ -413,7 +442,7 @@ at its angular velocity, let us first define a few notations.
 
 The angular velocity of link $k$ viewed in the world frame is then
 \begin{eqnarray}
-[\omega_k] & = & \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T = \sum_{j \in s(1,p(k))}
+[\bm{\omega}_k] & = & \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T = \sum_{j \in s(1,p(k))}
 \frac{\partial R^0_{p(k)}}{\partial q_j} R_k R_k^T (R^0_{p(k)})^T
 \dot{q}_j + \sum_{j \in s(k)} R^0_{p(k)} \frac{\partial R_k}{\partial q_j} R_k^T
 (R^0_{p(k)})^T \dot{q}_j  \nonumber \\
@@ -422,7 +451,7 @@ The angular velocity of link $k$ viewed in the world frame is then
 \end{eqnarray}
 \ignorethis{
 \begin{eqnarray}
-[\omega_k] & = & \dot{(R^0_{k-1}R_k)} (R^0_{k-1}R_k)^T = \sum_j
+[\bm{\omega}_k] & = & \dot{(R^0_{k-1}R_k)} (R^0_{k-1}R_k)^T = \sum_j
 \frac{\partial R^0_{k-1}}{\partial q_j} R_k R_k^T (R^0_{k-1})^T
 \dot{q}_j + \sum_j R^0_{k-1} \frac{\partial R_k}{\partial q_j} R_k^T
 (R^0_{k-1})^T \dot{q}_j  \nonumber \\
@@ -436,7 +465,7 @@ Using the property of skew symmetric matrix, $[R \vc{u}] = R [\vc{u}]
 R^T$, we can express the angular velocity in the vector form as
 \begin{equation}
 \label{eqn:angular_velocity}
-\omega_k = (\vc{u}_{11} \cdots R^0_{p(l(j))} \vc{u}_{l(j)j} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
+\bm{\omega}_k = (\vc{u}_{11} \cdots R^0_{p(l(j))} \vc{u}_{l(j)j} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
 \end{equation}
 where $j$ is in the set of $s(1,k)$, and $J_{\omega k}$ is a $3 \times
 n$ matrix. Note that the zero columns in $J_{\omega k}$ correspond to
@@ -444,9 +473,9 @@ DOFs that are not in the chain of transformations from the root to the
 link $k$. Let us look at a couple of examples using the articulated
 rigid body system in Figure \ref{fig:example1}:
 \begin{eqnarray}
-\omega_1 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; \vc{0}
+\bm{\omega}_1 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; \vc{0}
 \;\;\vc{0}\;\;\vc{0}\;\;\vc{0}\;\;\vc{0}) \dot{\vc{q}}  \nonumber \\
-\omega_4 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; R^0_1\vc{u}_{23} \;\;
+\bm{\omega}_4 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; R^0_1\vc{u}_{23} \;\;
 R^0_1\vc{u}_{24} \;\;  R^0_1\vc{u}_{25} \;\; \vc{0} \;\;
 R^0_2 \vc{u}_{47}) \dot{\vc{q}} \nonumber
 \end{eqnarray}
@@ -463,7 +492,7 @@ exponential map, $\vc{u}$ do not have a simple symbolic form.
 \ignorethis{
 \begin{equation}
 \label{eqn:angular_velocity}
-\omega_k = (\vc{s}_1 \cdots \vc{s}_{np} \; R^0_{k-1} \vc{t}_1 \cdots
+\bm{\omega}_k = (\vc{s}_1 \cdots \vc{s}_{np} \; R^0_{k-1} \vc{t}_1 \cdots
 R^0_{k-1} \vc{t}_{nk}\; \vc{0} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
 \end{equation}
 where $np$ is the number of DOFs in the parent chain and $nk$ is the
@@ -476,11 +505,13 @@ can be expressed in terms of the generalized velocity:
 \vc{v}_k = J_{vk} \dot{\vc{q}}, \;\;\;\mathrm{where}\;\; J_{vk} = \frac{\partial T^0_k
   \vc{c}_k}{\partial \vc{q}}.
 \end{equation}
-where the chain of transformations from the world frame to the local
+where the chain of homogeneous transformations from the world frame to the local
 frame of link $k$ is denoted as $T^0_k$. Note that $T^0_k$ is
 different from $R^0_k$ in that $T^0_k$ includes the translational
-transformations. $\vc{c}$ denotes the center of mass of link $k$ in
+transformations. $\vc{c}_k$ denotes the center of mass of link $k$ in
 its local frame.
+
+\sumit{Cut this part here and keep it for later. Instead, put $J_i$ for each link and go to next section.}
 
 We can concatenate all $2m$  Jacobian matrices into a single Jacobian
 that relates the generalized velocity to the Cartesian velocity of each
@@ -489,7 +520,7 @@ link:
 \left[
 \begin{array}{c}
 \vc{v} \\
-\omega \\
+\bm{\omega} \\
 \end{array}
 \right] =
 \left[
@@ -497,9 +528,9 @@ link:
 \vc{v}_1 \\
 \vdots \\
 \vc{v}_m \\
-\omega_1 \\
+\bm{\omega}_1 \\
 \vdots \\
-\omega_m
+\bm{\omega}_m
 \end{array}
 \right] = 
 \left[
@@ -523,7 +554,7 @@ J_{\omega m}
 
 Typically, the Jacobian $J$ is full column rank because the
 number of DOFs in the maximal representation is more than that in the
-generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $(\vc{v}, \omega)$, we
+generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $(\vc{v}, \bm{\omega})$, we
 will end up solving a over-constrained linear system. We can use
 pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
 \begin{equation}
@@ -531,14 +562,14 @@ pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
 \left[
 \begin{array}{c}
 \vc{v} \\
-\omega
+\bm{\omega}
 \end{array}
 \right]
  = J^+
 \left[
 \begin{array}{c}
 \vc{v} \\
-\omega
+\bm{\omega}
 \end{array}
 \right]
 \end{equation}
@@ -548,7 +579,7 @@ velocity between a child and a parent link expressed in the local
 frame of the parent, instead of using angular velocity of each link
 expressed in the world frame.
 \begin{equation}
-\hat{\omega}_k = (R^0_{p(k)})^T(\omega_k - \omega_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
+\hat{\bm{\omega}}_k = (R^0_{p(k)})^T(\bm{\omega}_k - \bm{\omega}_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
 \cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
 \end{equation}
 where $j$ is in the set of $s(k)$. Comparing the above equation with Equation \ref{eqn:angular_velocity},
@@ -557,14 +588,72 @@ that $J_\omega$.
 
 \ignorethis{
 \begin{equation}
-\hat{\omega}_k = (\vc{0} \cdots \vc{0} \;\vc{t}_1 \cdots \vc{t}_{nk}\;
+\hat{\bm{\omega}}_k = (\vc{0} \cdots \vc{0} \;\vc{t}_1 \cdots \vc{t}_{nk}\;
 \vc{0} \cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
 \end{equation}
 }
 
+\subsection{Equations of motion}
+Describe the equations carrying over from rigid body section.
+
+\section{Conversion between Cartesian and Generalized Coordinates}
+In practice, we often want to use third-party rigid body simulators
+rather than develop our own. There are a few widely used physics
+engines that provide efficient, robust, and fairly accurate rigid body
+simulation and collision handling. Open Dynamic Engine (ODE), PhysX, and
+Bullet are perhaps the most popular free choices among game developers and
+academic researchers. These commercial simulators use the maximal
+representation rather than generalized coordinates
+described above. That is, these simulators represent each link in the
+articulated rigid body system as six DOFs,
+leading to a redundant system with additional constraints between
+links. A common practice is to develop control algorithms in
+generalized coordinates and do forward simulation using a commercial
+physics engine, such as ODE. This requires some conversion between
+Cartesian and generalized coordinates.
+
+\subsection{Definitions}
+In the maximal coordinates, the state of an articulated rigid body
+system can be expressed as $(\vc{x}_k, R_k, \vc{v}_k,
+\boldsymbol{\bm{\omega}}_k)$, where $k = 1, \cdots, m$. Here $\vc{x}_k$ and
+$R_k$ are the position and orientation of the rigid link $k$, and $(\vc{v}_k,
+\boldsymbol{\bm{\omega}}_k)$ are the linear and angular velocity of the
+rigid link $k$ viewed in the world frame. Similarly, we define the
+Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
+{\tau}_k)$, both of which are expressed in the world
+frame.
+
+The same articulated rigid body system can be represented in
+generalized coordinates. We define the generalized state as $(q_j,
+\dot{q}_j)$, where $j = 1, \cdots, n$. The corresponding generalized
+forces are then defined as $(Q_1, \cdots, Q_n)$.
+
+\subsection{Velocity conversion}
+Let us first consider only one rigid body. From rigid body dynamics,
+we can write down the relation between the orientation and the angular
+velocity as $\dot{R} = [\bm{\omega}] R$, where $[\boldsymbol{\bm{\omega}}]$
+denotes the skew symmetric matrix of ${\bm{\omega}}$. We can
+then express the relation between the angular velocity and the
+generalized velocity as
+\begin{equation}
+[\bm{\omega}] = \dot{R} R^{T} = \left(\sum_j \frac{\partial R}{\partial q_j}
+\dot{q}_j \right) R^T = \sum_j\frac{\partial R}{\partial q_j} R^T
+\dot{q}_j = \sum_j [\vc{j}_j] \dot{q}_j
+\end{equation}
+Here $[\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T$ is a skew
+symmetric matrix because $R \in SO(3)$. We can also express the
+angular velocity as
+\begin{equation}
+\bm{\omega} = ( \vc{j}_1 \cdots \vc{j}_n) \dot{\vc{q}} = J_{\omega} \dot{\vc{q}}
+\end{equation}
+where $ J_{\omega} \in \vc{R}^{3 \times n}$ is the Jacobian matrix
+that relates the generalized velocity to the angular velocity of the
+rigid body.
+ 
+
 \subsection{Force conversion}
 The relation between the Cartesian force and the generalized force can
-be found in Equation \ref{eqn:virtual_work}:
+be found in Equation \ref{eq:virtual_work}:
 \begin{equation}
 \label{eqn:force_conversion}
 \vc{Q} = \sum_i J_{vi}^T \vc{f}_i + \sum_k J_{\omega k}^T \tau_k = 
@@ -576,7 +665,7 @@ J_{v}^T & J_\omega^T
 \left[
 \begin{array}{c}
 \vc{f} \\
-\tau
+\bm{\tau}
 \end{array}
 \right] 
 , \;\;\;\mathrm{where}\;\;
@@ -600,7 +689,7 @@ J_{v}^T & J_\omega^T
 \left[
 \begin{array}{c}
 \vc{f} \\
-\tau
+\bm{\tau}
 \end{array}
 \right] 
  = \left[
@@ -629,7 +718,7 @@ J_{v}^T & \hat{J}_\omega^T
 \left[
 \begin{array}{c}
 \vc{f} \\
-\hat{\tau}
+\hat{\bm{\tau}}
 \end{array}
 \right]  
 \end{equation}
