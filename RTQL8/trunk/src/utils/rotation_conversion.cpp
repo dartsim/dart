@@ -215,5 +215,138 @@ namespace utils {
       return mat;
     }
 
+    // get the derivative of rotation matrix wrt el no.
+    Matrix3d get_derivative_matrix(const Quaterniond& q, int el){
+      Matrix3d mat = Matrix3d::Zero();
+      switch(el){
+      case 0:	// wrt w
+        mat(0, 0) = q.w();
+        mat(1, 1) = q.w();
+        mat(2, 2) = q.w();
+        mat(0, 1) = -q.z();
+        mat(1, 0) = q.z();
+        mat(0, 2) = q.y();
+        mat(2, 0) = -q.y();
+        mat(1, 2) = -q.x();
+        mat(2, 1) = q.x();
+        break;
+      case 1:	// wrt x
+        mat(0, 0) = q.x();
+        mat(1, 1) = -q.x();
+        mat(2, 2) = -q.x();
+        mat(0, 1) = q.y();
+        mat(1, 0) = q.y();
+        mat(0, 2) = q.z();
+        mat(2, 0) = q.z();
+        mat(1, 2) = -q.w();
+        mat(2, 1) = q.w();
+        break;
+      case 2:	// wrt y
+        mat(0, 0) = -q.y();
+        mat(1, 1) = q.y();
+        mat(2, 2) = -q.y();
+        mat(0, 1) = q.x();
+        mat(1, 0) = q.x();
+        mat(0, 2) = q.w();
+        mat(2, 0) = -q.w();
+        mat(1, 2) = q.z();
+        mat(2, 1) = q.z();
+        break;
+      case 3:	// wrt z
+        mat(0, 0) = -q.z();
+        mat(1, 1) = -q.z();
+        mat(2, 2) = q.z();
+        mat(0, 1) = -q.w();
+        mat(1, 0) = q.w();
+        mat(0, 2) = q.x();
+        mat(2, 0) = q.x();
+        mat(1, 2) = q.y();
+        mat(2, 1) = q.y();
+        break;
+      default:
+        break;
+      }
+      return 2*mat;
+    }
+
+    Matrix3d get_derivative_matrix(const Quaterniond& q, int el1, int el2){
+      Matrix3d mat = Matrix3d::Zero();
+
+      // wrt same dof
+      if(el1==el2){
+        switch(el1){
+        case 0:	// wrt w
+          mat(0, 0) = 1;
+          mat(1, 1) = 1;
+          mat(2, 2) = 1;
+          break;
+        case 1:	// wrt x
+          mat(0, 0) = 1;
+          mat(1, 1) = -1;
+          mat(2, 2) = -1;
+          break;
+        case 2:	// wrt y
+          mat(0, 0) = -1;
+          mat(1, 1) = 1;
+          mat(2, 2) =-1;
+          break;
+        case 3:	// wrt z
+          mat(0, 0) = -1;
+          mat(1, 1) = -1;
+          mat(2, 2) = 1;
+          break;
+        }
+      }
+      // wrt different dofs
+      else {
+        // arrange in increasing order
+        if(el1>el2){
+          int temp=el2;
+          el2=el1;
+          el1=temp;
+        }
+        switch(el1){
+        case 0:	// wrt w
+          switch(el2){
+          case 1:	// wrt x
+            mat(1, 2) = -1;
+            mat(2, 1) = 1;
+            break;
+          case 2:	// wrt y
+            mat(0, 2) = 1;
+            mat(2, 0) = -1;
+            break;
+          case 3:	// wrt z
+            mat(0, 1) = -1;
+            mat(1, 0) = 1;
+            break;
+          }
+          break;
+        case 1:	// wrt x
+          switch(el2){
+          case 2:	// wrt y
+            mat(0, 1) = 1;
+            mat(1, 0) = 1;
+            break;
+          case 3:	// wrt z
+            mat(0, 2) = 1;
+            mat(2, 0) = 1;
+            break;
+          }
+          break;
+        case 2:	// wrt y
+          switch(el2){
+          case 3:	// wrt z
+            mat(1, 2) = 1;
+            mat(2, 1) = 1;
+            break;
+          }
+          break;
+        }
+      }
+	
+      return 2*mat;
+    }
+
   } // namespace rot_conv
 } // namespace utils
