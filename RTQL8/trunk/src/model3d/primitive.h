@@ -10,32 +10,44 @@ namespace model3d {
   class Primitive{
   public:
     Primitive();
-    virtual void draw(Vec4d _color, bool _default);
-    virtual bool isInside(Vec3d _pt);	// decides if the point is inside
-    virtual Vec3d getNormal(Vec3d& _pt); //in world coordinate
+    virtual void draw(Vector4d& _color, bool _default);
+    virtual bool isInside(Vector3d _pt);	// decides if the point is inside
+    virtual Vector3d getNormal(Vector3d& _pt); //in world coordinate
 	
-    inline void setInertia(Mat3d& _inertia);
-    Mat3d getInertia();
-    inline Mat4d getMassTensor();
+    inline void setInertia(Matrix3d& _inertia) {
+        mInertia = _inertia;
+        setMassTensorFromInertia();
+    }
+    Matrix3d getInertia() { return mInertia; }
+    inline Matrix4d getMassTensor() { return mMassTensor; }
 
-    inline void setColor(Vec3d _color);
-    inline Vec3d getColor();
+    inline void setColor(Vector3d _color) { mColor = _color; }
+    inline Vector3d getColor() { return mColor; }
 
-    inline void setWorldPos(Vec3d _pos);
-    inline Vec3d getCOM(); //in local coordinate
-    inline Vec3d getWorldCOM(); //in world coordinatei;
+    inline void setWorldPos(Vector3d _pos) { mWorldPos = _pos; }
+    inline Vector3d getCOM() { return mCOM; } //in local coordinates
+    inline Vector3d getWorldCOM() { return (mWorldPos + mCOM); } //in world coordinates;
                                 // assume the world position is up to date
 	
-    inline void setDim(Vec3d _dim);
-    inline Vec3d getDim();
+    inline void setDim(Vector3d _dim) {
+        mDim = _dim;
+        calVolume();
+        calMassTensor();
+        calInertiaFromMassTensor();
+    }
+    inline Vector3d getDim() { return mDim; }
 	
-    inline void setMass(double _m);
-    inline double getMass();
+    inline void setMass(double _m) {
+        mMass = _m;
+        calMassTensor();
+    }
+    inline double getMass() { return mMass; }
 
-    inline void setVolume(double _v);
-    inline double getVolume();
+    inline void setVolume(double _v) { mVolume = _v; }
+    inline double getVolume() { return mVolume; }
 	
-    inline int getID();
+    inline int getID() { return mID; }
+
   protected:
     void setMassTensorFromInertia();
     void calInertiaFromMassTensor();
@@ -44,18 +56,18 @@ namespace model3d {
     virtual void calVolume();
     virtual void calCOM();
 
-    Vec3d mDim; // dimensions for bounding box
-    Mat3d mInertia;	// inertia
-    Mat4d mMassTensor; // mass tensor for lagrangian dynamics
+    Vector3d mDim; // dimensions for bounding box
+    Matrix3d mInertia;	// inertia
+    Matrix4d mMassTensor; // mass tensor for lagrangian dynamics
     double mMass;	// mass
     double mVolume; // volume
 
-    Vec3d mCOM;	// COM in local coordinate; default (0,0,0)
-    Vec3d mWorldPos; // local origin in world coordinate
-    Vec3d mLinearVel;
-    Vec3d mAngVel;
+    Vector3d mCOM;	// COM in local coordinate; default (0,0,0)
+    Vector3d mWorldPos; // local origin in world coordinate
+    Vector3d mLinearVel;
+    Vector3d mAngVel;
 	
-    Vec3d mColor;		// color for the primitive
+    Vector3d mColor;		// color for the primitive
     int mID; // unique id
 
     static int mCounter;

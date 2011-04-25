@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_PRIMITIVE_CUBE_H
 #define SRC_MODEL3D_PRIMITIVE_CUBE_H
 
-#include "Primitive.h"
+#include "primitive.h"
 
 namespace model3d {
 
@@ -9,7 +9,7 @@ namespace model3d {
   public:
     PrimitiveCube(Vector3d _dim, double _mass);
 
-    void draw(Vector4d _col, bool _default = true);
+    void draw(Vector4d& _col, bool _default = true);
   private:
     void calMassTensor();
     void calVolume();

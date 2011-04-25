@@ -26,6 +26,11 @@ namespace utils {
     Matrix3d euler_to_matrixy(double y);
     Matrix3d euler_to_matrixz(double z);
 
+    // Note: retrieves the derivative matrix given a quaternion
+    // This is not functionality that is part of Eigen
+    Matrix3d get_derivative_matrix(const Quaterniond& q, int el);
+    Matrix3d get_derivative_matrix(const Quaterniond& q, int el1, int el2);
+
   } // namespace rot_conv
 } // namespace utils
 
