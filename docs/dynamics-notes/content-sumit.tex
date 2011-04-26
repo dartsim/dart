@@ -582,11 +582,12 @@ generalized coordinates. We define the generalized state as $(q_j,
 
 \subsection{Cartesian and Generalized velocities}
 We now describe how to express the Cartesian velocities in terms of generalized velocities for the articulated body system. 
-For a single rigid body, \eqnref{velang} describes the relation between the velocities as $[\bm{\omega}] = J_{\omega} \dot{\vc{q}}$,
+For a single rigid body, \eqnref{velang} describes the relation between the angular velocity and the generalized velocity as $[\bm{\omega}] = J_{\omega} \dot{\vc{q}}$,
 where each column $\vc{j}_j$ of the Jacobian matrix $J_{\omega}$ is defined as:
 \begin{equation}
 [\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T
 \end{equation}
+In addition, \eqnref{vellin} describes the relation between the linear velocity and the generalized velocity as $\vc{v} = J_v \dot{\vc{q}}$. 
 
 \begin{wrapfigure}{r}{0.4\textwidth}
  \vspace{-10pt}
@@ -598,7 +599,7 @@ where each column $\vc{j}_j$ of the Jacobian matrix $J_{\omega}$ is defined as:
 \label{fig:example1}
 \end{wrapfigure}
 
-Now, consider a multibody system with $m$ rigid links. Before we look
+We use the same recipe as rigid body dynamics in \secref{rigidbodydyngen} for an articulated rigid body system and define the Jacobians for each rigid link that relate its respective velocities to the generalized velocity of the entire system. Consider an articulated multibody system with $m$ rigid links. Before we look
 at its angular velocity, let us first define a few notations.
 \begin{itemize}
 \item $s(k)$ returns the index set of DOFs in link $k$, and $s(1, k)$
@@ -637,7 +638,7 @@ The angular velocity of link $k$ viewed in the world frame is then
 Using the property of skew symmetric matrix, $[R \vc{u}] = R [\vc{u}]
 R^T$, we can express the angular velocity in the vector form as
 \begin{equation}
-\label{eqn:angular_velocity}
+\label{eq:angular_velocity_link}
 \bm{\omega}_k = (\vc{u}_{11} \cdots R^0_{p(l(j))} \vc{u}_{l(j)j} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
 \end{equation}
 where $j$ is in the set of $s(1,k)$, and $J_{\omega k}$ is a $3 \times
@@ -664,7 +665,7 @@ exponential map, $\vc{u}$ do not have a simple symbolic form.
 
 \ignorethis{
 \begin{equation}
-\label{eqn:angular_velocity}
+\label{eq:angular_velocity_link}
 \bm{\omega}_k = (\vc{s}_1 \cdots \vc{s}_{np} \; R^0_{k-1} \vc{t}_1 \cdots
 R^0_{k-1} \vc{t}_{nk}\; \vc{0} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
 \end{equation}
@@ -675,6 +676,7 @@ number of DOFs in the link $k$.
 Similarly, the linear velocity of the center of mass of the link $k$
 can be expressed in terms of the generalized velocity: 
 \begin{equation}
+\label{eq:linear_velocity_link}
 \vc{v}_k = J_{vk} \dot{\vc{q}}, \;\;\;\mathrm{where}\;\; J_{vk} = \frac{\partial T^0_k
   \vc{c}_k}{\partial \vc{q}}.
 \end{equation}
@@ -755,7 +757,7 @@ expressed in the world frame.
 \hat{\bm{\omega}}_k = (R^0_{p(k)})^T(\bm{\omega}_k - \bm{\omega}_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
 \cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
 \end{equation}
-where $j$ is in the set of $s(k)$. Comparing the above equation with Equation \ref{eqn:angular_velocity},
+where $j$ is in the set of $s(k)$. Comparing the above equation with \eqnref{angular_velocity_link},
 the angular part of Jacobian, $\hat{J}_\omega$, is usually more sparse
 that $J_\omega$.
 
@@ -767,7 +769,19 @@ that $J_\omega$.
 }
 
 \subsection{Equations of motion}
-Describe the equations carrying over from rigid body section.
+We now derive the equations of motion of an articulated rigid body system in generalized coordinates. The kinetic energy $T$ of the entire system can be expressed as the sum of kinetic energies of all the rigid links as $T=\sum_k T_k$. Therefore the equations of motion of the system can be computed as:
+\begin{eqnarray}
+\nonumber
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T}{\partial \vc{q}} & = & \frac{d}{dt} \left ( \frac{\partial \sum_k T_k}{\partial \dot{\vc{q}}} \right ) - \frac{\partial \sum_k T_k}{\partial \vc{q}}\\
+\nonumber
+& = & \sum_k \left ( \frac{d}{dt} \left ( \frac{\partial T_k}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T_k}{\partial \vc{q}} \right )\\
+\nonumber
+& = & \sum_k \left ( \left( J_k^T M_{ck} J_k \right )\ddot{\vc{q}} + \left( J_k^T M_{ck} \dot{J}_k + J_k^T [\tilde{\bm{\omega}}_k]M_{ck} J_k \right )\dot{\vc{q}} \right )\\
+& = &  \sum_k \left( J_k^T M_{ck} J_k \right )\ddot{\vc{q}} + \sum_k\left( J_k^T M_{ck} \dot{J}_k + J_k^T [\tilde{\bm{\omega}}_k]M_{ck} J_k \right )\dot{\vc{q}}
+\end{eqnarray}
+In deriving the above equation, we use the equations of motion in generalized coordinates for a single rigid body defined in \eqnref{dyngen_vec} subscripted by $k$ for the dynamics of $k^{th}$ link in the multibody system. The Jacobian $J_k$ for the $k^{th}$ link is defined as $(J_{vk}^T,J_{\omega k}^T)^T$, where $J_{vk}$ and $J_{\omega k}$ are defined in \eqnref{angular_velocity_link} and \eqnref{linear_velocity_link} respectively. 
+
+
 
 \section{Conversion between Cartesian and Generalized Coordinates}
 In practice, we often want to use third-party rigid body simulators
