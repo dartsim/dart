@@ -61,7 +61,7 @@ constraint manifold at a fixed time, written as
 We can write virtual work of force $\vForce{i}$ acting on particle
 $\vGlobalPoint_i$ as
 \begin{equation}\label{eq:virtual_work}
-  \vForce{i} \delta \vGlobalPoint_i = \vForce{i} \sum_j \frac{\partial \vGlobalPoint_i}{\partial
+  \vForce{i} . \delta \vGlobalPoint_i = \vForce{i} . \sum_j \frac{\partial \vGlobalPoint_i}{\partial
     \sJoint_j}\delta \sJoint_j = \sum_j \sGeneralForce{j} \delta \sJoint_j
 \end{equation}
 where $\sGeneralForce{j}$ is defined as \emph{generalized force}
@@ -72,7 +72,7 @@ between the forces acting on a system and the inertia force of the
 system along any virtual displacement consistent with the constraints
 of the system, is zero. Therefore, the virtual work at $\vGlobalPoint_i$ can be written as
 \begin{equation}\label{eq:inertial_work}
-  \delta \sWork_i = \vForce{i} \delta \vGlobalPoint_i = \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
+  \delta \sWork_i = \vForce{i} . \delta \vGlobalPoint_i = \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
     \delta \vGlobalPoint_i = \sum_j \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
     \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j} \delta \sJoint_j
 \end{equation}
@@ -107,7 +107,7 @@ from which we derive the following two identities:
 Using these two identities, we rewrite Equation \ref{eq:inertia_force} as
 \begin{equation}
 \label{eq:inertia_force2}
-\sInfMass_i \ddot{\vGlobalPoint}_i \cdot \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j}   = \frac{d}{dt} \left[ \frac{\partial}{\partial \dot{\sJoint}_j} \left( \frac{1}{2} \sInfMass_i \dot{\vGlobalPoint}_i^{T} \dot{\vGlobalPoint}_i\right) \right]
+\sInfMass_i \ddot{\vGlobalPoint}_i \cdot \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j}   = \frac{d}{dt} \left ( \frac{\partial}{\partial \dot{\sJoint}_j} \left( \frac{1}{2} \sInfMass_i \dot{\vGlobalPoint}_i^{T} \dot{\vGlobalPoint}_i\right) \right)
    - \frac{\partial}{\partial \sJoint_j} \left( \frac{1}{2} \sInfMass_i \dot{\vGlobalPoint}_i^{T} \dot{\vGlobalPoint}_i \right)
 \end{equation}
 
@@ -128,8 +128,8 @@ Combining the definition of generalized force (Equation
 \ref{eq:inertial_work}), and the generalized inertia force (Equation
 \ref{eq:inertia_kinetic}), we arrive at the following equation:
 \begin{equation}\label{eq:dynamic_equil}
-    \left[ \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
-    \sJoint_j}\right] \delta \sJoint_j = \sGeneralForce{j} \delta
+    \left ( \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
+    \sJoint_j}\right ) \delta \sJoint_j = \sGeneralForce{j} \delta
     \sJoint_j
 \end{equation}
 
@@ -216,7 +216,7 @@ Baraff's course notes). The linear momentum \vc{p} is computed as:
  &=& m \vc{v}
 \end{eqnarray}
 where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
-\vc{r}_i' = \vc{0}$, the second term vanishes. The angular momentum \vc{L} about the COM is computed as:
+\vc{r}_i' = \vc{0}$ (property of the COM), the second term vanishes. The angular momentum \vc{L} about the COM is computed as:
 \begin{eqnarray}
 \nonumber
 \vc{L} & = & \sum_i \vc{l}_i  = \sum_i \vc{r}_i' \times \vc{p}_i\\
@@ -224,7 +224,8 @@ where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
 & = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
 &= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
 \end{eqnarray}
-Note that we used the identity $[\vc{a}]\vc{b} = -[\vc{b}]\vc{a}$. 
+The notation $[\vc{a}] \vc{b}$ denotes the cross product $\vc{a}\times \vc{b}$ with $[\vc{a}]$ as the skew-symmetric matrix corresponding to the vector $\vc{a}$. Therefore the following identities hold: $[\vc{a}]\vc{b} = -[\vc{b}]\vc{a}$ and $[\vc{a}]^T = -[\vc{a}]$.
+
 Now recall the inertia tensor about the COM defined in Witkin and
 Baraff's course notes: $I_c = \sum_i \sInfMass ((\vc{r}_i'^T
 \vc{r}_i')\vc{I} - \vc{r}_i' \vc{r}_i'^T)$, where $\vc{I}$ is the
