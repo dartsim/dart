@@ -627,7 +627,7 @@ The angular velocity of link $k$ viewed in the world frame is then
 [\vc{u}_{l(j)j}] = \frac{\partial R_{l(j)}}{\partial q_j} R_{l(j)}^T
 \end{eqnarray}
 
-\sumit{here itself introduce the notation $\hat{J}$ instead of \vc{u}}. Could be used later and things may get more convenient}.
+\sumit{here itself introduce the notation $\hat{J}$ instead of \vc{u}. Could be used later and things may get more convenient}.
 
 \ignorethis{
 \begin{eqnarray}
@@ -851,60 +851,60 @@ world frame. For example, the joint torque between link $p(k)$ and
 link $k$ can be computed as $\hat{\bm{\tau}}_{p(k)} = (R^0_{p(k)})^T(\bm{\tau}_{p(k)} -
 \bm{\tau}_k)$. Equation \ref{eqn:force_conversion} is then modified to:
 \begin{equation}
-\vc{Q} = \left[
+\vc{Q} = \left (
 \begin{array}{cc}
 J_{v}^T & J_\omega^T
 \end{array}
-\right]
-\left[
+\right )
+\left (
 \begin{array}{c}
 \vc{f} \\
 \bm{\tau}
 \end{array}
-\right] 
- = \left[
+\right ) 
+ = \left (
 \begin{array}{cc}
 J_{v}^T & J_\omega^T
 \end{array}
-\right]
-\left[
+\right )
+\left (
 \begin{array}{c}
 \vc{f} \\
 D 
-\left[
+\left (
 \begin{array}{c}
 R^0_{p(1)} \hat{\bm{\tau}}_1 \\
 \vdots \\
-R^0_{p(m)}) \hat{\bm{\tau}}_m
+R^0_{p(m)} \hat{\bm{\tau}}_m
 \end{array}
-\right]
+\right )
 \end{array}
-\right] =
-\left[
+\right ) =
+\left (
 \begin{array}{cc}
 J_{v}^T & \hat{J}_\omega^T
 \end{array}
-\right]
-\left[
+\right )
+\left (
 \begin{array}{c}
 \vc{f} \\
 \hat{\bm{\tau}}
 \end{array}
-\right]  
+\right )  
 \end{equation}
 where matrix $D$ encodes the relation between body torques and joint
 torques. For example, matrix $D$ for the system in Figure \ref{fig:example1} looks
 like:
 \begin{equation}
 D =
-\left[
+\left (
 \begin{array}{cccc}
 \vc{I}_{3\time 3}  & -\vc{I}_{3\time 3} & \vc{0} & \vc{0}\\
 \vc{0} & \vc{I}_{3\time 3}  & -\vc{I}_{3\time 3} & -\vc{I}_{3\time 3}\\
 \vc{0} & \vc{0} & \vc{I}_{3\time 3}  & \vc{0}\\
 \vc{0} & \vc{0} & \vc{0} & \vc{I}_{3\time 3}\\
 \end{array}
-\right]  
+\right )  
 \end{equation}
 
 
