@@ -6,7 +6,9 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 
-#include "bodynode.h"
+#include "primitive.h"
+#include "joint.h"
+#include "marker.h"
 
 namespace model3d {
 #define MAX_NODE3D_NAME 128
@@ -18,19 +20,26 @@ namespace model3d {
   class Skeleton;
   class Joint;
 
+  class Skeleton {
+  public:
+    int getNumDofs() {
+      return 6;
+    }
+  };
+
+
   class BodyNode {
   public:
     BodyNode(char *_name = NULL);
     ~BodyNode();
 
     // functions from Node
-    void evalR(VectorXd&);
     void init();
     void update(VectorXd&);
-    void evalSecondOrder(VectorXd&);
+    void evalSecondOrder(const VectorXd&);
     MatrixXd evalM(VectorXd&);
     VectorXd evalC(VectorXd&);
-    VectorXd evalWorldPos(VectorXd& h);	// recursive function
+    VectorXd evalWorldPos(VectorXd& lp); 
     MatrixXd evalDpDq(VectorXd& lp);	
     void evalSecDpDq(VectorXd&, vector<MatrixXd>&);
     VectorXd evalMomenta(VectorXd&,VectorXd&);
@@ -39,9 +48,9 @@ namespace model3d {
     double evalG();
     VectorXd evaldGdq();
 
-    inline VectorXd evalCOM();
+    VectorXd evalCOM() { return mCOM; }
     void draw();
-    inline double getMass();
+    double getMass() { return mPrimitive->getMass(); };
 
     // Jie's helper functions
     void evalJC();
@@ -51,46 +60,47 @@ namespace model3d {
 
     // ori functions
     // Transformation
-    MatrixXd getWorldTransform();
+    MatrixXd getWorldTransform() { return W; }
   
     // Inverse Transformation
-    MatrixXd getWorldInvTransform();
-    MatrixXd getLocalInvTransform();
+    MatrixXd getWorldInvTransform() { return W.inverse(); }
+    MatrixXd getLocalInvTransform() { return T.inverse(); }
 	
     void draw(Vector4d& _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
     void drawHandles(Vector4d& _color, bool _default);	// render the handles
 
-    inline char* getName();
-    inline Vector3d getOffset();
-    inline void setOffset(Vector3d& _off);
-    inline int getModelIndex();
-    inline void setModelIndex(int _idx);
-    inline BodyNode* getNodeIn();
-    inline void setSkel(Skeleton* skel);
+    char* getName() { return mName; }
+    Vector3d getOffset() { return Vector3d(mOffset[0],mOffset[1],mOffset[2]); }
+    void setOffset(Vector3d& _off) { mOffset = _off; }
+    int getModelIndex() { return mModelIndex; }
+    void setModelIndex(int _idx) { mModelIndex = _idx; }
+    BodyNode* getNodeIn() { return mNodeIn; }
+    void setSkel(Skeleton* skel) { mSkel = skel; }
 
-    inline void addHandle(Marker *h);
-    inline vector<Marker*> clearHandles();
-    inline void removeHandle(Marker *h);
-    inline int getNumHandles();
-    inline Marker* getHandle(int i);
+    void addHandle(Marker *h) { mHandles.push_back(h); }
+    vector<Marker*> clearHandles();
+    void removeHandle(Marker *h);
+    int getNumHandles() { return mHandles.size(); }
+    Marker* getHandle(int i) { return mHandles[i]; }
 	
-    inline Primitive* getPrimitive();
-    inline void setPrimitive(Primitive *_p);
+    Primitive* getPrimitive() { return mPrimitive; }
+    void setPrimitive(Primitive *_p) { mPrimitive = _p; }
 
-    inline void addJointOut(Joint *_c);
-    inline int getNumJoints();
-    inline Joint* getJointOut(int i);
-    inline Joint* getJointIn();
-    inline void setJointIn(Joint *_p);
+    void addJointOut(Joint *_c) { mJointOut.push_back(_c); }
+    int getNumJoints() { mJointOut.size(); }
+    Joint* getJointOut(int i) { return mJointOut[i]; }
+    Joint* getJointIn() { return mJointIn; }
+    void setJointIn(Joint *_p) { mJointIn=_p; mNodeIn = _p->getNodeIn(); }
 
     // wrapper functions for joints
-    inline BodyNode* getNodeOut(int i);
-    inline int getNumDofs();
-    inline Dof* getDof(int i);
-    inline bool isPresent(Dof* q);
-    inline Matrix4d getLocalTrans();
-    inline Matrix4d getLocalDeriv(Dof* q);
-    inline Matrix4d getLocalDeriv2(Dof* q1, Dof* q2);
+    BodyNode* getNodeOut(int i) { return mJointOut[i]->getNodeOut(); }
+    int getNumDofs() const { return mJointIn->getNumDofs(); }
+    Dof* getDof(int i) { return mJointIn->getDof(i); }
+    bool isPresent(Dof* q) { return mJointIn->isPresent(q); }
+    Matrix4d getLocalTrans() const { return mJointIn->getTransform(); }
+    Matrix4d getLocalDeriv(Dof* q) const { return mJointIn->getDeriv(q); }
+    Matrix4d getLocalDeriv2(Dof* q1, Dof* q2) const {
+      return mJointIn->getDeriv2(q1, q2); }
 
   public:
     char mName[MAX_NODE3D_NAME];

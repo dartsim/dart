@@ -10,6 +10,7 @@ namespace model3d {
 
   class Dof;
   class BodyNode;
+  class Transformation;
 
   class Joint {
   public:
@@ -22,7 +23,7 @@ namespace model3d {
       UNIVERSAL
     };
 	
-    Joint(BodyNode *_bIn, BodyNode *_bOut);
+    Joint(BodyNode* _bIn, BodyNode* _bOut);
     ~Joint();
 
     bool isPresent(Dof *d);	// true if d is present in the dof list
@@ -41,17 +42,17 @@ namespace model3d {
     void applyDeriv2(Dof*, Dof*, Matrix4d&);
 
     void addTransform(Transformation *t, bool _isVariable = true);
-    inline int getNumTransforms();
-    inline Transformation* getTransform(int i);
+    int getNumTransforms(){return mTransforms.size();}
+    Transformation* getTransform(int i){return mTransforms[i];}
 
-    inline int getNumDofs();
-    inline Dof* getDof(int i);
+    int getNumDofs(){return mDofs.size();}
+    Dof* getDof(int i){return mDofs[i];}
 	
-    inline BodyNode* getNodeIn();
-    inline BodyNode* getNodeOut();
+    BodyNode* getNodeIn(){return mNodeIn;}
+    BodyNode* getNodeOut(){return mNodeOut;}
 	
-    inline void setModelIndex(int _idx);
-    inline int getModelIndex();
+    void setModelIndex(int _idx){mModelIndex= _idx;}
+    int getModelIndex(){return mModelIndex;}
 
   protected:
     BodyNode *mNodeIn;

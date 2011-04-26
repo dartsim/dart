@@ -6,9 +6,12 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 
+#include "transformation.h"
+
 namespace model3d {
 #define MAX_DOF_NAME 128
   class Joint;
+  class Transformation;
 
   class Dof{
   public:
@@ -20,29 +23,29 @@ namespace model3d {
 	
     ~Dof(){}
 
-    // some inline helper functions
-    inline void setName(char* _n);
-    inline char* getName();
+    // some helper functions
+    void setName(char* _n){ strcpy(mName,_n); }
+    char* getName(){return mName;}
 	
-    inline void setValue(double v);
-    inline double getValue();
+    void setValue(double v);
+    double getValue(){return mVal;}
 	
-    inline double getMin();
-    inline double getMax();
-    inline void setMin(double _min);
-    inline void setMax(double _max);
+    double getMin(){return mMinVal;}
+    double getMax(){return mMaxVal;}
+    void setMin(double _min){mMinVal=_min;}
+    void setMax(double _max){mMaxVal=_max;}
 	
-    inline int getModelIndex();
-    inline void setModelIndex(int _idx);
+    int getModelIndex(){return mModelIndex;}
+    void setModelIndex(int _idx){mModelIndex=_idx;}
 
-    inline bool isVariable();
-    inline void setVariable();
+    bool isVariable(){return mVariable;}
+    void setVariable(){mVariable=true;}
 	
-    inline void setTrans(Transformation *_t);
-    inline Transformation* getTrans();
+    void setTrans(Transformation *_t){mTrans=_t;}
+    Transformation* getTrans(){return mTrans;}
 	
-    inline void setJoint(Joint *_j);
-    inline Joint *getJoint();
+    void setJoint(Joint *_j){mJoint=_j;}
+    Joint *getJoint(){return mJoint;}
 
   protected:
     void init(double _v, const char * _name, double _min, double Max);
@@ -52,8 +55,6 @@ namespace model3d {
     double mVal;	// value of the joint angle
     double mMinVal;	// min value allowed
     double mMaxVal;	// max value allowed
-
-    double mVel;
 
     double mTorque;
     double mMinTorque;

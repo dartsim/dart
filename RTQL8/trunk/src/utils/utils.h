@@ -7,6 +7,7 @@
 #include <ctime>
 #include <climits>
 #include <cassert>
+#include <iostream>
 using namespace std;
 // External Libraries
 #include <Eigen/Dense>
@@ -144,25 +145,27 @@ namespace utils {
 /*   /\*   glPopMatrix(); *\/ */
 /*   /\* } *\/ */
 
-/*   inline Matd makeSkewSymmetric(Vecd v){ */
-/*     Matd result(3,3,vl_0); */
+  inline MatrixXd makeSkewSymmetric(const VectorXd& v){
+    MatrixXd result = MatrixXd::Zero(3, 3);
 		
-/*     result.Elt(0,1) = -v[2]; */
-/*     result.Elt(1,0) = v[2]; */
-/*     result.Elt(0,2) = v[1]; */
-/*     result.Elt(2,0) = -v[1]; */
-/*     result.Elt(1,2) = -v[0]; */
-/*     result.Elt(2,1) = v[0]; */
+    result(0, 1) = -v(2);
+    result(1, 0) =  v(2);
+    result(0, 2) =  v(1);
+    result(2, 0) = -v(1);
+    result(1, 2) = -v(0);
+    result(2, 1) =  v(0);
 
-/*     return result; */
-/*   } */
+    return result;
+  }
 
-/*   inline Vecd cross(Vecd a, Vecd b){ */
-/*     Vec3d v1(a[0],a[1],a[2]); */
-/*     Vec3d v2(b[0],b[1],b[2]); */
-/*     Vec3d v = cross(v1,v2); */
-/*     return Vecd(3,v[0],v[1],v[2]); */
-/*   } */
+  inline VectorXd cross(const VectorXd& a, const VectorXd& b) {
+    Vector3d v1(a(0), a(1), a(2));
+    Vector3d v2(b(0), b(1), b(2));
+    Vector3d v = cross(v1, v2);
+    VectorXd ret(3);
+    ret << v(0), v(1), v(2);
+    return ret;
+  }
 	
 /*   // *p*artial *S*kew *S*ymmetric matrix / *p*artial *E*lement{1,2,3} */
 
@@ -184,24 +187,28 @@ namespace utils {
 /*   //  0  0  0 */
 /*   const Matd pSSpE3(3,3,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0); */
 
-/*   inline Vecd fromSkewSymmetric(const Matd& m) */
-/*   { */
-/*     if (fabs(m[0][0]) > EPSILON || fabs(m[1][1]) > EPSILON || fabs(m[2][2]) > EPSILON) */
-/*     { */
-/*       printf("Not skew symmetric matrix"); */
-/*       cout<<m<<endl; */
-/*       exit(0); */
-/*     } */
-/*     Vecd ret(3,vl_0); */
-/*     Vecd unitY(3,0.0, 1.0, 0.0); */
-/*     Vecd xz = m * unitY; */
-/*     ret[0] = xz[2]; */
-/*     ret[2] = -xz[0]; */
-/*     Vecd unitZ(3,0.0, 0.0, 1.0); */
-/*     Vecd y = m * unitZ; */
-/*     ret[1] = y[0]; */
-/*     return ret; */
-/*   } */
+  inline VectorXd fromSkewSymmetric(const MatrixXd& m) {
+    if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON)
+    {
+      cout << "Not skew symmetric matrix" << endl;
+      cerr << m <<endl;
+      exit(0);
+    }
+    VectorXd ret = VectorXd::Zero(3);
+    VectorXd unitY(3);
+    unitY << 0.0, 1.0, 0.0;
+    
+    VectorXd xz = m * unitY;
+    ret(0) = xz(2);
+    ret(2) = -xz(0);
+
+    VectorXd unitZ(3);
+    unitZ << 0.0, 0.0, 1.0;
+
+    VectorXd y = m * unitZ;
+    ret(1) = y(0);
+    return ret;
+  }
 
 /*   inline double scale_to_bound(double v, double lower_bound, double upper_bound) { */
 /*     return (v - lower_bound) / (upper_bound - lower_bound); */
