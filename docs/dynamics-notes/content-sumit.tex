@@ -383,7 +383,7 @@ Using the above equations, we write:
 \frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) - \frac{\partial T}{\partial q_j} & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} \\ & & + \left ( \dot{(J)}_j^T M_c J \dot{\vc{q}}  - \left( \frac{\partial J}{\partial q_j} \dot{\vc{q}}\right)^T M_c J \dot{\vc{q}} \right )
 \end{eqnarray}
 
-The second term in the above equations involves the computation of $\dot{J}$ that can be computed as $\sum_k \frac{\partial J}{\partial q_k} \dot{q}_k$. We now simplify the third, fourth and the fifth terms one by one. Let us start with the third term:
+The second term in the above equation involves the computation of $\dot{J}$ that can be computed as $\sum_k \frac{\partial J}{\partial q_k} \dot{q}_k$. We now simplify the third, fourth and the fifth terms one by one. Let us start with the third term:
 \begin{eqnarray}
 \label{eq:term3}
 \nonumber
@@ -405,7 +405,7 @@ The fourth term in \eqnref{lageqn_j} can be simplified as:
  & = & \bm{\omega}^T [\vc{j}_j] I_c \bm{\omega} \mbox{\ \ (From \eqnref{Jaccolj})}\\
 \mbox{term 4}  & = & - \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega} \mbox{\ \ (Using the identity $\vc{a}.(\vc{b}\times\vc{c}) = -\vc{b}.(\vc{a}\times\vc{c}))$}
 \end{eqnarray}
-For simplifying the fifth term, we express it explicitly using the linear and angular components:
+For simplifying the fifth term in \eqnref{lageqn_j}, we explicitly express it using the linear and angular components:
 \begin{eqnarray}
 \label{eq:term5}
 \left (
