@@ -573,7 +573,7 @@ $R_k$ are the position and orientation of the rigid link $k$, and $(\vc{v}_k,
 {\bm{\omega}}_k)$ are the linear and angular velocity of the
 rigid link $k$ viewed in the world frame. Similarly, we define the
 Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
-{\tau}_k)$, both of which are expressed in the world
+{\bm{\tau}}_k)$, both of which are expressed in the world
 frame.
 
 The same articulated rigid body system can be represented in
@@ -612,7 +612,10 @@ at its angular velocity, let us first define a few notations.
   example, $l(5) = 2$.
 \item $R^0_k$ is the chain of rotational transformations from the
   world frame to the local frame of the link $k$.
+  \sumit{Also introduce what $R_k$ means.}
 \end{itemize}
+
+\sumit{why not index the ``set'' of dofs with the link index. would make indexing lot less confusing}
 
 The angular velocity of link $k$ viewed in the world frame is then
 \begin{eqnarray}
@@ -623,6 +626,9 @@ The angular velocity of link $k$ viewed in the world frame is then
 & = & \sum_{j \in s(1,k)} (R^0_{p(l(j))} [\vc{u}_{l(j)j}] (R^0_{p(l(j))})^T) \dot{q}_j, \;\;\;\mathrm{where}\;\;
 [\vc{u}_{l(j)j}] = \frac{\partial R_{l(j)}}{\partial q_j} R_{l(j)}^T
 \end{eqnarray}
+
+\sumit{here itself introduce the notation $\hat{J}$ instead of \vc{u}}. Could be used later and things may get more convenient}.
+
 \ignorethis{
 \begin{eqnarray}
 [\bm{\omega}_k] & = & \dot{(R^0_{k-1}R_k)} (R^0_{k-1}R_k)^T = \sum_j
@@ -686,87 +692,26 @@ different from $R^0_k$ in that $T^0_k$ includes the translational
 transformations. $\vc{c}_k$ denotes the center of mass of link $k$ in
 its local frame.
 
-\sumit{Cut this part here and keep it for later. Instead, put $J_i$ for each link and go to next section.}
+We can concatenate the Cartesian velocities into a single vector $\vc{V}_k$ and denote the relation as:
+\begin{eqnarray}
+\label{eq:vel_relation_link}
+\nonumber
+\vc{V}_k & = & {J}_k \dot{\vc{q}}\\
+\mbox{where } & & 
+\vc{V}_k = \left (
+\begin{array}{c}
+\vc{v}_k\\
+\bm{\omega}_k
+\end{array}
+\right ) \mbox{and\ }
+{J}_k = \left (
+\begin{array}{c}
+J_{vk}\\
+J_{\omega k}
+\end{array}
+\right ) 
+\end{eqnarray}
 
-We can concatenate all $2m$  Jacobian matrices into a single Jacobian
-that relates the generalized velocity to the Cartesian velocity of each
-link:
-\begin{equation}
-\left[
-\begin{array}{c}
-\vc{v} \\
-\bm{\omega} \\
-\end{array}
-\right] =
-\left[
-\begin{array}{c}
-\vc{v}_1 \\
-\vdots \\
-\vc{v}_m \\
-\bm{\omega}_1 \\
-\vdots \\
-\bm{\omega}_m
-\end{array}
-\right] = 
-\left[
-\begin{array}{c}
-J_{v1} \\
-\vdots \\
-J_{vm} \\
-J_{\omega 1} \\
-\vdots \\
-J_{\omega m}
-\end{array}
-\right] 
-\left[
-\begin{array}{c}
-\dot{q}_1\\
-\vdots \\
-\dot{q}_n
-\end{array}
-\right]  = J \dot{\vc{q}}
-\end{equation}
-
-Typically, the Jacobian $J$ is full column rank because the
-number of DOFs in the maximal representation is more than that in the
-generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $(\vc{v}, \bm{\omega})$, we
-will end up solving a over-constrained linear system. We can use
-pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
-\begin{equation}
- \dot{\vc{q}} = (J^TJ)^{-1}J^T
-\left[
-\begin{array}{c}
-\vc{v} \\
-\bm{\omega}
-\end{array}
-\right]
- = J^+
-\left[
-\begin{array}{c}
-\vc{v} \\
-\bm{\omega}
-\end{array}
-\right]
-\end{equation}
-
-Alternatively, we can rewrite the equation using the relative angular
-velocity between a child and a parent link expressed in the local
-frame of the parent, instead of using angular velocity of each link
-expressed in the world frame.
-\begin{equation}
-\hat{\bm{\omega}}_k = (R^0_{p(k)})^T(\bm{\omega}_k - \bm{\omega}_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
-\cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
-\end{equation}
-where $j$ is in the set of $s(k)$. Comparing the above equation with \eqnref{angular_velocity_link},
-the angular part of Jacobian, $\hat{J}_\omega$, is usually more sparse
-that $J_\omega$.
-
-\ignorethis{
-\begin{equation}
-\hat{\bm{\omega}}_k = (\vc{0} \cdots \vc{0} \;\vc{t}_1 \cdots \vc{t}_{nk}\;
-\vc{0} \cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
-\end{equation}
-}
 
 \subsection{Equations of motion}
 We now derive the equations of motion of an articulated rigid body system in generalized coordinates. The kinetic energy $T$ of the entire system can be expressed as the sum of kinetic energies of all the rigid links as $T=\sum_k T_k$. Therefore the equations of motion of the system can be computed as:
@@ -779,7 +724,7 @@ We now derive the equations of motion of an articulated rigid body system in gen
 & = & \sum_k \left ( \left( J_k^T M_{ck} J_k \right )\ddot{\vc{q}} + \left( J_k^T M_{ck} \dot{J}_k + J_k^T [\tilde{\bm{\omega}}_k]M_{ck} J_k \right )\dot{\vc{q}} \right )\\
 & = &  \sum_k \left( J_k^T M_{ck} J_k \right )\ddot{\vc{q}} + \sum_k\left( J_k^T M_{ck} \dot{J}_k + J_k^T [\tilde{\bm{\omega}}_k]M_{ck} J_k \right )\dot{\vc{q}}
 \end{eqnarray}
-In deriving the above equation, we use the equations of motion in generalized coordinates for a single rigid body defined in \eqnref{dyngen_vec} subscripted by $k$ for the dynamics of $k^{th}$ link in the multibody system. The Jacobian $J_k$ for the $k^{th}$ link is defined as $(J_{vk}^T,J_{\omega k}^T)^T$, where $J_{vk}$ and $J_{\omega k}$ are defined in \eqnref{angular_velocity_link} and \eqnref{linear_velocity_link} respectively. 
+In deriving the above equation, we use the equations of motion in generalized coordinates for a single rigid body defined in \eqnref{dyngen_vec} subscripted by $k$ for the dynamics of $k^{th}$ link in the multibody system. The Jacobian $J_k$ for the $k^{th}$ link is defined in \eqnref{vel_relation_link}.
 
 
 
@@ -799,6 +744,7 @@ generalized coordinates and do forward simulation using a commercial
 physics engine, such as ODE. This requires some conversion between
 Cartesian and generalized coordinates.
 
+\ignorethis{
 \subsection{Definitions}
 In the maximal coordinates, the state of an articulated rigid body
 system can be expressed as $(\vc{x}_k, R_k, \vc{v}_k,
@@ -807,66 +753,103 @@ $R_k$ are the position and orientation of the rigid link $k$, and $(\vc{v}_k,
 \boldsymbol{\bm{\omega}}_k)$ are the linear and angular velocity of the
 rigid link $k$ viewed in the world frame. Similarly, we define the
 Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
-{\tau}_k)$, both of which are expressed in the world
+{\bm{\tau}}_k)$, both of which are expressed in the world
 frame.
-
 The same articulated rigid body system can be represented in
 generalized coordinates. We define the generalized state as $(q_j,
 \dot{q}_j)$, where $j = 1, \cdots, n$. The corresponding generalized
 forces are then defined as $(Q_1, \cdots, Q_n)$.
+}
 
 \subsection{Velocity conversion}
-Let us first consider only one rigid body. From rigid body dynamics,
-we can write down the relation between the orientation and the angular
-velocity as $\dot{R} = [\bm{\omega}] R$, where $[\boldsymbol{\bm{\omega}}]$
-denotes the skew symmetric matrix of ${\bm{\omega}}$. We can
-then express the relation between the angular velocity and the
-generalized velocity as
+
+We can concatenate all $2m$ Jacobian matrices corresponding to each link into a single Jacobian
+that relates the generalized velocity to the Cartesian velocity of each
+link:
 \begin{equation}
-[\bm{\omega}] = \dot{R} R^{T} = \left(\sum_j \frac{\partial R}{\partial q_j}
-\dot{q}_j \right) R^T = \sum_j\frac{\partial R}{\partial q_j} R^T
-\dot{q}_j = \sum_j [\vc{j}_j] \dot{q}_j
+\vc{V} \equiv 
+\left(
+\begin{array}{c}
+\vc{v}_1 \\
+\bm{\omega}_1 \\
+\vdots \\
+\vc{v}_m \\
+\bm{\omega}_m
+\end{array}
+\right) = 
+\left (
+\begin{array}{c}
+J_{v1} \\
+J_{\omega 1} \\
+\vdots \\
+J_{vm} \\
+J_{\omega m}
+\end{array}
+\right) 
+\left(
+\begin{array}{c}
+\dot{q}_1\\
+\vdots \\
+\dot{q}_n
+\end{array}
+\right)  \equiv J \dot{\vc{q}}
 \end{equation}
-Here $[\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T$ is a skew
-symmetric matrix because $R \in SO(3)$. We can also express the
-angular velocity as
+
+Typically, the Jacobian $J$ is full column rank because the
+number of DOFs in the maximal representation is more than that in the
+generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $\vc{V}$, we
+will end up solving a over-constrained linear system. We can use
+pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
 \begin{equation}
-\bm{\omega} = ( \vc{j}_1 \cdots \vc{j}_n) \dot{\vc{q}} = J_{\omega} \dot{\vc{q}}
+ \dot{\vc{q}} = (J^TJ)^{-1}J^T \vc{V} \equiv J^+\vc{V}
+ \end{equation}
+
+Alternatively, we can rewrite the equation using the relative angular
+velocity between a child and a parent link expressed in the local
+frame of the parent, instead of using angular velocity of each link
+expressed in the world frame.
+
+\sumit{if dofs indexed using links, then defining local angular velocity might be easier and cleaner.}\\
+\sumit{Also, can define $D$ here and then use in the forces as well.}
+
+\begin{equation}
+\hat{\bm{\omega}}_k = (R^0_{p(k)})^T(\bm{\omega}_k - \bm{\omega}_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
+\cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
 \end{equation}
-where $ J_{\omega} \in \vc{R}^{3 \times n}$ is the Jacobian matrix
-that relates the generalized velocity to the angular velocity of the
-rigid body.
- 
+where $j$ is in the set of $s(k)$. Comparing the above equation with \eqnref{angular_velocity_link},
+the angular part of Jacobian, $\hat{J}_{\omega k}$, is usually more sparse
+that $J_{\omega k}$. Also note that the computation of the Jacobian $\hat{J}_{\omega k}$ involves only the local joint rotation as opposed to the entire chain of rotations.
+
 
 \subsection{Force conversion}
 The relation between the Cartesian force and the generalized force can
 be found in Equation \ref{eq:virtual_work}:
 \begin{equation}
 \label{eqn:force_conversion}
-\vc{Q} = \sum_i J_{vi}^T \vc{f}_i + \sum_k J_{\omega k}^T \tau_k = 
-\left[
+\vc{Q} = \sum_i J_{vi}^T \vc{f}_i + \sum_k J_{\omega k}^T \bm{\tau}_k = 
+\left (
 \begin{array}{cc}
 J_{v}^T & J_\omega^T
 \end{array}
-\right]
-\left[
+\right)
+\left(
 \begin{array}{c}
 \vc{f} \\
 \bm{\tau}
 \end{array}
-\right] 
+\right) 
 , \;\;\;\mathrm{where}\;\;
 J_{vi} = \frac{\partial \vc{r}_i}{\partial \vc{q}}
 \end{equation}
 where $\vc{r}_i$ is the point of application of the Cartesian force
-$\vc{f}_i$ expressed in the world frame. Body torque $\tau_k$ is the torque
+$\vc{f}_i$ expressed in the world frame. Body torque $\bm{\tau}_k$ is the torque
 applied on link $k$. 
 
 Sometimes it is more convenient to express \emph{joint torques} in the
 local frame of the parent link, rather than \emph{body torques} in the
 world frame. For example, the joint torque between link $p(k)$ and
-link $k$ can be computed as $\hat{\tau}_{p(k)} = (R^0_{p(k)})^T(\tau_{p(k)} -
-\tau_k)$. Equation \ref{eqn:force_conversion} is then modified to:
+link $k$ can be computed as $\hat{\bm{\tau}}_{p(k)} = (R^0_{p(k)})^T(\bm{\tau}_{p(k)} -
+\bm{\tau}_k)$. Equation \ref{eqn:force_conversion} is then modified to:
 \begin{equation}
 \vc{Q} = \left[
 \begin{array}{cc}
@@ -890,9 +873,9 @@ J_{v}^T & J_\omega^T
 D 
 \left[
 \begin{array}{c}
-R^0_{p(1)} \hat{\tau}_1 \\
+R^0_{p(1)} \hat{\bm{\tau}}_1 \\
 \vdots \\
-R^0_{p(m)}) \hat{\tau}_m
+R^0_{p(m)}) \hat{\bm{\tau}}_m
 \end{array}
 \right]
 \end{array}
