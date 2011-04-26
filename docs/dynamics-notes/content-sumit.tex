@@ -256,6 +256,7 @@ The equations corresponding to the torque can be evaluated as:
 
 Combining \eqnref{force} and \eqnref{torque}, we get:
 \begin{equation}
+\label{eq:newtoneuler}
 \left(
 \begin{array}{cc}
 m\vc{I} & \vc{0} \\
@@ -346,6 +347,7 @@ where $\vc{j}_{j}$ is the $j^{th}$ column of the matrix $J_{\omega}$.
 
 Using \eqnref{vellin} and \eqnref{velang}, we can write:
 \begin{equation}
+\label{eq:velcartall}
 \vc{V} = \left(
 \begin{array}{c}
 J_v \\
@@ -513,10 +515,49 @@ Writing the equations for all the $q_j$ in the vector form, we get:
 \frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T}{\partial \vc{q}} & = & \left( J^T M_c J \right )\ddot{\vc{q}} + \left( J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J \right )\dot{\vc{q}}
 \end{eqnarray}
 
-\ignorethis{
-\paragraph{Note.}
-In the above equation, we introduce tensor notations $\frac{\partial J}{\partial \vc{q}}$ and $\frac{\partial M_c}{\partial \vc{q}}$. For example, $j^{th}$ element of the tensor $\frac{\partial J}{\partial \vc{q}}$ is the matrix $\frac{\partial J}{\partial {q}_j}$. Note that the notation $\frac{\partial J}{\partial \vc{q}} \dot{\vc{q}}$ is \emph{not} the same as $\dot{J}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial J}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial J}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (J)_k}{\partial q_j} \dot{{q}_k}$. In contrast, the $j^{th}$ column of the matrix $\dot{J}$ is $\sum_k \frac{\partial (J)_j}{\partial q_k} \dot{{q}_k}$. To avoid any confusion, we explicitly represent $\dot{J}$ as $\sum_k \frac{\partial J}{\partial q_k} \dot{q}_k$.
-}
+
+\subsection{Derivation using Newton-Euler equations}
+We can alternatively derive the result in \eqnref{dyngen_vec} from the Newton-Euler equations in \eqnref{newtoneuler}. Using \eqnref{velcartall}, we substitute the Cartesian velocities $\vc{v},\bm{\omega}$ in terms of the generalized velocities $\dot{\vc{q}}$ into \eqnref{newtoneuler} and get:
+\begin{eqnarray}
+\nonumber
+M_c (\dot{J\dot{\vc{q}}}) + 
+\left ( 
+\begin{array}{c}
+\vc{0} \\
+(J_w \dot{\vc{q}}) \times I_c J_w \dot{\vc{q}}
+\end{array}
+\right )
+& = &
+\left ( 
+\begin{array}{c}
+\vc{f} \\
+\bm{\tau}
+\end{array}
+\right )\\
+\Rightarrow 
+M_c J \ddot{\vc{q}} + M_c \dot{J} \dot{\vc{q}} + [\tilde{\bm{\omega}}]M_c J \dot{\vc{q}} & = & 
+\left ( 
+\begin{array}{c}
+\vc{f} \\
+\bm{\tau}
+\end{array}
+\right )
+\end{eqnarray}
+
+From the principle of virtual work in \eqnref{virtual_work}, we convert the Cartesian-space forces to the Generalized space by pre-multiplying the above equation with the transpose of the Jacobian $J$:
+\begin{eqnarray}
+\label{eq:dyngen_vec2}
+\left (J^T M_c J \right ) \ddot{\vc{q}} + \left (J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J \right ) \dot{\vc{q}} & = & J_v^T \vc{f} + J_\omega^T \bm{\tau}
+\end{eqnarray}
+
+The LHS of \eqnref{dyngen_vec2} is identical to the RHS of \eqnref{dyngen_vec} and they are of the form $M(\vc{q})\ddot{\vc{q}} + C(\vc{q},\dot{\vc{q}}) = \vc{Q}$, where the Mass matrix, the Coriolis matrix and the generalized forces are defined as:
+\begin{eqnarray}
+\nonumber
+M(\vc{q}) & = & J^T M_c J\\
+\nonumber
+C(\vc{q},\dot{\vc{q}}) & = & J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J\\
+\vc{Q} & = & J_v^T \vc{f} + J_\omega^T \bm{\tau}
+\end{eqnarray}
 
 \section{Articulated Rigid Body Dynamics}
 We now derive the equations of motion for an articulated rigid body structure. We follow the derivation of rigid body dynamics in generalized coordinates from \secref{rigidbodydyngen}.
