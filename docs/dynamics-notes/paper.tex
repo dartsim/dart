@@ -1,0 +1,54 @@
+\documentclass[11pt]{article}
+
+%\pagestyle{empty}
+\usepackage[dvips,final]{graphicx}
+\usepackage{psfrag}
+%\usepackage{helvet} \renewcommand{\familydefault}{\sfdefault} 
+%\usepackage[scaled=0.92]{helvet}
+
+% Over-full v-boxes on even pages are due to the \v{c} in author's name
+\vfuzz2pt % Don't report over-full v-boxes if over-edge is small
+
+
+\usepackage{mathptmx,amsmath,color,ifthen}
+\newboolean{nofigures}
+\setboolean{nofigures}{false} \ifthenelse{\boolean{nofigures}}
+{\usepackage[dvips,final]{graphicx} \usepackage{psfrag}\usepackage{subfigure}}
+\graphicspath{{figures/}} 
+\setlength{\textwidth}{7.5in}
+\usepackage[papersize={8.5in,11in},left=1in,right=1in,top=.97in,bottom=.95in]{geometry}
+\usepackage{sidecap}
+\usepackage{wrapfig}
+\usepackage{amsbsy}
+
+%\topmargin=2.5cm
+%\parindent 0pt
+%\setlength{\textheight}{9.3in} \setlength{\oddsidemargin}{-0.25in}
+%\setlength{\evensidemargin}{0.1in} \setlength{\topmargin}{-0.55in}
+
+\renewcommand{\baselinestretch}{1.015}
+
+%\suppresscover
+
+\input{defs}
+\title{Dynamics of Articulated Rigid Bodies}
+
+\author{C. Karen Liu \and Sumit Jain}
+\date{}
+
+
+
+\begin{document}
+
+\maketitle
+
+\input{content}
+\newpage
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
+
+% Local Variables:
+% TeX-master: t
+% End:
