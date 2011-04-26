@@ -39,37 +39,25 @@ namespace model3d {
     Transformation();
     virtual ~Transformation();
 
-    inline TransFormType getType() { return mType; }
+    TransFormType getType() { return mType; }
 
-    inline int getModelIndex() { return mModelIndex; }
-    inline void setModelIndex(int _idx) { mModelIndex = _idx; }
+    int getModelIndex() { return mModelIndex; }
+    void setModelIndex(int _idx) { mModelIndex = _idx; }
 	
-    inline Joint* getJoint() { return mJoint; }
-    inline void setJoint(Joint *_joint) { mJoint = _joint; }
+    Joint* getJoint() { return mJoint; }
+    void setJoint(Joint *_joint) { mJoint = _joint; }
 
-    inline int getNumDofs() { return mDofs.size(); }
-    inline Dof* getDof(int i) { return mDofs[i]; }
+    int getNumDofs() { return mDofs.size(); }
+    Dof* getDof(int i) { return mDofs[i]; }
 	
     bool getVariable() { return mVariable; }
     void setVariable(bool _var) { mVariable = _var; }
 
-    inline void setDirty() { isDirty = true; }
-    inline Matrix4d getTransform() {
-        if ( isDirty ) {
-            evalTransform();
-            isDirty = false;
-        }
-        return mTransform;
-    }
+    void setDirty() { isDirty = true; }
+    Matrix4d getTransform();
 	
     bool isPresent(Dof *d);	// true if d is present in the dof list
-    virtual Matrix4d getInvTransform() {
-        if ( isDirty ) {
-            evalTransform();
-            isDirty = false;
-        }
-        return mTransform.inverse();
-    }
+    virtual Matrix4d getInvTransform();
 	
     virtual void applyTransform(Vector3d& _v);
     virtual void applyTransform(Matrix4d& _m);

@@ -71,6 +71,7 @@ FILE(GLOB model3d_hdrs "src/model3d/*.h")
 
 # Library 
 ADD_LIBRARY(model3d ${model3d_srcs} ${model3d_hdrs})
+TARGET_LINK_LIBRARIES(model3d utils)
 SET_TARGET_PROPERTIES(model3d PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
 ###############################################
