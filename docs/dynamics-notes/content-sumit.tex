@@ -64,7 +64,7 @@ $\vGlobalPoint_i$ as
   \vForce{i} . \delta \vGlobalPoint_i = \vForce{i} . \sum_j \frac{\partial \vGlobalPoint_i}{\partial
     \sJoint_j}\delta \sJoint_j = \sum_j \sGeneralForce{j} \delta \sJoint_j
 \end{equation}
-where $\sGeneralForce{j}$ is defined as \emph{generalized force}
+where $\sGeneralForce{j} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as \emph{generalized force}
 associated with coordinate $\sJoint_j$.
 
 From D'Alembert's principle, we know that the sum of the differences
@@ -201,7 +201,7 @@ simulation. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
 sequence, we can use these equations of motion to derive generalized
 forces for inverse dynamics. 
 
-\sumit{say it is tedious to do it for rigid bodies since infinite number of points. We make use of the fact that points in a single rigid body satisfy a compact relation etc.}
+The above formulation is convenient for a system consisting of finite number of mass points. However, for a dynamic system that consists of rigid bodies, there are infinitely many points contained in each rigid body making the above formulation intractable. The rigid body relation between the infinitely many points in a rigid body can be exploited to make the equations compact. In the folliwing sections, we derive the equations of motions for a rigid body followed by the equations for an articulated multibody system.
 
 \section{Rigid Body Dynamics: Newton-Euler equations}
 We describe the familiar Newton-Euler equations of rigid body dynamics. We start writing down the
@@ -211,7 +211,7 @@ linear velocity of the COM, and angular velocity are $m$, $\vc{x}$, $R$,
 $\vc{v}$, and $\bm{\omega}$ respectively (same as defined in Witkin and
 Baraff's course notes). The linear momentum \vc{p} is computed as:
 \begin{eqnarray}
-\vc{P} &=& \sum_i \vc{p}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
+\vc{p} &=& \sum_i \vc{p}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
     \times \vc{r}_i') \nonumber \\
  &=& m \vc{v}
 \end{eqnarray}
@@ -219,7 +219,7 @@ where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
 \vc{r}_i' = \vc{0}$ (property of the COM), the second term vanishes. The angular momentum \vc{L} about the COM is computed as:
 \begin{eqnarray}
 \nonumber
-\vc{L} & = & \sum_i \vc{l}_i  = \sum_i \vc{r}_i' \times \vc{p}_i\\
+\vc{L} & = & \sum_i \vc{L}_i  = \sum_i \vc{r}_i' \times \vc{p}_i\\
 \nonumber
 & = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
 &= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
@@ -238,10 +238,10 @@ identity $-[\vc{a}][\vc{a}] = (\vc{a}^T\vc{a}) \vc{I}  -
 \end{equation}
 Note that the inertia tensor can be written as $I_c = RI_0R^T$, where $R$ is the rotation matrix corresponding to the orientation of the body and $I_0$ is the constant inertia tensor defined at zero rotation. The angular velocity in the skew-symmetric form is related to the rotation matrix $R$ as $[\bm{\omega}] = \dot{R}R^T$. Also $[\bm{\omega}]^T = -[\bm{\omega}]$.
 
-Now, the dynamics of a rigid body can be written as $\vc{f} = \dot{\vc{P}} \mbox{,\ } \bm{\tau} = \dot{\vc{L}}$. The equations corresponding to the linear force can be evaluated as:
+Now, the dynamics of a rigid body can be written as $\vc{f} = \dot{\vc{p}} \mbox{,\ } \bm{\tau} = \dot{\vc{L}}$. The equations corresponding to the linear force can be evaluated as:
 \begin{eqnarray}
 \label{eq:force}
-\vc{f} & = & \dot{\vc{P}} = m \dot{\vc{v}}
+\vc{f} & = & \dot{\vc{p}} = m \dot{\vc{v}}
 \end{eqnarray}
 The equations corresponding to the torque can be evaluated as:
 \begin{eqnarray}
@@ -327,15 +327,15 @@ m\vc{I} & \vc{0} \\
 \right)
  \equiv \frac{1}{2}\vc{V}^T M_c \vc{V}
 \end{eqnarray}
-where $\vc{V} \equiv (\vc{v}^T,\bm{\omega}^T)^T$, $M_c \equiv \mbox{blockdiag}(m\vc{I},I_c)$ and $\vc{I}$ is a $3\times3$ identity matrix. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{c}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
+where $\vc{V} = (\vc{v}^T,\bm{\omega}^T)^T$, $M_c = \mbox{blockdiag}(m\vc{I},I_c)$ and $\vc{I}$ is a $3\times3$ identity matrix. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{c}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
 \begin{eqnarray}
 \label{eq:vellin}
-\vc{v} \equiv \dot{\vc{c}}(\vc{q}) = \frac{\partial \vc{c}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
+\vc{v} = \dot{\vc{c}}(\vc{q}) = \frac{\partial \vc{c}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
 \end{eqnarray}
 The angular velocity is computed as:
 \begin{eqnarray}
 \nonumber
-[\bm{\omega}] & \equiv & \dot{R}(\vc{q})R^T(\vc{q}) \\
+[\bm{\omega}] & = & \dot{R}(\vc{q})R^T(\vc{q}) \\
 \label{eq:Jaccolj}
 & = & \sum_j \frac{\partial R}{\partial q_j}R^T \dot{q}_j \equiv \sum_j [\vc{j}_{j}] \dot{q}_j
 \end{eqnarray}
@@ -390,7 +390,7 @@ The second term in the above equation involves the computation of $\dot{J}$ that
 \begin{eqnarray}
 \label{eq:term3}
 \nonumber
-(J)_j^T \dot{M}_c J \dot{\vc{q}} & = & (J_w)_j^T \dot{I}_c J_w \dot{\vc{q}} \mbox{\ \ (Reduced using the definition of $M_c$ in \eqnref{kinetic_vec})}\\
+(J)_j^T \dot{M}_c J \dot{\vc{q}} & = & (J_w)_j^T \dot{I}_c J_w \dot{\vc{q}} \mbox{\ \ (The linear term in $M_c$ is constant: see \eqnref{kinetic_vec})}\\
 \nonumber
 & = & \vc{j}_j^T\dot{(RI_0 R^T)}\bm{\omega} \mbox{\ \ ($\vc{j}_j$ represents the $j^{th}$ column of $J_w$: see \eqnref{Jaccolj})} \\
 \mbox{term 3} & = & \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega}  \mbox{\ \ (From \eqnref{torque})}
