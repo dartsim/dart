@@ -3,8 +3,11 @@
 
 #include <vector>
 using namespace std;
+#include <Eigen/Dense>
+using namespace Eigen;
 
 namespace model3d {
+
   class Transformation;
   class Marker;
   class Joint;
@@ -13,7 +16,7 @@ namespace model3d {
 
   class Skeleton {
   public:
-    Vecd mCurrState; 
+    VectorXd mCurrState; 
     BodyNode* mRoot;
     int nDofs;
     int nNodes;
@@ -33,26 +36,26 @@ namespace model3d {
     void setDependDofMap(BodyNode *b);
 	
     // inline access functions
-    inline int getNumDofs();
-    inline int getNumNodes();
-    inline int getNumHandles();
-    inline Dof* getDof(int i);
-    inline BodyNode* getNode(int i);
+    int getNumDofs() { return mDofs.size(); }
+    int getNumNodes() { return mNodes.size(); }
+    int getNumHandles() { return mHandles.size(); }
+    Dof* getDof(int i) { return mDofs[i]; }
+    BodyNode* getNode(int i) { return mNodes[i]; }
     BodyNode* getNode(const char* const name);
     int getNodeIndex(const char* const name);
-    inline Marker* getHandle(int i);
-    inline double getMass();
-    Vecd EvalCOM();
+    Marker* getHandle(int i) { return mHandles[i]; }
+    double getMass() { return mMass; }
+    VectorXd EvalCOM();
 
-    void setState(Vecd&);
+    void setState(VectorXd&);
     void setState(vector<double>&);
 
     inline void draw(Vector4d _color, bool _default = true) ;
     inline void drawHandles(Vector4d _color, bool _default = true );
 	
-    inline void setPose(Vecd& _pose);
+    inline void setPose(VectorXd& _pose);
     inline void setPose(vector<double>& _pose);
-    inline void getPose(Vecd& _pose);
+    inline void getPose(VectorXd& _pose);
     inline void getPose(vector<double>& _pose);
 
   protected:
