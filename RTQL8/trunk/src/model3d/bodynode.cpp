@@ -2,6 +2,7 @@
 #include "joint.h"
 #include "marker.h"
 #include "dof.h"
+#include "skeleton.h"
 
 #include "utils/misc.h"
 #include "utils/utils.h"

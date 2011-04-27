@@ -20,14 +20,6 @@ namespace model3d {
   class Skeleton;
   class Joint;
 
-  class Skeleton {
-  public:
-    int getNumDofs() {
-      return 6;
-    }
-  };
-
-
   class BodyNode {
   public:
     BodyNode(char *_name = NULL);
