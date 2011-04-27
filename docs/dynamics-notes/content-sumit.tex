@@ -176,7 +176,7 @@ From \eqnref{kinetic_vector}, we can derive the derivative
 terms to construct the Lagrange's equation (\eqnref{lagrangian_dyn2}).
 \begin{equation}
 \frac{d}{dt}\frac{\partial T}{\partial \dot{\vc{q}}} - \frac{\partial
-  T}{\partial \vc{q}} = M\ddot{\vc{q}} + \dot{M} \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \frac{\partial M}{\partial \vc{q}} \dot{\vc{q}} = M
+  T}{\partial \vc{q}} = M\ddot{\vc{q}} + \dot{M} \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \frac{\partial M}{\partial \vc{q}} \dot{\vc{q}} \equiv M
 \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})
 \end{equation}
 where $C$ is the Coriolis and centrifugal term in \eqnref{lagrangian_vector} and is defined as $C = \dot{M}
@@ -186,7 +186,7 @@ where $C$ is the Coriolis and centrifugal term in \eqnref{lagrangian_vector} and
 tensor multiplication so that $\frac{\partial M}{\partial
   \vc{q}} \dot{\vc{q}}$ is not equivalent to $\dot{M}$.
   }
-\paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$.
+\paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$. \sumit{Actually in this case they are equal! - since jacobian is the linear jacobian only.}
 
 Once we know how to compute the mass matrix, Coriolis and centrifugal
 term, and generalized forces, we can compute the acceleration in
@@ -462,7 +462,7 @@ We now extract and simplify the angular term in \eqnref{term5} as:
 Now let us evaluate the term denoted by $\vc{z}_{jk}$. Consider the skew symmetric form:
 \begin{eqnarray}
 \nonumber
-[\vc{z}_{jk}] & = & \left [ \frac{\partial \vc{j}_j}{\partial q_k}  -  \frac{\partial \vc{j}_k}{\partial q_j} \right ] = \frac{\partial [\vc{j}_j]}{\partial q_k}  -  \frac{\partial [\vc{j}_k]}{\partial q_j}\\
+[\vc{z}_{jk}] & = & \left [ \frac{\partial \vc{j}_j}{\partial q_k}  -  \frac{\partial \vc{j}_k}{\partial q_j} \right ] = \frac{\partial [\vc{j}_j]}{\partial q_k}  -  \frac{\partial [\vc{j}_k]}{\partial q_j} \mbox{\ \ (Using linearity of the skew symmetric matrix)}\\
 \nonumber
 & = & \left ( \frac{\partial^2 R}{\partial q_j \partial q_k} + \frac{\partial R}{\partial q_j} \frac{\partial R^T}{\partial q_k} \right ) - \left ( \frac{\partial^2 R}{\partial q_k \partial q_j} + \frac{\partial R}{\partial q_k} \frac{\partial R^T}{\partial q_j} \right ) \mbox{\ \ (From \eqnref{Jaccolj})}\\
 \nonumber
@@ -482,7 +482,7 @@ Substituting the above in \eqnref{term5_ang}, we get:
 \nonumber
 & = & \left ( \bigg ( \sum_k [\vc{j}_k]\dot{q}_k \bigg ) \vc{j}_j \right )^T I_c\bm{\omega}\\
 \nonumber
-& = & \left ( \bigg [ \sum_k \vc{j}_k \dot{q}_k \bigg ] \vc{j}_j \right )^T I_c\bm{\omega} \mbox{\ \ (Using linearity of the cross product)}\\
+& = & \left ( \bigg [ \sum_k \vc{j}_k \dot{q}_k \bigg ] \vc{j}_j \right )^T I_c\bm{\omega} \\
 \nonumber
 & = & \left ( [ J_\omega \dot{\vc{q}} ] \vc{j}_j \right )^T I_c\bm{\omega} = ([\bm{\omega}]\vc{j}_j)^TI_c\bm{\omega}\\
 \mbox{term 5 (angular)} & = & -\vc{j}_j^T [\bm{\omega}] I_c\bm{\omega}
@@ -684,7 +684,7 @@ where the chain of homogeneous transformations from the world frame to the local
 frame of link $k$ is denoted as $T^0_k$. Note that $T^0_k$ is
 different from $R^0_k$ in that $T^0_k$ includes the translational
 transformations. $\vc{c}_k$ denotes the center of mass of link $k$ in
-its local frame.
+its local frame. \sumit{probably change this since $\vc{c}$ was used as global point before}.
 
 We can concatenate the Cartesian velocities into a single vector $\vc{V}_k$ and denote the relation as:
 \begin{eqnarray}
@@ -837,7 +837,7 @@ J_{vi} = \frac{\partial \vc{r}_i}{\partial \vc{q}}
 \end{equation}
 where $\vc{r}_i$ is the point of application of the Cartesian force
 $\vc{f}_i$ expressed in the world frame. Body torque $\bm{\tau}_k$ is the torque
-applied on link $k$. 
+applied on link $k$. \sumit{can make the linear jacobian at the COM and add torque component in the $\bm{\tau}$}.
 
 Sometimes it is more convenient to express \emph{joint torques} in the
 local frame of the parent link, rather than \emph{body torques} in the
