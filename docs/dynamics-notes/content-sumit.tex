@@ -176,17 +176,14 @@ From \eqnref{kinetic_vector}, we can derive the derivative
 terms to construct the Lagrange's equation (\eqnref{lagrangian_dyn2}).
 \begin{equation}
 \frac{d}{dt}\frac{\partial T}{\partial \dot{\vc{q}}} - \frac{\partial
-  T}{\partial \vc{q}} = M\ddot{\vc{q}} + \dot{M} \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \frac{\partial M}{\partial \vc{q}} \dot{\vc{q}} \equiv M
+  T}{\partial \vc{q}} = M\ddot{\vc{q}} + \dot{M} \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \left ( \frac{\partial M}{\partial \vc{q}} \right )^T \dot{\vc{q}} \equiv M
 \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})
 \end{equation}
 where $C$ is the Coriolis and centrifugal term in \eqnref{lagrangian_vector} and is defined as $C = \dot{M}
-\dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \frac{\partial M}{\partial
-  \vc{q}} \dot{\vc{q}}$. 
- \ignorethis{Note that the second term of $C$ involves a
-tensor multiplication so that $\frac{\partial M}{\partial
-  \vc{q}} \dot{\vc{q}}$ is not equivalent to $\dot{M}$.
-  }
-\paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$. \sumit{Actually in this case they are equal! - since jacobian is the linear jacobian only.}
+\dot{\vc{q}} - \frac{1}{2}\left( \frac{\partial M}{\partial  \vc{q}} \dot{\vc{q}} \right)^T \dot{\vc{q}}$. 
+
+\paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that, in general, the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$.
+\sumit{Not sure that they are equal ?}
 
 Once we know how to compute the mass matrix, Coriolis and centrifugal
 term, and generalized forces, we can compute the acceleration in
@@ -321,10 +318,10 @@ m\vc{I}_3 & \vc{0} \\
 \right)
  \equiv \frac{1}{2}\vc{V}^T M_c \vc{V}
 \end{eqnarray}
-where $\vc{V} = (\vc{v}^T,\bm{\omega}^T)^T$, $M_c = \mbox{blockdiag}(m\vc{I}_3,I_c)$. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{c}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
+where $\vc{V} = (\vc{v}^T,\bm{\omega}^T)^T$, $M_c = \mbox{blockdiag}(m\vc{I}_3,I_c)$. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{x}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
 \begin{eqnarray}
 \label{eq:vellin}
-\vc{v} = \dot{\vc{c}}(\vc{q}) = \frac{\partial \vc{c}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
+\vc{v} = \dot{\vc{x}}(\vc{q}) = \frac{\partial \vc{x}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
 \end{eqnarray}
 The angular velocity is computed as:
 \begin{eqnarray}
@@ -447,10 +444,10 @@ The linear term can be extracted and simplified as:
 \nonumber
 m\left( \dot{(J_v)_j}  - \left(\frac{\partial J_v}{\partial q_j}\dot{\vc{q}}\right) \right )^T J_v \dot{\vc{q}} & = & m\left( \sum_k \frac{\partial (J_v)_j}{\partial q_k}\dot{q}_k -  \sum_k \frac{\partial (J_v)_k}{\partial q_j} \dot{q}_k \right )^T J_v \dot{\vc{q}}\\
 \nonumber
-& = & m\left( \sum_k \frac{\partial^2 \vc{c}}{\partial q_j \partial q_k}\dot{q}_k -  \sum_k \frac{\partial^2 \vc{c}}{\partial q_k \partial q_j} \dot{q}_k \right )^T J_v \dot{\vc{q}} \\
+& = & m\left( \sum_k \frac{\partial^2 \vc{x}}{\partial q_j \partial q_k}\dot{q}_k -  \sum_k \frac{\partial^2 \vc{x}}{\partial q_k \partial q_j} \dot{q}_k \right )^T J_v \dot{\vc{q}} \\
 \mbox{term 5 (linear)} & = & 0
 \end{eqnarray}
-The above derivation uses the property of the Jacobian of the linear velocity  $(J_v)_j = \frac{\partial \vc{c}}{\partial q_j}$ $\forall j$ (See \eqnref{vellin}).
+The above derivation uses the property of the Jacobian of the linear velocity  $(J_v)_j = \frac{\partial \vc{x}}{\partial q_j}$ $\forall j$ (See \eqnref{vellin}).
 
 We now extract and simplify the angular term in \eqnref{term5} as:
 \begin{eqnarray}
@@ -557,7 +554,7 @@ C(\vc{q},\dot{\vc{q}}) & = & (J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J)\
 \section{Articulated Rigid Body Dynamics}
 We now derive the equations of motion for an articulated rigid body structure. We follow the derivation of rigid body dynamics in generalized coordinates from \secref{rigidbodydyngen}.
 
-An articulated rigid body system is represented as a set of rigid bodies connected through joints in a tree structure. The generalized coordinates are the six DOFs representing the global translation and rotation of the root link of the tree, and the joint angles corresponding to the admissible joint rotations for all the joints. 
+An articulated rigid body system is represented as a set of rigid bodies connected through joints in a tree structure. Every rigid link has exactly one \emph{parent} joint. The joint corresponding to the root of the tree is special since it does not link the root to any other rigid link. The generalized coordinates are the six DOFs of the root link of the tree (that may represent the global translation and rotation), and the joint angles corresponding to the admissible joint rotations for all the other joints. 
 
 \subsection{Definitions}
 The state of an articulated rigid body
@@ -571,97 +568,108 @@ Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
 frame.
 
 The same articulated rigid body system can be represented in
-generalized coordinates. We define the generalized state as $(q_j,
-\dot{q}_j)$, where $j = 1, \cdots, n$.
-
-\subsection{Cartesian and Generalized velocities}
-We now describe how to express the Cartesian velocities in terms of generalized velocities for the articulated body system. 
-For a single rigid body, \eqnref{velang} describes the relation between the angular velocity and the generalized velocity as $[\bm{\omega}] = J_{\omega} \dot{\vc{q}}$,
-where each column $\vc{j}_j$ of the Jacobian matrix $J_{\omega}$ is defined as:
-\begin{equation}
-[\vc{j}_j] = \frac{\partial R}{\partial q_j} R^T
-\end{equation}
-In addition, \eqnref{vellin} describes the relation between the linear velocity and the generalized velocity as $\vc{v} = J_v \dot{\vc{q}}$. 
+generalized coordinates. We define the generalized state as $(\vc{q},\dot{\vc{q}})$, where $\vc{q} = (\vc{q}_1,\hdots,\vc{q}_k,\hdots,\vc{q}_m)$ and each $\vc{q}_k$ is the set of DOFs of the parent joint corresponding to the rigid link (see \figref{example1}). 
 
 \begin{wrapfigure}{r}{0.4\textwidth}
- \vspace{-10pt}
+ \vspace{20pt}
 \begin{center}
-\includegraphics[width=2.1in]{example1.eps}
+\includegraphics[width=2.1in]{example1_new.eps}
 \end{center}
 \caption{An articulated system.}
- \vspace{-20pt}
+ \vspace{0pt}
 \label{fig:example1}
 \end{wrapfigure}
 
-We use the same recipe as rigid body dynamics in \secref{rigidbodydyngen} for an articulated rigid body system and define the Jacobians for each rigid link that relate its respective velocities to the generalized velocity of the entire system. Consider an articulated multibody system with $m$ rigid links. Before we look
-at its angular velocity, let us first define a few notations.
+We list a few notations and definitions for an articulated rigid body system with $m$ rigid links. 
 \begin{itemize}
-\item $s(k)$ returns the index set of DOFs in link $k$, and $s(1, k)$
-  returns the index set of DOFs in the chain of links from the root to
-  the link $k$. For example in Figure \ref{fig:example1}, $s(2) = \{3, 4, 5\}$, $s(1, 4) = \{1, 2, 3,
-    4, 5, 7\}$.
+\item $n(k)$ returns the number of DOFs in the parent joint of the link $k$. For example in Figure \ref{fig:example1}, $n(2) = 3$, $n(3) = 1$ etc. We denote the total number of DOFs in the system by $n$. \eg $n=7$ in Figure \ref{fig:example1}.
 \item $p(k)$ returns the index of the parent link of link $k$. For
-  example, $p(4) = 2$.
-\item $l(j)$ returns the link index where DOF $j$ resides. For
-  example, $l(5) = 2$.
-\item $R^0_k$ is the chain of rotational transformations from the
-  world frame to the local frame of the link $k$.
-  \sumit{Also introduce what $R_k$ means.}
+  example, $p(4) = 2$. $p(1,k)$ returns the indices of all the links in the chain from the root to the link $k$ (including $k$). For example, $p(1,4) = \{1,2,4\}$
+\item $R_k$ is the local rotation matrix for the joint $k$ and depends only on the DOFs $\vc{q}_k$. $R^0_k$ is the chain of rotational transformations from the
+  world frame to the local frame of the link $k$. Therefore, $R^0_k = R^0_{p(k)}R_k$.
 \end{itemize}
 
-\sumit{why not index the ``set'' of dofs with the link index. would make indexing lot less confusing}
 
-The angular velocity of link $k$ viewed in the world frame is then
+
+\subsection{Cartesian and Generalized velocities}
+
+For a single rigid body, \eqnref{vellin} and \eqnref{velang} describe the relation between the Cartesian velocities and the generalized velocities. 
+For an articulated rigid body system, we use the same recipe as rigid body dynamics in \secref{rigidbodydyngen} and define the Jacobians for each rigid link that relate its respective Cartesian velocities to the generalized velocity of the entire system. 
+
+We start with deriving the relation for the angular velocity. The angular velocity of link $k$ viewed in the world frame is:
 \begin{eqnarray}
-[\bm{\omega}_k] & = & \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T = \sum_{j \in s(1,p(k))}
-\frac{\partial R^0_{p(k)}}{\partial q_j} R_k R_k^T (R^0_{p(k)})^T
-\dot{q}_j + \sum_{j \in s(k)} R^0_{p(k)} \frac{\partial R_k}{\partial q_j} R_k^T
-(R^0_{p(k)})^T \dot{q}_j  \nonumber \\
-& = & \sum_{j \in s(1,k)} (R^0_{p(l(j))} [\vc{u}_{l(j)j}] (R^0_{p(l(j))})^T) \dot{q}_j, \;\;\;\mathrm{where}\;\;
-[\vc{u}_{l(j)j}] = \frac{\partial R_{l(j)}}{\partial q_j} R_{l(j)}^T
+\nonumber
+[\bm{\omega}_k] & = & \dot{R^0_k} {R^0_k}^T = \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T\\
+\nonumber
+& = & (\dot{R^0_{p(k)}}R_k + {R^0_{p(k)}}\dot{R_k})  R_k^T {R^0_{p(k)}}^T \\
+\label{eq:angvelk_recursive}
+& = & \dot{R^0_{p(k)}}{R^0_{p(k)}}^T + R^0_{p(k)} \left ( \dot{R_k} R_k^T \right ) {R^0_{p(k)}}^T \equiv [\bm{\omega}_{p(k)}] + R^0_{p(k)} [\hat{\bm{\omega}}_k] {R^0_{p(k)}}^T
+%& = & [\bm{\omega}_{p(k)}] +  [R^0_{p(k)} \hat{\bm{\omega}}_k] = [\bm{\omega}_{p(k)} + R^0_{p(k)} \hat{\bm{\omega}}_k]
 \end{eqnarray}
+In the above equation, we define [$\hat{\bm{\omega}}_k] = \dot{R_k} R_k^T$ that denotes the angular velocity of the link $k$ in its \emph{parent} frame since the rotation matrix $R_k$ is the rotation of the rigid link $k$ with respect to its parent link $p(k)$. We can further write $\hat{\bm{\omega}}_k = \hat{J}_{\omega k} \dot{\vc{q}}_k$ where $\hat{J}_{\omega k}$ is the \emph{local} Jacobian matrix for the parent joint of link $k$ of size $3\times n(k)$. 
 
-\sumit{here itself introduce the notation $\hat{J}$ instead of \vc{u}. Could be used later and things may get more convenient}.
-
-\ignorethis{
+Using the property of skew symmetric matrix, $[R \bm{\omega}] = R [\bm{\omega}]
+R^T$, we can express \eqnref{angvelk_recursive} in the vector form as:
 \begin{eqnarray}
-[\bm{\omega}_k] & = & \dot{(R^0_{k-1}R_k)} (R^0_{k-1}R_k)^T = \sum_j
-\frac{\partial R^0_{k-1}}{\partial q_j} R_k R_k^T (R^0_{k-1})^T
-\dot{q}_j + \sum_j R^0_{k-1} \frac{\partial R_k}{\partial q_j} R_k^T
-(R^0_{k-1})^T \dot{q}_j  \nonumber \\
-& = & \sum_j ([\vc{s}_j] +R^0_{k-1} [\vc{t}_j] (R^0_{k-1})^T) \dot{q}_j, \;\;\;\mathrm{where}\;\;
-\vc{s}_j = \frac{\partial R^0_{k-1}}{\partial q_j} (R^0_{k-1})^T, \;\;
-\vc{t}_j = \frac{\partial R_k}{\partial q_j} R_k^T
+\label{eq:angvelk_iterative}
+\nonumber
+\bm{\omega}_k & = & \bm{\omega}_{p(k)} + R^0_{p(k)} \hat{J}_{\omega k} \dot{\vc{q}}_k\\
+\nonumber
+& = & \sum_{l \in p(1,k)} R^0_{p(l)} \hat{J}_{\omega l} \dot{\vc{q}}_l \mbox{\ \ (By unrolling the recursive definition)}\\
+& \equiv & J_{\omega k}\dot{\vc{q}}
 \end{eqnarray}
-}
-
-Using the property of skew symmetric matrix, $[R \vc{u}] = R [\vc{u}]
-R^T$, we can express the angular velocity in the vector form as
+where the Jacobian $J_{\omega k}$ is:
 \begin{equation}
-\label{eq:angular_velocity_link}
-\bm{\omega}_k = (\vc{u}_{11} \cdots R^0_{p(l(j))} \vc{u}_{l(j)j} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\vc{q}}
+\label{eq:angular_velocity_jac_link}
+J_{\omega k} = \left ( \hat{J}_{\omega 1}\;\; \hdots\;\; R^0_{p(l)} \hat{J}_{\omega l} \;\;\hdots\;\; \vc{0} \;\;\hdots \right )
 \end{equation}
-where $j$ is in the set of $s(1,k)$, and $J_{\omega k}$ is a $3 \times
-n$ matrix. Note that the zero columns in $J_{\omega k}$ correspond to
-DOFs that are not in the chain of transformations from the root to the
-link $k$. Let us look at a couple of examples using the articulated
+
+Note that the zero matrices \vc{0} of size $3\times n(l)$ in $J_{\omega k}$ correspond to
+joint DOFs $\vc{q}_l$ that are \emph{not} in the chain of transformations from the root to the
+link $k$. 
+Let us look at a couple of examples using the articulated
 rigid body system in Figure \ref{fig:example1}:
 \begin{eqnarray}
-\bm{\omega}_1 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; \vc{0}
-\;\;\vc{0}\;\;\vc{0}\;\;\vc{0}\;\;\vc{0}) \dot{\vc{q}}  \nonumber \\
-\bm{\omega}_4 &=& (\vc{u}_{11} \;\; \vc{u}_{12} \;\; R^0_1\vc{u}_{23} \;\;
-R^0_1\vc{u}_{24} \;\;  R^0_1\vc{u}_{25} \;\; \vc{0} \;\;
-R^0_2 \vc{u}_{47}) \dot{\vc{q}} \nonumber
+\bm{\omega}_1 &=& (\hat{J}_{\omega 1} \;\; \vc{0}
+\;\;\vc{0}\;\;\vc{0}) \dot{\vc{q}}  \nonumber \\
+\bm{\omega}_4 &=& (\hat{J}_{\omega 1} \;\; R^0_1\hat{J}_{\omega 2} \;\;
+\vc{0} \;\;
+R^0_2 \hat{J}_{\omega 4}) \dot{\vc{q}} \nonumber
 \end{eqnarray}
-where $\vc{u}$, $R\vc{u}$, and $\vc{0}$ are all $3\times 1$
-vectors. Depending on the representation of the rotation matrix,
-$\vc{u}$ can assume different values. For example, if the joint
+Depending on the representation of the rotation $\vc{q}_k$,
+$\hat{J}_{\omega k}$ can assume different values. For example, if the joint
 between link $1$ and link $2$ in Figure \ref{fig:example1} is
 represented as three Euler rotations, $R^{(x)}$, $R^{(y)}$, and
-$R^{(z)}$, we have $\vc{u}_{23} = (1\;\; 0 \;\; 0)^T$, $\vc{u}_{24} =
-R^{(x)} (0\;\;1\;\;0)^T$, and $\vc{u}_{25} = R^{(x)}R^{(y)}
-(0\;\;0\;\;1)^T$. If the joint is represented as a quaternion or an
-exponential map, $\vc{u}$ do not have a simple symbolic form.
+$R^{(z)}$ such that $R_2(\vc{q}_2)= R^{(x)}(q_{21}) R^{(y)}(q_{22}) R^{(z)}(q_{23})$, we have:
+\begin{equation}
+\hat{J}_{\omega 2} = \left (
+\begin{array}{ccc}
+\begin{array}{c}
+1\\
+0\\
+0
+\end{array}
+&
+R^{(x)} \Bigg (
+\begin{array}{c}
+0\\
+1\\
+0
+\end{array} 
+\Bigg )
+&
+R^{(x)} R^{(y)}\Bigg (
+\begin{array}{c}
+0\\
+0\\
+1
+\end{array} 
+\Bigg )
+\end{array}
+\right )
+\end{equation}
+If the joint is represented as a quaternion or an
+exponential map, $\hat{J}_{\omega k}$ does not have a simple symbolic form.
 
 \ignorethis{
 \begin{equation}
@@ -677,14 +685,14 @@ Similarly, the linear velocity of the center of mass of the link $k$
 can be expressed in terms of the generalized velocity: 
 \begin{equation}
 \label{eq:linear_velocity_link}
-\vc{v}_k = J_{vk} \dot{\vc{q}}, \;\;\;\mathrm{where}\;\; J_{vk} = \frac{\partial T^0_k
+\vc{v}_k = J_{vk} \dot{\vc{q}}, \;\;\;\mathrm{where}\;\; J_{vk} = \frac{\partial \vc{x}_k}{\partial \vc{q}}=  \frac{\partial T^0_k
   \vc{c}_k}{\partial \vc{q}}.
 \end{equation}
 where the chain of homogeneous transformations from the world frame to the local
 frame of link $k$ is denoted as $T^0_k$. Note that $T^0_k$ is
 different from $R^0_k$ in that $T^0_k$ includes the translational
 transformations. $\vc{c}_k$ denotes the center of mass of link $k$ in
-its local frame. \sumit{probably change this since $\vc{c}$ was used as global point before}.
+its local frame.
 
 We can concatenate the Cartesian velocities into a single vector $\vc{V}_k$ and denote the relation as:
 \begin{eqnarray}
@@ -765,28 +773,35 @@ link:
 \left(
 \begin{array}{c}
 \vc{v}_1 \\
-\bm{\omega}_1 \\
 \vdots \\
 \vc{v}_m \\
+\bm{\omega}_1 \\
+\vdots \\
 \bm{\omega}_m
 \end{array}
 \right) = 
 \left (
 \begin{array}{c}
 J_{v1} \\
-J_{\omega 1} \\
 \vdots \\
 J_{vm} \\
+J_{\omega 1} \\
+\vdots \\
 J_{\omega m}
 \end{array}
 \right) 
 \left(
 \begin{array}{c}
-\dot{q}_1\\
+\dot{\vc{q}}_1\\
 \vdots \\
-\dot{q}_n
+\dot{\vc{q}}_m
 \end{array}
-\right)  \equiv J \dot{\vc{q}}
+\right)  \equiv \left(
+\begin{array}{c}
+J_v\\
+J_{\omega}
+\end{array}
+\right)\dot{\vc{q}} \equiv J \dot{\vc{q}}
 \end{equation}
 
 Typically, the Jacobian $J$ is full column rank because the
@@ -795,24 +810,60 @@ generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $\vc{V}
 will end up solving a over-constrained linear system. We can use
 pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
 \begin{equation}
- \dot{\vc{q}} = (J^TJ)^{-1}J^T \vc{V} \equiv J^+\vc{V}
+ \dot{\vc{q}} =  J^+\vc{V}
  \end{equation}
+where the pseudo-inverse notation $J^+ = (J^TJ)^{-1}J^T$. 
 
-Alternatively, we can rewrite the equation using the relative angular
-velocity between a child and a parent link expressed in the local
-frame of the parent, instead of using angular velocity of each link
-expressed in the world frame.
+Computing $J^+$ may be expensive for a system with many rigid links. 
+Alternatively, we can rewrite the equation using the relative velocity between a child and a parent link expressed in the local
+frame of the parent, instead of using velocities of each link
+expressed in the world frame. As an example, we write the simplified expression for the angular velocity of link $k$ using \eqnref{angvelk_iterative} as: 
+\begin{eqnarray}
+\nonumber
+\bm{\omega}_k - \bm{\omega}_{p(k)} & = & R^0_{p(k)}\hat{\bm{\omega}}_k = R^0_{p(k)}\hat{J}_{\omega k} \dot{\vc{q}}_k \\
+\Rightarrow \left ( -\vc{I}_3\;\; \vc{I}_3 \right ) 
+\left ( 
+\begin{array}{c}
+\bm{\omega}_{p(k)}\\
+\bm{\omega}_k
+\end{array}
+\right ) & = & R^0_{p(k)}\hat{J}_{\omega k} \dot{\vc{q}}_k
+\end{eqnarray}
 
-\sumit{if dofs indexed using links, then defining local angular velocity might be easier and cleaner.}\\
-\sumit{Also, can define $D$ here and then use in the forces as well.}
+%\begin{pmatrix}
+%\vc{0}  &                    &  &\\
+%        & \ddots             &  & \\
+%        &                    & R^0_{p(k)}\hat{J}_{\omega k} & \\
+%        &                    &  & \ddots & \\
+%        &                    &   &     & \vc{0}
+%\end{pmatrix} 
 
+Combining these equations for all the links, we get:
+\begin{eqnarray}
+D_{\omega} \bm{\omega} = D_{\omega} J_{\omega} \dot{\vc{q}} = \mbox{blockdiag}(\hat{J}_{\omega 1},\hdots,R^0_{p(m)}\hat{J}_{\omega m})\dot{\vc{q}} \equiv \hat{J}_{\omega}\dot{\vc{q}}
+\end{eqnarray}
+where $D_{\omega}$ is a constant matrix that encodes the connectivity between links. For example, matrix $D_{\omega}$ for the system in Figure \ref{fig:example1} looks
+like:
 \begin{equation}
-\hat{\bm{\omega}}_k = (R^0_{p(k)})^T(\bm{\omega}_k - \bm{\omega}_{p(k)}) = (\vc{0} \cdots \vc{0} \;\; \vc{u}_{l(j)j} \;\; \vc{0}
-\cdots \vc{0}) \dot{\vc{q}} = \hat{J}_{\omega k} \dot{\vc{q}} 
+D_{\omega} =
+\left (
+\begin{array}{cccc}
+\vc{I}_{3}  & \vc{0} & \vc{0} & \vc{0}\\
+-\vc{I}_{3} & \vc{I}_{3}  & \vc{0} & \vc{0}\\
+\vc{0} & -\vc{I}_{3} & \vc{I}_{3}  & \vc{0}\\
+\vc{0} & -\vc{I}_{3} & \vc{0} & \vc{I}_{3}\\
+\end{array}
+\right )  
 \end{equation}
-where $j$ is in the set of $s(k)$. Comparing the above equation with \eqnref{angular_velocity_link},
-the angular part of Jacobian, $\hat{J}_{\omega k}$, is usually more sparse
-that $J_{\omega k}$. Also note that the computation of the Jacobian $\hat{J}_{\omega k}$ involves only the local joint rotation as opposed to the entire chain of rotations.
+In addition, the matrix $\hat{J}_{\omega} = D_{\omega} J_{\omega}$ is much sparser as compared to ${J}_{\omega}$. For only rotational DOFs, it is sufficient to invert only $J_{\omega}$. Therefore, we can compute $\dot{\vc{q}}$ as:
+\begin{eqnarray}
+\nonumber
+ \dot{\vc{q}} & = & J_{\omega}^+ \bm{\omega}\\
+ \nonumber
+ & = &  \hat{J}_{\omega}^+ D_{\omega}\bm{\omega}\\
+ & = & \mbox{blockdiag}\left((\hat{J}_{\omega 1})^+,\hdots,(R^0_{p(m)}\hat{J}_{\omega m})^+\right ) D_{\omega}\bm{\omega}
+\end{eqnarray}
+Therefore, we see that the problem of computing pseudo-inverse of a matrix $J_{\omega}$ is reduced to computing $m$ pseudo-inverses of much smaller constant-sized matrices $R^0_{p(k)}\hat{J}_{\omega k}$.
 
 
 \subsection{Force conversion}
@@ -887,19 +938,7 @@ J_{v}^T & \hat{J}_\omega^T
 \right )  
 \end{equation}
 where matrix $D$ encodes the relation between body torques and joint
-torques. For example, matrix $D$ for the system in Figure \ref{fig:example1} looks
-like:
-\begin{equation}
-D =
-\left (
-\begin{array}{cccc}
-\vc{I}_{3\time 3}  & -\vc{I}_{3\time 3} & \vc{0} & \vc{0}\\
-\vc{0} & \vc{I}_{3\time 3}  & -\vc{I}_{3\time 3} & -\vc{I}_{3\time 3}\\
-\vc{0} & \vc{0} & \vc{I}_{3\time 3}  & \vc{0}\\
-\vc{0} & \vc{0} & \vc{0} & \vc{I}_{3\time 3}\\
-\end{array}
-\right )  
-\end{equation}
+torques. 
 
 
 %\section{Recursive Inverse and Forward Dynamics}
