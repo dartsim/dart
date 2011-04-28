@@ -544,6 +544,7 @@ From the principle of virtual work in \eqnref{virtual_work}, we convert the Cart
 
 The LHS of \eqnref{dyngen_vec2} is identical to the RHS of \eqnref{dyngen_vec} and they are of the form $M(\vc{q})\ddot{\vc{q}} + C(\vc{q},\dot{\vc{q}}) = \vc{Q}$, where the Mass matrix, the Coriolis matrix and the generalized forces are defined as:
 \begin{eqnarray}
+\label{eq:summary_dynamics}
 \nonumber
 M(\vc{q}) & = & J^T M_c J\\
 \nonumber
@@ -642,8 +643,8 @@ between link $1$ and link $2$ in Figure \ref{fig:example1} is
 represented as three Euler rotations, $R^{(x)}$, $R^{(y)}$, and
 $R^{(z)}$ such that $R_2(\vc{q}_2)= R^{(x)}(q_{21}) R^{(y)}(q_{22}) R^{(z)}(q_{23})$, we have:
 \begin{equation}
-\hat{J}_{\omega 2} = \left (
-\begin{array}{ccc}
+\hat{J}_{\omega 2} = 
+\begin{pmatrix}
 \begin{array}{c}
 1\\
 0\\
@@ -665,8 +666,7 @@ R^{(x)} R^{(y)}\Bigg (
 1
 \end{array} 
 \Bigg )
-\end{array}
-\right )
+\end{pmatrix}
 \end{equation}
 If the joint is represented as a quaternion or an
 exponential map, $\hat{J}_{\omega k}$ does not have a simple symbolic form.
@@ -840,12 +840,17 @@ expressed in the world frame. As an example, we write the simplified expression 
 
 Combining these equations for all the links, we get:
 \begin{eqnarray}
-D_{\omega} \bm{\omega} = D_{\omega} J_{\omega} \dot{\vc{q}} = \mbox{blockdiag}(\hat{J}_{\omega 1},\hdots,R^0_{p(m)}\hat{J}_{\omega m})\dot{\vc{q}} \equiv \hat{J}_{\omega}\dot{\vc{q}}
+\label{eq:jacsplit}
+\nonumber
+D \bm{\omega} = D J_{\omega} \dot{\vc{q}} & = & \mbox{blockdiag}(\hat{J}_{\omega 1},\hdots,R^0_{p(m)}\hat{J}_{\omega m})\dot{\vc{q}}\\
+\nonumber
+& = & \mbox{blockdiag}(\vc{I}_3,\hdots,R^0_{p(m)})\mbox{blockdiag}(\hat{J}_{\omega 1},\hdots,\hat{J}_{\omega m})\dot{\vc{q}}\\
+& \equiv & \hat{R} \hat{J}_{\omega}\dot{\vc{q}}
 \end{eqnarray}
-where $D_{\omega}$ is a constant matrix that encodes the connectivity between links. For example, matrix $D_{\omega}$ for the system in Figure \ref{fig:example1} looks
+where $D$ is a constant matrix that encodes the connectivity between links. For example, matrix $D$ for the system in Figure \ref{fig:example1} looks
 like:
 \begin{equation}
-D_{\omega} =
+D =
 \left (
 \begin{array}{cccc}
 \vc{I}_{3}  & \vc{0} & \vc{0} & \vc{0}\\
@@ -855,15 +860,20 @@ D_{\omega} =
 \end{array}
 \right )  
 \end{equation}
-In addition, the matrix $\hat{J}_{\omega} = D_{\omega} J_{\omega}$ is much sparser as compared to ${J}_{\omega}$. For only rotational DOFs, it is sufficient to invert only $J_{\omega}$. Therefore, we can compute $\dot{\vc{q}}$ as:
+The relation between $\hat{J}_{\omega}$ and $J_{\omega}$ follows from \eqnref{jacsplit}:
+\begin{equation}
+\label{eq:jacbodyhat}
+\hat{J}_{\omega} = \hat{R}^T D J_{\omega}
+\end{equation}
+The matrix $\hat{J}_{\omega}$ being block diagonal is much sparser as compared to ${J}_{\omega}$. For rotational DOFs, it is sufficient to invert only $J_{\omega}$. Therefore, we can compute $\dot{\vc{q}}$ as:
 \begin{eqnarray}
 \nonumber
  \dot{\vc{q}} & = & J_{\omega}^+ \bm{\omega}\\
  \nonumber
- & = &  \hat{J}_{\omega}^+ D_{\omega}\bm{\omega}\\
- & = & \mbox{blockdiag}\left((\hat{J}_{\omega 1})^+,\hdots,(R^0_{p(m)}\hat{J}_{\omega m})^+\right ) D_{\omega}\bm{\omega}
+ & = &  \hat{J}_{\omega}^+ \hat{R}^T D\bm{\omega}\\
+ & = & \mbox{blockdiag}\left(\hat{J}_{\omega 1}^+,\hdots,\hat{J}_{\omega m}^+\right ) \mbox{blockdiag}\left(\vc{I}_3,\hdots,{R^0_{p(m)}}^T\right ) D\bm{\omega}
 \end{eqnarray}
-Therefore, we see that the problem of computing pseudo-inverse of a matrix $J_{\omega}$ is reduced to computing $m$ pseudo-inverses of much smaller constant-sized matrices $R^0_{p(k)}\hat{J}_{\omega k}$.
+Therefore, we see that the problem of computing pseudo-inverse of a matrix $J_{\omega}$ is reduced to computing $m$ pseudo-inverses of much smaller constant-sized matrices $\hat{J}_{\omega k}$.
 
 
 \subsection{Force conversion}
@@ -871,10 +881,10 @@ The relation between the Cartesian force and the generalized force can
 be found in \eqnref{virtual_work}:
 \begin{equation}
 \label{eq:force_conversion}
-\vc{Q} = \sum_i J_{vi}^T \vc{f}_i + \sum_k J_{\omega k}^T \bm{\tau}_k = 
+\vc{Q} = \sum_i {J^{'}_{vi}}^T \vc{f}_i + \sum_k J_{\omega k}^T \bm{\tau}_k = 
 \left (
 \begin{array}{cc}
-J_{v}^T & J_\omega^T
+{J^{'}_{v}}^T & J_\omega^T
 \end{array}
 \right)
 \left(
@@ -884,50 +894,40 @@ J_{v}^T & J_\omega^T
 \end{array}
 \right) 
 , \;\;\;\mathrm{where}\;\;
-J_{vi} = \frac{\partial \vc{r}_i}{\partial \vc{q}}
+J^{'}_{vi} = \frac{\partial \vc{r}_i}{\partial \vc{q}}
 \end{equation}
 where $\vc{r}_i$ is the point of application of the Cartesian force
-$\vc{f}_i$ expressed in the world frame. Body torque $\bm{\tau}_k$ is the torque
-applied on link $k$. \sumit{can make the linear jacobian at the COM and add torque component in the $\bm{\tau}$}.
+$\vc{f}_i$ expressed in the world frame. 
 
-Sometimes it is more convenient to express \emph{joint torques} in the
-local frame of the parent link, rather than \emph{body torques} in the
-world frame. For example, the joint torque between link $p(k)$ and
-link $k$ can be computed as $\hat{\bm{\tau}}_{p(k)} = (R^0_{p(k)})^T(\bm{\tau}_{p(k)} -
-\bm{\tau}_k)$. \eqnref{force_conversion} is then modified to:
-\begin{equation}
-\vc{Q} = \left (
+\paragraph{Note.} Body torque $\bm{\tau}_k$ is the torque
+applied on link $k$ in the world frame and does \emph{not} include the torque induced by the linear forces $\vc{f}_i$. 
+However, the definition for torque in \eqnref{summary_dynamics} \emph{includes} the torque $[\vc{r}_i-\vc{x}_i] \vc{f}_i$ due to each force $\vc{f}_i$ ($\vc{x}_i$ is the COM of the link $i$). As a result, the linear Jacobian $J_{v}$ in \eqnref{summary_dynamics} is defined for the COM of the respective rigid link and $J^{'}_{v}$ in \eqnref{force_conversion} is defined for the point of application of the force. It is easy to verify that ${J^{'}_{vi}}^T\vc{f}_i = J_{vi}^T\vc{f}_i + J_{\omega i}^T[\vc{r}_i-\vc{x}_i] \vc{f}_i$.
+%However, for the sake of clarity, we use the new definition of the Jacobian in \eqnref{force_conversion} and abuse the notation by denoting it by $J_v$.
+
+Often many controllers (such as a tracking controller) find it convenient to compute the Cartesian-space \emph{joint torques} in the local frame of the parent link rather than \emph{body torques} in the world frame. Joint torque $\hat{\bm{\tau}}_k$ in the frame of parent link $p(k)$ is defined such that positive torque in the world frame $R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the link $k$ and negative torque $-R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the parent link $p(k)$. Therefore, the body torque $\bm{\tau}_k$ applied to the link $k$ can be written in terms of the joint torques as $\bm{\tau}_k = R^0_{p(k)}\hat{\bm{\tau}}_k - \sum_l R^0_{k} \hat{\bm{\tau}}_l$, $\forall l:k=p(l)$. Collecting the body torques for all the rigid links in the vector $\bm{\tau}$, the relation between the body torques and the joint torques can be defined as:
+\begin{eqnarray}
+\label{eq:torquesbodyhat}
+\bm{\tau} & = & D^T \hat{R} \hat{\bm{\tau}} = (\hat{R}^T D)^T \hat{\bm{\tau}}
+\end{eqnarray}
+where $\hat{R}, D$ are defined in \eqnref{jacbodyhat}. We now substitute \eqnref{torquesbodyhat} in \eqnref{force_conversion} and get:
+\begin{eqnarray}
+\nonumber
+\vc{Q} & = & 
+\left (
 \begin{array}{cc}
-J_{v}^T & J_\omega^T
+{J^{'}_{v}}^T & J_\omega^T
 \end{array}
 \right )
-\left (
-\begin{array}{c}
+\begin{pmatrix}
 \vc{f} \\
-\bm{\tau}
-\end{array}
-\right ) 
- = \left (
-\begin{array}{cc}
-J_{v}^T & J_\omega^T
-\end{array}
-\right )
-\left (
-\begin{array}{c}
-\vc{f} \\
-D 
-\left (
-\begin{array}{c}
-R^0_{p(1)} \hat{\bm{\tau}}_1 \\
-\vdots \\
-R^0_{p(m)} \hat{\bm{\tau}}_m
-\end{array}
-\right )
-\end{array}
-\right ) =
+(\hat{R}^T D)^T \hat{\bm{\tau}}
+\end{pmatrix}
+ \\
+\nonumber
+& = & 
 \left (
 \begin{array}{cc}
-J_{v}^T & \hat{J}_\omega^T
+{J^{'}_{v}}^T & (\hat{R}^T D J_\omega)^T
 \end{array}
 \right )
 \left (
@@ -935,10 +935,21 @@ J_{v}^T & \hat{J}_\omega^T
 \vc{f} \\
 \hat{\bm{\tau}}
 \end{array}
-\right )  
-\end{equation}
-where matrix $D$ encodes the relation between body torques and joint
-torques. 
+\right )
+\\
+& = & 
+\left (
+\begin{array}{cc}
+{J^{'}_{v}}^T & \hat{J}_\omega^T
+\end{array}
+\right )
+\left (
+\begin{array}{c}
+\vc{f} \\
+\hat{\bm{\tau}}
+\end{array}
+\right ) \mbox{\ \ (Using \eqnref{jacbodyhat})}
+\end{eqnarray}
 
 
 %\section{Recursive Inverse and Forward Dynamics}
