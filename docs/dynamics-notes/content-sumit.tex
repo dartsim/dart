@@ -561,7 +561,7 @@ An articulated rigid body system is represented as a set of rigid bodies connect
 The state of an articulated rigid body
 system can be expressed as $(\vc{x}_k, R_k, \vc{v}_k,
 \boldsymbol{\bm{\omega}}_k)$, where $k = 1, \cdots, m$ and $m$ is the number of rigid links. Here $\vc{x}_k$ and
-$R_k$ are the position and orientation of the rigid link $k$, and $(\vc{v}_k,
+$R_k$ are the position of the COM and the orientation of the rigid link $k$, and $(\vc{v}_k,
 {\bm{\omega}}_k)$ are the linear and angular velocity of the
 rigid link $k$ viewed in the world frame. Similarly, we define the
 Cartesian force and torque applied on rigid link $k$ as $(\vc{f}_k,
@@ -600,11 +600,11 @@ For an articulated rigid body system, we use the same recipe as rigid body dynam
 We start with deriving the relation for the angular velocity. The angular velocity of link $k$ viewed in the world frame is:
 \begin{eqnarray}
 \nonumber
-[\bm{\omega}_k] & = & \dot{R^0_k} {R^0_k}^T = \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T\\
+[\bm{\omega}_k] & = & \dot{R}^0_k {R^0_k}^T = \dot{(R^0_{p(k)}R_k)} (R^0_{p(k)}R_k)^T\\
 \nonumber
-& = & (\dot{R^0_{p(k)}}R_k + {R^0_{p(k)}}\dot{R_k})  R_k^T {R^0_{p(k)}}^T \\
+& = & (\dot{R}^0_{p(k)}R_k + {R^0_{p(k)}}\dot{R}_k)  R_k^T {R^0_{p(k)}}^T \\
 \label{eq:angvelk_recursive}
-& = & \dot{R^0_{p(k)}}{R^0_{p(k)}}^T + R^0_{p(k)} \left ( \dot{R_k} R_k^T \right ) {R^0_{p(k)}}^T \equiv [\bm{\omega}_{p(k)}] + R^0_{p(k)} [\hat{\bm{\omega}}_k] {R^0_{p(k)}}^T
+& = & \dot{R}^0_{p(k)}{R^0_{p(k)}}^T + R^0_{p(k)} \left ( \dot{R}_k R_k^T \right ) {R^0_{p(k)}}^T \equiv [\bm{\omega}_{p(k)}] + R^0_{p(k)} [\hat{\bm{\omega}}_k] {R^0_{p(k)}}^T
 %& = & [\bm{\omega}_{p(k)}] +  [R^0_{p(k)} \hat{\bm{\omega}}_k] = [\bm{\omega}_{p(k)} + R^0_{p(k)} \hat{\bm{\omega}}_k]
 \end{eqnarray}
 In the above equation, we define [$\hat{\bm{\omega}}_k] = \dot{R_k} R_k^T$ that denotes the angular velocity of the link $k$ in its \emph{parent} frame since the rotation matrix $R_k$ is the rotation of the rigid link $k$ with respect to its parent link $p(k)$. We can further write $\hat{\bm{\omega}}_k = \hat{J}_{\omega k} \dot{\vc{q}}_k$ where $\hat{J}_{\omega k}$ is the \emph{local} Jacobian matrix for the parent joint of link $k$ of size $3\times n(k)$. 
