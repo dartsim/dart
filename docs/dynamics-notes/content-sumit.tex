@@ -216,7 +216,16 @@ where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
 & = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
 &= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
 \end{eqnarray}
-The notation $[\vc{a}] \vc{b}$ denotes the cross product $\vc{a}\times \vc{b}$ with $[\vc{a}]$ as the skew-symmetric matrix corresponding to the vector $\vc{a}$. Therefore the following identities hold: $[\vc{a}]\vc{b} = -[\vc{b}]\vc{a}$ and $[\vc{a}]^T = -[\vc{a}]$.
+The notation $[\vc{a}] \vc{b}$ denotes the cross product $\vc{a}\times \vc{b}$ with $[\vc{a}]$ as the skew-symmetric matrix corresponding to the vector $\vc{a}$:
+\begin{equation}
+[\vc{a}] = 
+\begin{pmatrix}
+0 & -a_3 & a_2\\
+a_3&  0 & -a_1\\
+-a_2 & a_1 & 0
+\end{pmatrix}
+\end{equation}
+Therefore the following identities hold: $[\vc{a}]\vc{b} = -[\vc{b}]\vc{a}$ and $[\vc{a}]^T = -[\vc{a}]$.
 
 Now recall the inertia tensor about the COM defined in Witkin and
 Baraff's course notes: $I_c = \sum_i \sInfMass ((\vc{r}_i'^T
@@ -673,7 +682,15 @@ R^{(x)} R^{(y)}\Bigg (
 \end{pmatrix}
 \end{equation}
 If the joint is represented as a quaternion or an
-exponential map, $\hat{J}_{\omega k}$ does not have a simple symbolic form. \sumit{Give explanation of why not?}.
+exponential map, $\hat{J}_{\omega k}$ does not have a simple form. As an example, the relation between the rotation matrix $R_k$ and the exponential map representation $\vc{q}_k=(q_{k1},q_{k2},q_{k3})$ can be written as:
+\begin{equation}
+R_k(\vc{q}_k) = e^{[\vc{q}_k]} = \vc{I}_3 + \frac{sin \theta}{\theta} [{\vc{q}}_k] + \frac{1-cos \theta}{\theta^2}[{\vc{q}}_k]^2
+\end{equation}
+where $\theta = ||\vc{q}_k ||$. The Jacobian $\hat{J}_{\omega k}$ can be derived by equating the result of $\dot{R}_k R_k^T$ to $[\hat{J}_{\omega k} \dot{\vc{q}}_k]$:
+\begin{equation}
+\hat{J}_{\omega k} = R_k \left ( \vc{I}_3 - \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2 \right )
+\end{equation}
+%Now, the $j^{th}$ column $\vc{j}_{kj}$ of the Jacobian $J_{\omega k}$ can be evaluated as $[\vc{j}_{kj}] = \frac{\partial R_k}{\partial q_{kj}}R_k^T$.
 
 \ignorethis{
 \begin{equation}
@@ -685,7 +702,7 @@ where $np$ is the number of DOFs in the parent chain and $nk$ is the
 number of DOFs in the link $k$. 
 }
 
-Similarly, the linear velocity of the center of mass of the link $k$
+Similar to the angular velocity, the linear velocity of the center of mass of the link $k$
 can be expressed in terms of the generalized velocity: 
 \begin{equation}
 \label{eq:linear_velocity_link}
@@ -695,7 +712,7 @@ can be expressed in terms of the generalized velocity:
 where the chain of homogeneous transformations from the world frame to the local
 frame of link $k$ is denoted as $W^0_k$. Note that $W^0_k$ is
 different from $R^0_k$ in that $W^0_k$ includes the translational
-transformations. $\vc{c}_k$ denotes the center of mass of link $k$ in
+transformations. $\vc{c}_k$ is a constant vector that denotes the center of mass of link $k$ in
 its local frame.
 
 We can concatenate the Cartesian velocities into a single vector $\vc{V}_k$ and denote the relation as:
@@ -966,7 +983,11 @@ where $R, D$ are defined in \eqnref{jacbodyhat}. We now substitute \eqnref{torqu
 \right )  \mbox{\ \ (Using \eqnref{jacbodyhat})}
 \end{eqnarray}
 
-\eqnref{torques_cart2gen} gives the relation to convert the given cartesian forces \vc{f} and joint torques $\hat{\bm{\tau}}$ to the generalized forces $\vc{Q}$. We now describe the process to convert the given generalized forces $\vc{Q}$ to cartesian forces and torques. In general, the transposed Jacobian in \eqnref{force_conversion} can be inverted using pseudo-inverse to get the Cartesian forces and torques. However, the full Jacobian may be large and expensive to invert. Also note that the relation represents and under-constrained system when solving for $\vc{f}$ and $\bm{\tau}^{'}$. This is because the size of the unknowns is $6m$ and the number of constraints are $n$ with $n\le 6m$. Based on the information about the form of $\vc{Q}$, we can solve for the Cartesian forces and torques in different ways. We describe the solutions to the following cases:
+\eqnref{torques_cart2gen} gives the relation to convert the given cartesian forces \vc{f} and joint torques $\hat{\bm{\tau}}$ to the generalized forces $\vc{Q}$. 
+
+We now describe the process to convert the given generalized forces $\vc{Q}$ to cartesian forces and torques. In general, the transposed Jacobian in \eqnref{force_conversion} can be inverted using pseudo-inverse to get the Cartesian forces and torques. Note that the relation represents and under-constrained system when solving for $\vc{f}$ and $\bm{\tau}^{'}$. This is because the size of the unknowns is $6m$ and the number of constraints are $n$ with $n\le 6m$. Therefore, we get particular solutions for the Cartesian forces and torques out of many possible solutions.
+
+Based on the information about the form of $\vc{Q}$, we can solve for the Cartesian forces and torques in different ways. We describe the solutions to the following cases:
 \begin{enumerate}
 \item \textbf{General case. } In the most general case, the points of application of the Cartesian forces are not known. Therefore, we cannot use the Jacobian $J_{v}^{'}$ in \eqnref{force_conversion}. This forces us to assume the points of application to be the COM of each link and compute the torques $\bm{\tau}$ instead of body torques $\bm{\tau}^{'}$. \ie, we can invert the transposed Jacobian by computing its pseudo-inverse and a get a particular least squared solution for $\vc{f}$ and $\bm{\tau}$ as:
 \begin{equation}
@@ -981,14 +1002,17 @@ where $R, D$ are defined in \eqnref{jacbodyhat}. We now substitute \eqnref{torqu
 \end{array}
 \right )^+ \vc{Q}
 \end{equation}
+If the points of the force application are known, the Jacobian in \eqnref{torques_cart2gen} can be inverted to obtain the forces $\vc{f}$ and the joint torques $\hat{\bm{\tau}}$.
 
-\item \textbf{Known points of applied forces. }
-
-\item \textbf{No linear forces. }
+\item \textbf{No linear forces. } The more common case for many controllers involves the conversion of only the joint torques from generalized to the Cartesian coordinates. Therefore, the linear forces \vc{f} are zero and \eqnref{torques_cart2gen} can be simplified further to result in the following conversion relation:
+\begin{eqnarray}
+\nonumber
+\hat{\bm{\tau}}  & = & (\hat{J}_{\omega}^T)^+ \vc{Q}\\
+\mbox{or } \hat{\bm{\tau}}_k  & = & (\hat{J}_{\omega k}^T)^+ \vc{Q}_k \;\; \forall k \in 1\hdots m
+\end{eqnarray}
+where $\vc{Q}_k$ denotes the components of the generalized forces corresponding to the rotational DOFs $\vc{q}_k$. Note that the size of the matrix $\hat{J}_{\omega k}^T$ is $n(k)\times 3$ and $n(k)\leq 3$. This implies that we get a particular least squared solution for each $\hat{\bm{\tau}}_k$ out of possibly many solutions that would give rise to the same $\vc{Q}_k$ using the relation $\vc{Q}_k = \hat{J}_{\omega k}^T \hat{\bm{\tau}}_k$.
+%\item \textbf{Known points of applied forces. } When the points of application of forces are known, \eqnref{torques_cart2gen} can be used. Instead of inverting the Jacobian,
 
 \end{enumerate}
-
-\sumit{talk about inverting to get body force/torque from gen coordinates}.
- Therefore, by taking the pseudo-inverse, we get a particular \emph{least-squared} solution for the Cartesian forces and torques.
 
 %\section{Recursive Inverse and Forward Dynamics}
