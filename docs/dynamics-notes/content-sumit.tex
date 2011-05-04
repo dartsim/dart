@@ -687,9 +687,11 @@ exponential map, $\hat{J}_{\omega k}$ does not have a simple form. As an example
 R_k(\vc{q}_k) = e^{[\vc{q}_k]} = \vc{I}_3 + \frac{sin \theta}{\theta} [{\vc{q}}_k] + \frac{1-cos \theta}{\theta^2}[{\vc{q}}_k]^2
 \end{equation}
 where $\theta = ||\vc{q}_k ||$. The Jacobian $\hat{J}_{\omega k}$ can be derived by equating the result of $\dot{R}_k R_k^T$ to $[\hat{J}_{\omega k} \dot{\vc{q}}_k]$:
-\begin{equation}
-\hat{J}_{\omega k} = R_k \left ( \vc{I}_3 - \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2 \right )
-\end{equation}
+\begin{eqnarray}
+\nonumber
+\hat{J}_{\omega k} & = & R_k \left ( \vc{I}_3 - \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2 \right )\\
+ & = & \vc{I}_3 + \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2
+\end{eqnarray}
 %Now, the $j^{th}$ column $\vc{j}_{kj}$ of the Jacobian $J_{\omega k}$ can be evaluated as $[\vc{j}_{kj}] = \frac{\partial R_k}{\partial q_{kj}}R_k^T$.
 
 \ignorethis{
