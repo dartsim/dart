@@ -1,11 +1,40 @@
 \section{Introduction}
+If you have not read the excellent SIGGRAPH course notes on
+physics-based animation by Baraff and Witkin, you can stop reading
+further right now. Go look for those notes at
+http://www.cs.cmu.edu/~baraff/sigcourse/ and come back when
+you fully understand everything in the notes.
 
-This article attempts to answer the following questions.
+If you are still reading this document, you probably fit the following
+profile. You are a computer scientist with no mechanical engineering
+background and minimal training in physics in high school but you are
+seriously interested in physics-based character animation. You have
+read Baraff and Witkin's SIGGRAPH course notes a few times but don't
+know where to go from simulating rigid bodies to human figures. You
+have played with some commercial physics engines like ODE (Open
+Dynamic Engine), PhysX, Havok, or Bullet, but you wish to
+simulate human behaviors more interesting than ragdoll effects.
+
+Physics-based character animation consists of two parts: simulation
+and control. This document focuses on the simulation part. It's quite
+likely that you do not need to understand how underlying simulation
+works if your control algorithm is simple enough. However, complex
+human behaviors often require sophisticated controllers that exploit
+the dynamics of a multibody system. A good understanding of multibody
+dynamics is paramount for designing effective controllers.
+
+There are many ways to learn multibody dynamics. Reading a textbook
+on this topic or taking a course from the mechanical engineering
+department will both do the job. However, if you only want to learn
+the minimal set of multibody dynamics necessary to jump start your
+research in physics-based character animation, this document might be
+what you are looking for. In particular, this document attempts to
+answer the following questions.
 
 \begin{itemize}
 \item I know how to derive the equations of motion for one rigid body
   and I have seen people use the following equations for articulated
-  rigid bodies, but I don't know how they are derived?
+  rigid bodies, but I don't know how they are derived.
 \begin{equation}
 M(\vc{q}) \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})  = \vc{Q} \nonumber
 \end{equation}
@@ -19,31 +48,34 @@ M(\vc{q}) \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})  = \vc{Q} \nonumber
 \end{equation}
 
 \item I use generalized coordinates to compute the control forces, how do I convert them to Cartesian forces such that I can use simulators like ODE, PhysX, or Bullet which represent rigid bodies in the maximal coordinates?
-\item I heard of Featherstone algorithm. What is it and how is it related to Lagrangian dynamics?
+
+%%\item I heard of Featherstone algorithm. What is it and how is it related to Lagrangian dynamics?
 \end{itemize}
+
+
 
 \newpage
 \section{Lagrangian Dynamics}
 \label{sec:lagrangian}
 Articulated human motions can be described by a set of dynamic
-equations of motion of multibody systems. Since the direct
-application of Newton's second law becomes difficult when a
-complex human skeleton is considered, we use \emph{Lagrange's
-equations} derived from \emph{D'Alembert's principle} to describe
-the dynamic of the motions. The entire human skeleton is consist
-of a collection of particles $\{\vGlobalPoint_1, \vGlobalPoint_2,
-\ldots, \vGlobalPoint_{\sNumParticle}\}$.  Each particle,
-$\vGlobalPoint_i$, is defined by Cartesian coordinates that
-describe the translation with respective to the world coordinates.
-We can represent $\vGlobalPoint_i$ by a set of \emph{generalized
-coordinates} that indicate the joint configuration of the human
-skeleton:
+equations of motion of multibody systems. Since the direct application
+of Newton's second law becomes difficult when a complex human skeleton
+is considered, we use \emph{Lagrange's equations} derived from
+\emph{D'Alembert's principle} to describe the dynamic of the
+motions. To simplify the math, let's temporarily imagine the entire
+human skeleton is consist of a collection of particles
+$\{\vGlobalPoint_1, \vGlobalPoint_2, \ldots,
+\vGlobalPoint_{\sNumParticle}\}$.  Each particle, $\vGlobalPoint_i$,
+is defined by Cartesian coordinates that describe the translation with
+respective to the world coordinates.  We can represent
+$\vGlobalPoint_i$ by a set of \emph{generalized coordinates} that
+indicate the joint configuration of the human skeleton:
 
 \begin{equation}\label{eq:general_coord}
     \vGlobalPoint_i = \vGlobalPoint_i(\sJoint_{1},
 \sJoint_{2}, \ldots, \sJoint_{\sNumJoint}, t)
 \end{equation}
-where $t$ is the time and $\sJoint_j$ is a joint angle value in
+where $t$ is the time and $\sJoint_j$ is a joint degree of freedom (DOF) in
 the skeleton.
 
 The virtual displacement $\delta \vGlobalPoint_i$ refers to an
@@ -192,16 +224,22 @@ simulation. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
 sequence, we can use these equations of motion to derive generalized
 forces for inverse dynamics. 
 
-The above formulation is convenient for a system consisting of finite number of mass points. However, for a dynamic system that consists of rigid bodies, there are infinitely many points contained in each rigid body making the above formulation intractable. The rigid body relation between the infinitely many points in a rigid body can be exploited to make the equations compact. In the following sections, we derive the equations of motions for a rigid body followed by the equations for an articulated multibody system.
+The above formulation is convenient for a system consisting of finite
+number of mass points. However, for a dynamic system that consists of
+rigid bodies, there are infinitely many points contained in each rigid
+body making the above formulation intractable. In the following two
+sections, we view a rigid body as a continuum and derive compact
+equations of motions in both Cartesian coordinates and generalized
+coordinates.
 
 \newpage
 \section{Rigid Body Dynamics: Newton-Euler equations}
-We describe the familiar Newton-Euler equations of rigid body dynamics. We start writing down the
-momenta of the rigid body whose mass, position of the center
-of mass (COM), orientation,
-linear velocity of the COM, and angular velocity are $m$, $\vc{x}$, $R$,
-$\vc{v}$, and $\bm{\omega}$ respectively (same as defined in Witkin and
-Baraff's course notes). The linear momentum \vc{p} is computed as:
+This section describes the familiar Newton-Euler equations of rigid
+body dynamics. We begin with the momenta of the rigid body whose mass,
+position of the center of mass (COM), orientation, linear velocity of
+the COM, and angular velocity are $m$, $\vc{x}$, $R$, $\vc{v}$, and
+$\bm{\omega}$ respectively (same as defined in Witkin and Baraff's
+course notes). The linear momentum \vc{p} is computed as:
 \begin{eqnarray}
 \vc{p} &=& \sum_i \vc{p}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
     \times \vc{r}_i') \nonumber \\
@@ -216,7 +254,7 @@ where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
 & = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
 &= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
 \end{eqnarray}
-The notation $[\vc{a}] \vc{b}$ denotes the cross product $\vc{a}\times \vc{b}$ with $[\vc{a}]$ as the skew-symmetric matrix corresponding to the vector $\vc{a}$:
+The notation $[\vc{a}] \vc{b}$ denotes the cross product $\vc{a}\times \vc{b}$ with $[\vc{a}]$ being the skew-symmetric matrix corresponding to the vector $\vc{a}$:
 \begin{equation}
 [\vc{a}] = 
 \begin{pmatrix}
@@ -256,7 +294,8 @@ The equations corresponding to the torque can be evaluated as:
 & = & I_c\dot{\bm{\omega}} + [\bm{\omega}]I_c \bm{\omega} - I_c[\bm{\omega}]\bm{\omega} = I_c\dot{\bm{\omega}} + \bm{\omega} \times I_c \bm{\omega}
 \end{eqnarray}
 
-Combining \eqnref{force} and \eqnref{torque}, we get:
+Combining \eqnref{force} and \eqnref{torque}, we arrive at the
+Newton-Euler equations:
 \begin{equation}
 \label{eq:newtoneuler}
 \left(
@@ -290,7 +329,7 @@ m\vc{I}_3 & \vc{0} \\
 \label{sec:rigidbodydyngen}
 The Newton-Euler equations are defined in terms of velocities instead of position and orientation. We now derive the equations in generalized coordinates \vc{q} that define the position and orientation. The first three coordinates are the same as the position of COM. The next three represent the rotation of the rigid body such as an exponential map or three Euler angles (or four coordinates can be used for a quaternion).
 
-We first start by computing the kinetic energy of the rigid body:
+We start by computing the kinetic energy of the rigid body:
 \begin{eqnarray}
 \label{eq:rigid_kinetic}
 T &=& \sum_i T_i = \sum_i \frac{1}{2}  \sInfMass \dot{\vGlobalPoint}_i^{T}
@@ -519,7 +558,7 @@ Writing the equations for all the $q_j$ in the vector form, we get:
 \end{eqnarray}
 
 
-\subsection{Derivation using Newton-Euler equations}
+\paragraph{Derivation using Newton-Euler equations.}
 We can alternatively derive the result in \eqnref{dyngen_vec} from the Newton-Euler equations in \eqnref{newtoneuler}. Using \eqnref{velcartall}, we substitute the Cartesian velocities $\vc{v},\bm{\omega}$ in terms of the generalized velocities $\dot{\vc{q}}$ into \eqnref{newtoneuler} and get:
 \begin{eqnarray}
 \nonumber
