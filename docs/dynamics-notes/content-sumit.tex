@@ -1,15 +1,15 @@
 \section{Introduction}
 If you have not read the excellent SIGGRAPH course notes on
-physics-based animation by Baraff and Witkin, you can stop reading
+physics-based animation by Witkin and Baraff, you can stop reading
 further right now. Go look for those notes at
-http://www.cs.cmu.edu/~baraff/sigcourse/ and come back when
+{\tt http://www.cs.cmu.edu/\textasciitilde baraff/sigcourse/} and come back when
 you fully understand everything in the notes.
 
 If you are still reading this document, you probably fit the following
 profile. You are a computer scientist with no mechanical engineering
 background and minimal training in physics in high school but you are
 seriously interested in physics-based character animation. You have
-read Baraff and Witkin's SIGGRAPH course notes a few times but don't
+read Witkin and Baraff's SIGGRAPH course notes a few times but don't
 know where to go from simulating rigid bodies to human figures. You
 have played with some commercial physics engines like ODE (Open
 Dynamic Engine), PhysX, Havok, or Bullet, but you wish to
@@ -431,16 +431,16 @@ The second term in the above equation involves the computation of $\dot{J}$ that
 \begin{eqnarray}
 \label{eq:term3}
 \nonumber
-(J)_j^T \dot{M}_c J \dot{\vc{q}} & = & (J_w)_j^T \dot{I}_c J_w \dot{\vc{q}} \mbox{\ \ (The linear term in $M_c$ is constant: see \eqnref{kinetic_vec})}\\
+(J)_j^T \dot{M}_c J \dot{\vc{q}} & = & (J_\omega)_j^T \dot{I}_c J_\omega \dot{\vc{q}} \mbox{\ \ (The linear term in $M_c$ is constant: see \eqnref{kinetic_vec})}\\
 \nonumber
-& = & \vc{j}_j^T\dot{(RI_0 R^T)}\bm{\omega} \mbox{\ \ ($\vc{j}_j$ represents the $j^{th}$ column of $J_w$: see \eqnref{Jaccolj})} \\
+& = & \vc{j}_j^T\dot{(RI_0 R^T)}\bm{\omega} \mbox{\ \ ($\vc{j}_j$ represents the $j^{th}$ column of $J_\omega$: see \eqnref{Jaccolj})} \\
 \mbox{term 3} & = & \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega}  \mbox{\ \ (From \eqnref{torque})}
 \end{eqnarray}
 The fourth term in \eqnref{lageqn_j} can be simplified as:
 \begin{eqnarray}
 \label{eq:term4}
 \nonumber
-\frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} & = & \frac{1}{2} (J_w \dot{\vc{q}})^T \frac{\partial I_c}{\partial q_j} J_w \dot{\vc{q}}\\
+\frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} & = & \frac{1}{2} (J_\omega \dot{\vc{q}})^T \frac{\partial I_c}{\partial q_j} J_\omega \dot{\vc{q}}\\
 \nonumber
 & = & \frac{1}{2} \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}I_0R^T + RI_0\frac{\partial R^T}{\partial q_j} \right )  \bm{\omega} = \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}I_0R^T \right ) \bm{\omega} \\
 \nonumber
@@ -566,7 +566,7 @@ M_c (\dot{J\dot{\vc{q}}}) +
 \left ( 
 \begin{array}{c}
 \vc{0} \\
-(J_w \dot{\vc{q}}) \times I_c J_w \dot{\vc{q}}
+(J_\omega \dot{\vc{q}}) \times I_c J_\omega \dot{\vc{q}}
 \end{array}
 \right )
 & = &
