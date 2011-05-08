@@ -162,6 +162,13 @@ namespace model3d {
     for(int i=0; i<nNodes; i++)
       mNodes.at(i)->update(mCurrState);
   }
-
+  void Skeleton::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default) 
+  {
+		mRoot->draw(RI, _color, _default);
+  }
+  void Skeleton::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
+  {
+		mRoot->drawHandles(RI, _color, _default);
+  }
   
 } // namespace model3d

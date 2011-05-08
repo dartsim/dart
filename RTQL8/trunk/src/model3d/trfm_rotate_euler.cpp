@@ -16,8 +16,11 @@ TrfmRotateEulerX::TrfmRotateEulerX(Dof *q, char *_name){
     strcpy(mName, "EulerX");
 }
 
-void TrfmRotateEulerX::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmRotateEulerX::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+#else
   glRotatef(mDofs[0]->getValue()*180/M_PI, 1.0, 0.0, 0.0);
 #endif
 }
@@ -83,8 +86,11 @@ TrfmRotateEulerY::TrfmRotateEulerY(Dof *q, char *_name){
     strcpy(mName, "EulerY");
 }
 
-void TrfmRotateEulerY::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmRotateEulerY::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+#else
   glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
 #endif
 }
@@ -150,8 +156,11 @@ TrfmRotateEulerZ::TrfmRotateEulerZ(Dof *q, char* _name){
     strcpy(mName, "EulerZ");
 }
 
-void TrfmRotateEulerZ::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmRotateEulerZ::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
+#else
   glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
 #endif
 }

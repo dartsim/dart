@@ -92,10 +92,25 @@ if (WIN32)
   TARGET_LINK_LIBRARIES(unittests debug gtest_maind optimized gtest_main)
 endif()
 
-# FIND_PACKAGE(wxWidgets REQUIRED base core gl)
-# INCLUDE(${wxWidgets_USE_FILE})
-# TARGET_LINK_LIBRARIES(painter ${wxWidgets_LIBRARIES})
+###############################################
+# YUI
+PROJECT(YUI)
+# Search all header and source files
+FILE(GLOB YUI_srcs "src/YUI/*.cpp")
+FILE(GLOB YUI_hdrs "src/YUI/*.h")
+# Library 
+ADD_LIBRARY(YUI ${YUI_srcs} ${YUI_hdrs})
+SET_TARGET_PROPERTIES(YUI PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
+###############################################
+# renderer
+PROJECT(renderer)
+# Search all header and source files
+FILE(GLOB renderer_srcs "src/renderer/*.cpp")
+FILE(GLOB renderer_hdrs "src/renderer/*.h")
+# Library 
+ADD_LIBRARY(renderer ${renderer_srcs} ${renderer_hdrs})
+SET_TARGET_PROPERTIES(renderer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
 
 ###############################################

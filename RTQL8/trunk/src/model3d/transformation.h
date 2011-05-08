@@ -7,6 +7,7 @@ using namespace Eigen;
 #include <vector>
 using namespace std;
 #include "utils/misc.h" // For M_PI
+#include "OpenGLRenderInterface.h"
 
 namespace model3d {
 #define MAX_TRANSFORMATION_NAME 182
@@ -70,7 +71,7 @@ namespace model3d {
     virtual void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
     virtual void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
 
-    virtual void applyGLTransform() = 0;	// apply transform in GL
+	virtual void applyGLTransform(Renderer::OpenGLRenderInterface* RI) = 0;	// apply transform in GL
     virtual void evalTransform() = 0;	// computes and stores in above
     virtual Matrix4d getDeriv(Dof *q) = 0;	// get derivative wrt to a dof
     virtual Matrix4d getDeriv2(Dof *q1, Dof *q2) = 0;	// get derivative wrt to 2 dofs present in a transformation

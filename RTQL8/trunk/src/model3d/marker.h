@@ -31,9 +31,9 @@ namespace model3d {
   public:
     Marker(char*, Vector3d& , BodyNode*, ConstraintType _type = NO);
     ~Marker();
-	/*
-    void draw(bool _offset = true, Vector4d _color = Vector4d::Identity(), bool _default = true);
-	*/
+
+    void draw(Renderer::OpenGLRenderInterface* RI, bool _offset = true, const Vector4d& _color = Vector4d::Identity(), bool _default = true);
+
     /* VectorXd getWorldCoords(){return mNode->evalWorldPos(mOffset);} */
     VectorXd getWorldCoords();
 	

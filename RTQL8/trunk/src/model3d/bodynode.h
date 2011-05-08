@@ -9,6 +9,8 @@ using namespace Eigen;
 #include "primitive.h"
 #include "joint.h"
 #include "marker.h"
+#include "OpenGLRenderInterface.h"
+
 
 namespace model3d {
 #define MAX_NODE3D_NAME 128
@@ -58,8 +60,8 @@ namespace model3d {
     MatrixXd getWorldInvTransform() { return W.inverse(); }
     MatrixXd getLocalInvTransform() { return T.inverse(); }
 	
-    void draw(Vector4d& _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
-    void drawHandles(Vector4d& _color, bool _default);	// render the handles
+	void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
+    void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default);	// render the handles
 
     char* getName() { return mName; }
     Vector3d getOffset() { return Vector3d(mOffset[0],mOffset[1],mOffset[2]); }
@@ -130,6 +132,10 @@ namespace model3d {
     double mMass;
     VectorXd mOffset;
     Skeleton* mModel;
+
+ private:
+	int mID;
+	static int msBodyNodeCount;
 
   };
 
