@@ -18,10 +18,14 @@ TrfmTranslate::TrfmTranslate(Dof *x, Dof *y, Dof *z, char* _name){
     strcpy(mName, "Translate");
 }
 
-void TrfmTranslate::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmTranslate::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
+#else
   glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 #endif
+
 }
 
 void TrfmTranslate::evalTransform(){
@@ -100,8 +104,11 @@ TrfmTranslateX::TrfmTranslateX(Dof *x, char *_name){
     strcpy(mName, "TranslateX");
 }
 
-void TrfmTranslateX::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmTranslateX::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
+#else
   glTranslatef(mDofs[0]->getValue(), 0, 0);
 #endif
 }
@@ -173,8 +180,11 @@ TrfmTranslateY::TrfmTranslateY(Dof *y, char *_name){
     strcpy(mName, "TranslateY");
 }
 
-void TrfmTranslateY::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmTranslateY::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
+#else
   glTranslatef(0, mDofs[0]->getValue(), 0);
 #endif
 }
@@ -247,8 +257,11 @@ TrfmTranslateZ::TrfmTranslateZ(Dof *z, char *_name){
     strcpy(mName, "TranslateZ");
 }
 
-void TrfmTranslateZ::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmTranslateZ::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
+#ifdef _RENDERER_TEST
+	if (RI)
+		RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
+#else
   glTranslatef(0, 0, mDofs[0]->getValue());
 #endif
 }

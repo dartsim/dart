@@ -9,10 +9,18 @@
 #include "utils/eigen_helper.h"
 
 #include "bodynode.h"
+#ifdef _RENDERER_TEST
+#include "OpenGLRenderInterface.h"
+#else
+#include <gl/glut.h>
+#endif
 
 extern VectorXd gravity;
 
+
+
 namespace model3d {
+  int BodyNode::msBodyNodeCount = 0;
   
   BodyNode::BodyNode(char *_name) {
     mJointOut.clear();
@@ -21,7 +29,7 @@ namespace model3d {
     mJointIn = NULL;
     mNodeIn = NULL;
     mPrimitive = NULL;
-
+	mID = BodyNode::msBodyNodeCount++;
     mModelIndex = -1;
 
     if(_name == NULL) {
@@ -319,7 +327,7 @@ namespace model3d {
 
   VectorXd BodyNode::evaldGdq()
   {
-    // return mMass*(gravity*mJC);
+     return mMass*(gravity*mJC);
   }
 
 
@@ -411,6 +419,79 @@ namespace model3d {
       }
     }
 
+  }
+
+  void BodyNode::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth)
+  {
+#ifdef _RENDERER_TEST
+	  if (!RI) return;
+	  RI->PushMatrix();
+	  // render the self geometry
+	  for(int i=0; i<mJointIn->getNumTransforms(); i++){
+		  mJointIn->getTransform(i)->applyGLTransform(RI);
+	  }
+	  if(mPrimitive != NULL) {
+		  RI->PushName((unsigned)mID);
+		  mPrimitive->draw(RI, _color, _default);
+		  RI->PopName();
+	  }
+
+	  // render the subtree
+	  for(int i=0; i<mJointOut.size(); i++){
+		  mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
+	  }
+	  RI->PopMatrix();
+#else
+	  glPushMatrix();
+	  // render the self geometry
+	  for(int i=0; i<mJointIn->getNumTransforms(); i++){
+		  mJointIn->getTransform(i)->applyGLTransform(RI);
+	  }
+	  if(mPrimitive != NULL) {
+		  glPushName((unsigned)mID);
+		  mPrimitive->draw(RI, _color, _default);
+		  glPopName();
+	  }
+
+	  // render the subtree
+	  for(int i=0; i<mJointOut.size(); i++){
+		  mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
+	  }
+	  glPopMatrix();
+#endif
+  }
+  void BodyNode::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
+  {
+#ifdef _RENDERER_TEST
+	  if (!RI) return;
+	  RI->PushMatrix();
+	  for(int i=0; i<mJointIn->getNumTransforms(); i++){
+		  mJointIn->getTransform(i)->applyGLTransform(RI);
+	  }
+
+	  // render the corresponding mHandless
+	  for(int i=0; i<mHandles.size(); i++){
+		  mHandles[i]->draw(RI, false, _color, _default);
+	  }
+	  for(int i=0; i<mJointOut.size(); i++){
+		  mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
+	  }
+	  RI->PopMatrix();
+#else
+	  glPushMatrix();
+	  for(int i=0; i<mJointIn->getNumTransforms(); i++){
+		  mJointIn->getTransform(i)->applyGLTransform(RI);
+	  }
+
+	  // render the corresponding mHandless
+	  for(int i=0; i<mHandles.size(); i++){
+		  mHandles[i]->draw(RI, false, _color, _default);
+	  }
+	  for(int i=0; i<mJointOut.size(); i++){
+		  mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
+	  }
+	  glPopMatrix();
+#endif
   }
 
 } // namespace model3d

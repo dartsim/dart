@@ -5,6 +5,7 @@
 using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
+#include "OpenGLRenderInterface.h"
 
 namespace model3d {
 
@@ -50,8 +51,8 @@ namespace model3d {
     void setState(VectorXd&);
     void setState(vector<double>&);
 
-    inline void draw(Vector4d _color, bool _default = true) ;
-    inline void drawHandles(Vector4d _color, bool _default = true );
+    inline void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true) ;
+    inline void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true );
 	
     inline void setPose(VectorXd& _pose);
     inline void setPose(vector<double>& _pose);

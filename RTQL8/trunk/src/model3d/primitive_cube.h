@@ -8,8 +8,8 @@ namespace model3d {
   class PrimitiveCube : public Primitive {
   public:
     PrimitiveCube(Vector3d _dim, double _mass);
-
-    void draw(Vector4d& _col, bool _default = true);
+	
+    virtual void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _col, bool _default = true);
   private:
     void calMassTensor();
     void calVolume();

@@ -9,7 +9,7 @@ namespace model3d {
   public:
     TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
 	
-    void applyGLTransform();
+    void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
     void evalTransform();
     Matrix4d getDeriv(Dof *);
     Matrix4d getDeriv2(Dof *, Dof *);

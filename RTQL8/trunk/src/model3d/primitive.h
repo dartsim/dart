@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 using namespace Eigen;
+#include "OpenGLRenderInterface.h"
 
 namespace model3d {
   class Transformation;
@@ -47,6 +48,14 @@ namespace model3d {
     double getVolume() { return mVolume; }
 	
     int getID() { return mID; }
+
+	virtual void draw(Renderer::OpenGLRenderInterface* RI){
+		draw(RI, Vector4d(1,0,0,0), true);
+	}
+	virtual void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
+	{
+		//implemented in the derived class.
+	}
 
   protected:
     void setMassTensorFromInertia();

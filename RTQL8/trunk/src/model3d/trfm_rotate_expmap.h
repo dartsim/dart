@@ -15,7 +15,7 @@ namespace model3d {
 
     Matrix4d getInvTransform();
 
-    void applyGLTransform();
+    void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
     void evalTransform();
     Matrix4d getDeriv(Dof *);
     Matrix4d getDeriv2(Dof *q1, Dof *q2);

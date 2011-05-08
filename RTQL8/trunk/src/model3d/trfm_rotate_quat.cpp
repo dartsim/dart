@@ -81,8 +81,8 @@ Matrix4d TrfmRotateQuat::getDeriv2(Dof *d1, Dof *d2){
   return ret;
 }
 
-void TrfmRotateQuat::applyGLTransform(){
-#ifdef ENABLE_OPENGL_RENDERER
+void TrfmRotateQuat::applyGLTransform(Renderer::OpenGLRenderInterface* RI)
+{
 #if 0	
   Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
   q.normalize();
@@ -96,8 +96,14 @@ void TrfmRotateQuat::applyGLTransform(){
   Vector3d a = angleAxis.axis();
   double theta = angleAxis.angle();
   if(a.dot(a)>EPSILON*EPSILON && theta>EPSILON)
-    glRotatef(theta*180/M_PI, a(0), a(1), a(2));
+  {
+#ifdef _RENDERER_TEST
+	  if (RI)
+		  RI->Rotate(a, theta*180/M_PI);
+#else
+	  glRotatef(theta*180/M_PI, a(0), a(1), a(2));
 #endif
+  }
 #endif
 }
 } // namespace model3d
