@@ -2,8 +2,8 @@
 #include <iostream>
 using namespace std;
 // Google Libraries
-//#include <glog/logging.h>
-//using namespace google;
+#include <glog/logging.h>
+using namespace google;
 
 namespace utils {
   using namespace boost::posix_time;
@@ -59,17 +59,17 @@ namespace utils {
   }
 
   void Timer::print() {
-    //if(mCount>0) {
-    //  VLOG(1) << "Timer [" << mName << "] : "
-    //          << "Last = " << mLastElapsed << " "
-    //          << "Total " << " "
-    //          << mTotal << " " << mCount << "; "
-    //          << "Average: " << mTotal / mCount << " "
-    //          << "FPS : " << mCount / mTotal << "hz ";
-    //   
-    //} else {
-    //  VLOG(1) << "Timer " << mName << " doesn't have any record." << endl;
-    //}
+    if(mCount>0) {
+      VLOG(1) << "Timer [" << mName << "] : "
+              << "Last = " << mLastElapsed << " "
+              << "Total " << " "
+              << mTotal << " " << mCount << "; "
+              << "Average: " << mTotal / mCount << " "
+              << "FPS : " << mCount / mTotal << "hz ";
+       
+    } else {
+      VLOG(1) << "Timer " << mName << " doesn't have any record." << endl;
+    }
   }
 
   scoped_timer::scoped_timer(Timer* _timer)
