@@ -1,6 +1,10 @@
 #include "Trackball.h"
+#if WIN32
 #include <GL/glut.h>
-
+#elif UNIX
+#elif APPLE
+#include <Glut/glut.h>
+#endif
 
 using namespace Eigen;
 

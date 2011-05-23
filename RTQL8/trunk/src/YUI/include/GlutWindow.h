@@ -1,7 +1,12 @@
 #ifndef _GLUTWINDOW_
 #define _GLUTWINDOW_
 
+#if WIN32
 #include <GL/glut.h>
+#elif UNIX
+#elif APPLE
+#include <Glut/glut.h>
+#endif
 #include <vector>
 
 class GlutWindow

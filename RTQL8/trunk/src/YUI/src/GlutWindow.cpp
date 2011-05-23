@@ -1,5 +1,8 @@
+#if !WIN32
+#include <dirent.h>
+#endif
+
 #include <iostream>
-//#include <dirent.h>
 #include "GlutWindow.h"
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
@@ -93,16 +96,17 @@ bool GlutWindow::screenshot()
 {
 	static int count=0;
 	char fileBase[32]="capture/";
-	
+
+#if !WIN32
 	// test open the directory
-	//DIR* dp = opendir(fileBase);
-	//// create the directory if it doesn't exist
-	//if( dp == NULL ){
-	//	char cmd[256];
-	//	sprintf(cmd, "mkdir %s", fileBase);
-	//	system(cmd);
-	//}else closedir(dp);
-	
+	DIR* dp = opendir(fileBase);
+	// create the directory if it doesn't exist
+	if( dp == NULL ){
+		char cmd[256];
+		sprintf(cmd, "mkdir %s", fileBase);
+		system(cmd);
+	}else closedir(dp);
+#endif	
 	char fname[64];
 	sprintf(fname, "%s%.4d.tga", fileBase, count++); 
 
