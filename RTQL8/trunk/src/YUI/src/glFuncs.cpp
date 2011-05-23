@@ -1,10 +1,16 @@
+#if WIN32
 #include <gl/glut.h>
+#elif UNIX
+#elif APPLE
+#include <Glut/glut.h>
+#endif
+
 #include <string>
 #include <Eigen/Eigen>
 
 using namespace Eigen;
 
-void drawStringOnScreen(float x, float y, std::string s)
+void drawStringOnScreen(float x, float y, const std::string& s)
 { // draws text on the screen
 	GLint oldMode;
 	glGetIntegerv(GL_MATRIX_MODE, &oldMode);
@@ -27,7 +33,7 @@ void drawStringOnScreen(float x, float y, std::string s)
 	glMatrixMode(oldMode);
 }
 
-void drawArrow(const Vector3d& pt, const Vector3d& dir, const double length, const double thickness, const double arrowThickness){
+void drawArrow3D(const Vector3d& pt, const Vector3d& dir, const double length, const double thickness, const double arrowThickness){
 	Vector3d normDir = dir;
 	normDir.normalize();
 
@@ -55,4 +61,8 @@ void drawArrow(const Vector3d& pt, const Vector3d& dir, const double length, con
 	glPopMatrix();
 
 	gluDeleteQuadric(c);
+}
+
+void drawArrow2D()
+{
 }

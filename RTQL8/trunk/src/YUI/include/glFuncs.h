@@ -3,7 +3,8 @@
 
 #include <Eigen/Eigen>
 
-void drawStringOnScreen(float x, float y, std::string s);
-void drawArrow(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
+void drawStringOnScreen(float x, float y, const std::string& s);
+void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
+void drawArrow2D();
 
 #endif

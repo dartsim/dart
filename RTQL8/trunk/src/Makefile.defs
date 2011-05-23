@@ -1,0 +1,24 @@
+OPENGL = /System/Library/Frameworks/OpenGL.framework/Versions/A/Headers
+GLUT = /System/Library/Frameworks/GLUT.framework/Versions/A/Headers
+GLDLIBS	= -framework AGL -framework OpenGL -framework GLUT -lpthread -framework Carbon -framework Cocoa -framework ApplicationServices
+CPP = /usr/bin/g++-4.2
+CPPFLAGS_DEBUG= -g -DDEBUG -Wall -Wno-sign-compare
+CPPFLAGS_RELEASE= -O3 -Wall -Wno-sign-compare
+LDFLAGS = -Wl -dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib
+AR = ar
+RANLIB = ranlib
+MAKE = make
+CP = cp
+
+BIN_DIR = ./bin
+LIB_DIR = ./lib
+RELEASE_DIR = ./release
+DEBUG_DIR = ./debug
+SRC = src
+RF = $(RELEASE_DIR)/$(*F)
+DF = $(DEBUG_DIR)/$(*F)
+
+YUI = ../YUI
+EIGEN = /Users/Tingting/Software/Eigen3
+TICPP = /Users/Tingting/Software/ticpp
+BOOST = /Users/Tingting/Software/boost_1_43_0

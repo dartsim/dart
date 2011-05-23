@@ -30,15 +30,15 @@ all: release debug
 default: release
 
 release : $(RELEASE_OBJS)
-	$(CPP) $(CPPFLAGS_RELEASE) -DMACOSX -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 
 debug : $(DEBUG_OBJS)
-	$(CPP) $(CPPFLAGS_DEBUG) -DMACOSX -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DMACOSX $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -46,7 +46,7 @@ debug : $(DEBUG_OBJS)
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DMACOSX $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \
