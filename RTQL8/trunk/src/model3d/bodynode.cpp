@@ -15,7 +15,7 @@
 #include <gl/glut.h>
 #endif
 
-extern VectorXd gravity;
+extern Vector3d gravity;
 
 
 
@@ -208,7 +208,6 @@ namespace model3d {
     VectorXd ret = VectorXd::Zero(mSkel->getNumDofs());
     ret = mK2Qd * last(state,mSkel->getNumDofs()) - mMass * gravity * mJC;
     return ret;
-
   }
 
   VectorXd BodyNode::evalWorldPos(VectorXd& lp) {

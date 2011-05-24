@@ -743,7 +743,7 @@ void Tokenize(const string& inputStr, vector<string>& tokens)
 }
 
 
-Vector3d adjustPos(Vector3d _pos)
+Vector3d adjustPos(const Vector3d& _pos)
 {
   // rearrange the coordinates
   Vector3d pos2 =_pos;
@@ -754,7 +754,7 @@ Vector3d adjustPos(Vector3d _pos)
   return pos2;
 }
 
-Quaterniond ExpToQuat(Vector3d v) {
+Quaterniond ExpToQuat(const Vector3d& v) {
   double mag = v.norm();
   if(mag > 1e-10){
     Quaterniond q(mag, v[0]/mag, v[1]/mag, v[2]/mag);

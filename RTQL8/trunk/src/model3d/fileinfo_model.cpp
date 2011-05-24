@@ -17,7 +17,7 @@
 
 using namespace std;
 
-int readSkelFile( const char* filename, model3d::Skeleton* skel );
+int readSkelFile( const char* const filename, model3d::Skeleton* skel );
 
 namespace model3d{
 

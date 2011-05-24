@@ -75,9 +75,9 @@ namespace model3d {
 
     for(int i=0; i<nDofs; i++)
       mCurrState[i] = mDofs.at(i)->getValue();
-    for(int i=0; i<nNodes; i++)
-      mNodes.at(i)->update(mCurrState);
-  }
+   // for(int i=0; i<nNodes; i++)
+   //   mNodes.at(i)->update(mCurrState);
+ }
 
   void Skeleton::setDependDofMap(BodyNode* b){
     // init the map
