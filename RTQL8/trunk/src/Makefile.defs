@@ -22,3 +22,4 @@ YUI = ../YUI
 EIGEN = /Users/Tingting/Software/Eigen3
 TICPP = /Users/Tingting/Software/ticpp
 BOOST = /Users/Tingting/Software/boost_1_43_0
+GLOG = /Users/Tingting/Software/glog-0.3.1
