@@ -19,11 +19,11 @@ OBJS = \
 	skeleton.o \
 	c3d.o \
 	fileinfo_c3d.o \
+	fileinfo_dof.o \
 	parser_model.o \
 	skel_scanner.o \
 	fileinfo_model.o \
 	$(NULL)
-#fileinfo_dof.o \
 #parser_vsk.o \
 
 IDIRS = -I. -I.. -I$(EIGEN) -I$(EIGEN)/Eigen -I/usr/include/malloc -I$(TICPP) -I$(BOOST) -I../renderer -I../utils
