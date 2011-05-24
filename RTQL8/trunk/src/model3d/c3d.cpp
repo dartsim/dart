@@ -35,7 +35,7 @@ namespace model3d {
   }
 
 
-  bool LoadC3DFile( const char *fileName, std::vector< std::vector<Vector3d> > & mPointData, int *nFrame, int *nMarker, double *freq )
+  bool loadC3DFile( const char *fileName, std::vector< std::vector<Vector3d> > & mPointData, int *nFrame, int *nMarker, double *freq )
   {
     char buf[C3D_REC_SIZE];
     FILE *file;
@@ -105,17 +105,27 @@ namespace model3d {
         if (mC3DScale < 0)
         {
           memcpy(&frame, buf, sizeof(frame));
-          v[0] = frame.y / 1000.0;
-          v[1] = frame.z / 1000.0;
-          v[2] = frame.x / 1000.0;
-        }
-        else
+	  if(bDecFmt){
+		  frame.y = ConvertDecToFloat((char*)&frame.y);
+		  frame.z = ConvertDecToFloat((char*)&frame.z);
+		  frame.x = ConvertDecToFloat((char*)&frame.x);
+	  }
+	  v[0] = frame.y / 1000.0;
+	  v[1] = frame.z / 1000.0;
+	  v[2] = frame.x / 1000.0;
+	}
+	else
         {
           memcpy(&frameSI, buf, sizeof(frameSI));
-          v[0] = (float)frameSI.y * pntScale / 1000.0;
-          v[1] = (float)frameSI.z * pntScale / 1000.0;
-          v[2] = (float)frameSI.x * pntScale / 1000.0;
-        }
+	  if(bDecFmt){
+		  frameSI.y = ConvertDecToFloat((char*)&frameSI.y);
+		  frameSI.z = ConvertDecToFloat((char*)&frameSI.z);
+		  frameSI.x = ConvertDecToFloat((char*)&frameSI.x);
+	  }
+	  v[0] = (float)frameSI.y * pntScale / 1000.0;
+	  v[1] = (float)frameSI.z * pntScale / 1000.0;
+	  v[2] = (float)frameSI.x * pntScale / 1000.0;
+	}
         mPointData[i][j] = v;
       }
     }
@@ -127,10 +137,10 @@ namespace model3d {
     return true;
   }
 
-  bool SaveC3DFile(const char *fileName, std::vector< std::vector<Vector3d> >& mPointData, int nFrame, int nMarker, double freq)
+  bool saveC3DFile(const char *fileName, std::vector< std::vector<Vector3d> >& mPointData, int nFrame, int nMarker, double freq)
   {
     FILE* file; 
-    int i, j, offset;
+    int i, j;
     Vector3d v;
     c3d_head hdr;
     c3d_param parm;

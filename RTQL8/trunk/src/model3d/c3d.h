@@ -51,7 +51,7 @@ namespace model3d {
 
   bool loadC3DFile( const char *fileName, vector< vector<Vector3d> >& mPointData,
                       int *nFrame, int *nMarker, double *freq );
-  bool SaveC3dFile( const char* fileName, vector< vector<Vector3d> >& mPointData,
+  bool saveC3DFile( const char* fileName, vector< vector<Vector3d> >& mPointData,
                       int nFrame, int nMarker, double freq ); 
 
   double maxElem(vector<double>& arr, int& index);

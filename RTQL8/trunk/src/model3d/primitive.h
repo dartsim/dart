@@ -66,18 +66,19 @@ namespace model3d {
     virtual void calCOM() {}
 
     Vector3d mDim; // dimensions for bounding box
-    Matrix3d mInertia;	// inertia
-    Matrix4d mMassTensor; // mass tensor for lagrangian dynamics
     double mMass;	// mass
     double mVolume; // volume
 
+    Matrix3d mInertia;	// inertia
+    Matrix4d mMassTensor; // mass tensor for lagrangian dynamics
+    
     Vector3d mCOM;	// COM in local coordinate; default (0,0,0)
     Vector3d mWorldPos; // local origin in world coordinate
     Vector3d mLinearVel;
     Vector3d mAngVel;
 	
-    Vector3d mColor;		// color for the primitive
     int mID; // unique id
+    Vector3d mColor;		// color for the primitive
 
     static int mCounter;
   };
