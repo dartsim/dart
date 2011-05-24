@@ -10,17 +10,27 @@ OBJS =  \
 	Main.o \
 	$(NULL)
 
-IDIRS = -I. -I$(EIGEN) -I$(YUI)/include
-LDIRS = -L$(YUI)/lib
+IDIRS = -I. -I$(EIGEN) -I$(YUI)/include -I../renderer -I../model3d -I$(TICPP)/include
+LDIRS = -L../../lib -L$(TICPP)/lib -L$(GLOG)/lib
 LIBS = \
 	$(NULL)
 
 RELEASE_LIBS = \
 	   -lYUI \
+	   -lRenderer \
+	   -lModel3D \
+	   -lUtils \
+	   -lticpp32 \
+	   -lglog \
 	   $(NULL)
 
 DEBUG_LIBS = \
 	   -lYUId \
+	   -lRendererd \
+	   -lModel3Dd \
+	   -lUtilsd \
+	   -lticpp32 \
+	   -lglog \
 	   $(NULL)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(patsubst %.cpp,%.o,$(f)))
