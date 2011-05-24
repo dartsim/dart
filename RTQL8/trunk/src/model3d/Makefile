@@ -22,9 +22,9 @@ OBJS = \
 	fileinfo_dof.o \
 	parser_model.o \
 	skel_scanner.o \
+	parser_vsk.o \
 	fileinfo_model.o \
 	$(NULL)
-#parser_vsk.o \
 
 IDIRS = -I. -I.. -I$(EIGEN) -I$(EIGEN)/Eigen -I/usr/include/malloc -I$(TICPP) -I$(BOOST) -I../renderer -I../utils
 
