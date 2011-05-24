@@ -51,7 +51,7 @@ namespace model3d {
     void setState(VectorXd&);
     void setState(vector<double>&);
 
-    inline void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true) ;
+    void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true) ;
     inline void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true );
 	
     inline void setPose(VectorXd& _pose);
