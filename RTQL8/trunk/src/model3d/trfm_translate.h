@@ -23,9 +23,9 @@ namespace model3d {
     void applyDeriv(Dof* q, Vector3d& v);
     void applyDeriv(Dof* q, Matrix4d& m);
 
-    Matrix4d getDeriv2(Dof *q1, Dof *q2);
-    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
-    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
+    Matrix4d getDeriv2(Dof *q1, Dof *q2){ return Matrix4d(); } // TODO::placeholder to run code
+//    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
+//    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
   };
 
   class TrfmTranslateX : public Transformation {
@@ -45,9 +45,9 @@ namespace model3d {
     void applyDeriv(Dof* q, Vector3d& v);
     void applyDeriv(Dof* q, Matrix4d& m);
 
-    Matrix4d getDeriv2(Dof *q1, Dof *q2);
-    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
-    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
+//    Matrix4d getDeriv2(Dof *q1, Dof *q2);
+//    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
+//    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
   };
 
   class TrfmTranslateY : public Transformation {
@@ -67,9 +67,9 @@ namespace model3d {
     void applyDeriv(Dof* q, Vector3d& v);
     void applyDeriv(Dof* q, Matrix4d& m);
 
-    Matrix4d getDeriv2(Dof *q1, Dof *q2);
-    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
-    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
+ //   Matrix4d getDeriv2(Dof *q1, Dof *q2);
+ //   void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
+ //   void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
   };
 
   class TrfmTranslateZ : public Transformation {
@@ -89,9 +89,9 @@ namespace model3d {
     void applyDeriv(Dof* q, Vector3d& v);
     void applyDeriv(Dof* q, Matrix4d& m);
 
-    Matrix4d getDeriv2(Dof *q1, Dof *q2);
-    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
-    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
+//    Matrix4d getDeriv2(Dof *q1, Dof *q2);
+//    void applyDeriv2(Dof* q1, Dof* q2, Vector3d& v);
+//    void applyDeriv2(Dof* q1, Dof* q2, Matrix4d& m);
   };
 } // namespace model3d
 
