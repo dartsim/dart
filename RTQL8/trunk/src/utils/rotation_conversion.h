@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 using namespace Eigen;
 // Local Headers
-#include "utils/misc.h"
+#include "misc.h"
 
 namespace utils {
   namespace rot_conv {
