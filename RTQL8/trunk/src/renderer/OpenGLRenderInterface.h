@@ -39,8 +39,8 @@ namespace Renderer
 	{
 
 	public:
-		OpenGLRenderInterface();
-		~OpenGLRenderInterface();
+		OpenGLRenderInterface(){}
+		~OpenGLRenderInterface(){}
 
 		void Initialize();
 		void Destroy();

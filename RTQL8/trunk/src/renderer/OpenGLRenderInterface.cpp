@@ -1,5 +1,10 @@
 #include "OpenGLRenderInterface.h"
+#if WIN32
 #include <GL/glut.h>
+#elif UNIX
+#elif APPLE
+#include <GLUT/Glut.h>
+#endif
 
 namespace Renderer
 {
