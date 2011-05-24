@@ -39,7 +39,7 @@ namespace model3d {
 	
 	
     Vector3d getLocalCoords(){return mOffset;}
-    Vector3d setLocalCoords(Vector3d& _offset){mOffset = _offset;}
+    void setLocalCoords(Vector3d& _offset){mOffset = _offset;}
     void setModelIndex(int _idx){mModelIndex=_idx;}
     int getModelIndex(){return mModelIndex;}
     int getID(){return mSphere.getID();}

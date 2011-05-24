@@ -81,7 +81,7 @@ namespace model3d {
     void setPrimitive(Primitive *_p) { mPrimitive = _p; }
 
     void addJointOut(Joint *_c) { mJointOut.push_back(_c); }
-    int getNumJoints() { mJointOut.size(); }
+    int getNumJoints() { return mJointOut.size(); }
     Joint* getJointOut(int i) { return mJointOut[i]; }
     Joint* getJointIn() { return mJointIn; }
     void setJointIn(Joint *_p) { mJointIn=_p; mNodeIn = _p->getNodeIn(); }

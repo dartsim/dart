@@ -10,9 +10,9 @@ typedef union {
   vec3d v3DValue;
   vec4d v4DValue;
   vec3v v3VValue;
-  Transformation* tValue;
-  Primitive* pValue;
-  Dof* dofValue;
+  model3d::Transformation* tValue;
+  model3d::Primitive* pValue;
+  model3d::Dof* dofValue;
 } yystype;
 
 # define YYSTYPE yystype
