@@ -1,17 +1,36 @@
 #ifndef SRC_MODEL3D_FILEINFO_MODEL_H
 #define SRC_MODEL3D_FILEINFO_MODEL_H
 
-#include "fileinfo_base.h"
+//#include "fileinfo_base.h"
+#include "skeleton.h"
+#include <fstream>
+#include <Eigen/Dense>
+
+class BodyNode;
 
 namespace model3d {
 
-  class FileInfoModel : public FileInfoBase {
+  class FileInfoModel /*: public FileInfoBase*/ {
+  public:
+  	enum FileType {
+		VSK,
+		SKEL
+	};
+  
   public:
     FileInfoModel();
     ~FileInfoModel();
 	
-    virtual void draw(int, bool _default = true);
-    virtual bool loadFile(const char* const);
+    void draw(Renderer::OpenGLRenderInterface* RI, const Eigen::Vector4d& color, bool _default = true); // whether to use the default color stored in Skeleton; color is used only when default = false
+    bool loadFile(const char* _filename, FileType _type);
+    bool saveFile(const char* _filename);
+
+  protected:
+    Skeleton* mSkel;
+    char mFileName[256]; // could use string instead
+
+   // used in saveFile to write the subtree of _b
+    void saveBodyNodeTree(BodyNode* _b, std::ofstream &_outfile, int _numLinks);
   };
 
 } // namespace model3d

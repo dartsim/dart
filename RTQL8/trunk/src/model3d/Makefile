@@ -4,26 +4,26 @@ RELEASE_LIB = $(LIB_DIR)/libModel3D.a
 DEBUG_LIB = $(LIB_DIR)/libModel3Dd.a
 
 OBJS = \
-	c3d.o \
-	fileinfo_c3d.o \
-	primitive_cube.o \
-	dof.o \
-	primitive_ellipsoid.o \
-	joint.o \
 	marker.o \
+	dof.o \
+	joint.o \
 	bodynode.o \
 	primitive.o \
+	primitive_cube.o \
+	primitive_ellipsoid.o \
+	transformation.o \
 	trfm_rotate_euler.o \
 	trfm_rotate_expmap.o \
 	trfm_rotate_quat.o \
+	trfm_translate.o \
 	skeleton.o \
+	c3d.o \
+	fileinfo_c3d.o \
 	parser_model.o \
 	skel_scanner.o \
-	transformation.o \
-	trfm_translate.o \
+	fileinfo_model.o \
 	$(NULL)
 #fileinfo_dof.o \
-#fileinfo_model.o \
 #parser_vsk.o \
 
 IDIRS = -I. -I.. -I$(EIGEN) -I$(EIGEN)/Eigen -I/usr/include/malloc -I$(TICPP) -I$(BOOST) -I../renderer -I../utils
