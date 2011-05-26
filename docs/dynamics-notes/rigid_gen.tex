@@ -1,0 +1,277 @@
+\section{Rigid Body Dynamics: Generalized coordinates}
+\label{sec:rigidbodydyngen}
+The Newton-Euler equations are defined in terms of velocities instead of position and orientation. We now derive the equations in generalized coordinates \vc{q} that define the position and orientation. The first three coordinates are the same as the position of COM. The next three represent the rotation of the rigid body such as an exponential map or three Euler angles (or four coordinates can be used for a quaternion).
+
+We start by computing the kinetic energy of the rigid body:
+\begin{eqnarray}
+\label{eq:rigid_kinetic}
+T &=& \sum_i T_i = \sum_i \frac{1}{2}  \sInfMass \dot{\vGlobalPoint}_i^{T}
+    \dot{\vGlobalPoint}_i = \sum_i \frac{1}{2}  \sInfMass (\vc{v} + \bm{\omega}
+    \times \vc{r}_i')^T (\vc{v} + \boldsymbol{\bm{\omega}}
+    \times \vc{r}_i') \nonumber \\
+ &=& \sum_i \frac{1}{2}  \sInfMass (\vc{v}^T\vc{v} +
+    \vc{v}^T [\bm{\omega}] \vc{r}_i' + \vc{r}_i'^T [\bm{\omega}]^T \vc{v} +
+    \vc{r}_i'^T [\bm{\omega}]^T [\bm{\omega}] \vc{r}_i')
+\end{eqnarray}
+Because $\sum_i \sInfMass
+\vc{r}_i' = \vc{0}$, the second term and the third term in \eqnref{rigid_kinetic} vanish. Using the identity $[\bm{\omega}]\vc{r}_i' =
+-[\vc{r}_i']\bm{\omega}$, we can rewrite \eqnref{rigid_kinetic}
+as:
+\begin{eqnarray}
+\nonumber
+T & = & \frac{1}{2} m \vc{v}^T\vc{v} + \frac{1}{2} \bm{\omega}^T \left ( \sum_i -\sInfMass
+ [\vc{r}_i'][\vc{r}_i'] \right ) \bm{\omega}\\
+ & = & \frac{1}{2} m \vc{v}^T\vc{v} + \frac{1}{2} \bm{\omega}^T I_c \bm{\omega}
+\end{eqnarray}
+The kinetic energy of a rigid body can be written in its vector form:
+\begin{eqnarray}
+\label{eq:kinetic_vec}
+T &=& \frac{1}{2} (\vc{v}^T \;\; \bm{\omega}^T)
+\left(
+\begin{array}{cc}
+m\vc{I}_3 & \vc{0} \\
+\vc{0} & I_c
+\end{array}
+\right)
+\left(
+\begin{array}{c}
+\vc{v} \\
+\bm{\omega} 
+\end{array}
+\right)
+ \equiv \frac{1}{2}\vc{V}^T M_c \vc{V}
+\end{eqnarray}
+where $\vc{V} = (\vc{v}^T,\bm{\omega}^T)^T$, $M_c = \mbox{blockdiag}(m\vc{I}_3,I_c)$. We now relate the velocities in the Cartesian space $\vc{V}$ to the generalized velocities $\dot{\vc{q}}$. Let $\vc{x}(\vc{q})$ and $R(\vc{q})$ represent the position of the COM and the rotation matrix of the rigid body. The linear velocity of the COM is computed as:
+\begin{eqnarray}
+\label{eq:vellin}
+\vc{v} = \dot{\vc{x}}(\vc{q}) = \frac{\partial \vc{x}}{\partial \vc{q}} \dot{\vc{q}} \equiv J_v \dot{\vc{q}}
+\end{eqnarray}
+The angular velocity is computed as:
+\begin{eqnarray}
+\nonumber
+[\bm{\omega}] & = & \dot{R}(\vc{q})R^T(\vc{q}) \\
+\label{eq:Jaccolj}
+& = & \sum_j \frac{\partial R}{\partial q_j}R^T \dot{q}_j \equiv \sum_j [\vc{j}_{j}] \dot{q}_j
+\end{eqnarray}
+$\frac{\partial R}{\partial q_j}R^T$ is always a skew-symmetric matrix that we represent as $[\vc{j}_{j}]$ (skew-symmetric form of the vector $\vc{j}_j$). $\bm{\omega}$ can be now be represented in the vector form as:
+\begin{equation}
+\label{eq:velang}
+\bm{\omega} = J_{\omega} \dot{\vc{q}}
+\end{equation}
+where $\vc{j}_{j}$ is the $j^{th}$ column of the matrix $J_{\omega}$.
+
+Using \eqnref{vellin} and \eqnref{velang}, we can write:
+\begin{equation}
+\label{eq:velcartall}
+\vc{V} = \left(
+\begin{array}{c}
+J_v \\
+J_{\omega}
+\end{array}
+\right) \dot{\vc{q}} \equiv J(\vc{q})\dot{\vc{q}}
+\end{equation}
+Substituting the above in \eqnref{kinetic_vec}, we get:
+\begin{equation}
+T = \frac{1}{2}\dot{\vc{q}}^T J^T M_c J \dot{\vc{q}}
+\end{equation}
+
+Using the recipe of Lagrangian dynamics in \eqnref{lagrangian_dyn2}, we first compute $\frac{\partial T}{\partial \dot{q}_j}$ as:
+\begin{eqnarray}
+\nonumber
+\frac{\partial T}{\partial \dot{q}_j} & = & \frac{1}{2}\dot{\vc{q}}^T J^T M_c (J)_j + \frac{1}{2} (J)_j^T M_c J \dot{\vc{q}}\\
+ & = & (J)_j^T M_c J \dot{\vc{q}}
+\end{eqnarray}
+where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix A. The term $\frac{d}{dt} \left( \frac{\partial T}{\partial \dot{q}_j} \right )$ is computed as:
+\begin{eqnarray}
+\label{eq:lagterm1}
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} + \dot{(J)}_j^T M_c J \dot{\vc{q}}
+\end{eqnarray}
+Now we evaluate the term $\frac{\partial T}{\partial q_j}$:
+\begin{eqnarray}
+\nonumber
+\frac{\partial T}{\partial q_j} & = & \frac{1}{2}\dot{\vc{q}}^T J^T M_c \frac{\partial J}{\partial q_j} \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T \frac{\partial J^T}{\partial q_j} M_c J \dot{\vc{q}}\\
+\label{eq:lagterm2}
+& = & \dot{\vc{q}}^T \frac{\partial J^T}{\partial q_j} M_c J \dot{\vc{q}} + \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}}
+\end{eqnarray}
+Using the above equations, we write:
+\begin{eqnarray}
+\label{eq:lageqn_j}
+\nonumber
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) - \frac{\partial T}{\partial q_j} & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} \\ & & + \left ( \dot{(J)}_j^T M_c J \dot{\vc{q}}  - \left( \frac{\partial J}{\partial q_j} \dot{\vc{q}}\right)^T M_c J \dot{\vc{q}} \right )
+\end{eqnarray}
+
+The second term in the above equation involves the computation of $\dot{J}$ that can be computed as $\sum_k \frac{\partial J}{\partial q_k} \dot{q}_k$. We now simplify the third, fourth and the fifth terms one by one. Let us start with the third term:
+\begin{eqnarray}
+\label{eq:term3}
+\nonumber
+(J)_j^T \dot{M}_c J \dot{\vc{q}} & = & (J_\omega)_j^T \dot{I}_c J_\omega \dot{\vc{q}} \mbox{\ \ (The linear term in $M_c$ is constant: see \eqnref{kinetic_vec})}\\
+\nonumber
+& = & \vc{j}_j^T\dot{(RI_0 R^T)}\bm{\omega} \mbox{\ \ ($\vc{j}_j$ represents the $j^{th}$ column of $J_\omega$: see \eqnref{Jaccolj})} \\
+\mbox{term 3} & = & \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega}  \mbox{\ \ (From \eqnref{torque})}
+\end{eqnarray}
+The fourth term in \eqnref{lageqn_j} can be simplified as:
+\begin{eqnarray}
+\label{eq:term4}
+\nonumber
+\frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} & = & \frac{1}{2} (J_\omega \dot{\vc{q}})^T \frac{\partial I_c}{\partial q_j} J_\omega \dot{\vc{q}}\\
+\nonumber
+& = & \frac{1}{2} \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}I_0R^T + RI_0\frac{\partial R^T}{\partial q_j} \right )  \bm{\omega} = \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}I_0R^T \right ) \bm{\omega} \\
+\nonumber
+& = & \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}R^T I_c \right ) \bm{\omega}\\
+\nonumber
+ & = & \bm{\omega}^T [\vc{j}_j] I_c \bm{\omega} \mbox{\ \ (From \eqnref{Jaccolj})}\\
+\mbox{term 4}  & = & - \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega} \mbox{\ \ (Using the identity $\vc{a}.(\vc{b}\times\vc{c}) = -\vc{b}.(\vc{a}\times\vc{c}))$}
+\end{eqnarray}
+For simplifying the fifth term in \eqnref{lageqn_j}, we explicitly express it using the linear and angular components:
+\begin{eqnarray}
+\label{eq:term5}
+\left (
+\begin{array}{cc}
+\dot{(J_v)_j}^T & \dot{(J_\omega)_j}^T
+\end{array} 
+\right )
+\left(
+\begin{array}{cc}
+m\vc{I}_3 & \vc{0} \\
+\vc{0} & I_c
+\end{array}
+\right)
+\left (
+\begin{array}{cc}
+J_v \dot{\vc{q}} \\
+J_\omega \dot{\vc{q}}
+\end{array} 
+\right )
+-
+\left (
+\begin{array}{cc}
+\left(\frac{\partial J_v}{\partial q_j}\dot{\vc{q}}\right)^T & \left(\frac{\partial J_\omega}{\partial q_j}\dot{\vc{q}}\right)^T
+\end{array} 
+\right )
+\left(
+\begin{array}{cc}
+m\vc{I}_3 & \vc{0} \\
+\vc{0} & I_c
+\end{array}
+\right)
+\left (
+\begin{array}{cc}
+J_v \dot{\vc{q}} \\
+J_\omega \dot{\vc{q}}
+\end{array} 
+\right )
+\end{eqnarray}
+The linear term can be extracted and simplified as:
+\begin{eqnarray}
+\label{eq:term5_lin}
+\nonumber
+m\left( \dot{(J_v)_j}  - \left(\frac{\partial J_v}{\partial q_j}\dot{\vc{q}}\right) \right )^T J_v \dot{\vc{q}} & = & m\left( \sum_k \frac{\partial (J_v)_j}{\partial q_k}\dot{q}_k -  \sum_k \frac{\partial (J_v)_k}{\partial q_j} \dot{q}_k \right )^T J_v \dot{\vc{q}}\\
+\nonumber
+& = & m\left( \sum_k \frac{\partial^2 \vc{x}}{\partial q_j \partial q_k}\dot{q}_k -  \sum_k \frac{\partial^2 \vc{x}}{\partial q_k \partial q_j} \dot{q}_k \right )^T J_v \dot{\vc{q}} \\
+\mbox{term 5 (linear)} & = & 0
+\end{eqnarray}
+The above derivation uses the property of the Jacobian of the linear velocity  $(J_v)_j = \frac{\partial \vc{x}}{\partial q_j}$ $\forall j$ (See \eqnref{vellin}).
+
+We now extract and simplify the angular term in \eqnref{term5} as:
+\begin{eqnarray}
+\label{eq:term5_ang}
+\nonumber
+\left( \dot{(J_\omega)_j}  - \left(\frac{\partial J_\omega}{\partial q_j}\dot{\vc{q}}\right) \right )^T I_c J_\omega \dot{\vc{q}} & = & \left( \sum_k \frac{\partial \vc{j}_j}{\partial q_k}\dot{q}_k -  \sum_k \frac{\partial \vc{j}_k}{\partial q_j} \dot{q}_k \right )^T I_c \bm{\omega}\\
+& = & \left( \sum_k \left ( \frac{\partial \vc{j}_j}{\partial q_k}  -  \frac{\partial \vc{j}_k}{\partial q_j}\right ) \dot{q}_k \right )^T I_c \bm{\omega} \equiv \left ( \sum_k \vc{z}_{jk} \dot{q}_k \right )^T I_c\bm{\omega} 
+\end{eqnarray}
+Now let us evaluate the term denoted by $\vc{z}_{jk}$. Consider the skew symmetric form:
+\begin{eqnarray}
+\nonumber
+[\vc{z}_{jk}] & = & \left [ \frac{\partial \vc{j}_j}{\partial q_k}  -  \frac{\partial \vc{j}_k}{\partial q_j} \right ] = \frac{\partial [\vc{j}_j]}{\partial q_k}  -  \frac{\partial [\vc{j}_k]}{\partial q_j} \mbox{\ \ (Using linearity of the skew symmetric matrix)}\\
+\nonumber
+& = & \left ( \frac{\partial^2 R}{\partial q_j \partial q_k} + \frac{\partial R}{\partial q_j} \frac{\partial R^T}{\partial q_k} \right ) - \left ( \frac{\partial^2 R}{\partial q_k \partial q_j} + \frac{\partial R}{\partial q_k} \frac{\partial R^T}{\partial q_j} \right ) \mbox{\ \ (From \eqnref{Jaccolj})}\\
+\nonumber
+& = & \frac{\partial R}{\partial q_j}R^T \left( \frac{\partial R}{\partial q_k}R^T\right)^T - \frac{\partial R}{\partial q_k}R^T \left( \frac{\partial R}{\partial q_j}R^T\right)^T\\
+\nonumber
+& = & -[\vc{j}_j][\vc{j}_k] + [\vc{j}_k][\vc{j}_j] \mbox{\ \ (Using the identity $[\vc{a}]^T = -[\vc{a}]$)}\\
+\nonumber
+& = & [\vc{j}_k\times \vc{j}_j] \mbox{\ \ (Using the identity $[\vc{u}\times \vc{v}] = [\vc{u}][\vc{v}] - [\vc{v}][\vc{u}]$)}\\
+\Rightarrow \vc{z}_{jk} & = & \vc{j}_k\times \vc{j}_j = [\vc{j}_k] \vc{j}_j
+\end{eqnarray}
+
+Substituting the above in \eqnref{term5_ang}, we get:
+\begin{eqnarray}
+\label{eq:term5_ang_final}
+\nonumber
+\left ( \sum_k \vc{z}_{jk} \dot{q}_k \right )^T I_c\bm{\omega}  & = & \left ( \sum_k [\vc{j}_k] \vc{j}_j \dot{q}_k \right )^T I_c\bm{\omega} \\
+\nonumber
+& = & \left ( \bigg ( \sum_k [\vc{j}_k]\dot{q}_k \bigg ) \vc{j}_j \right )^T I_c\bm{\omega}\\
+\nonumber
+& = & \left ( \bigg [ \sum_k \vc{j}_k \dot{q}_k \bigg ] \vc{j}_j \right )^T I_c\bm{\omega} \\
+\nonumber
+& = & \left ( [ J_\omega \dot{\vc{q}} ] \vc{j}_j \right )^T I_c\bm{\omega} = ([\bm{\omega}]\vc{j}_j)^TI_c\bm{\omega}\\
+\mbox{term 5 (angular)} & = & -\vc{j}_j^T [\bm{\omega}] I_c\bm{\omega}
+\end{eqnarray} 
+
+Finally, we substitute the terms computed in \eqnref{term3}, \eqnref{term4}, \eqnref{term5_lin} and \eqnref{term5_ang_final} into \eqnref{lageqn_j} and rewrite it as:
+\begin{eqnarray}
+\label{eq:lageqn_j_final}
+\nonumber
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) - \frac{\partial T}{\partial q_j} & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega}\\
+\nonumber
+& = & \left( (J)_j^T M_c J \right )\ddot{\vc{q}} + \left( (J)_j^T M_c \dot{J} + (J)_j^T [\tilde{\bm{\omega}}]M_c J \right )\dot{\vc{q}}\\
+\mbox{where } [\tilde{\bm{\omega}}] & = &
+\left ( 
+\begin{array}{cc}
+\vc{0} & \vc{0} \\
+\vc{0} & [J_\omega \dot{\vc{q}}]
+\end{array}
+\right )
+\end{eqnarray}
+
+Writing the equations for all the $q_j$ in the vector form, we get:
+\begin{eqnarray}
+\label{eq:dyngen_vec}
+\frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T}{\partial \vc{q}} & = & \left( J^T M_c J \right )\ddot{\vc{q}} + \left( J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J \right )\dot{\vc{q}}
+\end{eqnarray}
+
+
+\paragraph{Derivation using Newton-Euler equations.}
+We can alternatively derive the result in \eqnref{dyngen_vec} from the Newton-Euler equations in \eqnref{newtoneuler}. Using \eqnref{velcartall}, we substitute the Cartesian velocities $\vc{v},\bm{\omega}$ in terms of the generalized velocities $\dot{\vc{q}}$ into \eqnref{newtoneuler} and get:
+\begin{eqnarray}
+\nonumber
+M_c (\dot{J\dot{\vc{q}}}) + 
+\left ( 
+\begin{array}{c}
+\vc{0} \\
+(J_\omega \dot{\vc{q}}) \times I_c J_\omega \dot{\vc{q}}
+\end{array}
+\right )
+& = &
+\left ( 
+\begin{array}{c}
+\vc{f} \\
+\bm{\tau}
+\end{array}
+\right )\\
+\Rightarrow 
+M_c J \ddot{\vc{q}} + M_c \dot{J} \dot{\vc{q}} + [\tilde{\bm{\omega}}]M_c J \dot{\vc{q}} & = & 
+\left ( 
+\begin{array}{c}
+\vc{f} \\
+\bm{\tau}
+\end{array}
+\right )
+\end{eqnarray}
+
+From the principle of virtual work in \eqnref{virtual_work}, we convert the Cartesian-space forces to the Generalized space by pre-multiplying the above equation with the transpose of the Jacobian $J$:
+\begin{eqnarray}
+\label{eq:dyngen_vec2}
+\left (J^T M_c J \right ) \ddot{\vc{q}} + \left (J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J \right ) \dot{\vc{q}} & = & J_v^T \vc{f} + J_\omega^T \bm{\tau}
+\end{eqnarray}
+
+The LHS of \eqnref{dyngen_vec2} is identical to the RHS of \eqnref{dyngen_vec} and they are of the form $M(\vc{q})\ddot{\vc{q}} + C(\vc{q},\dot{\vc{q}}) = \vc{Q}$, where the Mass matrix, the Coriolis matrix and the generalized forces are defined as:
+\begin{eqnarray}
+\label{eq:summary_dynamics}
+\nonumber
+M(\vc{q}) & = & J^T M_c J\\
+\nonumber
+C(\vc{q},\dot{\vc{q}}) & = & (J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J)\dot{\vc{q}}\\
+\vc{Q} & = & J_v^T \vc{f} + J_\omega^T \bm{\tau}
+\end{eqnarray}
+
