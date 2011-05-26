@@ -141,17 +141,33 @@ The relations between $\hat{\bm{\omega}}$ and $\bm{\omega}$, and $\hat{J}_{\omeg
 \end{eqnarray}
 The matrix $\hat{J}_{\omega}$ being block diagonal is much sparser as compared to ${J}_{\omega}$. 
 
-{
-If $\vc{V}$ satisfies the overconstrained system of equations $\vc{V} = J\dot{\vc{q}}$, we need only $n$ constraints out of $6m$ to uniquely determine $\dot{\vc{q}}$ from the Cartesian velocities $\vc{V}$. Equivalently, we can collect $k$ number of rows from $J$ in $J'$ such that the rank of $J'$ is $n$, and compute $\dot{\vc{q}} = J'^+ \vc{V}'$, where $\vc{V}'$ are the velocity components corresponding to the rows in $J'$. This computed $\dot{\vc{q}}$ still satisfies $\vc{V} = J\dot{\vc{q}}$. 
+\ignorethis{
+If $\vc{q}$ satisfies the over-constrained system of equations $\vc{V} = J\dot{\vc{q}}$, we need only $n$ constraints out of $6m$ to uniquely determine $\dot{\vc{q}}$ from the Cartesian velocities $\vc{V}$. Equivalently, we can collect $k$ number of rows from $J$ in $J'$ such that the rank of $J'$ is $n$, and compute $\dot{\vc{q}} = J'^+ \vc{V}'$, where $\vc{V}'$ are the velocity components corresponding to the rows in $J'$. This computed $\dot{\vc{q}}$ still satisfies $\vc{V} = J\dot{\vc{q}}$. 
 %Therefore, $\dot{\vc{q}}$ computed in \eqnref{angvel_cart2gen} also satisfies the linear velocity relation $\vc{v} = J_v \dot{\vc{q}}$.
 }
 
-Now, for a system with only rotational DOFs, it is sufficient to invert
-only $J_{\omega}$ which is also a full column rank matrix
-($J_{\omega} \in \Re^{3m \times n}$ and $n\leq 3m$). This
-is because each rotational joint can have at most three independent
-DOFs.  We then can compute the velocities of the rotational DOFs
-$\dot{\vc{q}}$ as:
+If $\vc{q}$ satisfies the over-constrained system of equations $\vc{V}
+= J\dot{\vc{q}}$, using any $n$ independent constraints out of $6m$ to
+solve this linear system will result in the same $\dot{\vc{q}}$. This
+can be explained by the problem of fitting an unknown plane to $6m$ 3D
+points as $A\vc{x} = \vc{b}$, where $A \in \Re^{6m \times 3}$. If all
+$6m$ points happen to lie on a plane, i.e. there exists an $\vc{x}$
+that exactly satisfies the over-constrained system, we can arbitrarily
+pick three distinctive points to form the constraints and the solution
+plane will be the same. Therefore, if we know $\vc{V}$ can be achieved
+in the generalized coordinates, we can pick a subset of rows from $J$
+to form a $J'$ such that the rank of $J'$ is $n$, and compute
+$\dot{\vc{q}} = J'^+ \vc{V}'$, where $\vc{V}'$ are the velocity
+components corresponding to the rows in $J'$. The solution $\dot{\vc{q}}$ to this
+system will be the same for any $J'$.
+
+
+For a system with only rotational DOFs, it is sufficient
+to invert only $J_{\omega}$ which is also a full column rank matrix
+($J_{\omega} \in \Re^{3m \times n}$ and $n\leq 3m$). This is because
+each rotational joint can have at most three independent DOFs.  We
+then can compute the velocities of the rotational DOFs $\dot{\vc{q}}$
+as:
 \begin{eqnarray}
 \label{eq:angvel_cart2gen}
 \nonumber
