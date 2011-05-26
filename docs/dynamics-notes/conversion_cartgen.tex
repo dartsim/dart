@@ -152,13 +152,13 @@ solve this linear system will result in the same $\dot{\vc{q}}$. This
 can be explained by the problem of fitting an unknown plane to $6m$ 3D
 points as $A\vc{x} = \vc{b}$, where $A \in \Re^{6m \times 3}$. If all
 $6m$ points happen to lie on a plane, i.e. there exists an $\vc{x}$
-that exactly satisfies the over-constrained system, we can arbitrarily
-pick three distinctive points to form the constraints and the solution
-plane will be the same. Therefore, if we know $\vc{V}$ can be achieved
-in the generalized coordinates, we can pick a subset of rows from $J$
-to form a $J'$ such that the rank of $J'$ is $n$, and compute
-$\dot{\vc{q}} = J'^+ \vc{V}'$, where $\vc{V}'$ are the velocity
-components corresponding to the rows in $J'$. The solution $\dot{\vc{q}}$ to this
+that exactly satisfies the over-constrained system, any three
+distinctive points we pick as the constraints will result in the same
+plane. Therefore, if we know $\vc{V}$ can be achieved in the
+generalized coordinates, we can pick a subset of rows from $J$ to form
+a $J'$ such that the rank of $J'$ is $n$, and compute $\dot{\vc{q}} =
+J'^+ \vc{V}'$, where $\vc{V}'$ are the velocity components
+corresponding to the rows in $J'$. The solution $\dot{\vc{q}}$ to this
 system will be the same for any $J'$.
 
 
