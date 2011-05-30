@@ -10,9 +10,14 @@
 
 #include "bodynode.h"
 #ifdef _RENDERER_TEST
-#include "OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 #else
+#if WIN32
 #include <gl/glut.h>
+#elif UNIX
+#elif APPLE
+#include <GLUT/glut.h>
+#endif
 #endif
 
 extern Vector3d gravity;
@@ -59,7 +64,8 @@ namespace model3d {
   }
 
   void BodyNode::init() {
-    mMass = mPrimitive->getMass();
+    if(mPrimitive!=NULL)
+	    mMass = mPrimitive->getMass();
     
     int nDofs = mSkel->getNumDofs();
     int localDofs = getNumDofs();
@@ -431,7 +437,10 @@ namespace model3d {
 	  }
 	  if(mPrimitive != NULL) {
 		  RI->PushName((unsigned)mID);
+		  RI->PushMatrix();
+		  RI->Translate(mOffset);
 		  mPrimitive->draw(RI, _color, _default);
+		  RI->PopMatrix();
 		  RI->PopName();
 	  }
 

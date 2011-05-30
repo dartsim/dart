@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 using namespace Eigen;
-#include "OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 
 namespace model3d {
   class Transformation;

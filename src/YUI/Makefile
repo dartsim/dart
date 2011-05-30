@@ -11,7 +11,7 @@ OBJS = \
 	glFuncs.o \
 	$(NULL)
 
-IDIRS = -Iinclude -I$(OPENGL) -I$(GLUT) -I$(EIGEN) -I$(EIGEN)/Eigen
+IDIRS = -I. -I$(OPENGL) -I$(GLUT) -I$(EIGEN)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
 
@@ -28,7 +28,7 @@ debug : $(DEBUG_OBJS)
 	$(AR) cr $(DEBUG_LIB) $(DEBUG_OBJS)
 	$(RANLIB) $(DEBUG_LIB)
 
-$(RELEASE_DIR)/%.o: $(SRC)/%.cpp
+$(RELEASE_DIR)/%.o: %.cpp
 	@echo $<
 	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
@@ -36,7 +36,7 @@ $(RELEASE_DIR)/%.o: $(SRC)/%.cpp
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
 		rm -f $(RF).P
 
-$(DEBUG_DIR)/%.o: $(SRC)/%.cpp
+$(DEBUG_DIR)/%.o: %.cpp
 	@echo $<
 	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \

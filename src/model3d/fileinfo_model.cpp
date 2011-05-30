@@ -11,7 +11,7 @@
 #include "dof.h"
 #include "primitive_ellipsoid.h"
 #include "primitive_cube.h"
-#include "OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 //#include "Capsule.h"
 //#include <iomanip>
 
