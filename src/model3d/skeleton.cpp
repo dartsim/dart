@@ -134,7 +134,7 @@ namespace model3d {
     return com;
   }
   
-  void Skeleton::setState(VectorXd& state) {
+  void Skeleton::setState(const VectorXd& state) {
     assert(state.size() == nDofs);
     int k=0;
     for(k=0; k<nDofs; k++)
@@ -148,7 +148,7 @@ namespace model3d {
       mNodes.at(i)->update(mCurrState);
   }
 
-  void Skeleton::setState(vector<double>& state) {
+  void Skeleton::setState(const vector<double>& state) {
     assert(state.size()==nDofs);
     int k=0;
     for(k=0; k<nDofs; k++)
@@ -162,6 +162,23 @@ namespace model3d {
     for(int i=0; i<nNodes; i++)
       mNodes.at(i)->update(mCurrState);
   }
+
+  void Skeleton::setPose(const VectorXd& _pose){
+#ifdef DEBUG
+	  assert(_pose.size() == nDofs);
+#endif
+	  for(int i=0; i<nDofs; i++)
+		  mDofs[i]->setValue(_pose(i));
+  }
+
+  void Skeleton::setPose(const vector<double>& _pose){
+#ifdef DEBUG
+	  assert(_pose.size() == nDofs);
+#endif
+	  for(int i=0; i<nDofs; i++)
+		  mDofs[i]->setValue(_pose[i]);
+  }
+
   void Skeleton::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default) 
   {
 		mRoot->draw(RI, _color, _default);
@@ -170,5 +187,6 @@ namespace model3d {
   {
 		mRoot->drawHandles(RI, _color, _default);
   }
-  
+
+
 } // namespace model3d

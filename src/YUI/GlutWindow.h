@@ -21,6 +21,7 @@ public:
 	static void specKeyEvent( int key, int x, int y );
 	static void mouseClick(int button, int state, int x, int y);
 	static void mouseDrag(int x, int y);
+	static void mouseMove(int x, int y);
 	static void refresh();
 	static void refreshTimer(int);
 	static void runTimer(int);
@@ -37,6 +38,7 @@ protected:
 	virtual void specKey( int key, int x, int y){}
 	virtual void click(int button, int state, int x, int y){}
 	virtual void drag(int x, int y){}
+	virtual void move(int x, int y){}
 	virtual void displayTimer(int);
 	virtual void simTimer(int){}
 

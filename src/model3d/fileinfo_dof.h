@@ -45,6 +45,9 @@ namespace model3d {
 //    static Vector4d mColorPool[2];
   	inline void setFPS(double _fps){ mFPS = _fps; }
 	inline double getFPS() const { return mFPS; }
+  	inline double getNumFrames() const { return mNumFrames; }
+ 	inline Skeleton* getModel() const { return mSkel; }
+
   public:
     vector< vector<double> > mDofs;
 //    vector< vector<double> > mMuscles;
