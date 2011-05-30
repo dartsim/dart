@@ -48,16 +48,16 @@ namespace model3d {
     double getMass() { return mMass; }
     VectorXd EvalCOM();
 
-    void setState(VectorXd&);
-    void setState(vector<double>&);
+    void setState(const VectorXd&);
+    void setState(const vector<double>&);
 
     void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true) ;
-    inline void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true );
+    void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default = true );
 	
-    inline void setPose(VectorXd& _pose);
-    inline void setPose(vector<double>& _pose);
-    inline void getPose(VectorXd& _pose);
-    inline void getPose(vector<double>& _pose);
+    void setPose(const VectorXd& _pose);
+    void setPose(const vector<double>& _pose);
+    void getPose(VectorXd& _pose);
+    void getPose(vector<double>& _pose);
 
   protected:
     vector<Marker*> mHandles;

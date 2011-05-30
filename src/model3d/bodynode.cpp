@@ -457,7 +457,10 @@ namespace model3d {
 	  }
 	  if(mPrimitive != NULL) {
 		  glPushName((unsigned)mID);
+		  glPushMatrix();
+		  glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
 		  mPrimitive->draw(RI, _color, _default);
+		  glPopMatrix();
 		  glPopName();
 	  }
 

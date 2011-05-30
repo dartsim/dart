@@ -42,6 +42,7 @@ void GlutWindow::initWindow(int w, int h, const char* name)
 	glutSpecialFunc( specKeyEvent );
 	glutMouseFunc( mouseClick );
 	glutMotionFunc( mouseDrag );
+	glutPassiveMotionFunc( mouseMove );
 	//glutTimerFunc ( mDisplayTimeout, refreshTimer, 0 );
 	//glutTimerFunc ( mDisplayTimeout, runTimer, 0 );
 }
@@ -69,6 +70,11 @@ void GlutWindow::mouseClick(int button, int state, int x, int y)
 void GlutWindow::mouseDrag(int x, int y)
 {
 	current()->drag(x, y);
+}
+
+void GlutWindow::mouseMove(int x, int y)
+{
+	current()->move(x, y);
 }
 
 void GlutWindow::refresh()
