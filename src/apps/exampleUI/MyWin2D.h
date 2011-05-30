@@ -1,7 +1,7 @@
 #ifndef _MYWIN2D_
 #define _MYWIN2D_
 
-#include "Win2D.h"
+#include "YUI/Win2D.h"
 
 class MyWin2D : public Win2D
 {

@@ -9,7 +9,7 @@ using namespace Eigen;
 #include "primitive.h"
 #include "joint.h"
 #include "marker.h"
-#include "OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 
 
 namespace model3d {

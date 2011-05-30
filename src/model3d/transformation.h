@@ -7,7 +7,7 @@ using namespace Eigen;
 #include <vector>
 using namespace std;
 #include "utils/misc.h" // For M_PI
-#include "OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 
 namespace model3d {
 #define MAX_TRANSFORMATION_NAME 182

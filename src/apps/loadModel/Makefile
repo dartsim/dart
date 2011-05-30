@@ -1,7 +1,7 @@
 include ../../Makefile.defs
 
-RELEASE_BIN = exampleUI
-DEBUG_BIN = exampleUId
+RELEASE_BIN = loadModel
+DEBUG_BIN = loadModeld
 
 RF = $(*F)
 DF = $(*F)
@@ -10,17 +10,25 @@ OBJS =  \
 	Main.o \
 	$(NULL)
 
-IDIRS = -I. -I../../ -I$(EIGEN) -I$(TICPP)/include
+IDIRS = -I. -I../.. -I$(EIGEN) -I$(TICPP)/include
 LDIRS = -L../$(LIB_DIR) -L$(TICPP)/lib -L$(GLOG)/lib
 LIBS = \
+	-lticpp32 \
+	-lglog \
 	$(NULL)
 
 RELEASE_LIBS = \
 	   -lYUI \
+	   -lRenderer \
+	   -lModel3D \
+	   -lUtils \
 	   $(NULL)
 
 DEBUG_LIBS = \
 	   -lYUId \
+	   -lRendererd \
+	   -lModel3Dd \
+	   -lUtilsd \
 	   $(NULL)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(patsubst %.cpp,%.o,$(f)))
