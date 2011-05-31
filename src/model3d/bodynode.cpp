@@ -482,7 +482,7 @@ namespace model3d {
 
 	  // render the corresponding mHandless
 	  for(int i=0; i<mHandles.size(); i++){
-		  mHandles[i]->draw(RI, false, _color, _default);
+		  mHandles[i]->draw(RI, true, _color, _default);
 	  }
 	  for(int i=0; i<mJointOut.size(); i++){
 		  mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
@@ -496,7 +496,7 @@ namespace model3d {
 
 	  // render the corresponding mHandless
 	  for(int i=0; i<mHandles.size(); i++){
-		  mHandles[i]->draw(RI, false, _color, _default);
+		  mHandles[i]->draw(RI, true, _color, _default);
 	  }
 	  for(int i=0; i<mJointOut.size(); i++){
 		  mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
