@@ -126,8 +126,11 @@ where $\theta = ||\vc{q}_k ||$. The Jacobian $\hat{J}_{\omega k}$ can be derived
 \hat{J}_{\omega k} & = & R_k \left ( \vc{I}_3 - \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2 \right )\\
  & = & \vc{I}_3 + \frac{1-cos\theta}{\theta^2}[\vc{q}_k] + \frac{\theta - sin \theta}{\theta^3} [\vc{q}_k]^2
 \end{eqnarray}
-%Now, the $j^{th}$ column $\vc{j}_{kj}$ of the Jacobian $J_{\omega k}$ can be evaluated as $[\vc{j}_{kj}] = \frac{\partial R_k}{\partial q_{kj}}R_k^T$.
-
+For the case when $\theta \rightarrow 0$, $R_k$ and $\hat{J}_{\omega k}$ can be approximated as follows:
+\begin{eqnarray}
+R_k & = & \vc{I}_3 + [{\vc{q}}_k] + \frac{1}{2}[{\vc{q}}_k]^2\\
+\hat{J}_{\omega k} & = & \vc{I}_3 + \frac{1}{2}[{\vc{q}}_k] + \frac{1}{6}[{\vc{q}}_k]^2
+\end{eqnarray}
 \ignorethis{
 \begin{equation}
 \label{eq:angular_velocity_link}
@@ -137,7 +140,6 @@ R^0_{k-1} \vc{t}_{nk}\; \vc{0} \cdots \vc{0}) \dot{\vc{q}} = J_{\omega k} \dot{\
 where $np$ is the number of DOFs in the parent chain and $nk$ is the
 number of DOFs in the link $k$. 
 }
-
 Similar to the angular velocity, the linear velocity of the center of mass of the link $k$
 can be expressed in terms of the generalized velocity: 
 \begin{equation}
