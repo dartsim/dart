@@ -37,11 +37,11 @@ constraint manifold at a fixed time, written as
 We can write virtual work of force $\vForce{i}$ acting on particle
 $\vGlobalPoint_i$ as
 \begin{equation}\label{eq:virtual_work}
-  \vForce{i} . \delta \vGlobalPoint_i = \vForce{i} . \sum_j \frac{\partial \vGlobalPoint_i}{\partial
-    \sJoint_j}\delta \sJoint_j = \sum_j \sGeneralForce{j} \delta \sJoint_j
+  \vc{f}_{i} . \delta \vc{r}_i = \vc{f}_{i} . \sum_j \frac{\partial \vc{r}_i}{\partial
+    q_j}\delta q_j \equiv \sum_j Q_{ij} \delta q_j = \vc{Q}_i.\delta \vc{q}
 \end{equation}
-where $\sGeneralForce{j} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as \emph{generalized force}
-associated with coordinate $\sJoint_j$.
+where $Q_{ij} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as the component of the \emph{generalized force}
+associated with coordinate $q_j$. In the vector form, $\vc{Q}_i$ is the generalized force corresponding to the Cartesian force $\vc{f}_i$ with the relation $\vc{Q}_i = J_i^T \vc{f}_i$, where $J_i$ is the Jacobian matrix with the $j^{th}$ column defined as $\frac{\partial \vc{r}_i}{\partial q_j}$.
 
 From D'Alembert's principle, we know that the sum of the differences
 between the forces acting on a system and the inertia force of the
@@ -102,7 +102,7 @@ and rewrite \eqnref{inertia_force2} as
 Combining the definition of generalized force (\eqnref{virtual_work}), D'Alembert's principle (\eqnref{inertial_work}), and the generalized inertia force (\eqnref{inertia_kinetic}), we arrive at the following equation:
 \begin{equation}\label{eq:dynamic_equil}
     \left ( \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
-    \sJoint_j}\right ) \delta \sJoint_j = \sGeneralForce{j} \delta
+    \sJoint_j}\right ) \delta \sJoint_j = Q_{ij} \delta
     \sJoint_j
 \end{equation}
 
@@ -112,7 +112,7 @@ independent, \eqnref{dynamic_equil} leads to
 \begin{equation}\label{eq:lagrangian_dyn2}
     \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial
     \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
-    \sJoint_j} - \sGeneralForce{j} = 0
+    \sJoint_j} - Q_{ij} = 0
 \end{equation}
 
 \paragraph{Equations of Motion in Vector Form.} \eqnref{lagrangian_dyn2} is the equation of motion for one generalized coordinate in a
