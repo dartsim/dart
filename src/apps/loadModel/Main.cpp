@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 {
 	FileInfoModel modelFile;
 	//modelFile.loadFile("Yuting.vsk",FileInfoModel::VSK);
-	modelFile.loadFile("YutingEuler.skel",FileInfoModel::SKEL);
+	modelFile.loadFile("Yuting.skel",FileInfoModel::SKEL);
 
 	MyWindow window(modelFile.getSkel());
 
