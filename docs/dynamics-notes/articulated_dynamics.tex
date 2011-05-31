@@ -53,7 +53,7 @@ We start with deriving the relation for the angular velocity. The angular veloci
 & = & \dot{R}^0_{p(k)}{R^0_{p(k)}}^T + R^0_{p(k)} \left ( \dot{R}_k R_k^T \right ) {R^0_{p(k)}}^T \equiv [\bm{\omega}_{p(k)}] + R^0_{p(k)} [\hat{\bm{\omega}}_k] {R^0_{p(k)}}^T
 %& = & [\bm{\omega}_{p(k)}] +  [R^0_{p(k)} \hat{\bm{\omega}}_k] = [\bm{\omega}_{p(k)} + R^0_{p(k)} \hat{\bm{\omega}}_k]
 \end{eqnarray}
-In the above equation, we define [$\hat{\bm{\omega}}_k] = \dot{R_k} R_k^T$ that denotes the angular velocity of the link $k$ in its \emph{parent} frame since the rotation matrix $R_k$ is the rotation of the rigid link $k$ with respect to its parent link $p(k)$. We can further write $\hat{\bm{\omega}}_k = \hat{J}_{\omega k} \dot{\vc{q}}_k$ where $\hat{J}_{\omega k}$ is the \emph{local} Jacobian matrix that relates the joint velocity of link $k$ to its angular velocity in the frame of the parent link $p(k)$. The dimension of $\hat{J}_{\omega k}$ is $3\times n(k)$. 
+In the above equation, we define [$\hat{\bm{\omega}}_k] = \dot{R_k} R_k^T$ that denotes the angular velocity of the link $k$ in the frame of its parent link $p(k)$ since the rotation matrix $R_k$ is the rotation of the rigid link $k$ with respect to $p(k)$. We can further write $\hat{\bm{\omega}}_k = \hat{J}_{\omega k} \dot{\vc{q}}_k$ where $\hat{J}_{\omega k}$ is the \emph{local} Jacobian matrix that relates the joint velocity of link $k$ to its angular velocity in the frame of the parent link $p(k)$. The dimension of $\hat{J}_{\omega k}$ is $3\times n(k)$. 
 
 Using the property of skew symmetric matrix, $[R \bm{\omega}] = R [\bm{\omega}]
 R^T$, we can express \eqnref{angvelk_recursive} in the vector form as:
