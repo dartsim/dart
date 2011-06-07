@@ -50,6 +50,8 @@ jittering for depth of field effects. Use in conjunction with the
 accwindow() routine.
 */
 
+#include <utils/LoadOpengl.h>
+
 typedef struct 
 {
 	GLfloat x, y;

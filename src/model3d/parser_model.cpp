@@ -127,7 +127,7 @@ using namespace model3d;
 #include "marker.h"
 #include "transformation.h"
 #include "trfm_rotate_euler.h"
-#include "trfm_rotate_expMap.h"
+#include "trfm_rotate_expmap.h"
 #include "trfm_rotate_quat.h"
 #include "trfm_translate.h"
 #include "primitive_cube.h"

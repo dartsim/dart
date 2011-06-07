@@ -1,7 +1,7 @@
 #include "primitive_ellipsoid.h"
 
 #ifndef _RENDERER_TEST
-#include <gl/glut.h>
+#include "utils/LoadOpengl.h"
 #endif
 
 // TODO: do we need to include an equivalent config file?

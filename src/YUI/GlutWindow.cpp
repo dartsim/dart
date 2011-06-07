@@ -2,7 +2,9 @@
 #include <dirent.h>
 #endif
 
+#include <cstdio>
 #include <iostream>
+using namespace std;
 #include "GlutWindow.h"
 
 std::vector<GlutWindow*> GlutWindow::mWindows;

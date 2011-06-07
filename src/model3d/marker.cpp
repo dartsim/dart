@@ -1,6 +1,6 @@
 #include "marker.h"
 #ifndef _RENDERER_TEST
-#include <gl/glut.h>
+#include "utils/LoadOpengl.h"
 #endif
 
 

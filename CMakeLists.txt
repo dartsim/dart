@@ -25,6 +25,7 @@ if (user_info STREQUAL "Sehoon")
   if (UNIX)
     message(STATUS "Operating system = UNIX")
     INCLUDE_DIRECTORIES(/usr/local/include/eigen3)
+    INCLUDE_DIRECTORIES(/usr/local/include/ticpp)
   elseif (WIN32)
     message(STATUS "Operating system = WIN32")
     INCLUDE_DIRECTORIES(c:/dev/external/include)
@@ -46,7 +47,6 @@ else ()
   # Invalid user info?
   message(FATAL_ERROR "Invalid user information")
 endif ()
-
 
 
 ###############################################
@@ -85,7 +85,7 @@ ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
 TARGET_LINK_LIBRARIES(unittests utils model3d)
 TARGET_LINK_LIBRARIES(unittests gflags)
 if (UNIX)
-  TARGET_LINK_LIBRARIES(unittests gtest pthread)
+  TARGET_LINK_LIBRARIES(unittests gtest pthread glut)
 endif()
 if (WIN32)
   TARGET_LINK_LIBRARIES(unittests debug gtestd optimized gtest)

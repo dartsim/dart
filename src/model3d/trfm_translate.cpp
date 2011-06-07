@@ -1,5 +1,6 @@
 #include "trfm_translate.h"
 #include "dof.h"
+#include "utils/LoadOpengl.h"
 // #include "RenderConfig.h"
 
 namespace model3d {
