@@ -12,12 +12,9 @@
 #ifdef _RENDERER_TEST
 #include "renderer/OpenGLRenderInterface.h"
 #else
-#if WIN32
-#include <gl/glut.h>
-#elif UNIX
-#elif APPLE
-#include <GLUT/glut.h>
-#endif
+
+#include "utils/LoadOpengl.h"
+
 #endif
 
 extern Vector3d gravity;

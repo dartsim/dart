@@ -1,10 +1,5 @@
-#if WIN32
-#include <gl/glut.h>
-#elif UNIX
-#elif APPLE
-#include <Glut/glut.h>
-#endif
-
+#include "glFuncs.h"
+#include "utils/LoadOpengl.h"
 #include <string>
 #include <Eigen/Eigen>
 
