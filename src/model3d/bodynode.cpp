@@ -1,3 +1,5 @@
+#include "bodynode.h"
+
 #include "primitive.h"
 #include "joint.h"
 #include "marker.h"
@@ -8,13 +10,10 @@
 #include "utils/utils.h"
 #include "utils/eigen_helper.h"
 
-#include "bodynode.h"
 #ifdef _RENDERER_TEST
 #include "renderer/OpenGLRenderInterface.h"
 #else
-
 #include "utils/LoadOpengl.h"
-
 #endif
 
 extern Vector3d gravity;
@@ -332,6 +331,9 @@ namespace model3d {
      return mMass*(gravity*mJC);
   }
 
+  double BodyNode::getMass() const {
+    return mPrimitive->getMass();
+  }
 
   void BodyNode::evalJC() {
     mJC.setZero();
@@ -406,7 +408,6 @@ namespace model3d {
     }
   }
 
-
   vector<Marker*> BodyNode::clearHandles() {
     vector<Marker*> ret = mHandles; 
     mHandles.clear(); 
@@ -468,6 +469,7 @@ namespace model3d {
 	  glPopMatrix();
 #endif
   }
+
   void BodyNode::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
   {
 #ifdef _RENDERER_TEST
@@ -500,6 +502,38 @@ namespace model3d {
 	  }
 	  glPopMatrix();
 #endif
+  }
+
+  void BodyNode::setJointIn(Joint *_p) {
+    mJointIn=_p; mNodeIn = _p->getNodeIn();
+  }
+
+  BodyNode* BodyNode::getNodeOut(int i) const {
+    return mJointOut[i]->getNodeOut();
+  }
+
+  int BodyNode::getNumDofs() const {
+    return mJointIn->getNumDofs();
+  }
+
+  Dof* BodyNode::getDof(int i) {
+    return mJointIn->getDof(i);
+  }
+
+  bool BodyNode::isPresent(Dof* q) {
+    return mJointIn->isPresent(q);
+  }
+
+  Matrix4d BodyNode::getLocalTrans() const {
+    return mJointIn->getTransform();
+  }
+
+  Matrix4d BodyNode::getLocalDeriv(Dof* q) const {
+    return mJointIn->getDeriv(q);
+  }
+
+  Matrix4d BodyNode::getLocalDeriv2(Dof* q1, Dof* q2) const {
+    return mJointIn->getDeriv2(q1, q2);
   }
 
 } // namespace model3d

@@ -10,6 +10,8 @@
 #include "parser_vsk.h"
 #include "marker.h"
 #include "dof.h"
+#include "joint.h"
+#include "marker.h"
 #include "primitive_ellipsoid.h"
 #include "primitive_cube.h"
 #include "renderer/OpenGLRenderInterface.h"

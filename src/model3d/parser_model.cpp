@@ -124,6 +124,7 @@ using namespace Eigen;
 using namespace model3d;
 
 #include "skeleton.h"
+#include "joint.h"
 #include "marker.h"
 #include "transformation.h"
 #include "trfm_rotate_euler.h"

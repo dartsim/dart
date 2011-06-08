@@ -20,6 +20,8 @@ using namespace Eigen;
 // Local Files
 #include "skeleton.h"
 #include "bodynode.h"
+#include "joint.h"
+#include "marker.h"
 #include "dof.h"
 #include "transformation.h"
 #include "trfm_translate.h"
