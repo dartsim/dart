@@ -1,3 +1,11 @@
+/*
+RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+All rights reserved.
+
+Author		Sehoon Ha
+Date		06/07/2011
+*/
+
 #ifndef SRC_MODEL3D_BODYNODE_H
 #define SRC_MODEL3D_BODYNODE_H
 
@@ -6,11 +14,9 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 
-#include "primitive.h"
-#include "joint.h"
-#include "marker.h"
-#include "renderer/OpenGLRenderInterface.h"
-
+namespace Renderer {
+  class OpenGLRenderInterface;
+} // namespace Renderer
 
 namespace model3d {
 #define MAX_NODE3D_NAME 128
@@ -22,14 +28,21 @@ namespace model3d {
   class Skeleton;
   class Joint;
 
+  /**
+     @brief BodyNode class represents a single node of the skeleton.
+
+     BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
+     connected and have a set of core functions for calculating derivatives.
+     Mostly automatically constructed by FileInfoModel. @see FileInfoModel.
+  */
   class BodyNode {
   public:
-    BodyNode(char *_name = NULL);
-    ~BodyNode();
+    BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
+    virtual ~BodyNode(); ///< Default destructor
 
     // functions from Node
-    void init();
-    void update(VectorXd&);
+    void init(); ///< Initialize the properties and the derivatives
+    void update(VectorXd&); ///< update all values w.r.t. the given joint angles.
     void evalSecondOrder(const VectorXd&);
     MatrixXd evalM(VectorXd&);
     VectorXd evalC(VectorXd&);
@@ -44,7 +57,7 @@ namespace model3d {
 
     VectorXd evalCOM() { return mCOM; }
     void draw();
-    double getMass() { return mPrimitive->getMass(); };
+    double getMass() const;
 
     // Jie's helper functions
     void evalJC();
@@ -60,12 +73,14 @@ namespace model3d {
     MatrixXd getWorldInvTransform() { return W.inverse(); }
     MatrixXd getLocalInvTransform() { return T.inverse(); }
 	
-	void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
-    void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default);	// render the handles
+    void draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color,
+              bool _default, int depth = 0);	// render the entire bodylink subtree rooted here
+    void drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color,
+                     bool _default);	// render the handles
 
     char* getName() { return mName; }
     Vector3d getOffset() { return Vector3d(mOffset[0],mOffset[1],mOffset[2]); }
-    void setOffset(Vector3d& _off) { mOffset = _off; }
+    void setOffset(const Vector3d& _off) { mOffset = _off; }
     int getModelIndex() { return mModelIndex; }
     void setModelIndex(int _idx) { mModelIndex = _idx; }
     BodyNode* getNodeIn() { return mNodeIn; }
@@ -74,27 +89,26 @@ namespace model3d {
     void addHandle(Marker *h) { mHandles.push_back(h); }
     vector<Marker*> clearHandles();
     void removeHandle(Marker *h);
-    int getNumHandles() { return mHandles.size(); }
-    Marker* getHandle(int i) { return mHandles[i]; }
+    int getNumHandles() const { return mHandles.size(); }
+    Marker* getHandle(int i) const { return mHandles[i]; }
 	
-    Primitive* getPrimitive() { return mPrimitive; }
+    Primitive* getPrimitive() const { return mPrimitive; }
     void setPrimitive(Primitive *_p) { mPrimitive = _p; }
 
-    void addJointOut(Joint *_c) { mJointOut.push_back(_c); }
+    void addJointOut(Joint* _c) { mJointOut.push_back(_c); }
     int getNumJoints() { return mJointOut.size(); }
     Joint* getJointOut(int i) { return mJointOut[i]; }
     Joint* getJointIn() { return mJointIn; }
-    void setJointIn(Joint *_p) { mJointIn=_p; mNodeIn = _p->getNodeIn(); }
+    void setJointIn(Joint *_p);
 
     // wrapper functions for joints
-    BodyNode* getNodeOut(int i) { return mJointOut[i]->getNodeOut(); }
-    int getNumDofs() const { return mJointIn->getNumDofs(); }
-    Dof* getDof(int i) { return mJointIn->getDof(i); }
-    bool isPresent(Dof* q) { return mJointIn->isPresent(q); }
-    Matrix4d getLocalTrans() const { return mJointIn->getTransform(); }
-    Matrix4d getLocalDeriv(Dof* q) const { return mJointIn->getDeriv(q); }
-    Matrix4d getLocalDeriv2(Dof* q1, Dof* q2) const {
-      return mJointIn->getDeriv2(q1, q2); }
+    BodyNode* getNodeOut(int i) const;
+    int getNumDofs() const;
+    Dof* getDof(int i);
+    bool isPresent(Dof* q);
+    Matrix4d getLocalTrans() const;
+    Matrix4d getLocalDeriv(Dof* q) const;
+    Matrix4d getLocalDeriv2(Dof* q1, Dof* q2) const;
 
   public:
     char mName[MAX_NODE3D_NAME];
@@ -134,9 +148,8 @@ namespace model3d {
     Skeleton* mModel;
 
  private:
-	int mID;
-	static int msBodyNodeCount;
-
+    int mID;
+    static int msBodyNodeCount;
   };
 
 } // namespace model3d

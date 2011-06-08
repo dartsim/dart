@@ -3,6 +3,7 @@
 #include "dof.h"
 #include "joint.h"
 #include "bodynode.h"
+#include "marker.h"
 
 #include <cassert>
 using namespace std;
