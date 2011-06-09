@@ -13,7 +13,7 @@ OBJS =  \
 IDIRS = -I. -I../.. -I$(EIGEN) -I$(TICPP)/include
 LDIRS = -L../$(LIB_DIR) -L$(TICPP)/lib -L$(GLOG)/lib
 LIBS = \
-	-lticpp32 \
+	-lticpp \
 	-lglog \
 	$(NULL)
 
