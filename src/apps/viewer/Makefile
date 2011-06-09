@@ -17,7 +17,7 @@ OBJS =  \
 IDIRS = -I. -I../../ -I$(EIGEN)
 LDIRS = -L../$(LIB_DIR) -L$(TICPP)/lib -L$(GLOG)/lib
 LIBS = \
-	-lticpp32 \
+	-lticpp \
 	$(NULL)
 
 RELEASE_LIBS = \

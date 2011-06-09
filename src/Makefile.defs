@@ -19,8 +19,7 @@ RF = $(RELEASE_DIR)/$(*F)
 DF = $(DEBUG_DIR)/$(*F)
 
 YUI = ../YUI
-EIGEN = /Users/Tingting/Software/Eigen3
-TICPP = /Users/Tingting/Software/ticpp
-#BOOST = /Users/Tingting/Software/boost_1_43_0
-BOOST = /opt/local/include
-GLOG = /Users/Tingting/Software/glog-0.3.1
+EIGEN = /Users/karenliu/Research/eigen-3.0
+TICPP = /Users/karenliu/Research/ticpp
+BOOST = /Users/karenliu/Research/boost_1_43_0
+GLOG = /usr/local
