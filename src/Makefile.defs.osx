@@ -18,8 +18,8 @@ SRC = src
 RF = $(RELEASE_DIR)/$(*F)
 DF = $(DEBUG_DIR)/$(*F)
 
-YUI = ../YUI
-EIGEN = /Users/karenliu/Research/eigen-3.0
-TICPP = /Users/karenliu/Research/ticpp
-BOOST = /Users/karenliu/Research/boost_1_43_0
-GLOG = /usr/local
+YUI = 
+EIGEN =
+TICPP =
+BOOST =
+GLOG =
