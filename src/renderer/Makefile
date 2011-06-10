@@ -11,7 +11,7 @@ OBJS = \
 	OpenGLRenderInterface.o \
 	$(NULL)
 
-IDIRS = -I. -I$(OPENGL) -I$(GLUT) -I$(EIGEN)
+IDIRS = -I. -I.. -I$(OPENGL) -I$(GLUT) -I$(EIGEN)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
 
