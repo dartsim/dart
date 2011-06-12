@@ -1,9 +1,9 @@
 #ifndef SRC_MODEL3D_PARSER_DEFS_H
 #define SRC_MODEL3D_PARSER_DEFS_H
 
-#include "transformation.h"
-#include "primitive.h"
-#include "dof.h"
+#include "Transformation.h"
+#include "Primitive.h"
+#include "Dof.h"
 
 typedef model3d::Dof* vec3d[3];
 typedef model3d::Dof* vec4d[4];

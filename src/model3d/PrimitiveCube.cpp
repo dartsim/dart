@@ -1,4 +1,4 @@
-#include "primitive_cube.h"
+#include "PrimitiveCube.h"
 #ifndef _RENDERER_TEST
 #include "utils/LoadOpengl.h"
 #endif

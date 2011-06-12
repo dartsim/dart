@@ -1,4 +1,4 @@
-#include "c3d.h"
+#include "C3D.h"
 #include <cstring>
 #include <cstdio>
 using namespace std;

@@ -1,4 +1,4 @@
-#include "fileinfo_model.h"
+#include "FileInfoModel.h"
 
 #include <iomanip>
 #include <string>
@@ -6,14 +6,14 @@
 #include <fstream>
 #include <sstream>
 
-#include "skeleton.h"
-#include "parser_vsk.h"
-#include "marker.h"
-#include "dof.h"
-#include "joint.h"
-#include "marker.h"
-#include "primitive_ellipsoid.h"
-#include "primitive_cube.h"
+#include "Skeleton.h"
+#include "ParserVsk.h"
+#include "Marker.h"
+#include "Dof.h"
+#include "Joint.h"
+#include "Marker.h"
+#include "PrimitiveEllipsoid.h"
+#include "PrimitiveCube.h"
 #include "renderer/OpenGLRenderInterface.h"
 //#include "Capsule.h"
 //#include <iomanip>

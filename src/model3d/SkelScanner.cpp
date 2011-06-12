@@ -575,7 +575,7 @@ char *yytext;
 #include <io.h>
 #endif
 
-#include "parser_model.h"
+#include "ParserModel.h"
 
 #ifdef WIN32
 #define isatty _isatty

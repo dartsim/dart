@@ -1,13 +1,13 @@
-#include "bodynode.h"
+#include "BodyNode.h"
 
 using namespace std;
 using namespace Eigen;
 
-#include "primitive.h"
-#include "joint.h"
-#include "marker.h"
-#include "dof.h"
-#include "skeleton.h"
+#include "Primitive.h"
+#include "Joint.h"
+#include "Marker.h"
+#include "Dof.h"
+#include "Skeleton.h"
 
 #include "utils/misc.h"
 #include "utils/utils.h"

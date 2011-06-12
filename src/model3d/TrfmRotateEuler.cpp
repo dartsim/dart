@@ -1,5 +1,5 @@
-#include "trfm_rotate_euler.h"
-#include "dof.h"
+#include "TrfmRotateEuler.h"
+#include "Dof.h"
 #include "utils/LoadOpengl.h"
 // #include "RenderConfig.h"
 

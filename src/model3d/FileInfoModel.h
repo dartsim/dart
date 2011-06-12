@@ -2,7 +2,7 @@
 #define SRC_MODEL3D_FILEINFO_MODEL_H
 
 //#include "fileinfo_base.h"
-#include "skeleton.h"
+#include "Skeleton.h"
 #include <fstream>
 #include <Eigen/Dense>
 

@@ -1,4 +1,4 @@
-#include "primitive.h"
+#include "Primitive.h"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

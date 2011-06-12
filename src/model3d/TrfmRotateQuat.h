@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_TRFM_ROTATE_QUAT_H
 #define SRC_MODEL3D_TRFM_ROTATE_QUAT_H
 
-#include "transformation.h"
+#include "Transformation.h"
 
 namespace model3d {
 

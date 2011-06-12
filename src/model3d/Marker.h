@@ -3,8 +3,8 @@
 
 #include <Eigen/Dense>
 using namespace Eigen;
-#include "primitive_ellipsoid.h"
-#include "bodynode.h"
+#include "PrimitiveEllipsoid.h"
+#include "BodyNode.h"
 
 namespace model3d {
 #define MAX_MARKER_NAME 256

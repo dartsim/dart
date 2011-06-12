@@ -1,9 +1,9 @@
-#include "skeleton.h"
+#include "Skeleton.h"
 
-#include "dof.h"
-#include "joint.h"
-#include "bodynode.h"
-#include "marker.h"
+#include "Dof.h"
+#include "Joint.h"
+#include "BodyNode.h"
+#include "Marker.h"
 
 #include <cassert>
 using namespace std;
