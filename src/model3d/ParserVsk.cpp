@@ -1,4 +1,4 @@
-#include "parser_vsk.h"
+#include "ParserVsk.h"
 
 // Standard Library
 #include <map>
@@ -18,19 +18,19 @@ using namespace std;
 using namespace Eigen;
 
 // Local Files
-#include "skeleton.h"
-#include "bodynode.h"
-#include "joint.h"
-#include "marker.h"
-#include "dof.h"
-#include "transformation.h"
-#include "trfm_translate.h"
-#include "trfm_rotate_expmap.h"
-#include "trfm_rotate_euler.h"
-#include "marker.h"
-#include "primitive.h"
-#include "primitive_ellipsoid.h"
-#include "primitive_cube.h"
+#include "Skeleton.h"
+#include "BodyNode.h"
+#include "Joint.h"
+#include "Marker.h"
+#include "Dof.h"
+#include "Transformation.h"
+#include "TrfmTranslate.h"
+#include "TrfmRotateExpmap.h"
+#include "TrfmRotateEuler.h"
+#include "Marker.h"
+#include "Primitive.h"
+#include "PrimitiveEllipsoid.h"
+#include "PrimitiveCube.h"
 //#include "Quaternion.h"
 
 #define mScaleVSK 1.0e-3

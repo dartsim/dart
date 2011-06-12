@@ -1,5 +1,5 @@
-#include "trfm_rotate_expmap.h"
-#include "dof.h"
+#include "TrfmRotateExpmap.h"
+#include "Dof.h"
 #include "utils/rotation_conversion.h"
 #include "utils/LoadOpengl.h"
 // #include "RenderConfig.h"

@@ -1,10 +1,10 @@
-#include "trfm_rotate_quat.h"
+#include "TrfmRotateQuat.h"
 #include "utils/rotation_conversion.h"
 
 #include <cassert>
 using namespace std;
 
-#include "dof.h"
+#include "Dof.h"
 //#include <opengl/gl.h>
 
 namespace model3d {

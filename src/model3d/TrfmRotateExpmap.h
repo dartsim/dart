@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_TRFM_ROTATE_EXPMAP_H
 #define SRC_MODEL3D_TRFM_ROTATE_EXPMAP_H
 
-#include "transformation.h"
+#include "Transformation.h"
 //#include "moremath.h"
 #include <cmath>
 #include <cassert>

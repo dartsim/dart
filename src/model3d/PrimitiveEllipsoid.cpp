@@ -1,4 +1,4 @@
-#include "primitive_ellipsoid.h"
+#include "PrimitiveEllipsoid.h"
 
 #ifndef _RENDERER_TEST
 #include "utils/LoadOpengl.h"

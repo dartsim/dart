@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_TRFM_ROTATE_EULER_H
 #define SRC_MODEL3D_TRFM_ROTATE_EULER_H
 
-#include "transformation.h"
+#include "Transformation.h"
 #include <cassert>
 using namespace std;
 

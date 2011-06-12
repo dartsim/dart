@@ -3,7 +3,7 @@
 
 #include <cassert>
 using namespace std;
-#include "transformation.h"
+#include "Transformation.h"
 
 namespace model3d {
   class TrfmTranslate : public Transformation {

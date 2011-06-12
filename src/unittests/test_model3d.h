@@ -1,7 +1,7 @@
 #ifndef SRC_UNITTESTS_TEST_MODEL3D_H
 #define SRC_UNITTESTS_TEST_MODEL3D_H
 
-#include "model3d/bodynode.h"
+#include "model3d/BodyNode.h"
 
 TEST(MODEL3D, BODYNODE) {
   using model3d::BodyNode;

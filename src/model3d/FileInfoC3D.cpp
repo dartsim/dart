@@ -1,5 +1,5 @@
-#include "fileinfo_c3d.h"
-#include "c3d.h"
+#include "FileInfoC3D.h"
+#include "C3D.h"
 #include <cassert>
 
 namespace model3d{

@@ -1,8 +1,8 @@
-#include "transformation.h"
+#include "Transformation.h"
 
 #include "utils/eigen_helper.h"
-#include "dof.h"
-#include "joint.h"
+#include "Dof.h"
+#include "Joint.h"
 
 namespace model3d {
 

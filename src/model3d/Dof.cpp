@@ -1,4 +1,4 @@
-#include "dof.h"
+#include "Dof.h"
 
 double inf = 1e9;
 

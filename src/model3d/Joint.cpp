@@ -1,8 +1,8 @@
-#include "joint.h"
+#include "Joint.h"
 
-#include "dof.h"
-#include "transformation.h"
-#include "bodynode.h"
+#include "Dof.h"
+#include "Transformation.h"
+#include "BodyNode.h"
 
 
 namespace model3d {

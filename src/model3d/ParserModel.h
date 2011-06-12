@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_PARSER_MODEL_H
 #define SRC_MODEL3D_PARSER_MODEL_H
 
-#include "parser_defs.h"
+#include "ParserDefs.h"
 
 typedef union {
   double	dValue;

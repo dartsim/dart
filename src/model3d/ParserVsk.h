@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_PARSER_VSK_H
 #define SRC_MODEL3D_PARSER_VSK_H
 
-#include "skeleton.h"
+#include "Skeleton.h"
 
 //namespace model3d {
 //  class Skeleton;

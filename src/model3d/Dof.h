@@ -6,7 +6,7 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 
-#include "transformation.h"
+#include "Transformation.h"
 
 namespace model3d {
 #define MAX_DOF_NAME 128

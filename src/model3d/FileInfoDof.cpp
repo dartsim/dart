@@ -1,4 +1,4 @@
-#include "fileinfo_dof.h"
+#include "FileInfoDof.h"
 //#include "Ellipsoid.h"
 //#include "Model.h"
 /*
@@ -23,8 +23,8 @@
 
 #include <string>
 #include <fstream>
-#include "skeleton.h"
-#include "dof.h"
+#include "Skeleton.h"
+#include "Dof.h"
 
 using namespace std;
 

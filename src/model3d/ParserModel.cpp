@@ -116,23 +116,23 @@
 #include <malloc.h>
 #include <fstream>
 #include <assert.h>
-#include "parser_model.h"
+#include "ParserModel.h"
 
 #include <Eigen/Dense>
 using namespace Eigen;
 
 using namespace model3d;
 
-#include "skeleton.h"
-#include "joint.h"
-#include "marker.h"
-#include "transformation.h"
-#include "trfm_rotate_euler.h"
-#include "trfm_rotate_expmap.h"
-#include "trfm_rotate_quat.h"
-#include "trfm_translate.h"
-#include "primitive_cube.h"
-#include "primitive_ellipsoid.h"
+#include "Skeleton.h"
+#include "Joint.h"
+#include "Marker.h"
+#include "Transformation.h"
+#include "TrfmRotateEuler.h"
+#include "TrfmRotateExpmap.h"
+#include "TrfmRotateQuat.h"
+#include "TrfmTranslate.h"
+#include "PrimitiveCube.h"
+#include "PrimitiveEllipsoid.h"
 //#include "Capsule.h"
 //#include "PrimMesh.h"
 

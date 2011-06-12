@@ -1,7 +1,7 @@
 #ifndef SRC_MODEL3D_PRIMITIVE_CUBE_H
 #define SRC_MODEL3D_PRIMITIVE_CUBE_H
 
-#include "primitive.h"
+#include "Primitive.h"
 
 namespace model3d {
 
