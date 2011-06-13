@@ -1,6 +1,14 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
 #include "Transformation.h"
 
-#include "utils/eigen_helper.h"
+#include "utils/EigenHelper.h"
 #include "Dof.h"
 #include "Joint.h"
 

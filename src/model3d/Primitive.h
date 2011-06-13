@@ -1,5 +1,13 @@
-#ifndef SRC_MODEL3D_PRIMITIVE_H
-#define SRC_MODEL3D_PRIMITIVE_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef MODEL3D_PRIMITIVE_H
+#define MODEL3D_PRIMITIVE_H
 
 #include <Eigen/Dense>
 
@@ -78,4 +86,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif
+#endif // #ifndef MODEL3D_PRIMITIVE_H
+

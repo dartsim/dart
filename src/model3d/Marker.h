@@ -1,5 +1,14 @@
-#ifndef SRC_MODEL3D_MARKER_H
-#define SRC_MODEL3D_MARKER_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+
+#ifndef MODEL3D_MARKER_H
+#define MODEL3D_MARKER_H
 
 #include <Eigen/Dense>
 using namespace Eigen;
@@ -54,5 +63,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif // #ifndef SRC_MODEL3D_MARKER_H
+#endif // #ifndef MODEL3D_MARKER_H
 

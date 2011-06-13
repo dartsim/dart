@@ -1,5 +1,13 @@
-#ifndef SRC_UTILS_MISC_H
-#define SRC_UTILS_MISC_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef UTILS_MISC_H
+#define UTILS_MISC_H
 
 // Epsilon definition
 #ifndef EPSILON
@@ -32,18 +40,18 @@
 #define SAFE_RELEASE_PTR(x) do{if(x) {delete x; x = NULL;}}while(0)
 
 // For generate getter/setter method
-#define GETSET(type, var)    \
-public:                      \
-type var() const {           \
-  return var##_;             \
-}                            \
-void set_##var(type _val) {  \
-  var##_ = _val;             \
-}                            \
-private:                     \
+#define GETSET(type, var)                       \
+    public:                                     \
+    type var() const {                          \
+        return var##_;                          \
+    }                                           \
+    void set_##var(type _val) {                 \
+        var##_ = _val;                          \
+    }                                           \
+private:                                        \
 type var##_                 
 
 
-#endif // #ifndef SRC_UTILS_MISC_H
+#endif // #ifndef UTILS_MISC_H
 
 

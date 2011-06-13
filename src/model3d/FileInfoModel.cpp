@@ -1,3 +1,11 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
 #include "FileInfoModel.h"
 
 #include <iomanip>
@@ -12,6 +20,7 @@
 #include "Dof.h"
 #include "Joint.h"
 #include "Marker.h"
+#include "Transformation.h"
 #include "PrimitiveEllipsoid.h"
 #include "PrimitiveCube.h"
 #include "renderer/OpenGLRenderInterface.h"

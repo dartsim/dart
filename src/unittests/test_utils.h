@@ -1,8 +1,8 @@
 #ifndef SRC_UNITTESTS_TEST_UTILS_H
 #define SRC_UNITTESTS_TEST_UTILS_H
 
-#include "utils/rotation_conversion.h"
-#include "utils/utils.h"
+#include "utils/RotationConversion.h"
+#include "utils/Utils.h"
 
 TEST(UTILS, ROTATION_CONVERSION) {
   using namespace utils::rot_conv;
@@ -16,16 +16,16 @@ TEST(UTILS, ROTATION_CONVERSION) {
 
 
   // Test conversion between expmap and quaternion
-  Quaterniond q = exp_to_quat(expmap);
-  Vector3d expmap2 = quat_to_exp(q);
+  Quaterniond q = expToQuat(expmap);
+  Vector3d expmap2 = quatToExp(q);
 
   EXPECT_NEAR((expmap - expmap2).norm(), 0.0, EPSILON)
     << "Orig: " << expmap << " Reconstructed: " << expmap2;
   
   // Test conversion between matrix and euler
-  Matrix3d m = quat_to_matrix(q);
-  Vector3d e = matrix_to_euler(m, XYZ);
-  Matrix3d m2 = euler_to_matrix(e, XYZ);
+  Matrix3d m = quatToMatrix(q);
+  Vector3d e = matrixToEuler(m, XYZ);
+  Matrix3d m2 = eulerToMatrix(e, XYZ);
 
   EXPECT_NEAR((m - m2).norm(), 0.0, EPSILON)
     << "Orig: " << m << " Reconstructed: " << m2;
