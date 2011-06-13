@@ -1,4 +1,4 @@
-include ../Makefile.defs
+include ../Makefile.defs.osx
 
 RELEASE_LIB = $(LIB_DIR)/libYUI.a
 DEBUG_LIB = $(LIB_DIR)/libYUId.a

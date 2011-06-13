@@ -42,7 +42,6 @@ namespace model3d {
 	
     // init the model after parsing
     void initSkel();
-    void setDependDofMap(BodyNode *b);
 	
     // inline access functions
     int getNumDofs() { return mDofs.size(); }
@@ -54,7 +53,6 @@ namespace model3d {
     int getNodeIndex(const char* const name);
     Marker* getHandle(int i) { return mHandles[i]; }
     double getMass() { return mMass; }
-    VectorXd EvalCOM();
 
     void setState(const VectorXd&);
     void setState(const vector<double>&);

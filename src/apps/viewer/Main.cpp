@@ -1,11 +1,9 @@
-#include "model3d/fileinfo_model.h"
-#include "model3d/fileinfo_dof.h"
+#include "model3d/FileInfoModel.h"
+#include "model3d/FileInfoDof.h"
 #include "MyWindow.h"
 #include <GLUT/glut.h>
 
 using namespace model3d;
-
-Eigen::Vector3d gravity(0,0,0);
 
 int main(int argc, char* argv[])
 {

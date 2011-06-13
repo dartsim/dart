@@ -7,7 +7,9 @@
 */
 
 #include "Marker.h"
-#ifndef _RENDERER_TEST
+#ifdef _RENDERER_TEST
+#include "renderer/OpenGLRenderInterface.h"
+#else
 #include "utils/LoadOpengl.h"
 #endif
 
@@ -25,7 +27,7 @@ namespace model3d {
   Marker::~Marker() {
   }
 
-  VectorXd Marker::getWorldCoords() {
+  Vector3d Marker::getWorldCoords() {
     return mNode->evalWorldPos(mOffset);
   }
 

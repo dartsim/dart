@@ -2274,7 +2274,7 @@ void __recordMass(char* massName, double massValue)
 /* create new primitive */	
 Primitive* __setGeometry(char* shape, char *massName, vec3v color)
 {
-	Primitive *prim;
+	Primitive *prim = NULL;
 
 	// lookup mass by name
 	double massValue = 0.0;	
@@ -2290,9 +2290,10 @@ Primitive* __setGeometry(char* shape, char *massName, vec3v color)
 //		prim = new Capsule(Vector3d(0,0,0), massValue);
 	else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
 		prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
-//	else{
-//		prim = new PrimMesh(shape,massValue);
-//	}
+	else{
+	    cout<<"Unknown primitive type "<<shape<<endl;
+        exit(0);
+    }
 
 	//set color
 	prim->setColor(Vector3d(color[0], color[1], color[2]));	
@@ -2303,7 +2304,7 @@ Primitive* __setGeometry(char* shape, char *massName, vec3v color)
 /* create new primitive */
 Primitive* __setGeometry(char *shape, char *massName)
 {
-	Primitive *prim;
+	Primitive *prim = NULL;
 
 	//lookup mass by name
 	double massValue = 0.0;	
@@ -2321,9 +2322,10 @@ Primitive* __setGeometry(char *shape, char *massName)
 //		prim = new Capsule(Vector3d(0,0,0), massValue);
 	else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
 		prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
-//	else{
-//		prim = new PrimMesh(shape,massValue);
-//	}
+	else{
+	    cout<<"Unknown primitive type "<<shape<<endl;
+        exit(0);
+    }
 
 	return prim;
 }
@@ -2331,7 +2333,7 @@ Primitive* __setGeometry(char *shape, char *massName)
 /* create new primitive */
 Primitive* __setGeometry(char *shape, vec3v color)
 {
-	Primitive *prim;
+	Primitive *prim = NULL;
 
 	// create new primitive by shape
 	double massValue = 0.0;
@@ -2355,8 +2357,6 @@ Primitive* __setGeometry(char *shape, vec3v color)
 		// create new ellipsoid primitive
 		if(found)
 			prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
-//		else
-//			prim = new PrimMesh(shape,massValue);
 	}
 
 	// set color
@@ -2368,8 +2368,7 @@ Primitive* __setGeometry(char *shape, vec3v color)
 /* create new primitive */
 Primitive* __setGeometry(vec3v color)
 {
-	Primitive *prim;
-	prim = new PrimitiveEllipsoid(Vector3d(0,0,0), 0);
+	Primitive *prim = new PrimitiveEllipsoid(Vector3d(0,0,0), 0);
 	prim->setColor(Vector3d(color[0], color[1], color[2]));
 	return prim;
 }
@@ -2377,7 +2376,7 @@ Primitive* __setGeometry(vec3v color)
 /* create new primitive */
 Primitive* __setGeometry(char *shape)
 {
-	Primitive *prim;
+	Primitive *prim = NULL;
 	double massValue = 0.0;
 	if(!strcmp(shape, "CUBE"))
 		prim = new PrimitiveCube(Vector3d(0,0,0), massValue);
@@ -2399,8 +2398,6 @@ Primitive* __setGeometry(char *shape)
 		// create new ellipsoid primitive
 		if(found)
 			prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
-//		else
-//			prim = new PrimMesh(shape,massValue);
 	}
 
 	return prim;

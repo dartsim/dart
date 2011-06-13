@@ -75,8 +75,8 @@ namespace model3d {
     // calculate mass
     // init the dependsOnDof stucture for each bodylink
     for(int i=0; i<nNodes; i++) {
-      mNodes[i]->setSkel(this);
-      setDependDofMap(mNodes[i]);
+      mNodes[i]->setModel(this);
+      mNodes[i]->setDependDofMap(nDofs);
       mNodes.at(i)->init();
       mMass += mNodes[i]->getMass();
     }
@@ -85,29 +85,9 @@ namespace model3d {
 
     for(int i=0; i<nDofs; i++)
       mCurrState[i] = mDofs.at(i)->getValue();
-   // for(int i=0; i<nNodes; i++)
-   //   mNodes.at(i)->update(mCurrState);
+    for(int i=0; i<nNodes; i++)
+      mNodes.at(i)->updateTransform();
  }
-
-  void Skeleton::setDependDofMap(BodyNode* b){
-    // init the map
-    b->dependsOnDof = new bool[mDofs.size()];
-    memset(b->dependsOnDof, false, mDofs.size()*sizeof(bool));
-    // if not the root node, then copy parent's map first
-    if(b->getNodeIn()!=NULL){
-      // check if map already computed for parent bodylink
-      if(b->getNodeIn()->dependsOnDof==NULL){	// map not set for parent
-        setDependDofMap(b->getNodeIn());
-      }
-      // copy the parent map
-      memcpy(b->dependsOnDof, b->getNodeIn()->dependsOnDof, mDofs.size()*sizeof(bool));
-    }
-    // set the self dofs map
-    for(int i=0; i<b->getNumDofs(); i++){
-      int dofid = b->getDof(i)->getModelIndex();
-      b->dependsOnDof[dofid]=true;
-    }	
-  }
 
   BodyNode* Skeleton::getNode(const char* const name) {
     const int nNodes = getNumNodes();
@@ -130,19 +110,6 @@ namespace model3d {
     }
     return -1;
   }
-
-  VectorXd Skeleton::EvalCOM() {
-    const int nNodes = getNumNodes();
-    double mass = getMass();
-    VectorXd com = VectorXd::Zero(3);
-
-    for(int i = 0; i < nNodes; i++){
-      BodyNode* node = getNode(i);
-      com += node->getMass() * node->evalCOM();
-    }
-    com /= mass;
-    return com;
-  }
   
   void Skeleton::setState(const VectorXd& state) {
     assert(state.size() == nDofs);
@@ -155,7 +122,7 @@ namespace model3d {
     for(int i=0; i<nDofs; i++)
       mDofs.at(i)->setValue(state[i]);
     for(int i=0; i<nNodes; i++)
-      mNodes.at(i)->update(mCurrState);
+      mNodes.at(i)->updateTransform();
   }
 
   void Skeleton::setState(const vector<double>& state) {
@@ -170,7 +137,7 @@ namespace model3d {
       mCurrState[k] = state.at(i);
     }
     for(int i=0; i<nNodes; i++)
-      mNodes.at(i)->update(mCurrState);
+      mNodes.at(i)->updateTransform();
   }
 
   void Skeleton::setPose(const VectorXd& _pose){

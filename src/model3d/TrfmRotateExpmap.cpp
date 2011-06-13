@@ -113,7 +113,8 @@ Matrix4d TrfmRotateExpMap::getDeriv(Dof *d){
   // compute derivative of R wrt each qi
   vector<Matrix3d> dR_dq;
   dR_dq.resize(4);
-  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+// TODO need to rewrite
+//  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
   // derivative wrt which dof 
   int j=-1;
@@ -208,7 +209,8 @@ Matrix4d TrfmRotateExpMap::getDeriv2(Dof *q1, Dof *q2){
   // compute derivative of R wrt each qi
   vector<Matrix3d> dR_dq;
   dR_dq.resize(4);
-  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+// TODO need to rewrite
+//  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
   // compute derivative of R wrt each qi and ql
   vector<vector<Matrix3d> > dR_dq_dq;
@@ -216,7 +218,8 @@ Matrix4d TrfmRotateExpMap::getDeriv2(Dof *q1, Dof *q2){
   for(int i=0; i<4; i++) dR_dq_dq[i].resize(4);
   for(int i=0; i<4; i++) {
     for(int l=i; l<4; l++) {
-      dR_dq_dq[i][l] = utils::rot_conv::getDerivativeMatrix(q, i, l);
+      // TODO need to rewrite
+      //dR_dq_dq[i][l] = utils::rot_conv::getDerivativeMatrix(q, i, l);
       dR_dq_dq[l][i]=dR_dq_dq[i][l];
     }
   }
