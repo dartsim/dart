@@ -11,6 +11,8 @@ using namespace Eigen;
 
 #ifndef _RENDERER_TEST
 #include "utils/LoadOpengl.h"
+#else
+#include "renderer/OpenGLRenderInterface.h"
 #endif
 
 // TODO: do we need to include an equivalent config file?

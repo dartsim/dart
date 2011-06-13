@@ -1,4 +1,4 @@
-include ../../Makefile.defs
+include ../../Makefile.defs.osx
 
 RELEASE_BIN = viewer
 DEBUG_BIN = viewerd
@@ -42,9 +42,11 @@ all: debug release
 
 release : $(RELEASE_OBJS)
 	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -D_RENDERER_TEST_ -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CP) $(RELEASE_BIN) ../$(BIN_DIR)/$(RELEASE_BIN)
 
 debug : $(DEBUG_OBJS)
 	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -D_RENDERER_TEST_ -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CP) $(DEBUG_BIN) ../$(BIN_DIR)/$(DEBUG_BIN)
 
 $(RELEASE_DIR)/%.o: %.cpp
 	@echo $<

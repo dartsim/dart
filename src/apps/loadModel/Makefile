@@ -1,4 +1,4 @@
-include ../../Makefile.defs
+include ../../Makefile.defs.osx
 
 RELEASE_BIN = loadModel
 DEBUG_BIN = loadModeld

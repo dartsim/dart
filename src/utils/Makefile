@@ -1,4 +1,4 @@
-include ../Makefile.defs
+include ../Makefile.defs.osx
 
 RELEASE_LIB = $(LIB_DIR)/libUtils.a
 DEBUG_LIB = $(LIB_DIR)/libUtilsd.a
@@ -8,9 +8,9 @@ DEBUG_DIR=.
 SRC=.
 
 OBJS = \
-	eigen_helper.o \
-	rotation_conversion.o \
-	timer.o \
+	EigenHelper.o \
+	RotationConversion.o \
+	Timer.o \
 	$(NULL)
 
 IDIRS = -I. -I$(EIGEN) -I$(BOOST) -I$(GLOG)/include

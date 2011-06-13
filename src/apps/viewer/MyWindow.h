@@ -2,7 +2,7 @@
 #define _MYWINDOW_
 
 #include "YUI/Win3D.h"
-#include "model3d/fileinfo_dof.h"
+#include "model3d/FileInfoDof.h"
 #include "renderer/OpenGLRenderInterface.h"
 
 class MyWindow : public Win3D

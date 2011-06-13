@@ -1,29 +1,29 @@
-include ../Makefile.defs
+include ../Makefile.defs.osx
 
 RELEASE_LIB = $(LIB_DIR)/libModel3D.a
 DEBUG_LIB = $(LIB_DIR)/libModel3Dd.a
 
 OBJS = \
-	marker.o \
-	dof.o \
-	joint.o \
-	bodynode.o \
-	primitive.o \
-	primitive_cube.o \
-	primitive_ellipsoid.o \
-	transformation.o \
-	trfm_rotate_euler.o \
-	trfm_rotate_expmap.o \
-	trfm_rotate_quat.o \
-	trfm_translate.o \
-	skeleton.o \
-	c3d.o \
-	fileinfo_c3d.o \
-	fileinfo_dof.o \
-	parser_model.o \
-	skel_scanner.o \
-	parser_vsk.o \
-	fileinfo_model.o \
+	Marker.o \
+	Dof.o \
+	Joint.o \
+	BodyNode.o \
+	Primitive.o \
+	PrimitiveCube.o \
+	PrimitiveEllipsoid.o \
+	Transformation.o \
+	TrfmRotateEuler.o \
+	TrfmRotateExpmap.o \
+	TrfmRotateQuat.o \
+	TrfmTranslate.o \
+	Skeleton.o \
+	C3D.o \
+	FileInfoC3D.o \
+	FileInfoDof.o \
+	ParserModel.o \
+	SkelScanner.o \
+	ParserVsk.o \
+	FileInfoModel.o \
 	$(NULL)
 
 IDIRS = -I. -I.. -I$(EIGEN) -I/usr/include/malloc -I$(TICPP) -I$(BOOST)

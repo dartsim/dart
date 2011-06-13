@@ -31,7 +31,7 @@ namespace model3d {
 
     protected:
         BodyNode* mNode;	// body link associated with
-        VectorXd mOffset;	// local coordinates in the links
+        Vector3d mOffset;	// local coordinates in the links
         PrimitiveEllipsoid mSphere;
         char mName[MAX_MARKER_NAME];
         int mModelIndex;	// position in the model class handle vector
@@ -44,7 +44,7 @@ namespace model3d {
         void draw(Renderer::OpenGLRenderInterface* RI, bool _offset = true, const Vector4d& _color = Vector4d::Identity(), bool _default = true);
 
         /* VectorXd getWorldCoords(){return mNode->evalWorldPos(mOffset);} */
-        VectorXd getWorldCoords();
+        Vector3d getWorldCoords();
 	
 	
         Vector3d getLocalCoords(){return mOffset;}
