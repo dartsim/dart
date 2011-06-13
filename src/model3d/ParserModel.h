@@ -1,5 +1,14 @@
-#ifndef SRC_MODEL3D_PARSER_MODEL_H
-#define SRC_MODEL3D_PARSER_MODEL_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+
+#ifndef MODEL3D_PARSER_MODEL_H
+#define MODEL3D_PARSER_MODEL_H
 
 #include "ParserDefs.h"
 
@@ -40,6 +49,6 @@ typedef union {
 
 extern YYSTYPE yylval;
 
-#endif // #ifndef SRC_MODEL3D_PARSER_MODEL_H
+#endif // #ifndef MODEL3D_PARSER_MODEL_H
 
 

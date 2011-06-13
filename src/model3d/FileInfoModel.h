@@ -1,5 +1,14 @@
-#ifndef SRC_MODEL3D_FILEINFO_MODEL_H
-#define SRC_MODEL3D_FILEINFO_MODEL_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+
+#ifndef MODEL3D_FILEINFO_MODEL_H
+#define MODEL3D_FILEINFO_MODEL_H
 
 //#include "fileinfo_base.h"
 #include "Skeleton.h"
@@ -36,5 +45,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif // #ifndef SRC_MODEL3D_FILEINFO_MODEL_H
+#endif // #ifndef MODEL3D_FILEINFO_MODEL_H
 

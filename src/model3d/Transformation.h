@@ -1,12 +1,20 @@
-#ifndef SRC_MODEL3D_TRANSFORMATION_H
-#define SRC_MODEL3D_TRANSFORMATION_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef MODEL3D_TRANSFORMATION_H
+#define MODEL3D_TRANSFORMATION_H
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 using namespace Eigen;
 #include <vector>
 using namespace std;
-#include "utils/misc.h" // For M_PI
+#include "utils/Misc.h" // For M_PI
 #include "renderer/OpenGLRenderInterface.h"
 
 namespace model3d {
@@ -93,5 +101,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif // #ifndef SRC_MODEL3D_TRANSFORMATION_H
+#endif // #ifndef MODEL3D_TRANSFORMATION_H
 

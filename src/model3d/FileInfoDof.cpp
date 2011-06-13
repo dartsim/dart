@@ -1,3 +1,12 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+
 #include "FileInfoDof.h"
 //#include "Ellipsoid.h"
 //#include "Model.h"

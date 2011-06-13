@@ -1,5 +1,13 @@
-#ifndef SRC_MODEL3D_TRFM_ROTATE_QUAT_H
-#define SRC_MODEL3D_TRFM_ROTATE_QUAT_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef MODEL3D_TRFM_ROTATE_QUAT_H
+#define MODEL3D_TRFM_ROTATE_QUAT_H
 
 #include "Transformation.h"
 
@@ -17,5 +25,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif // #ifndef SRC_MODEL3D_TRFM_ROTATE_QUAT_H
+#endif // #ifndef MODEL3D_TRFM_ROTATE_QUAT_H
 

@@ -1,3 +1,11 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
 #include "TrfmTranslate.h"
 #include "Dof.h"
 #include "utils/LoadOpengl.h"

@@ -1,5 +1,13 @@
-#ifndef SRC_MODEL3D_TRFM_ROTATE_EXPMAP_H
-#define SRC_MODEL3D_TRFM_ROTATE_EXPMAP_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef MODEL3D_TRFM_ROTATE_EXPMAP_H
+#define MODEL3D_TRFM_ROTATE_EXPMAP_H
 
 #include "Transformation.h"
 //#include "moremath.h"
@@ -29,4 +37,4 @@ namespace model3d {
   };
 } // namespace model3d
 
-#endif // SRC_MODEL3D_TRFM_ROTATE_EXPMAP_H
+#endif // MODEL3D_TRFM_ROTATE_EXPMAP_H

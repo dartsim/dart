@@ -6,8 +6,8 @@
   Date		06/07/2011
 */
 
-#ifndef SRC_MODEL3D_BODYNODE_H
-#define SRC_MODEL3D_BODYNODE_H
+#ifndef MODEL3D_BODYNODE_H
+#define MODEL3D_BODYNODE_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -152,5 +152,5 @@ namespace model3d {
 
 } // namespace model3d
 
-#endif // #ifndef SRC_MODEL3D_BODYNODE_H
+#endif // #ifndef MODEL3D_BODYNODE_H
 

@@ -1,3 +1,12 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+
 #include "BodyNode.h"
 
 using namespace std;
@@ -8,10 +17,11 @@ using namespace Eigen;
 #include "Marker.h"
 #include "Dof.h"
 #include "Skeleton.h"
+#include "Transformation.h"
 
-#include "utils/misc.h"
-#include "utils/utils.h"
-#include "utils/eigen_helper.h"
+#include "utils/Misc.h"
+#include "utils/Utils.h"
+#include "utils/EigenHelper.h"
 
 #ifdef _RENDERER_TEST
 #include "renderer/OpenGLRenderInterface.h"

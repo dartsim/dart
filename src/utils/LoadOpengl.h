@@ -1,5 +1,13 @@
-#ifndef SRC_UTILS_LOAD_OPENGL_H
-#define SRC_UTILS_LOAD_OPENGL_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/12/2011
+*/
+
+#ifndef UTILS_LOAD_OPENGL_H
+#define UTILS_LOAD_OPENGL_H
 
 #if WIN32
 #include <GL/glut.h>
@@ -11,5 +19,5 @@
 #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif // #ifndef SRC_UTILS_LOAD_OPENGL_H
+#endif // #ifndef UTILS_LOAD_OPENGL_H
 
