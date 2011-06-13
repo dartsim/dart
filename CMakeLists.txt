@@ -114,6 +114,24 @@ FILE(GLOB renderer_hdrs "src/renderer/*.h")
 ADD_LIBRARY(renderer ${renderer_srcs} ${renderer_hdrs})
 SET_TARGET_PROPERTIES(renderer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
+###############################################
+# apps/exampleUI
+PROJECT(exampleUI)
+FILE(GLOB example_ui_srcs "src/apps/exampleUI/*.cpp")
+FILE(GLOB example_ui_hdrs "src/apps/exampleUI/*.h")
+ADD_EXECUTABLE(exampleUI ${example_ui_srcs} ${example_ui_hdrs})
+TARGET_LINK_LIBRARIES(exampleUI YUI)
+TARGET_LINK_LIBRARIES(exampleUI glut GL GLU)
+
+###############################################
+# apps/exampleUI
+PROJECT(loadModel)
+FILE(GLOB load_model_srcs "src/apps/loadModel/*.cpp")
+FILE(GLOB load_model_hdrs "src/apps/loadModel/*.h")
+ADD_EXECUTABLE(loadModel ${load_model_srcs} ${load_model_hdrs})
+TARGET_LINK_LIBRARIES(loadModel model3d ticpp YUI)
+TARGET_LINK_LIBRARIES(loadModel glut GL GLU)
+
 
 ###############################################
 # Doxygen
