@@ -1,4 +1,6 @@
 #include "PrimitiveCube.h"
+using namespace Eigen;
+
 #ifndef _RENDERER_TEST
 #include "utils/LoadOpengl.h"
 #endif

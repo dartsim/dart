@@ -87,6 +87,8 @@ namespace model3d {
     Matrix4d mTransform;	// transformation matrix will be stored here
 	
     bool isDirty;
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
 } // namespace model3d
