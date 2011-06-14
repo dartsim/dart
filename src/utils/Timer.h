@@ -9,18 +9,14 @@
 #ifndef UTILS_TIMER_H
 #define UTILS_TIMER_H
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-namespace bp = boost::posix_time;
-
 namespace utils {
     class Timer;
-    class scoped_profile;
 
     /**
        @brief The implementation of Timer class
 
        This is a definition of timer class.
-       For measure the time, boost date_time is used.
+       For measure the time, clock() api is used
     */
     class Timer {
     public:
@@ -37,26 +33,12 @@ namespace utils {
 
     private:
         int mCount;
-        bp::ptime mStart;
-        bp::ptime mStop;
+        double mStart;
+        double mStop;
         double mLastElapsed;
         double mTotal;
-        char* mName;
+        char *mName;
         bool mIsRunning;
-    };
-
-    /**
-       @brief A helper class for timer class
-       @see Timer
-
-    */
-    class scoped_timer {
-    public:
-        scoped_timer(Timer* timer);
-        ~scoped_timer();
-        Timer* timer() const;
-    private:
-        Timer* timer_;
     };
 } // namespace utils
 
