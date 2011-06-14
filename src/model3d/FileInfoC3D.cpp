@@ -9,7 +9,9 @@
 
 #include "FileInfoC3D.h"
 #include "C3D.h"
+
 #include <cassert>
+using namespace std;
 
 namespace model3d{
 

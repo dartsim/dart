@@ -23,7 +23,7 @@ namespace model3d {
         void calVolume();
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+            };
 
 } // namespace model3d
 

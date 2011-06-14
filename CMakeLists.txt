@@ -84,7 +84,7 @@ FILE(GLOB unittests_srcs "src/unittests/*.cpp")
 FILE(GLOB unittests_hdrs "src/unittests/*.h")
 
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
-TARGET_LINK_LIBRARIES(unittests utils model3d)
+TARGET_LINK_LIBRARIES(unittests utils model3d ticpp)
 TARGET_LINK_LIBRARIES(unittests gflags)
 if (UNIX)
   TARGET_LINK_LIBRARIES(unittests gtest pthread glut)

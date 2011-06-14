@@ -11,23 +11,23 @@
 //#include "Ellipsoid.h"
 //#include "Model.h"
 /*
-#include "FunctionDof.h"
-#include "FunctionMuscle.h"
-#include "FunctionCOM.h"
-#include "FunctionCOMVel.h"
-#include "FunctionCOMAccel.h"
-#include "FunctionDofVel.h"
-#include "FunctionDofAccel.h"
-#include "FunctionHandle.h"
+  #include "FunctionDof.h"
+  #include "FunctionMuscle.h"
+  #include "FunctionCOM.h"
+  #include "FunctionCOMVel.h"
+  #include "FunctionCOMAccel.h"
+  #include "FunctionDofVel.h"
+  #include "FunctionDofAccel.h"
+  #include "FunctionHandle.h"
 */
 //#include "RotationConversion.h"
 
 /*
-#ifdef USEFLTK
-#include "../UI/include/glFuncs.h"
-#else
-#include "../glutDisplay/include/glFuncs.h"
-#endif
+  #ifdef USEFLTK
+  #include "../UI/include/glFuncs.h"
+  #else
+  #include "../glutDisplay/include/glFuncs.h"
+  #endif
 */
 
 #include <string>
@@ -39,20 +39,20 @@ using namespace std;
 
 namespace model3d{
 
-FileInfoDof::FileInfoDof(Skeleton* _skel, double _fps)
+    FileInfoDof::FileInfoDof(Skeleton* _skel, double _fps)
 	: mSkel(_skel),mFPS(_fps)
-{
+    {
 	mNumFrames = 0;
-}
+    }
 
-FileInfoDof::~FileInfoDof()
-{
+    FileInfoDof::~FileInfoDof()
+    {
 	mDofs.clear();
 	mNumFrames = 0;
-}
+    }
 
-bool FileInfoDof::loadFile(const char* _fName)
-{
+    bool FileInfoDof::loadFile(const char* _fName)
+    {
 	ifstream inFile(_fName);
 	if(inFile.fail()==1) return false;
 	
@@ -71,25 +71,25 @@ bool FileInfoDof::loadFile(const char* _fName)
 	inFile >> nDof;
 
 	if( mSkel==NULL || mSkel->getNumDofs()!=nDof )
-		return false;
+            return false;
 
 	mDofs.resize(mNumFrames);
 
 	//dof names
 	for(int i=0; i<nDof; i++)
-		inFile >> buffer;
+            inFile >> buffer;
 	for(int j=0; j<mNumFrames; j++){
-		for(int i=0; i<nDof; i++){
-			double val;
-			inFile >> val;
-			mDofs[j].push_back(val);
-		}
+            for(int i=0; i<nDof; i++){
+                double val;
+                inFile >> val;
+                mDofs[j].push_back(val);
+            }
 	}
 
 	// fps
 	inFile>>buffer;
 	if(!inFile.eof()){
-		inFile>>mFPS;
+            inFile>>mFPS;
 	}
 	
 	inFile.close();
@@ -99,9 +99,9 @@ bool FileInfoDof::loadFile(const char* _fName)
 	text = text.substr(lastSlash+1);
 	strcpy(mFileName, text.c_str());
 	return true;
-}
+    }
 
-bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double sampleRate ){
+    bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double sampleRate ){
 	if(_end<_start) return false;
 	
 	ofstream outFile(_fName, ios::out);
@@ -114,14 +114,14 @@ bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double sam
 	outFile<<"frames = " <<last-first+1<<" dofs = "<<mSkel->getNumDofs()<<endl;
 
 	for(int i=0; i<mSkel->getNumDofs(); i++)
-		outFile << mSkel->getDof(i)->getName() << ' ';
+            outFile << mSkel->getDof(i)->getName() << ' ';
 	outFile << endl;
 	
 	for(int i=first; i<= last; i++){
-		for(int j=0; j<mSkel->getNumDofs(); j++){
-			outFile << mDofs[i][j] <<' ';
-		}
-		outFile << endl;
+            for(int j=0; j<mSkel->getNumDofs(); j++){
+                outFile << mDofs[i][j] <<' ';
+            }
+            outFile << endl;
 	}
 	
 	outFile<<"FPS "<<mFPS<<endl;
@@ -133,6 +133,6 @@ bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double sam
 	text = text.substr(lastSlash+1);
 	strcpy(mFileName, text.c_str());
 	return true;
-}
+    }
 
 }

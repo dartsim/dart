@@ -10,14 +10,16 @@
 #ifndef MODEL3D_FILEINFO_MODEL_H
 #define MODEL3D_FILEINFO_MODEL_H
 
-//#include "fileinfo_base.h"
-#include "Skeleton.h"
 #include <fstream>
 #include <Eigen/Dense>
 
-class BodyNode;
+namespace Renderer {
+    class OpenGLRenderInterface;
+} // namespace Renderer
 
 namespace model3d {
+    class BodyNode;
+    class Skeleton;
 
     class FileInfoModel /*: public FileInfoBase*/ {
     public:
