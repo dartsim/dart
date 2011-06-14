@@ -81,7 +81,7 @@ namespace model3d {
         }
     }
 
-    Vector3d BodyNode::evalWorldPos(Vector3d& lp) {
+    Vector3d BodyNode::evalWorldPos(const Vector3d& lp) {
         Vector3d result = utils::transform(W,lp);
         return result;
     }

@@ -49,7 +49,7 @@ namespace model3d {
         Eigen::Matrix4d getLocalTransform() const { return T; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
         Eigen::Matrix4d getLocalInvTransform() const { return T.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
 
-        Eigen::Vector3d evalWorldPos(Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
+        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
         void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node
         bool dependsOn(int _dofIndex) const { return dependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
