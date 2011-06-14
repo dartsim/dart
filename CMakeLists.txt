@@ -85,7 +85,7 @@ FILE(GLOB unittests_hdrs "src/unittests/*.h")
 
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
 TARGET_LINK_LIBRARIES(unittests utils model3d ticpp)
-TARGET_LINK_LIBRARIES(unittests gflags)
+TARGET_LINK_LIBRARIES(unittests gflags glog)
 if (UNIX)
   TARGET_LINK_LIBRARIES(unittests gtest pthread glut)
 endif()
@@ -129,7 +129,7 @@ PROJECT(loadModel)
 FILE(GLOB load_model_srcs "src/apps/loadModel/*.cpp")
 FILE(GLOB load_model_hdrs "src/apps/loadModel/*.h")
 ADD_EXECUTABLE(loadModel ${load_model_srcs} ${load_model_hdrs})
-TARGET_LINK_LIBRARIES(loadModel model3d ticpp YUI)
+TARGET_LINK_LIBRARIES(loadModel model3d ticpp YUI gflags glog)
 TARGET_LINK_LIBRARIES(loadModel glut GL GLU)
 
 ###############################################
@@ -139,7 +139,7 @@ FILE(GLOB viewer_srcs "src/apps/viewer/*.cpp")
 FILE(GLOB viewer_hdrs "src/apps/viewer/*.h")
 ADD_EXECUTABLE(viewer ${viewer_srcs} ${viewer_hdrs})
 TARGET_LINK_LIBRARIES(viewer model3d ticpp YUI)
-TARGET_LINK_LIBRARIES(viewer glut GL GLU)
+TARGET_LINK_LIBRARIES(viewer glut GL GLU glog gflags)
 
 
 ###############################################
