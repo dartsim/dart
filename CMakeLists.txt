@@ -132,6 +132,15 @@ ADD_EXECUTABLE(loadModel ${load_model_srcs} ${load_model_hdrs})
 TARGET_LINK_LIBRARIES(loadModel model3d ticpp YUI)
 TARGET_LINK_LIBRARIES(loadModel glut GL GLU)
 
+###############################################
+# apps/exampleUI
+PROJECT(viewer)
+FILE(GLOB viewer_srcs "src/apps/viewer/*.cpp")
+FILE(GLOB viewer_hdrs "src/apps/viewer/*.h")
+ADD_EXECUTABLE(viewer ${viewer_srcs} ${viewer_hdrs})
+TARGET_LINK_LIBRARIES(viewer model3d ticpp YUI)
+TARGET_LINK_LIBRARIES(viewer glut GL GLU)
+
 
 ###############################################
 # Doxygen
