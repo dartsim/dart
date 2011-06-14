@@ -31,14 +31,6 @@ namespace model3d {
             SOFT
         };
 
-    protected:
-        BodyNode* mNode;	// body link associated with
-        Eigen::Vector3d mOffset;	// local coordinates in the links
-        PrimitiveEllipsoid* mSphere;
-        char mName[MAX_MARKER_NAME];
-        int mModelIndex;	// position in the model class handle vector
-        ConstraintType mType;
-
     public:
         Marker(char*, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
         virtual ~Marker();
@@ -59,6 +51,15 @@ namespace model3d {
         // useful for IK
         ConstraintType getConstraintType(){return mType;}
         void setConstraintType(ConstraintType _type){mType = _type;}
+
+    protected:
+        BodyNode* mNode;	// body link associated with
+        Eigen::Vector3d mOffset;	// local coordinates in the links
+        PrimitiveEllipsoid* mSphere;
+        char mName[MAX_MARKER_NAME];
+        int mModelIndex;	// position in the model class handle vector
+        ConstraintType mType;
+
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             };

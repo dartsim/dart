@@ -20,6 +20,9 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 
+#include <glog/logging.h>
+using namespace google;
+
 // Local Files
 #include "Skeleton.h"
 #include "BodyNode.h"
@@ -69,7 +72,7 @@ void autoGeneratePrimitive2(Skeleton* skel);
 //
 int readVSKFile(const char* const filename, Skeleton* _skel)
 {
-    cout << "Read SKel File!! Yay!!" << endl;
+    VLOG(1) << "Read SKel File!! Yay!!" << endl;
 
     // Load xml and create Document
     ticpp::Document _stateFile(filename);
@@ -79,10 +82,10 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
     }
     catch(ticpp::Exception e)
     {
-        cout << "LoadFile Fails: " << e.what() << endl;
+        VLOG(1) << "LoadFile Fails: " << e.what() << endl;
         return VSK_ERROR;
     }
-    cout << "Load " << filename << " (xml) Successfully" << endl;
+    VLOG(1) << "Load " << filename << " (xml) Successfully" << endl;
 
     // Load Kinematic Model which defines Parameters, Skeletons and Markers
     ticpp::Element* kinmodel = NULL;
@@ -103,7 +106,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
             double val = 0; 
             childparam->GetAttribute("VALUE", &val);
             paramsList[pname] = val;
-            // cout << pname << " = " << val << endl;
+            // VLOG(1) << pname << " = " << val << endl;
         }
     }
 
@@ -157,11 +160,11 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
                 string mname = childmass->GetAttribute("NAME");
                 double mi=0; childmass->GetAttribute("VALUE", &mi);
                 masslist[mname] = mi;
-                cout<<"mass: "<<mname<<" "<<mi<<endl;
+                VLOG(1)<<"mass: "<<mname<<" "<<mi<<endl;
             }
         } 
         catch( ticpp::Exception ){
-            cout<<"no masses found!\n";
+            VLOG(1)<<"no masses found!\n";
         }
     }
 
@@ -185,7 +188,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
   
     _skel->initSkel();
     // 
-    cout << "Everything Looks good. I'm happy!" << endl;
+    VLOG(1) << "Everything Looks good. I'm happy!" << endl;
     return VSK_OK;
 }
 
@@ -195,9 +198,9 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
 {
     string sname = _segment->GetAttribute("NAME");
 
-    cout<<"\nsegment: "<<sname<<" ";
-    if(_parent) cout<<"parent: "<<_parent->getName()<<endl;
-    else cout<<"parent: NULL\n";
+    VLOG(1)<<"\nsegment: "<<sname<<" ";
+    if(_parent) VLOG(1)<<"parent: "<<_parent->getName()<<endl;
+    else VLOG(1)<<"parent: NULL\n";
 
     // make bodylink out of current segment
     BodyNode* blink = new BodyNode((char *)sname.c_str());
@@ -209,7 +212,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     //// HARDCODED: constant rotation for humerus and changed translation
     if(sname.compare(1, 8, "humerus")!=0)
     {
-        cout << "THE COMMON CODE!!" << endl;
+        VLOG(1) << "THE COMMON CODE!!" << endl;
         string txyz = _segment->GetAttribute("POSITION");
         vector<string> tokens; Tokenize(txyz, tokens);
         assert(tokens.size()==3);
@@ -243,7 +246,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
             // add transformation to joint
             jt->addTransform(tele, false);	
             // don't add to model because it's not variable
-            cout<<"telescope: "<<pos2<<endl;
+            VLOG(1)<<"telescope: "<<pos2<<endl;
         }
 
         {
@@ -252,7 +255,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
             assert(tokens.size()==3);
             for (int i = 0; i < 3; ++i) {
                 orientation[i] = str2double(tokens[i]);
-                // cout << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
+                // VLOG(1) << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
             }
             orientation = adjustPos(orientation) / mScaleVSK;
         }
@@ -260,7 +263,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     }
     // HARDCODED: constant rotation for humerus and changed translation
     else {
-        cout << "HUMERUS SPECIAL CODE!!!!!" << endl;
+        VLOG(1) << "HUMERUS SPECIAL CODE!!!!!" << endl;
         char lr = sname[0];
         //adjusted: +-Shoulder ShoulderHeight 0 
         string paramShoulder = "ShoulderLen";
@@ -270,14 +273,14 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         // telescope
         Vector3d pos(0.0, 1.0, 0.0);	// adjusted for skel
         pos *= _paramsList[paramShoulder];
-        cout<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
+        VLOG(1)<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
         Dof** dofs = new Dof*[3];
         for(int i=0; i<3; i++) dofs[i] = new Dof(pos[i]);
         TrfmTranslate* tele = new TrfmTranslate(dofs[0],dofs[1],dofs[2]);
         // add transformation to joint
         jt->addTransform(tele, false);	
         // don't add to model because it's not variable
-        cout<<"telescope: "<<pos<<endl;
+        VLOG(1)<<"telescope: "<<pos<<endl;
 
         // const rotation
         Dof *dofx = new Dof(-expShoulder[0]);
@@ -286,21 +289,21 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         TrfmRotateExpMap *consrot= new TrfmRotateExpMap(dofx, dofy, dofz);
         jt->addTransform(consrot, false);	
         // don't add to model because it's not variable
-        cout<<"const rotation: "<<-expShoulder<<endl;
+        VLOG(1)<<"const rotation: "<<-expShoulder<<endl;
     }
 
     // HARDCODED: constant rotation for clavicle
     if(sname.compare(1, 8, "clavicle")==0){
-        cout << "CLAVICLE SPECIAL CODE!!" << endl;
+        VLOG(1) << "CLAVICLE SPECIAL CODE!!" << endl;
         char lr = sname[0];
         string hname = "humerus";
         hname.insert(hname.begin(), lr);
-        cout<<hname<<endl;
+        VLOG(1)<<hname<<endl;
         // read the childsegment humerus
         ticpp::Element *humerus = _segment->FirstChildElement( "Segment");
         string cname = humerus->GetAttribute("NAME");
         if(cname.compare(hname)!=0){
-            cout<<"Error: childname of "<<sname<<" doesnt match: "<<hname<<" vs "<<cname<<endl;
+            VLOG(1)<<"Error: childname of "<<sname<<" doesnt match: "<<hname<<" vs "<<cname<<endl;
             return false;
         }
         // add telescope and const rot transforms
@@ -327,7 +330,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         string paramShoulder = "ShoulderLen";
         paramShoulder.push_back(lr);
         _paramsList[paramShoulder] = lenShoulder;
-        cout<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
+        VLOG(1)<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
         //adjusted: +-Shoulder ShoulderHeight z 
     
         pos.normalize();
@@ -343,7 +346,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         TrfmRotateExpMap *consrot= new TrfmRotateExpMap(dofx, dofy, dofz);
         jt->addTransform(consrot, false);	
         // don't add to model because it's not variable
-        cout<<"const rotation: "<<expShoulder<<endl;
+        VLOG(1)<<"const rotation: "<<expShoulder<<endl;
     }
 
     
@@ -382,14 +385,14 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         }catch( ticpp::Exception e){
         }
     }
-    if(!foundJoint) cout<<"fixed joint!\n";
+    if(!foundJoint) VLOG(1)<<"fixed joint!\n";
 
     for(int i=0; i<jt->getNumTransforms(); i++){
         if(!jt->getTransform(i)->getVariable()) continue;
         for(int j=0; j<jt->getTransform(i)->getNumDofs(); j++){
-            cout<<jt->getTransform(i)->getDof(j)->getName()<<" ";
+            VLOG(1)<<jt->getTransform(i)->getDof(j)->getName()<<" ";
         }
-        cout<<endl;
+        VLOG(1)<<endl;
     }
 
     // add to the model
@@ -407,7 +410,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
 
 bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
 {
-    cout<<"read free\n";
+    VLOG(1)<<"read free\n";
 
     // create new transformation
     string tname1 = string(_jt->getNodeOut()->getName()) + "_t";
@@ -450,8 +453,8 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
 
 bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _model, Vector3d orient)
 {
-    cout << "read ball\n";
-    cout << "orientation = " << orient << endl;
+    VLOG(1) << "read ball\n";
+    VLOG(1) << "orientation = " << orient << endl;
     string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
     string tname2_0 = tname2 + "Ball0";
     string tname2_1 = tname2 + "Ball1";
@@ -477,7 +480,7 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _model, Vector3d o
 
 bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
 {
-    cout<<"read hardy spicer\n";
+    VLOG(1)<<"read hardy spicer\n";
 
     // Read axisxyz and parse it into tokens
     string axisxyz = _je->GetAttribute("AXIS-PAIR");
@@ -531,7 +534,7 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
 
 bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
 {
-    cout<<"read hinge\n";
+    VLOG(1)<<"read hinge\n";
 
     string tname = string(_jt->getNodeOut()->getName()) + "_a";
     tname += "Hinge0";
@@ -553,17 +556,17 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     // if(tokens[1].compare("1")==0){
     if ((axis - adjustPos(Vector3d(1.0, 0.0, 0.0)) / mScaleVSK ).norm() < 0.01) {
         r1 = new TrfmRotateEulerX(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "RotateEulerX" << endl;
+        VLOG(1) << "RotateEulerX" << endl;
     }
     else if ((axis - adjustPos(Vector3d(0.0, 1.0, 0.0)) / mScaleVSK ).norm() < 0.01) {
         // else if(tokens[2].compare("1")==0){
         r1 = new TrfmRotateEulerY(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "RotateEulerY" << endl;
+        VLOG(1) << "RotateEulerY" << endl;
     }
     else if ((axis - adjustPos(Vector3d(0.0, 0.0, 1.0)) / mScaleVSK ).norm() < 0.01) {
         // else if(tokens[0].compare("1")==0){
         r1 = new TrfmRotateEulerZ(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "RotateEulerZ" << endl;
+        VLOG(1) << "RotateEulerZ" << endl;
     }
     assert(r1!=NULL);
     _jt->addTransform(r1);	
@@ -616,10 +619,10 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 
     Marker* m = new Marker((char*)mname.c_str(), lpos2, _model->getNode(_segmentindex[sname]));
     _model->addHandle(m);
-    cout<<"marker: "<<mname<<" ";
-    cout<<"segment: "<<sname<<" ";
-    cout<<"sindex: "<<_segmentindex[sname]<<" ";
-    cout<<"lpos: "<<lpos2<<endl;
+    VLOG(1)<<"marker: "<<mname<<" ";
+    VLOG(1)<<"segment: "<<sname<<" ";
+    VLOG(1)<<"sindex: "<<_segmentindex[sname]<<" ";
+    VLOG(1)<<"lpos: "<<lpos2<<endl;
     return true;
 }
 
@@ -691,7 +694,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
         prim = new PrimitiveCube(dim, mass);
     }
     else {
-        cout << "Primitive type " << ptype << " not recognized!\n";
+        VLOG(1) << "Primitive type " << ptype << " not recognized!\n";
         return false;
     }
 
@@ -793,7 +796,7 @@ void autoGeneratePrimitive2(Skeleton* skel)
 {
     // autoGeneratePrimitive(skel); return;
   
-    cout << "Auto-generating primitives" << endl;
+    VLOG(1) << "Auto-generating primitives" << endl;
 
     double massSum = 0.0;
     for(int i=0; i<skel->getNumNodes(); i++){
@@ -803,17 +806,17 @@ void autoGeneratePrimitive2(Skeleton* skel)
         // Search translate matrix
         Vector3d size = 0.1 * Vector3d(1,1,1);
         Vector3d offset(0,0,0);
-        cout << endl;
-        cout << "Node = " << node->getName() << endl;
+        VLOG(1) << endl;
+        VLOG(1) << "Node = " << node->getName() << endl;
         if (node->getNodeIn() == NULL)
         {
-            cout << "I'm root!!!!!" << endl;
+            VLOG(1) << "I'm root!!!!!" << endl;
             size = 0.1 * Vector3d(1,1,1);
             continue;
         }
         BodyNode* parent = node->getNodeIn();
 
-        cout << "Parent Node = " << node->getNodeIn()->getName() << endl;
+        VLOG(1) << "Parent Node = " << node->getNodeIn()->getName() << endl;
         for (int j = 0; j < joint->getNumTransforms(); ++j)
         {
             Transformation* trfm = joint->getTransform(j);
@@ -845,9 +848,9 @@ void autoGeneratePrimitive2(Skeleton* skel)
         double density = 2000.0;
         double mass = density * size[0] * size[1] * size[2];
         massSum += mass;
-        cout << "Size = " << size << endl;
-        cout << "Offset = " << offset << endl;
-        cout << "Mass = " << mass << endl;
+        VLOG(1) << "Size = " << size << endl;
+        VLOG(1) << "Offset = " << offset << endl;
+        VLOG(1) << "Mass = " << mass << endl;
 
         // size = 0.1 * Vector3d(vl_1);
         // offset = Vector3d(vl_0);
@@ -861,7 +864,7 @@ void autoGeneratePrimitive2(Skeleton* skel)
     }
 
     autoGeneratePrimitive(skel);
-    cout << "Sum of mass = " << massSum << endl;
+    VLOG(1) << "Sum of mass = " << massSum << endl;
 }
 
 Vector3d RotatePoint(const Quaterniond& q, const Vector3d& pt)
@@ -873,13 +876,13 @@ Vector3d RotatePoint(const Quaterniond& q, const Vector3d& pt)
 
     // check below - assuming same format of point achieved
     Vector3d temp;
-    //cout<<"Point before: "<<0<<" "<<pt.x<<" "<<pt.y<<" "<<pt.z<<"\n";
-    //cout<<"Point after:  "<<rot.x<<" "<<rot.y<<" "<<rot.z<<" "<<rot.w<<"\n";
+    //VLOG(1)<<"Point before: "<<0<<" "<<pt.x<<" "<<pt.y<<" "<<pt.z<<"\n";
+    //VLOG(1)<<"Point after:  "<<rot.x<<" "<<rot.y<<" "<<rot.z<<" "<<rot.w<<"\n";
     temp[0]=rot.x();
     temp[1]=rot.y();
     temp[2]=rot.z();
 
-    //cout<<"Point after rotation: "<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
+    //VLOG(1)<<"Point after rotation: "<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
     return temp;
 }
 

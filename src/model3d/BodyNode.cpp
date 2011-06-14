@@ -68,21 +68,21 @@ namespace model3d {
         else
             mMass = 0;
 
-        T = Matrix4d::Identity();
-        W = Matrix4d::Identity();
+        mTransLocal = Matrix4d::Identity();
+        mTransWorld = Matrix4d::Identity();
     }
 
     void BodyNode::updateTransform() {
-        T = mJointIn->getTransform();
+        mTransLocal = mJointIn->getTransform();
         if (mNodeIn) {
-            W = mNodeIn->W*T;
+            mTransWorld = mNodeIn->mTransWorld * mTransLocal;
         } else {
-            W = T;
+            mTransWorld = mTransLocal;
         }
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& lp) {
-        Vector3d result = utils::transform(W,lp);
+        Vector3d result = utils::transform(mTransWorld, lp);
         return result;
     }
     

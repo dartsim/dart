@@ -44,10 +44,10 @@ namespace model3d {
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< update transformations w.r.t. the current dof values in Dof*
 
-        Eigen::Matrix4d getWorldTransform() const { return W; } ///< transformation from the local coordinates of this body node to the world coordinates
-        Eigen::Matrix4d getWorldInvTransform() const { return W.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
-        Eigen::Matrix4d getLocalTransform() const { return T; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return T.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
+        Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< transformation from the local coordinates of this body node to the world coordinates
+        Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
+        Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
+        Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
@@ -101,8 +101,8 @@ namespace model3d {
         std::vector<Marker *> mHandles; ///< list of handles associated
 
         // transformations
-        Eigen::Matrix4d T; ///< local transformation from parent to itself
-        Eigen::Matrix4d W; ///< global transformation
+        Eigen::Matrix4d mTransLocal; ///< local transformation from parent to itself
+        Eigen::Matrix4d mTransWorld; ///< global transformation
 
         bool *dependsOnDof; ///< map to answer the question whether the bodylink depends on the asked dof or not.
 
