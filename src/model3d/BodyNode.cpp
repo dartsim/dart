@@ -33,7 +33,7 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(char *_name) 
-            : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), dependsOnDof(NULL), mMass(0), mOffset(0,0,0)
+        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), dependsOnDof(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();
         mHandles.clear();

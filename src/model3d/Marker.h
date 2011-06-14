@@ -11,15 +11,17 @@
 #define MODEL3D_MARKER_H
 
 #include <Eigen/Dense>
-using namespace Eigen;
-#include "PrimitiveEllipsoid.h"
-#include "BodyNode.h"
+
+namespace Renderer {
+    class OpenGLRenderInterface;
+} // namespace Renderer
 
 namespace model3d {
 #define MAX_MARKER_NAME 256
 
     class Dof;
     class BodyNode;
+    class PrimitiveEllipsoid;
 
     class Marker {
     public:
@@ -31,27 +33,27 @@ namespace model3d {
 
     protected:
         BodyNode* mNode;	// body link associated with
-        Vector3d mOffset;	// local coordinates in the links
-        PrimitiveEllipsoid mSphere;
+        Eigen::Vector3d mOffset;	// local coordinates in the links
+        PrimitiveEllipsoid* mSphere;
         char mName[MAX_MARKER_NAME];
         int mModelIndex;	// position in the model class handle vector
         ConstraintType mType;
 
     public:
-        Marker(char*, Vector3d& , BodyNode*, ConstraintType _type = NO);
-        ~Marker();
+        Marker(char*, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
+        virtual ~Marker();
 
-        void draw(Renderer::OpenGLRenderInterface* RI, bool _offset = true, const Vector4d& _color = Vector4d::Identity(), bool _default = true);
+        void draw(Renderer::OpenGLRenderInterface* RI, bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _default = true);
 
-        /* VectorXd getWorldCoords(){return mNode->evalWorldPos(mOffset);} */
-        Vector3d getWorldCoords();
+        /* Eigen::VectorXd getWorldCoords(){return mNode->evalWorldPos(mOffset);} */
+        Eigen::Vector3d getWorldCoords();
 	
 	
-        Vector3d getLocalCoords(){return mOffset;}
-        void setLocalCoords(Vector3d& _offset){mOffset = _offset;}
+        Eigen::Vector3d getLocalCoords(){return mOffset;}
+        void setLocalCoords(Eigen::Vector3d& _offset){mOffset = _offset;}
         void setModelIndex(int _idx){mModelIndex=_idx;}
         int getModelIndex(){return mModelIndex;}
-        int getID(){return mSphere.getID();}
+        int getID();
         BodyNode* getNode(){return mNode;}
         char* getName(){return mName;}
         // useful for IK

@@ -38,7 +38,7 @@ namespace model3d {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as memebers in this class
         
-        BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
+            BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNode(); ///< Default destructor
 
         void init(); ///< Initialize the vector memebers with proper sizes

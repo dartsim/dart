@@ -115,6 +115,7 @@
 
 #include <malloc.h>
 #include <fstream>
+#include <iostream>
 #include <assert.h>
 #include "ParserModel.h"
 
@@ -124,6 +125,7 @@ using namespace Eigen;
 using namespace model3d;
 
 #include "Skeleton.h"
+#include "BodyNode.h"
 #include "Joint.h"
 #include "Marker.h"
 #include "Transformation.h"

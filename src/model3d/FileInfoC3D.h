@@ -10,9 +10,8 @@
 #define MODEL3D_FILEINFO_C3D_H
 
 #include <vector>
-using namespace std;
 #include <Eigen/Dense>
-using namespace Eigen;
+
 //Yuting: does fileinfo_base still exist?
 //#include "fileinfo_base.h"
 #include "utils/EigenArrayHelper.h"

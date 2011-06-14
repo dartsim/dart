@@ -13,15 +13,15 @@
 
 namespace model3d {
 
-  class TrfmRotateQuat: public Transformation {
-  public:
-    TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
+    class TrfmRotateQuat: public Transformation {
+    public:
+        TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
 	
-    void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
-    void evalTransform();
-    Matrix4d getDeriv(Dof *);
-    Matrix4d getDeriv2(Dof *, Dof *);
-  };
+        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void evalTransform();
+        Eigen::Matrix4d getDeriv(Dof *);
+        Eigen::Matrix4d getDeriv2(Dof *, Dof *);
+    };
 
 } // namespace model3d
 
