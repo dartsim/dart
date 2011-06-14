@@ -1,0 +1,4 @@
+syntax: glob
+bin/CMakeFiles
+bin/CMakeCache.txt
+TAGS
