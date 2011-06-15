@@ -1,4 +1,4 @@
-include ../Makefile.defs.osx
+include ../Makefile.defs
 
 RELEASE_LIB = $(LIB_DIR)/libModel3D.a
 DEBUG_LIB = $(LIB_DIR)/libModel3Dd.a
@@ -26,7 +26,7 @@ OBJS = \
 	FileInfoModel.o \
 	$(NULL)
 
-IDIRS = -I. -I.. -I$(EIGEN) -I/usr/include/malloc -I$(TICPP) -I$(BOOST)
+IDIRS = -I. -I.. -I$(EIGEN) -I/usr/include/malloc -I$(TICPP)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
 
@@ -45,7 +45,7 @@ debug : $(DEBUG_OBJS)
 
 $(RELEASE_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -D_RENDERER_TEST $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -53,7 +53,7 @@ $(RELEASE_DIR)/%.o: %.cpp
 
 $(DEBUG_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -D_RENDERER_TEST $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \
