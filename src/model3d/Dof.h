@@ -20,39 +20,39 @@ namespace model3d {
     class Dof{
     public:
         Dof();
-        Dof(double val);
-        Dof(double val, double min, double max);
-        Dof(double val, char *name);
-        Dof(double val, char *name, double min, double max);
+        Dof(double _val);
+        Dof(double _val, double _min, double _max);
+        Dof(double _val, char *_name);
+        Dof(double _val, char *_name, double _min, double _max);
 	
         virtual ~Dof(){}
 
         // some helper functions
-        void setName(char* _n) { strcpy(mName,_n); }
+        void setName(char* _n) { strcpy(mName, _n); }
         char* getName() { return mName; }
 	
-        void setValue(double v);
-        double getValue() { return mVal; }
+        void setValue(double _v);
+        double getValue() const { return mVal; }
 	
-        double getMin() { return mMinVal; }
-        double getMax() { return mMaxVal; }
+        double getMin() const { return mMinVal; }
+        double getMax() const { return mMaxVal; }
         void setMin(double _min) { mMinVal = _min; }
         void setMax(double _max) { mMaxVal = _max; }
 	
-        int getModelIndex() { return mModelIndex; }
+        int getModelIndex() const { return mModelIndex; }
         void setModelIndex(int _idx) { mModelIndex = _idx; }
 
-        bool isVariable() { return mVariable; }
+        bool isVariable() const { return mVariable; }
         void setVariable() { mVariable = true; }
 	
         void setTrans(Transformation *_t){ mTrans = _t; }
-        Transformation* getTrans(){ return mTrans; }
+        Transformation* getTrans() const{ return mTrans; }
 	
         void setJoint(Joint *_j) { mJoint = _j; }
-        Joint *getJoint() { return mJoint; }
+        Joint *getJoint() const { return mJoint; }
 
     protected:
-        void init(double _v, const char * _name, double _min, double Max);
+        void init(double _v, const char * _name, double _min, double _max);
         char mName[MAX_DOF_NAME];
         int mModelIndex; // unique to dof in model
 
