@@ -24,14 +24,12 @@ RELEASE_LIBS = \
 	   -lModel3D \
 	   -lUtils \
 	   -lYUI \
-	   -lRenderer \
 	   $(NULL)
 
 DEBUG_LIBS = \
 	   -lModel3Dd \
 	   -lUtilsd \
 	   -lYUId \
-	   -lRenderer \
 	   $(NULL)
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
@@ -41,16 +39,16 @@ default: release
 all: debug release
 
 release : $(RELEASE_OBJS)
-	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_RELEASE) -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(RELEASE_BIN) ../$(BIN_DIR)/$(RELEASE_BIN)
 
 debug : $(DEBUG_OBJS)
-	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_DEBUG) -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(DEBUG_BIN) ../$(BIN_DIR)/$(DEBUG_BIN)
 
 $(RELEASE_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -58,7 +56,7 @@ $(RELEASE_DIR)/%.o: %.cpp
 
 $(DEBUG_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \
@@ -68,4 +66,4 @@ $(DEBUG_DIR)/%.o: %.cpp
 -include $(OBJS:%.o=$(DEBUG_DIR)/%.d)
 
 clean:
-	rm -f $(BIN).exe $(BIN).exe.stackdump $(RELEASE_OBJS) $(DRAW_OBJS) $(RELEASE_DIR)/*.d $(DEBUG_OBJS) $(DEBUG_DIR)/*.d $(BIN)
+	rm -f $(RELEASE_OBJS) $(RELEASE_DIR)/*.d $(DEBUG_OBJS) $(DEBUG_DIR)/*.d $(BIN)
