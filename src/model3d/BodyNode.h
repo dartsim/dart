@@ -52,7 +52,7 @@ namespace model3d {
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
         void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node
-        bool dependsOn(int _dofIndex) const { return dependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
+        bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
 
         void draw(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default, int depth = 0);    ///< render the entire bodylink subtree rooted here
         void drawHandles(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default);    ///< render the handles
@@ -104,7 +104,7 @@ namespace model3d {
         Eigen::Matrix4d T; ///< local transformation from parent to itself
         Eigen::Matrix4d W; ///< global transformation
 
-        bool *dependsOnDof; ///< map to answer the question whether the bodylink depends on the asked dof or not.
+        bool *mDependsOnDof; ///< map to answer the question whether the bodylink depends on the asked dof or not.
 
         double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
         Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame
