@@ -13,7 +13,6 @@
 using namespace std;
 
 #include "Dof.h"
-//#include <opengl/gl.h>
 
 namespace model3d {
 
@@ -46,7 +45,7 @@ namespace model3d {
         mTransform(3, 3) = 1.0;
     }
 
-    Matrix4d TrfmRotateQuat::getDeriv(Dof *d){
+    Matrix4d TrfmRotateQuat::getDeriv(const Dof *d){
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
         q.normalize();	
 
@@ -67,7 +66,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateQuat::getDeriv2(Dof *d1, Dof *d2){
+    Matrix4d TrfmRotateQuat::getDeriv2(const Dof *d1, const Dof *d2){
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
         q.normalize();
 	
@@ -91,7 +90,7 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateQuat::applyGLTransform(Renderer::OpenGLRenderInterface* RI)
+    void TrfmRotateQuat::applyGLTransform() const
     {
 #if 0	
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());

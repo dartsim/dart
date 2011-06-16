@@ -10,7 +10,7 @@
 #define MODEL3D_TRFM_ROTATE_EXPMAP_H
 
 #include "Transformation.h"
-//#include "moremath.h"
+
 #include <cmath>
 #include <cassert>
 
@@ -22,10 +22,10 @@ namespace model3d {
 
         Eigen::Matrix4d getInvTransform();
 
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
-        Eigen::Matrix4d getDeriv(Dof *);
-        Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
+        Eigen::Matrix4d getDeriv(const Dof *);
+        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2);
 	
     private:
         // some math utility functions

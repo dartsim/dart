@@ -45,7 +45,7 @@ debug : $(DEBUG_OBJS)
 
 $(RELEASE_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -53,7 +53,7 @@ $(RELEASE_DIR)/%.o: %.cpp
 
 $(DEBUG_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \

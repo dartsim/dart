@@ -73,7 +73,7 @@ namespace model3d {
     }
 
     void BodyNode::updateTransform() {
-        T = mJointIn->getTransform();
+        T = mJointIn->getLocalTransform();
         if (mNodeIn) {
             W = mNodeIn->W*T;
         } else {
@@ -103,84 +103,42 @@ namespace model3d {
         }
     }
     
-    void BodyNode::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth)
-    {
-#ifdef _RENDERER_TEST
-        if (!RI) return;
-        RI->PushMatrix();
-        // render the self geometry
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
-        }
-        if(mPrimitive != NULL) {
-            RI->PushName((unsigned)mID);
-            RI->PushMatrix();
-            RI->Translate(mOffset);
-            mPrimitive->draw(RI, _color, _default);
-            RI->PopMatrix();
-            RI->PopName();
-        }
-
-        // render the subtree
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
-        }
-        RI->PopMatrix();
-#else
+    void BodyNode::draw(const Vector4d& _color, bool _useDefaultColor, int _depth) const {
         glPushMatrix();
         // render the self geometry
         for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+            mJointIn->getTransform(i)->applyGLTransform();
         }
         if(mPrimitive != NULL) {
             glPushName((unsigned)mID);
             glPushMatrix();
             glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
-            mPrimitive->draw(RI, _color, _default);
+            mPrimitive->draw(_color, _useDefaultColor);
             glPopMatrix();
             glPopName();
         }
 
         // render the subtree
         for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
+            mJointOut[i]->getNodeOut()->draw(_color, _useDefaultColor);
         }
         glPopMatrix();
-#endif
     }
 
-    void BodyNode::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
-    {
-#ifdef _RENDERER_TEST
-        if (!RI) return;
-        RI->PushMatrix();
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
-        }
-
-        // render the corresponding mHandless
-        for(int i=0; i<mHandles.size(); i++){
-            mHandles[i]->draw(RI, true, _color, _default);
-        }
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
-        }
-        RI->PopMatrix();
-#else
+    void BodyNode::drawHandles(const Vector4d& _color, bool _useDefaultColor) const {
         glPushMatrix();
         for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+            mJointIn->getTransform(i)->applyGLTransform();
         }
 
         // render the corresponding mHandless
         for(int i=0; i<mHandles.size(); i++){
-            mHandles[i]->draw(RI, true, _color, _default);
+            mHandles[i]->draw(true, _color, _useDefaultColor);
         }
         for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
+            mJointOut[i]->getNodeOut()->drawHandles(_color, _useDefaultColor);
         }
         glPopMatrix();
-#endif
     }
 
     void BodyNode::setJointIn(Joint *_p) {

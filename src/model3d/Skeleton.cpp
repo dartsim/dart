@@ -160,13 +160,11 @@ namespace model3d {
             mDofs[i]->setValue(_pose[i]);
     }
 
-    void Skeleton::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default) 
-    {
-        mRoot->draw(RI, _color, _default);
+    void Skeleton::draw(const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->draw(_color, _useDefaultColor);
     }
-    void Skeleton::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
-    {
-        mRoot->drawHandles(RI, _color, _default);
+    void Skeleton::drawHandles(const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->drawHandles(_color, _useDefaultColor);
     }
 
 

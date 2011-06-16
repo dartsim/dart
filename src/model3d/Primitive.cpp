@@ -73,8 +73,4 @@ namespace model3d {
         mInertia(2, 2) += trace;
     }
 
-    void Primitive::draw(Renderer::OpenGLRenderInterface* RI) {
-        draw(RI, Eigen::Vector4d(1,0,0,0), true);
-    }
-
 } // namespace model3d

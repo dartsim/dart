@@ -9,7 +9,7 @@
 #include "TrfmRotateEuler.h"
 #include "Dof.h"
 #include "utils/LoadOpengl.h"
-// #include "RenderConfig.h"
+
 using namespace Eigen;
 
 namespace model3d {
@@ -25,13 +25,8 @@ namespace model3d {
             strcpy(mName, "EulerX");
     }
 
-    void TrfmRotateEulerX::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
-#else
+    void TrfmRotateEulerX::applyGLTransform() const{
         glRotatef(mDofs[0]->getValue()*180/M_PI, 1.0, 0.0, 0.0);
-#endif
     }
 
     void TrfmRotateEulerX::evalTransform(){
@@ -46,7 +41,7 @@ namespace model3d {
         mTransform(3, 3) = 1.0; 
     }
 
-    Matrix4d TrfmRotateEulerX::getDeriv(Dof *q){
+    Matrix4d TrfmRotateEulerX::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
@@ -59,7 +54,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerX::getDeriv2(Dof *q1, Dof *q2){
+    Matrix4d TrfmRotateEulerX::getDeriv2(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
@@ -95,13 +90,8 @@ namespace model3d {
             strcpy(mName, "EulerY");
     }
 
-    void TrfmRotateEulerY::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
-#else
+    void TrfmRotateEulerY::applyGLTransform() const{
         glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
-#endif
     }
 
     void TrfmRotateEulerY::evalTransform(){
@@ -116,7 +106,7 @@ namespace model3d {
         mTransform(3, 3) = 1.0; 
     }
 
-    Matrix4d TrfmRotateEulerY::getDeriv(Dof *q){
+    Matrix4d TrfmRotateEulerY::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
@@ -129,7 +119,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerY::getDeriv2(Dof *q1, Dof *q2){
+    Matrix4d TrfmRotateEulerY::getDeriv2(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
@@ -165,13 +155,8 @@ namespace model3d {
             strcpy(mName, "EulerZ");
     }
 
-    void TrfmRotateEulerZ::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
-#else
+    void TrfmRotateEulerZ::applyGLTransform() const{
         glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
-#endif
     }
 
     void TrfmRotateEulerZ::evalTransform(){
@@ -186,7 +171,7 @@ namespace model3d {
         mTransform(3, 3) = 1.0; 
     }
 
-    Matrix4d TrfmRotateEulerZ::getDeriv(Dof *q){
+    Matrix4d TrfmRotateEulerZ::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
@@ -199,7 +184,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerZ::getDeriv2(Dof *q1, Dof *q2){
+    Matrix4d TrfmRotateEulerZ::getDeriv2(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());

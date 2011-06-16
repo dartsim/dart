@@ -17,10 +17,10 @@ namespace model3d {
     public:
         TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
 	
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
-        Eigen::Matrix4d getDeriv(Dof *);
-        Eigen::Matrix4d getDeriv2(Dof *, Dof *);
+        Eigen::Matrix4d getDeriv(const Dof *);
+        Eigen::Matrix4d getDeriv2(const Dof *, const Dof *);
     };
 
 } // namespace model3d

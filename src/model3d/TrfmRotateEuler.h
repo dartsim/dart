@@ -20,10 +20,10 @@ namespace model3d {
 
         Eigen::Matrix4d getInvTransform();
 	
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
-        Eigen::Matrix4d getDeriv(Dof *q);
-        Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2);
     };
 
     // rotate about y axis
@@ -33,10 +33,10 @@ namespace model3d {
 
         Eigen::Matrix4d getInvTransform();
 	
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
-        Eigen::Matrix4d getDeriv(Dof *q);
-        Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2);
     };
 
 
@@ -47,10 +47,10 @@ namespace model3d {
 
         Eigen::Matrix4d getInvTransform();
 	
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
-        Eigen::Matrix4d getDeriv(Dof *q);
-        Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2);
     };
 } // namespace model3d
 

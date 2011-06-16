@@ -14,60 +14,33 @@
 #include <climits>
 #include <Eigen/Dense>
 
-//#include "fileinfo_base.h"
-
 namespace model3d {
     class Skeleton;
  
-    //Yuting: let's have the most basic info for now
-    /* 
-       struct OtherContact{
-       int frameNum;
-       Vector3d pos;
-       Vector3d force;
-       int node;
-       OtherContact(int _fn, int _n, Vector3d _p, Vector3d _f);
-       };
-    */
-    class FileInfoDof /*: public FileInfoBase*/ {
+    class FileInfoDof {
     public:
         FileInfoDof(Skeleton* _skel, double _fps = 120.0);
         virtual ~FileInfoDof();
-    
-        bool loadFile(const char*);
-        bool saveFile(const char*, int, int, double sampleRate = 1.0);
 
-//   inline int getNumContacts();
-//   inline void setNumContacts(int _n);
-        inline void addDof(std::vector<double>& _dofs){ mDofs.push_back(_dofs); mNumFrames++; }
-//    inline void addDof(VectorXd _dofs );
-//    inline void addMuscles(const vector<double>& _muscles );
-//    inline void addContactForces(vector<Vector3d>& _contacts );
-//    inline void addContactPos(vector<Vector3d>& _pos );
-        inline double getDofAt(int _frame, int _id) const { assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame).at(_id); }
-//   inline double getMuscleAt( int _frame, int _id);
-//   inline void getContactAt(int _frame, vector<Vector3d>& _force, vector<Vector3d>& _pos);
-//    inline void addOtherContact(int _frame, int _node, Vector3d _pos, Vector3d _force );
-//  protected:
-//    static Vector4d mColorPool[2];
-  	inline void setFPS(double _fps){ mFPS = _fps; }
-	inline double getFPS() const { return mFPS; }
-  	inline double getNumFrames() const { return mNumFrames; }
- 	inline Skeleton* getModel() const { return mSkel; }
+        bool loadFile(const char* _fileName);
+        bool saveFile(const char* _fileName, int _start, int _end, double _sampleRate = 1.0); ///< Note: down sampling not implemented yet
 
-    public:
-        std::vector< std::vector<double> > mDofs;
-//    vector< vector<double> > mMuscles;
-//    vector< vector<Vector3d> > mContactForces;
-//    vector< vector<Vector3d> > mContactPos;
-//    vector< OtherContact* > mOther;
-//    int mNumContacts;
-  
+        void addDof(std::vector<double>& _dofs){ mDofs.push_back(_dofs); mNumFrames++; }
+        double getDofAt(int _frame, int _id) const { assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame).at(_id); }
+        std::vector<double>& getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
+
+        void setFPS(double _fps){ mFPS = _fps; }
+        double getFPS() const { return mFPS; }
+        
+        double getNumFrames() const { return mNumFrames; }
+        Skeleton* getModel() const { return mModel; }
+
     protected:
-  	Skeleton* mSkel;
-  	double mFPS;
-	int mNumFrames;
-  	char mFileName[256];
+        Skeleton* mModel; ///< model associated with
+        double mFPS; ///< frame rate
+        int mNumFrames; ///< number of frames
+        char mFileName[256]; ///< file name
+        std::vector< std::vector<double> > mDofs; ///< dof data [frame][dofIndex]
     };
 
 } // namespace model3d

@@ -12,10 +12,6 @@
 
 #include <Eigen/Dense>
 
-namespace Renderer {
-    class OpenGLRenderInterface;
-} // namespace Renderer
-
 namespace model3d {
 #define MAX_MARKER_NAME 256
 
@@ -30,38 +26,42 @@ namespace model3d {
             HARD,
             SOFT
         };
-
-    protected:
-        BodyNode* mNode;	// body link associated with
-        Eigen::Vector3d mOffset;	// local coordinates in the links
-        PrimitiveEllipsoid* mSphere;
-        char mName[MAX_MARKER_NAME];
-        int mModelIndex;	// position in the model class handle vector
-        ConstraintType mType;
-
+    
     public:
-        Marker(char*, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
-        virtual ~Marker();
+        Marker(const char* _name, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
+        virtual ~Marker(){}
 
-        void draw(Renderer::OpenGLRenderInterface* RI, bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _default = true);
+        void draw(bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _useDefaultColor = true) const;
 
-        /* Eigen::VectorXd getWorldCoords(){return mNode->evalWorldPos(mOffset);} */
-        Eigen::Vector3d getWorldCoords();
+        Eigen::Vector3d getWorldCoords(); ///< get the world coordinates of mOffset
 	
-	
-        Eigen::Vector3d getLocalCoords(){return mOffset;}
+        Eigen::Vector3d getLocalCoords() const {return mOffset;}
         void setLocalCoords(Eigen::Vector3d& _offset){mOffset = _offset;}
+
+        int getModelIndex() const{return mModelIndex;}
         void setModelIndex(int _idx){mModelIndex=_idx;}
-        int getModelIndex(){return mModelIndex;}
-        int getID();
-        BodyNode* getNode(){return mNode;}
-        char* getName(){return mName;}
+        
+        int getID() const {return mID;}
+        BodyNode* getNode() const {return mNode;}
+        const char* getName() const {return mName;}
+        
         // useful for IK
-        ConstraintType getConstraintType(){return mType;}
+        ConstraintType getConstraintType() const {return mType;}
         void setConstraintType(ConstraintType _type){mType = _type;}
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-            };
+    
+    protected:
+        BodyNode* mNode;	///< body link associated with
+        Eigen::Vector3d mOffset;	///< local coordinates in the links
+        char mName[MAX_MARKER_NAME]; ///< name of this marker, max length 256 characters
+        int mModelIndex;	///< position in the model class handle vector
+        ConstraintType mType; ///< type of constraint
+    
+    private:
+        int mID; ///< a unique ID of this marker globally
+        static int msMarkerCount; ///< counts the number of markers globally
+    };
 
 } // namespace model3d
 

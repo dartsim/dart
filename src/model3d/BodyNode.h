@@ -13,10 +13,6 @@
 #include <Eigen/Dense>
 #include "utils/EigenArrayHelper.h"
 
-namespace Renderer {
-    class OpenGLRenderInterface;
-} // namespace Renderer
-
 namespace model3d {
 #define MAX_NODE3D_NAME 128
 
@@ -54,8 +50,8 @@ namespace model3d {
         void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node
         bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
 
-        void draw(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default, int depth = 0);    ///< render the entire bodylink subtree rooted here
-        void drawHandles(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default);    ///< render the handles
+        void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor=true, int depth = 0) const ;    ///< render the entire bodylink subtree rooted here
+        void drawHandles(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor=true) const ;    ///< render the handles
 
         char* getName() { return mName; }
 
