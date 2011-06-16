@@ -19,14 +19,12 @@ LIBS = \
 
 RELEASE_LIBS = \
 	   -lYUI \
-	   -lRenderer \
 	   -lModel3D \
 	   -lUtils \
 	   $(NULL)
 
 DEBUG_LIBS = \
 	   -lYUId \
-	   -lRendererd \
 	   -lModel3Dd \
 	   -lUtilsd \
 	   $(NULL)
@@ -38,16 +36,16 @@ all: release debug
 default: release
 
 release : $(RELEASE_OBJS)
-	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_RELEASE) -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(RELEASE_BIN) ../$(BIN_DIR)/$(RELEASE_BIN)
 
 debug : $(DEBUG_OBJS)
-	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_DEBUG) -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(DEBUG_BIN) ../$(BIN_DIR)/$(DEBUG_BIN)
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -55,7 +53,7 @@ debug : $(DEBUG_OBJS)
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \

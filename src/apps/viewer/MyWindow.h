@@ -3,19 +3,18 @@
 
 #include "YUI/Win3D.h"
 #include "model3d/FileInfoDof.h"
-#include "renderer/OpenGLRenderInterface.h"
 
 class MyWindow : public Win3D {
 public:
-MyWindow(model3d::FileInfoDof& mot): Win3D(), mMotion(mot) {
+    MyWindow(model3d::FileInfoDof& _mot): Win3D(), mMotion(_mot) {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
 		
         mPlaying = false;
-        bMarker = false;
-        bShowProgress = false;
+        mShowMarker = false;
+        mShowProgress = false;
 
         mPersp = 30.f;
         mTrans[2] = -1.f;
@@ -24,19 +23,17 @@ MyWindow(model3d::FileInfoDof& mot): Win3D(), mMotion(mot) {
 
     virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
-    virtual void displayTimer(int val);
-    virtual void move(int x, int y);
+    virtual void displayTimer(int _val);
+    virtual void move(int _x, int _y);
     void computeMax();
 	
 protected:	
-
     int mMaxFrame;
     bool mPlaying;
     int mFrame;
-    bool bMarker;
-    bool bShowProgress;
+    bool mShowMarker;
+    bool mShowProgress;
     model3d::FileInfoDof& mMotion;
-    Renderer::OpenGLRenderInterface mRenderer;
 };
 
 #endif

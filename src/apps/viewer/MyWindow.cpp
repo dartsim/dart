@@ -1,7 +1,5 @@
 #include "MyWindow.h"
 #include "YUI/glFuncs.h"
-// #include <GLUT/glut.h>
-#include "utils/LoadOpengl.h"
 #include "model3d/Skeleton.h"
 #include <cstdio>
 
@@ -9,7 +7,7 @@ using namespace std;
 using namespace Eigen;
 using namespace model3d;
 
-void MyWindow::displayTimer(int val)
+void MyWindow::displayTimer(int _val)
 {
     mFrame++;
     if(mFrame == mMaxFrame){
@@ -18,7 +16,7 @@ void MyWindow::displayTimer(int val)
     }
     glutPostRedisplay();
     if(mPlaying)	
-        glutTimerFunc(mDisplayTimeout, refreshTimer, val);
+        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
 void MyWindow::computeMax()
@@ -29,16 +27,20 @@ void MyWindow::computeMax()
 void MyWindow::draw()
 {
     Skeleton* model = mMotion.getModel();
+
+    // validate the frame index
     int nFrames = mMotion.getNumFrames();
     int fr = mFrame;
     if(fr>=nFrames) fr = nFrames-1;
-    model->setPose(mMotion.mDofs.at(fr));
-    model->draw(&mRenderer, Vector4d(0.0,0.0,0.0,1.0),false);
-    if(bMarker)
-        model->drawHandles(&mRenderer, Vector4d(1.0,0.0,0.0,1.0),false);
+    
+    // update and draw the motion
+    model->setPose(mMotion.getPoseAtFrame(fr));
+    model->draw();
+    if(mShowMarker) model->drawHandles();
 
-    if(bShowProgress) drawProgressBar(fr,mMaxFrame);
+    if(mShowProgress) drawProgressBar(fr,mMaxFrame);
 
+    // display the frame count in 2D text
     char buff[64];
     sprintf(buff,"%d/%d",mFrame,mMaxFrame);
     string frame(buff);
@@ -51,24 +53,24 @@ void MyWindow::draw()
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
     switch(key){
-    case ' ':
+    case ' ': // use space key to play or stop the motion
         mPlaying = !mPlaying;
         if(mPlaying)
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         break;
-    case 'r':
+    case 'r': // reset the motion to the first frame
         mFrame = 0;
         break;
-    case 'a':
+    case 'a': // move one frame forward
         if(mFrame<mMaxFrame-1)
             mFrame ++;
         break;
-    case 'd':
+    case 'd': // move one frame backward
         if(mFrame>0)
             mFrame --;
         break;
-    case 'm':
-        bMarker = !bMarker;
+    case 'h': // show or hide markers
+        mShowMarker = !mShowMarker;
         break;
     default:
         Win3D::keyboard(key,x,y);
@@ -76,19 +78,20 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
-void MyWindow::move(int x, int y)
+// display the progress bar when the mouse moves to the bar region
+void MyWindow::move(int _x, int _y)
 {
-    double Xport = (double)x/mWinWidth;
-    double Yport = (double)(mWinHeight-y)/mWinHeight;
+    double Xport = (double)_x/mWinWidth;
+    double Yport = (double)(mWinHeight-_y)/mWinHeight;
 
-    bool oldShow = bShowProgress;
+    bool oldShow = mShowProgress;
 
     if(!mRotate && !mTranslate && !mZooming){
         if(Xport>=0.15 && Xport<=0.85 && Yport>=0.02 && Yport<=0.08)
-            bShowProgress = true;
-        else if(bShowProgress) bShowProgress = false;
+            mShowProgress = true;
+        else if(mShowProgress) mShowProgress = false;
     }
 
-    if( oldShow != bShowProgress)
+    if( oldShow != mShowProgress)
         glutPostRedisplay();
 }

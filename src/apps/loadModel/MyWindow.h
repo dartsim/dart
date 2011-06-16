@@ -2,24 +2,38 @@
 #define _MYWINDOW_
 
 #include "YUI/Win3D.h"
-#include "renderer/OpenGLRenderInterface.h"
 #include "model3d/Skeleton.h"
 
 class MyWindow : public Win3D {
 public:
-MyWindow(model3d::Skeleton* skel) : mSkel(skel){
+    MyWindow(model3d::Skeleton* _model) : mModel(_model){
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
+    
+        mDrawMarker = false;
     }
 
-    virtual void draw(){
-        mSkel->draw(&mRenderer, Vector4d(0.0,0.0,0.0,0.0), false);
+    void draw(){
+        mModel->draw();
+        if(mDrawMarker) mModel->drawHandles();
+    }
+
+    void keyboard(unsigned char key, int x, int y){
+        switch(key){
+        case 'h':
+        case 'H':
+            mDrawMarker = !mDrawMarker;
+            break;
+        default:
+            Win3D::keyboard(key,x,y);
+        }
+        glutPostRedisplay();
     }
 
 protected:
-    model3d::Skeleton* mSkel;
-    Renderer::OpenGLRenderInterface mRenderer;
+    model3d::Skeleton* mModel;
+    bool mDrawMarker;
 };
 
 #endif

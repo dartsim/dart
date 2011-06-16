@@ -1,10 +1,11 @@
 #include "model3d/FileInfoModel.h"
 #include "model3d/FileInfoDof.h"
-#include "MyWindow.h"
-#include "utils/LoadOpengl.h"
-#include <iostream>
-using namespace std;
 
+#include "MyWindow.h"
+
+#include <iostream>
+
+using namespace std;
 using namespace model3d;
 
 int main(int argc, char* argv[])
@@ -17,9 +18,8 @@ int main(int argc, char* argv[])
     FileInfoModel model;
     model.loadFile(argv[1],FileInfoModel::SKEL);
 
-    FileInfoDof motion(model.getSkel());
+    FileInfoDof motion(model.getModel());
     motion.loadFile(argv[2]);
-
 
     MyWindow window(motion);
     window.computeMax();
