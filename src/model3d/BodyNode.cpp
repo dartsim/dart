@@ -40,7 +40,7 @@ namespace model3d {
 
         mID = BodyNode::msBodyNodeCount++;
 
-        if(_name == NULL) {
+        if (_name == NULL) {
             strcpy(mName, "BodyNode");
         } else {
             strcpy(mName, _name);
@@ -48,12 +48,12 @@ namespace model3d {
     }
 
     BodyNode::~BodyNode() {
-        for(int i = 0; i < mHandles.size(); ++i){
+        for (int i = 0; i < mHandles.size(); ++i){
             delete mHandles[i];
         }
         mHandles.clear();
 
-        if(mPrimitive != NULL) {
+        if (mPrimitive != NULL) {
             delete mPrimitive;
             mPrimitive = NULL;
         }
@@ -63,26 +63,26 @@ namespace model3d {
     }
 
     void BodyNode::init() {
-        if(mPrimitive!=NULL)
+        if (mPrimitive != NULL)
             mMass = mPrimitive->getMass();
         else
             mMass = 0;
 
-        T = Matrix4d::Identity();
-        W = Matrix4d::Identity();
+        mT = Matrix4d::Identity();
+        mW = Matrix4d::Identity();
     }
 
     void BodyNode::updateTransform() {
-        T = mJointIn->getTransform();
+        mT = mJointIn->getTransform();
         if (mNodeIn) {
-            W = mNodeIn->W*T;
+            mW = mNodeIn->mW * mT;
         } else {
-            W = T;
+            mW = mT;
         }
     }
 
-    Vector3d BodyNode::evalWorldPos(const Vector3d& lp) {
-        Vector3d result = utils::transform(W,lp);
+    Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
+        Vector3d result = utils::transform(mW, _lp);
         return result;
     }
     
@@ -92,115 +92,116 @@ namespace model3d {
         memset(mDependsOnDof, false, _numDofs*sizeof(bool));
     
         // if this is not the root node, copy its parent's map first
-        if(mNodeIn!=NULL){
+        if (mNodeIn != NULL) {
             memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
         }
 
         // set dependence for itself
-        for( int i=0; i<getNumDofs(); i++){
+        for (int i = 0; i < getNumDofs(); i++) {
             int dofID = getDof(i)->getModelIndex();
             mDependsOnDof[dofID] = true;
         }
     }
     
-    void BodyNode::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth)
+    void BodyNode::draw(Renderer::OpenGLRenderInterface* _RI, const Vector4d& _color, bool _default, int _depth)
     {
 #ifdef _RENDERER_TEST
-        if (!RI) return;
+        if (!_RI) return;
         RI->PushMatrix();
         // render the self geometry
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
         if(mPrimitive != NULL) {
-            RI->PushName((unsigned)mID);
-            RI->PushMatrix();
-            RI->Translate(mOffset);
-            mPrimitive->draw(RI, _color, _default);
-            RI->PopMatrix();
-            RI->PopName();
+            _RI->PushName((unsigned)mID);
+            _RI->PushMatrix();
+            _RI->Translate(mOffset);
+            mPrimitive->draw(_RI, _color, _default);
+            _RI->PopMatrix();
+            _RI->PopName();
         }
 
         // render the subtree
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
+        for (int i = 0; i < mJointOut.size(); i++) {
+            mJointOut[i]->getNodeOut()->draw(_RI, _color, _default);
         }
-        RI->PopMatrix();
+        _RI->PopMatrix();
 #else
         glPushMatrix();
         // render the self geometry
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
-        if(mPrimitive != NULL) {
+        if (mPrimitive != NULL) {
             glPushName((unsigned)mID);
             glPushMatrix();
             glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
-            mPrimitive->draw(RI, _color, _default);
+            mPrimitive->draw(_RI, _color, _default);
             glPopMatrix();
             glPopName();
         }
 
         // render the subtree
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(RI, _color, _default);
+        for (int i = 0; i < mJointOut.size(); i++) {
+            mJointOut[i]->getNodeOut()->draw(_RI, _color, _default);
         }
         glPopMatrix();
 #endif
     }
 
-    void BodyNode::drawHandles(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default)
+    void BodyNode::drawHandles(Renderer::OpenGLRenderInterface* _RI, const Vector4d& _color, bool _default)
     {
 #ifdef _RENDERER_TEST
-        if (!RI) return;
-        RI->PushMatrix();
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+        if (!_RI) return;
+        _RI->PushMatrix();
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
 
         // render the corresponding mHandless
-        for(int i=0; i<mHandles.size(); i++){
-            mHandles[i]->draw(RI, true, _color, _default);
+        for (int i = 0; i < mHandles.size(); i++) {
+            mHandles[i]->draw(_RI, true, _color, _default);
         }
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
+        for (int i = 0; i < mJointOut.size(); i++) {
+            mJointOut[i]->getNodeOut()->drawHandles(_RI, _color, _default);
         }
-        RI->PopMatrix();
+        _RI->PopMatrix();
 #else
         glPushMatrix();
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
 
         // render the corresponding mHandless
-        for(int i=0; i<mHandles.size(); i++){
-            mHandles[i]->draw(RI, true, _color, _default);
+        for (int i = 0; i < mHandles.size(); i++) {
+            mHandles[i]->draw(_RI, true, _color, _default);
         }
-        for(int i=0; i<mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _default);
+        for (int i = 0; i < mJointOut.size(); i++) {
+            mJointOut[i]->getNodeOut()->drawHandles(_RI,_color, _default);
         }
         glPopMatrix();
 #endif
     }
 
     void BodyNode::setJointIn(Joint *_p) {
-        mJointIn=_p; mNodeIn = _p->getNodeIn();
+        mJointIn = _p; 
+        mNodeIn = _p->getNodeIn();
     }
 
-    BodyNode* BodyNode::getNodeOut(int i) const {
-        return mJointOut[i]->getNodeOut();
+    BodyNode* BodyNode::getNodeOut(int _idx) const {
+        return mJointOut[_idx]->getNodeOut();
     }
 
     int BodyNode::getNumDofs() const {
         return mJointIn->getNumDofs();
     }
 
-    Dof* BodyNode::getDof(int i) {
-        return mJointIn->getDof(i);
+    Dof* BodyNode::getDof(int _idx) const {
+        return mJointIn->getDof(_idx);
     }
 
-    bool BodyNode::isPresent(Dof* q) {
-        return mJointIn->isPresent(q);
+    bool BodyNode::isPresent(Dof* _q) {
+        return mJointIn->isPresent(_q);
     }
 
 } // namespace model3d

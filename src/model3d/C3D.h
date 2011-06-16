@@ -53,16 +53,16 @@ namespace model3d {
         float	residual;
     } c3d_frame;
 
-    float convertDecToFloat(char bytes[4]);
-    void convertFloatToDec(float f, char* bytes);
+    float convertDecToFloat(char _bytes[4]);
+    void convertFloatToDec(float _f, char* _bytes);
 
-    bool loadC3DFile( const char *fileName, EIGEN_VV_VEC3D& mPointData,
-                      int *nFrame, int *nMarker, double *freq );
-    bool saveC3DFile( const char* fileName, EIGEN_VV_VEC3D& mPointData,
-                      int nFrame, int nMarker, double freq ); 
+    bool loadC3DFile( const char *_fileName, EIGEN_VV_VEC3D& _pointData,
+                      int *_nFrame, int *_nMarker, double *_freq );
+    bool saveC3DFile( const char* _fileName, EIGEN_VV_VEC3D& _pointData,
+                      int _nFrame, int _nMarker, double _freq ); 
 
-    double maxElem(std::vector<double>& arr, int& index);
-    double minElem(std::vector<double>& arr, int& index);
+    double maxElem(std::vector<double>& _arr, int& _index);
+    double minElem(std::vector<double>& _arr, int& _index);
 
 } // namespace model3d
 
