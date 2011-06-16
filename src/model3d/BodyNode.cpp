@@ -38,7 +38,7 @@ namespace model3d {
 
         mID = BodyNode::msBodyNodeCount++;
 
-        if(_name == NULL) {
+        if (_name == NULL) {
             strcpy(mName, "BodyNode");
         } else {
             strcpy(mName, _name);
@@ -46,12 +46,12 @@ namespace model3d {
     }
 
     BodyNode::~BodyNode() {
-        for(int i = 0; i < mHandles.size(); ++i){
+        for (int i = 0; i < mHandles.size(); ++i){
             delete mHandles[i];
         }
         mHandles.clear();
 
-        if(mPrimitive != NULL) {
+        if (mPrimitive != NULL) {
             delete mPrimitive;
             mPrimitive = NULL;
         }
@@ -59,11 +59,10 @@ namespace model3d {
     }
 
     void BodyNode::init() {
-        if(mPrimitive!=NULL)
+        if (mPrimitive != NULL)
             mMass = mPrimitive->getMass();
         else
             mMass = 0;
-
         mTransLocal = Matrix4d::Identity();
         mTransWorld = Matrix4d::Identity();
     }
@@ -77,21 +76,21 @@ namespace model3d {
         }
     }
 
-    Vector3d BodyNode::evalWorldPos(const Vector3d& lp) {
-        Vector3d result = utils::transform(mTransWorld, lp);
+    Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
+        Vector3d result = utils::transform(mTransWorld, _lp);
         return result;
     }
+    
 
     void BodyNode::setDependDofList() {
         mDependantDofs.clear();
-
         if (mNodeIn != NULL) {
             mDependantDofs.insert(mDependantDofs.end(),
                                   mNodeIn->mDependantDofs.begin(),
                                   mNodeIn->mDependantDofs.end());
         }
 
-        for(int i = 0; i < getNumDofs(); i++) {
+        for (int i = 0; i < getNumDofs(); i++) {
             int dofID = getDof(i)->getModelIndex();
             mDependantDofs.push_back(dofID);
         }
@@ -133,7 +132,7 @@ namespace model3d {
         for(int i=0; i<mJointIn->getNumTransforms(); i++){
             mJointIn->getTransform(i)->applyGLTransform();
         }
-        if(mPrimitive != NULL) {
+        if (mPrimitive != NULL) {
             glPushName((unsigned)mID);
             glPushMatrix();
             glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
@@ -166,23 +165,24 @@ namespace model3d {
     }
 
     void BodyNode::setJointIn(Joint *_p) {
-        mJointIn=_p; mNodeIn = _p->getNodeIn();
+        mJointIn = _p; 
+        mNodeIn = _p->getNodeIn();
     }
 
-    BodyNode* BodyNode::getNodeOut(int i) const {
-        return mJointOut[i]->getNodeOut();
+    BodyNode* BodyNode::getNodeOut(int _idx) const {
+        return mJointOut[_idx]->getNodeOut();
     }
 
     int BodyNode::getNumDofs() const {
         return mJointIn->getNumDofs();
     }
 
-    Dof* BodyNode::getDof(int i) {
-        return mJointIn->getDof(i);
+    Dof* BodyNode::getDof(int _idx) const {
+        return mJointIn->getDof(_idx);
     }
 
-    bool BodyNode::isPresent(Dof* q) {
-        return mJointIn->isPresent(q);
+    bool BodyNode::isPresent(Dof* _q) {
+        return mJointIn->isPresent(_q);
     }
 
 } // namespace model3d
