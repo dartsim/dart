@@ -9,6 +9,8 @@
 
 #include "BodyNode.h"
 
+#include <algorithm>
+
 using namespace std;
 using namespace Eigen;
 
@@ -33,10 +35,11 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(char *_name) 
-        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mDependsOnDof(NULL), mMass(0), mOffset(0,0,0)
+        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();
         mHandles.clear();
+        mDependantDofs.clear();
 
         mID = BodyNode::msBodyNodeCount++;
 
@@ -58,8 +61,6 @@ namespace model3d {
             mPrimitive = NULL;
         }
         mJointOut.clear();
-        delete[] mDependsOnDof;
-        mDependsOnDof = NULL;
     }
 
     void BodyNode::init() {
@@ -85,23 +86,51 @@ namespace model3d {
         Vector3d result = utils::transform(mTransWorld, lp);
         return result;
     }
-    
-    void BodyNode::setDependDofMap(int _numDofs){
-        // initialize the map
-        mDependsOnDof = new bool[_numDofs];
-        memset(mDependsOnDof, false, _numDofs*sizeof(bool));
-    
-        // if this is not the root node, copy its parent's map first
-        if(mNodeIn!=NULL){
-            memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
+
+    void BodyNode::setDependDofList() {
+        mDependantDofs.clear();
+
+        if (mNodeIn != NULL) {
+            mDependantDofs.insert(mDependantDofs.end(),
+                                  mNodeIn->mDependantDofs.begin(),
+                                  mNodeIn->mDependantDofs.end());
         }
 
-        // set dependence for itself
-        for( int i=0; i<getNumDofs(); i++){
+        for(int i = 0; i < getNumDofs(); i++) {
             int dofID = getDof(i)->getModelIndex();
-            mDependsOnDof[dofID] = true;
+            mDependantDofs.push_back(dofID);
+        }
+
+        for (int i = 0; i < mDependantDofs.size() - 1; i++) {
+            int now = mDependantDofs[i];
+            int next = mDependantDofs[i + 1];
+            if (now > next) {
+                cerr << "Array not sorted!!!" << endl;
+                exit(0);
+            }
         }
     }
+
+    bool BodyNode::dependsOn(int _dofIndex) const {
+        return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
+    }
+    
+    // void BodyNode::setDependDofMap(int _numDofs){
+    //     // initialize the map
+    //     mDependsOnDof = new bool[_numDofs];
+    //     memset(mDependsOnDof, false, _numDofs*sizeof(bool));
+    
+    //     // if this is not the root node, copy its parent's map first
+    //     if(mNodeIn!=NULL){
+    //         memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
+    //     }
+
+    //     // set dependence for itself
+    //     for( int i=0; i<getNumDofs(); i++){
+    //         int dofID = getDof(i)->getModelIndex();
+    //         mDependsOnDof[dofID] = true;
+    //     }
+    // }
     
     void BodyNode::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default, int depth)
     {
