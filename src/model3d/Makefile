@@ -26,7 +26,7 @@ OBJS = \
 	FileInfoModel.o \
 	$(NULL)
 
-IDIRS = -I. -I.. -I$(EIGEN) -I/usr/include/malloc -I$(TICPP)
+IDIRS = -I. -I.. -I$(EIGEN) -I/usr/include/malloc -I$(TICPP) -I$(GLOG)/src
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
 

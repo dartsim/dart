@@ -34,21 +34,25 @@ namespace model3d {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as memebers in this class
         
-            BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
+        BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNode(); ///< Default destructor
 
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< update transformations w.r.t. the current dof values in Dof*
 
-        Eigen::Matrix4d getWorldTransform() const { return W; } ///< transformation from the local coordinates of this body node to the world coordinates
-        Eigen::Matrix4d getWorldInvTransform() const { return W.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
-        Eigen::Matrix4d getLocalTransform() const { return T; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return T.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
+        Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< transformation from the local coordinates of this body node to the world coordinates
+        Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
+        Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
+        Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
-        void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node
-        bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
+        /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
+        /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
+        void setDependDofList(); ///< set up the list of dependant dofs 
+        bool dependsOn(int _dofIndex) const; ///< test whether this dof is depedant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
+        int getNumDependantDofs() const { return mDependantDofs.size(); } ///< the number of the dofs which this node is affected
+        int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< return an dof index from the array index (< getNumDependantDofs)
 
         void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor=true, int depth = 0) const ;    ///< render the entire bodylink subtree rooted here
         void drawHandles(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor=true) const ;    ///< render the handles
@@ -97,10 +101,10 @@ namespace model3d {
         std::vector<Marker *> mHandles; ///< list of handles associated
 
         // transformations
-        Eigen::Matrix4d T; ///< local transformation from parent to itself
-        Eigen::Matrix4d W; ///< global transformation
+        Eigen::Matrix4d mTransLocal; ///< local transformation from parent to itself
+        Eigen::Matrix4d mTransWorld; ///< global transformation
 
-        bool *mDependsOnDof; ///< map to answer the question whether the bodylink depends on the asked dof or not.
+        std::vector<int> mDependantDofs; ///< A list of dependant Dof indices 
 
         double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
         Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame

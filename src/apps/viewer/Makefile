@@ -18,7 +18,8 @@ IDIRS = -I. -I../../ -I$(EIGEN)
 LDIRS = -L../$(LIB_DIR) -L$(TICPP)/lib -L$(GLOG)/lib
 LIBS = \
 	-lticpp \
-	$(NULL)
+	-lglog \
+    $(NULL)
 
 RELEASE_LIBS = \
 	   -lModel3D \

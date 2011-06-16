@@ -48,6 +48,7 @@ namespace model3d {
         // useful for IK
         ConstraintType getConstraintType() const {return mType;}
         void setConstraintType(ConstraintType _type){mType = _type;}
+    
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     

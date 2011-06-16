@@ -1,4 +1,5 @@
 syntax: glob
 bin/CMakeFiles
 bin/CMakeCache.txt
+docs/
 TAGS

@@ -80,7 +80,8 @@ namespace model3d {
         // init the dependsOnDof stucture for each bodylink
         for(int i=0; i<nNodes; i++) {
             mNodes[i]->setModel(this);
-            mNodes[i]->setDependDofMap(nDofs);
+            // mNodes[i]->setDependDofMap(nDofs);
+            mNodes[i]->setDependDofList();
             mNodes.at(i)->init();
             mMass += mNodes[i]->getMass();
         }
