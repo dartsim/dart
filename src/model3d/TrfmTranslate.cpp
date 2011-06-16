@@ -9,7 +9,7 @@
 #include "TrfmTranslate.h"
 #include "Dof.h"
 #include "utils/LoadOpengl.h"
-// #include "RenderConfig.h"
+
 using namespace Eigen;
 
 namespace model3d {
@@ -28,14 +28,8 @@ namespace model3d {
             strcpy(mName, "Translate");
     }
 
-    void TrfmTranslate::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
-#else
+    void TrfmTranslate::applyGLTransform() const{
         glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-#endif
-
     }
 
     void TrfmTranslate::evalTransform(){
@@ -49,7 +43,7 @@ namespace model3d {
         }
     }
 
-    Matrix4d TrfmTranslate::getDeriv(Dof *q){
+    Matrix4d TrfmTranslate::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         for(int i=0; i<mDofs.size(); i++)
             if(mDofs[i] == q){
@@ -59,14 +53,14 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmTranslate::applyDeriv(Dof* q, Vector3d& v){
+    void TrfmTranslate::applyDeriv(const Dof* q, Vector3d& v){
         for(int i=0; i<mDofs.size(); i++){
             if(mDofs[i] != q) v(i) = 0;
             else v(i) = 1;
         }
     }
 
-    void TrfmTranslate::applyDeriv(Dof* q, Matrix4d& m){
+    void TrfmTranslate::applyDeriv(const Dof* q, Matrix4d& m){
         for(int i=0; i<mDofs.size(); i++){
             if(mDofs[i] != q) m.row(i).setZero();
             else m.row(i) = m.row(3);
@@ -114,13 +108,8 @@ namespace model3d {
             strcpy(mName, "TranslateX");
     }
 
-    void TrfmTranslateX::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
-#else
+    void TrfmTranslateX::applyGLTransform() const{
         glTranslatef(mDofs[0]->getValue(), 0, 0);
-#endif
     }
 
     void TrfmTranslateX::evalTransform(){
@@ -132,14 +121,14 @@ namespace model3d {
         mTransform(_X, 3) = mDofs[0]->getValue(); 
     }
 
-    Matrix4d TrfmTranslateX::getDeriv(Dof *q){
+    Matrix4d TrfmTranslateX::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
             ret(_X, 3) = 1.0;
         return ret;
     }
 
-    void TrfmTranslateX::applyDeriv(Dof* q, Vector3d& v){
+    void TrfmTranslateX::applyDeriv(const Dof* q, Vector3d& v){
         if(mDofs[0] != q) v=Vector3d::Zero();
         else { 
             v = Vector3d(1, 0, 0);
@@ -148,7 +137,7 @@ namespace model3d {
         }
     }
 
-    void TrfmTranslateX::applyDeriv(Dof* q, Matrix4d& m){
+    void TrfmTranslateX::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m=Matrix4d::Zero();
         else for(int i=0; i<4; i++){
                 if(i==_X) m.row(i) = m.row(3);
@@ -190,13 +179,8 @@ namespace model3d {
             strcpy(mName, "TranslateY");
     }
 
-    void TrfmTranslateY::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
-#else
+    void TrfmTranslateY::applyGLTransform() const {
         glTranslatef(0, mDofs[0]->getValue(), 0);
-#endif
     }
 
     void TrfmTranslateY::evalTransform(){
@@ -208,14 +192,14 @@ namespace model3d {
         mTransform(_Y, 3) = mDofs[0]->getValue(); 
     }
 
-    Matrix4d TrfmTranslateY::getDeriv(Dof *q){
+    Matrix4d TrfmTranslateY::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
             ret(_Y, 3) = 1.0;
         return ret;
     }
 
-    void TrfmTranslateY::applyDeriv(Dof* q, Vector3d& v){
+    void TrfmTranslateY::applyDeriv(const Dof* q, Vector3d& v){
         if(mDofs[0] != q) v=Vector3d::Zero();
         else {
             v = Vector3d(0, 1, 0);
@@ -225,7 +209,7 @@ namespace model3d {
         }
     }
 
-    void TrfmTranslateY::applyDeriv(Dof* q, Matrix4d& m){
+    void TrfmTranslateY::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m=Matrix4d::Zero();
         else for(int i=0; i<4; i++){
                 if(i==_Y) m.row(i)=m.row(3);
@@ -267,13 +251,8 @@ namespace model3d {
             strcpy(mName, "TranslateZ");
     }
 
-    void TrfmTranslateZ::applyGLTransform(Renderer::OpenGLRenderInterface* RI){
-#ifdef _RENDERER_TEST
-	if (RI)
-            RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
-#else
+    void TrfmTranslateZ::applyGLTransform() const {
         glTranslatef(0, 0, mDofs[0]->getValue());
-#endif
     }
 
     void TrfmTranslateZ::evalTransform(){
@@ -285,19 +264,19 @@ namespace model3d {
         mTransform(_Z, 3) = mDofs[0]->getValue(); 
     }
 
-    Matrix4d TrfmTranslateZ::getDeriv(Dof *q){
+    Matrix4d TrfmTranslateZ::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
             ret(_Z, 3) = 1.0;
         return ret;
     }
 
-    void TrfmTranslateZ::applyDeriv(Dof* q, Vector3d& v){
+    void TrfmTranslateZ::applyDeriv(const Dof* q, Vector3d& v){
         if(mDofs[0] != q) v=Vector3d::Zero();
         else v=Vector3d(0,0,1);
     }
 
-    void TrfmTranslateZ::applyDeriv(Dof* q, Matrix4d& m){
+    void TrfmTranslateZ::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m = Matrix4d::Zero();
         else for(int i=0; i<4; i++){
                 if(i==_Z) m.row(i) = m.row(3);

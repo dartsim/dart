@@ -12,29 +12,29 @@
 #include <vector>
 #include <Eigen/Dense>
 
-//Yuting: does fileinfo_base still exist?
-//#include "fileinfo_base.h"
 #include "utils/EigenArrayHelper.h"
 
 namespace model3d {
-    class FileInfoC3D /*: public FileInfoBase*/ {
+    class FileInfoC3D {
+    
     public:
         FileInfoC3D();
-        virtual ~FileInfoC3D();
-
-        //Yuting: do we want to make it public?
-        EIGEN_VV_VEC3D mData;
+        virtual ~FileInfoC3D(){}
 
         int getNumMarkers() const { return mNumMarkers; } 
         int getNumFrames() const { return mNumFrames; }
         double getFPS() const { return mFPS; }
 
+        Eigen::Vector3d getDataAt(int _frame, int _idx) const { return mData.at(_frame).at(_idx); } ///< Note: not checking index range
+        void addData(const EIGEN_V_VEC3D& _data) { mData.push_back(_data); }
+
         virtual bool loadFile(const char*);
-        virtual bool saveFile(const char*, int _start, int _end,
-                              double sampleRate = 1);
+        virtual bool saveFile(const char*, int _start, int _end, double _sampleRate = 1); ///< Note: down sampling not implemented yet
+    
     protected:
         int mNumMarkers;
         int mNumFrames;
+        EIGEN_VV_VEC3D mData;
         double mFPS;
         char mFileName[256]; // change to string?
     };

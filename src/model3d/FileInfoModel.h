@@ -13,15 +13,12 @@
 #include <fstream>
 #include <Eigen/Dense>
 
-namespace Renderer {
-    class OpenGLRenderInterface;
-} // namespace Renderer
-
 namespace model3d {
+    
     class BodyNode;
     class Skeleton;
 
-    class FileInfoModel /*: public FileInfoBase*/ {
+    class FileInfoModel {
     public:
   	enum FileType {
             VSK,
@@ -32,17 +29,18 @@ namespace model3d {
         FileInfoModel();
         virtual ~FileInfoModel();
 	
-        void draw(Renderer::OpenGLRenderInterface* RI, const Eigen::Vector4d& color, bool _default = true); // whether to use the default color stored in Skeleton; color is used only when default = false
+        void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
         bool loadFile(const char* _filename, FileType _type);
-        bool saveFile(const char* _filename);
-        inline Skeleton* getSkel() const { return mSkel; }
+        bool saveFile(const char* _filename) const;
+        
+        Skeleton* getModel() const { return mModel; }
 
     protected:
-        Skeleton* mSkel;
+        Skeleton* mModel;
         char mFileName[256]; // could use string instead
 
         // used in saveFile to write the subtree of _b
-        void saveBodyNodeTree(BodyNode* _b, std::ofstream &_outfile, int _numLinks);
+        void saveBodyNodeTree(BodyNode* _b, std::ofstream &_outfile, int _numLinks) const;
     };
 
 } // namespace model3d

@@ -23,14 +23,14 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
 	
-        Eigen::Matrix4d getDeriv(Dof *q);
-        void applyDeriv(Dof* q, Eigen::Vector3d& v);
-        void applyDeriv(Dof* q, Eigen::Matrix4d& m);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        void applyDeriv(const Dof* q, Eigen::Vector3d& v);
+        void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
-        Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2){ return Eigen::Matrix4d(); } // TODO::placeholder to run code
+        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2){ return Eigen::Matrix4d(); } // TODO::placeholder to run code
 //    void applyDeriv2(Dof* q1, Dof* q2, Eigen::Vector3d& v);
 //    void applyDeriv2(Dof* q1, Dof* q2, Eigen::Matrix4d& m);
     };
@@ -45,12 +45,12 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
 	
-        Eigen::Matrix4d getDeriv(Dof *q);
-        void applyDeriv(Dof* q, Eigen::Vector3d& v);
-        void applyDeriv(Dof* q, Eigen::Matrix4d& m);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        void applyDeriv(const Dof* q, Eigen::Vector3d& v);
+        void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
 //    Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
 //    void applyDeriv2(Dof* q1, Dof* q2, Eigen::Vector3d& v);
@@ -67,12 +67,12 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
 	
-        Eigen::Matrix4d getDeriv(Dof *q);
-        void applyDeriv(Dof* q, Eigen::Vector3d& v);
-        void applyDeriv(Dof* q, Eigen::Matrix4d& m);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        void applyDeriv(const Dof* q, Eigen::Vector3d& v);
+        void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
         //   Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
         //   void applyDeriv2(Dof* q1, Dof* q2, Eigen::Vector3d& v);
@@ -89,12 +89,12 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform(Renderer::OpenGLRenderInterface* RI);
+        void applyGLTransform() const;
         void evalTransform();
 	
-        Eigen::Matrix4d getDeriv(Dof *q);
-        void applyDeriv(Dof* q, Eigen::Vector3d& v);
-        void applyDeriv(Dof* q, Eigen::Matrix4d& m);
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        void applyDeriv(const Dof* q, Eigen::Vector3d& v);
+        void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
 //    Eigen::Matrix4d getDeriv2(Dof *q1, Dof *q2);
 //    void applyDeriv2(Dof* q1, Dof* q2, Eigen::Vector3d& v);

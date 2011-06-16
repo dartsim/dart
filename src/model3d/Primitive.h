@@ -11,27 +11,22 @@
 
 #include <Eigen/Dense>
 
-namespace Renderer {
-    class OpenGLRenderInterface;
-} // namespace Renderer
-
 namespace model3d {
     class Transformation;
 
     class Primitive {
     public:
         Primitive();
-        /* virtual void draw(Eigen::Vector4d& _color, bool _default); */
+        
         virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
         virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt); 
 	
         void setInertia(const Eigen::Matrix3d& _inertia);
-
-        Eigen::Matrix3d getInertia() { return mInertia; }
-        Eigen::Matrix4d getMassTensor() { return mMassTensor; }
+        Eigen::Matrix3d getInertia() const { return mInertia; }
+        Eigen::Matrix4d getMassTensor() const { return mMassTensor; }
 
         void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
-        Eigen::Vector3d getColor() { return mColor; }
+        Eigen::Vector3d getColor() const { return mColor; }
 
         void setWorldPos(const Eigen::Vector3d& _pos) { mWorldPos = _pos; }
         Eigen::Vector3d getCOM() { return mCOM; } //in local coordinates
@@ -49,12 +44,7 @@ namespace model3d {
 	
         int getID() { return mID; }
 
-        virtual void draw(Renderer::OpenGLRenderInterface* RI);
-
-	virtual void draw(Renderer::OpenGLRenderInterface* RI,
-                          const Eigen::Vector4d& _color, bool _default) {
-            //implemented in the derived class.
-	}
+        virtual void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
     protected:
         void setMassTensorFromInertia();

@@ -7,13 +7,9 @@
 */
 
 #include "PrimitiveEllipsoid.h"
-using namespace Eigen;
 
-#ifndef _RENDERER_TEST
 #include "utils/LoadOpengl.h"
-#else
-#include "renderer/OpenGLRenderInterface.h"
-#endif
+using namespace Eigen;
 
 // TODO: do we need to include an equivalent config file?
 // #include "RenderConfig.h"
@@ -32,27 +28,15 @@ namespace model3d {
         }
     }
 
-    void PrimitiveEllipsoid::draw(Renderer::OpenGLRenderInterface* RI, const Vector4d& _color, bool _default) {
-#ifdef _RENDERER_TEST
-        if (!RI)
-            return;
-        if (_default)
-            RI->SetPenColor( _color );
-        else
-            RI->SetPenColor( mColor );
-        RI->PushMatrix();
-        RI->DrawEllipsoid(mDim);
-        RI->PopMatrix();
-#else
-        if (_default)
-            glColor4d( _color[0], _color[1], _color[2], _color[3] );
-        else
+    void PrimitiveEllipsoid::draw(const Vector4d& _color, bool _useDefaultColor) const {
+        if (_useDefaultColor)
             glColor4d( mColor[0], mColor[1], mColor[2], 1.0 );
+        else
+            glColor4d( _color[0], _color[1], _color[2], _color[3] );
         glPushMatrix();
         glScalef(mDim(0), mDim(1), mDim(2));
         glutSolidSphere(0.5, 16, 16);
         glPopMatrix();
-#endif
     }
 
     void PrimitiveEllipsoid::calMassTensor(){

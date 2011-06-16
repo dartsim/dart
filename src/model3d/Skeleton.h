@@ -12,10 +12,6 @@
 #include <vector>
 #include <Eigen/Dense>
 
-namespace Renderer {
-    class OpenGLRenderInterface;
-} // namespace Renderer
-
 namespace model3d {
 
     class Transformation;
@@ -58,8 +54,8 @@ namespace model3d {
         void setState(const Eigen::VectorXd&);
         void setState(const std::vector<double>&);
 
-        void draw(Renderer::OpenGLRenderInterface* RI, const Eigen::Vector4d& _color, bool _default = true) ;
-        void drawHandles(Renderer::OpenGLRenderInterface* RI, const Eigen::Vector4d& _color, bool _default = true );
+        void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+        void drawHandles(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 	
         void setPose(const Eigen::VectorXd& _pose);
         void setPose(const std::vector<double>& _pose);
