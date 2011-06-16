@@ -35,10 +35,10 @@ namespace model3d {
        Mostly automatically constructed by FileInfoModel. @see FileInfoModel.
     */
     class BodyNode {
-    public:
+    public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as memebers in this class
         
-            BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
+        BodyNode(char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNode(); ///< Default destructor
 
         void init(); ///< Initialize the vector memebers with proper sizes
@@ -49,7 +49,7 @@ namespace model3d {
         Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
         Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
 
-        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
+        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
@@ -58,8 +58,8 @@ namespace model3d {
         int getNumDependantDofs() const { return mDependantDofs.size(); } ///< the number of the dofs which this node is affected
         int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< return an dof index from the array index (< getNumDependantDofs)
 
-        void draw(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default, int depth = 0);    ///< render the entire bodylink subtree rooted here
-        void drawHandles(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default);    ///< render the handles
+        void draw(Renderer::OpenGLRenderInterface *_RI, const Eigen::Vector4d& _color, bool _default, int _depth = 0);    ///< render the entire bodylink subtree rooted here
+        void drawHandles(Renderer::OpenGLRenderInterface *_RI, const Eigen::Vector4d& _color, bool _default);    ///< render the handles
 
         char* getName() { return mName; }
 
@@ -77,22 +77,22 @@ namespace model3d {
 
         void addHandle(Marker *_h) { mHandles.push_back(_h); }
         int getNumHandles() const { return mHandles.size(); }
-        Marker* getHandle(int i) const { return mHandles[i]; }
+        Marker* getHandle(int _idx) const { return mHandles[_idx]; }
 
         void setPrimitive(Primitive *_p) { mPrimitive = _p; }
         Primitive* getPrimitive() const { return mPrimitive; }
         
         void addJointOut(Joint *_c) { mJointOut.push_back(_c); }
         int getNumJoints() { return mJointOut.size(); }
-        Joint* getJointOut(int i) { return mJointOut[i]; }
+        Joint* getJointOut(int _idx) const { return mJointOut[_idx]; }
         void setJointIn(Joint *_p);
-        Joint* getJointIn() { return mJointIn; }
+        Joint* getJointIn() const { return mJointIn; }
 
         // wrapper functions for joints
-        BodyNode* getNodeOut(int i) const;
+        BodyNode* getNodeOut(int _idx) const;
         int getNumDofs() const;
-        Dof* getDof(int i);
-        bool isPresent(Dof *q);
+        Dof* getDof(int _idx) const;
+        bool isPresent(Dof *_q);
 
     protected:
         char mName[MAX_NODE3D_NAME]; ///< name

@@ -19,33 +19,32 @@ using namespace Eigen;
 
 namespace model3d {
 
-    float ConvertDecToFloat(char bytes[4]) {
-        char p[4]; 
-        p[0] = bytes[2]; 
-        p[1] = bytes[3]; 
-        p[2] = bytes[0]; 
-        p[3] = bytes[1]; 
+    float ConvertDecToFloat(char _bytes[4]) {
+        char p[4];
+        p[0] = _bytes[2]; 
+        p[1] = _bytes[3]; 
+        p[2] = _bytes[0]; 
+        p[3] = _bytes[1]; 
         if (p[0] || p[1] || p[2] || p[3]) 
             --p[3];          // adjust exponent 
         return *(float*)p; 
     } 
 
 
-    void ConvertFloatToDec(float f, char* bytes) {
-        char* p = (char*)&f; 
-        bytes[0] = p[2]; 
-        bytes[1] = p[3]; 
-        bytes[2] = p[0]; 
-        bytes[3] = p[1]; 
-        if (bytes[0] || bytes[1] || bytes[2] || bytes[3]) 
-            ++bytes[1];      // adjust exponent 
+    void ConvertFloatToDec(float _f, char* _bytes) {
+        char* p = (char*)&_f; 
+        _bytes[0] = p[2]; 
+        _bytes[1] = p[3]; 
+        _bytes[2] = p[0]; 
+        _bytes[3] = p[1]; 
+        if (_bytes[0] || _bytes[1] || _bytes[2] || _bytes[3]) 
+	    ++_bytes[1];      // adjust exponent 
     }
 
 
-    bool loadC3DFile(const char *fileName, EIGEN_VV_VEC3D& mPointData, int *nFrame, int *nMarker, double *freq) {
+    bool loadC3DFile(const char *_fileName, EIGEN_VV_VEC3D& _pointData, int *_nFrame, int *_nMarker, double *_freq) {
         char buf[C3D_REC_SIZE];
         FILE *file;
-        int i, j;
         Vector3d v;
         c3d_head hdr;
         c3d_param param;
@@ -53,7 +52,7 @@ namespace model3d {
         c3d_frame frame;
         bool bDecFmt = true;
 
-        if ( (file=fopen( fileName, "rb" )) == NULL )  
+        if ((file = fopen( _fileName, "rb" )) == NULL)  
             return false; 
 
         //get the header
@@ -76,38 +75,38 @@ namespace model3d {
             hdr.scale = ConvertDecToFloat((char*)&hdr.scale);
         }
 
-        int mNumFrames = hdr.end_frame - hdr.start_frame + 1;
-        int mNumMarkers = hdr.pnt_cnt;
-        double mC3DScale = hdr.scale;
+        int numFrames = hdr.end_frame - hdr.start_frame + 1;
+        int numMarkers = hdr.pnt_cnt;
+        double c3dScale = hdr.scale;
 
-        *freq = hdr.freq;
-        *nMarker = mNumMarkers;
-        *nFrame = mNumFrames;
+        *_freq = hdr.freq;
+        *_nMarker = numMarkers;
+        *_nFrame = numFrames;
 
         float pntScale = (hdr.scale < 0) ? 1 : hdr.scale;
 
         //eat parameter records
-        for (i = 3; i < hdr.rec_start; i++) {
+        for (int i = 3; i < hdr.rec_start; i++) {
             if (!fread(buf, C3D_REC_SIZE, 1, file)) {
                 return false;
             }
         }
 
         // start retrieving data
-        mPointData.resize(mNumFrames);
+        _pointData.resize(numFrames);
 
         int iRecSize;
-        if (mC3DScale < 0)
+        if (c3dScale < 0)
             iRecSize = sizeof(c3d_frame) + ( hdr.a_channels * hdr.a_frames * sizeof(float));
         else
             iRecSize = sizeof(c3d_frameSI) + ( hdr.a_channels * hdr.a_frames * sizeof(short));
 
-        for(i = 0; i < mNumFrames; i++) {
-            mPointData[i].resize(mNumMarkers);
-            for(j = 0; j < mNumMarkers; j++) {
+        for(int i = 0; i < numFrames; i++) {
+            _pointData[i].resize(numMarkers);
+            for(int j = 0; j < numMarkers; j++) {
                 if (!fread(buf, iRecSize, 1, file))
                     return false;
-                if (mC3DScale < 0) {
+                if (c3dScale < 0) {
                     memcpy(&frame, buf, sizeof(frame));
                     if(bDecFmt){
                         frame.y = ConvertDecToFloat((char*)&frame.y);
@@ -128,29 +127,29 @@ namespace model3d {
                     v[1] = (float)frameSI.z * pntScale / 1000.0;
                     v[2] = (float)frameSI.x * pntScale / 1000.0;
                 }
-                mPointData[i][j] = v;
+                _pointData[i][j] = v;
             }
         }
         fclose(file);
 
-        const char *pch = strrchr(fileName, '\\');  //clip leading path
-        if (pch) fileName = pch+1;
+        const char *pch = strrchr(_fileName, '\\');  //clip leading path
+        if (pch) 
+            _fileName = pch + 1;
 
         return true;
     }
 
-    bool saveC3DFile(const char *fileName, EIGEN_VV_VEC3D& mPointData, int nFrame, int nMarker, double freq) {
+    bool saveC3DFile(const char *_fileName, EIGEN_VV_VEC3D& _pointData, int _nFrame, int _nMarker, double _freq) {
         FILE *file; 
-        int i, j;
         Vector3d v;
         c3d_head hdr;
         c3d_param parm;
         c3d_frame frame;
 
-        if ( (file=fopen( fileName, "wb" )) == NULL )  
+        if ((file = fopen(_fileName, "wb")) == NULL)  
             return false; 
 
-        int mrkrCnt = nMarker;
+        int mrkrCnt = _nMarker;
 
         //write header
         memset(&hdr, 0, sizeof(hdr));
@@ -159,13 +158,13 @@ namespace model3d {
         hdr.pnt_cnt = mrkrCnt;
         hdr.a_channels = 0;
         hdr.start_frame = 1;
-        hdr.end_frame = nFrame;
+        hdr.end_frame = _nFrame;
 
         //make scale neg to show we are saving floats rather than scaled ints
         hdr.scale = -0.1;
         hdr.rec_start = 3;
         hdr.a_frames = 1;
-        hdr.freq = freq;
+        hdr.freq = _freq;
         fwrite(&hdr, C3D_REC_SIZE, 1, file);
 
         memset(&parm, 0, sizeof(parm));
@@ -174,10 +173,10 @@ namespace model3d {
 
         //write the data
         frame.residual = 0;
-        for(i = 0; i < nFrame; i++) {
-            for(j = 0; j < nMarker; j++) {
+        for (int i = 0; i < _nFrame; i++) {
+            for (int j = 0; j < _nMarker; j++) {
                 // data is in meters, so put it into millimeters
-                v = mPointData[i][j] * 1000.0;
+                v = _pointData[i][j] * 1000.0;
                 frame.x = v[2];
                 frame.y = v[0];
                 frame.z = v[1];
