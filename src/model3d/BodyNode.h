@@ -51,8 +51,12 @@ namespace model3d {
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
 
-        void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node
-        bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range
+        /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
+        /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
+        void setDependDofList(); ///< set up the list of dependant dofs 
+        bool dependsOn(int _dofIndex) const; ///< test whether this dof is depedant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
+        int getNumDependantDofs() const { return mDependantDofs.size(); } ///< the number of the dofs which this node is affected
+        int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< return an dof index from the array index (< getNumDependantDofs)
 
         void draw(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default, int depth = 0);    ///< render the entire bodylink subtree rooted here
         void drawHandles(Renderer::OpenGLRenderInterface *RI, const Eigen::Vector4d& _color, bool _default);    ///< render the handles
@@ -104,7 +108,7 @@ namespace model3d {
         Eigen::Matrix4d mTransLocal; ///< local transformation from parent to itself
         Eigen::Matrix4d mTransWorld; ///< global transformation
 
-        bool *mDependsOnDof; ///< map to answer the question whether the bodylink depends on the asked dof or not.
+        std::vector<int> mDependantDofs; ///< A list of dependant Dof indices 
 
         double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
         Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame
