@@ -5,7 +5,6 @@ DEBUG_LIB = $(LIB_DIR)/libUtilsd.a
 
 RELEASE_DIR=.
 DEBUG_DIR=.
-SRC=.
 
 OBJS = \
 	EigenHelper.o \
@@ -30,17 +29,17 @@ debug : $(DEBUG_OBJS)
 	$(AR) cr $(DEBUG_LIB) $(DEBUG_OBJS)
 	$(RANLIB) $(DEBUG_LIB)
 
-$(RELEASE_DIR)/%.o: $(SRC)/%.cpp
+$(RELEASE_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
 		rm -f $(RF).P
 
-$(DEBUG_DIR)/%.o: $(SRC)/%.cpp
+$(DEBUG_DIR)/%.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \
