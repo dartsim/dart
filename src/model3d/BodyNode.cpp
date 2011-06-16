@@ -9,6 +9,8 @@
 
 #include "BodyNode.h"
 
+#include <algorithm>
+
 using namespace std;
 using namespace Eigen;
 
@@ -22,21 +24,17 @@ using namespace Eigen;
 #include "utils/Misc.h"
 #include "utils/Utils.h"
 #include "utils/EigenHelper.h"
-
-#ifdef _RENDERER_TEST
-#include "renderer/OpenGLRenderInterface.h"
-#else
 #include "utils/LoadOpengl.h"
-#endif
 
 namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(char *_name) 
-        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mDependsOnDof(NULL), mMass(0), mOffset(0,0,0)
+        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();
         mHandles.clear();
+        mDependantDofs.clear();
 
         mID = BodyNode::msBodyNodeCount++;
 
@@ -58,8 +56,6 @@ namespace model3d {
             mPrimitive = NULL;
         }
         mJointOut.clear();
-        delete[] mDependsOnDof;
-        mDependsOnDof = NULL;
     }
 
     void BodyNode::init() {
@@ -68,40 +64,68 @@ namespace model3d {
         else
             mMass = 0;
 
-        T = Matrix4d::Identity();
-        W = Matrix4d::Identity();
+        mTransLocal = Matrix4d::Identity();
+        mTransWorld = Matrix4d::Identity();
     }
 
     void BodyNode::updateTransform() {
-        T = mJointIn->getLocalTransform();
+        mTransLocal = mJointIn->getLocalTransform();
         if (mNodeIn) {
-            W = mNodeIn->W*T;
+            mTransWorld = mNodeIn->mTransWorld * mTransLocal;
         } else {
-            W = T;
+            mTransWorld = mTransLocal;
         }
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& lp) {
-        Vector3d result = utils::transform(W,lp);
+        Vector3d result = utils::transform(mTransWorld, lp);
         return result;
     }
-    
-    void BodyNode::setDependDofMap(int _numDofs){
-        // initialize the map
-        mDependsOnDof = new bool[_numDofs];
-        memset(mDependsOnDof, false, _numDofs*sizeof(bool));
-    
-        // if this is not the root node, copy its parent's map first
-        if(mNodeIn!=NULL){
-            memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
+
+    void BodyNode::setDependDofList() {
+        mDependantDofs.clear();
+
+        if (mNodeIn != NULL) {
+            mDependantDofs.insert(mDependantDofs.end(),
+                                  mNodeIn->mDependantDofs.begin(),
+                                  mNodeIn->mDependantDofs.end());
         }
 
-        // set dependence for itself
-        for( int i=0; i<getNumDofs(); i++){
+        for(int i = 0; i < getNumDofs(); i++) {
             int dofID = getDof(i)->getModelIndex();
-            mDependsOnDof[dofID] = true;
+            mDependantDofs.push_back(dofID);
+        }
+
+        for (int i = 0; i < mDependantDofs.size() - 1; i++) {
+            int now = mDependantDofs[i];
+            int next = mDependantDofs[i + 1];
+            if (now > next) {
+                cerr << "Array not sorted!!!" << endl;
+                exit(0);
+            }
         }
     }
+
+    bool BodyNode::dependsOn(int _dofIndex) const {
+        return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
+    }
+    
+    // void BodyNode::setDependDofMap(int _numDofs){
+    //     // initialize the map
+    //     mDependsOnDof = new bool[_numDofs];
+    //     memset(mDependsOnDof, false, _numDofs*sizeof(bool));
+    
+    //     // if this is not the root node, copy its parent's map first
+    //     if(mNodeIn!=NULL){
+    //         memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
+    //     }
+
+    //     // set dependence for itself
+    //     for( int i=0; i<getNumDofs(); i++){
+    //         int dofID = getDof(i)->getModelIndex();
+    //         mDependsOnDof[dofID] = true;
+    //     }
+    // }
     
     void BodyNode::draw(const Vector4d& _color, bool _useDefaultColor, int _depth) const {
         glPushMatrix();
