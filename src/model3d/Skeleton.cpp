@@ -138,7 +138,7 @@ namespace model3d {
 
         for(int i=0; i<nDofs; i++){
             mDofs.at(i)->setValue(state.at(i));
-            mCurrState[k] = state.at(i);
+            mCurrState[i] = state.at(i);
         }
         for(int i=0; i<nNodes; i++)
             mNodes.at(i)->updateTransform();

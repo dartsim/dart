@@ -1,4 +1,4 @@
-include ../Makefile.defs.osx
+include ../Makefile.defs
 
 RELEASE_LIB = $(LIB_DIR)/libRenderer.a
 DEBUG_LIB = $(LIB_DIR)/libRendererd.a

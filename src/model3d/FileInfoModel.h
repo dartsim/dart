@@ -30,7 +30,7 @@ namespace model3d {
   
     public:
         FileInfoModel();
-        ~FileInfoModel();
+        virtual ~FileInfoModel();
 	
         void draw(Renderer::OpenGLRenderInterface* RI, const Eigen::Vector4d& color, bool _default = true); // whether to use the default color stored in Skeleton; color is used only when default = false
         bool loadFile(const char* _filename, FileType _type);

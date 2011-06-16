@@ -31,7 +31,7 @@ namespace model3d {
         };
 	
         Joint(BodyNode* _bIn, BodyNode* _bOut);
-        ~Joint();
+        virtual ~Joint();
 
         bool isPresent(Dof *d);	// true if d is present in the dof list
         int getIndex(int dofIndex); // get local index of the dof at this joint

@@ -1,4 +1,4 @@
-include ../Makefile.defs.osx
+include ../Makefile.defs
 
 RELEASE_LIB = $(LIB_DIR)/libUtils.a
 DEBUG_LIB = $(LIB_DIR)/libUtilsd.a
@@ -13,7 +13,7 @@ OBJS = \
 	Timer.o \
 	$(NULL)
 
-IDIRS = -I. -I$(EIGEN) -I$(BOOST) -I$(GLOG)/include
+IDIRS = -I. -I$(EIGEN) -I$(GLOG)/src
 
 RELEASE_OBJS := $(foreach f,$(OBJS),$(RELEASE_DIR)/$(patsubst %.cpp,%.o,$(f)))
 

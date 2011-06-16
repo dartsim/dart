@@ -1,4 +1,4 @@
-include ../../Makefile.defs.osx
+include ../../Makefile.defs
 
 RELEASE_BIN = loadModel
 DEBUG_BIN = loadModeld
@@ -38,16 +38,16 @@ all: release debug
 default: release
 
 release : $(RELEASE_OBJS)
-	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -D_RENDERER_TEST_ -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -o $(RELEASE_BIN) $(RELEASE_OBJS) $(LIBS) $(LDIRS) $(RELEASE_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(RELEASE_BIN) ../$(BIN_DIR)/$(RELEASE_BIN)
 
 debug : $(DEBUG_OBJS)
-	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -D_RENDERER_TEST_ -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
+	$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -o $(DEBUG_BIN) $(DEBUG_OBJS) $(LDIRS) $(LIBS) $(DEBUG_LIBS) -bind_at_load $(GLDLIBS) $(LDFLAGS)
 	$(CP) $(DEBUG_BIN) ../$(BIN_DIR)/$(DEBUG_BIN)
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE -D_RENDERER_TEST_ $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_RELEASE) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(RF).d $(RF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(RF).P >> $(RF).d; \
@@ -55,7 +55,7 @@ debug : $(DEBUG_OBJS)
 
 %.o: %.cpp
 	@echo $<
-	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE -D_RENDERER_TEST_ $(IDIRS) -MMD -c -o $@ $<
+	@$(CPP) $(CPPFLAGS_DEBUG) -DAPPLE $(IDIRS) -MMD -c -o $@ $<
 	@cp $(DF).d $(DF).P; \
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(DF).P >> $(DF).d; \
