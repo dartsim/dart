@@ -14,12 +14,9 @@ BIN_DIR = ../../bin
 LIB_DIR = ../../lib
 RELEASE_DIR = ./release
 DEBUG_DIR = ./debug
-SRC = src
 RF = $(RELEASE_DIR)/$(*F)
 DF = $(DEBUG_DIR)/$(*F)
 
-YUI = 
 EIGEN =
 TICPP =
-BOOST =
 GLOG =

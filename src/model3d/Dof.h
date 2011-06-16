@@ -25,7 +25,7 @@ namespace model3d {
         Dof(double val, char *name);
         Dof(double val, char *name, double min, double max);
 	
-        ~Dof(){}
+        virtual ~Dof(){}
 
         // some helper functions
         void setName(char* _n) { strcpy(mName,_n); }

@@ -32,7 +32,7 @@ namespace model3d {
     class FileInfoDof /*: public FileInfoBase*/ {
     public:
         FileInfoDof(Skeleton* _skel, double _fps = 120.0);
-        ~FileInfoDof();
+        virtual ~FileInfoDof();
     
         bool loadFile(const char*);
         bool saveFile(const char*, int, int, double sampleRate = 1.0);

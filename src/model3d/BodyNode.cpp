@@ -33,7 +33,7 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(char *_name) 
-        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), dependsOnDof(NULL), mMass(0), mOffset(0,0,0)
+        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mDependsOnDof(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();
         mHandles.clear();
@@ -58,8 +58,8 @@ namespace model3d {
             mPrimitive = NULL;
         }
         mJointOut.clear();
-        delete[] dependsOnDof;
-        dependsOnDof = NULL;
+        delete[] mDependsOnDof;
+        mDependsOnDof = NULL;
     }
 
     void BodyNode::init() {
@@ -88,18 +88,18 @@ namespace model3d {
     
     void BodyNode::setDependDofMap(int _numDofs){
         // initialize the map
-        dependsOnDof = new bool[_numDofs];
-        memset(dependsOnDof, false, _numDofs*sizeof(bool));
+        mDependsOnDof = new bool[_numDofs];
+        memset(mDependsOnDof, false, _numDofs*sizeof(bool));
     
         // if this is not the root node, copy its parent's map first
         if(mNodeIn!=NULL){
-            memcpy(dependsOnDof, mNodeIn->dependsOnDof, _numDofs*sizeof(bool));
+            memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
         }
 
         // set dependence for itself
         for( int i=0; i<getNumDofs(); i++){
             int dofID = getDof(i)->getModelIndex();
-            dependsOnDof[dofID] = true;
+            mDependsOnDof[dofID] = true;
         }
     }
     
