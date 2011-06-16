@@ -33,7 +33,7 @@ namespace model3d {
         int nHandles;
 
         Skeleton();
-        ~Skeleton();
+        virtual ~Skeleton();
 	
         void addHandle(Marker *h);
         void addNode(BodyNode *b);
