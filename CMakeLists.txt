@@ -10,6 +10,10 @@ if (WIN32)
   message(STATUS "Setup Visual Studio Specifig Flags")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /GL /Gy")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /GL /Gy")
+elseif (APPLE)
+elseif (UNIX)
+  # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
 endif()
 
 ###############################################
@@ -39,12 +43,12 @@ if (user_info STREQUAL "Sehoon")
     message(FATAL_ERROR "Invalid operating system")
   endif()
 
-####
+  ####
 elseif (user_info EQUAL "Yunfei")
   # If user is Yunfei
 elseif (user_info EQUAL "Kristin")
   # If user is Yunfei
-####
+  ####
 else ()
   # Invalid user info?
   message(FATAL_ERROR "Invalid user information")
@@ -147,25 +151,25 @@ TARGET_LINK_LIBRARIES(viewer glut GL GLU glog gflags)
 FIND_PACKAGE(Doxygen)
 IF (DOXYGEN_FOUND)
 
-SET(DOXYGEN_INPUT "Doxyfile")
-SET(DOXYGEN_OUTPUT "doc")
+  SET(DOXYGEN_INPUT "Doxyfile")
+  SET(DOXYGEN_OUTPUT "doc")
 
-ADD_CUSTOM_COMMAND(
-  OUTPUT ${DOXYGEN_OUTPUT}
-  COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-  COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-  COMMAND ${CMAKE_COMMAND} -E echo "Done."
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  DEPENDS ${DOXYGEN_INPUT}
-  )
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${DOXYGEN_OUTPUT}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${DOXYGEN_INPUT}
+    )
 
-ADD_CUSTOM_TARGET(docs DEPENDS ${DOXYGEN_OUTPUT})
-# ADD_CUSTOM_TARGET(apidoc ALL DEPENDS ${DOXYGEN_OUTPUT})
+  ADD_CUSTOM_TARGET(docs DEPENDS ${DOXYGEN_OUTPUT})
+  # ADD_CUSTOM_TARGET(apidoc ALL DEPENDS ${DOXYGEN_OUTPUT})
 
-ADD_CUSTOM_TARGET(docs_forced
-  COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-  COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-  COMMAND ${CMAKE_COMMAND} -E echo "Done."
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  ADD_CUSTOM_TARGET(docs_forced
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 ENDIF (DOXYGEN_FOUND)
