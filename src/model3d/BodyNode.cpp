@@ -108,28 +108,11 @@ namespace model3d {
     bool BodyNode::dependsOn(int _dofIndex) const {
         return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
     }
-    
-    // void BodyNode::setDependDofMap(int _numDofs){
-    //     // initialize the map
-    //     mDependsOnDof = new bool[_numDofs];
-    //     memset(mDependsOnDof, false, _numDofs*sizeof(bool));
-    
-    //     // if this is not the root node, copy its parent's map first
-    //     if(mNodeIn!=NULL){
-    //         memcpy(mDependsOnDof, mNodeIn->mDependsOnDof, _numDofs*sizeof(bool));
-    //     }
-
-    //     // set dependence for itself
-    //     for( int i=0; i<getNumDofs(); i++){
-    //         int dofID = getDof(i)->getModelIndex();
-    //         mDependsOnDof[dofID] = true;
-    //     }
-    // }
-    
+        
     void BodyNode::draw(const Vector4d& _color, bool _useDefaultColor, int _depth) const {
         glPushMatrix();
         // render the self geometry
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
             mJointIn->getTransform(i)->applyGLTransform();
         }
         if (mPrimitive != NULL) {
@@ -142,7 +125,7 @@ namespace model3d {
         }
 
         // render the subtree
-        for(int i=0; i<mJointOut.size(); i++){
+        for (int i = 0; i < mJointOut.size(); i++) {
             mJointOut[i]->getNodeOut()->draw(_color, _useDefaultColor);
         }
         glPopMatrix();
@@ -150,15 +133,15 @@ namespace model3d {
 
     void BodyNode::drawHandles(const Vector4d& _color, bool _useDefaultColor) const {
         glPushMatrix();
-        for(int i=0; i<mJointIn->getNumTransforms(); i++){
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
             mJointIn->getTransform(i)->applyGLTransform();
         }
 
         // render the corresponding mHandless
-        for(int i=0; i<mHandles.size(); i++){
+        for (int i = 0; i < mHandles.size(); i++) {
             mHandles[i]->draw(true, _color, _useDefaultColor);
         }
-        for(int i=0; i<mJointOut.size(); i++){
+        for (int i = 0; i < mJointOut.size(); i++) {
             mJointOut[i]->getNodeOut()->drawHandles(_color, _useDefaultColor);
         }
         glPopMatrix();
