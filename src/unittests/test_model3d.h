@@ -11,7 +11,7 @@ TEST(MODEL3D, VSK) {
   
     FileInfoModel modelFile;
     modelFile.loadFile("Yuting.vsk", FileInfoModel::VSK);
-    Skeleton* skel = modelFile.getSkel();
+    Skeleton* skel = modelFile.getModel();
 
     EXPECT_TRUE(skel != NULL);
 
