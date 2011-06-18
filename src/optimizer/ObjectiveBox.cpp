@@ -4,24 +4,24 @@ using namespace Eigen;
 
 namespace optimizer {
 
-    ObjBox::ObjBox(int numDofs) {
+    ObjectiveBox::ObjectiveBox(int numDofs) {
         SetNumDofs(numDofs);
         mG = 0.0;
     }
     
-    ObjBox::~ObjBox() {
+    ObjectiveBox::~ObjectiveBox() {
         Clear();
     }
 
-    void ObjBox::Add(Constraint *newObjective) {
+    void ObjectiveBox::Add(Constraint *newObjective) {
         mObjectives.push_back(newObjective);
     }
 
-    void ObjBox::Clear() {
+    void ObjectiveBox::Clear() {
         mObjectives.clear();
     }
 
-    int ObjBox::TakeOut(Constraint *obj) {
+    int ObjectiveBox::TakeOut(Constraint *obj) {
         int index = -1;
         for(int i = 0; i < mObjectives.size(); i++){
             if(mObjectives[i] == obj){
@@ -40,7 +40,7 @@ namespace optimizer {
         return index;
     }
 
-    int ObjBox::IsInBox(Constraint *testObj)  {
+    int ObjectiveBox::IsInBox(Constraint *testObj)  {
         for(int i = 0; i < mObjectives.size(); i++) {
             if(mObjectives[i] == testObj)
                 return i;
@@ -48,7 +48,7 @@ namespace optimizer {
         return -1;
     }
 
-    void ObjBox::SetNumDofs(int numDofs) {
+    void ObjectiveBox::SetNumDofs(int numDofs) {
         mNumDofs = numDofs;
         mG = 0;
         mdG.resize(numDofs);
@@ -58,7 +58,7 @@ namespace optimizer {
         }
     }
 
-    void ObjBox::EvaldG() {
+    void ObjectiveBox::EvaldG() {
         for(int i = 0; i < mObjectives.size(); i++) {
             if(mObjectives[i]->mActive){
                 mObjectives[i]->FilldG(mdG);
@@ -66,17 +66,17 @@ namespace optimizer {
         }
     }
 
-    void ObjBox::EvalddG() {
+    void ObjectiveBox::EvalddG() {
     }
 
-    void ObjBox::EvalG() {
+    void ObjectiveBox::EvalG() {
         mG = 0;
         for(int i = 0; i < mObjectives.size(); i++)
             if(mObjectives[i]->mActive)
                 mG += mObjectives[i]->EvalG();
     }
 
-    void ObjBox::ReallocateMem() {
+    void ObjectiveBox::ReallocateMem() {
         for(int i = 0; i < mObjectives.size(); i++)
             mObjectives[i]->AllocateMem();
     }
