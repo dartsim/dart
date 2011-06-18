@@ -9,7 +9,7 @@ namespace optimizer {
     class ConstraintBox {
     public:
         ConstraintBox(int numDofs);
-        ~ConstraintBox();
+        virtual ~ConstraintBox();
 	
         void Add(Constraint *newConstraint);
         void Clear();
