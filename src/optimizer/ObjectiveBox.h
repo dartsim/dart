@@ -8,10 +8,10 @@ namespace optimizer {
 
     class Constraint;
 
-    class ObjBox {
+    class ObjectiveBox {
     public:
-        ObjBox(int numDofs);
-        virtual ~ObjBox();
+        ObjectiveBox(int numDofs);
+        virtual ~ObjectiveBox();
 	
         void Add(Constraint *newObjective);
         void Clear();
