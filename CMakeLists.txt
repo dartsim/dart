@@ -80,8 +80,22 @@ ADD_LIBRARY(model3d ${model3d_srcs} ${model3d_hdrs})
 TARGET_LINK_LIBRARIES(model3d utils)
 SET_TARGET_PROPERTIES(model3d PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
+
 ###############################################
-# Unittests
+# optimizer
+PROJECT(optimizer)
+
+# Search all header and source files
+FILE(GLOB optimizer_srcs "src/optimizer/*.cpp")
+FILE(GLOB optimizer_hdrs "src/optimizer/*.h")
+
+# Library 
+ADD_LIBRARY(optimizer ${optimizer_srcs} ${optimizer_hdrs})
+TARGET_LINK_LIBRARIES(optimizer utils)
+SET_TARGET_PROPERTIES(optimizer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
+
+###############################################
+# Unittestsrep
 PROJECT(unittests)
 # Search all header and source files
 FILE(GLOB unittests_srcs "src/unittests/*.cpp")
