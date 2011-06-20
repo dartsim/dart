@@ -23,16 +23,21 @@ namespace optimizer {
         void Clear();
         int TakeOut(Constraint *target);
         int IsInBox(Constraint *testConstraint);	//return index of component if true
+
+        int getNumConstraints() const { return mConstraints.size(); }
+        Constraint * getConstraint(int index) const { return mConstraints[index]; }
+
         void EvalJ();
         void EvalC();
         void ReallocateMem();
 
         //Must be called before using ConstraintBox
+        int getNumDofs() const { return mNumDofs; }
         void SetNumDofs(int numDofs);
+        int getNumTotalRows() const { return mNumTotalRows; }
 
-    private:
         int mNumDofs; //number of Model DOFs
-        int mNumConstrs;
+        int mNumTotalRows;
         std::vector<Constraint *> mConstraints;
         std::vector<double> mC;
         std::vector< std::vector<double> *> mJ; //Jacobian

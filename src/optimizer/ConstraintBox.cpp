@@ -15,7 +15,7 @@ using namespace Eigen;
 namespace optimizer {
 
     ConstraintBox::ConstraintBox(int numDofs) {
-        mNumConstrs=0;
+        mNumTotalRows=0;
         SetNumDofs(numDofs);
     }
 
@@ -25,7 +25,7 @@ namespace optimizer {
 
     void ConstraintBox::Add(Constraint *newConstraint) {
         mConstraints.push_back(newConstraint);
-        mNumConstrs += newConstraint->mNumRows;
+        mNumTotalRows += newConstraint->mNumRows;
 
         for(int i = 0; i < newConstraint->mNumRows; i++) {
             mC.push_back(0.0);
@@ -59,7 +59,7 @@ namespace optimizer {
         mJMap.clear();
         mC.clear();
 
-        mNumConstrs = 0;
+        mNumTotalRows = 0;
     }
 
     int ConstraintBox::TakeOut(Constraint *target) {
@@ -87,7 +87,7 @@ namespace optimizer {
             delete mJMap[count+j];
         }
 
-        mNumConstrs -= length ;
+        mNumTotalRows -= length ;
         mJ.erase(mJ.begin() + count, mJ.begin() + count + length);
         mJMap.erase(mJMap.begin() + count, mJMap.begin() + count + length);
 
@@ -129,7 +129,7 @@ namespace optimizer {
 
     void ConstraintBox::SetNumDofs(int numDofs) {
         mNumDofs = numDofs;
-        for(int i = 0; i < mNumConstrs; i++){
+        for(int i = 0; i < mNumTotalRows; i++){
             if(mJ[i]->size()!=mNumDofs){
                 mJ[i]->resize(numDofs);
                 mJMap[i]->resize(numDofs);

@@ -25,6 +25,9 @@ namespace optimizer {
         void Clear();
         int TakeOut(Constraint *obj);
         int IsInBox(Constraint*);
+
+        int getNumConstraints() const { return mObjectives.size(); }
+        Constraint * getConstraint(int index) const { return mObjectives[index]; }
 	
         void EvalG();
         void EvaldG();

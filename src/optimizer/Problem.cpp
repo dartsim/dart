@@ -8,6 +8,7 @@
 
 #include "Problem.h"
 
+#include <iostream>
 using namespace std;
 
 #include "Var.h"
@@ -15,10 +16,12 @@ using namespace std;
 #include "ConstraintBox.h"
 #include "ObjectiveBox.h"
 
+
 namespace optimizer {
 
     Problem::Problem()
         : mConBox(NULL), mObjBox(NULL) {
+        mVariables.clear();
     }
     
     Problem::~Problem() {
@@ -30,13 +33,19 @@ namespace optimizer {
             delete mObjBox;
         }
 
-        for (int i = 0; mVariables.size(); ++i) {
+        for (int i = 0; i < mVariables.size(); ++i) {
             delete mVariables[i];
         }
         mVariables.clear();
     }
 
-    void Problem::AddVariable(double value, double lower, double upper) {
+    void Problem::update(double* coefs) {
+        for (int i = 0; i < mVariables.size(); ++i) {
+            mVariables[i]->mVal = coefs[i];
+        }
+    }
+
+    void Problem::addVariable(double value, double lower, double upper) {
         Var* var = new Var(value, upper, lower);
         mVariables.push_back(var);
     }
@@ -46,5 +55,16 @@ namespace optimizer {
         mObjBox = new ObjectiveBox(this->mVariables.size());
     }
     
+    ConstraintBox* Problem::conBox() const {
+        return mConBox;
+    }
+
+    ObjectiveBox* Problem::objBox() const {
+        return mObjBox;
+    }
+
+    std::vector<Var *>& Problem::vars() {
+        return mVariables;
+    }
 
 } // namespace optimizer
