@@ -20,15 +20,12 @@ Eigen::VectorXd SampleConstraint::EvalC() {
     VectorXd x(1);
     x(0) = vars[mIndex]->mVal - mTarget;
 
-    cout << "x = " << x(0) << endl;
     return x;
 
 }
 
 void SampleConstraint::FilldG(std::vector<double>& dG) {
     VectorXd dP = EvalC();
-
-    cout << "dG.size() = " << dG.size() << endl;
 
     for(int i = 0; i < mVariables.size(); i++){
         const Var* var = mVariables[i];

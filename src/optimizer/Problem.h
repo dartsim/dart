@@ -30,7 +30,7 @@ namespace optimizer {
         ObjectiveBox* objBox() const;
         std::vector<Var *>& vars();
 
-    private:
+    protected:
         ConstraintBox* mConBox;
         ObjectiveBox* mObjBox;
         std::vector<Var *> mVariables;
