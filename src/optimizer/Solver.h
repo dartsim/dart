@@ -20,7 +20,7 @@ namespace optimizer {
         Solver(Problem *prob);
         virtual ~Solver();
 
-        virtual Eigen::VectorXd solve() = 0;
+        virtual bool solve() = 0;
         virtual Eigen::VectorXd getState() = 0;
         virtual void setState(const Eigen::VectorXd& x) = 0;
 

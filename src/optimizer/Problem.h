@@ -20,10 +20,15 @@ namespace optimizer {
     public:
         Problem();
         virtual ~Problem();
-        virtual void update() = 0;
+        virtual void update(double* coefs);
 
-        void AddVariable(double value, double lower, double upper);
+        int getNumVariables() const { return mVariables.size(); }
+        void addVariable(double value, double lower, double upper);
         void createBoxes();
+
+        ConstraintBox* conBox() const;
+        ObjectiveBox* objBox() const;
+        std::vector<Var *>& vars();
 
     private:
         ConstraintBox* mConBox;

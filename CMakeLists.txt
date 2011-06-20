@@ -88,9 +88,12 @@ PROJECT(optimizer)
 # Search all header and source files
 FILE(GLOB optimizer_srcs "src/optimizer/*.cpp")
 FILE(GLOB optimizer_hdrs "src/optimizer/*.h")
+FILE(GLOB optimizer_snopt_srcs "src/optimizer/snopt/*.cpp")
+FILE(GLOB optimizer_snopt_hdrs "src/optimizer/snopt/*.h")
 
 # Library 
-ADD_LIBRARY(optimizer ${optimizer_srcs} ${optimizer_hdrs})
+ADD_LIBRARY(optimizer ${optimizer_srcs} ${optimizer_hdrs}
+  ${optimizer_snopt_srcs} ${optimizer_snopt_hdrs})
 TARGET_LINK_LIBRARIES(optimizer utils)
 SET_TARGET_PROPERTIES(optimizer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
@@ -142,7 +145,7 @@ TARGET_LINK_LIBRARIES(exampleUI YUI)
 TARGET_LINK_LIBRARIES(exampleUI glut GL GLU)
 
 ###############################################
-# apps/exampleUI
+# apps/loadModel
 PROJECT(loadModel)
 FILE(GLOB load_model_srcs "src/apps/loadModel/*.cpp")
 FILE(GLOB load_model_hdrs "src/apps/loadModel/*.h")
@@ -151,13 +154,24 @@ TARGET_LINK_LIBRARIES(loadModel model3d ticpp YUI gflags glog)
 TARGET_LINK_LIBRARIES(loadModel glut GL GLU)
 
 ###############################################
-# apps/exampleUI
+# apps/viewer
 PROJECT(viewer)
 FILE(GLOB viewer_srcs "src/apps/viewer/*.cpp")
 FILE(GLOB viewer_hdrs "src/apps/viewer/*.h")
 ADD_EXECUTABLE(viewer ${viewer_srcs} ${viewer_hdrs})
 TARGET_LINK_LIBRARIES(viewer model3d ticpp YUI)
 TARGET_LINK_LIBRARIES(viewer glut GL GLU glog gflags)
+
+
+###############################################
+# apps/sampleOpt
+PROJECT(sampleOpt)
+FILE(GLOB sampleOpt_srcs "src/apps/sampleOpt/*.cpp")
+FILE(GLOB sampleOpt_hdrs "src/apps/sampleOpt/*.h")
+ADD_EXECUTABLE(sampleOpt ${sampleOpt_srcs} ${sampleOpt_hdrs})
+TARGET_LINK_LIBRARIES(sampleOpt optimizer)
+TARGET_LINK_LIBRARIES(sampleOpt glog gflags gfortran snopt)
+
 
 
 ###############################################

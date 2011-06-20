@@ -9,6 +9,8 @@
 #include "ObjectiveBox.h"
 #include "Constraint.h"
 using namespace Eigen;
+#include <iostream>
+using namespace std;
 
 namespace optimizer {
 
@@ -57,6 +59,7 @@ namespace optimizer {
     }
 
     void ObjectiveBox::SetNumDofs(int numDofs) {
+
         mNumDofs = numDofs;
         mG = 0;
         mdG.resize(numDofs);

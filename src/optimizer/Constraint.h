@@ -19,7 +19,7 @@ namespace optimizer {
 
     class Constraint {
     public:
-        Constraint(std::vector<Var*>& var);
+        Constraint(std::vector<Var *>& var);
         virtual ~Constraint() {}
 
     public:
