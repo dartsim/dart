@@ -32,7 +32,9 @@ namespace optimizer {
             mNoDisplay = false;
             mSolverIter = 10;
 
-            mTotalDofs = 0;
+            // mTotalDofs = 0;
+            mTotalDofs = problem->getNumVariables();
+
             mOptCount = 0;
             mPrint = true;
             mUnit = 4;
@@ -44,7 +46,9 @@ namespace optimizer {
             }
         }
 
-        SnoptInterface::Return SnoptSolver::Solve() {
+        bool SnoptSolver::solve() {
+            ResetSolver();
+
             int nVar = mTotalDofs;
 
             // RESET CONSTRAINTS AND OBJECTIVES
@@ -54,11 +58,7 @@ namespace optimizer {
             // RESET PROBLEM DIMENSION IN SNOPT
             int nConstr = conBox()->getNumTotalRows();
 
-            cout << "==== " << objBox()->mdG.size() << endl;
-            cout  << "mProb = " << mProb << endl;
             mSnopt->ResizeJacobian(nVar, nVar, nConstr, nConstr);
-            cout << "---- " << objBox()->mdG.size() << endl;
-            cout  << "mProb = " << mProb << endl;
 
             // FILL IN BOUNDARIES
             double* coef_vals = new double[nVar + mSnopt->constr_total];
@@ -118,12 +118,19 @@ namespace optimizer {
             delete[] coef_vals;
             delete[] lower_bounds;
             delete[] upper_bounds;
-            return ret;
+
+            if(ret == SnoptInterface::Solution) {
+                return true;
+            } else {
+                return false;
+            }
         }
 
         int SnoptSolver::IterUpdate(long mask, int compute_gradients, double *coefs, void *update_data) {
             if(!mask)
                 return 0;
+
+
             SnoptSolver *m = (SnoptSolver*)update_data;
 
 
@@ -135,6 +142,9 @@ namespace optimizer {
             vector<Var *>& vars(m->mProb->vars());
             for(int i = 0; i < m->mTotalDofs; i++)
                 vars[i]->mVal = coefs[i];
+
+            // Update Problem
+            m->mProb->update(coefs);
 
             // UPDATE CONSTRAINTS, OBJECTIVES, AND THEIR GRADIENTS
             if(mask & SnoptInterface::Obj){
@@ -175,12 +185,6 @@ namespace optimizer {
 
         }
 
-        bool SnoptSolver::Recipe() {
-            ResetSolver();
-            if(Solve() == SnoptInterface::Solution)
-                return true;
-            else return false;
-        }
         
         ConstraintBox* SnoptSolver::conBox() {
             return mProb->conBox();

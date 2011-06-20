@@ -40,9 +40,6 @@ namespace optimizer {
     }
 
     void Problem::update(double* coefs) {
-        for (int i = 0; i < mVariables.size(); ++i) {
-            mVariables[i]->mVal = coefs[i];
-        }
     }
 
     void Problem::addVariable(double value, double lower, double upper) {

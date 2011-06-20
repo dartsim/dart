@@ -21,11 +21,11 @@ namespace optimizer {
         virtual ~Solver();
 
         virtual bool solve() = 0;
-        virtual Eigen::VectorXd getState() = 0;
-        virtual void setState(const Eigen::VectorXd& x) = 0;
+        virtual Eigen::VectorXd getState();
+        virtual void setState(const Eigen::VectorXd& x);
 
 
-        void setProblem(Problem * prob);
+        virtual void setProblem(Problem * prob);
         Problem* getProblem() const;
     protected:
         Problem *mProb;

@@ -27,15 +27,9 @@ namespace optimizer {
             SnoptSolver(Problem *problem);
             virtual ~SnoptSolver();
 
-            virtual bool solve() { return true; }
-            virtual Eigen::VectorXd getState() {
-                return Eigen::VectorXd(1); }
-            virtual void setState(const Eigen::VectorXd& x) {}
+            virtual bool solve();
 
-            virtual bool Recipe();
             virtual void ResetSolver();
-            virtual SnoptInterface::Return Solve();
-
             static int IterUpdate(long mask, int compute_gradients, double *coefs, void *update_data);
         private:
             SnoptInterface *mSnopt;
