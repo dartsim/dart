@@ -1,3 +1,11 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author	Sehoon Ha
+  Date		06/19/2011
+*/
+
 #ifndef OPTIMIZER_PROBLEM_H
 #define OPTIMIZER_PROBLEM_H
 
