@@ -98,15 +98,15 @@ TARGET_LINK_LIBRARIES(optimizer utils)
 SET_TARGET_PROPERTIES(optimizer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "lib")
 
 ###############################################
-# Unittestsrep
+# Unittests
 PROJECT(unittests)
 # Search all header and source files
 FILE(GLOB unittests_srcs "src/unittests/*.cpp")
 FILE(GLOB unittests_hdrs "src/unittests/*.h")
 
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
-TARGET_LINK_LIBRARIES(unittests utils model3d ticpp)
-TARGET_LINK_LIBRARIES(unittests gflags glog)
+TARGET_LINK_LIBRARIES(unittests utils model3d optimizer ticpp)
+TARGET_LINK_LIBRARIES(unittests gflags glog gfortran snopt)
 if (UNIX)
   TARGET_LINK_LIBRARIES(unittests gtest pthread glut)
 endif()

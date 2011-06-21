@@ -7,18 +7,20 @@
 */
 
 #include "Var.h"
+#include <glog/logging.h>
 
 namespace optimizer {
 
-    Var::Var(double val, double upper, double lower)
-        :mVal(val), mUpper(upper), mLower(lower), mWeight(1.0) {
+    Var::Var(double val, double lower, double upper)
+        :mVal(val), mLower(lower), mUpper(upper), mWeight(1.0) {
+        CHECK_LT(mLower, mUpper);
     }
 
     void Var::setWeight(double weight) {
         mWeight = weight;
         mVal *= weight;
-        mUpper *= weight;
         mLower *= weight;
+        mUpper *= weight;
     }
 
 } // namespace optimizer

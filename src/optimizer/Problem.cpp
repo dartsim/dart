@@ -43,7 +43,7 @@ namespace optimizer {
     }
 
     void Problem::addVariable(double value, double lower, double upper) {
-        Var* var = new Var(value, upper, lower);
+        Var* var = new Var(value, lower, upper);
         mVariables.push_back(var);
     }
     
