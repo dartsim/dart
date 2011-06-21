@@ -12,12 +12,12 @@
 namespace optimizer {
     struct Var {
     public:
-        Var(double val, double upper, double lower);
+        Var(double val, double lower, double upper);
         void setWeight(double weight);
     public:
         double mVal;
-        double mUpper;
         double mLower;
+        double mUpper;
         double mWeight;
     };
     
