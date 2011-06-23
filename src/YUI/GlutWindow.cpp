@@ -170,7 +170,7 @@ bool GlutWindow::screenshot()
 inline GlutWindow* GlutWindow::current()
 {
 	int id = glutGetWindow();
-	for(int i=0; i<mWinIDs.size(); i++){
+	for(unsigned int i=0; i<mWinIDs.size(); i++){
 		if(mWinIDs.at(i) == id){
 			return mWindows.at(i);
 		}
