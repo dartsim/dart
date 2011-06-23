@@ -1,3 +1,6 @@
+#if WIN32
+#include "config_for_unittests.h"
+#endif
 // Standard Libraries
 #include <iostream>
 using namespace std;
