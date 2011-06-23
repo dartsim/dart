@@ -29,7 +29,7 @@ namespace model3d {
     }
 
     Transformation::~Transformation(){
-        for(int i=0; i<mDofs.size(); i++) {
+        for(unsigned int i=0; i<mDofs.size(); i++) {
             delete mDofs[i];
         }
         mDofs.clear();
@@ -52,7 +52,7 @@ namespace model3d {
     }
 
     bool Transformation::isPresent(const Dof *q) const {
-        for(int i=0; i<mDofs.size(); i++){
+        for(unsigned int i=0; i<mDofs.size(); i++){
             if(q==mDofs[i]) return true;
         }
         return false;

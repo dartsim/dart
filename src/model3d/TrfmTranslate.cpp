@@ -38,14 +38,14 @@ namespace model3d {
         mTransform(1, 1) = 1.0; 
         mTransform(2, 2) = 1.0; 
         mTransform(3, 3) = 1.0; 
-        for(int i=0; i<mDofs.size(); i++){
+        for(unsigned int i=0; i<mDofs.size(); i++){
             mTransform(i, 3) = mDofs[i]->getValue();
         }
     }
 
     Matrix4d TrfmTranslate::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             if(mDofs[i] == q){
                 ret(i, 3) = 1.0;
                 break;
@@ -54,14 +54,14 @@ namespace model3d {
     }
 
     void TrfmTranslate::applyDeriv(const Dof* q, Vector3d& v){
-        for(int i=0; i<mDofs.size(); i++){
+        for(unsigned int i=0; i<mDofs.size(); i++){
             if(mDofs[i] != q) v(i) = 0;
             else v(i) = 1;
         }
     }
 
     void TrfmTranslate::applyDeriv(const Dof* q, Matrix4d& m){
-        for(int i=0; i<mDofs.size(); i++){
+        for(unsigned int i=0; i<mDofs.size(); i++){
             if(mDofs[i] != q) m.row(i).setZero();
             else m.row(i) = m.row(3);
         }
@@ -70,29 +70,29 @@ namespace model3d {
 
     Matrix4d TrfmTranslate::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             ret(i, 3) = -mDofs[i]->getValue();
         return ret;
     }
 
     void TrfmTranslate::applyTransform(Vector3d& v){
-        for(int i=0; i<mDofs.size(); i++) 
+        for(unsigned int i=0; i<mDofs.size(); i++) 
             v(i) +=mDofs[i]->getValue();
     }
 
     void TrfmTranslate::applyInvTransform(Vector3d& v){
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             v(i) -= mDofs[i]->getValue();
     }
 
     void TrfmTranslate::applyTransform(Matrix4d& m){
-        for(int i=0; i<mDofs.size(); i++) {
+        for(unsigned int i=0; i<mDofs.size(); i++) {
             m.row(i) += mDofs[i]->getValue() * m.row(3);
         }
     }
 
     void TrfmTranslate::applyInvTransform(Matrix4d& m){
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             m.row(i) -= mDofs[i]->getValue() * m.row(3);
     }
 

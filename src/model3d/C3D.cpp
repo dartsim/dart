@@ -119,9 +119,9 @@ namespace model3d {
                 } else {
                     memcpy(&frameSI, buf, sizeof(frameSI));
                     if (bDecFmt) {
-                        frameSI.y = ConvertDecToFloat((char*)&frameSI.y);
-                        frameSI.z = ConvertDecToFloat((char*)&frameSI.z);
-                        frameSI.x = ConvertDecToFloat((char*)&frameSI.x);
+                        frameSI.y = (short)ConvertDecToFloat((char*)&frameSI.y);
+                        frameSI.z = (short)ConvertDecToFloat((char*)&frameSI.z);
+                        frameSI.x = (short)ConvertDecToFloat((char*)&frameSI.x);
                     }
                     v[0] = (float)frameSI.y * pntScale / 1000.0;
                     v[1] = (float)frameSI.z * pntScale / 1000.0;
@@ -161,10 +161,10 @@ namespace model3d {
         hdr.end_frame = _nFrame;
 
         //make scale neg to show we are saving floats rather than scaled ints
-        hdr.scale = -0.1;
+        hdr.scale = (float)-0.1;
         hdr.rec_start = 3;
         hdr.a_frames = 1;
-        hdr.freq = _freq;
+        hdr.freq = (float)_freq;
         fwrite(&hdr, C3D_REC_SIZE, 1, file);
 
         memset(&parm, 0, sizeof(parm));
@@ -177,9 +177,9 @@ namespace model3d {
             for (int j = 0; j < _nMarker; j++) {
                 // data is in meters, so put it into millimeters
                 v = _pointData[i][j] * 1000.0;
-                frame.x = v[2];
-                frame.y = v[0];
-                frame.z = v[1];
+                frame.x = (float)v[2];
+                frame.y = (float)v[0];
+                frame.z = (float)v[1];
                 fwrite(&frame, sizeof(frame), 1, file);
             }
         }

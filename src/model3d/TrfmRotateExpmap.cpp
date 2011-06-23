@@ -111,7 +111,7 @@ namespace model3d {
 
         // derivative wrt which dof 
         int j=-1;
-        for(int i=0; i<mDofs.size(); i++) if(d==mDofs[i]) j=i;
+        for(unsigned int i=0; i<mDofs.size(); i++) if(d==mDofs[i]) j=i;
         assert(j!=-1);
 
         // compute derivative of qi's wrt v[j]
@@ -189,7 +189,7 @@ namespace model3d {
 	
         // derivative wrt which mDofs
         int j=-1, k=-1;
-        for(int i=0; i<mDofs.size(); i++) {
+        for(unsigned int i=0; i<mDofs.size(); i++) {
             if(q1==mDofs[i]) j=i;
             if(q2==mDofs[i]) k=i;
         }

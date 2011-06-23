@@ -1,27 +1,36 @@
 /*
-  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
-  All rights reserved.
+RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+All rights reserved.
 
-  Author	Sehoon Ha
-  Date		06/12/2011
+Author	Sehoon Ha
+Date		06/12/2011
 */
 
 
 #ifndef MODEL3D_PARSER_MODEL_H
 #define MODEL3D_PARSER_MODEL_H
 
-#include "ParserDefs.h"
+//#include "ParserDefs.h"
+namespace model3d{
+    class Transformation;
+    class Primitive;
+    class Dof;
+}
+
+typedef model3d::Dof* dofVec3[3];
+typedef model3d::Dof* dofVec4[4];
+typedef double doubleVec3[3];
 
 typedef union {
-  double	dValue;
-  int iValue;
-  char* sValue;
-  vec3d v3DValue;
-  vec4d v4DValue;
-  vec3v v3VValue;
-  model3d::Transformation* tValue;
-  model3d::Primitive* pValue;
-  model3d::Dof* dofValue;
+    double	dValue;
+    int iValue;
+    char* sValue;
+    dofVec3 v3DValue;
+    dofVec4 v4DValue;
+    doubleVec3 v3VValue;
+    model3d::Transformation* tValue;
+    model3d::Primitive* pValue;
+    model3d::Dof* dofValue;
 } yystype;
 
 # define YYSTYPE yystype
@@ -50,5 +59,3 @@ typedef union {
 extern YYSTYPE yylval;
 
 #endif // #ifndef MODEL3D_PARSER_MODEL_H
-
-

@@ -14,9 +14,9 @@
 #include "Primitive.h"
 #include "Dof.h"
 
-typedef model3d::Dof* vec3d[3];
-typedef model3d::Dof* vec4d[4];
-typedef double vec3v[3];
+typedef model3d::Dof* dofVec3[3];
+typedef model3d::Dof* dofVec4[4];
+typedef double doubleVec3[3];
 
 #endif // #ifndef MODEL3D_PARSER_DEFS_H
 
