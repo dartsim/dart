@@ -117,6 +117,10 @@ enum yytokentype {
 #include <fstream>
 #include <iostream>
 #include <assert.h>
+
+#include "Transformation.h"
+#include "Primitive.h"
+#include "Dof.h"
 #include "ParserModel.h"
 
 #include <Eigen/Dense>
@@ -179,20 +183,20 @@ Dof* __createDOF( char*, double, double, double );
 void __recordMass(char*, double);
 void __startNode( char*, int );
 void __endNode();
-void __createTranslate( vec3d );
-void __createTelescope( vec3v, Dof* );
+void __createTranslate( dofVec3 );
+void __createTelescope( doubleVec3, Dof* );
 void __createRotateEuler( Dof*, int );
 void __createRotateEuler( double, int );
-void __createRotateExpMap( vec3d );
-void __createRotateQuat( vec4d );
-void __setPrimitive( vec3v, vec3v, Dof*);
-void __setPrimitive( vec3v, vec3v, Dof*, Primitive*);
-Primitive* __setGeometry(char*, char*, vec3v);
+void __createRotateExpMap( dofVec3 );
+void __createRotateQuat( dofVec4 );
+void __setPrimitive( doubleVec3, doubleVec3, Dof*);
+void __setPrimitive( doubleVec3, doubleVec3, Dof*, Primitive*);
+Primitive* __setGeometry(char*, char*, doubleVec3);
 Primitive* __setGeometry(char*, char*);
-Primitive* __setGeometry(char*, vec3v);
+Primitive* __setGeometry(char*, doubleVec3);
 Primitive* __setGeometry(char*);
-Primitive* __setGeometry(vec3v);
-void __createHandle( char*, vec3v, int, char* );
+Primitive* __setGeometry(doubleVec3);
+void __createHandle( char*, doubleVec3, int, char* );
 
 
 
@@ -221,9 +225,9 @@ typedef union YYSTYPE
     double	dValue;
     int iValue;
     char* sValue;
-    vec3d v3DValue;
-    vec4d v4DValue;
-    vec3v v3VValue;
+    dofVec3 v3DValue;
+    dofVec4 v4DValue;
+    doubleVec3 v3VValue;
     Transformation* tValue;
     Primitive* pValue;
     Dof* dofValue;
@@ -1956,7 +1960,7 @@ void __finishSkel(){
 }
 
 /* create a new handle and add it to the apropriate node*/
-void __createHandle( char* name, vec3v offset, int id, char* node_name ) {
+void __createHandle( char* name, doubleVec3 offset, int id, char* node_name ) {
 
     BodyNode *node = NULL;
 
@@ -2073,7 +2077,7 @@ void __startNode( char* s, int id ) {
 }
 
 /* create a new primitive */
-void __setPrimitive( vec3v s, vec3v t, Dof* bone ) {
+void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone ) {
     double bone_length = bone->getValue();
 
     Vector3d vecScale(s[0],s[1],s[2]);
@@ -2087,7 +2091,7 @@ void __setPrimitive( vec3v s, vec3v t, Dof* bone ) {
 }
 
 /* set offset and dimension of an existing primitive */
-void __setPrimitive( vec3v s, vec3v t, Dof* bone, Primitive *geo ) {
+void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone, Primitive *geo ) {
     double bone_length = bone->getValue();
 
     geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
@@ -2099,7 +2103,7 @@ void __setPrimitive( vec3v s, vec3v t, Dof* bone, Primitive *geo ) {
 }
 
 /* create translation transformation */
-void __createTranslate( vec3d v ) 
+void __createTranslate( dofVec3 v ) 
 {
     //----  get common name of all three dofs 
     int pos;
@@ -2130,7 +2134,7 @@ void __createTranslate( vec3d v )
 }
 
 /* create a constant translation transformation */
-void __createTelescope( vec3v v, Dof* l ) 
+void __createTelescope( doubleVec3 v, Dof* l ) 
 {
     // create new transformation	
     Dof** dofs = new Dof*[3];
@@ -2148,7 +2152,7 @@ void __createTelescope( vec3v v, Dof* l )
 }
 
 /* create rotation transformation using exponential map*/
-void __createRotateExpMap( vec3d v ) 
+void __createRotateExpMap( dofVec3 v ) 
 {
     //----  get the common name of all three dofs
     int pos;
@@ -2179,7 +2183,7 @@ void __createRotateExpMap( vec3d v )
 }
 
 /* create rotation transformation using quaternion */
-void __createRotateQuat( vec4d v )
+void __createRotateQuat( dofVec4 v )
 {
     //----  get the common name of all four dofs
     int pos;
@@ -2274,7 +2278,7 @@ void __recordMass(char* massName, double massValue)
 }
 
 /* create new primitive */	
-Primitive* __setGeometry(char* shape, char *massName, vec3v color)
+Primitive* __setGeometry(char* shape, char *massName, doubleVec3 color)
 {
     Primitive *prim = NULL;
 
@@ -2333,7 +2337,7 @@ Primitive* __setGeometry(char *shape, char *massName)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(char *shape, vec3v color)
+Primitive* __setGeometry(char *shape, doubleVec3 color)
 {
     Primitive *prim = NULL;
 
@@ -2368,7 +2372,7 @@ Primitive* __setGeometry(char *shape, vec3v color)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(vec3v color)
+Primitive* __setGeometry(doubleVec3 color)
 {
     Primitive *prim = new PrimitiveEllipsoid(Vector3d(0,0,0), 0);
     prim->setColor(Vector3d(color[0], color[1], color[2]));
@@ -2487,5 +2491,3 @@ Skeleton* readSkelFile( const char* filename, vector<char*>* dofNames ) {
 
     return skel;
 }
-
-
