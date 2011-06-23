@@ -11,8 +11,11 @@ using namespace model3d;
 int main(int argc, char* argv[])
 {
     if(argc!=3){
-        cout<<"viewer skel_file dof_file"<<endl;
-        exit(0);
+        //cout<<"viewer skel_file dof_file"<<endl;
+        //exit(0);
+		argv = new char*[3];
+		argv[1] = "YutingEuler.skel";
+		argv[2] = "RHand.dof";
     }
 	
     FileInfoModel model;

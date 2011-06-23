@@ -27,7 +27,7 @@ namespace model3d {
     }
 
     Joint::~Joint(){
-        for(int i=0; i<mTransforms.size(); i++){
+        for(unsigned int i=0; i<mTransforms.size(); i++){
             delete mTransforms[i];
         }
         mTransforms.clear();
@@ -35,13 +35,13 @@ namespace model3d {
     }
 
     bool Joint::isPresent (const Dof* _q) const{
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             if(_q==mDofs[i]) return true;
         return false;
     }
 
     int Joint::getLocalIndex (int _dofModelIndex) const{
-        for(int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++)
             if(mDofs[i]->getModelIndex()==_dofModelIndex) return i;
         return -1;
     }
