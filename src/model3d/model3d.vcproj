@@ -272,10 +272,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ParserDefs.h"
-				>
-			</File>
-			<File
 				RelativePath=".\ParserModel.h"
 				>
 			</File>
