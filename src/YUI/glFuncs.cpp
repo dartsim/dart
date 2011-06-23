@@ -19,7 +19,7 @@ void drawStringOnScreen(float x, float y, const std::string& s)
 	glPushMatrix();
 	glLoadIdentity();
 	glRasterPos2f(x, y); 
-	int length = s.length();
+	unsigned int length = s.length();
 	for (unsigned int c=0; c < length; c++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c) );
 	glPopMatrix();

@@ -2437,7 +2437,7 @@ Skeleton* readSkelFile( FILE* file, vector<char*>* dofNames ) {
     return gSkel;
 }
 
-int readSkelFile( const char* filename, Skeleton* skel ) {
+int readSkelFile( const char* const filename, Skeleton* skel ) {
     FILE* file = fopen( filename, "r" );
 
     if( file == NULL ){

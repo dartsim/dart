@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="model3d"
-	ProjectGUID="{78429FB6-D4A8-40DB-B2A8-8307477E71DD}"
+	Name="viewer"
+	ProjectGUID="{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -60,11 +60,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="..\..\lib\$(ProjectName)_d.lib"
+				Name="VCLinkerTool"
+				AdditionalDependencies="glut32d.lib ticpp_d.lib libglog_d.lib"
+				OutputFile="..\..\..\bin\$(ProjectName)_d.exe"
+				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;"
+				OptimizeReferences="1"
+				LinkTimeCodeGeneration="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -76,6 +83,9 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -83,7 +93,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -107,7 +117,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -125,11 +135,16 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="..\..\lib\$(ProjectName).lib"
+				Name="VCLinkerTool"
+				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib"
+				OutputFile="..\..\..\bin\$(ProjectName).exe"
+				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -139,6 +154,9 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -154,83 +172,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\BodyNode.cpp"
+				RelativePath=".\Main.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\C3D.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Dof.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoC3D.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoDof.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoModel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Joint.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Marker.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserModel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserVsk.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Primitive.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveCube.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveEllipsoid.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Skeleton.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SkelScanner.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Transformation.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateEuler.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateExpmap.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateQuat.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmTranslate.cpp"
+				RelativePath=".\MyWindow.cpp"
 				>
 			</File>
 		</Filter>
@@ -240,79 +186,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\BodyNode.h"
-				>
-			</File>
-			<File
-				RelativePath=".\C3D.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Dof.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoC3D.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoDof.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoModel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Joint.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Marker.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserModel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserVsk.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Primitive.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveCube.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveEllipsoid.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Skeleton.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Transformation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateEuler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateExpmap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateQuat.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmTranslate.h"
+				RelativePath=".\MyWindow.h"
 				>
 			</File>
 		</Filter>

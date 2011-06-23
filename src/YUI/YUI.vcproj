@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="model3d"
-	ProjectGUID="{78429FB6-D4A8-40DB-B2A8-8307477E71DD}"
+	Name="YUI"
+	ProjectGUID="{7779378B-3237-413F-941A-8FCDBA31AC96}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -154,83 +154,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\BodyNode.cpp"
+				RelativePath=".\glFuncs.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\C3D.cpp"
+				RelativePath=".\GlutWindow.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Dof.cpp"
+				RelativePath=".\Trackball.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoC3D.cpp"
+				RelativePath=".\Win2D.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoDof.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FileInfoModel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Joint.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Marker.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserModel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserVsk.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Primitive.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveCube.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveEllipsoid.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Skeleton.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SkelScanner.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Transformation.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateEuler.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateExpmap.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateQuat.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmTranslate.cpp"
+				RelativePath=".\Win3D.cpp"
 				>
 			</File>
 		</Filter>
@@ -240,79 +180,27 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\BodyNode.h"
+				RelativePath=".\glFuncs.h"
 				>
 			</File>
 			<File
-				RelativePath=".\C3D.h"
+				RelativePath=".\GlutWindow.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Dof.h"
+				RelativePath=".\jitter.h"
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoC3D.h"
+				RelativePath=".\Trackball.h"
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoDof.h"
+				RelativePath=".\Win2D.h"
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoModel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Joint.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Marker.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserModel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserVsk.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Primitive.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveCube.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PrimitiveEllipsoid.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Skeleton.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Transformation.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateEuler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateExpmap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmRotateQuat.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TrfmTranslate.h"
+				RelativePath=".\Win3D.h"
 				>
 			</File>
 		</Filter>
