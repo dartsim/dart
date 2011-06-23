@@ -217,7 +217,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         vector<string> tokens; Tokenize(txyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
-        for(int i=0; i<tokens.size(); i++) {
+        for(unsigned int i=0; i<tokens.size(); i++) {
             string strval = tokens[i];
             int neg = 1;
             if(strval.c_str()[0]=='-') {
@@ -311,7 +311,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         vector<string> tokens; Tokenize(hxyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
-        for(int i=0; i<tokens.size(); i++) {
+        for(unsigned int i=0; i<tokens.size(); i++) {
             string strval = tokens[i];
             int neg = 1;
             if(strval.c_str()[0]=='-') {
@@ -588,7 +588,7 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 
 
     Vector3d lpos(0,0,0);
-    for(int i=0; i<tokens.size(); i++) {
+    for(unsigned int i=0; i<tokens.size(); i++) {
         string strval = tokens[i];
         int neg = 1;
         if(strval.c_str()[0]=='-') {
@@ -652,7 +652,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     assert(tokens.size()==3);
 
     Vector3d dim(0,0,0);
-    for(int i=0; i<tokens.size(); i++) {
+    for(unsigned int i=0; i<tokens.size(); i++) {
         istringstream instr(tokens[i]);
         instr >> dim[i];
     }
@@ -663,7 +663,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     assert(tokens.size()==3);
     
     Vector3d off(0,0,0);
-    for(int i=0; i<tokens.size(); i++) {
+    for(unsigned int i=0; i<tokens.size(); i++) {
         istringstream instr(tokens[i]);
         instr >> off[i];
     }
@@ -706,7 +706,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
         if (tokens.size() == 3)
         {
             Vector3d clr(0,0,0);
-            for(int i=0; i<tokens.size(); i++) {
+            for(unsigned int i=0; i<tokens.size(); i++) {
                 istringstream instr(tokens[i]);
                 instr >> clr[i];
             }

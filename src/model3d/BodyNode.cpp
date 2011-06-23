@@ -46,7 +46,7 @@ namespace model3d {
     }
 
     BodyNode::~BodyNode() {
-        for (int i = 0; i < mHandles.size(); ++i){
+        for (unsigned int i = 0; i < mHandles.size(); ++i){
             delete mHandles[i];
         }
         mHandles.clear();
@@ -95,7 +95,7 @@ namespace model3d {
             mDependantDofs.push_back(dofID);
         }
 
-        for (int i = 0; i < mDependantDofs.size() - 1; i++) {
+        for (unsigned int i = 0; i < mDependantDofs.size() - 1; i++) {
             int now = mDependantDofs[i];
             int next = mDependantDofs[i + 1];
             if (now > next) {
@@ -125,7 +125,7 @@ namespace model3d {
         }
 
         // render the subtree
-        for (int i = 0; i < mJointOut.size(); i++) {
+        for (unsigned int i = 0; i < mJointOut.size(); i++) {
             mJointOut[i]->getNodeOut()->draw(_color, _useDefaultColor);
         }
         glPopMatrix();
@@ -138,10 +138,10 @@ namespace model3d {
         }
 
         // render the corresponding mHandless
-        for (int i = 0; i < mHandles.size(); i++) {
+        for (unsigned int i = 0; i < mHandles.size(); i++) {
             mHandles[i]->draw(true, _color, _useDefaultColor);
         }
-        for (int i = 0; i < mJointOut.size(); i++) {
+        for (unsigned int i = 0; i < mJointOut.size(); i++) {
             mJointOut[i]->getNodeOut()->drawHandles(_color, _useDefaultColor);
         }
         glPopMatrix();
