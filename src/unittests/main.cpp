@@ -15,17 +15,17 @@ using namespace google;
 VectorXd gravity = VectorXd::Zero(3);
 
 int main(int argc, char* argv[]) {
-   ::testing::InitGoogleTest(&argc, argv);
+    ::testing::InitGoogleTest(&argc, argv);
 
-  // Init google libraries
-  ParseCommandLineFlags(&argc, &argv, true);
-  InitGoogleLogging(argv[0]);
+    // Init google libraries
+    ParseCommandLineFlags(&argc, &argv, true);
+    InitGoogleLogging(argv[0]);
 
-  // Define logging flag
-  FLAGS_alsologtostderr = true;
-  FLAGS_minloglevel = INFO;
-  // FLAGS_log_dir = "./glog/";
-  FLAGS_v = 0; // Make this value 1 to see the messages from the library
+    // Define logging flag
+    FLAGS_alsologtostderr = true;
+    FLAGS_minloglevel = INFO;
+    // FLAGS_log_dir = "./glog/";
+    FLAGS_v = 0; // Make this value 1 to see the messages from the library
 
-  return RUN_ALL_TESTS();
+    return RUN_ALL_TESTS();
 }

@@ -172,6 +172,15 @@ ADD_EXECUTABLE(sampleOpt ${sampleOpt_srcs} ${sampleOpt_hdrs})
 TARGET_LINK_LIBRARIES(sampleOpt optimizer)
 TARGET_LINK_LIBRARIES(sampleOpt glog gflags gfortran snopt)
 
+###############################################
+# apps/simpleik
+PROJECT(simpleik)
+FILE(GLOB simpleik_srcs "src/apps/simpleik/*.cpp")
+FILE(GLOB simpleik_hdrs "src/apps/simpleik/*.h")
+ADD_EXECUTABLE(simpleik ${simpleik_srcs} ${simpleik_hdrs})
+TARGET_LINK_LIBRARIES(simpleik model3d optimizer)
+TARGET_LINK_LIBRARIES(simpleik glut GL GLU)
+TARGET_LINK_LIBRARIES(simpleik glog gflags gfortran snopt)
 
 
 ###############################################
