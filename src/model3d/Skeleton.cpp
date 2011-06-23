@@ -28,11 +28,11 @@ namespace model3d {
     }
 
     Skeleton::~Skeleton(){
-        for(int i = 0; i < mJoints.size(); i++) delete mJoints[i];
+        for(unsigned int i = 0; i < mJoints.size(); i++) delete mJoints[i];
         mJoints.clear();
         mDofs.clear();
         mTransforms.clear();
-        for(int i=0; i<mNodes.size(); i++) delete mNodes[i];
+        for(unsigned int i=0; i<mNodes.size(); i++) delete mNodes[i];
         mNodes.clear();
         mHandles.clear();
     }
