@@ -39,6 +39,7 @@ namespace model3d {
 
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< update transformations w.r.t. the current dof values in Dof*
+        void updateDerivatives();
 
         Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< transformation from the local coordinates of this body node to the world coordinates
         Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
@@ -90,6 +91,8 @@ namespace model3d {
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
+        Eigen::Matrix4d getLocalDeriv(Dof *q) const;
+
     protected:
         char mName[MAX_NODE3D_NAME]; ///< name
         int mModelIndex;    ///< location in the model
@@ -106,6 +109,9 @@ namespace model3d {
 
         std::vector<int> mDependantDofs; ///< A list of dependant Dof indices 
 
+
+        std::vector<Eigen::MatrixXd> Tq;
+
         double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
         Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame
         Skeleton *mModel; ///< the model this node belongs to
@@ -113,6 +119,8 @@ namespace model3d {
     private:
         int mID; ///< a unique ID of this node globally 
         static int msBodyNodeCount; ///< counts the numbe of nodes globally
+    public:
+        std::vector<Eigen::MatrixXd> Wq;
     };
 
 } // namespace model3d

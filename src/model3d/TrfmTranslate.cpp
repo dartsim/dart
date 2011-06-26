@@ -9,7 +9,8 @@
 #include "TrfmTranslate.h"
 #include "Dof.h"
 #include "utils/LoadOpengl.h"
-
+#include <iostream>
+using namespace std;
 using namespace Eigen;
 
 namespace model3d {
@@ -92,8 +93,9 @@ namespace model3d {
     }
 
     void TrfmTranslate::applyInvTransform(Matrix4d& m){
-        for(unsigned int i=0; i<mDofs.size(); i++)
+        for(unsigned int i=0; i<mDofs.size(); i++) {
             m.row(i) -= mDofs[i]->getValue() * m.row(3);
+        }
     }
 
     TrfmTranslateX::TrfmTranslateX(Dof *x, char *_name){

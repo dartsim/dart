@@ -51,8 +51,8 @@ namespace model3d {
         Marker* getHandle(int i) { return mHandles[i]; }
         double getMass() { return mMass; }
 
-        void setState(const Eigen::VectorXd&);
-        void setState(const std::vector<double>&);
+        void setState(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
+        void setState(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
         void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
         void drawHandles(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;

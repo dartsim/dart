@@ -11,7 +11,6 @@
 #include "Dof.h"
 #include "Transformation.h"
 #include "BodyNode.h"
-using namespace std;
 using namespace Eigen;
 
 
@@ -48,8 +47,9 @@ namespace model3d {
 
     Matrix4d Joint::getLocalTransform(){
         Matrix4d m = Matrix4d::Identity();
-        for(int i= mTransforms.size()-1; i>=0; i--)
+        for(int i= mTransforms.size()-1; i>=0; i--) {
             mTransforms[i]->applyTransform(m);
+        }
         return m;
     }
 
