@@ -743,9 +743,9 @@ Vector3d adjustPos(const Vector3d& _pos)
 {
     // rearrange the coordinates
     Vector3d pos2 =_pos;
-    pos2[0] = _pos[1];
-    pos2[1] = _pos[2];
-    pos2[2] = _pos[0];
+    // pos2[0] = _pos[1];
+    // pos2[1] = _pos[2];
+    // pos2[2] = _pos[0];
     pos2 *= mScaleVSK;
     return pos2;
 }

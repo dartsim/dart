@@ -10,7 +10,6 @@
 #include "Dof.h"
 #include "utils/RotationConversion.h"
 #include "utils/LoadOpengl.h"
-
 using namespace std;
 
 inline double Tsinc(double theta){
@@ -99,15 +98,17 @@ namespace model3d {
     Matrix4d TrfmRotateExpMap::getDeriv(const Dof *d){
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta = v.norm();
+
         Vector3d vhat = Vector3d::Zero();
         if(!isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
-	
+
+        
         // compute derivative of R wrt each qi
         vector<Matrix3d> dR_dq;
         dR_dq.resize(4);
 // TODO need to rewrite
-//  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+        for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
         // derivative wrt which dof 
         int j=-1;
@@ -141,6 +142,7 @@ namespace model3d {
                 ret(i, j) = mat(i, j);
             }
         }
+
 
         return ret;
     }

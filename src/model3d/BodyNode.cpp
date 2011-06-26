@@ -59,12 +59,20 @@ namespace model3d {
     }
 
     void BodyNode::init() {
-        if (mPrimitive != NULL)
+        if (mPrimitive != NULL) {
             mMass = mPrimitive->getMass();
-        else
+        } else {
             mMass = 0;
+        }
+
         mTransLocal = Matrix4d::Identity();
         mTransWorld = Matrix4d::Identity();
+
+        const int localDofs = getNumDofs();
+        Tq.resize(localDofs, MatrixXd::Identity(4, 4));
+        const int nDofs = getModel()->getNumDofs();
+        Wq.resize(nDofs, MatrixXd::Identity(4, 4));
+        
     }
 
     void BodyNode::updateTransform() {
@@ -73,6 +81,32 @@ namespace model3d {
             mTransWorld = mNodeIn->mTransWorld * mTransLocal;
         } else {
             mTransWorld = mTransLocal;
+        }
+    }
+
+    void BodyNode::updateDerivatives() {
+        const int localDofs = getNumDofs();
+
+        // Update Local Derivatives
+        for(int i = 0; i < localDofs; i++) {
+            Tq.at(i) = getLocalDeriv(getDof(i));
+        }
+
+        // Update World Derivates
+        if (mNodeIn) {
+            for (int i = 0; i < getNumDependantDofs(); i++) {
+                int index = getDependantDof(i);
+                if (mNodeIn->dependsOn(index)) {
+                    Wq.at(index) = mNodeIn->Wq.at(index) * mTransLocal;
+                } else {
+                    Wq.at(index) = mNodeIn->mTransWorld * Tq.at( mJointIn->getLocalIndex(index) );
+                }
+            }
+        } else {
+            for(int i = 0; i < localDofs; ++i) {
+                int index1 = mJointIn->getDof(i)->getModelIndex();
+                Wq.at(index1) = Tq.at(i);
+            }
         }
     }
 
@@ -168,5 +202,9 @@ namespace model3d {
         return mJointIn->isPresent(_q);
     }
 
+    Matrix4d BodyNode::getLocalDeriv(Dof* q) const {
+        return mJointIn->getDeriv(q);
+    }
+    
 } // namespace model3d
 

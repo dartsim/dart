@@ -356,5 +356,7 @@ namespace utils {
             return 2*mat;
         }
 
+        
+
     } // namespace rot_conv
 } // namespace utils

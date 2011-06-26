@@ -116,7 +116,7 @@ namespace model3d {
         return -1;
     }
   
-    void Skeleton::setState(const VectorXd& state) {
+    void Skeleton::setState(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
         assert(state.size() == nDofs);
         int k=0;
         for(k=0; k<nDofs; k++)
@@ -124,25 +124,29 @@ namespace model3d {
         if(k==nDofs) return;
 
         mCurrState = state;
-        for(int i=0; i<nDofs; i++)
+        for(int i=0; i<nDofs; i++) {
             mDofs.at(i)->setValue(state[i]);
-        for(int i=0; i<nNodes; i++)
-            mNodes.at(i)->updateTransform();
+        }
+
+        if (bCalcTrans) {
+            for(int i = 0; i < nNodes; i++) {
+                mNodes.at(i)->updateTransform();
+            }
+        }
+
+        if (bCalcDeriv) {
+            for(int i = 0; i < nNodes; i++) {
+                mNodes.at(i)->updateDerivatives();
+            }
+        }
     }
 
-    void Skeleton::setState(const vector<double>& state) {
-        assert(state.size()==nDofs);
-        int k=0;
-        for(k=0; k<nDofs; k++)
-            if(mCurrState[k]!=state.at(k)) break;
-        if(k==nDofs) return;
-
-        for(int i=0; i<nDofs; i++){
-            mDofs.at(i)->setValue(state.at(i));
-            mCurrState[i] = state.at(i);
+    void Skeleton::setState(const vector<double>& state, bool bCalcTrans, bool bCalcDeriv) {
+        VectorXd x(state.size());
+        for (int i = 0; i < state.size(); i++) {
+            x(i) = state[i];
         }
-        for(int i=0; i<nNodes; i++)
-            mNodes.at(i)->updateTransform();
+        setState(x, bCalcTrans, bCalcDeriv);
     }
 
     void Skeleton::setPose(const VectorXd& _pose){
