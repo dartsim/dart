@@ -5,6 +5,7 @@
 #include "model3d/Skeleton.h"
 #include "model3d/BodyNode.h"
 #include "model3d/FileInfoDof.h"
+#include "model3d/FileInfoC3D.h"
 
 TEST(MODEL3D, VSK_LOADER) {
     using namespace Eigen;
@@ -21,6 +22,19 @@ TEST(MODEL3D, VSK_LOADER) {
     EXPECT_EQ(skel->getNumHandles(), 53);
 }
 
+TEST(MODEL3D, C3D_LOADER) {
+    using namespace Eigen;
+    using namespace model3d;
+  
+    FileInfoC3D c3dFile;
+    bool result = c3dFile.loadFile("./squat.c3d");
+    EXPECT_TRUE(result);
+
+    EXPECT_EQ(c3dFile.getNumMarkers(), 53);
+    EXPECT_EQ(c3dFile.getNumFrames(), 2539);
+}
+
+
 TEST(MODEL3D, TRANS_AND_DERIV) {
     using namespace Eigen;
     using namespace model3d;
@@ -32,14 +46,14 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     
     Skeleton* skel = modelFile.getModel();
     EXPECT_TRUE(skel != NULL);
-    LOG(INFO) << "# Dofs = " << skel->getNumDofs();
-    LOG(INFO) << "# Nodes  = " << skel->getNumNodes();
+    /* LOG(INFO) << "# Dofs = " << skel->getNumDofs(); */
+    /* LOG(INFO) << "# Nodes  = " << skel->getNumNodes(); */
 
 
     FileInfoDof dofFile(skel);
     result = dofFile.loadFile("./init_Tpose.dof");
     EXPECT_TRUE(result);
-    LOG(INFO) << "# frames = " << dofFile.getNumFrames();
+    /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 
     vector<double>& pose = dofFile.getPoseAtFrame(0);
     skel->setState(pose);
