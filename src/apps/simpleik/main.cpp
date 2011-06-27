@@ -2,6 +2,7 @@
 using namespace std;
 
 #include <glog/logging.h>
+#include <gflags/gflags.h>
 using namespace google;
 
 int main(int argc, char* argv[]) {

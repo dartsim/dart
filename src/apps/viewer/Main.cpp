@@ -10,25 +10,27 @@ using namespace model3d;
 
 int main(int argc, char* argv[])
 {
+    const char* modelfile;
+    const char* doffile;
     if(argc!=3){
-        //cout<<"viewer skel_file dof_file"<<endl;
-        //exit(0);
-		argv = new char*[3];
-		argv[1] = "YutingEuler.skel";
-		argv[2] = "RHand.dof";
+		modelfile = "YutingEuler.skel";
+		doffile = "RHand.dof";
+    }else{
+        modelfile = argv[1];
+        doffile = argv[2];
     }
 	
     FileInfoModel model;
-    model.loadFile(argv[1],FileInfoModel::SKEL);
+    model.loadFile(modelfile,FileInfoModel::SKEL);
 
     FileInfoDof motion(model.getModel());
-    motion.loadFile(argv[2]);
+    motion.loadFile(doffile);
 
     MyWindow window(motion);
     window.computeMax();
 
     glutInit(&argc, argv);
-    window.initWindow(640, 480, argv[1]);
+    window.initWindow(640, 480, modelfile);
     glutMainLoop();
 
     return 0;
