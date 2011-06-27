@@ -4,6 +4,7 @@ using namespace Eigen;
 #include "model3d/BodyNode.h"
 #include "model3d/Skeleton.h"
 #include "optimizer/Var.h"
+#include "utils/Utils.h"
 
 namespace optimizer {
     
@@ -23,6 +24,8 @@ namespace optimizer {
         Vector3d wp = mNode->evalWorldPos(mOffset);
         Vector3d C = wp - mTarget;
         VectorXd ret(C);
+        // cout << "mNode = " << mNode->getModelIndex() << " : "
+        //      << ret.transpose() << endl;
         return ret;
     }
 
@@ -31,15 +34,15 @@ namespace optimizer {
 
     void PositionConstraint::FilldG(std::vector<double>& dG) {
         VectorXd dP = EvalC();
-        for(int i = 0; i < mNode->getNumDependantDofs(); i++) {
-            int dofIndex = mNode->getDependantDof(i);
+        for(int dofIndex = 0; dofIndex < mNode->getNumDependantDofs(); dofIndex++) {
+            int i = mNode->getDependantDof(dofIndex);
             
-            const Var* v = mVariables[dofIndex];
+            const Var* v = mVariables[i];
             double w = v->mWeight;
 
-            // VectorXd J = utils::transform(mNode->Wq.at(i),mOffset);
-            // J /= w;
-            // dG.at(i) += dP.dot(J);
+            VectorXd J = utils::transform(mNode->Wq.at(i),mOffset);
+            J /= w;
+            dG.at(i) += dP.dot(J);
         }
     }
 
