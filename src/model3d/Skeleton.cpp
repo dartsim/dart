@@ -165,6 +165,19 @@ namespace model3d {
             mDofs[i]->setValue(_pose[i]);
     }
 
+    void Skeleton::getPose(Eigen::VectorXd& _pose) {
+        _pose.resize(nDofs);
+        for (int i = 0; i < nDofs; i++) {
+            _pose(i) = mDofs[i]->getValue();
+        }
+    }
+    void Skeleton::getPose(std::vector<double>& _pose) {
+        _pose.resize(nDofs);
+        for (int i = 0; i < nDofs; i++) {
+            _pose[i] = mDofs[i]->getValue();
+        }
+    }
+
     void Skeleton::draw(const Vector4d& _color, bool _useDefaultColor) const {
         mRoot->draw(_color, _useDefaultColor);
     }
