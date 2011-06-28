@@ -72,7 +72,9 @@ namespace model3d {
         Tq.resize(localDofs, MatrixXd::Identity(4, 4));
         const int nDofs = getModel()->getNumDofs();
         Wq.resize(nDofs, MatrixXd::Identity(4, 4));
-        
+
+        mJC = MatrixXd::Zero(3, nDofs);
+        mJW = MatrixXd::Zero(3, nDofs);
     }
 
     void BodyNode::updateTransform() {
@@ -108,6 +110,10 @@ namespace model3d {
                 Wq.at(index1) = Tq.at(i);
             }
         }
+
+        evalJC();
+        evalJW();
+
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
@@ -204,6 +210,40 @@ namespace model3d {
 
     Matrix4d BodyNode::getLocalDeriv(Dof* q) const {
         return mJointIn->getDeriv(q);
+    }
+
+    void BodyNode::evalJC() {
+        mJC.setZero();
+
+        for (vector<int>::iterator i_iter = mDependantDofs.begin();
+             i_iter != mDependantDofs.end(); i_iter++) {
+            int i = (*i_iter);
+            VectorXd J = utils::transform(Wq.at(i), mOffset);
+            mJC(0, i) = J(0);
+            mJC(1, i) = J(1);
+            mJC(2, i) = J(2);
+        }
+    }
+
+    void BodyNode::evalJW() {
+        using eigenhelper::sub;
+        using eigenhelper::trans;
+        
+        mJW.setZero();
+        for (vector<int>::iterator i_iter = mDependantDofs.begin();
+             i_iter != mDependantDofs.end(); i_iter++) {
+            int i = (*i_iter);
+
+            MatrixXd transR = trans(sub(mTransWorld, 3, 3));
+            MatrixXd dRdq = sub(Wq.at(i), 3, 3);
+            MatrixXd omegaSkewSymmetric = dRdq * transR;
+            VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
+            omega = transR * omega;
+            
+            mJW(0, i) = omega(0);
+            mJW(1, i) = omega(1);
+            mJW(2, i) = omega(2);
+        }
     }
     
 } // namespace model3d
