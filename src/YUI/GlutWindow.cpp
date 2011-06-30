@@ -6,7 +6,7 @@
 #include <iostream>
 using namespace std;
 #include "GlutWindow.h"
-#include "Renderer/OpenGLRenderInterface.h"
+#include "renderer/OpenGLRenderInterface.h"
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
 std::vector<int> GlutWindow::mWinIDs;
