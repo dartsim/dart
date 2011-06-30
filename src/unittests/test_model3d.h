@@ -28,7 +28,7 @@ TEST(MODEL3D, C3D_LOADER) {
   
     FileInfoC3D c3dFile;
     bool result = c3dFile.loadFile("./squat.c3d");
-    EXPECT_TRUE(result);
+    ASSERT_TRUE(result);
 
     EXPECT_EQ(c3dFile.getNumMarkers(), 53);
     EXPECT_EQ(c3dFile.getNumFrames(), 2539);
@@ -40,9 +40,8 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     using namespace model3d;
   
     FileInfoModel modelFile;
-    bool result = false;
-    result = modelFile.loadFile("./SehoonVSK3.vsk", FileInfoModel::VSK);
-    EXPECT_TRUE(result);
+    bool loadModelResult = modelFile.loadFile("./SehoonVSK3.vsk", FileInfoModel::VSK);
+    ASSERT_TRUE(loadModelResult);
     
     Skeleton* skel = modelFile.getModel();
     EXPECT_TRUE(skel != NULL);
@@ -51,8 +50,8 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
 
 
     FileInfoDof dofFile(skel);
-    result = dofFile.loadFile("./init_Tpose.dof");
-    EXPECT_TRUE(result);
+    bool loadDofResult = dofFile.loadFile("./init_Tpose.dof");
+    ASSERT_TRUE(loadDofResult);
     /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 
     vector<double>& pose = dofFile.getPoseAtFrame(0);
@@ -91,7 +90,33 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
         }
     }
 
-    
+    // Check Jacobian
+    const MatrixXd JC = skel->getNode(23)->mJC;
+    MatrixXd JC_truth(JC.rows(), JC.cols());
+    JC_truth << 1, 0, 0, 0.013694, -0.0194371, -0.422612, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0157281, -0.00961473, -0.421925, 0.0026645, -0.0048767, -0.179914, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.0013539, -0.00132969, -0.00885535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        , 0, 1, 0, 0.0321939, 0.00226492, -0.135736, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0330525, 0.00462613, -0.135448, 0.0181491, 0.00758086, -0.122187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.00532694, 0.0049221, -0.128917, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        , 0, 0, 1, 0.423948, 0.130694, 0.0166546, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.42642, 0.118176, 0.0221309, 0.180296, 0.120584, 0.0105059, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0838259, 0.081304, 0.00719314, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    for (int i = 0; i < JC.rows(); i++) {
+        for (int j = 0; j < JC.cols(); j++) {
+            EXPECT_NEAR(JC(i, j), JC_truth(i, j), TOLERANCE);
+        }
+    }
+
+
+    // Check Jacobian
+    const MatrixXd JW = skel->getNode(23)->mJW;
+    MatrixXd JW_truth(JW.rows(), JW.cols());
+    JW_truth << 0, 0, 0, 0.0818662, 0.996527, 0.000504051, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.110263, 0.993552, 0.0249018, 0.0772274, 0.995683, 0.0423836, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.648386, 0.628838, 0.0338389, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        , 0, 0, 0, -0.995079, 0.082001, -0.0518665, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.992054, 0.111479, -0.0554717, -0.996033, 0.078601, -0.0313861, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.629201, 0.649145, -0.00994729, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        , 0, 0, 0, -0.0518265, 0.00391001, 0.998406, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.0579139, -0.0187244, 0.998021, -0.0343359, -0.0398718, 0.998564, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.0262454, -0.0235626, 0.999159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+    for (int i = 0; i < JW.rows(); i++) {
+        for (int j = 0; j < JW.cols(); j++) {
+            EXPECT_NEAR(JW(i, j), JW_truth(i, j), TOLERANCE);
+        }
+    }
+
+
 }
 
 

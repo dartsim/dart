@@ -95,6 +95,9 @@ namespace model3d {
         Eigen::Matrix4d getLocalDeriv(Dof *q) const;
 
     protected:
+        void evalJC();
+        void evalJW();
+        
         char mName[MAX_NODE3D_NAME]; ///< name
         int mModelIndex;    ///< location in the model
 
@@ -111,7 +114,6 @@ namespace model3d {
         std::vector<int> mDependantDofs; ///< A list of dependant Dof indices 
 
 
-        std::vector<Eigen::MatrixXd> Tq;
 
         double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
         Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame
@@ -121,7 +123,10 @@ namespace model3d {
         int mID; ///< a unique ID of this node globally 
         static int msBodyNodeCount; ///< counts the numbe of nodes globally
     public:
+        std::vector<Eigen::MatrixXd> Tq;
         std::vector<Eigen::MatrixXd> Wq;
+        Eigen::MatrixXd mJC;
+        Eigen::MatrixXd mJW;
     };
 
 } // namespace model3d
