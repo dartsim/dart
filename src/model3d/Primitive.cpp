@@ -9,7 +9,6 @@
 #include "Primitive.h"
 using namespace Eigen;
 
-#include "renderer/OpenGLRenderInterface.h"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

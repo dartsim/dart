@@ -9,7 +9,11 @@
 #include "TrfmRotateExpmap.h"
 #include "Dof.h"
 #include "utils/RotationConversion.h"
+
+#ifndef _RENDER_TEST
 #include "utils/LoadOpengl.h"
+#endif
+
 using namespace std;
 
 inline double Tsinc(double theta){
@@ -277,13 +281,18 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateExpMap::applyGLTransform() const{
-        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-        double theta = v.norm();
-        Vector3d vhat = Vector3d::Zero();
-        if(!isZero(theta)) {
-            vhat= v/theta;
+    void TrfmRotateExpMap::applyGLTransform(Renderer::RenderInterface* RI) const{
+		Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+		double theta = v.norm();
+		Vector3d vhat = Vector3d::Zero();
+		if(!isZero(theta)) {
+			vhat= v/theta;
+#ifdef _RENDER_TEST
+			RI->Rotate(vhat, theta * 180 / M_PI);
+#else
             glRotatef(theta*180/M_PI, vhat(0), vhat(1), vhat(2));
+#endif
         }
+
     }
 } // namespace model3d

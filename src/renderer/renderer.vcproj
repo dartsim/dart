@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="gb2312"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="viewer"
-	ProjectGUID="{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
-	RootNamespace="model3d"
+	Name="renderer"
+	ProjectGUID="{128762C5-DAA9-467A-8EA4-26719FA7E956}"
+	RootNamespace="renderer"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="4"
 			CharacterSet="1"
 			>
 			<Tool
@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
+				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,19 +60,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glut32d.lib ticpp_d.lib libglog_d.lib opengl32.lib glu32.lib renderer_d.lib"
-				OutputFile="..\..\..\bin\$(ProjectName)_d.exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
-				GenerateDebugInformation="true"
-				OptimizeReferences="1"
-				LinkTimeCodeGeneration="0"
+				Name="VCLibrarianTool"
+				OutputFile="..\..\lib\$(ProjectName)_d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -84,9 +76,6 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -94,7 +83,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="4"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -115,11 +104,10 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
+				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
+				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -136,16 +124,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib opengl32.lib glu32.lib renderer.lib"
-				OutputFile="..\..\..\bin\$(ProjectName).exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
+				Name="VCLibrarianTool"
+				OutputFile="..\..\lib\$(ProjectName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -155,9 +138,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -173,11 +153,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\Main.cpp"
+				RelativePath=".\OpenGLRenderInterface.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\MyWindow.cpp"
+				RelativePath=".\RenderInterface.cpp"
 				>
 			</File>
 		</Filter>
@@ -187,7 +167,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\MyWindow.h"
+				RelativePath=".\Camera.h"
+				>
+			</File>
+			<File
+				RelativePath=".\light.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OpenGLCamera.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OpenGLRenderInterface.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderInterface.h"
 				>
 			</File>
 		</Filter>

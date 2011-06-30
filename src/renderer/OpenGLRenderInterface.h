@@ -1,102 +1,60 @@
-#ifndef OPENGL_RENDER_intERFACE_H
-#define OPENGL_RENDER_intERFACE_H
+#ifndef OPENGL_RENDER_INTERFACE_H
+#define OPENGL_RENDER_INTERFACE_H
 
 
 #include <list>
 #include <vector>
-#include "light.h"
-#include "Camera.h"
+#include "RenderInterface.h"
+
 using namespace std;
 
 namespace Renderer {
-    enum DecoBufferType
-    {
-        BT_Front,
-        BT_Back
-    };
 
-    enum DecoColorChannel
-    {
-        CC_R,
-        CC_G,
-        CC_B,
-        CC_A,
-        CC_RGB,
-        CC_RGBA
-    };
 
-    enum DecoDrawType
-    {
-        DT_WireFrame,
-        DT_SolidPolygon,
-        DT_FrontPolygon,
-        DT_BackPolygon,
-        DT_Max
-    };
-
-    class OpenGLRenderInterface
+	class OpenGLRenderInterface : public RenderInterface
     {
 
     public:
         OpenGLRenderInterface(){}
-        ~OpenGLRenderInterface(){}
+        virtual ~OpenGLRenderInterface(){}
 
-        void Initialize();
-        void Destroy();
+        virtual void Initialize();
+        virtual void Destroy();
 
-        void SetViewport(int X,int Y,int Width,int Height);
-        void GetViewport(int& X, int& Y, int &Width, int& Height);
+        virtual void SetViewport(int X,int Y,int Width,int Height);
+        virtual void GetViewport(int& X, int& Y, int &Width, int& Height) const;
 
-        void Clear(const Vector3d& color);
+        virtual void Clear(const Vector3d& color);
 
-        void SetDefaultLight();
-        void AddLight(const Light& light);
-        void EraseAllLights();
-        void TurnOffLights();
-        void TurnOnLights();
+        virtual void SetDefaultLight();
+        virtual void TurnOffLights();
+        virtual void TurnOnLights();
 
-        void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow);
-        void GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const;
-        void SetDefaultMaterial();
+        virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow);
+        virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const;
+        virtual void SetDefaultMaterial();
 
-        void PushMatrix();
-        void PopMatrix();
-        void PushName(int id);
-        void PopName();
+        virtual void PushMatrix();
+        virtual void PopMatrix();
+        virtual void PushName(int id);
+        virtual void PopName();
 
-        void SetLocalToWorldTransform(const Matrix4d& Matrix);
-        Matrix4d GetLocalToWorldTransform() const;
+        virtual void Translate(const Vector3d& offset); //glTranslate 
+        virtual void Rotate(const Vector3d& axis, float rad); //glRotate
+        virtual void Scale(const Vector3d& scale); //glScale
 
-        void Translate(const Vector3d& offset); //glTranslate 
-        void Rotate(const Vector3d& axis, float rad); //glRotate
-        void Scale(const Vector3d& scale); //glScale
+        virtual void DrawEllipsoid(const Vector3d& size);
+        virtual void DrawCube(const Vector3d& size);
 
-        void DrawEllipsoid(const Vector3d& size);
-        void DrawCube(const Vector3d& size);
-        void DrawPlane(const Vector2d& size);
+        virtual void SetPenColor(const Vector4d& col);
+        virtual void SetPenColor(const Vector3d& col);
 
-        void SetPenColor(const Vector4d& col);
-        void SetPenColor(const Vector3d& col);
-
-        void SetAntialiasingOption(bool bAntialiasing);
-        void SetDrawingOption(DecoDrawType drawingOption);
-
-        void SaveToImage(const char * filename, DecoBufferType buffType = BT_Back);
-        void ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
-
-        Camera& GetCamera()
-        {
-            return mCamera;
-        }
+        virtual void SaveToImage(const char * filename, DecoBufferType buffType = BT_Back);
+        virtual void ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
 
     private:
         int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
-        bool mAntialiasingOption;
-        DecoDrawType mDrawingOption;
-        Matrix4d mLocalToWorld;
-//		vector<Matrix4d> mMatrixStack;
-        std::vector<Light> mLightList;
-        Camera mCamera;
+
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

@@ -10,7 +10,7 @@
 
 #include "utils/Misc.h" // For M_PI
 #include "utils/EigenHelper.h"
-#include "renderer/OpenGLRenderInterface.h"
+#include "renderer/RenderInterface.h"
 
 #include "Dof.h"
 #include "Joint.h"

@@ -8,7 +8,11 @@
 
 #include "TrfmTranslate.h"
 #include "Dof.h"
+
+#ifndef _RENDER_TEST
 #include "utils/LoadOpengl.h"
+#endif
+
 #include <iostream>
 using namespace std;
 using namespace Eigen;
@@ -29,8 +33,13 @@ namespace model3d {
             strcpy(mName, "Translate");
     }
 
-    void TrfmTranslate::applyGLTransform() const{
+    void TrfmTranslate::applyGLTransform(Renderer::RenderInterface* RI) const{
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
+#else
         glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+#endif
     }
 
     void TrfmTranslate::evalTransform(){
@@ -110,9 +119,14 @@ namespace model3d {
             strcpy(mName, "TranslateX");
     }
 
-    void TrfmTranslateX::applyGLTransform() const{
-        glTranslatef(mDofs[0]->getValue(), 0, 0);
-    }
+    void TrfmTranslateX::applyGLTransform(Renderer::RenderInterface* RI) const{
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
+#else
+		glTranslatef(mDofs[0]->getValue(), 0, 0);
+#endif    
+	}
 
     void TrfmTranslateX::evalTransform(){
         mTransform.setZero();
@@ -181,8 +195,13 @@ namespace model3d {
             strcpy(mName, "TranslateY");
     }
 
-    void TrfmTranslateY::applyGLTransform() const {
-        glTranslatef(0, mDofs[0]->getValue(), 0);
+    void TrfmTranslateY::applyGLTransform(Renderer::RenderInterface* RI) const {
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
+#else
+		glTranslatef(0, mDofs[0]->getValue(), 0);
+#endif
     }
 
     void TrfmTranslateY::evalTransform(){
@@ -253,9 +272,14 @@ namespace model3d {
             strcpy(mName, "TranslateZ");
     }
 
-    void TrfmTranslateZ::applyGLTransform() const {
-        glTranslatef(0, 0, mDofs[0]->getValue());
-    }
+    void TrfmTranslateZ::applyGLTransform(Renderer::RenderInterface* RI) const {
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
+#else
+		glTranslatef(0, 0, mDofs[0]->getValue());
+#endif    
+	}
 
     void TrfmTranslateZ::evalTransform(){
         mTransform.setZero();
