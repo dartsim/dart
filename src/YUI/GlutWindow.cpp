@@ -56,7 +56,7 @@ void GlutWindow::initWindow(int w, int h, const char* name)
 
 	if (mRI)
 		delete mRI;
-	mRI = new Renderer::OpenGLRenderInterface();
+	mRI = new renderer::OpenGLRenderInterface();
 	mRI->Initialize();
 	//glutTimerFunc ( mDisplayTimeout, refreshTimer, 0 );
 	//glutTimerFunc ( mDisplayTimeout, runTimer, 0 );

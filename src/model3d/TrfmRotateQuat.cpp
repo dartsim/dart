@@ -90,7 +90,7 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateQuat::applyGLTransform(Renderer::RenderInterface* RI) const
+    void TrfmRotateQuat::applyGLTransform(renderer::RenderInterface* RI) const
     {
 #if 0	
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());

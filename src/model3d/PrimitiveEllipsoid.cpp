@@ -30,7 +30,7 @@ namespace model3d {
         }
     }
 
-	void PrimitiveEllipsoid::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+	void PrimitiveEllipsoid::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
 #ifdef _RENDER_TEST
 		if (!RI)
 			return;

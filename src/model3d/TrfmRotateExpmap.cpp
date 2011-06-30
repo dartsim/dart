@@ -281,7 +281,7 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateExpMap::applyGLTransform(Renderer::RenderInterface* RI) const{
+    void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* RI) const{
 		Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 		double theta = v.norm();
 		Vector3d vhat = Vector3d::Zero();

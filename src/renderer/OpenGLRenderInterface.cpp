@@ -1,7 +1,7 @@
 #include "OpenGLRenderInterface.h"
 #include "utils/LoadOpengl.h"
 
-namespace Renderer
+namespace renderer
 {
 	void OpenGLRenderInterface::Initialize()
 	{

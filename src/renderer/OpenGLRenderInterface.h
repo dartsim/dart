@@ -8,7 +8,7 @@
 
 using namespace std;
 
-namespace Renderer {
+namespace renderer {
 
 
 	class OpenGLRenderInterface : public RenderInterface

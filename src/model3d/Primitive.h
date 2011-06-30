@@ -47,7 +47,7 @@ namespace model3d {
 	
         int getID() { return mID; }
 
-		virtual void draw(Renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
+		virtual void draw(renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
     protected:
         void setMassTensorFromInertia();

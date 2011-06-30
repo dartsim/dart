@@ -28,7 +28,7 @@ namespace model3d {
             strcpy(mName, "EulerX");
     }
 
-	void TrfmRotateEulerX::applyGLTransform(Renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerX::applyGLTransform(renderer::RenderInterface* RI) const{
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
@@ -98,7 +98,7 @@ namespace model3d {
             strcpy(mName, "EulerY");
     }
 
-	void TrfmRotateEulerY::applyGLTransform(Renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerY::applyGLTransform(renderer::RenderInterface* RI) const{
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
@@ -169,7 +169,7 @@ namespace model3d {
             strcpy(mName, "EulerZ");
     }
 
-	void TrfmRotateEulerZ::applyGLTransform(Renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerZ::applyGLTransform(renderer::RenderInterface* RI) const{
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);

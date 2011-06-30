@@ -42,7 +42,7 @@ namespace model3d{
         }
     }
 
-	void FileInfoModel::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+	void FileInfoModel::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
         mModel->draw(RI, _color, _useDefaultColor);
     }
 

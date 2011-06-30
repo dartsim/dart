@@ -24,7 +24,7 @@ namespace model3d {
         strcpy(mName, _name);
     }
 
-    void Marker::draw(Renderer::RenderInterface* RI, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
+    void Marker::draw(renderer::RenderInterface* RI, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
 #ifdef _RENDER_TEST
 		if (!RI) return;
 		RI->PushName(getID());

@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-namespace Renderer
+namespace renderer
 {
 
 #define DEFAULT_NEAR_PLANE 0.001

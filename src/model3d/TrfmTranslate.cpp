@@ -33,7 +33,7 @@ namespace model3d {
             strcpy(mName, "Translate");
     }
 
-    void TrfmTranslate::applyGLTransform(Renderer::RenderInterface* RI) const{
+    void TrfmTranslate::applyGLTransform(renderer::RenderInterface* RI) const{
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
@@ -119,7 +119,7 @@ namespace model3d {
             strcpy(mName, "TranslateX");
     }
 
-    void TrfmTranslateX::applyGLTransform(Renderer::RenderInterface* RI) const{
+    void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* RI) const{
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
@@ -195,7 +195,7 @@ namespace model3d {
             strcpy(mName, "TranslateY");
     }
 
-    void TrfmTranslateY::applyGLTransform(Renderer::RenderInterface* RI) const {
+    void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* RI) const {
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
@@ -272,7 +272,7 @@ namespace model3d {
             strcpy(mName, "TranslateZ");
     }
 
-    void TrfmTranslateZ::applyGLTransform(Renderer::RenderInterface* RI) const {
+    void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* RI) const {
 #ifdef _RENDER_TEST
 		if (RI)
 			RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
