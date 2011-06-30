@@ -42,8 +42,8 @@ namespace model3d{
         }
     }
 
-    void FileInfoModel::draw(const Vector4d& _color, bool _useDefaultColor) const {
-        mModel->draw(_color, _useDefaultColor);
+	void FileInfoModel::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+        mModel->draw(RI, _color, _useDefaultColor);
     }
 
     bool FileInfoModel::loadFile( const char* _fName, FileType _type ) {

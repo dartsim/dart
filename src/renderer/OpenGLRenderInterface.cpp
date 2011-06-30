@@ -30,7 +30,7 @@ namespace Renderer
 		mViewportHeight = Height;
 
 	}
-	void OpenGLRenderInterface::GetViewport(int& X, int& Y, int &Width, int& Height)
+	void OpenGLRenderInterface::GetViewport(int& X, int& Y, int &Width, int& Height) const
 	{
 		X = mViewportX;
 		Y = mViewportY;
@@ -49,14 +49,6 @@ namespace Renderer
 
 	}
 
-	void OpenGLRenderInterface::AddLight(const Light& light)
-	{
-		mLightList.push_back(light);
-	}
-	void OpenGLRenderInterface::EraseAllLights()
-	{
-		mLightList.clear();
-	}
 	void OpenGLRenderInterface::TurnOffLights()
 	{
 		glDisable(GL_LIGHTING);
@@ -114,5 +106,24 @@ namespace Renderer
 		glRotated(rad, axis[0], axis[1], axis[2]);
 	}
 
+	void OpenGLRenderInterface::SaveToImage(const char * filename, DecoBufferType buffType)
+	{
 
+	}
+	void OpenGLRenderInterface::ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels)
+	{
+
+	}
+	void OpenGLRenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow)
+	{
+
+	}
+	void OpenGLRenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const
+	{
+
+	}
+	void OpenGLRenderInterface::SetDefaultMaterial()
+	{
+
+	}
 }

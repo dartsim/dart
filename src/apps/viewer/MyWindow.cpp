@@ -35,8 +35,8 @@ void MyWindow::draw()
     
     // update and draw the motion
     model->setPose(mMotion.getPoseAtFrame(fr));
-    model->draw();
-    if(mShowMarker) model->drawHandles();
+    model->draw(mRI);
+    if(mShowMarker) model->drawHandles(mRI);
 
     if(mShowProgress) drawProgressBar(fr,mMaxFrame);
 

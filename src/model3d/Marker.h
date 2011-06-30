@@ -11,6 +11,7 @@
 #define MODEL3D_MARKER_H
 
 #include <Eigen/Dense>
+#include "renderer/RenderInterface.h"
 
 namespace model3d {
 #define MAX_MARKER_NAME 256
@@ -31,7 +32,7 @@ namespace model3d {
         Marker(const char* _name, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
         virtual ~Marker(){}
 
-        void draw(bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _useDefaultColor = true) const;
+		void draw(Renderer::RenderInterface* RI = NULL, bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _useDefaultColor = true) const;
 
         Eigen::Vector3d getWorldCoords(); ///< get the world coordinates of mOffset
 	

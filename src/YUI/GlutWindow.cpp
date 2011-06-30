@@ -6,6 +6,7 @@
 #include <iostream>
 using namespace std;
 #include "GlutWindow.h"
+#include "Renderer/OpenGLRenderInterface.h"
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
 std::vector<int> GlutWindow::mWinIDs;
@@ -24,6 +25,13 @@ GlutWindow::GlutWindow()
 	mBackground[1] = 0.3;
 	mBackground[2] = 0.3;
 	mBackground[3] = 1.0;
+	mRI = NULL;
+}
+
+GlutWindow::~GlutWindow()
+{
+	if (mRI)
+		delete mRI;
 }
 
 void GlutWindow::initWindow(int w, int h, const char* name)
@@ -45,6 +53,11 @@ void GlutWindow::initWindow(int w, int h, const char* name)
 	glutMouseFunc( mouseClick );
 	glutMotionFunc( mouseDrag );
 	glutPassiveMotionFunc( mouseMove );
+
+	if (mRI)
+		delete mRI;
+	mRI = new Renderer::OpenGLRenderInterface();
+	mRI->Initialize();
 	//glutTimerFunc ( mDisplayTimeout, refreshTimer, 0 );
 	//glutTimerFunc ( mDisplayTimeout, runTimer, 0 );
 }

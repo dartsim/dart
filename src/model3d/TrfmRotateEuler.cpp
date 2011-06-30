@@ -8,7 +8,10 @@
 
 #include "TrfmRotateEuler.h"
 #include "Dof.h"
+
+#ifndef _RENDER_TEST
 #include "utils/LoadOpengl.h"
+#endif
 
 using namespace Eigen;
 
@@ -25,8 +28,13 @@ namespace model3d {
             strcpy(mName, "EulerX");
     }
 
-    void TrfmRotateEulerX::applyGLTransform() const{
+	void TrfmRotateEulerX::applyGLTransform(Renderer::RenderInterface* RI) const{
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+#else
         glRotatef(mDofs[0]->getValue()*180/M_PI, 1.0, 0.0, 0.0);
+#endif
     }
 
     void TrfmRotateEulerX::evalTransform(){
@@ -90,8 +98,14 @@ namespace model3d {
             strcpy(mName, "EulerY");
     }
 
-    void TrfmRotateEulerY::applyGLTransform() const{
-        glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
+	void TrfmRotateEulerY::applyGLTransform(Renderer::RenderInterface* RI) const{
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+#else
+		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
+#endif
+      
     }
 
     void TrfmRotateEulerY::evalTransform(){
@@ -155,9 +169,14 @@ namespace model3d {
             strcpy(mName, "EulerZ");
     }
 
-    void TrfmRotateEulerZ::applyGLTransform() const{
-        glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
-    }
+	void TrfmRotateEulerZ::applyGLTransform(Renderer::RenderInterface* RI) const{
+#ifdef _RENDER_TEST
+		if (RI)
+			RI->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
+#else
+		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
+#endif   
+	}
 
     void TrfmRotateEulerZ::evalTransform(){
         mTransform.setZero();

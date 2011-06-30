@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <Eigen/Dense>
+#include "renderer/RenderInterface.h"
 
 namespace model3d {
     
@@ -29,7 +30,7 @@ namespace model3d {
         FileInfoModel();
         virtual ~FileInfoModel();
 	
-        void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
+		void draw(Renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
         bool loadFile(const char* _filename, FileType _type);
         bool saveFile(const char* _filename) const;
         

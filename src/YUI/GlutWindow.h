@@ -2,12 +2,14 @@
 #define _GLUTWINDOW_
 
 #include "utils/LoadOpengl.h"
+#include "renderer/RenderInterface.h"
 #include <vector>
 
 class GlutWindow
 {
 public:
 	GlutWindow();
+	virtual ~GlutWindow();
 	virtual void initWindow(int w, int h, const char* name);
 
 // callback functions	
@@ -48,6 +50,7 @@ protected:
 	bool mMouseDrag;
 	bool mCapture;
 	double mBackground[4];
+	Renderer::RenderInterface* mRI;
 };
 
 #endif

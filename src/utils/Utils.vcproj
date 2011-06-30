@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

@@ -23,7 +23,7 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform() const;
+		void applyGLTransform(Renderer::RenderInterface* RI) const;
         void evalTransform();
 	
         Eigen::Matrix4d getDeriv(const Dof *q);
@@ -45,7 +45,7 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform() const;
+        void applyGLTransform(Renderer::RenderInterface* RI) const;
         void evalTransform();
 	
         Eigen::Matrix4d getDeriv(const Dof *q);
@@ -67,7 +67,7 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform() const;
+        void applyGLTransform(Renderer::RenderInterface* RI) const;
         void evalTransform();
 	
         Eigen::Matrix4d getDeriv(const Dof *q);
@@ -89,7 +89,7 @@ namespace model3d {
         void applyInvTransform(Eigen::Vector3d&);
         void applyInvTransform(Eigen::Matrix4d&);
 
-        void applyGLTransform() const;
+        void applyGLTransform(Renderer::RenderInterface* RI) const;
         void evalTransform();
 	
         Eigen::Matrix4d getDeriv(const Dof *q);

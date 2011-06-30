@@ -18,7 +18,7 @@ using namespace Eigen;
 #include "Marker.h"
 #include "Transformation.h"
 
-#include "renderer/OpenGLRenderInterface.h"
+#include "renderer/RenderInterface.h"
 
 
 namespace model3d {
@@ -178,11 +178,11 @@ namespace model3d {
         }
     }
 
-    void Skeleton::draw(const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->draw(_color, _useDefaultColor);
+	void Skeleton::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->draw(RI, _color, _useDefaultColor);
     }
-    void Skeleton::drawHandles(const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->drawHandles(_color, _useDefaultColor);
+    void Skeleton::drawHandles(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->drawHandles(RI, _color, _useDefaultColor);
     }
 
 

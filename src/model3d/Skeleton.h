@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "renderer/RenderInterface.h"
 
 namespace model3d {
 
@@ -54,8 +55,8 @@ namespace model3d {
         void setState(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
         void setState(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
-        void draw(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-        void drawHandles(const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
+        void draw(Renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+        void drawHandles(Renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 	
         void setPose(const Eigen::VectorXd& _pose);
         void setPose(const std::vector<double>& _pose);
