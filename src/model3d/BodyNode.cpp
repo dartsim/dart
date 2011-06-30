@@ -152,7 +152,7 @@ namespace model3d {
         return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
     }
         
-	void BodyNode::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
+	void BodyNode::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
 #ifdef _RENDER_TEST
 		if (!RI) return;
 		RI->PushMatrix();
@@ -197,7 +197,7 @@ namespace model3d {
 #endif
     }
 
-    void BodyNode::drawHandles(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+    void BodyNode::drawHandles(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
 #ifdef _RENDER_TEST
 		if (!RI) return;
 		RI->PushMatrix();

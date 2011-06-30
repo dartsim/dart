@@ -4,7 +4,7 @@
 #include "Eigen/Core"
 using namespace Eigen;
 
-namespace Renderer
+namespace renderer
 {
     enum LightType {
         LT_PointLight,

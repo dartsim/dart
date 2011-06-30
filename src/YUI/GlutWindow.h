@@ -50,7 +50,7 @@ protected:
 	bool mMouseDrag;
 	bool mCapture;
 	double mBackground[4];
-	Renderer::RenderInterface* mRI;
+	renderer::RenderInterface* mRI;
 };
 
 #endif

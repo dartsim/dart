@@ -1,6 +1,6 @@
 #include "RenderInterface.h"
 
-namespace Renderer
+namespace renderer
 {
 	void RenderInterface::Initialize()
 	{

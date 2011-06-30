@@ -5,7 +5,7 @@
 #include "light.h"
 #include "Camera.h"
 
-namespace Renderer
+namespace renderer
 {
 	enum DecoBufferType
 	{

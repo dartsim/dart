@@ -35,7 +35,7 @@ namespace model3d {
         }
     }
 
-	void PrimitiveCube::draw(Renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const{
+	void PrimitiveCube::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const{
 #ifdef _RENDER_TEST
 		if (!RI) return;
 		if (!_useDefaultColor)
