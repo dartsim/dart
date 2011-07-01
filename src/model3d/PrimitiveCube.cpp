@@ -8,9 +8,6 @@
 
 #include "PrimitiveCube.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif 
 
 using namespace std;
 using namespace Eigen;

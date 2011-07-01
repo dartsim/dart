@@ -8,9 +8,6 @@
 
 #include "PrimitiveEllipsoid.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif
 using namespace Eigen;
 
 // TODO: do we need to include an equivalent config file?

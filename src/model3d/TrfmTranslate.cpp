@@ -9,9 +9,6 @@
 #include "TrfmTranslate.h"
 #include "Dof.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif
 
 #include <iostream>
 using namespace std;

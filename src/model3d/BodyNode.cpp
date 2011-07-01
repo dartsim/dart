@@ -25,9 +25,6 @@ using namespace Eigen;
 #include "utils/Utils.h"
 #include "utils/EigenHelper.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif
 
 namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
