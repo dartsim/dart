@@ -9,10 +9,6 @@
 #include "TrfmRotateEuler.h"
 #include "Dof.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif
-
 using namespace Eigen;
 
 namespace model3d {

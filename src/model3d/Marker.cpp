@@ -11,9 +11,6 @@ using namespace Eigen;
 
 #include "BodyNode.h"
 
-#ifndef _RENDER_TEST
-#include "utils/LoadOpengl.h"
-#endif
 
 namespace model3d {
     int Marker::msMarkerCount = 0;
