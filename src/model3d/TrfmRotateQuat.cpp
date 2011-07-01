@@ -106,7 +106,7 @@ namespace model3d {
         double theta = angleAxis.angle();
         if(a.dot(a)>EPSILON*EPSILON && theta>EPSILON)
         {
-#ifdef _RENDER_TEST
+#if 1
             if (RI)
                 RI->Rotate(a, theta*180/M_PI);
 #else

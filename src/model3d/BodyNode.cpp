@@ -153,7 +153,7 @@ namespace model3d {
     }
         
 	void BodyNode::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
-#ifdef _RENDER_TEST
+#if 1
 		if (!RI) return;
 		RI->PushMatrix();
 		// render the self geometry
@@ -198,7 +198,7 @@ namespace model3d {
     }
 
     void BodyNode::drawHandles(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
-#ifdef _RENDER_TEST
+#if 1
 		if (!RI) return;
 		RI->PushMatrix();
 		for(int i=0; i<mJointIn->getNumTransforms(); i++){

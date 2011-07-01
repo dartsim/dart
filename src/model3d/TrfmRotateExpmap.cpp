@@ -287,7 +287,7 @@ namespace model3d {
 		Vector3d vhat = Vector3d::Zero();
 		if(!isZero(theta)) {
 			vhat= v/theta;
-#ifdef _RENDER_TEST
+#if 1
 			RI->Rotate(vhat, theta * 180 / M_PI);
 #else
             glRotatef(theta*180/M_PI, vhat(0), vhat(1), vhat(2));
