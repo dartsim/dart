@@ -34,7 +34,7 @@ namespace model3d {
     }
 
     void TrfmTranslate::applyGLTransform(renderer::RenderInterface* RI) const{
-#ifdef _RENDER_TEST
+#if 1
 		if (RI)
 			RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
 #else
@@ -120,7 +120,7 @@ namespace model3d {
     }
 
     void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* RI) const{
-#ifdef _RENDER_TEST
+#if 1
 		if (RI)
 			RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
 #else
@@ -196,7 +196,7 @@ namespace model3d {
     }
 
     void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* RI) const {
-#ifdef _RENDER_TEST
+#if 1
 		if (RI)
 			RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
 #else
@@ -273,7 +273,7 @@ namespace model3d {
     }
 
     void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* RI) const {
-#ifdef _RENDER_TEST
+#if 1
 		if (RI)
 			RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
 #else

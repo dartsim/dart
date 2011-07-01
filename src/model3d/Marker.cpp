@@ -25,7 +25,7 @@ namespace model3d {
     }
 
     void Marker::draw(renderer::RenderInterface* RI, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
-#ifdef _RENDER_TEST
+#if 1
 		if (!RI) return;
 		RI->PushName(getID());
 		if(mType==HARD) RI->SetPenColor(Vector3d(1, 0, 0));
