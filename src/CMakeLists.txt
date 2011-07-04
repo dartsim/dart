@@ -1,0 +1,12 @@
+# all libraries
+ADD_SUBDIRECTORY(utils)
+ADD_SUBDIRECTORY(model3d)
+ADD_SUBDIRECTORY(optimizer)
+ADD_SUBDIRECTORY(YUI)
+ADD_SUBDIRECTORY(renderer)
+
+# Unit Test
+ADD_SUBDIRECTORY(unittests)
+
+# Apps
+ADD_SUBDIRECTORY(apps)
