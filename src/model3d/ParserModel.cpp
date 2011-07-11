@@ -113,7 +113,9 @@ enum yytokentype {
 //#line 1 "src/skel.y"
 
 
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 #include <fstream>
 #include <iostream>
 #include <assert.h>

@@ -13,7 +13,7 @@
 #include <GL/glut.h>
 #elif defined(__linux)
 #include <GL/glut.h>
-#elif APPLE
+#elif defined(__APPLE__)
 #include <Glut/glut.h>
 #else
 #error "Load OpenGL Error: What's your operating system?"
