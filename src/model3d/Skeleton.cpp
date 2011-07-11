@@ -143,7 +143,7 @@ namespace model3d {
 
     void Skeleton::setState(const vector<double>& state, bool bCalcTrans, bool bCalcDeriv) {
         VectorXd x(state.size());
-        for (int i = 0; i < state.size(); i++) {
+        for (unsigned int i = 0; i < state.size(); i++) {
             x(i) = state[i];
         }
         setState(x, bCalcTrans, bCalcDeriv);

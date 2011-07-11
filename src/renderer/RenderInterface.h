@@ -51,8 +51,8 @@ namespace renderer
 		virtual void TurnOffLights();
 		virtual void TurnOnLights();
 
-		virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow);
-		virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const;
+		virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow);
+		virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const;
 		virtual void SetDefaultMaterial();
 
 		virtual void PushMatrix();
@@ -61,7 +61,7 @@ namespace renderer
 		virtual void PopName();
 
 		virtual void Translate(const Vector3d& offset); //glTranslate 
-		virtual void Rotate(const Vector3d& axis, float rad); //glRotate
+		virtual void Rotate(const Vector3d& axis, double rad); //glRotate
 		virtual void Scale(const Vector3d& scale); //glScale
 
 		virtual void DrawEllipsoid(const Vector3d& size);
