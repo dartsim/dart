@@ -1,0 +1,121 @@
+#!smake
+#
+# Copyright (c) Mark J. Kilgard, 1998.
+#
+
+TOP = ../..
+include $(TOP)/glutdefs
+include $(ROOT)/usr/include/make/commondefs
+
+LD_QUICKSTART_INFO=
+LN = ln -s
+MV = mv
+RM = -rm -rf
+
+TARGETS = accconvolve alphablend alphablendnosort billboard \
+  bubble bump chromakey chromakey_fancy cloud cloudl csg complexity decal dissolve \
+  explode fire genspheremap highlight interp lightmap lightp line \
+  multiaccumaa multialphablend multialphablendnosort multimirror \
+  multiscreendoor multispheremap noise nthsurfdemo paint projtex sbias \
+  screendoor smoke softshadow2 spectral tess texgen texmovie texpage \
+  textile underwater usespheremap vapor volume warp water zcomposite
+
+LLDLIBS = $(GLUT) -lGLU -lGL -lXmu -lXi -lXext -lX11 -lm
+
+LCOPTS = -I$(TOP)/include -fullwarn
+LWOFF = ,813,852,827,826,819
+LDIRT = *~ *.bak *.pure $(DATA_LINKS) *.pix32 *.Counts *.pixie
+
+default : $(TARGETS)
+
+accconvolve: accconvolve.o texture.o
+	$(CCF) -o $@ accconvolve.o texture.o $(LDFLAGS)
+
+billboard: billboard.o texture.o
+	$(CCF) -o $@ billboard.o texture.o $(LDFLAGS)
+
+bubble: bubble.o texture.o
+	$(CCF) -o $@ bubble.o texture.o $(LDFLAGS)
+
+bump: bump.o texture.o
+	$(CCF) -o $@ bump.o texture.o $(LDFLAGS)
+
+chromakey: chromakey.o texture.o
+	$(CCF) -o $@ chromakey.o texture.o $(LDFLAGS)
+
+chromakey_fancy: chromakey_fancy.o texture.o
+	$(CCF) -o $@ chromakey_fancy.o texture.o $(LDFLAGS)
+
+cloud: cloud.o texture.o
+	$(CCF) -o $@ cloud.o texture.o $(LDFLAGS)
+
+cloudl: cloudl.o texture.o
+	$(CCF) -o $@ cloudl.o texture.o $(LDFLAGS)
+
+explode: explode.o texture.o
+	$(CCF) -o $@ explode.o texture.o $(LDFLAGS)
+
+fire: fire.o texture.o sm.o d.o
+	$(CCF) -o $@ fire.o texture.o sm.o d.o $(LDFLAGS)
+
+genspheremap: genspheremap.o texture.o
+	$(CCF) -o $@ genspheremap.o texture.o $(LDFLAGS)
+
+highlight: highlight.o texture.o
+	$(CCF) -o $@ highlight.o texture.o $(LDFLAGS)
+
+interp: interp.o texture.o
+	$(CCF) -o $@ interp.o texture.o $(LDFLAGS)
+
+lightmap: lightmap.o texture.o
+	$(CCF) -o $@ lightmap.o texture.o $(LDFLAGS)
+
+lightp: lightp.o texture.o
+	$(CCF) -o $@ lightp.o texture.o $(LDFLAGS)
+
+multispheremap: multispheremap.o texture.o
+	$(CCF) -o $@ multispheremap.o texture.o $(LDFLAGS)
+
+paint: paint.o texture.o
+	$(CCF) -o $@ paint.o texture.o $(LDFLAGS)
+
+projtex: projtex.o texture.o
+	$(CCF) -o $@ projtex.o texture.o $(LDFLAGS)
+
+sbias: sbias.o texture.o
+	$(CCF) -o $@ sbias.o texture.o $(LDFLAGS)
+
+smoke: smoke.o texture.o
+	$(CCF) -o $@ smoke.o texture.o $(LDFLAGS)
+
+tess: tess.o sphere.o
+	$(CCF) -o $@ tess.o sphere.o $(LDFLAGS)
+
+texmovie: texmovie.o texture.o
+	$(CCF) -o $@ texmovie.o texture.o $(LDFLAGS)
+
+texpage: texpage.o texture.o
+	$(CCF) -o $@ texpage.o texture.o $(LDFLAGS)
+
+textile: textile.o texture.o
+	$(CCF) -o $@ textile.o texture.o $(LDFLAGS)
+
+underwater: underwater.o texture.o
+	$(CCF) -o $@ underwater.o texture.o $(LDFLAGS)
+
+usespheremap: usespheremap.o texture.o
+	$(CCF) -o $@ usespheremap.o texture.o $(LDFLAGS)
+
+vapor: vapor.o texture.o
+	$(CCF) -o $@ vapor.o texture.o $(LDFLAGS)
+
+volume: volume.o texture.o
+	$(CCF) -o $@ volume.o texture.o $(LDFLAGS)
+
+warp: warp.o texture.o
+	$(CCF) -o $@ warp.o texture.o $(LDFLAGS)
+
+water: water.o texture.o
+	$(CCF) -o $@ water.o texture.o $(LDFLAGS)
+
+include $(COMMONRULES)
