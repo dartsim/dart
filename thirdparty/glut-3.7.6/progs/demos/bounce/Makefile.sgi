@@ -1,0 +1,46 @@
+#!smake
+#
+# Copyright (c) Mark J. Kilgard, 1996, 1997.
+#
+
+TOP = ../../..
+include $(TOP)/glutdefs
+include $(ROOT)/usr/include/make/commondefs
+
+LD_QUICKSTART_INFO=
+LN = ln -s
+MV = mv
+RM = -rm -rf
+
+TARGETS = bounce
+
+LLDLIBS = $(GLUT) -lGLU -lGL -lXmu -lXext -lX11 -lm
+
+SRCS = bounce.c glui.c trackball.c tb.c
+OBJS = $(SRCS:.c=.o)
+
+LCOPTS = -I$(TOP)/include -fullwarn
+LWOFF = ,813,852,827,826
+LDIRT = *~ *.bak *.pure trackball.c trackball.h tb.c tb.h
+
+default : $(TARGETS)
+
+bounce: $(OBJS)
+	$(RM) $@
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+
+trackball.c:
+	ln -s ../../examples/trackball.c .
+
+trackball.h:
+	ln -s ../../examples/trackball.h .
+
+tb.c:
+	ln -s ../smooth/tb.c .
+
+tb.h:
+	ln -s ../smooth/tb.h .
+
+tb.o: tb.h trackball.h tb.c
+
+include $(COMMONRULES)

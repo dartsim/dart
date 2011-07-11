@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gle", "gle\gle.vcproj", "{F446A0D5-AF17-4678-88B0-AD0C136372E2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gle_dll", "gle\gle_dll.vcproj", "{828B9625-FA8D-4A45-A19D-C544ED903864}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F446A0D5-AF17-4678-88B0-AD0C136372E2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F446A0D5-AF17-4678-88B0-AD0C136372E2}.Debug|Win32.Build.0 = Debug|Win32
+		{F446A0D5-AF17-4678-88B0-AD0C136372E2}.Release|Win32.ActiveCfg = Release|Win32
+		{F446A0D5-AF17-4678-88B0-AD0C136372E2}.Release|Win32.Build.0 = Release|Win32
+		{828B9625-FA8D-4A45-A19D-C544ED903864}.Debug|Win32.ActiveCfg = Debug|Win32
+		{828B9625-FA8D-4A45-A19D-C544ED903864}.Debug|Win32.Build.0 = Debug|Win32
+		{828B9625-FA8D-4A45-A19D-C544ED903864}.Release|Win32.ActiveCfg = Release|Win32
+		{828B9625-FA8D-4A45-A19D-C544ED903864}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
