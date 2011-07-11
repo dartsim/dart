@@ -101,7 +101,7 @@ namespace renderer
 	{
 		glScaled(scale[0], scale[1], scale[2]);
 	}
-	void OpenGLRenderInterface::Rotate(const Vector3d& axis, float rad)
+	void OpenGLRenderInterface::Rotate(const Vector3d& axis, double rad)
 	{
 		glRotated(rad, axis[0], axis[1], axis[2]);
 	}
@@ -114,11 +114,11 @@ namespace renderer
 	{
 
 	}
-	void OpenGLRenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow)
+	void OpenGLRenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow)
 	{
 
 	}
-	void OpenGLRenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const
+	void OpenGLRenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const
 	{
 
 	}
