@@ -67,7 +67,7 @@ namespace renderer
 	void RenderInterface::Scale(const Vector3d& scale)
 	{
 	}
-	void RenderInterface::Rotate(const Vector3d& axis, float rad)
+	void RenderInterface::Rotate(const Vector3d& axis, double rad)
 	{
 	}
 	void RenderInterface::SaveToImage(const char * filename, DecoBufferType buffType)
@@ -78,11 +78,11 @@ namespace renderer
 	{
 
 	}
-	void RenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, float cosinePow)
+	void RenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow)
 	{
 
 	}
-	void RenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, float& cosinePow) const
+	void RenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const
 	{
 
 	}

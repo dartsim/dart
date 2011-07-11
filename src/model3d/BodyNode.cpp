@@ -167,7 +167,7 @@ namespace model3d {
 		}
 
 		// render the subtree
-		for(int i=0; i<mJointOut.size(); i++){
+		for(unsigned int i=0; i<mJointOut.size(); i++){
 			mJointOut[i]->getNodeOut()->draw(RI, _color, _useDefaultColor);
 		}
 		RI->PopMatrix();
@@ -203,10 +203,10 @@ namespace model3d {
     }
 
 		// render the corresponding mHandless
-		for(int i=0; i<mHandles.size(); i++){
+		for(unsigned int i=0; i<mHandles.size(); i++){
 			mHandles[i]->draw(RI, true, _color, _useDefaultColor);
 		}
-		for(int i=0; i<mJointOut.size(); i++){
+		for(unsigned int i=0; i<mJointOut.size(); i++){
 			mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _useDefaultColor);
 		}
 		RI->PopMatrix();
