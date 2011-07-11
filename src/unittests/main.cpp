@@ -5,11 +5,11 @@
 #include <iostream>
 using namespace std;
 // Google Libraries
-#include <gflags/gflags.h>
 #include <glog/logging.h>
-using namespace google;
+#include <gflags/gflags.h>
 // External Libraries
 #include <gtest/gtest.h>
+using namespace google;
 // Local headers
 #include "test_utils.h"
 #include "test_model3d.h"
