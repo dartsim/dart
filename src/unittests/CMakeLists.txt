@@ -5,10 +5,16 @@ PROJECT(unittests)
 FILE(GLOB unittests_srcs "*.cpp")
 FILE(GLOB unittests_hdrs "*.h")
 
+
+
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
 TARGET_LINK_LIBRARIES(unittests utils model3d optimizer ticpp)
-TARGET_LINK_LIBRARIES(unittests gflags glog gfortran snopt)
-if (UNIX)
+TARGET_LINK_LIBRARIES(unittests glog gflags gfortran snopt)
+TARGET_LINK_LIBRARIES(unittests ${GLUT_glut_LIBRARY})
+
+if (APPLE)
+TARGET_LINK_LIBRARIES(unittests gtest pthread)
+elseif (UNIX)
   TARGET_LINK_LIBRARIES(unittests gtest pthread glut)
 endif()
 if (WIN32)
