@@ -8,23 +8,19 @@
 
 
 #include "BodyNode.h"
-
 #include <algorithm>
-
-using namespace std;
-using namespace Eigen;
-
 #include "Primitive.h"
 #include "Joint.h"
 #include "Marker.h"
 #include "Dof.h"
 #include "Skeleton.h"
 #include "Transformation.h"
-
 #include "utils/Misc.h"
 #include "utils/Utils.h"
 #include "utils/EigenHelper.h"
 
+using namespace std;
+using namespace Eigen;
 
 namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
@@ -69,9 +65,9 @@ namespace model3d {
         mTransWorld = Matrix4d::Identity();
 
         const int localDofs = getNumDofs();
-        Tq.resize(localDofs, MatrixXd::Identity(4, 4));
+        mTq.resize(localDofs, MatrixXd::Identity(4, 4));
         const int nDofs = getModel()->getNumDofs();
-        Wq.resize(nDofs, MatrixXd::Identity(4, 4));
+        mWq.resize(nDofs, MatrixXd::Identity(4, 4));
         
         mJC = MatrixXd::Zero(3, nDofs);
         mJW = MatrixXd::Zero(3, nDofs);
@@ -91,7 +87,7 @@ namespace model3d {
 
         // Update Local Derivatives
         for(int i = 0; i < localDofs; i++) {
-            Tq.at(i) = getLocalDeriv(getDof(i));
+            mTq.at(i) = getLocalDeriv(getDof(i));
         }
 
         // Update World Derivates
@@ -99,15 +95,15 @@ namespace model3d {
             for (int i = 0; i < getNumDependantDofs(); i++) {
                 int index = getDependantDof(i);
                 if (mNodeIn->dependsOn(index)) {
-                    Wq.at(index) = mNodeIn->Wq.at(index) * mTransLocal;
+                    mWq.at(index) = mNodeIn->mWq.at(index) * mTransLocal;
                 } else {
-                    Wq.at(index) = mNodeIn->mTransWorld * Tq.at( mJointIn->getLocalIndex(index) );
+                    mWq.at(index) = mNodeIn->mTransWorld * mTq.at( mJointIn->getLocalIndex(index) );
                 }
             }
         } else {
             for(int i = 0; i < localDofs; ++i) {
                 int index1 = mJointIn->getDof(i)->getModelIndex();
-                Wq.at(index1) = Tq.at(i);
+                mWq.at(index1) = mTq.at(i);
             }
         }
 
@@ -149,79 +145,79 @@ namespace model3d {
         return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
     }
         
-	void BodyNode::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
+    void BodyNode::draw(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
 #if 1
-		if (!RI) return;
-		RI->PushMatrix();
-		// render the self geometry
-		for(int i=0; i<mJointIn->getNumTransforms(); i++){
-			mJointIn->getTransform(i)->applyGLTransform(RI);
-		}
-		if(mPrimitive != NULL) {
-			RI->PushName((unsigned)mID);
-			RI->PushMatrix();
-			RI->Translate(mOffset);
-			mPrimitive->draw(RI, _color, _useDefaultColor);
-			RI->PopMatrix();
-			RI->PopName();
-		}
+        if (!_RI) return;
+        _RI->PushMatrix();
+        // render the self geometry
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
+        }
+        if (mPrimitive != NULL) {
+            _RI->PushName((unsigned)mID);
+            _RI->PushMatrix();
+            _RI->Translate(mOffset);
+            mPrimitive->draw(_RI, _color, _useDefaultColor);
+            _RI->PopMatrix();
+            _RI->PopName();
+        }
 
-		// render the subtree
-		for(unsigned int i=0; i<mJointOut.size(); i++){
-			mJointOut[i]->getNodeOut()->draw(RI, _color, _useDefaultColor);
-		}
-		RI->PopMatrix();
+        // render the subtree
+        for (unsigned int i = 0; i < mJointOut.size(); i++){
+            mJointOut[i]->getNodeOut()->draw(_RI, _color, _useDefaultColor);
+        }
+        _RI->PopMatrix();
 #else
         glPushMatrix();
         // render the self geometry
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
         if (mPrimitive != NULL) {
             glPushName((unsigned)mID);
             glPushMatrix();
             glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
-            mPrimitive->draw(RI, _color, _useDefaultColor);
+            mPrimitive->draw(_RI, _color, _useDefaultColor);
             glPopMatrix();
             glPopName();
         }
 
         // render the subtree
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->draw(RI, _color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->draw(_RI, _color, _useDefaultColor);
         }
         glPopMatrix();
 #endif
     }
 
-    void BodyNode::drawHandles(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
+    void BodyNode::drawHandles(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor) const {
 #if 1
-		if (!RI) return;
-		RI->PushMatrix();
-		for(int i=0; i<mJointIn->getNumTransforms(); i++){
-			mJointIn->getTransform(i)->applyGLTransform(RI);
-    }
-
-		// render the corresponding mHandless
-		for(unsigned int i=0; i<mHandles.size(); i++){
-			mHandles[i]->draw(RI, true, _color, _useDefaultColor);
-		}
-		for(unsigned int i=0; i<mJointOut.size(); i++){
-			mJointOut[i]->getNodeOut()->drawHandles(RI,_color, _useDefaultColor);
-		}
-		RI->PopMatrix();
-#else
-        glPushMatrix();
+        if (!_RI) return;
+        _RI->PushMatrix();
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(RI);
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
 
         // render the corresponding mHandless
         for (unsigned int i = 0; i < mHandles.size(); i++) {
-            mHandles[i]->draw(RI, true, _color, _useDefaultColor);
+            mHandles[i]->draw(_RI, true, _color, _useDefaultColor);
         }
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->drawHandles(RI, _color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->drawHandles(_RI,_color, _useDefaultColor);
+        }
+        _RI->PopMatrix();
+#else
+        glPushMatrix();
+        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
+            mJointIn->getTransform(i)->applyGLTransform(_RI);
+        }
+
+        // render the corresponding mHandless
+        for (unsigned int i = 0; i < mHandles.size(); i++) {
+            mHandles[i]->draw(_RI, true, _color, _useDefaultColor);
+        }
+        for (unsigned int i = 0; i < mJointOut.size(); i++) {
+            mJointOut[i]->getNodeOut()->drawHandles(_RI, _color, _useDefaultColor);
         }
         glPopMatrix();
 #endif
@@ -248,8 +244,8 @@ namespace model3d {
         return mJointIn->isPresent(_q);
     }
 
-    Matrix4d BodyNode::getLocalDeriv(Dof* q) const {
-        return mJointIn->getDeriv(q);
+    Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
+        return mJointIn->getDeriv(_q);
     }
     
     void BodyNode::evalJC() {
@@ -258,7 +254,7 @@ namespace model3d {
         for (vector<int>::iterator i_iter = mDependantDofs.begin();
              i_iter != mDependantDofs.end(); i_iter++) {
             int i = (*i_iter);
-            VectorXd J = utils::transform(Wq.at(i), mOffset);
+            VectorXd J = utils::transform(mWq.at(i), mOffset);
             mJC(0, i) = J(0);
             mJC(1, i) = J(1);
             mJC(2, i) = J(2);
@@ -275,7 +271,7 @@ namespace model3d {
             int i = (*i_iter);
 
             MatrixXd transR = trans(sub(mTransWorld, 3, 3));
-            MatrixXd dRdq = sub(Wq.at(i), 3, 3);
+            MatrixXd dRdq = sub(mWq.at(i), 3, 3);
             MatrixXd omegaSkewSymmetric = dRdq * transR;
             VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
             omega = transR * omega;

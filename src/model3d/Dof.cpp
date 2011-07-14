@@ -8,7 +8,6 @@
 
 
 #include "Dof.h"
-
 #include "Transformation.h"
 
 double inf = 1e9;
@@ -39,7 +38,7 @@ namespace model3d {
         if (mTrans != NULL) mTrans->setDirty();
     }
 
-  void Dof::init(double _v, const char * _name, double _min, double _max){
+    void Dof::init(double _v, const char * _name, double _min, double _max){
         strcpy(mName, _name);
         mVal = _v;
         mMinVal = _min;
