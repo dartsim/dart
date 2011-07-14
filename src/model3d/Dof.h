@@ -54,20 +54,20 @@ namespace model3d {
     protected:
         void init(double _v, const char * _name, double _min, double _max);
         char mName[MAX_DOF_NAME];
-        int mModelIndex; // unique to dof in model
+        int mModelIndex; // Unique to dof in model
 
-        double mVal;	// value of the joint angle
-        double mMinVal;	// min value allowed
-        double mMaxVal;	// max value allowed
+        double mVal;	// Value of the joint angle
+        double mMinVal;	// Min value allowed
+        double mMaxVal;	// Max value allowed
 
         double mTorque;
         double mMinTorque;
         double mMaxTorque;
 
-        Transformation *mTrans;	// transformation associated with
-        Joint *mJoint;	// joint to which it belongs
+        Transformation *mTrans;	// Transformation associated with
+        Joint *mJoint;	// Joint to which it belongs
 
-        bool mVariable;	// true when it is a variable and included int he model
+        bool mVariable;	// True when it is a variable and included int he model
     };
 } // namespace model3d
 

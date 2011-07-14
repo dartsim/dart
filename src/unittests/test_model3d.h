@@ -78,7 +78,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
 
 
     // Check the derivative of one global transform matrix
-    const Matrix4d& Wq = skel->getNode(10)->Wq.at(4);
+    const Matrix4d& Wq = skel->getNode(10)->mWq.at(4);
     Matrix4d Wq_truth;
     Wq_truth << 0.121382, 0.413015, 0.902378, 0.161838
         ,-0.0175714, 0.00698451, 0.0149899, 0.00571836

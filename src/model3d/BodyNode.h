@@ -39,25 +39,25 @@ namespace model3d {
         virtual ~BodyNode(); ///< Default destructor
 
         void init(); ///< Initialize the vector memebers with proper sizes
-        void updateTransform(); ///< update transformations w.r.t. the current dof values in Dof*
+        void updateTransform(); ///< Update transformations w.r.t. the current dof values in Dof*
         void updateDerivatives();
 
-        Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< transformation from the local coordinates of this body node to the world coordinates
-        Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< transformation from the world coordinates to the local coordiantes of this body node
-        Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< transformation from the local coordiantes of this node to the local coordiantes of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< transformation from the local coordinates of the parent node to the local coordiantes of this node
+        Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< Transformation from the local coordinates of this body node to the world coordinates
+        Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< Transformation from the world coordinates to the local coordiantes of this body node
+        Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< Transformation from the local coordiantes of this body node to the local coordiantes of its parent
+        Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordiantes of this body node
 
-        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< given a 3D vector lp in the local coordinates of this node, return the world coordinates of this vector
+        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
-        void setDependDofList(); ///< set up the list of dependant dofs 
-        bool dependsOn(int _dofIndex) const; ///< test whether this dof is depedant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
-        int getNumDependantDofs() const { return mDependantDofs.size(); } ///< the number of the dofs which this node is affected
-        int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< return an dof index from the array index (< getNumDependantDofs)
+        void setDependDofList(); ///< Set up the list of dependent dofs 
+        bool dependsOn(int _dofIndex) const; ///< Test whether this dof is depedant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
+        int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
+        int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
 
-		void draw(renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int depth = 0) const ;    ///< render the entire bodylink subtree rooted here
-		void drawHandles(renderer::RenderInterface* RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< render the handles
+        void draw(renderer::RenderInterface* _RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
+        void drawHandles(renderer::RenderInterface* _RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
 
         char* getName() { return mName; }
 
@@ -92,41 +92,39 @@ namespace model3d {
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
-        Eigen::Matrix4d getLocalDeriv(Dof *q) const;
+        Eigen::Matrix4d getLocalDeriv(Dof *_q) const;
 
     protected:
-        void evalJC();
-        void evalJW();
+        void evalJC(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
+        void evalJW(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
         
-        char mName[MAX_NODE3D_NAME]; ///< name
-        int mModelIndex;    ///< location in the model
+        char mName[MAX_NODE3D_NAME]; ///< Name
+        int mModelIndex;    ///< Index in the model
 
-        Primitive *mPrimitive;  ///< body geometry
-        std::vector<Joint *> mJointOut; ///< list of joints that link to children
-        Joint *mJointIn;    ///< joint to connect to parent
-        BodyNode *mNodeIn;      ///< parent node
-        std::vector<Marker *> mHandles; ///< list of handles associated
+        Primitive *mPrimitive;  ///< Geometry of this body node
+        std::vector<Joint *> mJointOut; ///< List of joints that link to child nodes
+        Joint *mJointIn;    ///< Joint connecting to parent node
+        BodyNode *mNodeIn;      ///< Parent node
+        std::vector<Marker *> mHandles; ///< List of handles associated
 
         // transformations
-        Eigen::Matrix4d mTransLocal; ///< local transformation from parent to itself
-        Eigen::Matrix4d mTransWorld; ///< global transformation
+        Eigen::Matrix4d mTransLocal; ///< Local transformation from parent to itself
+        Eigen::Matrix4d mTransWorld; ///< Global transformation
 
-        std::vector<int> mDependantDofs; ///< A list of dependant Dof indices 
+        std::vector<int> mDependantDofs; ///< A list of dependant dof indices 
 
-
-
-        double mMass; ///< mass of this node; if it has no primitive associated with, its mass is zero
-        Eigen::Vector3d mOffset; ///< origin of this node in its parent's coordinate frame
-        Skeleton *mModel; ///< the model this node belongs to
+        double mMass; ///< Mass of this node; zero if no primitive
+        Eigen::Vector3d mOffset; ///< Origin of this body node in its parent's coordinate frame
+        Skeleton *mModel; ///< Pointer to the model this body node belongs to
 
     private:
-        int mID; ///< a unique ID of this node globally 
-        static int msBodyNodeCount; ///< counts the numbe of nodes globally
+        int mID; ///< A unique ID of this node globally 
+        static int msBodyNodeCount; ///< Counts the number of nodes globally
     public:
-        std::vector<Eigen::MatrixXd> Tq;
-        std::vector<Eigen::MatrixXd> Wq;
-        Eigen::MatrixXd mJC;
-        Eigen::MatrixXd mJW;
+        std::vector<Eigen::MatrixXd> mTq; ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+        std::vector<Eigen::MatrixXd> mWq; ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+        Eigen::MatrixXd mJC; ///< Linear Jacobian; Cartesian_linear_velocity = mJC * generalized_velocity
+        Eigen::MatrixXd mJW; ///< Angular Jacobian; Cartesian_angular_velocity = mJW * generalized_velocity
     };
 
 } // namespace model3d
