@@ -35,12 +35,12 @@ namespace model3d {
 #if 1
 		if (!_ri) return;
 		if (!_useDefaultColor)
-			_ri->SetPenColor( _color );
+			_ri->setPenColor( _color );
 		else
-			_ri->SetPenColor( mColor );
-		_ri->PushMatrix();
-		_ri->DrawCube(mDim);
-		_ri->PopMatrix();
+			_ri->setPenColor( mColor );
+		_ri->pushMatrix();
+		_ri->drawCube(mDim);
+		_ri->popMatrix();
 #else
         if (_useDefaultColor)
             glColor4d( mColor[0], mColor[1], mColor[2], 1.0 );

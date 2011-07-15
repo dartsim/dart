@@ -4,12 +4,10 @@
 #include "Eigen/Core"
 using namespace Eigen;
 
-namespace renderer
-{
+namespace renderer {
     enum LightType {
         LT_PointLight,
         LT_DirectionLight,
-
     };
 
 
@@ -38,7 +36,5 @@ namespace renderer
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 }
-
-
 
 #endif
