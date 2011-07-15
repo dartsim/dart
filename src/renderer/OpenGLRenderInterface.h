@@ -1,6 +1,5 @@
-#ifndef OPENGL_RENDER_INTERFACE_H
-#define OPENGL_RENDER_INTERFACE_H
-
+#ifndef OPENGL_RENDERINTERFACE_H
+#define OPENGL_RENDERINTERFACE_H
 
 #include <list>
 #include <vector>
@@ -9,48 +8,45 @@
 using namespace std;
 
 namespace renderer {
-
-
-	class OpenGLRenderInterface : public RenderInterface
-    {
+    class OpenGLRenderInterface : public RenderInterface {
 
     public:
         OpenGLRenderInterface(){}
         virtual ~OpenGLRenderInterface(){}
 
-        virtual void Initialize();
-        virtual void Destroy();
+        virtual void initialize();
+        virtual void destroy();
 
-        virtual void SetViewport(int X,int Y,int Width,int Height);
-        virtual void GetViewport(int& X, int& Y, int &Width, int& Height) const;
+        virtual void setViewport(int X,int Y,int Width,int Height);
+        virtual void getViewport(int& X, int& Y, int &Width, int& Height) const;
 
-        virtual void Clear(const Vector3d& color);
+        virtual void clear(const Vector3d& color);
 
-        virtual void SetDefaultLight();
-        virtual void TurnOffLights();
-        virtual void TurnOnLights();
+        virtual void setDefaultLight();
+        virtual void turnLightsOff();
+        virtual void turnLightsOn();
 
-        virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow);
-        virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const;
-        virtual void SetDefaultMaterial();
+        virtual void setMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow);
+        virtual void getMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const;
+        virtual void setDefaultMaterial();
 
-        virtual void PushMatrix();
-        virtual void PopMatrix();
-        virtual void PushName(int id);
-        virtual void PopName();
+        virtual void pushMatrix();
+        virtual void popMatrix();
+        virtual void pushName(int id);
+        virtual void popName();
 
-        virtual void Translate(const Vector3d& offset); //glTranslate 
-        virtual void Rotate(const Vector3d& axis, double rad); //glRotate
-        virtual void Scale(const Vector3d& scale); //glScale
+        virtual void translate(const Vector3d& offset); //glTranslate 
+        virtual void rotate(const Vector3d& axis, double rad); //glRotate
+        virtual void scale(const Vector3d& scale); //glScale
 
-        virtual void DrawEllipsoid(const Vector3d& size);
-        virtual void DrawCube(const Vector3d& size);
+        virtual void drawEllipsoid(const Vector3d& size);
+        virtual void drawCube(const Vector3d& size);
 
-        virtual void SetPenColor(const Vector4d& col);
-        virtual void SetPenColor(const Vector3d& col);
+        virtual void setPenColor(const Vector4d& col);
+        virtual void setPenColor(const Vector3d& col);
 
-        virtual void SaveToImage(const char * filename, DecoBufferType buffType = BT_Back);
-        virtual void ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
+        virtual void saveToImage(const char * filename, DecoBufferType buffType = BT_Back);
+        virtual void readFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
 
     private:
         int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
@@ -61,4 +57,4 @@ namespace renderer {
 } // namespace renderer
 
 
-#endif
+#endif // OPENGL_RENDERINTERFACE_H

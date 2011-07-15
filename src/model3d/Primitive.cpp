@@ -18,7 +18,7 @@ namespace model3d {
     Primitive::Primitive()
         : mDim(0,0,0), mMass(0), mVolume(0),
           mInertia(Matrix3d::Zero()),
-          mMassTensor(Matrix4d::Zero()), mCOM(0,0,0),
+          mMassTensor(Matrix4d::Zero()), mCOMLocal(0,0,0),
           mID(mCounter++), mColor(0.5,0.5,1.0) {
     }
 
@@ -34,20 +34,20 @@ namespace model3d {
 
     void Primitive::setDim(const Eigen::Vector3d& _dim) {
         mDim = _dim;
-        calVolume();
-        calMassTensor();
-        calInertiaFromMassTensor();
+        computeVolume();
+        computeMassTensor();
+        computeInertiaFromMassTensor();
     }
 
     void Primitive::setMass(double _m) {
         mMass = _m;
-        calMassTensor();
+        computeMassTensor();
+        computeInertiaFromMassTensor();
     }
 
     int Primitive::mCounter = PRIMITIVE_MAGIC_NUMBER;
 
-    void Primitive::setMassTensorFromInertia()
-    {
+    void Primitive::setMassTensorFromInertia() {
         // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
 	
         double halftrace = 0.5* mInertia.trace();
@@ -62,7 +62,7 @@ namespace model3d {
         mMassTensor(3, 3) = mMass;
     }
 
-    void Primitive::calInertiaFromMassTensor(){
+    void Primitive::computeInertiaFromMassTensor(){
         double trace = mMassTensor(0, 0) + mMassTensor(1, 1) + mMassTensor(2, 2);
         for(int i=0; i<3; i++)
             for(int j=0; j<3; j++)

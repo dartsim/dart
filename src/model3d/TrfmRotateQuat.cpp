@@ -90,7 +90,7 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateQuat::applyGLTransform(renderer::RenderInterface* RI) const
+    void TrfmRotateQuat::applyGLTransform(renderer::RenderInterface* _ri) const
     {
 #if 0	
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
@@ -107,8 +107,8 @@ namespace model3d {
         if(a.dot(a)>EPSILON*EPSILON && theta>EPSILON)
         {
 #if 1
-            if (RI)
-                RI->Rotate(a, theta*180/M_PI);
+            if (_ri)
+                _ri->Rotate(a, theta*180/M_PI);
 #else
             glRotatef(theta*180/M_PI, a(0), a(1), a(2));
 #endif

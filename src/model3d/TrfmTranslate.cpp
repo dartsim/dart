@@ -30,10 +30,10 @@ namespace model3d {
             strcpy(mName, "Translate");
     }
 
-    void TrfmTranslate::applyGLTransform(renderer::RenderInterface* RI) const{
+    void TrfmTranslate::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
-		if (RI)
-			RI->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
+		if (_ri)
+			_ri->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
 #else
         glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 #endif
@@ -116,10 +116,10 @@ namespace model3d {
             strcpy(mName, "TranslateX");
     }
 
-    void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* RI) const{
+    void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
-		if (RI)
-			RI->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
+		if (_ri)
+			_ri->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
 #else
 		glTranslatef(mDofs[0]->getValue(), 0, 0);
 #endif    
@@ -192,10 +192,10 @@ namespace model3d {
             strcpy(mName, "TranslateY");
     }
 
-    void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* RI) const {
+    void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* _ri) const {
 #if 1
-		if (RI)
-			RI->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
+		if (_ri)
+			_ri->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
 #else
 		glTranslatef(0, mDofs[0]->getValue(), 0);
 #endif
@@ -269,10 +269,10 @@ namespace model3d {
             strcpy(mName, "TranslateZ");
     }
 
-    void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* RI) const {
+    void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* _ri) const {
 #if 1
-		if (RI)
-			RI->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
+		if (_ri)
+			_ri->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
 #else
 		glTranslatef(0, 0, mDofs[0]->getValue());
 #endif    

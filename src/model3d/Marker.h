@@ -32,7 +32,7 @@ namespace model3d {
         Marker(const char* _name, Eigen::Vector3d& , BodyNode*, ConstraintType _type = NO);
         virtual ~Marker(){}
 
-		void draw(renderer::RenderInterface* RI = NULL, bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _useDefaultColor = true) const;
+		void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true, const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(), bool _useDefaultColor = true) const;
 
         Eigen::Vector3d getWorldCoords(); ///< get the world coordinates of mOffset
 	

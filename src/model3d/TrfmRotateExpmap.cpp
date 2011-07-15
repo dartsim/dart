@@ -278,14 +278,14 @@ namespace model3d {
         return ret;
     }
 
-    void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* RI) const{
+    void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{
 		Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 		double theta = v.norm();
 		Vector3d vhat = Vector3d::Zero();
 		if(!isZero(theta)) {
 			vhat= v/theta;
 #if 1
-			RI->Rotate(vhat, theta * 180 / M_PI);
+			_ri->Rotate(vhat, theta * 180 / M_PI);
 #else
             glRotatef(theta*180/M_PI, vhat(0), vhat(1), vhat(2));
 #endif

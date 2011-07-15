@@ -3,7 +3,7 @@
 
 namespace renderer
 {
-	void OpenGLRenderInterface::Initialize()
+	void OpenGLRenderInterface::initialize()
 	{
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -14,14 +14,14 @@ namespace renderer
 		glEnable(GL_DEPTH_TEST);
 		//glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 		glShadeModel(GL_SMOOTH);
-		Clear(Vector3d(1.0, 1.0, 1.0));
+		clear(Vector3d(1.0, 1.0, 1.0));
 	}
-	void OpenGLRenderInterface::Destroy()
+	void OpenGLRenderInterface::destroy()
 	{
 
 	}
 
-	void OpenGLRenderInterface::SetViewport(int X,int Y,int Width,int Height)
+	void OpenGLRenderInterface::setViewport(int X,int Y,int Width,int Height)
 	{
 		glViewport(X, Y, Width, Height);
 		mViewportX = X;
@@ -30,7 +30,7 @@ namespace renderer
 		mViewportHeight = Height;
 
 	}
-	void OpenGLRenderInterface::GetViewport(int& X, int& Y, int &Width, int& Height) const
+	void OpenGLRenderInterface::getViewport(int& X, int& Y, int &Width, int& Height) const
 	{
 		X = mViewportX;
 		Y = mViewportY;
@@ -38,91 +38,91 @@ namespace renderer
 		Height =mViewportHeight;
 	}
 
-	void OpenGLRenderInterface::Clear(const Vector3d& color)
+	void OpenGLRenderInterface::clear(const Vector3d& color)
 	{
 		glClearColor((GLfloat)color[0], (GLfloat)color[1], (GLfloat)color[2], 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
-	void OpenGLRenderInterface::SetDefaultLight()
+	void OpenGLRenderInterface::setDefaultLight()
 	{
 
 	}
 
-	void OpenGLRenderInterface::TurnOffLights()
+	void OpenGLRenderInterface::turnLightsOff()
 	{
 		glDisable(GL_LIGHTING);
 	}
-	void OpenGLRenderInterface::TurnOnLights()
+	void OpenGLRenderInterface::turnLightsOn()
 	{
 //not finished yet
 		glEnable(GL_LIGHTING);	
 	}
-	void OpenGLRenderInterface::SetPenColor(const Vector4d& col)
+	void OpenGLRenderInterface::setPenColor(const Vector4d& col)
 	{
 		glColor4d(col[0], col[1], col[2], col[3]);
 	}
-	void OpenGLRenderInterface::SetPenColor(const Vector3d& col)
+	void OpenGLRenderInterface::setPenColor(const Vector3d& col)
 	{
 		glColor4d(col[0], col[1], col[2], 1.0);
 	}
-	void OpenGLRenderInterface::DrawCube(const Vector3d& size)
+	void OpenGLRenderInterface::drawCube(const Vector3d& size)
 	{
 		glScaled(size(0), size(1), size(2));
 		glutSolidCube(1.0);
 	}
-	void OpenGLRenderInterface::DrawEllipsoid(const Vector3d& size)
+	void OpenGLRenderInterface::drawEllipsoid(const Vector3d& size)
 	{
 		glScaled(size(0), size(1), size(2));
 		glutSolidSphere(0.5, 16, 16);
 	}
-	void OpenGLRenderInterface::PushMatrix()
+	void OpenGLRenderInterface::pushMatrix()
 	{
 		glPushMatrix();
 	}
-	void OpenGLRenderInterface::PopMatrix()
+	void OpenGLRenderInterface::popMatrix()
 	{
 		glPopMatrix();
 	}
-	void OpenGLRenderInterface::PushName(int id)
+	void OpenGLRenderInterface::pushName(int id)
 	{
 		glPushName(id);
 	}
-	void OpenGLRenderInterface::PopName()
+	void OpenGLRenderInterface::popName()
 	{
 		glPopName();
 	}
-	void OpenGLRenderInterface::Translate(const Vector3d& offset)
+	void OpenGLRenderInterface::translate(const Vector3d& offset)
 	{
 		glTranslated(offset[0], offset[1], offset[2]);
 	}
 	
-	void OpenGLRenderInterface::Scale(const Vector3d& scale)
+	void OpenGLRenderInterface::scale(const Vector3d& scale)
 	{
 		glScaled(scale[0], scale[1], scale[2]);
 	}
-	void OpenGLRenderInterface::Rotate(const Vector3d& axis, double rad)
+	void OpenGLRenderInterface::rotate(const Vector3d& axis, double rad)
 	{
 		glRotated(rad, axis[0], axis[1], axis[2]);
 	}
 
-	void OpenGLRenderInterface::SaveToImage(const char * filename, DecoBufferType buffType)
+	void OpenGLRenderInterface::saveToImage(const char * filename, DecoBufferType buffType)
 	{
 
 	}
-	void OpenGLRenderInterface::ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels)
+	void OpenGLRenderInterface::readFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels)
 	{
 
 	}
-	void OpenGLRenderInterface::SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow)
+	void OpenGLRenderInterface::setMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow)
 	{
 
 	}
-	void OpenGLRenderInterface::GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const
+	void OpenGLRenderInterface::getMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const
 	{
 
 	}
-	void OpenGLRenderInterface::SetDefaultMaterial()
+	void OpenGLRenderInterface::setDefaultMaterial()
 	{
 
 	}
