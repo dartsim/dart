@@ -1,87 +1,82 @@
-#ifndef _RENDER_INTERFACE_H
-#define _RENDER_INTERFACE_H
+#ifndef RENDERINTERFACE_H
+#define RENDERINTERFACE_H
 
 #include <vector>
 #include "light.h"
 #include "Camera.h"
 
-namespace renderer
-{
-	enum DecoBufferType
-	{
-		BT_Front,
-		BT_Back
-	};
+namespace renderer{
+    enum DecoBufferType {
+        BT_Front,
+        BT_Back
+    };
 
-	enum DecoColorChannel
-	{
-		CC_R,
-		CC_G,
-		CC_B,
-		CC_A,
-		CC_RGB,
-		CC_RGBA
-	};
+    enum DecoColorChannel {
+        CC_R,
+        CC_G,
+        CC_B,
+        CC_A,
+        CC_RGB,
+        CC_RGBA
+    };
 
-	enum DecoDrawType
-	{
-		DT_WireFrame,
-		DT_SolidPolygon,
-		DT_FrontPolygon,
-		DT_BackPolygon,
-		DT_Max
-	};
-	class RenderInterface
-	{
-	public:
-		RenderInterface(){}
-		virtual ~RenderInterface(){}
+    enum DecoDrawType {
+        DT_WireFrame,
+        DT_SolidPolygon,
+        DT_FrontPolygon,
+        DT_BackPolygon,
+        DT_Max
+    };
 
-		virtual void Initialize();
-		virtual void Destroy();
+    class RenderInterface {
+    public:
+        RenderInterface(){}
+        virtual ~RenderInterface(){}
 
-		virtual void SetViewport(int X,int Y,int Width,int Height);
-		virtual void GetViewport(int& X, int& Y, int &Width, int& Height) const;
+        virtual void Initialize();
+        virtual void Destroy();
 
-		virtual void Clear(const Vector3d& color);
+        virtual void SetViewport(int X,int Y,int Width,int Height);
+        virtual void GetViewport(int& X, int& Y, int &Width, int& Height) const;
 
-		virtual void SetDefaultLight();
-		virtual void AddLight(Light* light);
-		virtual void EraseAllLights();
-		virtual void TurnOffLights();
-		virtual void TurnOnLights();
+        virtual void Clear(const Vector3d& color);
 
-		virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow);
-		virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const;
-		virtual void SetDefaultMaterial();
+        virtual void SetDefaultLight();
+        virtual void AddLight(Light* light);
+        virtual void EraseAllLights();
+        virtual void TurnOffLights();
+        virtual void TurnOnLights();
 
-		virtual void PushMatrix();
-		virtual void PopMatrix();
-		virtual void PushName(int id);
-		virtual void PopName();
+        virtual void SetMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow);
+        virtual void GetMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const;
+        virtual void SetDefaultMaterial();
 
-		virtual void Translate(const Vector3d& offset); //glTranslate 
-		virtual void Rotate(const Vector3d& axis, double rad); //glRotate
-		virtual void Scale(const Vector3d& scale); //glScale
+        virtual void PushMatrix();
+        virtual void PopMatrix();
+        virtual void PushName(int id);
+        virtual void PopName();
 
-		virtual void DrawEllipsoid(const Vector3d& size);
-		virtual void DrawCube(const Vector3d& size);
+        virtual void Translate(const Vector3d& offset); //glTranslate 
+        virtual void Rotate(const Vector3d& axis, double rad); //glRotate
+        virtual void Scale(const Vector3d& scale); //glScale
 
-		virtual void SetPenColor(const Vector4d& col);
-		virtual void SetPenColor(const Vector3d& col);
+        virtual void DrawEllipsoid(const Vector3d& size);
+        virtual void DrawCube(const Vector3d& size);
 
-		virtual void SaveToImage(const char * filename, DecoBufferType buffType = BT_Back);
-		virtual void ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
+        virtual void SetPenColor(const Vector4d& col);
+        virtual void SetPenColor(const Vector3d& col);
 
-		virtual Camera* GetCamera()
-		{
-			return mCamera;
-		}
-	protected:
+        virtual void SaveToImage(const char * filename, DecoBufferType buffType = BT_Back);
+        virtual void ReadFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels);
+
+        virtual Camera* GetCamera()
+        {
+            return mCamera;
+        }
+    protected:
         Camera* mCamera;
-		std::vector<Light*> mLightList;
-	};
+        std::vector<Light*> mLightList;
+    };
 }
 
-
-#endif
+#endif // RENDERINTERFACE_H

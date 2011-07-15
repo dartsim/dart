@@ -17,7 +17,7 @@ namespace model3d {
     public:
         TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
 	
-		void applyGLTransform(renderer::RenderInterface* RI) const;
+		void applyGLTransform(renderer::RenderInterface* _ri) const;
         void evalTransform();
         Eigen::Matrix4d getDeriv(const Dof *);
         Eigen::Matrix4d getDeriv2(const Dof *, const Dof *);

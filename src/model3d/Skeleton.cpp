@@ -174,11 +174,11 @@ namespace model3d {
         }
     }
 
-	void Skeleton::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->draw(RI, _color, _useDefaultColor);
+	void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->draw(_ri, _color, _useDefaultColor);
     }
-    void Skeleton::drawHandles(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->drawHandles(RI, _color, _useDefaultColor);
+    void Skeleton::drawHandles(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->drawHandles(_ri, _color, _useDefaultColor);
     }
 
 

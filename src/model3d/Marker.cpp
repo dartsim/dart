@@ -21,27 +21,27 @@ namespace model3d {
         strcpy(mName, _name);
     }
 
-    void Marker::draw(renderer::RenderInterface* RI, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
+    void Marker::draw(renderer::RenderInterface* _ri, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
 #if 1
-		if (!RI) return;
-		RI->PushName(getID());
-		if(mType==HARD) RI->SetPenColor(Vector3d(1, 0, 0));
-		else if(mType==SOFT) RI->SetPenColor(Vector3d(0, 1, 0));
+		if (!_ri) return;
+		_ri->PushName(getID());
+		if(mType==HARD) _ri->SetPenColor(Vector3d(1, 0, 0));
+		else if(mType==SOFT) _ri->SetPenColor(Vector3d(0, 1, 0));
 		else {
-			if(_useDefaultColor) RI->SetPenColor(Vector3d(0,0,1));
-			else RI->SetPenColor(Vector4d(_color[0],_color[1],_color[2], _color[3]));
+			if(_useDefaultColor) _ri->SetPenColor(Vector3d(0,0,1));
+			else _ri->SetPenColor(Vector4d(_color[0],_color[1],_color[2], _color[3]));
 		}
 		if(_offset){
-			RI->PushMatrix();
-			RI->Translate(mOffset);
-			RI->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
-			RI->PopMatrix();
+			_ri->PushMatrix();
+			_ri->Translate(mOffset);
+			_ri->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->PopMatrix();
 		}
 		else{
-			RI->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
 		}
 
-		RI->PopName();
+		_ri->PopName();
 #else
         glPushName(getID());
         if(mType==HARD) glColor3f(1, 0, 0);

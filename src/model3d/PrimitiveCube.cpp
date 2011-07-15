@@ -7,7 +7,7 @@
 */
 
 #include "PrimitiveCube.h"
-
+#include "renderer/RenderInterface.h"
 
 using namespace std;
 using namespace Eigen;
@@ -19,29 +19,28 @@ using namespace Eigen;
 
 namespace model3d {
 
-    PrimitiveCube::PrimitiveCube(Vector3d _dim, double _mass)
-    {
+    PrimitiveCube::PrimitiveCube(Vector3d _dim, double _mass){
         mDim = _dim;
         mMass = _mass;
         if(_dim!=Vector3d::Zero())
-            calVolume();
+            computeVolume();
         if( mMass != 0){
-            calMassTensor();
-            calInertiaFromMassTensor();
-            calVolume();
+            computeMassTensor();
+            computeInertiaFromMassTensor();
+            computeVolume();
         }
     }
 
-	void PrimitiveCube::draw(renderer::RenderInterface* RI, const Vector4d& _color, bool _useDefaultColor) const{
+	void PrimitiveCube::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const{
 #if 1
-		if (!RI) return;
+		if (!_ri) return;
 		if (!_useDefaultColor)
-			RI->SetPenColor( _color );
+			_ri->SetPenColor( _color );
 		else
-			RI->SetPenColor( mColor );
-		RI->PushMatrix();
-		RI->DrawCube(mDim);
-		RI->PopMatrix();
+			_ri->SetPenColor( mColor );
+		_ri->PushMatrix();
+		_ri->DrawCube(mDim);
+		_ri->PopMatrix();
 #else
         if (_useDefaultColor)
             glColor4d( mColor[0], mColor[1], mColor[2], 1.0 );
@@ -54,7 +53,7 @@ namespace model3d {
 #endif
     }
 
-    void PrimitiveCube::calMassTensor(){
+    void PrimitiveCube::computeMassTensor(){
         mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
         mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
         mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
@@ -62,7 +61,7 @@ namespace model3d {
         mMassTensor *= mMass;
     }
 
-    void PrimitiveCube::calVolume(){
+    void PrimitiveCube::computeVolume(){
         mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
     }
 

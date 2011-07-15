@@ -24,10 +24,10 @@ namespace model3d {
             strcpy(mName, "EulerX");
     }
 
-	void TrfmRotateEulerX::applyGLTransform(renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerX::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
-		if (RI)
-			RI->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+		if (_ri)
+			_ri->Rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
 #else
         glRotatef(mDofs[0]->getValue()*180/M_PI, 1.0, 0.0, 0.0);
 #endif
@@ -94,10 +94,10 @@ namespace model3d {
             strcpy(mName, "EulerY");
     }
 
-	void TrfmRotateEulerY::applyGLTransform(renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerY::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
-		if (RI)
-			RI->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
+		if (_ri)
+			_ri->Rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
 #else
 		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
 #endif
@@ -165,10 +165,10 @@ namespace model3d {
             strcpy(mName, "EulerZ");
     }
 
-	void TrfmRotateEulerZ::applyGLTransform(renderer::RenderInterface* RI) const{
+	void TrfmRotateEulerZ::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
-		if (RI)
-			RI->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
+		if (_ri)
+			_ri->Rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
 #else
 		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
 #endif   
