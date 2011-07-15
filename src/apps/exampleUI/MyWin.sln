@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyWin", "MyWin.vcproj", "{3
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6} = {D45EC2C1-8F7B-4894-82C9-5045607F9ED6}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderer", "..\..\renderer\renderer.vcproj", "{128762C5-DAA9-467A-8EA4-26719FA7E956}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -36,6 +38,10 @@ Global
 		{3CDC2A09-7B36-4167-BCD6-01C97F72F907}.Debug|Win32.Build.0 = Debug|Win32
 		{3CDC2A09-7B36-4167-BCD6-01C97F72F907}.Release|Win32.ActiveCfg = Release|Win32
 		{3CDC2A09-7B36-4167-BCD6-01C97F72F907}.Release|Win32.Build.0 = Release|Win32
+		{128762C5-DAA9-467A-8EA4-26719FA7E956}.Debug|Win32.ActiveCfg = Debug|Win32
+		{128762C5-DAA9-467A-8EA4-26719FA7E956}.Debug|Win32.Build.0 = Debug|Win32
+		{128762C5-DAA9-467A-8EA4-26719FA7E956}.Release|Win32.ActiveCfg = Release|Win32
+		{128762C5-DAA9-467A-8EA4-26719FA7E956}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

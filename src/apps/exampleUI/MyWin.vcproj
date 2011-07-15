@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,9 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glut32.lib ticpp_d.lib libglog_d.lib"
+				AdditionalDependencies="glut32.lib ticpp_d.lib libglog_d.lib renderer_d.lib"
 				OutputFile="..\..\..\bin\$(ProjectName)_d.exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
 				OptimizeReferences="1"
 				LinkTimeCodeGeneration="0"
 			/>
@@ -118,7 +118,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -136,9 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib"
+				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib renderer.lib"
 				OutputFile="..\..\..\bin\$(ProjectName).exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
