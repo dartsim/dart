@@ -27,13 +27,13 @@ namespace model3d {
         if(_name!=NULL)
             strcpy(mName, _name);
         else
-            strcpy(mName, "Translate");
+            strcpy(mName, "translate");
     }
 
     void TrfmTranslate::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
 		if (_ri)
-			_ri->Translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
+			_ri->translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
 #else
         glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 #endif
@@ -119,7 +119,7 @@ namespace model3d {
     void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* _ri) const{
 #if 1
 		if (_ri)
-			_ri->Translate(Vector3d(mDofs[0]->getValue(), 0, 0));
+			_ri->translate(Vector3d(mDofs[0]->getValue(), 0, 0));
 #else
 		glTranslatef(mDofs[0]->getValue(), 0, 0);
 #endif    
@@ -195,7 +195,7 @@ namespace model3d {
     void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* _ri) const {
 #if 1
 		if (_ri)
-			_ri->Translate(Vector3d(0, mDofs[0]->getValue(), 0));
+			_ri->translate(Vector3d(0, mDofs[0]->getValue(), 0));
 #else
 		glTranslatef(0, mDofs[0]->getValue(), 0);
 #endif
@@ -272,7 +272,7 @@ namespace model3d {
     void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* _ri) const {
 #if 1
 		if (_ri)
-			_ri->Translate(Vector3d(0, 0, mDofs[0]->getValue()));
+			_ri->translate(Vector3d(0, 0, mDofs[0]->getValue()));
 #else
 		glTranslatef(0, 0, mDofs[0]->getValue());
 #endif    

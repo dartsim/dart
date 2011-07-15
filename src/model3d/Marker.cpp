@@ -24,24 +24,24 @@ namespace model3d {
     void Marker::draw(renderer::RenderInterface* _ri, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
 #if 1
 		if (!_ri) return;
-		_ri->PushName(getID());
-		if(mType==HARD) _ri->SetPenColor(Vector3d(1, 0, 0));
-		else if(mType==SOFT) _ri->SetPenColor(Vector3d(0, 1, 0));
+		_ri->pushName(getID());
+		if(mType==HARD) _ri->setPenColor(Vector3d(1, 0, 0));
+		else if(mType==SOFT) _ri->setPenColor(Vector3d(0, 1, 0));
 		else {
-			if(_useDefaultColor) _ri->SetPenColor(Vector3d(0,0,1));
-			else _ri->SetPenColor(Vector4d(_color[0],_color[1],_color[2], _color[3]));
+			if(_useDefaultColor) _ri->setPenColor(Vector3d(0,0,1));
+			else _ri->setPenColor(Vector4d(_color[0],_color[1],_color[2], _color[3]));
 		}
 		if(_offset){
-			_ri->PushMatrix();
-			_ri->Translate(mOffset);
-			_ri->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
-			_ri->PopMatrix();
+			_ri->pushMatrix();
+			_ri->translate(mOffset);
+			_ri->drawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->popMatrix();
 		}
 		else{
-			_ri->DrawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->drawEllipsoid(Vector3d(0.01, 0.01, 0.01));
 		}
 
-		_ri->PopName();
+		_ri->popName();
 #else
         glPushName(getID());
         if(mType==HARD) glColor3f(1, 0, 0);

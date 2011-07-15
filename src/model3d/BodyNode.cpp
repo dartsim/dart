@@ -148,25 +148,25 @@ namespace model3d {
     void BodyNode::draw(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
 #if 1
         if (!_RI) return;
-        _RI->PushMatrix();
+        _RI->pushMatrix();
         // render the self geometry
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
             mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
         if (mPrimitive != NULL) {
-            _RI->PushName((unsigned)mID);
-            _RI->PushMatrix();
-            _RI->Translate(mOffset);
+            _RI->pushName((unsigned)mID);
+            _RI->pushMatrix();
+            _RI->translate(mOffset);
             mPrimitive->draw(_RI, _color, _useDefaultColor);
-            _RI->PopMatrix();
-            _RI->PopName();
+            _RI->popMatrix();
+            _RI->popName();
         }
 
         // render the subtree
         for (unsigned int i = 0; i < mJointOut.size(); i++){
             mJointOut[i]->getNodeOut()->draw(_RI, _color, _useDefaultColor);
         }
-        _RI->PopMatrix();
+        _RI->popMatrix();
 #else
         glPushMatrix();
         // render the self geometry
@@ -193,7 +193,7 @@ namespace model3d {
     void BodyNode::drawHandles(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor) const {
 #if 1
         if (!_RI) return;
-        _RI->PushMatrix();
+        _RI->pushMatrix();
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
             mJointIn->getTransform(i)->applyGLTransform(_RI);
         }
@@ -205,7 +205,7 @@ namespace model3d {
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
             mJointOut[i]->getNodeOut()->drawHandles(_RI,_color, _useDefaultColor);
         }
-        _RI->PopMatrix();
+        _RI->popMatrix();
 #else
         glPushMatrix();
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
