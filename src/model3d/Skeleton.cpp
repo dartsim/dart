@@ -150,17 +150,13 @@ namespace model3d {
     }
 
     void Skeleton::setPose(const VectorXd& _pose){
-#ifdef DEBUG
         assert(_pose.size() == nDofs);
-#endif
         for(int i=0; i<nDofs; i++)
             mDofs[i]->setValue(_pose(i));
     }
 
     void Skeleton::setPose(const vector<double>& _pose){
-#ifdef DEBUG
         assert(_pose.size() == nDofs);
-#endif
         for(int i=0; i<nDofs; i++)
             mDofs[i]->setValue(_pose[i]);
     }
