@@ -1,9 +1,12 @@
 syntax: glob
-bin/CMakeFiles
-bin/CMakeCache.txt
+CMakeFiles*
+CMakeCache.txt
+cmake_install.cmake
+Makefile
 docs/
 TAGS
 .DS_Store
 bin/
+lib/
 thirdparty/
 *.orig
