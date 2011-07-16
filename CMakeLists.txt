@@ -7,20 +7,23 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 ###############################################
 # SETTING: Global settings
 INCLUDE_DIRECTORIES("src")
+
 SET(CMAKE_CXX_WARNING_LEVEL 4)
+
 if (WIN32)
   message(STATUS "Setup Visual Studio Specifig Flags")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /GL /Gy")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /GL /Gy")
-elseif (APPLE)
-elseif (UNIX AND NOT APPLE)
+#elseif (APPLE)
+#elseif (UNIX AND NOT APPLE)
+elseif (UNIX)  
   # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
 endif()
 
 ###############################################
 # User specific settings
-INCLUDE(Directories.cmake)
+INCLUDE(Directories.cmake.generic)
 
 ###############################################
 # Find important packages
