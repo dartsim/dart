@@ -3,3 +3,7 @@ bin/CMakeFiles
 bin/CMakeCache.txt
 docs/
 TAGS
+.DS_Store
+bin/
+thirdparty/
+*.orig
