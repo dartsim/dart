@@ -11,6 +11,15 @@ elseif (WIN32)
     INCLUDE_DIRECTORIES(c:/dev/external/include)
     INCLUDE_DIRECTORIES(c:/dev/boost_1_46_1)
     LINK_DIRECTORIES(c:/dev/external/lib)
+
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.1)
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/gflags-1.5/src/windows)
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/glog-0.3.1/src/windows)
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/glut-3.7.6/include)
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/ticpp)
+
+    LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
+
 elseif (APPLE)
     message(STATUS "Operating system = APPLE")
     INCLUDE_DIRECTORIES(/Users/karenliu/Research/eigen-3.0)

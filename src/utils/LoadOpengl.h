@@ -10,6 +10,7 @@
 #define UTILS_LOAD_OPENGL_H
 
 #if WIN32
+#include <cstdlib> // To disable glut::exit() function
 #include <GL/glut.h>
 #elif defined(__linux)
 #include <GL/glut.h>
