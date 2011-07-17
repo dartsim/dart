@@ -6,6 +6,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace model3d;
+#include "utils/LoadOpengl.h"
 
 void MyWindow::displayTimer(int _val)
 {

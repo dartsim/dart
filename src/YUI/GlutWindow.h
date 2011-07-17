@@ -1,7 +1,6 @@
 #ifndef _GLUTWINDOW_
 #define _GLUTWINDOW_
 
-#include "utils/LoadOpengl.h"
 #include "renderer/RenderInterface.h"
 #include <vector>
 

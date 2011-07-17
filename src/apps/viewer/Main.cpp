@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace model3d;
+#include "utils/LoadOpengl.h"
 
 int main(int argc, char* argv[])
 {

@@ -3,6 +3,7 @@
 #include "jitter.h"
 
 using namespace Eigen;
+#include "utils/LoadOpengl.h"
 
 Win3D::Win3D()
 	:GlutWindow(), mTrans(0.0,0.0,0.0), mEye(0.0,0.0,1.0), mZoom(1.0), mPersp(45.0), mRotate(false), mTranslate(false), mZooming(false)

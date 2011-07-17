@@ -1,5 +1,7 @@
 #include <iostream>
 #include "Win2D.h"
+#include "utils/LoadOpengl.h"
+
 
 Win2D::Win2D():GlutWindow()
 {
