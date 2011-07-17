@@ -23,7 +23,7 @@ endif()
 
 ###############################################
 # User specific settings
-INCLUDE(Directories.cmake.generic)
+INCLUDE(Directories.cmake)
 
 ###############################################
 # Find important packages
