@@ -3,6 +3,7 @@
 
 #include "YUI/Win3D.h"
 #include "model3d/Skeleton.h"
+#include "utils/LoadOpengl.h";
 
 class MyWindow : public Win3D {
 public:

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <iostream>
 using namespace std;
+#include "utils/LoadOpengl.h"
 #include "GlutWindow.h"
 #include "renderer/OpenGLRenderInterface.h"
 

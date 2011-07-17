@@ -1,20 +1,15 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "model3d", "..\..\model3d\model3d.vcproj", "{78429FB6-D4A8-40DB-B2A8-8307477E71DD}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "model3d", "..\..\model3d\model3d.vcxproj", "{78429FB6-D4A8-40DB-B2A8-8307477E71DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "YUI", "..\..\YUI\YUI.vcproj", "{7779378B-3237-413F-941A-8FCDBA31AC96}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "YUI", "..\..\YUI\YUI.vcxproj", "{7779378B-3237-413F-941A-8FCDBA31AC96}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "..\..\utils\Utils.vcproj", "{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "..\..\utils\Utils.vcxproj", "{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "loadModel", "loadModel.vcproj", "{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
-	ProjectSection(ProjectDependencies) = postProject
-		{7779378B-3237-413F-941A-8FCDBA31AC96} = {7779378B-3237-413F-941A-8FCDBA31AC96}
-		{78429FB6-D4A8-40DB-B2A8-8307477E71DD} = {78429FB6-D4A8-40DB-B2A8-8307477E71DD}
-		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6} = {D45EC2C1-8F7B-4894-82C9-5045607F9ED6}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "loadModel", "loadModel.vcxproj", "{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderer", "..\..\renderer\renderer.vcproj", "{128762C5-DAA9-467A-8EA4-26719FA7E956}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "renderer", "..\..\renderer\renderer.vcxproj", "{128762C5-DAA9-467A-8EA4-26719FA7E956}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
