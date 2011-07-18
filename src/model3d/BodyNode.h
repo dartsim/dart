@@ -56,8 +56,8 @@ namespace model3d {
         int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
         int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
 
-        void draw(renderer::RenderInterface* _RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
-        void drawHandles(renderer::RenderInterface* _RI = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
+        void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
 
         char* getName() { return mName; }
 

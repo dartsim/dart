@@ -131,6 +131,7 @@ namespace model3d {
             mDependantDofs.push_back(dofID);
         }
 
+#if _DEBUG
         for (unsigned int i = 0; i < mDependantDofs.size() - 1; i++) {
             int now = mDependantDofs[i];
             int next = mDependantDofs[i + 1];
@@ -139,85 +140,86 @@ namespace model3d {
                 exit(0);
             }
         }
+#endif
     }
 
     bool BodyNode::dependsOn(int _dofIndex) const {
         return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
     }
         
-    void BodyNode::draw(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
+    void BodyNode::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
 #if 1
-        if (!_RI) return;
-        _RI->pushMatrix();
+        if (!_ri) return;
+        _ri->pushMatrix();
         // render the self geometry
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_RI);
+            mJointIn->getTransform(i)->applyGLTransform(_ri);
         }
         if (mPrimitive != NULL) {
-            _RI->pushName((unsigned)mID);
-            _RI->pushMatrix();
-            _RI->translate(mOffset);
-            mPrimitive->draw(_RI, _color, _useDefaultColor);
-            _RI->popMatrix();
-            _RI->popName();
+            _ri->pushName((unsigned)mID);
+            _ri->pushMatrix();
+            _ri->translate(mOffset);
+            mPrimitive->draw(_ri, _color, _useDefaultColor);
+            _ri->popMatrix();
+            _ri->popName();
         }
 
         // render the subtree
         for (unsigned int i = 0; i < mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(_RI, _color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->draw(_ri, _color, _useDefaultColor);
         }
-        _RI->popMatrix();
+        _ri->popMatrix();
 #else
         glPushMatrix();
         // render the self geometry
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_RI);
+            mJointIn->getTransform(i)->applyGLTransform(_ri);
         }
         if (mPrimitive != NULL) {
             glPushName((unsigned)mID);
             glPushMatrix();
             glTranslatef(mOffset[0],mOffset[1],mOffset[2]);
-            mPrimitive->draw(_RI, _color, _useDefaultColor);
+            mPrimitive->draw(_ri, _color, _useDefaultColor);
             glPopMatrix();
             glPopName();
         }
 
         // render the subtree
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->draw(_RI, _color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->draw(_ri, _color, _useDefaultColor);
         }
         glPopMatrix();
 #endif
     }
 
-    void BodyNode::drawHandles(renderer::RenderInterface* _RI, const Vector4d& _color, bool _useDefaultColor) const {
+    void BodyNode::drawHandles(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
 #if 1
-        if (!_RI) return;
-        _RI->pushMatrix();
+        if (!_ri) return;
+        _ri->pushMatrix();
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_RI);
+            mJointIn->getTransform(i)->applyGLTransform(_ri);
         }
 
         // render the corresponding mHandless
         for (unsigned int i = 0; i < mHandles.size(); i++) {
-            mHandles[i]->draw(_RI, true, _color, _useDefaultColor);
+            mHandles[i]->draw(_ri, true, _color, _useDefaultColor);
         }
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->drawHandles(_RI,_color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->drawHandles(_ri,_color, _useDefaultColor);
         }
-        _RI->popMatrix();
+        _ri->popMatrix();
 #else
         glPushMatrix();
         for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_RI);
+            mJointIn->getTransform(i)->applyGLTransform(_ri);
         }
 
         // render the corresponding mHandless
         for (unsigned int i = 0; i < mHandles.size(); i++) {
-            mHandles[i]->draw(_RI, true, _color, _useDefaultColor);
+            mHandles[i]->draw(_ri, true, _color, _useDefaultColor);
         }
         for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->drawHandles(_RI, _color, _useDefaultColor);
+            mJointOut[i]->getNodeOut()->drawHandles(_ri, _color, _useDefaultColor);
         }
         glPopMatrix();
 #endif
