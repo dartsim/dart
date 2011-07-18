@@ -2,7 +2,7 @@
 #define RENDERINTERFACE_H
 
 #include <vector>
-#include "light.h"
+#include "Light.h"
 #include "Camera.h"
 
 namespace renderer{

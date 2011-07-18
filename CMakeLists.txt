@@ -21,9 +21,14 @@ elseif (UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
 endif()
 
+
 ###############################################
 # User specific settings
 INCLUDE(Directories.cmake)
+
+FIND_PATH( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
+message(STATUS "INCLUDES = ${CMAKE_INCLUDE_PATH}")
+message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 
 ###############################################
 # Find important packages
