@@ -10,3 +10,12 @@ bin/
 lib/
 thirdparty/
 *.orig
+*.obj
+*.idb
+*.pdb
+*.ncb
+*.suo
+*.htm
+*.user
+*.dep
+*.manifest
