@@ -25,9 +25,12 @@ int main(int argc, char* argv[]) {
     // Define logging flag
     FLAGS_alsologtostderr = true;
     FLAGS_minloglevel = INFO;
-    FLAGS_v = 0;
+    FLAGS_v = 1;
 
     LOG(INFO) << "simpleik begins";
+
+    CHECK(1 + 2 == 3) << "more explanation";
+
 
     IKProblem prob;
 
