@@ -1,5 +1,13 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author     Jie Tan
+  Date      07/18/2011
+*/
+
+#ifndef RENDERER_CAMERA_H
+#define RENDERER_CAMERA_H
 
 namespace renderer {
 
@@ -16,19 +24,19 @@ namespace renderer {
     public:
         Camera() {}
         virtual ~Camera() {};
-        virtual void set (const Vector3d& Eye, const Vector3d& look, const Vector3d& up);
-        virtual void slide (double delX, double delY, double delZ, bool bLocal = false);
-        virtual void setFrustum (float vAng, float asp, float nearD, float farD);
-        virtual void setOrtho(float width, float height, float nearD, float farD);
+        virtual void set(const Vector3d& _eye, const Vector3d& _look, const Vector3d& _up);
+        virtual void slide(double _delX, double _delY, double _delZ, bool _bLocal = false);
+        virtual void setFrustum(float _vAng, float _asp, float _nearD, float _farD);
+        virtual void setOrtho(float _width, float _height, float _nearD, float _farD);
 
 
-        virtual void roll (float angle);
-        virtual void pitch (float angle);
-        virtual void yaw (float angle);
-        virtual void localRotate (float angle, AXIS axis);
-        virtual void globalRotate (float angle, AXIS axis);
+        virtual void roll(float _angle);
+        virtual void pitch(float _angle);
+        virtual void yaw(float _angle);
+        virtual void localRotate(float _angle, AXIS _axis);
+        virtual void globalRotate(float _angle, AXIS _axis);
 
-        virtual Vector3d getEye (void) const {
+        virtual Vector3d getEye(void) const {
         }
         virtual Vector3d getLookAtDir(void) const {
         }
@@ -59,7 +67,7 @@ namespace renderer {
         float mViewAngle, mAspect, mNearDist, mFarDist, mWidth, mHeight;
         bool mIsOrthognal;
     };
-}
+} // namespace renderer
 
 
-#endif
+#endif // #ifndef RENDERER_CAMERA_H
