@@ -25,12 +25,8 @@ namespace model3d {
     }
 
 	void TrfmRotateEulerX::applyGLTransform(renderer::RenderInterface* _ri) const{
-#if 1
 		if (_ri)
 			_ri->rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
-#else
-        glRotatef(mDofs[0]->getValue()*180/M_PI, 1.0, 0.0, 0.0);
-#endif
     }
 
     void TrfmRotateEulerX::evalTransform(){
@@ -95,12 +91,8 @@ namespace model3d {
     }
 
 	void TrfmRotateEulerY::applyGLTransform(renderer::RenderInterface* _ri) const{
-#if 1
 		if (_ri)
 			_ri->rotate(Vector3d(0.0, 1.0, 0.0), mDofs[0]->getValue()*180/M_PI);
-#else
-		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 1.0, 0.0);
-#endif
       
     }
 
@@ -166,12 +158,8 @@ namespace model3d {
     }
 
 	void TrfmRotateEulerZ::applyGLTransform(renderer::RenderInterface* _ri) const{
-#if 1
 		if (_ri)
-			_ri->rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI);
-#else
-		glRotatef(mDofs[0]->getValue()*180/M_PI, 0.0, 0.0, 1.0);
-#endif   
+			_ri->rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI); 
 	}
 
     void TrfmRotateEulerZ::evalTransform(){

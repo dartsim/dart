@@ -22,7 +22,6 @@ namespace model3d {
     }
 
     void Marker::draw(renderer::RenderInterface* _ri, bool _offset, const Vector4d& _color, bool _useDefaultColor) const {
-#if 1
 		if (!_ri) return;
 		_ri->pushName(getID());
 		if(mType==HARD) _ri->setPenColor(Vector3d(1, 0, 0));
@@ -42,26 +41,7 @@ namespace model3d {
 		}
 
 		_ri->popName();
-#else
-        glPushName(getID());
-        if(mType==HARD) glColor3f(1, 0, 0);
-        else if(mType==SOFT) glColor3f(0, 1, 0);
-        else{
-            if(_useDefaultColor) glColor3f(0,0,1);
-            else glColor4d(_color[0],_color[1],_color[2],_color[3]);
-        }
 
-        if(_offset){
-            glPushMatrix();
-            glTranslatef(mOffset[0], mOffset[1], mOffset[2]);
-            glutSolidSphere(0.01,8,8);
-            glPopMatrix();
-        }
-        else{
-            glutSolidSphere(0.01,8,8);
-        }
-        glPopName();
-#endif
     }
 
     Vector3d Marker::getWorldCoords() {

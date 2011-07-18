@@ -29,7 +29,6 @@ namespace model3d {
     }
 
 	void PrimitiveEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-#if 1
 		if (!_ri)
 			return;
 		if (!_useDefaultColor)
@@ -39,16 +38,6 @@ namespace model3d {
 		_ri->pushMatrix();
 		_ri->drawEllipsoid(mDim);
 		_ri->popMatrix();
-#else
-        if (_useDefaultColor)
-            glColor4d( mColor[0], mColor[1], mColor[2], 1.0 );
-        else
-            glColor4d( _color[0], _color[1], _color[2], _color[3] );
-        glPushMatrix();
-        glScalef(mDim(0), mDim(1), mDim(2));
-        glutSolidSphere(0.5, 16, 16);
-        glPopMatrix();
-#endif
     }
 
     void PrimitiveEllipsoid::computeMassTensor(){
