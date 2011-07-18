@@ -31,12 +31,8 @@ namespace model3d {
     }
 
     void TrfmTranslate::applyGLTransform(renderer::RenderInterface* _ri) const{
-#if 1
 		if (_ri)
 			_ri->translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
-#else
-        glTranslatef(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-#endif
     }
 
     void TrfmTranslate::evalTransform(){
@@ -117,12 +113,8 @@ namespace model3d {
     }
 
     void TrfmTranslateX::applyGLTransform(renderer::RenderInterface* _ri) const{
-#if 1
 		if (_ri)
-			_ri->translate(Vector3d(mDofs[0]->getValue(), 0, 0));
-#else
-		glTranslatef(mDofs[0]->getValue(), 0, 0);
-#endif    
+			_ri->translate(Vector3d(mDofs[0]->getValue(), 0, 0)); 
 	}
 
     void TrfmTranslateX::evalTransform(){
@@ -193,12 +185,8 @@ namespace model3d {
     }
 
     void TrfmTranslateY::applyGLTransform(renderer::RenderInterface* _ri) const {
-#if 1
 		if (_ri)
 			_ri->translate(Vector3d(0, mDofs[0]->getValue(), 0));
-#else
-		glTranslatef(0, mDofs[0]->getValue(), 0);
-#endif
     }
 
     void TrfmTranslateY::evalTransform(){
@@ -270,12 +258,8 @@ namespace model3d {
     }
 
     void TrfmTranslateZ::applyGLTransform(renderer::RenderInterface* _ri) const {
-#if 1
 		if (_ri)
 			_ri->translate(Vector3d(0, 0, mDofs[0]->getValue()));
-#else
-		glTranslatef(0, 0, mDofs[0]->getValue());
-#endif    
 	}
 
     void TrfmTranslateZ::evalTransform(){
