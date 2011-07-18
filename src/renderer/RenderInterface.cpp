@@ -1,93 +1,128 @@
+/*
+  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
+
+  Author     Jie Tan
+  Date      07/18/2011
+*/
+
 #include "RenderInterface.h"
 
 namespace renderer {
 	void RenderInterface::initialize()
 	{
 	}
+
 	void RenderInterface::destroy()
 	{
 	}
 
-	void RenderInterface::setViewport(int X,int Y,int Width,int Height)
-	{
-	}
-	void RenderInterface::getViewport(int& X, int& Y, int &Width, int& Height) const
+	void RenderInterface::setViewport(int _x,int _y,int _width,int _height)
 	{
 	}
 
-	void RenderInterface::clear(const Vector3d& color)
+	void RenderInterface::getViewport(int& _x, int& _y,int& _width,int& _height) const
+	{
+	}
+
+	void RenderInterface::clear(const Vector3d& _color)
 	{
 	}
 
 	void RenderInterface::setDefaultLight()
 	{
 	}
-	void RenderInterface::addLight(Light* light)
+
+	void RenderInterface::addLight(Light *_light)
 	{
-		mLightList.push_back(light);
+		mLightList.push_back(_light);
 	}
+
 	void RenderInterface::eraseAllLights()
 	{
 		mLightList.clear();
 	}
+
 	void RenderInterface::turnLightsOff()
 	{
 	}
+
 	void RenderInterface::turnLightsOn()
 	{
 	}
-	void RenderInterface::setPenColor(const Vector4d& col)
-	{
-	}
-	void RenderInterface::setPenColor(const Vector3d& col)
-	{
-	}
-	void RenderInterface::drawCube(const Vector3d& size)
-	{
-	}
-	void RenderInterface::drawEllipsoid(const Vector3d& size)
-	{
-	}
-	void RenderInterface::pushMatrix()
-	{
-	}
-	void RenderInterface::popMatrix()
-	{
-	}
-	void RenderInterface::pushName(int id)
-	{
-	}
-	void RenderInterface::popName()
-	{
-	}
-	void RenderInterface::translate(const Vector3d& offset)
-	{
-	}
-	void RenderInterface::scale(const Vector3d& scale)
-	{
-	}
-	void RenderInterface::rotate(const Vector3d& axis, double rad)
-	{
-	}
-	void RenderInterface::saveToImage(const char * filename, DecoBufferType buffType)
+
+	void RenderInterface::setMaterial(const Vector3d& _diffuse, const Vector3d& _specular, double _cosinePow)
 	{
 
 	}
-	void RenderInterface::readFrameBuffer(DecoBufferType buffType, DecoColorChannel ch, void* pixels)
+
+	void RenderInterface::getMaterial(Vector3d& _diffuse, Vector3d& _specular, double& cosinePow) const
 	{
 
 	}
-	void RenderInterface::setMaterial(const Vector3d& diffuse, const Vector3d& specular, double cosinePow)
-	{
 
-	}
-	void RenderInterface::getMaterial(Vector3d& diffuse, Vector3d& specular, double& cosinePow) const
-	{
-
-	}
 	void RenderInterface::setDefaultMaterial()
 	{
 
 	}
 
-}
+	void RenderInterface::pushMatrix()
+	{
+	}
+
+	void RenderInterface::popMatrix()
+	{
+	}
+
+	void RenderInterface::pushName(int _id)
+	{
+	}
+
+	void RenderInterface::popName()
+	{
+	}
+
+	void RenderInterface::translate(const Vector3d& _offset)
+	{
+	}
+
+	void RenderInterface::rotate(const Vector3d& _axis, double _rad)
+	{
+	}
+
+	void RenderInterface::scale(const Vector3d& _scale)
+	{
+	}
+
+	void RenderInterface::drawEllipsoid(const Vector3d& _size)
+	{
+	}
+
+	void RenderInterface::drawCube(const Vector3d& _size)
+	{
+	}
+
+	void RenderInterface::setPenColor(const Vector4d& _col)
+	{
+	}
+
+	void RenderInterface::setPenColor(const Vector3d& _col)
+	{
+	}
+
+
+	void RenderInterface::saveToImage(const char *_filename, DecoBufferType _buffType)
+	{
+
+	}
+
+	void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels)
+	{
+
+	}
+
+	Camera*  RenderInterface::getCamera(){
+		return mCamera;
+	}
+
+} // namespace renderer
