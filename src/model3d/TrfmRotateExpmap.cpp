@@ -104,11 +104,11 @@ namespace model3d {
         if(!isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
 
-        
+
         // compute derivative of R wrt each qi
         vector<Matrix3d> dR_dq;
         dR_dq.resize(4);
-// TODO need to rewrite
+        // TODO need to rewrite
         for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
         // derivative wrt which dof 
@@ -150,7 +150,7 @@ namespace model3d {
 
     double TrfmRotateExpMap::get_dq_dv_dv(int i, int j, int k, double theta, Vector3d vhat){
         double dq_dv_dv=0;
-	
+
         double cos_half = cos(0.5*theta);
         double sin_half = sin(0.5*theta);
         double sinc_theta_half = (sin_half/theta);
@@ -189,7 +189,7 @@ namespace model3d {
         Vector3d vhat = Vector3d::Zero();
         if(!isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
-	
+
         // derivative wrt which mDofs
         int j=-1, k=-1;
         for(unsigned int i=0; i<mDofs.size(); i++) {
@@ -202,8 +202,8 @@ namespace model3d {
         // compute derivative of R wrt each qi
         vector<Matrix3d> dR_dq;
         dR_dq.resize(4);
-// TODO need to rewrite
-//  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+        // TODO need to rewrite
+        //  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
         // compute derivative of R wrt each qi and ql
         vector<vector<Matrix3d> > dR_dq_dq;
@@ -279,12 +279,12 @@ namespace model3d {
     }
 
     void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{
-		Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-		double theta = v.norm();
-		Vector3d vhat = Vector3d::Zero();
-		if(!isZero(theta)) {
-			vhat= v/theta;
-			_ri->rotate(vhat, theta * 180 / M_PI);
+        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+        double theta = v.norm();
+        Vector3d vhat = Vector3d::Zero();
+        if(!isZero(theta)) {
+            vhat= v/theta;
+            _ri->rotate(vhat, theta * 180 / M_PI);
         }
 
     }
