@@ -16,6 +16,7 @@ using namespace Eigen;
 
 namespace model3d {
     Joint::Joint(BodyNode *_bIn, BodyNode *_bOut){
+		mType = UNKNOWN;
         mModelIndex=-1;
         mNodeIn=_bIn;
         mNodeOut=_bOut;
@@ -94,12 +95,12 @@ namespace model3d {
         }
     }
 
-    Matrix4d Joint::getDeriv2(const Dof* _q1, const Dof* _q2){
+    Matrix4d Joint::getSecondDeriv(const Dof* _q1, const Dof* _q2){
         Matrix4d m = Matrix4d::Identity();
         for(int i=mTransforms.size()-1; i>=0; i--){
             Transformation* transf = mTransforms[i];
             if(transf->isPresent(_q1) && transf->isPresent(_q2)){
-                transf->applyDeriv2(_q1, _q2, m);
+                transf->applySecondDeriv(_q1, _q2, m);
             }else if(transf->isPresent(_q1)){
                 transf->applyDeriv(_q1, m);
             }else if(transf->isPresent(_q2)){
@@ -111,11 +112,11 @@ namespace model3d {
         return m;
     }
 
-    void Joint::applyDeriv2(const Dof* _q1, const Dof* _q2, Vector3d& _v){
+    void Joint::applySecondDeriv(const Dof* _q1, const Dof* _q2, Vector3d& _v){
         for(int i=mTransforms.size()-1; i>=0; i--){
             Transformation* transf = mTransforms[i];
             if(transf->isPresent(_q1) && transf->isPresent(_q2)){
-                transf->applyDeriv2(_q1, _q2, _v);
+                transf->applySecondDeriv(_q1, _q2, _v);
             }else if(transf->isPresent(_q1)){
                 transf->applyDeriv(_q1, _v);
             }else if(transf->isPresent(_q2)){
@@ -126,11 +127,11 @@ namespace model3d {
         }
     }
 
-    void Joint::applyDeriv2(const Dof* _q1, const Dof* _q2, Matrix4d& _m){
+    void Joint::applySecondDeriv(const Dof* _q1, const Dof* _q2, Matrix4d& _m){
         for(int i=mTransforms.size()-1; i>=0; i--){
             Transformation* transf = mTransforms[i];
             if(transf->isPresent(_q1) && transf->isPresent(_q2)){
-                transf->applyDeriv2(_q1, _q2, _m);
+                transf->applySecondDeriv(_q1, _q2, _m);
             }else if(transf->isPresent(_q1)){
                 transf->applyDeriv(_q1, _m);
             }else if(transf->isPresent(_q2)){

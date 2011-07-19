@@ -20,7 +20,7 @@ namespace model3d {
 		void applyGLTransform(renderer::RenderInterface* _ri) const;
         void evalTransform();
         Eigen::Matrix4d getDeriv(const Dof *);
-        Eigen::Matrix4d getDeriv2(const Dof *, const Dof *);
+        Eigen::Matrix4d getSecondDeriv(const Dof *, const Dof *);
     };
 
 } // namespace model3d

@@ -183,7 +183,7 @@ namespace model3d {
         return dq_dv_dv;
     }
 
-    Matrix4d TrfmRotateExpMap::getDeriv2(const Dof *q1, const Dof *q2){
+    Matrix4d TrfmRotateExpMap::getSecondDeriv(const Dof *q1, const Dof *q2){
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta = v.norm();
         Vector3d vhat = Vector3d::Zero();

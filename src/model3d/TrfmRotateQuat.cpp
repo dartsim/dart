@@ -66,7 +66,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateQuat::getDeriv2(const Dof *d1, const Dof *d2){
+    Matrix4d TrfmRotateQuat::getSecondDeriv(const Dof *d1, const Dof *d2){
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
         q.normalize();
 	

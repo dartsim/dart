@@ -21,7 +21,8 @@ namespace model3d {
 
     class Joint {
     public:
-        enum Type {
+        enum JointType {
+			UNKNOWN,
             FREE,
             BALLEULER,
             BALLQUAT,
@@ -44,9 +45,9 @@ namespace model3d {
         void applyDeriv(const Dof* _q, Eigen::Vector3d& _v); ///< apply the derivative w.r.t. _q for vector _v. Note: if _q doesn't belong to this joint, applyTransform(_v) is used in effect.
         void applyDeriv(const Dof* _q, Eigen::Matrix4d& _m); ///< apply the derivative w.r.t. _q for matrix _m. Note: if _q doesn't belong to this joint, applyTransform(_m) is used in effect.
 	
-        Eigen::Matrix4d getDeriv2(const Dof* _q1, const Dof* _q2); ///< returns the second derivative of the local transformation w.r.t. _q1 and _q2
-        void applyDeriv2(const Dof* _q1, const Dof* _q2, Eigen::Vector3d& _v); ///< apply the second derivative to _v
-        void applyDeriv2(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m); ///< apply the second derivative to _m
+        Eigen::Matrix4d getSecondDeriv(const Dof* _q1, const Dof* _q2); ///< returns the second derivative of the local transformation w.r.t. _q1 and _q2
+        void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Vector3d& _v); ///< apply the second derivative to _v
+        void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m); ///< apply the second derivative to _m
 
         void addTransform(Transformation *_t, bool _isVariable = true); ///< add _t to mTransforms; _isVariable indicates whether this transformation is a degree of freedom
         int getNumTransforms() const {return mTransforms.size();}
@@ -61,10 +62,13 @@ namespace model3d {
         void setModelIndex(int _idx){mModelIndex= _idx;}
         int getModelIndex() const {return mModelIndex;}
 
+		JointType getJointType(){return mType;}
+
     protected:
         BodyNode *mNodeIn; ///< parent node
         BodyNode *mNodeOut; ///< child node
         int mModelIndex;	///< unique dof id in model
+		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as UNKNOWN
 
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeOut
         std::vector<Dof*> mDofs;	///< associated dofs

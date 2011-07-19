@@ -54,7 +54,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerX::getDeriv2(const Dof *q1, const Dof *q2){
+    Matrix4d TrfmRotateEulerX::getSecondDeriv(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
@@ -121,7 +121,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerY::getDeriv2(const Dof *q1, const Dof *q2){
+    Matrix4d TrfmRotateEulerY::getSecondDeriv(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
@@ -187,7 +187,7 @@ namespace model3d {
         return ret;
     }
 
-    Matrix4d TrfmRotateEulerZ::getDeriv2(const Dof *q1, const Dof *q2){
+    Matrix4d TrfmRotateEulerZ::getSecondDeriv(const Dof *q1, const Dof *q2){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
