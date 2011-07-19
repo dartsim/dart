@@ -203,7 +203,8 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     else VLOG(1)<<"parent: NULL\n";
 
     // make bodylink out of current segment
-    BodyNode* blink = new BodyNode((char *)sname.c_str());
+    // BodyNode* blink = new BodyNode((char *)sname.c_str());
+    BodyNode* blink = _skel->createBodyNode( sname.c_str() );
 
     // make a joint
     Joint* jt = new Joint(_parent, blink); 
