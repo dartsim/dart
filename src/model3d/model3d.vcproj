@@ -256,7 +256,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoSkel.h"
+				RelativePath=".\FileInfoSkel.hpp"
 				>
 			</File>
 			<File
