@@ -1,4 +1,5 @@
-#include "model3d/FileInfoSkel.h"
+#include "model3d/Skeleton.h"
+#include "model3d/FileInfoSkel.hpp"
 #include "model3d/FileInfoDof.h"
 
 #include "MyWindow.h"
@@ -20,8 +21,9 @@ int main(int argc, char* argv[])
         doffile = argv[2];
     }
 	
-    FileInfoSkel model;
-    model.loadFile(modelfile,FileInfoSkel::SKEL);
+    FileInfoSkel<Skeleton> model;
+    model.loadFile(modelfile, model3d::SKEL);
+    // model.getSkel();
 
     FileInfoDof motion(model.getSkel());
     motion.loadFile(doffile);

@@ -37,6 +37,10 @@ namespace model3d {
         mHandles.clear();
     }
 
+    BodyNode* Skeleton::createBodyNode(const char* const name) {
+        return new BodyNode(const_cast<char*>(name));
+    }
+
     void Skeleton::addHandle(Marker *_h) {
         mHandles.push_back(_h);
         _h->setSkelIndex(mHandles.size()-1);

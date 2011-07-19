@@ -6,7 +6,7 @@ using namespace std;
 #include <glog/logging.h>
 using namespace google;
 
-#include "model3d/FileInfoSkel.h"
+#include "model3d/FileInfoSkel.hpp"
 #include "model3d/Skeleton.h"
 #include "model3d/BodyNode.h"
 #include "model3d/Marker.h"
@@ -30,8 +30,8 @@ namespace optimizer {
     }
 
     void IKProblem::initProblem() {
-        mFileInfoSkel = new FileInfoSkel();
-        bool result = mFileInfoSkel->loadFile("./SehoonVSK3.vsk", FileInfoSkel::VSK);
+        mFileInfoSkel = new FileInfoSkel<Skeleton>();
+        bool result = mFileInfoSkel->loadFile("./SehoonVSK3.vsk", model3d::VSK);
         CHECK(result);
 
         // Add variables

@@ -31,7 +31,8 @@ namespace model3d {
 
         Skeleton();
         virtual ~Skeleton();
-	
+
+        virtual BodyNode* createBodyNode(const char* const name = NULL);
         void addHandle(Marker *h);
         void addNode(BodyNode *b);
         void addJoint(Joint *_j);
