@@ -14,7 +14,7 @@ using namespace Eigen;
 namespace model3d {
 ////////////////////////////////////////////////////////////////////////////////
 // rotation about X axis
-    TrfmRotateEulerX::TrfmRotateEulerX(Dof *q, char *_name){
+    TrfmRotateEulerX::TrfmRotateEulerX(Dof *q, const char *_name){
         mDofs.push_back(q);
         q->setTrans(this);
         mType = Transformation::T_ROTATEX;
@@ -80,7 +80,7 @@ namespace model3d {
 
 ////////////////////////////////////////////////////////////////////////////////
 // rotation about Y axis
-    TrfmRotateEulerY::TrfmRotateEulerY(Dof *q, char *_name){
+    TrfmRotateEulerY::TrfmRotateEulerY(Dof *q, const char *_name){
         mDofs.push_back(q);
         q->setTrans(this);
         mType = Transformation::T_ROTATEY;
@@ -147,7 +147,7 @@ namespace model3d {
 
 ////////////////////////////////////////////////////////////////////////////////
 // rotation about Z axis
-    TrfmRotateEulerZ::TrfmRotateEulerZ(Dof *q, char* _name){
+    TrfmRotateEulerZ::TrfmRotateEulerZ(Dof *q, const char* _name){
         mDofs.push_back(q);
         q->setTrans(this);
         mType = Transformation::T_ROTATEZ;

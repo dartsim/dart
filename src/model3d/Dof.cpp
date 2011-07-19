@@ -21,7 +21,7 @@ namespace model3d {
         init(_v, "dof", -inf , inf );
     }
 
-    Dof::Dof(double _v, char * _name){
+    Dof::Dof(double _v, const char * _name){
         init(_v, _name, -inf , inf );
     }
 
@@ -29,7 +29,7 @@ namespace model3d {
         init(_v, "dof", _min, _max);
     }
 
-    Dof::Dof(double _v, char * _name, double _min, double _max){
+    Dof::Dof(double _v, const char * _name, double _min, double _max){
         init(_v, _name, _min, _max);
     }
 

@@ -240,7 +240,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
                 stringstream dofNameBuf;
                 dofNameBuf << sname << "_" << i;
                 string dofName = dofNameBuf.str();
-                char* pDofName = const_cast<char*>(dofName.c_str());
+                const char* pDofName = dofName.c_str();
                 dofs[i] = new Dof(pos2[i], pDofName);
             }
             TrfmTranslate* tele = new TrfmTranslate(dofs[0],dofs[1],dofs[2]);
@@ -420,13 +420,13 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     string tname1_2 = tname1 + "Free2";
     vector<Dof*> dofs1;
     dofs1.resize(3);
-    dofs1[0] = new Dof(0.0, const_cast<char*>(tname1_0.c_str()), -100.0, 100.0);
-    dofs1[1] = new Dof(0.0, const_cast<char*>(tname1_1.c_str()), -100.0, 100.0);
-    dofs1[2] = new Dof(0.0, const_cast<char*>(tname1_2.c_str()), -100.0, 100.0);
+    dofs1[0] = new Dof(0.0, tname1_0.c_str(), -100.0, 100.0);
+    dofs1[1] = new Dof(0.0, tname1_1.c_str(), -100.0, 100.0);
+    dofs1[2] = new Dof(0.0, tname1_2.c_str(), -100.0, 100.0);
     // dofs1[1] = new Dof(0.0, -100.0, 100.0);
     // dofs1[2] = new Dof(0.0, -100.0, 100.0);
     // add transformation to joint
-    TrfmTranslate* trans = new TrfmTranslate(dofs1[0], dofs1[1], dofs1[2], (char*)tname1.c_str()); 
+    TrfmTranslate* trans = new TrfmTranslate(dofs1[0], dofs1[1], dofs1[2], tname1.c_str()); 
     _jt->addTransform(trans);	
     // add transformation to model because it's a variable dof
     _skel->addTransform(trans);
@@ -437,14 +437,14 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     string tname2_2 = tname2 + "Free5";
     vector<Dof*> dofs2;
     dofs2.resize(3);
-    dofs2[0] = new Dof(0.0, const_cast<char*>(tname2_0.c_str()), -3.1415, 3.1415);
-    dofs2[1] = new Dof(0.0, const_cast<char*>(tname2_1.c_str()), -3.1415, 3.1415);
-    dofs2[2] = new Dof(0.0, const_cast<char*>(tname2_2.c_str()), -3.1415, 3.1415);
+    dofs2[0] = new Dof(0.0, tname2_0.c_str(), -3.1415, 3.1415);
+    dofs2[1] = new Dof(0.0, tname2_1.c_str(), -3.1415, 3.1415);
+    dofs2[2] = new Dof(0.0, tname2_2.c_str(), -3.1415, 3.1415);
     // dofs2[0] = new Dof(0.0, -3.1415, 3.1415);
     // dofs2[1] = new Dof(0.0, -3.1415, 3.1415);
     // dofs2[2] = new Dof(0.0, -3.1415, 3.1415);
     // add transformation to joint
-    TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], (char*)tname2.c_str());
+    TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], tname2.c_str());
     _jt->addTransform(expmap);	
     // add transformation to model because it's a variable dof
     _skel->addTransform(expmap);
@@ -462,15 +462,15 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d or
     string tname2_2 = tname2 + "Ball2";
     vector<Dof*> dofs2;
     dofs2.resize(3);
-    dofs2[0] = new Dof(orient[0], const_cast<char*>(tname2_0.c_str()), -3.1415, 3.1415);
-    dofs2[1] = new Dof(orient[1], const_cast<char*>(tname2_1.c_str()), -3.1415, 3.1415);
-    dofs2[2] = new Dof(orient[2], const_cast<char*>(tname2_2.c_str()), -3.1415, 3.1415);
+    dofs2[0] = new Dof(orient[0], tname2_0.c_str(), -3.1415, 3.1415);
+    dofs2[1] = new Dof(orient[1], tname2_1.c_str(), -3.1415, 3.1415);
+    dofs2[2] = new Dof(orient[2], tname2_2.c_str(), -3.1415, 3.1415);
 
   
     // dofs2[1] = new Dof(0.0, -3.1415, 3.1415);
     // dofs2[2] = new Dof(0.0, -3.1415, 3.1415);
     // add transformation to joint
-    TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], (char*)tname2.c_str());
+    TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], tname2.c_str());
     _jt->addTransform(expmap);	
     // add transformation to model because it's a variable dof
     _skel->addTransform(expmap);
@@ -490,9 +490,9 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 
     string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
     string tname2_1 = tname2 + "Hardy0";
-    char* pTname1 = const_cast<char*>(tname2_1.c_str());
+    const char* pTname1 = tname2_1.c_str();
     string tname2_2 = tname2 + "Hardy1";
-    char* pTname2 = const_cast<char*>(tname2_2.c_str());
+    const char* pTname2 = tname2_2.c_str();
 
 
     // Use Tokenize
@@ -539,7 +539,7 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 
     string tname = string(_jt->getNodeOut()->getName()) + "_a";
     tname += "Hinge0";
-    char* pTname = const_cast<char*>(tname.c_str());
+    const char* pTname = tname.c_str();
 
     string axisxyz = _je->GetAttribute("AXIS");
     vector<string> tokens;
@@ -618,7 +618,7 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
         RotatePoint(qr, lpos2);
     }
 
-    Marker* m = new Marker((char*)mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
+    Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
     _skel->addHandle(m);
     VLOG(1)<<"marker: "<<mname<<" ";
     VLOG(1)<<"segment: "<<sname<<" ";

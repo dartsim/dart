@@ -15,7 +15,7 @@
 namespace model3d {
     class TrfmTranslate : public Transformation {
     public:
-        TrfmTranslate(Dof *x, Dof *y, Dof *z, char *_name = NULL);
+        TrfmTranslate(Dof *x, Dof *y, Dof *z, const char *_name = NULL);
 	
         Eigen::Matrix4d getInvTransform();
         void applyTransform(Eigen::Vector3d&);
@@ -37,7 +37,7 @@ namespace model3d {
 
     class TrfmTranslateX : public Transformation {
     public:
-        TrfmTranslateX(Dof *x, char *_name = NULL);
+        TrfmTranslateX(Dof *x, const char *_name = NULL);
 	
         Eigen::Matrix4d getInvTransform();
         void applyTransform(Eigen::Vector3d&);
@@ -59,7 +59,7 @@ namespace model3d {
 
     class TrfmTranslateY : public Transformation {
     public:
-        TrfmTranslateY(Dof *y, char *_name = NULL);
+        TrfmTranslateY(Dof *y, const char *_name = NULL);
 	
         Eigen::Matrix4d getInvTransform();
         void applyTransform(Eigen::Vector3d&);
@@ -81,7 +81,7 @@ namespace model3d {
 
     class TrfmTranslateZ : public Transformation {
     public:
-        TrfmTranslateZ(Dof *z, char *_name = NULL);
+        TrfmTranslateZ(Dof *z, const char *_name = NULL);
 	
         Eigen::Matrix4d getInvTransform();
         void applyTransform(Eigen::Vector3d&);

@@ -38,7 +38,7 @@ namespace model3d {
     }
 
     BodyNode* Skeleton::createBodyNode(const char* const name) {
-        return new BodyNode(const_cast<char*>(name));
+        return new BodyNode(name);
     }
 
     void Skeleton::addHandle(Marker *_h) {

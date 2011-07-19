@@ -15,7 +15,7 @@ namespace model3d {
 
     class TrfmRotateQuat: public Transformation {
     public:
-        TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name = NULL);
+        TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, const char *_name = NULL);
 	
 		void applyGLTransform(renderer::RenderInterface* _ri) const;
         void evalTransform();

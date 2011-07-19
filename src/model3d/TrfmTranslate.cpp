@@ -15,7 +15,7 @@ using namespace std;
 using namespace Eigen;
 
 namespace model3d {
-    TrfmTranslate::TrfmTranslate(Dof *x, Dof *y, Dof *z, char* _name){
+    TrfmTranslate::TrfmTranslate(Dof *x, Dof *y, Dof *z, const char* _name){
         mDofs.resize(3);
         mDofs[0]=x;
         mDofs[1]=y;
@@ -100,7 +100,7 @@ namespace model3d {
         }
     }
 
-    TrfmTranslateX::TrfmTranslateX(Dof *x, char *_name){
+    TrfmTranslateX::TrfmTranslateX(Dof *x, const char *_name){
         mDofs.resize(1);
         mDofs[0]=x;
         mDofs[0]->setTrans(this);
@@ -172,7 +172,7 @@ namespace model3d {
         m.row(_X) -= mDofs[0]->getValue() * m.row(3);
     }
 
-    TrfmTranslateY::TrfmTranslateY(Dof *y, char *_name){
+    TrfmTranslateY::TrfmTranslateY(Dof *y, const char *_name){
         mDofs.resize(1);
         mDofs[0]=y;
         mDofs[0]->setTrans(this);
@@ -245,7 +245,7 @@ namespace model3d {
         m.row(_Y) -= mDofs[0]->getValue() * m.row(3);
     }
 
-    TrfmTranslateZ::TrfmTranslateZ(Dof *z, char *_name){
+    TrfmTranslateZ::TrfmTranslateZ(Dof *z, const char *_name){
         mDofs.resize(1);
         mDofs[0]=z;
         mDofs[0]->setTrans(this);

@@ -149,7 +149,7 @@ using namespace std;
 //#define YYDEBUG 1
 
 int yylex();
-void yyerror(char*);
+void yyerror(const char*);
 void openFile(FILE*);
 void closeFile();
 
@@ -183,7 +183,7 @@ Dof* __createDOF( double );
 Dof* __createDOF( char* );
 Dof* __createDOF( char*, double, double, double );
 void __recordMass(char*, double);
-void __startNode( char*, int );
+void __startNode( const char*, int );
 void __endNode();
 void __createTranslate( dofVec3 );
 void __createTelescope( doubleVec3, Dof* );
@@ -193,10 +193,10 @@ void __createRotateExpMap( dofVec3 );
 void __createRotateQuat( dofVec4 );
 void __setPrimitive( doubleVec3, doubleVec3, Dof*);
 void __setPrimitive( doubleVec3, doubleVec3, Dof*, Primitive*);
-Primitive* __setGeometry(char*, char*, doubleVec3);
-Primitive* __setGeometry(char*, char*);
-Primitive* __setGeometry(char*, doubleVec3);
-Primitive* __setGeometry(char*);
+Primitive* __setGeometry(const char*, const char*, doubleVec3);
+Primitive* __setGeometry(const char*, const char*);
+Primitive* __setGeometry(const char*, doubleVec3);
+Primitive* __setGeometry(const char*);
 Primitive* __setGeometry(doubleVec3);
 void __createHandle( char*, doubleVec3, int, char* );
 
@@ -2053,7 +2053,7 @@ void __endNode()
 }
 
 /* create a new node whose parent node is cur_node, and create a new joint to connect them; add the new node to model*/
-void __startNode( char* s, int id ) {
+void __startNode( const char* s, int id ) {
     char fullName[256];
     strcpy(fullName, namePrefix);
     strcat(fullName, s);
@@ -2281,7 +2281,7 @@ void __recordMass(char* massName, double massValue)
 }
 
 /* create new primitive */	
-Primitive* __setGeometry(char* shape, char *massName, doubleVec3 color)
+Primitive* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 {
     Primitive *prim = NULL;
 
@@ -2311,7 +2311,7 @@ Primitive* __setGeometry(char* shape, char *massName, doubleVec3 color)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(char *shape, char *massName)
+Primitive* __setGeometry(const char *shape, const char *massName)
 {
     Primitive *prim = NULL;
 
@@ -2340,7 +2340,7 @@ Primitive* __setGeometry(char *shape, char *massName)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(char *shape, doubleVec3 color)
+Primitive* __setGeometry(const char *shape, doubleVec3 color)
 {
     Primitive *prim = NULL;
 
@@ -2383,7 +2383,7 @@ Primitive* __setGeometry(doubleVec3 color)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(char *shape)
+Primitive* __setGeometry(const char *shape)
 {
     Primitive *prim = NULL;
     double massValue = 0.0;
@@ -2412,11 +2412,11 @@ Primitive* __setGeometry(char *shape)
     return prim;
 }
 
-void yyerror( char* error ) {
+void yyerror( const char* error ) {
     printf( "%s\n", error );
 }
 
-Skeleton* readSkelFile( FILE* file, vector<char*>* dofNames ) {
+Skeleton* readSkelFile( FILE* file, vector<const char*>* dofNames ) {
     gSkel = new Skeleton();
 
     cur_node = NULL;
@@ -2482,7 +2482,7 @@ int readSkelFile( const char* const filename, Skeleton* skel ) {
     return error;
 }
 
-Skeleton* readSkelFile( const char* filename, vector<char*>* dofNames ) {
+Skeleton* readSkelFile( const char* filename, vector<const char*>* dofNames ) {
     FILE* file = fopen( filename, "r" );
 
     if( file == NULL )
