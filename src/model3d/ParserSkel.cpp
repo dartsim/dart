@@ -2059,7 +2059,8 @@ void __startNode( char* s, int id ) {
     strcat(fullName, s);
 
     // create a new node
-    BodyNode* newNode = new BodyNode( fullName );
+    // BodyNode* newNode = new BodyNode( fullName );
+    BodyNode* newNode = gSkel->createBodyNode( fullName );
     fprintf(stderr, "   reading node: %s\n", s);
 
     // push the cur_node (parent) to the stack

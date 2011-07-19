@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     bool result = c3dFile.loadFile("./squat.c3d");
     CHECK(result);
 
-    FileInfoDof resultDof(prob.getModel());
+    FileInfoDof resultDof(prob.getSkel());
 
     snopt::SnoptSolver solver(&prob);
     for (int i = 0; i < c3dFile.getNumFrames(); i++) {
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
         solver.solve();
 
         vector<double> pose;
-        prob.getModel()->getPose(pose);
+        prob.getSkel()->getPose(pose);
         resultDof.addDof(pose);
     }
     resultDof.saveFile("./result.dof", 0, resultDof.getNumFrames());

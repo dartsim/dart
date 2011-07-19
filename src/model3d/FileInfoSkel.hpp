@@ -6,14 +6,19 @@
   Date		06/12/2011
 */
 
-#include "FileInfoSkel.h"
 
+#ifndef MODEL3D_FILEINFO_SKEL_H
+#define MODEL3D_FILEINFO_SKEL_H
+
+#include <fstream>
 #include <iomanip>
 #include <string>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 
+#include <Eigen/Dense>
+
+#include "renderer/RenderInterface.h"
 #include "Skeleton.h"
 #include "BodyNode.h"
 #include "ParserVsk.h"
@@ -25,38 +30,71 @@
 #include "PrimitiveEllipsoid.h"
 #include "PrimitiveCube.h"
 
-using namespace std;
-using namespace Eigen;
-
 int readSkelFile( const char* const filename, model3d::Skeleton* skel );
 
-namespace model3d{
+namespace model3d {
+    
+    class BodyNode;
+    class Skeleton;
 
-    FileInfoSkel::FileInfoSkel() : mSkel(NULL){
+    enum SkeletonFileType {
+        VSK,
+        SKEL
+    };
+
+    template <class SkeletonType>
+    class FileInfoSkel {
+    public:
+  
+    public:
+        FileInfoSkel();
+        virtual ~FileInfoSkel();
+	
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
+        bool loadFile(const char* _filename, SkeletonFileType _type);
+        bool saveFile(const char* _filename) const;
+        
+        SkeletonType* getSkel() const { return mSkel; }
+
+    protected:
+        SkeletonType* mSkel;
+        char mFileName[256]; // could use string instead
+
+        // used in saveFile to write the subtree of _b
+        void saveBodyNodeTree(BodyNode* _b, std::ofstream &_outfile, int _numLinks) const;
+    };
+
+    template <class SkeletonType>
+    FileInfoSkel<SkeletonType>::FileInfoSkel() : mSkel(NULL){
     }
 
-    FileInfoSkel::~FileInfoSkel(){
+    template <class SkeletonType>
+    FileInfoSkel<SkeletonType>::~FileInfoSkel(){
         if(mSkel){ 
             delete mSkel;
             mSkel = NULL;
         }
     }
 
-	void FileInfoSkel::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    template <class SkeletonType>
+    void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         mSkel->draw(_ri, _color, _useDefaultColor);
     }
 
-    bool FileInfoSkel::loadFile( const char* _fName, FileType _type ) {
+    template <class SkeletonType>
+    bool FileInfoSkel<SkeletonType>::loadFile( const char* _fName, SkeletonFileType _type ) {
         if( mSkel )
             delete mSkel;
-        mSkel = new Skeleton;
+        // mSkel = new Skeleton;
+        mSkel = new SkeletonType;
+
         bool success = false;
         if(_type == SKEL)
             success = !readSkelFile( _fName, mSkel);
         else if(_type == VSK)
             success = (readVSKFile(_fName, mSkel) == VSK_OK);
         if(success){	
-            string text = _fName;
+            std::string text = _fName;
             int lastSlash = text.find_last_of("/");
             text = text.substr(lastSlash+1);
             strcpy(mFileName, text.c_str());
@@ -64,9 +102,11 @@ namespace model3d{
         return success;
     }
 
-    const string unitlength = "unitlength";
+    const static std::string unitlength = "unitlength";
 
-    bool FileInfoSkel::saveFile( const char* _fName) const {
+    template <class SkeletonType>
+    bool FileInfoSkel<SkeletonType>::saveFile( const char* _fName) const {
+        using namespace std;
         ofstream output(_fName);
         if(output.fail()){
             cout<<"Unable to save file "<<_fName<<endl;
@@ -120,7 +160,8 @@ namespace model3d{
         return true;
     }
 
-    void FileInfoSkel::saveBodyNodeTree(BodyNode *_b, ofstream &_outfile, int _numLinks) const {
+    template <class SkeletonType>
+    void FileInfoSkel<SkeletonType>::saveBodyNodeTree(BodyNode *_b, std::ofstream &_outfile, int _numLinks) const {
         // save the current one
         _outfile<<"\nnode "<<_b->getName()<<" { "<<_b->getSkelIndex()<<"\n";
         // write the trans
@@ -181,7 +222,7 @@ namespace model3d{
         if(elp) _outfile<<", SPHERE";
         else if(box) _outfile<<", CUBE";
 
-        _outfile<<", "<<string(_b->getName())+string("_mass");
+        _outfile<<", "<<std::string(_b->getName())+std::string("_mass");
         _outfile<<" }\n";
 
         for(int i=0; i<_b->getNumJoints(); i++){
@@ -192,4 +233,9 @@ namespace model3d{
         _outfile<<"}\n";	//node
 
     }
-}
+
+
+} // namespace model3d
+
+#endif // #ifndef MODEL3D_FILEINFO_SKEL_H
+
