@@ -19,3 +19,4 @@ thirdparty/
 *.user
 *.dep
 *.manifest
+*.rsp
