@@ -1,7 +1,7 @@
 #ifndef SRC_UNITTESTS_TEST_MODEL3D_H
 #define SRC_UNITTESTS_TEST_MODEL3D_H
 
-#include "model3d/FileInfoModel.h"
+#include "model3d/FileInfoSkel.h"
 #include "model3d/Skeleton.h"
 #include "model3d/BodyNode.h"
 #include "model3d/FileInfoDof.h"
@@ -11,9 +11,9 @@ TEST(MODEL3D, VSK_LOADER) {
     using namespace Eigen;
     using namespace model3d;
   
-    FileInfoModel modelFile;
-    modelFile.loadFile("Yuting.vsk", FileInfoModel::VSK);
-    Skeleton* skel = modelFile.getModel();
+    FileInfoSkel modelFile;
+    modelFile.loadFile("Yuting.vsk", FileInfoSkel::VSK);
+    Skeleton* skel = modelFile.getSkel();
 
     EXPECT_TRUE(skel != NULL);
 
@@ -39,11 +39,11 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     using namespace Eigen;
     using namespace model3d;
   
-    FileInfoModel modelFile;
-    bool loadModelResult = modelFile.loadFile("./SehoonVSK3.vsk", FileInfoModel::VSK);
+    FileInfoSkel modelFile;
+    bool loadModelResult = modelFile.loadFile("./SehoonVSK3.vsk", FileInfoSkel::VSK);
     ASSERT_TRUE(loadModelResult);
     
-    Skeleton* skel = modelFile.getModel();
+    Skeleton* skel = modelFile.getSkel();
     EXPECT_TRUE(skel != NULL);
     /* LOG(INFO) << "# Dofs = " << skel->getNumDofs(); */
     /* LOG(INFO) << "# Nodes  = " << skel->getNumNodes(); */

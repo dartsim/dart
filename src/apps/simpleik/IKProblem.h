@@ -4,7 +4,7 @@
 #include "optimizer/Problem.h"
 
 namespace model3d {
-    class FileInfoModel;
+    class FileInfoSkel;
     class Skeleton;
 } // namespace model3d
 
@@ -16,9 +16,9 @@ namespace optimizer {
     
         void initProblem();
         virtual void update(double* coefs);
-        model3d::Skeleton* getModel() const;
+        model3d::Skeleton* getSkel() const;
     protected:
-        model3d::FileInfoModel* mFileInfoModel;
+        model3d::FileInfoSkel* mFileInfoSkel;
     };
 } // namespace optimizer
 
