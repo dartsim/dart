@@ -74,13 +74,13 @@ namespace model3d {
         // TODO: old code has implementations (but what are they?)
         virtual void applyDeriv(const Dof* q, Eigen::Vector3d& v);
         virtual void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
-        virtual void applyDeriv2(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
-        virtual void applyDeriv2(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
+        virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
+        virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
 	virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;	// apply transform in GL
         virtual void evalTransform() = 0;	// computes and stores in above
         virtual Eigen::Matrix4d getDeriv(const Dof *q) = 0;	// get derivative wrt to a dof
-        virtual Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
+        virtual Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
 
     protected:
         std::vector<Dof *> mDofs;	// collection of Dofs

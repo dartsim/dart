@@ -25,7 +25,7 @@ namespace model3d {
         void applyGLTransform(renderer::RenderInterface* _ri) const;
         void evalTransform();
         Eigen::Matrix4d getDeriv(const Dof *);
-        Eigen::Matrix4d getDeriv2(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
 	
     private:
         // some math utility functions

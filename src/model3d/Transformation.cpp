@@ -88,13 +88,13 @@ namespace model3d {
         m = getDeriv(q) * m;
     }
 
-    void Transformation::applyDeriv2(const Dof* q1, const Dof* q2, Vector3d& v) {
+    void Transformation::applySecondDeriv(const Dof* q1, const Dof* q2, Vector3d& v) {
         using eigenhelper::xform;
-        v = xform(getDeriv2(q1, q2), v);
+        v = xform(getSecondDeriv(q1, q2), v);
     }
 
-    void Transformation::applyDeriv2(const Dof* q1, const Dof* q2, Matrix4d& m) {
-        m = getDeriv2(q1, q2)*m;
+    void Transformation::applySecondDeriv(const Dof* q1, const Dof* q2, Matrix4d& m) {
+        m = getSecondDeriv(q1, q2)*m;
     }
   
 
