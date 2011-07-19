@@ -7,8 +7,8 @@ Date		06/12/2011
 */
 
 
-#ifndef MODEL3D_PARSER_MODEL_H
-#define MODEL3D_PARSER_MODEL_H
+#ifndef MODEL3D_PARSER_SKEL_H
+#define MODEL3D_PARSER_SKEL_H
 
 //#include "ParserDefs.h"
 namespace model3d{
@@ -58,4 +58,4 @@ typedef union {
 
 extern YYSTYPE yylval;
 
-#endif // #ifndef MODEL3D_PARSER_MODEL_H
+#endif // #ifndef MODEL3D_PARSER_SKEL_H

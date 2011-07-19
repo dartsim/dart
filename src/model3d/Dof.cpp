@@ -43,7 +43,7 @@ namespace model3d {
         mVal = _v;
         mMinVal = _min;
         mMaxVal = _max;
-        mModelIndex = -1;
+        mSkelIndex = -1;
         mVariable = false;
         mTrans = NULL;
         mJoint = NULL;	// remains null if const dof

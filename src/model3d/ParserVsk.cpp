@@ -56,13 +56,13 @@ double str2double(const string& str);
 VectorXd getDofVectorXd(Transformation* trfm);
 
 // Parsing Helper Functions    
-bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model);
-bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _model, Vector3d orient);
-bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model);
-bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _model);
-bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _model);
-bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _model);
-bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _model);
+bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
+bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient);
+bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
+bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
+bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
+bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
+bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
 void autoGeneratePrimitive(Skeleton* skel);
 void autoGeneratePrimitive2(Skeleton* skel);
 
@@ -194,7 +194,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
 
 
 
-bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _model)
+bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel)
 {
     string sname = _segment->GetAttribute("NAME");
 
@@ -357,7 +357,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         try {
             tf = _segment->FirstChildElement( "JointFree" );
             foundJoint = true;
-            readJointFree(tf, jt, _model);
+            readJointFree(tf, jt, _skel);
         }catch( ticpp::Exception e){
         }
     }
@@ -365,7 +365,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         try {
             tf = _segment->FirstChildElement( "JointBall" );
             foundJoint = true;
-            readJointBall(tf, jt, _model, orientation);
+            readJointBall(tf, jt, _skel, orientation);
         }catch( ticpp::Exception e){
         }
     }
@@ -373,7 +373,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         try {
             tf = _segment->FirstChildElement( "JointHardySpicer" );
             foundJoint = true;
-            readJointHardySpicer(tf, jt, _model);
+            readJointHardySpicer(tf, jt, _skel);
         }catch( ticpp::Exception e){
         }
     }
@@ -381,7 +381,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         try {
             tf = _segment->FirstChildElement( "JointHinge" );
             foundJoint = true;
-            readJointHinge(tf, jt, _model);
+            readJointHinge(tf, jt, _skel);
         }catch( ticpp::Exception e){
         }
     }
@@ -396,19 +396,19 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     }
 
     // add to the model
-    _model->addNode(blink);
+    _skel->addNode(blink);
     // _segmentindex[sname]=blink->getModelID();
-    _segmentindex[sname]=blink->getModelIndex();
+    _segmentindex[sname]=blink->getSkelIndex();
 
     // handle the subtree
     ticpp::Iterator< ticpp::Element > childseg("Segment");
     for ( childseg = childseg.begin( _segment ); childseg != childseg.end(); childseg++ ){
-        if(!readSegment(childseg->ToElement(), blink, _paramsList, _segmentindex, _model)) return false;
+        if(!readSegment(childseg->ToElement(), blink, _paramsList, _segmentindex, _skel)) return false;
     }
     return true;
 }
 
-bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
+bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 {
     VLOG(1)<<"read free\n";
 
@@ -428,7 +428,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     TrfmTranslate* trans = new TrfmTranslate(dofs1[0], dofs1[1], dofs1[2], (char*)tname1.c_str()); 
     _jt->addTransform(trans);	
     // add transformation to model because it's a variable dof
-    _model->addTransform(trans);
+    _skel->addTransform(trans);
 
     string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
     string tname2_0 = tname2 + "Free3";
@@ -446,12 +446,12 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], (char*)tname2.c_str());
     _jt->addTransform(expmap);	
     // add transformation to model because it's a variable dof
-    _model->addTransform(expmap);
+    _skel->addTransform(expmap);
 
     return true;
 }
 
-bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _model, Vector3d orient)
+bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient)
 {
     VLOG(1) << "read ball\n";
     VLOG(1) << "orientation = " << orient << endl;
@@ -472,13 +472,13 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _model, Vector3d o
     TrfmRotateExpMap* expmap= new TrfmRotateExpMap(dofs2[0], dofs2[1], dofs2[2], (char*)tname2.c_str());
     _jt->addTransform(expmap);	
     // add transformation to model because it's a variable dof
-    _model->addTransform(expmap);
+    _skel->addTransform(expmap);
 
     return true;
 }
 
 
-bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
+bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 {
     VLOG(1)<<"read hardy spicer\n";
 
@@ -512,7 +512,7 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     }
     assert(r1!=NULL);
     _jt->addTransform(r1);	
-    _model->addTransform(r1);
+    _skel->addTransform(r1);
 
     Transformation *r2=NULL;
     if(tokens[4].compare("1")==0){
@@ -526,13 +526,13 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     }
     assert(r2!=NULL);
     _jt->addTransform(r2);	
-    _model->addTransform(r2);
+    _skel->addTransform(r2);
 
     return true;
 }
 
 
-bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
+bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 {
     VLOG(1)<<"read hinge\n";
 
@@ -570,12 +570,12 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _model)
     }
     assert(r1!=NULL);
     _jt->addTransform(r1);	
-    _model->addTransform(r1);
+    _skel->addTransform(r1);
 
     return true;
 }
 
-bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _model)
+bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel)
 {
     string mname = _marker->GetAttribute("NAME");
     string sname = _marker->GetAttribute("SEGMENT");
@@ -617,8 +617,8 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
         RotatePoint(qr, lpos2);
     }
 
-    Marker* m = new Marker((char*)mname.c_str(), lpos2, _model->getNode(_segmentindex[sname]));
-    _model->addHandle(m);
+    Marker* m = new Marker((char*)mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
+    _skel->addHandle(m);
     VLOG(1)<<"marker: "<<mname<<" ";
     VLOG(1)<<"segment: "<<sname<<" ";
     VLOG(1)<<"sindex: "<<_segmentindex[sname]<<" ";
@@ -627,11 +627,11 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 }
 
 
-bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _model)
+bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel)
 {
     string bname = _prim->GetAttribute("SEGMENT");
     int segIdx = _segmentindex[bname];
-    BodyNode* blink = _model->getNode(segIdx);
+    BodyNode* blink = _skel->getNode(segIdx);
 	
     string mname = _prim->GetAttribute("MASS");
     double mass = _massList[mname];

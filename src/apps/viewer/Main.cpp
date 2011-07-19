@@ -1,4 +1,4 @@
-#include "model3d/FileInfoModel.h"
+#include "model3d/FileInfoSkel.h"
 #include "model3d/FileInfoDof.h"
 
 #include "MyWindow.h"
@@ -20,10 +20,10 @@ int main(int argc, char* argv[])
         doffile = argv[2];
     }
 	
-    FileInfoModel model;
-    model.loadFile(modelfile,FileInfoModel::SKEL);
+    FileInfoSkel model;
+    model.loadFile(modelfile,FileInfoSkel::SKEL);
 
-    FileInfoDof motion(model.getModel());
+    FileInfoDof motion(model.getSkel());
     motion.loadFile(doffile);
 
     MyWindow window(motion);

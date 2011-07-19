@@ -39,8 +39,8 @@ namespace model3d {
         void setMin(double _min) { mMinVal = _min; }
         void setMax(double _max) { mMaxVal = _max; }
 	
-        int getModelIndex() const { return mModelIndex; }
-        void setModelIndex(int _idx) { mModelIndex = _idx; }
+        int getSkelIndex() const { return mSkelIndex; }
+        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
         bool isVariable() const { return mVariable; }
         void setVariable() { mVariable = true; }
@@ -54,7 +54,7 @@ namespace model3d {
     protected:
         void init(double _v, const char * _name, double _min, double _max);
         char mName[MAX_DOF_NAME];
-        int mModelIndex; // Unique to dof in model
+        int mSkelIndex; // Unique to dof in model
 
         double mVal;	// Value of the joint angle
         double mMinVal;	// Min value allowed

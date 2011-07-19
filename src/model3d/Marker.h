@@ -39,8 +39,8 @@ namespace model3d {
         Eigen::Vector3d getLocalCoords() const {return mOffset;}
         void setLocalCoords(Eigen::Vector3d& _offset){mOffset = _offset;}
 
-        int getModelIndex() const{return mModelIndex;}
-        void setModelIndex(int _idx){mModelIndex=_idx;}
+        int getSkelIndex() const{return mSkelIndex;}
+        void setSkelIndex(int _idx){mSkelIndex=_idx;}
         
         int getID() const {return mID;}
         BodyNode* getNode() const {return mNode;}
@@ -57,7 +57,7 @@ namespace model3d {
         BodyNode* mNode;	///< body link associated with
         Eigen::Vector3d mOffset;	///< local coordinates in the links
         char mName[MAX_MARKER_NAME]; ///< name of this marker, max length 256 characters
-        int mModelIndex;	///< position in the model class handle vector
+        int mSkelIndex;	///< position in the model class handle vector
         ConstraintType mType; ///< type of constraint
     
     private:

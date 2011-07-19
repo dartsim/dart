@@ -24,7 +24,7 @@ namespace model3d {
         :mTransform(Matrix4d::Zero()) {
         mJoint=NULL;
         mVariable=true;
-        mModelIndex=-1;
+        mSkelIndex=-1;
         isDirty = true;
     }
 

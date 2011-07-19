@@ -29,7 +29,7 @@ namespace model3d {
 
        BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
        connected and have a set of core functions for calculating derivatives.
-       Mostly automatically constructed by FileInfoModel. @see FileInfoModel.
+       Mostly automatically constructed by FileInfoSkel. @see FileInfoSkel.
     */
     class BodyNode {
     public:      
@@ -64,11 +64,11 @@ namespace model3d {
         void setOffset(const Eigen::Vector3d& _off) { mOffset = _off; }
         Eigen::Vector3d getOffset() const { return mOffset; }
         
-        void setModel(Skeleton* _model) { mModel = _model; }
-        Skeleton* getModel() const { return mModel; }
+        void setSkel(Skeleton* _skel) { mSkel = _skel; }
+        Skeleton* getSkel() const { return mSkel; }
 
-        void setModelIndex(int _idx) { mModelIndex = _idx; }
-        int getModelIndex() const { return mModelIndex; }
+        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+        int getSkelIndex() const { return mSkelIndex; }
         
         BodyNode* getNodeIn() const { return mNodeIn; }
         double getMass() const { return mMass; }
@@ -99,7 +99,7 @@ namespace model3d {
         void evalJW(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
         
         char mName[MAX_NODE3D_NAME]; ///< Name
-        int mModelIndex;    ///< Index in the model
+        int mSkelIndex;    ///< Index in the model
 
         Primitive *mPrimitive;  ///< Geometry of this body node
         std::vector<Joint *> mJointOut; ///< List of joints that link to child nodes
@@ -115,7 +115,7 @@ namespace model3d {
 
         double mMass; ///< Mass of this node; zero if no primitive
         Eigen::Vector3d mOffset; ///< Origin of this body node in its parent's coordinate frame
-        Skeleton *mModel; ///< Pointer to the model this body node belongs to
+        Skeleton *mSkel; ///< Pointer to the model this body node belongs to
 
     private:
         int mID; ///< A unique ID of this node globally 

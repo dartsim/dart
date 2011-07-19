@@ -18,8 +18,8 @@ using namespace std;
 
 namespace model3d{
 
-    FileInfoDof::FileInfoDof(Skeleton* _model, double _fps)
-        : mModel(_model),mFPS(_fps),mNumFrames(0){
+    FileInfoDof::FileInfoDof(Skeleton* _skel, double _fps)
+        : mSkel(_skel),mFPS(_fps),mNumFrames(0){
     }
 
     FileInfoDof::~FileInfoDof(){
@@ -46,7 +46,7 @@ namespace model3d{
         inFile >> buffer;
         inFile >> nDof;
 
-        if( mModel==NULL || mModel->getNumDofs()!=nDof )
+        if( mSkel==NULL || mSkel->getNumDofs()!=nDof )
             return false;
 
         mDofs.resize(mNumFrames);
@@ -87,14 +87,14 @@ namespace model3d{
         int last = _end<mNumFrames?_end:mNumFrames-1;
 
         outFile.precision(20);
-        outFile<<"frames = " <<last-first+1<<" dofs = "<<mModel->getNumDofs()<<endl;
+        outFile<<"frames = " <<last-first+1<<" dofs = "<<mSkel->getNumDofs()<<endl;
 
-        for(int i=0; i<mModel->getNumDofs(); i++)
-            outFile << mModel->getDof(i)->getName() << ' ';
+        for(int i=0; i<mSkel->getNumDofs(); i++)
+            outFile << mSkel->getDof(i)->getName() << ' ';
         outFile << endl;
 
         for(int i=first; i<= last; i++){
-            for(int j=0; j<mModel->getNumDofs(); j++){
+            for(int j=0; j<mSkel->getNumDofs(); j++){
                 outFile << mDofs[i][j] <<' ';
             }
             outFile << endl;

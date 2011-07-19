@@ -26,7 +26,7 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(char *_name) 
-        : mModelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
+        : mSkelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();
         mHandles.clear();
@@ -66,7 +66,7 @@ namespace model3d {
 
         const int localDofs = getNumDofs();
         mTq.resize(localDofs, MatrixXd::Identity(4, 4));
-        const int nDofs = getModel()->getNumDofs();
+        const int nDofs = getSkel()->getNumDofs();
         mWq.resize(nDofs, MatrixXd::Identity(4, 4));
         
         mJC = MatrixXd::Zero(3, nDofs);
@@ -102,7 +102,7 @@ namespace model3d {
             }
         } else {
             for(int i = 0; i < localDofs; ++i) {
-                int index1 = mJointIn->getDof(i)->getModelIndex();
+                int index1 = mJointIn->getDof(i)->getSkelIndex();
                 mWq.at(index1) = mTq.at(i);
             }
         }
@@ -127,7 +127,7 @@ namespace model3d {
         }
 
         for (int i = 0; i < getNumDofs(); i++) {
-            int dofID = getDof(i)->getModelIndex();
+            int dofID = getDof(i)->getSkelIndex();
             mDependantDofs.push_back(dofID);
         }
 

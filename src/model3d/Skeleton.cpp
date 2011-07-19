@@ -39,32 +39,32 @@ namespace model3d {
 
     void Skeleton::addHandle(Marker *_h) {
         mHandles.push_back(_h);
-        _h->setModelIndex(mHandles.size()-1);
+        _h->setSkelIndex(mHandles.size()-1);
         BodyNode *body = _h->getNode();
         body->addHandle(_h);
     }
 
     void Skeleton::addNode(BodyNode *b) {
         mNodes.push_back(b);
-        b->setModelIndex(mNodes.size()-1);
+        b->setSkelIndex(mNodes.size()-1);
         addJoint(b->getJointIn());
     }
 
     void Skeleton::addJoint(Joint *_j) {
         mJoints.push_back(_j);
-        _j->setModelIndex(mJoints.size()-1);
+        _j->setSkelIndex(mJoints.size()-1);
     }
 
     void Skeleton::addDof(Dof *q) {
         mDofs.push_back(q);
-        q->setModelIndex(mDofs.size()-1);
+        q->setSkelIndex(mDofs.size()-1);
         q->setVariable();
     }
 
     void Skeleton::addTransform(Transformation *t) {
         mTransforms.push_back(t);
         t->setVariable(true);
-        t->setModelIndex(mTransforms.size()-1);
+        t->setSkelIndex(mTransforms.size()-1);
         for(int i=0; i<t->getNumDofs(); i++) {
             addDof(t->getDof(i));
         }
@@ -79,7 +79,7 @@ namespace model3d {
         // calculate mass
         // init the dependsOnDof stucture for each bodylink
         for(int i=0; i<nNodes; i++) {
-            mNodes[i]->setModel(this);
+            mNodes[i]->setSkel(this);
             // mNodes[i]->setDependDofMap(nDofs);
             mNodes[i]->setDependDofList();
             mNodes.at(i)->init();

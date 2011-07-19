@@ -35,7 +35,7 @@ namespace model3d {
         virtual ~Joint();
 
         bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list
-        int getLocalIndex (int _dofModelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
+        int getLocalIndex (int _dofSkelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
 
         Eigen::Matrix4d getLocalTransform(); ///< computes and returns the local transformation from NodeIn to NodeOut
         void applyTransform(Eigen::Vector3d& _v); ///< apply the local transformation to a vector _v
@@ -59,15 +59,15 @@ namespace model3d {
         BodyNode* getNodeIn() const {return mNodeIn;}
         BodyNode* getNodeOut() const {return mNodeOut;}
 	
-        void setModelIndex(int _idx){mModelIndex= _idx;}
-        int getModelIndex() const {return mModelIndex;}
+        void setSkelIndex(int _idx){mSkelIndex= _idx;}
+        int getSkelIndex() const {return mSkelIndex;}
 
 		JointType getJointType(){return mType;}
 
     protected:
         BodyNode *mNodeIn; ///< parent node
         BodyNode *mNodeOut; ///< child node
-        int mModelIndex;	///< unique dof id in model
+        int mSkelIndex;	///< unique dof id in model
 		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as UNKNOWN
 
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeOut
