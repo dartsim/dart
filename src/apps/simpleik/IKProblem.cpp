@@ -6,7 +6,7 @@ using namespace std;
 #include <glog/logging.h>
 using namespace google;
 
-#include "model3d/FileInfoModel.h"
+#include "model3d/FileInfoSkel.hpp"
 #include "model3d/Skeleton.h"
 #include "model3d/BodyNode.h"
 #include "model3d/Marker.h"
@@ -21,21 +21,21 @@ using namespace optimizer;
 
 namespace optimizer {
     IKProblem::IKProblem()
-        : Problem(), mFileInfoModel(NULL) {
+        : Problem(), mFileInfoSkel(NULL) {
         initProblem();
     }
 
     IKProblem::~IKProblem() {
-        delete mFileInfoModel;
+        delete mFileInfoSkel;
     }
 
     void IKProblem::initProblem() {
-        mFileInfoModel = new FileInfoModel();
-        bool result = mFileInfoModel->loadFile("./SehoonVSK3.vsk", FileInfoModel::VSK);
+        mFileInfoSkel = new FileInfoSkel<Skeleton>();
+        bool result = mFileInfoSkel->loadFile("./SehoonVSK3.vsk", model3d::VSK);
         CHECK(result);
 
         // Add variables
-        for (int i = 0; i < getModel()->getNumDofs(); i++) {
+        for (int i = 0; i < getSkel()->getNumDofs(); i++) {
             addVariable((double)i / 100.0, -10.0, 10.0);
         }
         LOG(INFO) << "Add # " << getNumVariables() << " Variables";
@@ -44,12 +44,12 @@ namespace optimizer {
         createBoxes();
 
         // Add positional constraints
-        for (int i = 0; i < getModel()->getNumHandles(); i++) {
-            Marker* marker = getModel()->getHandle(i);
+        for (int i = 0; i < getSkel()->getNumHandles(); i++) {
+            Marker* marker = getSkel()->getHandle(i);
             BodyNode* node = marker->getNode();
             Eigen::Vector3d offset = marker->getLocalCoords();
             PositionConstraint* p = new PositionConstraint(
-                this->vars(), getModel(), node, offset, Eigen::Vector3d::Zero());
+                this->vars(), getSkel(), node, offset, Eigen::Vector3d::Zero());
             objBox()->Add(p);
         }
 
@@ -68,11 +68,11 @@ namespace optimizer {
         }
         // cout << "IKProblem::update()" << endl;
         // cout << pose.transpose() << endl;
-        getModel()->setState(pose);
+        getSkel()->setState(pose);
     }
 
-    Skeleton* IKProblem::getModel() const {
-        return mFileInfoModel->getModel();
+    Skeleton* IKProblem::getSkel() const {
+        return mFileInfoSkel->getSkel();
     }
 
 
