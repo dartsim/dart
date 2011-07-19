@@ -25,7 +25,7 @@ namespace model3d {
         mJoint=NULL;
         mVariable=true;
         mSkelIndex=-1;
-        isDirty = true;
+        mDirty = true;
     }
 
     Transformation::~Transformation(){
@@ -36,17 +36,17 @@ namespace model3d {
     }
 
     Matrix4d Transformation::getTransform() {
-        if ( isDirty ) {
-            evalTransform();
-            isDirty = false;
+        if ( mDirty ) {
+            computeTransform();
+            mDirty = false;
         }
         return mTransform;
     }
 
     Matrix4d Transformation::getInvTransform() {
-        if ( isDirty ) {
-            evalTransform();
-            isDirty = false;
+        if ( mDirty ) {
+            computeTransform();
+            mDirty = false;
         }
         return mTransform.inverse();
     }

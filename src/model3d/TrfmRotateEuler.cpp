@@ -29,7 +29,7 @@ namespace model3d {
 			_ri->rotate(Vector3d(1.0, 0.0, 0.0), mDofs[0]->getValue()*180/M_PI);
     }
 
-    void TrfmRotateEulerX::evalTransform(){
+    void TrfmRotateEulerX::computeTransform(){
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
@@ -96,7 +96,7 @@ namespace model3d {
       
     }
 
-    void TrfmRotateEulerY::evalTransform(){
+    void TrfmRotateEulerY::computeTransform(){
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
@@ -162,7 +162,7 @@ namespace model3d {
 			_ri->rotate(Vector3d(0.0, 0.0, 1.0), mDofs[0]->getValue()*180/M_PI); 
 	}
 
-    void TrfmRotateEulerZ::evalTransform(){
+    void TrfmRotateEulerZ::computeTransform(){
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());

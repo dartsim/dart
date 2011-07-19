@@ -30,7 +30,7 @@ namespace model3d {
             strcpy(mName, "QUAT");
     }
 
-    void TrfmRotateQuat::evalTransform(){
+    void TrfmRotateQuat::computeTransform(){
         // Quaternion constructor takes (w, x, y, z)
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(),mDofs[2]->getValue(),mDofs[3]->getValue());
         q.normalize();

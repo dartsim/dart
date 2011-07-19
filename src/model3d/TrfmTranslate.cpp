@@ -35,7 +35,7 @@ namespace model3d {
 			_ri->translate(Vector3d(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue()));
     }
 
-    void TrfmTranslate::evalTransform(){
+    void TrfmTranslate::computeTransform(){
         mTransform.setZero();
         mTransform(0, 0) = 1.0; 
         mTransform(1, 1) = 1.0; 
@@ -117,7 +117,7 @@ namespace model3d {
 			_ri->translate(Vector3d(mDofs[0]->getValue(), 0, 0)); 
 	}
 
-    void TrfmTranslateX::evalTransform(){
+    void TrfmTranslateX::computeTransform(){
         mTransform.setZero();
         mTransform(0, 0) = 1.0; 
         mTransform(1, 1) = 1.0; 
@@ -189,7 +189,7 @@ namespace model3d {
 			_ri->translate(Vector3d(0, mDofs[0]->getValue(), 0));
     }
 
-    void TrfmTranslateY::evalTransform(){
+    void TrfmTranslateY::computeTransform(){
         mTransform.setZero();
         mTransform(0, 0) = 1.0; 
         mTransform(1, 1) = 1.0; 
@@ -262,7 +262,7 @@ namespace model3d {
 			_ri->translate(Vector3d(0, 0, mDofs[0]->getValue()));
 	}
 
-    void TrfmTranslateZ::evalTransform(){
+    void TrfmTranslateZ::computeTransform(){
         mTransform.setZero();
         mTransform(0, 0) = 1.0; 
         mTransform(1, 1) = 1.0; 
