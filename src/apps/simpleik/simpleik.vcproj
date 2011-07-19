@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glut32d.lib ticpp_d.lib libglog_d.lib libgflags_d.lib opengl32.lib glu32.lib renderer_d.lib optimizer_d.lib"
+				AdditionalDependencies="glut32d.lib ticpp_d.lib libglog_d.lib libgflags_d.lib opengl32.lib glu32.lib renderer_d.lib optimizer_d.lib snoptd.lib"
 				OutputFile="..\..\..\bin\$(ProjectName)_d.exe"
 				AdditionalLibraryDirectories="..\..\..\thirdparty\lib;..\..\..\lib"
 				GenerateDebugInformation="true"
@@ -137,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib libgflags.lib opengl32.lib glu32.lib renderer.lib optimizer.lib"
+				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib libgflags.lib opengl32.lib glu32.lib renderer.lib optimizer.lib snopt.lib"
 				OutputFile="..\..\..\bin\$(ProjectName).exe"
 				AdditionalLibraryDirectories="..\..\..\thirdparty\lib;..\..\..\lib"
 			/>

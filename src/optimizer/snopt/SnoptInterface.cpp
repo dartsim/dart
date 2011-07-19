@@ -227,11 +227,14 @@ namespace optimizer {
             }
         }
 
+#ifndef WIN32
+
 #define SNINIT sninit_
 #define SNOPT snopt_
 #define SNSPEC snspec_
 #define S1USER s1user_
 
+#endif
         extern "C" {
             void SNINIT(int *iprint, int *isum, char *cw, int *lencw,  
                         int *iw, int *leniw, double *rw, int *lenrw);
