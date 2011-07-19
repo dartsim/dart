@@ -22,8 +22,8 @@ namespace model3d {
         Dof();
         Dof(double _val);
         Dof(double _val, double _min, double _max);
-        Dof(double _val, char *_name);
-        Dof(double _val, char *_name, double _min, double _max);
+        Dof(double _val, const char *_name);
+        Dof(double _val, const char *_name, double _min, double _max);
 	
         virtual ~Dof(){}
 

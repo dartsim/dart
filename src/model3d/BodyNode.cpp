@@ -25,7 +25,7 @@ using namespace Eigen;
 namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
-    BodyNode::BodyNode(char *_name) 
+    BodyNode::BodyNode(const char *_name) 
         : mSkelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
     {
         mJointOut.clear();

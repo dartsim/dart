@@ -18,7 +18,7 @@ namespace model3d {
 
     class TrfmRotateExpMap: public Transformation{
     public:
-        TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, char* name = NULL);
+        TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, const char* name = NULL);
 
         Eigen::Matrix4d getInvTransform();
 

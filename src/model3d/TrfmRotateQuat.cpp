@@ -16,7 +16,7 @@ using namespace std;
 
 namespace model3d {
 
-    TrfmRotateQuat::TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, char *_name){
+    TrfmRotateQuat::TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, const char *_name){
         mDofs.clear();
         mDofs.resize(4);
         mDofs[0]=w;

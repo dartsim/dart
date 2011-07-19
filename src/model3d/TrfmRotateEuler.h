@@ -16,7 +16,7 @@ namespace model3d {
     // rotate about x axis
     class TrfmRotateEulerX: public Transformation {
     public:
-        TrfmRotateEulerX(Dof *x, char *_name=NULL);
+        TrfmRotateEulerX(Dof *x, const char *_name=NULL);
 
         Eigen::Matrix4d getInvTransform();
 	
@@ -29,7 +29,7 @@ namespace model3d {
     // rotate about y axis
     class TrfmRotateEulerY: public Transformation {
     public:
-        TrfmRotateEulerY(Dof *y, char *_name=NULL);
+        TrfmRotateEulerY(Dof *y, const char *_name=NULL);
 
         Eigen::Matrix4d getInvTransform();
 	
@@ -43,7 +43,7 @@ namespace model3d {
 // rotate about z axis
     class TrfmRotateEulerZ: public Transformation {
     public:
-        TrfmRotateEulerZ(Dof *z, char *_name=NULL);
+        TrfmRotateEulerZ(Dof *z, const char *_name=NULL);
 
         Eigen::Matrix4d getInvTransform();
 	

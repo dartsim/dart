@@ -302,7 +302,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 #define YY_FLUSH_BUFFER yy_flush_buffer(YY_CURRENT_BUFFER )
 
-YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size  );
+YY_BUFFER_STATE yy_scan_buffer (const char *base,yy_size_t size  );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str  );
 YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len  );
 
@@ -615,10 +615,10 @@ extern int yywrap (void );
 #endif
 #endif
 
-static void yyunput (int c,char *buf_ptr  );
+static void yyunput (int c,const char *buf_ptr  );
 
 #ifndef yytext_ptr
-static void yy_flex_strncpy (char *,yyconst char *,int );
+static void yy_flex_strncpy (const char *,yyconst char *,int );
 #endif
 
 #ifdef YY_NEED_STRLEN

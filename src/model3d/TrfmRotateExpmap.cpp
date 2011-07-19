@@ -32,7 +32,7 @@ inline double sqr(double d) {
 
 namespace model3d {
 
-    TrfmRotateExpMap::TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, char* _name){
+    TrfmRotateExpMap::TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, const char* _name){
         mDofs.resize(3);
         mDofs[0]=x;
         mDofs[1]=y;
