@@ -1,14 +1,14 @@
 #include "MyWindow.h"
-#include "model3d/FileInfoModel.h"
+#include "model3d/FileInfoSkel.h"
 
 using namespace model3d;
 
 int main(int argc, char* argv[]) {
-    FileInfoModel modelFile;
-    modelFile.loadFile("Yuting.vsk", FileInfoModel::VSK);
+    FileInfoSkel modelFile;
+    modelFile.loadFile("Yuting.vsk", FileInfoSkel::VSK);
     // modelFile.loadFile("Yuting.skel",FileInfoModel::SKEL);
 
-    MyWindow window(modelFile.getModel());
+    MyWindow window(modelFile.getSkel());
 
     glutInit(&argc, argv);
     window.initWindow(640,480,"Load Model");
