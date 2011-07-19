@@ -6,7 +6,7 @@
   Date		06/12/2011
 */
 
-#include "FileInfoModel.h"
+#include "FileInfoSkel.h"
 
 #include <iomanip>
 #include <string>
@@ -32,29 +32,29 @@ int readSkelFile( const char* const filename, model3d::Skeleton* skel );
 
 namespace model3d{
 
-    FileInfoModel::FileInfoModel() : mModel(NULL){
+    FileInfoSkel::FileInfoSkel() : mSkel(NULL){
     }
 
-    FileInfoModel::~FileInfoModel(){
-        if(mModel){ 
-            delete mModel;
-            mModel = NULL;
+    FileInfoSkel::~FileInfoSkel(){
+        if(mSkel){ 
+            delete mSkel;
+            mSkel = NULL;
         }
     }
 
-	void FileInfoModel::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        mModel->draw(_ri, _color, _useDefaultColor);
+	void FileInfoSkel::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        mSkel->draw(_ri, _color, _useDefaultColor);
     }
 
-    bool FileInfoModel::loadFile( const char* _fName, FileType _type ) {
-        if( mModel )
-            delete mModel;
-        mModel = new Skeleton;
+    bool FileInfoSkel::loadFile( const char* _fName, FileType _type ) {
+        if( mSkel )
+            delete mSkel;
+        mSkel = new Skeleton;
         bool success = false;
         if(_type == SKEL)
-            success = !readSkelFile( _fName, mModel);
+            success = !readSkelFile( _fName, mSkel);
         else if(_type == VSK)
-            success = (readVSKFile(_fName, mModel) == VSK_OK);
+            success = (readVSKFile(_fName, mSkel) == VSK_OK);
         if(success){	
             string text = _fName;
             int lastSlash = text.find_last_of("/");
@@ -66,7 +66,7 @@ namespace model3d{
 
     const string unitlength = "unitlength";
 
-    bool FileInfoModel::saveFile( const char* _fName) const {
+    bool FileInfoSkel::saveFile( const char* _fName) const {
         ofstream output(_fName);
         if(output.fail()){
             cout<<"Unable to save file "<<_fName<<endl;
@@ -74,12 +74,12 @@ namespace model3d{
         }
         output<<fixed<<setprecision(6);
 
-        int _numLinks = mModel->nNodes;
+        int _numLinks = mSkel->nNodes;
 
         output<<"dofs {\n";
-        for(int i=0; i<mModel->getNumDofs(); i++){
-            Dof *d = mModel->getDof(i);
-            if(d->getJoint()->getNodeOut()->getModelIndex() >= _numLinks) break;
+        for(int i=0; i<mSkel->getNumDofs(); i++){
+            Dof *d = mSkel->getDof(i);
+            if(d->getJoint()->getNodeOut()->getSkelIndex() >= _numLinks) break;
             output<<'\t'<<d->getName()<<" { "<<d->getValue()<<", "<<d->getMin()<<", "<<d->getMax()<<" }\n";
         }
         output<<unitlength<<" { 1.0, 1.0, 1.0 }\n";
@@ -87,30 +87,30 @@ namespace model3d{
 
         // masses
         output<<"\nmass {\n";
-        for(int i=0; i<mModel->nNodes; i++){
+        for(int i=0; i<mSkel->nNodes; i++){
             if(i>=_numLinks) break;
-            string massname = mModel->getNode(i)->getName();
+            string massname = mSkel->getNode(i)->getName();
             massname += "_mass";
-            output<<massname<<" { "<<mModel->getNode(i)->getMass()<<" }\n";
+            output<<massname<<" { "<<mSkel->getNode(i)->getMass()<<" }\n";
 
         }
         output<<"}\n";
 
         // nodes
-        saveBodyNodeTree(mModel->mRoot, output, _numLinks);
+        saveBodyNodeTree(mSkel->mRoot, output, _numLinks);
 
         // markers
         output<<"\nhandles {\n";
-        for(int i=0; i<mModel->getNumHandles(); i++){
-            if(mModel->getHandle(i)->getNode()->getModelIndex()>=_numLinks) break;
-            string hname = mModel->getHandle(i)->getName();
+        for(int i=0; i<mSkel->getNumHandles(); i++){
+            if(mSkel->getHandle(i)->getNode()->getSkelIndex()>=_numLinks) break;
+            string hname = mSkel->getHandle(i)->getName();
             if(hname.empty()){
                 ostringstream ss;
                 ss<<"handle"<<i;
                 hname = ss.str();
             }
-            Vector3d lc = mModel->getHandle(i)->getLocalCoords();
-            output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mModel->getHandle(i)->getNode()->getName()<<" } "<<endl;
+            Vector3d lc = mSkel->getHandle(i)->getLocalCoords();
+            output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mSkel->getHandle(i)->getNode()->getName()<<" } "<<endl;
 
         }
         output<<"}\n";
@@ -120,9 +120,9 @@ namespace model3d{
         return true;
     }
 
-    void FileInfoModel::saveBodyNodeTree(BodyNode *_b, ofstream &_outfile, int _numLinks) const {
+    void FileInfoSkel::saveBodyNodeTree(BodyNode *_b, ofstream &_outfile, int _numLinks) const {
         // save the current one
-        _outfile<<"\nnode "<<_b->getName()<<" { "<<_b->getModelIndex()<<"\n";
+        _outfile<<"\nnode "<<_b->getName()<<" { "<<_b->getSkelIndex()<<"\n";
         // write the trans
         _outfile<<"chain { "<<_b->getJointIn()->getNumTransforms()<<"\n";
         for(int i=0; i<_b->getJointIn()->getNumTransforms(); i++){
@@ -185,7 +185,7 @@ namespace model3d{
         _outfile<<" }\n";
 
         for(int i=0; i<_b->getNumJoints(); i++){
-            if(_b->getNodeOut(i)->getModelIndex()>=_numLinks) continue;
+            if(_b->getNodeOut(i)->getSkelIndex()>=_numLinks) continue;
             saveBodyNodeTree(_b->getNodeOut(i), _outfile, _numLinks);
         }
 

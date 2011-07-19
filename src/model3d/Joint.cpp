@@ -17,7 +17,7 @@ using namespace Eigen;
 namespace model3d {
     Joint::Joint(BodyNode *_bIn, BodyNode *_bOut){
 		mType = UNKNOWN;
-        mModelIndex=-1;
+        mSkelIndex=-1;
         mNodeIn=_bIn;
         mNodeOut=_bOut;
         if(mNodeIn != NULL)
@@ -40,9 +40,9 @@ namespace model3d {
         return false;
     }
 
-    int Joint::getLocalIndex (int _dofModelIndex) const{
+    int Joint::getLocalIndex (int _dofSkelIndex) const{
         for(unsigned int i=0; i<mDofs.size(); i++)
-            if(mDofs[i]->getModelIndex()==_dofModelIndex) return i;
+            if(mDofs[i]->getSkelIndex()==_dofSkelIndex) return i;
         return -1;
     }
 

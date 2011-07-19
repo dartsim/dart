@@ -26,7 +26,7 @@ void MyWindow::computeMax()
 
 void MyWindow::draw()
 {
-    Skeleton* model = mMotion.getModel();
+    Skeleton* model = mMotion.getSkel();
 
     // validate the frame index
     int nFrames = mMotion.getNumFrames();

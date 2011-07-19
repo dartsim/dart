@@ -48,8 +48,8 @@ namespace model3d {
 
         TransFormType getType() const { return mType; }
 
-        int getModelIndex() const { return mModelIndex; }
-        void setModelIndex(int _idx) { mModelIndex = _idx; }
+        int getSkelIndex() const { return mSkelIndex; }
+        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 	
         Joint* getJoint() const { return mJoint; }
         void setJoint(Joint *_joint) { mJoint = _joint; }
@@ -85,7 +85,7 @@ namespace model3d {
     protected:
         std::vector<Dof *> mDofs;	// collection of Dofs
         TransFormType mType;
-        int mModelIndex;	// position in the model transform vector
+        int mSkelIndex;	// position in the model transform vector
         char mName[MAX_TRANSFORMATION_NAME];
 
         Joint *mJoint;	// Transformation associated with

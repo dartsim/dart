@@ -33,10 +33,10 @@ namespace model3d {
         double getFPS() const { return mFPS; }
         
         double getNumFrames() const { return mNumFrames; }
-        Skeleton* getModel() const { return mModel; }
+        Skeleton* getSkel() const { return mSkel; }
 
     protected:
-        Skeleton* mModel; ///< model associated with
+        Skeleton* mSkel; ///< model associated with
         double mFPS; ///< frame rate
         int mNumFrames; ///< number of frames
         char mFileName[256]; ///< file name

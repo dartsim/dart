@@ -123,7 +123,7 @@ enum yytokentype {
 #include "Transformation.h"
 #include "Primitive.h"
 #include "Dof.h"
-#include "ParserModel.h"
+#include "ParserSkel.h"
 
 #include <Eigen/Dense>
 using namespace Eigen;

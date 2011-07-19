@@ -174,7 +174,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoModel.cpp"
+				RelativePath=".\FileInfoSkel.cpp"
 				>
 			</File>
 			<File
@@ -186,7 +186,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ParserModel.cpp"
+				RelativePath=".\ParserSkel.cpp"
 				>
 			</File>
 			<File
@@ -260,7 +260,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FileInfoModel.h"
+				RelativePath=".\FileInfoSkel.h"
 				>
 			</File>
 			<File
@@ -272,7 +272,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ParserModel.h"
+				RelativePath=".\ParserSkel.h"
 				>
 			</File>
 			<File
