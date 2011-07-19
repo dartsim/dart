@@ -1,9 +1,9 @@
 /*
-  RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
-  All rights reserved.
+    RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+    All rights reserved.
 
-  Author	Sehoon Ha
-  Date		06/12/2011
+    Author  Sehoon Ha
+    Date    06/12/2011
 */
 
 #ifndef MODEL3D_TRANSFORMATION_H
@@ -50,22 +50,22 @@ namespace model3d {
 
         int getSkelIndex() const { return mSkelIndex; }
         void setSkelIndex(int _idx) { mSkelIndex = _idx; }
-	
+
         Joint* getJoint() const { return mJoint; }
         void setJoint(Joint *_joint) { mJoint = _joint; }
 
         int getNumDofs() const { return mDofs.size(); }
         Dof* getDof(int i) const { return mDofs[i]; }
-	
+
         bool getVariable() const { return mVariable; }
         void setVariable(bool _var) { mVariable = _var; }
 
-        void setDirty() { isDirty = true; }
+        void setDirty() { mDirty = true; }
         Eigen::Matrix4d getTransform();
-	
+
         bool isPresent(const Dof *d) const;	// true if d is present in the dof list
         virtual Eigen::Matrix4d getInvTransform();
-	
+
         virtual void applyTransform(Eigen::Vector3d& _v);
         virtual void applyTransform(Eigen::Matrix4d& _m);
         virtual void applyInvTransform(Eigen::Vector3d& _v);
@@ -77,8 +77,8 @@ namespace model3d {
         virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
         virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
-	virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;	// apply transform in GL
-        virtual void evalTransform() = 0;	// computes and stores in above
+        virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;	// apply transform in GL
+        virtual void computeTransform() = 0;	// computes and stores in above
         virtual Eigen::Matrix4d getDeriv(const Dof *q) = 0;	// get derivative wrt to a dof
         virtual Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
 
@@ -91,11 +91,11 @@ namespace model3d {
         Joint *mJoint;	// Transformation associated with
         bool mVariable;	// true when it is a variable and included int he model
         Eigen::Matrix4d mTransform;	// transformation matrix will be stored here
-	
-        bool isDirty;
+
+        bool mDirty;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-            };
+    };
 
 } // namespace model3d
 

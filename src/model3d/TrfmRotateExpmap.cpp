@@ -47,7 +47,7 @@ namespace model3d {
             strcpy(mName, "EXPMAP");
     }
 
-    void TrfmRotateExpMap::evalTransform(){
+    void TrfmRotateExpMap::computeTransform(){
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta= v.norm();
         Vector3d vhat = Vector3d::Zero();
@@ -66,9 +66,9 @@ namespace model3d {
     }
 
     Matrix4d TrfmRotateExpMap::getInvTransform(){
-        if(isDirty){
-            evalTransform();
-            isDirty=false;
+        if(mDirty){
+            computeTransform();
+            mDirty=false;
         }
         return mTransform.transpose();
     }
