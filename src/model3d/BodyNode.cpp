@@ -17,7 +17,7 @@
 #include "Transformation.h"
 #include "utils/Misc.h"
 #include "utils/UtilsMath.h"
-#include "utils/EigenHelper.h"
+//#include "utils/EigenHelper.h"
 
 using namespace std;
 using namespace Eigen;
@@ -228,16 +228,18 @@ namespace model3d {
     }
 
     void BodyNode::evalJW() {
-        using eigenhelper::sub;
-        using eigenhelper::trans;
+        //using eigenhelper::sub;
+        //using eigenhelper::trans;
         
         mJW.setZero();
         for (vector<int>::iterator i_iter = mDependantDofs.begin();
              i_iter != mDependantDofs.end(); i_iter++) {
             int i = (*i_iter);
 
-            MatrixXd transR = trans(sub(mTransWorld, 3, 3));
-            MatrixXd dRdq = sub(mWq.at(i), 3, 3);
+            //MatrixXd transR = trans(sub(mTransWorld, 3, 3));
+            //MatrixXd dRdq = sub(mWq.at(i), 3, 3);
+            MatrixXd transR = mTransWorld.topLeftCorner(3,3).transpose();
+            MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
             MatrixXd omegaSkewSymmetric = dRdq * transR;
             VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
             omega = transR * omega;
