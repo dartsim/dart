@@ -22,10 +22,11 @@ namespace model3d {
 
     Transformation::Transformation()
         :mTransform(Matrix4d::Zero()) {
-        mJoint=NULL;
-        mVariable=true;
-        mSkelIndex=-1;
-        mDirty = true;
+            strcpy(mName,"");
+            mJoint=NULL;
+            mVariable=true;
+            mSkelIndex=-1;
+            mDirty = true;
     }
 
     Transformation::~Transformation(){
@@ -66,13 +67,13 @@ namespace model3d {
         v = Vector3d( v4d[0], v4d[1], v4d[2] );
     }
 
+    void Transformation::applyTransform(Matrix4d& m) {
+        m = getTransform() * m;
+    }
+
     void Transformation::applyInvTransform(Vector3d& v) {
         using eigenhelper::xform;
         v = xform(getInvTransform(), v);
-    }
-
-    void Transformation::applyTransform(Matrix4d& m) {
-        m = getTransform() * m;
     }
 
     void Transformation::applyInvTransform(Matrix4d& m) {
@@ -96,6 +97,6 @@ namespace model3d {
     void Transformation::applySecondDeriv(const Dof* q1, const Dof* q2, Matrix4d& m) {
         m = getSecondDeriv(q1, q2)*m;
     }
-  
+
 
 } // namespace model3d

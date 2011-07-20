@@ -70,7 +70,6 @@ namespace model3d {
         virtual void applyInvTransform(Eigen::Vector3d& _v);
         virtual void applyInvTransform(Eigen::Matrix4d& _m);
 
-        // TODO: old code has implementations (but what are they?)
         virtual void applyDeriv(const Dof* q, Eigen::Vector3d& v);
         virtual void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
         virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
