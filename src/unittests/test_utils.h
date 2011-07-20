@@ -2,7 +2,7 @@
 #define SRC_UNITTESTS_TEST_UTILS_H
 
 #include "utils/RotationConversion.h"
-#include "utils/Utils.h"
+#include "utils/UtilsMath.h"
 
 TEST(UTILS, ROTATION_CONVERSION) {
   using namespace utils::rot_conv;
