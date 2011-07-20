@@ -2,6 +2,7 @@ syntax: glob
 CMakeFiles*
 CMakeCache.txt
 cmake_install.cmake
+src/utils/Paths.h
 Makefile
 docs/
 TAGS
