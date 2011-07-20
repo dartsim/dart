@@ -4,7 +4,7 @@ using namespace Eigen;
 #include "model3d/BodyNode.h"
 #include "model3d/Skeleton.h"
 #include "optimizer/Var.h"
-#include "utils/Utils.h"
+#include "utils/UtilsMath.h"
 
 namespace optimizer {
     

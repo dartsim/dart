@@ -12,7 +12,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "Utils/RotationConversion.h"
+#include "utils/RotationConversion.h"
 
 namespace model3d {
 
