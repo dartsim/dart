@@ -70,15 +70,15 @@ namespace model3d {
         virtual void applyInvTransform(Eigen::Vector3d& _v);
         virtual void applyInvTransform(Eigen::Matrix4d& _m);
 
-        virtual void applyDeriv(const Dof* q, Eigen::Vector3d& v);
-        virtual void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
-        virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
-        virtual void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
+        virtual void applyDeriv(const Dof* _q, Eigen::Vector3d& _v);
+        virtual void applyDeriv(const Dof* _q, Eigen::Matrix4d& _m);
+        virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Vector3d& _v);
+        virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m);
 
         virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;	// apply transform in GL
         virtual void computeTransform() = 0;	// computes and stores in above
-        virtual Eigen::Matrix4d getDeriv(const Dof *q) = 0;	// get derivative wrt to a dof
-        virtual Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
+        virtual Eigen::Matrix4d getDeriv(const Dof *_q) = 0;	// get derivative wrt to a dof
+        virtual Eigen::Matrix4d getSecondDeriv(const Dof *_q1, const Dof *_q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
 
     protected:
         std::vector<Dof *> mDofs;	// collection of Dofs

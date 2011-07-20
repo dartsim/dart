@@ -59,43 +59,43 @@ namespace model3d {
         return false;
     }
 
-    void Transformation::applyTransform(Vector3d& v) {
+    void Transformation::applyTransform(Vector3d& _v) {
         using eigenhelper::xform;
-        v= xform(getTransform(), v);
-        Vector4d v4d( v[0], v[1], v[2], 1 );
-        v4d = getTransform() * v4d;
-        v = Vector3d( v4d[0], v4d[1], v4d[2] );
+        _v= xform(getTransform(), _v);
+        Vector4d v4d( _v[0], _v[1], _v[2], 1 );
+        v4d = getTransform() *v4d;
+        _v = Vector3d( v4d[0], v4d[1], v4d[2] );
     }
 
-    void Transformation::applyTransform(Matrix4d& m) {
-        m = getTransform() * m;
+    void Transformation::applyTransform(Matrix4d& _m) {
+        _m = getTransform() *_m;
     }
 
-    void Transformation::applyInvTransform(Vector3d& v) {
+    void Transformation::applyInvTransform(Vector3d& _v) {
         using eigenhelper::xform;
-        v = xform(getInvTransform(), v);
+        _v = xform(getInvTransform(), _v);
     }
 
-    void Transformation::applyInvTransform(Matrix4d& m) {
-        m = getInvTransform() * m;
+    void Transformation::applyInvTransform(Matrix4d& _m) {
+        _m = getInvTransform() *_m;
     }
 
-    void Transformation::applyDeriv(const Dof* q, Vector3d& v) {
+    void Transformation::applyDeriv(const Dof*_q, Vector3d& _v) {
         using eigenhelper::xform;
-        v = xform(getDeriv(q), v);
+        _v = xform(getDeriv(_q), _v);
     }
 
-    void Transformation::applyDeriv(const Dof* q, Matrix4d& m)  {
-        m = getDeriv(q) * m;
+    void Transformation::applyDeriv(const Dof*_q, Matrix4d& _m)  {
+        _m = getDeriv(_q) *_m;
     }
 
-    void Transformation::applySecondDeriv(const Dof* q1, const Dof* q2, Vector3d& v) {
+    void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Vector3d& _v) {
         using eigenhelper::xform;
-        v = xform(getSecondDeriv(q1, q2), v);
+        _v = xform(getSecondDeriv(_q1, _q2), _v);
     }
 
-    void Transformation::applySecondDeriv(const Dof* q1, const Dof* q2, Matrix4d& m) {
-        m = getSecondDeriv(q1, q2)*m;
+    void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Matrix4d& _m) {
+        _m = getSecondDeriv(_q1, _q2)*_m;
     }
 
 
