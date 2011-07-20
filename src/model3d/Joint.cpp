@@ -18,7 +18,7 @@ using namespace std;
 
 
 namespace model3d {
-    Joint::Joint(BodyNode *_bIn, BodyNode *_bOut){
+    Joint::Joint(BodyNode *_bIn, BodyNode *_bOut, const char *_name){
 		mType = J_UNKNOWN;
         mSkelIndex=-1;
         mNodeIn=_bIn;
@@ -28,6 +28,7 @@ namespace model3d {
         mNumDofsRot=0;
         mNumDofsTrans=0;
         mRotTransIndex.clear();
+        if(_name) setName(_name);
     }
 
     Joint::~Joint(){
@@ -166,12 +167,12 @@ namespace model3d {
 
     Vector3d Joint::getAxis( unsigned int _i ){
         assert(_i>=0 && _i<=2);
-		if(mTransforms.size()<=_i) return Vector3d(0,0,0);
+        if(mTransforms.size()<=_i) return Vector3d::Zero();
         Transformation *rot = mTransforms[mTransforms.size()-_i - 1];
-        if(rot->getType()==Transformation::T_ROTATEX) return Vector3d(1,0,0);
-        if(rot->getType()==Transformation::T_ROTATEY) return Vector3d(0,1,0);
-        if(rot->getType()==Transformation::T_ROTATEZ) return Vector3d(0,0,1);
-        return Vector3d(0,0,0);
+        if(rot->getType()==Transformation::T_ROTATEX) return Vector3d::UnitX();
+        if(rot->getType()==Transformation::T_ROTATEY) return Vector3d::UnitY();
+        if(rot->getType()==Transformation::T_ROTATEZ) return Vector3d::UnitZ();
+        return Vector3d::Zero();
     }
 
     Matrix4d Joint::getDeriv(const Dof* _q){

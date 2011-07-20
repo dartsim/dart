@@ -33,7 +33,7 @@ namespace model3d {
             J_TRANS
         };
 	
-        Joint(BodyNode* _bIn, BodyNode* _bOut);
+        Joint(BodyNode* _bIn, BodyNode* _bOut, const char *_name=NULL);
         virtual ~Joint();
 
         bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list
@@ -70,11 +70,17 @@ namespace model3d {
 
 		JointType getJointType(){return mType;}
 
+        inline const char *getName(){return mName;}
+        inline void setName(const char *_name){
+            strcpy(mName, _name);
+        }
+
     protected:
         BodyNode *mNodeIn; ///< parent node
         BodyNode *mNodeOut; ///< child node
         int mSkelIndex;	///< unique dof id in model
 		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as J_UNKNOWN
+        char mName[512];    ///< name the joint so that joint can be retrieved by name
 
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeOut
         std::vector<Dof*> mDofs;	///< associated dofs
