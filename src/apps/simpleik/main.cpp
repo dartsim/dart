@@ -17,6 +17,8 @@ using namespace optimizer;
 
 using namespace Eigen;
 
+#include "utils/Paths.h"
+
 int main(int argc, char* argv[]) {
     // Init google libraries
     ParseCommandLineFlags(&argc, &argv, true);
@@ -35,7 +37,7 @@ int main(int argc, char* argv[]) {
     IKProblem prob;
 
     FileInfoC3D c3dFile;
-    bool result = c3dFile.loadFile("./squat.c3d");
+    bool result = c3dFile.loadFile(GROUNDZERO_DATA_PATH"c3d/squat.c3d");
     CHECK(result);
 
     FileInfoDof resultDof(prob.getSkel());
@@ -56,7 +58,7 @@ int main(int argc, char* argv[]) {
         prob.getSkel()->getPose(pose);
         resultDof.addDof(pose);
     }
-    resultDof.saveFile("./result.dof", 0, resultDof.getNumFrames());
+    resultDof.saveFile(GROUNDZERO_DATA_PATH"dof/result.dof", 0, resultDof.getNumFrames());
     LOG(INFO) << "Save OK";
 
     LOG(INFO) << "simpleik OK";

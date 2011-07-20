@@ -17,7 +17,7 @@ using namespace model3d;
 #include "optimizer/ConstraintBox.h"
 using namespace optimizer;
 #include "PositionConstraint.h"
-
+#include "utils/Paths.h"
 
 namespace optimizer {
     IKProblem::IKProblem()
@@ -31,7 +31,7 @@ namespace optimizer {
 
     void IKProblem::initProblem() {
         mFileInfoSkel = new FileInfoSkel<Skeleton>();
-        bool result = mFileInfoSkel->loadFile("./SehoonVSK3.vsk", model3d::VSK);
+        bool result = mFileInfoSkel->loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk", model3d::VSK);
         CHECK(result);
 
         // Add variables
