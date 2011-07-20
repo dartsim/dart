@@ -196,25 +196,26 @@ namespace utils {
 /*   const Matd pSSpE3(3,3,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0); */
 
     inline VectorXd fromSkewSymmetric(const MatrixXd& m) {
-        if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON)
-        {
+        if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON) {
             cout << "Not skew symmetric matrix" << endl;
             cerr << m <<endl;
-            exit(0);
+            return VectorXd::Zero(3);
         }
         VectorXd ret = VectorXd::Zero(3);
-        VectorXd unitY(3);
-        unitY << 0.0, 1.0, 0.0;
-    
-        VectorXd xz = m * unitY;
-        ret(0) = xz(2);
-        ret(2) = -xz(0);
+        //VectorXd unitY(3);
+        //unitY << 0.0, 1.0, 0.0;
+        //VectorXd xz = m * unitY;
+        //ret(0) = xz(2);
+        //ret(2) = -xz(0);
+        //VectorXd unitZ(3);
+        //unitZ << 0.0, 0.0, 1.0;
+        //VectorXd y = m * unitZ;
+        //ret(1) = y(0);
 
-        VectorXd unitZ(3);
-        unitZ << 0.0, 0.0, 1.0;
+        ret(0) = m(2,1);
+        ret(1) = m(0,2);
+        ret(2) = m(1,0);
 
-        VectorXd y = m * unitZ;
-        ret(1) = y(0);
         return ret;
     }
 
