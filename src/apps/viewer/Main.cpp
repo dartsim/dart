@@ -8,14 +8,15 @@
 
 using namespace std;
 using namespace model3d;
+#include "utils/Paths.h"
 
 int main(int argc, char* argv[])
 {
     const char* modelfile;
     const char* doffile;
     if(argc!=3){
-		modelfile = "YutingEuler.skel";
-		doffile = "RHand.dof";
+		modelfile = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+		doffile = GROUNDZERO_DATA_PATH"dof/RHand.dof";
     }else{
         modelfile = argv[1];
         doffile = argv[2];

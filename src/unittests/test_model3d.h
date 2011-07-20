@@ -6,13 +6,14 @@
 #include "model3d/BodyNode.h"
 #include "model3d/FileInfoDof.h"
 #include "model3d/FileInfoC3D.h"
+#include "utils/Paths.h"
 
 TEST(MODEL3D, VSK_LOADER) {
     using namespace Eigen;
     using namespace model3d;
   
     FileInfoSkel<Skeleton> modelFile;
-    modelFile.loadFile("Yuting.vsk", model3d::VSK);
+    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk", model3d::VSK);
     // Skeleton* skel = modelFile.getSkel();
 
     // EXPECT_TRUE(skel != NULL);
@@ -27,7 +28,7 @@ TEST(MODEL3D, C3D_LOADER) {
     using namespace model3d;
   
     FileInfoC3D c3dFile;
-    bool result = c3dFile.loadFile("./squat.c3d");
+    bool result = c3dFile.loadFile(GROUNDZERO_DATA_PATH"c3d/squat.c3d");
     ASSERT_TRUE(result);
 
     EXPECT_EQ(c3dFile.getNumMarkers(), 53);
@@ -40,7 +41,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     using namespace model3d;
   
     FileInfoSkel<Skeleton> modelFile;
-    bool loadModelResult = modelFile.loadFile("./SehoonVSK3.vsk", model3d::VSK);
+    bool loadModelResult = modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk", model3d::VSK);
     ASSERT_TRUE(loadModelResult);
     
     Skeleton* skel = modelFile.getSkel();
@@ -50,7 +51,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
 
 
     FileInfoDof dofFile(skel);
-    bool loadDofResult = dofFile.loadFile("./init_Tpose.dof");
+    bool loadDofResult = dofFile.loadFile(GROUNDZERO_DATA_PATH"dof/init_Tpose.dof");
     ASSERT_TRUE(loadDofResult);
     /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 
