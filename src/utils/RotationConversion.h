@@ -18,7 +18,7 @@ using namespace Eigen;
 namespace utils {
     namespace rot_conv {
 
-        enum RotationOrder {XYZ, XZY, YZX, YXZ, ZXY, ZYX};
+        enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
 
         Quaterniond matrixToQuat(Matrix3d& m);	// forms the Quaterniond from a rotation matrix
         Quaterniond expToQuat(Vector3d& v);
