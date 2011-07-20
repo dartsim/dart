@@ -11,7 +11,6 @@
 
 // External Libraries
 #include <Eigen/Dense>
-using namespace Eigen;
 // Local Headers
 #include "Misc.h"
 
@@ -20,25 +19,25 @@ namespace utils {
 
         enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
 
-        Quaterniond matrixToQuat(Matrix3d& m);	// forms the Quaterniond from a rotation matrix
-        Quaterniond expToQuat(Vector3d& v);
-        Vector3d quatToExp(Quaterniond& q);
-        Matrix3d quatToMatrix(Quaterniond& q);
+        Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
+        Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
+        Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
+        Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
 
         // Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
         // coord sys transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-        Vector3d matrixToEuler(Matrix3d& m, RotationOrder _order);
-        Matrix3d eulerToMatrix(Vector3d& v, RotationOrder _order);
+        Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder _order);
+        Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder _order);
 
-        Matrix3d eulerToMatrixx(double x);
-        Matrix3d eulerToMatrixy(double y);
-        Matrix3d eulerToMatrixz(double z);
+        Eigen::Matrix3d eulerToMatrixx(double x);
+        Eigen::Matrix3d eulerToMatrixy(double y);
+        Eigen::Matrix3d eulerToMatrixz(double z);
 
         // Yuting: I don't think we need it, and it shoudn't be here even if we do
         // Note: retrieves the derivative matrix given a quaternion
         // This is not functionality that is part of Eigen
-        Matrix3d getDerivativeMatrix(const Quaterniond& q, int el);
-        Matrix3d getDerivativeMatrix(const Quaterniond& q, int el1, int el2);
+        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el);
+        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el1, int el2);
 
     } // namespace rot_conv
 } // namespace utils
