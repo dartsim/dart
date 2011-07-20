@@ -33,11 +33,11 @@ namespace model3d {
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        mTransform(_X, _X) = 1.0; 
-        mTransform(_Y, _Y) = cosq; 
-        mTransform(_Y, _Z) = -sinq; 
-        mTransform(_Z, _Y) = sinq; 
-        mTransform(_Z, _Z) = cosq; 
+        mTransform(A_X, A_X) = 1.0; 
+        mTransform(A_Y, A_Y) = cosq; 
+        mTransform(A_Y, A_Z) = -sinq; 
+        mTransform(A_Z, A_Y) = sinq; 
+        mTransform(A_Z, A_Z) = cosq; 
         mTransform(3, 3) = 1.0; 
     }
 
@@ -46,10 +46,10 @@ namespace model3d {
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_Y, _Y) = -sinq;
-            ret(_Y, _Z) = -cosq;
-            ret(_Z, _Y) = cosq;
-            ret(_Z, _Z) = -sinq;
+            ret(A_Y, A_Y) = -sinq;
+            ret(A_Y, A_Z) = -cosq;
+            ret(A_Z, A_Y) = cosq;
+            ret(A_Z, A_Z) = -sinq;
         }
         return ret;
     }
@@ -59,10 +59,10 @@ namespace model3d {
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_Y, _Y) = -cosq;
-            ret(_Y, _Z) = sinq;
-            ret(_Z, _Y) = -sinq;
-            ret(_Z, _Z) = -cosq;
+            ret(A_Y, A_Y) = -cosq;
+            ret(A_Y, A_Z) = sinq;
+            ret(A_Z, A_Y) = -sinq;
+            ret(A_Z, A_Z) = -cosq;
         }
         return ret;
     }
@@ -71,10 +71,10 @@ namespace model3d {
         Matrix4d ret = Matrix4d::Ones();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        ret(_Y, _Y) = cosq;
-        ret(_Y, _Z) = sinq;
-        ret(_Z, _Y) = -sinq;
-        ret(_Z, _Z) = cosq;
+        ret(A_Y, A_Y) = cosq;
+        ret(A_Y, A_Z) = sinq;
+        ret(A_Z, A_Y) = -sinq;
+        ret(A_Z, A_Z) = cosq;
         return ret;
     }
 
@@ -100,11 +100,11 @@ namespace model3d {
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        mTransform(_Y, _Y) = 1.0; 
-        mTransform(_X, _X) = cosq; 
-        mTransform(_X, _Z) = sinq; 
-        mTransform(_Z, _X) = -sinq; 
-        mTransform(_Z, _Z) = cosq; 
+        mTransform(A_Y, A_Y) = 1.0; 
+        mTransform(A_X, A_X) = cosq; 
+        mTransform(A_X, A_Z) = sinq; 
+        mTransform(A_Z, A_X) = -sinq; 
+        mTransform(A_Z, A_Z) = cosq; 
         mTransform(3, 3) = 1.0; 
     }
 
@@ -113,10 +113,10 @@ namespace model3d {
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_X, _X) = -sinq;
-            ret(_X, _Z) = cosq;
-            ret(_Z, _X) = -cosq;
-            ret(_Z, _Z) = -sinq;
+            ret(A_X, A_X) = -sinq;
+            ret(A_X, A_Z) = cosq;
+            ret(A_Z, A_X) = -cosq;
+            ret(A_Z, A_Z) = -sinq;
         }
         return ret;
     }
@@ -126,10 +126,10 @@ namespace model3d {
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_X, _X) = -cosq;
-            ret(_X, _Z) = -sinq;
-            ret(_Z, _X) = sinq;
-            ret(_Z, _Z) = -cosq;
+            ret(A_X, A_X) = -cosq;
+            ret(A_X, A_Z) = -sinq;
+            ret(A_Z, A_X) = sinq;
+            ret(A_Z, A_Z) = -cosq;
         }
         return ret;
     }
@@ -138,10 +138,10 @@ namespace model3d {
         Matrix4d ret = Matrix4d::Ones();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        ret(_X, _X) = cosq;
-        ret(_X, _Z) = -sinq;
-        ret(_Z, _X) = sinq;
-        ret(_Z, _Z) = cosq;
+        ret(A_X, A_X) = cosq;
+        ret(A_X, A_Z) = -sinq;
+        ret(A_Z, A_X) = sinq;
+        ret(A_Z, A_Z) = cosq;
         return ret;
     }
 
@@ -166,11 +166,11 @@ namespace model3d {
         mTransform.setZero();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        mTransform(_Z, _Z) = 1.0; 
-        mTransform(_X, _X) = cosq; 
-        mTransform(_X, _Y) = -sinq; 
-        mTransform(_Y, _X) = sinq; 
-        mTransform(_Y, _Y) = cosq; 
+        mTransform(A_Z, A_Z) = 1.0; 
+        mTransform(A_X, A_X) = cosq; 
+        mTransform(A_X, A_Y) = -sinq; 
+        mTransform(A_Y, A_X) = sinq; 
+        mTransform(A_Y, A_Y) = cosq; 
         mTransform(3, 3) = 1.0; 
     }
 
@@ -179,10 +179,10 @@ namespace model3d {
         if(q==mDofs[0]){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_X, _X) = -sinq;
-            ret(_X, _Y) = -cosq;
-            ret(_Y, _X) = cosq;
-            ret(_Y, _Y) = -sinq;
+            ret(A_X, A_X) = -sinq;
+            ret(A_X, A_Y) = -cosq;
+            ret(A_Y, A_X) = cosq;
+            ret(A_Y, A_Y) = -sinq;
         }
         return ret;
     }
@@ -192,10 +192,10 @@ namespace model3d {
         if(mDofs[0]==q1 && mDofs[0]==q2){
             double cosq = cos(mDofs[0]->getValue());
             double sinq = sin(mDofs[0]->getValue());
-            ret(_X, _X) = -cosq;
-            ret(_X, _Y) = sinq;
-            ret(_Y, _X) = -sinq;
-            ret(_Y, _Y) = -cosq;
+            ret(A_X, A_X) = -cosq;
+            ret(A_X, A_Y) = sinq;
+            ret(A_Y, A_X) = -sinq;
+            ret(A_Y, A_Y) = -cosq;
         }
         return ret;
     }
@@ -204,10 +204,10 @@ namespace model3d {
         Matrix4d ret = Matrix4d::Ones();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
-        ret(_X, _X) = cosq;
-        ret(_X, _Y) = sinq;
-        ret(_Y, _X) = -sinq;
-        ret(_Y, _Y) = cosq;
+        ret(A_X, A_X) = cosq;
+        ret(A_X, A_Y) = sinq;
+        ret(A_Y, A_X) = -sinq;
+        ret(A_Y, A_Y) = cosq;
         return ret;
     }
 //

@@ -21,12 +21,11 @@ namespace model3d {
     class Joint;
     class Dof;
 
-#ifndef _AXIS
-#define _AXIS
-#define _X 0
-#define _Y 1
-#define _Z 2
-#endif
+    enum AxisType{
+        A_X=0,
+        A_Y=1,
+        A_Z=2
+    };
 
     class Transformation {
     public:
