@@ -123,13 +123,13 @@ namespace model3d {
         mTransform(1, 1) = 1.0; 
         mTransform(2, 2) = 1.0; 
         mTransform(3, 3) = 1.0; 
-        mTransform(_X, 3) = mDofs[0]->getValue(); 
+        mTransform(A_X, 3) = mDofs[0]->getValue(); 
     }
 
     Matrix4d TrfmTranslateX::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
-            ret(_X, 3) = 1.0;
+            ret(A_X, 3) = 1.0;
         return ret;
     }
 
@@ -145,31 +145,31 @@ namespace model3d {
     void TrfmTranslateX::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m=Matrix4d::Zero();
         else for(int i=0; i<4; i++){
-                if(i==_X) m.row(i) = m.row(3);
+                if(i==A_X) m.row(i) = m.row(3);
                 else m.row(i).setZero();
             }
     }
 
     Matrix4d TrfmTranslateX::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
-        ret(_X, 3) = -mDofs[0]->getValue();
+        ret(A_X, 3) = -mDofs[0]->getValue();
         return ret;
     }
 
     void TrfmTranslateX::applyTransform(Vector3d& v){
-        v(_X) += mDofs[0]->getValue();
+        v(A_X) += mDofs[0]->getValue();
     }
 
     void TrfmTranslateX::applyInvTransform(Vector3d& v){
-        v(_X) -= mDofs[0]->getValue();
+        v(A_X) -= mDofs[0]->getValue();
     }
 
     void TrfmTranslateX::applyTransform(Matrix4d& m){
-        m.row(_X) += mDofs[0]->getValue() * m.row(3);
+        m.row(A_X) += mDofs[0]->getValue() * m.row(3);
     }
 
     void TrfmTranslateX::applyInvTransform(Matrix4d& m){
-        m.row(_X) -= mDofs[0]->getValue() * m.row(3);
+        m.row(A_X) -= mDofs[0]->getValue() * m.row(3);
     }
 
     TrfmTranslateY::TrfmTranslateY(Dof *y, const char *_name){
@@ -195,13 +195,13 @@ namespace model3d {
         mTransform(1, 1) = 1.0; 
         mTransform(2, 2) = 1.0; 
         mTransform(3, 3) = 1.0; 
-        mTransform(_Y, 3) = mDofs[0]->getValue(); 
+        mTransform(A_Y, 3) = mDofs[0]->getValue(); 
     }
 
     Matrix4d TrfmTranslateY::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
-            ret(_Y, 3) = 1.0;
+            ret(A_Y, 3) = 1.0;
         return ret;
     }
 
@@ -218,31 +218,31 @@ namespace model3d {
     void TrfmTranslateY::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m=Matrix4d::Zero();
         else for(int i=0; i<4; i++){
-                if(i==_Y) m.row(i)=m.row(3);
+                if(i==A_Y) m.row(i)=m.row(3);
                 else m.row(i).setZero();
             }
     }
 
     Matrix4d TrfmTranslateY::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
-        ret(_Y, 3) = -mDofs[0]->getValue();
+        ret(A_Y, 3) = -mDofs[0]->getValue();
         return ret;
     }
 
     void TrfmTranslateY::applyTransform(Vector3d& v){
-        v(_Y) += mDofs[0]->getValue();
+        v(A_Y) += mDofs[0]->getValue();
     }
 
     void TrfmTranslateY::applyInvTransform(Vector3d& v){
-        v(_Y) -= mDofs[0]->getValue();
+        v(A_Y) -= mDofs[0]->getValue();
     }
 
     void TrfmTranslateY::applyTransform(Matrix4d& m){
-        m.row(_Y) += mDofs[0]->getValue() * m.row(3);
+        m.row(A_Y) += mDofs[0]->getValue() * m.row(3);
     }
 
     void TrfmTranslateY::applyInvTransform(Matrix4d& m){
-        m.row(_Y) -= mDofs[0]->getValue() * m.row(3);
+        m.row(A_Y) -= mDofs[0]->getValue() * m.row(3);
     }
 
     TrfmTranslateZ::TrfmTranslateZ(Dof *z, const char *_name){
@@ -268,13 +268,13 @@ namespace model3d {
         mTransform(1, 1) = 1.0; 
         mTransform(2, 2) = 1.0; 
         mTransform(3, 3) = 1.0; 
-        mTransform(_Z, 3) = mDofs[0]->getValue(); 
+        mTransform(A_Z, 3) = mDofs[0]->getValue(); 
     }
 
     Matrix4d TrfmTranslateZ::getDeriv(const Dof *q){
         Matrix4d ret = Matrix4d::Zero();
         if(mDofs[0] == q)
-            ret(_Z, 3) = 1.0;
+            ret(A_Z, 3) = 1.0;
         return ret;
     }
 
@@ -286,31 +286,31 @@ namespace model3d {
     void TrfmTranslateZ::applyDeriv(const Dof* q, Matrix4d& m){
         if(mDofs[0] != q) m = Matrix4d::Zero();
         else for(int i=0; i<4; i++){
-                if(i==_Z) m.row(i) = m.row(3);
+                if(i==A_Z) m.row(i) = m.row(3);
                 else m.row(i).setZero();
             }
     }
 
     Matrix4d TrfmTranslateZ::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
-        ret(_Z, 3) = -mDofs[0]->getValue();
+        ret(A_Z, 3) = -mDofs[0]->getValue();
         return ret;
     }
 
     void TrfmTranslateZ::applyTransform(Vector3d& v){
-        v(_Z) += mDofs[0]->getValue();
+        v(A_Z) += mDofs[0]->getValue();
     }
 
     void TrfmTranslateZ::applyInvTransform(Vector3d& v){
-        v(_Z) -= mDofs[0]->getValue();
+        v(A_Z) -= mDofs[0]->getValue();
     }
 
     void TrfmTranslateZ::applyTransform(Matrix4d& m){
-        m.row(_Z) += mDofs[0]->getValue() * m.row(3);
+        m.row(A_Z) += mDofs[0]->getValue() * m.row(3);
     }
 
     void TrfmTranslateZ::applyInvTransform(Matrix4d& m){
-        m.row(_Z) -= mDofs[0]->getValue() * m.row(3);
+        m.row(A_Z) -= mDofs[0]->getValue() * m.row(3);
     }
 
 } // namespace model3d

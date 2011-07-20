@@ -59,16 +59,16 @@ namespace model3d {
     }
 
     void Transformation::applyTransform(Vector3d& v) {
-        // TODO: fix
-        // v= xform(getTransform(), v);
-        // Vector4d v4d( v.x, v.y, v.z, 1 );
-        // v4d = getTransform() * v4d;
-        // v = Vector3d( v4d.x, v4d.y, v4d.z );
+        using eigenhelper::xform;
+        v= xform(getTransform(), v);
+        Vector4d v4d( v[0], v[1], v[2], 1 );
+        v4d = getTransform() * v4d;
+        v = Vector3d( v4d[0], v4d[1], v4d[2] );
     }
 
     void Transformation::applyInvTransform(Vector3d& v) {
-        // TODO: fix
-        // v = xform(getInvTransform(), v);
+        using eigenhelper::xform;
+        v = xform(getInvTransform(), v);
     }
 
     void Transformation::applyTransform(Matrix4d& m) {
