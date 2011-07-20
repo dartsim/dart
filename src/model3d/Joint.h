@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "Utils/RotationConversion.h"
 
 namespace model3d {
 
@@ -22,13 +23,14 @@ namespace model3d {
     class Joint {
     public:
         enum JointType {
-			UNKNOWN,
-            FREE,
-            BALLEULER,
-            BALLQUAT,
-            BALLEXPMAP,
-            HINGE,
-            UNIVERSAL
+            J_UNKNOWN, 
+            J_FREEEULER, 
+            J_FREEEXPMAP, 
+            J_BALLEULER, 
+            J_BALLEXPMAP, 
+            J_HINGE, 
+            J_UNIVERSAL, 
+            J_TRANS
         };
 	
         Joint(BodyNode* _bIn, BodyNode* _bOut);
@@ -40,6 +42,10 @@ namespace model3d {
         Eigen::Matrix4d getLocalTransform(); ///< computes and returns the local transformation from NodeIn to NodeOut
         void applyTransform(Eigen::Vector3d& _v); ///< apply the local transformation to a vector _v
         void applyTransform(Eigen::Matrix4d& _m); ///< apply the local transformation to a matrix _m
+
+        void computeJac(Eigen::MatrixXd *_J, Eigen::MatrixXd *_Jdot, Eigen::VectorXd *_qdot);   ///< compute the relative angular velocity jacobian i.e. w_rel = J*\dot{q_local}
+        utils::rot_conv::RotationOrder getEulerOrder(); ///< Rotation order for the euler rotation if hinge, universal or ball euler joint
+        Eigen::Vector3d getAxis(unsigned int _i);    ///< returns the i th axis of rotation accordingly when R = R2*R1*R0 (i \in {0,1,2})
 	
         Eigen::Matrix4d getDeriv(const Dof* _q); ///< returns the derivative of the local transformation w.r.t. _q. Note: this function assumes _q belongs to this joint. Is _q is not in this joint, the local transformation is returned.
         void applyDeriv(const Dof* _q, Eigen::Vector3d& _v); ///< apply the derivative w.r.t. _q for vector _v. Note: if _q doesn't belong to this joint, applyTransform(_v) is used in effect.
@@ -68,11 +74,15 @@ namespace model3d {
         BodyNode *mNodeIn; ///< parent node
         BodyNode *mNodeOut; ///< child node
         int mSkelIndex;	///< unique dof id in model
-		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as UNKNOWN
+		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as J_UNKNOWN
 
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeOut
         std::vector<Dof*> mDofs;	///< associated dofs
         
+        int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
+        int mNumDofsTrans;   ///< number of DOFs for corresponding to translation
+        std::vector<int> mRotTransIndex; ///< indices of the rotation dofs 
+
         void addDof(Dof *_d); ///< add _d to mDofs 
     };
 
