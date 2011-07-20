@@ -71,7 +71,7 @@ namespace model3d {
         }
     }
 
-    void Joint::computeJac(MatrixXd *_J, MatrixXd *_Jdot, VectorXd *_qdot){
+    void Joint::computeRotationJac(MatrixXd *_J, MatrixXd *_Jdot, VectorXd *_qdot){
         assert(_J);
         _J->resize(3, mNumDofsRot);
         _J->setZero();
@@ -140,7 +140,7 @@ namespace model3d {
             }
         }
         else {
-            cout<<"computeJac not implemented yet for this joint type\n";
+            cout<<"computeRotationJac not implemented yet for this joint type\n";
         }
     }
 

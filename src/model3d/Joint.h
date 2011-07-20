@@ -43,7 +43,7 @@ namespace model3d {
         void applyTransform(Eigen::Vector3d& _v); ///< apply the local transformation to a vector _v
         void applyTransform(Eigen::Matrix4d& _m); ///< apply the local transformation to a matrix _m
 
-        void computeJac(Eigen::MatrixXd *_J, Eigen::MatrixXd *_Jdot, Eigen::VectorXd *_qdot);   ///< compute the relative angular velocity jacobian i.e. w_rel = J*\dot{q_local}
+        void computeRotationJac(Eigen::MatrixXd *_J, Eigen::MatrixXd *_Jdot, Eigen::VectorXd *_qdot);   ///< compute the relative angular velocity jacobian i.e. w_rel = J*\dot{q_local}
         utils::rot_conv::RotationOrder getEulerOrder(); ///< Rotation order for the euler rotation if hinge, universal or ball euler joint
         Eigen::Vector3d getAxis(unsigned int _i);    ///< returns the i th axis of rotation accordingly when R = R2*R1*R0 (i \in {0,1,2})
 	
