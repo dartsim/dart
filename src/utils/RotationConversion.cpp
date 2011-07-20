@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <iostream>
 using namespace std;
+using namespace Eigen;
 
 namespace utils {
     namespace rot_conv {
