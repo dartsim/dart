@@ -16,7 +16,7 @@
 #include "Skeleton.h"
 #include "Transformation.h"
 #include "utils/Misc.h"
-#include "utils/Utils.h"
+#include "utils/UtilsMath.h"
 #include "utils/EigenHelper.h"
 
 using namespace std;
