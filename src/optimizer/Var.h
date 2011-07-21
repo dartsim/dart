@@ -10,7 +10,7 @@
 #define OPTIMIZER_VAR_H
 
 namespace optimizer {
-    struct Var {
+    class Var {
     public:
         Var(double val, double lower, double upper);
         void setWeight(double weight);
