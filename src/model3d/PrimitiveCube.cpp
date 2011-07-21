@@ -12,11 +12,6 @@
 using namespace std;
 using namespace Eigen;
 
-
-// TODO: do we need to include an equivalent config file?
-// #include "RenderConfig.h"
-
-
 namespace model3d {
 
     PrimitiveCube::PrimitiveCube(Vector3d _dim, double _mass){
