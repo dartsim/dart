@@ -10,7 +10,6 @@ Date		06/12/2011
 #ifndef MODEL3D_PARSER_SKEL_H
 #define MODEL3D_PARSER_SKEL_H
 
-//#include "ParserDefs.h"
 namespace model3d{
     class Transformation;
     class Primitive;

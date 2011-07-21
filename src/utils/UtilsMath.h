@@ -6,8 +6,8 @@
   Date		06/12/2011
 */
 
-#ifndef UTILS_UTILS_H
-#define UTILS_UTILS_H
+#ifndef UTILS_UTILSMATH_H
+#define UTILS_UTILSMATH_H
 
 // Standard Libraries
 #include <vector>
@@ -229,6 +229,6 @@ namespace utils {
   
 } // namespace utils
 
-#endif // #ifndef UTILS_UTILS_H
+#endif // #ifndef UTILS_UTILSMATH_H
 
 

@@ -165,6 +165,10 @@
 				RelativePath=".\Timer.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UtilsCode.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -193,6 +197,10 @@
 			</File>
 			<File
 				RelativePath=".\Timer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UtilsCode.h"
 				>
 			</File>
 			<File
