@@ -357,6 +357,34 @@ namespace utils {
             return 2*mat;
         }
 
+        Vector3d rotatePoint(const Quaterniond& q, const Vector3d& pt) {
+            Quaterniond quat_pt(0, pt[0], pt[1], pt[2]);
+            Quaterniond qinv = q.inverse();
+
+            Quaterniond rot = q*quat_pt*qinv;
+
+            // check below - assuming same format of point achieved
+            Vector3d temp;
+            //VLOG(1)<<"Point before: "<<0<<" "<<pt.x<<" "<<pt.y<<" "<<pt.z<<"\n";
+            //VLOG(1)<<"Point after:  "<<rot.x<<" "<<rot.y<<" "<<rot.z<<" "<<rot.w<<"\n";
+            temp[0]=rot.x();
+            temp[1]=rot.y();
+            temp[2]=rot.z();
+
+            //VLOG(1)<<"Point after rotation: "<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
+            return temp;
+        }
+
+        Vector3d rotatePoint(const Quaterniond& q, double x, double y, double z){
+            Vector3d pt;
+            pt[0]=x;
+            pt[1]=y;
+            pt[2]=z;
+
+            return rotatePoint(q, pt);
+        }
+
+
         
 
     } // namespace rot_conv

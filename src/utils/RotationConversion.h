@@ -20,9 +20,11 @@ namespace utils {
         enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
 
         Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
+        Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
+
         Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
         Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
-        Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
+
 
         // Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
         // coord sys transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
@@ -38,6 +40,8 @@ namespace utils {
         // This is not functionality that is part of Eigen
         Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el);
         Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el1, int el2);
+        Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
+        Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
 
     } // namespace rot_conv
 } // namespace utils

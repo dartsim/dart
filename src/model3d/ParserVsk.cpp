@@ -37,7 +37,8 @@ using namespace google;
 #include "Primitive.h"
 #include "PrimitiveEllipsoid.h"
 #include "PrimitiveCube.h"
-//#include "Quaternion.h"
+#include "utils/RotationConversion.h"
+#include "utils/UtilsCode.h"
 
 #define mScaleVSK 1.0e-3
 Vector3d expShoulder(0,0,0);
@@ -48,11 +49,6 @@ using namespace model3d;
 
 // Forward Declarations of helper functions
 Vector3d adjustPos(const Vector3d& _pos);
-void Tokenize(const string& inputStr, vector<string>& tokens);
-Quaterniond ExpToQuat(const Vector3d& v);
-Vector3d RotatePoint(const Quaterniond& q, const Vector3d& pt);
-Vector3d RotatePoint(const Quaterniond& q, double x, double y, double z);
-double str2double(const string& str);
 VectorXd getDofVectorXd(Transformation* trfm);
 
 // Parsing Helper Functions    
@@ -67,11 +63,7 @@ void autoGeneratePrimitive(Skeleton* skel);
 void autoGeneratePrimitive2(Skeleton* skel);
 
 
-//
-// Interface function.
-//
-int readVSKFile(const char* const filename, Skeleton* _skel)
-{
+int readVSKFile(const char* const filename, Skeleton* _skel){
     VLOG(1) << "Read SKel File!! Yay!!" << endl;
 
     // Load xml and create Document
@@ -194,8 +186,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel)
 
 
 
-bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel)
-{
+bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel) {
     string sname = _segment->GetAttribute("NAME");
 
     VLOG(1)<<"\nsegment: "<<sname<<" ";
@@ -203,19 +194,18 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     else VLOG(1)<<"parent: NULL\n";
 
     // make bodylink out of current segment
-    // BodyNode* blink = new BodyNode((char *)sname.c_str());
     BodyNode* blink = _skel->createBodyNode( sname.c_str() );
 
     // make a joint
     Joint* jt = new Joint(_parent, blink); 
     Vector3d orientation(0,0,0);
   
-    //// HARDCODED: constant rotation for humerus and changed translation
+    // HARDCODED: constant rotation for humerus and changed translation
     if(sname.compare(1, 8, "humerus")!=0)
     {
         VLOG(1) << "THE COMMON CODE!!" << endl;
         string txyz = _segment->GetAttribute("POSITION");
-        vector<string> tokens; Tokenize(txyz, tokens);
+        vector<string> tokens; utils::tokenize(txyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
         for(unsigned int i=0; i<tokens.size(); i++) {
@@ -252,10 +242,10 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
 
         {
             string txtOrientation = _segment->GetAttribute("ORIENTATION");
-            vector<string> tokens; Tokenize(txtOrientation, tokens);
+            vector<string> tokens; utils::tokenize(txtOrientation, tokens);
             assert(tokens.size()==3);
             for (int i = 0; i < 3; ++i) {
-                orientation[i] = str2double(tokens[i]);
+                orientation[i] = utils::strTodouble(tokens[i]);
                 // VLOG(1) << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
             }
             orientation = adjustPos(orientation) / mScaleVSK;
@@ -309,7 +299,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         }
         // add telescope and const rot transforms
         string hxyz = humerus->GetAttribute("POSITION");
-        vector<string> tokens; Tokenize(hxyz, tokens);
+        vector<string> tokens; utils::tokenize(hxyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
         for(unsigned int i=0; i<tokens.size(); i++) {
@@ -409,8 +399,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     return true;
 }
 
-bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
-{
+bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read free\n";
 
     // create new transformation
@@ -452,8 +441,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     return true;
 }
 
-bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient)
-{
+bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient) {
     VLOG(1) << "read ball\n";
     VLOG(1) << "orientation = " << orient << endl;
     string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
@@ -479,8 +467,7 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d or
 }
 
 
-bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
-{
+bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read hardy spicer\n";
 
     // Read axisxyz and parse it into tokens
@@ -495,9 +482,9 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     const char* pTname2 = tname2_2.c_str();
 
 
-    // Use Tokenize
+    // Use utils::tokenize
     tokens.clear();
-    Tokenize(axisxyz, tokens);
+    utils::tokenize(axisxyz, tokens);
     assert(tokens.size()==6);
 
     // Which axis do we have?
@@ -533,8 +520,7 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
 }
 
 
-bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
-{
+bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read hinge\n";
 
     string tname = string(_jt->getNodeOut()->getName()) + "_a";
@@ -545,15 +531,15 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     vector<string> tokens;
     tokens.clear();
 
-    // Use Tokenize
-    Tokenize(axisxyz, tokens);
+    // Use utils::tokenize
+    utils::tokenize(axisxyz, tokens);
     assert(tokens.size()==3);
 
     // Read axes data
     Transformation *r1=NULL;
-    Vector3d axis(str2double(tokens[0]),
-                  str2double(tokens[1]),
-                  str2double(tokens[2]));
+    Vector3d axis(utils::strTodouble(tokens[0]),
+                  utils::strTodouble(tokens[1]),
+                  utils::strTodouble(tokens[2]));
     // if(tokens[1].compare("1")==0){
     if ((axis - adjustPos(Vector3d(1.0, 0.0, 0.0)) / mScaleVSK ).norm() < 0.01) {
         r1 = new TrfmRotateEulerX(new Dof(0.0, pTname, -3.1415, 3.1415));
@@ -576,15 +562,14 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel)
     return true;
 }
 
-bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel)
-{
+bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel) {
     string mname = _marker->GetAttribute("NAME");
     string sname = _marker->GetAttribute("SEGMENT");
 
     // get the local position
     string pxyz = _marker->GetAttribute("POSITION");
     vector<string> tokens;
-    Tokenize(pxyz, tokens);
+    utils::tokenize(pxyz, tokens);
     assert(tokens.size()==3);
 
 
@@ -614,8 +599,9 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
         expShoulder = -expShoulder;	
 
         // create new  position
-        Quaterniond qr = ExpToQuat(-expShoulder);	// negative for the markers
-        RotatePoint(qr, lpos2);
+        Vector3d negExpShoulder = -expShoulder;
+        Quaterniond qr = utils::rot_conv::expToQuat(negExpShoulder);	// negative for the markers
+        utils::rot_conv::rotatePoint(qr, lpos2);
     }
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
@@ -628,8 +614,7 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 }
 
 
-bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel)
-{
+bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel) {
     string bname = _prim->GetAttribute("SEGMENT");
     int segIdx = _segmentindex[bname];
     BodyNode* blink = _skel->getNode(segIdx);
@@ -648,7 +633,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
 
     string dimxyz = _prim->GetAttribute("DIMENSION");
     vector<string> tokens;
-    Tokenize(dimxyz, tokens);
+    utils::tokenize(dimxyz, tokens);
      
     assert(tokens.size()==3);
 
@@ -660,7 +645,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     dim = adjustPos(dim*scale);
 
     string offxyz = _prim->GetAttribute("OFFSET");
-    Tokenize(offxyz, tokens);
+    utils::tokenize(offxyz, tokens);
     assert(tokens.size()==3);
     
     Vector3d off(0,0,0);
@@ -703,7 +688,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     try {
         string cname = _prim->GetAttribute("RGB");
         tokens.clear();
-        Tokenize(cname, tokens);
+        utils::tokenize(cname, tokens);
         if (tokens.size() == 3)
         {
             Vector3d clr(0,0,0);
@@ -726,22 +711,8 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     return true;
 }
 
-void Tokenize(const string& inputStr, vector<string>& tokens) {
-    tokens.clear();
-    stringstream sin(inputStr.c_str());
-    for (;;) {
-        string temp;
-        sin >> temp;
-        if (sin.fail()) {
-            break;
-        }
-        tokens.push_back(temp);
-    }
-}
 
-
-Vector3d adjustPos(const Vector3d& _pos)
-{
+Vector3d adjustPos(const Vector3d& _pos) {
     // rearrange the coordinates
     Vector3d pos2 =_pos;
     // pos2[0] = _pos[1];
@@ -749,25 +720,6 @@ Vector3d adjustPos(const Vector3d& _pos)
     // pos2[2] = _pos[0];
     pos2 *= mScaleVSK;
     return pos2;
-}
-
-Quaterniond ExpToQuat(const Vector3d& v) {
-    double mag = v.norm();
-    if(mag > 1e-10){
-        Quaterniond q(mag, v[0]/mag, v[1]/mag, v[2]/mag);
-        return q;
-    }
-    else{
-        Quaterniond q(1,0,0,0);
-        return q;
-    }
-}
-
-double str2double(const string& str) {
-    stringstream ss(str);
-    double value;
-    ss >> value;
-    return value;
 }
 
 VectorXd getDofVectorXd(Transformation* tr) {
@@ -780,8 +732,7 @@ VectorXd getDofVectorXd(Transformation* tr) {
     return data;
 }
 
-void autoGeneratePrimitive(Skeleton* skel)
-{
+void autoGeneratePrimitive(Skeleton* skel) {
     for(int i=0; i<skel->getNumNodes(); i++){
         if(skel->getNode(i)->getPrimitive()) continue;
         PrimitiveEllipsoid *pm = new PrimitiveEllipsoid(0.05 * Vector3d(1.0,1.0,1.0), 1.0);
@@ -866,33 +817,5 @@ void autoGeneratePrimitive2(Skeleton* skel)
 
     autoGeneratePrimitive(skel);
     VLOG(1) << "Sum of mass = " << massSum << endl;
-}
-
-Vector3d RotatePoint(const Quaterniond& q, const Vector3d& pt)
-{
-    Quaterniond quat_pt(0, pt[0], pt[1], pt[2]);
-    Quaterniond qinv = q.inverse();
-
-    Quaterniond rot = q*quat_pt*qinv;
-
-    // check below - assuming same format of point achieved
-    Vector3d temp;
-    //VLOG(1)<<"Point before: "<<0<<" "<<pt.x<<" "<<pt.y<<" "<<pt.z<<"\n";
-    //VLOG(1)<<"Point after:  "<<rot.x<<" "<<rot.y<<" "<<rot.z<<" "<<rot.w<<"\n";
-    temp[0]=rot.x();
-    temp[1]=rot.y();
-    temp[2]=rot.z();
-
-    //VLOG(1)<<"Point after rotation: "<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
-    return temp;
-}
-
-Vector3d RotatePoint(const Quaterniond& q, double x, double y, double z){
-    Vector3d pt;
-    pt[0]=x;
-    pt[1]=y;
-    pt[2]=z;
-
-    return RotatePoint(q, pt);
 }
 
