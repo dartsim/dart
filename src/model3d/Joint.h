@@ -36,7 +36,7 @@ namespace model3d {
         Joint(BodyNode* _bIn, BodyNode* _bOut, const char *_name=NULL);
         virtual ~Joint();
 
-        bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list
+        bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list for the joint
         int getLocalIndex (int _dofSkelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
 
         Eigen::Matrix4d getLocalTransform(); ///< computes and returns the local transformation from NodeIn to NodeOut
@@ -55,7 +55,7 @@ namespace model3d {
         void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Vector3d& _v); ///< apply the second derivative to _v
         void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m); ///< apply the second derivative to _m
 
-        void addTransform(Transformation *_t, bool _isVariable = true); ///< add _t to mTransforms; _isVariable indicates whether this transformation is a degree of freedom
+        void addTransform(Transformation *_t, bool _isVariable = true); ///< add _t to mTransforms; _isVariable indicates whether this transformation is a degree of freedom; also sets the joint type automatically
         int getNumTransforms() const {return mTransforms.size();}
         Transformation* getTransform(int i) const {return mTransforms[i];}
 
