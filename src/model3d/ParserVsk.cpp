@@ -40,7 +40,7 @@ using namespace google;
 #include "utils/RotationConversion.h"
 #include "utils/UtilsCode.h"
 
-#define mScaleVSK 1.0e-3
+#define SCALE_VSK 1.0e-3
 Vector3d expShoulder(0,0,0);
 double lenShoulder = 0;
 
@@ -83,7 +83,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     ticpp::Element* kinmodel = NULL;
     kinmodel = _stateFile.FirstChildElement( "KinematicModel" );
     if(!kinmodel) return VSK_ERROR;
-    
+
     // Read parameters and fill paramsList
     map<string, double> paramsList;
     paramsList.clear();
@@ -113,7 +113,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
         ticpp::Iterator< ticpp::Element > childseg("Segment");
         for ( childseg = childseg.begin( skel ); childseg != childseg.end(); childseg++ ){
             if(!readSegment(childseg->ToElement(), NULL, paramsList,
-                            segmentindex, _skel))
+                segmentindex, _skel))
             {
                 return VSK_ERROR;
             }
@@ -132,7 +132,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
         ticpp::Iterator< ticpp::Element > childmarker("Marker");
         for ( childmarker = childmarker.begin( markers ); childmarker != childmarker.end(); childmarker++ ){
             if(!readMarker(childmarker->ToElement(), paramsList,
-                           segmentindex, _skel))
+                segmentindex, _skel))
             {
                 return VSK_ERROR;
             }
@@ -177,7 +177,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     }
 
     autoGeneratePrimitive2(_skel);
-  
+
     _skel->initSkel();
     // 
     VLOG(1) << "Everything Looks good. I'm happy!" << endl;
@@ -199,7 +199,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     // make a joint
     Joint* jt = new Joint(_parent, blink); 
     Vector3d orientation(0,0,0);
-  
+
     // HARDCODED: constant rotation for humerus and changed translation
     if(sname.compare(1, 8, "humerus")!=0)
     {
@@ -248,7 +248,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
                 orientation[i] = utils::strTodouble(tokens[i]);
                 // VLOG(1) << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
             }
-            orientation = adjustPos(orientation) / mScaleVSK;
+            orientation = adjustPos(orientation) / SCALE_VSK;
         }
 
     }
@@ -323,7 +323,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         _paramsList[paramShoulder] = lenShoulder;
         VLOG(1)<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
         //adjusted: +-Shoulder ShoulderHeight z 
-    
+
         pos.normalize();
         double angleShoulder = pos[1];
         Vector3d axisShoulder = Vector3d(pos[2], 0, -pos[0]);
@@ -340,7 +340,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         VLOG(1)<<"const rotation: "<<expShoulder<<endl;
     }
 
-    
+
     // make transforms
     ticpp::Element *tf = 0;
     bool foundJoint = false;
@@ -454,7 +454,7 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d or
     dofs2[1] = new Dof(orient[1], tname2_1.c_str(), -3.1415, 3.1415);
     dofs2[2] = new Dof(orient[2], tname2_2.c_str(), -3.1415, 3.1415);
 
-  
+
     // dofs2[1] = new Dof(0.0, -3.1415, 3.1415);
     // dofs2[2] = new Dof(0.0, -3.1415, 3.1415);
     // add transformation to joint
@@ -538,19 +538,19 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     // Read axes data
     Transformation *r1=NULL;
     Vector3d axis(utils::strTodouble(tokens[0]),
-                  utils::strTodouble(tokens[1]),
-                  utils::strTodouble(tokens[2]));
+        utils::strTodouble(tokens[1]),
+        utils::strTodouble(tokens[2]));
     // if(tokens[1].compare("1")==0){
-    if ((axis - adjustPos(Vector3d(1.0, 0.0, 0.0)) / mScaleVSK ).norm() < 0.01) {
+    if ((axis - adjustPos(Vector3d(1.0, 0.0, 0.0)) / SCALE_VSK ).norm() < 0.01) {
         r1 = new TrfmRotateEulerX(new Dof(0.0, pTname, -3.1415, 3.1415));
         VLOG(1) << "RotateEulerX" << endl;
     }
-    else if ((axis - adjustPos(Vector3d(0.0, 1.0, 0.0)) / mScaleVSK ).norm() < 0.01) {
+    else if ((axis - adjustPos(Vector3d(0.0, 1.0, 0.0)) / SCALE_VSK ).norm() < 0.01) {
         // else if(tokens[2].compare("1")==0){
         r1 = new TrfmRotateEulerY(new Dof(0.0, pTname, -3.1415, 3.1415));
         VLOG(1) << "RotateEulerY" << endl;
     }
-    else if ((axis - adjustPos(Vector3d(0.0, 0.0, 1.0)) / mScaleVSK ).norm() < 0.01) {
+    else if ((axis - adjustPos(Vector3d(0.0, 0.0, 1.0)) / SCALE_VSK ).norm() < 0.01) {
         // else if(tokens[0].compare("1")==0){
         r1 = new TrfmRotateEulerZ(new Dof(0.0, pTname, -3.1415, 3.1415));
         VLOG(1) << "RotateEulerZ" << endl;
@@ -618,10 +618,10 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     string bname = _prim->GetAttribute("SEGMENT");
     int segIdx = _segmentindex[bname];
     BodyNode* blink = _skel->getNode(segIdx);
-	
+
     string mname = _prim->GetAttribute("MASS");
     double mass = _massList[mname];
-	
+
     string sname = _prim->GetAttribute("SCALE");
     double scale = 0;
     map<string, double>::iterator it = _paramsList.find(sname);
@@ -634,7 +634,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     string dimxyz = _prim->GetAttribute("DIMENSION");
     vector<string> tokens;
     utils::tokenize(dimxyz, tokens);
-     
+
     assert(tokens.size()==3);
 
     Vector3d dim(0,0,0);
@@ -647,7 +647,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     string offxyz = _prim->GetAttribute("OFFSET");
     utils::tokenize(offxyz, tokens);
     assert(tokens.size()==3);
-    
+
     Vector3d off(0,0,0);
     for(unsigned int i=0; i<tokens.size(); i++) {
         istringstream instr(tokens[i]);
@@ -718,7 +718,7 @@ Vector3d adjustPos(const Vector3d& _pos) {
     // pos2[0] = _pos[1];
     // pos2[1] = _pos[2];
     // pos2[2] = _pos[0];
-    pos2 *= mScaleVSK;
+    pos2 *= SCALE_VSK;
     return pos2;
 }
 
@@ -747,7 +747,7 @@ void autoGeneratePrimitive(Skeleton* skel) {
 void autoGeneratePrimitive2(Skeleton* skel)
 {
     // autoGeneratePrimitive(skel); return;
-  
+
     VLOG(1) << "Auto-generating primitives" << endl;
 
     double massSum = 0.0;
@@ -791,7 +791,7 @@ void autoGeneratePrimitive2(Skeleton* skel)
         maxSize = max(maxSize, size[2]);
         maxSize *= 0.35;
         maxSize = min(0.1, maxSize);
-    
+
         for (int j = 0; j < 3; ++j)
         {
             size[j] = max(size[j], maxSize);
