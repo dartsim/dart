@@ -1,4 +1,4 @@
-#include "glFuncs.h"
+#include "GLFuncs.h"
 #include "utils/LoadOpengl.h"
 #include <string>
 #include <Eigen/Eigen>
