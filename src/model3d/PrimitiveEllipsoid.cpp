@@ -11,9 +11,6 @@
 
 using namespace Eigen;
 
-// TODO: do we need to include an equivalent config file?
-// #include "RenderConfig.h"
-
 namespace model3d {
 
     PrimitiveEllipsoid::PrimitiveEllipsoid(Vector3d _dim, double _mass){
@@ -41,10 +38,9 @@ namespace model3d {
     }
 
     void PrimitiveEllipsoid::computeMassTensor(){
-        // if cuboid scaling factor is 1/12
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/5;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/5;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/5;
+        mMassTensor(0, 0) = (mDim(0)*mDim(0))/10;
+        mMassTensor(1, 1) = (mDim(1)*mDim(1))/10;
+        mMassTensor(2, 2) = (mDim(2)*mDim(2))/10;
         mMassTensor(3, 3) = 1;
         mMassTensor *= mMass;
     }
