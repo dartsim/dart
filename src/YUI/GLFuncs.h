@@ -1,5 +1,5 @@
-#ifndef _GLFUNCS_
-#define _GLFUNCS_
+#ifndef YUI_GLFUNCS_H
+#define YUI_GLFUNCS_H
 
 #include <Eigen/Eigen>
 
@@ -9,4 +9,4 @@ void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec, double t
 void drawProgressBar(int currFrame, int totalFrame);
 
 
-#endif
+#endif  YUI_GLFUNCS_H
