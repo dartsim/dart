@@ -17,8 +17,8 @@ namespace model3d {
     class PrimitiveCube : public Primitive {
     public:
         PrimitiveCube(Eigen::Vector3d _dim, double _mass);
-	
-		void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
+
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
     private:
         void computeMassTensor();
         void computeVolume();

@@ -16,8 +16,8 @@ namespace model3d {
     class PrimitiveEllipsoid : public Primitive {
     public:
         PrimitiveEllipsoid(Eigen::Vector3d _dim, double Mass); 
-	
-		void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
     private:
         void computeMassTensor();
         void computeVolume();
