@@ -29,8 +29,8 @@ namespace optimizer {
 
             virtual bool solve();
 
-            virtual void ResetSolver();
-            static int IterUpdate(long mask, int compute_gradients, double *coefs, void *update_data);
+            virtual void resetSolver();
+            static int iterUpdate(long mask, int compute_gradients, double *coefs, void *update_data);
         private:
             SnoptInterface *mSnopt;
             /* std::vector<Dofs> mVariables; */

@@ -22,45 +22,45 @@ namespace optimizer {
 
         using namespace std;
 
-        SnoptInterface* SnoptInterface::ref = NULL;
+        SnoptInterface* SnoptInterface::mRef = NULL;
 
 
         SnoptInterface::SnoptInterface(int constr_tot, int coef_tot, int nonlin_constr_tot,
                                        int nonlin_obj, int nonlin_jac, int *c_eqns, int has_obj,
                                        VVD J, VVB JMap, std::vector<double> *constraints,
                                        double *objective, std::vector<double> *gradient,
-                                       SnoptInterface::UpdateF update_f, void *update_d) {
-            has_objective = has_obj;
-            constr_total = constr_tot;
-            coef_total = coef_tot;
-            nonlin_constr_total = nonlin_constr_tot;
-            nonlin_obj_coef = nonlin_obj;
-            nonlin_jac_coef = nonlin_jac;
+                                       SnoptInterface::updateFunc update_f, void *update_d) {
+            mHasObjective = has_obj;
+            mNumConstr = constr_tot;
+            mNumCoef = coef_tot;
+            mNumNonlinConstr = nonlin_constr_tot;
+            mNumNonlinObjCoef = nonlin_obj;
+            mNumNonlinJacCoef = nonlin_jac;
 
             // init constraint type for each constraint
-            if(constr_total != 0)
-                constr_eqns = new int[constr_total];
+            if(mNumConstr != 0)
+                mConstrEqns = new int[mNumConstr];
             else
-                constr_eqns = NULL;
+                mConstrEqns = NULL;
 
-            for(int i = 0; i < constr_total; i++)
-                constr_eqns[i] = c_eqns[i];
+            for(int i = 0; i < mNumConstr; i++)
+                mConstrEqns[i] = c_eqns[i];
 
-            solver_x = new double[coef_total];
-            problem_x = new double[coef_total];
+            mSolverX = new double[mNumCoef];
+            mProblemX = new double[mNumCoef];
 	
-            dConstr_dCoef = J;
-            coefMap = JMap;
-            constr = constraints;
+            mdConstrdCoef = J;
+            mCoefMap = JMap;
+            mConstr = constraints;
   
-            obj = objective;
-            dObj_dCoef = gradient;
+            mObj = objective;
+            mdObjdCoef = gradient;
 
-            update_func = update_f;
-            update_data = update_d;
+            mUpdateFunc = update_f;
+            mUpdateData = update_d;
 	
-            lo_bounds = NULL;
-            hi_bounds = NULL;
+            mBoundsLo = NULL;
+            mBoundsHi = NULL;
 
             mOutput = 0;
             mSum = 0;
@@ -69,27 +69,27 @@ namespace optimizer {
             mAbnormal = NONE;
             mBreak = -1;
 
-            ref = this;
+            mRef = this;
         }
 
         SnoptInterface::SnoptInterface(int has_obj, VVD J, VVB JMap, std::vector<double> *constraints,
                                        double *objective, std::vector<double> *gradient,
-                                       SnoptInterface::UpdateF update_f, void *update_d) {
-            has_objective = has_obj;
+                                       SnoptInterface::updateFunc update_f, void *update_d) {
+            mHasObjective = has_obj;
 
-            constr_eqns = NULL;
-            solver_x = NULL;
-            problem_x = NULL;
+            mConstrEqns = NULL;
+            mSolverX = NULL;
+            mProblemX = NULL;
 	
-            dConstr_dCoef = J;
-            coefMap = JMap;
-            constr = constraints;
+            mdConstrdCoef = J;
+            mCoefMap = JMap;
+            mConstr = constraints;
   
-            obj = objective;
-            dObj_dCoef = gradient;
+            mObj = objective;
+            mdObjdCoef = gradient;
 
-            update_func = update_f;
-            update_data = update_d;
+            mUpdateFunc = update_f;
+            mUpdateData = update_d;
 
             mOutput = 0;
             mSum = 0;
@@ -99,129 +99,129 @@ namespace optimizer {
             mBreak = -1;
 
 
-            ref = this;
+            mRef = this;
         }
 
         SnoptInterface::~SnoptInterface() {
 
-            delete[] constr_eqns;
-            delete[] solver_x;
-            delete[] problem_x;
+            delete[] mConstrEqns;
+            delete[] mSolverX;
+            delete[] mProblemX;
             // delete[] lo_bounds;
             // delete[] hi_bounds;
 
-            ref = NULL;
+            mRef = NULL;
         }
 
         void SnoptInterface::clear(long mask, int compute_derivs) {
             if(mask & SnoptInterface::Obj) {
-                *obj = 0.0;
+                *mObj = 0.0;
                 if (compute_derivs) {
-                    for(int i = 0; i < dObj_dCoef->size(); i++) {
-                        dObj_dCoef->at(i) = 0.0;
+                    for(unsigned int i = 0; i < mdObjdCoef->size(); i++) {
+                        mdObjdCoef->at(i) = 0.0;
                     }
                 }
             }
 
             if(mask & SnoptInterface::Constr) {
-                for(int i = 0; i < constr->size(); i++)
-                    constr->at(i) = 0.0;
+                for(unsigned int i = 0; i < mConstr->size(); i++)
+                    mConstr->at(i) = 0.0;
                 if(compute_derivs) {
-                    for(int i = 0; i < dConstr_dCoef->size(); i++)
-                        for(int j = 0; j < dConstr_dCoef->at(i)->size(); j++)
-                            dConstr_dCoef->at(i)->at(j) = 0.0;
-                    for(int i = 0; i < coefMap->size(); i++)
-                        for(int j = 0; j < coefMap->at(i)->size(); j++)
-                            coefMap->at(i)->at(j) = 0;
+                    for(unsigned int i = 0; i < mdConstrdCoef->size(); i++)
+                        for(unsigned int j = 0; j < mdConstrdCoef->at(i)->size(); j++)
+                            mdConstrdCoef->at(i)->at(j) = 0.0;
+                    for(unsigned int i = 0; i < mCoefMap->size(); i++)
+                        for(unsigned int j = 0; j < mCoefMap->at(i)->size(); j++)
+                            mCoefMap->at(i)->at(j) = 0;
                 }
 
             }
         }
 
 
-        void SnoptInterface::ResizeJacobian(int coef_tot, int nonlin_coef_tot,
+        void SnoptInterface::resizeJacobian(int coef_tot, int nonlin_coef_tot,
                                             int constr_tot, int nonlin_constr_tot) {
-            constr_total = constr_tot;
-            nonlin_constr_total = nonlin_constr_tot;
+            mNumConstr = constr_tot;
+            mNumNonlinConstr = nonlin_constr_tot;
 
-            coef_total = coef_tot;
-            nonlin_obj_coef = nonlin_coef_tot;
-            nonlin_jac_coef = nonlin_coef_tot;
+            mNumCoef = coef_tot;
+            mNumNonlinObjCoef = nonlin_coef_tot;
+            mNumNonlinJacCoef = nonlin_coef_tot;
 
             // modify constraint type for each constraint
-            if (constr_eqns != NULL)
-                delete[] constr_eqns;
+            if (mConstrEqns != NULL)
+                delete[] mConstrEqns;
 
-            if(constr_total != 0)
-                constr_eqns = new int[constr_total];
+            if(mNumConstr != 0)
+                mConstrEqns = new int[mNumConstr];
             else
-                constr_eqns = NULL;
+                mConstrEqns = NULL;
 
-            for(int i = 0; i < constr_total; i++)
-                constr_eqns[i] = 0;
+            for(int i = 0; i < mNumConstr; i++)
+                mConstrEqns[i] = 0;
 
-            constr->resize(constr_total);
+            mConstr->resize(mNumConstr);
   
-            for(int i = 0; i < dConstr_dCoef->size(); i++)
-                delete dConstr_dCoef->at(i);
+            for(unsigned int i = 0; i < mdConstrdCoef->size(); i++)
+                delete mdConstrdCoef->at(i);
 
-            dConstr_dCoef->resize(constr_total);
+            mdConstrdCoef->resize(mNumConstr);
   
-            for(int i = 0; i < constr_total; i++){
-                dConstr_dCoef->at(i) = new std::vector<double>;
-                dConstr_dCoef->at(i)->resize(coef_total);
+            for(int i = 0; i < mNumConstr; i++){
+                mdConstrdCoef->at(i) = new std::vector<double>;
+                mdConstrdCoef->at(i)->resize(mNumCoef);
             }
 
-            for(int i = 0; i < coefMap->size(); i++)
-                delete coefMap->at(i);
+            for(unsigned int i = 0; i < mCoefMap->size(); i++)
+                delete mCoefMap->at(i);
   
-            coefMap->resize(constr_total);
-            for(int i = 0; i < constr_total; i++){
-                coefMap->at(i) = new std::vector<bool>;
-                coefMap->at(i)->resize(coef_total);
+            mCoefMap->resize(mNumConstr);
+            for(int i = 0; i < mNumConstr; i++){
+                mCoefMap->at(i) = new std::vector<bool>;
+                mCoefMap->at(i)->resize(mNumCoef);
             }
 
-            dObj_dCoef->resize(coef_total);
+            mdObjdCoef->resize(mNumCoef);
 
-            if(solver_x)
-                delete[] solver_x;
-            if(problem_x)
-                delete[] problem_x;
+            if(mSolverX)
+                delete[] mSolverX;
+            if(mProblemX)
+                delete[] mProblemX;
 
-            solver_x = new double[coef_total];
-            problem_x = new double[coef_total];
+            mSolverX = new double[mNumCoef];
+            mProblemX = new double[mNumCoef];
 
         }
 
         void SnoptInterface::update(long mask, int compute_derivs, double *x) {
-            for(int i = 0; i < coef_total; i++){
-                problem_x[i] = x[i];
+            for(int i = 0; i < mNumCoef; i++){
+                mProblemX[i] = x[i];
             }
 
-            update_func(mask, compute_derivs, problem_x, update_data);
+            mUpdateFunc(mask, compute_derivs, mProblemX, mUpdateData);
         }
 
         void SnoptInterface::updateSolverX() {
-            for(int i = 0; i < coef_total; i++)
-                solver_x[i] = problem_x[i];
+            for(int i = 0; i < mNumCoef; i++)
+                mSolverX[i] = mProblemX[i];
         }
 
         void SnoptInterface::scaleValues(long mask, int compute_derivs) {
             if(mask & SnoptInterface::Obj){
                 if(compute_derivs) 
-                    for(int i = 0; i < coef_total; i++){
-                        dObj_dCoef->at(i) *= coef_scale[i];
+                    for(int i = 0; i < mNumCoef; i++){
+                        mdObjdCoef->at(i) *= mCoefScale[i];
                     }
             }
 
             if (mask & SnoptInterface::Constr) {
-                for(int i = 0; i < constr_total; i++)
-                    constr->at(i) *= constr_scale[i];
+                for(int i = 0; i < mNumConstr; i++)
+                    mConstr->at(i) *= mConstrScale[i];
                 if (compute_derivs) {
-                    for(int i = 0; i < constr_total; i++)
-                        for(int j = 0; j < coef_total; j++){
-                            double scl = constr_scale[i] * coef_scale[j];
-                            dConstr_dCoef->at(i)->at(j) *= scl;
+                    for(int i = 0; i < mNumConstr; i++)
+                        for(int j = 0; j < mNumCoef; j++){
+                            double scl = mConstrScale[i] * mCoefScale[j];
+                            mdConstrdCoef->at(i)->at(j) *= scl;
                         }
                 }
             }
@@ -273,9 +273,9 @@ namespace optimizer {
                    char *cw, int *lencw, int *iw, int *leniw, double *rw, int *lenrw)
             {
 
-                SnoptInterface *s = SnoptInterface::ref;
-                char *found;
+                SnoptInterface *s = SnoptInterface::mRef;
                 /*
+                char *found;
                   if((found = strstr(MjrMsg, "i")) != NULL){
                   cout << "Infeasible QP found" << endl;
                   s->mAbnormal = SnoptInterface::INFEASIBLE;
@@ -307,79 +307,79 @@ namespace optimizer {
 
         SnoptInterface::Return SnoptInterface::solve(double *x, double *lo_bounds,
                                                      double *hi_bounds, int unit) {
-            //	printf("Solver: obj=%d, nconstrs=%d, ncoefs=%d, nl_constrs=%d, nl_coefs=%d\n"
-            //		, has_objective, constr_total, coef_total, 
-            //	nonlin_constr_total, nonlin_coef_total);
+            //	printf("Solver: mObj=%d, nconstrs=%d, ncoefs=%d, nl_constrs=%d, nl_coefs=%d\n"
+            //		, mHasObjective, mNumConstr, mNumCoef, 
+            //	mNumNonlinConstr, nonlin_coef_total);
 
             mAbnormal = NONE;
             mTermination = false;
 
-            int constr_count = (1 > constr_total)? 1 : constr_total;
-            int nm = coef_total + constr_count;
+            int constr_count = (1 > mNumConstr)? 1 : mNumConstr;
+            int nm = mNumCoef + constr_count;
 
-            for(int i = 0; i < coef_total; i++)
-                problem_x[i] = x[i];
+            for(int i = 0; i < mNumCoef; i++)
+                mProblemX[i] = x[i];
 
             updateSolverX();
             double *xs = new double[nm];
-            for(int i = 0; i < coef_total; i++)
-                xs[i] = solver_x[i];
+            for(int i = 0; i < mNumCoef; i++)
+                xs[i] = mSolverX[i];
 
             double *bu = new double[nm];
             double *bl = new double[nm];
             int *hs = new int[nm];
             double *pi = new double[constr_count];
             // set the bounds for the unknowns, and init the unknowns vector
-            for(int i = 0; i < coef_total; i++){
+            for(int i = 0; i < mNumCoef; i++){
                 bl[i] = lo_bounds[i];
                 bu[i] = hi_bounds[i];
                 hs[i] = 2;
             }
 
             // set bounds for the constraints
-            for(int i = 0; i < constr_total; i++){
-                if(constr_eqns[i] == 0){
-                    bl[coef_total + i] = -x[coef_total + i];
-                    bu[coef_total + i] = x[coef_total + i];
-                }else if(constr_eqns[i] == 1){
-                    bl[coef_total + i] = x[coef_total + i];
-                    bu[coef_total + i] = x[coef_total + i] + 1e7;
-                }else if(constr_eqns[i] == 2){
-                    bl[coef_total + i] = -1e7 + x[coef_total + i];
-                    bu[coef_total + i] = -0.0 + x[coef_total + i];
-                }else if(constr_eqns[i] == 3){
-                    bl[coef_total + i] = -1e-2 + x[coef_total + i];
-                    bu[coef_total + i] = 1e-2 + x[coef_total + i];
-                }else if(constr_eqns[i] == 4){
-                    bl[coef_total + i] = -1e-2 + x[coef_total + i];
-                    bu[coef_total + i] = 1e-2 + x[coef_total + i];
-                }else if(constr_eqns[i] = 5){
-                    bl[coef_total + i] = -1e3 + x[coef_total + i];
-                    bu[coef_total + i] = 1e3 + x[coef_total + i];
+            for(int i = 0; i < mNumConstr; i++){
+                if(mConstrEqns[i] == 0){
+                    bl[mNumCoef + i] = -x[mNumCoef + i];
+                    bu[mNumCoef + i] = x[mNumCoef + i];
+                }else if(mConstrEqns[i] == 1){
+                    bl[mNumCoef + i] = x[mNumCoef + i];
+                    bu[mNumCoef + i] = x[mNumCoef + i] + 1e7;
+                }else if(mConstrEqns[i] == 2){
+                    bl[mNumCoef + i] = -1e7 + x[mNumCoef + i];
+                    bu[mNumCoef + i] = -0.0 + x[mNumCoef + i];
+                }else if(mConstrEqns[i] == 3){
+                    bl[mNumCoef + i] = -1e-2 + x[mNumCoef + i];
+                    bu[mNumCoef + i] = 1e-2 + x[mNumCoef + i];
+                }else if(mConstrEqns[i] == 4){
+                    bl[mNumCoef + i] = -1e-2 + x[mNumCoef + i];
+                    bu[mNumCoef + i] = 1e-2 + x[mNumCoef + i];
+                }else if(mConstrEqns[i] = 5){
+                    bl[mNumCoef + i] = -1e3 + x[mNumCoef + i];
+                    bu[mNumCoef + i] = 1e3 + x[mNumCoef + i];
                 }
 
                 pi[i] = 0;
-                xs[coef_total + i] = x[coef_total + i];
-                hs[coef_total + i] = 2;
+                xs[mNumCoef + i] = x[mNumCoef + i];
+                hs[mNumCoef + i] = 2;
             }
 
-            if(constr_total == 0){
+            if(mNumConstr == 0){
                 pi[0] = 0;
-                xs[coef_total] = 0.0;
-                bl[coef_total] = -1.e7;
-                bu[coef_total] = 1.e7;
+                xs[mNumCoef] = 0.0;
+                bl[mNumCoef] = -1.e7;
+                bu[mNumCoef] = 1.e7;
             }
             double *rc = new double[nm];
 
             // initialize best solution and update function so that jacobian
             // can be frozen
-            update(SnoptInterface::Obj | SnoptInterface::Constr, 1, solver_x);
+            update(SnoptInterface::Obj | SnoptInterface::Constr, 1, mSolverX);
 
             // set the jacobian
             double *a = NULL;
             int *ha = NULL;
             int *ka = NULL;
-            FillUpSnoptFormat(dConstr_dCoef, &a, &ha, &ka);
+            fillUpSnoptFormat(mdConstrdCoef, &a, &ha, &ka);
 
             static int lencw = 1000 * sizeof(char[8]);
             static int leniw = 800 * nm;
@@ -422,17 +422,17 @@ namespace optimizer {
             //	char *startup = "Warm";
             char startup[16] = "Cold";
             int m = constr_count;
-            int n = coef_total;
+            int n = mNumCoef;
             int ne = 0;
-            for(int j = 0; j < coef_total; j++){
-                int nonZeroCount = SparseCount(j);	
+            for(int j = 0; j < mNumCoef; j++){
+                int nonZeroCount = sparseCount(j);	
                 ne += (1 > nonZeroCount) ? 1 : nonZeroCount;
             }
 
             int nName = 1;
-            int nnCon = nonlin_constr_total;
-            int nnObj = nonlin_obj_coef;
-            int nnJac = (nnCon == 0) ? 0 : nonlin_jac_coef;
+            int nnCon = mNumNonlinConstr;
+            int nnObj = mNumNonlinObjCoef;
+            int nnJac = (nnCon == 0) ? 0 : mNumNonlinJacCoef;
             int iObj = 0;
             double ObjAdd = 0;
             char problem_name[16] = "MOM";
@@ -451,11 +451,11 @@ namespace optimizer {
                   cw, &lencw, iw, &leniw, rw, &lenrw,
                   strlen(startup));
 
-            returnedObj = Obj;
+            mReturnedObj = Obj;
 
             update(SnoptInterface::Obj | SnoptInterface::Constr, 1, xs);
 
-            for(int i = 0; i < coef_total; i++)
+            for(int i = 0; i < mNumCoef; i++)
                 x[i] = xs[i];
 
             delete[] xs;
@@ -475,7 +475,7 @@ namespace optimizer {
             if(inform != 0)
                 VLOG(1) << "inform = " << inform << endl;
   
-            // cout << "objective = " << returnedObj << endl;
+            // cout << "objective = " << mReturnedObj << endl;
 
             switch(inform){
             case 0:
@@ -500,15 +500,15 @@ namespace optimizer {
                                     int *iu, int *leniu, 
                                     double *ru, int *lenru) {
 
-            SnoptInterface *s = SnoptInterface::ref;
+            SnoptInterface *s = SnoptInterface::mRef;
             assert(s != NULL);
 
             s->update(SnoptInterface::Obj, *mode, x);
 
-            *f_obj = s->obj[0];
+            *f_obj = s->mObj[0];
             if(*mode == 2){
                 for(int i = 0; i < *nn_obj; i++){
-                    g_obj[i] = s->dObj_dCoef->at(i);
+                    g_obj[i] = s->mdObjdCoef->at(i);
                 }
             }
         }
@@ -519,9 +519,9 @@ namespace optimizer {
                                    char *cu, int *lencu, 
                                    int *iu, int *leniu, 
                                    double *ru, int *lenru) {
-            SnoptInterface *s = SnoptInterface::ref;
+            SnoptInterface *s = SnoptInterface::mRef;
             assert(s != NULL);
-            if(s->constr_total == 0){
+            if(s->mNumConstr == 0){
                 f_con[0] = 0.0;
                 return;
             }
@@ -529,33 +529,33 @@ namespace optimizer {
             s->update(SnoptInterface::Constr, *mode, x);
 
             for(int i = 0; i < *nn_con; i++){
-                f_con[i] = s->constr->at(i);
+                f_con[i] = s->mConstr->at(i);
             }
 
 
             if(*mode == 2){
                 int nElt = 0;
-                for(int j = 0; j < s->coef_total; j++){
-                    if(s->SparseCount(j) == 0){
+                for(int j = 0; j < s->mNumCoef; j++){
+                    if(s->sparseCount(j) == 0){
                         g_con[nElt++] = 0.0;
                         continue;
                     }
                     for(int i = 0; i < *nn_con; i++){
-                        if(s->coefMap->at(i)->at(j))
-                            g_con[nElt++] = s->dConstr_dCoef->at(i)->at(j);
+                        if(s->mCoefMap->at(i)->at(j))
+                            g_con[nElt++] = s->mdConstrdCoef->at(i)->at(j);
                     }
                 }
             }
         }
 
-        void SnoptInterface::FillUpSnoptFormat(VVD jacobian, double **a, int **ha, int **ka) {
+        void SnoptInterface::fillUpSnoptFormat(VVD jacobian, double **a, int **ha, int **ka) {
             //	Count up the nonzero elements and allocate memory for a, ha, and ka
             int nElts = 0;
-            int cols = coef_total;
-            int *nonZeroInCol = new int[coef_total];
+            int cols = mNumCoef;
+            int *nonZeroInCol = new int[mNumCoef];
 
             for(int j = 0; j < cols; j++){
-                nonZeroInCol[j] = SparseCount(j);
+                nonZeroInCol[j] = sparseCount(j);
                 nElts += (1 > nonZeroInCol[j]) ? 1 : nonZeroInCol[j];
             }
 
@@ -567,7 +567,7 @@ namespace optimizer {
                 delete[] *ka;
             *a = new double[nElts];
             *ha = new int[nElts];
-            *ka = new int[coef_total + 1];
+            *ka = new int[mNumCoef + 1];
 
             //	Fillup the SNOPT sparse structure
             nElts = 0;
@@ -581,8 +581,8 @@ namespace optimizer {
                     continue;
                 }
 
-                for(int i = 0; i < constr_total; i++){
-                    if(coefMap->at(i)->at(j)){
+                for(int i = 0; i < mNumConstr; i++){
+                    if(mCoefMap->at(i)->at(j)){
                         (*a)[nElts] = jacobian->at(i)->at(j);
                         (*ha)[nElts] = i + 1;	//Fortran starts from 1
                         nElts++;
@@ -590,24 +590,24 @@ namespace optimizer {
                 }
             }
 
-            (*ka)[coef_total] = nElts + 1;	//Last entry is special	
+            (*ka)[mNumCoef] = nElts + 1;	//Last entry is special	
             delete[] nonZeroInCol;
         }
 
-//int SnoptInterface::SparseCount()
+//int SnoptInterface::sparseCount()
 //{
 //	int numNonZero = 0;
-//	for(int i = 0; i < constr_total; i++)
-//		for(int j = 0; j < coef_total; j++)
-//			if(coefMap->at(i)->at(j))
+//	for(int i = 0; i < mNumConstr; i++)
+//		for(int j = 0; j < mNumCoef; j++)
+//			if(mCoefMap->at(i)->at(j))
 //				numNonZero++;
 //	return numNonZero;
 //}
 
-        int SnoptInterface::SparseCount(int col) {
+        int SnoptInterface::sparseCount(int col) {
             int numNonZero = 0;
-            for(int i = 0; i < constr_total; i++)
-                if(coefMap->at(i)->at(col))
+            for(int i = 0; i < mNumConstr; i++)
+                if(mCoefMap->at(i)->at(col))
                     numNonZero++;
 	
             return numNonZero;
@@ -615,7 +615,7 @@ namespace optimizer {
 
 
         void SnoptInterface::checkTermination(int *iAbort, double *xs) {
-            SnoptInterface *s = SnoptInterface::ref;
+            SnoptInterface *s = SnoptInterface::mRef;
             // cout << "check " << s->mTermination << endl;
             if(s->mTermination){
                 *iAbort = 1;

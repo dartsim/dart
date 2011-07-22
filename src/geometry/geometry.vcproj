@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="9.00"
 	Name="geometry"
-	ProjectGUID="{920D7227-75E6-4D87-967F-72FEF4B451B7}"
+	ProjectGUID="{D07B0CD6-31A4-425E-AC39-29B3FA26470D}"
 	RootNamespace="geometry"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"

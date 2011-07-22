@@ -20,7 +20,7 @@ namespace optimizer {
         mCompletion = VectorXd::Zero(mNumRows);
     }
 
-    VectorXd PositionConstraint::EvalC() {
+    VectorXd PositionConstraint::evalCon() {
         Vector3d wp = mNode->evalWorldPos(mOffset);
         Vector3d C = wp - mTarget;
         VectorXd ret(C);
@@ -29,11 +29,11 @@ namespace optimizer {
         return ret;
     }
 
-    void PositionConstraint::FillJ(VVD jEntry, VVB jMap, int index) {
+    void PositionConstraint::fillJac(VVD jEntry, VVB jMap, int index) {
     }
 
-    void PositionConstraint::FilldG(std::vector<double>& dG) {
-        VectorXd dP = EvalC();
+    void PositionConstraint::fillObjGrad(std::vector<double>& dG) {
+        VectorXd dP = evalCon();
         for(int dofIndex = 0; dofIndex < mNode->getNumDependantDofs(); dofIndex++) {
             int i = mNode->getDependantDof(dofIndex);
             

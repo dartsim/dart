@@ -21,27 +21,27 @@ namespace optimizer {
         ObjectiveBox(int numDofs);
         virtual ~ObjectiveBox();
 	
-        void Add(Constraint *newObjective);
-        void Clear();
-        int TakeOut(Constraint *obj);
-        int IsInBox(Constraint*);
+        void add(Constraint *_newobj);
+        void clear();
+        int remove(Constraint *_obj);
+        int isInBox(Constraint *_obj);
 
         int getNumConstraints() const { return mObjectives.size(); }
         Constraint * getConstraint(int index) const { return mObjectives[index]; }
 	
-        void EvalG();
-        void EvaldG();
-        void EvalddG();
+        void evalObj();
+        void evalObjGrad();
+        void evalObjHess();
 	
         //Must be called befob re using Constraints
-        void SetNumDofs(int numDofs);
-        void ReallocateMem();
+        void setNumDofs(int _numdofs);
+        void reallocateMem();
 
         int mNumDofs; //number of Model DOFs
         std::vector<Constraint *> mObjectives;
-        double mG;
-        std::vector<double> mdG;
-        Eigen::MatrixXd mddG;
+        double mObj;
+        std::vector<double> mObjGrad;
+        Eigen::MatrixXd mObjHess;
     };
 
 } // namespace optimizer

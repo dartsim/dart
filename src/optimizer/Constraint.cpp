@@ -24,8 +24,8 @@ namespace optimizer {
         mActive = true;
     }
 
-    double Constraint::EvalG() {
-        VectorXd constr = EvalC();
+    double Constraint::evalObj() {
+        VectorXd constr = evalCon();
         return 0.5 * constr.dot(constr);
         /* return 0.5*dot(constr, constr); */
     }

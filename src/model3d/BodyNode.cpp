@@ -17,7 +17,6 @@
 #include "Transformation.h"
 #include "utils/Misc.h"
 #include "utils/UtilsMath.h"
-//#include "utils/EigenHelper.h"
 
 using namespace std;
 using namespace Eigen;
@@ -61,59 +60,79 @@ namespace model3d {
             mMass = 0;
         }
 
-        mTransLocal = Matrix4d::Identity();
-        mTransWorld = Matrix4d::Identity();
+        mT = Matrix4d::Identity();
+        mW = Matrix4d::Identity();
 
-        const int localDofs = getNumDofs();
-        mTq.resize(localDofs, MatrixXd::Identity(4, 4));
-        const int nDofs = getSkel()->getNumDofs();
-        mWq.resize(nDofs, MatrixXd::Identity(4, 4));
+        const int numLocalDofs = getNumLocalDofs();
+        mTq.resize(numLocalDofs, Matrix4d::Zero());
+        //const int numDepDofs = getSkel()->getNumLocalDofs();
+        const int numDepDofs = getNumDependantDofs();
+        mWq.resize(numDepDofs, Matrix4d::Zero());
         
-        mJC = MatrixXd::Zero(3, nDofs);
-        mJW = MatrixXd::Zero(3, nDofs);
+        mJc = MatrixXd::Zero(3, numDepDofs);
+        mJw = MatrixXd::Zero(3, numDepDofs);
     }
 
     void BodyNode::updateTransform() {
-        mTransLocal = mJointIn->getLocalTransform();
+        mT = mJointIn->getLocalTransform();
         if (mNodeIn) {
-            mTransWorld = mNodeIn->mTransWorld * mTransLocal;
-        } else {
-            mTransWorld = mTransLocal;
+            mW = mNodeIn->mW * mT;
+        } 
+        else {
+            mW = mT;
         }
     }
 
-    void BodyNode::updateDerivatives() {
-        const int localDofs = getNumDofs();
+    void BodyNode::updateFirstDerivatives() {
+        const int numLocalDofs = getNumLocalDofs();
+        const int numParentDofs = getNumDependantDofs()-numLocalDofs;
 
         // Update Local Derivatives
-        for(int i = 0; i < localDofs; i++) {
+        for(int i = 0; i < numLocalDofs; i++) {
             mTq.at(i) = getLocalDeriv(getDof(i));
         }
 
-        // Update World Derivates
-        if (mNodeIn) {
-            for (int i = 0; i < getNumDependantDofs(); i++) {
-                int index = getDependantDof(i);
-                if (mNodeIn->dependsOn(index)) {
-                    mWq.at(index) = mNodeIn->mWq.at(index) * mTransLocal;
-                } else {
-                    mWq.at(index) = mNodeIn->mTransWorld * mTq.at( mJointIn->getLocalIndex(index) );
-                }
+        //// Update World Derivatives
+        //if (mNodeIn) {
+        //    for (int i = 0; i < getNumDependantDofs(); i++) {
+        //        int index = getDependantDof(i);
+        //        if (mNodeIn->dependsOn(index)) {
+        //            mWq.at(index) = mNodeIn->mWq.at(index) * mT;
+        //        } 
+        //        else {
+        //            mWq.at(index) = mNodeIn->mW * mTq.at( mJointIn->getLocalIndex(index) );
+        //        }
+        //    }
+        //} 
+        //else {
+        //    for(int i = 0; i < numLocalDofs; ++i) {
+        //        int index1 = mJointIn->getDof(i)->getSkelIndex();
+        //        mWq.at(index1) = mTq.at(i);
+        //    }
+        //}
+
+        // Update World Derivatives
+        // parent dofs
+        for (int i = 0; i < numParentDofs; i++) {
+            assert(mNodeIn);    // should always have a parent if enters this for loop
+            mWq.at(i) = mNodeIn->mWq.at(i) * mT;
+        }
+        // local dofs
+        for(int i = 0; i < numLocalDofs; i++){
+            if(mNodeIn) {
+                mWq.at(numParentDofs+i) = mNodeIn->mW * mTq.at(i);
             }
-        } else {
-            for(int i = 0; i < localDofs; ++i) {
-                int index1 = mJointIn->getDof(i)->getSkelIndex();
-                mWq.at(index1) = mTq.at(i);
+            else {
+                mWq.at(numParentDofs+i) = mTq.at(i);
             }
         }
 
-        evalJC();
-        evalJW();
-
+        evalJacLin();
+        evalJacAng();
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        Vector3d result = utils::transform(mTransWorld, _lp);
+        Vector3d result = utils::xformHom(mW, _lp);
         return result;
     }
     
@@ -121,12 +140,10 @@ namespace model3d {
     void BodyNode::setDependDofList() {
         mDependantDofs.clear();
         if (mNodeIn != NULL) {
-            mDependantDofs.insert(mDependantDofs.end(),
-                                  mNodeIn->mDependantDofs.begin(),
-                                  mNodeIn->mDependantDofs.end());
+            mDependantDofs.insert(mDependantDofs.end(), mNodeIn->mDependantDofs.begin(), mNodeIn->mDependantDofs.end());
         }
 
-        for (int i = 0; i < getNumDofs(); i++) {
+        for (int i = 0; i < getNumLocalDofs(); i++) {
             int dofID = getDof(i)->getSkelIndex();
             mDependantDofs.push_back(dofID);
         }
@@ -198,7 +215,7 @@ namespace model3d {
         return mJointOut[_idx]->getNodeOut();
     }
 
-    int BodyNode::getNumDofs() const {
+    int BodyNode::getNumLocalDofs() const {
         return mJointIn->getNumDofs();
     }
 
@@ -214,39 +231,50 @@ namespace model3d {
         return mJointIn->getDeriv(_q);
     }
     
-    void BodyNode::evalJC() {
-        mJC.setZero();
-
-        for (vector<int>::iterator i_iter = mDependantDofs.begin();
-             i_iter != mDependantDofs.end(); i_iter++) {
-            int i = (*i_iter);
-            VectorXd J = utils::transform(mWq.at(i), mOffset);
-            mJC(0, i) = J(0);
-            mJC(1, i) = J(1);
-            mJC(2, i) = J(2);
+    void BodyNode::evalJacLin() {
+        mJc.setZero();
+        //for (vector<int>::iterator i_iter = mDependantDofs.begin();
+        //     i_iter != mDependantDofs.end(); i_iter++) {
+        //    int i = (*i_iter);
+        //    VectorXd J = utils::xformHom(mWq.at(i), mOffset);
+        //    mJc(0, i) = J(0);
+        //    mJc(1, i) = J(1);
+        //    mJc(2, i) = J(2);
+        //}
+        for (unsigned int i=0; i<mDependantDofs.size(); i++) {
+            VectorXd J = utils::xformHom(mWq.at(i), mOffset);
+            mJc(0, i) = J(0);
+            mJc(1, i) = J(1);
+            mJc(2, i) = J(2);
         }
     }
 
-    void BodyNode::evalJW() {
-        //using eigenhelper::sub;
-        //using eigenhelper::trans;
-        
-        mJW.setZero();
-        for (vector<int>::iterator i_iter = mDependantDofs.begin();
-             i_iter != mDependantDofs.end(); i_iter++) {
-            int i = (*i_iter);
+    void BodyNode::evalJacAng() {
+        mJw.setZero();
+        //for (vector<int>::iterator i_iter = mDependantDofs.begin();
+        //     i_iter != mDependantDofs.end(); i_iter++) {
+        //    int i = (*i_iter);
 
-            //MatrixXd transR = trans(sub(mTransWorld, 3, 3));
-            //MatrixXd dRdq = sub(mWq.at(i), 3, 3);
-            MatrixXd transR = mTransWorld.topLeftCorner(3,3).transpose();
+        //    MatrixXd transR = mW.topLeftCorner(3,3).transpose();
+        //    MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
+        //    MatrixXd omegaSkewSymmetric = dRdq * transR;
+        //    VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
+        //    omega = transR * omega;
+        //    
+        //    mJw(0, i) = omega(0);
+        //    mJw(1, i) = omega(1);
+        //    mJw(2, i) = omega(2);
+        //}
+        for (unsigned int i=0; i<mDependantDofs.size(); i++) {
+            MatrixXd transR = mW.topLeftCorner(3,3).transpose();
             MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
             MatrixXd omegaSkewSymmetric = dRdq * transR;
             VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
             omega = transR * omega;
-            
-            mJW(0, i) = omega(0);
-            mJW(1, i) = omega(1);
-            mJW(2, i) = omega(2);
+
+            mJw(0, i) = omega(0);
+            mJw(1, i) = omega(1);
+            mJw(2, i) = omega(2);
         }
     }
     
