@@ -37,8 +37,8 @@ namespace model3d {
         mHandles.clear();
     }
 
-    BodyNode* Skeleton::createBodyNode(const char* const name) {
-        return new BodyNode(name);
+    BodyNode* Skeleton::createBodyNode(const char* const _name) {
+        return new BodyNode(_name);
     }
 
     void Skeleton::addHandle(Marker *_h) {
@@ -48,10 +48,10 @@ namespace model3d {
         body->addHandle(_h);
     }
 
-    void Skeleton::addNode(BodyNode *b) {
-        mNodes.push_back(b);
-        b->setSkelIndex(mNodes.size()-1);
-        addJoint(b->getJointIn());
+    void Skeleton::addNode(BodyNode *_b) {
+        mNodes.push_back(_b);
+        _b->setSkelIndex(mNodes.size()-1);
+        addJoint(_b->getJointIn());
     }
 
     void Skeleton::addJoint(Joint *_j) {
@@ -59,42 +59,42 @@ namespace model3d {
         _j->setSkelIndex(mJoints.size()-1);
     }
 
-    void Skeleton::addDof(Dof *q) {
-        mDofs.push_back(q);
-        q->setSkelIndex(mDofs.size()-1);
-        q->setVariable();
+    void Skeleton::addDof(Dof *_q) {
+        mDofs.push_back(_q);
+        _q->setSkelIndex(mDofs.size()-1);
+        _q->setVariable();
     }
 
-    void Skeleton::addTransform(Transformation *t) {
-        mTransforms.push_back(t);
-        t->setVariable(true);
-        t->setSkelIndex(mTransforms.size()-1);
-        for(int i=0; i<t->getNumDofs(); i++) {
-            addDof(t->getDof(i));
+    void Skeleton::addTransform(Transformation *_t) {
+        mTransforms.push_back(_t);
+        _t->setVariable(true);
+        _t->setSkelIndex(mTransforms.size()-1);
+        for(int i=0; i<_t->getNumDofs(); i++) {
+            addDof(_t->getDof(i));
         }
     }
   
     void Skeleton::initSkel() {
         mRoot = mNodes[0];
-        nDofs = mDofs.size();
-        nNodes = mNodes.size();
-        nHandles = mHandles.size();
+        mNumDofs = mDofs.size();
+        mNumNodes = mNodes.size();
+        mNumHandles = mHandles.size();
 
         // calculate mass
         // init the dependsOnDof stucture for each bodylink
-        for(int i=0; i<nNodes; i++) {
+        for(int i=0; i<mNumNodes; i++) {
             mNodes[i]->setSkel(this);
-            // mNodes[i]->setDependDofMap(nDofs);
+            // mNodes[i]->setDependDofMap(mNumDofs);
             mNodes[i]->setDependDofList();
             mNodes.at(i)->init();
             mMass += mNodes[i]->getMass();
         }
 
-        mCurrState = VectorXd::Zero(nDofs);
+        mCurrState = VectorXd::Zero(mNumDofs);
 
-        for(int i=0; i<nDofs; i++)
+        for(int i=0; i<mNumDofs; i++)
             mCurrState[i] = mDofs.at(i)->getValue();
-        for(int i=0; i<nNodes; i++)
+        for(int i=0; i<mNumNodes; i++)
             mNodes.at(i)->updateTransform();
     }
 
@@ -121,26 +121,26 @@ namespace model3d {
     }
   
     void Skeleton::setState(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
-        assert(state.size() == nDofs);
+        assert(state.size() == mNumDofs);
         int k=0;
-        for(k=0; k<nDofs; k++)
+        for(k=0; k<mNumDofs; k++)
             if(mCurrState[k]!=state[k]) break;
-        if(k==nDofs) return;
+        if(k==mNumDofs) return;
 
         mCurrState = state;
-        for(int i=0; i<nDofs; i++) {
+        for(int i=0; i<mNumDofs; i++) {
             mDofs.at(i)->setValue(state[i]);
         }
 
         if (bCalcTrans) {
-            for(int i = 0; i < nNodes; i++) {
+            for(int i = 0; i < mNumNodes; i++) {
                 mNodes.at(i)->updateTransform();
             }
         }
 
         if (bCalcDeriv) {
-            for(int i = 0; i < nNodes; i++) {
-                mNodes.at(i)->updateDerivatives();
+            for(int i = 0; i < mNumNodes; i++) {
+                mNodes.at(i)->updateFirstDerivatives();
             }
         }
     }
@@ -154,26 +154,26 @@ namespace model3d {
     }
 
     void Skeleton::setPose(const VectorXd& _pose){
-        assert(_pose.size() == nDofs);
-        for(int i=0; i<nDofs; i++)
+        assert(_pose.size() == mNumDofs);
+        for(int i=0; i<mNumDofs; i++)
             mDofs[i]->setValue(_pose(i));
     }
 
     void Skeleton::setPose(const vector<double>& _pose){
-        assert(_pose.size() == nDofs);
-        for(int i=0; i<nDofs; i++)
+        assert(_pose.size() == mNumDofs);
+        for(int i=0; i<mNumDofs; i++)
             mDofs[i]->setValue(_pose[i]);
     }
 
     void Skeleton::getPose(Eigen::VectorXd& _pose) {
-        _pose.resize(nDofs);
-        for (int i = 0; i < nDofs; i++) {
+        _pose.resize(mNumDofs);
+        for (int i = 0; i < mNumDofs; i++) {
             _pose(i) = mDofs[i]->getValue();
         }
     }
     void Skeleton::getPose(std::vector<double>& _pose) {
-        _pose.resize(nDofs);
-        for (int i = 0; i < nDofs; i++) {
+        _pose.resize(mNumDofs);
+        for (int i = 0; i < mNumDofs; i++) {
             _pose[i] = mDofs[i]->getValue();
         }
     }

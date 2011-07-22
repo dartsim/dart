@@ -34,23 +34,23 @@ namespace optimizer {
         bool result = mFileInfoSkel->loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk", model3d::VSK);
         CHECK(result);
 
-        // Add variables
+        // add variables
         for (int i = 0; i < getSkel()->getNumDofs(); i++) {
             addVariable((double)i / 100.0, -10.0, 10.0);
         }
-        LOG(INFO) << "Add # " << getNumVariables() << " Variables";
+        LOG(INFO) << "add # " << getNumVariables() << " Variables";
 
         // Create Con and Obj Boxes
         createBoxes();
 
-        // Add positional constraints
+        // add positional constraints
         for (int i = 0; i < getSkel()->getNumHandles(); i++) {
             Marker* marker = getSkel()->getHandle(i);
             BodyNode* node = marker->getNode();
             Eigen::Vector3d offset = marker->getLocalCoords();
             PositionConstraint* p = new PositionConstraint(
                 this->vars(), getSkel(), node, offset, Eigen::Vector3d::Zero());
-            objBox()->Add(p);
+            objBox()->add(p);
         }
 
         LOG(INFO) << "# Constraints = " << conBox()->getNumConstraints();
@@ -63,7 +63,7 @@ namespace optimizer {
 
     void IKProblem::update(double* coefs) {
         Eigen::VectorXd pose(mVariables.size());
-        for (int i = 0; i < mVariables.size(); ++i) {
+        for (unsigned int i = 0; i < mVariables.size(); ++i) {
             pose(i) = mVariables[i]->mVal;
         }
         // cout << "IKProblem::update()" << endl;

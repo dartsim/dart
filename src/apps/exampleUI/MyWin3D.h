@@ -1,7 +1,7 @@
 #ifndef _MYWIN3D_
 #define _MYWIN3D_
 
-#include "YUI/Win3D.h"
+#include "yui/Win3D.h"
 
 class MyWin3D : public Win3D
 {

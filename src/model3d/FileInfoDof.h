@@ -32,7 +32,7 @@ namespace model3d {
         void setFPS(double _fps){ mFPS = _fps; }
         double getFPS() const { return mFPS; }
         
-        double getNumFrames() const { return mNumFrames; }
+        int getNumFrames() const { return mNumFrames; }
         Skeleton* getSkel() const { return mSkel; }
 
     protected:

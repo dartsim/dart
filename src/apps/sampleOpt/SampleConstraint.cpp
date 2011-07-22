@@ -15,7 +15,7 @@ SampleConstraint::SampleConstraint(std::vector<optimizer::Var *>& var, int index
 }
 
 
-Eigen::VectorXd SampleConstraint::EvalC() {
+Eigen::VectorXd SampleConstraint::evalCon() {
     std::vector<Var *>& vars = mVariables;
     VectorXd x(1);
     x(0) = vars[mIndex]->mVal - mTarget;
@@ -24,10 +24,10 @@ Eigen::VectorXd SampleConstraint::EvalC() {
 
 }
 
-void SampleConstraint::FilldG(std::vector<double>& dG) {
-    VectorXd dP = EvalC();
+void SampleConstraint::fillObjGrad(std::vector<double>& dG) {
+    VectorXd dP = evalCon();
 
-    for(int i = 0; i < mVariables.size(); i++){
+    for(unsigned int i = 0; i < mVariables.size(); i++){
         const Var* var = mVariables[i];
         VectorXd J(1);
         if (i == mIndex) {

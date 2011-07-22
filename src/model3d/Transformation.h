@@ -29,6 +29,8 @@ namespace model3d {
 
     class Transformation {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         enum TransFormType {
             T_ROTATEX,
             T_ROTATEY,
@@ -91,8 +93,6 @@ namespace model3d {
         Eigen::Matrix4d mTransform;	// transformation matrix will be stored here
 
         bool mDirty;
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
 } // namespace model3d

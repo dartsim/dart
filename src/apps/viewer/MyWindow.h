@@ -1,7 +1,7 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include "YUI/Win3D.h"
+#include "yui/Win3D.h"
 #include "model3d/FileInfoDof.h"
 
 class MyWindow : public Win3D {
