@@ -32,32 +32,26 @@ namespace model3d {
     */
     class BodyNode {
     public:      
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
-
-        // first derivatives
-        std::vector<Eigen::MatrixXd> mTq; ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
-        std::vector<Eigen::MatrixXd> mWq; ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
-        Eigen::MatrixXd mJc; ///< Linear Jacobian; Cartesian_linear_velocity = mJc * generalized_velocity
-        Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as memebers in this class
         
         BodyNode(const char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNode(); ///< Default destructor
 
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< Update transformations w.r.t. the current dof values in Dof*
-        void updateFirstDerivatives();
+        void updateDerivatives();
 
-        Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
-        Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
-        Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordiantes of this body node
+        Eigen::Matrix4d getWorldTransform() const { return mTransWorld; } ///< Transformation from the local coordinates of this body node to the world coordinates
+        Eigen::Matrix4d getWorldInvTransform() const { return mTransWorld.inverse(); } ///< Transformation from the world coordinates to the local coordiantes of this body node
+        Eigen::Matrix4d getLocalTransform() const { return mTransLocal; } ///< Transformation from the local coordiantes of this body node to the local coordiantes of its parent
+        Eigen::Matrix4d getLocalInvTransform() const { return mTransLocal.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordiantes of this body node
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
         void setDependDofList(); ///< Set up the list of dependent dofs 
-        bool dependsOn(int _dofIndex) const; ///< Test whether this dof is dependant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
+        bool dependsOn(int _dofIndex) const; ///< Test whether this dof is depedant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
         int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
         int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
 
@@ -93,15 +87,15 @@ namespace model3d {
 
         // wrapper functions for joints
         BodyNode* getNodeOut(int _idx) const;
-        int getNumLocalDofs() const;
+        int getNumDofs() const;
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
         Eigen::Matrix4d getLocalDeriv(Dof *_q) const;
 
     protected:
-        void evalJacLin(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
-        void evalJacAng(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
+        void evalJC(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
+        void evalJW(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
         
         char mName[MAX_NODE3D_NAME]; ///< Name
         int mSkelIndex;    ///< Index in the model
@@ -113,8 +107,8 @@ namespace model3d {
         std::vector<Marker *> mHandles; ///< List of handles associated
 
         // transformations
-        Eigen::Matrix4d mT; ///< Local transformation from parent to itself
-        Eigen::Matrix4d mW; ///< Global transformation
+        Eigen::Matrix4d mTransLocal; ///< Local transformation from parent to itself
+        Eigen::Matrix4d mTransWorld; ///< Global transformation
 
         std::vector<int> mDependantDofs; ///< A list of dependant dof indices 
 
@@ -125,6 +119,11 @@ namespace model3d {
     private:
         int mID; ///< A unique ID of this node globally 
         static int msBodyNodeCount; ///< Counts the number of nodes globally
+    public:
+        std::vector<Eigen::MatrixXd> mTq; ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+        std::vector<Eigen::MatrixXd> mWq; ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+        Eigen::MatrixXd mJC; ///< Linear Jacobian; Cartesian_linear_velocity = mJC * generalized_velocity
+        Eigen::MatrixXd mJW; ///< Angular Jacobian; Cartesian_angular_velocity = mJW * generalized_velocity
     };
 
 } // namespace model3d

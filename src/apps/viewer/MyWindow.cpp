@@ -1,5 +1,5 @@
 #include "MyWindow.h"
-#include "yui/GLFuncs.h"
+#include "YUI/GLFuncs.h"
 #include "model3d/Skeleton.h"
 #include <cstdio>
 

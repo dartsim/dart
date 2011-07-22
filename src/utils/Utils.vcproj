@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="utils"
+	Name="Utils"
 	ProjectGUID="{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
@@ -153,6 +153,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\EigenHelper.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\RotationConversion.cpp"
 				>

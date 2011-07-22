@@ -10,11 +10,11 @@ class SampleConstraint : public optimizer::Constraint {
 public:
     SampleConstraint(std::vector<optimizer::Var *>& var, int index, double target);
     
-    virtual Eigen::VectorXd evalCon();
+    virtual Eigen::VectorXd EvalC();
 
-    virtual void fillJac(optimizer::VVD, int index) {}
-    virtual void fillJac(optimizer::VVD, optimizer::VVB, int index) {}
-    virtual void fillObjGrad(std::vector<double>& dG);
+    virtual void FillJ(optimizer::VVD, int index) {}
+    virtual void FillJ(optimizer::VVD, optimizer::VVB, int index) {}
+    virtual void FilldG(std::vector<double>& dG);
 
 private:
     int mIndex;

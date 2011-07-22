@@ -47,7 +47,7 @@ namespace optimizer {
         }
 
         bool SnoptSolver::solve() {
-            resetSolver();
+            ResetSolver();
 
             int nVar = mTotalDofs;
 
@@ -58,10 +58,10 @@ namespace optimizer {
             // RESET PROBLEM DIMENSION IN SNOPT
             int nConstr = conBox()->getNumTotalRows();
 
-            mSnopt->resizeJacobian(nVar, nVar, nConstr, nConstr);
+            mSnopt->ResizeJacobian(nVar, nVar, nConstr, nConstr);
 
             // FILL IN BOUNDARIES
-            double* coef_vals = new double[nVar + mSnopt->mNumConstr];
+            double* coef_vals = new double[nVar + mSnopt->constr_total];
             double* lower_bounds = new double[nVar];
             double* upper_bounds = new double[nVar];
 
@@ -95,13 +95,13 @@ namespace optimizer {
                 Constraint* c = conBox()->getConstraint(i);
                 for(int j=0; j< c->mNumRows; j++){
                     if(c->mEquality == 1)
-                        mSnopt->mConstrEqns[counter++] = 1;
+                        mSnopt->constr_eqns[counter++] = 1;
                     else if(c->mEquality == -1)
-                        mSnopt->mConstrEqns[counter++] = 2;
+                        mSnopt->constr_eqns[counter++] = 2;
                     else if(c->mSlack) // allow slip
-                        mSnopt->mConstrEqns[counter++] = 5;
+                        mSnopt->constr_eqns[counter++] = 5;
                     else
-                        mSnopt->mConstrEqns[counter++] = 0;
+                        mSnopt->constr_eqns[counter++] = 0;
                 }	
             }
 
@@ -113,7 +113,7 @@ namespace optimizer {
             SnoptInterface::Return ret = mSnopt->solve(coef_vals, lower_bounds, upper_bounds,mUnit);
 
             VLOG(1) << "SnoptSolver " << mOptCount << " : ";
-            VLOG(1) << "obj = " << mSnopt->mReturnedObj << endl;
+            VLOG(1) << "obj = " << mSnopt->returnedObj << endl;
 
             delete[] coef_vals;
             delete[] lower_bounds;
@@ -126,7 +126,7 @@ namespace optimizer {
             }
         }
 
-        int SnoptSolver::iterUpdate(long mask, int compute_gradients, double *coefs, void *update_data) {
+        int SnoptSolver::IterUpdate(long mask, int compute_gradients, double *coefs, void *update_data) {
             if(!mask)
                 return 0;
 
@@ -151,12 +151,12 @@ namespace optimizer {
                 //	m->mObjBox->EvalActivation(0);
                 if(compute_gradients){
                     //FILL OUT dObj_dCoef
-                    m->objBox()->evalObjGrad();
+                    m->objBox()->EvaldG();
                 }
 
                 if(compute_gradients != 1){
                     //FILL OUT obj
-                    m->objBox()->evalObj();
+                    m->objBox()->EvalG();
                 }
             }
 
@@ -164,24 +164,24 @@ namespace optimizer {
                 //	m->mConstrBox->EvalActivation(0);
                 if(compute_gradients){
                     // FILL OUT JACOBIAN
-                    m->conBox()->evalJac();
+                    m->conBox()->EvalJ();
                 }
                 if(compute_gradients != 1){
                     //FILL OUT CONSTR
-                    m->conBox()->evalCon();
+                    m->conBox()->EvalC();
                 }
             }
 	
             return 1;
         }
 
-        void SnoptSolver::resetSolver() {
+        void SnoptSolver::ResetSolver() {
             if(mSnopt != NULL){
                 delete mSnopt;
                 mSnopt = NULL;
             }
 
-            mSnopt = new SnoptInterface(1, &conBox()->mJac, &conBox()->mJacMap, &conBox()->mCon, &objBox()->mObj, &objBox()->mObjGrad, SnoptSolver::iterUpdate, this);
+            mSnopt = new SnoptInterface(1, &conBox()->mJ, &conBox()->mJMap, &conBox()->mC, &objBox()->mG, &objBox()->mdG, SnoptSolver::IterUpdate, this);
 
         }
 

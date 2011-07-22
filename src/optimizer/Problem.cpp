@@ -33,7 +33,7 @@ namespace optimizer {
             delete mObjBox;
         }
 
-        for (unsigned int i = 0; i < mVariables.size(); ++i) {
+        for (int i = 0; i < mVariables.size(); ++i) {
             delete mVariables[i];
         }
         mVariables.clear();

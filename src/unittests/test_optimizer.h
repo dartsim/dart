@@ -19,19 +19,19 @@ public:
         mCompletion = Eigen::VectorXd::Zero(1);
     }
     
-    virtual Eigen::VectorXd evalCon() {
+    virtual Eigen::VectorXd EvalC() {
         std::vector<optimizer::Var *>& vars = mVariables;
         Eigen::VectorXd x(1);
         x(0) = vars[mIndex]->mVal - mTarget;
         return x;
     }
 
-    virtual void fillJac(optimizer::VVD, int index) {}
-    virtual void fillJac(optimizer::VVD, optimizer::VVB, int index) {}
-    virtual void fillObjGrad(std::vector<double>& dG) {
-        VectorXd dP = evalCon();
+    virtual void FillJ(optimizer::VVD, int index) {}
+    virtual void FillJ(optimizer::VVD, optimizer::VVB, int index) {}
+    virtual void FilldG(std::vector<double>& dG) {
+        VectorXd dP = EvalC();
 
-        for(unsigned int i = 0; i < mVariables.size(); i++){
+        for(int i = 0; i < mVariables.size(); i++){
             const optimizer::Var* var = mVariables[i];
             VectorXd J(1);
             if (i == mIndex) {
@@ -60,7 +60,7 @@ TEST(SIMPLE_SNOPT, OPTIMIZER) {
 
     SampleConstraint* c = new SampleConstraint(
         prob.vars(), 0, 3.0);
-    prob.objBox()->add(c);
+    prob.objBox()->Add(c);
 
     snopt::SnoptSolver solver(&prob);
     solver.solve();

@@ -23,16 +23,16 @@ namespace optimizer {
         virtual ~Constraint() {}
 
     public:
-        virtual Eigen::VectorXd evalCon() = 0;
-        virtual double evalObj();
+        virtual Eigen::VectorXd EvalC() = 0;
+        virtual double EvalG();
 
-        virtual void fillJac(VVD, int index) {}
-        virtual void fillJac(VVD, VVB, int index) {}
-        virtual void fillObjGrad(std::vector<double>& dG){}
-        virtual void fillObjHess(Eigen::MatrixXd& ddG, int index) {}
+        virtual void FillJ(VVD, int index) {}
+        virtual void FillJ(VVD, VVB, int index) {}
+        virtual void FilldG(std::vector<double>& dG){}
+        virtual void FillddG(Eigen::MatrixXd& ddG, int index) {}
 	
-        virtual void allocateMem() {}
-        virtual void updateParams() {}
+        virtual void AllocateMem() {}
+        virtual void UpdateParams() {}
 
         std::vector<Var *>& mVariables;
         int mIndex; // index of the variable this constraint is concerning

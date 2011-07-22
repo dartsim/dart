@@ -30,5 +30,12 @@
 #define EIGEN_V_QUATD std::vector< Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond > >
 #define EIGEN_VV_QUATD std::vector< std::vector< Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> > >
 
+namespace eigenhelper {
+
+    Eigen::Vector3d xformHom(const Eigen::Matrix4d& m, const Eigen::Vector3d& v);   ///< homogeneous transformation of the vector v with the last value treated a 1
+    Eigen::Vector3d xformHomDir(const Eigen::Matrix4d& m, const Eigen::Vector3d& v);   ///< homogeneous transformation of the vector v treated as a direction: last value 0
+  
+} // namespace eigenhelper
+
 #endif // #ifndef UTILS_EIGEN_HELPER_H
 

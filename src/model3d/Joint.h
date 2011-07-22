@@ -22,8 +22,6 @@ namespace model3d {
 
     class Joint {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
-
         enum JointType {
             J_UNKNOWN, 
             J_FREEEULER, 
