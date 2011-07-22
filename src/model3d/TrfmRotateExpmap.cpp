@@ -56,7 +56,6 @@ namespace model3d {
         // Quaternion q(vhat, theta);
 
         mTransform.setZero();
-        // TODO: check to make sure this is a mat3d
         Matrix3d rot = q.matrix();      
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)
@@ -108,7 +107,6 @@ namespace model3d {
         // compute derivative of R wrt each qi
         vector<Matrix3d> dR_dq;
         dR_dq.resize(4);
-        // TODO need to rewrite
         for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
         // derivative wrt which dof 
@@ -202,8 +200,7 @@ namespace model3d {
         // compute derivative of R wrt each qi
         vector<Matrix3d> dR_dq;
         dR_dq.resize(4);
-        // TODO need to rewrite
-        //  for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+        for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
 
         // compute derivative of R wrt each qi and ql
         vector<vector<Matrix3d> > dR_dq_dq;
@@ -211,8 +208,7 @@ namespace model3d {
         for(int i=0; i<4; i++) dR_dq_dq[i].resize(4);
         for(int i=0; i<4; i++) {
             for(int l=i; l<4; l++) {
-                // TODO need to rewrite
-                //dR_dq_dq[i][l] = utils::rot_conv::getDerivativeMatrix(q, i, l);
+                dR_dq_dq[i][l] = utils::rot_conv::getDerivativeMatrix(q, i, l);
                 dR_dq_dq[l][i]=dR_dq_dq[i][l];
             }
         }

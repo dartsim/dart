@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "utils/EigenArrayHelper.h"
 #include "renderer/RenderInterface.h"
 
 namespace model3d {
