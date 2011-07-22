@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="geometry"
-	ProjectGUID="{D07B0CD6-31A4-425E-AC39-29B3FA26470D}"
-	RootNamespace="geometry"
+	Name="dynamics"
+	ProjectGUID="{920D7227-75E6-4D87-967F-72FEF4B451B7}"
+	RootNamespace="dynamics"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -153,15 +153,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\CornerTable.cpp"
+				RelativePath=".\BodyNodeDynamics.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Mesh3DGen.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Mesh3DTriangle.cpp"
+				RelativePath=".\SkeletonDynamics.cpp"
 				>
 			</File>
 		</Filter>
@@ -171,15 +167,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\CornerTable.h"
+				RelativePath=".\BodyNodeDynamics.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Mesh3DGen.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Mesh3DTriangle.h"
+				RelativePath=".\SkeletonDynamics.h"
 				>
 			</File>
 		</Filter>
