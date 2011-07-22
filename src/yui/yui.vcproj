@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="unittests"
-	ProjectGUID="{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
+	Name="yui"
+	ProjectGUID="{7779378B-3237-413F-941A-8FCDBA31AC96}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="4"
 			CharacterSet="1"
 			>
 			<Tool
@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/gflags-1.5/src/windows&quot;;&quot;../../thirdparty/gflags-1.5/src&quot;;&quot;../../thirdparty/gtest-1.6.0/include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,18 +60,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="ticpp_d.lib libglog_d.lib libgflags-debug.lib gtestd.lib"
-				OutputFile="..\..\bin\$(ProjectName)_d.exe"
-				AdditionalLibraryDirectories="..\..\thirdparty\lib;..\..\lib"
-				OptimizeReferences="1"
-				LinkTimeCodeGeneration="0"
+				Name="VCLibrarianTool"
+				OutputFile="..\..\lib\$(ProjectName)_d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -83,9 +76,6 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -93,7 +83,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="4"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -117,8 +107,8 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/gflags-1.5/src/windows&quot;;&quot;../../thirdparty/gflags-1.5/src&quot;;&quot;../../thirdparty/gtest-1.6.0/include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="../;&quot;../../thirdparty/eigen-3.0.1&quot;;../../thirdparty/ticpp;&quot;../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../thirdparty/glut-3.7.6/include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -135,16 +125,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="ticpp.lib libglog.lib libgflags.lib gtest.lib"
-				OutputFile="..\..\bin\$(ProjectName).exe"
-				AdditionalLibraryDirectories="..\..\thirdparty\lib;..\..\lib"
+				Name="VCLibrarianTool"
+				OutputFile="..\..\lib\$(ProjectName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -154,9 +139,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -172,7 +154,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\main.cpp"
+				RelativePath=".\GLFuncs.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GlutWindow.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Trackball.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Win2D.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Win3D.cpp"
 				>
 			</File>
 		</Filter>
@@ -182,11 +180,27 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\test_model3d.h"
+				RelativePath=".\GLFuncs.h"
 				>
 			</File>
 			<File
-				RelativePath=".\test_utils.h"
+				RelativePath=".\GlutWindow.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Jitter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Trackball.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Win2D.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Win3D.h"
 				>
 			</File>
 		</Filter>

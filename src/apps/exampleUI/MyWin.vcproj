@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="MyWin"
+	Name="mywin"
 	ProjectGUID="{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glut32.lib ticpp_d.lib libglog_d.lib renderer_d.lib"
 				OutputFile="..\..\..\bin\$(ProjectName)_d.exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
+				AdditionalLibraryDirectories="..\..\..\thirdparty\lib;..\..\..\lib"
 				OptimizeReferences="1"
 				LinkTimeCodeGeneration="0"
 			/>
@@ -138,7 +138,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glut32.lib ticpp.lib libglog.lib renderer.lib"
 				OutputFile="..\..\..\bin\$(ProjectName).exe"
-				AdditionalLibraryDirectories="&quot;..\..\..\thirdparty\glut-3.7.6\lib&quot;;..\..\..\thirdparty\ticpp\lib;&quot;..\..\..\thirdparty\glog-0.3.1\lib&quot;;..\..\..\lib"
+				AdditionalLibraryDirectories="..\..\..\thirdparty\lib;..\..\..\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

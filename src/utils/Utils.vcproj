@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="Utils"
+	Name="utils"
 	ProjectGUID="{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
