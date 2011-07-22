@@ -1,6 +1,3 @@
-#if WIN32
-#include "config_for_unittests.h"
-#endif
 // Standard Libraries
 #include <iostream>
 using namespace std;
@@ -27,8 +24,8 @@ int main(int argc, char* argv[]) {
     // Define logging flag
     FLAGS_alsologtostderr = true;
     FLAGS_minloglevel = INFO;
-    // FLAGS_log_dir = "./glog/";
     FLAGS_v = 0; // Make this value 1 to see the messages from the library
+    //// FLAGS_log_dir = "./glog/";
 
     return RUN_ALL_TESTS();
 }
