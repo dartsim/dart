@@ -12,7 +12,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "utils/EigenArrayHelper.h"
+#include "utils/EigenHelper.h"
 
 namespace model3d {
     class FileInfoC3D {
