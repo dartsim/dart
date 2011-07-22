@@ -53,13 +53,13 @@ namespace geometry {
 
         virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true);
 
-        //static vector<double> getBarycentricCoords(const Eigen::Vector3d _p, const Eigen::Vector3d _v1, const Eigen::Vector3d _v2, const Eigen::Vector3d _v3);
-        //// projects the point onto triangle (v1,v2,v3) along normal n and return (a1,a2,a3)
-        //static vector<double> getBarycentricCoords(const Eigen::Vector3d _p, const Eigen::Vector3d _v1, const Eigen::Vector3d _v2, const Eigen::Vector3d _v3, const Eigen::Vector3d _n, Eigen::Vector3d &_pproj){
-        //    // barycentric coords
-        //    _pproj = _p - _n.dot(_p-_v1) *_n;	// assume normalized normal
-        //    return getBarycentricCoords(_pproj, _v1, _v2, _v3);
-        //}
+        static vector<double> getBarycentricCoords(const Eigen::Vector3d& _p, const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, const Eigen::Vector3d& _v3);
+        // projects the point onto triangle (v1,v2,v3) along normal n and return (a1,a2,a3)
+        static vector<double> getBarycentricCoords(const Eigen::Vector3d& _p, const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, const Eigen::Vector3d& _v3, const Eigen::Vector3d& _n, Eigen::Vector3d &_pproj){
+            // barycentric coords
+            _pproj = _p - _n.dot(_p-_v1) *_n;	// assume normalized normal
+            return getBarycentricCoords(_pproj, _v1, _v2, _v3);
+        }
 
         static vector<pair<int, int>> getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2);
         static void writeCorres(const char *_file, Mesh3DTriangle *_m1, Mesh3DTriangle *_m2, const vector<pair<int, int>> &_corres);
