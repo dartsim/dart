@@ -10,6 +10,7 @@
 #define UTILS_EIGEN_HELPER_H
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #define EIGEN_V_VEC2D std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >
 #define EIGEN_V_VEC3D std::vector< Eigen::Vector3d >
