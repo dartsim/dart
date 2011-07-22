@@ -35,13 +35,12 @@ namespace utils {
         Eigen::Matrix3d eulerToMatrixy(double y);
         Eigen::Matrix3d eulerToMatrixz(double z);
 
-        // Yuting: I don't think we need it, and it shoudn't be here even if we do
-        // Note: retrieves the derivative matrix given a quaternion
-        // This is not functionality that is part of Eigen
-        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el);
-        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el1, int el2);
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
+
+        // TODO: remove from here
+        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el);
+        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el1, int el2);
 
     } // namespace rot_conv
 } // namespace utils
