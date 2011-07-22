@@ -8,12 +8,17 @@
 
 
 #include "EigenHelper.h"
+using namespace Eigen;
 
 namespace eigenhelper {
-    Eigen::Vector3d xform(const Eigen::Matrix4d& m, const Eigen::Vector3d& v) {
-        Eigen::Vector4d x(v(0), v(1), v(2), 1.0);
-        Eigen::Vector4d y = m * x;
-        return Eigen::Vector3d(y(0), y(1), y(2));
+    Vector3d xformHom(const Matrix4d& m, const Vector3d& v) {
+        Vector4d x(v(0), v(1), v(2), 1.0);
+        Vector4d y = m * x;
+        return Vector3d(y(0), y(1), y(2));
+    }
+
+    Vector3d xformHomDir(const Matrix4d& m, const Vector3d& v) {
+        return m.topLeftCorner(3,3)*v;
     }
   
 } // namespace eigenhelper

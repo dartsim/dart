@@ -60,8 +60,8 @@ namespace model3d {
     }
 
     void Transformation::applyTransform(Vector3d& _v) {
-        using eigenhelper::xform;
-        _v= xform(getTransform(), _v);
+        using eigenhelper::xformHom;
+        _v= xformHom(getTransform(), _v);
         Vector4d v4d( _v[0], _v[1], _v[2], 1 );
         v4d = getTransform() *v4d;
         _v = Vector3d( v4d[0], v4d[1], v4d[2] );
@@ -72,8 +72,8 @@ namespace model3d {
     }
 
     void Transformation::applyInvTransform(Vector3d& _v) {
-        using eigenhelper::xform;
-        _v = xform(getInvTransform(), _v);
+        using eigenhelper::xformHom;
+        _v = xformHom(getInvTransform(), _v);
     }
 
     void Transformation::applyInvTransform(Matrix4d& _m) {
@@ -81,8 +81,8 @@ namespace model3d {
     }
 
     void Transformation::applyDeriv(const Dof*_q, Vector3d& _v) {
-        using eigenhelper::xform;
-        _v = xform(getDeriv(_q), _v);
+        using eigenhelper::xformHom;
+        _v = xformHom(getDeriv(_q), _v);
     }
 
     void Transformation::applyDeriv(const Dof*_q, Matrix4d& _m)  {
@@ -90,8 +90,8 @@ namespace model3d {
     }
 
     void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Vector3d& _v) {
-        using eigenhelper::xform;
-        _v = xform(getSecondDeriv(_q1, _q2), _v);
+        using eigenhelper::xformHom;
+        _v = xformHom(getSecondDeriv(_q1, _q2), _v);
     }
 
     void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Matrix4d& _m) {

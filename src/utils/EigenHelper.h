@@ -32,7 +32,8 @@
 
 namespace eigenhelper {
 
-    Eigen::Vector3d xform(const Eigen::Matrix4d& m, const Eigen::Vector3d& v);
+    Eigen::Vector3d xformHom(const Eigen::Matrix4d& m, const Eigen::Vector3d& v);   ///< homogenous transformation of the vector v with the last value treated a 1
+    Eigen::Vector3d xformHomDir(const Eigen::Matrix4d& m, const Eigen::Vector3d& v);   ///< homogenous transformation of the vector v treated as a direction: last value 0
   
 } // namespace eigenhelper
 
