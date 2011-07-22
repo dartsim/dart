@@ -71,6 +71,19 @@ namespace model3d {
         m.row(3).setZero();
     }
 
+    Matrix4d TrfmTranslate::getSecondDeriv( const Dof *q1, const Dof *q2 ) {
+        return Eigen::Matrix4d::Zero(); // always zero
+    }
+
+    void TrfmTranslate::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Vector3d& v ) {
+        v.setZero();
+    }
+
+    void TrfmTranslate::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Matrix4d& m ) {
+        m.setZero();
+    }
+
+
     Matrix4d TrfmTranslate::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
         for(unsigned int i=0; i<mDofs.size(); i++)
@@ -150,6 +163,18 @@ namespace model3d {
             }
     }
 
+    Matrix4d TrfmTranslateX::getSecondDeriv( const Dof *q1, const Dof *q2 ) {
+        return Eigen::Matrix4d::Zero(); // always zero
+    }
+
+    void TrfmTranslateX::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Vector3d& v ) {
+        v.setZero();
+    }
+
+    void TrfmTranslateX::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Matrix4d& m ) {
+        m.setZero();
+    }
+
     Matrix4d TrfmTranslateX::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
         ret(A_X, 3) = -mDofs[0]->getValue();
@@ -209,9 +234,6 @@ namespace model3d {
         if(mDofs[0] != q) v=Vector3d::Zero();
         else {
             v = Vector3d(0, 1, 0);
-            // equivalent to the following?
-            // v = Vector3d::Zero();
-            // v(1) = 1;
         }
     }
 
@@ -221,6 +243,18 @@ namespace model3d {
                 if(i==A_Y) m.row(i)=m.row(3);
                 else m.row(i).setZero();
             }
+    }
+
+    Matrix4d TrfmTranslateY::getSecondDeriv( const Dof *q1, const Dof *q2 ) {
+        return Eigen::Matrix4d::Zero(); // always zero
+    }
+
+    void TrfmTranslateY::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Vector3d& v ) {
+        v.setZero();
+    }
+
+    void TrfmTranslateY::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Matrix4d& m ) {
+        m.setZero();
     }
 
     Matrix4d TrfmTranslateY::getInvTransform(){
@@ -289,6 +323,18 @@ namespace model3d {
                 if(i==A_Z) m.row(i) = m.row(3);
                 else m.row(i).setZero();
             }
+    }
+
+    Matrix4d TrfmTranslateZ::getSecondDeriv( const Dof *q1, const Dof *q2 ) {
+        return Eigen::Matrix4d::Zero(); // always zero
+    }
+
+    void TrfmTranslateZ::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Vector3d& v ) {
+        v.setZero();
+    }
+
+    void TrfmTranslateZ::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Matrix4d& m ) {
+        m.setZero();
     }
 
     Matrix4d TrfmTranslateZ::getInvTransform(){
