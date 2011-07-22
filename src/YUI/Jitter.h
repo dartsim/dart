@@ -35,7 +35,7 @@
  * OpenGL(TM) is a trademark of Silicon Graphics, Inc.
  */
 /*
-jitter.h
+Jitter.h
 
 This file contains jitter point arrays for 2,3,4,8,15,24 and 66 jitters.
 
