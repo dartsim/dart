@@ -40,7 +40,7 @@ namespace optimizer {
             const Var* v = mVariables[i];
             double w = v->mWeight;
 
-            VectorXd J = utils::transform(mNode->mWq.at(i),mOffset);
+            VectorXd J = utils::xformHom(mNode->mWq.at(i),mOffset);
             J /= w;
             dG.at(i) += dP.dot(J);
         }
