@@ -17,10 +17,10 @@ namespace optimizer {
                            const Eigen::Vector3d& offset,
                            const Eigen::Vector3d& val);
 
-        virtual Eigen::VectorXd EvalC();
-        virtual void FillJ(VVD, int){}
-        virtual void FillJ(VVD, VVB, int);
-        virtual void FilldG(std::vector<double>&);
+        virtual Eigen::VectorXd evalCon();
+        virtual void fillJac(VVD, int){}
+        virtual void fillJac(VVD, VVB, int);
+        virtual void fillObjGrad(std::vector<double>&);
 
         void setTarget(const Eigen::Vector3d& target);
         Eigen::Vector3d getTarget() const;

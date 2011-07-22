@@ -151,12 +151,12 @@ namespace optimizer {
                 //	m->mObjBox->EvalActivation(0);
                 if(compute_gradients){
                     //FILL OUT dObj_dCoef
-                    m->objBox()->EvaldG();
+                    m->objBox()->evalObjGrad();
                 }
 
                 if(compute_gradients != 1){
                     //FILL OUT obj
-                    m->objBox()->EvalG();
+                    m->objBox()->evalObj();
                 }
             }
 
@@ -164,11 +164,11 @@ namespace optimizer {
                 //	m->mConstrBox->EvalActivation(0);
                 if(compute_gradients){
                     // FILL OUT JACOBIAN
-                    m->conBox()->EvalJ();
+                    m->conBox()->evalJac();
                 }
                 if(compute_gradients != 1){
                     //FILL OUT CONSTR
-                    m->conBox()->EvalC();
+                    m->conBox()->evalCon();
                 }
             }
 	
@@ -181,7 +181,7 @@ namespace optimizer {
                 mSnopt = NULL;
             }
 
-            mSnopt = new SnoptInterface(1, &conBox()->mJ, &conBox()->mJMap, &conBox()->mC, &objBox()->mG, &objBox()->mdG, SnoptSolver::IterUpdate, this);
+            mSnopt = new SnoptInterface(1, &conBox()->mJac, &conBox()->mJacMap, &conBox()->mCon, &objBox()->mObj, &objBox()->mObjGrad, SnoptSolver::IterUpdate, this);
 
         }
 
