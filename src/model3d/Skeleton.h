@@ -25,9 +25,9 @@ namespace model3d {
     public:
         Eigen::VectorXd mCurrState; 
         BodyNode* mRoot;
-        int mNumDofs;
-        int mNumNodes;
-        int mNumHandles;
+        int nDofs;
+        int nNodes;
+        int nHandles;
 
         Skeleton();
         virtual ~Skeleton();

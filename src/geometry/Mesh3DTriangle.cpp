@@ -207,24 +207,25 @@ namespace geometry {
         if(!lightstate) glDisable( GL_LIGHTING );
     }
 
-    vector<double> Mesh3DTriangle::getBarycentricCoords(const Vector3d& _p, const Vector3d& _v1, const Vector3d& _v2, const Vector3d& _v3){
-        // barycentric coords
-        MatrixXd B = MatrixXd::Zero(3, 2);
-        for(int ri=0; ri<3; ri++) B(ri, 0) = _v1[ri]-_v3[ri];
-        for(int ri=0; ri<3; ri++) B(ri, 1) = _v2[ri]-_v3[ri];
-        VectorXd rhs = VectorXd::Zero(3);
-        for(int ri=0; ri<3; ri++) rhs[ri] = _p[ri]-_v3[ri];
-        JacobiSVD<MatrixXd> svdB(B, ComputeThinU | ComputeThinV);
-        VectorXd brv = svdB.solve(rhs);
-        //MatrixXd Binv = MatrixXd::Zero(2, 3);
-        //svdB.pseudoInv(Binv);
-        //VectorXd brv = Binv*rhs;
-        vector<double> br(3, 0.0);
-        br[0] = brv[0];
-        br[1] = brv[1];
-        br[2] = 1-(brv[0]+brv[1]);
-        return br;
-    }
+
+    //vector<double> Mesh3DTriangle::getBarycentricCoords(const Vector3d _p, const Vector3d _v1, const Vector3d _v2, const Vector3d _v3){
+    //    // barycentric coords
+    //    Matd B(3, 2, vl_0);
+    //    for(int ri=0; ri<3; ri++) B[ri][0] = _v1[ri]-_v3[ri];
+    //    for(int ri=0; ri<3; ri++) B[ri][1] = _v2[ri]-_v3[ri];
+    //    VectorXd rhs(3, vl_0);
+    //    for(int ri=0; ri<3; ri++) rhs[ri] = _p[ri]-_v3[ri];
+    //    SVD svdB(B);
+    //    Matd Binv(2, 3, vl_0);
+    //    svdB.pseudoInv(Binv);
+    //    VectorXd brv = Binv*rhs;
+    //    vector<double> br(3, 0.0);
+    //    br[0] = brv[0];
+    //    br[1] = brv[1];
+    //    br[2] = 1-(brv[0]+brv[1]);
+    //    //cout<<"barycentric2: "<<brv<<endl;
+    //    return br;
+    //}
 
     vector<pair<int, int>> Mesh3DTriangle::getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2){
         vector<pair<int, int>> vcorr;

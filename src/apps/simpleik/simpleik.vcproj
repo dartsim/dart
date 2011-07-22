@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/gflags-1.5/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
+				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -118,7 +118,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/gflags-1.5/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
+				AdditionalIncludeDirectories="../../;&quot;../../../thirdparty/eigen-3.0.1&quot;;../../../thirdparty/ticpp;&quot;../../../thirdparty/glog-0.3.1/src/windows&quot;;&quot;../../../thirdparty/glut-3.7.6/include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;GLUT_BUILDING_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

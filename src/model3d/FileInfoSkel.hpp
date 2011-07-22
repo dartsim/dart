@@ -114,7 +114,7 @@ namespace model3d {
         }
         output<<fixed<<setprecision(6);
 
-        int _numLinks = mSkel->mNumNodes;
+        int _numLinks = mSkel->nNodes;
 
         output<<"dofs {\n";
         for(int i=0; i<mSkel->getNumDofs(); i++){
@@ -127,7 +127,7 @@ namespace model3d {
 
         // masses
         output<<"\nmass {\n";
-        for(int i=0; i<mSkel->mNumNodes; i++){
+        for(int i=0; i<mSkel->nNodes; i++){
             if(i>=_numLinks) break;
             string massname = mSkel->getNode(i)->getName();
             massname += "_mass";

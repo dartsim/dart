@@ -33,51 +33,51 @@ namespace optimizer {
                 double val;
             };
 
-            typedef int (*updateFunc) (long mask, int compute_gradients, double *coef_values, void *update_data);
+            typedef int (*UpdateF) (long mask, int compute_gradients, double *coef_values, void *update_data);
 		
             SnoptInterface(int constr_total, int coef_total, 
                            int nonlin_constr_total, int nonlin_obj_coef, int nonlin_jac_coef,
                            int *constr_eqns, int has_objective, VVD J, VVB JMap, std::vector<double> *constraints,
-                           double *objective, std::vector<double> *gradient,	updateFunc update_f, void *update_d);
+                           double *objective, std::vector<double> *gradient,	UpdateF update_f, void *update_d);
 		
             SnoptInterface(int has_objective, VVD J, VVB JMap, std::vector<double> *constraints, double *objective,
-                           std::vector<double> *gradient, updateFunc update_f, void *update_d);
+                           std::vector<double> *gradient, UpdateF update_f, void *update_d);
             ~SnoptInterface();
 
             Return solve(double *x, double *lo_bounds, double *hi_bounds, int unit = 4);
 
             void clear(long mask, int compute_derivs);
 
-            void resizeJacobian(int coef_total, int nonlin_coef_total, int constr_total, int nonlin_constr_total);
-            void resizeCoef();
+            void ResizeJacobian(int coef_total, int nonlin_coef_total, int constr_total, int nonlin_constr_total);
+            void ResizeCoef();
 
-            int mNumConstr;
-            int mNumCoef;
-            int mNumNonlinConstr;
-            int mNumNonlinObjCoef;
-            int mNumNonlinJacCoef;
+            int constr_total;
+            int coef_total;
+            int nonlin_constr_total;
+            int nonlin_obj_coef;
+            int nonlin_jac_coef;
 
-            double *mSolverX;
-            double *mProblemX;
-            double *mBoundsLo;
-            double *mBoundsHi;
-            int *mConstrEqns;
+            double *solver_x;
+            double *problem_x;
+            double *lo_bounds;
+            double *hi_bounds;
+            int *constr_eqns;
 
-            int mHasObjective;
+            int has_objective;
 
-            static SnoptInterface *mRef;
+            static SnoptInterface *ref;
 
-            double *mObj;
-            std::vector<double> *mdObjdCoef;
+            double *obj;
+            std::vector<double> *dObj_dCoef;
 
-            std::vector<double> *mConstr;
-            VVD mdConstrdCoef;
+            std::vector<double> *constr;
+            VVD dConstr_dCoef;
 
-            Eigen::VectorXd mConstrScale;
-            Eigen::VectorXd mCoefScale;
+            Eigen::VectorXd constr_scale;
+            Eigen::VectorXd coef_scale;
 
-            VVB mCoefMap;
-            double mReturnedObj;
+            VVB coefMap;
+            double returnedObj;
 
             int mOutput;
             int mSum;
@@ -92,8 +92,8 @@ namespace optimizer {
 
 
         protected:
-            SnoptInterface::updateFunc mUpdateFunc;
-            void *mUpdateData;
+            SnoptInterface::UpdateF update_func;
+            void *update_data;
 
             void scaleValues(long update_type, int compute_derivs);
 
@@ -106,8 +106,8 @@ namespace optimizer {
                                  double *x, double *f_con, double *g_con, int *nstate, 
                                  char *cu, int *lencu, int *iu, int *leniu, 
                                  double *ru, int *lenru);
-            void fillUpSnoptFormat(VVD jacobian, double **a, int **ha, int **ka);
-            int sparseCount(int col);
+            void FillUpSnoptFormat(VVD jacobian, double **a, int **ha, int **ka);
+            int SparseCount(int col);
 
         };
         

@@ -15,25 +15,25 @@ using namespace std;
 namespace optimizer {
 
     ObjectiveBox::ObjectiveBox(int numDofs) {
-        setNumDofs(numDofs);
-        mObj = 0.0;
+        SetNumDofs(numDofs);
+        mG = 0.0;
     }
     
     ObjectiveBox::~ObjectiveBox() {
-        clear();
+        Clear();
     }
 
-    void ObjectiveBox::add(Constraint *newObjective) {
+    void ObjectiveBox::Add(Constraint *newObjective) {
         mObjectives.push_back(newObjective);
     }
 
-    void ObjectiveBox::clear() {
+    void ObjectiveBox::Clear() {
         mObjectives.clear();
     }
 
-    int ObjectiveBox::remove(Constraint *obj) {
+    int ObjectiveBox::TakeOut(Constraint *obj) {
         int index = -1;
-        for(unsigned int i = 0; i < mObjectives.size(); i++){
+        for(int i = 0; i < mObjectives.size(); i++){
             if(mObjectives[i] == obj){
                 index = i;
                 break;
@@ -50,46 +50,46 @@ namespace optimizer {
         return index;
     }
 
-    int ObjectiveBox::isInBox(Constraint *testObj)  {
-        for(unsigned int i = 0; i < mObjectives.size(); i++) {
+    int ObjectiveBox::IsInBox(Constraint *testObj)  {
+        for(int i = 0; i < mObjectives.size(); i++) {
             if(mObjectives[i] == testObj)
                 return i;
         }
         return -1;
     }
 
-    void ObjectiveBox::setNumDofs(int numDofs) {
+    void ObjectiveBox::SetNumDofs(int numDofs) {
 
         mNumDofs = numDofs;
-        mObj = 0;
-        mObjGrad.resize(numDofs);
+        mG = 0;
+        mdG.resize(numDofs);
 
         for(int i = 0; i < numDofs; i++) {
-            mObjGrad[i] = 0.0;
+            mdG[i] = 0.0;
         }
     }
 
-    void ObjectiveBox::evalObjGrad() {
-        for(unsigned int i = 0; i < mObjectives.size(); i++) {
+    void ObjectiveBox::EvaldG() {
+        for(int i = 0; i < mObjectives.size(); i++) {
             if(mObjectives[i]->mActive){
-                mObjectives[i]->fillObjGrad(mObjGrad);
+                mObjectives[i]->FilldG(mdG);
             }
         }
     }
 
-    void ObjectiveBox::evalObjHess() {
+    void ObjectiveBox::EvalddG() {
     }
 
-    void ObjectiveBox::evalObj() {
-        mObj = 0;
-        for(unsigned int i = 0; i < mObjectives.size(); i++)
+    void ObjectiveBox::EvalG() {
+        mG = 0;
+        for(int i = 0; i < mObjectives.size(); i++)
             if(mObjectives[i]->mActive)
-                mObj += mObjectives[i]->evalObj();
+                mG += mObjectives[i]->EvalG();
     }
 
-    void ObjectiveBox::reallocateMem() {
-        for(unsigned int i = 0; i < mObjectives.size(); i++)
-            mObjectives[i]->allocateMem();
+    void ObjectiveBox::ReallocateMem() {
+        for(int i = 0; i < mObjectives.size(); i++)
+            mObjectives[i]->AllocateMem();
     }
 
     

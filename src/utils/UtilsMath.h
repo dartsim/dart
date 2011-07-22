@@ -92,7 +92,7 @@ namespace utils {
         return min + ((double)rand()/(RAND_MAX + 1.0)) * (max-min);
     }
 
-    inline unsigned seedRand(){
+    inline unsigned seed_rand(){
         time_t now = time(0);
         unsigned char *p = (unsigned char *)&now;
         unsigned seed = 0;
@@ -105,7 +105,7 @@ namespace utils {
         return seed;
     }
 
-    inline VectorXd xformHom(const MatrixXd& M, const VectorXd& v) { ///< homogeneous transformation of the vector v with the last value treated a 1
+    inline VectorXd transform(const MatrixXd& M, const VectorXd& v) {
         int n = v.size();
         assert(M.rows() == n + 1);
         VectorXd augV(n + 1);
@@ -117,17 +117,7 @@ namespace utils {
         return ret;
     }
 
-    //inline Vector3d xformHom(const Matrix4d& m, const Vector3d& v) { ///< homogeneous transformation of the vector v with the last value treated a 1
-    //    Vector4d x(v(0), v(1), v(2), 1.0);
-    //    Vector4d y = m * x;
-    //    return Vector3d(y(0), y(1), y(2));
-    //}
-
-    inline Vector3d xformHomDir(const Matrix4d& m, const Vector3d& v) { ///< homogeneous transformation of the vector v treated as a direction: last value 0
-        return m.topLeftCorner(3,3)*v;
-    }
-
-    /* inline VectorXd xformHom(const VectorXd& v, const MatrixXd& M){ */
+    /* inline VectorXd transform(const VectorXd& v, const MatrixXd& M){ */
     /*   int n = v.size(); */
     /*   assert(M.rows() == n + 1); */
     
@@ -176,14 +166,14 @@ namespace utils {
         return result;
     }
 
-    //inline VectorXd cross(const VectorXd& a, const VectorXd& b) {
-    //    Vector3d v1(a(0), a(1), a(2));
-    //    Vector3d v2(b(0), b(1), b(2));
-    //    Vector3d v = cross(v1, v2);
-    //    VectorXd ret(3);
-    //    ret << v(0), v(1), v(2);
-    //    return ret;
-    //}
+    inline VectorXd cross(const VectorXd& a, const VectorXd& b) {
+        Vector3d v1(a(0), a(1), a(2));
+        Vector3d v2(b(0), b(1), b(2));
+        Vector3d v = cross(v1, v2);
+        VectorXd ret(3);
+        ret << v(0), v(1), v(2);
+        return ret;
+    }
 	
 /*   // *p*artial *S*kew *S*ymmetric matrix / *p*artial *E*lement{1,2,3} */
 
