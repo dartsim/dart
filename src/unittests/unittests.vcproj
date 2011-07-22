@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ticpp_d.lib libglog_d.lib libgflags-debug.lib gtestd.lib"
+				AdditionalDependencies="ticpp_d.lib libglog_d.lib libgflags_d.lib gtest_d.lib snoptd.lib"
 				OutputFile="..\..\bin\$(ProjectName)_d.exe"
 				AdditionalLibraryDirectories="..\..\thirdparty\lib;..\..\lib"
 				OptimizeReferences="1"
@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ticpp.lib libglog.lib libgflags.lib gtest.lib"
+				AdditionalDependencies="ticpp.lib libglog.lib libgflags.lib gtest.lib snopt.lib"
 				OutputFile="..\..\bin\$(ProjectName).exe"
 				AdditionalLibraryDirectories="..\..\thirdparty\lib;..\..\lib"
 			/>

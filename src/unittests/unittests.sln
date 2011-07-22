@@ -3,13 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unittests", "unittests.vcproj", "{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
 	ProjectSection(ProjectDependencies) = postProject
+		{8729984B-454F-42C0-8BF2-908F407B51D1} = {8729984B-454F-42C0-8BF2-908F407B51D1}
 		{78429FB6-D4A8-40DB-B2A8-8307477E71DD} = {78429FB6-D4A8-40DB-B2A8-8307477E71DD}
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6} = {D45EC2C1-8F7B-4894-82C9-5045607F9ED6}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "model3d", "..\model3d\model3d.vcproj", "{78429FB6-D4A8-40DB-B2A8-8307477E71DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "..\utils\Utils.vcproj", "{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "utils", "..\utils\Utils.vcproj", "{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "optimizer", "..\optimizer\optimizer.vcproj", "{8729984B-454F-42C0-8BF2-908F407B51D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +32,10 @@ Global
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}.Debug|Win32.Build.0 = Debug|Win32
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}.Release|Win32.ActiveCfg = Release|Win32
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6}.Release|Win32.Build.0 = Release|Win32
+		{8729984B-454F-42C0-8BF2-908F407B51D1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8729984B-454F-42C0-8BF2-908F407B51D1}.Debug|Win32.Build.0 = Debug|Win32
+		{8729984B-454F-42C0-8BF2-908F407B51D1}.Release|Win32.ActiveCfg = Release|Win32
+		{8729984B-454F-42C0-8BF2-908F407B51D1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
