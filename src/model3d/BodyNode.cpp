@@ -64,10 +64,10 @@ namespace model3d {
         mW = Matrix4d::Identity();
 
         const int numLocalDofs = getNumLocalDofs();
-        mTq.resize(numLocalDofs, MatrixXd::Zero(4, 4));
+        mTq.resize(numLocalDofs, Matrix4d::Zero());
         //const int numDepDofs = getSkel()->getNumLocalDofs();
         const int numDepDofs = getNumDependantDofs();
-        mWq.resize(numDepDofs, MatrixXd::Zero(4, 4));
+        mWq.resize(numDepDofs, Matrix4d::Zero());
         
         mJc = MatrixXd::Zero(3, numDepDofs);
         mJw = MatrixXd::Zero(3, numDepDofs);
@@ -129,11 +129,10 @@ namespace model3d {
 
         evalJacLin();
         evalJacAng();
-
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        Vector3d result = utils::transform(mW, _lp);
+        Vector3d result = utils::xformHom(mW, _lp);
         return result;
     }
     
@@ -237,13 +236,13 @@ namespace model3d {
         //for (vector<int>::iterator i_iter = mDependantDofs.begin();
         //     i_iter != mDependantDofs.end(); i_iter++) {
         //    int i = (*i_iter);
-        //    VectorXd J = utils::transform(mWq.at(i), mOffset);
+        //    VectorXd J = utils::xformHom(mWq.at(i), mOffset);
         //    mJc(0, i) = J(0);
         //    mJc(1, i) = J(1);
         //    mJc(2, i) = J(2);
         //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
-            VectorXd J = utils::transform(mWq.at(i), mOffset);
+            VectorXd J = utils::xformHom(mWq.at(i), mOffset);
             mJc(0, i) = J(0);
             mJc(1, i) = J(1);
             mJc(2, i) = J(2);

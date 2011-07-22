@@ -154,10 +154,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\EigenHelper.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\RotationConversion.cpp"
 				>
 			</File>
