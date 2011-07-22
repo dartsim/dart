@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="YUI"
+	Name="yui"
 	ProjectGUID="{7779378B-3237-413F-941A-8FCDBA31AC96}"
 	RootNamespace="model3d"
 	Keyword="Win32Proj"
