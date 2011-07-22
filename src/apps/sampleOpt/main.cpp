@@ -19,7 +19,7 @@ class SampleProblem : public Problem {
 public:
     virtual void update(double* coefs) {
         cout << "TestProblem::update" << endl;
-        for (int i = 0; i < mVariables.size(); ++i) {
+        for (unsigned int i = 0; i < mVariables.size(); ++i) {
             cout << "Value (" << i << ") = " << mVariables[i]->mVal << endl;
         }
     }
@@ -42,9 +42,9 @@ int main(int argc, char* argv[]) {
     // Create constraints and objectives
     SampleConstraint* c = new SampleConstraint(
         prob.vars(), 0, 3.0);
-    prob.objBox()->Add(c);
+    prob.objBox()->add(c);
 
-    // Create a solever and solve
+    // Create a solver and solve
     snopt::SnoptSolver solver(&prob);
     solver.solve();
 
