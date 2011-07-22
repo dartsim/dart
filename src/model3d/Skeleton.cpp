@@ -140,7 +140,7 @@ namespace model3d {
 
         if (bCalcDeriv) {
             for(int i = 0; i < mNumNodes; i++) {
-                mNodes.at(i)->updateDerivatives();
+                mNodes.at(i)->updateFirstDerivatives();
             }
         }
     }
