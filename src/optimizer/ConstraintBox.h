@@ -19,29 +19,29 @@ namespace optimizer {
         ConstraintBox(int numDofs);
         virtual ~ConstraintBox();
 	
-        void Add(Constraint *newConstraint);
-        void Clear();
-        int TakeOut(Constraint *target);
-        int IsInBox(Constraint *testConstraint);	//return index of component if true
+        void add(Constraint *newConstraint);
+        void clear();
+        int remove(Constraint *target);
+        int isInBox(Constraint *testConstraint);	//return index of component if true
 
         int getNumConstraints() const { return mConstraints.size(); }
         Constraint * getConstraint(int index) const { return mConstraints[index]; }
 
-        void EvalJ();
-        void EvalC();
-        void ReallocateMem();
+        void evalJac();
+        void evalCon();
+        void reallocateMem();
 
         //Must be called before using ConstraintBox
         int getNumDofs() const { return mNumDofs; }
-        void SetNumDofs(int numDofs);
+        void setNumDofs(int numDofs);
         int getNumTotalRows() const { return mNumTotalRows; }
 
         int mNumDofs; //number of Model DOFs
         int mNumTotalRows;
         std::vector<Constraint *> mConstraints;
-        std::vector<double> mC;
-        std::vector< std::vector<double> *> mJ; //Jacobian
-        std::vector< std::vector<bool> *> mJMap; //Show nonzero elements of Jacobian
+        std::vector<double> mCon;
+        std::vector< std::vector<double> *> mJac; //Jacobian
+        std::vector< std::vector<bool> *> mJacMap; //Show nonzero elements of Jacobian
     };
 } // namespace optimizer
 

@@ -117,21 +117,21 @@ namespace optimizer {
             if(mask & SnoptInterface::Obj) {
                 *obj = 0.0;
                 if (compute_derivs) {
-                    for(int i = 0; i < dObj_dCoef->size(); i++) {
+                    for(unsigned int i = 0; i < dObj_dCoef->size(); i++) {
                         dObj_dCoef->at(i) = 0.0;
                     }
                 }
             }
 
             if(mask & SnoptInterface::Constr) {
-                for(int i = 0; i < constr->size(); i++)
+                for(unsigned int i = 0; i < constr->size(); i++)
                     constr->at(i) = 0.0;
                 if(compute_derivs) {
-                    for(int i = 0; i < dConstr_dCoef->size(); i++)
-                        for(int j = 0; j < dConstr_dCoef->at(i)->size(); j++)
+                    for(unsigned int i = 0; i < dConstr_dCoef->size(); i++)
+                        for(unsigned int j = 0; j < dConstr_dCoef->at(i)->size(); j++)
                             dConstr_dCoef->at(i)->at(j) = 0.0;
-                    for(int i = 0; i < coefMap->size(); i++)
-                        for(int j = 0; j < coefMap->at(i)->size(); j++)
+                    for(unsigned int i = 0; i < coefMap->size(); i++)
+                        for(unsigned int j = 0; j < coefMap->at(i)->size(); j++)
                             coefMap->at(i)->at(j) = 0;
                 }
 
@@ -162,7 +162,7 @@ namespace optimizer {
 
             constr->resize(constr_total);
   
-            for(int i = 0; i < dConstr_dCoef->size(); i++)
+            for(unsigned int i = 0; i < dConstr_dCoef->size(); i++)
                 delete dConstr_dCoef->at(i);
 
             dConstr_dCoef->resize(constr_total);
@@ -172,7 +172,7 @@ namespace optimizer {
                 dConstr_dCoef->at(i)->resize(coef_total);
             }
 
-            for(int i = 0; i < coefMap->size(); i++)
+            for(unsigned int i = 0; i < coefMap->size(); i++)
                 delete coefMap->at(i);
   
             coefMap->resize(constr_total);
@@ -274,8 +274,8 @@ namespace optimizer {
             {
 
                 SnoptInterface *s = SnoptInterface::ref;
-                char *found;
                 /*
+                char *found;
                   if((found = strstr(MjrMsg, "i")) != NULL){
                   cout << "Infeasible QP found" << endl;
                   s->mAbnormal = SnoptInterface::INFEASIBLE;
