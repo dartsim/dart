@@ -2,7 +2,7 @@
   RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
   All rights reserved.
 
-  Author	Sumit jain
+  Author	Sumit Jain
   Date		07/21/2011
 */
 
@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "renderer/RenderInterface.h"
 #include "model3d/Skeleton.h"
 
 namespace dynamics{
