@@ -12,6 +12,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "renderer/RenderInterface.h"
+#include "utils/EigenHelper.h"
 
 namespace model3d {
 #define MAX_NODE3D_NAME 128
@@ -35,8 +36,8 @@ namespace model3d {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
         // first derivatives
-        std::vector<Eigen::MatrixXd> mTq; ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
-        std::vector<Eigen::MatrixXd> mWq; ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+        EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+        EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
         Eigen::MatrixXd mJc; ///< Linear Jacobian; Cartesian_linear_velocity = mJc * generalized_velocity
         Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
         
@@ -50,7 +51,7 @@ namespace model3d {
         Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
         Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
         Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordiantes of this body node
+        Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordinates of this body node
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 

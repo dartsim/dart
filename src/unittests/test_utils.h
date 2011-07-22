@@ -47,7 +47,7 @@ TEST(UTILS, UTILS) {
     0.0, 0.0, 1.0, 1.0,
     0.0, 0.0, 0.0, 1.0;
   Vector3d pt(1.0, 0.5, 1.0);
-  Vector3d result = utils::transform(M, pt);
+  Vector3d result = utils::xformHom(M, pt);
   Vector3d expected(4.0, 2.5, 2.0);
   EXPECT_NEAR( (result - expected).norm(), 0.0, EPSILON)
     << "result = " << result << " expected = " << expected;
