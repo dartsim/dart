@@ -1,6 +1,6 @@
 #include "Win3D.h"
 
-#include "jitter.h"
+#include "Jitter.h"
 
 using namespace Eigen;
 
