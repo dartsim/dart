@@ -12,7 +12,7 @@
 #include <vector>
 #include <ctime>
 #include <Eigen/Dense>
-#include "utils/EigenArrayHelper.h"
+#include "utils/EigenHelper.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //  C3D file reader and writer
