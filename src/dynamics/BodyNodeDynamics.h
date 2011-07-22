@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "renderer/RenderInterface.h"
 #include "model3d/BodyNode.h"
 
 namespace dynamics{
