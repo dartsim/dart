@@ -3,7 +3,7 @@
 
 #include "yui/Win3D.h"
 
-class MyWin3D : public Win3D
+class MyWin3D : public yui::Win3D
 {
 public:
 	MyWin3D(){

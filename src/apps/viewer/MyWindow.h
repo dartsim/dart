@@ -4,7 +4,7 @@
 #include "yui/Win3D.h"
 #include "model3d/FileInfoDof.h"
 
-class MyWindow : public Win3D {
+class MyWindow : public yui::Win3D {
 public:
     MyWindow(model3d::FileInfoDof& _mot): Win3D(), mMotion(_mot) {
         mBackground[0] = 1.0;
