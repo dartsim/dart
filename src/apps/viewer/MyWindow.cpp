@@ -38,7 +38,7 @@ void MyWindow::draw()
     model->draw(mRI);
     if(mShowMarker) model->drawHandles(mRI);
 
-    if(mShowProgress) drawProgressBar(fr,mMaxFrame);
+    if(mShowProgress) yui::drawProgressBar(fr,mMaxFrame);
 
     // display the frame count in 2D text
     char buff[64];
@@ -46,7 +46,7 @@ void MyWindow::draw()
     string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
-    drawStringOnScreen(0.02f,0.02f,frame);
+    yui::drawStringOnScreen(0.02f,0.02f,frame);
     glEnable(GL_LIGHTING);
 }
 

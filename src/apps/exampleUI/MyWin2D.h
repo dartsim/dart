@@ -3,7 +3,7 @@
 
 #include "yui/Win2D.h"
 
-class MyWin2D : public Win2D
+class MyWin2D : public yui::Win2D
 {
 public:
 	MyWin2D(){ 
