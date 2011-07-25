@@ -31,9 +31,9 @@ namespace utils {
         Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder _order);
         Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder _order);
 
-        Eigen::Matrix3d eulerToMatrixx(double x);
-        Eigen::Matrix3d eulerToMatrixy(double y);
-        Eigen::Matrix3d eulerToMatrixz(double z);
+        Eigen::Matrix3d eulerToMatrixX(double x);
+        Eigen::Matrix3d eulerToMatrixY(double y);
+        Eigen::Matrix3d eulerToMatrixZ(double z);
 
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
