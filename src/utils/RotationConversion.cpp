@@ -166,29 +166,29 @@ namespace utils {
 
         Matrix3d eulerToMatrix(Vector3d& v, RotationOrder order) {
             if(order==XYZ){
-                return eulerToMatrixz(v[2])*eulerToMatrixy(v[1])*eulerToMatrixx(v[0]);
+                return eulerToMatrixZ(v[2])*eulerToMatrixY(v[1])*eulerToMatrixX(v[0]);
             }
             if(order==ZYX){
-                return eulerToMatrixx(v[0])*eulerToMatrixy(v[1])*eulerToMatrixz(v[2]);
+                return eulerToMatrixX(v[0])*eulerToMatrixY(v[1])*eulerToMatrixZ(v[2]);
             }
             if(order==YZX){
-                return eulerToMatrixx(v[0])*eulerToMatrixz(v[2])*eulerToMatrixy(v[1]);
+                return eulerToMatrixX(v[0])*eulerToMatrixZ(v[2])*eulerToMatrixY(v[1]);
             }
             if(order==XZY){
-                return eulerToMatrixy(v[1])*eulerToMatrixz(v[2])*eulerToMatrixx(v[0]);
+                return eulerToMatrixY(v[1])*eulerToMatrixZ(v[2])*eulerToMatrixX(v[0]);
             }
             if(order==YXZ){
-                return eulerToMatrixz(v[2])*eulerToMatrixx(v[0])*eulerToMatrixy(v[1]);
+                return eulerToMatrixZ(v[2])*eulerToMatrixX(v[0])*eulerToMatrixY(v[1]);
             }
             if(order==ZXY){
-                return eulerToMatrixy(v[1])*eulerToMatrixx(v[0])*eulerToMatrixz(v[2]);
+                return eulerToMatrixY(v[1])*eulerToMatrixX(v[0])*eulerToMatrixZ(v[2]);
             }
 
             printf("euler_to_matrix - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
             return Matrix3d::Zero();
         }
 
-        Matrix3d eulerToMatrixx(double x) {
+        Matrix3d eulerToMatrixX(double x) {
             Matrix3d mat = Matrix3d::Zero();
             double cosangle = cos(x);
             double sinangle = sin(x);
@@ -200,7 +200,7 @@ namespace utils {
             return mat;
         }
 
-        Matrix3d eulerToMatrixy(double y) {
+        Matrix3d eulerToMatrixY(double y) {
             Matrix3d mat = Matrix3d::Zero();
             double cosangle = cos(y);
             double sinangle = sin(y);
@@ -212,7 +212,7 @@ namespace utils {
             return mat;
         }
 
-        Matrix3d eulerToMatrixz(double z) {
+        Matrix3d eulerToMatrixZ(double z) {
             Matrix3d mat = Matrix3d::Zero();
             double cosangle = cos(z);
             double sinangle = sin(z);
