@@ -4,6 +4,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "exampledynamics", "exampledynamics.vcproj", "{3CDC2A09-7B36-4167-BCD6-01C97F72F907}"
 	ProjectSection(ProjectDependencies) = postProject
 		{920D7227-75E6-4D87-967F-72FEF4B451B7} = {920D7227-75E6-4D87-967F-72FEF4B451B7}
+		{2DDFCE83-F8AA-4AED-A6C9-D649204177EF} = {2DDFCE83-F8AA-4AED-A6C9-D649204177EF}
 		{7779378B-3237-413F-941A-8FCDBA31AC96} = {7779378B-3237-413F-941A-8FCDBA31AC96}
 		{78429FB6-D4A8-40DB-B2A8-8307477E71DD} = {78429FB6-D4A8-40DB-B2A8-8307477E71DD}
 		{D45EC2C1-8F7B-4894-82C9-5045607F9ED6} = {D45EC2C1-8F7B-4894-82C9-5045607F9ED6}
@@ -22,6 +23,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dynamics", "..\..\dynamics\dynamics.vcproj", "{920D7227-75E6-4D87-967F-72FEF4B451B7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "geometry", "..\..\geometry\geometry.vcproj", "{D07B0CD6-31A4-425E-AC39-29B3FA26470D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mayaexports", "..\..\mayaexports\mayaexports.vcproj", "{2DDFCE83-F8AA-4AED-A6C9-D649204177EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +60,10 @@ Global
 		{D07B0CD6-31A4-425E-AC39-29B3FA26470D}.Debug|Win32.Build.0 = Debug|Win32
 		{D07B0CD6-31A4-425E-AC39-29B3FA26470D}.Release|Win32.ActiveCfg = Release|Win32
 		{D07B0CD6-31A4-425E-AC39-29B3FA26470D}.Release|Win32.Build.0 = Release|Win32
+		{2DDFCE83-F8AA-4AED-A6C9-D649204177EF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2DDFCE83-F8AA-4AED-A6C9-D649204177EF}.Debug|Win32.Build.0 = Debug|Win32
+		{2DDFCE83-F8AA-4AED-A6C9-D649204177EF}.Release|Win32.ActiveCfg = Release|Win32
+		{2DDFCE83-F8AA-4AED-A6C9-D649204177EF}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
