@@ -127,42 +127,6 @@ namespace utils {
         return m.topLeftCorner(3,3)*v;
     }
 
-    /* inline VectorXd xformHom(const VectorXd& v, const MatrixXd& M){ */
-    /*   int n = v.size(); */
-    /*   assert(M.rows() == n + 1); */
-    
-    /*   VectorXd augV(n + 1); */
-    /*   augV.head(n) = v; */
-    /*   augV = augV * M; */
-    /*   VectorXd ret = augV.head(n); */
-    /*   return ret; */
-    /* } */
-
-/*   /\* void drawArrow(Vecd p, Vecd force){ *\/ */
-/*   /\*   Vecd begin = p+force*5; *\/ */
-		
-/*   /\*   glColor3f(1.0,0.0,0.0); *\/ */
-
-/*   /\*   glLineWidth(5.0); *\/ */
-/*   /\*   glBegin(GL_LINES); *\/ */
-/*   /\*   glVertex2f(begin[0],begin[1]); *\/ */
-/*   /\*   glVertex2f(p[0],p[1]); *\/ */
-/*   /\*   glEnd(); *\/ */
-
-/*   /\*   // arrow head *\/ */
-/*   /\*   double theta = atan2(force[1],force[0]); *\/ */
-/*   /\*   glPushMatrix(); *\/ */
-/*   /\*   glTranslatef(begin[0],begin[1],0.0); *\/ */
-/*   /\*   glRotatef(theta*180.0/M_PI,0.0,0.0,1.0); *\/ */
-/*   /\*   glTranslatef(-5.0,0.0,0.0); *\/ */
-/*   /\*   glBegin(GL_TRIANGLES); *\/ */
-/*   /\*   glVertex2f(0.0,5.0); *\/ */
-/*   /\*   glVertex2f(10,0.0); *\/ */
-/*   /\*   glVertex2f(0.0,-5.0); *\/ */
-/*   /\*   glEnd(); *\/ */
-/*   /\*   glPopMatrix(); *\/ */
-/*   /\* } *\/ */
-
     inline MatrixXd makeSkewSymmetric(const VectorXd& v){
         MatrixXd result = MatrixXd::Zero(3, 3);
 		
@@ -176,35 +140,6 @@ namespace utils {
         return result;
     }
 
-    //inline VectorXd cross(const VectorXd& a, const VectorXd& b) {
-    //    Vector3d v1(a(0), a(1), a(2));
-    //    Vector3d v2(b(0), b(1), b(2));
-    //    Vector3d v = cross(v1, v2);
-    //    VectorXd ret(3);
-    //    ret << v(0), v(1), v(2);
-    //    return ret;
-    //}
-	
-/*   // *p*artial *S*kew *S*ymmetric matrix / *p*artial *E*lement{1,2,3} */
-
-/*   // frist element */
-/*   //  0  0  0 */
-/*   //  0  0 -1 */
-/*   //  0  1  0 */
-/*   const Matd pSSpE1(3,3,0.0,0.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0); */
-	
-/*   // second element */
-/*   //  0  0  1 */
-/*   //  0  0  0 */
-/*   // -1  0  0 */
-/*   const Matd pSSpE2(3,3,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.0); */
-
-/*   // third element */
-/*   //  0 -1  0 */
-/*   //  1  0  0 */
-/*   //  0  0  0 */
-/*   const Matd pSSpE3(3,3,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0); */
-
     inline VectorXd fromSkewSymmetric(const MatrixXd& m) {
         if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON) {
             cout << "Not skew symmetric matrix" << endl;
@@ -212,15 +147,6 @@ namespace utils {
             return VectorXd::Zero(3);
         }
         VectorXd ret = VectorXd::Zero(3);
-        //VectorXd unitY(3);
-        //unitY << 0.0, 1.0, 0.0;
-        //VectorXd xz = m * unitY;
-        //ret(0) = xz(2);
-        //ret(2) = -xz(0);
-        //VectorXd unitZ(3);
-        //unitZ << 0.0, 0.0, 1.0;
-        //VectorXd y = m * unitZ;
-        //ret(1) = y(0);
 
         ret(0) = m(2,1);
         ret(1) = m(0,2);
@@ -229,14 +155,6 @@ namespace utils {
         return ret;
     }
 
-/*   inline double scale_to_bound(double v, double lower_bound, double upper_bound) { */
-/*     return (v - lower_bound) / (upper_bound - lower_bound); */
-/*   } */
-
-/*   inline double scale_from_bound(double w, double lower_bound, double upper_bound) { */
-/*     return (1.0 - w) * lower_bound + w * upper_bound; */
-/*   } */
-  
 } // namespace utils
 
 #endif // #ifndef UTILS_UTILSMATH_H
