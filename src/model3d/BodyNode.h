@@ -76,7 +76,7 @@ namespace model3d {
         void setSkelIndex(int _idx) { mSkelIndex = _idx; }
         int getSkelIndex() const { return mSkelIndex; }
         
-        BodyNode* getNodeIn() const { return mNodeIn; }
+        BodyNode* getParentNode() const { return mNodeParent; }
         double getMass() const { return mMass; }
 
         void addHandle(Marker *_h) { mHandles.push_back(_h); }
@@ -86,14 +86,14 @@ namespace model3d {
         void setPrimitive(Primitive *_p) { mPrimitive = _p; }
         Primitive* getPrimitive() const { return mPrimitive; }
         
-        void addJointOut(Joint *_c) { mJointOut.push_back(_c); }
-        int getNumJoints() { return mJointOut.size(); }
-        Joint* getJointOut(int _idx) const { return mJointOut[_idx]; }
-        void setJointIn(Joint *_p);
-        Joint* getJointIn() const { return mJointIn; }
+        void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
+        int getNumChildJoints() { return mJointsChild.size(); }
+        Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
+        void setParentJoint(Joint *_p);
+        Joint* getParentJoint() const { return mJointParent; }
 
         // wrapper functions for joints
-        BodyNode* getNodeOut(int _idx) const;
+        BodyNode* getChildNode(int _idx) const;
         int getNumLocalDofs() const;
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
@@ -108,9 +108,9 @@ namespace model3d {
         int mSkelIndex;    ///< Index in the model
 
         Primitive *mPrimitive;  ///< Geometry of this body node
-        std::vector<Joint *> mJointOut; ///< List of joints that link to child nodes
-        Joint *mJointIn;    ///< Joint connecting to parent node
-        BodyNode *mNodeIn;      ///< Parent node
+        std::vector<Joint *> mJointsChild; ///< List of joints that link to child nodes
+        Joint *mJointParent;    ///< Joint connecting to parent node
+        BodyNode *mNodeParent;      ///< Parent node
         std::vector<Marker *> mHandles; ///< List of handles associated
 
         // transformations

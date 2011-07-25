@@ -403,7 +403,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read free\n";
 
     // create new transformation
-    string tname1 = string(_jt->getNodeOut()->getName()) + "_t";
+    string tname1 = string(_jt->getChildNode()->getName()) + "_t";
     string tname1_0 = tname1 + "Free0";
     string tname1_1 = tname1 + "Free1";
     string tname1_2 = tname1 + "Free2";
@@ -420,7 +420,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     // add transformation to model because it's a variable dof
     _skel->addTransform(trans);
 
-    string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
+    string tname2 = string(_jt->getChildNode()->getName()) + "_a";
     string tname2_0 = tname2 + "Free3";
     string tname2_1 = tname2 + "Free4";
     string tname2_2 = tname2 + "Free5";
@@ -444,7 +444,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
 bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient) {
     VLOG(1) << "read ball\n";
     VLOG(1) << "orientation = " << orient << endl;
-    string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
+    string tname2 = string(_jt->getChildNode()->getName()) + "_a";
     string tname2_0 = tname2 + "Ball0";
     string tname2_1 = tname2 + "Ball1";
     string tname2_2 = tname2 + "Ball2";
@@ -475,7 +475,7 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     vector<string> tokens;
     tokens.clear();
 
-    string tname2 = string(_jt->getNodeOut()->getName()) + "_a";
+    string tname2 = string(_jt->getChildNode()->getName()) + "_a";
     string tname2_1 = tname2 + "Hardy0";
     const char* pTname1 = tname2_1.c_str();
     string tname2_2 = tname2 + "Hardy1";
@@ -523,7 +523,7 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
 bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read hinge\n";
 
-    string tname = string(_jt->getNodeOut()->getName()) + "_a";
+    string tname = string(_jt->getChildNode()->getName()) + "_a";
     tname += "Hinge0";
     const char* pTname = tname.c_str();
 
@@ -753,22 +753,22 @@ void autoGeneratePrimitive2(Skeleton* skel)
     double massSum = 0.0;
     for(int i=0; i<skel->getNumNodes(); i++){
         BodyNode* node = skel->getNode(i);
-        Joint* joint = node->getJointIn();
+        Joint* joint = node->getParentJoint();
         if(node->getPrimitive()) continue;
         // Search translate matrix
         Vector3d size = 0.1 * Vector3d(1,1,1);
         Vector3d offset(0,0,0);
         VLOG(1) << endl;
         VLOG(1) << "Node = " << node->getName() << endl;
-        if (node->getNodeIn() == NULL)
+        if (node->getParentNode() == NULL)
         {
             VLOG(1) << "I'm root!!!!!" << endl;
             size = 0.1 * Vector3d(1,1,1);
             continue;
         }
-        BodyNode* parent = node->getNodeIn();
+        BodyNode* parent = node->getParentNode();
 
-        VLOG(1) << "Parent Node = " << node->getNodeIn()->getName() << endl;
+        VLOG(1) << "Parent Node = " << node->getParentNode()->getName() << endl;
         for (int j = 0; j < joint->getNumTransforms(); ++j)
         {
             Transformation* trfm = joint->getTransform(j);

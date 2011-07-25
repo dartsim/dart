@@ -119,7 +119,7 @@ namespace model3d {
         output<<"dofs {\n";
         for(int i=0; i<mSkel->getNumDofs(); i++){
             Dof *d = mSkel->getDof(i);
-            if(d->getJoint()->getNodeOut()->getSkelIndex() >= _numLinks) break;
+            if(d->getJoint()->getChildNode()->getSkelIndex() >= _numLinks) break;
             output<<'\t'<<d->getName()<<" { "<<d->getValue()<<", "<<d->getMin()<<", "<<d->getMax()<<" }\n";
         }
         output<<unitlength<<" { 1.0, 1.0, 1.0 }\n";
@@ -165,9 +165,9 @@ namespace model3d {
         // save the current one
         _outfile<<"\nnode "<<_b->getName()<<" { "<<_b->getSkelIndex()<<"\n";
         // write the trans
-        _outfile<<"chain { "<<_b->getJointIn()->getNumTransforms()<<"\n";
-        for(int i=0; i<_b->getJointIn()->getNumTransforms(); i++){
-            Transformation *tr = _b->getJointIn()->getTransform(i);
+        _outfile<<"chain { "<<_b->getParentJoint()->getNumTransforms()<<"\n";
+        for(int i=0; i<_b->getParentJoint()->getNumTransforms(); i++){
+            Transformation *tr = _b->getParentJoint()->getTransform(i);
             if(!tr->getVariable()){	// constant
                 if(tr->getType()==Transformation::T_TRANSLATE){
                     _outfile<<"telescope { <"<<tr->getDof(0)->getValue()<<", "<<tr->getDof(1)->getValue()<<", "<<tr->getDof(2)->getValue()<<">, "<<unitlength<<" }\n";
@@ -225,9 +225,9 @@ namespace model3d {
         _outfile<<", "<<std::string(_b->getName())+std::string("_mass");
         _outfile<<" }\n";
 
-        for(int i=0; i<_b->getNumJoints(); i++){
-            if(_b->getNodeOut(i)->getSkelIndex()>=_numLinks) continue;
-            saveBodyNodeTree(_b->getNodeOut(i), _outfile, _numLinks);
+        for(int i=0; i<_b->getNumChildJoints(); i++){
+            if(_b->getChildNode(i)->getSkelIndex()>=_numLinks) continue;
+            saveBodyNodeTree(_b->getChildNode(i), _outfile, _numLinks);
         }
 
         _outfile<<"}\n";	//node

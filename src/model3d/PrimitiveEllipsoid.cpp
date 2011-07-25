@@ -14,6 +14,7 @@ using namespace Eigen;
 namespace model3d {
 
     PrimitiveEllipsoid::PrimitiveEllipsoid(Vector3d _dim, double _mass){
+        mType = P_ELLIPSOID;
         mDim = _dim;
         mMass = _mass;
         if(mDim != Vector3d::Zero())

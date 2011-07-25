@@ -16,7 +16,7 @@ namespace model3d {
 
     // initialize in the same order as declaration
     Primitive::Primitive()
-        : mDim(0,0,0), mMass(0), mVolume(0),
+        : mType(P_UNDEFINED), mDim(0,0,0), mMass(0), mVolume(0),
           mInertia(Matrix3d::Zero()),
           mMassTensor(Matrix4d::Zero()), mCOMLocal(0,0,0),
           mID(mCounter++), mColor(0.5,0.5,1.0) {

@@ -25,15 +25,15 @@ namespace model3d {
         bool loadFile(const char* _fileName);
         bool saveFile(const char* _fileName, int _start, int _end, double _sampleRate = 1.0); ///< Note: down sampling not implemented yet
 
-        void addDof(std::vector<double>& _dofs){ mDofs.push_back(_dofs); mNumFrames++; }
-        double getDofAt(int _frame, int _id) const { assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame).at(_id); }
-        std::vector<double>& getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
+        inline void addDof(std::vector<double>& _dofs){ mDofs.push_back(_dofs); mNumFrames++; }
+        inline double getDofAt(int _frame, int _id) const { assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame).at(_id); }
+        inline std::vector<double>& getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
 
-        void setFPS(double _fps){ mFPS = _fps; }
-        double getFPS() const { return mFPS; }
+        inline void setFPS(double _fps){ mFPS = _fps; }
+        inline double getFPS() const { return mFPS; }
         
-        int getNumFrames() const { return mNumFrames; }
-        Skeleton* getSkel() const { return mSkel; }
+        inline int getNumFrames() const { return mNumFrames; }
+        inline Skeleton* getSkel() const { return mSkel; }
 
     protected:
         Skeleton* mSkel; ///< model associated with
