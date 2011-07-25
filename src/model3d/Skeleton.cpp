@@ -51,7 +51,7 @@ namespace model3d {
     void Skeleton::addNode(BodyNode *_b) {
         mNodes.push_back(_b);
         _b->setSkelIndex(mNodes.size()-1);
-        addJoint(_b->getJointIn());
+        addJoint(_b->getParentJoint());
     }
 
     void Skeleton::addJoint(Joint *_j) {

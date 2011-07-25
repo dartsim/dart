@@ -15,6 +15,7 @@ using namespace Eigen;
 namespace model3d {
 
     PrimitiveCube::PrimitiveCube(Vector3d _dim, double _mass){
+        mType = P_CUBE;
         mDim = _dim;
         mMass = _mass;
         if(_dim!=Vector3d::Zero())

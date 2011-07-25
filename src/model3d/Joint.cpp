@@ -21,10 +21,10 @@ namespace model3d {
     Joint::Joint(BodyNode *_bIn, BodyNode *_bOut, const char *_name){
 		mType = J_UNKNOWN;
         mSkelIndex=-1;
-        mNodeIn=_bIn;
-        mNodeOut=_bOut;
-        if(mNodeIn != NULL) mNodeIn->addJointOut(this);
-        if(mNodeOut != NULL) mNodeOut->setJointIn(this);
+        mNodeParent=_bIn;
+        mNodeChild=_bOut;
+        if(mNodeParent != NULL) mNodeParent->addChildJoint(this);
+        if(mNodeChild != NULL) mNodeChild->setParentJoint(this);
         mNumDofsRot=0;
         mNumDofsTrans=0;
         mRotTransIndex.clear();

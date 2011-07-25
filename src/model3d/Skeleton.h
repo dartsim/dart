@@ -43,15 +43,17 @@ namespace model3d {
         void initSkel();
 	
         // inline access functions
-        int getNumDofs() { return mDofs.size(); }
-        int getNumNodes() { return mNodes.size(); }
-        int getNumHandles() { return mHandles.size(); }
-        Dof* getDof(int i) { return mDofs[i]; }
-        BodyNode* getNode(int i) { return mNodes[i]; }
+        inline int getNumDofs() { return mDofs.size(); }
+        inline int getNumNodes() { return mNodes.size(); }
+        inline int getNumHandles() { return mHandles.size(); }
+        inline Dof* getDof(int i) { return mDofs[i]; }
+        inline BodyNode* getNode(int i) { return mNodes[i]; }
+        inline BodyNode* getRoot() { return mRoot; }
         BodyNode* getNode(const char* const name);
         int getNodeIndex(const char* const name);
-        Marker* getHandle(int i) { return mHandles[i]; }
-        double getMass() { return mMass; }
+        inline Marker* getHandle(int i) { return mHandles[i]; }
+        inline double getMass() { return mMass; }
+        inline int getNumJoints(){return mJoints.size();}
 
         void setState(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
         void setState(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);

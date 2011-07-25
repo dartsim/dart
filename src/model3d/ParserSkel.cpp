@@ -2129,7 +2129,7 @@ void __createTranslate( dofVec3 v )
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform((Transformation*)trans);	
+        cur_node->getParentJoint()->addTransform((Transformation*)trans);	
     }	
     // add transformation to model because it's a variable dof
     gSkel->addTransform((Transformation*)trans);
@@ -2150,7 +2150,7 @@ void __createTelescope( doubleVec3 v, Dof* l )
     // add transformation to joint
     // don't add to model because it's not variable
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform((Transformation*)tele, false);	
+        cur_node->getParentJoint()->addTransform((Transformation*)tele, false);	
     }
 }
 
@@ -2178,7 +2178,7 @@ void __createRotateExpMap( dofVec3 v )
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform((Transformation*)expmap);	
+        cur_node->getParentJoint()->addTransform((Transformation*)expmap);	
     }
 
     //add to model because it's variable
@@ -2210,7 +2210,7 @@ void __createRotateQuat( dofVec4 v )
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform((Transformation*)quat);	
+        cur_node->getParentJoint()->addTransform((Transformation*)quat);	
     }
 
     // add to model because it's variable
@@ -2236,7 +2236,7 @@ case 2: // 'z'
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform(trans);
+        cur_node->getParentJoint()->addTransform(trans);
     }
 
     // add to model because it's variable
@@ -2268,7 +2268,7 @@ case 2: // 'z'
     // not a variable dof, do not add to model
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getJointIn()->addTransform(trans, false);
+        cur_node->getParentJoint()->addTransform(trans, false);
     }
 }
 

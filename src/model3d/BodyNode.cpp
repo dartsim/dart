@@ -25,9 +25,9 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(const char *_name) 
-        : mSkelIndex(-1), mPrimitive(NULL), mJointIn(NULL), mNodeIn(NULL), mMass(0), mOffset(0,0,0)
+        : mSkelIndex(-1), mPrimitive(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mOffset(0,0,0)
     {
-        mJointOut.clear();
+        mJointsChild.clear();
         mHandles.clear();
         mDependantDofs.clear();
 
@@ -50,7 +50,7 @@ namespace model3d {
             delete mPrimitive;
             mPrimitive = NULL;
         }
-        mJointOut.clear();
+        mJointsChild.clear();
     }
 
     void BodyNode::init() {
@@ -74,9 +74,9 @@ namespace model3d {
     }
 
     void BodyNode::updateTransform() {
-        mT = mJointIn->getLocalTransform();
-        if (mNodeIn) {
-            mW = mNodeIn->mW * mT;
+        mT = mJointParent->getLocalTransform();
+        if (mNodeParent) {
+            mW = mNodeParent->mW * mT;
         } 
         else {
             mW = mT;
@@ -93,20 +93,20 @@ namespace model3d {
         }
 
         //// Update World Derivatives
-        //if (mNodeIn) {
+        //if (mNodeParent) {
         //    for (int i = 0; i < getNumDependantDofs(); i++) {
         //        int index = getDependantDof(i);
-        //        if (mNodeIn->dependsOn(index)) {
-        //            mWq.at(index) = mNodeIn->mWq.at(index) * mT;
+        //        if (mNodeParent->dependsOn(index)) {
+        //            mWq.at(index) = mNodeParent->mWq.at(index) * mT;
         //        } 
         //        else {
-        //            mWq.at(index) = mNodeIn->mW * mTq.at( mJointIn->getLocalIndex(index) );
+        //            mWq.at(index) = mNodeParent->mW * mTq.at( mJointParent->getLocalIndex(index) );
         //        }
         //    }
         //} 
         //else {
         //    for(int i = 0; i < numLocalDofs; ++i) {
-        //        int index1 = mJointIn->getDof(i)->getSkelIndex();
+        //        int index1 = mJointParent->getDof(i)->getSkelIndex();
         //        mWq.at(index1) = mTq.at(i);
         //    }
         //}
@@ -114,13 +114,13 @@ namespace model3d {
         // Update World Derivatives
         // parent dofs
         for (int i = 0; i < numParentDofs; i++) {
-            assert(mNodeIn);    // should always have a parent if enters this for loop
-            mWq.at(i) = mNodeIn->mWq.at(i) * mT;
+            assert(mNodeParent);    // should always have a parent if enters this for loop
+            mWq.at(i) = mNodeParent->mWq.at(i) * mT;
         }
         // local dofs
         for(int i = 0; i < numLocalDofs; i++){
-            if(mNodeIn) {
-                mWq.at(numParentDofs+i) = mNodeIn->mW * mTq.at(i);
+            if(mNodeParent) {
+                mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
             }
             else {
                 mWq.at(numParentDofs+i) = mTq.at(i);
@@ -139,8 +139,8 @@ namespace model3d {
 
     void BodyNode::setDependDofList() {
         mDependantDofs.clear();
-        if (mNodeIn != NULL) {
-            mDependantDofs.insert(mDependantDofs.end(), mNodeIn->mDependantDofs.begin(), mNodeIn->mDependantDofs.end());
+        if (mNodeParent != NULL) {
+            mDependantDofs.insert(mDependantDofs.end(), mNodeParent->mDependantDofs.begin(), mNodeParent->mDependantDofs.end());
         }
 
         for (int i = 0; i < getNumLocalDofs(); i++) {
@@ -168,8 +168,8 @@ namespace model3d {
         if (!_ri) return;
         _ri->pushMatrix();
         // render the self geometry
-        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_ri);
+        for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
+            mJointParent->getTransform(i)->applyGLTransform(_ri);
         }
         if (mPrimitive != NULL) {
             _ri->pushName((unsigned)mID);
@@ -181,8 +181,8 @@ namespace model3d {
         }
 
         // render the subtree
-        for (unsigned int i = 0; i < mJointOut.size(); i++){
-            mJointOut[i]->getNodeOut()->draw(_ri, _color, _useDefaultColor);
+        for (unsigned int i = 0; i < mJointsChild.size(); i++){
+            mJointsChild[i]->getChildNode()->draw(_ri, _color, _useDefaultColor);
         }
         _ri->popMatrix();
 
@@ -191,44 +191,44 @@ namespace model3d {
     void BodyNode::drawHandles(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         if (!_ri) return;
         _ri->pushMatrix();
-        for (int i = 0; i < mJointIn->getNumTransforms(); i++) {
-            mJointIn->getTransform(i)->applyGLTransform(_ri);
+        for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
+            mJointParent->getTransform(i)->applyGLTransform(_ri);
         }
 
         // render the corresponding mHandless
         for (unsigned int i = 0; i < mHandles.size(); i++) {
             mHandles[i]->draw(_ri, true, _color, _useDefaultColor);
         }
-        for (unsigned int i = 0; i < mJointOut.size(); i++) {
-            mJointOut[i]->getNodeOut()->drawHandles(_ri,_color, _useDefaultColor);
+        for (unsigned int i = 0; i < mJointsChild.size(); i++) {
+            mJointsChild[i]->getChildNode()->drawHandles(_ri,_color, _useDefaultColor);
         }
         _ri->popMatrix();
 
     }
 
-    void BodyNode::setJointIn(Joint *_p) {
-        mJointIn = _p; 
-        mNodeIn = _p->getNodeIn();
+    void BodyNode::setParentJoint(Joint *_p) {
+        mJointParent = _p; 
+        mNodeParent = _p->getParentNode();
     }
 
-    BodyNode* BodyNode::getNodeOut(int _idx) const {
-        return mJointOut[_idx]->getNodeOut();
+    BodyNode* BodyNode::getChildNode(int _idx) const {
+        return mJointsChild[_idx]->getChildNode();
     }
 
     int BodyNode::getNumLocalDofs() const {
-        return mJointIn->getNumDofs();
+        return mJointParent->getNumDofs();
     }
 
     Dof* BodyNode::getDof(int _idx) const {
-        return mJointIn->getDof(_idx);
+        return mJointParent->getDof(_idx);
     }
 
     bool BodyNode::isPresent(Dof* _q) {
-        return mJointIn->isPresent(_q);
+        return mJointParent->isPresent(_q);
     }
 
     Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
-        return mJointIn->getDeriv(_q);
+        return mJointParent->getDeriv(_q);
     }
     
     void BodyNode::evalJacLin() {

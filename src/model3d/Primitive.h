@@ -20,6 +20,12 @@ namespace model3d {
 
     class Primitive {
     public:
+        enum PrimitiveType {
+            P_UNDEFINED,
+            P_CUBE,
+            P_ELLIPSOID
+        };
+
         Primitive();
 
         virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
@@ -33,7 +39,7 @@ namespace model3d {
         Eigen::Vector3d getColor() const { return mColor; }
 
         void setWorldPos(const Eigen::Vector3d& _pos) { mPosWorld = _pos; }
-        Eigen::Vector3d getCOM() { return mCOMLocal; } //in local coordinates
+        Eigen::Vector3d getLocalCOM() { return mCOMLocal; } //in local coordinates
 
         void setDim(const Eigen::Vector3d& _dim);
         Eigen::Vector3d getDim() { return mDim; }
@@ -45,6 +51,7 @@ namespace model3d {
         double getVolume() { return mVolume; }
 
         int getID() { return mID; }
+        PrimitiveType getPrimitiveType(){return mType;}
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -56,6 +63,7 @@ namespace model3d {
         virtual void computeVolume() {}
         virtual void computeCOM() {}
 
+        PrimitiveType mType;    ///< Type of primitive; unknown in the general case
         Eigen::Vector3d mDim; ///< dimensions for bounding box
         double mMass;	///< mass of the body
         double mVolume; ///< volume enclosed by the geometry

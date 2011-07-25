@@ -35,7 +35,7 @@ namespace model3d {
             J_TRANS
         };
 	
-        Joint(BodyNode* _bIn, BodyNode* _bOut, const char *_name=NULL);
+        Joint(BodyNode* _bParent, BodyNode* _bChild, const char *_name=NULL);
         virtual ~Joint();
 
         bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list for the joint
@@ -64,8 +64,8 @@ namespace model3d {
         int getNumDofs() const {return mDofs.size();}
         Dof* getDof(int _idx) const {return mDofs[_idx];}
 	
-        BodyNode* getNodeIn() const {return mNodeIn;}
-        BodyNode* getNodeOut() const {return mNodeOut;}
+        BodyNode* getParentNode() const {return mNodeParent;}
+        BodyNode* getChildNode() const {return mNodeChild;}
 	
         void setSkelIndex(int _idx){mSkelIndex= _idx;}
         int getSkelIndex() const {return mSkelIndex;}
@@ -78,13 +78,13 @@ namespace model3d {
         }
 
     protected:
-        BodyNode *mNodeIn; ///< parent node
-        BodyNode *mNodeOut; ///< child node
+        BodyNode *mNodeParent; ///< parent node
+        BodyNode *mNodeChild; ///< child node
         int mSkelIndex;	///< unique dof id in model
 		JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as J_UNKNOWN
         char mName[512];    ///< name the joint so that joint can be retrieved by name
 
-        std::vector<Transformation*> mTransforms;	///< transformations for mNodeOut
+        std::vector<Transformation*> mTransforms;	///< transformations for mNodeChild
         std::vector<Dof*> mDofs;	///< associated dofs
         
         int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
