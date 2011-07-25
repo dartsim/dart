@@ -69,7 +69,7 @@ namespace model3d {
         const int numDepDofs = getNumDependantDofs();
         mWq.resize(numDepDofs, Matrix4d::Zero());
         
-        mJc = MatrixXd::Zero(3, numDepDofs);
+        mJv = MatrixXd::Zero(3, numDepDofs);
         mJw = MatrixXd::Zero(3, numDepDofs);
     }
 
@@ -232,20 +232,20 @@ namespace model3d {
     }
     
     void BodyNode::evalJacLin() {
-        mJc.setZero();
+        mJv.setZero();
         //for (vector<int>::iterator i_iter = mDependantDofs.begin();
         //     i_iter != mDependantDofs.end(); i_iter++) {
         //    int i = (*i_iter);
         //    VectorXd J = utils::xformHom(mWq.at(i), mOffset);
-        //    mJc(0, i) = J(0);
-        //    mJc(1, i) = J(1);
-        //    mJc(2, i) = J(2);
+        //    mJv(0, i) = J(0);
+        //    mJv(1, i) = J(1);
+        //    mJv(2, i) = J(2);
         //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
             VectorXd J = utils::xformHom(mWq.at(i), mOffset);
-            mJc(0, i) = J(0);
-            mJc(1, i) = J(1);
-            mJc(2, i) = J(2);
+            mJv(0, i) = J(0);
+            mJv(1, i) = J(1);
+            mJv(2, i) = J(2);
         }
     }
 

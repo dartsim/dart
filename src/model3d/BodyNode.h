@@ -38,7 +38,7 @@ namespace model3d {
         // first derivatives
         EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
         EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
-        Eigen::MatrixXd mJc; ///< Linear Jacobian; Cartesian_linear_velocity = mJc * generalized_velocity
+        Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity = mJv * generalized_velocity
         Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
         
         BodyNode(const char *_name = NULL); ///< Default constructor. The name can be up to 128
