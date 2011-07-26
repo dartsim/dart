@@ -238,7 +238,9 @@ namespace mayaexports{
                 if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rot_conv::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rot_conv::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
-                    *rotPtr = utils::rot_conv::quatToMatrix(utils::rot_conv::expToQuat(Vector3d(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue())))*(*rotPtr);
+                    Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
+                    Quaterniond q = utils::rot_conv::expToQuat(exmap);
+                    *rotPtr = utils::rot_conv::quatToMatrix(q)*(*rotPtr);
                 }
             }
         }
@@ -252,7 +254,9 @@ namespace mayaexports{
                 if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rot_conv::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rot_conv::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
-                    *rotPtr = utils::rot_conv::quatToMatrix(utils::rot_conv::expToQuat(Vector3d(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue())))*(*rotPtr);
+                    Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
+                    Quaterniond q = utils::rot_conv::expToQuat(exmap);
+                    *rotPtr = utils::rot_conv::quatToMatrix(q)*(*rotPtr);
                 }
             }
         }

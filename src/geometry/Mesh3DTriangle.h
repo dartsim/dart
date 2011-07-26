@@ -61,9 +61,9 @@ namespace geometry {
             return getBarycentricCoords(_pproj, _v1, _v2, _v3);
         }
 
-        static vector<pair<int, int>> getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2);
-        static void writeCorres(const char *_file, Mesh3DTriangle *_m1, Mesh3DTriangle *_m2, const vector<pair<int, int>> &_corres);
-        static void readCorres(const char *_file, vector<pair<int, int>> &_corres);
+        static vector<pair<int, int> > getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2);
+        static void writeCorres(const char *_file, Mesh3DTriangle *_m1, Mesh3DTriangle *_m2, const vector<pair<int, int> > &_corres);
+        static void readCorres(const char *_file, vector<pair<int, int> > &_corres);
     };
 
 } // namespace geometry

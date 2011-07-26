@@ -121,7 +121,9 @@ namespace mayaexports{
                     if(tf->getType()==Transformation::T_ROTATEY) rotdofs = utils::rot_conv::eulerToMatrixY(vals[0])*(rotdofs);
                     if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = utils::rot_conv::eulerToMatrixZ(vals[0])*(rotdofs);
                     if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
-                        rotdofs = utils::rot_conv::quatToMatrix(utils::rot_conv::expToQuat(Vector3d(vals[0], vals[1], vals[2])))*(rotdofs);
+                        Vector3d exmap(vals[0],vals[1],vals[2]);
+                        Quaterniond quat = utils::rot_conv::expToQuat(exmap);
+                        rotdofs = utils::rot_conv::quatToMatrix(quat)*(rotdofs);
                     }
                 }
                 // convert to euler angles
@@ -179,8 +181,10 @@ namespace mayaexports{
                     // ASSUME "xyz" ordering for dof values
                     vector<Vector3d> eulerValues;
                     for(int i=_first; i<=_last; i++){
-                        Quaterniond q = utils::rot_conv::expToQuat(Vector3d(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex())));
-                        Vector3d angles = utils::rot_conv::matrixToEuler(q.matrix(), utils::rot_conv::XYZ);
+                        Vector3d exmap(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex()));
+                        Quaterniond q = utils::rot_conv::expToQuat(exmap);
+                        Matrix3d rot = q.matrix();
+                        Vector3d angles = utils::rot_conv::matrixToEuler(rot, utils::rot_conv::XYZ);
                         eulerValues.push_back(angles);
                     }
 

@@ -109,7 +109,7 @@ namespace geometry {
                 issd>>mNumFaces;
                 cout<<"Number of vertices: "<<mNumVertices<<endl;
                 cout<<"Number of faces: "<<mNumFaces<<endl;
-                mNumFaceVertices.resize(mNumFaces, -1);
+                mNumFaceVertices.resize(mNumFaces, 0);
                 mVertexPos = VectorXd(3*mNumVertices);	// xyz in sequence
                 mVertexPos.setZero();
                 mVertexVel = mVertexPos;	// xyz in sequence
