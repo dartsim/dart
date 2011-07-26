@@ -35,6 +35,12 @@ namespace model3d {
     public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
+        // transformations
+        Eigen::Matrix4d mT; ///< Local transformation from parent to itself
+        Eigen::Matrix4d mW; ///< Global transformation
+        void evalJacLin(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
+        void evalJacAng(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
+
         // first derivatives
         EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
         EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
@@ -55,6 +61,8 @@ namespace model3d {
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
+        Eigen::Matrix4d getLocalDeriv(Dof *_q) const;
+
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
         void setDependDofList(); ///< Set up the list of dependent dofs 
@@ -67,8 +75,8 @@ namespace model3d {
 
         char* getName() { return mName; }
 
-        void setOffset(const Eigen::Vector3d& _off) { mOffset = _off; }
-        Eigen::Vector3d getOffset() const { return mOffset; }
+        void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }
+        Eigen::Vector3d getLocalCOM() const { return mCOMLocal; }
         
         void setSkel(Skeleton* _skel) { mSkel = _skel; }
         Skeleton* getSkel() const { return mSkel; }
@@ -98,11 +106,7 @@ namespace model3d {
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
-        Eigen::Matrix4d getLocalDeriv(Dof *_q) const;
-
     protected:
-        void evalJacLin(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
-        void evalJacAng(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
         
         char mName[MAX_NODE3D_NAME]; ///< Name
         int mSkelIndex;    ///< Index in the model
@@ -113,14 +117,10 @@ namespace model3d {
         BodyNode *mNodeParent;      ///< Parent node
         std::vector<Marker *> mHandles; ///< List of handles associated
 
-        // transformations
-        Eigen::Matrix4d mT; ///< Local transformation from parent to itself
-        Eigen::Matrix4d mW; ///< Global transformation
-
         std::vector<int> mDependantDofs; ///< A list of dependant dof indices 
 
         double mMass; ///< Mass of this node; zero if no primitive
-        Eigen::Vector3d mOffset; ///< Origin of this body node in its parent's coordinate frame
+        Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame
         Skeleton *mSkel; ///< Pointer to the model this body node belongs to
 
     private:

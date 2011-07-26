@@ -707,7 +707,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     }
 
     blink->setPrimitive(prim);
-    blink->setOffset( off );
+    blink->setLocalCOM( off );
     return true;
 }
 
@@ -740,7 +740,7 @@ void autoGeneratePrimitive(Skeleton* skel) {
         BodyNode* node = skel->getNode(i);
         node->setPrimitive(pm);
         Vector3d vecZero(0,0,0);
-        node->setOffset(vecZero);
+        node->setLocalCOM(vecZero);
     }
 }
 
@@ -809,7 +809,7 @@ void autoGeneratePrimitive2(Skeleton* skel)
         // Ellipsoid *pm = new Ellipsoid(vl_0, 0.1*Vector3d(vl_1), 1.0);
         PrimitiveEllipsoid *pm = new PrimitiveEllipsoid(size, mass);
         BodyNode* target = parent;
-        target->setOffset(offset);
+        target->setLocalCOM(offset);
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
         target->setPrimitive(pm);
 

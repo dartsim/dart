@@ -27,7 +27,8 @@ namespace model3d {
         if(mNodeChild != NULL) mNodeChild->setParentJoint(this);
         mNumDofsRot=0;
         mNumDofsTrans=0;
-        mRotTransIndex.clear();
+        mRotDofIndex.clear();
+        mRotTransformIndex.clear();
         if(_name) setName(_name);
     }
 
@@ -45,10 +46,14 @@ namespace model3d {
         return false;
     }
 
-    int Joint::getLocalIndex (int _dofSkelIndex) const{
+    int Joint::getDofLocalIndex (int _dofSkelIndex) const{
         for(unsigned int i=0; i<mDofs.size(); i++)
             if(mDofs[i]->getSkelIndex()==_dofSkelIndex) return i;
         return -1;
+    }
+
+    int Joint::getDofSkelIndex() const {
+        return mDofs[0]->getSkelIndex();
     }
 
     Matrix4d Joint::getLocalTransform(){
@@ -71,8 +76,9 @@ namespace model3d {
         }
     }
 
-    void Joint::computeRotationJac(MatrixXd *_J, MatrixXd *_Jdot, VectorXd *_qdot){
+    void Joint::computeRotationJac(MatrixXd *_J, MatrixXd *_Jdot, const VectorXd *_qdot){
         assert(_J);
+        assert(mType!=J_UNKNOWN);
         _J->resize(3, mNumDofsRot);
         _J->setZero();
         if(_Jdot) {
@@ -87,19 +93,21 @@ namespace model3d {
 
         if(mType==J_HINGE){
             assert(mNumDofsRot==1);
-            assert(mRotTransIndex.size()==1);
-            (*_J)(rotEulerMap[mTransforms[mRotTransIndex[0]]->getType()], 0) = 1.0;
+            assert(mRotDofIndex.size()==1);
+            assert(mRotTransformIndex.size()==1);
+            (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
             // _Jdot is zero
         }
         else if(mType==J_UNIVERSAL){
             assert(mNumDofsRot==2);
-            assert(mRotTransIndex.size()==2);
+            assert(mRotDofIndex.size()==2);
+            assert(mRotTransformIndex.size()==2);
 
-            Matrix4d R0 = mTransforms[mRotTransIndex[0]]->getTransform();
+            Matrix4d R0 = mTransforms[mRotTransformIndex[0]]->getTransform();
             // first col
-            (*_J)(rotEulerMap[mTransforms[mRotTransIndex[0]]->getType()], 0) = 1.0;
+            (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
             // second col
-            for(int r=0; r<3; r++) (*_J)(r, 1) = R0(r, rotEulerMap[mTransforms[mRotTransIndex[1]]->getType()]);
+            for(int r=0; r<3; r++) (*_J)(r, 1) = R0(r, rotEulerMap[mTransforms[mRotTransformIndex[1]]->getType()]);
             if(_Jdot){
                 // first col is zero
                 // second col w_0 x(R_0*e_1), (w_0 = e_0*qd_0) == qd_0 * J_0 x J_1
@@ -112,16 +120,17 @@ namespace model3d {
         }
         else if(mType==J_BALLEULER || mType==J_FREEEULER){
             assert(mNumDofsRot==3);
-            assert(mRotTransIndex.size()==3);
+            assert(mRotDofIndex.size()==3);
+            assert(mRotTransformIndex.size()==3);
 
-            Matrix4d R0 = mTransforms[mRotTransIndex[0]]->getTransform();
-            Matrix4d R1 = mTransforms[mRotTransIndex[1]]->getTransform();
+            Matrix4d R0 = mTransforms[mRotTransformIndex[0]]->getTransform();
+            Matrix4d R1 = mTransforms[mRotTransformIndex[1]]->getTransform();
             // first col
-            (*_J)(rotEulerMap[mTransforms[mRotTransIndex[0]]->getType()], 0) = 1.0;
+            (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
             // second col
-            for(int r=0; r<3; r++) (*_J)(r, 1) = R0(r, rotEulerMap[mTransforms[mRotTransIndex[1]]->getType()]);
+            for(int r=0; r<3; r++) (*_J)(r, 1) = R0(r, rotEulerMap[mTransforms[mRotTransformIndex[1]]->getType()]);
             // third col
-            VectorXd R1e2 = R1.col(rotEulerMap[mTransforms[mRotTransIndex[2]]->getType()]);
+            VectorXd R1e2 = R1.col(rotEulerMap[mTransforms[mRotTransformIndex[2]]->getType()]);
             VectorXd J_2 = R0*R1e2;
             for(int r=0; r<3; r++) (*_J)(r, 2) = J_2[r];
             if(_Jdot){
@@ -142,17 +151,30 @@ namespace model3d {
         else {
             cout<<"computeRotationJac not implemented yet for this joint type\n";
         }
+
+        // adjust for the constant rotation transformation: ASSUME that its position can be only at transform index 0
+        if(mTransforms.size()>0 
+            && !mTransforms[0]->getVariable() 
+            && (mTransforms[0]->getType()==Transformation::T_ROTATEX 
+                || mTransforms[0]->getType()==Transformation::T_ROTATEY 
+                || mTransforms[0]->getType()==Transformation::T_ROTATEZ ))
+        {
+            Matrix3d rotConst = mTransforms[0]->getTransform().topLeftCorner(3,3);
+            (*_J) = rotConst*(*_J);
+            if(_Jdot) (*_Jdot) = rotConst*(*_Jdot);
+        }
     }
 
     utils::rot_conv::RotationOrder Joint::getEulerOrder(){
         if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return utils::rot_conv::UNKNOWN;
 
-        assert(mNumDofsRot==mRotTransIndex.size());
+        assert(mNumDofsRot==mRotTransformIndex.size());
+        assert(mNumDofsRot==mRotDofIndex.size());
         string rot="";
         for(int i=mNumDofsRot-1; i>=0; i--){
-            if(mTransforms[mRotTransIndex[i]]->getType()==Transformation::T_ROTATEX) rot+="x";
-            else if(mTransforms[mRotTransIndex[i]]->getType()==Transformation::T_ROTATEY) rot+="y";
-            else if(mTransforms[mRotTransIndex[i]]->getType()==Transformation::T_ROTATEZ) rot+="z";
+            if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEX) rot+="x";
+            else if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEY) rot+="y";
+            else if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEZ) rot+="z";
         }
 
         if(rot.compare("xyz")==0 || rot.compare("xy")==0 || rot.compare("yz")==0 || rot.compare("xz")==0 || rot.compare("x")==0 || rot.compare("y")==0 || rot.compare("z")==0) return utils::rot_conv::XYZ;
@@ -265,7 +287,8 @@ namespace model3d {
             case Transformation::T_ROTATEZ:
             case Transformation::T_ROTATEEXPMAP:
                 mNumDofsRot+=_t->getNumDofs();
-                mRotTransIndex.push_back(mTransforms.size()-1);
+                mRotTransformIndex.push_back(mTransforms.size()-1);
+                for(int k=0; k<_t->getNumDofs(); k++) mRotDofIndex.push_back(_t->getDof(k)->getSkelIndex());
                 break;
             default:	// translation dofs
                 mNumDofsTrans+=_t->getNumDofs();
@@ -279,7 +302,8 @@ namespace model3d {
             else if(mNumDofsRot==1 && mNumDofsTrans==0) mType=J_HINGE;
             else if(mNumDofsRot==0 && mNumDofsTrans>0) mType=J_TRANS;
             else {
-                cout<<"Joint constructed not recognized\n";
+                mType=J_UNKNOWN;
+                cout<<"Type of joint not recognized\n";
             }
         }
     }
@@ -288,7 +312,6 @@ namespace model3d {
         mDofs.push_back(_d);
         _d->setJoint(this);
     }
-
 
 } // namespace model3d
 

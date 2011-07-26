@@ -8,6 +8,8 @@
 
 #include "RenderInterface.h"
 
+using namespace Eigen;
+
 namespace renderer {
 	void RenderInterface::initialize()
 	{

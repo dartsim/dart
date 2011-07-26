@@ -9,6 +9,8 @@
 #include "OpenGLRenderInterface.h"
 #include "utils/LoadOpengl.h"
 
+using namespace Eigen;
+
 namespace renderer {
 
     void OpenGLRenderInterface::initialize() {

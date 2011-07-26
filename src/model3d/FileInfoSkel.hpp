@@ -77,7 +77,7 @@ namespace model3d {
     }
 
     template <class SkeletonType>
-    void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
         mSkel->draw(_ri, _color, _useDefaultColor);
     }
 
@@ -149,7 +149,7 @@ namespace model3d {
                 ss<<"handle"<<i;
                 hname = ss.str();
             }
-            Vector3d lc = mSkel->getHandle(i)->getLocalCoords();
+            Eigen::Vector3d lc = mSkel->getHandle(i)->getLocalCoords();
             output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mSkel->getHandle(i)->getNode()->getName()<<" } "<<endl;
 
         }
@@ -210,8 +210,8 @@ namespace model3d {
         _outfile<<"}\n";	// chain
 
         // primitive
-        Vector3d pdim = _b->getPrimitive()->getDim();
-        Vector3d off = _b->getOffset();
+        Eigen::Vector3d pdim = _b->getPrimitive()->getDim();
+        Eigen::Vector3d off = _b->getLocalCOM();
         _outfile<<"primitive { <"<<pdim[0]<<", "<<pdim[1]<<", "<<pdim[2]<<">, <"<<off[0]<<", "<<off[1]<<", "<<off[2]<<">, "<<unitlength;
         // different types
 

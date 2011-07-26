@@ -79,6 +79,7 @@ namespace model3d {
         mNumDofs = mDofs.size();
         mNumNodes = mNodes.size();
         mNumHandles = mHandles.size();
+        mNumJoints = mJoints.size();
 
         // calculate mass
         // init the dependsOnDof stucture for each bodylink
