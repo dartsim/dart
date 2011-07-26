@@ -32,8 +32,8 @@ namespace geometry {
         Eigen::VectorXd mVertexPos;	// xyz in sequence
         Eigen::VectorXd mVertexVel;	// xyz in sequence
         vector<int> mFaces;	// list of 3 or more vertex indices in sequence for each face
-        vector<vector<int>> mFaceTextureIndices;
-        vector<vector<int>> mFaceNormalIndices;	// should exactly correspond to mFaces; indexes into the mVertexNormals
+        vector<vector<int> > mFaceTextureIndices;
+        vector<vector<int> > mFaceNormalIndices;	// should exactly correspond to mFaces; indexes into the mVertexNormals
 
         Mesh3DGen(){
             mNumVertices = 0;

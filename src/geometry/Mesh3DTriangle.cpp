@@ -226,8 +226,8 @@ namespace geometry {
         return br;
     }
 
-    vector<pair<int, int>> Mesh3DTriangle::getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2){
-        vector<pair<int, int>> vcorr;
+    vector<pair<int, int> > Mesh3DTriangle::getVertexCorres(Mesh3DTriangle *_mesh1, Mesh3DTriangle *_mesh2){
+        vector<pair<int, int> > vcorr;
         vcorr.clear();
 
         for(unsigned int i=0; i<_mesh1->mNumVertices; i++){
@@ -244,7 +244,7 @@ namespace geometry {
 
     }
 
-    void Mesh3DTriangle::writeCorres(const char *_file, Mesh3DTriangle *_m1, Mesh3DTriangle *_m2, const vector<pair<int, int>> &_corres){
+    void Mesh3DTriangle::writeCorres(const char *_file, Mesh3DTriangle *_m1, Mesh3DTriangle *_m2, const vector<pair<int, int> > &_corres){
         cout<<"Num corres: "<<_corres.size()<<endl<<endl;
         ofstream fc(_file);
         fc<<"# "<<_m1->mFileName<<" "<<_m2->mFileName<<endl;
@@ -255,7 +255,7 @@ namespace geometry {
         fc.close();
     }
 
-    void Mesh3DTriangle::readCorres(const char *_file, vector<pair<int, int>> &_corres){
+    void Mesh3DTriangle::readCorres(const char *_file, vector<pair<int, int> > &_corres){
         _corres.clear();
         ifstream fc(_file);
 

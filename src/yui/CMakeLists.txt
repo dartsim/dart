@@ -1,9 +1,9 @@
 ###############################################
 # YUI
-PROJECT(YUI)
+PROJECT(yui)
 # Search all header and source files
-FILE(GLOB YUI_srcs "*.cpp")
-FILE(GLOB YUI_hdrs "*.h")
+FILE(GLOB yui_srcs "*.cpp")
+FILE(GLOB yui_hdrs "*.h")
 # Library 
-ADD_LIBRARY(YUI ${YUI_srcs} ${YUI_hdrs})
-SET_TARGET_PROPERTIES(YUI PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+ADD_LIBRARY(yui ${yui_srcs} ${yui_hdrs})
+SET_TARGET_PROPERTIES(yui PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
