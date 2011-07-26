@@ -22,8 +22,12 @@ namespace model3d{
 namespace mayaexports{
 
     class MayaExportSkeleton{
+    public:    
+        static bool exportMayaAscii( model3d::Skeleton *_model, ofstream &_outFile );
+    
     private:
-    public:
+        friend class MayaExportMotion;
+        
         static const string mSuffixPrim;
         static const string mSuffixShape;
         static const string mSuffixGeom;
@@ -36,7 +40,6 @@ namespace mayaexports{
         static bool exportMayaAsciiSegmentSubtree2(model3d::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
         static bool exportMayaAsciiSegmentFooter(model3d::BodyNode* _b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix  );
 
-        static bool exportMayaAscii( model3d::Skeleton *_model, ofstream &_outFile );
     };
 }
 #endif  // MAYAEXPORTS_MAYAEXPORTSKELETON_H
