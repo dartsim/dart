@@ -53,7 +53,7 @@ namespace mayaexports{
         // headers
         _outFile<<"//Maya ASCII 2011 scene"<<endl;
         _outFile<<"requires maya \"2011\";"<<endl;
-        _outFile<<"currentUnit -l centimeter -a degree -t film;"<<endl;
+        _outFile<<"currentUnit -l meter -a radian -t film;"<<endl;
         _outFile<<"fileInfo \"application\" \"maya\";"<<endl;
         return true;
     }

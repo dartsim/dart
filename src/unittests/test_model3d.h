@@ -56,7 +56,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 
     vector<double>& pose = dofFile.getPoseAtFrame(0);
-    skel->setState(pose);
+    skel->setPose(pose, true, true);
 
     const int nodeIndex = 1;
     BodyNode* node = skel->getNode(nodeIndex);
