@@ -25,7 +25,7 @@ namespace dynamics{
         return new BodyNodeDynamics(_name);
     }
 
-    VectorXd SkeletonDynamics::inverseDynamics( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    VectorXd SkeletonDynamics::inverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
         for(int i=0; i<mNumNodes; i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));

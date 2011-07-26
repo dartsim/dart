@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     skel.getSkel()->setPose(q);
     // solve the inverse dynamics
     Vector3d gravity(0.0, -9.81, 0.0);
-    skelDyn->inverseDynamics(gravity, &qdot);
+    skelDyn->inverseDynamicsLinear(gravity, &qdot);
 
     for(int i=0; i<skel.getSkel()->getNumNodes(); i++){
         BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(skelDyn->getNode(i));
