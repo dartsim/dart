@@ -45,14 +45,14 @@ namespace dynamics{
             BodyNodeDynamics *bnodei = static_cast<BodyNodeDynamics*>(mNodes[i]);
             // convert to generalized torques
             Matrix3d Ri = bnodei->getLocalTransform().topLeftCorner(3,3);
-            VectorXd torqueGeni = bnodei->mJwJoint.transpose()*Ri*bnodei->mTorqueJointLocal;
+            VectorXd torqueGeni = bnodei->mJwJoint.transpose()*Ri*bnodei->mTorqueJointBody;
             // translation dof forces may add to torque as well: e.g. Root joint
             if(mJoints[i]->getNumDofsTrans()>0){
                 assert(mJoints[i]->getNumDofsTrans()==3);   // ASSUME: 3 DOF translation only
-                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), bnodei->getParentJoint()->getNumDofsTrans()) = Ri*bnodei->mForceJointLocal;
+                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), bnodei->getParentJoint()->getNumDofsTrans()) = Ri*bnodei->mForceJointBody;
                 // TODO: already taken care of??
                 //Vector3d cl = bnodei->getLocalCOM();
-                //torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointLocal));
+                //torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointBody));
             }
             torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), bnodei->getParentJoint()->getNumDofsRot()) = torqueGeni;
         }

@@ -20,10 +20,10 @@ namespace dynamics{
     BodyNodeDynamics::BodyNodeDynamics( const char *_name ) : BodyNode(_name){
         mJwJoint = MatrixXd::Zero(3,0);
         mJwDotJoint = MatrixXd::Zero(3,0);
-        mVLocal = Vector3d::Zero();
-        mVDotLocal = Vector3d::Zero();
-        mOmegaLocal = Vector3d::Zero();
-        mOmegaDotLocal = Vector3d::Zero();
+        mVBody = Vector3d::Zero();
+        mVDotBody = Vector3d::Zero();
+        mOmegaBody = Vector3d::Zero();
+        mOmegaDotBody = Vector3d::Zero();
     }
 
     BodyNodeDynamics::~BodyNodeDynamics(){
@@ -33,10 +33,10 @@ namespace dynamics{
         // update the local transform mT and the world transform mW
         BodyNode::updateTransform();
 
-        mVLocal.setZero();
-        mVDotLocal.setZero();
-        mOmegaLocal.setZero();
-        mOmegaDotLocal.setZero();
+        mVBody.setZero();
+        mVDotBody.setZero();
+        mOmegaBody.setZero();
+        mOmegaDotBody.setZero();
 
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
@@ -62,27 +62,27 @@ namespace dynamics{
             Vector3d clparent = nodeParent->getLocalCOM();
             Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
 
-            mOmegaLocal = RjointT*(nodeParent->mOmegaLocal + omegaJoint);
-            mOmegaDotLocal = RjointT*(nodeParent->mOmegaDotLocal + omegaDotJoint + nodeParent->mOmegaDotLocal.cross(omegaDotJoint));
-            mVLocal = mOmegaLocal.cross(cl) + RjointT*(nodeParent->mVLocal + nodeParent->mOmegaLocal.cross(rl-clparent));
-            mVDotLocal = mOmegaDotLocal.cross(cl) + mOmegaLocal.cross(mOmegaLocal.cross(cl)) + RjointT*(nodeParent->mVDotLocal + nodeParent->mOmegaDotLocal.cross(rl-clparent) + nodeParent->mOmegaLocal.cross(nodeParent->mOmegaLocal.cross(rl-clparent)));
+            mOmegaBody = RjointT*(nodeParent->mOmegaBody + omegaJoint);
+            mOmegaDotBody = RjointT*(nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaDotBody.cross(omegaDotJoint));
+            mVBody = mOmegaBody.cross(cl) + RjointT*(nodeParent->mVBody + nodeParent->mOmegaBody.cross(rl-clparent));
+            mVDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl)) + RjointT*(nodeParent->mVDotBody + nodeParent->mOmegaDotBody.cross(rl-clparent) + nodeParent->mOmegaBody.cross(nodeParent->mOmegaBody.cross(rl-clparent)));
         }
         // base case: root
         else {
-            mOmegaLocal = RjointT*omegaJoint;
-            mOmegaDotLocal = RjointT*omegaDotJoint;
-            mVLocal = mOmegaLocal.cross(cl);
-            mVDotLocal = mOmegaDotLocal.cross(cl) + mOmegaLocal.cross(mOmegaLocal.cross(cl));
+            mOmegaBody = RjointT*omegaJoint;
+            mOmegaDotBody = RjointT*omegaDotJoint;
+            mVBody = mOmegaBody.cross(cl);
+            mVDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl));
             // incorporate gravity as part of acceleration by changing frame to the one accelerating with g
-            // Therefore real acceleration == W*mVDotLocal + g;
-            mVDotLocal -= RjointT*_gravity;
+            // Therefore real acceleration == W*mVDotBody + g;
+            mVDotBody -= RjointT*_gravity;
             // if root has translation DOFs
             if(mJointParent->getNumDofsTrans()>0){
                 VectorXd qDotTransJoint = _qdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
-                mVLocal += RjointT*qDotTransJoint;
+                mVBody += RjointT*qDotTransJoint;
                 if(_qdotdot){
                     VectorXd qDotDotTransJoint = _qdotdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
-                    mVDotLocal += RjointT*qDotDotTransJoint;
+                    mVDotBody += RjointT*qDotDotTransJoint;
                 }
             }
         }
@@ -90,27 +90,24 @@ namespace dynamics{
 
     void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
         cout<<"BodyNodeDynamics::computeInvDynForces - Not yet implemented\n";
-        mForceJointLocal.setZero();
-        mTorqueJointLocal.setZero();
+        mForceJointBody.setZero();
+        mTorqueJointBody.setZero();
 
         Vector3d cl = mCOMLocal;
         Matrix3d Ic = mPrimitive->getInertia();
 
         // base case: end effectors
-        mForceJointLocal = mMass*mVDotLocal;
-        mTorqueJointLocal = cl.cross(mForceJointLocal) + mOmegaLocal.cross(Ic*mOmegaLocal) + Ic*mOmegaDotLocal;
+        mForceJointBody = mMass*mVDotBody;
+        mTorqueJointBody = cl.cross(mForceJointBody) + mOmegaBody.cross(Ic*mOmegaBody) + Ic*mOmegaDotBody;
         // general case
         for(unsigned int j=0; j<mJointsChild.size(); j++){
             BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(mJointsChild[j]->getChildNode());
             Matrix3d Rchild = bchild->mT.topLeftCorner(3,3);
-            Vector3d forceChildNode = Rchild*bchild->mForceJointLocal;
-            mForceJointLocal += forceChildNode;
+            Vector3d forceChildNode = Rchild*bchild->mForceJointBody;
+            mForceJointBody += forceChildNode;
             Vector3d rlchild = bchild->mT.col(3).head(3);
-            mTorqueJointLocal += (rlchild-cl).cross(forceChildNode) + Rchild*bchild->mTorqueJointLocal;
+            mTorqueJointBody += (rlchild-cl).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
         }
-
-        //// convert to generalized torques
-        //mTorqueGen.segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot()) = mJwJoint.transpose()*mT.topLeftCorner(3,3)*mTorqueJointLocal;
     }
 
 
