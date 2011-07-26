@@ -40,9 +40,10 @@ identity $-[\vc{a}][\vc{a}] = (\vc{a}^T\vc{a}) \vc{I}_3  -
 \begin{equation}
 \vc{L} = I_c \bm{\omega}
 \end{equation}
-Note that the inertia tensor can be written as $I_c = RI_0R^T$, where $R$ is the rotation matrix corresponding to the orientation of the body and $I_0$ is the constant inertia tensor defined at zero rotation. The angular velocity in the skew-symmetric form is related to the rotation matrix $R$ as $[\bm{\omega}] = \dot{R}R^T$. Also $[\bm{\omega}]^T = -[\bm{\omega}]$.
+where the inertia tensor can be written as $I_c = RI_0R^T$. $R$ is the rotation matrix corresponding to the orientation of the body and $I_0$ is the constant inertia tensor defined at zero rotation. From Witkin and Baraff's course notes, we also learned that the angular velocity in the skew-symmetric form is related to the rotation matrix $R$ as $[\bm{\omega}] = \dot{R}R^T$.
 
-Now, the dynamics of a rigid body can be written as $\vc{f} = \dot{\vc{p}} \mbox{,\ } \bm{\tau} = \dot{\vc{L}}$. The equations corresponding to the linear force can be evaluated as:
+With these definitions, we can derive the equations of motion for a
+rigid body. The equations corresponding to the linear force can be evaluated as:
 \begin{eqnarray}
 \label{eq:force}
 \vc{f} & = & \dot{\vc{p}} = m \dot{\vc{v}}
@@ -55,8 +56,11 @@ The equations corresponding to the torque can be evaluated as:
 \nonumber
 & = & I_c\dot{\bm{\omega}} + \dot{(RI_0 R^T)}\bm{\omega} = I_c\dot{\bm{\omega}} + \dot{R}I_0 R^T\bm{\omega} + R I_0 \dot{R}^T\bm{\omega}\\
 \nonumber
-& = & I_c\dot{\bm{\omega}} + \dot{R}R^T I_c \bm{\omega} + I_c (\dot{R}R^T)^T\bm{\omega} \\
-& = & I_c\dot{\bm{\omega}} + [\bm{\omega}]I_c \bm{\omega} - I_c[\bm{\omega}]\bm{\omega} = I_c\dot{\bm{\omega}} + \bm{\omega} \times I_c \bm{\omega}
+& = & I_c\dot{\bm{\omega}} + \dot{R}R^T I_c \bm{\omega} + I_c
+(\dot{R}R^T)^T\bm{\omega} \\ \nonumber
+& = & I_c\dot{\bm{\omega}} + [\bm{\omega}]I_c \bm{\omega} -
+I_c[\bm{\omega}]\bm{\omega}  \mbox{\ \ (Using the identity $[\bm{\omega}]^T = -[\bm{\omega}]$)}\\ 
+&= & I_c\dot{\bm{\omega}} + \bm{\omega} \times I_c \bm{\omega}
 \end{eqnarray}
 
 Combining \eqnref{force} and \eqnref{torque}, we arrive at the
