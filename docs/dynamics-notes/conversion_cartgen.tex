@@ -179,9 +179,13 @@ as:
 & = & \mbox{blockdiag}\left(\hat{J}_{\omega 1}^+,\hdots,\hat{J}_{\omega m}^+\right ) \hat{\bm{\omega}}\\
 \mbox{or\ \ } \dot{\vc{q}}_k & = & \hat{J}_{\omega k}^+ \hat{\bm{\omega}}_k \mbox{\ \ , } k \in 1\hdots m
 \end{eqnarray}
-From this formulation, we see that the problem of computing pseudo-inverse of a matrix
-$J_{\omega}$ is reduced to computing $m$ pseudo-inverses of much
-smaller constant-sized matrices $\hat{J}_{\omega k}$. Note that $\dot{\vc{q}}$ computed in \eqnref{angvel_cart2gen} also satisfies the linear velocity relation $\vc{v} = J_v \dot{\vc{q}}$.
+From this formulation, we see that the problem of computing
+pseudo-inverse of a matrix $J_{\omega}$ is reduced to computing $m$
+pseudo-inverses of much smaller constant-sized matrices
+$\hat{J}_{\omega k}$. Note that if $\dot{\vc{q}}$ computed in
+\eqnref{angvel_cart2gen} exactly satisfies the linear system
+$\bm{\omega} = J_{\omega} \dot{\vc{q}}$, it also satisfies the linear
+velocity relation $\vc{v} = J_v \dot{\vc{q}}$.
 
 \ignorethis{
 Note that if $\vc{V}$ can be achieved in the generalized coordinates,
