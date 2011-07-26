@@ -40,7 +40,9 @@ namespace model3d {
 
         bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list for the joint
         int getDofLocalIndex (int _dofSkelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
-        int getDofSkelIndex() const;    ///< index of the first local dof (dof 0) in the full skel dof list
+        int getFirstDofIndex() const;    ///< index of the first local dof (dof 0) of the joint in the full skel dof list
+        int getFirstRotDofIndex() const;    ///< index of the first rot local dof (dof 0) of the joint in the full skel dof list
+        int getFirstTransDofIndex() const;    ///< index of the first trans local dof (dof 0) of the joint in the full skel dof list
 
         Eigen::Matrix4d getLocalTransform(); ///< computes and returns the local transformation from NodeIn to NodeOut
         void applyTransform(Eigen::Vector3d& _v); ///< apply the local transformation to a vector _v
@@ -94,7 +96,6 @@ namespace model3d {
 
         int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
         int mNumDofsTrans;   ///< number of DOFs for corresponding to translation
-        std::vector<int> mRotDofIndex;  ///< indices of the rotation dofs
         std::vector<int> mRotTransformIndex; ///< indices of the rotation transforms
 
         void addDof(Dof *_d); ///< add _d to mDofs 

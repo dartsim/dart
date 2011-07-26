@@ -40,8 +40,8 @@ namespace dynamics{
 
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
-         // assume trans dofs before rotation dofs
-        VectorXd qDotJoint = _qdot->segment(mJointParent->getDofSkelIndex()+mJointParent->getNumDofsTrans(), mJointParent->getNumDofsRot());
+         // ASSUME: trans dofs before rotation dofs
+        VectorXd qDotJoint = _qdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
         mJointParent->computeRotationJac(&mJwJoint, &mJwDotJoint, &qDotJoint);
 
         // Local Rotation matrix transposed
@@ -51,7 +51,7 @@ namespace dynamics{
         Vector3d omegaJoint = mJwJoint*qDotJoint;
         Vector3d omegaDotJoint = mJwDotJoint*qDotJoint;
         if(_qdotdot){
-            VectorXd qDotDotJoint = _qdotdot->segment(mJointParent->getDofSkelIndex()+mJointParent->getNumDofsTrans(), mJointParent->getNumDofsRot());
+            VectorXd qDotDotJoint = _qdotdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
             omegaDotJoint += mJwJoint*qDotDotJoint;
         }
 
@@ -78,10 +78,10 @@ namespace dynamics{
             mVDotLocal -= RjointT*_gravity;
             // if root has translation DOFs
             if(mJointParent->getNumDofsTrans()>0){
-                VectorXd qDotTransJoint = _qdot->segment(mJointParent->getDofSkelIndex(), mJointParent->getNumDofsTrans());
+                VectorXd qDotTransJoint = _qdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
                 mVLocal += RjointT*qDotTransJoint;
                 if(_qdotdot){
-                    VectorXd qDotDotTransJoint = _qdotdot->segment(mJointParent->getDofSkelIndex(), mJointParent->getNumDofsTrans());
+                    VectorXd qDotDotTransJoint = _qdotdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
                     mVDotLocal += RjointT*qDotDotTransJoint;
                 }
             }
@@ -90,13 +90,29 @@ namespace dynamics{
 
     void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
         cout<<"BodyNodeDynamics::computeInvDynForces - Not yet implemented\n";
+        mForceJointLocal.setZero();
+        mTorqueJointLocal.setZero();
+
+        Vector3d cl = mCOMLocal;
+        Matrix3d Ic = mPrimitive->getInertia();
+
         // base case: end effectors
-        if(mJointsChild.size()==0){
-
+        mForceJointLocal = mMass*mVDotLocal;
+        mTorqueJointLocal = cl.cross(mForceJointLocal) + mOmegaLocal.cross(Ic*mOmegaLocal) + Ic*mOmegaDotLocal;
+        // general case
+        for(unsigned int j=0; j<mJointsChild.size(); j++){
+            BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(mJointsChild[j]->getChildNode());
+            Matrix3d Rchild = bchild->mT.topLeftCorner(3,3);
+            Vector3d forceChildNode = Rchild*bchild->mForceJointLocal;
+            mForceJointLocal += forceChildNode;
+            Vector3d rlchild = bchild->mT.col(3).head(3);
+            mTorqueJointLocal += (rlchild-cl).cross(forceChildNode) + Rchild*bchild->mTorqueJointLocal;
         }
-        else {
 
-        }
+        //// convert to generalized torques
+        //mTorqueGen.segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot()) = mJwJoint.transpose()*mT.topLeftCorner(3,3)*mTorqueJointLocal;
     }
+
+
 
 }   // namespace dynamics

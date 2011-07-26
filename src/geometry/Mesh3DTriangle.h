@@ -57,7 +57,7 @@ namespace geometry {
         // projects the point onto triangle (v1,v2,v3) along normal n and return (a1,a2,a3)
         static vector<double> getBarycentricCoords(const Eigen::Vector3d& _p, const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, const Eigen::Vector3d& _v3, const Eigen::Vector3d& _n, Eigen::Vector3d &_pproj){
             // barycentric coords
-            _pproj = _p - _n.dot(_p-_v1) *_n;	// assume normalized normal
+            _pproj = _p - _n.dot(_p-_v1) *_n;	// ASSUME normalized normal
             return getBarycentricCoords(_pproj, _v1, _v2, _v3);
         }
 

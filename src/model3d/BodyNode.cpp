@@ -233,14 +233,6 @@ namespace model3d {
     
     void BodyNode::evalJacLin() {
         mJv.setZero();
-        //for (vector<int>::iterator i_iter = mDependantDofs.begin();
-        //     i_iter != mDependantDofs.end(); i_iter++) {
-        //    int i = (*i_iter);
-        //    VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
-        //    mJv(0, i) = Ji(0);
-        //    mJv(1, i) = Ji(1);
-        //    mJv(2, i) = Ji(2);
-        //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
             VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
             mJv(0, i) = Ji(0);
@@ -251,26 +243,12 @@ namespace model3d {
 
     void BodyNode::evalJacAng() {
         mJw.setZero();
-        //for (vector<int>::iterator i_iter = mDependantDofs.begin();
-        //     i_iter != mDependantDofs.end(); i_iter++) {
-        //    int i = (*i_iter);
-
-        //    MatrixXd transR = mW.topLeftCorner(3,3).transpose();
-        //    MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
-        //    MatrixXd omegaSkewSymmetric = dRdq * transR;
-        //    VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
-        //    //omegai = transR * omegai;
-        //    
-        //    mJw(0, i) = omegai(0);
-        //    mJw(1, i) = omegai(1);
-        //    mJw(2, i) = omegai(2);
-        //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
             MatrixXd transR = mW.topLeftCorner(3,3).transpose();
             MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
             MatrixXd omegaSkewSymmetric = dRdq * transR;
             VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
-            //omegai = transR * omegai;
+            //omegai = transR * omegai; // makes it in the local body frame
 
             mJw(0, i) = omegai(0);
             mJw(1, i) = omegai(1);

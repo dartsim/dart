@@ -176,7 +176,7 @@ namespace mayaexports{
                 if(t->getVariable()==false) continue;
                 wroteNode = true;
                 if(t->getType()==Transformation::T_ROTATEEXPMAP){
-                    // assume "xyz" ordering for dof values
+                    // ASSUME "xyz" ordering for dof values
                     vector<Vector3d> eulerValues;
                     for(int i=_first; i<=_last; i++){
                         Quaterniond q = utils::rot_conv::expToQuat(Vector3d(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex())));

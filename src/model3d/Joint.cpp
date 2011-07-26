@@ -27,7 +27,6 @@ namespace model3d {
         if(mNodeChild != NULL) mNodeChild->setParentJoint(this);
         mNumDofsRot=0;
         mNumDofsTrans=0;
-        mRotDofIndex.clear();
         mRotTransformIndex.clear();
         if(_name) setName(_name);
     }
@@ -52,7 +51,16 @@ namespace model3d {
         return -1;
     }
 
-    int Joint::getDofSkelIndex() const {
+    int Joint::getFirstDofIndex() const {
+        return mDofs[0]->getSkelIndex();
+    }
+
+    int Joint::getFirstRotDofIndex() const {
+        return mTransforms[mRotTransformIndex[0]]->getDof(0)->getSkelIndex();
+        //return mDofs[0]->getSkelIndex() + mNumDofsTrans;
+    }
+
+    int Joint::getFirstTransDofIndex() const {  // ASSUME: trans dofs are in the beginning
         return mDofs[0]->getSkelIndex();
     }
 
@@ -93,14 +101,12 @@ namespace model3d {
 
         if(mType==J_HINGE){
             assert(mNumDofsRot==1);
-            assert(mRotDofIndex.size()==1);
             assert(mRotTransformIndex.size()==1);
             (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
             // _Jdot is zero
         }
         else if(mType==J_UNIVERSAL){
             assert(mNumDofsRot==2);
-            assert(mRotDofIndex.size()==2);
             assert(mRotTransformIndex.size()==2);
 
             Matrix4d R0 = mTransforms[mRotTransformIndex[0]]->getTransform();
@@ -120,7 +126,6 @@ namespace model3d {
         }
         else if(mType==J_BALLEULER || mType==J_FREEEULER){
             assert(mNumDofsRot==3);
-            assert(mRotDofIndex.size()==3);
             assert(mRotTransformIndex.size()==3);
 
             Matrix4d R0 = mTransforms[mRotTransformIndex[0]]->getTransform();
@@ -169,7 +174,6 @@ namespace model3d {
         if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return utils::rot_conv::UNKNOWN;
 
         assert(mNumDofsRot==mRotTransformIndex.size());
-        assert(mNumDofsRot==mRotDofIndex.size());
         string rot="";
         for(int i=mNumDofsRot-1; i>=0; i--){
             if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEX) rot+="x";
@@ -288,7 +292,6 @@ namespace model3d {
             case Transformation::T_ROTATEEXPMAP:
                 mNumDofsRot+=_t->getNumDofs();
                 mRotTransformIndex.push_back(mTransforms.size()-1);
-                for(int k=0; k<_t->getNumDofs(); k++) mRotDofIndex.push_back(_t->getDof(k)->getSkelIndex());
                 break;
             default:	// translation dofs
                 mNumDofsTrans+=_t->getNumDofs();
