@@ -49,9 +49,10 @@ namespace dynamics{
             // translation dof forces may add to torque as well: e.g. Root joint
             if(mJoints[i]->getNumDofsTrans()>0){
                 assert(mJoints[i]->getNumDofsTrans()==3);   // ASSUME: 3 DOF translation only
-                Vector3d cl = bnodei->getLocalCOM();
                 torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), bnodei->getParentJoint()->getNumDofsTrans()) = Ri*bnodei->mForceJointLocal;
-                torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointLocal));
+                // TODO: already taken care of??
+                //Vector3d cl = bnodei->getLocalCOM();
+                //torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointLocal));
             }
             torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), bnodei->getParentJoint()->getNumDofsRot()) = torqueGeni;
         }
