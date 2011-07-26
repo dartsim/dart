@@ -49,6 +49,7 @@ namespace mayaexports{
         return success;
     }
 
+    // XXX This code is not currently used!
     bool MayaExportMotion::exportMayaAnimSegment(ofstream &outFile0, int _first, int _last, BodyNode *_b, const string &_nodesPrefix, int _writeNumNodes, int level){
         int dofNum=0;
         int rotationCode=0;	// 1 is X, 2 is Y and 4 is Z
@@ -415,7 +416,7 @@ namespace mayaexports{
         vector<Vector3d> eulerAngles;
         vector<Vector3d> transVals;
         for(int fi=_first; fi<=_last; fi++){
-            _b->getSkel()->setPose(mDofData->getPoseAtFrame(fi));
+            _b->getSkel()->setState(mDofData->getPoseAtFrame(fi),true,false);
             Matrix4d Wl = _b->getLocalTransform();
             Matrix3d Rl = Matrix3d::Zero();
             Vector3d tl = Vector3d::Zero();
