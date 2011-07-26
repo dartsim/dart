@@ -31,6 +31,7 @@ namespace dynamics{
         Eigen::Vector3d mVDotLocal; ///< linear acceleration expressed in the *local frame* of the body 
         Eigen::Vector3d mOmegaLocal;    ///< angular velocity expressed in the *local frame* of the body 
         Eigen::Vector3d mOmegaDotLocal; ///< angular acceleration expressed in the *local frame* of the body 
+        Eigen::Vector3d mForceJointLocal;   ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
         Eigen::Vector3d mTorqueJointLocal;   ///< the torque in Cartesian coordinates for the joint expressed in the local frame of the body instead of the joint
         void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the velocities in the first pass of the algorithm
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm

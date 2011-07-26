@@ -44,9 +44,16 @@ namespace dynamics{
         for(int i=0; i<mNumNodes; i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *bnodei = static_cast<BodyNodeDynamics*>(mNodes[i]);
             // convert to generalized torques
-            VectorXd torqueGeni = bnodei->mJwJoint.transpose()*bnodei->getLocalTransform().topLeftCorner(3,3)*bnodei->mTorqueJointLocal;
-            //for(int j=0; j<torqueGeni.size(); j++) torqueGen[mJoints[i]->getDofSkelIndex()+j] = torqueGeni;
-            torqueGen.segment(mJoints[i]->getDofSkelIndex(), torqueGeni.size()) = torqueGeni;
+            Matrix3d Ri = bnodei->getLocalTransform().topLeftCorner(3,3);
+            VectorXd torqueGeni = bnodei->mJwJoint.transpose()*Ri*bnodei->mTorqueJointLocal;
+            // translation dof forces may add to torque as well: e.g. Root joint
+            if(mJoints[i]->getNumDofsTrans()>0){
+                assert(mJoints[i]->getNumDofsTrans()==3);   // ASSUME: 3 DOF translation only
+                Vector3d cl = bnodei->getLocalCOM();
+                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), bnodei->getParentJoint()->getNumDofsTrans()) = Ri*bnodei->mForceJointLocal;
+                torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointLocal));
+            }
+            torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), bnodei->getParentJoint()->getNumDofsRot()) = torqueGeni;
         }
 
         return torqueGen;

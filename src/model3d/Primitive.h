@@ -57,8 +57,11 @@ namespace model3d {
     protected:
         void setMassTensorFromInertia();    ///< sets the "mass tensor" in lagrangian dynamics from the inertia matrix
         void computeInertiaFromMassTensor();    ///< computes the inertia matrix from the "mass tensor" in lagrangian dynamics
-        virtual void computeInertia() {}
-        virtual void computeMassTensor() {}
+        virtual void computeMassTensor()=0;
+        virtual void computeInertia() {
+            computeMassTensor();
+            computeInertiaFromMassTensor();
+        }
         virtual void computeVolume() {}
 
         PrimitiveType mType;    ///< Type of primitive; unknown in the general case
