@@ -416,7 +416,7 @@ namespace mayaexports{
         vector<Vector3d> eulerAngles;
         vector<Vector3d> transVals;
         for(int fi=_first; fi<=_last; fi++){
-            _b->getSkel()->setState(mDofData->getPoseAtFrame(fi),true,false);
+            _b->getSkel()->setPose(mDofData->getPoseAtFrame(fi),true,false);
             Matrix4d Wl = _b->getLocalTransform();
             Matrix3d Rl = Matrix3d::Zero();
             Vector3d tl = Vector3d::Zero();
