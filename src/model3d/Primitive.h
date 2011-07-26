@@ -60,7 +60,6 @@ namespace model3d {
         virtual void computeInertia() {}
         virtual void computeMassTensor() {}
         virtual void computeVolume() {}
-        virtual void computeCOM() {}
 
         PrimitiveType mType;    ///< Type of primitive; unknown in the general case
         Eigen::Vector3d mDim; ///< dimensions for bounding box
@@ -69,10 +68,7 @@ namespace model3d {
 
         Eigen::Matrix3d mInertia;	///< inertia matrix
         Eigen::Matrix4d mMassTensor; ///< homogenous mass tensor for lagrangian dynamics
-
-        Eigen::Vector3d mOffset;	///< Offset to draw if needed; default (0,0,0)
-        Eigen::Vector3d mLinearVel; ///< Linear velocity of the COM in the world coodinates
-        Eigen::Vector3d mAngVel;    ///< Angular velocity of the body in the world coordinates
+        //Eigen::Vector3d mOffset;	///< Offset to draw if needed; default (0,0,0)
 
         int mID; // unique id
         Eigen::Vector3d mColor;		///< color for the primitive

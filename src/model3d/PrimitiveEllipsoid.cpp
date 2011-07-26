@@ -22,7 +22,6 @@ namespace model3d {
         if(mMass != 0){
             computeMassTensor();
             computeInertiaFromMassTensor();
-            computeCOM();
         }
     }
 
