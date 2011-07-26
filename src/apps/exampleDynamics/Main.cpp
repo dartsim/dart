@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
         }
 
         // compute velocities using inverse dynamics routine
-        Vector3d v2 = nodei->mW.topLeftCorner(3,3)*nodei->mVLocal;
-        Vector3d w2 = nodei->mW.topLeftCorner(3,3)*nodei->mOmegaLocal;
+        Vector3d v2 = nodei->mW.topLeftCorner(3,3)*nodei->mVBody;
+        Vector3d w2 = nodei->mW.topLeftCorner(3,3)*nodei->mOmegaBody;
 
         cout<<"Node: "<<nodei->getName()<<endl;
         //cout<<"Angular Jacobian regular: \n"<<(nodei->mJw).rightCols(nodei->getParentJoint()->getNumDofsRot())<<endl;

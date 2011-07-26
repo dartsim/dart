@@ -23,7 +23,7 @@ namespace model3d {
 
     class Skeleton {
     public:
-        Eigen::VectorXd mCurrState; 
+        Eigen::VectorXd mCurrPose; 
         BodyNode* mRoot;
 
 
@@ -53,14 +53,14 @@ namespace model3d {
         inline Marker* getHandle(int i) { return mHandles[i]; }
         inline double getMass() { return mMass; }
 
-        void setState(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
-        void setState(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
+        virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
+        virtual void setPose(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
         void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 	
-        void setPose(const Eigen::VectorXd& _pose);
-        void setPose(const std::vector<double>& _pose);
+        //void setPose(const Eigen::VectorXd& _pose);
+        //void setPose(const std::vector<double>& _pose);
         void getPose(Eigen::VectorXd& _pose);
         void getPose(std::vector<double>& _pose);
 

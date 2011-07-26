@@ -12,6 +12,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "model3d/BodyNode.h"
+#include "utils/EigenHelper.h"
 
 namespace dynamics{
     /**
@@ -27,14 +28,28 @@ namespace dynamics{
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
         Eigen::MatrixXd mJwDotJoint;    ///< Time derivative of the Jacobian matrix for the parent joint
-        Eigen::Vector3d mVLocal; ///< linear velocity expressed in the *local frame* of the body 
-        Eigen::Vector3d mVDotLocal; ///< linear acceleration expressed in the *local frame* of the body 
-        Eigen::Vector3d mOmegaLocal;    ///< angular velocity expressed in the *local frame* of the body 
-        Eigen::Vector3d mOmegaDotLocal; ///< angular acceleration expressed in the *local frame* of the body 
-        Eigen::Vector3d mForceJointLocal;   ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
-        Eigen::Vector3d mTorqueJointLocal;   ///< the torque in Cartesian coordinates for the joint expressed in the local frame of the body instead of the joint
+        Eigen::Vector3d mVBody; ///< linear velocity expressed in the *local frame* of the body 
+        Eigen::Vector3d mVDotBody; ///< linear acceleration expressed in the *local frame* of the body 
+        Eigen::Vector3d mOmegaBody;    ///< angular velocity expressed in the *local frame* of the body 
+        Eigen::Vector3d mOmegaDotBody; ///< angular acceleration expressed in the *local frame* of the body 
+        Eigen::Vector3d mForceJointBody;   ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
+        Eigen::Vector3d mTorqueJointBody;   ///< the torque in Cartesian coordinates for the joint expressed in the local frame of the body instead of the joint
         void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the velocities in the first pass of the algorithm
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm
+
+        // Regular Dynamics formulation - M*qdd + C*qdot + g = 0
+        Eigen::MatrixXd mM; ///< Mass matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
+        Eigen::MatrixXd mC; ///< Coriolis matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
+
+    protected:
+
+        // Regular Dynamics formulation - second derivatives
+        EIGEN_VV_MAT4D mTqq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+        EIGEN_VV_MAT4D mWqq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+        std::vector<Eigen::MatrixXd> mJvq; ///< Linear Jacobian derivative wrt to all the dependent dofs
+        std::vector<Eigen::MatrixXd> mJwq; ///< Angular Jacobian derivative wrt to all the dependent dofs
+        Eigen::MatrixXd mJvDot; ///< Time derivative of the Linear velocity Jacobian
+        Eigen::MatrixXd mJwDot; ///< Time derivative of the Angular velocity Jacobian
 
     };
 
