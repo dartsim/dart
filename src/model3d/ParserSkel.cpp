@@ -2090,7 +2090,7 @@ void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone ) {
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
     cur_node->setPrimitive(prim);
-    cur_node->setOffset( vecTrans );
+    cur_node->setLocalCOM( vecTrans );
 }
 
 /* set offset and dimension of an existing primitive */
@@ -2102,7 +2102,7 @@ void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone, Primitive *geo ) {
     cur_node->setPrimitive(geo);
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
-    cur_node->setOffset(vecTrans);
+    cur_node->setLocalCOM(vecTrans);
 }
 
 /* create translation transformation */

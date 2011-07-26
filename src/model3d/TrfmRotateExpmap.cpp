@@ -9,26 +9,11 @@
 #include "TrfmRotateExpmap.h"
 #include "Dof.h"
 #include "utils/RotationConversion.h"
+#include "utils/UtilsMath.h"
 
 
 using namespace std;
-
-inline double Tsinc(double theta){
-    return 0.5-sqrt(theta)/48;
-}
-
-inline bool isZero(double theta){
-    return(fabs(theta)<EPSILON);
-}
-
-inline int delta(int i, int j){
-    if(i==j) return 1;
-    return 0;
-}
-
-inline double sqr(double d) {
-    return d * d;
-}
+using namespace Eigen;
 
 namespace model3d {
 
@@ -51,7 +36,7 @@ namespace model3d {
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta= v.norm();
         Vector3d vhat = Vector3d::Zero();
-        if(!isZero(theta)) vhat= v/theta;
+        if(!utils::isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
         // Quaternion q(vhat, theta);
 
@@ -78,7 +63,7 @@ namespace model3d {
         if (i==0) dq_dv = -0.5*v(j)*sinc_theta_half;
         else {
             i=i-1;
-            dq_dv = sinc_theta_half*delta(i,j) + 0.5*vhat(i)*vhat(j)*(cos(0.5*theta)-2*sinc_theta_half);
+            dq_dv = sinc_theta_half*utils::delta(i,j) + 0.5*vhat(i)*vhat(j)*(cos(0.5*theta)-2*sinc_theta_half);
         }
         return dq_dv;
     }
@@ -86,11 +71,11 @@ namespace model3d {
     double TrfmRotateExpMap::get_dq_dv_approx(int i, int j, double theta, Vector3d v){
         // printf("========== inside approx ==========\n");
         double dq_dv=0;
-        double sinc_theta_half = Tsinc(theta);
+        double sinc_theta_half = utils::Tsinc(theta);
         if (i==0) dq_dv = -0.5*v(j)*sinc_theta_half;
         else {
             i=i-1;
-            dq_dv = sinc_theta_half*delta(i,j) + (v(i)*v(j)*(sqr(theta)/40-1))/24;
+            dq_dv = sinc_theta_half*utils::delta(i,j) + (v(i)*v(j)*(utils::sqr(theta)/40-1))/24;
         }
         return dq_dv;
     }
@@ -100,7 +85,7 @@ namespace model3d {
         double theta = v.norm();
 
         Vector3d vhat = Vector3d::Zero();
-        if(!isZero(theta)) vhat= v/theta;
+        if(!utils::isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
 
 
@@ -154,12 +139,12 @@ namespace model3d {
         double sinc_theta_half = (sin_half/theta);
 
         if (i==0) {
-            dq_dv_dv = -0.5*sinc_theta_half*delta(j,k);
+            dq_dv_dv = -0.5*sinc_theta_half*utils::delta(j,k);
             dq_dv_dv += - 0.25*vhat(j)*vhat(k)*(cos_half-2*sinc_theta_half);
         }
         else {
             i=i-1;
-            dq_dv_dv = ((cos_half-2*sinc_theta_half)/(2*theta))*(vhat(k)*delta(i,j)+vhat(i)*delta(k,j)+vhat(j)*delta(i,k));
+            dq_dv_dv = ((cos_half-2*sinc_theta_half)/(2*theta))*(vhat(k)*utils::delta(i,j)+vhat(i)*utils::delta(k,j)+vhat(j)*utils::delta(i,k));
             dq_dv_dv += 0.25*vhat(i)*vhat(j)*vhat(k)*(-sin_half-(6/theta)*(cos_half-2*sinc_theta_half));
         }
         return dq_dv_dv;
@@ -170,12 +155,12 @@ namespace model3d {
         double dq_dv_dv=0;
 
         if (i==0) {
-            dq_dv_dv = v(j)*v(k)/48 - 0.5*Tsinc(theta)*delta(j,k);
+            dq_dv_dv = v(j)*v(k)/48 - 0.5*utils::Tsinc(theta)*utils::delta(j,k);
         }
         else {
             i=i-1;
-            dq_dv_dv = -(v(k)*delta(i,j)+v(i)*delta(k,j)+v(j)*delta(i,k))/24;
-            dq_dv_dv += (sqr(theta)/960)*(v(i)*delta(k,j)+v(j)*delta(i,k));
+            dq_dv_dv = -(v(k)*utils::delta(i,j)+v(i)*utils::delta(k,j)+v(j)*utils::delta(i,k))/24;
+            dq_dv_dv += (utils::sqr(theta)/960)*(v(i)*utils::delta(k,j)+v(j)*utils::delta(i,k));
             dq_dv_dv += v(i)*v(j)*v(k)/480;
         }
         return dq_dv_dv;
@@ -185,7 +170,7 @@ namespace model3d {
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta = v.norm();
         Vector3d vhat = Vector3d::Zero();
-        if(!isZero(theta)) vhat= v/theta;
+        if(!utils::isZero(theta)) vhat= v/theta;
         Quaterniond q(AngleAxisd(theta, vhat));
 
         // derivative wrt which mDofs
@@ -278,7 +263,7 @@ namespace model3d {
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta = v.norm();
         Vector3d vhat = Vector3d::Zero();
-        if(!isZero(theta)) {
+        if(!utils::isZero(theta)) {
             vhat= v/theta;
             _ri->rotate(vhat, theta * 180 / M_PI);
         }

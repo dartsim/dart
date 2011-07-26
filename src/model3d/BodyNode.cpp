@@ -25,7 +25,7 @@ namespace model3d {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(const char *_name) 
-        : mSkelIndex(-1), mPrimitive(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mOffset(0,0,0)
+        : mSkelIndex(-1), mPrimitive(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mCOMLocal(0,0,0)
     {
         mJointsChild.clear();
         mHandles.clear();
@@ -174,7 +174,7 @@ namespace model3d {
         if (mPrimitive != NULL) {
             _ri->pushName((unsigned)mID);
             _ri->pushMatrix();
-            _ri->translate(mOffset);
+            _ri->translate(mCOMLocal);
             mPrimitive->draw(_ri, _color, _useDefaultColor);
             _ri->popMatrix();
             _ri->popName();
@@ -236,16 +236,16 @@ namespace model3d {
         //for (vector<int>::iterator i_iter = mDependantDofs.begin();
         //     i_iter != mDependantDofs.end(); i_iter++) {
         //    int i = (*i_iter);
-        //    VectorXd J = utils::xformHom(mWq.at(i), mOffset);
-        //    mJv(0, i) = J(0);
-        //    mJv(1, i) = J(1);
-        //    mJv(2, i) = J(2);
+        //    VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
+        //    mJv(0, i) = Ji(0);
+        //    mJv(1, i) = Ji(1);
+        //    mJv(2, i) = Ji(2);
         //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
-            VectorXd J = utils::xformHom(mWq.at(i), mOffset);
-            mJv(0, i) = J(0);
-            mJv(1, i) = J(1);
-            mJv(2, i) = J(2);
+            VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
+            mJv(0, i) = Ji(0);
+            mJv(1, i) = Ji(1);
+            mJv(2, i) = Ji(2);
         }
     }
 
@@ -258,23 +258,23 @@ namespace model3d {
         //    MatrixXd transR = mW.topLeftCorner(3,3).transpose();
         //    MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
         //    MatrixXd omegaSkewSymmetric = dRdq * transR;
-        //    VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
-        //    omega = transR * omega;
+        //    VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
+        //    //omegai = transR * omegai;
         //    
-        //    mJw(0, i) = omega(0);
-        //    mJw(1, i) = omega(1);
-        //    mJw(2, i) = omega(2);
+        //    mJw(0, i) = omegai(0);
+        //    mJw(1, i) = omegai(1);
+        //    mJw(2, i) = omegai(2);
         //}
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
             MatrixXd transR = mW.topLeftCorner(3,3).transpose();
             MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
             MatrixXd omegaSkewSymmetric = dRdq * transR;
-            VectorXd omega = utils::fromSkewSymmetric(omegaSkewSymmetric);
-            omega = transR * omega;
+            VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
+            //omegai = transR * omegai;
 
-            mJw(0, i) = omega(0);
-            mJw(1, i) = omega(1);
-            mJw(2, i) = omega(2);
+            mJw(0, i) = omegai(0);
+            mJw(1, i) = omegai(1);
+            mJw(2, i) = omegai(2);
         }
     }
     

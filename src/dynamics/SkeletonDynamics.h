@@ -24,6 +24,10 @@ namespace dynamics{
 
         virtual model3d::BodyNode* createBodyNode(const char* const _name = NULL);
 
+        Eigen::VectorXd inverseDynamics(const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot=NULL); ///< runs recursive inverse dynamics algorithm and returns the generalized forces; if qdd is NULL, it is treated as zero
+
+    protected:
+
     };
 
 } // namespace dynamics

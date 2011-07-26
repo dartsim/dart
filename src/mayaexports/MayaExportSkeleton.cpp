@@ -87,7 +87,7 @@ namespace mayaexports{
         string name1 = _prefix+_b->getName()+_suffix; name1+=mSuffixPrim;
         string name2 = _prefix+_b->getName()+_suffix; name2+=mSuffixShape;
         _outFile<<"createNode transform -n \""<<name1.c_str()<<"\" -p \""<<_prefix+_b->getName()+_suffix<<"\";"<<endl;
-        Vector3d off = prim->getLocalCOM();
+        Vector3d off = _b->getLocalCOM(); //prim->getLocalCOM();
         //if(prim->getPrimitiveType()==Primitive::P_CYLINDER) {
         //    GeomCylinder *cyl = static_cast<GeomCylinder*>(prim->getGeom());
         //    Vector3d ax = cyl->getOrientation();

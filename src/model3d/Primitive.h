@@ -38,8 +38,7 @@ namespace model3d {
         void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
         Eigen::Vector3d getColor() const { return mColor; }
 
-        void setWorldPos(const Eigen::Vector3d& _pos) { mPosWorld = _pos; }
-        Eigen::Vector3d getLocalCOM() { return mCOMLocal; } //in local coordinates
+        //Eigen::Vector3d getOffset() { return mOffset; } //in local coordinates
 
         void setDim(const Eigen::Vector3d& _dim);
         Eigen::Vector3d getDim() { return mDim; }
@@ -71,8 +70,7 @@ namespace model3d {
         Eigen::Matrix3d mInertia;	///< inertia matrix
         Eigen::Matrix4d mMassTensor; ///< homogenous mass tensor for lagrangian dynamics
 
-        Eigen::Vector3d mCOMLocal;	///< COM in local coordinate; default (0,0,0)
-        Eigen::Vector3d mPosWorld;  ///< local origin in world coordinate
+        Eigen::Vector3d mOffset;	///< Offset to draw if needed; default (0,0,0)
         Eigen::Vector3d mLinearVel; ///< Linear velocity of the COM in the world coodinates
         Eigen::Vector3d mAngVel;    ///< Angular velocity of the body in the world coordinates
 

@@ -39,13 +39,14 @@ namespace model3d {
         virtual ~Joint();
 
         bool isPresent (const Dof *_d) const;	///< true if d is present in the dof list for the joint
-        int getLocalIndex (int _dofSkelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
+        int getDofLocalIndex (int _dofSkelIndex) const; ///< get local index of the dof at this joint; if the dof is not presented at this joint, return -1
+        int getDofSkelIndex() const;    ///< index of the first local dof (dof 0) in the full skel dof list
 
         Eigen::Matrix4d getLocalTransform(); ///< computes and returns the local transformation from NodeIn to NodeOut
         void applyTransform(Eigen::Vector3d& _v); ///< apply the local transformation to a vector _v
         void applyTransform(Eigen::Matrix4d& _m); ///< apply the local transformation to a matrix _m
 
-        void computeRotationJac(Eigen::MatrixXd *_J, Eigen::MatrixXd *_Jdot, Eigen::VectorXd *_qdot);   ///< compute the relative angular velocity jacobian i.e. w_rel = J*\dot{q_local}
+        void computeRotationJac(Eigen::MatrixXd *_J, Eigen::MatrixXd *_Jdot, const Eigen::VectorXd *_qdot);   ///< compute the relative angular velocity jacobian i.e. w_rel = J*\dot{q_local}
         utils::rot_conv::RotationOrder getEulerOrder(); ///< Rotation order for the euler rotation if hinge, universal or ball euler joint
         Eigen::Vector3d getAxis(unsigned int _i);    ///< returns the i th axis of rotation accordingly when R = R2*R1*R0 (i \in {0,1,2})
 	
@@ -63,6 +64,10 @@ namespace model3d {
 
         int getNumDofs() const {return mDofs.size();}
         Dof* getDof(int _idx) const {return mDofs[_idx];}
+
+        inline int getNumDofsTrans(){return mNumDofsTrans;}
+        inline int getNumDofsRot(){return mNumDofsRot;}
+        inline const std::vector<int>& getRotTransformIndices(){return mRotTransformIndex;}
 	
         BodyNode* getParentNode() const {return mNodeParent;}
         BodyNode* getChildNode() const {return mNodeChild;}
@@ -86,10 +91,11 @@ namespace model3d {
 
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeChild
         std::vector<Dof*> mDofs;	///< associated dofs
-        
+
         int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
         int mNumDofsTrans;   ///< number of DOFs for corresponding to translation
-        std::vector<int> mRotTransIndex; ///< indices of the rotation dofs 
+        std::vector<int> mRotDofIndex;  ///< indices of the rotation dofs
+        std::vector<int> mRotTransformIndex; ///< indices of the rotation transforms
 
         void addDof(Dof *_d); ///< add _d to mDofs 
     };

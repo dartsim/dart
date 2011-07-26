@@ -44,6 +44,14 @@ namespace utils {
         return x*x;
     }
 
+    inline double Tsinc(double theta){
+        return 0.5-sqrt(theta)/48;
+    }
+
+    inline bool isZero(double theta){
+        return(fabs(theta)<EPSILON);
+    }
+
     inline double asinh(double X){
         return log(X + sqrt(X * X + 1));
     }

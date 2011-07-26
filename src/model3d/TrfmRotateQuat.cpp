@@ -11,6 +11,7 @@
 
 #include <cassert>
 using namespace std;
+using namespace Eigen;
 
 #include "Dof.h"
 
