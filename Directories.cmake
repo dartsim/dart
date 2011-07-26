@@ -8,6 +8,7 @@ if (UNIX)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/glog-0.3.1/src)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/gtest-1.6.0/include)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/ticpp)
+    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage-3.15.0/Dist)
 
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/bin)
