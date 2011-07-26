@@ -68,7 +68,7 @@ namespace optimizer {
         }
         // cout << "IKProblem::update()" << endl;
         // cout << pose.transpose() << endl;
-        getSkel()->setState(pose);
+        getSkel()->setPose(pose,true,true);
     }
 
     Skeleton* IKProblem::getSkel() const {

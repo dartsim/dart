@@ -37,8 +37,8 @@ namespace mayaexports{
         outFile0 << "animVersion 1.1;" << endl;
         outFile0 << "mayaVersion 2011;" << endl;
         outFile0 << "timeUnit film;" << endl;
-        outFile0 << "linearUnit cm;" << endl;
-        outFile0 << "angularUnit rad;" << endl;
+        outFile0 << "linearUnit meter;" << endl;
+        outFile0 << "angularUnit radian;" << endl;
         outFile0 << "startTime " << first<<";\n";
         outFile0 << "endTime " << last<<";\n\n";
 
