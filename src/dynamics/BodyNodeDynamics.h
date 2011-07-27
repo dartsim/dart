@@ -49,11 +49,11 @@ namespace dynamics{
         Eigen::MatrixXd mC; ///< Coriolis matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton Coriolis matrix
         Eigen::VectorXd mCvec; ///< Coriolis vector of dimension numDependentDofs x 1; mCvec = mC*qdot
         Eigen::VectorXd mG; ///< Gravity vector or generalized gravity forces; dimension numDependentDofs x 1
-        void evalVelocity(const Eigen::Vector3d &_qDotSkel);   ///< evaluates the velocity of the COM in the world frame
-        void evalOmega(const Eigen::Vector3d &_qDotSkel);   ///< evaluates the Omega in the world frame
+        void evalVelocity(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the velocity of the COM in the world frame
+        void evalOmega(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the Omega in the world frame
         void evalMassMatrix();  ///< evaluates the mass matrix mM
-        void evalCoriolisMatrix(const Eigen::Vector3d &_qDotSkel);  ///< evaluates the Coriolis matrix mC
-        void evalCoriolisVector(const Eigen::Vector3d &_qDotSkel);  ///< evaluates the Coriolis vector mCvec directy: i.e. shortcut for mC*qdot
+        void evalCoriolisMatrix(const Eigen::VectorXd &_qDotSkel);  ///< evaluates the Coriolis matrix mC
+        void evalCoriolisVector(const Eigen::VectorXd &_qDotSkel);  ///< evaluates the Coriolis vector mCvec directy: i.e. shortcut for mC*qdot
         void evalGravityVector(const Eigen::Vector3d &_gravity);   ///< evaluates the gravity vector mG in the generalized coordinates
 
         // add functions to add to the existing *full* matrices typically for the entire skeleton
@@ -76,8 +76,8 @@ namespace dynamics{
         Eigen::Matrix4d getLocalSecondDeriv(const model3d::Dof *_q1, const model3d::Dof *_q2) const;
         void evalJacDerivLin(int _qi);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
         void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
-        void evalJacDotLin(const Eigen::Vector3d &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
-        void evalJacDotAng(const Eigen::Vector3d &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
+        void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
+        void evalJacDotAng(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
 
     };
 
