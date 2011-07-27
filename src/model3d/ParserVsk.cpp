@@ -64,7 +64,7 @@ void autoGeneratePrimitive2(Skeleton* skel);
 
 
 int readVSKFile(const char* const filename, Skeleton* _skel){
-    VLOG(1) << "Read SKel File!! Yay!!" << endl;
+    VLOG(1) << "Entering Read VSK File" << endl;
 
     // Load xml and create Document
     ticpp::Document _stateFile(filename);
@@ -180,7 +180,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
 
     _skel->initSkel();
     // 
-    VLOG(1) << "Everything Looks good. I'm happy!" << endl;
+    VLOG(1) << "VSK Parser exiting successfully" << endl;
     return VSK_OK;
 }
 

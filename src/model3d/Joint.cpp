@@ -306,7 +306,7 @@ namespace model3d {
             else if(mNumDofsRot==0 && mNumDofsTrans>0) mType=J_TRANS;
             else {
                 mType=J_UNKNOWN;
-                cout<<"Type of joint not recognized\n";
+                //cout<<"Type of joint not recognized\n";
             }
         }
     }
