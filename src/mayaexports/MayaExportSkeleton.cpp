@@ -80,6 +80,8 @@ namespace mayaexports{
 
     bool MayaExportSkeleton::exportMayaAsciiPrimitive(BodyNode* _b, ofstream &_outFile, const string &_prefix, const string &_suffix  ){
         Primitive *prim = _b->getPrimitive();
+        if(prim==NULL) return false; // an dummy node
+        
         Vector3d dim = prim->getDim();
         string ngeom = _prefix+_b->getName()+_suffix; ngeom+=mSuffixGeom; 
 
