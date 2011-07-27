@@ -46,9 +46,8 @@ int main(int argc, char* argv[])
     }
     // set the pose
     skel.getSkel()->setPose(q);
+    Vector3d gravity(0.0, -9.81, 0.0);
     // solve the inverse dynamics
-    //Vector3d gravity(0.0, -9.81, 0.0);
-    Vector3d gravity(0.0, 0.0, 0.0);
 
     //// test the velocities computed by the two methods
     //skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
@@ -89,25 +88,54 @@ int main(int argc, char* argv[])
     //}
     //exit(1);
 
+    // test the Jwdot using finite differences
+    double dt = 1.0e-3;
+    VectorXd origq = q;
+    VectorXd newq = q + qdot*dt;
+    for(int i=0; i<skel.getSkel()->getNumNodes(); i++){
+        BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(skelDyn->getNode(i));
+
+        skel.getSkel()->setPose(origq);
+        skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
+        Matrix3d Ri = nodei->mW.topLeftCorner(3,3);
+
+        MatrixXd JwOrig = nodei->mJwJoint;
+        MatrixXd JwDotOrig = nodei->mJwDotJoint;
+        Vector3d wOrig = Ri*nodei->mOmegaBody;
+        Vector3d wDotOrig = Ri*nodei->mOmegaDotBody;
+        Vector3d vOrig = Ri*nodei->mVelBody;
+        Vector3d vDotOrig = Ri*nodei->mVelDotBody;
+
+        skel.getSkel()->setPose(newq);
+        skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
+        Matrix3d Rinew = nodei->mW.topLeftCorner(3,3);
+
+        MatrixXd JwNew = nodei->mJwJoint;
+        MatrixXd JwDotApprox = (JwNew-JwOrig)/dt;
+        Vector3d wNew = Rinew*nodei->mOmegaBody;
+        Vector3d wDotApprox = (wNew-wOrig)/dt;
+        Vector3d vNew = Rinew*nodei->mVelBody;
+        Vector3d vDotApprox = (vNew-vOrig)/dt;
+
+        cout<<"JwDot: \n"<<JwDotOrig<<endl;
+        cout<<"JwDot approx: \n"<<JwDotApprox<<endl;
+        cout<<"wDot: \n"<<wDotOrig<<endl;
+        cout<<"wDot approx: \n"<<wDotApprox<<endl;
+        cout<<"vDot: \n"<<vDotOrig<<endl;
+        cout<<"vDot approx: \n"<<vDotApprox<<endl;
+
+        cout<<endl;
+        //getchar();
+    }
+
     // test the dynamics
     VectorXd Cginvdyn = skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
 
     cout<<"C+g term inverse dynamics: "<<Cginvdyn<<endl;
     cout<<"C+g term regular dynamics: "<<skelDyn->mCg<<endl;
+    cout<<"Difference: \n"<<Cginvdyn - skelDyn->mCg<<endl;
     
-    for(int i=0; i<skel.getSkel()->getNumNodes(); i++){
-        BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(skelDyn->getNode(i));
-        cout<<"Omega invdyn: \n"<<nodei->mW.topLeftCorner(3,3)*nodei->mOmegaBody<<endl;
-        cout<<"Omega regular: \n"<<nodei->mOmega<<endl;
-        cout<<"Ic: "<<nodei->mIc<<endl;
-        cout<<"Jvdot: "<<nodei->mJvDot<<endl;
-        cout<<"Jwdot: "<<nodei->mJwDot<<endl;
-        //cout<<"Coriolis matrix: "<<nodei->mC<<endl;
-
-        cout<<endl;
-        getchar();
-    }
     exit(1);
 
 

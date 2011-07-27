@@ -98,7 +98,7 @@ namespace dynamics{
             Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
 
             mOmegaBody = RjointT*(nodeParent->mOmegaBody + omegaJoint);
-            mOmegaDotBody = RjointT*(nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaDotBody.cross(omegaDotJoint));
+            mOmegaDotBody = RjointT*(nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaBody.cross(omegaJoint));
             mVelBody = mOmegaBody.cross(cl) + RjointT*(nodeParent->mVelBody + nodeParent->mOmegaBody.cross(rl-clparent));
             mVelDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl)) + RjointT*(nodeParent->mVelDotBody + nodeParent->mOmegaDotBody.cross(rl-clparent) + nodeParent->mOmegaBody.cross(nodeParent->mOmegaBody.cross(rl-clparent)));
         }
@@ -132,7 +132,7 @@ namespace dynamics{
 
         // base case: end effectors
         mForceJointBody = mMass*mVelDotBody;
-        mTorqueJointBody = cl.cross(mForceJointBody) + mOmegaBody.cross(Ibody*mOmegaBody) + Ibody*mOmegaDotBody;
+        mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(Ibody*mOmegaBody) + Ibody*mOmegaDotBody;
         // general case
         for(unsigned int j=0; j<mJointsChild.size(); j++){
             BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(mJointsChild[j]->getChildNode());
@@ -140,7 +140,7 @@ namespace dynamics{
             Vector3d forceChildNode = Rchild*bchild->mForceJointBody;
             mForceJointBody += forceChildNode;
             Vector3d rlchild = bchild->mT.col(3).head(3);
-            mTorqueJointBody += (rlchild-cl).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
+            mTorqueJointBody += (rlchild).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
         }
     }
 
@@ -247,12 +247,12 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::evalCoriolisMatrix(const VectorXd &_qDotSkel){
+        mC.setZero();
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        mC.setZero();
         Matrix3d R = mW.topLeftCorner(3,3);
         // term 1
         mC = getMass()*mJv.transpose()*mJvDot + mJw.transpose()*mIc*mJwDot;
@@ -261,25 +261,27 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
+        mCvec.setZero();
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        mCvec.setZero();
         Matrix3d R = mW.topLeftCorner(3,3);
         // term 1
         VectorXd Jvdqd = VectorXd::Zero(getNumDependantDofs());
         VectorXd Jwdqd = VectorXd::Zero(getNumDependantDofs());
         for(int i=0; i<getNumDependantDofs(); i++){
-            Jvdqd = mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
-            Jwdqd = mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
+            Jvdqd += mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
+            Jwdqd += mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
         }
-        // term 1
         mCvec = getMass()*mJv.transpose()*Jvdqd + mJw.transpose()*(mIc*Jwdqd);
         // term 2
-        evalOmega(_qDotSkel);   // evaluates mOmega vector
         mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
+
+        //// test
+        //evalCoriolisMatrix(_qDotSkel);
+        //for(int i=0; i<mC.cols(); i++) mCvec += mC.col(i)*_qDotSkel[mDependantDofs[i]];
     }
 
     void BodyNodeDynamics::evalGravityVector(const Vector3d &_gravity){
