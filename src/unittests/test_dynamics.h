@@ -187,6 +187,48 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
     }
 }
 
+TEST(DYNAMICS, COMPARE_MASS) {
+    using namespace std;
+    using namespace Eigen;
+    using namespace model3d;
+    using namespace dynamics;
+
+    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+    model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
+    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::SKEL);
+    ASSERT_TRUE(loadModelResult);
+
+    SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
+    EXPECT_TRUE(skelDyn != NULL);
+
+    const double TOLERANCE_EXACT = 1.0e-10;
+
+    // test the velocity computation using the two methods: inverse dynamics and regular
+    VectorXd q = VectorXd::Zero(skelFile.getSkel()->getNumDofs());
+    VectorXd qdot = VectorXd::Zero(skelFile.getSkel()->getNumDofs());
+    for(int i=0; i<skelFile.getSkel()->getNumDofs(); i++){
+        q[i] = utils::random(-1.0, 1.0);
+        qdot[i] = utils::random(-5.0, 5.0);
+    }
+    // set the pose
+    skelFile.getSkel()->setPose(q);
+    // solve the inverse dynamics
+    Vector3d gravity(0.0, -9.81, 0.0);
+
+    // test/compare the dynamics result for both methods
+    // test the mass matrix
+    skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
+    MatrixXd Minvdyn = skelDyn->mM;
+    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by NOT using inverse dynamics: use regular dynamics
+    MatrixXd Mregular = skelDyn->mM;
+
+    for(int ki=0; ki<Minvdyn.rows(); ki++){
+        for(int kj=0; kj<Minvdyn.cols(); kj++){
+            EXPECT_NEAR(Minvdyn(ki,kj), Mregular(ki,kj), TOLERANCE_EXACT);
+        }
+    }
+}
+
 
 #endif // #ifndef SRC_UNITTESTS_TEST_DYNAMICS_H
 
