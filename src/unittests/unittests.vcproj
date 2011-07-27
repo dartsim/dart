@@ -182,6 +182,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\test_dynamics.h"
+				>
+			</File>
+			<File
 				RelativePath=".\test_model3d.h"
 				>
 			</File>

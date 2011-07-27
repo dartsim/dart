@@ -269,8 +269,8 @@ namespace dynamics{
 
         Matrix3d R = mW.topLeftCorner(3,3);
         // term 1
-        VectorXd Jvdqd = VectorXd::Zero(getNumDependantDofs());
-        VectorXd Jwdqd = VectorXd::Zero(getNumDependantDofs());
+        Vector3d Jvdqd = Vector3d::Zero();
+        Vector3d Jwdqd = Vector3d::Zero();
         for(int i=0; i<getNumDependantDofs(); i++){
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
