@@ -60,7 +60,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
 bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
 bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
 void autoGeneratePrimitive(Skeleton* skel);
-void autoGeneratePrimitive2(Skeleton* skel);
+void autoGeneratePrimitiveParent(Skeleton* skel);
 
 
 int readVSKFile(const char* const filename, Skeleton* _skel){
@@ -176,7 +176,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
         // fill in the default if prims absent
     }
 
-    autoGeneratePrimitive2(_skel);
+    autoGeneratePrimitiveParent(_skel);
 
     _skel->initSkel();
     // 
@@ -744,7 +744,7 @@ void autoGeneratePrimitive(Skeleton* skel) {
     }
 }
 
-void autoGeneratePrimitive2(Skeleton* skel)
+void autoGeneratePrimitiveParent(Skeleton* skel)
 {
     // autoGeneratePrimitive(skel); return;
 
@@ -762,7 +762,7 @@ void autoGeneratePrimitive2(Skeleton* skel)
         VLOG(1) << "Node = " << node->getName() << endl;
         if (node->getParentNode() == NULL)
         {
-            VLOG(1) << "I'm root!!!!!" << endl;
+            VLOG(1) << "computing size for the root" << endl;
             size = 0.1 * Vector3d(1,1,1);
             continue;
         }
