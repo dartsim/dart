@@ -135,9 +135,9 @@ int main(int argc, char* argv[])
     cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->mCg<<endl;
 
     // test the mass matrix
-    skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by not using inverse dynamics
+    skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
     MatrixXd Minvdyn = skelDyn->mM;
-    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
+    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using regular dynamics
     MatrixXd Mregular = skelDyn->mM;
     cout<<"Difference\n"<<Minvdyn-Mregular<<endl;
     
