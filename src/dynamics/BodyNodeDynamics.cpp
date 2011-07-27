@@ -185,7 +185,10 @@ namespace dynamics{
 
         // Update Local Derivatives
         for(int i = 0; i < numLocalDofs; i++) {
+            //if(numParentDofs + i<mNumRootTrans) continue;
             for(int j=0; j<numLocalDofs; j++) {
+                //if(numParentDofs + j<mNumRootTrans) continue;
+                if(numParentDofs + i<mNumRootTrans && numParentDofs + j<mNumRootTrans) continue;
                 mTqq.at(i).at(j) = getLocalSecondDeriv(getDof(i), getDof(j));
             }
         }
@@ -200,17 +203,20 @@ namespace dynamics{
             }
             // local dofs j
             for(int j = 0; j < numLocalDofs; j++) {
+                //if(numParentDofs + j<mNumRootTrans) continue;
                 mWqq.at(i).at(numParentDofs + j) = nodeParentDyn->mWq.at(i) * mTq.at(j);
             }
         }
         // local dofs i
         for(int i = 0; i < numLocalDofs; i++){
+            //if(numParentDofs + i<mNumRootTrans) continue;
             // parent dofs j
             for(int j = 0; j < numParentDofs; j++) {
                 mWqq.at(numParentDofs + i).at(j) = nodeParentDyn->mWq.at(j) * mTq.at(i);
             }
             // local dofs j
             for(int j = 0; j < numLocalDofs; j++) {
+                //if(numParentDofs + j<mNumRootTrans) continue;
                 if(nodeParentDyn) mWqq.at(numParentDofs + i).at(numParentDofs + j) = nodeParentDyn->mW * mTqq.at(i).at(j);
                 else mWqq.at(numParentDofs + i).at(numParentDofs + j) = mTqq.at(i).at(j);
             }

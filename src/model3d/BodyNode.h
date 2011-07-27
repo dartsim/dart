@@ -119,6 +119,7 @@ namespace model3d {
         std::vector<Marker *> mHandles; ///< List of handles associated
 
         std::vector<int> mDependantDofs; ///< A list of dependant dof indices 
+        int mNumRootTrans;  ///< keep track of the root translation DOFs only if they are the first ones
 
         double mMass; ///< Mass of this node; zero if no primitive
         Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame

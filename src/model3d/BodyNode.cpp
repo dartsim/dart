@@ -71,6 +71,17 @@ namespace model3d {
         
         mJv = MatrixXd::Zero(3, numDepDofs);
         mJw = MatrixXd::Zero(3, numDepDofs);
+
+        mNumRootTrans = 0;
+        for(int i=0; i<mSkel->getNumDofs(); i++){
+            if(!(mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATE 
+                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEX  
+                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEY 
+                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEZ)) {
+                    mNumRootTrans = i;
+                    break;
+            }
+        }
     }
 
     void BodyNode::updateTransform() {
@@ -96,6 +107,8 @@ namespace model3d {
         // parent dofs
         for (int i = 0; i < numParentDofs; i++) {
             assert(mNodeParent);    // should always have a parent if enters this for loop
+            //if(i<mNumRootTrans) mWq.at(i) = mNodeParent->mWq.at(i);
+            //else 
             mWq.at(i) = mNodeParent->mWq.at(i) * mT;
         }
         // local dofs
