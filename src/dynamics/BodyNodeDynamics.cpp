@@ -64,7 +64,7 @@ namespace dynamics{
         mJwDot = MatrixXd::Zero(3, getNumDependantDofs());
     }
 
-    void BodyNodeDynamics::computeInvDynVelocities( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    void BodyNodeDynamics::computeInvDynVelocities( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
         // update the local transform mT and the world transform mW
         BodyNode::updateTransform();
 
@@ -72,6 +72,11 @@ namespace dynamics{
         mVelDotBody.setZero();
         mOmegaBody.setZero();
         mOmegaDotBody.setZero();
+
+        if(_computeJacobians){
+            mJv.setZero();
+            mJw.setZero();
+        }
 
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
@@ -118,6 +123,31 @@ namespace dynamics{
                 if(_qdotdot){
                     VectorXd qDotDotTransJoint = _qdotdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
                     mVelDotBody += RjointT*qDotDotTransJoint;
+                }
+            }
+        }
+
+        // compute Jacobians iteratively
+        if(_computeJacobians){
+            // compute the Angular Jacobian first - use it for Linear jacobian as well
+            if(nodeParent){
+                mJw.leftCols(nodeParent->getNumDependantDofs()) = nodeParent->mJw;
+                mJw.rightCols(getNumLocalDofs()) = nodeParent->mW.topLeftCorner(3,3)*mJwJoint;
+                Vector3d clparent = nodeParent->getLocalCOM();
+                Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
+                mJv.leftCols(nodeParent->getNumDependantDofs()) = nodeParent->mJv - utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent))*nodeParent->mJw;
+                mJv -= utils::makeSkewSymmetric(mW.topLeftCorner(3,3)*mCOMLocal)*mJw;
+            }
+            // base case: root
+            else {
+                mJw.rightCols(mJointParent->getNumDofsRot()) = mJwJoint;
+                mJv -= utils::makeSkewSymmetric(mW.topLeftCorner(3,3)*mCOMLocal)*mJw;
+                // if root has translation DOFs
+                if(mJointParent->getNumDofsTrans()>0){
+                    // ASSUME - 3 translational dofs
+                    assert(mJointParent->getNumDofsTrans()==3);
+                    // ASSUME - translation dofs in the beginning
+                    mJv.leftCols(mJointParent->getNumDofsTrans()) += MatrixXd::Identity(3,mJointParent->getNumDofsTrans());
                 }
             }
         }
@@ -275,7 +305,7 @@ namespace dynamics{
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
         }
-        mCvec = getMass()*mJv.transpose()*Jvdqd + mJw.transpose()*(mIc*Jwdqd);
+        mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
         // term 2
         mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
 

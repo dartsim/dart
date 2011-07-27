@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
         cout<<"Angular velocity InvDyn : \n"<<w2<<endl;
         cout<<endl;
 
-        getchar();
+        //getchar();
     }
 
     // test the Jwdot using finite differences
@@ -127,13 +127,19 @@ int main(int argc, char* argv[])
         //getchar();
     }
 
-    // test the dynamics
-    VectorXd Cginvdyn = skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
+    // test the dynamics: coriolis+gravity term
+    VectorXd Cginvdyn = skelDyn->computeInverseDynamicsLinear(gravity, &qdot, NULL, true);
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
-
     //cout<<"C+g term inverse dynamics: "<<Cginvdyn<<endl;
     //cout<<"C+g term regular dynamics: "<<skelDyn->mCg<<endl;
-    cout<<"Difference: \n"<<Cginvdyn - skelDyn->mCg<<endl;
+    cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->mCg<<endl;
+
+    // test the mass matrix
+    skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by not using inverse dynamics
+    MatrixXd Minvdyn = skelDyn->mM;
+    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
+    MatrixXd Mregular = skelDyn->mM;
+    cout<<"Difference\n"<<Minvdyn-Mregular<<endl;
     
 
     MyWindow window(motion);

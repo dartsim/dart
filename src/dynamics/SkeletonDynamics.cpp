@@ -25,14 +25,14 @@ namespace dynamics{
         return new BodyNodeDynamics(_name);
     }
 
-    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
         for(int i=0; i<mNumNodes; i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
             // init the node in the first pass
             nodei->initInverseDynamics();
             // compute the velocities
-            nodei->computeInvDynVelocities(_gravity, _qdot, _qdotdot);
+            nodei->computeInvDynVelocities(_gravity, _qdot, _qdotdot, _computeJacobians);
         }
 
         // BACKWARD PASS: compute the forces recursively -  from end effectors to root
@@ -67,8 +67,13 @@ namespace dynamics{
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
         if(_useInvDynamics){
-            mCg = computeInverseDynamicsLinear(_gravity, &_qdot);
-            // TODO: think how to evaluate the mass matrix in an efficient manner: should not call updateFirstDerivatives since it will be duplicate computation
+            mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true);
+            for(int i=0; i<getNumNodes(); i++){
+                BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+                // mass matrix M
+                nodei->evalMassMatrix(); // assumes Jacobians mJv and mJw have been computed above: use flag as true in computeInverseDynamicsLinear
+                nodei->addMass(mM);
+            }
         }
         else {
             // init the data structures for the dynamics
