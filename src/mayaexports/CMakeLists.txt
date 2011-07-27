@@ -1,5 +1,5 @@
 ###############################################
-# Utils
+# mayaexports
 PROJECT(mayaexports)
 
 # Search all header and source files
