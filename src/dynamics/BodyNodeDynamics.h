@@ -25,11 +25,15 @@ namespace dynamics{
         BodyNodeDynamics(const char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNodeDynamics(); ///< Default destructor
 
+        // Following functions called automatically by the skeleton: computeInverseDynamicsLinear and computeDynamics respectively
+        void initInverseDynamics();  ///< initialize data structures for linear inverse dynamics computation
+        void initDynamics();  ///< initialize data structures for regular dynamics computation
+
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
         Eigen::MatrixXd mJwDotJoint;    ///< Time derivative of the Jacobian matrix for the parent joint
-        Eigen::Vector3d mVBody; ///< linear velocity expressed in the *local frame* of the body 
-        Eigen::Vector3d mVDotBody; ///< linear acceleration expressed in the *local frame* of the body 
+        Eigen::Vector3d mVelBody; ///< linear velocity expressed in the *local frame* of the body 
+        Eigen::Vector3d mVelDotBody; ///< linear acceleration expressed in the *local frame* of the body 
         Eigen::Vector3d mOmegaBody;    ///< angular velocity expressed in the *local frame* of the body 
         Eigen::Vector3d mOmegaDotBody; ///< angular acceleration expressed in the *local frame* of the body 
         Eigen::Vector3d mForceJointBody;   ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
@@ -38,10 +42,28 @@ namespace dynamics{
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm
 
         // Regular Dynamics formulation - M*qdd + C*qdot + g = 0
+        void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
+        Eigen::Vector3d mVel; ///< Linear velocity in the world frame
+        Eigen::Vector3d mOmega; ///< Angular velocity in the world frame
         Eigen::MatrixXd mM; ///< Mass matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
-        Eigen::MatrixXd mC; ///< Coriolis matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
+        Eigen::MatrixXd mC; ///< Coriolis matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton Coriolis matrix
+        Eigen::VectorXd mCvec; ///< Coriolis vector of dimension numDependentDofs x 1; mCvec = mC*qdot
+        Eigen::VectorXd mG; ///< Gravity vector or generalized gravity forces; dimension numDependentDofs x 1
+        void evalVelocity(const Eigen::Vector3d &_qDotSkel);   ///< evaluates the velocity of the COM in the world frame
+        void evalOmega(const Eigen::Vector3d &_qDotSkel);   ///< evaluates the Omega in the world frame
+        void evalMassMatrix();  ///< evaluates the mass matrix mM
+        void evalCoriolisMatrix(const Eigen::Vector3d &_qDotSkel);  ///< evaluates the Coriolis matrix mC
+        void evalCoriolisVector(const Eigen::Vector3d &_qDotSkel);  ///< evaluates the Coriolis vector mCvec directy: i.e. shortcut for mC*qdot
+        void evalGravityVector(const Eigen::Vector3d &_gravity);   ///< evaluates the gravity vector mG in the generalized coordinates
 
-    protected:
+        // add functions to add to the existing *full* matrices typically for the entire skeleton
+        void addMass(Eigen::MatrixXd &_M);
+        void addCoriolis(Eigen::MatrixXd &_C);
+        void addCoriolisVec(Eigen::VectorXd &_Cvec);
+        void addGravity(Eigen::VectorXd &_G);
+
+    //protected:
+    public:
 
         // Regular Dynamics formulation - second derivatives
         EIGEN_VV_MAT4D mTqq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
@@ -50,6 +72,12 @@ namespace dynamics{
         std::vector<Eigen::MatrixXd> mJwq; ///< Angular Jacobian derivative wrt to all the dependent dofs
         Eigen::MatrixXd mJvDot; ///< Time derivative of the Linear velocity Jacobian
         Eigen::MatrixXd mJwDot; ///< Time derivative of the Angular velocity Jacobian
+
+        Eigen::Matrix4d getLocalSecondDeriv(const model3d::Dof *_q1, const model3d::Dof *_q2) const;
+        void evalJacDerivLin(int _qi);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
+        void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
+        void evalJacDotLin(const Eigen::Vector3d &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
+        void evalJacDotAng(const Eigen::Vector3d &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
 
     };
 

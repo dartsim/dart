@@ -62,10 +62,10 @@ namespace model3d {
 
         mT = Matrix4d::Identity();
         mW = Matrix4d::Identity();
+        mIc = Matrix3d::Zero();
 
         const int numLocalDofs = getNumLocalDofs();
         mTq.resize(numLocalDofs, Matrix4d::Zero());
-        //const int numDepDofs = getSkel()->getNumLocalDofs();
         const int numDepDofs = getNumDependantDofs();
         mWq.resize(numDepDofs, Matrix4d::Zero());
         
@@ -75,12 +75,12 @@ namespace model3d {
 
     void BodyNode::updateTransform() {
         mT = mJointParent->getLocalTransform();
-        if (mNodeParent) {
-            mW = mNodeParent->mW * mT;
-        } 
-        else {
-            mW = mT;
-        }
+        if (mNodeParent) mW = mNodeParent->mW * mT;
+        else mW = mT;
+
+        // update the inertia matrix 
+        Matrix3d R = mW.topLeftCorner(3,3);
+        mIc = R*mPrimitive->getInertia()*R.transpose();
     }
 
     void BodyNode::updateFirstDerivatives() {
@@ -92,25 +92,6 @@ namespace model3d {
             mTq.at(i) = getLocalDeriv(getDof(i));
         }
 
-        //// Update World Derivatives
-        //if (mNodeParent) {
-        //    for (int i = 0; i < getNumDependantDofs(); i++) {
-        //        int index = getDependantDof(i);
-        //        if (mNodeParent->dependsOn(index)) {
-        //            mWq.at(index) = mNodeParent->mWq.at(index) * mT;
-        //        } 
-        //        else {
-        //            mWq.at(index) = mNodeParent->mW * mTq.at( mJointParent->getLocalIndex(index) );
-        //        }
-        //    }
-        //} 
-        //else {
-        //    for(int i = 0; i < numLocalDofs; ++i) {
-        //        int index1 = mJointParent->getDof(i)->getSkelIndex();
-        //        mWq.at(index1) = mTq.at(i);
-        //    }
-        //}
-
         // Update World Derivatives
         // parent dofs
         for (int i = 0; i < numParentDofs; i++) {
@@ -119,12 +100,8 @@ namespace model3d {
         }
         // local dofs
         for(int i = 0; i < numLocalDofs; i++){
-            if(mNodeParent) {
-                mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
-            }
-            else {
-                mWq.at(numParentDofs+i) = mTq.at(i);
-            }
+            if(mNodeParent) mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
+            else mWq.at(numParentDofs+i) = mTq.at(i);
         }
 
         evalJacLin();
@@ -244,11 +221,8 @@ namespace model3d {
     void BodyNode::evalJacAng() {
         mJw.setZero();
         for (unsigned int i=0; i<mDependantDofs.size(); i++) {
-            MatrixXd transR = mW.topLeftCorner(3,3).transpose();
-            MatrixXd dRdq = mWq.at(i).topLeftCorner(3, 3);
-            MatrixXd omegaSkewSymmetric = dRdq * transR;
+            MatrixXd omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
             VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
-            //omegai = transR * omegai; // makes it in the local body frame
 
             mJw(0, i) = omegai(0);
             mJw(1, i) = omegai(1);

@@ -25,10 +25,13 @@ namespace dynamics{
         return new BodyNodeDynamics(_name);
     }
 
-    VectorXd SkeletonDynamics::inverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
         for(int i=0; i<mNumNodes; i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+            // init the node in the first pass
+            nodei->initInverseDynamics();
+            // compute the velocities
             nodei->computeInvDynVelocities(_gravity, _qdot, _qdotdot);
         }
 
@@ -58,6 +61,44 @@ namespace dynamics{
         }
 
         return torqueGen;
+    }
+
+    void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
+        mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mCvec = VectorXd::Zero(getNumDofs());
+        mG = VectorXd::Zero(getNumDofs());
+        mCg = VectorXd::Zero(getNumDofs());
+        if(_useInvDynamics){
+            //mCg = computeInverseDynamicsLinear(_gravity, &_qdot);
+            // TODO: think how to evaluate the mass matrix in an efficient manner: should not call updateFirstDerivatives since it will be duplicate computation
+        }
+        else {
+            // init the data structures for the dynamics
+            for(int i=0; i<getNumNodes(); i++){
+                BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+                // initialize the data structures for storage
+                nodei->initDynamics();
+
+                // compute all required stuff
+                nodei->updateTransform();
+                nodei->updateFirstDerivatives();
+                nodei->updateSecondDerivatives();
+                nodei->evalMassMatrix();
+                nodei->evalCoriolisMatrix(_qdot);
+                nodei->evalCoriolisVector(_qdot);
+                nodei->evalGravityVector(_gravity);
+
+                // add the Mass, Coriolis and the Gravity vector for the bodynode
+                nodei->addMass(mM);
+                nodei->addCoriolis(mC);
+                nodei->addCoriolisVec(mCvec);
+                nodei->addGravity(mG);
+            }
+
+            mCg = mC*_qdot + mG;
+            //mCg = mCvec + mG;
+        }
     }
 
 }   // namespace dynamics
