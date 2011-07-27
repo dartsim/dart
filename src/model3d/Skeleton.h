@@ -41,10 +41,10 @@ namespace model3d {
         void initSkel();
 	
         // inline access functions
-        inline int getNumDofs() { return mNumDofs; }
-        inline int getNumNodes() { return mNumNodes; }
-        inline int getNumHandles() { return mNumHandles; }
-        inline int getNumJoints(){return mNumJoints;}
+        inline int getNumDofs() { return mDofs.size(); }
+        inline int getNumNodes() { return mNodes.size(); }
+        inline int getNumHandles() { return mHandles.size(); }
+        inline int getNumJoints(){return mJoints.size();}
         inline Dof* getDof(int i) { return mDofs[i]; }
         inline BodyNode* getNode(int i) { return mNodes[i]; }
         inline BodyNode* getRoot() { return mRoot; }
@@ -70,11 +70,6 @@ namespace model3d {
         std::vector<Transformation*> mTransforms;
         std::vector<BodyNode*> mNodes;
         std::vector<Joint*> mJoints;
-
-        int mNumDofs;
-        int mNumNodes;
-        int mNumHandles;
-        int mNumJoints;
 
         double mMass;
     };
