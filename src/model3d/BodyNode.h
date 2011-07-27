@@ -38,13 +38,13 @@ namespace model3d {
         // transformations
         Eigen::Matrix4d mT; ///< Local transformation from parent to itself
         Eigen::Matrix4d mW; ///< Global transformation
-        void evalJacLin(); ///< Evaluate linear Jacobian of this body node wrt dependent dofs
-        void evalJacAng(); ///< Evaluate angular Jacobian of this body node wrt dependent dofs
+        void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
+        void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
 
         // first derivatives
         EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
         EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
-        Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity = mJv * generalized_velocity
+        Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity of the COM = mJv * generalized_velocity
         Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
         
         BodyNode(const char *_name = NULL); ///< Default constructor. The name can be up to 128
@@ -52,7 +52,8 @@ namespace model3d {
 
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< Update transformations w.r.t. the current dof values in Dof*
-        void updateFirstDerivatives();
+        void updateFirstDerivatives();  ///< Update the first derivatives of the transformations 
+        Eigen::Matrix3d mIc;    ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
 
         Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
         Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node

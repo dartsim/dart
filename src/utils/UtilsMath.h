@@ -113,30 +113,31 @@ namespace utils {
         return seed;
     }
 
-    inline VectorXd xformHom(const MatrixXd& M, const VectorXd& v) { ///< homogeneous transformation of the vector v with the last value treated a 1
-        int n = v.size();
-        assert(M.rows() == n + 1);
-        VectorXd augV(n + 1);
-        augV.head(n) = v;
-        augV(n) = 1.0;
+    //inline VectorXd xformHom(const MatrixXd& M, const VectorXd& _v) { ///< homogeneous transformation of the vector _v with the last value treated a 1
+    //    int n = _v.size();
+    //    assert(M.rows() == n + 1);
+    //    VectorXd augV(n + 1);
+    //    augV.head(n) = _v;
+    //    augV(n) = 1.0;
 
-        augV = M * augV;
-        VectorXd ret = augV.head(n);
-        return ret;
-    }
-
-    //inline Vector3d xformHom(const Matrix4d& m, const Vector3d& v) { ///< homogeneous transformation of the vector v with the last value treated a 1
-    //    Vector4d x(v(0), v(1), v(2), 1.0);
-    //    Vector4d y = m * x;
-    //    return Vector3d(y(0), y(1), y(2));
+    //    augV = M * augV;
+    //    VectorXd ret = augV.head(n);
+    //    return ret;
     //}
 
-    inline Vector3d xformHomDir(const Matrix4d& m, const Vector3d& v) { ///< homogeneous transformation of the vector v treated as a direction: last value 0
-        return m.topLeftCorner(3,3)*v;
+    inline Vector3d xformHom(const Matrix4d& _W, const Vector3d& _x) { ///< homogeneous transformation of the vector _v with the last value treated a 1
+        //Vector4d x(_x(0), _x(1), _x(2), 1.0);
+        //Vector4d y = _W * x;
+        //return Vector3d(y(0), y(1), y(2));
+        return _W.topLeftCorner(3,3)*_x + _W.col(3).head(3);
     }
 
-    inline MatrixXd makeSkewSymmetric(const VectorXd& v){
-        MatrixXd result = MatrixXd::Zero(3, 3);
+    inline Vector3d xformHomDir(const Matrix4d& _W, const Vector3d& _v) { ///< homogeneous transformation of the vector _v treated as a direction: last value 0
+        return _W.topLeftCorner(3,3)*_v;
+    }
+
+    inline Matrix3d makeSkewSymmetric(const Vector3d& v){
+        Matrix3d result = Matrix3d::Zero();
 		
         result(0, 1) = -v(2);
         result(1, 0) =  v(2);
@@ -148,14 +149,13 @@ namespace utils {
         return result;
     }
 
-    inline VectorXd fromSkewSymmetric(const MatrixXd& m) {
+    inline Vector3d fromSkewSymmetric(const Matrix3d& m) {
         if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON) {
             cout << "Not skew symmetric matrix" << endl;
             cerr << m <<endl;
-            return VectorXd::Zero(3);
+            return Vector3d::Zero();
         }
-        VectorXd ret = VectorXd::Zero(3);
-
+        Vector3d ret = Vector3d::Zero();
         ret(0) = m(2,1);
         ret(1) = m(0,2);
         ret(2) = m(1,0);
