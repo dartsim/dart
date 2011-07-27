@@ -52,12 +52,9 @@ namespace dynamics{
             // translation dof forces may add to torque as well: e.g. Root joint
             if(mJoints[i]->getNumDofsTrans()>0){
                 assert(mJoints[i]->getNumDofsTrans()==3);   // ASSUME: 3 DOF translation only
-                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), bnodei->getParentJoint()->getNumDofsTrans()) = Ri*bnodei->mForceJointBody;
-                // TODO: already taken care of??
-                //Vector3d cl = bnodei->getLocalCOM();
-                //torqueGeni += bnodei->mJwJoint.transpose()*Ri*(-cl.cross(bnodei->mForceJointBody));
+                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), mJoints[i]->getNumDofsTrans()) = Ri*bnodei->mForceJointBody;
             }
-            torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), bnodei->getParentJoint()->getNumDofsRot()) = torqueGeni;
+            torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), mJoints[i]->getNumDofsRot()) = torqueGeni;
         }
 
         return torqueGen;
@@ -70,7 +67,7 @@ namespace dynamics{
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
         if(_useInvDynamics){
-            //mCg = computeInverseDynamicsLinear(_gravity, &_qdot);
+            mCg = computeInverseDynamicsLinear(_gravity, &_qdot);
             // TODO: think how to evaluate the mass matrix in an efficient manner: should not call updateFirstDerivatives since it will be duplicate computation
         }
         else {
@@ -80,24 +77,27 @@ namespace dynamics{
                 // initialize the data structures for storage
                 nodei->initDynamics();
 
-                // compute all required stuff
+                // compute the transforms and the derivatives
                 nodei->updateTransform();
                 nodei->updateFirstDerivatives();
                 nodei->updateSecondDerivatives();
+                // compute the required data structures and add to the skel's data structures
+                // mass matrix M
                 nodei->evalMassMatrix();
-                nodei->evalCoriolisMatrix(_qdot);
-                nodei->evalCoriolisVector(_qdot);
-                nodei->evalGravityVector(_gravity);
-
-                // add the Mass, Coriolis and the Gravity vector for the bodynode
                 nodei->addMass(mM);
-                nodei->addCoriolis(mC);
+                //// Coriolis C
+                //nodei->evalCoriolisMatrix(_qdot);
+                //nodei->addCoriolis(mC);
+                // Coriolis vector C*qd
+                nodei->evalCoriolisVector(_qdot);
                 nodei->addCoriolisVec(mCvec);
+                // gravity vector G
+                nodei->evalGravityVector(_gravity);
                 nodei->addGravity(mG);
             }
 
-            mCg = mC*_qdot + mG;
-            //mCg = mCvec + mG;
+            //mCg = mC*_qdot + mG;
+            mCg = mCvec + mG;
         }
     }
 
