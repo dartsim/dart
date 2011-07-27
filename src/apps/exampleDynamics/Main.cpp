@@ -47,7 +47,8 @@ int main(int argc, char* argv[])
     // set the pose
     skel.getSkel()->setPose(q);
     // solve the inverse dynamics
-    Vector3d gravity(0.0, -9.81, 0.0);
+    //Vector3d gravity(0.0, -9.81, 0.0);
+    Vector3d gravity(0.0, 0.0, 0.0);
 
     //// test the velocities computed by the two methods
     //skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
@@ -97,7 +98,8 @@ int main(int argc, char* argv[])
     
     for(int i=0; i<skel.getSkel()->getNumNodes(); i++){
         BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(skelDyn->getNode(i));
-        cout<<"Omega: "<<nodei->mOmega<<endl;
+        cout<<"Omega invdyn: \n"<<nodei->mW.topLeftCorner(3,3)*nodei->mOmegaBody<<endl;
+        cout<<"Omega regular: \n"<<nodei->mOmega<<endl;
         cout<<"Ic: "<<nodei->mIc<<endl;
         cout<<"Jvdot: "<<nodei->mJvDot<<endl;
         cout<<"Jwdot: "<<nodei->mJwDot<<endl;

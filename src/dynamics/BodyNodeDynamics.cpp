@@ -213,28 +213,28 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::evalJacDotLin(const Vector3d &_qDotSkel) {
+    void BodyNodeDynamics::evalJacDotLin(const VectorXd &_qDotSkel) {
         mJvDot.setZero();
         for(int i=0; i<getNumDependantDofs(); i++){
             mJvDot += mJvq.at(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
 
-    void BodyNodeDynamics::evalJacDotAng(const Vector3d &_qDotSkel) {
+    void BodyNodeDynamics::evalJacDotAng(const VectorXd &_qDotSkel) {
         mJwDot.setZero();
         for(int i=0; i<getNumDependantDofs(); i++){
             mJwDot += mJwq.at(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
 
-    void BodyNodeDynamics::evalVelocity(const Vector3d &_qDotSkel){
+    void BodyNodeDynamics::evalVelocity(const VectorXd &_qDotSkel){
         mVel.setZero();
         for(int i=0; i<getNumDependantDofs(); i++){
             mVel += mJv.col(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
 
-    void BodyNodeDynamics::evalOmega(const Vector3d &_qDotSkel){
+    void BodyNodeDynamics::evalOmega(const VectorXd &_qDotSkel){
         mOmega.setZero();
         for(int i=0; i<getNumDependantDofs(); i++){
             mOmega += mJw.col(i)*_qDotSkel[mDependantDofs[i]];
@@ -246,7 +246,7 @@ namespace dynamics{
         mM = getMass()*mJv.transpose()*mJv + mJw.transpose()*mIc*mJw;
     }
 
-    void BodyNodeDynamics::evalCoriolisMatrix(const Vector3d &_qDotSkel){
+    void BodyNodeDynamics::evalCoriolisMatrix(const VectorXd &_qDotSkel){
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
@@ -260,7 +260,7 @@ namespace dynamics{
         mC += mJw.transpose()*utils::makeSkewSymmetric(mOmega)*mIc*mJw;
     }
 
-    void BodyNodeDynamics::evalCoriolisVector(const Vector3d &_qDotSkel){
+    void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
