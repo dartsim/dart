@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     model3d::FileInfoDof motion(skelFile.getSkel());
     motion.loadFile(doffilename);
 
-    // test the velocity computation using the two methods: inverse dynamics and regular
+    // test the velocity computation using the two methods: linear inverse dynamics and non-recursive
     VectorXd q = VectorXd::Zero(skelFile.getSkel()->getNumDofs());
     VectorXd qdot = VectorXd::Zero(skelFile.getSkel()->getNumDofs());
     for(int i=0; i<skelFile.getSkel()->getNumDofs(); i++){
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
     for(int i=0; i<skelFile.getSkel()->getNumNodes(); i++){
         BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(skelDyn->getNode(i));
-        // compute velocities using regular method
+        // compute velocities using non-recursive method
         nodei->updateTransform();
         nodei->updateFirstDerivatives();
         nodei->evalJacLin();
@@ -73,14 +73,14 @@ int main(int argc, char* argv[])
         Vector3d w2 = nodei->mW.topLeftCorner(3,3)*nodei->mOmegaBody;
 
         cout<<"Node: "<<nodei->getName()<<endl;
-        //cout<<"Angular Jacobian regular: \n"<<(nodei->mJw).rightCols(nodei->getParentJoint()->getNumDofsRot())<<endl;
+        //cout<<"Angular Jacobian non-recursive: \n"<<(nodei->mJw).rightCols(nodei->getParentJoint()->getNumDofsRot())<<endl;
         //MatrixXd WJw = nodei->mJwJoint;
         //if(nodei->getParentNode()) WJw = nodei->getParentNode()->mW.topLeftCorner(3,3)*WJw;
         //cout<<"Angular Jacobian InvDyn : \n"<<WJw<<endl;
-        cout<<"Linear velocity regular: \n"<<v1<<endl;
+        cout<<"Linear velocity nonrec: \n"<<v1<<endl;
         cout<<"Linear velocity InvDyn : \n"<<v2<<endl;
         cout<<endl;
-        cout<<"Angular velocity regular: \n"<<w1<<endl;
+        cout<<"Angular velocity nonrece: \n"<<w1<<endl;
         cout<<"Angular velocity InvDyn : \n"<<w2<<endl;
         cout<<endl;
 
@@ -131,15 +131,15 @@ int main(int argc, char* argv[])
     VectorXd Cginvdyn = skelDyn->computeInverseDynamicsLinear(gravity, &qdot, NULL, true);
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
     //cout<<"C+g term inverse dynamics: "<<Cginvdyn<<endl;
-    //cout<<"C+g term regular dynamics: "<<skelDyn->mCg<<endl;
+    //cout<<"C+g term nonrec dynamics: "<<skelDyn->mCg<<endl;
     cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->mCg<<endl;
 
     // test the mass matrix
     skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
     MatrixXd Minvdyn = skelDyn->mM;
-    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using regular dynamics
-    MatrixXd Mregular = skelDyn->mM;
-    cout<<"Difference\n"<<Minvdyn-Mregular<<endl;
+    skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using non-recursive dynamics
+    MatrixXd Mnonrec = skelDyn->mM;
+    cout<<"Difference\n"<<Minvdyn-Mnonrec<<endl;
     
 
     MyWindow window(motion);
