@@ -154,15 +154,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\RotationConversion.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Timer.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\UtilsCode.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UtilsRotation.cpp"
 				>
 			</File>
 		</Filter>
@@ -184,10 +184,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\RotationConversion.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Timer.h"
 				>
 			</File>
@@ -197,6 +193,10 @@
 			</File>
 			<File
 				RelativePath=".\UtilsMath.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UtilsRotation.h"
 				>
 			</File>
 		</Filter>

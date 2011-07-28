@@ -37,7 +37,7 @@ using namespace google;
 #include "Primitive.h"
 #include "PrimitiveEllipsoid.h"
 #include "PrimitiveCube.h"
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 #include "utils/UtilsCode.h"
 
 #define SCALE_VSK 1.0e-3
@@ -600,8 +600,8 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 
         // create new  position
         Vector3d negExpShoulder = -expShoulder;
-        Quaterniond qr = utils::rot_conv::expToQuat(negExpShoulder);	// negative for the markers
-        utils::rot_conv::rotatePoint(qr, lpos2);
+        Quaterniond qr = utils::rotation::expToQuat(negExpShoulder);	// negative for the markers
+        utils::rotation::rotatePoint(qr, lpos2);
     }
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));

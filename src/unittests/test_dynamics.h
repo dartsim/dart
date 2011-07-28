@@ -1,5 +1,5 @@
-#ifndef SRC_UNITTESTS_TEST_DYNAMICS_H
-#define SRC_UNITTESTS_TEST_DYNAMICS_H
+#ifndef UNITTESTS_TESTDYNAMICS_H
+#define UNITTESTS_TESTDYNAMICS_H
 
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
@@ -230,5 +230,5 @@ TEST(DYNAMICS, COMPARE_MASS) {
 }
 
 
-#endif // #ifndef SRC_UNITTESTS_TEST_DYNAMICS_H
+#endif // #ifndef UNITTESTS_TESTDYNAMICS_H
 
