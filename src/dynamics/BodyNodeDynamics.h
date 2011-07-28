@@ -27,7 +27,7 @@ namespace dynamics{
 
         // Following functions called automatically by the skeleton: computeInverseDynamicsLinear and computeDynamics respectively
         void initInverseDynamics();  ///< initialize data structures for linear inverse dynamics computation
-        void initDynamics();  ///< initialize data structures for regular dynamics computation
+        void initDynamics();  ///< initialize data structures for non-recursive dynamics computation
 
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
@@ -38,10 +38,10 @@ namespace dynamics{
         Eigen::Vector3d mOmegaDotBody; ///< angular acceleration expressed in the *local frame* of the body 
         Eigen::Vector3d mForceJointBody;   ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
         Eigen::Vector3d mTorqueJointBody;   ///< the torque in Cartesian coordinates for the joint expressed in the local frame of the body instead of the joint
-        void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _computeJacobians=true );   ///< computes the velocities in the first pass of the algorithm; also computes Transform W etc using updateTransform; computes Jacobians Jv and Jw if the flag is true; replaces updateFirstDerivatives of regular dynamics
+        void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _computeJacobians=true );   ///< computes the velocities in the first pass of the algorithm; also computes Transform W etc using updateTransform; computes Jacobians Jv and Jw if the flag is true; replaces updateFirstDerivatives of non-recursive dynamics
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm
 
-        // Regular Dynamics formulation - M*qdd + C*qdot + g = 0
+        // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
         void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
         Eigen::Vector3d mVel; ///< Linear velocity in the world frame
         Eigen::Vector3d mOmega; ///< Angular velocity in the world frame
@@ -65,7 +65,7 @@ namespace dynamics{
     //protected:
     public:
 
-        // Regular Dynamics formulation - second derivatives
+        // non-recursive Dynamics formulation - second derivatives
         EIGEN_VV_MAT4D mTqq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
         EIGEN_VV_MAT4D mWqq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
         std::vector<Eigen::MatrixXd> mJvq; ///< Linear Jacobian derivative wrt to all the dependent dofs

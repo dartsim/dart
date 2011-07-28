@@ -185,38 +185,36 @@ namespace dynamics{
 
         // Update Local Derivatives
         for(int i = 0; i < numLocalDofs; i++) {
-            //if(numParentDofs + i<mNumRootTrans) continue;
+            if(numParentDofs + i<mNumRootTrans) continue;   // since mTq is a constant
             for(int j=0; j<numLocalDofs; j++) {
-                //if(numParentDofs + j<mNumRootTrans) continue;
-                if(numParentDofs + i<mNumRootTrans && numParentDofs + j<mNumRootTrans) continue;
+                if(numParentDofs + j<mNumRootTrans) continue;   // since mTq is a constant
                 mTqq.at(i).at(j) = getLocalSecondDeriv(getDof(i), getDof(j));
             }
         }
 
         // Update World Derivatives
         // parent dofs i
-        for (int i = 0; i < numParentDofs; i++) {
+        for (int i = mNumRootTrans; i < numParentDofs; i++) {
             assert(nodeParentDyn);    // should always have a parent if enters this for loop
             // parent dofs j
-            for(int j = 0; j < numParentDofs; j++) {
+            for(int j = mNumRootTrans; j < numParentDofs; j++) {
                 mWqq.at(i).at(j) = nodeParentDyn->mWqq.at(i).at(j) * mT;
             }
             // local dofs j
             for(int j = 0; j < numLocalDofs; j++) {
-                //if(numParentDofs + j<mNumRootTrans) continue;
                 mWqq.at(i).at(numParentDofs + j) = nodeParentDyn->mWq.at(i) * mTq.at(j);
             }
         }
         // local dofs i
         for(int i = 0; i < numLocalDofs; i++){
-            //if(numParentDofs + i<mNumRootTrans) continue;
+            if(numParentDofs + i<mNumRootTrans) continue;
             // parent dofs j
-            for(int j = 0; j < numParentDofs; j++) {
+            for(int j = mNumRootTrans; j < numParentDofs; j++) {
                 mWqq.at(numParentDofs + i).at(j) = nodeParentDyn->mWq.at(j) * mTq.at(i);
             }
             // local dofs j
             for(int j = 0; j < numLocalDofs; j++) {
-                //if(numParentDofs + j<mNumRootTrans) continue;
+                if(numParentDofs + j<mNumRootTrans) continue;
                 if(nodeParentDyn) mWqq.at(numParentDofs + i).at(numParentDofs + j) = nodeParentDyn->mW * mTqq.at(i).at(j);
                 else mWqq.at(numParentDofs + i).at(numParentDofs + j) = mTqq.at(i).at(j);
             }
@@ -230,7 +228,8 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalJacDerivLin(int _qi){
         mJvq.at(_qi).setZero();
-        for(int j=0; j<getNumDependantDofs(); j++){
+        if(_qi<mNumRootTrans) return;
+        for(int j=mNumRootTrans; j<getNumDependantDofs(); j++){
             VectorXd Jvqi = utils::xformHom(mWqq.at(_qi).at(j), getLocalCOM());
             mJvq.at(_qi)(0,j) = Jvqi[0];
             mJvq.at(_qi)(1,j) = Jvqi[1];
@@ -240,7 +239,8 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalJacDerivAng(int _qi){
         mJwq.at(_qi).setZero();
-        for(int j=0; j<getNumDependantDofs(); j++){
+        if(_qi<mNumRootTrans) return;
+        for(int j=mNumRootTrans; j<getNumDependantDofs(); j++){
             Matrix3d JwqijSkewSymm = mWqq.at(_qi).at(j).topLeftCorner(3,3)*mW.topLeftCorner(3,3).transpose() + mWq.at(j).topLeftCorner(3,3)*mWq.at(_qi).topLeftCorner(3,3).transpose();
             Vector3d Jwqij = utils::fromSkewSymmetric(JwqijSkewSymm);
             mJwq.at(_qi)(0,j) = Jwqij[0];
@@ -251,14 +251,14 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalJacDotLin(const VectorXd &_qDotSkel) {
         mJvDot.setZero();
-        for(int i=0; i<getNumDependantDofs(); i++){
+        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
             mJvDot += mJvq.at(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
 
     void BodyNodeDynamics::evalJacDotAng(const VectorXd &_qDotSkel) {
         mJwDot.setZero();
-        for(int i=0; i<getNumDependantDofs(); i++){
+        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
             mJwDot += mJwq.at(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
@@ -272,7 +272,7 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalOmega(const VectorXd &_qDotSkel){
         mOmega.setZero();
-        for(int i=0; i<getNumDependantDofs(); i++){
+        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
             mOmega += mJw.col(i)*_qDotSkel[mDependantDofs[i]];
         }
     }
@@ -307,7 +307,7 @@ namespace dynamics{
         // term 1
         Vector3d Jvdqd = Vector3d::Zero();
         Vector3d Jwdqd = Vector3d::Zero();
-        for(int i=0; i<getNumDependantDofs(); i++){
+        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
         }
