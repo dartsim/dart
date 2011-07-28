@@ -33,19 +33,11 @@ namespace model3d {
     }
 
     void TrfmRotateExpMap::computeTransform(){
-        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-        double theta= v.norm();
-        Vector3d vhat = Vector3d::Zero();
-        if(!utils::isZero(theta)) vhat= v/theta;
-        Quaterniond q(AngleAxisd(theta, vhat));
-        // Quaternion q(vhat, theta);
+        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
+        Matrix3d rot = utils::rot_conv::expMapRot(q);
         mTransform.setZero();
-        Matrix3d rot = q.matrix();      
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++)
-                mTransform(i, j) = rot(i, j);
-        }
+        mTransform.topLeftCorner(3,3) = rot;
         mTransform(3, 3) = 1.0;
     }
 
@@ -57,121 +49,28 @@ namespace model3d {
         return mTransform.transpose();
     }
 
-    double TrfmRotateExpMap::get_dq_dv(int i, int j, double theta, Vector3d v, Vector3d vhat){
-        double dq_dv=0;
-        double sinc_theta_half = (sin(0.5*theta)/theta);
-        if (i==0) dq_dv = -0.5*v(j)*sinc_theta_half;
-        else {
-            i=i-1;
-            dq_dv = sinc_theta_half*utils::delta(i,j) + 0.5*vhat(i)*vhat(j)*(cos(0.5*theta)-2*sinc_theta_half);
-        }
-        return dq_dv;
-    }
-
-    double TrfmRotateExpMap::get_dq_dv_approx(int i, int j, double theta, Vector3d v){
-        // printf("========== inside approx ==========\n");
-        double dq_dv=0;
-        double sinc_theta_half = utils::Tsinc(theta);
-        if (i==0) dq_dv = -0.5*v(j)*sinc_theta_half;
-        else {
-            i=i-1;
-            dq_dv = sinc_theta_half*utils::delta(i,j) + (v(i)*v(j)*(utils::sqr(theta)/40-1))/24;
-        }
-        return dq_dv;
-    }
-
+ 
     Matrix4d TrfmRotateExpMap::getDeriv(const Dof *d){
-        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-        double theta = v.norm();
-
-        Vector3d vhat = Vector3d::Zero();
-        if(!utils::isZero(theta)) vhat= v/theta;
-        Quaterniond q(AngleAxisd(theta, vhat));
-
-
-        // compute derivative of R wrt each qi
-        vector<Matrix3d> dR_dq;
-        dR_dq.resize(4);
-        for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
         // derivative wrt which dof 
         int j=-1;
         for(unsigned int i=0; i<mDofs.size(); i++) if(d==mDofs[i]) j=i;
         assert(j!=-1);
+        assert(j>=0 && j<=2);
 
-        // compute derivative of qi's wrt v[j]
-        vector<double> dq_dv;
-        dq_dv.resize(4);
-        if(fabs(theta)<EPSILON) {
-            for(int i=0; i<4; i++){
-                dq_dv[i] = get_dq_dv_approx(i, j, theta, v);
-            }
-        }
-        else {
-            for(int i=0; i<4; i++){
-                dq_dv[i] = get_dq_dv(i, j, theta, v, vhat);
-            }
-        }
+        Matrix3d R = utils::rot_conv::expMapRot(q);
+        Matrix3d J = utils::rot_conv::expMapJac(q);
+        Matrix3d dRdj = utils::makeSkewSymmetric(J.col(j))*R;
 
-        // compute the reqd derivative
-        Matrix3d mat= Matrix3d::Zero();
+        Matrix4d dRdj4d = Matrix4d::Zero();
+        dRdj4d.topLeftCorner(3,3) = dRdj;
 
-        for(int i=0; i<4; i++){
-            mat+=dR_dq[i]*dq_dv[i];
-        }
-
-        Matrix4d ret = Matrix4d::Zero();
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++){
-                ret(i, j) = mat(i, j);
-            }
-        }
-
-
-        return ret;
-    }
-
-    double TrfmRotateExpMap::get_dq_dv_dv(int i, int j, int k, double theta, Vector3d vhat){
-        double dq_dv_dv=0;
-
-        double cos_half = cos(0.5*theta);
-        double sin_half = sin(0.5*theta);
-        double sinc_theta_half = (sin_half/theta);
-
-        if (i==0) {
-            dq_dv_dv = -0.5*sinc_theta_half*utils::delta(j,k);
-            dq_dv_dv += - 0.25*vhat(j)*vhat(k)*(cos_half-2*sinc_theta_half);
-        }
-        else {
-            i=i-1;
-            dq_dv_dv = ((cos_half-2*sinc_theta_half)/(2*theta))*(vhat(k)*utils::delta(i,j)+vhat(i)*utils::delta(k,j)+vhat(j)*utils::delta(i,k));
-            dq_dv_dv += 0.25*vhat(i)*vhat(j)*vhat(k)*(-sin_half-(6/theta)*(cos_half-2*sinc_theta_half));
-        }
-        return dq_dv_dv;
-    }
-
-    double TrfmRotateExpMap::get_dq_dv_dv_approx(int i, int j, int k, double theta, Vector3d v){
-        // printf("========= inside approx ==========\n");
-        double dq_dv_dv=0;
-
-        if (i==0) {
-            dq_dv_dv = v(j)*v(k)/48 - 0.5*utils::Tsinc(theta)*utils::delta(j,k);
-        }
-        else {
-            i=i-1;
-            dq_dv_dv = -(v(k)*utils::delta(i,j)+v(i)*utils::delta(k,j)+v(j)*utils::delta(i,k))/24;
-            dq_dv_dv += (utils::sqr(theta)/960)*(v(i)*utils::delta(k,j)+v(j)*utils::delta(i,k));
-            dq_dv_dv += v(i)*v(j)*v(k)/480;
-        }
-        return dq_dv_dv;
+        return dRdj4d;
     }
 
     Matrix4d TrfmRotateExpMap::getSecondDeriv(const Dof *q1, const Dof *q2){
-        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-        double theta = v.norm();
-        Vector3d vhat = Vector3d::Zero();
-        if(!utils::isZero(theta)) vhat= v/theta;
-        Quaterniond q(AngleAxisd(theta, vhat));
+        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
         // derivative wrt which mDofs
         int j=-1, k=-1;
@@ -181,82 +80,21 @@ namespace model3d {
         }
         assert(j!=-1);
         assert(k!=-1);
+        assert(j>=0 && j<=2);
+        assert(k>=0 && k<=2);
 
-        // compute derivative of R wrt each qi
-        vector<Matrix3d> dR_dq;
-        dR_dq.resize(4);
-        for(int i=0; i<4; i++) dR_dq[i] = utils::rot_conv::getDerivativeMatrix(q, i);
+        Matrix3d R = utils::rot_conv::expMapRot(q);
+        Matrix3d J = utils::rot_conv::expMapJac(q);
+        Matrix3d Jjss = utils::makeSkewSymmetric(J.col(j));
+        Matrix3d Jkss = utils::makeSkewSymmetric(J.col(k));
+        Matrix3d dJjdkss = utils::makeSkewSymmetric(utils::rot_conv::expMapJacDeriv(q, k).col(j));
 
-        // compute derivative of R wrt each qi and ql
-        vector<vector<Matrix3d> > dR_dq_dq;
-        dR_dq_dq.resize(4);
-        for(int i=0; i<4; i++) dR_dq_dq[i].resize(4);
-        for(int i=0; i<4; i++) {
-            for(int l=i; l<4; l++) {
-                dR_dq_dq[i][l] = utils::rot_conv::getDerivativeMatrix(q, i, l);
-                dR_dq_dq[l][i]=dR_dq_dq[i][l];
-            }
-        }
+        Matrix3d d2Rdidj = (Jjss*Jkss + dJjdkss)*R;
 
-        // compute derivative of qi's wrt v[j]
-        vector<double> dq_dvj;
-        dq_dvj.resize(4);
-        if(fabs(theta)<EPSILON) {
-            for(int i=0; i<4; i++){
-                dq_dvj[i] = get_dq_dv_approx(i, j, theta, v);
-            }
-        }
-        else {
-            for(int i=0; i<4; i++){
-                dq_dvj[i] = get_dq_dv(i, j, theta, v, vhat);
-            }
-        }
+        Matrix4d d2Rdidj4 = Matrix4d::Zero();
+        d2Rdidj4.topLeftCorner(3,3) = d2Rdidj;
 
-        // compute derivative of qi's wrt v[k]
-        vector<double> dq_dvk;
-        dq_dvk.resize(4);
-        if(fabs(theta)<EPSILON) {
-            for(int i=0; i<4; i++){
-                dq_dvk[i] = get_dq_dv_approx(i, k, theta, v);
-            }
-        }
-        else {
-            for(int i=0; i<4; i++){
-                dq_dvk[i] = get_dq_dv(i, k, theta, v, vhat);
-            }
-        }
-
-        // compute double derivative of qi's wrt v[j] and v[k]
-        vector<double> dq_dvj_dvk;
-        dq_dvj_dvk.resize(4);
-        if(fabs(theta)<EPSILON) {
-            for(int i=0; i<4; i++){
-                dq_dvj_dvk[i] = get_dq_dv_dv_approx(i, j, k, theta, v);
-            }
-        }
-        else {
-            for(int i=0; i<4; i++){
-                dq_dvj_dvk[i] = get_dq_dv_dv(i, j, k, theta, vhat);
-            }
-        }
-
-        // compute the reqd derivative
-        Matrix3d mat = Matrix3d::Zero();
-        for(int i=0; i<4; i++){
-            mat+=dR_dq[i]*dq_dvj_dvk[i];
-            Matrix3d localmat = Matrix3d::Zero();
-            for(int l=0; l<4; l++)
-                localmat+=dR_dq_dq[i][l]*dq_dvk[l];
-            mat+=localmat*dq_dvj[i];
-        }
-
-        Matrix4d ret = Matrix4d::Zero();
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++)
-                ret(i, j) = mat(i, j);
-        }
-
-        return ret;
+        return d2Rdidj4;
     }
 
     void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{
