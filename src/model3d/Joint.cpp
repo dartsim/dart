@@ -158,9 +158,9 @@ namespace model3d {
             assert(mRotTransformIndex.size()==1);
             Transformation *em = mTransforms[mRotTransformIndex[0]];
             Vector3d q(em->getDof(0)->getValue(), em->getDof(1)->getValue(), em->getDof(2)->getValue());
-            *_J = utils::rot_conv::expMapJac(q);
+            *_J = utils::rotation::expMapJac(q);
             if(_Jdot){
-                *_Jdot = utils::rot_conv::expMapJacDot(q, *_qdot);
+                *_Jdot = utils::rotation::expMapJacDot(q, *_qdot);
             }
         }
         else {
@@ -180,8 +180,8 @@ namespace model3d {
         }
     }
 
-    utils::rot_conv::RotationOrder Joint::getEulerOrder(){
-        if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return utils::rot_conv::UNKNOWN;
+    utils::rotation::RotationOrder Joint::getEulerOrder(){
+        if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return utils::rotation::UNKNOWN;
 
         assert(mNumDofsRot==mRotTransformIndex.size());
         string rot="";
@@ -191,14 +191,14 @@ namespace model3d {
             else if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEZ) rot+="z";
         }
 
-        if(rot.compare("xyz")==0 || rot.compare("xy")==0 || rot.compare("yz")==0 || rot.compare("xz")==0 || rot.compare("x")==0 || rot.compare("y")==0 || rot.compare("z")==0) return utils::rot_conv::XYZ;
-        if(rot.compare("yzx")==0 ) return utils::rot_conv::YZX;
-        if(rot.compare("zxy")==0 ) return utils::rot_conv::ZXY;
-        if(rot.compare("xzy")==0 ) return utils::rot_conv::XZY;
-        if(rot.compare("yxz")==0 ) return utils::rot_conv::YXZ;
-        if(rot.compare("zyx")==0 || rot.compare("zy")==0|| rot.compare("yx")==0|| rot.compare("zx")==0 ) return utils::rot_conv::ZYX;
+        if(rot.compare("xyz")==0 || rot.compare("xy")==0 || rot.compare("yz")==0 || rot.compare("xz")==0 || rot.compare("x")==0 || rot.compare("y")==0 || rot.compare("z")==0) return utils::rotation::XYZ;
+        if(rot.compare("yzx")==0 ) return utils::rotation::YZX;
+        if(rot.compare("zxy")==0 ) return utils::rotation::ZXY;
+        if(rot.compare("xzy")==0 ) return utils::rotation::XZY;
+        if(rot.compare("yxz")==0 ) return utils::rotation::YXZ;
+        if(rot.compare("zyx")==0 || rot.compare("zy")==0|| rot.compare("yx")==0|| rot.compare("zx")==0 ) return utils::rotation::ZYX;
 
-        return utils::rot_conv::UNKNOWN;
+        return utils::rotation::UNKNOWN;
     }
 
     Vector3d Joint::getAxis( unsigned int _i ){

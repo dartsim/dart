@@ -6,7 +6,7 @@
   Date		06/12/2011
 */
 
-#include "RotationConversion.h"
+#include "UtilsRotation.h"
 #include "UtilsMath.h"
 
 // Standard Libraries
@@ -16,7 +16,7 @@ using namespace std;
 using namespace Eigen;
 
 namespace utils {
-    namespace rot_conv {
+    namespace rotation {
         Quaterniond matrixToQuat(Matrix3d& mat) {
             return Quaterniond(mat);
         }
@@ -226,7 +226,7 @@ namespace utils {
         }
 
         // get the derivative of rotation matrix wrt el no.
-        Matrix3d getDerivativeMatrix(const Quaterniond& q, int el){
+        Matrix3d quatDeriv(const Quaterniond& q, int el){
             Matrix3d mat = Matrix3d::Zero();
             switch(el){
             case 0:	// wrt w
@@ -279,7 +279,7 @@ namespace utils {
             return 2*mat;
         }
 
-        Matrix3d getDerivativeMatrix(const Quaterniond& q, int el1, int el2){
+        Matrix3d quatSecondDeriv(const Quaterniond& q, int el1, int el2){
             Matrix3d mat = Matrix3d::Zero();
 
             // wrt same dof
@@ -457,5 +457,5 @@ namespace utils {
 
         
 
-    } // namespace rot_conv
+    } // namespace rotation
 } // namespace utils

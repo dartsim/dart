@@ -7,7 +7,7 @@
 */
 
 #include "TrfmRotateQuat.h"
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 
 #include <cassert>
 using namespace std;
@@ -56,7 +56,7 @@ namespace model3d {
         int el=-1;
         for(int i=0; i<4; i++) if(d==mDofs[i]) el=i;
         assert(el!=-1);
-        mat = utils::rot_conv::getDerivativeMatrix(q, el);
+        mat = utils::rotation::quatDeriv(q, el);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)
@@ -80,7 +80,7 @@ namespace model3d {
         }
         assert(el1!=-1);
         assert(el2!=-1);
-        mat = utils::rot_conv::getDerivativeMatrix(q, el1, el2);
+        mat = utils::rotation::quatSecondDeriv(q, el1, el2);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)

@@ -10,7 +10,7 @@
 
 #include <fstream>
 #include <string>
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 
 using namespace std;
 
@@ -31,7 +31,7 @@ namespace mayaexports{
         static const string mSuffixPrim;
         static const string mSuffixShape;
         static const string mSuffixGeom;
-        static const utils::rot_conv::RotationOrder mRotOrder;
+        static const utils::rotation::RotationOrder mRotOrder;
 
         static bool exportMayaAsciiHeader(ofstream &_outFile );
         static bool exportMayaAsciiPrimitive(model3d::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);

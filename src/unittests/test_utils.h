@@ -1,11 +1,11 @@
 #ifndef SRC_UNITTESTS_TEST_UTILS_H
 #define SRC_UNITTESTS_TEST_UTILS_H
 
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 #include "utils/UtilsMath.h"
 
-TEST(UTILS, ROTATION_CONVERSION) {
-  using namespace utils::rot_conv;
+TEST(UTILS, ROTATION) {
+  using namespace utils::rotation;
   
   // Create Initial ExpMap
   Vector3d axis(2.0, 1.0, 1.0);

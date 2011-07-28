@@ -12,7 +12,7 @@
 #include "model3d/Skeleton.h"
 #include "model3d/Primitive.h"
 #include "model3d/Transformation.h"
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 #include <iostream>
 
 using namespace std;
@@ -24,7 +24,7 @@ namespace mayaexports{
     const string MayaExportSkeleton::mSuffixPrim = "_prim";
     const string MayaExportSkeleton::mSuffixShape = "_shape";
     const string MayaExportSkeleton::mSuffixGeom = "_geom";
-    const utils::rot_conv::RotationOrder MayaExportSkeleton::mRotOrder = utils::rot_conv::XYZ;
+    const utils::rotation::RotationOrder MayaExportSkeleton::mRotOrder = utils::rotation::XYZ;
 
 
     bool MayaExportSkeleton::exportMayaAscii( Skeleton* _skel, ofstream &_outFile ){
@@ -236,13 +236,13 @@ namespace mayaexports{
                 Transformation *tf = _b->getParentJoint()->getTransform(i);
                 Matrix3d *rotPtr = NULL;
                 if(i>=separateRots) rotPtr = &rotdofs; else rotPtr = &rotcons;
-                if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = utils::rot_conv::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
-                if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rot_conv::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
-                if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rot_conv::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = utils::rotation::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rotation::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rotation::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                     Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
-                    Quaterniond q = utils::rot_conv::expToQuat(exmap);
-                    *rotPtr = utils::rot_conv::quatToMatrix(q)*(*rotPtr);
+                    Quaterniond q = utils::rotation::expToQuat(exmap);
+                    *rotPtr = utils::rotation::quatToMatrix(q)*(*rotPtr);
                 }
             }
         }
@@ -252,26 +252,26 @@ namespace mayaexports{
                 //if(tf->getVariable()) continue;	// only constant dofs should contribute to the ".jo" attribute; rest to ".r"
                 Matrix3d *rotPtr = NULL;
                 if(tf->getVariable()) rotPtr = &rotdofs; else rotPtr = &rotcons;
-                if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = utils::rot_conv::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
-                if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rot_conv::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
-                if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rot_conv::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = utils::rotation::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = utils::rotation::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
+                if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = utils::rotation::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                 if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                     Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
-                    Quaterniond q = utils::rot_conv::expToQuat(exmap);
-                    *rotPtr = utils::rot_conv::quatToMatrix(q)*(*rotPtr);
+                    Quaterniond q = utils::rotation::expToQuat(exmap);
+                    *rotPtr = utils::rotation::quatToMatrix(q)*(*rotPtr);
                 }
             }
         }
         // variable dofs: ".r"
         if(ro!=-1){
-            utils::rot_conv::RotationOrder rotorder;	// should match the above
-            if(ro==0) rotorder=utils::rot_conv::XYZ;
-            else if(ro==1) rotorder=utils::rot_conv::YZX;
-            else if(ro==2) rotorder=utils::rot_conv::ZXY;
-            else if(ro==3) rotorder=utils::rot_conv::XZY;
-            else if(ro==4) rotorder=utils::rot_conv::YXZ;
-            else if(ro==5) rotorder=utils::rot_conv::ZYX;
-            Vector3d edofs= utils::rot_conv::matrixToEuler(rotdofs, rotorder)*180/M_PI;	// convert to degrees
+            utils::rotation::RotationOrder rotorder;	// should match the above
+            if(ro==0) rotorder=utils::rotation::XYZ;
+            else if(ro==1) rotorder=utils::rotation::YZX;
+            else if(ro==2) rotorder=utils::rotation::ZXY;
+            else if(ro==3) rotorder=utils::rotation::XZY;
+            else if(ro==4) rotorder=utils::rotation::YXZ;
+            else if(ro==5) rotorder=utils::rotation::ZYX;
+            Vector3d edofs= utils::rotation::matrixToEuler(rotdofs, rotorder)*180/M_PI;	// convert to degrees
             if(rotdofs != Matrix3d::Identity()) {
                 // write in the correct order
                 double ax, ay, az;
@@ -292,7 +292,7 @@ namespace mayaexports{
         }
 
         // constant dofs: ".jo"
-        Vector3d econs = utils::rot_conv::matrixToEuler(rotcons, utils::rot_conv::XYZ)*180/M_PI;	// convert to degrees
+        Vector3d econs = utils::rotation::matrixToEuler(rotcons, utils::rotation::XYZ)*180/M_PI;	// convert to degrees
         if(rotcons!=Matrix3d::Identity()) _outFile<<"\t setAttr \".jo\" -type \"double3\" "<<econs[0]<<" "<<econs[1]<<" "<<econs[2]<<";"<<endl;
 
         // repeat the same for children
@@ -314,12 +314,12 @@ namespace mayaexports{
         _outFile<<"\t addAttr -ci true -sn \"liw\" -ln \"lockInfluenceWeights\" -bt \"lock\" -min 0 -max 1 -at \"bool\";"<<endl;
 
         int ro=-1;
-        if(mRotOrder==utils::rot_conv::XYZ) ro=0;
-        else if(mRotOrder==utils::rot_conv::YZX) ro=1;
-        else if(mRotOrder==utils::rot_conv::ZXY) ro=2;
-        else if(mRotOrder==utils::rot_conv::XZY) ro=3;
-        else if(mRotOrder==utils::rot_conv::YXZ) ro=4;
-        else if(mRotOrder==utils::rot_conv::ZYX) ro=5;
+        if(mRotOrder==utils::rotation::XYZ) ro=0;
+        else if(mRotOrder==utils::rotation::YZX) ro=1;
+        else if(mRotOrder==utils::rotation::ZXY) ro=2;
+        else if(mRotOrder==utils::rotation::XZY) ro=3;
+        else if(mRotOrder==utils::rotation::YXZ) ro=4;
+        else if(mRotOrder==utils::rotation::ZYX) ro=5;
 
         if(ro!=-1) _outFile<<"\t setAttr \".ro\" "<<ro<<";"<<endl;
 

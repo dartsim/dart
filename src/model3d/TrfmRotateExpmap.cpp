@@ -8,7 +8,7 @@
 
 #include "TrfmRotateExpmap.h"
 #include "Dof.h"
-#include "utils/RotationConversion.h"
+#include "utils/UtilsRotation.h"
 #include "utils/UtilsMath.h"
 
 
@@ -35,7 +35,7 @@ namespace model3d {
     void TrfmRotateExpMap::computeTransform(){
         Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
-        Matrix3d rot = utils::rot_conv::expMapRot(q);
+        Matrix3d rot = utils::rotation::expMapRot(q);
         mTransform.setZero();
         mTransform.topLeftCorner(3,3) = rot;
         mTransform(3, 3) = 1.0;
@@ -59,8 +59,8 @@ namespace model3d {
         assert(j!=-1);
         assert(j>=0 && j<=2);
 
-        Matrix3d R = utils::rot_conv::expMapRot(q);
-        Matrix3d J = utils::rot_conv::expMapJac(q);
+        Matrix3d R = utils::rotation::expMapRot(q);
+        Matrix3d J = utils::rotation::expMapJac(q);
         Matrix3d dRdj = utils::makeSkewSymmetric(J.col(j))*R;
 
         Matrix4d dRdj4d = Matrix4d::Zero();
@@ -83,11 +83,11 @@ namespace model3d {
         assert(j>=0 && j<=2);
         assert(k>=0 && k<=2);
 
-        Matrix3d R = utils::rot_conv::expMapRot(q);
-        Matrix3d J = utils::rot_conv::expMapJac(q);
+        Matrix3d R = utils::rotation::expMapRot(q);
+        Matrix3d J = utils::rotation::expMapJac(q);
         Matrix3d Jjss = utils::makeSkewSymmetric(J.col(j));
         Matrix3d Jkss = utils::makeSkewSymmetric(J.col(k));
-        Matrix3d dJjdkss = utils::makeSkewSymmetric(utils::rot_conv::expMapJacDeriv(q, k).col(j));
+        Matrix3d dJjdkss = utils::makeSkewSymmetric(utils::rotation::expMapJacDeriv(q, k).col(j));
 
         Matrix3d d2Rdidj = (Jjss*Jkss + dJjdkss)*R;
 

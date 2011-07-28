@@ -6,8 +6,8 @@
   Date		06/12/2011
 */
 
-#ifndef UTILS_ROTATION_CONVERSION_H
-#define UTILS_ROTATION_CONVERSION_H
+#ifndef UTILS_UTILSROTATION_H
+#define UTILS_UTILSROTATION_H
 
 // External Libraries
 #include <Eigen/Dense>
@@ -15,7 +15,7 @@
 #include "Misc.h"
 
 namespace utils {
-    namespace rot_conv {
+    namespace rotation {
 
         enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
 
@@ -38,9 +38,9 @@ namespace utils {
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
         Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
 
-        // TODO: remove from here
-        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el);
-        Eigen::Matrix3d getDerivativeMatrix(const Eigen::Quaterniond& q, int el1, int el2);
+        // quaternion stuff
+        Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& q, int el);
+        Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& q, int el1, int el2);
 
 
         // compute expmap stuff
@@ -49,8 +49,8 @@ namespace utils {
         Eigen::Matrix3d expMapJacDot(const Eigen::Vector3d &_expmap, const Eigen::Vector3d &_qdot); ///< computes the time derivative of the expmap Jacobian
         Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d &_expmap, int _qi);    ///< computes the derivative of the Jacobian of the expmap wrt to _qi indexed dof; _qi \in {0,1,2}
 
-    } // namespace rot_conv
+    } // namespace rotation
 } // namespace utils
 
-#endif // #ifndef UTILS_ROTATION_CONVERSION_H
+#endif // #ifndef UTILS_UTILSROTATION_H
 
