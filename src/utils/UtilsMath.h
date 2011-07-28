@@ -150,11 +150,13 @@ namespace utils {
     }
 
     inline Vector3d fromSkewSymmetric(const Matrix3d& m) {
+#if _DEBUG
         if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON) {
             cout << "Not skew symmetric matrix" << endl;
             cerr << m <<endl;
             return Vector3d::Zero();
         }
+#endif
         Vector3d ret = Vector3d::Zero();
         ret(0) = m(2,1);
         ret(1) = m(0,2);

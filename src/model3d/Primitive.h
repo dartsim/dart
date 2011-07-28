@@ -28,29 +28,29 @@ namespace model3d {
 
         Primitive();
 
-        virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
-        virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt); 
+        inline virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
+        inline virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt); 
 
         void setInertia(const Eigen::Matrix3d& _inertia);
-        Eigen::Matrix3d getInertia() const { return mInertia; }
-        Eigen::Matrix4d getMassTensor() const { return mMassTensor; }
+        inline Eigen::Matrix3d getInertia() const { return mInertia; }
+        inline Eigen::Matrix4d getMassTensor() const { return mMassTensor; }
 
-        void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
-        Eigen::Vector3d getColor() const { return mColor; }
+        inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
+        inline Eigen::Vector3d getColor() const { return mColor; }
 
         //Eigen::Vector3d getOffset() { return mOffset; } //in local coordinates
 
         void setDim(const Eigen::Vector3d& _dim);
-        Eigen::Vector3d getDim() { return mDim; }
+        inline Eigen::Vector3d getDim() { return mDim; }
 
         void setMass(double _m);
-        double getMass() { return mMass; }
+        inline double getMass() { return mMass; }
 
-        void setVolume(double _v) { mVolume = _v; }
-        double getVolume() { return mVolume; }
+        inline void setVolume(double _v) { mVolume = _v; }
+        inline double getVolume() { return mVolume; }
 
-        int getID() { return mID; }
-        PrimitiveType getPrimitiveType(){return mType;}
+        inline int getID() { return mID; }
+        inline PrimitiveType getPrimitiveType(){return mType;}
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -58,7 +58,7 @@ namespace model3d {
         void setMassTensorFromInertia();    ///< sets the "mass tensor" in lagrangian dynamics from the inertia matrix
         void computeInertiaFromMassTensor();    ///< computes the inertia matrix from the "mass tensor" in lagrangian dynamics
         virtual void computeMassTensor()=0;
-        virtual void computeInertia() {
+        inline virtual void computeInertia() {
             computeMassTensor();
             computeInertiaFromMassTensor();
         }

@@ -36,19 +36,19 @@ namespace model3d {
 
         Eigen::Vector3d getWorldCoords(); ///< get the world coordinates of mOffset
 	
-        Eigen::Vector3d getLocalCoords() const {return mOffset;}
-        void setLocalCoords(Eigen::Vector3d& _offset){mOffset = _offset;}
+        inline Eigen::Vector3d getLocalCoords() const {return mOffset;}
+        inline void setLocalCoords(Eigen::Vector3d& _offset){mOffset = _offset;}
 
-        int getSkelIndex() const{return mSkelIndex;}
-        void setSkelIndex(int _idx){mSkelIndex=_idx;}
+        inline int getSkelIndex() const{return mSkelIndex;}
+        inline void setSkelIndex(int _idx){mSkelIndex=_idx;}
         
-        int getID() const {return mID;}
-        BodyNode* getNode() const {return mNode;}
-        const char* getName() const {return mName;}
+        inline int getID() const {return mID;}
+        inline BodyNode* getNode() const {return mNode;}
+        inline const char* getName() const {return mName;}
         
         // useful for IK
-        ConstraintType getConstraintType() const {return mType;}
-        void setConstraintType(ConstraintType _type){mType = _type;}
+        inline ConstraintType getConstraintType() const {return mType;}
+        inline void setConstraintType(ConstraintType _type){mType = _type;}
     
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW

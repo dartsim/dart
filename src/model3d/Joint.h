@@ -61,23 +61,23 @@ namespace model3d {
         void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m); ///< apply the second derivative to _m
 
         void addTransform(Transformation *_t, bool _isVariable = true); ///< add _t to mTransforms; _isVariable indicates whether this transformation is a degree of freedom; also sets the joint type automatically
-        int getNumTransforms() const {return mTransforms.size();}
-        Transformation* getTransform(int i) const {return mTransforms[i];}
+        inline int getNumTransforms() const {return mTransforms.size();}
+        inline Transformation* getTransform(int i) const {return mTransforms[i];}
 
-        int getNumDofs() const {return mDofs.size();}
-        Dof* getDof(int _idx) const {return mDofs[_idx];}
+        inline int getNumDofs() const {return mDofs.size();}
+        inline Dof* getDof(int _idx) const {return mDofs[_idx];}
 
         inline int getNumDofsTrans(){return mNumDofsTrans;}
         inline int getNumDofsRot(){return mNumDofsRot;}
         inline const std::vector<int>& getRotTransformIndices(){return mRotTransformIndex;}
 	
-        BodyNode* getParentNode() const {return mNodeParent;}
-        BodyNode* getChildNode() const {return mNodeChild;}
+        inline BodyNode* getParentNode() const {return mNodeParent;}
+        inline BodyNode* getChildNode() const {return mNodeChild;}
 	
-        void setSkelIndex(int _idx){mSkelIndex= _idx;}
-        int getSkelIndex() const {return mSkelIndex;}
+        inline void setSkelIndex(int _idx){mSkelIndex= _idx;}
+        inline int getSkelIndex() const {return mSkelIndex;}
 
-		JointType getJointType(){return mType;}
+		inline JointType getJointType(){return mType;}
 
         inline const char *getName(){return mName;}
         inline void setName(const char *_name){

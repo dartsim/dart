@@ -47,21 +47,21 @@ namespace model3d {
         Transformation();
         virtual ~Transformation();
 
-        TransFormType getType() const { return mType; }
+        inline TransFormType getType() const { return mType; }
 
-        int getSkelIndex() const { return mSkelIndex; }
-        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+        inline int getSkelIndex() const { return mSkelIndex; }
+        inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
-        Joint* getJoint() const { return mJoint; }
-        void setJoint(Joint *_joint) { mJoint = _joint; }
+        inline Joint* getJoint() const { return mJoint; }
+        inline void setJoint(Joint *_joint) { mJoint = _joint; }
 
-        int getNumDofs() const { return mDofs.size(); }
-        Dof* getDof(int i) const { return mDofs[i]; }
+        inline int getNumDofs() const { return mDofs.size(); }
+        inline Dof* getDof(int i) const { return mDofs[i]; }
 
-        bool getVariable() const { return mVariable; }
-        void setVariable(bool _var) { mVariable = _var; }
+        inline bool getVariable() const { return mVariable; }
+        inline void setVariable(bool _var) { mVariable = _var; }
 
-        void setDirty() { mDirty = true; }
+        inline void setDirty() { mDirty = true; }
         Eigen::Matrix4d getTransform();
 
         bool isPresent(const Dof *d) const;	// true if d is present in the dof list

@@ -21,12 +21,12 @@ namespace model3d {
         FileInfoC3D();
         virtual ~FileInfoC3D(){}
 
-        int getNumMarkers() const { return mNumMarkers; } 
-        int getNumFrames() const { return mNumFrames; }
-        double getFPS() const { return mFPS; }
+        inline int getNumMarkers() const { return mNumMarkers; } 
+        inline int getNumFrames() const { return mNumFrames; }
+        inline double getFPS() const { return mFPS; }
 
-        Eigen::Vector3d getDataAt(int _frame, int _idx) const { return mData.at(_frame).at(_idx); } ///< Note: not checking index range
-        void addData(const EIGEN_V_VEC3D& _data) { mData.push_back(_data); }
+        inline Eigen::Vector3d getDataAt(int _frame, int _idx) const { return mData.at(_frame).at(_idx); } ///< Note: not checking index range
+        inline void addData(const EIGEN_V_VEC3D& _data) { mData.push_back(_data); }
 
         virtual bool loadFile(const char*);
         virtual bool saveFile(const char*, int _start, int _end, double _sampleRate = 1); ///< Note: down sampling not implemented yet
