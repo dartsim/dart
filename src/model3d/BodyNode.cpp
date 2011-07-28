@@ -120,12 +120,37 @@ namespace model3d {
         evalJacAng();
     }
 
+    void BodyNode::evalJacLin() {
+        mJv.setZero();
+        for (unsigned int i=0; i<mDependantDofs.size(); i++) {
+            VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
+            mJv(0, i) = Ji(0);
+            mJv(1, i) = Ji(1);
+            mJv(2, i) = Ji(2);
+        }
+    }
+
+    void BodyNode::evalJacAng() {
+        mJw.setZero();
+        for (unsigned int i=mNumRootTrans; i<mDependantDofs.size(); i++) {
+            MatrixXd omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
+            VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
+
+            mJw(0, i) = omegai(0);
+            mJw(1, i) = omegai(1);
+            mJw(2, i) = omegai(2);
+        }
+    }
+
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
         Vector3d result = utils::xformHom(mW, _lp);
         return result;
     }
-    
 
+    Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
+        return mJointParent->getDeriv(_q);
+    }
+    
     void BodyNode::setDependDofList() {
         mDependantDofs.clear();
         if (mNodeParent != NULL) {
@@ -214,32 +239,6 @@ namespace model3d {
 
     bool BodyNode::isPresent(Dof* _q) {
         return mJointParent->isPresent(_q);
-    }
-
-    Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
-        return mJointParent->getDeriv(_q);
-    }
-    
-    void BodyNode::evalJacLin() {
-        mJv.setZero();
-        for (unsigned int i=0; i<mDependantDofs.size(); i++) {
-            VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
-            mJv(0, i) = Ji(0);
-            mJv(1, i) = Ji(1);
-            mJv(2, i) = Ji(2);
-        }
-    }
-
-    void BodyNode::evalJacAng() {
-        mJw.setZero();
-        for (unsigned int i=mNumRootTrans; i<mDependantDofs.size(); i++) {
-            MatrixXd omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
-            VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
-
-            mJw(0, i) = omegai(0);
-            mJw(1, i) = omegai(1);
-            mJw(2, i) = omegai(2);
-        }
     }
     
 } // namespace model3d
