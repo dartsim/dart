@@ -55,10 +55,10 @@ namespace model3d {
         void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
 
-        Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
-        Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
-        Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
-        Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordinates of this body node
+        inline Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
+        inline Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
+        inline Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
+        inline Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordinates of this body node
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
@@ -68,38 +68,38 @@ namespace model3d {
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
         void setDependDofList(); ///< Set up the list of dependent dofs 
         bool dependsOn(int _dofIndex) const; ///< Test whether this dof is dependant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
-        int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
-        int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
+        inline int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
+        inline int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
         void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
 
-        char* getName() { return mName; }
+        inline char* getName() { return mName; }
 
-        void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }
-        Eigen::Vector3d getLocalCOM() const { return mCOMLocal; }
+        inline void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }
+        inline Eigen::Vector3d getLocalCOM() const { return mCOMLocal; }
         
-        void setSkel(Skeleton* _skel) { mSkel = _skel; }
-        Skeleton* getSkel() const { return mSkel; }
+        inline void setSkel(Skeleton* _skel) { mSkel = _skel; }
+        inline Skeleton* getSkel() const { return mSkel; }
 
-        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
-        int getSkelIndex() const { return mSkelIndex; }
+        inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+        inline int getSkelIndex() const { return mSkelIndex; }
         
-        BodyNode* getParentNode() const { return mNodeParent; }
-        double getMass() const { return mMass; }
+        inline BodyNode* getParentNode() const { return mNodeParent; }
+        inline double getMass() const { return mMass; }
 
-        void addHandle(Marker *_h) { mHandles.push_back(_h); }
-        int getNumHandles() const { return mHandles.size(); }
-        Marker* getHandle(int _idx) const { return mHandles[_idx]; }
+        inline void addHandle(Marker *_h) { mHandles.push_back(_h); }
+        inline int getNumHandles() const { return mHandles.size(); }
+        inline Marker* getHandle(int _idx) const { return mHandles[_idx]; }
 
-        void setPrimitive(Primitive *_p) { mPrimitive = _p; }
-        Primitive* getPrimitive() const { return mPrimitive; }
+        inline void setPrimitive(Primitive *_p) { mPrimitive = _p; }
+        inline Primitive* getPrimitive() const { return mPrimitive; }
         
-        void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
-        int getNumChildJoints() { return mJointsChild.size(); }
-        Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
+        inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
+        inline int getNumChildJoints() { return mJointsChild.size(); }
+        inline Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
+        inline Joint* getParentJoint() const { return mJointParent; }
         void setParentJoint(Joint *_p);
-        Joint* getParentJoint() const { return mJointParent; }
 
         // wrapper functions for joints
         BodyNode* getChildNode(int _idx) const;

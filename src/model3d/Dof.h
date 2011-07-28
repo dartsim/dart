@@ -29,27 +29,27 @@ namespace model3d {
 
         // some helper functions
         void setName(char* _n) { strcpy(mName, _n); }
-        char* getName() { return mName; }
+        inline char* getName() { return mName; }
 	
         void setValue(double _v);
-        double getValue() const { return mVal; }
+        inline double getValue() const { return mVal; }
 	
-        double getMin() const { return mMinVal; }
-        double getMax() const { return mMaxVal; }
-        void setMin(double _min) { mMinVal = _min; }
-        void setMax(double _max) { mMaxVal = _max; }
+        inline double getMin() const { return mMinVal; }
+        inline double getMax() const { return mMaxVal; }
+        inline void setMin(double _min) { mMinVal = _min; }
+        inline void setMax(double _max) { mMaxVal = _max; }
 	
-        int getSkelIndex() const { return mSkelIndex; }
-        void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+        inline int getSkelIndex() const { return mSkelIndex; }
+        inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
-        bool isVariable() const { return mVariable; }
-        void setVariable() { mVariable = true; }
+        inline bool isVariable() const { return mVariable; }
+        inline void setVariable() { mVariable = true; }
 	
-        void setTrans(Transformation *_t){ mTrans = _t; }
-        Transformation* getTrans() const{ return mTrans; }
+        inline void setTrans(Transformation *_t){ mTrans = _t; }
+        inline Transformation* getTrans() const{ return mTrans; }
 	
-        void setJoint(Joint *_j) { mJoint = _j; }
-        Joint *getJoint() const { return mJoint; }
+        inline void setJoint(Joint *_j) { mJoint = _j; }
+        inline Joint *getJoint() const { return mJoint; }
 
     protected:
         void init(double _v, const char * _name, double _min, double _max);
