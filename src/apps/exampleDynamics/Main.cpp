@@ -161,6 +161,13 @@ int main(int argc, char* argv[])
     timer.stopTimer();
     cout<<"Dynamics using non-recursive dynamics: "<<timer.lastElapsed()/N<<endl;
 
+    timer.startTimer();
+    for(int i=0; i<N; i++){
+        MatrixXd Minv = skelDyn->mM.inverse();
+    }
+    timer.stopTimer();
+    cout<<"Inverse M: "<<timer.lastElapsed()/N<<endl;
+
     exit(0);
 
 
