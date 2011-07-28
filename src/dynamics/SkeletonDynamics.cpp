@@ -46,6 +46,8 @@ namespace dynamics{
         assert(getNumNodes()==getNumJoints());
         for(int i=0; i<getNumNodes(); i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *bnodei = static_cast<BodyNodeDynamics*>(mNodes[i]);
+            if(bnodei->getParentJoint()->getJointType()==Joint::J_UNKNOWN) continue;
+
             // convert to generalized torques
             Matrix3d Ri = bnodei->getLocalTransform().topLeftCorner(3,3);
             VectorXd torqueGeni = bnodei->mJwJoint.transpose()*Ri*bnodei->mTorqueJointBody;

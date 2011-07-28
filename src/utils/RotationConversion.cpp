@@ -7,6 +7,7 @@
 */
 
 #include "RotationConversion.h"
+#include "UtilsMath.h"
 
 // Standard Libraries
 #include <cstdio>
@@ -382,6 +383,75 @@ namespace utils {
             pt[2]=z;
 
             return rotatePoint(q, pt);
+        }
+
+        // ----------- expmap computations -------------
+
+#define EPSILON_EXPMAP_THETA 1.0e-3
+
+        Matrix3d expMapRot(const Vector3d &_q){
+            double theta = _q.norm();
+
+            Matrix3d R = Matrix3d::Zero();
+            Matrix3d qss =  utils::makeSkewSymmetric(_q);
+            Matrix3d qss2 =  qss*qss;
+
+            if(theta<EPSILON_EXPMAP_THETA){
+                R = Matrix3d::Identity() + qss + 0.5*qss2;
+            }
+            else {
+                R = Matrix3d::Identity() + (sin(theta)/theta)*qss + ((1-cos(theta))/(theta*theta))*qss2;
+            }
+            return R;
+        }
+
+        Matrix3d expMapJac(const Vector3d &_q){
+            double theta = _q.norm();
+
+            Matrix3d J = Matrix3d::Zero();
+            Matrix3d qss =  utils::makeSkewSymmetric(_q);
+            Matrix3d qss2 =  qss*qss;
+
+            if(theta<EPSILON_EXPMAP_THETA){
+                J = Matrix3d::Identity() + 0.5*qss +  (1.0/6.0)*qss2;
+            }
+            else {
+                J = Matrix3d::Identity() + ((1-cos(theta))/(theta*theta))*qss + ((theta-sin(theta))/(theta*theta*theta))*qss2;
+            }
+            return J;
+        }
+
+        Matrix3d expMapJacDot(const Vector3d &_q, const Vector3d &_qdot){
+            double theta = _q.norm();
+
+            Matrix3d Jdot = Matrix3d::Zero();
+            Matrix3d qss =  utils::makeSkewSymmetric(_q);
+            Matrix3d qss2 =  qss*qss;
+            Matrix3d qdss = utils::makeSkewSymmetric(_qdot);
+            double ttdot = _q.dot(_qdot);   // theta*thetaDot
+            double st = sin(theta);
+            double ct = cos(theta);
+            double t2 = theta*theta;
+            double t3 = t2*theta;
+            double t4 = t3*theta;
+            double t5 = t4*theta;
+
+            if(theta<EPSILON_EXPMAP_THETA){
+                Jdot = 0.5*qdss + (1.0/6.0)*(qss*qdss + qdss*qss);
+                Jdot += (-1.0/12)*ttdot*qss + (-1.0/60)*ttdot*qss2;
+            }
+            else {
+                Jdot = ((1-ct)/t2)*qdss + ((theta-st)/t3)*(qss*qdss + qdss*qss);
+                Jdot += ((theta*st + 2*ct - 2)/t4)*ttdot*qss + ((3*st - theta*ct - 2*theta)/t5)*ttdot*qss2;
+            }
+            return Jdot;
+        }
+
+        Matrix3d expMapJacDeriv( const Vector3d &_q, int _qi ) {
+            assert(_qi>=0 && _qi<=2);
+            Vector3d qdot = Vector3d::Zero();
+            qdot[_qi] = 1.0;
+            return expMapJacDot(_q, qdot);
         }
 
 

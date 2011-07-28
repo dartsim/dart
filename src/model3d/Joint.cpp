@@ -153,6 +153,16 @@ namespace model3d {
                 }
             }
         }
+        else if(mType==J_BALLEXPMAP || mType==J_FREEEXPMAP){
+            assert(mNumDofsRot==3);
+            assert(mRotTransformIndex.size()==1);
+            Transformation *em = mTransforms[mRotTransformIndex[0]];
+            Vector3d q(em->getDof(0)->getValue(), em->getDof(1)->getValue(), em->getDof(2)->getValue());
+            *_J = utils::rot_conv::expMapJac(q);
+            if(_Jdot){
+                *_Jdot = utils::rot_conv::expMapJacDot(q, *_qdot);
+            }
+        }
         else {
             cout<<"computeRotationJac not implemented yet for this joint type\n";
         }

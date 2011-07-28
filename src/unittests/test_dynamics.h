@@ -17,9 +17,9 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
     using namespace model3d;
     using namespace dynamics;
 
-    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::SKEL);
+    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::VSK);
     ASSERT_TRUE(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
@@ -89,9 +89,9 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
     using namespace model3d;
     using namespace dynamics;
 
-    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::SKEL);
+    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::VSK);
     ASSERT_TRUE(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
@@ -156,9 +156,9 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
     using namespace model3d;
     using namespace dynamics;
 
-    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::SKEL);
+    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::VSK);
     ASSERT_TRUE(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
@@ -193,9 +193,9 @@ TEST(DYNAMICS, COMPARE_MASS) {
     using namespace model3d;
     using namespace dynamics;
 
-    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::SKEL);
+    bool loadModelResult = skelFile.loadFile(skelfilename, model3d::VSK);
     ASSERT_TRUE(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
