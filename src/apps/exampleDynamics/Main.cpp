@@ -23,7 +23,8 @@ int main(int argc, char* argv[])
     const char* skelfilename;
     const char* doffilename;
     if(argc!=3){
-		skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+		//skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
+		skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
 		doffilename = GROUNDZERO_DATA_PATH"dof/RHand.dof";
     }else{
         skelfilename = argv[1];
@@ -31,12 +32,12 @@ int main(int argc, char* argv[])
     }
 	
     model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    skelFile.loadFile(skelfilename, model3d::SKEL);
+    skelFile.loadFile(skelfilename, model3d::VSK);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
 
     model3d::FileInfoDof motion(skelFile.getSkel());
-    motion.loadFile(doffilename);
+    //motion.loadFile(doffilename);
 
     // test the velocity computation using the two methods: linear inverse dynamics and non-recursive
     VectorXd q = VectorXd::Zero(skelFile.getSkel()->getNumDofs());
@@ -85,7 +86,7 @@ int main(int argc, char* argv[])
         cout<<"Angular velocity InvDyn : \n"<<w2<<endl;
         cout<<endl;
 
-        //getchar();
+        getchar();
     }
 
     // test the Jwdot using finite differences
@@ -125,7 +126,7 @@ int main(int argc, char* argv[])
         cout<<"vDot approx: \n"<<vDotApprox<<endl;
 
         cout<<endl;
-        //getchar();
+        getchar();
     }
 
     // test the dynamics: coriolis+gravity term

@@ -87,19 +87,25 @@ namespace dynamics{
 
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
-         // ASSUME: trans dofs before rotation dofs
-        VectorXd qDotJoint = _qdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
-        mJointParent->computeRotationJac(&mJwJoint, &mJwDotJoint, &qDotJoint);
+        
+        Vector3d omegaJoint = Vector3d::Zero();
+        Vector3d omegaDotJoint = Vector3d::Zero();
 
         // Local Rotation matrix transposed
         Matrix3d RjointT = mT.topLeftCorner(3,3).transpose();
 
-        // Local angular velocity and angular acceleration
-        Vector3d omegaJoint = mJwJoint*qDotJoint;
-        Vector3d omegaDotJoint = mJwDotJoint*qDotJoint;
-        if(_qdotdot){
-            VectorXd qDotDotJoint = _qdotdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
-            omegaDotJoint += mJwJoint*qDotDotJoint;
+        if(mJointParent->getJointType()!=Joint::J_UNKNOWN){
+            // ASSUME: trans dofs before rotation dofs
+            VectorXd qDotJoint = _qdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
+            mJointParent->computeRotationJac(&mJwJoint, &mJwDotJoint, &qDotJoint);
+
+            // Local angular velocity and angular acceleration
+            omegaJoint = mJwJoint*qDotJoint;
+            omegaDotJoint = mJwDotJoint*qDotJoint;
+            if(_qdotdot){
+                VectorXd qDotDotJoint = _qdotdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
+                omegaDotJoint += mJwJoint*qDotDotJoint;
+            }
         }
 
         BodyNodeDynamics *nodeParent = static_cast<BodyNodeDynamics*>(mNodeParent);
