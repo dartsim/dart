@@ -9,13 +9,21 @@
 #ifndef UTILS_TIMER_H
 #define UTILS_TIMER_H
 
+#if WIN32
+#include <windows.h>
+typedef struct {
+    LARGE_INTEGER  start;
+    LARGE_INTEGER  stop;
+} stopWatch;
+#endif
+
 namespace utils {
     class Timer;
 
     /**
        @brief The implementation of Timer class
 
-       This is a definition of timer class.
+       This is a definition of mTimer class.
        For measure the time, clock() api is used
     */
     class Timer {
@@ -33,12 +41,21 @@ namespace utils {
 
     private:
         int mCount;
+#if WIN32
+        stopWatch mTimer;
+#else
         double mStart;
         double mStop;
+#endif
         double mLastElapsed;
         double mTotal;
         char *mName;
         bool mIsRunning;
+
+#if WIN32
+        LARGE_INTEGER  mFrequency;
+        double LIToSecs( LARGE_INTEGER & L) ;
+#endif
     };
 } // namespace utils
 
