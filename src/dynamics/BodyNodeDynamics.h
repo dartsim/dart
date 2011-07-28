@@ -65,6 +65,9 @@ namespace dynamics{
     //protected:
     public:
 
+        bool mInitializedInvDyn;   ///< true if linear inverse dynamics is initialized; init functions initialize only if false
+        bool mInitializedNonRecursiveDyn;   ///< true if non recursive dynamics is initialized; init function initialize only if false
+
         // non-recursive Dynamics formulation - second derivatives
         EIGEN_VV_MAT4D mTqq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
         EIGEN_VV_MAT4D mWqq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
