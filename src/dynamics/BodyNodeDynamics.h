@@ -62,8 +62,7 @@ namespace dynamics{
         void addCoriolisVec(Eigen::VectorXd &_Cvec);
         void addGravity(Eigen::VectorXd &_G);
 
-    //protected:
-    public:
+    protected:
 
         bool mInitializedInvDyn;   ///< true if linear inverse dynamics is initialized; init functions initialize only if false
         bool mInitializedNonRecursiveDyn;   ///< true if non recursive dynamics is initialized; init function initialize only if false
