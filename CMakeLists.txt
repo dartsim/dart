@@ -18,7 +18,7 @@ if (WIN32)
 #elseif (UNIX AND NOT APPLE)
 elseif (UNIX)  
   # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3")
 endif()
 
 ###############################################
