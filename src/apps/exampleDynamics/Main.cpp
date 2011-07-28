@@ -16,6 +16,7 @@ using namespace dynamics;
 
 #include "utils/UtilsMath.h"
 #include "utils/Paths.h"
+#include "utils/Timer.h"
 
 int main(int argc, char* argv[])
 {
@@ -141,6 +142,27 @@ int main(int argc, char* argv[])
     MatrixXd Mnonrec = skelDyn->mM;
     cout<<"Difference\n"<<Minvdyn-Mnonrec<<endl;
     
+    cout<<"\n\n";
+    utils::Timer timer("dynamics");
+    timer.startTimer();
+    int N = 10000;
+    for(int i=0; i<N; i++){
+        skelFile.getSkel()->setPose(q, false, false);
+        skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
+    }
+    timer.stopTimer();
+    cout<<"Dynamics using linear inverse dynamics: "<<timer.lastElapsed()/N<<endl;
+
+    timer.startTimer();
+    for(int i=0; i<N; i++){
+        skelFile.getSkel()->setPose(q, false, false);
+        skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using non-recursive dynamics
+    }
+    timer.stopTimer();
+    cout<<"Dynamics using non-recursive dynamics: "<<timer.lastElapsed()/N<<endl;
+
+    exit(0);
+
 
     MyWindow window(motion);
     window.computeMax();

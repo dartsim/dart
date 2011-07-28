@@ -62,7 +62,7 @@ namespace dynamics{
 
     void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
         mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
-        mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
         mCvec = VectorXd::Zero(getNumDofs());
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
