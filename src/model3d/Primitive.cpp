@@ -22,11 +22,6 @@ namespace model3d {
           mID(mCounter++), mColor(0.5,0.5,1.0) {
     }
 
-
-    Vector3d Primitive::getNormal(Vector3d& _pt) {
-        return Vector3d::Zero();
-    }
-
     void Primitive::setInertia(const Eigen::Matrix3d& _inertia) {
         mInertia = _inertia;
         setMassTensorFromInertia();

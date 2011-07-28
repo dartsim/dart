@@ -29,7 +29,7 @@ namespace model3d {
         Primitive();
 
         inline virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
-        inline virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt); 
+        inline virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt){ return Eigen::Vector3d::Zero(); }
 
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }
