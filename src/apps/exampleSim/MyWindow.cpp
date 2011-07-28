@@ -22,10 +22,10 @@ void MyWindow::initDyn()
 
 void MyWindow::displayTimer(int _val)
 {
-    int numIter = 10;//mDisplayTimeout / (mTimeStep*1000);
+    int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i=0; i<numIter; i++){
         mModel->computeDynamics(mGravity, mDofVels, true);
-        VectorXd qddot = -mModel->mM.inverse()*mModel->mCg; 
+        VectorXd qddot = -mModel->mM.ldlt().solve(mModel->mCg); 
         mDofVels += qddot*mTimeStep;
         mDofs += mDofVels*mTimeStep;
         mModel->setPose(mDofs,false,false);
