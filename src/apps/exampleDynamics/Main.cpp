@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     if(argc!=3){
 		//skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
 		skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
-		doffilename = GROUNDZERO_DATA_PATH"dof/RHand.dof";
+		doffilename = GROUNDZERO_DATA_PATH"dof/RHand.dof";  // matches YutingEuler.skel
     }else{
         skelfilename = argv[1];
         doffilename = argv[2];
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
         cout<<"Angular velocity InvDyn : \n"<<w2<<endl;
         cout<<endl;
 
-        getchar();
+        //getchar();
     }
 
     // test the Jwdot using finite differences
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
         cout<<"vDot approx: \n"<<vDotApprox<<endl;
 
         cout<<endl;
-        getchar();
+        //getchar();
     }
 
     // test the dynamics: coriolis+gravity term
