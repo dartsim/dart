@@ -7,6 +7,7 @@ ADD_SUBDIRECTORY(renderer)
 ADD_SUBDIRECTORY(mayaexports)
 ADD_SUBDIRECTORY(geometry)
 ADD_SUBDIRECTORY(dynamics)
+ADD_SUBDIRECTORY(lcpsolver)
 
 # Unit Test
 ADD_SUBDIRECTORY(unittests)

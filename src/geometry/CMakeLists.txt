@@ -1,5 +1,5 @@
 ###############################################
-# Utils
+# geometry
 PROJECT(geometry)
 
 # Search all header and source files
