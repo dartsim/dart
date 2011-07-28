@@ -25,12 +25,15 @@ namespace dynamics{
         mVelDotBody = Vector3d::Zero();
         mOmegaBody = Vector3d::Zero();
         mOmegaDotBody = Vector3d::Zero();
+        mInitializedInvDyn = false;
+        mInitializedNonRecursiveDyn = false;
     }
 
     BodyNodeDynamics::~BodyNodeDynamics(){
     }
 
     void BodyNodeDynamics::initInverseDynamics(){
+        if(mInitializedInvDyn) return;
         BodyNode::init();
 
         mJwJoint = MatrixXd::Zero(3, getNumDependantDofs());
@@ -41,11 +44,13 @@ namespace dynamics{
         mOmegaDotBody.setZero();
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
-        
         // mJv, mJw, and mIc needed for the mass matrix are already inited and computed by the model3d::BodyNode
+
+        mInitializedInvDyn = true;
     }
 
     void BodyNodeDynamics::initDynamics(){
+        if(mInitializedNonRecursiveDyn) return;
         BodyNode::init();
          
         mVel.setZero();
@@ -62,6 +67,8 @@ namespace dynamics{
         mJwq.resize(getNumDependantDofs(), MatrixXd::Zero(3, getNumDependantDofs()));
         mJvDot = MatrixXd::Zero(3, getNumDependantDofs());
         mJwDot = MatrixXd::Zero(3, getNumDependantDofs());
+
+        mInitializedNonRecursiveDyn = true;
     }
 
     void BodyNodeDynamics::computeInvDynVelocities( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
