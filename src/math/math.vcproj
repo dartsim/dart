@@ -153,6 +153,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\ODEIntegratorRK2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ODEIntegratorRK4.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SolverTridiagonal.cpp"
 				>
 			</File>
@@ -162,6 +170,18 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\ODEIntegrator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODEIntegratorRK2.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ODEIntegratorRK4.h"
+				>
+			</File>
 			<File
 				RelativePath=".\SolverTridiagonal.h"
 				>
