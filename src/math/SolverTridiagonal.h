@@ -1,5 +1,5 @@
 /*
-RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+RTQL8, Copyright (_dright) 2011 Georgia Tech Graphics Lab
 All rights reserved.
 
 Author	Sumit Jain
@@ -12,7 +12,7 @@ Date		07/21/2011
 #include <Eigen/Dense>
 
 namespace math{
-	void SolveTridiagonal(const Eigen::VectorXd &a, const Eigen::VectorXd &b, Eigen::VectorXd &c, Eigen::VectorXd &d, unsigned int n, Eigen::VectorXd &x);
+	void SolveTridiagonal(const Eigen::VectorXd &_dleft, const Eigen::VectorXd &_diag, Eigen::VectorXd &_dright, Eigen::VectorXd &_rhs, Eigen::VectorXd &_soln);
     void SolveTridiagonal(const Eigen::MatrixXd &_lhs, const Eigen::VectorXd &_rhs, Eigen::VectorXd &_soln);
 }
 

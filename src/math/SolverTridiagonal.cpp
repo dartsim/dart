@@ -1,9 +1,9 @@
 /*
-RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
-All rights reserved.
+  RTQL8, Copyright (_dright) 2011 Georgia Tech Graphics Lab
+  All rights reserved.
 
-Author	Sumit Jain
-Date		07/21/2011
+  Author	Sumit Jain
+  Date		07/28/2011
 */
 #include "SolverTridiagonal.h"
 
@@ -11,45 +11,45 @@ using namespace Eigen;
 
 namespace math{
 
-    void SolveTridiagonal(const VectorXd &a, const VectorXd &b, VectorXd &c, VectorXd &d, unsigned int n, VectorXd &x){
+    void SolveTridiagonal(const VectorXd &_dleft, const VectorXd &_diag, VectorXd &_dright, VectorXd &_rhs, VectorXd &_soln){
         unsigned int i;
 
         /* Modify the coefficients. */
-        c[0] /= b[0];    /* Division by zero risk. */
-        d[0] /= b[0];    /* Division by zero would imply a singular matrix. */
+        _dright[0] /= _diag[0];    /* Division by zero risk. */
+        _rhs[0] /= _diag[0];    /* Division by zero would imply a singular matrix. */
+        unsigned n = _dleft.size();
         for(i = 1; i < n; i++){
-            double id = (b[i] - c[i-1] * a[i]);  /* Division by zero risk. */
-            c[i] /= id;            /* Last value calculated is redundant. */
-            d[i] = (d[i] - d[i-1] * a[i])/id;
+            double id = (_diag[i] - _dright[i-1] * _dleft[i]);  /* Division by zero risk. */
+            _dright[i] /= id;            /* Last value calculated is redundant. */
+            _rhs[i] = (_rhs[i] - _rhs[i-1] * _dleft[i])/id;
         }
 
         /* Now back substitute. */
-        x[n - 1] = d[n - 1];
+        _soln[n - 1] = _rhs[n - 1];
         for(i = n - 2; i >= 0; i--)
-            x[i] = d[i] - c[i] * x[i + 1];
+            _soln[i] = _rhs[i] - _dright[i] * _soln[i + 1];
     }
 
 
     void SolveTridiagonal(const MatrixXd &_lhs, const VectorXd &_rhs, VectorXd &_soln) {
-        VectorXd a = VectorXd::Zero(_lhs.rows());
-        VectorXd b = VectorXd::Zero(_lhs.rows());
-        VectorXd c = VectorXd::Zero(_lhs.rows());
-        VectorXd d = VectorXd::Zero(_lhs.rows());
+        VectorXd dleft = VectorXd::Zero(_lhs.rows());
+        VectorXd diag = VectorXd::Zero(_lhs.rows());
+        VectorXd dright = VectorXd::Zero(_lhs.rows());
+        VectorXd rhsmod = _rhs;
 
         unsigned int n = _lhs.rows();
         for (unsigned int i = 0; i < n; i++) {
-            b[i] = _lhs(i, i);
-            if (i == 0) a[i] = 0;
-            else a[i] = _lhs(i, i-1);
+            diag[i] = _lhs(i, i);
+            if (i == 0) dleft[i] = 0;
+            else dleft[i] = _lhs(i, i-1);
 
             if (i == n-1) {
-                c[i] = 0;
+                dright[i] = 0;
             }
-            else c[i] = _lhs(i, i+1);
-            d[i] = _rhs[i];
+            else dright[i] = _lhs(i, i+1);
         }
 
-        SolveTridiagonal(a,b,c,d,n, _soln);
+        SolveTridiagonal(dleft, diag, dright, rhsmod, _soln);
     }
 
 }   //namespace math
