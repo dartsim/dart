@@ -10,6 +10,8 @@
 #include "BodyNodeDynamics.h"
 #include "model3d/Joint.h"
 #include "model3d/BodyNode.h"
+#include "model3d/dof.h"
+#include "utils/UtilsMath.h"
 
 using namespace Eigen;
 using namespace model3d;
@@ -105,6 +107,83 @@ namespace dynamics{
 
             //mCg = mC*_qdot + mG;
             mCg = mCvec + mG;
+        }
+    }
+
+    // assumptions made:
+    // 1. the pose _q has already been set to the model
+    // 2. first derivatives are up-to-date (i.e. consistent with _q ) 
+    // XXX
+    ///@Warning: dof values and transformations are inconsistent after this computation!
+    void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
+        for(unsigned int i=0; i<mJoints.size(); i++){
+            Joint* jnt = mJoints.at(i);
+            switch(jnt->getJointType()){ // only cares about euler and expmap of 3 rotations 
+            case Joint::J_FREEEULER:
+            case Joint::J_BALLEULER:
+            {
+                // clamp dof values to the range
+                for(int j=0; j<3; j++){
+                    int dofIndex = jnt->getDof(j)->getSkelIndex();
+                    if( _q[dofIndex]>M_PI ) _q[dofIndex] -= 2*M_PI;
+                    else if( _q[dofIndex]<-M_PI ) _q[dofIndex] += 2*M_PI;
+                }
+            }   break;
+            case Joint::J_FREEEXPMAP:
+            case Joint::J_BALLEXPMAP:
+            {
+                Vector3d exmap;
+                for(int j=0; j<3; j++){
+                    int dofIndex = jnt->getDof(j)->getSkelIndex();
+                    exmap[j] = _q[dofIndex];
+                }
+                
+                double theta = exmap.norm();
+                if( theta > M_PI ){
+                    exmap.normalize();
+                    exmap *= theta-2*M_PI;
+                
+                    BodyNode* node = jnt->getChildNode();
+                    int firstIndex = 0;
+                    if( jnt->getParentNode()!=NULL )
+                        firstIndex = jnt->getParentNode()->getNumDependantDofs();
+                        
+                    // extract the local Jw
+                    Matrix3d oldJwBody;
+                    for(int j=0; j<3; j++){
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*node->mT.topLeftCorner(3,3).transpose();
+                        oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                    }
+                
+                    // the new Jw
+                    Matrix3d newJwBody;
+                    // set new dof values to joint for derivative evaluation
+                    for(int j=0; j<3; j++)
+                        jnt->getDof(j)->setValue(exmap[j]);
+
+                    // compute the new Jw from Rq*trans(R)
+                    Matrix4d Tbody = jnt->getLocalTransform();
+                    for(int j=0; j<3; j++){
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
+                        newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                    }
+
+                    // solve new_qdot s.t. newJw*new_qdot = w
+                    // new_qdot = newJw.inverse()*w
+                    Vector3d old_qdot; // extract old_qdot
+                    for(int j=0; j<3; j++)
+                        old_qdot[j] = _qdot[jnt->getDof(j)->getSkelIndex()];
+                    Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
+                    for(int j=0; j<3; j++){
+                        int dofIndex = jnt->getDof(j)->getSkelIndex();
+                        _q[dofIndex] = exmap[j];
+                        _qdot[dofIndex] = new_qdot[j];
+                    }
+                }
+            }   break;
+            default:
+                break;
+            }
         }
     }
 
