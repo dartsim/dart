@@ -38,8 +38,8 @@ namespace geometry {
         Mesh3DGen(){
             mNumVertices = 0;
             mNumFaces=0;
-            mVertexPos = Eigen::VectorXd(0);
-            mVertexVel = Eigen::VectorXd(0);
+            mVertexPos = Eigen::VectorXd();
+            mVertexVel = Eigen::VectorXd();
             mVertexTextures.clear();
             mFaces.clear();
             mFileName[0]='\0';

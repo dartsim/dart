@@ -22,7 +22,7 @@ namespace geometry {
 
         Mesh3DTriangle();
         Mesh3DTriangle(const char *_file, MeshFormat _format);
-        virtual Mesh3DTriangle::~Mesh3DTriangle(){}
+        virtual ~Mesh3DTriangle(){}
 
         // read and write obj files
         bool readMesh(const char *_file, Mesh3DGen::MeshFormat _format);

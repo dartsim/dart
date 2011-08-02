@@ -27,7 +27,7 @@ namespace geometry{
         vector<int> mIndCorners;    ///< gives the corner index given the vertex (size = nverts, each ith position gives one incident corner)
 
         CornerTable(Mesh3DTriangle *_mesh3d);
-        virtual CornerTable::~CornerTable(){}
+        virtual ~CornerTable(){}
 
         void computeCornerOpposites();
         void checkConsistentOrientation();
