@@ -5,30 +5,23 @@
 include Makefile.srcs
 
 # General configuration variables:
-CC_PPC = gcc-4.0
-CC_I386 = gcc-4.0
-CC_X86_64 = gcc-4.0
-CPP_PPC = g++-4.0
-CPP_I386 = g++-4.0
-CPP_X86_64 = g++-4.0
-COMPILERFLAGS = -Os -fexceptions -fvisibility=hidden -DNO_LCMS
-COMPILERFLAGS_PPC = -arch ppc
-COMPILERFLAGS_I386 = -arch i386
+CC_X86_64 = gcc-4.2
+CC_I386 = gcc-4.2
+CPP_X86_64 = g++-4.2
+CPP_I386 = g++-4.2
+COMPILERFLAGS = -Os -fexceptions -fvisibility=hidden
 COMPILERFLAGS_X86_64 = -arch x86_64
+COMPILERFLAGS_I386 = -arch i386
 COMPILERPPFLAGS = -Wno-ctor-dtor-privacy
 INCLUDE += 
-INCLUDE_PPC = -isysroot /Developer/SDKs/MacOSX10.5.sdk
-INCLUDE_I386 = -isysroot /Developer/SDKs/MacOSX10.5.sdk
 INCLUDE_X86_64 = -isysroot /Developer/SDKs/MacOSX10.6.sdk
-CFLAGS_PPC = $(COMPILERFLAGS) $(COMPILERFLAGS_PPC) $(INCLUDE) $(INCLUDE_PPC)
-CFLAGS_I386 = $(COMPILERFLAGS) $(COMPILERFLAGS_I386) $(INCLUDE) $(INCLUDE_I386)
+INCLUDE_I386 = -isysroot /Developer/SDKs/MacOSX10.6.sdk
 CFLAGS_X86_64 = $(COMPILERFLAGS) $(COMPILERFLAGS_X86_64) $(INCLUDE) $(INCLUDE_X86_64)
-CPPFLAGS_PPC = $(COMPILERPPFLAGS) $(CFLAGS_PPC)
-CPPFLAGS_I386 = $(COMPILERPPFLAGS) $(CFLAGS_I386)
+CFLAGS_I386 = $(COMPILERFLAGS) $(COMPILERFLAGS_I386) $(INCLUDE) $(INCLUDE_I386)
 CPPFLAGS_X86_64 = $(COMPILERPPFLAGS) $(CFLAGS_X86_64)
-LIBRARIES_PPC = -Wl,-syslibroot /Developer/SDKs/MacOSX10.5.sdk
-LIBRARIES_I386 = -Wl,-syslibroot /Developer/SDKs/MacOSX10.5.sdk
+CPPFLAGS_I386 = $(COMPILERPPFLAGS) $(CFLAGS_I386)
 LIBRARIES_X86_64 = -Wl,-syslibroot /Developer/SDKs/MacOSX10.6.sdk
+LIBRARIES_I386 = -Wl,-syslibroot /Developer/SDKs/MacOSX10.6.sdk
 LIBTOOL = libtool
 LIPO = lipo
 
@@ -38,13 +31,11 @@ SHAREDLIB = lib$(TARGET)-$(VER_MAJOR).$(VER_MINOR).dylib
 LIBNAME = lib$(TARGET).$(VER_MAJOR).dylib
 HEADER = Source/FreeImage.h
 
-.SUFFIXES: .o-ppc .o-i386 .o-x86_64
-MODULES_PPC = $(SRCS:.c=.o-ppc)
-MODULES_I386 = $(SRCS:.c=.o-i386)
+.SUFFIXES: .o-x86_64 .o-i386
 MODULES_X86_64 = $(SRCS:.c=.o-x86_64)
-MODULES_PPC := $(MODULES_PPC:.cpp=.o-ppc)
-MODULES_I386 := $(MODULES_I386:.cpp=.o-i386)
+MODULES_I386 = $(SRCS:.c=.o-i386)
 MODULES_X86_64 := $(MODULES_X86_64:.cpp=.o-x86_64)
+MODULES_I386 := $(MODULES_I386:.cpp=.o-i386)
 
 PREFIX = /usr/local
 INSTALLDIR = $(PREFIX)/lib
@@ -61,54 +52,42 @@ dist: FreeImage
 
 FreeImage: $(STATICLIB) $(SHAREDLIB)
 
-$(STATICLIB): $(STATICLIB)-ppc $(STATICLIB)-i386 $(STATICLIB)-x86_64
-	$(LIPO) -create $(STATICLIB)-ppc $(STATICLIB)-i386 $(STATICLIB)-x86_64 -output $(STATICLIB)
-
-$(STATICLIB)-ppc: $(MODULES_PPC)
-	$(LIBTOOL) -arch_only ppc -o $@ $(MODULES_PPC)
-
-$(STATICLIB)-i386: $(MODULES_I386)
-	$(LIBTOOL) -arch_only i386 -o $@ $(MODULES_I386)
+$(STATICLIB): $(STATICLIB)-x86_64 $(STATICLIB)-i386
+	$(LIPO) -create $(STATICLIB)-x86_64 $(STATICLIB)-i386 -output $(STATICLIB)
 
 $(STATICLIB)-x86_64: $(MODULES_X86_64)
 	$(LIBTOOL) -arch_only x86_64 -o $@ $(MODULES_X86_64)
 
-$(SHAREDLIB): $(SHAREDLIB)-ppc $(SHAREDLIB)-i386 $(SHAREDLIB)-x86_64
-	$(LIPO) -create $(SHAREDLIB)-ppc $(SHAREDLIB)-i386 $(SHAREDLIB)-x86_64 -output $(SHAREDLIB)
+$(STATICLIB)-i386: $(MODULES_I386)
+	$(LIBTOOL) -arch_only i386 -o $@ $(MODULES_I386)
 
-$(SHAREDLIB)-ppc: $(MODULES_PPC)
-	$(CPP_PPC) -arch ppc -dynamiclib $(LIBRARIES_PPC) -o $@ $(MODULES_PPC)
-
-$(SHAREDLIB)-i386: $(MODULES_I386)
-	$(CPP_I386) -arch i386 -dynamiclib $(LIBRARIES_I386) -o $@ $(MODULES_I386)
+$(SHAREDLIB): $(SHAREDLIB)-x86_64 $(SHAREDLIB)-i386
+	$(LIPO) -create $(SHAREDLIB)-x86_64 $(SHAREDLIB)-i386 -output $(SHAREDLIB)
 
 $(SHAREDLIB)-x86_64: $(MODULES_X86_64)
 	$(CPP_X86_64) -arch x86_64 -dynamiclib $(LIBRARIES_X86_64) -o $@ $(MODULES_X86_64)
 
-.c.o-ppc:
-	$(CC_PPC) $(CFLAGS_PPC) -c $< -o $@
-
-.c.o-i386:
-	$(CC_I386) $(CFLAGS_I386) -c $< -o $@
+$(SHAREDLIB)-i386: $(MODULES_I386)
+	$(CPP_I386) -arch i386 -dynamiclib $(LIBRARIES_I386) -o $@ $(MODULES_I386)
 
 .c.o-x86_64:
 	$(CC_X86_64) $(CFLAGS_X86_64) -c $< -o $@
 
-.cpp.o-ppc:
-	$(CPP_PPC) $(CPPFLAGS_PPC) -c $< -o $@
-
-.cpp.o-i386:
-	$(CPP_I386) $(CPPFLAGS_I386) -c $< -o $@
+.c.o-i386:
+	$(CC_I386) $(CFLAGS_I386) -c $< -o $@
 
 .cpp.o-x86_64:
 	$(CPP_X86_64) $(CPPFLAGS_X86_64) -c $< -o $@
 
+.cpp.o-i386:
+	$(CPP_I386) $(CPPFLAGS_I386) -c $< -o $@
+
 install:
-	install -d -m 755 -o root -g wheel $(INCDIR) $(INSTALLDIR)
-	install -m 644 -o root -g wheel $(HEADER) $(INCDIR)
-	install -m 644 -o root -g wheel $(SHAREDLIB) $(STATICLIB) $(INSTALLDIR)
+	install -d -m 755 $(INCDIR) $(INSTALLDIR)
+	install -m 644 $(HEADER) $(INCDIR)
+	install -m 644 $(SHAREDLIB) $(STATICLIB) $(INSTALLDIR)
 	ranlib -sf $(INSTALLDIR)/$(STATICLIB)
 	ln -sf $(SHAREDLIB) $(INSTALLDIR)/$(LIBNAME)
 
 clean:
-	rm -f core Dist/*.* u2dtmp* $(MODULES_PPC) $(MODULES_I386) $(MODULES_X86_64) $(STATICLIB) $(STATICLIB)-ppc $(STATICLIB)-i386 $(SHAREDLIB) $(SHAREDLIB)-ppc $(SHAREDLIB)-i386 $(SHAREDLIB)-x86_64
+	rm -f core Dist/*.* u2dtmp* $(MODULES_X86_64) $(MODULES_I386) $(STATICLIB) $(STATICLIB)-x86_64 $(STATICLIB)-i386 $(SHAREDLIB) $(SHAREDLIB)-x86_64 $(SHAREDLIB)-i386
