@@ -1,5 +1,6 @@
 #include "LCPSolver.h"
 #include "Lemke.h"
+#include <cstdio>
 
 namespace lcpsolver {
 

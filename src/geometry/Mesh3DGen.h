@@ -12,7 +12,7 @@
 #include <vector>
 
 using namespace std;
-#include <Eigen/dense>
+#include <Eigen/Dense>
 
 namespace geometry { 
     class Mesh3DGen{

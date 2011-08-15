@@ -1,6 +1,7 @@
 #include "CornerTable.h"
 #include "Mesh3DTriangle.h"
 #include <map>
+#include <cstdio>
 
 namespace geometry {
 

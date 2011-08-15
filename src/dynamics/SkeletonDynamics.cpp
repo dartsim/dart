@@ -10,7 +10,7 @@
 #include "BodyNodeDynamics.h"
 #include "model3d/Joint.h"
 #include "model3d/BodyNode.h"
-#include "model3d/dof.h"
+#include "model3d/Dof.h"
 #include "utils/UtilsMath.h"
 
 using namespace Eigen;

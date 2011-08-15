@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <Eigen/Eigen>
+#include <cstdio>
 
 using namespace std;
 using namespace Eigen;
