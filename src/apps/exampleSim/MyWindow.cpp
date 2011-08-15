@@ -1,7 +1,7 @@
 #include "MyWindow.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "utils/UtilsMath.h"
-#include "yui/glFuncs.h"
+#include "yui/GLFuncs.h"
 #include <cstdio>
 
 using namespace std;

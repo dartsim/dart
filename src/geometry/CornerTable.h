@@ -9,7 +9,7 @@
 #ifndef GEOMETRY_CORNERTABLE_H
 #define GEOMETRY_CORNERTABLE_H
 
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include <vector>
 using namespace std;
 

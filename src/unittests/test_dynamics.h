@@ -8,7 +8,7 @@
 #include "model3d/BodyNode.h"
 #include "utils/Paths.h"
 #include <iostream>
-#include <Eigen/dense>
+#include <Eigen/Dense>
 
 
 TEST(DYNAMICS, COMPARE_VELOCITIES) {

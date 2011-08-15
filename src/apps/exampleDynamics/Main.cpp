@@ -7,7 +7,7 @@
 #include "MyWindow.h"
 
 #include <iostream>
-#include <Eigen/dense>
+#include <Eigen/Dense>
 
 using namespace std;
 using namespace Eigen;
