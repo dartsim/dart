@@ -29,7 +29,7 @@ namespace model3d {
     {
         mJointsChild.clear();
         mHandles.clear();
-        mDependantDofs.clear();
+        mDependentDofs.clear();
 
         mID = BodyNode::msBodyNodeCount++;
 
@@ -66,7 +66,7 @@ namespace model3d {
 
         const int numLocalDofs = getNumLocalDofs();
         mTq.resize(numLocalDofs, Matrix4d::Zero());
-        const int numDepDofs = getNumDependantDofs();
+        const int numDepDofs = getNumDependentDofs();
         mWq.resize(numDepDofs, Matrix4d::Zero());
         
         mJv = MatrixXd::Zero(3, numDepDofs);
@@ -96,7 +96,7 @@ namespace model3d {
 
     void BodyNode::updateFirstDerivatives() {
         const int numLocalDofs = getNumLocalDofs();
-        const int numParentDofs = getNumDependantDofs()-numLocalDofs;
+        const int numParentDofs = getNumDependentDofs()-numLocalDofs;
 
         // Update Local Derivatives
         for(int i = 0; i < numLocalDofs; i++) {
@@ -122,7 +122,7 @@ namespace model3d {
 
     void BodyNode::evalJacLin() {
         mJv.setZero();
-        for (unsigned int i=0; i<mDependantDofs.size(); i++) {
+        for (unsigned int i=0; i<mDependentDofs.size(); i++) {
             VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
             mJv(0, i) = Ji(0);
             mJv(1, i) = Ji(1);
@@ -132,7 +132,7 @@ namespace model3d {
 
     void BodyNode::evalJacAng() {
         mJw.setZero();
-        for (unsigned int i=mNumRootTrans; i<mDependantDofs.size(); i++) {
+        for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
             MatrixXd omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
             VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
 
@@ -152,20 +152,20 @@ namespace model3d {
     }
     
     void BodyNode::setDependDofList() {
-        mDependantDofs.clear();
+        mDependentDofs.clear();
         if (mNodeParent != NULL) {
-            mDependantDofs.insert(mDependantDofs.end(), mNodeParent->mDependantDofs.begin(), mNodeParent->mDependantDofs.end());
+            mDependentDofs.insert(mDependentDofs.end(), mNodeParent->mDependentDofs.begin(), mNodeParent->mDependentDofs.end());
         }
 
         for (int i = 0; i < getNumLocalDofs(); i++) {
             int dofID = getDof(i)->getSkelIndex();
-            mDependantDofs.push_back(dofID);
+            mDependentDofs.push_back(dofID);
         }
 
 #if _DEBUG
-        for (unsigned int i = 0; i < mDependantDofs.size() - 1; i++) {
-            int now = mDependantDofs[i];
-            int next = mDependantDofs[i + 1];
+        for (unsigned int i = 0; i < mDependentDofs.size() - 1; i++) {
+            int now = mDependentDofs[i];
+            int next = mDependentDofs[i + 1];
             if (now > next) {
                 cerr << "Array not sorted!!!" << endl;
                 exit(0);
@@ -175,7 +175,7 @@ namespace model3d {
     }
 
     bool BodyNode::dependsOn(int _dofIndex) const {
-        return binary_search(mDependantDofs.begin(), mDependantDofs.end(), _dofIndex);
+        return binary_search(mDependentDofs.begin(), mDependentDofs.end(), _dofIndex);
     }
         
     void BodyNode::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor, int _depth) const {

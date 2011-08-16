@@ -1,5 +1,5 @@
 /*
-    RTQL8, Copyright (c) 2011 Georgia Tech Graphics Lab
+    Rtql8, Copyright (c) 2011 Georgia Tech Graphics Lab
     All rights reserved.
 
     Author  Sumit Jain
@@ -36,8 +36,8 @@ namespace dynamics{
         if(mInitializedInvDyn) return;
         BodyNode::init();
 
-        mJwJoint = MatrixXd::Zero(3, getNumDependantDofs());
-        mJwDotJoint = MatrixXd::Zero(3, getNumDependantDofs());
+        mJwJoint = MatrixXd::Zero(3, getNumDependentDofs());
+        mJwDotJoint = MatrixXd::Zero(3, getNumDependentDofs());
         mVelBody.setZero();
         mOmegaBody.setZero();
         mVelDotBody.setZero();
@@ -55,18 +55,18 @@ namespace dynamics{
          
         mVel.setZero();
         mOmega.setZero();
-        mM = MatrixXd::Zero(getNumDependantDofs(), getNumDependantDofs());
-        mC = MatrixXd::Zero(getNumDependantDofs(), getNumDependantDofs());
-        mCvec = VectorXd::Zero(getNumDependantDofs());
-        mG = VectorXd::Zero(getNumDependantDofs());
+        mM = MatrixXd::Zero(getNumDependentDofs(), getNumDependentDofs());
+        mC = MatrixXd::Zero(getNumDependentDofs(), getNumDependentDofs());
+        mCvec = VectorXd::Zero(getNumDependentDofs());
+        mG = VectorXd::Zero(getNumDependentDofs());
         mTqq.resize(getNumLocalDofs());
         for(int i=0; i<getNumLocalDofs(); i++) mTqq[i].resize(getNumLocalDofs(), Matrix4d::Zero());
-        mWqq.resize(getNumDependantDofs());
-        for(int i=0; i<getNumDependantDofs(); i++) mWqq[i].resize(getNumDependantDofs(), Matrix4d::Zero());
-        mJvq.resize(getNumDependantDofs(), MatrixXd::Zero(3, getNumDependantDofs()));
-        mJwq.resize(getNumDependantDofs(), MatrixXd::Zero(3, getNumDependantDofs()));
-        mJvDot = MatrixXd::Zero(3, getNumDependantDofs());
-        mJwDot = MatrixXd::Zero(3, getNumDependantDofs());
+        mWqq.resize(getNumDependentDofs());
+        for(int i=0; i<getNumDependentDofs(); i++) mWqq[i].resize(getNumDependentDofs(), Matrix4d::Zero());
+        mJvq.resize(getNumDependentDofs(), MatrixXd::Zero(3, getNumDependentDofs()));
+        mJwq.resize(getNumDependentDofs(), MatrixXd::Zero(3, getNumDependentDofs()));
+        mJvDot = MatrixXd::Zero(3, getNumDependentDofs());
+        mJwDot = MatrixXd::Zero(3, getNumDependentDofs());
 
         mInitializedNonRecursiveDyn = true;
     }
@@ -144,11 +144,11 @@ namespace dynamics{
         if(_computeJacobians){
             // compute the Angular Jacobian first - use it for Linear jacobian as well
             if(nodeParent){
-                mJw.leftCols(nodeParent->getNumDependantDofs()) = nodeParent->mJw;
+                mJw.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJw;
                 mJw.rightCols(getNumLocalDofs()) = nodeParent->mW.topLeftCorner(3,3)*mJwJoint;
                 Vector3d clparent = nodeParent->getLocalCOM();
                 Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
-                mJv.leftCols(nodeParent->getNumDependantDofs()) = nodeParent->mJv - utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent))*nodeParent->mJw;
+                mJv.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJv - utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent))*nodeParent->mJw;
                 mJv -= utils::makeSkewSymmetric(mW.topLeftCorner(3,3)*mCOMLocal)*mJw;
             }
             // base case: root
@@ -193,7 +193,7 @@ namespace dynamics{
 
     void BodyNodeDynamics::updateSecondDerivatives() {
         const int numLocalDofs = getNumLocalDofs();
-        const int numParentDofs = getNumDependantDofs()-numLocalDofs;
+        const int numParentDofs = getNumDependentDofs()-numLocalDofs;
         BodyNodeDynamics *nodeParentDyn = static_cast<BodyNodeDynamics*>(mNodeParent);
 
         // Update Local Derivatives
@@ -242,7 +242,7 @@ namespace dynamics{
     void BodyNodeDynamics::evalJacDerivLin(int _qi){
         mJvq.at(_qi).setZero();
         if(_qi<mNumRootTrans) return;
-        for(int j=mNumRootTrans; j<getNumDependantDofs(); j++){
+        for(int j=mNumRootTrans; j<getNumDependentDofs(); j++){
             VectorXd Jvqi = utils::xformHom(mWqq.at(_qi).at(j), getLocalCOM());
             mJvq.at(_qi)(0,j) = Jvqi[0];
             mJvq.at(_qi)(1,j) = Jvqi[1];
@@ -253,7 +253,7 @@ namespace dynamics{
     void BodyNodeDynamics::evalJacDerivAng(int _qi){
         mJwq.at(_qi).setZero();
         if(_qi<mNumRootTrans) return;
-        for(int j=mNumRootTrans; j<getNumDependantDofs(); j++){
+        for(int j=mNumRootTrans; j<getNumDependentDofs(); j++){
             Matrix3d JwqijSkewSymm = mWqq.at(_qi).at(j).topLeftCorner(3,3)*mW.topLeftCorner(3,3).transpose() + mWq.at(j).topLeftCorner(3,3)*mWq.at(_qi).topLeftCorner(3,3).transpose();
             Vector3d Jwqij = utils::fromSkewSymmetric(JwqijSkewSymm);
             mJwq.at(_qi)(0,j) = Jwqij[0];
@@ -264,29 +264,29 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalJacDotLin(const VectorXd &_qDotSkel) {
         mJvDot.setZero();
-        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
-            mJvDot += mJvq.at(i)*_qDotSkel[mDependantDofs[i]];
+        for(int i=mNumRootTrans; i<getNumDependentDofs(); i++){
+            mJvDot += mJvq.at(i)*_qDotSkel[mDependentDofs[i]];
         }
     }
 
     void BodyNodeDynamics::evalJacDotAng(const VectorXd &_qDotSkel) {
         mJwDot.setZero();
-        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
-            mJwDot += mJwq.at(i)*_qDotSkel[mDependantDofs[i]];
+        for(int i=mNumRootTrans; i<getNumDependentDofs(); i++){
+            mJwDot += mJwq.at(i)*_qDotSkel[mDependentDofs[i]];
         }
     }
 
     void BodyNodeDynamics::evalVelocity(const VectorXd &_qDotSkel){
         mVel.setZero();
-        for(int i=0; i<getNumDependantDofs(); i++){
-            mVel += mJv.col(i)*_qDotSkel[mDependantDofs[i]];
+        for(int i=0; i<getNumDependentDofs(); i++){
+            mVel += mJv.col(i)*_qDotSkel[mDependentDofs[i]];
         }
     }
 
     void BodyNodeDynamics::evalOmega(const VectorXd &_qDotSkel){
         mOmega.setZero();
-        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
-            mOmega += mJw.col(i)*_qDotSkel[mDependantDofs[i]];
+        for(int i=mNumRootTrans; i<getNumDependentDofs(); i++){
+            mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
         }
     }
 
@@ -320,9 +320,9 @@ namespace dynamics{
         // term 1
         Vector3d Jvdqd = Vector3d::Zero();
         Vector3d Jwdqd = Vector3d::Zero();
-        for(int i=mNumRootTrans; i<getNumDependantDofs(); i++){
-            Jvdqd += mJvDot.col(i)*_qDotSkel[mDependantDofs[i]];
-            Jwdqd += mJwDot.col(i)*_qDotSkel[mDependantDofs[i]];
+        for(int i=mNumRootTrans; i<getNumDependentDofs(); i++){
+            Jvdqd += mJvDot.col(i)*_qDotSkel[mDependentDofs[i]];
+            Jwdqd += mJwDot.col(i)*_qDotSkel[mDependentDofs[i]];
         }
         mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
         // term 2
@@ -330,7 +330,7 @@ namespace dynamics{
 
         //// test
         //evalCoriolisMatrix(_qDotSkel);
-        //for(int i=0; i<mC.cols(); i++) mCvec += mC.col(i)*_qDotSkel[mDependantDofs[i]];
+        //for(int i=0; i<mC.cols(); i++) mCvec += mC.col(i)*_qDotSkel[mDependentDofs[i]];
     }
 
     void BodyNodeDynamics::evalGravityVector(const Vector3d &_gravity){
@@ -341,27 +341,27 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::addMass(Eigen::MatrixXd &_M){
-        for(int i=0; i<getNumDependantDofs(); i++){
-            for(int j=0; j<getNumDependantDofs(); j++){
-                _M(mDependantDofs[i], mDependantDofs[j]) += mM(i, j);
+        for(int i=0; i<getNumDependentDofs(); i++){
+            for(int j=0; j<getNumDependentDofs(); j++){
+                _M(mDependentDofs[i], mDependentDofs[j]) += mM(i, j);
             }
         }
     }
     void BodyNodeDynamics::addCoriolis(Eigen::MatrixXd &_C){
-        for(int i=0; i<getNumDependantDofs(); i++){
-            for(int j=0; j<getNumDependantDofs(); j++){
-                _C(mDependantDofs[i], mDependantDofs[j]) += mC(i, j);
+        for(int i=0; i<getNumDependentDofs(); i++){
+            for(int j=0; j<getNumDependentDofs(); j++){
+                _C(mDependentDofs[i], mDependentDofs[j]) += mC(i, j);
             }
         }
     }
     void BodyNodeDynamics::addCoriolisVec(Eigen::VectorXd &_Cvec){
-        for(int i=0; i<getNumDependantDofs(); i++){
-            _Cvec[mDependantDofs[i]] += mCvec[i];
+        for(int i=0; i<getNumDependentDofs(); i++){
+            _Cvec[mDependentDofs[i]] += mCvec[i];
         }
     }
     void BodyNodeDynamics::addGravity(Eigen::VectorXd &_G){
-        for(int i=0; i<getNumDependantDofs(); i++){
-            _G[mDependantDofs[i]] += mG[i];
+        for(int i=0; i<getNumDependentDofs(); i++){
+            _G[mDependentDofs[i]] += mG[i];
         }
     }
 
