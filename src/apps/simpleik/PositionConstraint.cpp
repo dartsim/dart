@@ -34,8 +34,8 @@ namespace optimizer {
 
     void PositionConstraint::fillObjGrad(std::vector<double>& dG) {
         VectorXd dP = evalCon();
-        for(int dofIndex = 0; dofIndex < mNode->getNumDependantDofs(); dofIndex++) {
-            int i = mNode->getDependantDof(dofIndex);
+        for(int dofIndex = 0; dofIndex < mNode->getNumDependentDofs(); dofIndex++) {
+            int i = mNode->getDependentDof(dofIndex);
             
             const Var* v = mVariables[i];
             double w = v->mWeight;

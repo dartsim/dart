@@ -45,8 +45,6 @@ namespace model3d {
     template <class SkeletonType>
     class FileInfoSkel {
     public:
-  
-    public:
         FileInfoSkel();
         virtual ~FileInfoSkel();
 	
