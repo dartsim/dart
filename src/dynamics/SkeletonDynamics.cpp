@@ -146,7 +146,7 @@ namespace dynamics{
                     BodyNode* node = jnt->getChildNode();
                     int firstIndex = 0;
                     if( jnt->getParentNode()!=NULL )
-                        firstIndex = jnt->getParentNode()->getNumDependantDofs();
+                        firstIndex = jnt->getParentNode()->getNumDependentDofs();
                         
                     // extract the local Jw
                     Matrix3d oldJwBody;

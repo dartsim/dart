@@ -67,9 +67,9 @@ namespace model3d {
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
         void setDependDofList(); ///< Set up the list of dependent dofs 
-        bool dependsOn(int _dofIndex) const; ///< Test whether this dof is dependant or not \warning{You may want to use getNumDependantDofs / getDependantDof for efficiency}
-        inline int getNumDependantDofs() const { return mDependantDofs.size(); } ///< The number of the dofs which this node is affected
-        inline int getDependantDof(int _arrayIndex) { return mDependantDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependantDofs)
+        bool dependsOn(int _dofIndex) const; ///< Test whether this dof is dependent or not \warning{You may want to use getNumDependentDofs / getDependentDof for efficiency}
+        inline int getNumDependentDofs() const { return mDependentDofs.size(); } ///< The number of the dofs which this node is affected
+        inline int getDependentDof(int _arrayIndex) { return mDependentDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependentDofs)
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
         void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
@@ -118,7 +118,7 @@ namespace model3d {
         BodyNode *mNodeParent;      ///< Parent node
         std::vector<Marker *> mHandles; ///< List of handles associated
 
-        std::vector<int> mDependantDofs; ///< A list of dependant dof indices 
+        std::vector<int> mDependentDofs; ///< A list of dependent dof indices 
         int mNumRootTrans;  ///< keep track of the root translation DOFs only if they are the first ones
 
         double mMass; ///< Mass of this node; zero if no primitive
