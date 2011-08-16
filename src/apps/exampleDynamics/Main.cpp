@@ -62,8 +62,8 @@ int main(int argc, char* argv[])
         nodei->evalJacAng();
         Vector3d v1 = Vector3d::Zero();
         Vector3d w1 = Vector3d::Zero();
-        for(int j=0; j<nodei->getNumDependantDofs(); j++){
-            int dj = nodei->getDependantDof(j);
+        for(int j=0; j<nodei->getNumDependentDofs(); j++){
+            int dj = nodei->getDependentDof(j);
             for(int k=0; k<3; k++) {
                 v1[k] += nodei->mJv(k, j)*qdot[dj];
                 w1[k] += nodei->mJw(k, j)*qdot[dj];
