@@ -173,7 +173,7 @@ as:
 \nonumber
  \dot{\vc{q}} & = & J_{\omega}^+ \bm{\omega}\\
  \nonumber
- & = &  \hat{J}_{\omega}^+ R^T D\bm{\omega} = \hat{J}_{\omega} \hat{\bm{\omega}} \\
+ & = &  \hat{J}_{\omega}^+ R^T D\bm{\omega} = \hat{J}_{\omega}^+ \hat{\bm{\omega}} \\
 % & = & \mbox{blockdiag}\left(\hat{J}_{\omega 1}^+,\hdots,\hat{J}_{\omega m}^+\right ) \mbox{blockdiag}\left(\vc{I}_3,\hdots,{R^0_{p(m)}}^T\right ) D\bm{\omega}
 \nonumber
 & = & \mbox{blockdiag}\left(\hat{J}_{\omega 1}^+,\hdots,\hat{J}_{\omega m}^+\right ) \hat{\bm{\omega}}\\
@@ -225,8 +225,8 @@ where $\vc{r}_k$ is the point of application of the Cartesian force
 $\vc{f}_k$ and $\bm{\tau}^{'}_k$ is the \emph{body torque} applied to link $k$ expressed in the world frame.
 
 \paragraph{Note.} Body torque $\bm{\tau}^{'}_k$ is the torque
-applied on link $k$ in the world frame and does \emph{not} include the torque induced by the linear forces $\vc{f}_i$. 
-However, the definition for torque in \eqnref{summary_dynamics} \emph{includes} the torque $[\vc{r}_k-\vc{x}_k] \vc{f}_i$ due to each force $\vc{f}_k$ ($\vc{x}_k$ is the COM of the link $i$). As a result, the linear Jacobian $J_{v}$ in \eqnref{summary_dynamics} is defined for the COM of the respective rigid link and $J^{'}_{v}$ in \eqnref{force_conversion} is defined for the point of application of the force. It is easy to verify that ${J^{'}_{vk}}^T\vc{f}_k = J_{vk}^T\vc{f}_k + J_{\omega k}^T[\vc{r}_k-\vc{x}_k] \vc{f}_k$. \ie $\bm{\tau}_k = \bm{\tau}^{'}_k + [\vc{r}_k-\vc{x}_k] \vc{f}_k$.
+applied on link $k$ in the world frame and does \emph{not} include the torque induced by the linear forces $\vc{f}_k$. 
+However, the definition for torque in \eqnref{summary_dynamics} \emph{includes} the torque $[\vc{r}_k-\vc{x}_k] \vc{f}_k$ due to each force $\vc{f}_k$ ($\vc{x}_k$ is the COM of the link $k$). As a result, the linear Jacobian $J_{v}$ in \eqnref{summary_dynamics} is defined for the COM of the respective rigid link and $J^{'}_{v}$ in \eqnref{force_conversion} is defined for the point of application of the force. It is easy to verify that ${J^{'}_{vk}}^T\vc{f}_k = J_{vk}^T\vc{f}_k + J_{\omega k}^T[\vc{r}_k-\vc{x}_k] \vc{f}_k$. \ie $\bm{\tau}_k = \bm{\tau}^{'}_k + [\vc{r}_k-\vc{x}_k] \vc{f}_k$.
 %However, for the sake of clarity, we use the new definition of the Jacobian in \eqnref{force_conversion} and abuse the notation by denoting it by $J_v$.
 
 Often many controllers (such as a tracking controller) find it convenient to compute the Cartesian-space \emph{joint torques} in the local frame of the parent link rather than body torques in the world frame. Joint torque $\hat{\bm{\tau}}_k$ in the frame of parent link $p(k)$ is defined such that positive torque in the world frame $R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the link $k$ and negative torque $-R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the parent link $p(k)$. Therefore, the body torque $\bm{\tau}^{'}_k$ applied to the link $k$ can be written in terms of the joint torques as $\bm{\tau}^{'}_k = R^0_{p(k)}\hat{\bm{\tau}}_k - \sum_l R^0_{k} \hat{\bm{\tau}}_l$, $\forall l:k=p(l)$. Collecting the body torques for all the rigid links in the vector $\bm{\tau}$, the relation between the body torques and the joint torques can be defined as:
