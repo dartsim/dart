@@ -107,13 +107,17 @@ namespace model3d {
         // parent dofs
         for (int i = 0; i < numParentDofs; i++) {
             assert(mNodeParent);    // should always have a parent if enters this for loop
-            if(i<mNumRootTrans) mWq.at(i) = mNodeParent->mWq.at(i); // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
-            else mWq.at(i) = mNodeParent->mWq.at(i) * mT;
+            if(i<mNumRootTrans) 
+                mWq.at(i) = mNodeParent->mWq.at(i); // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
+            else 
+                mWq.at(i) = mNodeParent->mWq.at(i) * mT;
         }
         // local dofs
         for(int i = 0; i < numLocalDofs; i++){
-            if(mNodeParent) mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
-            else mWq.at(i) = mTq.at(i);
+            if(mNodeParent) 
+                mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
+            else 
+                mWq.at(i) = mTq.at(i);
         }
 
         evalJacLin();

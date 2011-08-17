@@ -14,8 +14,8 @@ void MyWindow::initDyn()
     mDofs.resize(mModel->getNumDofs());
     mDofVels.resize(mModel->getNumDofs());
     for(unsigned int i=0; i<mModel->getNumDofs(); i++){
-        mDofs[i] = utils::random(-0.5,0.5);
-        mDofVels[i] = utils::random(-1.0,1.0);
+        mDofs[i] = utils::random(-0.1,0.1);
+        mDofVels[i] = utils::random(-0.1,0.1);
     }
     mModel->setPose(mDofs,false,false);
 }

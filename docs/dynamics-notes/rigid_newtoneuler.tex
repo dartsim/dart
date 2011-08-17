@@ -4,9 +4,9 @@ body dynamics. We begin with the momenta of the rigid body whose mass,
 position of the center of mass (COM), orientation, linear velocity of
 the COM, and angular velocity are $m$, $\vc{x}$, $R$, $\vc{v}$, and
 $\bm{\omega}$ respectively (same as defined in Witkin and Baraff's
-course notes). The linear momentum \vc{p} is computed as:
+course notes). The linear momentum \vc{P} is computed as:
 \begin{eqnarray}
-\vc{p} &=& \sum_i \vc{p}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
+\vc{P} &=& \sum_i \vc{P}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
     \times \vc{r}_i') \nonumber \\
  &=& m \vc{v}
 \end{eqnarray}
@@ -14,7 +14,7 @@ where $\vc{r}_i' = \vc{r}_i - \vc{x}$. Because $\sum_i \sInfMass
 \vc{r}_i' = \vc{0}$ (property of the COM), the second term vanishes. The angular momentum \vc{L} about the COM is computed as:
 \begin{eqnarray}
 \nonumber
-\vc{L} & = & \sum_i \vc{L}_i  = \sum_i \vc{r}_i' \times \vc{p}_i\\
+\vc{L} & = & \sum_i \vc{L}_i  = \sum_i \vc{r}_i' \times \vc{P}_i\\
 \nonumber
 & = & \sum_i \sInfMass \vc{r}_i' \times (\vc{v} + \bm{\omega} \times \vc{r}_i')\\
 &= & \vc{0} + \sum_i \sInfMass [\vc{r}_i'][\bm{\omega}]\vc{r}_i' = \left ( \sum_i -\sInfMass [\vc{r}_i'][\vc{r}_i'] \right )\bm{\omega}
