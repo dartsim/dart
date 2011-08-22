@@ -9,7 +9,7 @@ TAGS
 .DS_Store
 bin/
 lib/
-thirdparty/
+thirdparty/lib/
 *.orig
 *.obj
 *.idb
