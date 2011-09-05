@@ -44,6 +44,7 @@ namespace optimizer {
         createBoxes();
 
         // add positional constraints
+        mConstraints.clear();
         for (int i = 0; i < getSkel()->getNumHandles(); i++) {
             Marker* marker = getSkel()->getHandle(i);
             BodyNode* node = marker->getNode();
@@ -51,12 +52,11 @@ namespace optimizer {
             PositionConstraint* p = new PositionConstraint(
                 this->vars(), getSkel(), node, offset, Eigen::Vector3d::Zero());
             objBox()->add(p);
+            mConstraints.push_back(p);
         }
 
         LOG(INFO) << "# Constraints = " << conBox()->getNumConstraints();
         LOG(INFO) << "# Objectives = " << objBox()->getNumConstraints();
-
-    
 
         LOG(INFO) << "initProblem OK";
     }
@@ -75,5 +75,8 @@ namespace optimizer {
         return mFileInfoSkel->getSkel();
     }
 
+    PositionConstraint* IKProblem::getConstraint(int index) const {
+        return mConstraints[index];
+    }
 
 } // namespace optimizer
