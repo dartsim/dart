@@ -1,6 +1,8 @@
 #include "PositionConstraint.h"
 using namespace Eigen;
 
+#include <glog/logging.h>
+
 #include "model3d/BodyNode.h"
 #include "model3d/Skeleton.h"
 #include "optimizer/Var.h"
@@ -34,14 +36,19 @@ namespace optimizer {
 
     void PositionConstraint::fillObjGrad(std::vector<double>& dG) {
         VectorXd dP = evalCon();
+
         for(int dofIndex = 0; dofIndex < mNode->getNumDependentDofs(); dofIndex++) {
+            // VLOG(1) << "dofIndex = " << dofIndex;
             int i = mNode->getDependentDof(dofIndex);
+            // VLOG(1) << "i = " << i;
             
             const Var* v = mVariables[i];
             double w = v->mWeight;
+            // VLOG(1) << "w = " << w;
 
-            VectorXd J = utils::xformHom(mNode->mWq.at(i),mOffset);
+            VectorXd J = utils::xformHom(mNode->mWq.at(dofIndex),mOffset);
             J /= w;
+            // VLOG(1) << "J = " << J.transpose();
             dG.at(i) += dP.dot(J);
         }
     }
