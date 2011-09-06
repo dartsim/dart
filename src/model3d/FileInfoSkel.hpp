@@ -18,6 +18,8 @@
 
 #include <Eigen/Dense>
 
+#include <glog/logging.h>
+
 #include "renderer/RenderInterface.h"
 #include "Skeleton.h"
 #include "BodyNode.h"
@@ -49,6 +51,7 @@ namespace model3d {
         virtual ~FileInfoSkel();
 	
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const; ///< Note: _color is not used when _useDefaultColor=false
+        bool loadFile(const char* _filename);
         bool loadFile(const char* _filename, SkeletonFileType _type);
         bool saveFile(const char* _filename) const;
         
@@ -78,6 +81,23 @@ namespace model3d {
     void FileInfoSkel<SkeletonType>::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
         mSkel->draw(_ri, _color, _useDefaultColor);
     }
+
+    template <class SkeletonType>
+    bool FileInfoSkel<SkeletonType>::loadFile( const char* _fName ) {
+
+        std::string ext( _fName );
+        ext = ext.substr(ext.length() - 4);
+
+        if (ext == ".vsk") {
+            return loadFile(_fName, VSK);
+        } else if (ext == "skel") {
+            return loadFile(_fName, SKEL);
+        } else {
+            VLOG(1) << "invalid skeleton ext: " << ext;
+            return false;
+        }
+    }
+
 
     template <class SkeletonType>
     bool FileInfoSkel<SkeletonType>::loadFile( const char* _fName, SkeletonFileType _type ) {
