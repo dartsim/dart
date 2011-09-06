@@ -20,18 +20,27 @@ using namespace optimizer;
 #include "utils/Paths.h"
 
 namespace optimizer {
-    IKProblem::IKProblem()
+    IKProblem::IKProblem(const char* const filenameSkel)
         : Problem(), mFileInfoSkel(NULL) {
-        initProblem();
+        initProblem(filenameSkel);
     }
 
     IKProblem::~IKProblem() {
         delete mFileInfoSkel;
     }
 
-    void IKProblem::initProblem() {
+    void IKProblem::initProblem(const char* const filenameSkel) {
         mFileInfoSkel = new FileInfoSkel<Skeleton>();
-        bool result = mFileInfoSkel->loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk", model3d::VSK);
+
+
+        string ext( filenameSkel );
+        ext = ext.substr(ext.length() - 3);
+        bool result = false;
+        if (ext == "vsk") {
+            result = mFileInfoSkel->loadFile(filenameSkel, model3d::VSK);
+        } else {
+            result = mFileInfoSkel->loadFile(filenameSkel, model3d::SKEL);
+        }
         CHECK(result);
 
         // add variables

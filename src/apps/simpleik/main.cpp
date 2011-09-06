@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 using namespace std;
 #include <glog/logging.h>
 #include <gflags/gflags.h>
@@ -19,6 +20,13 @@ using namespace Eigen;
 
 #include "utils/Paths.h"
 
+DEFINE_string(skel, GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk",
+              "The input C3D file");
+DEFINE_string(c3d, GROUNDZERO_DATA_PATH"c3d/squat.c3d",
+              "The input C3D file");
+DEFINE_string(dof, GROUNDZERO_DATA_PATH"dof/result.dof",
+              "The output dof file");
+
 int main(int argc, char* argv[]) {
     // Init google libraries
     ParseCommandLineFlags(&argc, &argv, true);
@@ -29,12 +37,20 @@ int main(int argc, char* argv[]) {
     FLAGS_minloglevel = INFO;
     FLAGS_v = 1;
 
+    string filename_skel = FLAGS_skel;
+    string filename_c3d = FLAGS_c3d;
+    string filename_dof = FLAGS_dof;
+
+    LOG(INFO) << "filename_skel = " << filename_skel;
+    LOG(INFO) << "filename_c3d  = " << filename_c3d;
+    LOG(INFO) << "filename_dof  = " << filename_dof;
+
     LOG(INFO) << "simpleik begins";
 
-    IKProblem prob;
+    IKProblem prob(filename_skel.c_str());
 
     FileInfoC3D c3dFile;
-    bool result = c3dFile.loadFile(GROUNDZERO_DATA_PATH"c3d/squat.c3d");
+    bool result = c3dFile.loadFile(filename_c3d.c_str());
     CHECK(result);
 
     FileInfoDof resultDof(prob.getSkel());
@@ -76,8 +92,8 @@ int main(int argc, char* argv[]) {
         resultDof.addDof(pose);
     }
     
-    resultDof.saveFile(GROUNDZERO_DATA_PATH"dof/result.dof", 0, resultDof.getNumFrames());
-    LOG(INFO) << "Save the result to ["GROUNDZERO_DATA_PATH"dof/result.dof]";
+    resultDof.saveFile(filename_dof.c_str(), 0, resultDof.getNumFrames());
+    LOG(INFO) << "Save the result to [" << filename_dof.c_str() << "]";
     LOG(INFO) << "Save OK";
 
     LOG(INFO) << "simpleik OK";
