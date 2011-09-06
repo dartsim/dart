@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     }
 	
     FileInfoSkel<Skeleton> model;
-    model.loadFile(modelfile, model3d::SKEL);
+    model.loadFile(modelfile);
     // model.getSkel();
 
     FileInfoDof motion(model.getSkel());

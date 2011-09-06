@@ -35,12 +35,7 @@ namespace optimizer {
 
         string ext( filenameSkel );
         ext = ext.substr(ext.length() - 3);
-        bool result = false;
-        if (ext == "vsk") {
-            result = mFileInfoSkel->loadFile(filenameSkel, model3d::VSK);
-        } else {
-            result = mFileInfoSkel->loadFile(filenameSkel, model3d::SKEL);
-        }
+        bool result = mFileInfoSkel->loadFile(filenameSkel);
         CHECK(result);
 
         // add variables

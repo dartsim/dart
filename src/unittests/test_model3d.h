@@ -13,14 +13,14 @@ TEST(MODEL3D, VSK_LOADER) {
     using namespace model3d;
   
     FileInfoSkel<Skeleton> modelFile;
-    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk", model3d::VSK);
-    // Skeleton* skel = modelFile.getSkel();
+    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk");
+    Skeleton* skel = modelFile.getSkel();
 
-    // EXPECT_TRUE(skel != NULL);
+    EXPECT_TRUE(skel != NULL);
 
-    // EXPECT_EQ(skel->getNumDofs(), 66);
-    // EXPECT_EQ(skel->getNumNodes(), 30);
-    // EXPECT_EQ(skel->getNumHandles(), 53);
+    EXPECT_EQ(skel->getNumDofs(), 66);
+    EXPECT_EQ(skel->getNumNodes(), 30);
+    EXPECT_EQ(skel->getNumHandles(), 53);
 }
 
 TEST(MODEL3D, C3D_LOADER) {
@@ -41,7 +41,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     using namespace model3d;
   
     FileInfoSkel<Skeleton> modelFile;
-    bool loadModelResult = modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk", model3d::VSK);
+    bool loadModelResult = modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk");
     ASSERT_TRUE(loadModelResult);
     
     Skeleton* skel = modelFile.getSkel();
