@@ -38,17 +38,6 @@ namespace model3d {
         BodyNode(const char *_name = NULL); ///< Default constructor. The name can be up to 128
         virtual ~BodyNode(); ///< Default destructor
 
-        // transformations
-        Eigen::Matrix4d mT; ///< Local transformation from parent to itself
-        Eigen::Matrix4d mW; ///< Global transformation
-        Eigen::Matrix3d mIc;    ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
-
-        // first derivatives
-        EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
-        EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
-        Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity of the COM = mJv * generalized_velocity
-        Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
-
         void init(); ///< Initialize the vector memebers with proper sizes
         void updateTransform(); ///< Update transformations w.r.t. the current dof values in Dof*
         void updateFirstDerivatives();  ///< Update the first derivatives of the transformations 
@@ -107,6 +96,11 @@ namespace model3d {
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
+        Eigen::Matrix4d getDerivLocalTransform(int index) const;
+        Eigen::Matrix4d getDerivWorldTransform(int index) const;
+        Eigen::MatrixXd getJacobianLinear() const;
+        Eigen::MatrixXd getJacobianAngular() const;
+        
     protected:
         
         char mName[MAX_NODE3D_NAME]; ///< Name
@@ -124,6 +118,18 @@ namespace model3d {
         double mMass; ///< Mass of this node; zero if no primitive
         Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame
         Skeleton *mSkel; ///< Pointer to the model this body node belongs to
+
+        // transformations
+        Eigen::Matrix4d mT; ///< Local transformation from parent to itself
+        Eigen::Matrix4d mW; ///< Global transformation
+        Eigen::Matrix3d mIc;    ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
+
+        // first derivatives
+        EIGEN_V_MAT4D mTq;  ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+        EIGEN_V_MAT4D mWq;  ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+        Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity of the COM = mJv * generalized_velocity
+        Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
+
 
     private:
         int mID; ///< A unique ID of this node globally 

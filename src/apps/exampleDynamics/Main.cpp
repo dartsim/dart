@@ -65,14 +65,14 @@ int main(int argc, char* argv[])
         for(int j=0; j<nodei->getNumDependentDofs(); j++){
             int dj = nodei->getDependentDof(j);
             for(int k=0; k<3; k++) {
-                v1[k] += nodei->mJv(k, j)*qdot[dj];
-                w1[k] += nodei->mJw(k, j)*qdot[dj];
+                v1[k] += nodei->getJacobianLinear()(k, j)*qdot[dj];
+                w1[k] += nodei->getJacobianAngular()(k, j)*qdot[dj];
             }
         }
 
         // compute velocities using inverse dynamics routine
-        Vector3d v2 = nodei->mW.topLeftCorner(3,3)*nodei->mVelBody;
-        Vector3d w2 = nodei->mW.topLeftCorner(3,3)*nodei->mOmegaBody;
+        Vector3d v2 = nodei->getWorldTransform().topLeftCorner(3,3)*nodei->mVelBody;
+        Vector3d w2 = nodei->getWorldTransform().topLeftCorner(3,3)*nodei->mOmegaBody;
 
         cout<<"Node: "<<nodei->getName()<<endl;
         //cout<<"Angular Jacobian non-recursive: \n"<<(nodei->mJw).rightCols(nodei->getParentJoint()->getNumDofsRot())<<endl;
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 
         skelFile.getSkel()->setPose(origq);
         skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
-        Matrix3d Ri = nodei->mW.topLeftCorner(3,3);
+        Matrix3d Ri = nodei->getWorldTransform().topLeftCorner(3,3);
 
         MatrixXd JwOrig = nodei->mJwJoint;
         MatrixXd JwDotOrig = nodei->mJwDotJoint;
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 
         skelFile.getSkel()->setPose(newq);
         skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
-        Matrix3d Rinew = nodei->mW.topLeftCorner(3,3);
+        Matrix3d Rinew = nodei->getWorldTransform().topLeftCorner(3,3);
 
         MatrixXd JwNew = nodei->mJwJoint;
         MatrixXd JwDotApprox = (JwNew-JwOrig)/dt;
