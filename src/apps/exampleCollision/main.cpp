@@ -69,6 +69,10 @@ float (*T1)[3];
 float (*R2)[3][3];
 float (*T2)[3];
 
+BVH_CollideResult cres;
+BVH_CollideResult cres_current;
+BVH_DistanceResult dres;
+
 
 
 void rotation(Vec3f v[3], float R[3][3])
@@ -231,6 +235,7 @@ EndDraw()
 {
   glFlush();
   glutSwapBuffers();
+  
 }
 
 inline void glVertex3v(float V[3]) { glVertex3fv(V); }
@@ -242,12 +247,11 @@ cb_display()
   BeginDraw();
 
   int i;
-  BVH_CollideResult cres;
-  BVH_DistanceResult dres;
+  
   double oglm[16];
-
+  
   Vec3f r1[3], r2[3];
-
+   
   switch(query_type)
   {
   case 0:
@@ -278,13 +282,20 @@ cb_display()
 	  rotation(r1, R1[step]);
 	  rotation(r2, R2[step]);
     
+	 
+	  
     collide(*torus1_tested, 
 		r1,translation(T1[step]),
 		*torus2_tested,
         r2,translation(T2[step]), 
-		&cres
+		&cres_current
 		                  );
-
+// 	
+// 	if(cres_current.numPairs()>0){
+// 		memcpy(&cres, &cres_current, sizeof(BVH_CollideResult));
+// 		printf("%d %d\n", cres_current.id1(0), cres_current.id2(0));
+// 	}
+// 	if(cres.numPairs()>0)printf("cres %d %d\n", cres.id1(0), cres.id2(0));
     // draw model 1 and its overlapping tris
 
     MVtoOGL(oglm,R1[step],T1[step]);
@@ -293,6 +304,7 @@ cb_display()
     glColor3f(1,1,1);
     torus1_drawn->Draw();
     glColor3f(1,0,0);
+
      for(i = 0; i < cres.numPairs(); i++)
      {
        torus1_drawn->DrawTri(cres.id1(i));
@@ -309,7 +321,7 @@ cb_display()
     glMultMatrixd(oglm);
     glColor3f(1,1,1);
     torus2_drawn->Draw();
-    glColor3f(1,1,0);
+    glColor3f(1,0,0);
      for(i = 0; i < cres.numPairs(); i++)
      {
        torus2_drawn->DrawTri(cres.id2(i));
@@ -389,6 +401,9 @@ cb_display()
   }
 
   EndDraw();
+
+  
+
 }
 
 void LoadPath(float (* &R)[3][3], float (* &T)[3], char *filename) 
@@ -543,6 +558,7 @@ int main(int argc, char **argv)
   // Enter the main loop.
 
   glutMainLoop();
+  
 }
 
 
