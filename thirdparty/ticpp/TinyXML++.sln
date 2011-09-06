@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TiCPP", "TiCPP.vcproj", "{A3ECF630-3CB2-2443-9292-E6345CCA782D}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TiCPP", "TiCPP.vcxproj", "{A3ECF630-3CB2-2443-9292-E6345CCA782D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
