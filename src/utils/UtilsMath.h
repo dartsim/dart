@@ -139,7 +139,7 @@ namespace utils {
     inline Matrix3d makeSkewSymmetric(const Vector3d& v){
         Matrix3d result = Matrix3d::Zero();
 		
-        result(0, 1) .= -v(2);
+        result(0, 1) = -v(2);
         result(1, 0) =  v(2);
         result(0, 2) =  v(1);
         result(2, 0) = -v(1);

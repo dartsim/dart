@@ -15,10 +15,10 @@ namespace optimizer {
     
     class IKProblem : public optimizer::Problem {
     public:
-        IKProblem();
+        IKProblem(const char* const filenameSkel);
         virtual ~IKProblem();
     
-        void initProblem();
+        void initProblem(const char* const filenameSkel);
         virtual void update(double* coefs);
         model3d::Skeleton* getSkel() const;
 
