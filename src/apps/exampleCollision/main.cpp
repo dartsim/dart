@@ -291,10 +291,10 @@ cb_display()
 		&cres_current
 		                  );
 // 	
-// 	if(cres_current.numPairs()>0){
-// 		memcpy(&cres, &cres_current, sizeof(BVH_CollideResult));
-// 		printf("%d %d\n", cres_current.id1(0), cres_current.id2(0));
-// 	}
+ 	if(cres_current.numPairs()>0){
+ 		memcpy(&cres, &cres_current, sizeof(BVH_CollideResult));
+ 		//printf("%d %d\n", cres_current.id1(0), cres_current.id2(0));
+ 	}
 // 	if(cres.numPairs()>0)printf("cres %d %d\n", cres.id1(0), cres.id2(0));
     // draw model 1 and its overlapping tris
 
