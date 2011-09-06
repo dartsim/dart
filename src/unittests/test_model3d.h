@@ -79,7 +79,8 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
 
 
     // Check the derivative of one global transform matrix
-    const Matrix4d& Wq = skel->getNode(10)->mWq.at(4);
+    // const Matrix4d& Wq = skel->getNode(10)->mWq.at(4);
+    const Matrix4d& Wq = skel->getNode(10)->getDerivWorldTransform(4);
     Matrix4d Wq_truth;
     Wq_truth << 0.121382, 0.413015, 0.902378, 0.161838
         ,-0.0175714, 0.00698451, 0.0149899, 0.00571836
@@ -96,7 +97,7 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     BodyNode *nodecheck = skel->getNode(23);
 
     // Linear Jacobian
-    const MatrixXd Jv = nodecheck->mJv;
+    const MatrixXd Jv = nodecheck->getJacobianLinear();
     MatrixXd Jv_truth = MatrixXd::Zero(Jv.rows(), Jv.cols());
     Jv_truth<<1, 0, 0, 0.013694, -0.0194371, -0.422612, 0.0157281, -0.00961473, -0.421925, 0.0026645, -0.0048767, -0.179914, -0.0013539, -0.00132969, -0.00885535, 
         0, 1, 0, 0.0321939, 0.00226492, -0.135736, 0.0330525, 0.00462613, -0.135448, 0.0181491, 0.00758086, -0.122187, 0.00532694, 0.0049221, -0.128917,
@@ -108,7 +109,8 @@ TEST(MODEL3D, TRANS_AND_DERIV) {
     }
 
     // Angular Jacobian
-    const MatrixXd Jwbody = nodecheck->mW.topLeftCorner(3,3).transpose()*nodecheck->mJw;
+    const MatrixXd Jwbody = nodecheck->getWorldTransform().topLeftCorner(3,3).transpose()
+        * nodecheck->getJacobianAngular();
     MatrixXd Jwbody_truth = MatrixXd::Zero(Jwbody.rows(), Jwbody.cols());
     Jwbody_truth << 0, 0, 0, 0.0818662, 0.996527, 0.000504051, 0.110263, 0.993552, 0.0249018, 0.0772274, 0.995683, 0.0423836, 0.648386, 0.628838, 0.0338389,
         0, 0, 0, -0.995079, 0.082001, -0.0518665, -0.992054, 0.111479, -0.0554717, -0.996033, 0.078601, -0.0313861, -0.629201, 0.649145, -0.00994729,

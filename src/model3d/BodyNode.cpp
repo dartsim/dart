@@ -244,6 +244,22 @@ namespace model3d {
     bool BodyNode::isPresent(Dof* _q) {
         return mJointParent->isPresent(_q);
     }
+
+    Eigen::Matrix4d BodyNode::getDerivLocalTransform(int index) const {
+        return mTq[index];
+    }
+    
+    Eigen::Matrix4d BodyNode::getDerivWorldTransform(int index) const {
+        return mWq[index];
+    }
+    
+    Eigen::MatrixXd BodyNode::getJacobianLinear() const {
+        return mJv;
+    }
+    
+    Eigen::MatrixXd BodyNode::getJacobianAngular() const {
+        return mJw;
+    }
     
 } // namespace model3d
 

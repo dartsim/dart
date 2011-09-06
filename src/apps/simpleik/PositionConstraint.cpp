@@ -46,7 +46,7 @@ namespace optimizer {
             double w = v->mWeight;
             // VLOG(1) << "w = " << w;
 
-            VectorXd J = utils::xformHom(mNode->mWq.at(dofIndex),mOffset);
+            VectorXd J = utils::xformHom(mNode->getDerivWorldTransform(dofIndex),mOffset);
             J /= w;
             // VLOG(1) << "J = " << J.transpose();
             dG.at(i) += dP.dot(J);

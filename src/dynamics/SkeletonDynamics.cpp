@@ -151,7 +151,8 @@ namespace dynamics{
                     // extract the local Jw
                     Matrix3d oldJwBody;
                     for(int j=0; j<3; j++){
-                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*node->mT.topLeftCorner(3,3).transpose();
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)
+                            * node->getLocalTransform().topLeftCorner(3,3).transpose();
                         oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
                     }
                 
