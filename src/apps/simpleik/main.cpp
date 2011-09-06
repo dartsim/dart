@@ -31,9 +31,6 @@ int main(int argc, char* argv[]) {
 
     LOG(INFO) << "simpleik begins";
 
-    CHECK(1 + 2 == 3) << "more explanation";
-
-
     IKProblem prob;
 
     FileInfoC3D c3dFile;
@@ -46,9 +43,29 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < c3dFile.getNumFrames(); i++) {
         LOG(INFO) << "Frame Index = " << i;
         for (int j = 0; j < c3dFile.getNumMarkers(); j++) {
-            PositionConstraint* p = dynamic_cast<PositionConstraint*>(prob.objBox()->getConstraint(j));
+            // PositionConstraint* p = dynamic_cast<PositionConstraint*>(prob.objBox()->getConstraint(j));
+
+            PositionConstraint* p = prob.getConstraint(j);
+
             Vector3d target = c3dFile.getDataAt(i, j);
             p->setTarget(target);
+
+            bool isInBox = (prob.objBox()->isInBox(p) != -1);
+            bool isMissing = (target.norm() < 0.001);
+
+            if (isMissing && isInBox) {
+                int result = prob.objBox()->remove(p); 
+                LOG(INFO) << "\tDetect missing marker " << j << " ";
+                LOG(INFO) << "TakeOut() = " << result << " "
+                          << "size = " << prob.objBox()->getNumConstraints();
+
+            }
+            else if (!isMissing && !isInBox) {
+                prob.objBox()->add(p);
+                LOG(INFO) << "\tWe got the marker " << j << " back!!! ";
+                LOG(INFO) << "size = " << prob.objBox()->getNumConstraints();
+            }
+
         }
         LOG(INFO) << "Update OK";
 
@@ -58,7 +75,9 @@ int main(int argc, char* argv[]) {
         prob.getSkel()->getPose(pose);
         resultDof.addDof(pose);
     }
+    
     resultDof.saveFile(GROUNDZERO_DATA_PATH"dof/result.dof", 0, resultDof.getNumFrames());
+    LOG(INFO) << "Save the result to ["GROUNDZERO_DATA_PATH"dof/result.dof]";
     LOG(INFO) << "Save OK";
 
     LOG(INFO) << "simpleik OK";
