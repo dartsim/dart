@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <GL/glut.h>
+#include "utils/LoadOpengl.h"
 #include "model.h"
 #include "collision/collision.h"
 #include "collision/proximity.h"
@@ -428,7 +428,7 @@ void LoadPath(float (* &R)[3][3], float (* &T)[3], char *filename)
   fclose(fp);
 }
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   // init glut
 
@@ -465,7 +465,7 @@ void main(int argc, char **argv)
 
   torus1_tested = new BVHModel<RSS>;
 
-  fp = fopen("torus1.tris","r");
+  fp = fopen(GROUNDZERO_DATA_PATH"other/torus1.tris","r");
   fscanf(fp,"%d",&ntris);
   
   torus1_tested->beginModel();
