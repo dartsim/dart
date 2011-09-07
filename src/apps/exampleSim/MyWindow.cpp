@@ -26,7 +26,8 @@ void MyWindow::displayTimer(int _val)
     for(int i=0; i<numIter; i++){
         mModel->setPose(mDofs,false,false);
         mModel->computeDynamics(mGravity, mDofVels, true);
-        VectorXd qddot = -mModel->mM.fullPivHouseholderQr().solve(mModel->mCg); 
+        VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve(
+            mModel->getCombinedVector() ); 
         mModel->clampRotation(mDofs,mDofVels);
         mDofVels += qddot*mTimeStep;
         mDofs += mDofVels*mTimeStep;
