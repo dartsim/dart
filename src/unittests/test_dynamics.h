@@ -183,7 +183,7 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
 
     for(int ki=0; ki<Cginvdyn.size(); ki++){
-        EXPECT_NEAR(Cginvdyn[ki], skelDyn->mCg[ki], TOLERANCE_EXACT);
+        EXPECT_NEAR(Cginvdyn[ki], skelDyn->getCombinedVector()[ki], TOLERANCE_EXACT);
     }
 }
 
@@ -218,9 +218,9 @@ TEST(DYNAMICS, COMPARE_MASS) {
     // test/compare the dynamics result for both methods
     // test the mass matrix
     skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
-    MatrixXd Minvdyn = skelDyn->mM;
+    MatrixXd Minvdyn( skelDyn->getMassMatrix() );
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by NOT using inverse dynamics: use regular dynamics
-    MatrixXd Mregular = skelDyn->mM;
+    MatrixXd Mregular( skelDyn->getMassMatrix() );
 
     for(int ki=0; ki<Minvdyn.rows(); ki++){
         for(int kj=0; kj<Minvdyn.cols(); kj++){
