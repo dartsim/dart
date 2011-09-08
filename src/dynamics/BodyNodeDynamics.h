@@ -42,7 +42,7 @@ namespace dynamics{
         Eigen::Vector3d mExtTorqueBody; ///< the external Cartesian torque applied to the body; usually directly supplied from outside; contribution of the linear force will be considered later in the computation
         
         void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _computeJacobians=true );   ///< computes the velocities in the first pass of the algorithm; also computes Transform W etc using updateTransform; computes Jacobians Jv and Jw if the flag is true; replaces updateFirstDerivatives of non-recursive dynamics
-        void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm
+        void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _withExternalForces=true );   ///< computes the forces in the second pass of the algorithm
 
         // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
         void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
