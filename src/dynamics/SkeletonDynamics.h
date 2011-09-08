@@ -25,7 +25,7 @@ namespace dynamics{
         virtual model3d::BodyNode* createBodyNode(const char* const _name = NULL);
 
         // inverse dynamics computation
-        Eigen::VectorXd computeInverseDynamicsLinear(const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot=NULL, bool _computeJacobians=true, bool _withExternalForces=true); ///< runs recursive inverse dynamics algorithm and returns the generalized forces; if qdd is NULL, it is treated as zero; also computes Jacobian Jv and Jw in iterative manner if the flag is true i.e. replaces updateFirstDerivatives of non-recursive dynamics
+        Eigen::VectorXd computeInverseDynamicsLinear(const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot=NULL, bool _computeJacobians=true, bool _withExternalForces=false); ///< runs recursive inverse dynamics algorithm and returns the generalized forces; if qdd is NULL, it is treated as zero; also computes Jacobian Jv and Jw in iterative manner if the flag is true i.e. replaces updateFirstDerivatives of non-recursive dynamics
         
         void computeDynamics(const Eigen::Vector3d &_gravity, const Eigen::VectorXd &_qdot, bool _useInvDynamics=true);  ///< compute equations of motion matrices/vectors: M, C/Cvec, g in M*qdd + C*qd + g; if _useInvDynamics==true, uses computeInverseDynamicsLinear to compute C*qd+g term directly; else uses expensive generic computation of non-recursive dynamics
 
