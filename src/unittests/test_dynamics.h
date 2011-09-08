@@ -221,7 +221,7 @@ TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
     skelDyn->setPose(q, true, true); 
     
     addExternalForces(skelDyn); // adding external force may require transformations to be computed to convert points and forces to local coordinates
-    skelDyn->computeInverseDynamicsLinear(gravity, &qdot); // some computation in inverse dynamics is required even when only external forces are desired
+    skelDyn->computeInverseDynamicsLinear(gravity, &qdot, NULL, true, false); // some computation in inverse dynamics is required even when only external forces are desired
     skelDyn->evalExternalForces(true); // use recursive
     VectorXd Frec = skelDyn->getExternalForces();
     

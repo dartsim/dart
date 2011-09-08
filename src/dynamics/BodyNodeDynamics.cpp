@@ -169,7 +169,7 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _withExternalForces ) {
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
 
@@ -188,6 +188,26 @@ namespace dynamics{
             Vector3d rlchild = bchild->mT.col(3).head(3);
             mTorqueJointBody += (rlchild).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
         }
+
+        if( _withExternalForces ){
+            int nContacts = mContacts.size();
+            for(int i=0; i<nContacts; i++){
+                mExtForceBody += mContacts.at(i).second;
+                mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
+            }
+        
+            for(unsigned int i=0; i<mJointsChild.size(); i++){
+                BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
+                Matrix3d Rchild = childNode->mT.topLeftCorner(3,3);
+                Vector3d forceChild = Rchild*childNode->mExtForceBody;
+                mExtForceBody += forceChild;
+                Vector3d rlchild = childNode->mT.col(3).head(3);
+                mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody;
+            }
+        
+            mForceJointBody -= mExtForceBody;
+            mTorqueJointBody -= mExtTorqueBody;
+        }// endif compute external forces
     }
 
     Matrix4d BodyNodeDynamics::getLocalSecondDeriv(const Dof *_q1,const Dof *_q2 ) const {
