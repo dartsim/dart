@@ -19,7 +19,7 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
     // load skeleton
     const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     FileInfoSkel<SkeletonDynamics>* skelFile = new FileInfoSkel<SkeletonDynamics>;
-    bool loadModelResult = skelFile->loadFile(skelfilename, model3d::VSK);
+    bool loadModelResult = skelFile->loadFile(skelfilename);
     assert(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile->getSkel());
