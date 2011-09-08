@@ -13,8 +13,6 @@ using namespace google;
 #include "test_dynamics.h"
 #include "test_optimizer.h"
 
-VectorXd gravity = VectorXd::Zero(3);
-
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
 
