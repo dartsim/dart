@@ -91,7 +91,8 @@ namespace model3d {
 
         // update the inertia matrix 
         Matrix3d R = mW.topLeftCorner(3,3);
-        mIc = R*mPrimitive->getInertia()*R.transpose();
+        if(mPrimitive!=NULL)
+            mIc = R*mPrimitive->getInertia()*R.transpose();
     }
 
     void BodyNode::updateFirstDerivatives() {
