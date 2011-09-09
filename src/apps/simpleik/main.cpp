@@ -20,12 +20,13 @@ using namespace Eigen;
 
 #include "utils/Paths.h"
 
-DEFINE_string(skel, GROUNDZERO_DATA_PATH"skel/SehoonVSK3.vsk",
+DEFINE_string(skel, GROUNDZERO_DATA_PATH"skel/Nick01.vsk",
               "The input Skel file");
-DEFINE_string(c3d, GROUNDZERO_DATA_PATH"c3d/squat.c3d",
+DEFINE_string(c3d, GROUNDZERO_DATA_PATH"c3d/nick_freeform_001.c3d",
               "The input C3D file");
 DEFINE_string(dof, GROUNDZERO_DATA_PATH"dof/result.dof",
               "The output dof file");
+
 
 int main(int argc, char* argv[]) {
     // Init google libraries
