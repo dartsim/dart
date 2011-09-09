@@ -37,7 +37,9 @@ namespace utils {
         double lastElapsed() const;
         void stopTimer();
         bool isRunning() const;
-        void print();
+        void printLog();
+        void printScreen();
+        void print( bool _toScreen=true );
 
     private:
         int mCount;

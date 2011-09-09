@@ -1,12 +1,14 @@
 #include "MyWindow.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "utils/UtilsMath.h"
+#include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>
 
 using namespace std;
 using namespace Eigen;
 using namespace model3d;
+using namespace utils;
 
 void MyWindow::initDyn()
 {
@@ -22,14 +24,17 @@ void MyWindow::initDyn()
 
 void MyWindow::displayTimer(int _val)
 {
+    static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i=0; i<numIter; i++){
+        tSim.startTimer();
         mModel->setPose(mDofs,false,false);
         mModel->computeDynamics(mGravity, mDofVels, true);
         VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
         mModel->clampRotation(mDofs,mDofVels);
         mDofVels += qddot*mTimeStep;
         mDofs += mDofVels*mTimeStep;
+        tSim.stopTimer();
     }
 
     mFrame += numIter;   
