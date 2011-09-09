@@ -27,7 +27,8 @@ namespace dynamics{
         return new BodyNodeDynamics(_name);
     }
 
-    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
+    // computes the C term and gravity, excluding external forces
+    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians, bool _withExternalForces ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
         for(int i=0; i<getNumNodes(); i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
@@ -37,33 +38,20 @@ namespace dynamics{
             nodei->computeInvDynVelocities(_gravity, _qdot, _qdotdot, _computeJacobians);
         }
 
+        VectorXd torqueGen = VectorXd::Zero(getNumDofs());
         // BACKWARD PASS: compute the forces recursively -  from end effectors to root
         for(int i=getNumNodes()-1; i>=0; i--){ // decreasing order ensures that the parent joints/nodes are evaluated after the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
-            nodei->computeInvDynForces(_gravity, _qdot, _qdotdot);
+            nodei->computeInvDynForces(_gravity, _qdot, _qdotdot, _withExternalForces); // compute joint forces in cartesian space
+            nodei->getGeneralized(torqueGen); // convert joint forces to generalized coordinates
         }
 
-        // convert all the joint torques to generalized coordinates and collect them into a vector
-        VectorXd torqueGen = VectorXd::Zero(getNumDofs());
-        assert(getNumNodes()==getNumJoints());
-        for(int i=0; i<getNumNodes(); i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
-            BodyNodeDynamics *bnodei = static_cast<BodyNodeDynamics*>(mNodes[i]);
-            if(bnodei->getParentJoint()->getJointType()==Joint::J_UNKNOWN) continue;
-
-            // convert to generalized torques
-            Matrix3d Ri = bnodei->getLocalTransform().topLeftCorner(3,3);
-            VectorXd torqueGeni = bnodei->mJwJoint.transpose()*Ri*bnodei->mTorqueJointBody;
-            // translation dof forces may add to torque as well: e.g. Root joint
-            if(mJoints[i]->getNumDofsTrans()>0){
-                assert(mJoints[i]->getNumDofsTrans()==3);   // ASSUME: 3 DOF translation only
-                torqueGen.segment(mJoints[i]->getFirstTransDofIndex(), mJoints[i]->getNumDofsTrans()) = Ri*bnodei->mForceJointBody;
-            }
-            torqueGen.segment(mJoints[i]->getFirstRotDofIndex(), mJoints[i]->getNumDofsRot()) = torqueGeni;
-        }
+        if( _withExternalForces ) clearExternalForces();
 
         return torqueGen;
     }
 
+    // after the computation, mM, mCg, and mFext are ready for use
     void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
         mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
@@ -71,13 +59,16 @@ namespace dynamics{
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
         if(_useInvDynamics){
-            mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true);
+            mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
             for(int i=0; i<getNumNodes(); i++){
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
                 // mass matrix M
                 nodei->evalMassMatrix(); // assumes Jacobians mJv and mJw have been computed above: use flag as true in computeInverseDynamicsLinear
-                nodei->addMass(mM);
+                nodei->aggregateMass(mM);
             }
+        
+            evalExternalForces( true );
+            //mCg -= mFext;
         }
         else {
             // init the data structures for the dynamics
@@ -93,20 +84,35 @@ namespace dynamics{
                 // compute the required data structures and add to the skel's data structures
                 // mass matrix M
                 nodei->evalMassMatrix();
-                nodei->addMass(mM);
+                nodei->aggregateMass(mM);
                 //// Coriolis C
                 //nodei->evalCoriolisMatrix(_qdot);
                 //nodei->addCoriolis(mC);
                 // Coriolis vector C*qd
                 nodei->evalCoriolisVector(_qdot);
-                nodei->addCoriolisVec(mCvec);
+                nodei->aggregateCoriolisVec(mCvec);
                 // gravity vector G
                 nodei->evalGravityVector(_gravity);
-                nodei->addGravity(mG);
+                nodei->aggregateGravity(mG);
             }
 
+            evalExternalForces( false );
             //mCg = mC*_qdot + mG;
-            mCg = mCvec + mG;
+            mCg = mCvec + mG;// - mFext;
+        } 
+        
+        clearExternalForces();
+    }
+
+    void SkeletonDynamics::evalExternalForces(bool _useRecursive){
+        mFext = VectorXd::Zero(getNumDofs());
+        int nNodes = getNumNodes();
+        for(int i=nNodes-1; i>=0; i--){ // recursive from child to parent
+            BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+            if( _useRecursive )
+                nodei->evalExternalForcesRecursive( mFext );
+            else
+                nodei->evalExternalForces( mFext );
         }
     }
 
@@ -151,6 +157,7 @@ namespace dynamics{
                     // extract the local Jw
                     Matrix3d oldJwBody;
                     for(int j=0; j<3; j++){
+                        // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)
                             * node->getLocalTransform().topLeftCorner(3,3).transpose();
                         oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
@@ -186,6 +193,12 @@ namespace dynamics{
                 break;
             }
         }
+    }
+
+    void SkeletonDynamics::clearExternalForces(){
+        int nNodes = getNumNodes();
+        for(int i=0; i<nNodes; i++)
+            ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
     }
 
 }   // namespace dynamics

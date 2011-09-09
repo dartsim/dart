@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "GL/glut.h"
+#include "utils/LoadOpengl.h"
 #include "model.h"
 
 inline

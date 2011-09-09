@@ -81,7 +81,8 @@ struct Triangle3f
 
   Triangle3f()
   {
-    set(-1, -1, -1);
+    //set(-1, -1, -1);// parameters should be unsigned int
+    set(0,0,0);
   }
 
   Triangle3f(unsigned int fid0, unsigned int fid1, unsigned int fid2)

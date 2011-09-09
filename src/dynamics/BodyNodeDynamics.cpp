@@ -25,6 +25,8 @@ namespace dynamics{
         mVelDotBody = Vector3d::Zero();
         mOmegaBody = Vector3d::Zero();
         mOmegaDotBody = Vector3d::Zero();
+        mExtForceBody = Vector3d::Zero();
+        mExtTorqueBody = Vector3d::Zero();
         mInitializedInvDyn = false;
         mInitializedNonRecursiveDyn = false;
     }
@@ -59,6 +61,7 @@ namespace dynamics{
         mC = MatrixXd::Zero(getNumDependentDofs(), getNumDependentDofs());
         mCvec = VectorXd::Zero(getNumDependentDofs());
         mG = VectorXd::Zero(getNumDependentDofs());
+        mFext = VectorXd::Zero(getNumDependentDofs());
         mTqq.resize(getNumLocalDofs());
         for(int i=0; i<getNumLocalDofs(); i++) mTqq[i].resize(getNumLocalDofs(), Matrix4d::Zero());
         mWqq.resize(getNumDependentDofs());
@@ -166,16 +169,20 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot ) {
+    void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _withExternalForces ) {
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
 
         Vector3d cl = mCOMLocal;
-        Matrix3d Ibody = mPrimitive->getInertia();
+        Matrix3d Ibody = Matrix3d::Zero();
+        if(mPrimitive != NULL)
+           Ibody =  mPrimitive->getInertia();
 
         // base case: end effectors
-        mForceJointBody = mMass*mVelDotBody;
-        mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(Ibody*mOmegaBody) + Ibody*mOmegaDotBody;
+        if(mPrimitive!=NULL){
+            mForceJointBody = mMass*mVelDotBody;
+            mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(Ibody*mOmegaBody) + Ibody*mOmegaDotBody;
+        }
         // general case
         for(unsigned int j=0; j<mJointsChild.size(); j++){
             BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(mJointsChild[j]->getChildNode());
@@ -185,6 +192,26 @@ namespace dynamics{
             Vector3d rlchild = bchild->mT.col(3).head(3);
             mTorqueJointBody += (rlchild).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
         }
+
+        if( _withExternalForces ){
+            int nContacts = mContacts.size();
+            for(int i=0; i<nContacts; i++){
+                mExtForceBody += mContacts.at(i).second;
+                mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
+            }
+        
+            for(unsigned int i=0; i<mJointsChild.size(); i++){
+                BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
+                Matrix3d Rchild = childNode->mT.topLeftCorner(3,3);
+                Vector3d forceChild = Rchild*childNode->mExtForceBody;
+                mExtForceBody += forceChild;
+                Vector3d rlchild = childNode->mT.col(3).head(3);
+                mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody;
+            }
+        
+            mForceJointBody -= mExtForceBody;
+            mTorqueJointBody -= mExtTorqueBody;
+        }// endif compute external forces
     }
 
     Matrix4d BodyNodeDynamics::getLocalSecondDeriv(const Dof *_q1,const Dof *_q2 ) const {
@@ -291,8 +318,10 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::evalMassMatrix(){
+        //mM = MatrixXd::Zero(getNumDependentDofs(),getNumDependentDofs());;
         mM.setZero();
-        mM = getMass()*mJv.transpose()*mJv + mJw.transpose()*mIc*mJw;
+        if(mPrimitive!=NULL)
+            mM = getMass()*mJv.transpose()*mJv + mJw.transpose()*mIc*mJw;
     }
 
     void BodyNodeDynamics::evalCoriolisMatrix(const VectorXd &_qDotSkel){
@@ -302,11 +331,13 @@ namespace dynamics{
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        Matrix3d R = mW.topLeftCorner(3,3);
-        // term 1
-        mC = getMass()*mJv.transpose()*mJvDot + mJw.transpose()*mIc*mJwDot;
-        // term 2
-        mC += mJw.transpose()*utils::makeSkewSymmetric(mOmega)*mIc*mJw;
+        if(mPrimitive!=NULL){
+            Matrix3d R = mW.topLeftCorner(3,3);
+            // term 1
+            mC = getMass()*mJv.transpose()*mJvDot + mJw.transpose()*mIc*mJwDot;
+            // term 2
+            mC += mJw.transpose()*utils::makeSkewSymmetric(mOmega)*mIc*mJw;
+        }
     }
 
     void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
@@ -324,9 +355,11 @@ namespace dynamics{
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependentDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependentDofs[i]];
         }
-        mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
-        // term 2
-        mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
+        if( mPrimitive!=NULL ){
+            mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
+            // term 2
+            mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
+        }
 
         //// test
         //evalCoriolisMatrix(_qDotSkel);
@@ -335,35 +368,145 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalGravityVector(const Vector3d &_gravity){
         mG.setZero();
-        for(int i=0; i<mJv.cols(); i++){
-            mG[i] = -getMass()*_gravity.dot(mJv.col(i));    // '-' sign as term is on the left side of dynamics equation
+        if( mPrimitive!=NULL ){
+            for(int i=0; i<mJv.cols(); i++){
+                mG[i] = -getMass()*_gravity.dot(mJv.col(i));    // '-' sign as term is on the left side of dynamics equation
+            }
         }
     }
 
-    void BodyNodeDynamics::addMass(Eigen::MatrixXd &_M){
+    void BodyNodeDynamics::evalExternalForces( VectorXd& _extForce ){
+        int numDepDofs = getNumDependentDofs();
+        mFext = VectorXd::Zero(numDepDofs);
+        int nContacts = mContacts.size();
+        for(int i=0; i<nContacts; i++){
+            // compute J
+            MatrixXd J = MatrixXd::Zero(3, numDepDofs);
+            Vector3d force = mW.topLeftCorner(3,3)*mContacts.at(i).second;
+            for(int j=0; j<numDepDofs; j++)
+                J.col(j) = utils::xformHom(mWq.at(j),mContacts.at(i).first);
+            // compute J^TF
+            mFext += J.transpose()*force;
+        }
+
+        if(mExtTorqueBody.norm()>0){
+            mFext += mJw.transpose()*mW.topLeftCorner(3,3)*mExtTorqueBody;
+        }
+
+        for(int i=0; i<getNumDependentDofs(); i++)
+            _extForce(mDependentDofs[i]) += mFext(i);
+    }
+
+    void BodyNodeDynamics::evalExternalForcesRecursive( VectorXd& _extForce ){
+        int nContacts = mContacts.size();
+        for(int i=0; i<nContacts; i++){ // transform forces from com to joint
+            mExtForceBody += mContacts.at(i).second;
+            mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
+        }
+
+        for(unsigned int i=0; i<mJointsChild.size(); i++){ // recursive
+            BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
+            Matrix3d Rchild = childNode->mT.topLeftCorner(3,3);
+            Vector3d forceChild = Rchild*childNode->mExtForceBody;
+            mExtForceBody += forceChild;
+            Vector3d rlchild = childNode->mT.col(3).head(3);
+            mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody;
+        }
+   
+        // convert from cartesian space to generalized coordinates
+        jointCartesianToGeneralized( mExtTorqueBody, _extForce );
+        if(getParentJoint()->getNumDofsTrans()>0){
+            jointCartesianToGeneralized( mExtForceBody, _extForce, false );
+        }
+    }
+
+    void BodyNodeDynamics::jointCartesianToGeneralized( const Vector3d& _cForce, VectorXd& _gForce, bool _isTorque ){
+        Joint* joint = getParentJoint();
+        if( joint->getJointType() == Joint::J_UNKNOWN ) return;
+
+        Matrix3d Ri = getLocalTransform().topLeftCorner(3,3);
+        if( _isTorque ){
+            VectorXd torque = mJwJoint.transpose()*Ri*_cForce;
+            int firstRotDof = joint->getFirstRotDofIndex();
+            for(int i=0; i<joint->getNumDofsRot(); i++)
+                _gForce(firstRotDof+i) += torque(i);
+        }else{
+            if(joint->getNumDofsTrans()>0){
+                assert(joint->getNumDofsTrans()==3); // assume translational dofs are always for all three
+                _gForce.segment(joint->getFirstTransDofIndex(), 3) += Ri*_cForce;
+            }
+        }
+    }
+
+    void BodyNodeDynamics::bodyCartesianToGeneralized( const Vector3d& _cForce, VectorXd& _gForce, bool _isTorque ){
+        Joint* joint = getParentJoint();
+        if( joint->getJointType() == Joint::J_UNKNOWN ) return;
+
+        if( _isTorque){
+            jointCartesianToGeneralized( _cForce, _gForce, true );
+        }else{
+            Vector3d torque = mCOMLocal.cross(_cForce);
+            jointCartesianToGeneralized( torque, _gForce, true );
+            if(joint->getNumDofsTrans()>0)
+                jointCartesianToGeneralized( _cForce, _gForce, false );
+        }
+    }
+
+    void BodyNodeDynamics::getGeneralized( VectorXd& _gForce ){
+        jointCartesianToGeneralized( mTorqueJointBody, _gForce );
+        if( getParentJoint()->getNumDofsTrans()>0 )
+            jointCartesianToGeneralized( mForceJointBody, _gForce, false);
+    }
+
+    void BodyNodeDynamics::aggregateMass(Eigen::MatrixXd &_M){
+        if(mPrimitive==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             for(int j=0; j<getNumDependentDofs(); j++){
                 _M(mDependentDofs[i], mDependentDofs[j]) += mM(i, j);
             }
         }
     }
-    void BodyNodeDynamics::addCoriolis(Eigen::MatrixXd &_C){
+    void BodyNodeDynamics::aggregateCoriolis(Eigen::MatrixXd &_C){
         for(int i=0; i<getNumDependentDofs(); i++){
             for(int j=0; j<getNumDependentDofs(); j++){
                 _C(mDependentDofs[i], mDependentDofs[j]) += mC(i, j);
             }
         }
     }
-    void BodyNodeDynamics::addCoriolisVec(Eigen::VectorXd &_Cvec){
+    void BodyNodeDynamics::aggregateCoriolisVec(Eigen::VectorXd &_Cvec){
         for(int i=0; i<getNumDependentDofs(); i++){
             _Cvec[mDependentDofs[i]] += mCvec[i];
         }
     }
-    void BodyNodeDynamics::addGravity(Eigen::VectorXd &_G){
+    void BodyNodeDynamics::aggregateGravity(Eigen::VectorXd &_G){
+        if(mPrimitive==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             _G[mDependentDofs[i]] += mG[i];
         }
     }
 
+    void BodyNodeDynamics::addExtForce( const Vector3d& _offset, const Vector3d& _force, bool _isOffsetLocal, bool _isForceLocal ){
+        Vector3d pos = _offset;
+        Vector3d force = _force;
+        if( !_isOffsetLocal )
+            pos = utils::xformHom( getWorldInvTransform(), _offset );
+        if( !_isForceLocal )
+            force = mW.topLeftCorner(3,3).transpose()*_force;
+        mContacts.push_back( pair<Vector3d, Vector3d>(pos, force) );
+    }
+
+    void BodyNodeDynamics::addExtTorque( const Vector3d& _torque, bool _isLocal ){
+        if( _isLocal )
+            mExtTorqueBody += _torque;
+        else
+            mExtTorqueBody += mW.topLeftCorner(3,3).transpose()*_torque; 
+    }
+
+    void BodyNodeDynamics::clearExternalForces(){
+        mContacts.clear();
+        mFext.setZero();
+        mExtForceBody.setZero();
+        mExtTorqueBody.setZero();
+    }
 
 }   // namespace dynamics
