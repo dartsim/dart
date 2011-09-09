@@ -134,13 +134,13 @@ int main(int argc, char* argv[])
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
     //cout<<"C+g term inverse dynamics: "<<Cginvdyn<<endl;
     //cout<<"C+g term nonrec dynamics: "<<skelDyn->mCg<<endl;
-    cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->mCg<<endl;
+    cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->getCombinedVector() <<endl;
 
     // test the mass matrix
     skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
-    MatrixXd Minvdyn = skelDyn->mM;
+    MatrixXd Minvdyn( skelDyn->getMassMatrix() );
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using non-recursive dynamics
-    MatrixXd Mnonrec = skelDyn->mM;
+    MatrixXd Mnonrec( skelDyn->getMassMatrix() );
     cout<<"Difference\n"<<Minvdyn-Mnonrec<<endl;
     
     cout<<"\n\n";
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 
     timer.startTimer();
     for(int i=0; i<N; i++){
-        MatrixXd Minv = skelDyn->mM.inverse();
+        MatrixXd Minv = skelDyn->getMassMatrix().inverse();
     }
     timer.stopTimer();
     cout<<"Inverse M: "<<timer.lastElapsed()/N<<endl;
