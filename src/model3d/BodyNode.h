@@ -61,7 +61,7 @@ namespace model3d {
         inline int getDependentDof(int _arrayIndex) { return mDependentDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependentDofs)
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
-        void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
+        void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the handles
 
         inline char* getName() { return mName; }
 
@@ -77,9 +77,9 @@ namespace model3d {
         inline BodyNode* getParentNode() const { return mNodeParent; }
         inline double getMass() const { return mMass; }
 
-        inline void addHandle(Marker *_h) { mHandles.push_back(_h); }
-        inline int getNumHandles() const { return mHandles.size(); }
-        inline Marker* getHandle(int _idx) const { return mHandles[_idx]; }
+        inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
+        inline int getNumMarkers() const { return mMarkers.size(); }
+        inline Marker* getMarker(int _idx) const { return mMarkers[_idx]; }
 
         inline void setPrimitive(Primitive *_p) { mPrimitive = _p; }
         inline Primitive* getPrimitive() const { return mPrimitive; }
@@ -110,7 +110,7 @@ namespace model3d {
         std::vector<Joint *> mJointsChild; ///< List of joints that link to child nodes
         Joint *mJointParent;    ///< Joint connecting to parent node
         BodyNode *mNodeParent;      ///< Parent node
-        std::vector<Marker *> mHandles; ///< List of handles associated
+        std::vector<Marker *> mMarkers; ///< List of handles associated
 
         std::vector<int> mDependentDofs; ///< A list of dependent dof indices 
         int mNumRootTrans;  ///< keep track of the root translation DOFs only if they are the first ones

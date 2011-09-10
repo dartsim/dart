@@ -20,7 +20,7 @@ TEST(MODEL3D, VSK_LOADER) {
 
     EXPECT_EQ(skel->getNumDofs(), 66);
     EXPECT_EQ(skel->getNumNodes(), 30);
-    EXPECT_EQ(skel->getNumHandles(), 53);
+    EXPECT_EQ(skel->getNumMarkers(), 53);
 }
 
 TEST(MODEL3D, C3D_LOADER) {

@@ -31,7 +31,7 @@ namespace model3d {
         virtual ~Skeleton();
 
         virtual BodyNode* createBodyNode(const char* const name = NULL);
-        void addHandle(Marker *h);
+        void addMarker(Marker *h);
         void addNode(BodyNode *b);
         void addJoint(Joint *_j);
         void addDof(Dof *d);
@@ -43,21 +43,21 @@ namespace model3d {
         // inline access functions
         inline int getNumDofs() { return mDofs.size(); }
         inline int getNumNodes() { return mNodes.size(); }
-        inline int getNumHandles() { return mHandles.size(); }
+        inline int getNumMarkers() { return mMarkers.size(); }
         inline int getNumJoints(){return mJoints.size();}
         inline Dof* getDof(int i) { return mDofs[i]; }
         inline BodyNode* getNode(int i) { return mNodes[i]; }
         inline BodyNode* getRoot() { return mRoot; }
         BodyNode* getNode(const char* const name);
         int getNodeIndex(const char* const name);
-        inline Marker* getHandle(int i) { return mHandles[i]; }
+        inline Marker* getMarker(int i) { return mMarkers[i]; }
         inline double getMass() { return mMass; }
 
         virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
         virtual void setPose(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-        void drawHandles(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
+        void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 	
         //void setPose(const Eigen::VectorXd& _pose);
         //void setPose(const std::vector<double>& _pose);
@@ -65,7 +65,7 @@ namespace model3d {
         void getPose(std::vector<double>& _pose);
 
     protected:
-        std::vector<Marker*> mHandles;
+        std::vector<Marker*> mMarkers;
         std::vector<Dof*> mDofs;
         std::vector<Transformation*> mTransforms;
         std::vector<BodyNode*> mNodes;

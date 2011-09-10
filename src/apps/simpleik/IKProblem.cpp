@@ -49,8 +49,8 @@ namespace optimizer {
 
         // add positional constraints
         mConstraints.clear();
-        for (int i = 0; i < getSkel()->getNumHandles(); i++) {
-            Marker* marker = getSkel()->getHandle(i);
+        for (int i = 0; i < getSkel()->getNumMarkers(); i++) {
+            Marker* marker = getSkel()->getMarker(i);
             BodyNode* node = marker->getNode();
             Eigen::Vector3d offset = marker->getLocalCoords();
             PositionConstraint* p = new PositionConstraint(

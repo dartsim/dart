@@ -34,18 +34,18 @@ namespace model3d {
         mTransforms.clear();
         for(unsigned int i=0; i<mNodes.size(); i++) delete mNodes[i];
         mNodes.clear();
-        mHandles.clear();
+        mMarkers.clear();
     }
 
     BodyNode* Skeleton::createBodyNode(const char* const _name) {
         return new BodyNode(_name);
     }
 
-    void Skeleton::addHandle(Marker *_h) {
-        mHandles.push_back(_h);
-        _h->setSkelIndex(mHandles.size()-1);
+    void Skeleton::addMarker(Marker *_h) {
+        mMarkers.push_back(_h);
+        _h->setSkelIndex(mMarkers.size()-1);
         BodyNode *body = _h->getNode();
-        body->addHandle(_h);
+        body->addMarker(_h);
     }
 
     void Skeleton::addNode(BodyNode *_b) {
@@ -179,8 +179,8 @@ namespace model3d {
 	void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         mRoot->draw(_ri, _color, _useDefaultColor);
     }
-    void Skeleton::drawHandles(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->drawHandles(_ri, _color, _useDefaultColor);
+    void Skeleton::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        mRoot->drawMarkers(_ri, _color, _useDefaultColor);
     }
 
 
