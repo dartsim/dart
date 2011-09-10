@@ -28,7 +28,7 @@ namespace model3d {
         : mSkelIndex(-1), mPrimitive(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mCOMLocal(0,0,0)
     {
         mJointsChild.clear();
-        mHandles.clear();
+        mMarkers.clear();
         mDependentDofs.clear();
 
         mID = BodyNode::msBodyNodeCount++;
@@ -41,10 +41,10 @@ namespace model3d {
     }
 
     BodyNode::~BodyNode() {
-        for (unsigned int i = 0; i < mHandles.size(); ++i){
-            delete mHandles[i];
+        for (unsigned int i = 0; i < mMarkers.size(); ++i){
+            delete mMarkers[i];
         }
-        mHandles.clear();
+        mMarkers.clear();
 
         if (mPrimitive != NULL) {
             delete mPrimitive;
@@ -207,19 +207,19 @@ namespace model3d {
 
     }
 
-    void BodyNode::drawHandles(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    void BodyNode::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         if (!_ri) return;
         _ri->pushMatrix();
         for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
             mJointParent->getTransform(i)->applyGLTransform(_ri);
         }
 
-        // render the corresponding mHandless
-        for (unsigned int i = 0; i < mHandles.size(); i++) {
-            mHandles[i]->draw(_ri, true, _color, _useDefaultColor);
+        // render the corresponding mMarkerss
+        for (unsigned int i = 0; i < mMarkers.size(); i++) {
+            mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
         }
         for (unsigned int i = 0; i < mJointsChild.size(); i++) {
-            mJointsChild[i]->getChildNode()->drawHandles(_ri,_color, _useDefaultColor);
+            mJointsChild[i]->getChildNode()->drawMarkers(_ri,_color, _useDefaultColor);
         }
         _ri->popMatrix();
 

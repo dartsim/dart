@@ -605,7 +605,7 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
     }
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
-    _skel->addHandle(m);
+    _skel->addMarker(m);
     VLOG(1)<<"marker: "<<mname<<" ";
     VLOG(1)<<"segment: "<<sname<<" ";
     VLOG(1)<<"sindex: "<<_segmentindex[sname]<<" ";

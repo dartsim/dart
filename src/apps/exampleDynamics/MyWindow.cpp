@@ -36,7 +36,7 @@ void MyWindow::draw()
     // update and draw the motion
     model->setPose(mMotion.getPoseAtFrame(fr));
     model->draw(mRI);
-    if(mShowMarker) model->drawHandles(mRI);
+    if(mShowMarker) model->drawMarkers(mRI);
 
     if(mShowProgress) yui::drawProgressBar(fr,mMaxFrame);
 

@@ -159,16 +159,16 @@ namespace model3d {
 
         // markers
         output<<"\nhandles {\n";
-        for(int i=0; i<mSkel->getNumHandles(); i++){
-            if(mSkel->getHandle(i)->getNode()->getSkelIndex()>=_numLinks) break;
-            string hname = mSkel->getHandle(i)->getName();
+        for(int i=0; i<mSkel->getNumMarkers(); i++){
+            if(mSkel->getMarker(i)->getNode()->getSkelIndex()>=_numLinks) break;
+            string hname = mSkel->getMarker(i)->getName();
             if(hname.empty()){
                 ostringstream ss;
                 ss<<"handle"<<i;
                 hname = ss.str();
             }
-            Eigen::Vector3d lc = mSkel->getHandle(i)->getLocalCoords();
-            output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mSkel->getHandle(i)->getNode()->getName()<<" } "<<endl;
+            Eigen::Vector3d lc = mSkel->getMarker(i)->getLocalCoords();
+            output<<hname<<" { "<<"<"<<lc[0]<<", "<<lc[1]<<", "<<lc[2]<<">, "<<i<<", "<<mSkel->getMarker(i)->getNode()->getName()<<" } "<<endl;
 
         }
         output<<"}\n";

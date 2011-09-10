@@ -16,7 +16,7 @@ public:
 
     void draw(){
         mModel->draw(mRI);
-        if(mDrawMarker) mModel->drawHandles(mRI);
+        if(mDrawMarker) mModel->drawMarkers(mRI);
     }
 
     void keyboard(unsigned char key, int x, int y){

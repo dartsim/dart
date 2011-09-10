@@ -46,7 +46,7 @@ void MyWindow::displayTimer(int _val)
 void MyWindow::draw()
 {
     mModel->draw(mRI);
-    if(mShowMarker) mModel->drawHandles(mRI);
+    if(mShowMarker) mModel->drawMarkers(mRI);
     
     // display the frame count in 2D text
     char buff[64];

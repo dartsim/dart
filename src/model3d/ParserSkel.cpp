@@ -199,7 +199,7 @@ Primitive* __setGeometry(const char*, const char*);
 Primitive* __setGeometry(const char*, doubleVec3);
 Primitive* __setGeometry(const char*);
 Primitive* __setGeometry(doubleVec3);
-void __createHandle( char*, doubleVec3, int, char* );
+void __createMarker( char*, doubleVec3, int, char* );
 
 
 
@@ -1646,7 +1646,7 @@ yyreduce:
 
     case 40:
         //#line 220 "src/skel.y"
-        { __createHandle((yyvsp[(1) - (8)].sValue),(yyvsp[(3) - (8)].v3VValue),(yyvsp[(5) - (8)].iValue),(yyvsp[(7) - (8)].sValue)); ;}
+        { __createMarker((yyvsp[(1) - (8)].sValue),(yyvsp[(3) - (8)].v3VValue),(yyvsp[(5) - (8)].iValue),(yyvsp[(7) - (8)].sValue)); ;}
         break;
 
     case 43:
@@ -1963,7 +1963,7 @@ void __finishSkel(){
 }
 
 /* create a new handle and add it to the apropriate node*/
-void __createHandle( char* name, doubleVec3 offset, int id, char* node_name ) {
+void __createMarker( char* name, doubleVec3 offset, int id, char* node_name ) {
 
     BodyNode *node = NULL;
 
@@ -1994,7 +1994,7 @@ void __createHandle( char* name, doubleVec3 offset, int id, char* node_name ) {
 
     Vector3d vecOffset(offset[0],offset[1],offset[2]);
     Marker *tempMarker = new Marker(fullName, vecOffset, node);  
-    gSkel->addHandle(tempMarker);
+    gSkel->addMarker(tempMarker);
 }
 
 /* create a new dof from the dof list at the beginning of the file*/
