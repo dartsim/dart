@@ -558,7 +558,7 @@ int main(int argc, char **argv)
   // Enter the main loop.
 
   glutMainLoop();
-  
+  return 0;
 }
 
 
