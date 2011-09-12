@@ -54,7 +54,7 @@ class Model
   int display_list;
 
 public:
-  Model(char *tris_file);
+  Model(const char *const tris_file);
   ~Model();
   void Draw();
   void DrawTri(int index);

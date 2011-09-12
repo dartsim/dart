@@ -1,8 +1,8 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/FileInfoDof.h"
-#include "model3d/BodyNode.h"
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/FileInfoDof.h"
+#include "kinematics/BodyNode.h"
 
 #include "MyWindow.h"
 
@@ -11,7 +11,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 using namespace dynamics;
 
 #include "utils/UtilsMath.h"
@@ -31,12 +31,12 @@ int main(int argc, char* argv[])
         doffilename = argv[2];
     }
 	
-    model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    skelFile.loadFile(skelfilename, model3d::VSK);
+    kinematics::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
+    skelFile.loadFile(skelfilename, kinematics::VSK);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
 
-    model3d::FileInfoDof motion(skelFile.getSkel());
+    kinematics::FileInfoDof motion(skelFile.getSkel());
     //motion.loadFile(doffilename);
 
     // test the velocity computation using the two methods: linear inverse dynamics and non-recursive
