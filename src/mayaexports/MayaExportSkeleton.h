@@ -14,16 +14,16 @@
 
 using namespace std;
 
-namespace model3d{
+namespace kinematics{
     class Skeleton;
     class BodyNode;
-}   // namespace model3d
+}   // namespace kinematics
 
 namespace mayaexports{
 
     class MayaExportSkeleton{
     public:    
-        static bool exportMayaAscii( model3d::Skeleton *_model, ofstream &_outFile );
+        static bool exportMayaAscii( kinematics::Skeleton *_model, ofstream &_outFile );
     
     private:
         friend class MayaExportMotion;
@@ -34,11 +34,11 @@ namespace mayaexports{
         static const utils::rotation::RotationOrder mRotOrder;
 
         static bool exportMayaAsciiHeader(ofstream &_outFile );
-        static bool exportMayaAsciiPrimitive(model3d::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);
-        static bool exportMayaAsciiSegmentSubtree(model3d::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
+        static bool exportMayaAsciiPrimitive(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);
+        static bool exportMayaAsciiSegmentSubtree(kinematics::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
         // do not write the const stuff - all keyed now
-        static bool exportMayaAsciiSegmentSubtree2(model3d::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
-        static bool exportMayaAsciiSegmentFooter(model3d::BodyNode* _b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix  );
+        static bool exportMayaAsciiSegmentSubtree2(kinematics::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
+        static bool exportMayaAsciiSegmentFooter(kinematics::BodyNode* _b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix  );
 
     };
 }

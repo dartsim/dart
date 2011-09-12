@@ -1,14 +1,14 @@
 #include "mayaexports/MayaExportMotion.h"
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/FileInfoDof.h"
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/FileInfoDof.h"
 #include "utils/Paths.h"
 
-using namespace model3d;
+using namespace kinematics;
 
 int main(int argc, char* argv[])
 {
     FileInfoSkel<Skeleton> model;
-    model.loadFile(GROUNDZERO_DATA_PATH"skel/YutingEuler.skel", model3d::SKEL);
+    model.loadFile(GROUNDZERO_DATA_PATH"skel/YutingEuler.skel", kinematics::SKEL);
 
     FileInfoDof motion(model.getSkel());
     motion.loadFile(GROUNDZERO_DATA_PATH"dof/RHand.dof");
