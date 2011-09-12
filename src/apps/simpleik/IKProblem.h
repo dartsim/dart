@@ -4,11 +4,11 @@
 #include <vector>
 #include "optimizer/Problem.h"
 
-namespace model3d {
+namespace kinematics {
     class Skeleton;
     template<class SkeletonType>
     class FileInfoSkel;
-} // namespace model3d
+} // namespace kinematics
 
 namespace optimizer {
     class PositionConstraint;
@@ -20,11 +20,11 @@ namespace optimizer {
     
         void initProblem(const char* const filenameSkel);
         virtual void update(double* coefs);
-        model3d::Skeleton* getSkel() const;
+        kinematics::Skeleton* getSkel() const;
 
         PositionConstraint* getConstraint(int index) const;
     protected:
-        model3d::FileInfoSkel<model3d::Skeleton>* mFileInfoSkel;
+        kinematics::FileInfoSkel<kinematics::Skeleton>* mFileInfoSkel;
         std::vector<PositionConstraint*> mConstraints;
     };
 } // namespace optimizer

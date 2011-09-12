@@ -11,18 +11,18 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "model3d/Skeleton.h"
+#include "kinematics/Skeleton.h"
 
 namespace dynamics{
 
-    class SkeletonDynamics : public model3d::Skeleton{
+    class SkeletonDynamics : public kinematics::Skeleton{
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         SkeletonDynamics();
         virtual ~SkeletonDynamics();
 
-        virtual model3d::BodyNode* createBodyNode(const char* const _name = NULL);
+        virtual kinematics::BodyNode* createBodyNode(const char* const _name = NULL);
 
         // inverse dynamics computation
         Eigen::VectorXd computeInverseDynamicsLinear(const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot=NULL, bool _computeJacobians=true, bool _withExternalForces=false); ///< runs recursive inverse dynamics algorithm and returns the generalized forces; if qdd is NULL, it is treated as zero; also computes Jacobian Jv and Jw in iterative manner if the flag is true i.e. replaces updateFirstDerivatives of non-recursive dynamics

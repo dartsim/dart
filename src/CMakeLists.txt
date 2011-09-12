@@ -1,6 +1,6 @@
 # all libraries
 ADD_SUBDIRECTORY(utils)
-ADD_SUBDIRECTORY(model3d)
+ADD_SUBDIRECTORY(kinematics)
 ADD_SUBDIRECTORY(optimizer)
 ADD_SUBDIRECTORY(yui)
 ADD_SUBDIRECTORY(renderer)

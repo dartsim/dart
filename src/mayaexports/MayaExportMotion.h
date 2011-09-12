@@ -10,7 +10,7 @@
 
 #include <fstream>
 
-namespace model3d{
+namespace kinematics{
     class BodyNode;
     class Skeleton;
     class FileInfoDof;
@@ -20,18 +20,18 @@ namespace mayaexports{
 
     class MayaExportMotion{
     public:
-        MayaExportMotion(model3d::Skeleton *_skel, model3d::FileInfoDof *_dofData){
+        MayaExportMotion(kinematics::Skeleton *_skel, kinematics::FileInfoDof *_dofData){
             mSkel = _skel;
             mDofData = _dofData;
         }
         bool exportMayaAnim( const char* _fName, int _start, int _end, const std::string &_nodesPrefix, int _writeNumNodes );
     
     private:
-        model3d::FileInfoDof *mDofData;;
-        model3d::Skeleton *mSkel;
-        bool exportMayaAnimSegment(std::ofstream &outFile0, int _first, int _last, model3d::BodyNode *b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
+        kinematics::FileInfoDof *mDofData;;
+        kinematics::Skeleton *mSkel;
+        bool exportMayaAnimSegment(std::ofstream &outFile0, int _first, int _last, kinematics::BodyNode *b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
         // just write everything in common framework
-        bool exportMayaAnimSegment2(std::ofstream &outFile0, int _first, int _last, model3d::BodyNode *_b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
+        bool exportMayaAnimSegment2(std::ofstream &outFile0, int _first, int _last, kinematics::BodyNode *_b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
     };
 }   // namespace mayaexports
 

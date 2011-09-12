@@ -3,17 +3,17 @@
 
 #include "optimizer/Constraint.h"
 
-namespace model3d {
+namespace kinematics {
     class Skeleton;
     class BodyNode;
-} // namespace model3d
+} // namespace kinematics
 
 namespace optimizer {
     class Var;
 
     class PositionConstraint : public Constraint {
     public:
-        PositionConstraint(std::vector<Var *>& var, model3d::Skeleton* skel, model3d::BodyNode* node,
+        PositionConstraint(std::vector<Var *>& var, kinematics::Skeleton* skel, kinematics::BodyNode* node,
                            const Eigen::Vector3d& offset,
                            const Eigen::Vector3d& val);
 
@@ -29,8 +29,8 @@ namespace optimizer {
         Eigen::Vector3d mTarget;
         Eigen::Vector3d mOffset;
 
-        model3d::Skeleton* mSkel;
-        model3d::BodyNode* mNode;
+        kinematics::Skeleton* mSkel;
+        kinematics::BodyNode* mNode;
     };
 } // namespace optimizer
     
