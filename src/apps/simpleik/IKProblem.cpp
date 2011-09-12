@@ -6,11 +6,11 @@ using namespace std;
 #include <glog/logging.h>
 using namespace google;
 
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/Skeleton.h"
-#include "model3d/BodyNode.h"
-#include "model3d/Marker.h"
-using namespace model3d;
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/Skeleton.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Marker.h"
+using namespace kinematics;
 
 #include "optimizer/Var.h"
 #include "optimizer/ObjectiveBox.h"

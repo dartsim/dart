@@ -6,17 +6,17 @@
   Date		07/24/2011
 */
 #include "MayaExportSkeleton.h"
-#include "model3d/Dof.h"
-#include "model3d/BodyNode.h"
-#include "model3d/Joint.h"
-#include "model3d/Skeleton.h"
-#include "model3d/Primitive.h"
-#include "model3d/Transformation.h"
+#include "kinematics/Dof.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Joint.h"
+#include "kinematics/Skeleton.h"
+#include "kinematics/Primitive.h"
+#include "kinematics/Transformation.h"
 #include "utils/UtilsRotation.h"
 #include <iostream>
 
 using namespace std;
-using namespace model3d;
+using namespace kinematics;
 using namespace Eigen;
 
 namespace mayaexports{

@@ -5,10 +5,10 @@ using namespace std;
 #include <gflags/gflags.h>
 using namespace google;
 
-#include "model3d/Skeleton.h"
-#include "model3d/FileInfoC3D.h"
-#include "model3d/FileInfoDof.h"
-using namespace model3d;
+#include "kinematics/Skeleton.h"
+#include "kinematics/FileInfoC3D.h"
+#include "kinematics/FileInfoDof.h"
+using namespace kinematics;
 #include "IKProblem.h"
 #include "PositionConstraint.h"
 #include "optimizer/ObjectiveBox.h"

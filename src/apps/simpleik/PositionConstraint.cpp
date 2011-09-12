@@ -3,15 +3,15 @@ using namespace Eigen;
 
 #include <glog/logging.h>
 
-#include "model3d/BodyNode.h"
-#include "model3d/Skeleton.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Skeleton.h"
 #include "optimizer/Var.h"
 #include "utils/UtilsMath.h"
 
 namespace optimizer {
     
     PositionConstraint::PositionConstraint(
-        std::vector<Var *>& var, model3d::Skeleton* skel, model3d::BodyNode* node,
+        std::vector<Var *>& var, kinematics::Skeleton* skel, kinematics::BodyNode* node,
         const Eigen::Vector3d& offset, const Eigen::Vector3d& val)
         : Constraint(var), mSkel(skel), mNode(node), mTarget(val), mOffset(offset)
     {
