@@ -7,15 +7,15 @@
 */
 
 #include "BodyNodeDynamics.h"
-#include "model3d/Joint.h"
-#include "model3d/Primitive.h"
-#include "model3d/Transformation.h"
+#include "kinematics/Joint.h"
+#include "kinematics/Primitive.h"
+#include "kinematics/Transformation.h"
 #include "utils/UtilsMath.h"
 #include <iostream>
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 
 namespace dynamics{
     BodyNodeDynamics::BodyNodeDynamics( const char *_name ) : BodyNode(_name){
@@ -46,7 +46,7 @@ namespace dynamics{
         mOmegaDotBody.setZero();
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
-        // mJv, mJw, and mIc needed for the mass matrix are already inited and computed by the model3d::BodyNode
+        // mJv, mJw, and mIc needed for the mass matrix are already inited and computed by the kinematics::BodyNode
 
         mInitializedInvDyn = true;
     }

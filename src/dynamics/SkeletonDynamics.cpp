@@ -8,22 +8,22 @@
 
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
-#include "model3d/Joint.h"
-#include "model3d/BodyNode.h"
-#include "model3d/Dof.h"
+#include "kinematics/Joint.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Dof.h"
 #include "utils/UtilsMath.h"
 
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 
 namespace dynamics{
-    SkeletonDynamics::SkeletonDynamics(): model3d::Skeleton(){
+    SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(){
     }
 
     SkeletonDynamics::~SkeletonDynamics(){
     }
 
-    model3d::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
+    kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
         return new BodyNodeDynamics(_name);
     }
 

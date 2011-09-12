@@ -3,9 +3,9 @@
 
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/FileInfoDof.h"
-#include "model3d/BodyNode.h"
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/FileInfoDof.h"
+#include "kinematics/BodyNode.h"
 #include "utils/Paths.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -13,7 +13,7 @@
 dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     // load skeleton
@@ -39,7 +39,7 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
 void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     ((BodyNodeDynamics*)skelDyn->getNode(7))->addExtForce(Vector3d(0.1,0.2,0.3), Vector3d(30,40,50), true, false );
@@ -51,7 +51,7 @@ void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
 TEST(DYNAMICS, COMPARE_VELOCITIES) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -107,7 +107,7 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
 TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
     
     Vector3d gravity(0.0, -9.81, 0.0);
@@ -160,7 +160,7 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
 TEST(DYNAMICS, COMPARE_CORIOLIS) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -182,7 +182,7 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
 TEST(DYNAMICS, COMPARE_MASS) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
     
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -210,7 +210,7 @@ TEST(DYNAMICS, COMPARE_MASS) {
 TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -238,7 +238,7 @@ TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
 TEST(DYNAMICS, COMPARE_DYN_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
-    using namespace model3d;
+    using namespace kinematics;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;

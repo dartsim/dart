@@ -2,11 +2,11 @@
 #define _MYWINDOW_
 
 #include "yui/Win3D.h"
-#include "model3d/Skeleton.h"
+#include "kinematics/Skeleton.h"
 
 class MyWindow : public yui::Win3D {
 public:
-    MyWindow(model3d::Skeleton* _model) : mModel(_model){
+    MyWindow(kinematics::Skeleton* _model) : mModel(_model){
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
@@ -32,7 +32,7 @@ public:
     }
 
 protected:
-    model3d::Skeleton* mModel;
+    kinematics::Skeleton* mModel;
     bool mDrawMarker;
 };
 

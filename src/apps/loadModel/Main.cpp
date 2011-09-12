@@ -1,12 +1,12 @@
 #include "MyWindow.h"
-#include "model3d/FileInfoSkel.hpp"
+#include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
 
-using namespace model3d;
+using namespace kinematics;
 
 int main(int argc, char* argv[]) {
     FileInfoSkel<Skeleton> modelFile;
-    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk", model3d::VSK);
+    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk", kinematics::VSK);
     // modelFile.loadFile("Yuting.skel",FileInfoModel::SKEL);
 
     MyWindow window(modelFile.getSkel());

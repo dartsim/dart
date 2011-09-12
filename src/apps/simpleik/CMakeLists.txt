@@ -4,7 +4,7 @@ PROJECT(simpleik)
 FILE(GLOB simpleik_srcs "*.cpp")
 FILE(GLOB simpleik_hdrs "*.h")
 ADD_EXECUTABLE(simpleik ${simpleik_srcs} ${simpleik_hdrs})
-TARGET_LINK_LIBRARIES(simpleik model3d optimizer)
+TARGET_LINK_LIBRARIES(simpleik kinematics optimizer)
 
 if (WIN32)
     TARGET_LINK_LIBRARIES(simpleik debug ticpp_d optimized ticpp)

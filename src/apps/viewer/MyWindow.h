@@ -2,11 +2,11 @@
 #define _MYWINDOW_
 
 #include "yui/Win3D.h"
-#include "model3d/FileInfoDof.h"
+#include "kinematics/FileInfoDof.h"
 
 class MyWindow : public yui::Win3D {
 public:
-    MyWindow(model3d::FileInfoDof& _mot): Win3D(), mMotion(_mot) {
+    MyWindow(kinematics::FileInfoDof& _mot): Win3D(), mMotion(_mot) {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
@@ -33,7 +33,7 @@ protected:
     int mFrame;
     bool mShowMarker;
     bool mShowProgress;
-    model3d::FileInfoDof& mMotion;
+    kinematics::FileInfoDof& mMotion;
 };
 
 #endif
