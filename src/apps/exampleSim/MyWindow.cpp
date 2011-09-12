@@ -7,7 +7,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 using namespace utils;
 
 void MyWindow::initDyn()

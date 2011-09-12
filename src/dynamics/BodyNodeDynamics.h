@@ -11,14 +11,14 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "model3d/BodyNode.h"
+#include "kinematics/BodyNode.h"
 #include "utils/EigenHelper.h"
 
 namespace dynamics{
     /**
     @brief BodyNodeDynamics class represents a single node of the skeleton for dynamics
     */
-    class BodyNodeDynamics : public model3d::BodyNode{
+    class BodyNodeDynamics : public kinematics::BodyNode{
     public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
@@ -95,7 +95,7 @@ namespace dynamics{
         // contact points are a pair of (local point offset, Cartesian force in world coordinates) 
         std::vector< std::pair<Eigen::Vector3d, Eigen::Vector3d> > mContacts;
 
-        Eigen::Matrix4d getLocalSecondDeriv(const model3d::Dof *_q1, const model3d::Dof *_q2) const;
+        Eigen::Matrix4d getLocalSecondDeriv(const kinematics::Dof *_q1, const kinematics::Dof *_q2) const;
         void evalJacDerivLin(int _qi);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
         void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
