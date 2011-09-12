@@ -9,13 +9,13 @@ using namespace Eigen;
 #include "optimizer/Problem.h"
 #include "optimizer/ObjectiveBox.h"
 using namespace optimizer;
-#include "SampleConstraint.h"
+#include "ExampleConstraint.h"
 
 // For solver
 #include "optimizer/snopt/SnoptSolver.h"
 
 
-class SampleProblem : public Problem {
+class ExampleProblem : public Problem {
 public:
     virtual void update(double* coefs) {
         cout << "TestProblem::update" << endl;
@@ -29,18 +29,18 @@ int main(int argc, char* argv[]) {
     cout << setprecision(12) << fixed;
 
     cout << endl;
-    cout << "Sample Optimizer" << endl;
+    cout << "Example Optimizer" << endl;
     cout << endl;
 
 
     // Define problem. you can define your own problem as well
-    SampleProblem prob;
+    ExampleProblem prob;
     // Problem prob;
     prob.addVariable(0.0, -10.0, 10.0);
     prob.createBoxes();
 
     // Create constraints and objectives
-    SampleConstraint* c = new SampleConstraint(
+    ExampleConstraint* c = new ExampleConstraint(
         prob.vars(), 0, 3.0);
     prob.objBox()->add(c);
 
