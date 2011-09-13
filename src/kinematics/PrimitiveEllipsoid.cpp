@@ -38,9 +38,9 @@ namespace kinematics {
     }
 
     void PrimitiveEllipsoid::computeMassTensor(){
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/10;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/10;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/10;
+        mMassTensor(0, 0) = (mDim(0)*mDim(0))/20;
+        mMassTensor(1, 1) = (mDim(1)*mDim(1))/20;
+        mMassTensor(2, 2) = (mDim(2)*mDim(2))/20;
         mMassTensor(3, 3) = 1;
         mMassTensor *= mMass;
     }
