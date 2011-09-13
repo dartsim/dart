@@ -51,7 +51,7 @@ namespace kinematics {
 
         Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
-        Eigen::Matrix4d getLocalDeriv(Dof *_q) const;
+        Eigen::Matrix4d getLocalDeriv(Dof *_q) const; ///< First derivative of the local transformation w.r.t. the input dof
 
         /* void setDependDofMap(int _numDofs); ///< set up the dof dependence map for this node */
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */

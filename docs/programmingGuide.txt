@@ -55,7 +55,7 @@ namespace mynamespace{
 - Use "int *a" instead of "int* a"
 
 11. Integer and floating variables
-- Use "int" instead of "size_t" 
+- Use "unsigned int" instead of "size_t" 
 - Use "unsigned int" when needed
 - Don't apply equality operator on floating variables
 
