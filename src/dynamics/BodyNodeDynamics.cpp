@@ -378,6 +378,8 @@ namespace dynamics{
     void BodyNodeDynamics::evalExternalForces( VectorXd& _extForce ){
         int numDepDofs = getNumDependentDofs();
         mFext = VectorXd::Zero(numDepDofs);
+
+        // contribution of linear force
         int nContacts = mContacts.size();
         for(int i=0; i<nContacts; i++){
             // compute J
@@ -389,6 +391,7 @@ namespace dynamics{
             mFext += J.transpose()*force;
         }
 
+        // contribution of torque
         if(mExtTorqueBody.norm()>0){
             mFext += mJw.transpose()*mW.topLeftCorner(3,3)*mExtTorqueBody;
         }
@@ -404,16 +407,18 @@ namespace dynamics{
             mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
         }
 
-        for(unsigned int i=0; i<mJointsChild.size(); i++){ // recursive
+        for(unsigned int i=0; i<mJointsChild.size(); i++){ // recursion
             BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
-            Matrix3d Rchild = childNode->mT.topLeftCorner(3,3);
-            Vector3d forceChild = Rchild*childNode->mExtForceBody;
+            
+            Matrix3d Rchild = childNode->mT.topLeftCorner(3,3); // rotation from parent to child
+            Vector3d forceChild = Rchild*childNode->mExtForceBody; // convert external force of child to parent frame
             mExtForceBody += forceChild;
-            Vector3d rlchild = childNode->mT.col(3).head(3);
-            mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody;
+
+            Vector3d rlchild = childNode->mT.col(3).head(3); // child com in parent frame
+            mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody; // torque induced by linear force in child node, and the torque in child node
         }
    
-        // convert from cartesian space to generalized coordinates
+        // convert mExtForceBody and mExtTorqueBody from cartesian space to generalized coordinates (_extForce)
         jointCartesianToGeneralized( mExtTorqueBody, _extForce );
         if(getParentJoint()->getNumDofsTrans()>0){
             jointCartesianToGeneralized( mExtForceBody, _extForce, false );
