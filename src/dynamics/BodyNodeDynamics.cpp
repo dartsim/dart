@@ -199,16 +199,6 @@ namespace dynamics{
                 mExtForceBody += mContacts.at(i).second;
                 mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
             }
-        
-            for(unsigned int i=0; i<mJointsChild.size(); i++){
-                BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
-                Matrix3d Rchild = childNode->mT.topLeftCorner(3,3);
-                Vector3d forceChild = Rchild*childNode->mExtForceBody;
-                mExtForceBody += forceChild;
-                Vector3d rlchild = childNode->mT.col(3).head(3);
-                mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody;
-            }
-        
             mForceJointBody -= mExtForceBody;
             mTorqueJointBody -= mExtTorqueBody;
         }// endif compute external forces
