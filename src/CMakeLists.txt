@@ -1,10 +1,9 @@
 # all libraries
 ADD_SUBDIRECTORY(utils)
-ADD_SUBDIRECTORY(model3d)
+ADD_SUBDIRECTORY(kinematics)
 ADD_SUBDIRECTORY(optimizer)
 ADD_SUBDIRECTORY(yui)
 ADD_SUBDIRECTORY(renderer)
-ADD_SUBDIRECTORY(mayaexports)
 ADD_SUBDIRECTORY(geometry)
 ADD_SUBDIRECTORY(dynamics)
 ADD_SUBDIRECTORY(lcpsolver)

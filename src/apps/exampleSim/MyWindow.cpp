@@ -1,12 +1,14 @@
 #include "MyWindow.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "utils/UtilsMath.h"
+#include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
+using namespace utils;
 
 void MyWindow::initDyn()
 {
@@ -14,7 +16,7 @@ void MyWindow::initDyn()
     mDofs.resize(mModel->getNumDofs());
     mDofVels.resize(mModel->getNumDofs());
     for(unsigned int i=0; i<mModel->getNumDofs(); i++){
-        mDofs[i] = utils::random(-0.1,0.1);
+        mDofs[i] = utils::random(-0.5,0.5);
         mDofVels[i] = utils::random(-0.1,0.1);
     }
     mModel->setPose(mDofs,false,false);
@@ -22,15 +24,17 @@ void MyWindow::initDyn()
 
 void MyWindow::displayTimer(int _val)
 {
+    static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i=0; i<numIter; i++){
+        tSim.startTimer();
         mModel->setPose(mDofs,false,false);
         mModel->computeDynamics(mGravity, mDofVels, true);
-        VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve(
-            mModel->getCombinedVector() ); 
+        VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
         mModel->clampRotation(mDofs,mDofVels);
         mDofVels += qddot*mTimeStep;
         mDofs += mDofVels*mTimeStep;
+        tSim.stopTimer();
     }
 
     mFrame += numIter;   
@@ -42,7 +46,7 @@ void MyWindow::displayTimer(int _val)
 void MyWindow::draw()
 {
     mModel->draw(mRI);
-    if(mShowMarker) mModel->drawHandles(mRI);
+    if(mShowMarker) mModel->drawMarkers(mRI);
     
     // display the frame count in 2D text
     char buff[64];
