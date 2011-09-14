@@ -90,7 +90,7 @@ namespace utils {
         return mIsRunning;
     }
 
-    void Timer::print() {
+    void Timer::printLog() {
         if(mCount>0) {
             VLOG(1) << "Timer [" << mName << "] : "
                     << "Last = " << mLastElapsed << " "
@@ -102,6 +102,26 @@ namespace utils {
         } else {
             VLOG(1) << "Timer " << mName << " doesn't have any record." << endl;
         }
+    }
+
+    void Timer::printScreen() {
+        if(mCount>0) {
+            cout << "Timer [" << mName << "] : "<<endl
+                    << "Last elapsed : " << mLastElapsed << "; "
+                    << "Total time : " << " "
+                    << mTotal << "; " 
+                    << "Total count : " << mCount << "; "
+                    << "Average time : " << mTotal / mCount << " "
+                    << "FPS : " << mCount / mTotal << "hz "<<endl;
+       
+        } else {
+            cout << "Timer " << mName << " doesn't have any record." << endl;
+        }
+    }
+    
+    void Timer::print( bool _toScreen ){
+        if( _toScreen ) printScreen();
+        else printLog();
     }
 
 } // namespace utils

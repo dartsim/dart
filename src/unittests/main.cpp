@@ -9,11 +9,9 @@ using namespace std;
 using namespace google;
 // Local headers
 #include "test_utils.h"
-#include "test_model3d.h"
+#include "test_kinematics.h"
 #include "test_dynamics.h"
 #include "test_optimizer.h"
-
-VectorXd gravity = VectorXd::Zero(3);
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);

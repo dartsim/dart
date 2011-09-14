@@ -31,7 +31,7 @@ We list a few notations and definitions for an articulated rigid body system wit
 \begin{itemize}
 \item $p(k)$ returns the index of the parent link of link $k$. For
   example in Figure \ref{fig:example1}, $p(4) = 2$. $p(1,k)$ returns the indices of all the links in the chain from the root to the link $k$ (including $k$). For example, $p(1,4) = \{1,2,4\}$
-\item $n(k)$ returns the number of DOFs in the joint that connects the $k$ to the parent link $p(k)$. For example in Figure \ref{fig:example1}, $n(2) = 3$, $n(3) = 1$ etc. We denote the total number of DOFs in the system by $n$. \eg $n=7$ in Figure \ref{fig:example1}.
+\item $n(k)$ returns the number of DOFs in the joint that connects the  link $k$ to the parent link $p(k)$. For example in Figure \ref{fig:example1}, $n(2) = 3$, $n(3) = 1$ etc. We denote the total number of DOFs in the system by $n$. \eg $n=7$ in Figure \ref{fig:example1}.
 \item $R_k$ is the local rotation matrix for the link $k$ and depends only on the DOFs $\vc{q}_k$. $R^0_k$ is the chain of rotational transformations from the
   world frame to the local frame of the link $k$. Therefore, $R^0_k = R^0_{p(k)}R_k$. Since the link $1$ does not have a parent link, $R^0_{p(1)} = \vc{I}_3$.
 \end{itemize}
