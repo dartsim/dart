@@ -8,27 +8,27 @@
 
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
-#include "kinematics/Joint.h"
-#include "kinematics/BodyNode.h"
-#include "kinematics/Dof.h"
+#include "model3d/Joint.h"
+#include "model3d/BodyNode.h"
+#include "model3d/Dof.h"
 #include "utils/UtilsMath.h"
 
 using namespace Eigen;
-using namespace kinematics;
+using namespace model3d;
 
 namespace dynamics{
-    SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(){
+    SkeletonDynamics::SkeletonDynamics(): model3d::Skeleton(){
     }
 
     SkeletonDynamics::~SkeletonDynamics(){
     }
 
-    kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
+    model3d::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
         return new BodyNodeDynamics(_name);
     }
 
     // computes the C term and gravity, excluding external forces
-    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians, bool _withExternalForces ) {
+    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
         for(int i=0; i<getNumNodes(); i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
@@ -42,16 +42,13 @@ namespace dynamics{
         // BACKWARD PASS: compute the forces recursively -  from end effectors to root
         for(int i=getNumNodes()-1; i>=0; i--){ // decreasing order ensures that the parent joints/nodes are evaluated after the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
-            nodei->computeInvDynForces(_gravity, _qdot, _qdotdot, _withExternalForces); // compute joint forces in cartesian space
+            nodei->computeInvDynForces(_gravity, _qdot, _qdotdot); // compute joint forces in cartesian space
             nodei->getGeneralized(torqueGen); // convert joint forces to generalized coordinates
         }
-
-        if( _withExternalForces ) clearExternalForces();
 
         return torqueGen;
     }
 
-    // after the computation, mM, mCg, and mFext are ready for use
     void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
         mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
@@ -59,7 +56,7 @@ namespace dynamics{
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
         if(_useInvDynamics){
-            mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
+            mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true);
             for(int i=0; i<getNumNodes(); i++){
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
                 // mass matrix M
@@ -68,7 +65,7 @@ namespace dynamics{
             }
         
             evalExternalForces( true );
-            //mCg -= mFext;
+            mCg -= mFext;
         }
         else {
             // init the data structures for the dynamics
@@ -98,7 +95,7 @@ namespace dynamics{
 
             evalExternalForces( false );
             //mCg = mC*_qdot + mG;
-            mCg = mCvec + mG;// - mFext;
+            mCg = mCvec + mG - mFext;
         } 
         
         clearExternalForces();

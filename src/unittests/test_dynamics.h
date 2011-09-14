@@ -3,9 +3,9 @@
 
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
-#include "kinematics/FileInfoDof.h"
-#include "kinematics/BodyNode.h"
+#include "model3d/FileInfoSkel.hpp"
+#include "model3d/FileInfoDof.h"
+#include "model3d/BodyNode.h"
 #include "utils/Paths.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -13,13 +13,13 @@
 dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     // load skeleton
     const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
     FileInfoSkel<SkeletonDynamics>* skelFile = new FileInfoSkel<SkeletonDynamics>;
-    bool loadModelResult = skelFile->loadFile(skelfilename);
+    bool loadModelResult = skelFile->loadFile(skelfilename, model3d::VSK);
     assert(loadModelResult);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile->getSkel());
@@ -39,7 +39,7 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
 void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     ((BodyNodeDynamics*)skelDyn->getNode(7))->addExtForce(Vector3d(0.1,0.2,0.3), Vector3d(30,40,50), true, false );
@@ -51,7 +51,7 @@ void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
 TEST(DYNAMICS, COMPARE_VELOCITIES) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -107,7 +107,7 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
 TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
     
     Vector3d gravity(0.0, -9.81, 0.0);
@@ -160,7 +160,7 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
 TEST(DYNAMICS, COMPARE_CORIOLIS) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -182,7 +182,7 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
 TEST(DYNAMICS, COMPARE_MASS) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
     
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -210,7 +210,7 @@ TEST(DYNAMICS, COMPARE_MASS) {
 TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
@@ -221,7 +221,7 @@ TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
     skelDyn->setPose(q, true, true); 
     
     addExternalForces(skelDyn); // adding external force may require transformations to be computed to convert points and forces to local coordinates
-    skelDyn->computeInverseDynamicsLinear(gravity, &qdot, NULL, true, false); // some computation in inverse dynamics is required even when only external forces are desired
+    skelDyn->computeInverseDynamicsLinear(gravity, &qdot); // some computation in inverse dynamics is required even when only external forces are desired
     skelDyn->evalExternalForces(true); // use recursive
     VectorXd Frec = skelDyn->getExternalForces();
     
@@ -238,7 +238,7 @@ TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
 TEST(DYNAMICS, COMPARE_DYN_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
-    using namespace kinematics;
+    using namespace model3d;
     using namespace dynamics;
 
     const double TOLERANCE_EXACT = 1.0e-10;
