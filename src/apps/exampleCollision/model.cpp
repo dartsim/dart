@@ -72,7 +72,7 @@ Vnormalize(double V[3])
   V[2] *= d;
 }
 
-Model::Model(char *tris_file)
+Model::Model(const char* const tris_file)
 {
   FILE *fp = fopen(tris_file,"r");
   if (fp == NULL)
@@ -81,7 +81,8 @@ Model::Model(char *tris_file)
     exit(-1); 
   }
 
-  fscanf(fp,"%d",&ntris);
+  int result = 0;
+  result = fscanf(fp,"%d",&ntris);
   tri = new ModelTri[ntris];
 
   int i;
@@ -90,10 +91,10 @@ Model::Model(char *tris_file)
   {
     // read the tri verts
 
-    fscanf(fp,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-           &tri[i].p0[0], &tri[i].p0[1], &tri[i].p0[2],
-           &tri[i].p1[0], &tri[i].p1[1], &tri[i].p1[2],
-           &tri[i].p2[0], &tri[i].p2[1], &tri[i].p2[2]);
+    result = fscanf(fp,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                    &tri[i].p0[0], &tri[i].p0[1], &tri[i].p0[2],
+                    &tri[i].p1[0], &tri[i].p1[1], &tri[i].p1[2],
+                    &tri[i].p2[0], &tri[i].p2[1], &tri[i].p2[2]);
 
     // set the normal
 

@@ -1,19 +1,24 @@
+#include "MyWindow.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
-#include "utils/Paths.h"
 
-#include "MyWindow.h"
+#include "model3d/FileInfoSkel.hpp"
+
+#include "utils/Paths.h"
+#include "collision/collision.h"
+
+
+
 
 using namespace std;
 using namespace Eigen;
-using namespace kinematics;
+using namespace model3d;
 using namespace dynamics;
 
 int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model;
-    model.loadFile(GROUNDZERO_DATA_PATH"/skel/Chain.skel", kinematics::SKEL);
+    model.loadFile(GROUNDZERO_DATA_PATH"/skel/Chain.skel", model3d::SKEL);
 
     MyWindow window((SkeletonDynamics*)model.getSkel());
     

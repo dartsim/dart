@@ -1,11 +1,11 @@
 #include "MyWindow.h"
 #include "yui/GLFuncs.h"
-#include "model3d/Skeleton.h"
+#include "kinematics/Skeleton.h"
 #include <cstdio>
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 
 void MyWindow::displayTimer(int _val)
 {
@@ -36,7 +36,7 @@ void MyWindow::draw()
     // update and draw the motion
     model->setPose(mMotion.getPoseAtFrame(fr));
     model->draw(mRI);
-    if(mShowMarker) model->drawHandles(mRI);
+    if(mShowMarker) model->drawMarkers(mRI);
 
     if(mShowProgress) yui::drawProgressBar(fr,mMaxFrame);
 

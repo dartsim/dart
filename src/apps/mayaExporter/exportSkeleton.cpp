@@ -1,15 +1,15 @@
-#include "mayaexports/MayaExportSkeleton.h"
-#include "model3d/FileInfoSkel.hpp"
+#include "utils/MayaExportSkeleton.h"
+#include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
 
-using namespace model3d;
+using namespace kinematics;
 
 int main(int argc, char* argv[])
 {
     FileInfoSkel<Skeleton> model;
-    model.loadFile(GROUNDZERO_DATA_PATH"skel/YutingEuler.skel", model3d::SKEL);
+    model.loadFile(GROUNDZERO_DATA_PATH"skel/YutingEuler.skel", kinematics::SKEL);
     ofstream out("model.ma");
-    mayaexports::MayaExportSkeleton::exportMayaAscii(model.getSkel(), out);
+    utils::mayaexports::MayaExportSkeleton::exportMayaAscii(model.getSkel(), out);
     out.close();
 
     return 0;
