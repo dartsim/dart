@@ -3,12 +3,12 @@
 #include "utils/UtilsMath.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>
-#include "model3d/BodyNode.h"
-#include "model3d/Primitive.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Primitive.h"
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 
 
 void evalRT(MatrixXd mat, Vec3f R[3], Vec3f& T)
@@ -40,10 +40,10 @@ void MyWindow::initDyn()
 {
     // set random initial conditions
     mDofs.resize(mModel->getNumDofs());
-	printf("%d\n", mModel->getNumDofs());
+    printf("%d\n", mModel->getNumDofs());
     mDofVels.resize(mModel->getNumDofs());
     for(unsigned int i=0; i<mModel->getNumDofs(); i++){
-        mDofs[i] = utils::random(-0.1,0.1);
+        mDofs[i] = utils::random(-0.5,0.5);
         mDofVels[i] = utils::random(-0.1,0.1);
 		
     }
@@ -67,7 +67,7 @@ void MyWindow::displayTimer(int _val)
     for(int i=0; i<numIter; i++){
         mModel->setPose(mDofs,false,false);
         mModel->computeDynamics(mGravity, mDofVels, true);
-        VectorXd qddot = -mModel->mM.fullPivHouseholderQr().solve(mModel->mCg); 
+        VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve(mModel->getCombinedVector()); 
         mModel->clampRotation(mDofs,mDofVels);
         mDofVels += qddot*mTimeStep;
         mDofs += mDofVels*mTimeStep;
@@ -81,8 +81,8 @@ void MyWindow::displayTimer(int _val)
 
 void MyWindow::draw()
 {
-    //mModel->draw(mRI);
-    //if(mShowMarker) mModel->drawHandles(mRI);
+    mModel->draw(mRI);
+    if(mShowMarker) mModel->drawMarkers(mRI);
 	glDisable(GL_LIGHTING);
 
 	Vec3f R1[3];
