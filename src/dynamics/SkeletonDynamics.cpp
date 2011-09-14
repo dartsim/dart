@@ -98,7 +98,7 @@ namespace dynamics{
 
             evalExternalForces( false );
             //mCg = mC*_qdot + mG;
-            mCg = mCvec + mG;// - mFext;
+            mCg = mCvec + mG; //- mFext;
         } 
         
         clearExternalForces();
