@@ -11,14 +11,14 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "kinematics/BodyNode.h"
+#include "model3d/BodyNode.h"
 #include "utils/EigenHelper.h"
 
 namespace dynamics{
     /**
     @brief BodyNodeDynamics class represents a single node of the skeleton for dynamics
     */
-    class BodyNodeDynamics : public kinematics::BodyNode{
+    class BodyNodeDynamics : public model3d::BodyNode{
     public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
@@ -42,7 +42,7 @@ namespace dynamics{
         Eigen::Vector3d mExtTorqueBody; ///< the external Cartesian torque applied to the body; usually directly supplied from outside; contribution of the linear force will be considered later in the computation
         
         void computeInvDynVelocities( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _computeJacobians=true );   ///< computes the velocities in the first pass of the algorithm; also computes Transform W etc using updateTransform; computes Jacobians Jv and Jw if the flag is true; replaces updateFirstDerivatives of non-recursive dynamics
-        void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _withExternalForces );   ///< computes the forces in the second pass of the algorithm
+        void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot );   ///< computes the forces in the second pass of the algorithm
 
         // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
         void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
@@ -61,7 +61,7 @@ namespace dynamics{
         void evalCoriolisVector(const Eigen::VectorXd &_qDotSkel);  ///< evaluates the Coriolis vector mCvec directy: i.e. shortcut for mC*qdot
         void evalGravityVector(const Eigen::Vector3d &_gravity);   ///< evaluates the gravity vector mG in the generalized coordinates
         void evalExternalForces( Eigen::VectorXd& _extForce ); ///< evaluates the external forces mFext in the generalized coordinates as J^TF
-        void evalExternalForcesRecursive( Eigen::VectorXd& _extForce ); ///< evaluates the external forces mFext in the generalized coordinates recursively
+        void evalExternalForcesRecursive( Eigen::VectorXd& _extForce ); ///< evaluates the external forces mFext in the generalized coordinates as J^TF
 
         void jointCartesianToGeneralized( const Eigen::Vector3d& _cForce, Eigen::VectorXd& _gForce, bool _isTorque=true ); ///< convert cartesian forces in joint frame to generalized forces
         void bodyCartesianToGeneralized( const Eigen::Vector3d& _cForce, Eigen::VectorXd& _gForce, bool _isTorque=true ); ///< convert cartesian forces in body com frame to generalized forces
@@ -74,9 +74,9 @@ namespace dynamics{
         void aggregateGravity(Eigen::VectorXd &_G);
 
         // add and remove contact points where forces are applied
-        void addExtForce( const Eigen::Vector3d& _offset, const Eigen::Vector3d& _force, bool _isOffsetLocal=true, bool _isForceLocal=false ); ///< apply linear Cartesian forces to this node. A force is defined by a point of application and a force vector. The last two parameters specify frames of the first two parameters. Coordinate transformations are applied when needed. The point of application and the force in local coordinates are stored in mContacts. When conversion is needed, make sure the transformations are avaialble
-        void addExtTorque( const Eigen::Vector3d& _torque, bool _isLocal); ///< apply Cartesian torque to the node. The torque in local coordinates is accumulated in mExtTorqueBody
-        void clearExternalForces(); ///< clean up structures that store external forces: mContacts, mFext, mExtForceBody and mExtTorqueBody; called from @SkeletonDynamics::clearExternalForces
+        void addExtForce( const Eigen::Vector3d& _offset, const Eigen::Vector3d& _force, bool _isOffsetLocal=true, bool _isForceLocal=false );
+        void addExtTorque( const Eigen::Vector3d& _torque, bool _isLocal);
+        void clearExternalForces();
 
     protected:
 
@@ -91,10 +91,11 @@ namespace dynamics{
         Eigen::MatrixXd mJvDot; ///< Time derivative of the Linear velocity Jacobian
         Eigen::MatrixXd mJwDot; ///< Time derivative of the Angular velocity Jacobian
 
-        std::vector< std::pair<Eigen::Vector3d, Eigen::Vector3d> > mContacts; ///< list of contact points where external forces are applied
-        ///< contact points are a pair of (local point offset, Cartesian force in local coordinates) 
-        
-        Eigen::Matrix4d getLocalSecondDeriv(const kinematics::Dof *_q1, const kinematics::Dof *_q2) const;
+        // list of contact points where external forces are applied
+        // contact points are a pair of (local point offset, Cartesian force in world coordinates) 
+        std::vector< std::pair<Eigen::Vector3d, Eigen::Vector3d> > mContacts;
+
+        Eigen::Matrix4d getLocalSecondDeriv(const model3d::Dof *_q1, const model3d::Dof *_q2) const;
         void evalJacDerivLin(int _qi);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
         void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
