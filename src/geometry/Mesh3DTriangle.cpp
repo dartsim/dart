@@ -51,24 +51,26 @@ namespace geometry {
             mCornerTable = new CornerTable(this);
             fprintf(stderr, "reading from file: %s\n", fileName);
 
-            fscanf(file, "%d", &mNumVertices);
+            int result = 0;
+            result = fscanf(file, "%d", &mNumVertices);
+            
             mVertexPos = VectorXd::Zero(3*mNumVertices);
             mVertexVel = VectorXd::Zero(3*mNumVertices);
             for (unsigned int i = 0; i < mNumVertices; i++) {
-                fscanf(file, "%f %f %f", &mVertexPos[3*i+0], &mVertexPos[3*i+1], &mVertexPos[3*i+2]);
+                result = fscanf(file, "%lf %lf %lf", &mVertexPos[3*i+0], &mVertexPos[3*i+1], &mVertexPos[3*i+2]);
             }
 
-            fscanf(file, "%d", &mNumFaces);
+            result = fscanf(file, "%d", &mNumFaces);
             mCornerTable->mNumCorners = mNumFaces * 3;
             mFaces.resize(mCornerTable->mNumCorners, -1);
             for (unsigned int i = 0; i < mNumFaces; i++) {
-                fscanf(file, "%d %d %d", &mFaces[3*i+0], &mFaces[3*i+1], &mFaces[3*i+2]);
+                result = fscanf(file, "%d %d %d", &mFaces[3*i+0], &mFaces[3*i+1], &mFaces[3*i+2]);
             }
 
-            fscanf(file, "%d", &mNumFaces);
+            result = fscanf(file, "%d", &mNumFaces);
             mCornerTable->mIndOppCorners.resize(mCornerTable->mNumCorners, -1);
             for (unsigned int i = 0; i < mNumFaces; i++) {
-                fscanf(file, "%d %d %d", &mCornerTable->mIndOppCorners[3*i+0], &mCornerTable->mIndOppCorners[3*i+1], &mCornerTable->mIndOppCorners[3*i+2]);
+                result = fscanf(file, "%d %d %d", &mCornerTable->mIndOppCorners[3*i+0], &mCornerTable->mIndOppCorners[3*i+1], &mCornerTable->mIndOppCorners[3*i+2]);
             }
             fclose(file);
             return true;
