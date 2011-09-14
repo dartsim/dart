@@ -11,6 +11,7 @@ if (UNIX)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage-3.15.0/Dist)
 
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
+#    LINK_DIRECTORIES(/usr/local/lib)
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/bin)
 
 else()

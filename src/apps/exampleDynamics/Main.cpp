@@ -1,8 +1,8 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/FileInfoDof.h"
-#include "model3d/BodyNode.h"
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/FileInfoDof.h"
+#include "kinematics/BodyNode.h"
 
 #include "MyWindow.h"
 
@@ -11,7 +11,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace model3d;
+using namespace kinematics;
 using namespace dynamics;
 
 #include "utils/UtilsMath.h"
@@ -31,12 +31,12 @@ int main(int argc, char* argv[])
         doffilename = argv[2];
     }
 	
-    model3d::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
-    skelFile.loadFile(skelfilename, model3d::VSK);
+    kinematics::FileInfoSkel<dynamics::SkeletonDynamics> skelFile;
+    skelFile.loadFile(skelfilename, kinematics::VSK);
 
     SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile.getSkel());
 
-    model3d::FileInfoDof motion(skelFile.getSkel());
+    kinematics::FileInfoDof motion(skelFile.getSkel());
     //motion.loadFile(doffilename);
 
     // test the velocity computation using the two methods: linear inverse dynamics and non-recursive
@@ -134,13 +134,13 @@ int main(int argc, char* argv[])
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by not using inverse dynamics
     //cout<<"C+g term inverse dynamics: "<<Cginvdyn<<endl;
     //cout<<"C+g term nonrec dynamics: "<<skelDyn->mCg<<endl;
-    cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->mCg<<endl;
+    cout<<"Difference cg term: \n"<<Cginvdyn - skelDyn->getCombinedVector() <<endl;
 
     // test the mass matrix
     skelDyn->computeDynamics(gravity, qdot, true); // compute dynamics by using inverse dynamics
-    MatrixXd Minvdyn = skelDyn->mM;
+    MatrixXd Minvdyn( skelDyn->getMassMatrix() );
     skelDyn->computeDynamics(gravity, qdot, false); // compute dynamics by using non-recursive dynamics
-    MatrixXd Mnonrec = skelDyn->mM;
+    MatrixXd Mnonrec( skelDyn->getMassMatrix() );
     cout<<"Difference\n"<<Minvdyn-Mnonrec<<endl;
     
     cout<<"\n\n";
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 
     timer.startTimer();
     for(int i=0; i<N; i++){
-        MatrixXd Minv = skelDyn->mM.inverse();
+        MatrixXd Minv = skelDyn->getMassMatrix().inverse();
     }
     timer.stopTimer();
     cout<<"Inverse M: "<<timer.lastElapsed()/N<<endl;

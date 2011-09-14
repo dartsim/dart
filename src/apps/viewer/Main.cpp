@@ -1,13 +1,13 @@
-#include "model3d/Skeleton.h"
-#include "model3d/FileInfoSkel.hpp"
-#include "model3d/FileInfoDof.h"
+#include "kinematics/Skeleton.h"
+#include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/FileInfoDof.h"
 
 #include "MyWindow.h"
 
 #include <iostream>
 
 using namespace std;
-using namespace model3d;
+using namespace kinematics;
 #include "utils/Paths.h"
 
 int main(int argc, char* argv[])

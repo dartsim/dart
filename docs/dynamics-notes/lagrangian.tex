@@ -13,7 +13,6 @@ is defined by Cartesian coordinates that describe the translation with
 respective to the world coordinates.  We can represent
 $\vGlobalPoint_i$ by a set of \emph{generalized coordinates} that
 indicate the joint configuration of the human skeleton:
-
 \begin{equation}\label{eq:general_coord}
     \vGlobalPoint_i = \vGlobalPoint_i(\sJoint_{1},
 \sJoint_{2}, \ldots, \sJoint_{\sNumJoint}, t)
@@ -28,7 +27,6 @@ system coordinates are the generalized coordinates $\sJoint_j$ and the
 constraint manifold lies in the Cartesian space. The virtual
 displacement $\delta \vGlobalPoint_i$ is a tangent vector to the
 constraint manifold at a fixed time, written as
-
 \begin{equation}\label{eq:virtual_displace}
     \delta \vGlobalPoint_i = \sum_j \frac{\partial \vGlobalPoint_i}{\partial
     \sJoint_j}\delta \sJoint_j
@@ -37,8 +35,8 @@ constraint manifold at a fixed time, written as
 We can write virtual work of force $\vForce{i}$ acting on particle
 $\vGlobalPoint_i$ as
 \begin{equation}\label{eq:virtual_work}
-  \vc{f}_{i} . \delta \vc{r}_i = \vc{f}_{i} . \sum_j \frac{\partial \vc{r}_i}{\partial
-    q_j}\delta q_j \equiv \sum_j Q_{ij} \delta q_j = \vc{Q}_i.\delta \vc{q}
+  \vc{f}_{i} \cdot  \delta \vc{r}_i = \vc{f}_{i} \cdot  \sum_j \frac{\partial \vc{r}_i}{\partial
+    q_j}\delta q_j \equiv \sum_j Q_{ij} \delta q_j = \vc{Q}_i \cdot \delta \vc{q}
 \end{equation}
 where $Q_{ij} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as the component of the \emph{generalized force}
 associated with coordinate $q_j$. In the vector form, $\vc{Q}_i$ is the generalized force corresponding to the Cartesian force $\vc{f}_i$ with the relation $\vc{Q}_i = J_i^T \vc{f}_i$, where $J_i$ is the Jacobian matrix with the $j^{th}$ column defined as $\frac{\partial \vc{r}_i}{\partial q_j}$.
@@ -48,8 +46,9 @@ between the forces acting on a system and the inertia force of the
 system along any virtual displacement consistent with the constraints
 of the system, is zero. Therefore, the virtual work at $\vGlobalPoint_i$ can be written as
 \begin{equation}\label{eq:inertial_work}
-  \delta \sWork_i = \vForce{i} . \delta \vGlobalPoint_i = \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
-    \delta \vGlobalPoint_i = \sum_j \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
+  \delta \sWork_i = \vForce{i} \cdot  \delta \vGlobalPoint_i =
+  \sInfMass_i \ddot{\vGlobalPoint}_i \cdot \delta \vGlobalPoint_i =
+  \sum_j \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
     \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j} \delta \sJoint_j
 \end{equation}
 where $\sInfMass_i$ is the infinitesimal mass associated with
