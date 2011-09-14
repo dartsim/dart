@@ -38,6 +38,7 @@
 #define COLLISION_CHECKING_BVH_SPLIT_RULE_H
 
 
+#include <cstdio>
 #include "BVH_defs.h"
 #include "primitive.h"
 #include "vec_3f.h"
