@@ -52,6 +52,7 @@ namespace kinematics {
         int getNodeIndex(const char* const name);
         inline Marker* getMarker(int i) { return mMarkers[i]; }
         inline double getMass() { return mMass; }
+        Eigen::Vector3d getWorldCOM();
 
         virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
         virtual void setPose(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);

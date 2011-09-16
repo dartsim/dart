@@ -9,6 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace kinematics;
 using namespace utils;
+using namespace integration;
 
 void MyWindow::initDyn()
 {
@@ -22,18 +23,41 @@ void MyWindow::initDyn()
     mModel->setPose(mDofs,false,false);
 }
 
+VectorXd MyWindow::getState() {
+    VectorXd state(mDofs.size() + mDofVels.size());
+    state.head(mDofs.size()) = mDofs;
+    state.tail(mDofVels.size()) = mDofVels;
+    return state;
+}
+
+VectorXd MyWindow::evalDeriv() {
+    VectorXd deriv(mDofs.size() + mDofVels.size());
+    VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
+    mModel->clampRotation(mDofs, mDofVels);
+    deriv.tail(mDofVels.size()) = qddot; // set qddot (accelerations)
+    deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set velocities
+    return deriv;
+}
+
+void MyWindow::setState(VectorXd newState) {
+    mDofVels = newState.tail(mDofVels.size());
+    mDofs = newState.head(mDofs.size());
+}
+
+void MyWindow::setPose() {
+    mModel->setPose(mDofs,false,false);
+    mModel->computeDynamics(mGravity, mDofVels, true);
+}
+
 void MyWindow::displayTimer(int _val)
 {
     static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
+    cout << numIter << endl;
     for(int i=0; i<numIter; i++){
         tSim.startTimer();
-        mModel->setPose(mDofs,false,false);
-        mModel->computeDynamics(mGravity, mDofVels, true);
-        VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
-        mModel->clampRotation(mDofs,mDofVels);
-        mDofVels += qddot*mTimeStep;
-        mDofs += mDofVels*mTimeStep;
+        setPose();
+        mIntegrator.integrate(this, mTimeStep);
         tSim.stopTimer();
     }
 
