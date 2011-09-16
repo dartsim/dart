@@ -67,6 +67,7 @@ namespace kinematics {
 
         inline void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }
         inline Eigen::Vector3d getLocalCOM() const { return mCOMLocal; }
+        inline Eigen::Vector3d getWorldCOM() { return evalWorldPos(mCOMLocal); }
         
         inline void setSkel(Skeleton* _skel) { mSkel = _skel; }
         inline Skeleton* getSkel() const { return mSkel; }
