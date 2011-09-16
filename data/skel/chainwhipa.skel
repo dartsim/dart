@@ -1,0 +1,57 @@
+dofs {
+	root_len { 0.0, 0.0000, 1.0000 }
+	hip_euler_z { 0.0, 0.0000, 3.1416 }
+	hip_euler_y { 0.0, 0.0000, 3.1416 }
+    hip_euler_x { 0.0, 0.0000, 3.1416 }	
+	hip_len { 0.4000, 0.0000, 1.0000 }
+	thigh_euler_z { 0.0, 0.0000, 3.1416 }
+	thigh_euler_y { 0.0, 0.0000, 3.1416 }
+    thigh_euler_x { 0.0, 0.0000, 3.1416 }	
+	thigh_len { 0.6000, 0.0000, 1.0000 }
+	shin_euler_z { 0.0, 0.0000, 3.1416 }
+	shin_euler_y { 0.0, 0.0000, 3.1416 }
+    shin_euler_x { 0.0, 0.0000, 3.1416 }	
+	shin_len { 0.6000, 0.0000, 1.0000 }
+}
+
+mass {
+		total_mass { 25.0000 }
+      	hip_mass { 3.0000 }
+		thigh_mass { 20.0000 }
+		shin_mass { 2.0000 }
+}
+
+node hip { 0
+	chain { 3
+		telescope { <0.0000,0.0000,0.0000>, root_len}
+		rotate_euler { hip_euler_z, z }
+	    rotate_euler { hip_euler_y, y }
+	    rotate_euler { hip_euler_x, x }			
+	}
+	primitive {	<0.2000,1.0000,0.2000>, <0.0000,-0.5000,0.0000>, hip_len, hip_mass	}
+
+	node thigh { 1
+		chain { 3
+			telescope { <0.0000,-1.0000,0.0000>, hip_len }
+			rotate_euler { thigh_euler_z, z }
+	        rotate_euler { thigh_euler_y, y }
+	        rotate_euler { thigh_euler_x, x }	
+		}
+		primitive {	<0.2000,1.0000,0.2000>, <0.0000,-0.5000,0.0000>, thigh_len, thigh_mass	}
+		
+		node shin { 2
+		    chain { 3
+			    telescope { <0.0000,-1.0000,0.0000>, thigh_len }
+			    rotate_euler { shin_euler_z, z }
+	            rotate_euler { shin_euler_y, y }
+	            rotate_euler { shin_euler_x, x }	
+		    }
+		    primitive {	<0.2000,1.0000,0.2000>, <0.0000,-0.5000,0.0000>, shin_len, shin_mass	}
+	    }
+	}
+	
+}
+handles {
+    R { <0.0000,0.0000,0.0000>, 1, hip }
+}
+
