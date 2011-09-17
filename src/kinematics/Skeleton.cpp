@@ -117,6 +117,17 @@ namespace kinematics {
         }
         return -1;
     }
+
+    Vector3d Skeleton::getWorldCOM() {
+        assert(mMass != 0);
+        Vector3d com(0, 0, 0);
+        const int nNodes = getNumNodes();
+        for(int i = 0; i < nNodes; i++) {
+            BodyNode* node = getNode(i);
+            com += (node->getMass() * node->getWorldCOM());
+        }
+        return com / mMass;
+    }
   
     void Skeleton::setPose(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
         assert(state.size() == getNumDofs());

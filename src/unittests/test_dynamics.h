@@ -36,6 +36,28 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
     return skelDyn;
 }
 
+dynamics::SkeletonDynamics* prepareSkeletonChain( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot) {
+	using namespace std;
+	using namespace Eigen;
+	using namespace kinematics;
+	using namespace dynamics;
+
+	// load skeleton
+	const char* skelfilename = GROUNDZERO_DATA_PATH"skel/chainwhipa.skel";
+	FileInfoSkel<SkeletonDynamics>* skelFile = new FileInfoSkel<SkeletonDynamics>;
+	bool loadModelResult = skelFile->loadFile(skelfilename);
+	assert(loadModelResult);
+
+	SkeletonDynamics *skelDyn = static_cast<SkeletonDynamics*>(skelFile->getSkel());
+	assert(skelDyn != NULL);
+
+	// generate a random state
+	_q = VectorXd::Zero(skelDyn->getNumDofs());
+	_qdot = VectorXd::Zero(skelDyn->getNumDofs());
+	_q[6] = 1.5707963265;
+	return skelDyn;
+}
+
 void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     using namespace std;
     using namespace Eigen;
@@ -46,6 +68,15 @@ void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     ((BodyNodeDynamics*)skelDyn->getNode(7))->addExtForce(Vector3d(0.5,0.5,0.5), -Vector3d(20,4,5), true, false );
     ((BodyNodeDynamics*)skelDyn->getNode(13))->addExtForce(Vector3d(0,0,0), Vector3d(30,20,10), true, false );
     ((BodyNodeDynamics*)skelDyn->getNode(2))->addExtTorque(Vector3d(30,20,10), false );
+}
+
+void addExternalForcesChain(dynamics::SkeletonDynamics* skelDyn) {
+	using namespace std;
+	using namespace Eigen;
+	using namespace kinematics;
+	using namespace dynamics;
+
+	((BodyNodeDynamics*)skelDyn->getNode(2))->addExtForce(skelDyn->getNode(2)->getLocalCOM(), Vector3d(0,19.6,0), true, false );
 }
 
 TEST(DYNAMICS, COMPARE_VELOCITIES) {
@@ -264,6 +295,28 @@ TEST(DYNAMICS, COMPARE_DYN_EXTERNAL_FORCES) {
     for(int i=0; i<skelDyn->getNumDofs(); i++)
         for(int j=i; j<skelDyn->getNumDofs(); j++)
             EXPECT_NEAR(MRec(i,j), MNon(i,j), TOLERANCE_EXACT);
+}
+
+TEST(DYNAMICS, COMPARE_JOINT_TOQUE_W_EXTERNAL_FORCES) {
+	using namespace std;
+	using namespace Eigen;
+	using namespace kinematics;
+	using namespace utils;
+	using namespace dynamics;
+
+	const double TOLERANCE_EXACT = 1.0e-10;
+	Vector3d gravity(0.0, -9.8, 0.0);
+
+	VectorXd q, qdot;
+	SkeletonDynamics* skelDyn = prepareSkeletonChain(q, qdot);
+	skelDyn->setPose(q, true, true); 
+
+	addExternalForcesChain(skelDyn);
+	skelDyn->evalExternalForces(false);
+	VectorXd Cginvdyn = skelDyn->computeInverseDynamicsLinear(gravity, &qdot, NULL, true, true);
+
+	for(int i=0; i<skelDyn->getNumDofs(); i++)
+		EXPECT_NEAR(Cginvdyn(i), 0.0, TOLERANCE_EXACT);
 }
 
 // TODO
