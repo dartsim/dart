@@ -1,12 +1,8 @@
 #include "MyWindow.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-
 #include "kinematics/FileInfoSkel.hpp"
-
 #include "utils/Paths.h"
-#include "collision/collision.h"
-
 
 
 
