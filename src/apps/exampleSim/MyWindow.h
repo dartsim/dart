@@ -45,7 +45,9 @@ protected:
     bool mRunning;
     int mFrame;
     bool mShowMarker;
-    integration::RK4Integrator mIntegrator;
+    // Select an integrator
+    integration::EulerIntegrator mIntegrator;
+    //    integration::RK4Integrator mIntegrator;
     
     dynamics::SkeletonDynamics* mModel;
     Eigen::VectorXd mDofVels;
