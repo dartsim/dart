@@ -35,7 +35,7 @@ VectorXd MyWindow::evalDeriv() {
     VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
     mModel->clampRotation(mDofs, mDofVels);
     deriv.tail(mDofVels.size()) = qddot; // set qddot (accelerations)
-    deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set velocities
+    deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set new velocities
     return deriv;
 }
 
@@ -53,7 +53,6 @@ void MyWindow::displayTimer(int _val)
 {
     static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
-    cout << numIter << endl;
     for(int i=0; i<numIter; i++){
         tSim.startTimer();
         setPose();

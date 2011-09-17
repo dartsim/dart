@@ -95,7 +95,6 @@ void MyWindow::displayTimer(int _val)
 {
     static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
-    cout << numIter << endl;
     for(int i=0; i<numIter; i++){
         tSim.startTimer();
         setPose();
