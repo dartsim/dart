@@ -8,6 +8,7 @@ ADD_SUBDIRECTORY(geometry)
 ADD_SUBDIRECTORY(dynamics)
 ADD_SUBDIRECTORY(lcpsolver)
 ADD_SUBDIRECTORY(collision)
+ADD_SUBDIRECTORY(integration)
 
 # Unit Test
 ADD_SUBDIRECTORY(unittests)
