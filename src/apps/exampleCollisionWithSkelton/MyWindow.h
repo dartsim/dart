@@ -1,17 +1,23 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include "collision/collision_shapes.h"
 #include "yui/Win3D.h"
-#include <vector>
+#include "integration/EulerIntegrator.h"
+#include "integration/RK4Integrator.h"
+#include "collision/collision_shapes.h"
 
-using namespace std;
 using namespace collision_checking;
+using namespace std;
+
 namespace dynamics{
     class SkeletonDynamics;
 }
 
-class MyWindow : public yui::Win3D {
+namespace integration{
+    class IntegrableSystem;
+}
+
+class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
     MyWindow(dynamics::SkeletonDynamics* _m): Win3D(), mModel(_m) {
         mBackground[0] = 1.0;
@@ -34,11 +40,16 @@ public:
     virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
     virtual void displayTimer(int _val);
-	
+
+    // Needed for integration
+    virtual Eigen::VectorXd getState();
+    virtual Eigen::VectorXd evalDeriv();
+    virtual void setState(Eigen::VectorXd state);	
 protected:	
     bool mRunning;
     int mFrame;
     bool mShowMarker;
+    integration::RK4Integrator mIntegrator;
     
     dynamics::SkeletonDynamics* mModel;
     Eigen::VectorXd mDofVels;
@@ -46,6 +57,7 @@ protected:
     double mTimeStep;
     Eigen::Vector3d mGravity;
     void initDyn();
+    void setPose();
 
 	BVHModel<RSS>* mBox;
 	vector<BVHModel<RSS>*> mBody;
