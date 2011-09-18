@@ -15,7 +15,9 @@ In Unix-Like systems, go to "groundzero/bin/" directory and type the following c
 cmake ..
 
 2. Setup third party libraries
-We have dependencies on several third party libraries.
+We have dependencies on several third party libraries, including
+FreeImage, eigen, gflags, glog, gtest, glut, ticpp, and snopt. The
+source code of these libraries can be found under "groundzero/thirdparty". 
 Compile all the libraries, and put the generated library files under "groundzero/thirdparty/lib".
 (Note: If using Windows, remember to compile all projects with the same compiler (i.e. using the same version of Visual Studio).)
 
