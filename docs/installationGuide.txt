@@ -1,32 +1,30 @@
+Installation Guide
+
 1. Setup CMake
 Download CMake packages from http://www.cmake.org/.
 Use CMake to generate the solution files (Visual Studio) or Makefile (Unix-like system).
 You can use either command line or gui.
 
 Ex)
-In Windows,
-Use GUI. select CMakeLists.txt at root ("groundzero/")
+In Windows, run the CMake application. 
+Select CMakeLists.txt at root ("groundzero/").
 Make the system to generate the solution files under "groundzero/msvc/".
 
 Ex)
-In Unix-Like system, go to "groundzero/bin/" directory and type the following command.
+In Unix-Like systems, go to "groundzero/bin/" directory and type the following command.
 cmake ..
 
 2. Setup third party libraries
-We have dependancis on several third party libraries.
+We have dependencies on several third party libraries, including
+FreeImage, eigen, gflags, glog, gtest, glut, ticpp, and snopt. The
+source code of these libraries can be found under "groundzero/thirdparty". 
 Compile all the libraries, and put the generated library files under "groundzero/thirdparty/lib".
+(Note: If using Windows, remember to compile all projects with the same compiler (i.e. using the same version of Visual Studio).)
 
 2.1 Snopt package 
-In Unix-like system, you can just use Makefile to compile the snopt package. (requires gfortran)
+In Unix-like systems, you can just use Makefile to compile the snopt package. (Requires gfortran.)
 
 In Windows, you can use Visual Fortran (Intel Composer XE, http://software.intel.com/en-us/articles/intel-composer-xe/) to compile the package.
 You can compile the library with the trial version.
 
-
 3. Use generated Makefile or Visual Studio Solution file to compile the entire groundzero package.
-
-
-
-
-
-
