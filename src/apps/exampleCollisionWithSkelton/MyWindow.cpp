@@ -111,60 +111,60 @@ void MyWindow::displayTimer(int _val)
 
 void MyWindow::draw()
 {
-	glDisable(GL_LIGHTING);
+    glDisable(GL_LIGHTING);
     //mModel->draw(mRI);
     //if(mShowMarker) mModel->drawMarkers(mRI);
 
     //collision and draw
-	MatrixXd worldTrans(4, 4);
+    MatrixXd worldTrans(4, 4);
 
-	Vec3f R1[3];
+    Vec3f R1[3];
 
-	for(int i=0;i<3;i++)
-		for(int j=0;j<3;j++)
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
 			R1[i][j]=0;
-	for(int i=0;i<3;i++)
-		R1[i][i]=1;
+    for(int i=0;i<3;i++)
+        R1[i][i]=1;
 
-	Vec3f T1 = Vec3f(0, -0.4, 0);
-	Vec3f R2[3], T2;
+    Vec3f T1 = Vec3f(0, -0.4, 0);
+    Vec3f R2[3], T2;
 
-	bool bCollide = false;
-	MatrixXd matCOM;
-	matCOM.setIdentity(4, 4);
+    bool bCollide = false;
+    MatrixXd matCOM;
+    matCOM.setIdentity(4, 4);
 
-  	for(int i=0;i<mModel->getNumNodes();i++)
+    for(int i=0;i<mModel->getNumNodes();i++)
   	{
-  		BVH_CollideResult res;
+        BVH_CollideResult res;
   
-   		for(int j=0;j<3;j++)
-   		{
-   			matCOM(j, 3) = mModel->getNode(i)->getLocalCOM()[j];
-   		}
-   		worldTrans = mModel->getNode(i)->getWorldTransform()*matCOM;
-   		evalRT(worldTrans, R2, T2);
-   		collide(*mBox, R1, T1, *mBody[i], R2, T2, &res);
-   		if(res.numPairs()>0){
+   	    for(int j=0;j<3;j++)
+   	    {
+   	        matCOM(j, 3) = mModel->getNode(i)->getLocalCOM()[j];
+        }
+   	    worldTrans = mModel->getNode(i)->getWorldTransform()*matCOM;
+   	    evalRT(worldTrans, R2, T2);
+   	    collide(*mBox, R1, T1, *mBody[i], R2, T2, &res);
+   	    if(res.numPairs()>0){
    			//printf("c\n");
-   			glColor3f(1,0,0);
-   			bCollide=true;
-   		}
-   		else glColor3f(0.9, 0.9, 0.9);
+   		    glColor3f(1,0,0);
+   		    bCollide=true;
+   	    }
+   	    else glColor3f(0.9, 0.9, 0.9);
   
   
-   		glPushMatrix();
-   		glMultMatrixd(worldTrans.data());
-   		drawBVHModel(*mBody[i]);
-		glPopMatrix();
-	}
+        glPushMatrix();
+   	    glMultMatrixd(worldTrans.data());
+   	    drawBVHModel(*mBody[i]);
+	    glPopMatrix();
+    }
 
-	//drawBVHModel(*mBody[0]);
-	glPushMatrix();
-	glTranslatef(0, -0.4, 0);
-	if(bCollide)glColor3f(1,0,0);
-	else glColor3f(0.9, 0.9, 0.9);
-	drawBVHModel(*mBox);
-	glPopMatrix();
+    //drawBVHModel(*mBody[0]);
+    glPushMatrix();
+    glTranslatef(0, -0.4, 0);
+    if(bCollide)glColor3f(1,0,0);
+    else glColor3f(0.9, 0.9, 0.9);
+    drawBVHModel(*mBox);
+    glPopMatrix();
     // display the frame count in 2D text
     char buff[64];
     sprintf(buff,"%d",mFrame);
