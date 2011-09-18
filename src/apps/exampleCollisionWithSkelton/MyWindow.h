@@ -49,7 +49,7 @@ protected:
     bool mRunning;
     int mFrame;
     bool mShowMarker;
-    integration::RK4Integrator mIntegrator;
+    integration::EulerIntegrator mIntegrator;
     
     dynamics::SkeletonDynamics* mModel;
     Eigen::VectorXd mDofVels;
@@ -59,8 +59,8 @@ protected:
     void initDyn();
     void setPose();
 
-	BVHModel<RSS>* mBox;
-	vector<BVHModel<RSS>*> mBody;
+    BVHModel<RSS>* mBox;
+    vector<BVHModel<RSS>*> mBody;
 };
 
 #endif
