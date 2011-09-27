@@ -39,6 +39,7 @@ FILE(APPEND ${PATH_HEADER_DIR} "#endif // ifndef UTILS_PATHS_H\n")
 ###############################################
 # User specific settings
 INCLUDE(Directories.cmake)
+INCLUDE(ThirdParties.cmake)
 
 FIND_PATH( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
 message(STATUS "INCLUDES = ${CMAKE_INCLUDE_PATH}")

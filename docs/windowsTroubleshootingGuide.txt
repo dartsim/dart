@@ -1,54 +1,42 @@
-Troubleshooting Installation Issues on Windows 7 with Visual Studio (2010)
+Installation Guidelines on Windows 7 with Visual Studio (2010)
 
-So you want to run this in Windows? 
-Unfortunately, the build process is not quite as straightforward as it is on non-Unix-based systems.
-
-This document lays out some common problems encountered while attempting to build on Windows 7 (64-bit) for Visual Studio 2010.
+Unlike installation on its Unix-based OS counterparts, the Windows installation of DART requires some extra steps.
+This document lays out steps and problems encountered while building on Windows 7 (64-bit) for Visual Studio 2010.
 These are meant to be suggestions in case you run into issues; they are not necessarily solutions for all problems.
-In the future, some of these problems (2-3) may be resolved by developing a better CMake file for Windows.
 
 1. Building Third-Party Libraries
   a. General
-	Be sure to build all third-party libraries using the same compiler/runtime (same version of Visual Studio).
-	This may require conversions between project/solution files provided by the third party libraries.
+	Be sure to build all third-party libraries using the same compiler/runtime (same version of Visual Studio) you intend to use for DART.
+	All of the third-party libraries should have Visual Studio 2010 solutions available.
 	Also be sure that you are compiling with the same Runtime Library flag (e.g. /MD for release builds, /MDD for debug builds).
   b. Release vs. Debug
-	Based on the configuration you use to compile DART, you may need to compile both Release/Debug builds of the third party libraries.
-	All of the libraries will need to be built initially in Release mode.
-	Debug versions of the libraries may also need to be compiled if you use DART in Debug mode.
-	Currently, gtest will also need to be compiled in Debug mode regardless of whether you are running DART in Debug/Release/etc.
+	All libraries must be built in Release mode.
+	If you ever plan to run DART in Debug mode, you must compile the Debug buils of the third party libraries (with the exception of GLUT).
   c. Naming Conventions
-	The names of compiled libraries may not necessarily match what the Ground Zero solution file is expecting.
-	Since it is infinitely more tedious to change all of the project settings, we suggest renaming the libraries.
-	In particular, for gtest and gflags, you may be required to rename the static libraries from "lib*.lib" to "*.lib".
-	For the corresponding DLLs, keep "lib*.dll" as "lib*.dll".
-	For Debug libraries, you may need to rename "*_d.(lib|dll)" to "*d.(lib|dll)" (remove the underscore).
+	With the exception of GLUT, all of our libraries are compiled to lib<library name>.lib/.dll.
+	Debug versions are appended with a '_d' after the library name.
   d. Library Locations
 	All static library (.lib) files should be placed in (repo)/thirdparty/lib.
-	Any needed DLL files (e.g. libgflags.dll) can be placed in the bin folder for the Visual C/C++ compiler.
+	Any needed DLL files (e.g. libgflags.dll) can be placed in the System or System32 folder in the C drive.
+	(A sample path is C:\Windows\System32.)
+	An alternative is the bin folder for the Visual C/C++ compiler
 	(A sample path is C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin.)
-	For most of the third party libraries, these will automatically be placed in the directory once they are built.
-	Note: The GLUT solution/project currently fails to copy to the lib folder and will throw a build error.
-	Don't panic; ignore the error.
-	Instead, you will need to manually copy the library files from the lib/glut/(Debug|Release)/ directory after they are built.
-  e. SNOPT
+  e. GLUT
+    We use GLUT as our library for opening a window with an OpenGL context.
+	If you do not already have GLUT present on your machine, you will need to build it (we provide version 3.7.6).
+	Currently, the GLUT solution will compile, but it throw an error when it attempts to copy the .lib and .dll files to the appropriate folders.
+	The libraries can be found in glut-3.7.6/lib/glut/(Debug|Release)/
+	For glut32.lib, move this to the (repo)/thirdparty/lib directory.
+	For glut32.dll, move this to C:/Windows/System (or System32) directory. 
+
+2. SNOPT (remove me eventually)
+  a. General
 	Snopt is a Fortran library and must be compiled with a separate compiler into a library.
 	As mentioned before, this is most easily achieved with Intel's Parallel Studio XE.
 	You'll need to create a VisualFortran Static Library project and load the SNOPT source files into it.
 	You should only need to build a static (.lib) library.
 	This should be named 'snopt.lib' and placed in the third party library folder.
-  f. TinyXML
-	Opening/converting the provided solution file may fail to load the project (and source) file(s) correctly.
-	Instead, convert the Visual Studio Project file, which in turn will load the source files correctly.
-
-2. Missing Libraries/Dependencies at Compile-Time
-  a. Missing .h files
-	For the project, go to Properties -> Configuration Properties -> C/C++ -> General -> Additional Include Directories.
-	Add the path to the corresponding third-party header file.
-	1. (FreeImage.h): (repo)/thirdparty/FreeImage-*/Source
-	2. (gtest/gtest.h): (repo)/thirdparty/gtest-*/fused_src
-	(Note: '*' is a wildcard for the library version number.)
-  b. gfortran.lib
+  b. Compile-time: missing gfortran.lib
 	Remove this from the list of additional dependencies in Properties -> Config. Properties -> Linker -> Input -> Additional Dependencies.
 	If SNOPT was compiled with Parallel Studio XE, you will then likely be asked for libraries such as 'ifconsol.lib'.
 	These are located in the Intel compiler's 'lib' folder in Program Files.
@@ -57,11 +45,6 @@ In the future, some of these problems (2-3) may be resolved by developing a bett
 	To link, modify Properties -> Config. Properties -> Linker -> General -> Additional Library Directories.
 	If additional linker errors occur (e.g. LNK 4098) for duplicated methods, you may need to exclude libcmt.lib or msvcrt.lib.
 	This can be done in Properties -> Config. Properties -> Linker -> Input -> Ignore Specific Default Libraries.
-
-3. Running Sample Apps
-  a. Anything using SNOPT
+  c. Runtime Crashes
 	Make sure that you have a fort.4 file present in the directory containing the Visual Studio project files.
 	A sample fort.4 file lives in (repo)/bin.
-	
-Note: Currently, every time CMake rebuilds the project/solution files, it will blast over changes made in points 2-3.
-You will need to repeat the process to add/remove dependencies and copy in the fort.4 files.

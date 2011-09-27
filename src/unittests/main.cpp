@@ -11,7 +11,7 @@ using namespace google;
 #include "test_utils.h"
 #include "test_kinematics.h"
 #include "test_dynamics.h"
-#include "test_optimizer.h"
+// #include "test_optimizer.h"
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
