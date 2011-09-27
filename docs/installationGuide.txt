@@ -9,6 +9,7 @@ Ex)
 In Windows, run the CMake application. 
 Select CMakeLists.txt at root ("groundzero/").
 Make the system to generate the solution files under "groundzero/msvc/".
+Windows users should also refer to the windowsTroubleshootingGuide.txt for more specific details.
 
 Ex)
 In Unix-Like systems, go to "groundzero/bin/" directory and type the following command.
