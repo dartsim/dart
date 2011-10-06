@@ -13,10 +13,11 @@ using namespace dynamics;
 
 int main(int argc, char* argv[])
 {
-    FileInfoSkel<SkeletonDynamics> model;
+    FileInfoSkel<SkeletonDynamics> model, model2;
     model.loadFile(GROUNDZERO_DATA_PATH"/skel/Chain.skel", kinematics::SKEL);
+    model2.loadFile(GROUNDZERO_DATA_PATH"/skel/Collisiontest.skel", kinematics::SKEL);
 
-    MyWindow window((SkeletonDynamics*)model.getSkel());
+    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel());
     
     glutInit(&argc, argv);
     window.initWindow(640,480,"expForwardDyn");

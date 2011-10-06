@@ -5,6 +5,7 @@
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
 #include "collision/collision_shapes.h"
+#include "collision/collision_skelton.h"
 
 using namespace collision_checking;
 using namespace std;
@@ -19,7 +20,7 @@ namespace integration{
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
-    MyWindow(dynamics::SkeletonDynamics* _m): Win3D(), mModel(_m) {
+    MyWindow(dynamics::SkeletonDynamics* _m, dynamics::SkeletonDynamics* _m2): Win3D(), mModel(_m), mModel2(_m2) {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
@@ -52,6 +53,7 @@ protected:
     integration::EulerIntegrator mIntegrator;
     
     dynamics::SkeletonDynamics* mModel;
+    dynamics::SkeletonDynamics* mModel2;
     Eigen::VectorXd mDofVels;
     Eigen::VectorXd mDofs;
     double mTimeStep;
@@ -61,6 +63,8 @@ protected:
 
     BVHModel<RSS>* mBox;
     vector<BVHModel<RSS>*> mBody;
+    SkeltonCollision mContactCheck;
+
 };
 
 #endif
