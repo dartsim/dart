@@ -51,18 +51,17 @@ void MyWindow::initDyn()
     mModel->setPose(mDofs,false,false);
 
 	//init collision mesh
-	mBox = createCube<RSS>(0.05, 0.05, 0.05);
 
-	printf("Node: %d\n", mModel->getNumNodes());
-	for(int i=0;i<mModel->getNumNodes();i++)
-	{
-		BodyNode* node = mModel->getNode(i);
-		BVHModel<RSS>* cdmesh = createCube<RSS>(node->getPrimitive()->getDim()[0], node->getPrimitive()->getDim()[1], node->getPrimitive()->getDim()[2]);
-		//printf("create %lf %lf %lf\n", node->getPrimitive()->getDim()[0], node->getPrimitive()->getDim()[1], node->getPrimitive()->getDim()[2]);
-		if(cdmesh==NULL)return;
-		mBody.push_back(cdmesh);
 
-	}
+
+    
+
+    mContactCheck.addCollisionSkeltonNode(mModel->getRoot(), true);
+    mContactCheck.addCollisionSkeltonNode(mModel2->getRoot(), true);
+
+    //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
+    //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
+    printf("create model ok");
 }
 
 VectorXd MyWindow::getState() {
@@ -102,6 +101,10 @@ void MyWindow::displayTimer(int _val)
         tSim.stopTimer();
     }
 
+    mContactCheck.checkCollision();
+    printf("detect %d contacts", mContactCheck.getNumContact());
+
+
     mFrame += numIter;   
     glutPostRedisplay();
     if(mRunning)	
@@ -117,53 +120,64 @@ void MyWindow::draw()
     //collision and draw
     MatrixXd worldTrans(4, 4);
 
-    Vec3f R1[3];
-
-    for(int i=0;i<3;i++)
-        for(int j=0;j<3;j++)
-			R1[i][j]=0;
-    for(int i=0;i<3;i++)
-        R1[i][i]=1;
-
-    Vec3f T1 = Vec3f(0, -0.4, 0);
-    Vec3f R2[3], T2;
+   
 
     bool bCollide = false;
     MatrixXd matCOM;
     matCOM.setIdentity(4, 4);
 
-    for(int i=0;i<mModel->getNumNodes();i++)
-  	{
-        BVH_CollideResult res;
-  
-   	    for(int j=0;j<3;j++)
-   	    {
-   	        matCOM(j, 3) = mModel->getNode(i)->getLocalCOM()[j];
-        }
-   	    worldTrans = mModel->getNode(i)->getWorldTransform()*matCOM;
-   	    evalRT(worldTrans, R2, T2);
-   	    collide(*mBox, R1, T1, *mBody[i], R2, T2, &res);
-   	    if(res.numPairs()>0){
-   			//printf("c\n");
-   		    glColor3f(1,0,0);
-   		    bCollide=true;
-   	    }
-   	    else glColor3f(0.9, 0.9, 0.9);
-  
-  
-        glPushMatrix();
-   	    glMultMatrixd(worldTrans.data());
-   	    drawBVHModel(*mBody[i]);
-	    glPopMatrix();
+    
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//     for(int i=0;i<mContactCheck.mCollisionSkeltonNodeList.size();i++)
+//     {
+//         printf("%d\n",i);
+//         worldTrans.setIdentity(4, 4);
+//         matCOM.setIdentity(4, 4);
+//         if(mContactCheck.mCollisionSkeltonNodeList[i]->bodyNode !=NULL)
+//         {
+//             for(int j=0;j<3;j++)
+//             {
+//                 matCOM(j, 3) = mContactCheck.mCollisionSkeltonNodeList[i]->bodyNode->getLocalCOM()[j];
+//             }
+//             worldTrans = mContactCheck.mCollisionSkeltonNodeList[i]->bodyNode->getWorldTransform()*matCOM;
+//         }
+// 
+// 
+// 
+//         glPushMatrix();
+//         glMultMatrixd(worldTrans.data());
+// 
+//         drawBVHModel(*mContactCheck.mCollisionSkeltonNodeList[i]->cdmesh);
+//         glPopMatrix();
+//     }
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    mModel->draw(mRI);
+    mModel2->draw(mRI);
+
+
+
+     
+
+    glBegin(GL_LINES);
+    
+    for(int k=0;k<mContactCheck.getNumContact();k++)
+    {
+        Eigen::Vector3d  v = mContactCheck.getContact(k).point;
+        Eigen::Vector3d n = mContactCheck.getContact(k).normal;
+        glVertex3f(v[0], v[1], v[2]);
+       /* printf("%f %f %f\n", v[0], v[1], v[2]);*/
+        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
     }
+    glEnd();
 
     //drawBVHModel(*mBody[0]);
-    glPushMatrix();
-    glTranslatef(0, -0.4, 0);
-    if(bCollide)glColor3f(1,0,0);
-    else glColor3f(0.9, 0.9, 0.9);
-    drawBVHModel(*mBox);
-    glPopMatrix();
+//     glPushMatrix();
+//     glTranslatef(0, -0.4, 0);
+//     glColor3f(0.9, 0.9, 0.9);
+//     //glutSolidCube(0.05);
+//     glPopMatrix();
+    
     // display the frame count in 2D text
     char buff[64];
     sprintf(buff,"%d",mFrame);
