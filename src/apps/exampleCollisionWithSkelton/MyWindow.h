@@ -5,7 +5,7 @@
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
 #include "collision/collision_shapes.h"
-#include "collision/collision_skelton.h"
+#include "collision/collision_skeleton.h"
 
 using namespace collision_checking;
 using namespace std;
@@ -61,9 +61,9 @@ protected:
     void initDyn();
     void setPose();
 
-    BVHModel<RSS>* mBox;
-    vector<BVHModel<RSS>*> mBody;
-    SkeltonCollision mContactCheck;
+//     BVHModel<RSS>* mBox;
+//     vector<BVHModel<RSS>*> mBody;
+    SkeletonCollision mContactCheck;
 
 };
 

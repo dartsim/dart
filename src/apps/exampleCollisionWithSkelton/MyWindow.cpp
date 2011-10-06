@@ -56,8 +56,8 @@ void MyWindow::initDyn()
 
     
 
-    mContactCheck.addCollisionSkeltonNode(mModel->getRoot(), true);
-    mContactCheck.addCollisionSkeltonNode(mModel2->getRoot(), true);
+    mContactCheck.addCollisionSkeletonNode(mModel->getRoot(), true);
+    mContactCheck.addCollisionSkeletonNode(mModel2->getRoot(), true);
 
     //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
     //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
