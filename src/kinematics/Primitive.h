@@ -61,7 +61,7 @@ namespace kinematics {
         };
 
         Primitive();
-
+        
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }
         inline Eigen::Matrix4d getMassTensor() const { return mMassTensor; }
@@ -71,6 +71,8 @@ namespace kinematics {
 
         void setDim(const Eigen::Vector3d& _dim);
         inline Eigen::Vector3d getDim() const { return mDim; }
+
+        inline Eigen::Vector3d getOffset() const { return mOffset; }
 
         void setMass(const double _m);
         inline double getMass() { return mMass; }
@@ -111,6 +113,7 @@ namespace kinematics {
 
         int mID; // unique id
         Eigen::Vector3d mColor;		///< color for the primitive
+        Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
 
         geometry::Mesh3DGen *mVizMesh; ///< mesh for visualization>
         geometry::Mesh3DGen *mCollisionMesh; ///< mesh for collision detection>
