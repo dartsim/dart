@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s):
+ * Date:
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,29 +35,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PRIMITIVE_CUBE_H
-#define KINEMATICS_PRIMITIVE_CUBE_H
+#include "PrimitiveMesh.h"
+#include "renderer/RenderInterface.h"
 
-#include "Primitive.h"
-
+using namespace Eigen;
 
 namespace kinematics {
 
-    class PrimitiveCube : public Primitive {
-    public:
-        PrimitiveCube(Eigen::Vector3d _dim, double _mass);
+    PrimitiveMesh::PrimitiveMesh(Vector3d _dim, double _mass){
+        mType = P_MESH;
+        mDim = _dim;
+        mMass = _mass;
+        initMeshes();
+        if (mDim != Vector3d::Zero())
+            computeVolume();
+        if (mMass != 0){
+            computeMassTensor();
+            computeInertiaFromMassTensor();
+        }
+    }
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
-    private:
-        void computeMassTensor();
-        void computeVolume();
-        void initMeshes();
-        
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+    void PrimitiveMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        if (!_ri)
+            return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->drawMesh(mVizMesh);
+        _ri->popMatrix();
+    }
 
+    void PrimitiveMesh::computeMassTensor() {
+    }
+
+    void PrimitiveMesh::computeVolume() {
+    }
+
+    void PrimitiveMesh::initMeshes() {
+    }
 } // namespace kinematics
-
-#endif // #ifndef KINEMATICS_PRIMITIVE_CUBE_H
-

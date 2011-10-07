@@ -47,27 +47,28 @@ namespace kinematics {
         mType = P_CUBE;
         mDim = _dim;
         mMass = _mass;
-        if(_dim!=Vector3d::Zero())
+        initMeshes();
+        if (_dim != Vector3d::Zero())
             computeVolume();
-        if( mMass != 0){
+        if (mMass != 0){
             computeMassTensor();
             computeInertiaFromMassTensor();
             computeVolume();
         }
     }
 
-	void PrimitiveCube::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const{
-		if (!_ri) return;
-		if (!_useDefaultColor)
-			_ri->setPenColor( _color );
-		else
-			_ri->setPenColor( mColor );
-		_ri->pushMatrix();
-		_ri->drawCube(mDim);
-		_ri->popMatrix();
+    void PrimitiveCube::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        if (!_ri) return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->drawCube(mDim);
+        _ri->popMatrix();
     }
 
-    void PrimitiveCube::computeMassTensor(){
+    void PrimitiveCube::computeMassTensor() {
         mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
         mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
         mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
@@ -75,8 +76,13 @@ namespace kinematics {
         mMassTensor *= mMass;
     }
 
-    void PrimitiveCube::computeVolume(){
+    void PrimitiveCube::computeVolume() {
         mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
+    }
+
+    void PrimitiveCube::initMeshes() {
+        mVizMesh = NULL;
+        mCollisionMesh = NULL;
     }
 
 } // namespace kinematics

@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s):
+ * Date:
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,29 +35,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PRIMITIVE_CUBE_H
-#define KINEMATICS_PRIMITIVE_CUBE_H
+#ifndef KINEMATICS_PRIMITIVE_MESH_H
+#define KINEMATICS_PRIMITIVE_MESH_H
 
 #include "Primitive.h"
 
 
 namespace kinematics {
 
-    class PrimitiveCube : public Primitive {
+    class PrimitiveMesh : public Primitive {
     public:
-        PrimitiveCube(Eigen::Vector3d _dim, double _mass);
+        PrimitiveMesh(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
     private:
         void computeMassTensor();
         void computeVolume();
-        void initMeshes();
-        
+        void initMeshes(); ///< initialize mVizMesh and mCollisionMesh>
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_CUBE_H
+#endif // #ifndef KINEMATICS_PRIMITIVE_MESH_H
 

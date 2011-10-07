@@ -50,6 +50,7 @@ namespace kinematics {
     private:
         void computeMassTensor();
         void computeVolume();
+        void initMeshes();
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

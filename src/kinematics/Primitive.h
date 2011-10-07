@@ -40,8 +40,12 @@
 
 #include <Eigen/Dense>
 
-namespace renderer{
+namespace renderer {
     class RenderInterface;
+}
+
+namespace geometry {
+    class Mesh3DGen;
 }
 
 namespace kinematics {
@@ -52,13 +56,11 @@ namespace kinematics {
         enum PrimitiveType {
             P_UNDEFINED,
             P_CUBE,
-            P_ELLIPSOID
+            P_ELLIPSOID,
+            P_MESH
         };
 
         Primitive();
-
-        inline virtual bool isInside(Eigen::Vector3d& _pt) { return false; }
-        inline virtual Eigen::Vector3d getNormal(Eigen::Vector3d& _pt){ return Eigen::Vector3d::Zero(); }
 
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }
@@ -67,19 +69,23 @@ namespace kinematics {
         inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
         inline Eigen::Vector3d getColor() const { return mColor; }
 
-        //Eigen::Vector3d getOffset() { return mOffset; } //in local coordinates
-
         void setDim(const Eigen::Vector3d& _dim);
-        inline Eigen::Vector3d getDim() { return mDim; }
+        inline Eigen::Vector3d getDim() const { return mDim; }
 
-        void setMass(double _m);
+        void setMass(const double _m);
         inline double getMass() { return mMass; }
 
         inline void setVolume(double _v) { mVolume = _v; }
-        inline double getVolume() { return mVolume; }
+        inline double getVolume() const { return mVolume; }
 
-        inline int getID() { return mID; }
-        inline PrimitiveType getPrimitiveType(){return mType;}
+        inline int getID() const { return mID; }
+        inline PrimitiveType getPrimitiveType() const { return mType; }
+
+        inline geometry::Mesh3DGen* getVizMesh() const { return mVizMesh; }
+        inline void setVizMesh(geometry::Mesh3DGen *_mesh) { mVizMesh = _mesh; } 
+
+        inline geometry::Mesh3DGen* getCollisionMesh() const { return mCollisionMesh; }
+        inline void setCollisionMesh(geometry::Mesh3DGen *_mesh) { mCollisionMesh = _mesh; } 
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -93,6 +99,8 @@ namespace kinematics {
         }
         virtual void computeVolume() {}
 
+        virtual void initMeshes() {}
+
         PrimitiveType mType;    ///< Type of primitive; unknown in the general case
         Eigen::Vector3d mDim; ///< dimensions for bounding box
         double mMass;	///< mass of the body
@@ -100,10 +108,12 @@ namespace kinematics {
 
         Eigen::Matrix3d mInertia;	///< inertia matrix
         Eigen::Matrix4d mMassTensor; ///< homogenous mass tensor for lagrangian dynamics
-        //Eigen::Vector3d mOffset;	///< Offset to draw if needed; default (0,0,0)
 
         int mID; // unique id
         Eigen::Vector3d mColor;		///< color for the primitive
+
+        geometry::Mesh3DGen *mVizMesh; ///< mesh for visualization>
+        geometry::Mesh3DGen *mCollisionMesh; ///< mesh for collision detection>
 
         static int mCounter;
     public:
