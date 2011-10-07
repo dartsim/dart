@@ -129,6 +129,10 @@ namespace renderer {
 	{
 	}
 
+	void RenderInterface::drawMesh(const geometry::Mesh3DGen *_mesh)
+	{
+	}
+
 	void RenderInterface::drawCube(const Vector3d& _size)
 	{
 	}

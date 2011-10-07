@@ -46,27 +46,28 @@ namespace kinematics {
         mType = P_ELLIPSOID;
         mDim = _dim;
         mMass = _mass;
-        if(mDim != Vector3d::Zero())
+        initMeshes();
+        if (mDim != Vector3d::Zero())
             computeVolume();
-        if(mMass != 0){
+        if (mMass != 0){
             computeMassTensor();
             computeInertiaFromMassTensor();
         }
     }
 
-	void PrimitiveEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-		if (!_ri)
-			return;
-		if (!_useDefaultColor)
-			_ri->setPenColor( _color );
-		else
-			_ri->setPenColor( mColor );
-		_ri->pushMatrix();
-		_ri->drawEllipsoid(mDim);
-		_ri->popMatrix();
+    void PrimitiveEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        if (!_ri)
+            return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->drawEllipsoid(mDim);
+        _ri->popMatrix();
     }
 
-    void PrimitiveEllipsoid::computeMassTensor(){
+    void PrimitiveEllipsoid::computeMassTensor() {
         mMassTensor(0, 0) = (mDim(0)*mDim(0))/20;
         mMassTensor(1, 1) = (mDim(1)*mDim(1))/20;
         mMassTensor(2, 2) = (mDim(2)*mDim(2))/20;
@@ -74,8 +75,13 @@ namespace kinematics {
         mMassTensor *= mMass;
     }
 
-    void PrimitiveEllipsoid::computeVolume(){
+    void PrimitiveEllipsoid::computeVolume() {
         mVolume = M_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
+    }
+    
+    void PrimitiveEllipsoid::initMeshes() {
+        mVizMesh = NULL;
+        mCollisionMesh = NULL;
     }
 
 } // namespace kinematics

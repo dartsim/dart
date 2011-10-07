@@ -51,14 +51,9 @@ void MyWindow::initDyn()
     mModel->setPose(mDofs,false,false);
 
 	//init collision mesh
-
-
-
-    
-
     mContactCheck.addCollisionSkeletonNode(mModel->getRoot(), true);
     mContactCheck.addCollisionSkeletonNode(mModel2->getRoot(), true);
-
+    
     //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
     //mContactCheck.addCollisionMesh(createCube<RSS>(0.05, 0.05, 0.05));
     printf("create model ok");

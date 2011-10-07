@@ -92,55 +92,61 @@ namespace renderer {
         glEnable(GL_LIGHTING);	
     }
 
-	void OpenGLRenderInterface::setMaterial(const Vector3d& _diffuse, const Vector3d& _specular, double _cosinePow) {
+    void OpenGLRenderInterface::setMaterial(const Vector3d& _diffuse, const Vector3d& _specular, double _cosinePow) {
+        
+    }
 
-	}
+    void OpenGLRenderInterface::getMaterial(Vector3d& _diffuse, Vector3d& _specular, double& _cosinePow) const {
+        
+    }
 
-	void OpenGLRenderInterface::getMaterial(Vector3d& _diffuse, Vector3d& _specular, double& _cosinePow) const {
+    void OpenGLRenderInterface::setDefaultMaterial() {
+        
+    }
 
-	}
+    void OpenGLRenderInterface::pushMatrix() {
+        glPushMatrix();
+    }
 
-	void OpenGLRenderInterface::setDefaultMaterial() {
+    void OpenGLRenderInterface::popMatrix() {
+        glPopMatrix();
+    }
 
-	}
+    void OpenGLRenderInterface::pushName(int _id) {
+        glPushName(_id);
+    }
 
-	void OpenGLRenderInterface::pushMatrix() {
-		glPushMatrix();
-	}
+    void OpenGLRenderInterface::popName() {
+        glPopName();
+    }
 
-	void OpenGLRenderInterface::popMatrix() {
-		glPopMatrix();
-	}
+    void OpenGLRenderInterface::translate(const Vector3d& _offset) {
+        glTranslated(_offset[0], _offset[1], _offset[2]);
+    }
 
-	void OpenGLRenderInterface::pushName(int _id) {
-		glPushName(_id);
-	}
+    void OpenGLRenderInterface::rotate(const Vector3d& _axis, double _rad) {
+        glRotated(_rad, _axis[0], _axis[1], _axis[2]);
+    }
 
-	void OpenGLRenderInterface::popName() {
-		glPopName();
-	}
+    void OpenGLRenderInterface::scale(const Vector3d& _scale) {
+        glScaled(_scale[0], _scale[1], _scale[2]);
+    }
 
-	void OpenGLRenderInterface::translate(const Vector3d& _offset) {
-		glTranslated(_offset[0], _offset[1], _offset[2]);
-	}
+    void OpenGLRenderInterface::drawEllipsoid(const Vector3d& _size) {
+        glScaled(_size(0), _size(1), _size(2));
+        glutSolidSphere(0.5, 16, 16);
+    }
 
-	void OpenGLRenderInterface::rotate(const Vector3d& _axis, double _rad) {
-		glRotated(_rad, _axis[0], _axis[1], _axis[2]);
-	}
+    void OpenGLRenderInterface::drawCube(const Vector3d& _size) {
+        glScaled(_size(0), _size(1), _size(2));
+        glutSolidCube(1.0);
+    }
+    
 
-	void OpenGLRenderInterface::scale(const Vector3d& _scale) {
-		glScaled(_scale[0], _scale[1], _scale[2]);
-	}
+    void OpenGLRenderInterface::drawMesh(const geometry::Mesh3DGen *_mesh) {
+    
+    }
 
-	void OpenGLRenderInterface::drawEllipsoid(const Vector3d& _size) {
-		glScaled(_size(0), _size(1), _size(2));
-		glutSolidSphere(0.5, 16, 16);
-	}
-
-	void OpenGLRenderInterface::drawCube(const Vector3d& _size) {
-		glScaled(_size(0), _size(1), _size(2));
-		glutSolidCube(1.0);
-	}
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {
         glColor4d(_col[0], _col[1], _col[2], _col[3]);
@@ -152,10 +158,10 @@ namespace renderer {
 
     void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels) {
 
-	}
+    }
+    
+    void OpenGLRenderInterface::saveToImage(const char *_filename, DecoBufferType _buffType) {
 
-	void OpenGLRenderInterface::saveToImage(const char *_filename, DecoBufferType _buffType) {
-
-	}
+    }
 
 } // namespace renderer
