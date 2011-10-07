@@ -45,11 +45,12 @@ namespace kinematics {
 
     // initialize in the same order as declaration
     Primitive::Primitive()
-        : mType(P_UNDEFINED), mDim(0,0,0), mMass(0), mVolume(0), 
+        : mType(P_UNDEFINED), mDim(0, 0, 0), mMass(0), mVolume(0), 
           mInertia(Matrix3d::Zero()),
           mMassTensor(Matrix4d::Zero()),
+          mOffset(0, 0, 0),
           mVizMesh(NULL), mCollisionMesh(NULL),
-          mID(mCounter++), mColor(0.5,0.5,1.0) {
+          mID(mCounter++), mColor(0.5, 0.5, 1.0) {
     }
 
     void Primitive::setInertia(const Eigen::Matrix3d& _inertia) {
