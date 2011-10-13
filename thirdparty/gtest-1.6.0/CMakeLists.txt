@@ -70,6 +70,8 @@ link_directories(${gtest_BINARY_DIR}/src)
 cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)
+install (TARGETS gtest_main gtest
+  ARCHIVE DESTINATION ${CMAKE_SOURCE_DIR}/../lib)
 
 ########################################################################
 #
