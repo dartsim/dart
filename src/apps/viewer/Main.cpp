@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
     const char* modelfile;
     const char* doffile;
     if(argc!=3){
-		modelfile = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
-		doffile = GROUNDZERO_DATA_PATH"dof/RHand.dof";
+		modelfile = DART_DATA_PATH"skel/YutingEuler.skel";
+		doffile = DART_DATA_PATH"dof/RHand.dof";
     }else{
         modelfile = argv[1];
         doffile = argv[2];

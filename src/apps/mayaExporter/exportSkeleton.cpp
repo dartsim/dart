@@ -7,7 +7,7 @@ using namespace kinematics;
 int main(int argc, char* argv[])
 {
     FileInfoSkel<Skeleton> model;
-    model.loadFile(GROUNDZERO_DATA_PATH"skel/YutingEuler.skel", kinematics::SKEL);
+    model.loadFile(DART_DATA_PATH"skel/YutingEuler.skel", kinematics::SKEL);
     ofstream out("model.ma");
     utils::mayaexports::MayaExportSkeleton::exportMayaAscii(model.getSkel(), out);
     out.close();
