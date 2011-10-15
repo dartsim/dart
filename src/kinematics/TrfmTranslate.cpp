@@ -143,11 +143,14 @@ namespace kinematics {
     }
 
     TrfmTranslateX::TrfmTranslateX(Dof *x, const char *_name){
+        std::cout<< "ee "<< std::endl;
         mDofs.resize(1);
         mDofs[0]=x;
         mDofs[0]->setTrans(this);
         mType = Transformation::T_TRANSLATEX;
+        std::cout<< "Befr "<< std::endl;
         strcpy(mName, _name);
+        std::cout<< "Aftaar "<< std::endl;
         if(_name!=NULL)
             strcpy(mName, _name);
         else

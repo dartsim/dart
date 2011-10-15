@@ -20,12 +20,12 @@ namespace planning {
 
         std::string mName; ///< Name
         std::string mPathName; ///< PathName
+        int mGripID; /// THIS HAS TO BE REMOVED
 
         Robot();
         virtual ~Robot();
 
         inline std::string getName() { return mName; }
-      
     };
 
 } // namespace planning 
