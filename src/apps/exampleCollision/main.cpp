@@ -477,11 +477,11 @@ int main(int argc, char **argv)
 
     // model 1
 
-    torus1_drawn = new Model(GROUNDZERO_DATA_PATH"other/torus1.tris");
+    torus1_drawn = new Model(DART_DATA_PATH"other/torus1.tris");
 
     torus1_tested = new BVHModel<RSS>;
 
-    fp = fopen(GROUNDZERO_DATA_PATH"other/torus1.tris","r");
+    fp = fopen(DART_DATA_PATH"other/torus1.tris","r");
     int result = 0;
     result = fscanf(fp,"%d",&ntris);
   
@@ -516,11 +516,11 @@ int main(int argc, char **argv)
 
     // model 2
 
-    torus2_drawn = new Model(GROUNDZERO_DATA_PATH"other/torus2.tris");
+    torus2_drawn = new Model(DART_DATA_PATH"other/torus2.tris");
 
     torus2_tested = new BVHModel<RSS>;
 
-    fp = fopen(GROUNDZERO_DATA_PATH"other/torus2.tris","r");
+    fp = fopen(DART_DATA_PATH"other/torus2.tris","r");
     result = fscanf(fp,"%d",&ntris);
 
     torus2_tested->beginModel();
@@ -543,8 +543,8 @@ int main(int argc, char **argv)
 
     // load paths
 
-    LoadPath(R1,T1,GROUNDZERO_DATA_PATH"other/torus1.path");
-    LoadPath(R2,T2,GROUNDZERO_DATA_PATH"other/torus2.path");
+    LoadPath(R1,T1,DART_DATA_PATH"other/torus1.path");
+    LoadPath(R2,T2,DART_DATA_PATH"other/torus2.path");
 
     // print instructions
 

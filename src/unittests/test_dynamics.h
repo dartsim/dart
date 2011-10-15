@@ -51,7 +51,7 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
     using namespace dynamics;
 
     // load skeleton
-    const char* skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
+    const char* skelfilename = DART_DATA_PATH"skel/Yuting.vsk";
     FileInfoSkel<SkeletonDynamics>* skelFile = new FileInfoSkel<SkeletonDynamics>;
     bool loadModelResult = skelFile->loadFile(skelfilename);
     assert(loadModelResult);
@@ -77,7 +77,7 @@ dynamics::SkeletonDynamics* prepareSkeletonChain( Eigen::VectorXd& _q, Eigen::Ve
 	using namespace dynamics;
 
 	// load skeleton
-	const char* skelfilename = GROUNDZERO_DATA_PATH"skel/chainwhipa.skel";
+	const char* skelfilename = DART_DATA_PATH"skel/chainwhipa.skel";
 	FileInfoSkel<SkeletonDynamics>* skelFile = new FileInfoSkel<SkeletonDynamics>;
 	bool loadModelResult = skelFile->loadFile(skelfilename);
 	assert(loadModelResult);
