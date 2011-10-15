@@ -24,13 +24,6 @@ namespace planning {
     
     }
 
-    /**
-     * @function loadModel
-     * @brief Load a 3DS model as a primitive
-     */
-    void Object::loadModel( std::string _filename )
-    {
-    }
  
 
 }  // namespace planning

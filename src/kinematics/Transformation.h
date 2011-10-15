@@ -78,6 +78,8 @@ namespace kinematics {
 
         inline TransFormType getType() const { return mType; }
 
+        inline char* getName() { return mName; }
+
         inline int getSkelIndex() const { return mSkelIndex; }
         inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 

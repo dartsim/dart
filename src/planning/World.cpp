@@ -53,12 +53,14 @@ namespace planning {
     void World::printInfo() {
 
         /// Robots
-        std::cout<<"-- World has " << mRobots.size() << "robots "<< std::endl;
+        std::cout<<"-- World has " << mRobots.size() << " robots "<< std::endl;
         for( unsigned int i = 0; i < mRobots.size(); i++ )
-        { std::cout<<"* Robot["<<i<<"]: " << mRobots[i]->mName << std::endl; }
+        {    std::cout<<"* Robot["<<i<<"]: " << mRobots[i]->mName << " with "<< mRobots[i]->getNumNodes() << " nodes:" << std::endl;
+             std::cout<<"  -- DOF: " << mRobots[i]->getNumDofs() << std::endl;         
+        }
 
         /// Objects
-        std::cout<<"-- World has " << mObjects.size() << "objects "<< std::endl;
+        std::cout<<"-- World has " << mObjects.size() << " objects "<< std::endl;
         for( unsigned int i = 0; i < mObjects.size(); i++ )
         { std::cout<<"* Object["<<i<<"]: " << mObjects[i]->mName << std::endl; }
 

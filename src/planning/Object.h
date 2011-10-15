@@ -21,13 +21,13 @@ namespace planning {
 
         std::string mName; ///< Name
         std::string mPathName; ///< PathName
+        int mGripID; /// THIS HAS TO BE REMOVED
         bool mMovable;
         
         Object();
         virtual ~Object();
 
         inline std::string getName() { return mName; }
-        void loadModel( std::string _filename );
     };
 
 } // namespace planning 

@@ -28,8 +28,6 @@ namespace planning {
         int addObject( Object *_object );
         void printInfo();
 
-
-    protected:
         std::vector< Robot* > mRobots;
         std::vector< Object* > mObjects;
 

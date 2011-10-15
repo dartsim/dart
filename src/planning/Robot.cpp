@@ -23,6 +23,5 @@ namespace planning {
      */
     Robot::~Robot() {     
     }
-   
 
 }  // namespace planning
