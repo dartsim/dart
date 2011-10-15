@@ -23,9 +23,9 @@ int main(int argc, char* argv[])
     const char* skelfilename;
     const char* doffilename;
     if(argc!=3){
-		//skelfilename = GROUNDZERO_DATA_PATH"skel/YutingEuler.skel";
-		skelfilename = GROUNDZERO_DATA_PATH"skel/Yuting.vsk";
-		doffilename = GROUNDZERO_DATA_PATH"dof/RHand.dof";  // matches YutingEuler.skel
+		//skelfilename = DART_DATA_PATH"skel/YutingEuler.skel";
+		skelfilename = DART_DATA_PATH"skel/Yuting.vsk";
+		doffilename = DART_DATA_PATH"dof/RHand.dof";  // matches YutingEuler.skel
     }else{
         skelfilename = argv[1];
         doffilename = argv[2];
