@@ -74,19 +74,27 @@ ADD_SUBDIRECTORY(src)
 ###############################################
 # Install Targets
 if(MSVC)
-    set(CMAKE_INSTALL_PREFIX $ENV{VCInstallDir} )
+    set(CMAKE_INSTALL_PREFIX "C:/Golems" )
 else ()
     set(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
 FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" )
-FILE(GLOB hdrs "src/collision/*.h" "src/dynamics/*.h" "src/kinematics/*.h" "src/kinematics/*.hpp" "src/utils/*.h")
+FILE(GLOB collision_hdrs "src/collision/*.h")
+FILE(GLOB dynamics_hdrs "src/dynamics/*.h")
+FILE(GLOB kinematics_hdrs "src/kinematics/*.h")
+FILE(GLOB kinematics_hpps "src/kinematics/*.h")
+FILE(GLOB util_hdrs "src/utils/*.h")
 
-ADD_LIBRARY(dart ${srcs} ${hdrs} )
+ADD_LIBRARY(dart ${srcs} ${collision_hdrs} ${dynamics_hdrs} ${kinematics_hdrs} ${kinematics_hpps} ${util_hdrs} )
 TARGET_LINK_LIBRARIES(dart)
 SET_TARGET_PROPERTIES(dart PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
-INSTALL(FILES ${hdrs} DESTINATION include/dart )
+INSTALL(FILES ${collision_hdrs} DESTINATION include/dart/collision )
+INSTALL(FILES ${dynamics_hdrs} DESTINATION include/dart/dynamics )
+INSTALL(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics )
+INSTALL(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics )
+INSTALL(FILES ${util_hdrs} DESTINATION include/dart/utils )
 INSTALL(TARGETS dart ARCHIVE DESTINATION lib)
 
 ###############################################
