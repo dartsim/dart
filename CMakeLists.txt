@@ -80,7 +80,7 @@ else ()
     set(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
-FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/geometry/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" "src/planning/*.cpp" )
+FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/geometry/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" "src/planning/*.cpp" "src/renderer/*.cpp" )
 FILE(GLOB collision_hdrs "src/collision/*.h")
 FILE(GLOB dynamics_hdrs "src/dynamics/*.h")
 FILE(GLOB geometry_hdrs "src/geometry/*.h")
@@ -88,8 +88,9 @@ FILE(GLOB kinematics_hdrs "src/kinematics/*.h")
 FILE(GLOB kinematics_hpps "src/kinematics/*.h")
 FILE(GLOB util_hdrs "src/utils/*.h")
 FILE(GLOB planning_hdrs "src/planning/*.h")
+FILE(GLOB renderer_hdrs "src/renderer/*.h")
 
-ADD_LIBRARY(dart ${srcs} ${collision_hdrs} ${dynamics_hdrs} ${geometry_hdrs} ${kinematics_hdrs} ${kinematics_hpps} ${util_hdrs} ${planning_hdrs} )
+ADD_LIBRARY(dart ${srcs} ${collision_hdrs} ${dynamics_hdrs} ${geometry_hdrs} ${kinematics_hdrs} ${kinematics_hpps} ${util_hdrs} ${planning_hdrs} ${renderer_hdrs} )
 TARGET_LINK_LIBRARIES(dart)
 SET_TARGET_PROPERTIES(dart PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
@@ -100,6 +101,7 @@ INSTALL(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics )
 INSTALL(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics )
 INSTALL(FILES ${util_hdrs} DESTINATION include/dart/utils )
 INSTALL(FILES ${planning_hdrs} DESTINATION include/dart/planning )
+INSTALL(FILES ${renderer_hdrs} DESTINATION include/dart/renderer )
 INSTALL(TARGETS dart ARCHIVE DESTINATION lib)
 
 # Install Eigen
