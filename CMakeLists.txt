@@ -9,9 +9,10 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 INCLUDE_DIRECTORIES("src")
 
 SET(CMAKE_CXX_WARNING_LEVEL 4)
+SET(EIGEN_DIR ${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.1)
 
 if (WIN32)
-#  message(STATUS "Setup Visual Studio Specifig Flags")
+#  message(STATUS "Setup Visual Studio Specific Flags")
 #  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Zi /GL /Gy")
 #  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi /GL /Gy")
 #elseif (APPLE)
@@ -79,23 +80,32 @@ else ()
     set(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
-FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" )
+FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/geometry/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" "src/planning/*.cpp" )
 FILE(GLOB collision_hdrs "src/collision/*.h")
 FILE(GLOB dynamics_hdrs "src/dynamics/*.h")
+FILE(GLOB geometry_hdrs "src/geometry/*.h")
 FILE(GLOB kinematics_hdrs "src/kinematics/*.h")
 FILE(GLOB kinematics_hpps "src/kinematics/*.h")
 FILE(GLOB util_hdrs "src/utils/*.h")
+FILE(GLOB planning_hdrs "src/planning/*.h")
 
-ADD_LIBRARY(dart ${srcs} ${collision_hdrs} ${dynamics_hdrs} ${kinematics_hdrs} ${kinematics_hpps} ${util_hdrs} )
+ADD_LIBRARY(dart ${srcs} ${collision_hdrs} ${dynamics_hdrs} ${geometry_hdrs} ${kinematics_hdrs} ${kinematics_hpps} ${util_hdrs} ${planning_hdrs} )
 TARGET_LINK_LIBRARIES(dart)
 SET_TARGET_PROPERTIES(dart PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
 INSTALL(FILES ${collision_hdrs} DESTINATION include/dart/collision )
 INSTALL(FILES ${dynamics_hdrs} DESTINATION include/dart/dynamics )
+INSTALL(FILES ${geometry_hdrs} DESTINATION include/dart/geometry )
 INSTALL(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics )
 INSTALL(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics )
 INSTALL(FILES ${util_hdrs} DESTINATION include/dart/utils )
+INSTALL(FILES ${planning_hdrs} DESTINATION include/dart/planning )
 INSTALL(TARGETS dart ARCHIVE DESTINATION lib)
+
+# Install Eigen
+INSTALL(DIRECTORY ${EIGEN_DIR}/Eigen DESTINATION include/eigen3)
+INSTALL(DIRECTORY ${EIGEN_DIR}/unsupported DESTINATION include/eigen3)
+INSTALL(FILES ${EIGEN_DIR}/signature_of_eigen3_matrix_library DESTINATION include/eigen3)
 
 ###############################################
 # Doxygen
