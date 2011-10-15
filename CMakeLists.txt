@@ -71,6 +71,20 @@ endif()
 
 ADD_SUBDIRECTORY(src)
 
+###############################################
+# Install Targets
+# Windows users can change this variable to change their install target destination
+set(CMAKE_INSTALL_PREFIX /usr/local)
+
+FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" )
+FILE(GLOB hdrs "src/collision/*.h" "src/dynamics/*.h" "src/kinematics/*.h" "src/kinematics/*.hpp" "src/utils/*.h")
+
+ADD_LIBRARY(dart ${srcs} ${hdrs} )
+TARGET_LINK_LIBRARIES(dart)
+SET_TARGET_PROPERTIES(dart PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+
+INSTALL(FILES ${hdrs} DESTINATION include/dart )
+INSTALL(TARGETS dart ARCHIVE DESTINATION lib)
 
 ###############################################
 # Doxygen
