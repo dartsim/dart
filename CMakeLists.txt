@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-message(STATUS "Generate makefile/project file for GroundZero")
+message(STATUS "Generate makefile/project file for DART")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
@@ -30,9 +30,9 @@ FILE(APPEND ${PATH_HEADER_DIR} "#ifndef UTILS_PATHS_H\n")
 FILE(APPEND ${PATH_HEADER_DIR} "#define UTILS_PATHS_H\n")
 FILE(APPEND ${PATH_HEADER_DIR} "\n")
 FILE(APPEND ${PATH_HEADER_DIR} 
-    "#define GROUNDZERO_ROOT_PATH \"${CMAKE_SOURCE_DIR}/\"\n")
+    "#define DART_ROOT_PATH \"${CMAKE_SOURCE_DIR}/\"\n")
 FILE(APPEND ${PATH_HEADER_DIR} 
-    "#define GROUNDZERO_DATA_PATH \"${CMAKE_SOURCE_DIR}/data/\"\n")
+    "#define DART_DATA_PATH \"${CMAKE_SOURCE_DIR}/data/\"\n")
 FILE(APPEND ${PATH_HEADER_DIR} "\n")
 FILE(APPEND ${PATH_HEADER_DIR} "#endif // ifndef UTILS_PATHS_H\n")
 
@@ -73,8 +73,11 @@ ADD_SUBDIRECTORY(src)
 
 ###############################################
 # Install Targets
-# Windows users can change this variable to change their install target destination
-set(CMAKE_INSTALL_PREFIX /usr/local)
+if(MSVC)
+    set(CMAKE_INSTALL_PREFIX $ENV{VCInstallDir} )
+else ()
+    set(CMAKE_INSTALL_PREFIX /usr/local )
+endif()
 
 FILE(GLOB srcs "src/collision/*.cpp" "src/dynamics/*.cpp" "src/kinematics/*.cpp" "src/utils/*.cpp" )
 FILE(GLOB hdrs "src/collision/*.h" "src/dynamics/*.h" "src/kinematics/*.h" "src/kinematics/*.hpp" "src/utils/*.h")

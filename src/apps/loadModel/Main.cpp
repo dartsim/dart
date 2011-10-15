@@ -6,7 +6,7 @@ using namespace kinematics;
 
 int main(int argc, char* argv[]) {
     FileInfoSkel<Skeleton> modelFile;
-    modelFile.loadFile(GROUNDZERO_DATA_PATH"skel/Yuting.vsk", kinematics::VSK);
+    modelFile.loadFile(DART_DATA_PATH"skel/Yuting.vsk", kinematics::VSK);
     // modelFile.loadFile("Yuting.skel",FileInfoModel::SKEL);
 
     MyWindow window(modelFile.getSkel());
