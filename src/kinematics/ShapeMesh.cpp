@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PrimitiveMesh.h"
+#include "ShapeMesh.h"
 #include "renderer/RenderInterface.h"
 
 using namespace Eigen;
 
 namespace kinematics {
 
-    PrimitiveMesh::PrimitiveMesh(Vector3d _dim, double _mass){
+    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass){
         mType = P_MESH;
         mDim = _dim;
         mMass = _mass;
@@ -55,7 +55,7 @@ namespace kinematics {
         }
     }
 
-    void PrimitiveMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         if (!_ri)
             return;
         if (!_useDefaultColor)
@@ -67,12 +67,12 @@ namespace kinematics {
         _ri->popMatrix();
     }
 
-    void PrimitiveMesh::computeMassTensor() {
+    void ShapeMesh::computeMassTensor() {
     }
 
-    void PrimitiveMesh::computeVolume() {
+    void ShapeMesh::computeVolume() {
     }
 
-    void PrimitiveMesh::initMeshes() {
+    void ShapeMesh::initMeshes() {
     }
 } // namespace kinematics

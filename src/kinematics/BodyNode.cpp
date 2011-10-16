@@ -37,7 +37,7 @@
 
 #include "BodyNode.h"
 #include <algorithm>
-#include "Primitive.h"
+#include "Shape.h"
 #include "Joint.h"
 #include "Marker.h"
 #include "Dof.h"
@@ -53,7 +53,7 @@ namespace kinematics {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(const char *_name) 
-        : mSkelIndex(-1), mPrimitive(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mCOMLocal(0,0,0)
+        : mSkelIndex(-1), mShape(NULL), mJointParent(NULL), mNodeParent(NULL), mMass(0), mCOMLocal(0,0,0)
     {
         mJointsChild.clear();
         mMarkers.clear();
@@ -74,16 +74,16 @@ namespace kinematics {
         }
         mMarkers.clear();
 
-        if (mPrimitive != NULL) {
-            delete mPrimitive;
-            mPrimitive = NULL;
+        if (mShape != NULL) {
+            delete mShape;
+            mShape = NULL;
         }
         mJointsChild.clear();
     }
 
     void BodyNode::init() {
-        if (mPrimitive != NULL) {
-            mMass = mPrimitive->getMass();
+        if (mShape != NULL) {
+            mMass = mShape->getMass();
         } else {
             mMass = 0;
         }
@@ -119,8 +119,8 @@ namespace kinematics {
 
         // update the inertia matrix 
         Matrix3d R = mW.topLeftCorner(3,3);
-        if(mPrimitive!=NULL)
-            mIc = R*mPrimitive->getInertia()*R.transpose();
+        if(mShape!=NULL)
+            mIc = R*mShape->getInertia()*R.transpose();
     }
 
     void BodyNode::updateFirstDerivatives() {
@@ -218,11 +218,11 @@ namespace kinematics {
         for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
             mJointParent->getTransform(i)->applyGLTransform(_ri);
         }
-        if (mPrimitive != NULL) {
+        if (mShape != NULL) {
             _ri->pushName((unsigned)mID);
             _ri->pushMatrix();
             _ri->translate(mCOMLocal);
-            mPrimitive->draw(_ri, _color, _useDefaultColor);
+            mShape->draw(_ri, _color, _useDefaultColor);
             _ri->popMatrix();
             _ri->popName();
         }

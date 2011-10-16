@@ -65,7 +65,7 @@ namespace utils {
             static const utils::rotation::RotationOrder mRotOrder;
 
             static bool exportMayaAsciiHeader(ofstream &_outFile );
-            static bool exportMayaAsciiPrimitive(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);
+            static bool exportMayaAsciiShape(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);
             static bool exportMayaAsciiSegmentSubtree(kinematics::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );
             // do not write the const stuff - all keyed now
             static bool exportMayaAsciiSegmentSubtree2(kinematics::BodyNode *_b, const int _writeNumNodes, ofstream &_outFile, const string &_prefix, const string &_suffix );

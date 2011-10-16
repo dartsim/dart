@@ -46,7 +46,7 @@ namespace kinematics {
 
     class Dof;
     class BodyNode;
-    class PrimitiveEllipsoid;
+    class ShapeEllipsoid;
 
     class Marker {
     public:

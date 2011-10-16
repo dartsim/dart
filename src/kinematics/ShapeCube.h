@@ -35,17 +35,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PRIMITIVE_CUBE_H
-#define KINEMATICS_PRIMITIVE_CUBE_H
+#ifndef KINEMATICS_SHAPE_CUBE_H
+#define KINEMATICS_SHAPE_CUBE_H
 
-#include "Primitive.h"
+#include "Shape.h"
 
 
 namespace kinematics {
 
-    class PrimitiveCube : public Primitive {
+    class ShapeCube : public Shape {
     public:
-        PrimitiveCube(Eigen::Vector3d _dim, double _mass);
+        ShapeCube(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
     private:

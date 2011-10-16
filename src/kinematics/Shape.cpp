@@ -35,53 +35,67 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PrimitiveEllipsoid.h"
-#include "renderer/RenderInterface.h"
-
+#include "Shape.h"
 using namespace Eigen;
+
+
+#define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace kinematics {
 
-    PrimitiveEllipsoid::PrimitiveEllipsoid(Vector3d _dim, double _mass){
-        mType = P_ELLIPSOID;
+    // initialize in the same order as declaration
+    Shape::Shape()
+        : mType(P_UNDEFINED), mDim(0, 0, 0), mMass(0), mVolume(0), 
+          mInertia(Matrix3d::Zero()),
+          mMassTensor(Matrix4d::Zero()),
+          mOffset(0, 0, 0),
+          mVizMesh(NULL), mCollisionMesh(NULL),
+          mID(mCounter++), mColor(0.5, 0.5, 1.0) {
+    }
+
+    void Shape::setInertia(const Eigen::Matrix3d& _inertia) {
+        mInertia = _inertia;
+        setMassTensorFromInertia();
+    }
+
+    void Shape::setDim(const Eigen::Vector3d& _dim) {
         mDim = _dim;
-        mMass = _mass;
-        initMeshes();
-        if (mDim != Vector3d::Zero())
-            computeVolume();
-        if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
+        computeVolume();
+        computeMassTensor();
+        computeInertiaFromMassTensor();
+    }
+
+    void Shape::setMass(double _m) {
+        mMass = _m;
+        computeMassTensor();
+        computeInertiaFromMassTensor();
+    }
+
+    int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
+
+    void Shape::setMassTensorFromInertia() {
+        // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
+	
+        double halftrace = 0.5* mInertia.trace();
+        for(int i=0; i<3; i++) {
+            for(int j=0; j<3; j++) {
+                mMassTensor(i, j) = -mInertia(i, j);
+            }
         }
+        mMassTensor(0, 0) += halftrace;
+        mMassTensor(1, 1) += halftrace;
+        mMassTensor(2, 2) += halftrace;
+        mMassTensor(3, 3) = mMass;
     }
 
-    void PrimitiveEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri)
-            return;
-        if (!_useDefaultColor)
-            _ri->setPenColor(_color);
-        else
-            _ri->setPenColor(mColor);
-        _ri->pushMatrix();
-        _ri->drawEllipsoid(mDim);
-        _ri->popMatrix();
-    }
-
-    void PrimitiveEllipsoid::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/20;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/20;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/20;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
-    }
-
-    void PrimitiveEllipsoid::computeVolume() {
-        mVolume = M_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
-    }
-    
-    void PrimitiveEllipsoid::initMeshes() {
-        mVizMesh = NULL;
-        mCollisionMesh = NULL;
+    void Shape::computeInertiaFromMassTensor(){
+        double trace = mMassTensor(0, 0) + mMassTensor(1, 1) + mMassTensor(2, 2);
+        for(int i=0; i<3; i++)
+            for(int j=0; j<3; j++)
+                mInertia(i, j) = -mMassTensor(i, j);
+        mInertia(0, 0) += trace;
+        mInertia(1, 1) += trace;
+        mInertia(2, 2) += trace;
     }
 
 } // namespace kinematics

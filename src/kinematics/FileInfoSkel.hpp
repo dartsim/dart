@@ -29,8 +29,8 @@
 #include "Joint.h"
 #include "Marker.h"
 #include "Transformation.h"
-#include "PrimitiveEllipsoid.h"
-#include "PrimitiveCube.h"
+#include "ShapeEllipsoid.h"
+#include "ShapeCube.h"
 
 int readSkelFile( const char* const filename, kinematics::Skeleton* skel );
 
@@ -228,14 +228,14 @@ namespace kinematics {
         _outfile<<"}\n";	// chain
 
         // primitive
-        Eigen::Vector3d pdim = _b->getPrimitive()->getDim();
+        Eigen::Vector3d pdim = _b->getShape()->getDim();
         Eigen::Vector3d off = _b->getLocalCOM();
         _outfile<<"primitive { <"<<pdim[0]<<", "<<pdim[1]<<", "<<pdim[2]<<">, <"<<off[0]<<", "<<off[1]<<", "<<off[2]<<">, "<<unitlength;
         // different types
 
-        Primitive* prim = _b->getPrimitive();
-        PrimitiveEllipsoid* elp = dynamic_cast<PrimitiveEllipsoid*>(prim);
-        PrimitiveCube* box = dynamic_cast<PrimitiveCube*>(prim);
+        Shape* prim = _b->getShape();
+        ShapeEllipsoid* elp = dynamic_cast<ShapeEllipsoid*>(prim);
+        ShapeCube* box = dynamic_cast<ShapeCube*>(prim);
 
         if(elp) _outfile<<", SPHERE";
         else if(box) _outfile<<", CUBE";

@@ -143,7 +143,7 @@ namespace renderer {
     }
     
 
-    void OpenGLRenderInterface::drawMesh(const geometry::Mesh3DGen *_mesh) {
+    void OpenGLRenderInterface::drawMesh(const geometry::Mesh3D *_mesh) {
     
     }
 
