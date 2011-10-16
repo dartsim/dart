@@ -1,6 +1,6 @@
 #include "collision_skeleton.h"
 #include "collision_shapes.h"
-#include "kinematics/Primitive.h"
+#include "kinematics/Shape.h"
 
 
 
@@ -10,7 +10,7 @@ namespace collision_checking{
 CollisionSkeletonNode::CollisionSkeletonNode(kinematics::BodyNode* _bodyNode)
 {
     bodyNode = _bodyNode;
-    cdmesh = createCube<RSS>(bodyNode->getPrimitive()->getDim()[0], bodyNode->getPrimitive()->getDim()[1], bodyNode->getPrimitive()->getDim()[2]);
+    cdmesh = createCube<RSS>(bodyNode->getShape()->getDim()[0], bodyNode->getShape()->getDim()[1], bodyNode->getShape()->getDim()[2]);
     
 }
 CollisionSkeletonNode::~CollisionSkeletonNode()

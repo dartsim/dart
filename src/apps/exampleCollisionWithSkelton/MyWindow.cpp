@@ -6,7 +6,7 @@
 #include <cstdio>
 #include "yui/GLFuncs.h"
 #include "kinematics/BodyNode.h"
-#include "kinematics/Primitive.h"
+#include "kinematics/Shape.h"
 
 using namespace Eigen;
 using namespace kinematics;

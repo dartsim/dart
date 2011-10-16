@@ -35,28 +35,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
-#define KINEMATICS_PRIMITIVE_ELLIPSOID_H
+#include "ShapeEllipsoid.h"
+#include "renderer/RenderInterface.h"
 
-#include "Primitive.h"
+using namespace Eigen;
 
 namespace kinematics {
 
-    class PrimitiveEllipsoid : public Primitive {
-    public:
-        PrimitiveEllipsoid(Eigen::Vector3d _dim, double Mass); 
+    ShapeEllipsoid::ShapeEllipsoid(Vector3d _dim, double _mass){
+        mType = P_ELLIPSOID;
+        mDim = _dim;
+        mMass = _mass;
+        initMeshes();
+        if (mDim != Vector3d::Zero())
+            computeVolume();
+        if (mMass != 0){
+            computeMassTensor();
+            computeInertiaFromMassTensor();
+        }
+    }
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-    private:
-        void computeMassTensor();
-        void computeVolume();
-        void initMeshes();
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+    void ShapeEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        if (!_ri)
+            return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->drawEllipsoid(mDim);
+        _ri->popMatrix();
+    }
+
+    void ShapeEllipsoid::computeMassTensor() {
+        mMassTensor(0, 0) = (mDim(0)*mDim(0))/20;
+        mMassTensor(1, 1) = (mDim(1)*mDim(1))/20;
+        mMassTensor(2, 2) = (mDim(2)*mDim(2))/20;
+        mMassTensor(3, 3) = 1;
+        mMassTensor *= mMass;
+    }
+
+    void ShapeEllipsoid::computeVolume() {
+        mVolume = M_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
+    }
+    
+    void ShapeEllipsoid::initMeshes() {
+        mVizMesh = NULL;
+        mCollisionMesh = NULL;
+    }
 
 } // namespace kinematics
-
-#endif // #ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
-
-

@@ -35,54 +35,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PrimitiveCube.h"
-#include "renderer/RenderInterface.h"
+#ifndef KINEMATICS_SHAPE_ELLIPSOID_H
+#define KINEMATICS_SHAPE_ELLIPSOID_H
 
-using namespace std;
-using namespace Eigen;
+#include "Shape.h"
 
 namespace kinematics {
 
-    PrimitiveCube::PrimitiveCube(Vector3d _dim, double _mass){
-        mType = P_CUBE;
-        mDim = _dim;
-        mMass = _mass;
-        initMeshes();
-        if (_dim != Vector3d::Zero())
-            computeVolume();
-        if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
-            computeVolume();
-        }
-    }
+    class ShapeEllipsoid : public Shape {
+    public:
+        ShapeEllipsoid(Eigen::Vector3d _dim, double Mass); 
 
-    void PrimitiveCube::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri) return;
-        if (!_useDefaultColor)
-            _ri->setPenColor(_color);
-        else
-            _ri->setPenColor(mColor);
-        _ri->pushMatrix();
-        _ri->drawCube(mDim);
-        _ri->popMatrix();
-    }
-
-    void PrimitiveCube::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
-    }
-
-    void PrimitiveCube::computeVolume() {
-        mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
-    }
-
-    void PrimitiveCube::initMeshes() {
-        mVizMesh = NULL;
-        mCollisionMesh = NULL;
-    }
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+    private:
+        void computeMassTensor();
+        void computeVolume();
+        void initMeshes();
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
 
 } // namespace kinematics
+
+#endif // #ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
+
+

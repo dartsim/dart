@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PRIMITIVE_H
-#define KINEMATICS_PRIMITIVE_H
+#ifndef KINEMATICS_SHAPE_H
+#define KINEMATICS_SHAPE_H
 
 #include <Eigen/Dense>
 
@@ -45,22 +45,22 @@ namespace renderer {
 }
 
 namespace geometry {
-    class Mesh3DGen;
+    class Mesh3D;
 }
 
 namespace kinematics {
     class Transformation;
 
-    class Primitive {
+    class Shape {
     public:
-        enum PrimitiveType {
+        enum ShapeType {
             P_UNDEFINED,
             P_CUBE,
             P_ELLIPSOID,
             P_MESH
         };
 
-        Primitive();
+        Shape();
         
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }
@@ -81,13 +81,13 @@ namespace kinematics {
         inline double getVolume() const { return mVolume; }
 
         inline int getID() const { return mID; }
-        inline PrimitiveType getPrimitiveType() const { return mType; }
+        inline ShapeType getShapeType() const { return mType; }
 
-        inline geometry::Mesh3DGen* getVizMesh() const { return mVizMesh; }
-        inline void setVizMesh(geometry::Mesh3DGen *_mesh) { mVizMesh = _mesh; } 
+        inline geometry::Mesh3D* getVizMesh() const { return mVizMesh; }
+        inline void setVizMesh(geometry::Mesh3D *_mesh) { mVizMesh = _mesh; } 
 
-        inline geometry::Mesh3DGen* getCollisionMesh() const { return mCollisionMesh; }
-        inline void setCollisionMesh(geometry::Mesh3DGen *_mesh) { mCollisionMesh = _mesh; } 
+        inline geometry::Mesh3D* getCollisionMesh() const { return mCollisionMesh; }
+        inline void setCollisionMesh(geometry::Mesh3D *_mesh) { mCollisionMesh = _mesh; } 
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -103,7 +103,7 @@ namespace kinematics {
 
         virtual void initMeshes() {}
 
-        PrimitiveType mType;    ///< Type of primitive; unknown in the general case
+        ShapeType mType;    ///< Type of primitive; unknown in the general case
         Eigen::Vector3d mDim; ///< dimensions for bounding box
         double mMass;	///< mass of the body
         double mVolume; ///< volume enclosed by the geometry
@@ -115,8 +115,8 @@ namespace kinematics {
         Eigen::Vector3d mColor;		///< color for the primitive
         Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
 
-        geometry::Mesh3DGen *mVizMesh; ///< mesh for visualization>
-        geometry::Mesh3DGen *mCollisionMesh; ///< mesh for collision detection>
+        geometry::Mesh3D *mVizMesh; ///< mesh for visualization>
+        geometry::Mesh3D *mCollisionMesh; ///< mesh for collision detection>
 
         static int mCounter;
     public:

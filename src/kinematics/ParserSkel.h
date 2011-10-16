@@ -40,7 +40,7 @@
 
 namespace kinematics {
     class Transformation;
-    class Primitive;
+    class Shape;
     class Dof;
 }
 
@@ -56,7 +56,7 @@ typedef union {
     dofVec4 v4DValue;
     doubleVec3 v3VValue;
     kinematics::Transformation* tValue;
-    kinematics::Primitive* pValue;
+    kinematics::Shape* pValue;
     kinematics::Dof* dofValue;
 } yystype;
 

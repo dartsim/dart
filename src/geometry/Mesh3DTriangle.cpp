@@ -18,12 +18,12 @@ namespace geometry {
         readMesh(_file, _format);
     }
 
-    bool Mesh3DTriangle::readMesh(const char *_file, Mesh3DGen::MeshFormat _format){
-        if(_format==Mesh3DGen::CORNERTABLE){
+    bool Mesh3DTriangle::readMesh(const char *_file, Mesh3D::MeshFormat _format){
+        if(_format==Mesh3D::CORNERTABLE){
             return readCorners(_file);
         }
         else{
-            if(!Mesh3DGen::readMesh(_file, _format)) return false;
+            if(!Mesh3D::readMesh(_file, _format)) return false;
         }
         if(mVertexPos.size()!=mVertexVel.size()) mVertexVel = VectorXd::Zero(mVertexPos.size());
         mCornerTable = new CornerTable(this);
@@ -35,13 +35,13 @@ namespace geometry {
         return true;
     }
 
-    bool Mesh3DTriangle::writeMesh(const char *_file, Mesh3DGen::MeshFormat _format){
+    bool Mesh3DTriangle::writeMesh(const char *_file, Mesh3D::MeshFormat _format){
         assert(mFaces.size()==3*mNumFaces);	// triangle face
-        if(_format==Mesh3DGen::CORNERTABLE){
+        if(_format==Mesh3D::CORNERTABLE){
             return writeCorners(_file);
         }
         else{
-            return Mesh3DGen::writeMesh(_file, _format);
+            return Mesh3D::writeMesh(_file, _format);
         }
     }
 

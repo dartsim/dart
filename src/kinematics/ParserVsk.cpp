@@ -63,9 +63,9 @@ using namespace google;
 #include "TrfmRotateExpmap.h"
 #include "TrfmRotateEuler.h"
 #include "Marker.h"
-#include "Primitive.h"
-#include "PrimitiveEllipsoid.h"
-#include "PrimitiveCube.h"
+#include "Shape.h"
+#include "ShapeEllipsoid.h"
+#include "ShapeCube.h"
 #include "utils/UtilsRotation.h"
 #include "utils/UtilsCode.h"
 
@@ -87,9 +87,9 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
 bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
 bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
 bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
-bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
-void autoGeneratePrimitive(Skeleton* skel);
-void autoGeneratePrimitiveParent(Skeleton* skel);
+bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
+void autoGenerateShape(Skeleton* skel);
+void autoGenerateShapeParent(Skeleton* skel);
 
 
 int readVSKFile(const char* const filename, Skeleton* _skel){
@@ -193,11 +193,11 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     {
         ticpp::Element* prims = 0;
         try {
-            prims = kinmodel->FirstChildElement( "Primitives" );
+            prims = kinmodel->FirstChildElement( "Shapes" );
             if(!prims) return false;
-            ticpp::Iterator< ticpp::Element > childprim("Primitive");
+            ticpp::Iterator< ticpp::Element > childprim("Shape");
             for ( childprim = childprim.begin( prims ); childprim != childprim.end(); childprim++ ){
-                if(!readPrimitive(childprim->ToElement(), paramsList, masslist, segmentindex, _skel)) return false;
+                if(!readShape(childprim->ToElement(), paramsList, masslist, segmentindex, _skel)) return false;
             }
         } 
         catch( ticpp::Exception ){}
@@ -205,7 +205,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
         // fill in the default if prims absent
     }
 
-    autoGeneratePrimitiveParent(_skel);
+    autoGenerateShapeParent(_skel);
 
     _skel->initSkel();
     // 
@@ -643,7 +643,7 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 }
 
 
-bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel) {
+bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel) {
     string bname = _prim->GetAttribute("SEGMENT");
     int segIdx = _segmentindex[bname];
     BodyNode* blink = _skel->getNode(segIdx);
@@ -685,31 +685,31 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     off = adjustPos(off*scale);
 
 
-    Primitive *prim = NULL;
+    Shape *prim = NULL;
     string ptype = _prim->GetAttribute("TYPE");
     if(ptype.compare("ELLIPSOID")==0){
-        prim = new PrimitiveEllipsoid(dim, mass);
+        prim = new ShapeEllipsoid(dim, mass);
     }
     // else if(ptype.compare("SPHERE")==0){
-    //     prim = new PrimitiveSphere(off, dim[0], mass);
+    //     prim = new ShapeSphere(off, dim[0], mass);
     // }
     // else if(ptype.compare("CYLINDER")==0){
-    //     prim = new PrimitiveCylinder(off, dim, mass);
+    //     prim = new ShapeCylinder(off, dim, mass);
     // }
     // else if(ptype.compare("CYLINDERX")==0){
-    //     prim = new PrimitiveCylinderX(off, dim, mass);
+    //     prim = new ShapeCylinderX(off, dim, mass);
     // }
     // else if(ptype.compare("CYLINDERZ")==0){
-    //     prim = new PrimitiveCylinderZ(off, dim, mass);
+    //     prim = new ShapeCylinderZ(off, dim, mass);
     // }
     // else if(ptype.compare("HEAD")==0){
-    //     prim = new PrimitiveHead(off, dim, mass);
+    //     prim = new ShapeHead(off, dim, mass);
     // }
     else if(ptype.compare("CUBE")==0){
-        prim = new PrimitiveCube(dim, mass);
+        prim = new ShapeCube(dim, mass);
     }
     else {
-        VLOG(1) << "Primitive type " << ptype << " not recognized!\n";
+        VLOG(1) << "Shape type " << ptype << " not recognized!\n";
         return false;
     }
 
@@ -735,7 +735,7 @@ bool readPrimitive(ticpp::Element* _prim, map<string, double>& _paramsList, map<
     catch( ticpp::Exception ){
     }
 
-    blink->setPrimitive(prim);
+    blink->setShape(prim);
     blink->setLocalCOM( off );
     return true;
 }
@@ -761,21 +761,21 @@ VectorXd getDofVectorXd(Transformation* tr) {
     return data;
 }
 
-void autoGeneratePrimitive(Skeleton* skel) {
+void autoGenerateShape(Skeleton* skel) {
     for(int i=0; i<skel->getNumNodes(); i++){
-        if(skel->getNode(i)->getPrimitive()) continue;
-        PrimitiveEllipsoid *pm = new PrimitiveEllipsoid(0.05 * Vector3d(1.0,1.0,1.0), 1.0);
+        if(skel->getNode(i)->getShape()) continue;
+        ShapeEllipsoid *pm = new ShapeEllipsoid(0.05 * Vector3d(1.0,1.0,1.0), 1.0);
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
         BodyNode* node = skel->getNode(i);
-        node->setPrimitive(pm);
+        node->setShape(pm);
         Vector3d vecZero(0,0,0);
         node->setLocalCOM(vecZero);
     }
 }
 
-void autoGeneratePrimitiveParent(Skeleton* skel)
+void autoGenerateShapeParent(Skeleton* skel)
 {
-    // autoGeneratePrimitive(skel); return;
+    // autoGenerateShape(skel); return;
 
     VLOG(1) << "Auto-generating primitives" << endl;
 
@@ -783,7 +783,7 @@ void autoGeneratePrimitiveParent(Skeleton* skel)
     for(int i=0; i<skel->getNumNodes(); i++){
         BodyNode* node = skel->getNode(i);
         Joint* joint = node->getParentJoint();
-        if(node->getPrimitive()) continue;
+        if(node->getShape()) continue;
         // Search translate matrix
         Vector3d size = 0.1 * Vector3d(1,1,1);
         Vector3d offset(0,0,0);
@@ -836,15 +836,15 @@ void autoGeneratePrimitiveParent(Skeleton* skel)
         // size = 0.1 * Vector3d(vl_1);
         // offset = Vector3d(vl_0);
         // Ellipsoid *pm = new Ellipsoid(vl_0, 0.1*Vector3d(vl_1), 1.0);
-        PrimitiveEllipsoid *pm = new PrimitiveEllipsoid(size, mass);
+        ShapeEllipsoid *pm = new ShapeEllipsoid(size, mass);
         BodyNode* target = parent;
         target->setLocalCOM(offset);
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
-        target->setPrimitive(pm);
+        target->setShape(pm);
 
     }
 
-    autoGeneratePrimitive(skel);
+    autoGenerateShape(skel);
     VLOG(1) << "Sum of mass = " << massSum << endl;
 }
 

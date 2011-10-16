@@ -121,7 +121,7 @@ enum yytokentype {
 #include <assert.h>
 
 #include "Transformation.h"
-#include "Primitive.h"
+#include "Shape.h"
 #include "Dof.h"
 #include "ParserSkel.h"
 
@@ -139,8 +139,8 @@ using namespace kinematics;
 #include "TrfmRotateExpmap.h"
 #include "TrfmRotateQuat.h"
 #include "TrfmTranslate.h"
-#include "PrimitiveCube.h"
-#include "PrimitiveEllipsoid.h"
+#include "ShapeCube.h"
+#include "ShapeEllipsoid.h"
 //#include "Capsule.h"
 //#include "PrimMesh.h"
 #include <glog/logging.h>
@@ -192,13 +192,13 @@ void __createRotateEuler( Dof*, int );
 void __createRotateEuler( double, int );
 void __createRotateExpMap( dofVec3 );
 void __createRotateQuat( dofVec4 );
-void __setPrimitive( doubleVec3, doubleVec3, Dof*);
-void __setPrimitive( doubleVec3, doubleVec3, Dof*, Primitive*);
-Primitive* __setGeometry(const char*, const char*, doubleVec3);
-Primitive* __setGeometry(const char*, const char*);
-Primitive* __setGeometry(const char*, doubleVec3);
-Primitive* __setGeometry(const char*);
-Primitive* __setGeometry(doubleVec3);
+void __setShape( doubleVec3, doubleVec3, Dof*);
+void __setShape( doubleVec3, doubleVec3, Dof*, Shape*);
+Shape* __setGeometry(const char*, const char*, doubleVec3);
+Shape* __setGeometry(const char*, const char*);
+Shape* __setGeometry(const char*, doubleVec3);
+Shape* __setGeometry(const char*);
+Shape* __setGeometry(doubleVec3);
 void __createMarker( char*, doubleVec3, int, char* );
 
 
@@ -232,7 +232,7 @@ typedef union YYSTYPE
     dofVec4 v4DValue;
     doubleVec3 v3VValue;
     Transformation* tValue;
-    Primitive* pValue;
+    Shape* pValue;
     Dof* dofValue;
 }
 /* Line 193 of yacc.c.  */
@@ -1656,12 +1656,12 @@ yyreduce:
 
     case 44:
         //#line 234 "src/skel.y"
-        { __setPrimitive((yyvsp[(3) - (8)].v3VValue), (yyvsp[(5) - (8)].v3VValue), (yyvsp[(7) - (8)].dofValue)); ;}
+        { __setShape((yyvsp[(3) - (8)].v3VValue), (yyvsp[(5) - (8)].v3VValue), (yyvsp[(7) - (8)].dofValue)); ;}
         break;
 
     case 45:
         //#line 235 "src/skel.y"
-        { __setPrimitive((yyvsp[(3) - (9)].v3VValue), (yyvsp[(5) - (9)].v3VValue), (yyvsp[(7) - (9)].dofValue), (yyvsp[(9) - (9)].pValue)); ;}
+        { __setShape((yyvsp[(3) - (9)].v3VValue), (yyvsp[(5) - (9)].v3VValue), (yyvsp[(7) - (9)].dofValue), (yyvsp[(9) - (9)].pValue)); ;}
         break;
 
     case 46:
@@ -2081,26 +2081,26 @@ void __startNode( const char* s, int id ) {
 }
 
 /* create a new primitive */
-void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone ) {
+void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
     double bone_length = bone->getValue();
 
     Vector3d vecScale(s[0],s[1],s[2]);
     vecScale *= bone_length;
-    Primitive* prim = new PrimitiveEllipsoid(vecScale, 0);
+    Shape* prim = new ShapeEllipsoid(vecScale, 0);
 
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
-    cur_node->setPrimitive(prim);
+    cur_node->setShape(prim);
     cur_node->setLocalCOM( vecTrans );
 }
 
 /* set offset and dimension of an existing primitive */
-void __setPrimitive( doubleVec3 s, doubleVec3 t, Dof* bone, Primitive *geo ) {
+void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
     double bone_length = bone->getValue();
 
     geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
 
-    cur_node->setPrimitive(geo);
+    cur_node->setShape(geo);
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
     cur_node->setLocalCOM(vecTrans);
@@ -2282,9 +2282,9 @@ void __recordMass(char* massName, double massValue)
 }
 
 /* create new primitive */	
-Primitive* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
+Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 {
-    Primitive *prim = NULL;
+    Shape *prim = NULL;
 
     // lookup mass by name
     double massValue = 0.0;	
@@ -2295,11 +2295,11 @@ Primitive* __setGeometry(const char* shape, const char *massName, doubleVec3 col
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new PrimitiveCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeCube(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
     else{
         cout<<"Unknown primitive type "<<shape<<endl;
         exit(0);
@@ -2312,9 +2312,9 @@ Primitive* __setGeometry(const char* shape, const char *massName, doubleVec3 col
 }
 
 /* create new primitive */
-Primitive* __setGeometry(const char *shape, const char *massName)
+Shape* __setGeometry(const char *shape, const char *massName)
 {
-    Primitive *prim = NULL;
+    Shape *prim = NULL;
 
     //lookup mass by name
     double massValue = 0.0;	
@@ -2327,11 +2327,11 @@ Primitive* __setGeometry(const char *shape, const char *massName)
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new PrimitiveCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeCube(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
     else{
         cout<<"Unknown primitive type "<<shape<<endl;
         exit(0);
@@ -2341,18 +2341,18 @@ Primitive* __setGeometry(const char *shape, const char *massName)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(const char *shape, doubleVec3 color)
+Shape* __setGeometry(const char *shape, doubleVec3 color)
 {
-    Primitive *prim = NULL;
+    Shape *prim = NULL;
 
     // create new primitive by shape
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new PrimitiveCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeCube(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);	
+        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);	
     else{
         // mass name instead of shape is specified
         //lookup mass by name
@@ -2366,7 +2366,7 @@ Primitive* __setGeometry(const char *shape, doubleVec3 color)
         }
         // create new ellipsoid primitive
         if(found)
-            prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
+            prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
     }
 
     // set color
@@ -2376,24 +2376,24 @@ Primitive* __setGeometry(const char *shape, doubleVec3 color)
 }
 
 /* create new primitive */
-Primitive* __setGeometry(doubleVec3 color)
+Shape* __setGeometry(doubleVec3 color)
 {
-    Primitive *prim = new PrimitiveEllipsoid(Vector3d(0,0,0), 0);
+    Shape *prim = new ShapeEllipsoid(Vector3d(0,0,0), 0);
     prim->setColor(Vector3d(color[0], color[1], color[2]));
     return prim;
 }
 
 /* create new primitive */
-Primitive* __setGeometry(const char *shape)
+Shape* __setGeometry(const char *shape)
 {
-    Primitive *prim = NULL;
+    Shape *prim = NULL;
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new PrimitiveCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeCube(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "SPHERE") || !strcmp(shape, ""))
-        prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
     else{
         // mass name instead of shape is specified
         //lookup mass by name
@@ -2407,7 +2407,7 @@ Primitive* __setGeometry(const char *shape)
         }
         // create new ellipsoid primitive
         if(found)
-            prim = new PrimitiveEllipsoid(Vector3d(0,0,0), massValue);
+            prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
     }
 
     return prim;

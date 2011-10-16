@@ -40,7 +40,7 @@
 #include "kinematics/BodyNode.h"
 #include "kinematics/Joint.h"
 #include "kinematics/Skeleton.h"
-#include "kinematics/Primitive.h"
+#include "kinematics/Shape.h"
 #include "kinematics/Transformation.h"
 #include "utils/UtilsRotation.h"
 #include <iostream>
@@ -69,7 +69,7 @@ namespace utils {
             // geometries
             for(int i=0; i<_skel->getNumNodes(); i++){
                 BodyNode *b = _skel->getNode(i);
-                exportMayaAsciiPrimitive(b, _outFile, "", "");
+                exportMayaAsciiShape(b, _outFile, "", "");
             }
 
             // footers - connect stuff
@@ -109,8 +109,8 @@ namespace utils {
             return true;
         }
 
-        bool MayaExportSkeleton::exportMayaAsciiPrimitive(BodyNode* _b, ofstream &_outFile, const string &_prefix, const string &_suffix  ){
-            Primitive *prim = _b->getPrimitive();
+        bool MayaExportSkeleton::exportMayaAsciiShape(BodyNode* _b, ofstream &_outFile, const string &_prefix, const string &_suffix  ){
+            Shape *prim = _b->getShape();
             if(prim==NULL) return false; // an dummy node
         
             Vector3d dim = prim->getDim();
@@ -121,39 +121,39 @@ namespace utils {
             string name2 = _prefix+_b->getName()+_suffix; name2+=mSuffixShape;
             _outFile<<"createNode transform -n \""<<name1.c_str()<<"\" -p \""<<_prefix+_b->getName()+_suffix<<"\";"<<endl;
             Vector3d off = _b->getLocalCOM(); //prim->getLocalCOM();
-            //if(prim->getPrimitiveType()==Primitive::P_CYLINDER) {
+            //if(prim->getShapeType()==Shape::P_CYLINDER) {
             //    GeomCylinder *cyl = static_cast<GeomCylinder*>(prim->getGeom());
             //    Vector3d ax = cyl->getOrientation();
             //    off = off + 0.5*dim[1]*ax;	// to offset opengl and maya coordinate origin
             //}
             _outFile<<"\t setAttr \".t\" -type \"double3\" "<<off[0]<<" "<<off[1]<<" "<<off[2]<<";"<<endl;
             // shape 
-            if(prim->getPrimitiveType()==Primitive::P_ELLIPSOID) {
+            if(prim->getShapeType()==Shape::P_ELLIPSOID) {
                 _outFile<<"\t setAttr \".s\" -type \"double3\" "<<1.0<<" "<<dim[1]/dim[0]<<" "<<dim[2]/dim[0]<<";"<<endl;
             }
             _outFile<<"createNode mesh -n \""<<name2.c_str()<<"\" -p \""<<name1.c_str()<<"\";"<<endl;
 
             // geom
-            switch (prim->getPrimitiveType()){
-            case Primitive::P_ELLIPSOID:
+            switch (prim->getShapeType()){
+            case Shape::P_ELLIPSOID:
                 _outFile<<"createNode polySphere -n \""<<ngeom.c_str()<<"\";"<<endl;
                 _outFile<<"\t setAttr \".r\" "<<dim[0]/2<<";"<<endl;	// radius
                 _outFile<<"\t setAttr \".sa\" 20;"<<endl;	// subdivision axis
                 _outFile<<"\t setAttr \".sh\" 20;"<<endl;	// subdivision height
                 break;
-            case Primitive::P_CUBE:
+            case Shape::P_CUBE:
                 _outFile<<"createNode polyCube -n \""<<ngeom.c_str()<<"\";"<<endl;
                 _outFile<<"\t setAttr \".w\" "<<dim[0]<<";"<<endl;	// width
                 _outFile<<"\t setAttr \".h\" "<<dim[1]<<";"<<endl;	// height
                 _outFile<<"\t setAttr \".d\" "<<dim[2]<<";"<<endl;	// depth
                 break;
-                //case Primitive::P_SPHERE:
+                //case Shape::P_SPHERE:
                 //    _outFile<<"createNode polySphere -n \""<<ngeom.c_str()<<"\";"<<endl;
                 //    _outFile<<"\t setAttr \".r\" "<<dim[0]/2<<";"<<endl;	// radius
                 //    _outFile<<"\t setAttr \".sa\" 20;"<<endl;	// subdivision axis
                 //    _outFile<<"\t setAttr \".sh\" 20;"<<endl;	// subdivision height
                 //    break;
-                //case Primitive::P_CYLINDER:
+                //case Shape::P_CYLINDER:
                 //    {
                 //        GeomCylinder *cyl = static_cast<GeomCylinder*>(prim->getGeom());
                 //        Vector3d ax = cyl->getOrientation();
@@ -166,15 +166,15 @@ namespace utils {
                 //        _outFile<<"\t setAttr \".ax\" -type \"double3\" "<<ax[0]<<" "<<ax[1]<<" "<<ax[2]<<";"<<endl;
                 //    }
                 //    break;
-                //case Primitive::P_HEAD:
+                //case Shape::P_HEAD:
                 //    cout<<"placeholder sphere for head\n";
                 //    _outFile<<"createNode polySphere -n \""<<ngeom.c_str()<<"\";"<<endl;
                 //    _outFile<<"\t setAttr \".r\" "<<dim[0]/2<<";"<<endl;	// radius
                 //    _outFile<<"\t setAttr \".sa\" 20;"<<endl;	// subdivision axis
                 //    _outFile<<"\t setAttr \".sh\" 20;"<<endl;	// subdivision height
                 //    break;
-            case Primitive::P_UNDEFINED:
-                cout<<"Primitive type undefined for body "<<_b->getName()<<endl;
+            case Shape::P_UNDEFINED:
+                cout<<"Shape type undefined for body "<<_b->getName()<<endl;
                 return false;
                 break;
             }

@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sumit Jain <sumit@cc.gatech.edu>
- * Date: 07/21/2011
+ * Author(s):
+ * Date:
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,54 +35,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GEOMETRY_MESH3DGEN_H
-#define GEOMETRY_MESH3DGEN_H
+#ifndef KINEMATICS_SHAPE_MESH_H
+#define KINEMATICS_SHAPE_MESH_H
 
-#include <vector>
+#include "Shape.h"
 
-using namespace std;
-#include <Eigen/Dense>
 
-namespace geometry { 
-    class Mesh3DGen{
+namespace kinematics {
+
+    class ShapeMesh : public Shape {
+    public:
+        ShapeMesh(Eigen::Vector3d _dim, double _mass);
+
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
+    private:
+        void computeMassTensor();
+        void computeVolume();
+        void initMeshes(); ///< initialize mVizMesh and mCollisionMesh>
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
 
-        enum MeshFormat {OBJ, OFF, CORNERTABLE};
-        char mFileName[1024];
+} // namespace kinematics
 
-        unsigned int mNumVertices;
-        unsigned int mNumFaces;
-        vector<unsigned int> mNumFaceVertices;
-
-        vector<Eigen::Vector2d> mVertexTextures;
-        vector<Eigen::Vector3d> mVertexNormals;	// may not be same as the number of vertices
-
-        Eigen::VectorXd mVertexPos;	// xyz in sequence
-        Eigen::VectorXd mVertexVel;	// xyz in sequence
-        vector<int> mFaces;	// list of 3 or more vertex indices in sequence for each face
-        vector<vector<int> > mFaceTextureIndices;
-        vector<vector<int> > mFaceNormalIndices;	// should exactly correspond to mFaces; indexes into the mVertexNormals
-
-        Mesh3DGen(){
-            mNumVertices = 0;
-            mNumFaces=0;
-            mVertexPos = Eigen::VectorXd();
-            mVertexVel = Eigen::VectorXd();
-            mVertexTextures.clear();
-            mFaces.clear();
-            mFileName[0]='\0';
-        }
-        virtual bool readMesh(const char *_file, MeshFormat _format);
-        virtual bool writeMesh(const char *_file, MeshFormat _format);
-
-        virtual double computeVolume()=0;
-
-        virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true)=0;
-
-    };  // Mesh3DGen
-
-} // namespace geometry
-
-#endif  //GEOMETRY_MESH3DGEN_H
+#endif // #ifndef KINEMATICS_PRIMITIVE_MESH_H
 

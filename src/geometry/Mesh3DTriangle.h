@@ -38,12 +38,12 @@
 #ifndef GEOMETRY_MESH3DTRIANGLE_H
 #define GEOMETRY_MESH3DTRIANGLE_H
 
-#include "Mesh3DGen.h"
+#include "Mesh3D.h"
 
 namespace geometry {
     class CornerTable;
 
-    class Mesh3DTriangle: public Mesh3DGen{
+    class Mesh3DTriangle: public Mesh3D{
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -54,8 +54,8 @@ namespace geometry {
         virtual ~Mesh3DTriangle(){}
 
         // read and write obj files
-        bool readMesh(const char *_file, Mesh3DGen::MeshFormat _format);
-        bool writeMesh(const char *_file, Mesh3DGen::MeshFormat _format);
+        bool readMesh(const char *_file, Mesh3D::MeshFormat _format);
+        bool writeMesh(const char *_file, Mesh3D::MeshFormat _format);
 
         double computeVolume();
         void computeVolDer(Eigen::VectorXd &_der);
