@@ -26,8 +26,21 @@ namespace planning {
         
         Object();
         virtual ~Object();
-
         inline std::string getName() { return mName; }
+
+        void setPositionX( double _pos );
+        void getPositionX( double &_pos );
+
+        void setPositionY( double _pos );
+        void getPositionY( double &_pos );
+
+        void setPositionZ( double _pos );
+        void getPositionZ( double &_pos );
+
+        void setRotationRPY( double _roll, double _pitch, double _yaw );
+        void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+
+
     };
 
 } // namespace planning 
