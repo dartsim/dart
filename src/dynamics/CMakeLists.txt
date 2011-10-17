@@ -10,4 +10,5 @@ FILE(GLOB dynamics_hdrs "*.h")
 ADD_LIBRARY(dynamics ${dynamics_srcs} ${dynamics_hdrs})
 SET_TARGET_PROPERTIES(dynamics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
-
+INSTALL(FILES ${dynamics_hdrs} DESTINATION include/dart/dynamics)
+INSTALL(TARGETS dynamics ARCHIVE DESTINATION lib)
