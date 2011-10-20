@@ -44,7 +44,9 @@
 
 #include <vector>
 #include <string>
+#include "Model3DS.h"
 #include "kinematics/Skeleton.h"
+
 
 namespace planning {
 #define MAX_ROBOT_NAME 128
@@ -55,6 +57,8 @@ namespace planning {
         std::string mName; ///< Name
         std::string mPathName; ///< PathName
         int mGripID; /// THIS HAS TO BE REMOVED
+        std::vector<Model3DS*> mModels;
+        std::vector<int> mModelIndices;
 
         Robot();
         virtual ~Robot();
@@ -71,6 +75,9 @@ namespace planning {
 
         void setRotationRPY( double _roll, double _pitch, double _yaw );
         void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+
+        Model3DS* loadModel( string _filename );
+        void addModel( Model3DS* _model, int _index );
 
     };
 
