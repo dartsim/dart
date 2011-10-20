@@ -250,4 +250,24 @@ namespace planning {
 
     } 
 
+    /**
+     * @function loadModel
+     */
+    Model3DS* Robot::loadModel( string _filename )
+    {
+       Model3DS* model = new Model3DS();
+       model->Load( _filename );
+       return model;
+    }
+
+   /**
+    * @function addModel
+    */
+   void Robot::addModel( Model3DS* _model, int _index )
+   {
+      mModels.push_back( _model );
+      mModelIndices.push_back( _index );
+   }
+
+
 }  // namespace planning
