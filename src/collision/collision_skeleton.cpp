@@ -54,6 +54,9 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         ContactPoint pair;
         pair.bd1 = bodyNode;
         pair.bd2 = otherNode->bodyNode;
+
+        pair.bdID1 = this->bodynodeID;
+        pair.bdID2 = otherNode->bodynodeID;
         Vec3f v;
         
         v = res.collidePairs()[i].contact_point;
@@ -89,7 +92,9 @@ void SkeletonCollision::addCollisionSkeletonNode(kinematics::BodyNode *_bd, bool
 {
     if(_bRecursive == false || _bd->getNumChildJoints() ==0)
     {
-        mCollisionSkeletonNodeList.push_back(new CollisionSkeletonNode(_bd));
+        CollisionSkeletonNode* csnode = new CollisionSkeletonNode(_bd);
+        csnode->bodynodeID = mCollisionSkeletonNodeList.size();
+        mCollisionSkeletonNodeList.push_back(csnode);
     }
     else
     {
