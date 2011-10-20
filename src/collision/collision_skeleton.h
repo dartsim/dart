@@ -51,14 +51,15 @@ namespace collision_checking {
         Eigen::Vector3d normal;
         kinematics::BodyNode *bd1;
         kinematics::BodyNode *bd2;
+        int bdID1;
+        int bdID2;
     };
 
     struct CollisionSkeletonNode{
         BVHModel<RSS>* cdmesh;
         kinematics::BodyNode *bodyNode;
         AABB aabb;
-        
-
+        int bodynodeID;
 
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
