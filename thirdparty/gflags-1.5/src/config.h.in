@@ -28,12 +28,6 @@
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
-/* Define to 1 if you have the `putenv' function. */
-#undef HAVE_PUTENV
-
-/* Define to 1 if you have the `setenv' function. */
-#undef HAVE_SETENV
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -107,3 +101,9 @@
 
 /* Puts following code inside the Google namespace */
 #undef _START_GOOGLE_NAMESPACE_
+
+
+#if defined( __MINGW32__) || defined(__MINGW64__)
+#include "windows/port.h"
+#endif
+

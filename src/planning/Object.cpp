@@ -39,6 +39,8 @@
  */
 #include <kinematics/Joint.h>
 #include <kinematics/Transformation.h>
+#include <kinematics/TrfmTranslate.h>
+#include <kinematics/TrfmRotateEuler.h>
 #include <kinematics/BodyNode.h>
 #include <kinematics/Dof.h>
 #include "Object.h"
@@ -53,7 +55,46 @@ namespace planning {
      * @brief Constructor
      */
     Object::Object( ) {
-    }
+
+      //-- Always set the root node (6DOF for rot and trans) 
+      kinematics::Joint* joint;
+      kinematics::BodyNode *node;
+      kinematics::Transformation* trans;
+
+      //-- Set the initial RootNode that controls the position and orientation
+      node = this->createBodyNode( "rootBodyNode" );
+      joint = new kinematics::Joint( NULL, node, "rootJoint" );
+
+      //-- Add DOFs for RPY and XYZ of the whole robot
+      trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+
+      trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+
+      trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+
+      trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof(0, "rootYaw" ), "Try" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+ 
+      trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof(0, "rootPitch" ), "Trp" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+
+      trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof(0, "rootRoll" ), "Trr" );
+      joint->addTransform( trans, true );
+      this->addTransform( trans );
+
+      //-- This set this first node as rootNode
+      this->addNode( node );
+      this->initSkel();
+
+   }
 
     /**
      * @function ~Object
@@ -73,17 +114,10 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootX" ) { 
-                        joint->getTransform(i)->getDof(j)->setValue( _pos ); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+              joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
             } 
-        } 
+        }  
     }
 
     /**
@@ -96,17 +130,10 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootX" ) { 
-                        _pos = joint->getTransform(i)->getDof(j)->getValue(); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+              _pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
             } 
-        } 
+        }  
     }
 
     /**
@@ -119,18 +146,11 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootY" ) { 
-                        joint->getTransform(i)->getDof(j)->setValue( _pos ); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+              joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
             } 
-        } 
-    } 
+        }  
+    }
 
     /**
      * @function getPositionY
@@ -142,18 +162,11 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootY" ) { 
-                        _pos = joint->getTransform(i)->getDof(j)->getValue(); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+              _pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
             } 
-        } 
-    } 
+        }  
+    }
 
 
     /**
@@ -166,17 +179,10 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootZ" ) { 
-                        joint->getTransform(i)->getDof(j)->setValue( _pos ); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+              joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
             } 
-        } 
+        }  
     }
 
     /**
@@ -189,20 +195,11 @@ namespace planning {
         joint = getRoot()->getParentJoint();
 
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-
-            if( string( joint->getTransform(i)->getName() ) == "RootPos" ) {
-
-                for( unsigned int j = 0; j < joint->getTransform(i)->getNumDofs(); j++ ) {
-
-                    if( string( joint->getTransform(i)->getDof(j)->getName() ) =="RootZ" ) { 
-                        _pos = joint->getTransform(i)->getDof(j)->getValue(); break; 
-                    } 
-                }                  
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+              _pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
             } 
-        } 
+        }  
     }
-
-
 
     /**
      * @function setRotationRPY
@@ -215,16 +212,15 @@ namespace planning {
         joint = getRoot()->getParentJoint();
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
         {
-            if( string( joint->getTransform(i)->getName() ) == "RootRoll" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
             {  joint->getTransform(i)->getDof(0)->setValue( _roll ); } 
 
-            if( string( joint->getTransform(i)->getName() ) == "RootPitch" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
             {  joint->getTransform(i)->getDof(0)->setValue( _pitch ); } 
 
-            if( string( joint->getTransform(i)->getName() ) == "RootYaw" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
             {  joint->getTransform(i)->getDof(0)->setValue( _yaw ); } 
         } 
-
     } 
 
     /**
@@ -237,13 +233,13 @@ namespace planning {
         joint = getRoot()->getParentJoint();
         for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
         {
-            if( string( joint->getTransform(i)->getName() ) == "RootRoll" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
             {  _roll = joint->getTransform(i)->getDof(0)->getValue(); } 
 
-            if( string( joint->getTransform(i)->getName() ) == "RootPitch" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
             {  _pitch = joint->getTransform(i)->getDof(0)->getValue(); } 
 
-            if( string( joint->getTransform(i)->getName() ) == "RootYaw" )
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
             {  _yaw = joint->getTransform(i)->getDof(0)->getValue(); } 
         } 
 
