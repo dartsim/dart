@@ -64,7 +64,7 @@ namespace planning {
         virtual ~Robot();
         inline std::string getName() { return mName; }
 
-        void setPositionX( double _pos );
+        void setPositionX( double _pos );  
         void getPositionX( double &_pos );
 
         void setPositionY( double _pos );
@@ -75,6 +75,10 @@ namespace planning {
 
         void setRotationRPY( double _roll, double _pitch, double _yaw );
         void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+
+        void getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf );
+        void getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z );
+        void getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot );
 
         Model3DS* loadModel( string _filename );
         void addModel( Model3DS* _model, int _index );

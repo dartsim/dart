@@ -249,6 +249,48 @@ namespace planning {
         } 
 
     } 
+
+    /**
+     * @function getBodyNodeTransform
+     * @brief Get World Transform of a bodyNode of Robot
+     */
+    void Robot::getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf )
+    {
+       const char* name = _name.c_str();
+
+       kinematics::BodyNode* bodyNode = getNode( name );
+       Eigen::Matrix4d tfm= bodyNode->getWorldTransform();
+ 
+       _tf.setIdentity();
+       _tf.matrix() = tfm;       
+    }
+
+    /**
+     * @function getBodyNode Position XYZ
+     * @brief Get XYZ in World Coordinates
+     */
+    void Robot::getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z )
+    {
+       Eigen::Transform< double, 3,Eigen::Affine > tf;
+       getBodyNodeTransform( _name, tf );
+       Eigen::Vector3d xyz = tf.translation();
+
+       _x = xyz(0); _y = xyz(1); _z = xyz(2);      
+    }
+    
+    /**
+     * @function getBodyNode Rotation Matrix
+     * @brief Get Rotation matrix (Global)
+     */
+    void Robot::getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot )
+    {
+       Eigen::Transform< double, 3,Eigen::Affine > tf;
+       getBodyNodeTransform( _name, tf );
+       //_rot = tf.block<3,3>(0,0);
+       _rot = tf.rotation();
+    }
+
+
     /**
      * @function loadModel
      */
