@@ -13,7 +13,7 @@ public:
     virtual Eigen::VectorXd evalCon();
 
     virtual void fillJac(optimizer::VVD, int index) {}
-    virtual void fillJac(optimizer::VVD, optimizer::VVB, int index) {}
+    virtual void fillJac(optimizer::VVD, optimizer::VVB, int index);
     virtual void fillObjGrad(std::vector<double>& dG);
 
 private:

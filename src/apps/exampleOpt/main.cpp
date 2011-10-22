@@ -8,6 +8,7 @@ using namespace Eigen;
 #include "optimizer/Var.h"
 #include "optimizer/Problem.h"
 #include "optimizer/ObjectiveBox.h"
+#include "optimizer/ConstraintBox.h"
 using namespace optimizer;
 #include "ExampleConstraint.h"
 
@@ -36,13 +37,14 @@ int main(int argc, char* argv[]) {
     // Define problem. you can define your own problem as well
     ExampleProblem prob;
     // Problem prob;
-    prob.addVariable(0.0, -10.0, 10.0);
+    prob.addVariable(4, -1e7, 1e7);
+    prob.addVariable(-4, -1e7, 1e7);
     prob.createBoxes();
 
     // Create constraints and objectives
-    ExampleConstraint* c = new ExampleConstraint(
-        prob.vars(), 0, 3.0);
-    prob.objBox()->add(c);
+    ExampleConstraint* c = new ExampleConstraint(prob.vars(), 0, 3.0);
+    //prob.objBox()->add(c);
+    prob.conBox()->add(c);
 
     // Create a solver and solve
     snopt::SnoptSolver solver(&prob);

@@ -15,30 +15,34 @@ ExampleConstraint::ExampleConstraint(std::vector<optimizer::Var *>& var, int ind
 }
 
 
-Eigen::VectorXd ExampleConstraint::evalCon() {
-    std::vector<Var *>& vars = mVariables;
-    VectorXd x(1);
-    x(0) = vars[mIndex]->mVal - mTarget;
+VectorXd ExampleConstraint::evalCon() {
+    VectorXd ret(1);
+    VectorXd x(mVariables.size());
+    for(unsigned int i = 0; i < mVariables.size(); i++)
+        x[i] = mVariables[i]->mVal;
+    ret(0) = x.dot(x) - mTarget;
 
-    return x;
+    return ret;
 
+}
+ 
+void ExampleConstraint::fillJac(VVD jEntry, VVB jMap, int index) {
+    for (int i = 0; i < mNumRows; i++) {
+        for(unsigned int j = 0; j < mVariables.size(); j++) {
+            jEntry->at(index + i)->at(j) = 2.0 * mVariables[j]->mVal;
+            jMap->at(index + i)->at(j) = true;
+        }
+    }
 }
 
 void ExampleConstraint::fillObjGrad(std::vector<double>& dG) {
     VectorXd dP = evalCon();
-
+    VectorXd J(mVariables.size());
     for(unsigned int i = 0; i < mVariables.size(); i++){
-        const Var* var = mVariables[i];
-        VectorXd J(1);
-        if (i == mIndex) {
-            J(0) = 1.0;
-        } else {
-            J(1) = 0.0;
-        }
-
-        J /= var->mWeight;
-        dG.at(i) += dP.dot(J);
-    }
+        J[i] = 2.0 * mVariables[i]->mVal;
+        J[i] /= mVariables[i]->mWeight;
+        dG.at(i) += dP[0] * J[i];
+    }    
 }
 
 
