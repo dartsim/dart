@@ -46,7 +46,9 @@
 #include "fcl/BV_splitter.h"
 #include "fcl/BV_fitter.h"
 #include <vector>
+#ifdef USE_BOOST
 #include <boost/shared_ptr.hpp>
+#endif
 
 /** \brief Main namespace */
 namespace fcl
@@ -69,10 +71,18 @@ public:
   BVHBuildState build_state;
 
   /** \brief Split rule to split one BV node into two children */
+#ifdef USE_BOOST
   boost::shared_ptr<BVSplitterBase<BV> > bv_splitter;
+#else
+  BVSplitterBase<BV> * bv_splitter;
+#endif
 
   /** \brief Fitting rule to fit a BV node to a set of geometry primitives */
+#ifdef USE_BOOST
   boost::shared_ptr<BVFitterBase<BV> > bv_fitter;
+#else
+  BVFitterBase<BV> * bv_fitter;
+#endif
 
   /** \brief Model type */
   BVHModelType getModelType() const
@@ -105,8 +115,13 @@ public:
 
     build_state = BVH_BUILD_STATE_EMPTY;
 
+#ifdef USE_BOOST
     bv_splitter.reset(new BVSplitter<BV>(SPLIT_METHOD_MEAN));
     bv_fitter.reset(new BVFitter<BV>());
+#else
+    bv_splitter = new BVSplitter<BV>(SPLIT_METHOD_MEAN);
+    bv_fitter = new BVFitter<BV>();
+#endif
   }
 
   BVHModel(const BVHModel& other);
