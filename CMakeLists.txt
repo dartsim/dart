@@ -79,6 +79,14 @@ else()
     ENDIF ()
 endif()
 
+###############################################
+# Thirdparty libraries
+message(STATUS "Building thirdparty libraries")
+ADD_SUBDIRECTORY (thirdparty/ann_1.1.2)
+ADD_SUBDIRECTORY (thirdparty/libccd-1.0)
+ADD_SUBDIRECTORY (thirdparty/fcl.r42)
+
+message(STATUS "Building DART source")
 ADD_SUBDIRECTORY(src)
 
 ###############################################
