@@ -5,7 +5,7 @@ file (GLOB srcs "src/*.c")
 file (GLOB hdrs "src/ccd/*.h")
 
 include_directories (src)
-add_library (ccd ${srcs})
+add_library (ccd ${srcs} ${hdrs})
 set_target_properties (ccd PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
 install (FILES ${hdrs} DESTINATION include/ccd)
