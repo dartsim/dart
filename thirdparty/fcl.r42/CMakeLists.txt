@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 2.6)
 project (fcl)
 
+option (BUILD_ALL_TESTS "OFF")
+option (USE_BOOST "OFF")
+
+if (USE_BOOST)
+	add_definitions (-DUSEBOOST)
+endif (USE_BOOST)
+
+###################################
+# Build Library
 file (GLOB srcs "src/*.cpp")
 file (GLOB hdrs "include/fcl/*.h")
 
@@ -10,6 +19,57 @@ link_directories (fcl "${CMAKE_SOURCE_DIR}/../lib")
 add_library (fcl ${srcs})
 set_target_properties (fcl PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../lib")
 
+###################################
+# Build Test Cases
+add_executable (test_core_collision test/test_core_collision.cpp)
+target_link_libraries (test_core_collision fcl ccd ann)
+
+if (BUILD_ALL_TESTS)
+	add_executable (test_core_distance test/test_core_distance.cpp)
+	target_link_libraries (test_core_distance fcl ccd ann)
+	
+	add_executable (test_core_collision_point test/test_core_collision_point.cpp)
+	target_link_libraries (test_core_collision_point fcl ccd ann)
+	
+	add_executable (test_core_geometric_shapes test/test_core_geometric_shapes.cpp)
+	target_link_libraries(test_core_geometric_shapes fcl)
+	
+	add_executable (test_core_collision_shape_mesh_consistency test/test_core_collision_shape_mesh_consistency.cpp)
+	target_link_libraries(test_core_collision_shape_mesh_consistency fcl)
+	
+	add_executable (test_core_broad_phase test/test_core_broad_phase.cpp)
+	target_link_libraries(test_core_broad_phase fcl)
+	
+	add_executable (test_core_front_list test/test_core_front_list.cpp)
+	target_link_libraries(test_core_front_list fcl)
+	
+	add_executable (test_core_continuous_collision test/test_core_continuous_collision.cpp)
+	target_link_libraries(test_core_continuous_collision fcl)
+	
+	add_executable(test_core_deformable_object test/test_core_deformable_object.cpp)
+	target_link_libraries(test_core_deformable_object fcl)
+	
+	add_executable(test_core_conservative_advancement test/test_core_conservative_advancement.cpp)
+	target_link_libraries(test_core_conservative_advancement fcl)
+endif (BUILD_ALL_TESTS)                                               
+
+###################################
+# Install files 
 install (FILES ${hdrs} DESTINATION "${CMAKE_SOURCE_DIR}/../include/fcl")
 install (TARGETS fcl ARCHIVE DESTINATION "${CMAKE_SOURCE_DIR}/../lib")
 
+###################################
+# Run Tests
+enable_testing()
+add_test (test_core_collision ${CMAKE_BINARY_DIR}/test_core_collision)
+if (BUILD_ALL_TESTS)
+	add_test (test_core_distance ${CMAKE_BINARY_DIR}/test_core_distance)
+	add_test (test_core_collision_point ${CMAKE_BINARY_DIR}/test_core_collision_point)
+	add_test (test_core_geometric_shapes ${CMAKE_SOURCE_DIR}/test_core_geometric_shapes)
+	add_test (test_core_collision_shape_mesh_consistency ${CMAKE_SOURCE_DIR}/test_core_collision_shape_mesh_consistency)
+	add_test (test_core_broad_phase ${CMAKE_SOURCE_DIR}/test_core_broad_phase)
+	add_test (test_core_front_list ${CMAKE_SOURCE_DIR}/test_core_front_list)
+	add_test (test_core_continuous_collision ${CMAKE_SOURCE_DIR}/test_core_continuous_collision)
+	add_test (test_core_deformable_object ${CMAKE_SOURCE_DIR}/test_core_deformable_object)
+	add_test (test_core_conservative_advancement ${CMAKE_SOURCE_DIR}/test_core_conservative_advancement)
+endif (BUILD_ALL_TESTS)

@@ -40,7 +40,12 @@
 #include "fcl/simple_setup.h"
 #include "fcl/collision.h"
 #include "test_core_utility.h"
-#include <gtest/gtest.h>
+
+#define ASSERT_TRUE(x) \
+	if (x == false ) { \
+		printf("Failed at %d\n", __LINE__); \
+		return 1; \
+	}
 
 #if USE_PQP
 #include <PQP.h>
@@ -80,7 +85,7 @@ std::vector<BVHCollisionPair> global_pairs_now;
 
 std::vector<std::pair<int, int> > PQP_pairs;
 
-TEST(collision_test, mesh_mesh)
+int test()
 {
   std::vector<Vec3f> p1, p2;
   std::vector<Triangle> t1, t2;
@@ -529,12 +534,13 @@ TEST(collision_test, mesh_mesh)
       ASSERT_TRUE(global_pairs[j].id2 == global_pairs_now[j].id2);
     }
   }
+
+  return 0;
 }
 
 int main(int argc, char **argv)
 {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  return test();
 }
 
 template<typename BV>
@@ -544,8 +550,15 @@ bool collide_Test2(const Transform& tf,
 {
   BVHModel<BV> m1;
   BVHModel<BV> m2;
+#ifdef USE_BOOST
   m1.bv_splitter.reset(new BVSplitter<BV>(split_method));
   m2.bv_splitter.reset(new BVSplitter<BV>(split_method));
+#else
+  if(m1.bv_splitter != NULL) delete m1.bv_splitter;
+  if(m2.bv_splitter != NULL) delete m2.bv_splitter;
+  m1.bv_splitter = new BVSplitter<BV>(split_method);
+  m2.bv_splitter = new BVSplitter<BV>(split_method);
+#endif
 
   std::vector<Vec3f> vertices1_new(vertices1.size());
   for(unsigned int i = 0; i < vertices1_new.size(); ++i)
@@ -618,8 +631,15 @@ bool collide_Test(const Transform& tf,
 {
   BVHModel<BV> m1;
   BVHModel<BV> m2;
+#ifdef USE_BOOST
   m1.bv_splitter.reset(new BVSplitter<BV>(split_method));
   m2.bv_splitter.reset(new BVSplitter<BV>(split_method));
+#else
+  if(m1.bv_splitter != NULL) delete m1.bv_splitter;
+  if(m2.bv_splitter != NULL) delete m2.bv_splitter;
+  m1.bv_splitter = new BVSplitter<BV>(split_method);
+  m2.bv_splitter = new BVSplitter<BV>(split_method);
+#endif
 
   m1.beginModel();
   m1.addSubModel(vertices1, triangles1);
@@ -691,8 +711,15 @@ bool collide_Test_OBB(const Transform& tf,
 {
   BVHModel<OBB> m1;
   BVHModel<OBB> m2;
+#ifdef USE_BOOST
   m1.bv_splitter.reset(new BVSplitter<OBB>(split_method));
   m2.bv_splitter.reset(new BVSplitter<OBB>(split_method));
+#else
+  if(m1.bv_splitter != NULL) delete m1.bv_splitter;
+  if(m2.bv_splitter != NULL) delete m2.bv_splitter;
+  m1.bv_splitter = new BVSplitter<OBB>(split_method);
+  m2.bv_splitter = new BVSplitter<OBB>(split_method);
+#endif
 
   m1.beginModel();
   m1.addSubModel(vertices1, triangles1);
@@ -763,9 +790,15 @@ bool collide_Test_RSS(const Transform& tf,
 {
   BVHModel<RSS> m1;
   BVHModel<RSS> m2;
+#ifdef USE_BOOST
   m1.bv_splitter.reset(new BVSplitter<RSS>(split_method));
   m2.bv_splitter.reset(new BVSplitter<RSS>(split_method));
-
+#else
+  if(m1.bv_splitter != NULL) delete m1.bv_splitter;
+  if(m2.bv_splitter != NULL) delete m2.bv_splitter;
+  m1.bv_splitter = new BVSplitter<RSS>(split_method);
+  m2.bv_splitter = new BVSplitter<RSS>(split_method);
+#endif
   m1.beginModel();
   m1.addSubModel(vertices1, triangles1);
   m1.endModel();
@@ -836,8 +869,15 @@ bool test_collide_func(const Transform& tf,
 {
   BVHModel<BV> m1;
   BVHModel<BV> m2;
+#ifdef USE_BOOST
   m1.bv_splitter.reset(new BVSplitter<BV>(split_method));
   m2.bv_splitter.reset(new BVSplitter<BV>(split_method));
+#else
+  if(m1.bv_splitter != NULL) delete m1.bv_splitter;
+  if(m2.bv_splitter != NULL) delete m2.bv_splitter;
+  m1.bv_splitter = new BVSplitter<BV>(split_method);
+  m2.bv_splitter = new BVSplitter<BV>(split_method);
+#endif
 
   m1.beginModel();
   m1.addSubModel(vertices1, triangles1);
