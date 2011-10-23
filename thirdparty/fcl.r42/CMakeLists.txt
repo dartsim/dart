@@ -16,7 +16,7 @@ file (GLOB hdrs "include/fcl/*.h")
 set (CMAKE_CXX_FLAGS "-DUSE_PQP=0 -DUSE_SVMLIGHT=0")
 include_directories (include ../include)
 link_directories (fcl "${CMAKE_SOURCE_DIR}/lib")
-add_library (fcl ${srcs})
+add_library (fcl ${srcs} ${hdrs})
 set_target_properties (fcl PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
 ###################################
