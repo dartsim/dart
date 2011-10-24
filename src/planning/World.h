@@ -62,6 +62,7 @@ namespace planning {
 
         int addRobot( Robot *_robot );
         int addObject( Object *_object );
+        bool checkCollisions();
         void printInfo();
 
         std::vector< Robot* > mRobots;

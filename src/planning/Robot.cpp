@@ -110,6 +110,126 @@ namespace planning {
     }
 
     /**
+     * @function getNumQuickDOF
+     * @brief Returns the number of DOF NOT considering the 6 default DOF (XYZ, RPY)
+     */
+    int Robot::getNumQuickDofs() {
+        return ( getNumDofs() - getRoot()->getNumLocalDofs() );
+    }
+
+
+    /**
+     * @function getQuickDofsIndices
+     */
+    Eigen::VectorXi Robot::getQuickDofsIndices() {
+
+        int numDofs = getNumDofs();
+        int rootDofs = getRoot()->getNumLocalDofs();
+        int n = numDofs - rootDofs;
+
+        Eigen::VectorXi indices(n);
+
+       for( unsigned int i = 0; i < n; i++ )
+       {  indices(i) = rootDofs + i; } 
+
+    }
+
+    /**
+     * @function setQuickDofs
+     * @brief Set ALL DOFs but the 6 first ones
+     */
+    bool Robot::setQuickDofs( Eigen::VectorXd _vals )
+    {
+       int numDofs = getNumDofs();
+       int rootDofs = getRoot()->getNumLocalDofs();
+
+       if( _vals.size() != (numDofs - rootDofs) )
+       {  printf("--(x) Size of input does not match the number of DOFs...check! (x)--\n"); return false; }
+
+       for( unsigned int i = 0; i < numDofs - rootDofs; i++ )
+       {
+          mDofs.at(rootDofs + i)->setValue( _vals(i) );
+       } 
+
+       return true;
+    }
+
+
+    /**
+     * @function getQuickDofs
+     * @brief Get ALL DOFs but the 6 first ones
+     */
+    Eigen::VectorXd Robot::getQuickDofs( )
+    {
+       int numDofs = getNumDofs();
+       int rootDofs = getRoot()->getNumLocalDofs();
+       Eigen::VectorXd quickDofs( numDofs - rootDofs );
+
+       for( unsigned int i = 0; i < numDofs - rootDofs; i++ )
+       {
+          quickDofs(i) = mDofs.at(rootDofs + i)->getValue();
+       } 
+
+       return quickDofs;
+    }
+
+
+    /**
+     * @function setDofs
+     * @brief Set only specified DOFs
+     */
+    bool Robot::setDofs( Eigen::VectorXd _vals, Eigen::VectorXi _id )
+    {
+       int numDofs = getNumDofs();
+       int rootDofs = getRoot()->getNumLocalDofs();
+
+       if( _vals.size() != _id.size() )
+       {  printf("--(x) Size of input does not match the number of DOFs...check! (x)--\n"); return false; }
+
+       for( unsigned int i = 0; i < _id.size(); i++ )
+       {
+          if( _id(i) > numDofs - 1 )
+          { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
+            return false;
+          }       
+       }  
+
+       for( unsigned int i = 0; i < _id.size(); i++ )
+       {
+          mDofs.at( _id(i) )->setValue( _vals(i) );
+       } 
+
+       return true;
+    }
+
+    /**
+     * @function getDofs
+     * @brief Get only specified DOFs
+     */
+    Eigen::VectorXd Robot::getDofs( Eigen::VectorXi _id )
+    {
+       Eigen::VectorXd getDofs(0);
+
+       int numDofs = getNumDofs();
+
+       for( unsigned int i = 0; i < _id.size(); i++ )
+       {
+          if( _id(i) > numDofs - 1 )
+          { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
+            return getDofs;
+          }       
+       }  
+
+       getDofs.resize( _id.size() );
+       for( unsigned int i = 0; i < _id.size(); i++ )
+       {
+          getDofs(i) = mDofs.at( _id(i) )->getValue();
+       } 
+
+       return getDofs;
+    }
+
+    /**
      * @function setPositionX
      * @brief Set position X of the object in World
      */
@@ -290,6 +410,16 @@ namespace planning {
        _rot = tf.rotation();
     }
 
+    /**
+     * @function update
+     */
+    void Robot::update()
+    {
+        for(int i=0; i < getNumDofs(); i++)
+        {  mCurrPose[i] = mDofs.at(i)->getValue();  }
+        for(int i=0; i<getNumNodes(); i++) 
+        {  mNodes.at(i)->updateTransform();  }
+    }
 
     /**
      * @function loadModel
