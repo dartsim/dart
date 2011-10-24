@@ -139,7 +139,8 @@ static void penEPAPos(const ccd_pt_t *pt, const ccd_pt_el_t *nearest,
 
     // compute median
     len = 0;
-    ccdListForEachEntry(&pt->vertices, v, list){
+	/*
+	ccdListForEachEntry(&pt->vertices, v, list){
         len++;
     }
 
@@ -148,7 +149,7 @@ static void penEPAPos(const ccd_pt_t *pt, const ccd_pt_el_t *nearest,
     ccdListForEachEntry(&pt->vertices, v, list){
         vs[i++] = v;
     }
-
+	*/
     qsort(vs, len, sizeof(ccd_pt_vertex_t *), penEPAPosCmp);
 
     ccdVec3Set(pos, CCD_ZERO, CCD_ZERO, CCD_ZERO);

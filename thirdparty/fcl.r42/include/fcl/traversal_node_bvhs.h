@@ -45,8 +45,11 @@
 #include "fcl/intersect.h"
 #include "fcl/motion.h"
 
+#if USE_BOOST == 1
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
+#endif
+
 #include <limits>
 #include <vector>
 #include <cassert>
