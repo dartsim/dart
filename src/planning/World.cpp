@@ -83,6 +83,14 @@ namespace planning {
     } 
 
     /**
+     * @function checkCollisions
+     * @brief True if there is collisions False if there is NOT collisions whatsoever
+     */
+    bool World::checkCollisions() {
+        return false;
+    }
+
+    /**
      * @function printInfo
      */
     void World::printInfo() {
@@ -90,9 +98,7 @@ namespace planning {
         /// Robots
         std::cout<<"-- World has " << mRobots.size() << " robots "<< std::endl;
         for( unsigned int i = 0; i < mRobots.size(); i++ )
-        {    std::cout<<"* Robot["<<i<<"]: " << mRobots[i]->mName << " with "<< mRobots[i]->getNumNodes() << " nodes:" << std::endl;
-             std::cout<<"  -- DOF: " << mRobots[i]->getNumDofs() << std::endl;         
-        }
+        {    std::cout<<"* Robot["<<i<<"]: " << mRobots[i]->mName << " with "<< mRobots[i]->getNumQuickDofs() << " DOFs:" << std::endl; }
 
         /// Objects
         std::cout<<"-- World has " << mObjects.size() << " objects "<< std::endl;

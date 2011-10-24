@@ -64,6 +64,13 @@ namespace planning {
         virtual ~Robot();
         inline std::string getName() { return mName; }
 
+        int getNumQuickDofs(); /**< Get the number of DOF of the robot (DO NOT consider the 6 default DOF of the base) */
+        Eigen::VectorXi getQuickDofsIndices();
+        bool setQuickDofs( Eigen::VectorXd _vals ); /**< Set ALL DOFs but the 6 default ones */
+        Eigen::VectorXd getQuickDofs( );
+        bool setDofs( Eigen::VectorXd _vals, Eigen::VectorXi _id ); /**< Set DOF by number. Useful for humanoids I guess */
+        Eigen::VectorXd getDofs( Eigen::VectorXi _id );
+
         void setPositionX( double _pos );  
         void getPositionX( double &_pos );
 
@@ -79,6 +86,8 @@ namespace planning {
         void getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf );
         void getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z );
         void getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot );
+
+        void update();
 
         Model3DS* loadModel( string _filename );
         void addModel( Model3DS* _model, int _index );
