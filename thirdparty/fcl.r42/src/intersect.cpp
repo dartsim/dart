@@ -39,6 +39,10 @@
 #include <limits>
 #include <vector>
 
+#ifndef _isnan
+#define _isnan(x) isnan(x)
+#endif
+
 namespace fcl
 {
 const BVH_REAL PolySolver::NEAR_ZERO_THRESHOLD = 1e-9;
