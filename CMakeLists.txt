@@ -140,6 +140,12 @@ IF (DOXYGEN_FOUND)
 ENDIF (DOXYGEN_FOUND)
 
 ###############################################
+# Enable a test targets for running CTest executables
+enable_testing()
+add_test (unittests ${CMAKE_SOURCE_DIR}/bin/unittests)
+add_test (test_core_collision ${CMAKE_SOURCE_DIR}/bin/test_core_collision)
+
+###############################################
 # Package Installer
 
 SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")

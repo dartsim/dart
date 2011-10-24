@@ -89,8 +89,8 @@ int test()
 {
   std::vector<Vec3f> p1, p2;
   std::vector<Triangle> t1, t2;
-  loadOBJFile("test/env.obj", p1, t1);
-  loadOBJFile("test/rob.obj", p2, t2);
+  loadOBJFile("../thirdparty/fcl.r42/test/env.obj", p1, t1);
+  loadOBJFile("../thirdparty/fcl.r42/test/rob.obj", p2, t2);
 
   std::vector<Transform> transforms; // t0
   std::vector<Transform> transforms2; // t1
