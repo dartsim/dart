@@ -74,12 +74,12 @@
   // this macro as being exported.
   //----------------------------------------------------------------------
   #ifdef DLL_EXPORTS
-	 #define DLL_API __declspec(dllexport)
+	 #define __declspec(dllexport)
   #else
-	#define DLL_API __declspec(dllimport)
+	#define __declspec(dllimport)
   #endif
   //----------------------------------------------------------------------
-  // DLL_API is ignored for all other systems
+  // is ignored for all other systems
   //----------------------------------------------------------------------
 #else
   #define DLL_API
@@ -414,26 +414,26 @@ typedef ANNidx*   ANNidxArray;		// an array of point indices
 //				allocated copy.
 //----------------------------------------------------------------------
    
-DLL_API ANNdist annDist(
+ANNdist annDist(
 	int				dim,		// dimension of space
 	ANNpoint		p,			// points
 	ANNpoint		q);
 
-DLL_API ANNpoint annAllocPt(
+ANNpoint annAllocPt(
 	int				dim,		// dimension
 	ANNcoord		c = 0);		// coordinate value (all equal)
 
-DLL_API ANNpointArray annAllocPts(
+ANNpointArray annAllocPts(
 	int				n,			// number of points
 	int				dim);		// dimension
 
-DLL_API void annDeallocPt(
+void annDeallocPt(
 	ANNpoint		&p);		// deallocate 1 point
    
-DLL_API void annDeallocPts(
+void annDeallocPts(
 	ANNpointArray	&pa);		// point array
 
-DLL_API ANNpoint annCopyPt(
+ANNpoint annCopyPt(
 	int				dim,		// dimension
 	ANNpoint		source);	// point to copy
 
@@ -488,7 +488,7 @@ DLL_API ANNpoint annCopyPt(
 //		by itself.
 //----------------------------------------------------------------------
 
-class DLL_API ANNpointSet {
+class ANNpointSet {
 public:
 	virtual ~ANNpointSet() {}			// virtual distructor
 
@@ -535,7 +535,7 @@ public:
 //		performed by a simple linear scan of all the points.
 //----------------------------------------------------------------------
 
-class DLL_API ANNbruteForce: public ANNpointSet {
+class ANNbruteForce: public ANNpointSet {
 	int				dim;				// dimension
 	int				n_pts;				// number of points
 	ANNpointArray	pts;				// point array
@@ -702,7 +702,7 @@ class ANNkdStats;				// stats on kd-tree
 class ANNkd_node;				// generic node in a kd-tree
 typedef ANNkd_node*	ANNkd_ptr;	// pointer to a kd-tree node
 
-class DLL_API ANNkd_tree: public ANNpointSet {
+class ANNkd_tree: public ANNpointSet {
 protected:
 	int				dim;				// dimension of space
 	int				n_pts;				// number of points in tree
@@ -794,7 +794,7 @@ public:
 //		densely clustered that this is really needed.
 //----------------------------------------------------------------------
 
-class DLL_API ANNbd_tree: public ANNkd_tree {
+class ANNbd_tree: public ANNkd_tree {
 public:
 	ANNbd_tree(							// build skeleton tree
 		int				n,				// number of points
@@ -822,9 +822,9 @@ public:
 //						It clears up a minor memory leak.
 //----------------------------------------------------------------------
 
-DLL_API void annMaxPtsVisit(	// max. pts to visit in search
+void annMaxPtsVisit(	// max. pts to visit in search
 	int				maxPts);	// the limit
 
-DLL_API void annClose();		// called to end use of ANN
+void annClose();		// called to end use of ANN
 
 #endif
