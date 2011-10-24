@@ -31,7 +31,7 @@
 #ifdef __GNUC__
 # define _ccd_inline static inline __attribute__((always_inline))
 #else /* __GNUC__ */
-# define _ccd_inline static inline
+# define _ccd_inline static _inline
 #endif /* __GNUC__ */
 
 

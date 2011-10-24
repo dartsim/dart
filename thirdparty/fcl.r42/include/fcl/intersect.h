@@ -40,6 +40,7 @@
 #include "fcl/vec_3f.h"
 #include "fcl/BVH_internal.h"
 #include "fcl/primitive.h"
+#include <assert.h>
 
 #if USE_SVMLIGHT
 extern "C"
@@ -270,7 +271,9 @@ private:
   /** \brief compute the cdf(x) */
   static BVH_REAL gaussianCDF(BVH_REAL x)
   {
-    return 0.5 * erfc(-x / sqrt(2.0));
+//  erfc doesn't exist on Windows (maybe needs implementation)
+	assert(0);
+//    return 0.5 * erfc(-x / sqrt(2.0));
   }
 
 #if USE_SVMLIGHT

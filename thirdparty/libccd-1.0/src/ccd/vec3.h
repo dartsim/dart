@@ -205,12 +205,12 @@ _ccd_inline int ccdIsZero(ccd_real_t val)
 _ccd_inline int ccdEq(ccd_real_t _a, ccd_real_t _b)
 {
     ccd_real_t ab;
+    ccd_real_t a, b;
 
     ab = CCD_FABS(_a - _b);
     if (CCD_FABS(ab) < CCD_EPS)
         return 1;
 
-    ccd_real_t a, b;
     a = CCD_FABS(_a);
     b = CCD_FABS(_b);
     if (b > a){

@@ -45,6 +45,7 @@ static void _ccdPtNearestRenew(ccd_pt_t *pt)
     pt->nearest_type = 3;
     pt->nearest = NULL;
 
+	/*
     ccdListForEachEntry(&pt->vertices, v, list){
         _ccdPtNearestUpdate(pt, (ccd_pt_el_t *)v);
     }
@@ -56,6 +57,7 @@ static void _ccdPtNearestRenew(ccd_pt_t *pt)
     ccdListForEachEntry(&pt->faces, f, list){
         _ccdPtNearestUpdate(pt, (ccd_pt_el_t *)f);
     }
+	*/
 }
 
 
@@ -78,6 +80,7 @@ void ccdPtDestroy(ccd_pt_t *pt)
     ccd_pt_vertex_t *v, *v2;
 
     // first delete all faces
+	/*
     ccdListForEachEntrySafe(&pt->faces, f, f2, list){
         ccdPtDelFace(pt, f);
     }
@@ -91,6 +94,7 @@ void ccdPtDestroy(ccd_pt_t *pt)
     ccdListForEachEntrySafe(&pt->vertices, v, v2, list){
         ccdPtDelVertex(pt, v);
     }
+	*/
 }
 
 
@@ -196,6 +200,7 @@ void ccdPtRecomputeDistances(ccd_pt_t *pt)
     const ccd_vec3_t *a, *b, *c;
     ccd_real_t dist;
 
+	/*
     ccdListForEachEntry(&pt->vertices, v, list){
         dist = ccdVec3Len2(&v->v.v);
         v->dist = dist;
@@ -224,6 +229,7 @@ void ccdPtRecomputeDistances(ccd_pt_t *pt)
         dist = ccdVec3PointTriDist2(ccd_vec3_origin, a, b, c, &f->witness);
         f->dist = dist;
     }
+	*/
 }
 
 ccd_pt_el_t *ccdPtNearest(ccd_pt_t *pt)
@@ -259,6 +265,7 @@ void ccdPtDumpSVT2(ccd_pt_t *pt, FILE *fout)
 
     fprintf(fout, "Points:\n");
     i = 0;
+	/*
     ccdListForEachEntry(&pt->vertices, v, list){
         v->id = i++;
         fprintf(fout, "%lf %lf %lf\n",
@@ -280,4 +287,5 @@ void ccdPtDumpSVT2(ccd_pt_t *pt, FILE *fout)
         }
         fprintf(fout, "%d %d %d\n", a->id, b->id, c->id);
     }
+	*/
 }
