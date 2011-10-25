@@ -169,8 +169,6 @@ public:
 		Vector rot; // The angles to rotate the object
 	};
 
-	void ReportTriangles(vector<Triangle> *trigs);
-
 	GLuint modelDL;
 	GLuint colDL;
 	string modelname;
@@ -189,6 +187,8 @@ public:
 	bool lit; // True: the model is lit
 	bool visible; // True: the model gets rendered
 	void Load(string fullpath); // Loads a model
+	void ReportTriangles(vector<Triangle> *trigs); // Reports all triangles
+	void Get(int* numVertices, double* vertices, int* numIndices, short int* indicesTriangles);
 	void Draw(); // Draws the model
 	double Stri[3][3]; // Storing the triangle
 	FILE *bin3ds; // The binary 3ds file
