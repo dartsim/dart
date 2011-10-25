@@ -55,6 +55,7 @@ namespace planning {
         mRobots.resize(0); mObjects.resize(0);
     }
 
+  
     /**
      * @function ~World
      * @brief Destructor
