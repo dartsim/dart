@@ -132,6 +132,7 @@ namespace planning {
        for( unsigned int i = 0; i < n; i++ )
        {  indices(i) = rootDofs + i; } 
 
+       return indices;
     }
 
     /**
