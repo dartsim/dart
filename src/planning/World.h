@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
-
+#include "CollisionPhysics.h"
 
 
 namespace planning {

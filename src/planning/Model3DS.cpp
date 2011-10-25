@@ -358,6 +358,34 @@ void Model3DS::ReportTriangles(vector<Triangle> *trigs)
 	//glEndList();
 }
 
+void Model3DS::Get(int* numVertices, double* vertices, int* numIndices, short int* indicesTriangles) {
+	*numVertices = totalVerts;
+	*numIndices = totalFaces;
+	vertices = new double[*numVertices];
+	indicesTriangles = new short int[*numIndices];
+
+	int verticesCount = 0;
+	int indicesCount = 0;
+
+	for(int i = 0; i < numObjects; i++) {
+
+		for (int k = 0; k < Objects[i].numMatFaces; k++) {
+			for (int j = 0; j < Objects[i].MatFaces[k].numSubFaces; j += 3) {
+				unsigned short f1 = Objects[i].MatFaces[k].subFaces[j]*3;
+				unsigned short f2 = Objects[i].MatFaces[k].subFaces[j+1]*3;
+				unsigned short f3 = Objects[i].MatFaces[k].subFaces[j+2]*3;
+				indicesTriangles[indicesCount++] = verticesCount+f1;
+				indicesTriangles[indicesCount++] = verticesCount+f2;
+				indicesTriangles[indicesCount++] = verticesCount+f3;
+			}
+		}
+
+		for (int y = 0; y < Objects[i].numVerts; y++) {
+			vertices[verticesCount++] = Objects[i].Vertexes[y];
+		}
+	}
+}
+
 void Model3DS::Draw()
 {
 	if (visible)
@@ -457,6 +485,8 @@ void Model3DS::Draw()
 	glPopMatrix();
 	}
 }
+
+
 
 void Model3DS::CalculateNormals()
 {
