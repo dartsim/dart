@@ -222,8 +222,8 @@ void Model3DS::Load(string fullpath)
 	fseek(bin3ds, 0, SEEK_SET);
 
 	// Load the Main Chunk's header
-	fread(&main.id,sizeof(main.id),1,bin3ds);
-    fread(&main.len,sizeof(main.len),1,bin3ds);
+	size_t n = fread(&main.id,sizeof(main.id),1,bin3ds);
+    n = fread(&main.len,sizeof(main.len),1,bin3ds);
 
 	// Start Processing
 	MainChunkProcessor(main.len, ftell(bin3ds));
@@ -529,8 +529,8 @@ void Model3DS::MainChunkProcessor(int length, int findex)
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		//cerr << ftell(bin3ds) << endl;
 		switch (h.id)
@@ -567,8 +567,8 @@ void Model3DS::EditChunkProcessor(int length, int findex)
 	// First count the number of Objects and Materials
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -600,8 +600,8 @@ void Model3DS::EditChunkProcessor(int length, int findex)
 
 		while (ftell(bin3ds) < (findex + length - 6))
 		{
-			fread(&h.id,sizeof(h.id),1,bin3ds);
-			fread(&h.len,sizeof(h.len),1,bin3ds);
+			size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+			n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 			switch (h.id)
 			{
@@ -648,8 +648,8 @@ void Model3DS::EditChunkProcessor(int length, int findex)
 
 		while (ftell(bin3ds) < (findex + length - 6))
 		{
-			fread(&h.id,sizeof(h.id),1,bin3ds);
-			fread(&h.len,sizeof(h.len),1,bin3ds);
+			size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+			n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 			switch (h.id)
 			{
@@ -681,8 +681,8 @@ void Model3DS::MaterialChunkProcessor(int length, int findex, int matindex)
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -752,8 +752,8 @@ void Model3DS::DiffuseColorChunkProcessor(int length, int findex, int matindex)
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		// Determine the format of the color and load it
 		switch (h.id)
@@ -798,9 +798,9 @@ void Model3DS::doubleColorChunkProcessor(int length, int findex, int matindex)
 	// chunk's data findex + the size of the header
 	fseek(bin3ds, findex, SEEK_SET);
 
-	fread(&r,sizeof(r),1,bin3ds);
-	fread(&g,sizeof(g),1,bin3ds);
-	fread(&b,sizeof(b),1,bin3ds);
+	size_t n = fread(&r,sizeof(r),1,bin3ds);
+	n = fread(&g,sizeof(g),1,bin3ds);
+	n = fread(&b,sizeof(b),1,bin3ds);
 
 	Materials[matindex].color.r = (unsigned char)(r*255.0f);
 	Materials[matindex].color.g = (unsigned char)(g*255.0f);
@@ -823,9 +823,9 @@ void Model3DS::IntColorChunkProcessor(int length, int findex, int matindex)
 	// chunk's data findex + the size of the header
 	fseek(bin3ds, findex, SEEK_SET);
 
-	fread(&r,sizeof(r),1,bin3ds);
-	fread(&g,sizeof(g),1,bin3ds);
-	fread(&b,sizeof(b),1,bin3ds);
+	size_t n = fread(&r,sizeof(r),1,bin3ds);
+	n = fread(&g,sizeof(g),1,bin3ds);
+	n = fread(&b,sizeof(b),1,bin3ds);
 
 	Materials[matindex].color.r = r;
 	Materials[matindex].color.g = g;
@@ -849,8 +849,8 @@ void Model3DS::TextureMapChunkProcessor(int length, int findex, int matindex)
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -928,8 +928,8 @@ void Model3DS::ObjectChunkProcessor(int length, int findex, int objindex)
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -960,8 +960,8 @@ void Model3DS::TriangularMeshChunkProcessor(int length, int findex, int objindex
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -989,8 +989,8 @@ void Model3DS::TriangularMeshChunkProcessor(int length, int findex, int objindex
 
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		size_t n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -1020,7 +1020,7 @@ void Model3DS::VertexListChunkProcessor(int length, int findex, int objindex)
 	fseek(bin3ds, findex, SEEK_SET);
 
 	// Read the number of vertices of the object
-	fread(&numVerts,sizeof(numVerts),1,bin3ds);
+	size_t n = fread(&numVerts,sizeof(numVerts),1,bin3ds);
 
 	// Allocate arrays for the vertices and normals
 	Objects[objindex].Vertexes = new GLdouble[numVerts * 3];
@@ -1041,9 +1041,9 @@ void Model3DS::VertexListChunkProcessor(int length, int findex, int objindex)
 		//fread(&Objects[objindex].Vertexes[i+2],sizeof(GLdouble),1,bin3ds);
 		float v1,v2,v3;
 
-		fread(&v1,sizeof(GLfloat),1,bin3ds);
-		fread(&v2,sizeof(GLfloat),1,bin3ds);
-		fread(&v3,sizeof(GLfloat),1,bin3ds);
+		size_t n = fread(&v1,sizeof(GLfloat),1,bin3ds);
+		n = fread(&v2,sizeof(GLfloat),1,bin3ds);
+		n = fread(&v3,sizeof(GLfloat),1,bin3ds);
 		Objects[objindex].Vertexes[i] = v1;
 		Objects[objindex].Vertexes[i+2] = v2;
 		Objects[objindex].Vertexes[i+1] = v3;
@@ -1069,7 +1069,7 @@ void Model3DS::TexCoordsChunkProcessor(int length, int findex, int objindex)
 	fseek(bin3ds, findex, SEEK_SET);
 
 	// Read the number of coordinates
-	fread(&numCoords,sizeof(numCoords),1,bin3ds);
+	size_t n = fread(&numCoords,sizeof(numCoords),1,bin3ds);
 
 	// Allocate an array to hold the texture coordinates
 	Objects[objindex].TexCoords = new GLdouble[numCoords * 2];
@@ -1081,8 +1081,8 @@ void Model3DS::TexCoordsChunkProcessor(int length, int findex, int objindex)
 	for (int i = 0; i < numCoords * 2; i+=2)
 	{
 		float p1,p2;
-		fread(&p1,sizeof(GLfloat),1,bin3ds);
-		fread(&p2,sizeof(GLfloat),1,bin3ds);
+		size_t n = fread(&p1,sizeof(GLfloat),1,bin3ds);
+		n = fread(&p2,sizeof(GLfloat),1,bin3ds);
 		Objects[objindex].TexCoords[i] = p1;
 		Objects[objindex].TexCoords[i+1] = p2;
 	}
@@ -1110,7 +1110,7 @@ void Model3DS::FacesDescriptionChunkProcessor(int length, int findex, int objind
 	fseek(bin3ds, findex, SEEK_SET);
 
 	// Read the number of faces
-	fread(&numFaces,sizeof(numFaces),1,bin3ds);
+	size_t n = fread(&numFaces,sizeof(numFaces),1,bin3ds);
 
 	// Allocate an array to hold the faces
 	Objects[objindex].Faces = new GLushort[numFaces * 3];
@@ -1121,10 +1121,10 @@ void Model3DS::FacesDescriptionChunkProcessor(int length, int findex, int objind
 	for (int i = 0; i < numFaces * 3; i+=3)
 	{
 		// Read the vertices of the face
-		fread(&vertA,sizeof(vertA),1,bin3ds);
-		fread(&vertB,sizeof(vertB),1,bin3ds);
-		fread(&vertC,sizeof(vertC),1,bin3ds);
-		fread(&flags,sizeof(flags),1,bin3ds);
+		n = fread(&vertA,sizeof(vertA),1,bin3ds);
+		n = fread(&vertB,sizeof(vertB),1,bin3ds);
+		n = fread(&vertC,sizeof(vertC),1,bin3ds);
+		n = fread(&flags,sizeof(flags),1,bin3ds);
 
 		// Place them in the array
 		Objects[objindex].Faces[i]   = vertA;
@@ -1196,8 +1196,8 @@ void Model3DS::FacesDescriptionChunkProcessor(int length, int findex, int objind
 	// Check to see how many materials the faces are split into
 	while (ftell(bin3ds) < (findex + length - 6))
 	{
-		fread(&h.id,sizeof(h.id),1,bin3ds);
-		fread(&h.len,sizeof(h.len),1,bin3ds);
+		n = fread(&h.id,sizeof(h.id),1,bin3ds);
+		n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 		switch (h.id)
 		{
@@ -1227,8 +1227,8 @@ void Model3DS::FacesDescriptionChunkProcessor(int length, int findex, int objind
 		// Split the faces up
 		while (ftell(bin3ds) < (findex + length - 6))
 		{
-			fread(&h.id,sizeof(h.id),1,bin3ds);
-			fread(&h.len,sizeof(h.len),1,bin3ds);
+			n = fread(&h.id,sizeof(h.id),1,bin3ds);
+			n = fread(&h.len,sizeof(h.len),1,bin3ds);
 
 			switch (h.id)
 			{
@@ -1288,7 +1288,7 @@ void Model3DS::FacesMaterialsListChunkProcessor(int length, int findex, int obji
 	Objects[objindex].MatFaces[subfacesindex].MatIndex = material;
 
 	// Read the number of faces associated with this material
-	fread(&numEntries,sizeof(numEntries),1,bin3ds);
+	size_t n = fread(&numEntries,sizeof(numEntries),1,bin3ds);
 
 	// Allocate an array to hold the list of faces associated with this material
 	Objects[objindex].MatFaces[subfacesindex].subFaces = new GLushort[numEntries * 3];
@@ -1299,7 +1299,7 @@ void Model3DS::FacesMaterialsListChunkProcessor(int length, int findex, int obji
 	for (int i = 0; i < numEntries * 3; i+=3)
 	{
 		// read the face
-		fread(&Face,sizeof(Face),1,bin3ds);
+		n = fread(&Face,sizeof(Face),1,bin3ds);
 		// Add the face's vertices to the list
 		Objects[objindex].MatFaces[subfacesindex].subFaces[i] = Objects[objindex].Faces[Face * 3];
 		Objects[objindex].MatFaces[subfacesindex].subFaces[i+1] = Objects[objindex].Faces[Face * 3 + 1];

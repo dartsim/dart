@@ -63,6 +63,7 @@ namespace planning {
         Robot();
         virtual ~Robot();
         inline std::string getName() { return mName; }
+        inline std::string getPathName() { return mPathName; }
 
         int getNumQuickDofs(); /**< Get the number of DOF of the robot (DO NOT consider the 6 default DOF of the base) */
         Eigen::VectorXi getQuickDofsIndices();
