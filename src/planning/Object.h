@@ -64,6 +64,7 @@ namespace planning {
         Object();
         virtual ~Object();
         inline std::string getName() { return mName; }
+        inline std::string getPathName() { return mPathName; }
 
         void setPositionX( double _pos );
         void getPositionX( double &_pos );
