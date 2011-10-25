@@ -42,6 +42,9 @@
 #include <cstdlib>
 #include <algorithm>
 
+#ifndef EPSILON
+#define EPSILON 1e-6
+#endif
 /** \brief Main namespace */
 namespace fcl
 {
@@ -278,6 +281,7 @@ namespace fcl
 /** \brief A class describing a three-dimensional vector */
   class Vec3f
   {
+
   public:
     /** \brief vector data */
     BVH_REAL v_[3];
@@ -436,9 +440,7 @@ namespace fcl
              (v_[2] - other.v_[2] > -EPSILON));
     }
 
-  private:
-    /** \brief Tolerance for comparision */
-    static const BVH_REAL EPSILON;
+
   };
 
 

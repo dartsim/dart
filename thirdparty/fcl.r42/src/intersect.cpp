@@ -289,7 +289,7 @@ CloudClassifierParam::CloudClassifierParam()
 
 #endif
 
-const BVH_REAL Intersect::EPSILON = 1e-5;
+//const BVH_REAL Intersect::EPSILON = 1e-5;
 const BVH_REAL Intersect::NEAR_ZERO_THRESHOLD = 1e-7;
 const BVH_REAL Intersect::CCD_RESOLUTION = 1e-7;
 

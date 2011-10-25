@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
+#include "CollisionPhysics.h"
 
 
 namespace planning {
@@ -55,6 +56,8 @@ namespace planning {
 
     class World {
     public:
+
+    	CollisionPhysics mCollisionEngine;
 
         World();
         virtual ~World();
