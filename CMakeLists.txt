@@ -104,7 +104,7 @@ FILE(APPEND ${DART_CONFIG} "\nINCLUDE_DIRECTORIES(${CMAKE_INSTALL_PREFIX}/includ
 FILE(APPEND ${DART_CONFIG} "\nINCLUDE_DIRECTORIES(${CMAKE_INSTALL_PREFIX}/include/eigen3)")
 FILE(APPEND ${DART_CONFIG} "\nSET(DART_HEADERS ${CMAKE_INSTALL_PREFIX}/include/dart ${CMAKE_INSTALL_PREFIX}/include)")
 FILE(APPEND ${DART_CONFIG} "\n\nLINK_DIRECTORIES(${CMAKE_INSTALL_PREFIX}/lib)")
-FILE(APPEND ${DART_CONFIG} "\nSET(DART_LIBRARIES optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)")
+FILE(APPEND ${DART_CONFIG} "\nSET(DART_LIBRARIES optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd fcl ann)")
 FILE(APPEND ${DART_CONFIG} "\n\n")
 INSTALL(FILES ${DART_CONFIG} DESTINATION share/dart)
 

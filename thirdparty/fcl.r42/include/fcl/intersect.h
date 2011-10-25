@@ -284,7 +284,7 @@ private:
   static void singleKernelGradient(KERNEL_PARM *kernel_parm, SVECTOR *a, SVECTOR *b, Vec3f& g);
 #endif
 
-  static const BVH_REAL EPSILON;
+//  static const BVH_REAL EPSILON;
   static const BVH_REAL NEAR_ZERO_THRESHOLD;
   static const BVH_REAL CCD_RESOLUTION;
   static const unsigned int MAX_TRIANGLE_CLIPS = 8;

@@ -42,7 +42,7 @@ namespace fcl
 #if COLLISION_USE_SSE
 const float Vec3f::EPSILON = 1e-11;
 #else
-const BVH_REAL Vec3f::EPSILON = 1e-11;
+//const double Vec3f::EPSILON = 1e-11;
 #endif
 
 Vec3f matMulVec(const Vec3f M[3], const Vec3f& v)
