@@ -45,6 +45,7 @@
 #include <string>
 #include "Model3DS.h"
 #include "kinematics/Skeleton.h"
+#include <Eigen/Geometry>
 
 namespace planning {
 #define MAX_Object_NAME 128
@@ -72,6 +73,9 @@ namespace planning {
 
         void setPositionZ( double _pos );
         void getPositionZ( double &_pos );
+      
+        void setPositionXYZ( double _x, double _y, double _z );
+        void getPositionXYZ( double &_x, double &_y, double &_z );       
 
         void setRotationRPY( double _roll, double _pitch, double _yaw );
         void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
