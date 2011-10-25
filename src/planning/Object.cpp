@@ -202,6 +202,54 @@ namespace planning {
     }
 
     /**
+     * @function setPositionXYZ
+     */
+    void Object::setPositionXYZ( double _x, double _y, double _z ) { 
+
+        kinematics::Joint *joint;
+        joint = getRoot()->getParentJoint();
+
+        for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+              joint->getTransform(i)->getDof(0)->setValue( _x ); 
+            } 
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+              joint->getTransform(i)->getDof(0)->setValue( _y ); 
+            } 
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+              joint->getTransform(i)->getDof(0)->setValue( _z ); 
+            } 
+        } 
+
+    }
+
+    /**
+     * @function getPositionXYZ
+     */
+    void Object::getPositionXYZ( double &_x, double &_y, double &_z ) {
+
+        kinematics::Joint *joint;
+        joint = getRoot()->getParentJoint();
+
+        for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+              _x = joint->getTransform(i)->getDof(0)->getValue(); 
+            } 
+
+            else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+              _y = joint->getTransform(i)->getDof(0)->getValue(); 
+            } 
+
+            else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+              _z = joint->getTransform(i)->getDof(0)->getValue(); 
+            } 
+        }  
+    }
+
+
+    /**
      * @function setRotationRPY
      * @brief Set position Y of the object in World
      */
