@@ -48,7 +48,6 @@
 #include "Object.h"
 #include "CollisionPhysics.h"
 
-
 namespace planning {
 
     class Robot;
@@ -64,7 +63,9 @@ namespace planning {
 
         int addRobot( Robot *_robot );
         int addObject( Object *_object );
+        void enableCollisions();
         bool checkCollisions();
+        void disableCollisions();
         void printInfo();
 
         std::vector< Robot* > mRobots;
