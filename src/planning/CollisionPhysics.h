@@ -24,7 +24,8 @@ public:
 	~CollisionPhysics() {}
 
 	int addCollisionMesh(CollisionMesh _cMesh);
-	void checkCollisions();
+	bool checkCollisions();
+	void reset();
 };
 
 #endif /* COLLISIONPHYSICS_H_ */

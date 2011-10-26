@@ -25,7 +25,10 @@ int CollisionPhysics::addCollisionMesh(CollisionMesh _cMesh) {
 	return 1;
 }
 
-void CollisionPhysics::checkCollisions() {
+bool CollisionPhysics::checkCollisions() {
+
+	bool ret = false;
+
 	for(unsigned int i = 0; i < mCollisionPairs.size(); i++) {
 		fcl::collide(&(mCollisionPairs[i].node));
 
@@ -34,8 +37,16 @@ void CollisionPhysics::checkCollisions() {
 			mCollisionPairs[i].mesh2->setCollisionState(CollisionMesh::COLLISION);
 		}
 		else {
+			ret = true;
 			mCollisionPairs[i].mesh1->setCollisionState(CollisionMesh::COLLISION_FREE);
 			mCollisionPairs[i].mesh2->setCollisionState(CollisionMesh::COLLISION_FREE);
 		}
 	}
+
+	return ret;
+}
+
+void CollisionPhysics::reset() {
+	mCollisionMeshs.clear();
+    mCollisionPairs.clear();
 }

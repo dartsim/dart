@@ -46,7 +46,7 @@
 #include <string>
 #include "Model3DS.h"
 #include "kinematics/Skeleton.h"
-
+#include "CollisionPhysics.h"
 
 namespace planning {
 #define MAX_ROBOT_NAME 128
@@ -58,6 +58,7 @@ namespace planning {
         std::string mPathName; ///< PathName
         int mGripID; /// THIS HAS TO BE REMOVED
         std::vector<Model3DS*> mModels;
+        std::vector<CollisionMesh> mCollisionMeshes;
         std::vector<int> mModelIndices;
 
         Robot();
