@@ -41,6 +41,7 @@
 #ifndef PLANNING_OBJECT_H
 #define PLANNING_OBJECT_H
 
+#include <fcl/simple_setup.h>
 #include <vector>
 #include <string>
 #include "Model3DS.h"

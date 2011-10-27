@@ -1,6 +1,7 @@
 #ifndef COLLISIONWRAPPER_H_
 #define COLLISIONWRAPPER_H_
 
+#include <fcl/simple_setup.h>
 #include <fcl/BVH_model.h>
 #include <fcl/vec_3f.h>
 #include <Eigen/Eigen>
@@ -14,9 +15,9 @@ void getModel_3DSToFCL(Model3DS _model3DS,
 		std::vector<fcl::Triangle> *_triangles,
 		std::vector<fcl::Vec3f> *_vertices);
 
-fcl::Vec3f getTrans_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> _tf);
+fcl::Vec3f getTrans_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> &_tf);
 
-fcl::Vec3f getRotation_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> _tf, int col);
+fcl::Vec3f getRotation_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> &_tf, int col);
 
 }
 
