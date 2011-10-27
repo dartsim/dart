@@ -20,10 +20,10 @@ void CollisionWrapper::getModel_3DSToFCL(Model3DS _model3DS,
 
 }
 
-fcl::Vec3f CollisionWrapper::getTrans_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> _tf) {
+fcl::Vec3f CollisionWrapper::getTrans_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> &_tf) {
 	return fcl::Vec3f(_tf.translation()(0), _tf.translation()(1), _tf.translation()(2));
 }
 
-fcl::Vec3f CollisionWrapper::getRotation_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> _tf, int col) {
+fcl::Vec3f CollisionWrapper::getRotation_EigenToFCL(Eigen::Transform<double, 3, Eigen::Affine> &_tf, int col) {
 	return fcl::Vec3f(_tf.rotation()(col, 0), _tf.rotation()(col, 1), _tf.rotation()(col, 2));
 }

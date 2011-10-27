@@ -31,7 +31,7 @@ void CollisionMesh::setMesh(Model3DS _model3DS) {
 	mBVHModel.endModel();
 }
 
-void CollisionMesh::setTransform(Eigen::Transform< double, 3,Eigen::Affine > _tf) {
+void CollisionMesh::setTransform(Eigen::Transform< double, 3,Eigen::Affine > &_tf) {
 	fcl::Vec3f R[3];
 	fcl::Vec3f T;
 

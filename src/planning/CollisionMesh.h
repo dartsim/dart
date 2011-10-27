@@ -21,7 +21,7 @@ public:
 	int getCollisionState();
 
 	void setMesh(Model3DS _model3DS);
-	void setTransform(Eigen::Transform< double, 3,Eigen::Affine > _tf);
+	void setTransform(Eigen::Transform< double, 3,Eigen::Affine > &_tf);
 };
 
 #endif /* COLLISIONMESH_H_ */
