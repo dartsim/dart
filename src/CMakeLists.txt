@@ -9,7 +9,9 @@ ADD_SUBDIRECTORY(dynamics)
 ADD_SUBDIRECTORY(lcpsolver)
 ADD_SUBDIRECTORY(collision)
 ADD_SUBDIRECTORY(integration)
-ADD_SUBDIRECTORY(planning)
+if (PLANNING_AND_FCL)
+    ADD_SUBDIRECTORY(planning)
+endif (PLANNING_AND_FCL)
 
 # Unit Test
 ADD_SUBDIRECTORY(unittests)
