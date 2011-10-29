@@ -42,7 +42,6 @@
 #ifndef PLANNING_WORLD_H
 #define PLANNING_WORLD_H
 
-#include <fcl/simple_setup.h>
 #include <vector>
 #include <stdio.h>
 #include "Robot.h"
