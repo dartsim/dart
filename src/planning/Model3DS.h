@@ -169,6 +169,7 @@ public:
 		Vector rot; // The angles to rotate the object
 	};
 
+	bool collisionFlag;
 	GLuint modelDL;
 	GLuint colDL;
 	string modelname;
