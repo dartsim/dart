@@ -1,7 +1,9 @@
 #ifndef COLLISIONPHYSICS_H_
 #define COLLISIONPHYSICS_H_
 
+#ifdef WIN32
 #include "fcl/simple_setup.h"
+#endif
 #include <fcl/traversal_node_bvhs.h>
 #include "CollisionWrapper.h"
 #include "CollisionMesh.h"
