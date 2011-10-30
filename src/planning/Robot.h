@@ -42,7 +42,9 @@
 #ifndef PLANNING_ROBOT_H
 #define PLANNING_ROBOT_H
 
+#ifdef WIN32
 #include "fcl/simple_setup.h"
+#endif
 #include <vector>
 #include <string>
 #include "Model3DS.h"

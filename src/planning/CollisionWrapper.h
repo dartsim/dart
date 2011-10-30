@@ -1,7 +1,9 @@
 #ifndef COLLISIONWRAPPER_H_
 #define COLLISIONWRAPPER_H_
 
+#ifdef WIN32
 #include "fcl/simple_setup.h"
+#endif
 #include <fcl/BVH_model.h>
 #include <fcl/vec_3f.h>
 #include <Eigen/Eigen>

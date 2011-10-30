@@ -1,7 +1,9 @@
 #ifndef COLLISIONMESH_H_
 #define COLLISIONMESH_H_
 
+#ifdef WIN32
 #include "fcl/simple_setup.h"
+#endif
 #include <fcl/BVH_model.h>
 #include <vector>
 
