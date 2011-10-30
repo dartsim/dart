@@ -1,6 +1,7 @@
 #ifndef COLLISIONMESH_H_
 #define COLLISIONMESH_H_
 
+#include "fcl/simple_setup.h"
 #include <fcl/BVH_model.h>
 #include <vector>
 
