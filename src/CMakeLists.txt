@@ -9,12 +9,13 @@ ADD_SUBDIRECTORY(dynamics)
 ADD_SUBDIRECTORY(lcpsolver)
 ADD_SUBDIRECTORY(collision)
 ADD_SUBDIRECTORY(integration)
-if (PLANNING)
+if (INCLUDE_PLANNING)
+    message( STATUS "Adding planning library")
     ADD_SUBDIRECTORY(planning)
-endif (PLANNING)
+endif (INCLUDE_PLANNING)
 
 # Unit Test
-ADD_SUBDIRECTORY(unittests)
+#ADD_SUBDIRECTORY(unittests)
 
 # Apps
 ADD_SUBDIRECTORY(apps)
