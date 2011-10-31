@@ -83,32 +83,6 @@ namespace planning {
         return mObjects.size();
     } 
 
-    void World::enableCollisions() {
-    	for (int i = 0; i < mRobots.size(); i++) {
-    		for (int j = 0; j < mRobots[i]->mCollisionMeshes.size(); j++) {
-    			mCollisionEngine.addCollisionMesh(mRobots[i]->mCollisionMeshes[j]);
-    		}
-    	}
-
-    	for (int i = 0; i < mObjects.size(); i++) {
-    		for (int j = 0; j < mObjects[i]->mCollisionMeshes.size(); j++) {
-    			mCollisionEngine.addCollisionMesh(mObjects[i]->mCollisionMeshes[j]);
-    		}
-    	}
-    }
-
-    /**
-     * @function checkCollisions
-     * @brief True if there is collisions False if there is NOT collisions whatsoever
-     */
-    bool World::checkCollisions() {
-    	return mCollisionEngine.checkCollisions();
-    }
-
-    void World::disableCollisions() {
-    	mCollisionEngine.reset();
-    }
-
     /**
      * @function printInfo
      */

@@ -41,15 +41,11 @@
 #ifndef PLANNING_OBJECT_H
 #define PLANNING_OBJECT_H
 
-#ifdef WIN32
-#include "fcl/simple_setup.h"
-#endif
 #include <vector>
 #include <string>
 #include "Model3DS.h"
 #include "kinematics/Skeleton.h"
 #include <Eigen/Geometry>
-#include "CollisionPhysics.h"
 
 namespace planning {
 #define MAX_Object_NAME 128
@@ -63,7 +59,6 @@ namespace planning {
         int mGripID; /// THIS HAS TO BE REMOVED
         bool mMovable;
         std::vector<Model3DS*> mModels;
-        std::vector<CollisionMesh> mCollisionMeshes;
         std::vector<int> mModelIndices;
         
         Object();

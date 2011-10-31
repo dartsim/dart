@@ -42,14 +42,10 @@
 #ifndef PLANNING_WORLD_H
 #define PLANNING_WORLD_H
 
-#ifdef WIN32
-#include "fcl/simple_setup.h"
-#endif
 #include <vector>
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
-#include "CollisionPhysics.h"
 
 namespace planning {
 
@@ -59,16 +55,11 @@ namespace planning {
     class World {
     public:
 
-    	CollisionPhysics mCollisionEngine;
-
         World();
         virtual ~World();
 
         int addRobot( Robot *_robot );
         int addObject( Object *_object );
-        void enableCollisions();
-        bool checkCollisions();
-        void disableCollisions();
         void printInfo();
 
         std::vector< Robot* > mRobots;
