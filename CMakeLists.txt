@@ -11,7 +11,8 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7)")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ("PLANNING_AND_FCL" OFF )
+option ("FCL" OFF )
+option ("PLANNING" OFF)
 
 ###############################################
 # SETTING: Global settings
@@ -87,11 +88,11 @@ endif()
 ###############################################
 # Thirdparty libraries
 message(STATUS "Building thirdparty libraries")
-if (PLANNING_AND_FCL)
+if (FCL)
     ADD_SUBDIRECTORY (thirdparty/ann_1.1.2)
     ADD_SUBDIRECTORY (thirdparty/libccd-1.0)
     ADD_SUBDIRECTORY (thirdparty/fcl.r42)
-endif (PLANNING_AND_FCL)
+endif (FCL)
 
 message(STATUS "Building DART source")
 ADD_SUBDIRECTORY(src)
