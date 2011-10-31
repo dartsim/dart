@@ -11,8 +11,9 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7)")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ("FCL" OFF )
-option ("PLANNING" OFF)
+option ( FCL "FCL" OFF )
+option ( INCLUDE_PLANNING "PLANNING" ON)
+
 
 ###############################################
 # SETTING: Global settings
