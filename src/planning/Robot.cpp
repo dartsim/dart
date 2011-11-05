@@ -209,7 +209,7 @@ namespace planning {
      */
     Eigen::VectorXd Robot::getDofs( Eigen::VectorXi _id )
     {
-       Eigen::VectorXd getDofs(0);
+       Eigen::VectorXd getDofs( (Eigen::VectorXd::Index)0 );
 
        int numDofs = getNumDofs();
 
