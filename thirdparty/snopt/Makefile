@@ -1,5 +1,6 @@
-F77 = /usr/local/gfortran/bin/gfortran
+F77 = gfortran
 F77FLAGS = -m64
+RANLIB = ranlib
 
 LIB = libsnopt.a
 OBJS = \
