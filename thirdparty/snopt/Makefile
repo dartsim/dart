@@ -1,5 +1,5 @@
 F77 = gfortran
-F77FLAGS = -m64
+#F77FLAGS = -m32
 RANLIB = ranlib
 
 LIB = libsnopt.a
