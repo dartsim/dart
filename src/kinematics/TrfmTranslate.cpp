@@ -147,7 +147,6 @@ namespace kinematics {
         mDofs[0]=x;
         mDofs[0]->setTrans(this);
         mType = Transformation::T_TRANSLATEX;
-        strcpy(mName, _name);
         if(_name!=NULL)
             strcpy(mName, _name);
         else
@@ -231,7 +230,6 @@ namespace kinematics {
         mDofs[0]=y;
         mDofs[0]->setTrans(this);
         mType = Transformation::T_TRANSLATEY;
-        strcpy(mName, _name);
         if(_name!=NULL)
             strcpy(mName, _name);
         else
@@ -313,7 +311,6 @@ namespace kinematics {
         mDofs[0]=z;
         mDofs[0]->setTrans(this);
         mType = Transformation::T_TRANSLATEZ;
-        strcpy(mName, _name);
         if(_name!=NULL)
             strcpy(mName, _name);
         else
