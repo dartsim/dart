@@ -62,7 +62,7 @@ namespace dynamics {
             SkeletonDynamics* skel = mSkels[i];
             Eigen::MatrixXd skelMass = skel->getMassMatrix();
             Eigen::VectorXd skelTau = getSkelTauStar(skel, mDt);
-            assert(skelMass.rows == skelTau.rows());
+            assert(skelMass.rows() == skelTau.rows());
 
             mM.block(startRow, startCol, skelMass.rows(), skelMass.cols()) = skelMass;
             mTauStar.block(startRow, 0, skelTau.rows(), 1) = skelTau;
