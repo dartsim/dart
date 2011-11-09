@@ -84,6 +84,7 @@ namespace dynamics{
     void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
         mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mQdot = VectorXd::Zero(getNumDofs());
         mCvec = VectorXd::Zero(getNumDofs());
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
@@ -127,6 +128,7 @@ namespace dynamics{
 
             evalExternalForces( false );
             //mCg = mC*_qdot + mG;
+            mQdot = _qdot;
             mCg = mCvec + mG; //- mFext;
         } 
         
@@ -222,12 +224,30 @@ namespace dynamics{
                 break;
             }
         }
+        mQdot = _qdot;
     }
 
     void SkeletonDynamics::clearExternalForces(){
         int nNodes = getNumNodes();
         for(int i=0; i<nNodes; i++)
             ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
+    }
+
+    void SkeletonDynamics::applyAdditionalExternalForces(Eigen::VectorXd& _fext) {
+        assert(getNumDofs() == _fext.rows());
+
+        int nNodes = getNumNodes();
+        int startRow = 0;
+        for(int i = 0; i < nNodes; i++) {
+            BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+            int nDofs = 0; // getNUmDofs
+            Vector3d offset = Vector3d::Zero();
+            Vector3d force = _fext.block(startRow, 0, 3, 1);
+            nodei->addExtForce(offset, force);
+            startRow+= 3;
+        }
+
+        mFext += _fext;
     }
 
 }   // namespace dynamics

@@ -70,7 +70,10 @@ namespace dynamics{
         Eigen::VectorXd getGravityVector() const { return mG; }
         Eigen::VectorXd getCombinedVector() const { return mCg; }
         Eigen::VectorXd getExternalForces() const { return mFext; }
-    
+        Eigen::VectorXd getQDotVector() const { return mQdot; }
+
+        void applyAdditionalExternalForces(Eigen::VectorXd& _fext);
+
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
         Eigen::MatrixXd mC;    ///< Coriolis matrix for the skeleton; not being used currently
@@ -78,7 +81,7 @@ namespace dynamics{
         Eigen::VectorXd mG;    ///< Gravity vector for the skeleton; computed in nonrecursive dynamics only
         Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
         Eigen::VectorXd mFext; ///< external forces vector for the skeleton
-
+        Eigen::VectorXd mQdot; ///< the current qdot
     };
 
 } // namespace dynamics
