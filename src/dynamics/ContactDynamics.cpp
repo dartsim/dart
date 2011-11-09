@@ -10,8 +10,8 @@
 #include "utils/UtilsMath.h"
 
 namespace dynamics {
-    ContactDynamic::ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu)
-        : mSkels(_skels), mDt(_dt), mMu(_mu), mCollision(NULL) {
+    ContactDynamic::ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
+        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL) {
         initialize();
     }
 
