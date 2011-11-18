@@ -12,10 +12,10 @@ mass {
 
 node root { 0
     chain { 2
-        telescope { <0.0,-0.5,0.0>, Length }
+        telescope { <-1.0,-2.0,0.0>, Length }
         rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
     }
-    primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+    primitive {<0.2,5.0,5.0>, <0.0,-2.5,0.0>, Length, CUBE, node_mass}
 
     
 }

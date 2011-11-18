@@ -1,4 +1,5 @@
 #include "Lemke.h"
+#include <iostream>
 
 namespace lcpsolver {
 
@@ -23,9 +24,9 @@ namespace lcpsolver {
 
     int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd& _z)
     {
-	    int n = _q.size();
-	    CHECK(_M.rows() == n && _M.cols() == n) << "Matrices are not compatible";
-
+        int n = _q.size();
+        CHECK(_M.rows() == n && _M.cols() == n) << "Matrices are not compatible";
+        
 	    const double zer_tol = 1e-5;
 	    const double piv_tol = 1e-8;
 	    int maxiter = min(1000, 50 * n);
@@ -161,13 +162,17 @@ namespace lcpsolver {
 		    bas[lvindex] = entering;
     		
 	    }
+
 	    if (iter >= maxiter && leaving != t)
 		    err = 1;
 
 	    for (size_t i = 0; i < bas.size(); ++i)
-	    {
+                cout << "bas[i] = " << bas[i] << " ";
+            cout << endl;
+	    for (size_t i = 0; i < bas.size(); ++i) {
 		    _z[bas[i]] = x[i];
 	    }
+
 	    VectorXd realZ = _z.segment(0, n);
 	    _z = realZ;
 
