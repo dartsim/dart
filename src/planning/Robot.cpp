@@ -469,6 +469,9 @@ namespace planning {
         {  mCurrPose[i] = mDofs.at(i)->getValue();  }
         for(int i=0; i<getNumNodes(); i++) 
         {  mNodes.at(i)->updateTransform();  }
+        for(int i = 0; i < getNumNodes(); i++) {
+           mNodes.at(i)->updateFirstDerivatives();
+        }
     }
 
     /**
