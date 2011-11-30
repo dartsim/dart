@@ -166,20 +166,31 @@ namespace lcpsolver {
 	    if (iter >= maxiter && leaving != t)
 		    err = 1;
 
-	    for (size_t i = 0; i < bas.size(); ++i)
-                cout << "bas[i] = " << bas[i] << " ";
-            cout << endl;
-	    for (size_t i = 0; i < bas.size(); ++i) {
-		    _z[bas[i]] = x[i];
-	    }
+	    //for (size_t i = 0; i < bas.size(); ++i)
+     //           cout << "bas[i] = " << bas[i] << " ";
+     //       cout << endl;
 
-	    VectorXd realZ = _z.segment(0, n);
-	    _z = realZ;
+		if (err == 0)
+		{
+			for (size_t i = 0; i < bas.size(); ++i) {
+				_z[bas[i]] = x[i];
+			}
+
+			VectorXd realZ = _z.segment(0, n);
+			_z = realZ;
+		}
+		else
+		{
+			_z = VectorXd::Zero(n); //solve failed, return a 0 vector
+		}
 
 	    if (err == 1)
 		    LOG(ERROR) << "LCP Solver: Iterations exceeded limit";
 	    else if (err == 2)
 		    LOG(ERROR) << "LCP Solver: Unbounded ray";
+		
+
+
 	    return err;
     }
 
