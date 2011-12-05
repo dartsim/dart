@@ -13,7 +13,7 @@ using namespace dynamics;
 int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model;
-    model.loadFile(DART_DATA_PATH"/skel/numchuck.skel", kinematics::SKEL);
+    model.loadFile(DART_DATA_PATH"/skel/nunchuck.skel", kinematics::SKEL);
 
     MyWindow window((SkeletonDynamics*)model.getSkel());
     
