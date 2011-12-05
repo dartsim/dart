@@ -23,11 +23,25 @@ namespace dynamics {
 
     // Helper function to compute the T* vector an individual skeleton
     // Used when computing the global T* vector
-    static VectorXd getSkelTauStar(SkeletonDynamics* skel, const double dt) {
-        VectorXd tau = skel->getExternalForces();
-        VectorXd tauStar(VectorXd::Zero(tau.rows()));
-        tauStar = (skel->getMassMatrix() * skel->getQDotVector()) - (dt * (skel->getCoriolisVector() - tau));
-        return tauStar;
+    void ContactDynamic::computeTauStar() {
+        int startRow = 0;
+        for (int i = 0; i < getNumSkels(); i++) {
+            VectorXd tau = mSkels[i]->getExternalForces();
+            VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
+            mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
+            startRow += tauStar.rows();
+        }
+    }
+
+    void ContactDynamic::computeMassMat() {
+        int startRow = 0;
+        int startCol = 0;
+        for (int i = 0; i < getNumSkels(); i++) {
+            MatrixXd skelMass = mSkels[i]->getMassMatrix();
+            mM.block(startRow, startCol, skelMass.rows(), skelMass.cols()) = skelMass;
+            startRow+= skelMass.rows();
+            startCol+= skelMass.cols();
+        }
     }
 
     void ContactDynamic::initialize() {
@@ -53,25 +67,24 @@ namespace dynamics {
             cols += skel->getMassMatrix().cols();
         }
 
+        mConstrForces.resize(getNumSkels());
+        for (int i = 0; i < getNumSkels(); i++)
+            mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
+
         mM = MatrixXd::Zero(rows, cols);
         mTauStar = VectorXd::Zero(rows);
 
         // Construct mass matrix/external forces (tau)
         // Precomputed here because it is easier to get the matrix dimensions here.
-        int startRow = 0;
+        /*        int startRow = 0;
         int startCol = 0;
         for (int i = 0; i < getNumSkels(); i++) {
             SkeletonDynamics* skel = mSkels[i];
             MatrixXd skelMass = skel->getMassMatrix();
-            VectorXd skelTau = getSkelTauStar(skel, mDt);
-            assert(skelMass.rows() == skelTau.rows());
-
             mM.block(startRow, startCol, skelMass.rows(), skelMass.cols()) = skelMass;
-            mTauStar.block(startRow, 0, skelTau.rows(), 1) = skelTau;
-
             startRow+= skelMass.rows();
             startCol+= skelMass.cols();
-        }
+            }*/
 
         // Initialize the index vector:
         // If we have 3 skeletons,
@@ -79,7 +92,7 @@ namespace dynamics {
         // mIndices[1] = nDof0
         // mIndices[2] = nDof0 + nDof1
         // mIndices[3] = nDof0 + nDof1 + nDof2
-
+        
         mIndices.clear();
         int sumNDofs = 0;
         mIndices.push_back(sumNDofs);
@@ -106,23 +119,23 @@ namespace dynamics {
 
         fillMatrices();
         solve();
-        applyExternalForces();
+        applySolution();
 
     }
     
     void ContactDynamic::fillMatrices() {
-        //        int c = getNumContacts() * 3; // each contact is associated with 3 values
         int c = getNumContacts();
-
+        computeMassMat();
+        computeTauStar();
+        
         // Retrieve all of the matrices
         // TODO, should assert the dimensions of the matrices
         MatrixXd N = getNormalMatrix();
         MatrixXd B = getBasisMatrix();
         MatrixXd E = getContactMatrix();
-        MatrixXd Minv = getMassMatrix().inverse();
+        MatrixXd Minv = mM.inverse();
         MatrixXd mu = getMuMatrix();
-        VectorXd tauStar = getTauStarVector();
-
+        
         assert(Minv.rows() == Minv.cols());
         assert(Minv.cols() == N.rows());
         assert(Minv.cols() == B.rows());
@@ -156,8 +169,8 @@ namespace dynamics {
 
         // Construct Q
         mQBar = VectorXd::Zero(dimA);
-        mQBar.block(0, 0, c, 1) = nTmInv * tauStar;
-        mQBar.block(c, 0, c * mNumDir, 1) = bTmInv * tauStar;
+        mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
+        mQBar.block(c, 0, c * mNumDir, 1) = bTmInv * mTauStar;
     }
 
     bool ContactDynamic::solve() {
@@ -166,6 +179,30 @@ namespace dynamics {
         return b;
     }
     
+    void ContactDynamic::applySolution() {
+        int c = getNumContacts();
+
+        // First compute the external forces
+        int mStar = mM.rows(); // a hacky way to get the dimension
+        VectorXd forces(VectorXd::Zero(mStar));
+        VectorXd f_n = mX.block(0, 0, c, 1);
+        VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
+
+        // Note, we need to un-scale by dt (was premultiplied in).
+        // If this turns out to be a perf issue (above, as well as recomputing matrices 
+        // again), consider caching both to improve performance.
+        MatrixXd N = getNormalMatrix() / mDt;
+        MatrixXd B = getBasisMatrix() / mDt;
+        forces = (N * f_n) + (B * f_d);
+        // Next, apply the external forces skeleton by skeleton.
+        int startRow = 0;
+        for (int i = 0; i < getNumSkels(); i++) {
+            int nDof = mSkels[i]->getNumDofs();
+            mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
+            startRow += nDof;
+        }   
+    }
+    /*
     void ContactDynamic::applyExternalForces() {
         //        int c = getNumContacts() * 3;
         int c = getNumContacts();
@@ -193,7 +230,7 @@ namespace dynamics {
         }
         
     }
-
+*/
     MatrixXd ContactDynamic::getJacobian(kinematics::BodyNode* node, const Vector3d& p) const {
         const int nDofs = node->getSkel()->getNumDofs();
         MatrixXd J( MatrixXd::Zero(3, nDofs) );

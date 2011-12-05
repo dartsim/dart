@@ -36,10 +36,6 @@ void MyWindow::initDyn()
     mSkels[1]->computeDynamics(mGravity, mDofVels2, false);
 
     mCollisionHandle = new dynamics::ContactDynamic(mSkels, mTimeStep);
-
-	//init collision mesh
-    //    mContactCheck.addCollisionSkeletonNode(mModel->getRoot(), true);
-    //mContactCheck.addCollisionSkeletonNode(mModel2->getRoot(), true);
 }
 
 VectorXd MyWindow::getState() {
@@ -61,11 +57,11 @@ VectorXd MyWindow::evalDeriv() {
     int size3 = mDofs2.size();
     int size4 = mDofVels2.size();
     VectorXd deriv(size1 + size2 + size3 + size4);
-    VectorXd qddot = -mSkels[0]->getMassMatrix().fullPivHouseholderQr().solve( mSkels[0]->getCombinedVector() ); 
+    VectorXd qddot = mSkels[0]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[0]->getCombinedVector() + mSkels[0]->getExternalForces() + mCollisionHandle->getConstraintForce(0)); 
     mSkels[0]->clampRotation(mDofs, mDofVels);
     deriv.segment(size1, size2) = qddot; // set qddot (accelerations)
     deriv.head(size1) = mDofVels + (qddot * mTimeStep); // set velocities
-    VectorXd qddot2 = -mSkels[1]->getMassMatrix().fullPivHouseholderQr().solve( mSkels[1]->getCombinedVector() );
+    VectorXd qddot2 = mSkels[1]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[1]->getCombinedVector() + mSkels[1]->getExternalForces() + mCollisionHandle->getConstraintForce(1));
     mSkels[1]->clampRotation(mDofs2, mDofVels2);
     deriv.tail(size4) = qddot2; // set qddot (accelerations)
     deriv.segment(size1 + size2, size3) = mDofVels2 + (qddot2 * mTimeStep); // set velocities
@@ -89,19 +85,16 @@ void MyWindow::setPose() {
     mSkels[0]->computeDynamics(mGravity, mDofVels, true);
     mSkels[1]->setPose(mDofs2,false,false);
     mSkels[1]->computeDynamics(mGravity, mDofVels2, true);
+    mCollisionHandle->applyContactForces();
 }
 
 void MyWindow::displayTimer(int _val)
 {
-    static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i = 0; i < numIter; i++){
-        tSim.startTimer();
         setPose();
         mIntegrator.integrate(this, mTimeStep);
-        tSim.stopTimer();
     }
-    mCollisionHandle->applyContactForces();
 
     mFrame += numIter;   
     glutPostRedisplay();
