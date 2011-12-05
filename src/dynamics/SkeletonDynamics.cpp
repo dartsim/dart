@@ -99,6 +99,7 @@ namespace dynamics{
         
             evalExternalForces( true );
             //mCg -= mFext;
+            mQdot = _qdot;
         }
         else {
             // init the data structures for the dynamics
@@ -231,23 +232,6 @@ namespace dynamics{
         int nNodes = getNumNodes();
         for(int i=0; i<nNodes; i++)
             ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
-    }
-
-    void SkeletonDynamics::applyAdditionalExternalForces(Eigen::VectorXd& _fext) {
-        assert(getNumDofs() == _fext.rows());
-
-        int nNodes = getNumNodes();
-        int startRow = 0;
-        for(int i = 0; i < nNodes; i++) {
-            BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
-            int nDofs = 0; // getNUmDofs
-            Vector3d offset = Vector3d::Zero();
-            Vector3d force = _fext.block(startRow, 0, 3, 1);
-            nodei->addExtForce(offset, force);
-            startRow+= 3;
-        }
-
-        mFext += _fext;
     }
 
 }   // namespace dynamics

@@ -72,8 +72,6 @@ namespace dynamics{
         Eigen::VectorXd getExternalForces() const { return mFext; }
         Eigen::VectorXd getQDotVector() const { return mQdot; }
 
-        void applyAdditionalExternalForces(Eigen::VectorXd& _fext);
-
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
         Eigen::MatrixXd mC;    ///< Coriolis matrix for the skeleton; not being used currently
