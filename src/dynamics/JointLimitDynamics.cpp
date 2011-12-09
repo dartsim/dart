@@ -35,12 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
 #include "JointLimitDynamics.h"
 #include "lcpsolver/LCPSolver.h"
 #include "SkeletonDynamics.h"
 #include "kinematics/Dof.h"
 
 using namespace Eigen;
+using namespace std;
 
 namespace dynamics {
     JointLimitDynamics::JointLimitDynamics(SkeletonDynamics *_skel, double _dt): mSkel(_skel), mDt(_dt) {
