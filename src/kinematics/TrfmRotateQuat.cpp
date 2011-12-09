@@ -100,7 +100,7 @@ namespace kinematics {
         q.normalize();
 	
         Matrix3d mat = Matrix3d::Zero();
-        Matrix4d ret = Matrix4d::Ones();
+        Matrix4d ret = Matrix4d::Identity();
 
         int el1=-1, el2=-1;
         for(int i=0; i<4; i++) {

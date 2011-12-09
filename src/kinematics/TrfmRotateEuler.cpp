@@ -97,7 +97,7 @@ namespace kinematics {
     }
 
     Matrix4d TrfmRotateEulerX::getInvTransform(){
-        Matrix4d ret = Matrix4d::Ones();
+        Matrix4d ret = Matrix4d::Identity();
         double cosq = cos(mDofs[0]->getValue());
         double sinq = sin(mDofs[0]->getValue());
         ret(A_Y, A_Y) = cosq;

@@ -114,7 +114,7 @@ namespace kinematics {
 
 
     Matrix4d TrfmTranslate::getInvTransform(){
-        Matrix4d ret = Matrix4d::Ones();
+        Matrix4d ret = Matrix4d::Identity();
         for(unsigned int i=0; i<mDofs.size(); i++)
             ret(i, 3) = -mDofs[i]->getValue();
         return ret;
