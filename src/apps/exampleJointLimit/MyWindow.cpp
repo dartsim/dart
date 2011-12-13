@@ -106,13 +106,13 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         break;
     case 'l': // right force
         mForce[0] = 300.0;
-        static_cast<BodyNodeDynamics*>(mModel->getNode(1))->addExtForce(Vector3d(0.2, 0.0, 0), mForce);
+        static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.2, 0.0, 0), mForce);
         mForce[0] = 0.0;
         cout << "push" << endl;
         break;
     case 'k': // left force
         mForce[0] = -300.0;
-        static_cast<BodyNodeDynamics*>(mModel->getNode(1))->addExtForce(Vector3d(0.2, 0.0, 0), mForce);
+        static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.2, 0.0, 0), mForce);
         mForce[0] = 0.0;
         cout << "push" << endl;
         break;

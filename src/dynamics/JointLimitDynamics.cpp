@@ -62,15 +62,18 @@ namespace dynamics {
             double val = mSkel->getDof(i)->getValue();
             double ub = mSkel->getDof(i)->getMax();
             double lb = mSkel->getDof(i)->getMin();
-            if (val >= ub)
-                mLimitingDofIndex.push_back(i);
-            if (val <= lb)
-                mLimitingDofIndex.push_back(-i);
+            if (val >= ub){
+                mLimitingDofIndex.push_back(i + 1);
+                cout << "upper joint limit hit" << endl;
+            }
+            if (val <= lb){
+                mLimitingDofIndex.push_back(-(i + 1));
+                cout << "lower joint limit hit" << endl;
+            }
         }
         if (mLimitingDofIndex.size() == 0)
             return;
 
-        cout << "joint limit hit" << endl;
         fillMatrices();
         bool succ = solve();
         if (!succ)
@@ -88,7 +91,7 @@ namespace dynamics {
         // Construct A
         for (int i = 0; i < dimA; i++)
             for (int j = 0; j < dimA; j++) 
-                mA(i, j) = Minv(abs(mLimitingDofIndex[i]), abs(mLimitingDofIndex[j]));
+                mA(i, j) = Minv(abs(mLimitingDofIndex[i]) - 1, abs(mLimitingDofIndex[j]) - 1);
 
         mA *= mDt;
 
@@ -96,16 +99,15 @@ namespace dynamics {
         MatrixXd JMinv(dimA, Minv.cols());
         for (int i = 0; i < dimA; i++) {
             if (mLimitingDofIndex[i] > 0)  // hitting upper bound
-                JMinv.row(i) = -Minv.row(mLimitingDofIndex[i]);
+                JMinv.row(i) = -Minv.row(mLimitingDofIndex[i] - 1);
             else
-                JMinv.row(i) = Minv.row(abs(mLimitingDofIndex[i]));
+                JMinv.row(i) = Minv.row(abs(mLimitingDofIndex[i]) - 1);
         }
         mQBar = JMinv * mTauStar;
     }
 
     bool JointLimitDynamics::solve() {
         lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-        //cout << mA.rows() << " " << mA.cols() << " " << mQBar.rows() << " " << mX.rows() << endl;
         bool b = solver.Solve(mA, mQBar, mX);
         return b;
     }
@@ -114,10 +116,10 @@ namespace dynamics {
         mConstrForce.setZero();
         for (unsigned int i = 0; i < mLimitingDofIndex.size(); i++) {
             if (mLimitingDofIndex[i] > 0) // hitting upper bound
-                mConstrForce[mLimitingDofIndex[i]] -= mX[i];
+                mConstrForce[mLimitingDofIndex[i] - 1] -= mX[i];
             else
-                mConstrForce[abs(mLimitingDofIndex[i])] += mX[i];
-            cout << "mConstrForce[" << abs(mLimitingDofIndex[i]) << "] = " << mConstrForce[abs(mLimitingDofIndex[i])] << endl;
+                mConstrForce[abs(mLimitingDofIndex[i]) - 1] += mX[i];
+            cout << "mConstrForce[" << abs(mLimitingDofIndex[i]) - 1 << "] = " << mConstrForce[abs(mLimitingDofIndex[i]) - 1] << " dof = " <<  mSkel->getDof(abs(mLimitingDofIndex[i]) - 1)->getValue() << endl;
         }
     }
     
