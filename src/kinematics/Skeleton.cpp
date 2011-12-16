@@ -216,7 +216,7 @@ namespace kinematics {
         }
     }
 
-	void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         mRoot->draw(_ri, _color, _useDefaultColor);
     }
     void Skeleton::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

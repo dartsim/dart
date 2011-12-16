@@ -4,7 +4,7 @@
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
-#include "dynamics/ContactDynamics.h"
+#include "collision/collision_skeleton.h"
 
 using namespace std;
 
@@ -34,6 +34,7 @@ public:
     
         mGravity = Eigen::Vector3d(0.0,-9.8, 0.0);
         mTimeStep = 1.0/5000.0;
+        mForce = Eigen::Vector3d::Zero();
 
         mSkels.push_back(_m1);
         mSkels.push_back(_m2);
@@ -62,6 +63,7 @@ public:
     Eigen::VectorXd mDofs2;
     double mTimeStep;
     Eigen::Vector3d mGravity;
+    Eigen::Vector3d mForce;
     void initDyn();
     void setPose();
     //    SkeletonCollision mContactCheck;

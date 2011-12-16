@@ -1,18 +1,18 @@
 #include "MyWindow.h"
 #include "dynamics/SkeletonDynamics.h"
+#include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>
-#include "yui/GLFuncs.h"
 #include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
 
 using namespace Eigen;
 using namespace kinematics;
 using namespace utils;
 using namespace integration;
+using namespace dynamics;
 
 void MyWindow::initDyn()
 {
@@ -29,6 +29,7 @@ void MyWindow::initDyn()
         mDofs2[i] = 0.0;
         mDofVels2[i] = 0.0;
     }
+    mDofs2[1] = -0.1;
     
     mSkels[0]->setPose(mDofs,false,false);
     mSkels[1]->setPose(mDofs2,false,false);
@@ -92,10 +93,12 @@ void MyWindow::displayTimer(int _val)
 {
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i = 0; i < numIter; i++){
+        static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0), mForce);
         setPose();
         mIntegrator.integrate(this, mTimeStep);
     }
 
+    mForce = Vector3d::Zero();
     mFrame += numIter;   
     glutPostRedisplay();
     if(mRunning)	
@@ -118,19 +121,33 @@ void MyWindow::draw()
     mSkels[0]->draw(mRI);
     mSkels[1]->draw(mRI);
 
-    /*
-    glBegin(GL_LINES);
     
-    for(int k=0;k<mContactCheck.getNumContact();k++)
-    {
-        Eigen::Vector3d  v = mContactCheck.getContact(k).point;
-        Eigen::Vector3d n = mContactCheck.getContact(k).normal;
+    glBegin(GL_LINES);
+    VectorXd f = mCollisionHandle->getConstraintForce(1);
+    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+        Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
+        //        glVertex3f(v[0], v[1], v[2]);
+        //        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
+
         glVertex3f(v[0], v[1], v[2]);
-       // printf("%f %f %f\n", v[0], v[1], v[2]);
-        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
+        glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
+
+        //cout << "contact " << k << endl;
+        //cout << v << endl;
     }
     glEnd();
-    */
+
+
+    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+        mRI->pushMatrix();
+        glTranslated(v[0], v[1], v[2]);
+        mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+        mRI->popMatrix();
+    }
+        
     // display the frame count in 2D text
     char buff[64];
     sprintf(buff,"%d",mFrame);
@@ -155,10 +172,20 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'h': // show or hide markers
         mShowMarker = !mShowMarker;
         break;
+    case 's': // simulate one frame
+        mForce = Vector3d::Zero();
+        setPose();
+        mIntegrator.integrate(this, mTimeStep);
+        mFrame++;   
+        glutPostRedisplay();
+        break;
+    case 'p': // upper right force
+        //mForce[0] = 300.0;        
+        mForce[1] = 5.0;
+        cout << "push" << endl;
+        break;
     default:
         Win3D::keyboard(key,x,y);
     }
     glutPostRedisplay();
 }
-
-
