@@ -68,6 +68,7 @@ namespace dynamics {
         virtual ~ContactDynamic();
         void applyContactForces();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
+        inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
         
     private:
         void initialize();
@@ -98,6 +99,8 @@ namespace dynamics {
         Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) const; // gets a matrix of tangent dirs.
         Eigen::MatrixXd getContactMatrix() const; // E matrix
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
+
+        void cleanupContact();
         
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
