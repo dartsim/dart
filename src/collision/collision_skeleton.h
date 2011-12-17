@@ -43,7 +43,7 @@
 #include "../../thirdparty/eigen-3.0.1/Eigen/Dense"
 #include <vector>
 
-#define ODE_STYLE 1
+#define ODE_STYLE 0
 
 namespace collision_checking {
     struct ContactPoint {
@@ -66,6 +66,11 @@ namespace collision_checking {
 
         int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
         void evalRT(Eigen::MatrixXd mat, Vec3f R[3], Vec3f& T);
+        Eigen::Vector3d evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx);
+
+    private:
+        inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res);
+        inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
     };
 
    
@@ -81,6 +86,7 @@ namespace collision_checking {
         inline int getNumContact(){ return mContactPointList.size();}
         void checkCollision(bool bConsiderGround = false);
         
+        
 
     public:
         
@@ -88,7 +94,79 @@ namespace collision_checking {
         std::vector<CollisionSkeletonNode*> mCollisionSkeletonNodeList; 
     };
 
+   
+    inline bool CollisionSkeletonNode::EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p)
+    {
+        printf("ok\n");
+        const double ZERO = 0.00000001;
+        Vec3f n = (r2-r1).cross(r3-r1);
+        double s = (p1 - p0).dot(n);
+        if(std::abs(s)<ZERO)return false;
+        double t = (r1-p0).dot(n)/s;
+        Vec3f tmp=p0+(p1-p0)*t;
+        //printf("t %lf, %lf %lf %lf \n", t, dot(cross(r2-r1, tmp-r1), n), dot(cross(r3-r2, tmp-r2), n), dot(cross(r1-r3, tmp-r3), n));
+        if(t>=0&&t<=1&&
+            (((r2-r1).cross(tmp-r1)).dot(n)>0)&&
+            (((r3-r2).cross(tmp-r2)).dot(n)>0)&&
+            (((r1-r3).cross(tmp-r3)).dot(n)>0)
+            )
+        {
+            p=tmp;
+            return true;
+        }
+        return false;
+
+
+    }
+
+    inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res)
+    {
+        int count = 0;
+        Vec3f p = Vec3f(0);
+        Vec3f tmp;
+
+        if(EFtest(r1, r2, R1, R2, R3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(EFtest(r2, r3, R1, R2, R3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(EFtest(r3, r1, R1, R2, R3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(EFtest(R1, R2, r1, r2, r3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(EFtest(R2, R3, r1, r2, r3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(EFtest(R3, R1, r1, r2, r3, tmp))
+        {
+            p+=tmp;
+            count++;
+        }
+        if(count!=0){
+            res = p*(1.0/count);
+            return true;
+        }
+
+        else return false;
+
+    }  
     
 } // namespace collision
+
+
+
 
 #endif
