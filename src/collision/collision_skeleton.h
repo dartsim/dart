@@ -97,7 +97,6 @@ namespace collision_checking {
    
     inline bool CollisionSkeletonNode::EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p)
     {
-        printf("ok\n");
         const double ZERO = 0.00000001;
         Vec3f n = (r2-r1).cross(r3-r1);
         double s = (p1 - p0).dot(n);

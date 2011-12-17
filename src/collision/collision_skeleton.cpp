@@ -97,16 +97,16 @@ Eigen::Vector3d CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& r
     id2 = result.id2(idx);
     tri1 = node1->cdmesh->tri_indices[id1];
     tri2 = node2->cdmesh->tri_indices[id2];
-    printf("1");
+
     Vec3f v1, v2, v3, p1, p2, p3;
     v1 = node1->cdmesh->vertices[tri1[0]];
     v2 = node1->cdmesh->vertices[tri1[1]];
     v3 = node1->cdmesh->vertices[tri1[2]];
-    printf("2");
+
     p1 = node2->cdmesh->vertices[tri2[0]];
     p2 = node2->cdmesh->vertices[tri2[1]];
     p3 = node2->cdmesh->vertices[tri2[2]];
-    printf("3");
+
     Vec3f contact;
     FFtest(v1, v2, v3, p1, p2, p3, contact);
     printf("4");
