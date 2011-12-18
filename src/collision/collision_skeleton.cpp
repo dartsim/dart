@@ -31,27 +31,27 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     BVH_CollideResult res;
     Vec3f R1[3], T1, R2[3], T2;
 
-    matCOM.setIdentity(4, 4);
+//     matCOM.setIdentity(4, 4);
+// 
+//     for(int k=0;k<3;k++)
+//     {
+//         matCOM(k, 3) = bodyNode->getLocalCOM()[k];
+//     }
+//    worldTrans = bodyNode->getWorldTransform()*matCOM;
+    evalRT();
 
-    for(int k=0;k<3;k++)
-    {
-        matCOM(k, 3) = bodyNode->getLocalCOM()[k];
-    }
-    worldTrans = bodyNode->getWorldTransform()*matCOM;
-    evalRT(worldTrans, R1, T1);
 
-
-    matCOM.setIdentity(4, 4);
-
-    for(int k=0;k<3;k++)
-    {
-        matCOM(k, 3) = otherNode->bodyNode->getLocalCOM()[k];
-    }
-    worldTrans = otherNode->bodyNode->getWorldTransform()*matCOM;
-    evalRT(worldTrans, R2, T2);
+//     matCOM.setIdentity(4, 4);
+// 
+//     for(int k=0;k<3;k++)
+//     {
+//         matCOM(k, 3) = otherNode->bodyNode->getLocalCOM()[k];
+//     }
+//     worldTrans = otherNode->bodyNode->getWorldTransform()*matCOM;
+    otherNode->evalRT();
 
     res.num_max_contacts = num_max_contact;
-    collide(*cdmesh, R1, T1, *otherNode->cdmesh, R2, T2, &res);
+    collide(*cdmesh, mR, mT, *otherNode->cdmesh, otherNode->mR, otherNode->mT, &res);
 
     for(int i=0;i<res.numPairs();i++)
     {
@@ -65,29 +65,38 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         
 //         v = res.collidePairs()[i].contact_point;
 //         pair.point = Eigen::Vector3d(v[0], v[1], v[2]);
-        pair.point = evalContactPosition(res, otherNode, i);
+        if(evalContactPosition(res, otherNode, i, pair.point)==false)continue;
         v = res.collidePairs()[i].normal;
         pair.normal = Eigen::Vector3d(v[0], v[1], v[2]);
         result.push_back(pair);
 
     }
 
-    int collisionNum = res.numPairs();
+    int collisionNum = result.size();
     return collisionNum;
 
 }
 
-void CollisionSkeletonNode::evalRT(Eigen::MatrixXd mat, Vec3f R[3], Vec3f& T)
+void CollisionSkeletonNode::evalRT()
 {
+    Eigen::MatrixXd worldTrans(4, 4);
+    Eigen::MatrixXd matCOM;
+    matCOM.setIdentity(4, 4);
+     
+    for(int k=0;k<3;k++)
+    {
+        matCOM(k, 3) = bodyNode->getLocalCOM()[k];
+    }
+    worldTrans = bodyNode->getWorldTransform()*matCOM;
     //mat.transposeInPlace();
     for(int i=0;i<3;i++)
         for(int j=0;j<3;j++)
-            R[i][j] = mat(j, i);
+            mR[i][j] = worldTrans(j, i);
     for(int i=0;i<3;i++)
-        T[i] = mat(i, 3);
+        mT[i] = worldTrans(i, 3);
 }
 
-Eigen::Vector3d CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  CollisionSkeletonNode* other, int idx )
+bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition )
 {
     int id1, id2;
     Triangle tri1, tri2;
@@ -108,10 +117,21 @@ Eigen::Vector3d CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& r
     p3 = node2->cdmesh->vertices[tri2[2]];
 
     Vec3f contact;
-    FFtest(v1, v2, v3, p1, p2, p3, contact);
-    printf("4");
-    return Eigen::Vector3d(contact[0], contact[1], contact[2]);
+
+    v1 = TransformVertex(v1);
+    v2 = TransformVertex(v2);
+    v3 = TransformVertex(v3);
+    p1 = TransformVertex(p1);
+    p2 = TransformVertex(p2);
+    p3 = TransformVertex(p3);
+
+    bool testRes;
+    testRes = FFtest(v1, v2, v3, p1, p2, p3, contact);
+    contactPosition = Eigen::Vector3d(contact[0], contact[1], contact[2]);
+    return testRes;
 }
+
+
 
 
 SkeletonCollision::~SkeletonCollision()

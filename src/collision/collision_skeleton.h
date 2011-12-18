@@ -61,16 +61,20 @@ namespace collision_checking {
         AABB aabb;
         int bodynodeID;
 
+        Vec3f mR[3];
+        Vec3f mT;
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
 
         int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
-        void evalRT(Eigen::MatrixXd mat, Vec3f R[3], Vec3f& T);
-        Eigen::Vector3d evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx);
+        void evalRT();
+        
+        bool evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition);
 
     private:
         inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res);
         inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
+        inline Vec3f TransformVertex(Vec3f& v);
     };
 
    
@@ -121,7 +125,7 @@ namespace collision_checking {
     inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res)
     {
         int count = 0;
-        Vec3f p = Vec3f(0);
+        Vec3f p = Vec3f(0, 0, 0);
         Vec3f tmp;
 
         if(EFtest(r1, r2, R1, R2, R3, tmp))
@@ -162,6 +166,14 @@ namespace collision_checking {
         else return false;
 
     }  
+
+    inline collision_checking::Vec3f CollisionSkeletonNode::TransformVertex( Vec3f& v )
+    {
+        Vec3f res;
+        for(int i=0;i<3;i++)
+            res[i] = v.dot(mR[i])+mT[i];
+        return res;
+    }
     
 } // namespace collision
 
