@@ -39,8 +39,8 @@
 #define COLLISION_SKELTON_H
 
 #include "collision.h"
-#include "../kinematics/BodyNode.h"
-#include "../../thirdparty/eigen-3.0.1/Eigen/Dense"
+#include "kinematics/BodyNode.h"
+#include "Eigen/Dense"
 #include <vector>
 
 #define ODE_STYLE 0
