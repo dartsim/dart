@@ -181,6 +181,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         break;
     case 'p': // upper right force
         //mForce[0] = 300.0;        
+        mForce[0] = 0.01;
         mForce[1] = 5.0;
         cout << "push" << endl;
         break;
