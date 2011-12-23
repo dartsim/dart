@@ -2,7 +2,7 @@
 #include "collision_shapes.h"
 #include "kinematics/Shape.h"
 #include <cmath>
-
+#include "utils/LoadOpengl.h"
 
 
 
@@ -24,6 +24,7 @@ CollisionSkeletonNode::~CollisionSkeletonNode()
 
 int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int num_max_contact)
 {
+    
     Eigen::MatrixXd worldTrans(4, 4);
     Eigen::MatrixXd matCOM;
     
@@ -31,27 +32,14 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     BVH_CollideResult res;
     Vec3f R1[3], T1, R2[3], T2;
 
-//     matCOM.setIdentity(4, 4);
-// 
-//     for(int k=0;k<3;k++)
-//     {
-//         matCOM(k, 3) = bodyNode->getLocalCOM()[k];
-//     }
-//    worldTrans = bodyNode->getWorldTransform()*matCOM;
+
     evalRT();
-
-
-//     matCOM.setIdentity(4, 4);
-// 
-//     for(int k=0;k<3;k++)
-//     {
-//         matCOM(k, 3) = otherNode->bodyNode->getLocalCOM()[k];
-//     }
-//     worldTrans = otherNode->bodyNode->getWorldTransform()*matCOM;
     otherNode->evalRT();
+
 
     res.num_max_contacts = num_max_contact;
     collide(*cdmesh, mR, mT, *otherNode->cdmesh, otherNode->mR, otherNode->mT, &res);
+    
 
     for(int i=0;i<res.numPairs();i++)
     {
@@ -63,15 +51,13 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         pair.bdID2 = otherNode->bodynodeID;
         Vec3f v;
         
-//         v = res.collidePairs()[i].contact_point;
-//         pair.point = Eigen::Vector3d(v[0], v[1], v[2]);
-        if(evalContactPosition(res, otherNode, i, pair.point)==false)continue;
-        v = res.collidePairs()[i].normal;
+         if(evalContactPosition(res, otherNode, i, pair.point)==false)continue;
+         v = res.collidePairs()[i].normal;
         pair.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+        
         result.push_back(pair);
 
     }
-
     int collisionNum = result.size();
     return collisionNum;
 
@@ -82,16 +68,20 @@ void CollisionSkeletonNode::evalRT()
     Eigen::MatrixXd worldTrans(4, 4);
     Eigen::MatrixXd matCOM;
     matCOM.setIdentity(4, 4);
+
      
     for(int k=0;k<3;k++)
     {
         matCOM(k, 3) = bodyNode->getLocalCOM()[k];
     }
     worldTrans = bodyNode->getWorldTransform()*matCOM;
-    //mat.transposeInPlace();
+    mWorldTrans = worldTrans;
+
     for(int i=0;i<3;i++)
         for(int j=0;j<3;j++)
             mR[i][j] = worldTrans(j, i);
+
+
     for(int i=0;i<3;i++)
         mT[i] = worldTrans(i, 3);
 }
@@ -118,17 +108,46 @@ bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  Col
 
     Vec3f contact;
 
-    v1 = TransformVertex(v1);
-    v2 = TransformVertex(v2);
-    v3 = TransformVertex(v3);
-    p1 = TransformVertex(p1);
-    p2 = TransformVertex(p2);
-    p3 = TransformVertex(p3);
 
+     v1 = node1->TransformVertex(v1);
+     v2 = node1->TransformVertex(v2);
+     v3 = node1->TransformVertex(v3);
+     p1 = node2->TransformVertex(p1);
+     p2 = node2->TransformVertex(p2);
+     p3 = node2->TransformVertex(p3);
     bool testRes;
     testRes = FFtest(v1, v2, v3, p1, p2, p3, contact);
     contactPosition = Eigen::Vector3d(contact[0], contact[1], contact[2]);
     return testRes;
+}
+
+void CollisionSkeletonNode::drawCollisionSkeletonNode()
+{
+    evalRT();
+
+     double M[16];
+     for(int i=0;i<4;i++)
+         for(int j=0;j<4;j++)
+             M[j*4+i] = mWorldTrans(i, j);
+     Vec3f v1, v2, v3;
+     glPushMatrix();
+     glMultMatrixd(M);
+     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+     glBegin(GL_TRIANGLES);
+     for(int i=0;i<cdmesh->num_tris;i++)
+     {
+         Triangle tri = cdmesh->tri_indices[i];
+          glVertex3f(cdmesh->vertices[tri[0]][0], cdmesh->vertices[tri[0]][1], cdmesh->vertices[tri[0]][2]);
+          glVertex3f(cdmesh->vertices[tri[1]][0], cdmesh->vertices[tri[1]][1], cdmesh->vertices[tri[1]][2]);
+          glVertex3f(cdmesh->vertices[tri[2]][0], cdmesh->vertices[tri[2]][1], cdmesh->vertices[tri[2]][2]);
+
+     }
+     glEnd();
+     glPopMatrix();
+
+
+
+
 }
 
 
@@ -176,6 +195,14 @@ void SkeletonCollision::checkCollision(bool bConsiderGround)
             
     
         }
+}
+
+void SkeletonCollision::draw()
+{
+    for(int i=0;i<mCollisionSkeletonNodeList.size();i++)
+        mCollisionSkeletonNodeList[i]->drawCollisionSkeletonNode();
+
+    
 }
 
 
