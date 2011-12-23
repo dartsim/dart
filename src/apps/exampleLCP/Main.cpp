@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     cout << model.getSkel()->getNumDofs() << endl;
     cout << model2.getSkel()->getNumDofs() << endl;
     glutInit(&argc, argv);
-    window.initWindow(640,480,"expForwardDyn");
+    window.initWindow(640, 480, "expForwardDyn");
     glutMainLoop();
 
     return 0;

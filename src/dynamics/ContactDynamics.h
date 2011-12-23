@@ -64,7 +64,7 @@ namespace dynamics {
     
     class ContactDynamic {
     public:
-        ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.8, int _d = 4);
+        ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.0, int _d = 4);
         virtual ~ContactDynamic();
         void applyContactForces();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
