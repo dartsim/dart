@@ -43,7 +43,7 @@
 #include "Eigen/Dense"
 #include <vector>
 
-#define ODE_STYLE 0
+#define ODE_STYLE 1
 
 namespace collision_checking {
     struct ContactPoint {
@@ -63,6 +63,7 @@ namespace collision_checking {
 
         Vec3f mR[3];
         Vec3f mT;
+        Eigen::MatrixXd mWorldTrans;
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
 
@@ -70,6 +71,7 @@ namespace collision_checking {
         void evalRT();
         
         bool evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition);
+        void drawCollisionSkeletonNode();
 
     private:
         inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res);
@@ -89,6 +91,7 @@ namespace collision_checking {
         inline ContactPoint& getContact(int idx) { return mContactPointList[idx]; }
         inline int getNumContact(){ return mContactPointList.size();}
         void checkCollision(bool bConsiderGround = false);
+        void draw();
         
         
 
@@ -102,19 +105,19 @@ namespace collision_checking {
     inline bool CollisionSkeletonNode::EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p)
     {
         const double ZERO = 0.00000001;
-        Vec3f n = (r2-r1).cross(r3-r1);
+        Vec3f n = (r3-r1).cross(r2-r1);
         double s = (p1 - p0).dot(n);
         if(std::abs(s)<ZERO)return false;
         double t = (r1-p0).dot(n)/s;
         Vec3f tmp=p0+(p1-p0)*t;
-        //printf("t %lf, %lf %lf %lf \n", t, dot(cross(r2-r1, tmp-r1), n), dot(cross(r3-r2, tmp-r2), n), dot(cross(r1-r3, tmp-r3), n));
         if(t>=0&&t<=1&&
-            (((r2-r1).cross(tmp-r1)).dot(n)>0)&&
-            (((r3-r2).cross(tmp-r2)).dot(n)>0)&&
-            (((r1-r3).cross(tmp-r3)).dot(n)>0)
+            (((tmp-r1).cross(r2-r1)).dot(n)>=0)&&
+            (((r3-tmp).cross(r2-tmp)).dot(n)>=0)&&
+            (((r3-r1).cross(tmp-r1)).dot(n)>=0)
             )
         {
-            p=tmp;
+
+             p=tmp;
             return true;
         }
         return false;
@@ -124,55 +127,66 @@ namespace collision_checking {
 
     inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res)
     {
-        int count = 0;
-        Vec3f p = Vec3f(0, 0, 0);
+        int count1 = 0, count2 = 0;
+        Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
         Vec3f tmp;
 
         if(EFtest(r1, r2, R1, R2, R3, tmp))
         {
-            p+=tmp;
-            count++;
+            p1+=tmp;
+            count1++;
         }
         if(EFtest(r2, r3, R1, R2, R3, tmp))
         {
-            p+=tmp;
-            count++;
+            p1+=tmp;
+            count1++;
         }
         if(EFtest(r3, r1, R1, R2, R3, tmp))
         {
-            p+=tmp;
-            count++;
+            p1+=tmp;
+            count1++;
         }
+        if(count1==2)
+        {
+            res = p1*0.5;
+            return true;
+        }
+        
         if(EFtest(R1, R2, r1, r2, r3, tmp))
         {
-            p+=tmp;
-            count++;
+            p2+=tmp;
+            count2++;
         }
         if(EFtest(R2, R3, r1, r2, r3, tmp))
         {
-            p+=tmp;
-            count++;
+            p2+=tmp;
+            count2++;
         }
         if(EFtest(R3, R1, r1, r2, r3, tmp))
         {
-            p+=tmp;
-            count++;
+            p2+=tmp;
+            count2++;
         }
-        if(count!=0){
-            res = p*(1.0/count);
+        //printf("count %d\n",count);
+        if(count2==2){
+            res = p2*0.5;
             return true;
         }
-
+       
+        if(count1==1&&count2==1)
+        {
+            res = (p1+p2)*0.5;
+            return true;
+        }
         else return false;
 
     }  
 
     inline collision_checking::Vec3f CollisionSkeletonNode::TransformVertex( Vec3f& v )
     {
-        Vec3f res;
-        for(int i=0;i<3;i++)
-            res[i] = v.dot(mR[i])+mT[i];
-        return res;
+        Eigen::Vector3d vv(v[0], v[1], v[2]);
+        Eigen::Vector3d res = mWorldTrans.topLeftCorner(3,3)*vv + mWorldTrans.col(3).head(3);
+        return Vec3f(res[0], res[1], res[2]);
     }
     
 } // namespace collision
