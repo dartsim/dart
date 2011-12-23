@@ -35,6 +35,7 @@ if (WIN32)
 elseif (UNIX)  
   # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3")
+ # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -msse2 -g")
   SET(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
