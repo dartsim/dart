@@ -18,7 +18,7 @@ node root { 0
 	translate { <root<t-X>,root<t-Y>,root<t-Z>> }
         rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
     }
-    primitive {<1.0,1.0,1.0>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+    primitive {<1.0,1.0,1.0>, <0.0,0.0,0.0>, Length, CUBE, node_mass}
 
     
 }
