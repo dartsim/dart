@@ -12,6 +12,7 @@ using namespace std;
 
 namespace dynamics{
     class SkeletonDynamics;
+    class ContactDynamic;
 }
 
 namespace integration{
@@ -28,6 +29,8 @@ public:
 		
         mRunning = false;
         mShowMarker = false;
+        mPlayBack = false;
+        mCurrFrame = 0;
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
@@ -35,6 +38,8 @@ public:
     
         mGravity = Eigen::Vector3d(0.0,-9.8, 0.0);
         mTimeStep = 1.0/5000.0;
+        mSkels.push_back(mModel);
+        mSkels.push_back(mModel2);
         initDyn();
     }
 
@@ -50,21 +55,28 @@ protected:
     bool mRunning;
     int mFrame;
     bool mShowMarker;
+    bool mPlayBack;
+    int mCurrFrame;
+    std::vector<Eigen::VectorXd> mBakedStates;
+
     integration::EulerIntegrator mIntegrator;
     
+    std::vector<dynamics::SkeletonDynamics*> mSkels;
+    dynamics::ContactDynamic *mCollisionHandle;
     dynamics::SkeletonDynamics* mModel;
     dynamics::SkeletonDynamics* mModel2;
     Eigen::VectorXd mDofVels;
     Eigen::VectorXd mDofs;
     double mTimeStep;
     Eigen::Vector3d mGravity;
-    void initDyn();
-    void setPose();
-
-//     BVHModel<RSS>* mBox;
-//     vector<BVHModel<RSS>*> mBody;
     SkeletonCollision mContactCheck;
 
+
+    void initDyn();
+    void setPose();
+    void bake();
+
+    
 };
 
 #endif

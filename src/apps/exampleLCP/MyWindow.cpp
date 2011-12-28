@@ -29,13 +29,15 @@ void MyWindow::initDyn()
         mDofs2[i] = 0.0;
         mDofVels2[i] = 0.0;
     }
-    mDofs2[1] = -0.1;
-    
+    mDofVels2[0] = 0.3;
+    mDofVels2[2] = 0.15;
+    //    mDofs2[1] = -0.1;
+
     mSkels[0]->setPose(mDofs,false,false);
     mSkels[1]->setPose(mDofs2,false,false);
     mSkels[0]->computeDynamics(mGravity, mDofVels, false);
     mSkels[1]->computeDynamics(mGravity, mDofVels2, false);
-
+    
     mCollisionHandle = new dynamics::ContactDynamic(mSkels, mTimeStep);
 }
 
@@ -91,17 +93,34 @@ void MyWindow::setPose() {
 
 void MyWindow::displayTimer(int _val)
 {
+    if (mPlayBack) {        
+        if (mCurrFrame < mBakedStates.size()) {
+            int nDof1 = mDofs.size();
+            int nDof2 = mDofs2.size();
+            mSkels[0]->setPose(mBakedStates[mCurrFrame].head(nDof1), false, false);
+            mSkels[1]->setPose(mBakedStates[mCurrFrame].tail(nDof2), false, false);
+            mCurrFrame++;
+            glutPostRedisplay();
+        }else{
+            mCurrFrame = 0;
+        }        
+        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+        return;
+    }
     int numIter = mDisplayTimeout / (mTimeStep*1000);
-    for(int i = 0; i < numIter; i++){
-        static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0), mForce);
+    for (int i = 0; i < numIter; i++) {
+        static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.1, 0.1, 0.1), mForce);
         setPose();
         mIntegrator.integrate(this, mTimeStep);
     }
-
+    bake();
     mForce = Vector3d::Zero();
     mFrame += numIter;   
     glutPostRedisplay();
-    if(mRunning)	
+   
+    //    if (mFrame == 1826)
+    //        mRunning = false;
+    if (mRunning)
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
@@ -131,7 +150,7 @@ void MyWindow::draw()
         //        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
 
         glVertex3f(v[0], v[1], v[2]);
-        glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
+        glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
 
         //cout << "contact " << k << endl;
         //cout << v << endl;
@@ -163,8 +182,10 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     switch(key){
     case ' ': // use space key to play or stop the motion
         mRunning = !mRunning;
-        if(mRunning)
+        if(mRunning){
+            mPlayBack = false;
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+        }
         break;
     case 'r': // reset the motion to the first frame
         mFrame = 0;
@@ -179,14 +200,39 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mFrame++;   
         glutPostRedisplay();
         break;
-    case 'p': // upper right force
+    case 'w': // upper right force
         //mForce[0] = 300.0;        
-        mForce[0] = 0.01;
-        mForce[1] = 5.0;
+        mForce[0] = 0.5;
+        mForce[1] = 0.5;
         cout << "push" << endl;
+        break;
+    case 'q': // upper right force
+        //mForce[0] = 300.0;        
+        mForce[0] = -0.5;
+        cout << "push" << endl;
+        break;
+    case 'p': // playBack
+        mPlayBack = !mPlayBack;
+        if(mPlayBack){
+            mRunning = false;
+            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+        }
         break;
     default:
         Win3D::keyboard(key,x,y);
     }
     glutPostRedisplay();
+}
+
+void MyWindow::bake()
+{
+    int nDof1 = mDofs.size();
+    int nDof2 = mDofs2.size();
+    VectorXd state(nDof1 + nDof2);
+    for (int i = 0; i < nDof1; i++)
+        state[i] = mDofs[i];
+    for (int i = 0; i < nDof2; i++)
+        state[nDof1 + i] = mDofs2[i];
+        
+    mBakedStates.push_back(state);
 }

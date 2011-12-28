@@ -27,6 +27,8 @@ public:
 		
         mRunning = false;
         mShowMarker = false;
+        mPlayBack = false;
+        mCurrFrame = 0;
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
@@ -53,7 +55,10 @@ public:
     bool mRunning;
     int mFrame;
     bool mShowMarker;
+    bool mPlayBack;
+    int mCurrFrame;
     integration::EulerIntegrator mIntegrator;
+    std::vector<Eigen::VectorXd> mBakedStates;
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;
     dynamics::ContactDynamic *mCollisionHandle;
@@ -66,8 +71,7 @@ public:
     Eigen::Vector3d mForce;
     void initDyn();
     void setPose();
-    //    SkeletonCollision mContactCheck;
-
+    void bake();
 };
 
 #endif

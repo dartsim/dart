@@ -64,7 +64,7 @@ namespace dynamics {
     
     class ContactDynamic {
     public:
-        ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.0, int _d = 4);
+        ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.1, int _d = 8);
         virtual ~ContactDynamic();
         void applyContactForces();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
@@ -86,17 +86,16 @@ namespace dynamics {
         inline int getNumContactDirections() const { return mNumDir; }
         int getNumContacts() const;
 
-        Eigen::MatrixXd getJacobian(kinematics::BodyNode* node,
-                                    const Eigen::Vector3d& p) const;
+        Eigen::MatrixXd getJacobian(kinematics::BodyNode* node, const Eigen::Vector3d& p);
 
         // Helper functions to compute all of the matrices
         // Notation is similar to that used in derivation:
         // Mqddot + Cqdot + kq = tau + (J^T)(f_n)N + (J^T)D(f_d) -> Mqdot = tau* + N(f_n) + B(f_d)
         inline Eigen::MatrixXd getMassMatrix() const { return mM; } // M matrix
         inline Eigen::VectorXd getTauStarVector() const { return mTauStar; } // T* vector (not T)
-        Eigen::MatrixXd getNormalMatrix() const; // N matrix
-        Eigen::MatrixXd getBasisMatrix() const; // B matrix 
-        Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) const; // gets a matrix of tangent dirs.
+        Eigen::MatrixXd getNormalMatrix(); // N matrix
+        Eigen::MatrixXd getBasisMatrix() ; // B matrix 
+        Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
         Eigen::MatrixXd getContactMatrix() const; // E matrix
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
 

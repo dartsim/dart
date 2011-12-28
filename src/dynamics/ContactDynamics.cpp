@@ -124,7 +124,7 @@ namespace dynamics {
     
     void ContactDynamic::fillMatrices() {
         int c = getNumContacts();
-        //  cout << " contact # = " << c << endl;
+        cout << " contact # = " << c << endl;
         computeMassMat();
         computeTauStar();
         
@@ -133,7 +133,7 @@ namespace dynamics {
         MatrixXd E = getContactMatrix();
         MatrixXd Minv = mM.inverse();
         MatrixXd mu = getMuMatrix();
-        
+
         assert(Minv.rows() == Minv.cols());
         assert(Minv.cols() == N.rows());
         assert(Minv.cols() == B.rows());
@@ -148,7 +148,7 @@ namespace dynamics {
         MatrixXd Btranspose = B.transpose();
         MatrixXd nTmInv = Ntranspose * Minv;
         MatrixXd bTmInv = Btranspose * Minv;
-                
+                 
         // Construct
         int cd = c * mNumDir;
         //dimA = c;
@@ -157,7 +157,7 @@ namespace dynamics {
         mA.block(0, c, c, cd) = nTmInv * B;
         mA.block(c, 0, cd, c) = bTmInv * N;
         mA.block(c, c, cd, cd) = bTmInv * B;
-        mA.block(c, c + cd, cd, c) = E / (mDt*mDt);
+        mA.block(c, c + cd, cd, c) = E;
         mA.block(c + cd, 0, c, c) = mu;
         mA.block(c + cd, c, c, cd) = -E.transpose();
         
@@ -166,12 +166,12 @@ namespace dynamics {
         mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
         mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
 
-        //mQBar /= mDt;
-        
-        mA *= 1e3;
-        mQBar *= 1e3;
+        mQBar /= mDt;
+                
+        //mA *= 1e3;
+        //mQBar *= 1e3;
         /*
-        MatrixXd mat = mTauStar;
+        MatrixXd mat = B;
         for(int i = 0; i < mat.rows(); i++)
             for(int j = 0; j < mat.cols(); j++)
                 if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
@@ -182,13 +182,6 @@ namespace dynamics {
     bool ContactDynamic::solve() {
         lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
         bool b = solver.Solve(mA, mQBar, mX);
-        /*
-        MatrixXd mat = mA * mX + mQBar;
-        for(int i = 0; i < mat.rows(); i++)
-            for(int j = 0; j < mat.cols(); j++)
-                if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
-                    cout <<"W[" << i << "][" << j << "]= " << mat(i,j) << endl;
-        */
         return b;
     }
     
@@ -204,10 +197,10 @@ namespace dynamics {
         // Note, we need to un-scale by dt (was premultiplied in).
         // If this turns out to be a perf issue (above, as well as recomputing matrices 
         // again), consider caching both to improve performance.
-        //MatrixXd N = getNormalMatrix();
-        //MatrixXd B = getBasisMatrix();
-        MatrixXd N = getNormalMatrix() / mDt;
-        MatrixXd B = getBasisMatrix() / mDt;
+        MatrixXd N = getNormalMatrix();
+        MatrixXd B = getBasisMatrix();
+        //MatrixXd N = getNormalMatrix() / mDt;
+        //        MatrixXd B = getBasisMatrix() / mDt;
         forces = (N * f_n) + (B * f_d);
         //forces = N * f_n;
         // Next, apply the external forces skeleton by skeleton.
@@ -216,50 +209,32 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
             startRow += nDof;
-        }   
-    }
-    /*
-    void ContactDynamic::applyExternalForces() {
-        //        int c = getNumContacts() * 3;
-        int c = getNumContacts();
-
-        // First compute the external forces
-        int mStar = mM.rows(); // a hacky way to get the dimension
-        VectorXd forces(VectorXd::Zero(mStar));
-        VectorXd f_n = mX.block(0, 0, c, 1);
-        VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
-
-        // Note, we need to un-scale by dt (was premultiplied in).
-        // If this turns out to be a perf issue (above, as well as recomputing matrices 
-        // again), consider caching both to improve performance.
-        MatrixXd N = getNormalMatrix() / mDt;
-        MatrixXd B = getBasisMatrix() / mDt;
-        forces = (N * f_n) + (B * f_d);
-        // Next, apply the external forces skeleton by skeleton.
-        int startRow = 0;
-        for (int i = 0; i < getNumSkels(); i++) {
-            SkeletonDynamics* skel = mSkels[i];
-            int numRows = skel->getNumDofs();
-            VectorXd extForces = forces.block(startRow, 0, numRows, 1);
-            skel->applyAdditionalExternalForces(extForces);
-            startRow += numRows;
         }
-        
+        /*
+        MatrixXd mat = N * f_n;
+        for(int i = 0; i < mat.rows(); i++)
+            for(int j = 0; j < mat.cols(); j++)
+                if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
+                    cout <<"X[" << i << "][" << j << "]= " << mat(i,j) << endl;
+        */
     }
-*/
-    MatrixXd ContactDynamic::getJacobian(kinematics::BodyNode* node, const Vector3d& p) const {
-        const int nDofs = node->getSkel()->getNumDofs();
+
+    MatrixXd ContactDynamic::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
+
+        int nDofs = node->getSkel()->getNumDofs();
         MatrixXd J( MatrixXd::Zero(3, nDofs) );
+        VectorXd invP = utils::xformHom(node->getWorldInvTransform(), p); 
 
         for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
             int i = node->getDependentDof(dofIndex);
-            VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(dofIndex), p);
+            VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
             J.col(i) = Jcol;
         }
+
         return J;
     }
 
-    MatrixXd ContactDynamic::getNormalMatrix() const {
+    MatrixXd ContactDynamic::getNormalMatrix() {
         MatrixXd N(MatrixXd::Zero(getNumTotalDofs(), getNumContacts()));
 
         for (int i = 0; i < getNumContacts(); i++) {
@@ -283,12 +258,12 @@ namespace dynamics {
             N.block(index2, i, NDOF2, 1) = J12.transpose() * N12;
         }
 
-        N = N * mDt;
+        //        N = N * mDt;
         
         return N;
     }
 
-    MatrixXd ContactDynamic::getTangentBasisMatrix(const Vector3d& p, const Vector3d& n) const {
+    MatrixXd ContactDynamic::getTangentBasisMatrix(const Vector3d& p, const Vector3d& n)  {
         MatrixXd T(MatrixXd::Zero(3, mNumDir));
 
         // Pick an arbitrary vector to take the cross product of (in this case, Z-axis)
@@ -313,11 +288,11 @@ namespace dynamics {
                 T.block(0, i + iter, 3, 1) = -basis;
             }
         }
-
+ 
         return T;
     }
 
-    MatrixXd ContactDynamic::getBasisMatrix() const {
+    MatrixXd ContactDynamic::getBasisMatrix() {
         MatrixXd B(MatrixXd::Zero(getNumTotalDofs(), getNumContacts() * getNumContactDirections()));
 
         for (int i = 0; i < getNumContacts(); i++) {
@@ -333,8 +308,8 @@ namespace dynamics {
 
             // NOTE: indices shoud be verified
             Vector3d p = c.point;
-            MatrixXd B21 = getTangentBasisMatrix(p, -c.normal);
-            MatrixXd B12 = getTangentBasisMatrix(p, c.normal);
+            MatrixXd B21 = getTangentBasisMatrix(p, c.normal);
+            MatrixXd B12 = getTangentBasisMatrix(p, -c.normal);
             MatrixXd J21 = getJacobian(c.bd1, p);
             MatrixXd J12 = getJacobian(c.bd2, p);
 
@@ -342,7 +317,14 @@ namespace dynamics {
             B.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()) = J12.transpose() * B12;
         }
 
-        B = B * mDt;
+       /*        
+        MatrixXd mat = B;
+        for(int i = 0; i < mat.rows(); i++)
+            for(int j = 0; j < mat.cols(); j++)
+                //         if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
+                    cout <<"mat[" << i << "][" << j << "]= " << mat(i,j) << endl;
+        */
+        //B = B * mDt;
         
         return B;
     }
@@ -352,16 +334,16 @@ namespace dynamics {
         MatrixXd E(
             MatrixXd::Zero(getNumContacts() * numDir, getNumContacts())
             );
-        MatrixXd column(MatrixXd::Ones(numDir, 1));            
+        MatrixXd column(MatrixXd::Ones(numDir, 1));
         for (int i = 0; i < getNumContacts(); i++) {
             E.block(i * numDir, i, numDir, 1) = column;
         }
-        return E;
+        return E / (mDt * mDt);
     }
 
     MatrixXd ContactDynamic::getMuMatrix() const {
         int c = getNumContacts();
-        return (MatrixXd::Identity(c, c) * mMu);
+        return (MatrixXd::Identity(c, c) * mMu / (mDt * mDt));
 
     }
 
