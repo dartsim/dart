@@ -36,7 +36,7 @@ void MyWindow::initDyn()
     //    mContactCheck.addCollisionSkeletonNode(mModel->getRoot(), true);
     //    mContactCheck.addCollisionSkeletonNode(mModel2->getRoot(), true);
 
-    mCollisionHandle = new dynamics::ContactDynamic(mSkels, mTimeStep);
+    mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
 
 }
 

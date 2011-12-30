@@ -56,16 +56,16 @@ namespace lcpsolver {
 
 /*
   // Sample Usage
-  dynamics::ContactDynamic contacts(skels, dt);
+  dynamics::ContactDynamics contacts(skels, dt);
   contacts.applyContactForces();
  */
 namespace dynamics {
     class SkeletonDynamics;
     
-    class ContactDynamic {
+    class ContactDynamics {
     public:
-        ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.2, int _d = 8);
-        virtual ~ContactDynamic();
+        ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.2, int _d = 8);
+        virtual ~ContactDynamics();
         void applyContactForces();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
@@ -74,8 +74,8 @@ namespace dynamics {
         void initialize();
         void destroy();
        
-        void computeMassMat();
-        void computeTauStar();
+        void updateMassMat();
+        void updateTauStar();
        
         void fillMatrices();
         bool solve();
@@ -91,10 +91,10 @@ namespace dynamics {
         // Helper functions to compute all of the matrices
         // Notation is similar to that used in derivation:
         // Mqddot + Cqdot + kq = tau + (J^T)(f_n)N + (J^T)D(f_d) -> Mqdot = tau* + N(f_n) + B(f_d)
-        inline Eigen::MatrixXd getMassMatrix() const { return mM; } // M matrix
-        inline Eigen::VectorXd getTauStarVector() const { return mTauStar; } // T* vector (not T)
-        Eigen::MatrixXd getNormalMatrix(); // N matrix
-        Eigen::MatrixXd getBasisMatrix() ; // B matrix 
+        //        inline Eigen::MatrixXd getMassMatrix() const { return mM; } // M matrix
+        //        inline Eigen::VectorXd getTauStarVector() const { return mTauStar; } // T* vector (not T)
+        void updateNormalMatrix(); // N matrix
+        void updateBasisMatrix() ; // B matrix 
         Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
         Eigen::MatrixXd getContactMatrix() const; // E matrix
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
@@ -110,8 +110,10 @@ namespace dynamics {
         int mNumDir; // number of basis directions
 
         // Cached (aggregated) mass/tau matrices
-        Eigen::MatrixXd mM;
+        Eigen::MatrixXd mMInv;
         Eigen::VectorXd mTauStar;
+        Eigen::MatrixXd mN;
+        Eigen::MatrixXd mB;
 
         // Matrices to pass to solver
         Eigen::MatrixXd mA;
