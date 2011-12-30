@@ -53,7 +53,10 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         
          if(evalContactPosition(res, otherNode, i, pair.point)==false)continue;
          v = res.collidePairs()[i].normal;
+         
         pair.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+        //        v = res.collidePairs()[i].contact_point;
+        //        pair.point = Eigen::Vector3d(v[0], v[1], v[2]);
         
         result.push_back(pair);
 
