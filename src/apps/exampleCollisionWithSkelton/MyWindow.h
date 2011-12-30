@@ -12,7 +12,7 @@ using namespace std;
 
 namespace dynamics{
     class SkeletonDynamics;
-    class ContactDynamic;
+    class ContactDynamics;
 }
 
 namespace integration{
@@ -62,7 +62,7 @@ protected:
     integration::EulerIntegrator mIntegrator;
     
     std::vector<dynamics::SkeletonDynamics*> mSkels;
-    dynamics::ContactDynamic *mCollisionHandle;
+    dynamics::ContactDynamics *mCollisionHandle;
     dynamics::SkeletonDynamics* mModel;
     dynamics::SkeletonDynamics* mModel2;
     Eigen::VectorXd mDofVels;

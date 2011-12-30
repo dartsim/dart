@@ -38,7 +38,7 @@ void MyWindow::initDyn()
     mSkels[0]->computeDynamics(mGravity, mDofVels, false);
     mSkels[1]->computeDynamics(mGravity, mDofVels2, false);
     
-    mCollisionHandle = new dynamics::ContactDynamic(mSkels, mTimeStep);
+    mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
 }
 
 VectorXd MyWindow::getState() {

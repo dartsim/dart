@@ -10,7 +10,7 @@ using namespace std;
 
 namespace dynamics{
     class SkeletonDynamics;
-    class ContactDynamic;
+    class ContactDynamics;
 }
 
 namespace integration{
@@ -61,7 +61,7 @@ public:
     std::vector<Eigen::VectorXd> mBakedStates;
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;
-    dynamics::ContactDynamic *mCollisionHandle;
+    dynamics::ContactDynamics *mCollisionHandle;
     Eigen::VectorXd mDofVels;
     Eigen::VectorXd mDofs;
     Eigen::VectorXd mDofVels2;
