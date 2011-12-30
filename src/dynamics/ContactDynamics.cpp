@@ -8,9 +8,12 @@
 
 #include "collision/collision_skeleton.h"
 #include "utils/UtilsMath.h"
+#include "utils/Timer.h"
+
 
 using namespace Eigen;
 using namespace collision_checking;
+using namespace utils;
 
 namespace dynamics {
     ContactDynamic::ContactDynamic(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
@@ -111,13 +114,21 @@ namespace dynamics {
     }
 
     void ContactDynamic::applyContactForces() {
+        static Timer tLCP("LCP Solver");
         mCollision->clearAllContacts();
         mCollision->checkCollision(false);
-        if (getNumContacts() == 0)
+        
+        if (getNumContacts() == 0) {
+            for (int i = 0; i < getNumSkels(); i++) 
+                mConstrForces[i].setZero(); 
             return;
+        }
         cleanupContact();
         fillMatrices();
+        tLCP.startTimer();
         solve();
+        tLCP.stopTimer();
+        tLCP.printScreen();
         applySolution();
 
     }
@@ -357,7 +368,7 @@ namespace dynamics {
             ContactPoint& c = mCollision->getContact(i);
             bool isUnique = true;
             for (unsigned int j = 0; j < i; j++) {
-                if(c.point != mCollision->getContact(j).point){
+                if ((c.point - mCollision->getContact(j).point).norm() > 1e-3){
                     continue;
                 }else{
                     deleteIDs.push_back(i);
