@@ -144,31 +144,29 @@ void MyWindow::draw()
     mSkels[0]->draw(mRI);
     mSkels[1]->draw(mRI);
 
-    
-    glBegin(GL_LINES);
-    VectorXd f = mCollisionHandle->getConstraintForce(1);
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
-        //        glVertex3f(v[0], v[1], v[2]);
-        //        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
+    if (mRunning) {
+        glBegin(GL_LINES);
+        VectorXd f = mCollisionHandle->getConstraintForce(1);
+        for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+            Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
+            //        glVertex3f(v[0], v[1], v[2]);
+            //        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
 
-        glVertex3f(v[0], v[1], v[2]);
-        glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+            glVertex3f(v[0], v[1], v[2]);
+            glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
 
-        //cout << "contact " << k << endl;
-        //cout << v << endl;
-    }
-    glEnd();
+        }
+        glEnd();
 
-
-    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        mRI->pushMatrix();
-        glTranslated(v[0], v[1], v[2]);
-        mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
-        mRI->popMatrix();
+        mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+        for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+            mRI->pushMatrix();
+            glTranslated(v[0], v[1], v[2]);
+            mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+            mRI->popMatrix();
+        }
     }
         
     // display the frame count in 2D text
