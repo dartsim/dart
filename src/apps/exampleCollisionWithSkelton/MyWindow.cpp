@@ -29,8 +29,8 @@ void MyWindow::initDyn()
     mModel->computeDynamics(mGravity, mDofVels, false);
     
     VectorXd zeroVec(VectorXd::Zero(3));
-    mModel2->setPose(zeroVec, false, false);
     mModel2->computeDynamics(mGravity, zeroVec, false);
+    mModel2->setPose(zeroVec, false, false);
     
     //init collision mesh
     //    mContactCheck.addCollisionSkeletonNode(mModel->getRoot(), true);
@@ -102,24 +102,25 @@ void MyWindow::draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     mModel->draw(mRI);
     mModel2->draw(mRI);
-    glBegin(GL_LINES);
-    
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
-        glVertex3f(v[0], v[1], v[2]);
-       /* printf("%f %f %f\n", v[0], v[1], v[2]);*/
-        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
-    }
-    glEnd();
+    if (mRunning) {
+        glBegin(GL_LINES);
+        for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+            Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
+            glVertex3f(v[0], v[1], v[2]);
+            /* printf("%f %f %f\n", v[0], v[1], v[2]);*/
+            glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
+        }
+        glEnd();
 
-    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        mRI->pushMatrix();
-        glTranslated(v[0], v[1], v[2]);
-        mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
-        mRI->popMatrix();
+        mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+        for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+            mRI->pushMatrix();
+            glTranslated(v[0], v[1], v[2]);
+            mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+            mRI->popMatrix();
+        }
     }
     
     // display the frame count in 2D text
