@@ -24,7 +24,8 @@ CollisionSkeletonNode::~CollisionSkeletonNode()
 
 int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int num_max_contact)
 {
-    
+    using namespace std;
+
     Eigen::MatrixXd worldTrans(4, 4);
     Eigen::MatrixXd matCOM;
     
@@ -40,24 +41,79 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     res.num_max_contacts = num_max_contact;
     collide(*cdmesh, mR, mT, *otherNode->cdmesh, otherNode->mR, otherNode->mT, &res);
     
+    int start, size;
+    start = result.size();
+    size = 0;
 
     for(int i=0;i<res.numPairs();i++)
     {
-        ContactPoint pair;
-        pair.bd1 = bodyNode;
-        pair.bd2 = otherNode->bodyNode;
+        ContactPoint pair1, pair2;
+        pair1.bd1 = bodyNode;
+        pair1.bd2 = otherNode->bodyNode;
 
-        pair.bdID1 = this->bodynodeID;
-        pair.bdID2 = otherNode->bodynodeID;
+        pair1.bdID1 = this->bodynodeID;
+        pair1.bdID2 = otherNode->bodynodeID;
+
+        pair2.bd1 = bodyNode;
+        pair2.bd2 = otherNode->bodyNode;
+
+        pair2.bdID1 = this->bodynodeID;
+        pair2.bdID2 = otherNode->bodynodeID;
         Vec3f v;
         
-         if(evalContactPosition(res, otherNode, i, pair.point)==false)continue;
+
+         if(evalContactPosition(res, otherNode, i, pair1.point, pair2.point)==false)continue;
          v = res.collidePairs()[i].normal;
-        pair.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+        pair1.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+        pair2.normal = Eigen::Vector3d(v[0], v[1], v[2]);
         
-        result.push_back(pair);
+        result.push_back(pair1);
+        result.push_back(pair2);
+
+        size+=2;
 
     }
+
+    int cur = start;
+    std::vector<int> deleteIDs;
+    for(int i=start;i<start+size;i++)
+        for(int j=i+1;j<start+size;j++)
+        {
+            if(result[i].point == result[j].point)deleteIDs.push_back(i);
+            break;
+        }
+
+    for(int i =deleteIDs.size()-1; i>=0;i--)
+        result.erase(result.begin()+deleteIDs[i]);
+    
+    size = result.size()-start;
+    deleteIDs.clear();
+    const double ZERO = 0.00001;
+    
+    bool bremove;
+    
+    for(int i=start;i<start+size;i++)
+    {
+        bremove = false;
+        for(int j=start;j<start+size;j++)
+        {
+            if(j==i)continue;
+            if(bremove)break;
+            for(int k=start;k<start+size;k++)
+            {
+                if(i==j||i==k)continue;
+                Eigen::Vector3d  v = (result[i].point-result[j].point).cross(result[i].point-result[k].point);
+                if(v.norm()<ZERO&&((result[i].point-result[j].point).dot(result[i].point-result[k].point)<0)){bremove = true;break;}
+                
+                
+            }
+        }
+        if(bremove)deleteIDs.push_back(i);
+    }
+    
+    for(int i =deleteIDs.size()-1; i>=0;i--)
+       result.erase(result.begin()+deleteIDs[i]);
+    
     int collisionNum = result.size();
     return collisionNum;
 
@@ -86,7 +142,7 @@ void CollisionSkeletonNode::evalRT()
         mT[i] = worldTrans(i, 3);
 }
 
-bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition )
+bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2 )
 {
     int id1, id2;
     Triangle tri1, tri2;
@@ -106,7 +162,7 @@ bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  Col
     p2 = node2->cdmesh->vertices[tri2[1]];
     p3 = node2->cdmesh->vertices[tri2[2]];
 
-    Vec3f contact;
+    Vec3f contact1, contact2;
 
 
      v1 = node1->TransformVertex(v1);
@@ -116,8 +172,9 @@ bool CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  Col
      p2 = node2->TransformVertex(p2);
      p3 = node2->TransformVertex(p3);
     bool testRes;
-    testRes = FFtest(v1, v2, v3, p1, p2, p3, contact);
-    contactPosition = Eigen::Vector3d(contact[0], contact[1], contact[2]);
+    testRes = FFtest(v1, v2, v3, p1, p2, p3, contact1, contact2);
+    contactPosition1 = Eigen::Vector3d(contact1[0], contact1[1], contact1[2]);
+    contactPosition2 = Eigen::Vector3d(contact2[0], contact2[1], contact2[2]);
     return testRes;
 }
 

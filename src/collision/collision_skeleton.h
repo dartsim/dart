@@ -70,11 +70,11 @@ namespace collision_checking {
         int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
         void evalRT();
         
-        bool evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition);
+        bool evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2);
         void drawCollisionSkeletonNode();
 
     private:
-        inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res);
+        inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2);
         inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
         inline Vec3f TransformVertex(Vec3f& v);
     };
@@ -125,57 +125,59 @@ namespace collision_checking {
 
     }
 
-    inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res)
+    inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2)
     {
         int count1 = 0, count2 = 0;
-        Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
+        //Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
         Vec3f tmp;
+        Vec3f p1[4], p2[4];
 
         if(EFtest(r1, r2, R1, R2, R3, tmp))
         {
-            p1+=tmp;
+            p1[count1] = tmp;
             count1++;
         }
         if(EFtest(r2, r3, R1, R2, R3, tmp))
         {
-            p1+=tmp;
+            p1[count1] = tmp;
             count1++;
         }
         if(EFtest(r3, r1, R1, R2, R3, tmp))
         {
-            p1+=tmp;
+            p1[count1] = tmp;
             count1++;
         }
         if(count1==2)
         {
-            res = p1*0.5;
+            //res = p1*0.5;
+           res1 = p1[0]; res2 = p1[1];
             return true;
         }
         
         if(EFtest(R1, R2, r1, r2, r3, tmp))
         {
-            p2+=tmp;
+            p2[count2] = tmp;
             count2++;
         }
         if(EFtest(R2, R3, r1, r2, r3, tmp))
         {
-            p2+=tmp;
+            p2[count2] = tmp;
             count2++;
         }
         if(EFtest(R3, R1, r1, r2, r3, tmp))
         {
-            p2+=tmp;
+            p2[count2] = tmp;
             count2++;
         }
         //printf("count %d\n",count);
         if(count2==2){
-            res = p2*0.5;
+            res1 = p2[0]; res2 = p2[1];
             return true;
         }
        
         if(count1==1&&count2==1)
         {
-            res = (p1+p2)*0.5;
+            res1 = p1[0]; res2 = p2[0];
             return true;
         }
         else return false;
