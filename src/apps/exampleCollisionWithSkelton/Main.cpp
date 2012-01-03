@@ -15,12 +15,12 @@ int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model, model2;
     model.loadFile(DART_DATA_PATH"/skel/Nunchuck.skel", kinematics::SKEL);
-    model2.loadFile(DART_DATA_PATH"/skel/Collisiontest.skel", kinematics::SKEL);
+    model2.loadFile(DART_DATA_PATH"/skel/collisiontest.skel", kinematics::SKEL);
 
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel());
     
     glutInit(&argc, argv);
-    window.initWindow(640,480,"expForwardDyn");
+    window.initWindow(640,480,"LCP Collision");
     glutMainLoop();
 
     return 0;

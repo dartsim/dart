@@ -31,6 +31,7 @@ public:
         mShowMarker = false;
         mPlayBack = false;
         mCurrFrame = 0;
+        mForce = Eigen::Vector3d::Zero();
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
@@ -58,6 +59,8 @@ protected:
     bool mPlayBack;
     int mCurrFrame;
     std::vector<Eigen::VectorXd> mBakedStates;
+    Eigen::Vector3d mForce;
+
 
     integration::EulerIntegrator mIntegrator;
     
