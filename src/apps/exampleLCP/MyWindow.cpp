@@ -132,13 +132,6 @@ void MyWindow::draw()
 {
     glDisable(GL_LIGHTING);
 
-    //collision and draw
-    MatrixXd worldTrans(4, 4);
-
-    bool bCollide = false;
-    MatrixXd matCOM;
-    matCOM.setIdentity(4, 4);
-    
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     mSkels[0]->draw(mRI);
