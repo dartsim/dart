@@ -1,6 +1,7 @@
 #include "MyWindow.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/ContactDynamics.h"
+#include "dynamics/BodyNodeDynamics.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -25,8 +26,8 @@ void MyWindow::initDyn()
     mDofVels2.resize(mModel2->getNumDofs());
 
     for (unsigned int i = 0; i < mModel->getNumDofs(); i++) {
-        mDofs[i] = utils::random(-0.5,0.5);
-        mDofVels[i] = utils::random(-0.1,0.1);
+        mDofs[i] = utils::random(-0.7,0.7);
+        mDofVels[i] = utils::random(-0.15,0.15);
     }
     mModel->setPose(mDofs,false,false);
     mModel->computeDynamics(mGravity, mDofVels, false);
@@ -187,6 +188,19 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;
+    case 'l': // right force
+        mForce[0] = 300.0;
+        static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.0, 0.1, 0), mForce);
+        mForce[0] = 0.0;
+        cout << "push" << endl;
+        break;
+    case 'k': // left force
+        mForce[0] = -300.0;
+        static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.0, 0.1, 0), mForce);
+        mForce[0] = 0.0;
+        cout << "push" << endl;
+        break;
+
     default:
         Win3D::keyboard(key,x,y);
     }

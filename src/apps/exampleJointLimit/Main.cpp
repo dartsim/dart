@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     MyWindow window((SkeletonDynamics*)model.getSkel());
     
     glutInit(&argc, argv);
-    window.initWindow(640,480,"expForwardDyn");
+    window.initWindow(640,480,"LCP Joint Limit");
     glutMainLoop();
 
     return 0;

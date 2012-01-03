@@ -108,16 +108,16 @@ void MyWindow::displayTimer(int _val)
         return;
     }
 
-    static Timer tSim("Simulation");
+    //    static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for (int i = 0; i < numIter; i++) {
-        tSim.startTimer();
+        //        tSim.startTimer();
         static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.1, 0.1, 0.1), mForce);
         setPose();
         mIntegrator.integrate(this, mTimeStep);
-        tSim.stopTimer();
+        //        tSim.stopTimer();
     }
-    tSim.printScreen();
+    //    tSim.printScreen();
 
     bake();
     mForce = Vector3d::Zero();
@@ -200,13 +200,13 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'w': // upper right force
         //mForce[0] = 300.0;        
         mForce[0] = 0.4;
-        mForce[1] = 0.4;
-        cout << "push" << endl;
+        mForce[1] = 0.8;
+        cout << "push up and right" << endl;
         break;
     case 'q': // upper right force
         //mForce[0] = 300.0;        
         mForce[0] = -0.4;
-        cout << "push" << endl;
+        cout << "push left" << endl;
         break;
     case 'p': // playBack
         mPlayBack = !mPlayBack;
