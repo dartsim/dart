@@ -37,7 +37,7 @@ public:
         mFrame = 0;
     
         mGravity = Eigen::Vector3d(0.0,-9.8, 0.0);
-        mTimeStep = 1.0/5000.0;
+        mTimeStep = 1.0/1000.0;
         mSkels.push_back(mModel);
         mSkels.push_back(mModel2);
         initDyn();
@@ -67,6 +67,8 @@ protected:
     dynamics::SkeletonDynamics* mModel2;
     Eigen::VectorXd mDofVels;
     Eigen::VectorXd mDofs;
+    Eigen::VectorXd mDofVels2;
+    Eigen::VectorXd mDofs2;
     double mTimeStep;
     Eigen::Vector3d mGravity;
     SkeletonCollision mContactCheck;
