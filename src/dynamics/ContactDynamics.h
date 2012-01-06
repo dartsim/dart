@@ -67,6 +67,7 @@ namespace dynamics {
         ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.2, int _d = 8);
         virtual ~ContactDynamics();
         void applyContactForces();
+        void reset();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
         
@@ -82,7 +83,7 @@ namespace dynamics {
         void applySolution();
 
         inline int getNumSkels() const { return mSkels.size(); }
-        inline int getNumTotalDofs() const { return mIndices[getNumSkels()]; }
+        inline int getNumTotalDofs() const { return mIndices[mIndices.size() - 1]; }
         inline int getNumContactDirections() const { return mNumDir; }
         int getNumContacts() const;
 

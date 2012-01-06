@@ -22,19 +22,21 @@ void MyWindow::initDyn()
     mDofs2.resize(mSkels[1]->getNumDofs());
     mDofVels2.resize(mSkels[1]->getNumDofs());
     for(unsigned int i = 0; i < mSkels[0]->getNumDofs(); i++){
-        mDofs[i] = utils::random(-0.5,0.5);
-        mDofVels[i] = utils::random(-0.1,0.1);
+        mDofs[i] = 0.0;
+        mDofVels[i] = 0.0;
     }
     for(unsigned int i = 0; i < mSkels[1]->getNumDofs(); i++){
         mDofs2[i] = 0.0;
         mDofVels2[i] = 0.0;
     }
+
     mDofVels2[0] = 0.3;
     mDofVels2[2] = 0.15;
-    //    mDofs2[1] = -0.1;
+
+    mSkels[0]->setKinematicState(true);
 
     mSkels[0]->setPose(mDofs,false,false);
-    mSkels[1]->setPose(mDofs2,false,false);
+    mSkels[1]->setPose(mDofs2, false, false);
     mSkels[0]->computeDynamics(mGravity, mDofVels, false);
     mSkels[1]->computeDynamics(mGravity, mDofVels2, false);
     
@@ -86,7 +88,7 @@ void MyWindow::setState(VectorXd newState) {
 void MyWindow::setPose() {
     mSkels[0]->setPose(mDofs,false,false);
     mSkels[0]->computeDynamics(mGravity, mDofVels, true);
-    mSkels[1]->setPose(mDofs2,false,false);
+    mSkels[1]->setPose(mDofs2, false, false);
     mSkels[1]->computeDynamics(mGravity, mDofVels2, true);
     mCollisionHandle->applyContactForces();
 }
