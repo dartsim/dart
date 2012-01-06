@@ -71,6 +71,8 @@ namespace dynamics{
         Eigen::VectorXd getCombinedVector() const { return mCg; }
         Eigen::VectorXd getExternalForces() const { return mFext; }
         Eigen::VectorXd getQDotVector() const { return mQdot; }
+        bool getKinematicState() const { return mKinematicState; }
+        void setKinematicState(bool _s) { mKinematicState = _s; } 
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -80,6 +82,8 @@ namespace dynamics{
         Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
         Eigen::VectorXd mFext; ///< external forces vector for the skeleton
         Eigen::VectorXd mQdot; ///< the current qdot
+
+        bool mKinematicState; ///< true if the skeleton is currently controlled kinematically
     };
 
 } // namespace dynamics

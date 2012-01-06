@@ -25,26 +25,30 @@ namespace dynamics {
         destroy();
     }
 
-    void ContactDynamics::updateTauStar() {
-        int startRow = 0;
-        for (int i = 0; i < getNumSkels(); i++) {
-            VectorXd tau = mSkels[i]->getExternalForces();
-            VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
-            mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
-            startRow += tauStar.rows();
+    void ContactDynamics::applyContactForces() {
+        //        static Timer tLCP("LCP Solver");
+        if (getNumTotalDofs() == 0)
+            return;
+        mCollision->clearAllContacts();
+        mCollision->checkCollision(false);
+        
+        if (getNumContacts() == 0) {
+            for (int i = 0; i < getNumSkels(); i++) 
+                mConstrForces[i].setZero(); 
+            return;
         }
+        cleanupContact();
+        fillMatrices();
+        //        tLCP.startTimer();
+        solve();
+        //        tLCP.stopTimer();
+        //        tLCP.printScreen();
+        applySolution();
     }
 
-    void ContactDynamics::updateMassMat() {
-        int startRow = 0;
-        int startCol = 0;
-        for (int i = 0; i < getNumSkels(); i++) {
-            MatrixXd skelMass = mSkels[i]->getMassMatrix();
-            MatrixXd skelMassInv = skelMass.inverse();
-            mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
-            startRow+= skelMassInv.rows();
-            startCol+= skelMassInv.cols();
-        }
+    void ContactDynamics::reset() {
+        destroy();
+        initialize();
     }
 
     void ContactDynamics::initialize() {
@@ -65,14 +69,18 @@ namespace dynamics {
                 mBodyIndexToSkelIndex.push_back(i);
             }
 
+            if (!mSkels[i]->getKinematicState()) {
             // Use these to construct the mass matrix and external forces vector.
-            rows += skel->getMassMatrix().rows();
-            cols += skel->getMassMatrix().cols();
+                rows += skel->getMassMatrix().rows();
+                cols += skel->getMassMatrix().cols();
+            }
         }
 
         mConstrForces.resize(getNumSkels());
-        for (int i = 0; i < getNumSkels(); i++)
-            mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
+        for (int i = 0; i < getNumSkels(); i++){
+            if (!mSkels[i]->getKinematicState())
+                mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
+        }
 
         mMInv = MatrixXd::Zero(rows, cols);
         mTauStar = VectorXd::Zero(rows);
@@ -91,6 +99,8 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             SkeletonDynamics* skel = mSkels[i];
             int nDofs = skel->getNumDofs();
+            if (mSkels[i]->getKinematicState())
+                nDofs = 0;
             sumNDofs += nDofs;
             mIndices.push_back(sumNDofs);
         }
@@ -102,32 +112,38 @@ namespace dynamics {
         }
     }
 
-    void ContactDynamics::applyContactForces() {
-        //        static Timer tLCP("LCP Solver");
-        mCollision->clearAllContacts();
-        mCollision->checkCollision(false);
-        
-        if (getNumContacts() == 0) {
-            for (int i = 0; i < getNumSkels(); i++) 
-                mConstrForces[i].setZero(); 
-            return;
+    void ContactDynamics::updateTauStar() {
+        int startRow = 0;
+        for (int i = 0; i < getNumSkels(); i++) {
+            if (mSkels[i]->getKinematicState())
+                continue;
+            VectorXd tau = mSkels[i]->getExternalForces();
+            VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
+            mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
+            startRow += tauStar.rows();
         }
-        cleanupContact();
-        fillMatrices();
-        //        tLCP.startTimer();
-        solve();
-        //        tLCP.stopTimer();
-        //        tLCP.printScreen();
-        applySolution();
-
     }
-    
+
+    void ContactDynamics::updateMassMat() {
+        int startRow = 0;
+        int startCol = 0;
+        for (int i = 0; i < getNumSkels(); i++) {
+            if (mSkels[i]->getKinematicState())
+                continue;
+            MatrixXd skelMass = mSkels[i]->getMassMatrix();
+            MatrixXd skelMassInv = skelMass.inverse();
+            mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
+            startRow+= skelMassInv.rows();
+            startCol+= skelMassInv.cols();
+        }
+    }
+        
     void ContactDynamics::fillMatrices() {
         int c = getNumContacts();
-        //  cout << " contact # = " << c << endl;
+        //        cout << " contact # = " << c << endl;
         updateMassMat();
         updateTauStar();
-        
+
         updateNormalMatrix();
         updateBasisMatrix();
         MatrixXd E = getContactMatrix();
@@ -189,8 +205,8 @@ namespace dynamics {
         int c = getNumContacts();
 
         // First compute the external forces
-        int mStar = mMInv.rows(); // a hacky way to get the dimension
-        VectorXd forces(VectorXd::Zero(mStar));
+        int nRows = mMInv.rows(); // a hacky way to get the dimension
+        VectorXd forces(VectorXd::Zero(nRows));
         VectorXd f_n = mX.block(0, 0, c, 1);
         VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
 
@@ -206,6 +222,8 @@ namespace dynamics {
         // Next, apply the external forces skeleton by skeleton.
         int startRow = 0;
         for (int i = 0; i < getNumSkels(); i++) {
+            if (mSkels[i]->getKinematicState())
+                continue;
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
             startRow += nDof;
@@ -220,7 +238,6 @@ namespace dynamics {
     }
 
     MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
-
         int nDofs = node->getSkel()->getNumDofs();
         MatrixXd J( MatrixXd::Zero(3, nDofs) );
         VectorXd invP = utils::xformHom(node->getWorldInvTransform(), p); 
@@ -239,27 +256,26 @@ namespace dynamics {
 
         for (int i = 0; i < getNumContacts(); i++) {
             ContactPoint& c = mCollision->getContact(i);
+            Vector3d p = c.point;
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
 
-            int index1 = mIndices[skelID1];
-            int NDOF1 = c.bd1->getSkel()->getNumDofs();
-            int index2 = mIndices[skelID2];
-            int NDOF2 = c.bd2->getSkel()->getNumDofs();
-
-            // NOTE: indices shoudl be verified
-            Vector3d p = c.point;
-            Vector3d N21 = c.normal;
-            Vector3d N12 = -c.normal;
-            MatrixXd J21 = getJacobian(c.bd1, p);
-            MatrixXd J12 = getJacobian(c.bd2, p);
-
-            mN.block(index1, i, NDOF1, 1) = J21.transpose() * N21;
-            mN.block(index2, i, NDOF2, 1) = J12.transpose() * N12;
+            if (!mSkels[skelID1]->getKinematicState()) {
+                int index1 = mIndices[skelID1];
+                int NDOF1 = c.bd1->getSkel()->getNumDofs();
+                Vector3d N21 = c.normal;
+                MatrixXd J21 = getJacobian(c.bd1, p);
+                mN.block(index1, i, NDOF1, 1) = J21.transpose() * N21;
+            }
+            if (!mSkels[skelID2]->getKinematicState()) {
+                int index2 = mIndices[skelID2];
+                int NDOF2 = c.bd2->getSkel()->getNumDofs();
+                Vector3d N12 = -c.normal;
+                MatrixXd J12 = getJacobian(c.bd2, p);
+                mN.block(index2, i, NDOF2, 1) = J12.transpose() * N12;
+            }
         }
-
-        //        N = N * mDt;
-        
+        //        N = N * mDt;        
         return;
     }
 
@@ -294,29 +310,28 @@ namespace dynamics {
 
     void ContactDynamics::updateBasisMatrix() {
         mB = MatrixXd::Zero(getNumTotalDofs(), getNumContacts() * getNumContactDirections());
-
         for (int i = 0; i < getNumContacts(); i++) {
             ContactPoint& c = mCollision->getContact(i);
+            Vector3d p = c.point;
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
 
-            int index1 = mIndices[skelID1];
-            int NDOF1 = c.bd1->getSkel()->getNumDofs();
-            int index2 = mIndices[skelID2];
-            int NDOF2 = c.bd2->getSkel()->getNumDofs();
-
-
-            // NOTE: indices shoud be verified
-            Vector3d p = c.point;
-            MatrixXd B21 = getTangentBasisMatrix(p, c.normal);
-            MatrixXd B12 = getTangentBasisMatrix(p, -c.normal);
-            MatrixXd J21 = getJacobian(c.bd1, p);
-            MatrixXd J12 = getJacobian(c.bd2, p);
-
-            mB.block(index1, i * getNumContactDirections(), NDOF1, getNumContactDirections()) = J21.transpose() * B21;
-            mB.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()) = J12.transpose() * B12;
+            if (!mSkels[skelID1]->getKinematicState()) {
+                int index1 = mIndices[skelID1];
+                int NDOF1 = c.bd1->getSkel()->getNumDofs();
+                MatrixXd B21 = getTangentBasisMatrix(p, c.normal);
+                MatrixXd J21 = getJacobian(c.bd1, p);
+                mB.block(index1, i * getNumContactDirections(), NDOF1, getNumContactDirections()) = J21.transpose() * B21;
+            }
+            
+            if (!mSkels[skelID2]->getKinematicState()) {
+                int index2 = mIndices[skelID2];
+                int NDOF2 = c.bd2->getSkel()->getNumDofs();
+                MatrixXd B12 = getTangentBasisMatrix(p, -c.normal);
+                MatrixXd J12 = getJacobian(c.bd2, p);
+                mB.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()) = J12.transpose() * B12;
+            }
         }
-
        /*        
         MatrixXd mat = B;
         for(int i = 0; i < mat.rows(); i++)
@@ -324,8 +339,7 @@ namespace dynamics {
                 //         if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
                     cout <<"mat[" << i << "][" << j << "]= " << mat(i,j) << endl;
         */
-        //B = B * mDt;
-        
+        //B = B * mDt;        
         return;
     }
 
