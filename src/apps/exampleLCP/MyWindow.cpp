@@ -95,13 +95,14 @@ void MyWindow::setPose() {
 
 void MyWindow::displayTimer(int _val)
 {
-    if (mPlayBack) {        
+    if (!mRunning) {
         if (mCurrFrame < mBakedStates.size()) {
             int nDof1 = mDofs.size();
             int nDof2 = mDofs2.size();
             mSkels[0]->setPose(mBakedStates[mCurrFrame].head(nDof1), false, false);
-            mSkels[1]->setPose(mBakedStates[mCurrFrame].tail(nDof2), false, false);
-            mCurrFrame++;
+            mSkels[1]->setPose(mBakedStates[mCurrFrame].segment(nDof1, nDof2), false, false);
+            if(mPlayBack)
+                mCurrFrame++;
             glutPostRedisplay();
         }else{
             mCurrFrame = 0;
@@ -118,12 +119,13 @@ void MyWindow::displayTimer(int _val)
         setPose();
         mIntegrator.integrate(this, mTimeStep);
         //        tSim.stopTimer();
+        bake();
     }
     //    tSim.printScreen();
 
-    bake();
     mForce = Vector3d::Zero();
-    mFrame += numIter;   
+    mFrame += numIter;
+
     glutPostRedisplay();
    
     if (mRunning)
@@ -139,31 +141,41 @@ void MyWindow::draw()
     mSkels[0]->draw(mRI);
     mSkels[1]->draw(mRI);
 
-    
-    glBegin(GL_LINES);
-    VectorXd f = mCollisionHandle->getConstraintForce(1);
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
-        //        glVertex3f(v[0], v[1], v[2]);
-        //        glVertex3f(v[0]+n[0], v[1]+n[1], v[2]+n[2]);
+    if(!mRunning) {
+       if (mCurrFrame < mBakedStates.size()) {
+           int nDof1 = mSkels[0]->getNumDofs();
+           int nDof2 = mSkels[1]->getNumDofs();
+           int nContact = (mBakedStates[mCurrFrame].size() - nDof1 - nDof2) / 6;
+           for (int i = 0; i < nContact; i++) {
+               Vector3d v = mBakedStates[mCurrFrame].segment(nDof1 + nDof2 + i * 6, 3);
+               Vector3d n = mBakedStates[mCurrFrame].segment(nDof1 + nDof2 + i * 6 + 3, 3);
+               glBegin(GL_LINES);
+               glVertex3f(v[0], v[1], v[2]);
+               glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+               glEnd();
+               mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+               mRI->pushMatrix();
+               glTranslated(v[0], v[1], v[2]);
+               mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+               mRI->popMatrix();
+           }
+       }
+    }else{
+        VectorXd f = mCollisionHandle->getConstraintForce(1);
+        for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+            Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
 
-        glVertex3f(v[0], v[1], v[2]);
-        glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
-
-        //cout << "contact " << k << endl;
-        //cout << v << endl;
-    }
-    glEnd();
-
-
-    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
-    for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-        Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-        mRI->pushMatrix();
-        glTranslated(v[0], v[1], v[2]);
-        mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
-        mRI->popMatrix();
+            glBegin(GL_LINES);
+            glVertex3f(v[0], v[1], v[2]);
+            glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+            glEnd();
+            mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+            mRI->pushMatrix();
+            glTranslated(v[0], v[1], v[2]);
+            mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+            mRI->popMatrix();
+        }
     }
         
     // display the frame count in 2D text
@@ -180,11 +192,10 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 {
     switch(key){
     case ' ': // use space key to play or stop the motion
+        mPlayBack = false;
         mRunning = !mRunning;
-        if(mRunning){
-            mPlayBack = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
-        }
+        if(mRunning)
+            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);        
         break;
     case 'r': // reset the motion to the first frame
         mFrame = 0;
@@ -211,12 +222,28 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         cout << "push left" << endl;
         break;
     case 'p': // playBack
+        mRunning = false;
         mPlayBack = !mPlayBack;
-        if(mPlayBack){
-            mRunning = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+        if(mPlayBack)
+            glutTimerFunc(mDisplayTimeout, refreshTimer, 0);        
+        break;
+    case '[': // step backward
+        if(!mRunning){
+            mCurrFrame--;
+            if(mCurrFrame < 0)
+                mCurrFrame = 0;
+            //         glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
         }
         break;
+    case ']': // step backward
+        if(!mRunning){
+            mCurrFrame++;
+            if(mCurrFrame >= mBakedStates.size())
+                mCurrFrame = 0;
+            //        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+        }
+        break;
+
     default:
         Win3D::keyboard(key,x,y);
     }
@@ -227,11 +254,17 @@ void MyWindow::bake()
 {
     int nDof1 = mDofs.size();
     int nDof2 = mDofs2.size();
-    VectorXd state(nDof1 + nDof2);
+    int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
+    VectorXd state(nDof1 + nDof2 + 6 * nContact);
+
     for (int i = 0; i < nDof1; i++)
         state[i] = mDofs[i];
     for (int i = 0; i < nDof2; i++)
         state[nDof1 + i] = mDofs2[i];
-        
+    for (int i = 0; i < nContact; i++) {
+        int begin = nDof1 + nDof2 + i * 6;
+        state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
+        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
+    }
     mBakedStates.push_back(state);
 }
