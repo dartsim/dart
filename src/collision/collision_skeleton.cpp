@@ -60,6 +60,12 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         pair2.bdID1 = this->bodynodeID;
         pair2.bdID2 = otherNode->bodynodeID;
         Vec3f v;
+
+        pair1.triID1 = res.id1(i);
+        pair1.triID2 = res.id2(i);
+
+        pair2.triID1 = res.id1(i);
+        pair2.triID2 = res.id2(i);
         
 
          if(evalContactPosition(res, otherNode, i, pair1.point, pair2.point)==false)continue;
@@ -76,6 +82,10 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
 
     int cur = start;
     std::vector<int> deleteIDs;
+    
+    size = result.size()-start;
+    deleteIDs.clear();
+
     for(int i=start;i<start+size;i++)
         for(int j=i+1;j<start+size;j++)
         {
@@ -83,12 +93,13 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
             break;
         }
 
-    for(int i =deleteIDs.size()-1; i>=0;i--)
-        result.erase(result.begin()+deleteIDs[i]);
+        for(int i =deleteIDs.size()-1; i>=0;i--)
+            result.erase(result.begin()+deleteIDs[i]);
     
     size = result.size()-start;
     deleteIDs.clear();
     const double ZERO = 0.00001;
+    const double ZERO2 = ZERO*ZERO;
     
     bool bremove;
     
@@ -103,7 +114,10 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
             {
                 if(i==j||i==k)continue;
                 Eigen::Vector3d  v = (result[i].point-result[j].point).cross(result[i].point-result[k].point);
-                if(v.norm()<ZERO&&((result[i].point-result[j].point).dot(result[i].point-result[k].point)<0)){bremove = true;break;}
+                if(v.dot(v)<ZERO2&&
+                    ((result[i].point-result[j].point).dot(result[i].point-result[k].point)<0)&&
+                    result[i].isAdjacent(result[j])&&result[i].isAdjacent(result[k]))
+                {bremove = true;break;}
                 
                 
             }
@@ -113,6 +127,8 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     
     for(int i =deleteIDs.size()-1; i>=0;i--)
        result.erase(result.begin()+deleteIDs[i]);
+
+    
     
     int collisionNum = result.size();
     return collisionNum;

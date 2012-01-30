@@ -53,6 +53,13 @@ namespace collision_checking {
         kinematics::BodyNode *bd2;
         int bdID1;
         int bdID2;
+        int triID1;
+        int triID2;
+
+        bool isAdjacent(ContactPoint &otherPt){
+            return (bd1==otherPt.bd1&&triID1==otherPt.triID1||bd2==otherPt.bd2&&triID2==otherPt.triID2||
+                bd1==otherPt.bd2&&triID1==otherPt.triID2||bd2==otherPt.bd1&&triID2==otherPt.triID1);
+        }
     };
 
     struct CollisionSkeletonNode{
