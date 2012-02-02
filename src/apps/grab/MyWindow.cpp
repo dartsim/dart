@@ -86,7 +86,7 @@ void MyWindow::setPose() {
         if (mSkels[i]->getKinematicState()) {
             mSkels[i]->setPose(mDofs[i], true, false);
         } else {
-            mSkels[i]->setPose(mDofs[i], false, false);
+            mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
         }
     }
