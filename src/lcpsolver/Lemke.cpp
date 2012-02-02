@@ -190,7 +190,6 @@ namespace lcpsolver {
 		    LOG(ERROR) << "LCP Solver: Unbounded ray";
 		
 
-
 	    return err;
     }
 
