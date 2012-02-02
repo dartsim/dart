@@ -261,7 +261,9 @@ void SkeletonCollision::checkCollision(bool bConsiderGround)
              if(mCollisionSkeletonNodeList[i]->bodyNode->getParentNode()==mCollisionSkeletonNodeList[j]->bodyNode||
                  mCollisionSkeletonNodeList[j]->bodyNode->getParentNode()==mCollisionSkeletonNodeList[i]->bodyNode)
                   continue;
-           
+             if( mCollisionSkeletonNodeList[i]->bodyNode->getSkel() == mCollisionSkeletonNodeList[j]->bodyNode->getSkel())
+             continue;                       
+
             
             
             mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], mContactPointList, num_max_contact);

@@ -244,7 +244,7 @@ namespace dynamics {
 
         for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
             int i = node->getDependentDof(dofIndex);
-            VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(i), (Vector3d)invP);
+            VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
             J.col(i) = Jcol;
         }
 
