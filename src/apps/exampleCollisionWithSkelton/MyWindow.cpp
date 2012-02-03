@@ -85,9 +85,9 @@ void MyWindow::setState(VectorXd newState) {
 }
 
 void MyWindow::setPose() {
-    mModel->setPose(mDofs, false, false);
+    mModel->setPose(mDofs, true, true);
     mModel->computeDynamics(mGravity, mDofVels, true);
-    mModel2->setPose(mDofs2, false, false);
+    mModel2->setPose(mDofs2, true, true);
     mModel2->computeDynamics(mGravity, mDofVels2, true);
     mCollisionHandle->applyContactForces();
 }
