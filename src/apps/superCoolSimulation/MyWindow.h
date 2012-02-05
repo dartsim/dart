@@ -1,12 +1,16 @@
-//
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
+#include <stdarg.h>
 #include "yui/Win3D.h"
 #include "integration/RK4Integrator.h"
+//#include "collision/collision_skeleton.h"
+#include "dynamics/SkeletonDynamics.h"
+#include <vector>
 
 namespace dynamics{
     class SkeletonDynamics;
+	class ContactDynamics;
 }
 
 namespace integration{
@@ -17,7 +21,7 @@ namespace integration{
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
 	//Constructor
-	MyWindow(dynamics::SkeletonDynamics* _m);
+	MyWindow(dynamics::SkeletonDynamics* _m, dynamics::SkeletonDynamics* _m2);
 
 	// inherited from Win3D
 	virtual void draw();
@@ -31,21 +35,27 @@ public:
 
 protected:
 
+	//Environment
+	Eigen::Vector3d mGravity;
+	double mTimeStep;
+	int mFrame;
+	bool mSim, mPlay;
 
 	//Integrators
 	integration::RK4Integrator mIntegrator;
 
 	//Models
-	dynamics::SkeletonDynamics* mModel;
+	std::vector<dynamics::SkeletonDynamics*> mSkels;
+	dynamics::SkeletonDynamics* mModel, *mModel2;
 
 	//Degrees of freedom
-	Eigen::VectorXd mDofs;
-	Eigen::VectorXd mDofVels;
+	std::vector<Eigen::VectorXd> mDofs;
+	std::vector<Eigen::VectorXd> mDofVels;
 
-	//Environment
-	Eigen::Vector3d mGravity;
-	double mTimeStep;
-	int mFrame;
+	//Collision
+	dynamics::ContactDynamics* mCollisionHandle;
+
+
 
 	void initDyn();
 	void setPose();
