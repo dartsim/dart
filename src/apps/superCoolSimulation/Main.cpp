@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 	FileInfoSkel<SkeletonDynamics> model, model2;
     model.loadFile(DART_DATA_PATH"/skel/jellyfishMan.skel", kinematics::SKEL);
 	model2.loadFile(DART_DATA_PATH"/skel/ground1.skel", kinematics::SKEL);
-
+	
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel());
     
     glutInit(&argc, argv);
