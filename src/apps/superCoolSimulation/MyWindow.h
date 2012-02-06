@@ -4,9 +4,8 @@
 #include <stdarg.h>
 #include "yui/Win3D.h"
 #include "integration/RK4Integrator.h"
-//#include "collision/collision_skeleton.h"
+#include "collision/collision_skeleton.h"
 #include "dynamics/SkeletonDynamics.h"
-#include <vector>
 
 namespace dynamics{
     class SkeletonDynamics;
