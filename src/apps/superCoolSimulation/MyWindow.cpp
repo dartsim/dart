@@ -54,11 +54,17 @@ void MyWindow::initDyn()
 	mDofVels[0].setZero();
 
 	// translate JellyMan
-	mDofs[0][1] = 0.5;
-	mDofs[0][15] = 0.3;
-	mDofs[0][16] = -0.2;
-	mDofs[0][17] = 0.15;
-	mDofs[0][18] = 0.4;
+	mDofs[0][1] = 0.4;
+	mDofs[0][7] = 0.5;
+	mDofs[0][8] = 0.5;
+	mDofs[0][9] = 0.5;
+	mDofs[0][15] = 0.6;
+	mDofs[0][16] = -0.32;
+	mDofs[0][17] = 0.815;
+	mDofs[0][18] = 0.74;
+	mDofs[0][26] = -0.32;
+	mDofs[0][27] = 0.815;
+	mDofs[0][28] = 0.74;
 
 	// Initialize Ground
 	mDofs[1].resize(mModel2->getNumDofs());
@@ -67,7 +73,7 @@ void MyWindow::initDyn()
 	mDofVels[1].setZero();
 
 	// translate Ground
-	mDofs[1][1] = -0.5;
+	mDofs[1][1] = -0.3;
 
 	mModel->setPose(mDofs[0],false,false);
 	mModel2->setPose(mDofs[1],false,false);
@@ -145,6 +151,7 @@ void MyWindow::displayTimer(int _val)
     mFrame += numIter;  
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+
 }
 
 void MyWindow::draw()
@@ -174,14 +181,14 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;	
-		case 'p': // playBack
+	case 'p': // playBack
         mPlay = !mPlay;
         if (mPlay) {
             mSim = false;
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;
-    default:
+	default:
         Win3D::keyboard(key,x,y);
     }
     glutPostRedisplay();
