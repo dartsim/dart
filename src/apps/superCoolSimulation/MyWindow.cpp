@@ -28,10 +28,12 @@ MyWindow::MyWindow(dynamics::SkeletonDynamics* _m,dynamics::SkeletonDynamics* _m
 	//Camera settings
 	mPersp = 45.0f;
 	mTrans[2] = -20.0f;
+	mZoom = 0.5f;
 	mSim = false;
 	mPlay = false;
 
 	//setup skels vector
+	mSkels.resize(0);
 	mSkels.push_back(_m);
 	mSkels.push_back(_m2);
 
@@ -75,9 +77,14 @@ void MyWindow::initDyn()
 	// translate Ground
 	mDofs[1][1] = -0.3;
 
+	// Set Poses and Other Variables
 	mModel->setPose(mDofs[0],false,false);
-	mModel2->setPose(mDofs[1],false,false);
+	mModel->computeDynamics(mGravity,mDofVels[0],false);
 
+	mModel2->setPose(mDofs[1],false,false);
+	mModel2->setKinematicState(true);
+
+	//Initialize collision handling 
 	mCollisionHandle = new dynamics::ContactDynamics(mSkels,mTimeStep);
 	
 }
@@ -108,7 +115,9 @@ VectorXd MyWindow::evalDeriv() {
 
     VectorXd deriv = VectorXd::Zero(stateSize);
 
-    VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() + mCollisionHandle->getConstraintForce(0) ); 
+    VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve( -mModel->getCombinedVector() 
+		+ mModel->getExternalForces()
+		+ mCollisionHandle->getConstraintForce(0) ); 
     mModel->clampRotation(mDofs[0], mDofVels[0]);
 	deriv.segment(mDofs[0].size(), mDofVels[0].size()) = qddot; // set qddot (accelerations)
     deriv.head(mDofs[0].size()) = (mDofVels[0] + (qddot * mTimeStep)); // set new velocities
@@ -135,23 +144,26 @@ void MyWindow::setPose() {
     mModel->computeDynamics(mGravity, mDofVels[0], true);
 
 	mModel2->setPose(mDofs[1],true,false);
+	
+	mCollisionHandle->applyContactForces();
 }
 
 void MyWindow::displayTimer(int _val)
 {
-    static Timer tSim("Super Cool Simulation");
-    int numIter = mDisplayTimeout / (mTimeStep*1000);
-    for(int i=0; i<numIter; i++){
-        tSim.startTimer();
-        setPose();
-        mIntegrator.integrate(this, mTimeStep);
-        tSim.stopTimer();
-    }
-
-    mFrame += numIter;  
-	glutPostRedisplay();
-	glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
-
+	if (mSim)
+	{
+		static Timer tSim("Super Cool Simulation");
+		int numIter = mDisplayTimeout / (mTimeStep*1000);
+		for(int i=0; i<numIter; i++){
+			tSim.startTimer();
+			setPose();
+			mIntegrator.integrate(this, mTimeStep);
+			tSim.stopTimer();
+		}
+		mFrame += numIter;  
+		glutPostRedisplay();
+		glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+	}
 }
 
 void MyWindow::draw()
@@ -174,6 +186,11 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'r':
         mFrame = 0;
         break;
+	case 's': // simulate one frame
+		setPose();
+		mIntegrator.integrate(this, mTimeStep);
+		mFrame++;
+		break;
     case ' ': // use space key to play or stop the motion
         mSim = !mSim;
         if (mSim) {
