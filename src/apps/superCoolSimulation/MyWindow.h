@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include "yui/Win3D.h"
+#include "Controller.h"
 #include "integration/RK4Integrator.h"
 #include "collision/collision_skeleton.h"
 #include "dynamics/SkeletonDynamics.h"
@@ -36,9 +37,11 @@ protected:
 
 	//Environment
 	Eigen::Vector3d mGravity;
+	Eigen::Vector3d mForce, mForce2;
 	double mTimeStep;
-	int mFrame;
-	bool mSim, mPlay;
+	int mSimFrame, mPlayFrame;
+	bool mSim, mPlay, mDrop;
+	std::vector<Eigen::VectorXd> mBakedStates;
 
 	//Integrators
 	integration::RK4Integrator mIntegrator;
@@ -50,13 +53,15 @@ protected:
 	//Degrees of freedom
 	std::vector<Eigen::VectorXd> mDofs;
 	std::vector<Eigen::VectorXd> mDofVels;
+	std::vector<int> mIndices;
 
-	//Collision
+	//Collision Handlers and Controllers
 	dynamics::ContactDynamics* mCollisionHandle;
-
+	Controller *mController;
 
 
 	void initDyn();
 	void setPose();
+	void bake();
 };
 #endif
