@@ -15,19 +15,26 @@ These are meant to be suggestions in case you run into issues; they are not nece
   c. Naming Conventions
 	With the exception of GLUT, all of our libraries are compiled to lib<library name>.lib/.dll.
 	Debug versions are appended with a '_d' after the library name.
-  d. Library Locations
+  d. Build Order
+	fcl.r42 depends on ann_1.1.2 and libccd-1.0. Build these two libraries first.
+  e. Library Locations
 	All static library (.lib) files should be placed in (repo)/thirdparty/lib.
 	Any needed DLL files (e.g. libgflags.dll) can be placed in the System or System32 folder in the C drive.
 	(A sample path is C:\Windows\System32.)
 	An alternative is the bin folder for the Visual C/C++ compiler
 	(A sample path is C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin.)
-  e. GLUT
+	If you are feeling adventureous or do not have access to C:\Windows\System32 (don't have 
+	admin privileges), you can add (repo)/thirdparty/lib to your 'Path' environment variable and simply
+	put all the DLLs in said directory.
+  f. GLUT
     We use GLUT as our library for opening a window with an OpenGL context.
 	If you do not already have GLUT present on your machine, you will need to build it (we provide version 3.7.6).
-	Currently, the GLUT solution will compile, but it throw an error when it attempts to copy the .lib and .dll files to the appropriate folders.
+	Currently, the GLUT solution will compile, but it throw an error when it attempts to copy the .lib and .dll files to the appropriate folders. 
+	To get rid of the error turn off the Post-Build Event for the glut32 project.
+	(Properties -> Build Events -> Post-Build Event -> Use In Build = No)
 	The libraries can be found in glut-3.7.6/lib/glut/(Debug|Release)/
 	For glut32.lib, move this to the (repo)/thirdparty/lib directory.
-	For glut32.dll, move this to C:/Windows/System (or System32) directory. 
+	For glut32.dll, move this to C:/Windows/System (or System32) directory.
 
 2. SNOPT (remove me eventually)
   a. General
@@ -48,3 +55,13 @@ These are meant to be suggestions in case you run into issues; they are not nece
   c. Runtime Crashes
 	Make sure that you have a fort.4 file present in the directory containing the Visual Studio project files.
 	A sample fort.4 file lives in (repo)/bin.
+    
+3. GLUT
+  a. Problems with glutTimerFunc()
+	On some computers, GLUT appears to have problems calling glutTimeFunc() for each animation frame.
+	If you try running "exampleSim.exe" and only one frame of animation is renderered each time you press
+	the space bar, you need to make the following change in (repo)\thirdparty\glut-3.7.6\lib\glut\win32_util.c:
+
+	line 40:
+	- tp->tv_usec = ((float)t.QuadPart/f.QuadPart*1000*1000) - (tp->tv_sec*1000*1000);
+	+ tp->tv_usec = ((double)(t.QuadPart%f.QuadPart))*(1e6/(double)f.QuadPart);
