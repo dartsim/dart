@@ -122,6 +122,16 @@ namespace lcpsolver {
 			    if (x[j[i]] / d[j[i]] <= theta)
 				    tmpJ.push_back(j[i]);
 		    }
+            if (tmpJ.empty())
+            {
+                LOG(WARNING) << "tmpJ should never be empty!!!";
+                LOG(WARNING) << "dumping data:";
+                LOG(WARNING) << "theta:" << theta;
+                for (int i = 0; i < jSize; ++i)
+                {
+                    LOG(WARNING) << "x/d(" << j[i] << "): " << x[j[i]] / d[j[i]];
+                }
+            }
 		    j = tmpJ;
 		    jSize = static_cast<int>(j.size());
 		    lvindex = -1;
@@ -136,6 +146,10 @@ namespace lcpsolver {
 		    }
 		    else
 		    {
+                if (jSize == 0)
+                {
+                    LOG(WARNING) << "JSize should not be zero!!!";
+                }
 			    VectorXd dj(jSize);
 			    for (int i = 0; i < jSize; ++i)
 			    {
@@ -148,7 +162,13 @@ namespace lcpsolver {
 				    if (dj[i] == theta)
 					    lvindexSet.push_back(i);
 			    }
-
+                if (lvindexSet.empty())
+                {
+                    LOG(WARNING) << "lvindex set should never be empty!!!";
+                    LOG(WARNING) << "dumping data:";
+                    LOG(WARNING) << "theta:" << theta << " lvindex: " << lvindex;
+                    LOG(WARNING) << dj;
+                }
 			    lvindex = lvindexSet[static_cast<int>((lvindexSet.size() * RandDouble(0, 1)))];
 			    lvindex = j[lvindex];
 
@@ -178,6 +198,12 @@ namespace lcpsolver {
 
 			VectorXd realZ = _z.segment(0, n);
 			_z = realZ;
+
+            if (!validate(_M, _z, _q))
+            {
+                _z = VectorXd::Zero(n);
+                err = 3;
+            }
 		}
 		else
 		{
@@ -188,9 +214,26 @@ namespace lcpsolver {
 		    LOG(ERROR) << "LCP Solver: Iterations exceeded limit";
 	    else if (err == 2)
 		    LOG(ERROR) << "LCP Solver: Unbounded ray";
-		
+        else if (err == 3)
+            LOG(ERROR) << "LCP Solver: Solver converged with numerical issues. Validation failed.";
 
 	    return err;
+    }
+
+    bool validate(const MatrixXd& _M, const VectorXd& _z, const VectorXd& _q)
+    {
+        const double threshold = 1e-4;
+        int n = _z.size();
+
+        VectorXd w = _M * _z + _q;
+        for (int i = 0; i < n; ++i)
+        {
+            if (w(i) < -threshold || _z(i) < -threshold)
+                return false;
+            if (abs(w(i) * _z(i)) > threshold)
+                return false;
+        }
+        return true;
     }
 
 } //namespace lcpsolver
