@@ -64,7 +64,7 @@ namespace dynamics {
     
     class ContactDynamics {
     public:
-        ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.2, int _d = 6);
+        ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.8, int _d = 4);
         virtual ~ContactDynamics();
         void applyContactForces();
         void reset();
