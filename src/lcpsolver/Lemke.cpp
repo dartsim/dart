@@ -165,6 +165,11 @@ namespace lcpsolver {
 //             }
 		    j = tmpJ;
 		    jSize = static_cast<int>(j.size());
+            if (jSize == 0)
+            {
+                err = 4;
+                break;
+            }
 		    lvindex = -1;
 		    for (int i = 0; i < jSize; ++i)
 		    {
@@ -177,10 +182,10 @@ namespace lcpsolver {
 		    }
 		    else
 		    {
-                theta = 1e30;
+                theta = tmpMinRatio[0];
                 for (int i = 0; i < jSize; ++i)
                 {
-                    if (tmpMinRatio[i] < theta)
+                    if (tmpMinRatio[i] <= theta)
                     {
                         theta = tmpMinRatio[i];
                         lvindex = i;
@@ -206,15 +211,19 @@ namespace lcpsolver {
 
 		    ratio = x[lvindex] / d[lvindex];
 
+            bool bDiverged = false;
             for (int i = 0; i < n; ++i)
             {
                 if (isnan(x[i]) || isinf(x[i]))
                 {
-                    err = 4;
-                    _z = VectorXd::Zero(n);
-                    LOG(ERROR) << "LCP: iteration diverged.";
-                    return err;
+                    bDiverged = true;
+                    break;
                 }
+            }
+            if (bDiverged)
+            {
+                err = 4;
+                break;
             }
 		    x = x - ratio * d;
 		    x[lvindex] = ratio;
@@ -256,7 +265,8 @@ namespace lcpsolver {
 		    LOG(ERROR) << "LCP Solver: Unbounded ray";
         else if (err == 3)
             LOG(ERROR) << "LCP Solver: Solver converged with numerical issues. Validation failed.";
-
+        else if (err == 4)
+            LOG(ERROR) << "LCP Solver: Iteration diverged.";
 	    return err;
     }
 
