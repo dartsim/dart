@@ -117,21 +117,25 @@ namespace lcpsolver {
 		    }
 		    double theta = minRatio.minCoeff();
 		    vector<int> tmpJ;
+                    vector<double> tmpMinRatio;
 		    for (int i = 0; i < jSize; ++i)
 		    {
 			    if (x[j[i]] / d[j[i]] <= theta)
+                                {
 				    tmpJ.push_back(j[i]);
+                                    tmpMinRatio.push_back(minRatio[i]);
+                                }
 		    }
-            if (tmpJ.empty())
-            {
-                LOG(WARNING) << "tmpJ should never be empty!!!";
-                LOG(WARNING) << "dumping data:";
-                LOG(WARNING) << "theta:" << theta;
-                for (int i = 0; i < jSize; ++i)
-                {
-                    LOG(WARNING) << "x/d(" << j[i] << "): " << x[j[i]] / d[j[i]];
-                }
-            }
+//             if (tmpJ.empty())
+//             {
+//                 LOG(WARNING) << "tmpJ should never be empty!!!";
+//                 LOG(WARNING) << "dumping data:";
+//                 LOG(WARNING) << "theta:" << theta;
+//                 for (int i = 0; i < jSize; ++i)
+//                 {
+//                     LOG(WARNING) << "x(" << j[i] << "): " << x[j[i]] << "d: " << d[j[i]];
+//                 }
+//             }
 		    j = tmpJ;
 		    jSize = static_cast<int>(j.size());
 		    lvindex = -1;
@@ -146,36 +150,45 @@ namespace lcpsolver {
 		    }
 		    else
 		    {
-                if (jSize == 0)
-                {
-                    LOG(WARNING) << "JSize should not be zero!!!";
-                }
-			    VectorXd dj(jSize);
-			    for (int i = 0; i < jSize; ++i)
-			    {
-				    dj[i] = d[j[i]];
-			    }
-			    theta = dj.maxCoeff(&lvindex);
-			    vector<int> lvindexSet;
-			    for (int i = 0; i < jSize; ++i)
-			    {
-				    if (dj[i] == theta)
-					    lvindexSet.push_back(i);
-			    }
-                if (lvindexSet.empty())
-                {
-                    LOG(WARNING) << "lvindex set should never be empty!!!";
-                    LOG(WARNING) << "dumping data:";
-                    LOG(WARNING) << "theta:" << theta << " lvindex: " << lvindex;
-                    LOG(WARNING) << dj;
-                }
-			    lvindex = lvindexSet[static_cast<int>((lvindexSet.size() * RandDouble(0, 1)))];
+                        theta = 1e30;
+                        for (int i = 0; i < jSize; ++i)
+                            {
+                                if (tmpMinRatio[i] < theta)
+                                    {
+                                        theta = tmpMinRatio[i];
+                                        lvindex = i;
+                                    }
+                            }
+// 			    VectorXd dj(jSize);
+// 			    for (int i = 0; i < jSize; ++i)
+// 			    {
+// 				    dj[i] = d[j[i]];
+// 			    }
+// 			    theta = dj.maxCoeff(&lvindex);
+// 			    vector<int> lvindexSet;
+// 			    for (int i = 0; i < jSize; ++i)
+// 			    {
+// 				    if (dj[i] == theta)
+// 					    lvindexSet.push_back(i);
+// 			    }
+//			    lvindex = lvindexSet[static_cast<int>((lvindexSet.size() * RandDouble(0, 1)))];
 			    lvindex = j[lvindex];
 
 		    }
 		    leaving = bas[lvindex];
 
 		    ratio = x[lvindex] / d[lvindex];
+
+                    for (int i = 0; i < n; ++i)
+                        {
+                            if (x[i] != x[i] || isinf(x[i]))
+                                {
+                                    err = 4;
+                                    _z = VectorXd::Zero(n);
+                                    LOG(ERROR) << "LCP: iteration diverged.";
+                                    return err;
+                                }
+                        }
 		    x = x - ratio * d;
 		    x[lvindex] = ratio;
 		    B.col(lvindex) = Be;
