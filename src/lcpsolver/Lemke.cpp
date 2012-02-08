@@ -1,5 +1,32 @@
 #include "Lemke.h"
 #include <iostream>
+#include <cmath>
+using namespace std;
+
+#include <math.h>
+
+#ifndef isnan
+# define isnan(x) \
+    (sizeof (x) == sizeof (long double) ? isnan_ld (x) \
+    : sizeof (x) == sizeof (double) ? isnan_d (x) \
+    : isnan_f (x))
+static inline int isnan_f  (float       x) { return x != x; }
+static inline int isnan_d  (double      x) { return x != x; }
+static inline int isnan_ld (long double x) { return x != x; }
+#endif
+
+#ifndef isinf
+# define isinf(x) \
+    (sizeof (x) == sizeof (long double) ? isinf_ld (x) \
+    : sizeof (x) == sizeof (double) ? isinf_d (x) \
+    : isinf_f (x))
+static inline int isinf_f  (float       x)
+{ return !isnan (x) && isnan (x - x); }
+static inline int isinf_d  (double      x)
+{ return !isnan (x) && isnan (x - x); }
+static inline int isinf_ld (long double x)
+{ return !isnan (x) && isnan (x - x); }
+#endif
 
 namespace lcpsolver {
 
@@ -29,7 +56,7 @@ namespace lcpsolver {
         
 	    const double zer_tol = 1e-5;
 	    const double piv_tol = 1e-8;
-	    int maxiter = min(1000, 50 * n);
+	    int maxiter = 1000;
 	    int err = 0;
 
 	    if (_q.minCoeff() > 0)
@@ -120,11 +147,11 @@ namespace lcpsolver {
                     vector<double> tmpMinRatio;
 		    for (int i = 0; i < jSize; ++i)
 		    {
-			    if (x[j[i]] / d[j[i]] <= theta)
-                                {
-				    tmpJ.push_back(j[i]);
-                                    tmpMinRatio.push_back(minRatio[i]);
-                                }
+                if (x[j[i]] / d[j[i]] <= theta)
+                {
+                    tmpJ.push_back(j[i]);
+                    tmpMinRatio.push_back(minRatio[i]);
+                }
 		    }
 //             if (tmpJ.empty())
 //             {
@@ -150,15 +177,15 @@ namespace lcpsolver {
 		    }
 		    else
 		    {
-                        theta = 1e30;
-                        for (int i = 0; i < jSize; ++i)
-                            {
-                                if (tmpMinRatio[i] < theta)
-                                    {
-                                        theta = tmpMinRatio[i];
-                                        lvindex = i;
-                                    }
-                            }
+                theta = 1e30;
+                for (int i = 0; i < jSize; ++i)
+                {
+                    if (tmpMinRatio[i] < theta)
+                    {
+                        theta = tmpMinRatio[i];
+                        lvindex = i;
+                    }
+                }
 // 			    VectorXd dj(jSize);
 // 			    for (int i = 0; i < jSize; ++i)
 // 			    {
@@ -179,16 +206,16 @@ namespace lcpsolver {
 
 		    ratio = x[lvindex] / d[lvindex];
 
-                    for (int i = 0; i < n; ++i)
-                        {
-                            if (x[i] != x[i] || isinf(x[i]))
-                                {
-                                    err = 4;
-                                    _z = VectorXd::Zero(n);
-                                    LOG(ERROR) << "LCP: iteration diverged.";
-                                    return err;
-                                }
-                        }
+            for (int i = 0; i < n; ++i)
+            {
+                if (isnan(x[i]) || isinf(x[i]))
+                {
+                    err = 4;
+                    _z = VectorXd::Zero(n);
+                    LOG(ERROR) << "LCP: iteration diverged.";
+                    return err;
+                }
+            }
 		    x = x - ratio * d;
 		    x[lvindex] = ratio;
 		    B.col(lvindex) = Be;
