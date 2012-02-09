@@ -67,7 +67,7 @@ VectorXd MyWindow::evalDeriv() {
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
-    }        
+    }
     return deriv;
 }
 
@@ -105,6 +105,7 @@ void MyWindow::displayTimer(int _val)
         //    static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
+            cout << mSimFrame + i << endl;
             mController->computeTorques(mDofs[1], mDofVels[1]);
 
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
