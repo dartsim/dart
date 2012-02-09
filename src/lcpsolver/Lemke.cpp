@@ -40,7 +40,7 @@ namespace lcpsolver {
 	    }
 
 	    _z = VectorXd::Zero(2 * n);
-
+            //            cout << "check 1" << endl;
 	    int iter = 0;
 	    double theta = 0;
 	    double ratio = 0;
@@ -60,6 +60,7 @@ namespace lcpsolver {
 		    nonbas.push_back(i);
 		    bas.push_back(i + n);
 	    }
+            //            cout << "check 2" << endl;
 
 	    MatrixXd B = -MatrixXd::Identity(n, n);
 	    VectorXd minuxX = -x;
@@ -136,6 +137,7 @@ namespace lcpsolver {
 //                     LOG(WARNING) << "x(" << j[i] << "): " << x[j[i]] << "d: " << d[j[i]];
 //                 }
 //             }
+
 		    j = tmpJ;
 		    jSize = static_cast<int>(j.size());
 		    lvindex = -1;
@@ -175,6 +177,7 @@ namespace lcpsolver {
 			    lvindex = j[lvindex];
 
 		    }
+
 		    leaving = bas[lvindex];
 
 		    ratio = x[lvindex] / d[lvindex];
@@ -195,6 +198,7 @@ namespace lcpsolver {
 		    bas[lvindex] = entering;
     		
 	    }
+            cout << "check 6" << endl;
 
 	    if (iter >= maxiter && leaving != t)
 		    err = 1;
