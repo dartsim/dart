@@ -42,6 +42,7 @@
 #include "kinematics/BodyNode.h"
 #include "Eigen/Dense"
 #include <vector>
+#include "tri_tri_intersection_test.h"
 
 #define ODE_STYLE 1
 
@@ -55,6 +56,7 @@ namespace collision_checking {
         int bdID2;
         int triID1;
         int triID2;
+        double penetrationDepth;
 
         bool isAdjacent(ContactPoint &otherPt){
             return (bd1==otherPt.bd1&&triID1==otherPt.triID1||bd2==otherPt.bd2&&triID2==otherPt.triID2||
@@ -119,8 +121,8 @@ namespace collision_checking {
         Vec3f tmp=p0+(p1-p0)*t;
         if(t>=0&&t<=1&&
             (((tmp-r1).cross(r2-r1)).dot(n)>=0)&&
-            (((r3-tmp).cross(r2-tmp)).dot(n)>=0)&&
-            (((r3-r1).cross(tmp-r1)).dot(n)>=0)
+            (((tmp-r2).cross(r3-r2)).dot(n)>=0)&&
+            (((tmp-r3).cross(r1-r3)).dot(n)>=0)
             )
         {
 
@@ -132,62 +134,98 @@ namespace collision_checking {
 
     }
 
+    inline bool Vec3fCmp(Vec3f& v1, Vec3f& v2)
+    {
+        if(v1[0]!=v2[0])
+            return v1[0]<v2[0];
+        else if(v1[1]!=v2[1])
+            return v1[1]<v2[1];
+        else
+            return v1[2]<v2[2];
+    }
+
     inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2)
     {
-        int count1 = 0, count2 = 0;
+        float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
+        SET(U0, r1);
+        SET(U1, r2);
+        SET(U2, r3);
+        SET(V0, R1);
+        SET(V1, R2);
+        SET(V2, R3);
+        if(tri_tri_intersect(V0,V1,V2,
+            U0,U1,U2, RES1, RES2)==0)return false;
+        SET(res1, RES1);
+        SET(res2, RES2);
+        return true;
+
+        int count1 = 0, count2 = 0, count = 0;
         //Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
         Vec3f tmp;
-        Vec3f p1[4], p2[4];
+        Vec3f p[6], p1[4], p2[4];
 
         if(EFtest(r1, r2, R1, R2, R3, tmp))
         {
-            p1[count1] = tmp;
-            count1++;
+            p[count] = tmp;
+            count++;
         }
         if(EFtest(r2, r3, R1, R2, R3, tmp))
         {
-            p1[count1] = tmp;
-            count1++;
+            p[count] = tmp;
+            count++;
         }
         if(EFtest(r3, r1, R1, R2, R3, tmp))
         {
-            p1[count1] = tmp;
-            count1++;
+            p[count] = tmp;
+            count++;
         }
-        if(count1==2)
-        {
-            //res = p1*0.5;
-           res1 = p1[0]; res2 = p1[1];
-            return true;
-        }
+//         if(count1==2)
+//         {
+//             //res = p1*0.5;
+//            res1 = p1[0]; res2 = p1[1];
+//             return true;
+//         }
         
         if(EFtest(R1, R2, r1, r2, r3, tmp))
         {
-            p2[count2] = tmp;
-            count2++;
+            p[count] = tmp;
+            count++;
         }
         if(EFtest(R2, R3, r1, r2, r3, tmp))
         {
-            p2[count2] = tmp;
-            count2++;
+            p[count] = tmp;
+            count++;
         }
         if(EFtest(R3, R1, r1, r2, r3, tmp))
         {
-            p2[count2] = tmp;
-            count2++;
+            p[count] = tmp;
+            count++;
         }
         //printf("count %d\n",count);
-        if(count2==2){
-            res1 = p2[0]; res2 = p2[1];
-            return true;
-        }
+//         if(count2==2){
+//             res1 = p2[0]; res2 = p2[1];
+//             return true;
+//         }
        
-        if(count1==1&&count2==1)
+//         if(count1==1&&count2==1)
+//         {
+//             res1 = p1[0]; res2 = p2[0];
+//             return true;
+//         }
+//         else return false;
+        if(count==0) return false;
+        else
         {
-            res1 = p1[0]; res2 = p2[0];
+           
+            res1 = Vec3f(100000, 1000000, 1000000);
+            res2 = -res1;
+            for(int i=0; i<count;i++)
+            {
+                if(Vec3fCmp(p[i], res1))res1 = p[i];
+                if(!Vec3fCmp(p[i], res2))res2 = p[i];
+            }
             return true;
         }
-        else return false;
 
     }  
 
