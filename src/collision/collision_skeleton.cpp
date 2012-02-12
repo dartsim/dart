@@ -67,6 +67,8 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         pair2.triID1 = res.id1(i);
         pair2.triID2 = res.id2(i);
         
+        pair1.penetrationDepth = res.collidePairs()[i].penetration_depth;
+        pair2.penetrationDepth = res.collidePairs()[i].penetration_depth;
 
          if(evalContactPosition(res, otherNode, i, pair1.point, pair2.point)==false)continue;
          v = res.collidePairs()[i].normal;
