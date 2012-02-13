@@ -234,7 +234,7 @@ namespace lcpsolver {
 		    bas[lvindex] = entering;
     		
 	    }
-            cout << "check 6" << endl;
+            //            cout << "check 6" << endl;
 
 	    if (iter >= maxiter && leaving != t)
 		    err = 1;

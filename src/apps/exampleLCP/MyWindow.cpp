@@ -29,9 +29,9 @@ void MyWindow::initDyn()
         mDofs2[i] = 0.0;
         mDofVels2[i] = 0.0;
     }
-
-    mDofVels2[0] = 0.3;
-    mDofVels2[2] = 0.15;
+    mDofs2[1] = -0.1;
+    //    mDofVels2[0] = 0.3;
+    //    mDofVels2[2] = 0.15;
 
     mSkels[0]->setKinematicState(true);
 
@@ -120,6 +120,7 @@ void MyWindow::displayTimer(int _val)
         mIntegrator.integrate(this, mTimeStep);
         //        tSim.stopTimer();
         bake();
+        cout << "iter = " << i + mFrame << endl;
     }
     //    tSim.printScreen();
 
@@ -165,7 +166,6 @@ void MyWindow::draw()
         for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
             Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
             Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
-
             glBegin(GL_LINES);
             glVertex3f(v[0], v[1], v[2]);
             glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);

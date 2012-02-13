@@ -26,8 +26,12 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
 
-    mDofs[0][1] = -0.95;
+    mDofs[0][1] = -0.88;
     mDofs[1][19] = -0.15;
+    mDofs[1][9] = -0.2;
+    mDofs[1][10] = 0.2;
+    mDofs[1][15] = -0.2;
+    mDofs[1][16] = 0.2;
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
