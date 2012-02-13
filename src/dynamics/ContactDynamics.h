@@ -101,6 +101,7 @@ namespace dynamics {
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
 
         void cleanupContact();
+        void penaltyMethod();
         
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;

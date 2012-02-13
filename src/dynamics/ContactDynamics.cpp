@@ -32,18 +32,23 @@ namespace dynamics {
         mCollision->clearAllContacts();
         mCollision->checkCollision(false);
         
-        if (getNumContacts() == 0) {
-            for (int i = 0; i < getNumSkels(); i++) 
-                mConstrForces[i].setZero(); 
+        for (int i = 0; i < getNumSkels(); i++) 
+            mConstrForces[i].setZero(); 
+
+        if (getNumContacts() == 0)
             return;
-        }
+        
         cleanupContact();
-        fillMatrices();
+        //      if (getNumContacts() > 100)
+        //            penaltyMethod();
+        //        else {
+            fillMatrices();
         //        tLCP.startTimer();
-        solve();
+            solve();
         //        tLCP.stopTimer();
         //        tLCP.printScreen();
-        applySolution();
+            applySolution();
+            //        }
     }
 
     void ContactDynamics::reset() {
@@ -369,9 +374,10 @@ namespace dynamics {
         vector<int> deleteIDs;
         for (int i = 0; i < getNumContacts(); i++) {
             ContactPoint& c = mCollision->getContact(i);
+
             bool isUnique = true;
             for (unsigned int j = 0; j < i; j++) {
-                if ((c.point - mCollision->getContact(j).point).norm() > 1e-3){
+                if ((c.point - mCollision->getContact(j).point).norm() > 5e-3){
                     continue;
                 }else{
                     deleteIDs.push_back(i);
@@ -384,5 +390,49 @@ namespace dynamics {
         for (int i = deleteIDs.size() - 1; i >= 0; i--) {
             mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + deleteIDs[i]);
         }
+    }
+    
+    void ContactDynamics::penaltyMethod() {
+        for (int i = 0; i < getNumContacts(); i++) {
+            ContactPoint& c = mCollision->getContact(i);
+            double d = c.penetrationDepth;
+            Vector3d f = d * c.normal;
+            Vector3d p = c.point;
+            int sID1 = mBodyIndexToSkelIndex[c.bdID1];
+            int sID2 = mBodyIndexToSkelIndex[c.bdID2];           
+
+            int nDof = mSkels[sID1]->getNumDofs();
+            MatrixXd J(MatrixXd::Zero(3, nDof));
+            Vector3d invP = utils::xformHom(c.bd1->getWorldInvTransform(), p);
+            VectorXd qDot = mSkels[sID1]->getQDotVector();
+            double ks = 100 * mSkels[sID1]->getMass();
+            double kd = 2 * sqrt(ks);
+            if (!mSkels[sID1]->getKinematicState()){
+                for (int j = 0; j < c.bd1->getNumDependentDofs(); j++) {
+                    VectorXd Jcol = utils::xformHom(c.bd1->getDerivWorldTransform(j), invP);
+                    J.col(c.bd1->getDependentDof(j)) = Jcol;
+                }
+                VectorXd Q = J.transpose() * (f * ks - J * qDot * kd);
+                mConstrForces[sID1] += Q;
+            }
+            
+            nDof = mSkels[sID2]->getNumDofs();
+            J = MatrixXd::Zero(3, nDof);
+            invP = utils::xformHom(c.bd2->getWorldInvTransform(), p); 
+            qDot = mSkels[sID2]->getQDotVector();
+            ks = 100 * mSkels[sID2]->getMass();
+            kd = 2 * sqrt(ks);
+            if (!mSkels[sID2]->getKinematicState()){
+                for (int j = 0; j < c.bd2->getNumDependentDofs(); j++) {
+                    VectorXd Jcol = utils::xformHom(c.bd2->getDerivWorldTransform(j), invP);
+                    J.col(c.bd2->getDependentDof(j)) = Jcol;
+                }
+                VectorXd Q = J.transpose() * (-f * ks - J * qDot * kd);
+                cout << "contact " << i << " " << Q[1] << endl;
+                mConstrForces[sID2] += Q;
+            }
+        }
+        cout << "sum " << mConstrForces[1][1]  << endl;
+
     }
 }
