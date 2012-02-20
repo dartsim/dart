@@ -26,7 +26,7 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
 
-    mDofs[0][1] = -0.88;
+    mDofs[0][1] = -1.85;
     mDofs[1][19] = -0.15;
     mDofs[1][9] = -0.2;
     mDofs[1][10] = 0.2;

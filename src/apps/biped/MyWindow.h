@@ -79,7 +79,7 @@ public:
     int mPlayFrame;
     bool mPlay;
     bool mShowMarkers;
-    integration::EulerIntegrator mIntegrator;
+    integration::RK4Integrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;
