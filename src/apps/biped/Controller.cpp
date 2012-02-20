@@ -33,8 +33,8 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     mKd[17] = 2 * sqrt(3000.0);
     */
     for (int i = 18; i < nDof; i++) {
-        mKs[i] = 300.0;
-        mKd[i] = 2 * sqrt(300.0);
+        mKs[i] = 600.0;
+        mKd[i] = 2 * sqrt(600.0);
     }
 
 }
@@ -60,7 +60,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         VectorXd jCol = utils::xformHom(lFoot->getDerivWorldTransform(i), lHeel);
         J.col(index) = jCol;
     }
-    mTorques += J.transpose() * vf / 2.0;
+    //    mTorques += J.transpose() * vf / 2.0;
         
     J.setZero();
     for (int i = 0; i < rFoot->getNumDependentDofs(); i++) {
@@ -68,5 +68,5 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         VectorXd jCol = utils::xformHom(rFoot->getDerivWorldTransform(i), rHeel);
         J.col(index) = jCol;
     }
-    mTorques += J.transpose() * vf / 2.0;
+    //    mTorques += J.transpose() * vf / 2.0;
 }

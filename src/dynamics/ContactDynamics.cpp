@@ -17,7 +17,7 @@ using namespace utils;
 
 namespace dynamics {
     ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
-        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL) {
+        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL), mAccumTime(0) {
         initialize();
     }
 
@@ -35,20 +35,23 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) 
             mConstrForces[i].setZero(); 
 
-        if (getNumContacts() == 0)
+        if (getNumContacts() == 0){
+            mAccumTime = 0;
             return;
+        }
+        mAccumTime++;
         
         cleanupContact();
-        //      if (getNumContacts() > 100)
-        //            penaltyMethod();
-        //        else {
+        if (getNumContacts() > 0)
+            penaltyMethod();
+        else {
             fillMatrices();
-        //        tLCP.startTimer();
+            //    tLCP.startTimer();
             solve();
-        //        tLCP.stopTimer();
-        //        tLCP.printScreen();
+            //            tLCP.stopTimer();
+            //            tLCP.printScreen();
             applySolution();
-            //        }
+        }
     }
 
     void ContactDynamics::reset() {
@@ -393,7 +396,8 @@ namespace dynamics {
     }
     
     void ContactDynamics::penaltyMethod() {
-        for (int i = 0; i < getNumContacts(); i++) {
+        int nContact = getNumContacts();
+        for (int i = 0; i < nContact; i++) {
             ContactPoint& c = mCollision->getContact(i);
             double d = c.penetrationDepth;
             Vector3d f = d * c.normal;
@@ -405,14 +409,25 @@ namespace dynamics {
             MatrixXd J(MatrixXd::Zero(3, nDof));
             Vector3d invP = utils::xformHom(c.bd1->getWorldInvTransform(), p);
             VectorXd qDot = mSkels[sID1]->getQDotVector();
-            double ks = 100 * mSkels[sID1]->getMass();
-            double kd = 2 * sqrt(ks);
+            double ks = 200 * mSkels[sID1]->getMass();
+            double kd = 100 * mSkels[sID1]->getMass();
             if (!mSkels[sID1]->getKinematicState()){
                 for (int j = 0; j < c.bd1->getNumDependentDofs(); j++) {
                     VectorXd Jcol = utils::xformHom(c.bd1->getDerivWorldTransform(j), invP);
                     J.col(c.bd1->getDependentDof(j)) = Jcol;
                 }
-                VectorXd Q = J.transpose() * (f * ks - J * qDot * kd);
+                Vector3d v = J * qDot;
+                Vector3d vN = v.dot(c.normal) * c.normal;
+                Vector3d vT = v - vN;
+                Vector3d fN = (f * ks - vN * kd) / nContact;
+                Vector3d fT;
+                if( vT.norm() < 1e-7)
+                    fT.setZero();
+                else
+                    fT = fN.norm() * vT.normalized();
+                if( fN.dot(c.normal) < 0)
+                    fN.setZero();
+                VectorXd Q = J.transpose() * (fN - 1 * fT);
                 mConstrForces[sID1] += Q;
             }
             
@@ -420,15 +435,27 @@ namespace dynamics {
             J = MatrixXd::Zero(3, nDof);
             invP = utils::xformHom(c.bd2->getWorldInvTransform(), p); 
             qDot = mSkels[sID2]->getQDotVector();
-            ks = 100 * mSkels[sID2]->getMass();
-            kd = 2 * sqrt(ks);
+            ks = 200 * mSkels[sID2]->getMass();
+            kd = 100 * mSkels[sID2]->getMass();
+            double ki = 2 * mSkels[sID2]->getMass();
             if (!mSkels[sID2]->getKinematicState()){
                 for (int j = 0; j < c.bd2->getNumDependentDofs(); j++) {
                     VectorXd Jcol = utils::xformHom(c.bd2->getDerivWorldTransform(j), invP);
                     J.col(c.bd2->getDependentDof(j)) = Jcol;
                 }
-                VectorXd Q = J.transpose() * (-f * ks - J * qDot * kd);
-                cout << "contact " << i << " " << Q[1] << endl;
+                Vector3d v = J * qDot;
+                Vector3d vN = v.dot(c.normal) * c.normal;
+                Vector3d vT = v - vN;
+                Vector3d fN = (-f * ks - vN * kd - ki * mAccumTime * f) / nContact;
+                Vector3d fT;
+                if( vT.norm() < 1e-7)
+                    fT.setZero();
+                else
+                    fT = fN.norm() * vT.normalized();
+                if( fN.dot(-c.normal) < 0)
+                    fN.setZero();
+                VectorXd Q = J.transpose() * (fN - 1 * fT);
+                cout << "contact " << i << " " << mAccumTime << endl;
                 mConstrForces[sID2] += Q;
             }
         }

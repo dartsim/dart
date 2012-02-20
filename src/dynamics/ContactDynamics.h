@@ -122,6 +122,7 @@ namespace dynamics {
         Eigen::VectorXd mQBar;
         Eigen::VectorXd mX;
         std::vector<Eigen::VectorXd> mConstrForces; // solved constraint force in generalized coordinates; mConstrForces[i] is the constraint force for the ith skeleton
+        int mAccumTime;
     }; 
 } // namespace dynamics
 
