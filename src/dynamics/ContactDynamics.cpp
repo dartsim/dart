@@ -178,10 +178,16 @@ namespace dynamics {
         mA.block(0, c, c, cd) = nTmInv * mB;
         mA.block(c, 0, cd, c) = bTmInv * mN;
         mA.block(c, c, cd, cd) = bTmInv * mB;
-        mA.block(c, c + cd, cd, c) = E;
-        mA.block(c + cd, 0, c, c) = mu;
-        mA.block(c + cd, c, c, cd) = -E.transpose();
-        
+        mA.block(c, c + cd, cd, c) = E * (mDt * mDt);
+        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
+        mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
+
+		int cfmSize = getNumContacts() * (1 + mNumDir);
+        for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
+		{
+			mA(i, i) += 0.01 * mA(i, i);
+		}
+		
         // Construct Q
         mQBar = VectorXd::Zero(dimA);
         mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
