@@ -42,7 +42,7 @@ namespace dynamics {
         mAccumTime++;
         
         cleanupContact();
-        if (getNumContacts() > 0)
+        if (getNumContacts() > 50)
             penaltyMethod();
         else {
             fillMatrices();
@@ -125,7 +125,7 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getKinematicState())
                 continue;
-            VectorXd tau = mSkels[i]->getExternalForces();
+            VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getMassMatrix() * mSkels[i]->getInternalForces();
             VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
             mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
             startRow += tauStar.rows();
@@ -185,11 +185,9 @@ namespace dynamics {
         mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
         mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
 
-		int cfmSize = getNumContacts() * (1 + mNumDir);
+        int cfmSize = getNumContacts() * (1 + mNumDir);
         for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
-		{
-			mA(i, i) += 0.01 * mA(i, i);
-		}
+            mA(i, i) += 0.01 * mA(i, i);
 		
         // Construct Q
         mQBar = VectorXd::Zero(dimA);

@@ -26,13 +26,13 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
 
-    mDofs[0][1] = -1.85;
+    mDofs[0][1] = -0.90;
     mDofs[1][19] = -0.15;
     mDofs[1][9] = -0.2;
     mDofs[1][10] = 0.2;
     mDofs[1][15] = -0.2;
     mDofs[1][16] = 0.2;
-
+    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
@@ -65,9 +65,9 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
-        if(mController->getSkel() == mSkels[i])
-            qddot += mController->getTorques();
+        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i)) + mSkels[i]->getInternalForces();
+        //if(mController->getSkel() == mSkels[i])
+        //qddot += mController->getTorques();
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -91,6 +91,8 @@ void MyWindow::setPose() {
         } else {
             mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
+            mController->computeTorques(mDofs[1], mDofVels[1]);
+            mController->getSkel()->setInternalForces(mController->getTorques());
         }
     }
     mCollisionHandle->applyContactForces();
@@ -109,8 +111,6 @@ void MyWindow::displayTimer(int _val)
         //    static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
-            cout << mSimFrame + i << endl;
-            mController->computeTorques(mDofs[1], mDofVels[1]);
 
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
             setPose();

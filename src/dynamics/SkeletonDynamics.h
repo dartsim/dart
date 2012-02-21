@@ -58,7 +58,7 @@ namespace dynamics{
         
         void computeDynamics(const Eigen::Vector3d &_gravity, const Eigen::VectorXd &_qdot, bool _useInvDynamics=true);  ///< compute equations of motion matrices/vectors: M, C/Cvec, g in M*qdd + C*qd + g; if _useInvDynamics==true, uses computeInverseDynamicsLinear to compute C*qd+g term directly; else uses expensive generic computation of non-recursive dynamics. Note that different quantities are computed using different algorithms. At the end, mass matrix M, Coriolis force plus gravity Cg, and the external force Fext will be ready to use. The generalized force of gravity g is also updated if nonrecursive formula is used.
 
-        void evalExternalForces( bool _useRecursive ); ///< evaluate external forces to generalized torques; similarly to the inverse dynamics computation, when _useRecursive is true, a recursive algorithm is used; else the jacobian is used to do the conversion: tau = J^{T}F. Highly recommand to use this function after the respective (recursive or nonrecursive) dynamics computation because the necessary Jacobians will be ready. Extra care is needed to make sure the required quantitives are up-to-date when using this function alone. 
+        void evalExternalForces( bool _useRecursive ); ///< evaluate external forces to generalized torques; similarly to the inverse dynamics computation, when _useRecursive is true, a recursive algorithm is used; else the jacobian is used to do the conversion: tau = J^{T}F. Highly recommand to use this function after the respective (recursive or nonrecursive) dynamics computation because the necessary Jacobians will be ready. Extra care is needed to make sure the required quantities are up-to-date when using this function alone. 
         void clearExternalForces(); ///< clear all the contacts of external forces; automatically called after each (forward/inverse) dynamics computation, which marks the end of a cycle.
 
         void clampRotation( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot); ///< Clamp joint rotations to the range of [-pi, pi]. 
@@ -70,9 +70,11 @@ namespace dynamics{
         Eigen::VectorXd getGravityVector() const { return mG; }
         Eigen::VectorXd getCombinedVector() const { return mCg; }
         Eigen::VectorXd getExternalForces() const { return mFext; }
+        Eigen::VectorXd getInternalForces() const { return mFint; }
         Eigen::VectorXd getQDotVector() const { return mQdot; }
         bool getKinematicState() const { return mKinematicState; }
-        void setKinematicState(bool _s) { mKinematicState = _s; } 
+        void setKinematicState(bool _s) { mKinematicState = _s; }
+        void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -81,6 +83,7 @@ namespace dynamics{
         Eigen::VectorXd mG;    ///< Gravity vector for the skeleton; computed in nonrecursive dynamics only
         Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
         Eigen::VectorXd mFext; ///< external forces vector for the skeleton
+        Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
         Eigen::VectorXd mQdot; ///< the current qdot
 
         bool mKinematicState; ///< true if the skeleton is currently controlled kinematically
