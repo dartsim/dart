@@ -10,7 +10,7 @@ using namespace utils;
 Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     mSkel = _skel;
     int nDof = mSkel->getNumDofs();
-    
+        
     mTorques.resize(nDof);
     mDesiredDofs.resize(nDof);
     mKd.resize(nDof);
@@ -20,35 +20,26 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
         mKd[i] = 0.0;
     }
     for (int i = 6; i < 18; i++) {
-        mKs[i] = 600.0;
-        mKd[i] = 2 * sqrt(600.0);
+        mKs[i] = 200.0;
+        mKd[i] = 2 * sqrt(200.0);
     }
-    /*    mKs[10] = 3000.0;
-    mKd[10] = 2 * sqrt(3000.0);
-    mKs[11] = 3000.0;
-    mKd[11] = 2 * sqrt(3000.0);
-    mKs[16] = 3000.0;
-    mKd[16] = 2 * sqrt(3000.0);
-    mKs[17] = 3000.0;
-    mKd[17] = 2 * sqrt(3000.0);
-    */
     for (int i = 18; i < nDof; i++) {
-        mKs[i] = 600.0;
-        mKd[i] = 2 * sqrt(600.0);
+        mKs[i] = 200.0;
+        mKd[i] = 2 * sqrt(200.0);
     }
 
 }
 
 void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel) {
-    for (unsigned int i = 0; i < mTorques.size(); i++) {
+    for (unsigned int i = 18; i < mTorques.size(); i++) 
         mTorques[i] = -mKs[i] * (_dof[i] - mDesiredDofs[i])  -mKd[i] * _dofVel[i];
-    }
+    
     Vector3d com = mSkel->getWorldCOM();
     BodyNode *lFoot = mSkel->getNode("fullbody_h_foot_left");
     BodyNode *rFoot = mSkel->getNode("fullbody_h_foot_right");
     Vector3d cp = (lFoot->getWorldCOM() + rFoot->getWorldCOM()) /2.0;
     Vector3d vf = com - cp;
-    vf[1] = 0.0;
+    vf[1] = -10;
 
     int nDofs = mSkel->getNumDofs();
     MatrixXd J(MatrixXd::Zero(3, nDofs));
@@ -60,7 +51,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         VectorXd jCol = utils::xformHom(lFoot->getDerivWorldTransform(i), lHeel);
         J.col(index) = jCol;
     }
-    //    mTorques += J.transpose() * vf / 2.0;
+    mTorques += J.transpose() * vf / 2.0;
         
     J.setZero();
     for (int i = 0; i < rFoot->getNumDependentDofs(); i++) {
@@ -68,5 +59,8 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         VectorXd jCol = utils::xformHom(rFoot->getDerivWorldTransform(i), rHeel);
         J.col(index) = jCol;
     }
-    //    mTorques += J.transpose() * vf / 2.0;
+    mTorques += J.transpose() * vf / 2.0;
+   
+    for (int i = 0; i < 6; i++)
+        mTorques[i] = 0.0;
 }

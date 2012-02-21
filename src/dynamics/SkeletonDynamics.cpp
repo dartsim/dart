@@ -88,6 +88,7 @@ namespace dynamics{
         mCvec = VectorXd::Zero(getNumDofs());
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
+        mFint = VectorXd::Zero(getNumDofs());
         if(_useInvDynamics){
             mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
             for(int i=0; i<getNumNodes(); i++){

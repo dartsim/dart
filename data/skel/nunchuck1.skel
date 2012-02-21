@@ -15,7 +15,7 @@ dofs{
 }
 
 mass {
-    node_mass { 0.5 }
+    node_mass { 15 }
 }
 
 node root { 0
