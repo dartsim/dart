@@ -159,6 +159,7 @@ namespace dynamics{
             Joint* jnt = mJoints.at(i);
             switch(jnt->getJointType()){ // only cares about euler and expmap of 3 rotations 
             case Joint::J_FREEEULER:
+                break;
             case Joint::J_BALLEULER:
             {
                 // clamp dof values to the range
@@ -169,6 +170,8 @@ namespace dynamics{
                 }
             }   break;
             case Joint::J_FREEEXPMAP:
+                break;
+
             case Joint::J_BALLEXPMAP:
             {
                 Vector3d exmap;

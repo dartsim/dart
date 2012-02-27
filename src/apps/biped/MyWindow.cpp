@@ -25,14 +25,27 @@ void MyWindow::initDyn()
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
-
-    mDofs[0][1] = -0.90;
-    mDofs[1][19] = -0.15;
-    mDofs[1][9] = -0.2;
-    mDofs[1][10] = 0.2;
-    mDofs[1][15] = -0.2;
-    mDofs[1][16] = 0.2;
+    /*
+    mDofs[0][1] = -1.88;
+    mDofs[1][3] = -1;
+    mDofs[1][19] = 1;
+    mDofs[1][6] = 1.4;
+    mDofs[1][12] = 1.4;
+    mDofs[1][9] = -0.5;
+    mDofs[1][10] = 0.1;
+    mDofs[1][15] = -0.5;
+    mDofs[1][16] = 0.1;
+    */
+    mDofs[0][1] = -0.88;
+    mDofs[1][19] = -0.2;
+    mDofs[1][6] = 0.2;
+    mDofs[1][12] = 0.2;
+    mDofs[1][9] = -0.3;
+    mDofs[1][10] = 0.1;
+    mDofs[1][15] = -0.3;
+    mDofs[1][16] = 0.1;
     
+
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
@@ -65,9 +78,8 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i)) + mSkels[i]->getInternalForces();
-        //if(mController->getSkel() == mSkels[i])
-        //qddot += mController->getTorques();
+        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
+        //        cout << mSkels[i]->getInternalForces() << endl;
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -95,7 +107,7 @@ void MyWindow::setPose() {
             mController->getSkel()->setInternalForces(mController->getTorques());
         }
     }
-    mCollisionHandle->applyContactForces();
+        mCollisionHandle->applyContactForces();
 }
 
 void MyWindow::displayTimer(int _val)
@@ -117,6 +129,9 @@ void MyWindow::displayTimer(int _val)
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
             bake();
+            cout << "iter " << i + mSimFrame << endl;
+            //            if (i + mSimFrame > 40)
+            //                mController->setDesiredDof(19, 1.5);
         }
         //    tSim.printScreen();
 
