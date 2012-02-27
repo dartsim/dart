@@ -81,7 +81,7 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         size+=2;
 
     }
-
+    
     int cur = start;
     std::vector<int> deleteIDs;
     
@@ -130,7 +130,7 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     for(int i =deleteIDs.size()-1; i>=0;i--)
        result.erase(result.begin()+deleteIDs[i]);
 
-    
+  
     
     int collisionNum = result.size();
     return collisionNum;
