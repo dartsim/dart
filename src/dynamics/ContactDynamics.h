@@ -70,6 +70,8 @@ namespace dynamics {
         void reset();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
+        inline Eigen::Vector3d getCartesianForce(int _skelIndex, int _contactIndex) const { return mCartesianForces[_skelIndex].col(_contactIndex); }
+
         
     private:
         void initialize();
@@ -122,6 +124,7 @@ namespace dynamics {
         Eigen::VectorXd mQBar;
         Eigen::VectorXd mX;
         std::vector<Eigen::VectorXd> mConstrForces; // solved constraint force in generalized coordinates; mConstrForces[i] is the constraint force for the ith skeleton
+        std::vector<Eigen::MatrixXd> mCartesianForces; // mCartesianForces[i].col(j) stores the Cartesian force of contact j on skeleton i
         int mAccumTime;
     }; 
 } // namespace dynamics
