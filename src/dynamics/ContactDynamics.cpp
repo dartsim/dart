@@ -31,9 +31,12 @@ namespace dynamics {
             return;
         mCollision->clearAllContacts();
         mCollision->checkCollision(false);
-        
-        for (int i = 0; i < getNumSkels(); i++) 
+
+        for (int i = 0; i < getNumSkels(); i++) {
             mConstrForces[i].setZero(); 
+            mCartesianForces[i].resize(3, getNumContacts());
+            mCartesianForces[i].setZero();
+        }
 
         if (getNumContacts() == 0){
             mAccumTime = 0;
@@ -89,6 +92,7 @@ namespace dynamics {
             if (!mSkels[i]->getKinematicState())
                 mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
         }
+        mCartesianForces.resize(getNumSkels());
 
         mMInv = MatrixXd::Zero(rows, cols);
         mTauStar = VectorXd::Zero(rows);
@@ -240,6 +244,11 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
             startRow += nDof;
+            for (int j = 0; j < c; j++) {
+                ContactPoint& contact = mCollision->getContact(j);
+                Vector3d fc = -getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(j * mNumDir, mNumDir) - contact.normal * f_n[j];
+                mCartesianForces[i].col(j) = fc;
+            }
         }
         
         VectorXd sum = VectorXd::Zero(mNumDir);

@@ -61,7 +61,7 @@ mass {
       	hand_mass { 0.294 }
       	thigh_mass { 6.5709 }
       	shin_mass { 1.7738 }
-      	foot_mass { 1.5831 }
+      	foot_mass { 1.0831 }
 }
 
 node root { 0

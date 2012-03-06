@@ -27,11 +27,10 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
         mKs[i] = 0.0;
         mKd[i] = 0.0;
     }
-
-    
+       
     for (int i = 6; i < 18; i++) {
         mKs[i] = 100.0;
-        mKd[i] = 2 * sqrt(20.0);
+        mKd[i] = 2 * sqrt(100.0);
     }
     
     mKs[6] = 600.0;
@@ -52,14 +51,14 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     mKd[16] = 2 * sqrt(mKs[16]);
     mKs[17] = 1000.0;
     mKd[17] = 2 * sqrt(mKs[17]);
-
+    
     for (int i = 18; i < nDof; i++) {
         mKs[i] = 100.0;
         mKd[i] = 2 * sqrt(100.0);
     }
     mKs[19] = 600.0;
     mKd[19] = 2 * sqrt(mKs[19]);
-
+    
     mMassTree = VectorXd::Zero(nDof);
     for (int i = 6; i < nDof; i++)
         mMassTree[i] = computeMassTree(mSkel->getDof(i)->getJoint()->getChildNode());
@@ -68,43 +67,51 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
 }
 
 void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel) {
-    for (unsigned int i = 0; i < mTorques.size(); i++) 
+    mFrame++;
+
+    //BodyNode *torso = mSkel->getNode("fullbody_h_abdomen");
+    //Vector3d dir = torso->getWorldCOM() - torso->evalWorldPos(Vector3d::Zero());
+    //dir.normalize();
+    //Vector3d vertical(0, 1, 0);
+    //    double alpha = acos(dir.dot(vertical));
+    // if(dir.cross(vertical)[2] < 0)
+    //    alpha = -alpha;
+    //    cout << "alpha = " << alpha << endl;
+    //    mDesiredDofs[19] = alpha;
+
+    // PD tracking
+    mTorques.setZero();
+    for (unsigned int i = 6; i < mTorques.size(); i++) 
         mTorques[i] = -mKs[i] * (_dof[i] - mDesiredDofs[i])  -mKd[i] * _dofVel[i];
 
     int nDof = mSkel->getNumDofs();
-    //MatrixXd M = mSkel->getMassMatrix();
-    //    int n = M.cols();
     for (int i = 6; i < nDof; i++)
       mTorques[i] *= mMassTree[i];
-    //    VectorXd scaled = M * mTorques;
-    //    for (int i = 6; i < nDof; i++)
-    //        cout << scaled[i] / mTorques[i] << endl;
-    //    mTorques = scaled;
-    
+
     Vector3d com = mSkel->getWorldCOM();
     BodyNode *lFoot = mSkel->getNode("fullbody_h_foot_left");
     BodyNode *rFoot = mSkel->getNode("fullbody_h_foot_right");
-    Vector3d cp = (lFoot->getWorldCOM() + rFoot->getWorldCOM()) /2.0;
-    Vector3d vf = com - cp;
-    double k = 5;
-    
-    mFrame++;
-    
-    mDesiredDofs[10] = 0.1 - k * vf[0];
-    mDesiredDofs[16] = 0.1 - k * vf[0];
-       
-    vf[1] = -2000;
-    int nDofs = mSkel->getNumDofs();
-    MatrixXd J(MatrixXd::Zero(3, nDofs));
-    Vector3d lHeel = lFoot->getWorldTransform().block(0, 3, 3, 1);
-    Vector3d rHeel = rFoot->getWorldTransform().block(0, 3, 3, 1);
+    Vector3d cp = (lFoot->evalWorldPos(Vector3d::Zero()) + rFoot->evalWorldPos(Vector3d::Zero())) /2.0;
+    double k1 = 10.0;
+    Vector3d vf = (com - cp) * k1;
+    vf[1] = -mSkel->getMass() * 9.8;
+
+    // ankle strategy
+    double k2 = 5;
+    mDesiredDofs[10] = 0.1 - k2 * vf[0];
+    mDesiredDofs[16] = 0.1 - k2 * vf[0];
+
+    // virtual force on lower body
+    MatrixXd J(MatrixXd::Zero(3, nDof));
+    Vector3d lHeel = Vector3d::Zero(); //lFoot->getWorldTransform().block(0, 3, 3, 1);
+    Vector3d rHeel = Vector3d::Zero(); //rFoot->getWorldTransform().block(0, 3, 3, 1);
 
     for (int i = 0; i < lFoot->getNumDependentDofs(); i++) {
         int index = lFoot->getDependentDof(i);
         VectorXd jCol = utils::xformHom(lFoot->getDerivWorldTransform(i), lHeel);
         J.col(index) = jCol;
     }
-    //  mTorques += J.transpose() * vf / 2.0;
+    mTorques += J.transpose() * vf / 2.0;
         
     J.setZero();
     for (int i = 0; i < rFoot->getNumDependentDofs(); i++) {
@@ -112,10 +119,29 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         VectorXd jCol = utils::xformHom(rFoot->getDerivWorldTransform(i), rHeel);
         J.col(index) = jCol;
     }
-    //    mTorques += J.transpose() * vf / 2.0;
+    mTorques += J.transpose() * vf / 2.0;
+
+    // gravity compensation for upper body
+    VectorXd torque(nDof);
+    torque.setZero();
+    for (int i = 7; i < mSkel->getNumNodes(); i++) { // loop over each node in upperbody
+        BodyNode *node = mSkel->getNode(i);
+        Vector3d com = node->getLocalCOM();
+        J.setZero();
+
+        for (int j = 0; j < node->getNumDependentDofs(); j++) {
+            int index = node->getDependentDof(j);
+            VectorXd jCol = utils::xformHom(node->getDerivWorldTransform(j), com);
+            J.col(index) = jCol;
+        }
+        torque += node->getMass() * J.transpose() * Vector3d(0, 9.8, 0);
+    }
+
+    mTorques += torque;
     
     for (int i = 0; i < 6; i++)
         mTorques[i] = 0.0;
+    
 }
 
 double Controller::computeMassTree(BodyNode *_bd) {
