@@ -37,7 +37,7 @@ void MyWindow::displayTimer(int _val)
         mModel->setPose(mDofs, false, false);
         mModel->computeDynamics(mGravity, mDofVels, true);
         mIntegrator.integrate(this, mTimeStep);
-        cout << "iter " << i + mFrame << endl;
+        //        cout << "iter " << i + mFrame << endl;
     }
 
     mFrame += numIter;   
@@ -104,7 +104,6 @@ VectorXd MyWindow::getState() {
 VectorXd MyWindow::evalDeriv() {
     VectorXd deriv(mDofs.size() + mDofVels.size());
     VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces() + mController->getTorques()); // the control force is scaled by mass matrix 
-    cout << mController->getTorques() << endl;
     mModel->clampRotation(mDofs, mDofVels);
     deriv.tail(mDofVels.size()) = qddot; // set qddot (accelerations)
     deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set new velocities
