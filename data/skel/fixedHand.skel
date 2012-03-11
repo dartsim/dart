@@ -76,8 +76,8 @@ mass {
 node root { 0
 	chain { 3
                 telescope { <0.1,0.1,0.0>, Length }
-		rotate_euler { root<a-Z>, z }
-		rotate_euler { root<a-Y>, y }
+             	rotate_cons { 1.16, z }
+             	rotate_cons { -3.27, y }
 	}
 	primitive {<2.0,2.0,2.0>, <0.0,0.0,0.0>, Wrist, arm_mass}
 
