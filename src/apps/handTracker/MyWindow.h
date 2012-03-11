@@ -30,9 +30,9 @@ public:
         mTrans[2] = -1.f;
         mFrame = 0;
 
-        mGravity = Eigen::Vector3d(0.0,-9.8, 0.0);
-        mTimeStep = 1.0/5000.0;
-        mController = new Controller(mModel->getNumDofs());
+        mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
+        mTimeStep = 1.0/1000.0;
+        mController = new Controller(mModel);
         mForce = Eigen::Vector3d::Zero();
         initDyn();
     }

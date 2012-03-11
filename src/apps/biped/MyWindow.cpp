@@ -128,7 +128,7 @@ void MyWindow::displayTimer(int _val)
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
             bake();
-            //            cout << "iter " << i + mSimFrame << endl;
+            cout << "iter " << i + mSimFrame << endl;
         }
         //    tSim.printScreen();
 
