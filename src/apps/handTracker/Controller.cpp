@@ -18,7 +18,7 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     mKs.resize(nDof);
     for (int i = 0; i < nDof; i++) {
         mKs[i] = 20.0;
-        mKd[i] = 0.1;//2 * sqrt(0.0);
+        mKd[i] = 0.5;//2 * sqrt(0.0);
     }
 
     mMassTree = VectorXd::Zero(nDof);

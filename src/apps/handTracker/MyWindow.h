@@ -31,7 +31,7 @@ public:
         mFrame = 0;
 
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
-        mTimeStep = 1.0/1000.0;
+        mTimeStep = 1.0/5000.0;
         mController = new Controller(mModel);
         mForce = Eigen::Vector3d::Zero();
         initDyn();
@@ -56,8 +56,8 @@ protected:
     double mTimeStep;
     Eigen::Vector3d mGravity;
     Controller *mController;
-    integration::EulerIntegrator mIntegrator;
-    //integration::RK4Integrator mIntegrator;
+    //integration::EulerIntegrator mIntegrator;
+    integration::RK4Integrator mIntegrator;
     Eigen::Vector3d mForce;
 
     void initDyn();
