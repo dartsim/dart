@@ -94,6 +94,7 @@ endif()
 message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
+ADD_SUBDIRECTORY (thirdparty/snopt)
 
 if (FCL)
     include_directories(thirdparty/libccd/src)
