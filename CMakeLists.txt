@@ -39,6 +39,8 @@ elseif (UNIX)
   SET(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
+SET_DIRECTORY_PROPERTIES (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES CMakeCache.txt)
+
 ###############################################
 # Generate the path header file
 SET(PATH_HEADER_DIR ${CMAKE_SOURCE_DIR}/src/utils/Paths.h)
@@ -90,7 +92,12 @@ endif()
 ###############################################
 # Thirdparty libraries
 message(STATUS "Building thirdparty libraries")
+
+ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
+
 if (FCL)
+    include_directories(thirdparty/libccd/src)
+    include_directories(thirdparty/fcl/include)
     ADD_SUBDIRECTORY (thirdparty/libccd)
     ADD_SUBDIRECTORY (thirdparty/fcl)
 endif (FCL)

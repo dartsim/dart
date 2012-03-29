@@ -70,10 +70,10 @@ link_directories(${gtest_BINARY_DIR}/src)
 cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)
-install (TARGETS gtest_main gtest
-  ARCHIVE DESTINATION ${CMAKE_SOURCE_DIR}/../lib)
+set_target_properties (gtest_main gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../lib)
 file (GLOB gtest_hdrs "include/gtest/*.h")
-install (FILES ${gtest_hdrs} DESTINATION ${CMAKE_SOURCE_DIR}/../include/gtest)
+#install (TARGETS gtest_main gtest ARCHIVE DESTINATION ${CMAKE_SOURCE_DIR}/../lib)
+#install (FILES ${gtest_hdrs} DESTINATION ${CMAKE_SOURCE_DIR}/../include/gtest)
 ########################################################################
 #
 # Samples on how to link user tests with gtest or gtest_main.
