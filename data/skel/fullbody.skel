@@ -1,7 +1,7 @@
 dofs {
-	pelvis_trans_x { 0.0000, -10.0000, 10.0000 }
-	pelvis_trans_y { 0.8500, -10.0000, 10.0000 }
-	pelvis_trans_z { 0.0000, -10.0000, 10.0000 }
+	pelvis_trans_x { 0.0000, -100.0000, 100.0000 }
+	pelvis_trans_y { 0.8500, -100.0000, 100.0000 }
+	pelvis_trans_z { 0.0000, -100.0000, 100.0000 }
 	pelvis_euler_z { 0.0, -3.1416, 3.1416 }
 	pelvis_euler_y { 2.1, -3.1416, 3.1416 }
 	pelvis_euler_x { 0.0, -3.1416, 3.1416 }
@@ -61,7 +61,7 @@ mass {
       	hand_mass { 0.294 }
       	thigh_mass { 6.5709 }
       	shin_mass { 1.7738 }
-      	foot_mass { 1.5831 }
+      	foot_mass { 1.0831 }
 }
 
 node root { 0

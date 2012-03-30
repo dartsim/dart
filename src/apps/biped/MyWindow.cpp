@@ -25,14 +25,27 @@ void MyWindow::initDyn()
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
-
-    mDofs[0][1] = -0.90;
-    mDofs[1][19] = -0.15;
+    /*
+    mDofs[0][1] = -1.88;
+    mDofs[1][3] = -1;
+    mDofs[1][19] = 1;
+    mDofs[1][6] = 1.4;
+    mDofs[1][12] = 1.4;
+    mDofs[1][9] = -0.5;
+    mDofs[1][10] = 0.1;
+    mDofs[1][15] = -0.5;
+    mDofs[1][16] = 0.1;
+    */
+    mDofs[0][1] = -0.88;
+    mDofs[1][19] = -0.1;
+    mDofs[1][6] = 0.1;
+    mDofs[1][12] = 0.1;
     mDofs[1][9] = -0.2;
-    mDofs[1][10] = 0.2;
+    mDofs[1][10] = 0.1;
     mDofs[1][15] = -0.2;
-    mDofs[1][16] = 0.2;
+    mDofs[1][16] = 0.1;
     
+
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
@@ -65,9 +78,8 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i)) + mSkels[i]->getInternalForces();
-        //if(mController->getSkel() == mSkels[i])
-        //qddot += mController->getTorques();
+        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
+        //        cout << mSkels[i]->getExternalForces() << endl;
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -95,7 +107,7 @@ void MyWindow::setPose() {
             mController->getSkel()->setInternalForces(mController->getTorques());
         }
     }
-    mCollisionHandle->applyContactForces();
+        mCollisionHandle->applyContactForces();
 }
 
 void MyWindow::displayTimer(int _val)
@@ -111,12 +123,12 @@ void MyWindow::displayTimer(int _val)
         //    static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
-
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(11))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
             setPose();
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
             bake();
+            cout << "iter " << i + mSimFrame << endl;
         }
         //    tSim.printScreen();
 
@@ -148,6 +160,7 @@ void MyWindow::draw()
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
                     Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
                     glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
@@ -165,10 +178,11 @@ void MyWindow::draw()
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
                 Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
                 Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
+                Vector3d f = mCollisionHandle->getCartesianForce(1, k) / 100.0;
 
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);
-                glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+                glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                 glEnd();
                 mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
                 mRI->pushMatrix();
@@ -250,6 +264,10 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         break;
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
+        break;
+    case 'q': // push
+        mForce[0] = 50;
+        cout << "push left arm" << endl;
         break;
     default:
         Win3D::keyboard(key,x,y);

@@ -3,19 +3,16 @@
 
 #include <Eigen/Dense>
 #include <vector>
+namespace dynamics{
+    class SkeletonDynamics;
+}
+namespace kinematics{
+    class BodyNode;
+}
 
 class Controller {
  public:
-    Controller(int _nDof) { 
-        mTorques.resize(_nDof);
-        mDesiredDofs.resize(_nDof);
-        mKd.resize(_nDof);
-        mKs.resize(_nDof);
-        for (int i = 0; i < _nDof; i++) {
-            mKs[i] = 250.0;
-            mKd[i] = 2 * sqrt(250.0);
-        }
-    };
+    Controller(dynamics::SkeletonDynamics *_skel);
     virtual ~Controller() {};
 
     Eigen::VectorXd getTorques() { return mTorques; };
@@ -24,10 +21,13 @@ class Controller {
     void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
  
  protected:
+    double computeMassTree(kinematics::BodyNode *_bd);
+    dynamics::SkeletonDynamics *mSkel;
     Eigen::VectorXd mTorques;
     Eigen::VectorXd mDesiredDofs;
     std::vector<double> mKs;
     std::vector<double> mKd;
+    Eigen::VectorXd mMassTree;
 };
     
     

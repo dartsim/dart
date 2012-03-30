@@ -15,7 +15,7 @@ dofs{
 }
 
 mass {
-    node_mass { 15 }
+    node_mass { 1 }
 }
 
 node root { 0
@@ -32,13 +32,6 @@ node root { 0
         }
         primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
 
-        node node2 { 2
-             chain { 2
-             telescope { <0.0,-1.0,0.0>, Length }
-             rotate_euler { node2<a-Z>, z }
-             }
-             primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
-        }
     }
 }
 

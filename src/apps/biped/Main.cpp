@@ -13,10 +13,10 @@ using namespace dynamics;
 
 int main(int argc, char* argv[])
 {
-    FileInfoSkel<SkeletonDynamics> model, model2, model3, model4;
+    FileInfoSkel<SkeletonDynamics> model, model2;
     model.loadFile(DART_DATA_PATH"/skel/ground1.skel", kinematics::SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/fullbody.skel", kinematics::SKEL);
-    //    model2.loadFile(DART_DATA_PATH"/skel/nunchuck1.skel", kinematics::SKEL);
+    //model2.loadFile(DART_DATA_PATH"/skel/nunchuck1.skel", kinematics::SKEL);
 
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), NULL);
 

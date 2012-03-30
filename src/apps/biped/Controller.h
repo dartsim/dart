@@ -8,6 +8,10 @@ namespace dynamics{
     class SkeletonDynamics;
 }
 
+namespace kinematics{
+    class BodyNode;
+}
+
 class Controller {
  public:
     Controller(dynamics::SkeletonDynamics *_skel);
@@ -20,11 +24,14 @@ class Controller {
     dynamics::SkeletonDynamics* getSkel() { return mSkel; };
  
  protected:
+    double computeMassTree(kinematics::BodyNode *_bd);
     dynamics::SkeletonDynamics *mSkel;
     Eigen::VectorXd mTorques;
     Eigen::VectorXd mDesiredDofs;
+    Eigen::VectorXd mMassTree;
     std::vector<double> mKs;
     std::vector<double> mKd;
+    int mFrame;
 };
     
     
