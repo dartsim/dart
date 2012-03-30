@@ -13,6 +13,10 @@
 #define USE_EPSILON_TEST TRUE  
 #define EPSILON 0.000001
 
+#define NO_CONTACT 0
+#define COPLANAR_CONTACT -1
+#define INTERIAL_CONTACT 1
+
 
 /* some macros */
 #define CROSS(dest,v1,v2)                      \
@@ -83,7 +87,7 @@
   else                                                  \
   {                                                     \
     /* triangles are coplanar */                        \
-    return 0;     \
+    return COPLANAR_CONTACT;     \
   }
 
 inline void edge_tri_intersect(float V0[3], float V1[3], float DV0, float DV1, float V[3])
@@ -106,7 +110,7 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     float du0,du1,du2,dv0,dv1,dv2;
     float D[3];
     float isect1[2], isect2[2];
-    float du0du1,du0du2,dv0dv1,dv0dv2;
+    float du0du1,du0du2,dv0dv1,dv0dv2,du1du2,dv1dv2;
     short index;
     float vp0,vp1,vp2;
     float up0,up1,up2;
@@ -132,9 +136,10 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
 #endif
     du0du1=du0*du1;
     du0du2=du0*du2;
+    du1du2=du1*du2;
 
     if(du0du1>0.0f && du0du2>0.0f) /* same sign on all of them + not equal 0 ? */
-        return 0;                    /* no intersection occurs */
+        return NO_CONTACT;                    /* no intersection occurs */
 
     /* compute plane of triangle (U0,U1,U2) */
     SUB(E1,U1,U0);
@@ -156,9 +161,10 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
 
     dv0dv1=dv0*dv1;
     dv0dv2=dv0*dv2;
+    dv1dv2=dv1*dv2;
 
     if(dv0dv1>0.0f && dv0dv2>0.0f) /* same sign on all of them + not equal 0 ? */
-        return 0;                    /* no intersection occurs */
+        return NO_CONTACT;                    /* no intersection occurs */
 
     /* compute direction of intersection line */
     CROSS(D,N1,N2);
@@ -189,7 +195,7 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     SORT(isect1[0],isect1[1]);
     SORT(isect2[0],isect2[1]);
 
-    if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return 0;
+    //if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return NO_CONTACT;
     
     float res[4][3];
     if(du0du1>0)
@@ -202,10 +208,29 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
         edge_tri_intersect(U1, U0, du1, du0, res[0]);
         edge_tri_intersect(U1, U2, du1, du2, res[1]);
     }
-    else
+    else if(du1du2>0)
     {
         edge_tri_intersect(U0, U1, du0, du1, res[0]);
         edge_tri_intersect(U0, U2, du0, du2, res[1]);
+    }
+    else if(du0==0)
+    {
+        SET(res[0], U0);
+        edge_tri_intersect(U1, U2, du1, du2, res[1]);
+    }
+    else if(du1==0)
+    {
+        SET(res[0], U1);
+        edge_tri_intersect(U0, U2, du0, du2, res[1]);
+    }
+    else if(du2==0)
+    {
+        SET(res[0], U2);
+        edge_tri_intersect(U0, U1, du0, du1, res[1]);
+    }
+    else 
+    {
+        printf("contact error\n");
     }
 
     if(dv0dv1>0)
@@ -218,10 +243,29 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
         edge_tri_intersect(V1, V0, dv1, dv0, res[2]);
         edge_tri_intersect(V1, V2, dv1, dv2, res[3]);
     }
-    else
+    else if(dv1dv2>0)
     {
         edge_tri_intersect(V0, V1, dv0, dv1, res[2]);
         edge_tri_intersect(V0, V2, dv0, dv2, res[3]);
+    }
+    else if(dv0==0)
+    {
+        SET(res[2], V0);
+        edge_tri_intersect(V1, V2, dv1, dv2, res[3]);
+    }
+    else if(dv1==0)
+    {
+        SET(res[2], V1);
+        edge_tri_intersect(V0, V2, dv0, dv2, res[3]);
+    }
+    else if(dv2==0)
+    {
+        SET(res[2], V2);
+        edge_tri_intersect(V0, V1, dv0, dv1, res[3]);
+    }
+    else 
+    {
+        printf("contact error\n");
     }
 
     for(int i=3;i>0;i--)
