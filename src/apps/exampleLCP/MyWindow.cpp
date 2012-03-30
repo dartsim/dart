@@ -140,12 +140,12 @@ void MyWindow::draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     mSkels[0]->draw(mRI);
     mSkels[1]->draw(mRI);
-
+    int nContact = 0;
     if(!mRunning) {
        if (mCurrFrame < mBakedStates.size()) {
            int nDof1 = mSkels[0]->getNumDofs();
            int nDof2 = mSkels[1]->getNumDofs();
-           int nContact = (mBakedStates[mCurrFrame].size() - nDof1 - nDof2) / 6;
+           nContact = (mBakedStates[mCurrFrame].size() - nDof1 - nDof2) / 6;
            for (int i = 0; i < nContact; i++) {
                Vector3d v = mBakedStates[mCurrFrame].segment(nDof1 + nDof2 + i * 6, 3);
                Vector3d n = mBakedStates[mCurrFrame].segment(nDof1 + nDof2 + i * 6 + 3, 3);
@@ -162,6 +162,7 @@ void MyWindow::draw()
        }
     }else{
         VectorXd f = mCollisionHandle->getConstraintForce(1);
+        nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
         for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
             Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
             Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal;
@@ -178,12 +179,17 @@ void MyWindow::draw()
     }
         
     // display the frame count in 2D text
+    
     char buff[64];
-    sprintf(buff,"%d",mFrame);
+    if(mRunning)sprintf(buff,"%d",mFrame);
+    else sprintf(buff, "%d", mCurrFrame);
     string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
     yui::drawStringOnScreen(0.02f,0.02f,frame);
+    stringstream ss;
+    ss<<"contact "<<nContact;
+    yui::drawStringOnScreen(0.02f,0.06f,ss.str());
     glEnable(GL_LIGHTING);
 }
 
