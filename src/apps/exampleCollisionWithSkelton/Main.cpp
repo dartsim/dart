@@ -14,7 +14,7 @@ using namespace dynamics;
 int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model, model2;
-    model.loadFile(DART_DATA_PATH"/skel/Nunchuck.skel", kinematics::SKEL);
+    model.loadFile(DART_DATA_PATH"/skel/nunchuck.skel", kinematics::SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/collisiontest.skel", kinematics::SKEL);
 
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel());

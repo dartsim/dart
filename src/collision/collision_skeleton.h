@@ -43,19 +43,29 @@
 #include "Eigen/Dense"
 #include <vector>
 #include "tri_tri_intersection_test.h"
+#include <Map>
 
-#define ODE_STYLE 1
+#define ODE_STYLE 0
 
 namespace collision_checking {
+    class CollisionSkeletonNode;
+    struct ConatctTriangle
+    {
+        Vec3f v1, v2, v3, u1, u2, u3;
+    };
     struct ContactPoint {
         Eigen::Vector3d point;
         Eigen::Vector3d normal;
         kinematics::BodyNode *bd1;
         kinematics::BodyNode *bd2;
+        CollisionSkeletonNode *collisionSkeletonNode1;
+        CollisionSkeletonNode *collisionSkeletonNode2;
         int bdID1;
         int bdID2;
         int triID1;
         int triID2;
+        ConatctTriangle contactTri;
+
         double penetrationDepth;
 
         bool isAdjacent(ContactPoint &otherPt){
@@ -64,11 +74,14 @@ namespace collision_checking {
         }
     };
 
+
+
     struct CollisionSkeletonNode{
         BVHModel<RSS>* cdmesh;
         kinematics::BodyNode *bodyNode;
         AABB aabb;
         int bodynodeID;
+        
 
         Vec3f mR[3];
         Vec3f mT;
@@ -79,11 +92,12 @@ namespace collision_checking {
         int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
         void evalRT();
         
-        bool evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2);
-        void drawCollisionSkeletonNode();
+        int evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2, ConatctTriangle& contactTri);
+        void drawCollisionSkeletonNode(bool bTrans = true);
+        void drawCollisionTriangle(int tri);
 
     private:
-        inline bool FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2);
+        inline int FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2);
         inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
         inline Vec3f TransformVertex(Vec3f& v);
     };
@@ -92,22 +106,30 @@ namespace collision_checking {
 
     class SkeletonCollision {
     public:
-        SkeletonCollision() {}
+        SkeletonCollision() { mNumTriIntersection=0;}
         virtual ~SkeletonCollision();
         void addCollisionSkeletonNode(kinematics::BodyNode *_bd, bool _bRecursive = false);
         inline void clearAllContacts(){ mContactPointList.clear(); }
         inline void clearAllCollisionSkeletonNode() {mCollisionSkeletonNodeList.clear();}
         inline ContactPoint& getContact(int idx) { return mContactPointList[idx]; }
         inline int getNumContact(){ return mContactPointList.size();}
+        inline int getNumTriangleIntersection(){return mNumTriIntersection;}
         void checkCollision(bool bConsiderGround = false);
         void draw();
+        CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *bodyNode){
+            if(mbodyNodeHash.find(bodyNode)!=mbodyNodeHash.end())
+                return mbodyNodeHash[bodyNode];
+            else
+                return NULL;
+        }
         
         
 
     public:
-        
+        int mNumTriIntersection;
         std::vector<ContactPoint> mContactPointList;
         std::vector<CollisionSkeletonNode*> mCollisionSkeletonNodeList; 
+        std::map<kinematics::BodyNode*, CollisionSkeletonNode*> mbodyNodeHash;
     };
 
    
@@ -144,7 +166,7 @@ namespace collision_checking {
             return v1[2]<v2[2];
     }
 
-    inline bool CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2)
+    inline int CollisionSkeletonNode::FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2)
     {
         float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
         SET(U0, r1);
@@ -153,11 +175,13 @@ namespace collision_checking {
         SET(V0, R1);
         SET(V1, R2);
         SET(V2, R3);
-        if(tri_tri_intersect(V0,V1,V2,
-            U0,U1,U2, RES1, RES2)==0)return false;
+        
+        int contactResult = tri_tri_intersect(V0,V1,V2,
+            U0,U1,U2, RES1, RES2);
+        
         SET(res1, RES1);
         SET(res2, RES2);
-        return true;
+        return contactResult;
 
         int count1 = 0, count2 = 0, count = 0;
         //Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
