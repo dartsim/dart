@@ -15,7 +15,7 @@ if (INCLUDE_PLANNING)
 endif (INCLUDE_PLANNING)
 
 # Unit Test
-#ADD_SUBDIRECTORY(unittests)
+ADD_SUBDIRECTORY(unittests)
 
 # Apps
 ADD_SUBDIRECTORY(apps)

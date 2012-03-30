@@ -44,7 +44,7 @@ namespace dynamics {
         }
         mAccumTime++;
         
-        cleanupContact();
+        //cleanupContact();
         if (getNumContacts() > 50)
             penaltyMethod();
         else {

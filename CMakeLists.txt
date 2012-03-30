@@ -11,7 +11,7 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ( FCL "FCL" OFF )
+option ( FCL "FCL" ON )
 option ( INCLUDE_PLANNING "PLANNING" ON)
 
 
@@ -38,6 +38,8 @@ elseif (UNIX)
  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -msse2 -g")
   SET(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
+
+SET_DIRECTORY_PROPERTIES (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES CMakeCache.txt)
 
 ###############################################
 # Generate the path header file
@@ -67,33 +69,38 @@ message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 # Find important packages
 FIND_PACKAGE(OpenGL)
 IF (OPENGL_FOUND)
-MESSAGE("OPENGL FOUND")
-MESSAGE(${OPENGL_LIBRARIES})
+MESSAGE(STATUS "OPENGL FOUND")
+#MESSAGE(${OPENGL_LIBRARIES})
 ELSE (OPENGL_FOUND)
-MESSAGE("OPENGL NOT FOUND")
+MESSAGE(STATUS "OPENGL NOT FOUND")
 ENDIF ()
 
 if (WIN32)
     SET(GLUT_glut_LIBRARY glut32)
-    MESSAGE("GLUT FOUND")
-    MESSAGE(${GLUT_glut_LIBRARY})
+    MESSAGE(STATUS "GLUT FOUND")
+    #MESSAGE(${GLUT_glut_LIBRARY})
 else()
     FIND_PACKAGE(GLUT)
     IF (GLUT_FOUND)
-        MESSAGE("GLUT FOUND")
-        MESSAGE(${GLUT_glut_LIBRARY})
+        MESSAGE(STATUS "GLUT FOUND")
+        #MESSAGE(${GLUT_glut_LIBRARY})
     ELSE (GLUT_FOUND)
-        MESSAGE("GLUT NOT FOUND")
+        MESSAGE(STATUS "GLUT NOT FOUND")
     ENDIF ()
 endif()
 
 ###############################################
 # Thirdparty libraries
 message(STATUS "Building thirdparty libraries")
+
+ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
+ADD_SUBDIRECTORY (thirdparty/snopt)
+
 if (FCL)
-    ADD_SUBDIRECTORY (thirdparty/ann_1.1.2)
-    ADD_SUBDIRECTORY (thirdparty/libccd-1.0)
-    ADD_SUBDIRECTORY (thirdparty/fcl.r42)
+    include_directories(thirdparty/libccd/src)
+    include_directories(thirdparty/fcl/include)
+    ADD_SUBDIRECTORY (thirdparty/libccd)
+    ADD_SUBDIRECTORY (thirdparty/fcl)
 endif (FCL)
 
 message(STATUS "Building DART source")
