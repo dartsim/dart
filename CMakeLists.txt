@@ -11,7 +11,8 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ( FCL "FCL" ON )
+option ( SNOPT "SNOPT" OFF)
+option ( FCL "FCL" OFF )
 option ( INCLUDE_PLANNING "PLANNING" ON)
 
 
@@ -94,7 +95,11 @@ endif()
 message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
+LINK_DIRECTORIES (thirdparty/lib)
+
+if (SNOPT)
 ADD_SUBDIRECTORY (thirdparty/snopt)
+endif (SNOPT)
 
 if (FCL)
     include_directories(thirdparty/libccd/src)
