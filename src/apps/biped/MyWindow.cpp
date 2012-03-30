@@ -79,13 +79,16 @@ VectorXd MyWindow::evalDeriv() {
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
         VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
-        //        cout << mSkels[i]->getExternalForces() << endl;
+        // SPD
+        //VectorXd qddot = (mSkels[i]->getMassMatrix() + mController->getKd() * mTimeStep).fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces() - mController->getKp() * (mDofs[i] + mDofVels[i] * mTimeStep - mController->getDesiredDofs()) - mController->getKd() * mDofVels[i]); // the control
+
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
     }
     return deriv;
 }
+
 
 void MyWindow::setState(VectorXd newState) {
     for (unsigned int i = 0; i < mSkels.size(); i++) {

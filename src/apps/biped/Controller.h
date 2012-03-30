@@ -22,15 +22,18 @@ class Controller {
     void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; };
     void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
     dynamics::SkeletonDynamics* getSkel() { return mSkel; };
- 
+    Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; };
+    Eigen::MatrixXd getKp() {return mKp; };
+    Eigen::MatrixXd getKd() {return mKd; };
+
  protected:
     double computeMassTree(kinematics::BodyNode *_bd);
     dynamics::SkeletonDynamics *mSkel;
     Eigen::VectorXd mTorques;
     Eigen::VectorXd mDesiredDofs;
     Eigen::VectorXd mMassTree;
-    std::vector<double> mKs;
-    std::vector<double> mKd;
+    Eigen::MatrixXd mKp;
+    Eigen::MatrixXd mKd;
     int mFrame;
 };
     

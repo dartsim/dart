@@ -21,7 +21,7 @@ void MyWindow::initDyn()
     mDofVels.resize(mModel->getNumDofs());
 
     for (unsigned int i = 0; i < mModel->getNumDofs(); i++) {
-        mDofs[i] = pose[i] + random(-0.1, 0.1);
+        mDofs[i] = pose[i] + random(-0.5, 0.5);
         mDofVels[i] = 0.0;
         mController->setDesiredDof(i, pose[i]);
     }
@@ -33,11 +33,11 @@ void MyWindow::displayTimer(int _val)
     int numIter = mDisplayTimeout / (mTimeStep * 1000);
 
     for (int i = 0; i < numIter; i++) {
-        mController->computeTorques(mDofs, mDofVels);
-        mModel->setPose(mDofs, false, false);
+        mModel->setPose(mDofs, true, true);
         mModel->computeDynamics(mGravity, mDofVels, true);
+        //        mController->computeTorques(mDofs, mDofVels);
         mIntegrator.integrate(this, mTimeStep);
-        //        cout << "iter " << i + mFrame << endl;
+        //        cout << "************iter " << i + mFrame << endl;
     }
 
     mFrame += numIter;   
@@ -83,8 +83,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         cout << "up force on wrist" << endl;
         break;
     case 'a': // down force
-        mForce[1] = -100.0;
-        static_cast<BodyNodeDynamics*>(mModel->getNode("fixedHand_middleDIP"))->addExtForce(Vector3d(0.05, 0.0, 0), mForce);
+        mForce[1] = -5000.0;
+        static_cast<BodyNodeDynamics*>(mModel->getNode("fixedHand_middleDIP"))->addExtForce(Vector3d(0.1, 0.0, 0), mForce);
         mForce[1] = 0.0;
         cout << "down force on middle finger" << endl;
         break;
@@ -103,7 +103,9 @@ VectorXd MyWindow::getState() {
 
 VectorXd MyWindow::evalDeriv() {
     VectorXd deriv(mDofs.size() + mDofVels.size());
-    VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces() + mController->getTorques()); // the control force is scaled by mass matrix 
+    //    VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces() + mController->getTorques()); // the control force is scaled by mass matrix 
+    // SPD
+    VectorXd qddot = (mModel->getMassMatrix() + mController->getKd() * mTimeStep).fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces() - mController->getKp() * (mDofs + mDofVels * mTimeStep - mController->getDesiredDofs()) - mController->getKd() * mDofVels); // the control
     mModel->clampRotation(mDofs, mDofVels);
     deriv.tail(mDofVels.size()) = qddot; // set qddot (accelerations)
     deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set new velocities

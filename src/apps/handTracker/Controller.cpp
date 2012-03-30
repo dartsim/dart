@@ -12,29 +12,32 @@ using namespace utils;
 Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     mSkel = _skel;
     int nDof = mSkel->getNumDofs();        
-    mTorques.resize(nDof);
+    //    mTorques.resize(nDof);
     mDesiredDofs.resize(nDof);
-    mKd.resize(nDof);
-    mKs.resize(nDof);
-    for (int i = 0; i < nDof; i++) {
-        mKs[i] = 20.0;
-        mKd[i] = 0.5;//2 * sqrt(0.0);
-    }
+    //    mKd.resize(nDof);
+    //    mKs.resize(nDof);
 
-    mMassTree = VectorXd::Zero(nDof);
-    for (int i = 0; i < nDof; i++)
-        mMassTree[i] = computeMassTree(mSkel->getDof(i)->getJoint()->getChildNode());
+    mKp = MatrixXd::Identity(nDof, nDof) * 10.0;
+    mKd = MatrixXd::Identity(nDof, nDof) * 1.0;
+
+        //    for (int i = 0; i < nDof; i++) {
+    //    mKs[i] = 50.0;
+    //  mKd[i] = 5;//2 * sqrt(0.0);
+    //}
+
+    //    mMassTree = VectorXd::Zero(nDof);
+    //    for (int i = 0; i < nDof; i++)
+    //  mMassTree[i] = computeMassTree(mSkel->getDof(i)->getJoint()->getChildNode());
     
-    mMassTree /= mMassTree.norm();
+    //    mMassTree /= mMassTree.norm();
 }
-
+/*
 void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel) {
-    for (int i = 0; i < 2; i++)
-      mTorques[i] = 0.0;
     for (unsigned int i = 0; i < mTorques.size(); i++) {
         mTorques[i] = -mKs[i] * (_dof[i] - mDesiredDofs[i])  -mKd[i] * _dofVel[i];
-        mTorques[i] *= mMassTree[i];
+        mTorques[i] *= mMassTree[i];        
     }
+    cout << _dofVel[0] << endl;
 }
 
 double Controller::computeMassTree(BodyNode *_bd) {
@@ -47,3 +50,4 @@ double Controller::computeMassTree(BodyNode *_bd) {
         return sum;
     }
 }
+*/
