@@ -31,9 +31,12 @@ namespace dynamics {
             return;
         mCollision->clearAllContacts();
         mCollision->checkCollision(false);
-        
-        for (int i = 0; i < getNumSkels(); i++) 
+
+        for (int i = 0; i < getNumSkels(); i++) {
             mConstrForces[i].setZero(); 
+            mCartesianForces[i].resize(3, getNumContacts());
+            mCartesianForces[i].setZero();
+        }
 
         if (getNumContacts() == 0){
             mAccumTime = 0;
@@ -89,6 +92,7 @@ namespace dynamics {
             if (!mSkels[i]->getKinematicState())
                 mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
         }
+        mCartesianForces.resize(getNumSkels());
 
         mMInv = MatrixXd::Zero(rows, cols);
         mTauStar = VectorXd::Zero(rows);
@@ -125,7 +129,7 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getKinematicState())
                 continue;
-            VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getMassMatrix() * mSkels[i]->getInternalForces();
+            VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
             VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
             mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
             startRow += tauStar.rows();
@@ -221,6 +225,7 @@ namespace dynamics {
         VectorXd forces(VectorXd::Zero(nRows));
         VectorXd f_n = mX.block(0, 0, c, 1);
         VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
+        VectorXd lambda = mX.tail(c);
 
         // Note, we need to un-scale by dt (was premultiplied in).
         // If this turns out to be a perf issue (above, as well as recomputing matrices 
@@ -228,7 +233,7 @@ namespace dynamics {
         //        MatrixXd N = getNormalMatrix();
         //        MatrixXd B = getBasisMatrix();
         //MatrixXd N = getNormalMatrix() / mDt;
-        //        MatrixXd B = getBasisMatrix() / mDt;
+        //        MatrixXd B = getBasisMatrix() / mDt;        
         forces = (mN * f_n) + (mB * f_d);
         //forces = N * f_n;
         // Next, apply the external forces skeleton by skeleton.
@@ -239,7 +244,23 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
             startRow += nDof;
+            for (int j = 0; j < c; j++) {
+                ContactPoint& contact = mCollision->getContact(j);
+                Vector3d fc = -getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(j * mNumDir, mNumDir) - contact.normal * f_n[j];
+                mCartesianForces[i].col(j) = fc;
+            }
         }
+        
+        VectorXd sum = VectorXd::Zero(mNumDir);
+        for (int i = 0; i < c; i++)
+            sum += f_d.segment(i * mNumDir, mNumDir);
+        double tan = sum.norm();
+        if (f_n.sum() * mMu  < tan) {
+            cout << "normal force = " << f_n.sum() << endl;
+            cout << "tangent force = " << sum.norm() << endl;
+        }
+        //cout << "lambda = " << lambda << endl;
+
         /*
         MatrixXd mat = forces;
         for(int i = 0; i < mat.rows(); i++)

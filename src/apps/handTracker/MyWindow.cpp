@@ -15,13 +15,13 @@ using namespace dynamics;
 
 void MyWindow::initDyn()
 {
-    double pose[] = {1.1650263849341542244, -3.2736415363828421654, 1.1571946631272334027, 0.28296769490469175778, -0.86841303362685362544, -0.25627969123426669329, -0.79685538047236859072, -0.12734463791710903813, 0.14789072934042360452, -0.48935240234150112482, -0.30611976871154328306, -0.14817345106151691425, -0.24066512198813386214, -0.21809634746591596843, -0.011130368938586579844, -0.034110448084233024879, -0.4397398082290809862, -0.038024760469828035314, 0.029673622504407651257, -0.11456185499668754268, -0.56881125122878961609, -0.062291363717269003508, -0.17039243995921912744, -0.34058612440903029972, -0.74166613411407411594, 0.083218661053851505915}; 
+    double pose[] = {1.1571946631272334027, 0.28296769490469175778, -0.86841303362685362544, -0.25627969123426669329, -0.79685538047236859072, -0.12734463791710903813, 0.14789072934042360452, -0.48935240234150112482, -0.30611976871154328306, -0.14817345106151691425, -0.24066512198813386214, -0.21809634746591596843, -0.011130368938586579844, -0.034110448084233024879, -0.4397398082290809862, -0.038024760469828035314, 0.029673622504407651257, -0.11456185499668754268, -0.56881125122878961609, -0.062291363717269003508, -0.17039243995921912744, -0.34058612440903029972, -0.74166613411407411594, 0.083218661053851505915}; 
 
     mDofs.resize(mModel->getNumDofs());
     mDofVels.resize(mModel->getNumDofs());
 
     for (unsigned int i = 0; i < mModel->getNumDofs(); i++) {
-        mDofs[i] = pose[i] + random(-1.0, 1.0);
+        mDofs[i] = pose[i] + random(-0.1, 0.1);
         mDofVels[i] = 0.0;
         mController->setDesiredDof(i, pose[i]);
     }
@@ -37,6 +37,7 @@ void MyWindow::displayTimer(int _val)
         mModel->setPose(mDofs, false, false);
         mModel->computeDynamics(mGravity, mDofVels, true);
         mIntegrator.integrate(this, mTimeStep);
+        //        cout << "iter " << i + mFrame << endl;
     }
 
     mFrame += numIter;   
@@ -102,7 +103,7 @@ VectorXd MyWindow::getState() {
 
 VectorXd MyWindow::evalDeriv() {
     VectorXd deriv(mDofs.size() + mDofVels.size());
-    VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces()) + mController->getTorques(); // the control force is scaled by mass matrix 
+    VectorXd qddot = mModel->getMassMatrix().fullPivHouseholderQr().solve(-mModel->getCombinedVector() + mModel->getExternalForces() + mController->getTorques()); // the control force is scaled by mass matrix 
     mModel->clampRotation(mDofs, mDofVels);
     deriv.tail(mDofVels.size()) = qddot; // set qddot (accelerations)
     deriv.head(mDofs.size()) = (mDofVels + (qddot * mTimeStep)); // set new velocities
