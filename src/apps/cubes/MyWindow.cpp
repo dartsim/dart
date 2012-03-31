@@ -27,7 +27,7 @@ void MyWindow::initDyn()
     }
 
     mDofs[0][1] = -0.35;
-    mDofs[1][0] = 0.1;
+    mDofs[1][0] = 0.06;
     mDofs[1][1] = -0.2;
     mDofs[2][0] = 0.05;
     mDofs[3][1] = 0.08;
