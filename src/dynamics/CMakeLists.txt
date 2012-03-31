@@ -7,7 +7,7 @@ FILE(GLOB dynamics_srcs "*.cpp")
 FILE(GLOB dynamics_hdrs "*.h")
 
 # Library 
-ADD_LIBRARY(dynamics SHARED ${dynamics_srcs} ${dynamics_hdrs})
+ADD_LIBRARY(dynamics ${dynamics_srcs} ${dynamics_hdrs})
 TARGET_LINK_LIBRARIES(dynamics lcpsolver collision)
 SET_TARGET_PROPERTIES(dynamics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
