@@ -43,7 +43,7 @@
 #include "Eigen/Dense"
 #include <vector>
 #include "tri_tri_intersection_test.h"
-#include <Map>
+#include <map>
 
 #define ODE_STYLE 0
 

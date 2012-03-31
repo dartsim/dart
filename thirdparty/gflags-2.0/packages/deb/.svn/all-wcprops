@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/72/trunk/packages/deb
+END
+libgflags0.install
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/29/trunk/packages/deb/libgflags0.install
+END
+control
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/38/trunk/packages/deb/control
+END
+compat
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/7/trunk/packages/deb/compat
+END
+libgflags-dev.dirs
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/40/trunk/packages/deb/libgflags-dev.dirs
+END
+changelog
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/72/trunk/packages/deb/changelog
+END
+docs
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/13/trunk/packages/deb/docs
+END
+copyright
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/7/trunk/packages/deb/copyright
+END
+rules
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/7/trunk/packages/deb/rules
+END
+libgflags0.dirs
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/29/trunk/packages/deb/libgflags0.dirs
+END
+libgflags-dev.install
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/40/trunk/packages/deb/libgflags-dev.install
+END

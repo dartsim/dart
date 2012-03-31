@@ -11,14 +11,16 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ( FCL "FCL" ON )
-option ( INCLUDE_PLANNING "PLANNING" ON)
+option ( SNOPT "SNOPT" OFF)
+option ( FCL "FCL" OFF )
+option ( PLANNING "PLANNING" OFF)
 
 
 ###############################################
 # SETTING: Global settings
 INCLUDE_DIRECTORIES("src")
 
+SET(BUILD_SHARED_LIBS OFF)
 SET(CMAKE_CXX_WARNING_LEVEL 4)
 SET(EIGEN_DIR ${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.1)
 
@@ -38,8 +40,6 @@ elseif (UNIX)
  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -msse2 -g")
   SET(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
-
-SET_DIRECTORY_PROPERTIES (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES CMakeCache.txt)
 
 ###############################################
 # Generate the path header file
@@ -94,7 +94,10 @@ endif()
 message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
-ADD_SUBDIRECTORY (thirdparty/snopt)
+
+if (SNOPT)
+    ADD_SUBDIRECTORY (thirdparty/snopt)
+endif (SNOPT)
 
 if (FCL)
     include_directories(thirdparty/libccd/src)
