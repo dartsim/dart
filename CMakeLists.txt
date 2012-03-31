@@ -41,8 +41,6 @@ elseif (UNIX)
   SET(CMAKE_INSTALL_PREFIX /usr/local )
 endif()
 
-SET_DIRECTORY_PROPERTIES (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES CMakeCache.txt)
-
 ###############################################
 # Generate the path header file
 SET(PATH_HEADER_DIR ${CMAKE_SOURCE_DIR}/src/utils/Paths.h)
