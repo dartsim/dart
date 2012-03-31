@@ -5,11 +5,9 @@ PROJECT(unittests)
 FILE(GLOB unittests_srcs "*.cpp")
 FILE(GLOB unittests_hdrs "*.h")
 
-
-
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs})
 TARGET_LINK_LIBRARIES(unittests utils kinematics dynamics optimizer)
-# TARGET_LINK_LIBRARIES(unittests gfortran snopt)
+#TARGET_LINK_LIBRARIES(unittests gfortran snopt)
 
 LINK_THIRDPARTY_GFLAGS(unittests)
 LINK_THIRDPARTY_GLOG(unittests)

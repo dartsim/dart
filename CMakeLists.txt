@@ -13,13 +13,14 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
 option ( SNOPT "SNOPT" OFF)
 option ( FCL "FCL" OFF )
-option ( INCLUDE_PLANNING "PLANNING" ON)
+option ( PLANNING "PLANNING" OFF)
 
 
 ###############################################
 # SETTING: Global settings
 INCLUDE_DIRECTORIES("src")
 
+SET(BUILD_SHARED_LIBS OFF)
 SET(CMAKE_CXX_WARNING_LEVEL 4)
 SET(EIGEN_DIR ${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.1)
 
@@ -95,10 +96,9 @@ endif()
 message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
-LINK_DIRECTORIES (thirdparty/lib)
 
 if (SNOPT)
-ADD_SUBDIRECTORY (thirdparty/snopt)
+    ADD_SUBDIRECTORY (thirdparty/snopt)
 endif (SNOPT)
 
 if (FCL)
