@@ -1,0 +1,33 @@
+%\documentclass{article}
+\documentclass[12pt, letterpaper, onecolumn]{article}
+\usepackage[top=1.0in, bottom=1.0in, left=1.0in, right=1.0in]{geometry} %onecolumn
+
+\usepackage[pdftex, colorlinks=true, filecolor=blue, urlcolor=blue]{hyperref}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{graphicx}
+
+\newcommand{\projname}{p5}
+\newcommand{\projnum}{5}
+
+%\input{common}
+\newenvironment{packed_item}{
+\begin{itemize}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{itemize}}
+
+\begin{document}
+
+\title{Formulating LCP for Articulated Rigid Bodies}
+\author{}
+% Jie did the derivation, so kasiu feels bad about being the author :(
+\date{}
+%\date{Last Edited: Spring 2012}
+
+\maketitle
+\input{overview}
+\input{eqs_motion}
+\input{formulation}
+\input{standard_form}
+\end{document}
