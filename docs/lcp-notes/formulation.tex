@@ -49,8 +49,8 @@ Additionally, $\vec{\lambda}$ is a vector of length $c$ that contains all of the
 \subsection{Directional Friction Constraints}
 \begin{packed_item}
 \item $\vec{f_d} \geq 0$
-\item $B^T\dot{q} - E\vec{\lambda} \geq 0$
-\item $(B^T\dot{q} - E\vec{\lambda})^T\vec{f_d} = 0$
+\item $B^T\dot{q} + E\vec{\lambda} \geq 0$
+\item $(B^T\dot{q} + E\vec{\lambda})^T\vec{f_d} = 0$
 \end{packed_item}
 From this, we can construct the following linear system of equations:
 \begin{equation}
@@ -71,7 +71,7 @@ Here $(a, b, c)$ are the results of the following constraints:
 \begin{packed_item}
 \item $\vec{v_n} \geq 0$
 \item $\mu\vec{f_n} - E^T\vec{f_d} \geq 0$
-\item $B^T\dot{q} - E\vec{\lambda} \geq 0$
+\item $B^T\dot{q} + E\vec{\lambda} \geq 0$
 \end{packed_item}
 The expression for $\vec{v_n}$ comes from solving for the relative velocity in Equation \ref{eq:vn3}.
 \\
