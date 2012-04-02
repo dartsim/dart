@@ -12,13 +12,13 @@ namespace kinematics{
 
 class Controller {
  public:
-    Controller(dynamics::SkeletonDynamics *_skel);
+    Controller(dynamics::SkeletonDynamics *_skel, double _t);
     virtual ~Controller() {};
 
     //    Eigen::VectorXd getTorques() { return mTorques; };
     //    double getTorque(int _index) { return mTorques[_index]; };
     void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; };
-    //    void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
+    void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
     Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; };
     Eigen::MatrixXd getKp() {return mKp; };
     Eigen::MatrixXd getKd() {return mKd; };
@@ -32,6 +32,7 @@ class Controller {
     //    std::vector<double> mKd;
     Eigen::MatrixXd mKp;
     Eigen::MatrixXd mKd;
+    double mTimestep;
 
     //    Eigen::VectorXd mMassTree;
 };

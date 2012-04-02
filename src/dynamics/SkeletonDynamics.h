@@ -75,6 +75,8 @@ namespace dynamics{
         bool getKinematicState() const { return mKinematicState; }
         void setKinematicState(bool _s) { mKinematicState = _s; }
         void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
+        Eigen::MatrixXd getKd() const { return mKd; }
+        void setKd(Eigen::MatrixXd _m) { mKd = _m; }
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -87,6 +89,7 @@ namespace dynamics{
         Eigen::VectorXd mQdot; ///< the current qdot
 
         bool mKinematicState; ///< true if the skeleton is currently controlled kinematically
+        Eigen::MatrixXd mKd; 
     };
 
 } // namespace dynamics
