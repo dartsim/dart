@@ -89,7 +89,9 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
 
     }
 
-    const double ZERO = 0.001;
+   if(res.numPairs()==0)return 0;
+
+    const double ZERO = 0.000001;
     const double ZERO2 = ZERO*ZERO;
 
     int cur = start;
@@ -98,6 +100,7 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     size = result.size()-start;
     deleteIDs.clear();
 
+    //cout<<"before"<<result.size()<<endl;
     for(int i=start;i<start+size;i++)
         for(int j=i+1;j<start+size;j++)
         {
@@ -124,9 +127,9 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         {
             if(j==i)continue;
             if(bremove)break;
-            for(int k=start;k<start+size;k++)
+            for(int k=j+1;k<start+size;k++)
             {
-                if(i==j||i==k)continue;
+                if(i==k)continue;
                 Eigen::Vector3d  v = (result[i].point-result[j].point).cross(result[i].point-result[k].point);
                 if(v.dot(v)<ZERO2&&
                     ((result[i].point-result[j].point).dot(result[i].point-result[k].point)<0))
@@ -138,13 +141,13 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         if(bremove)deleteIDs.push_back(i);
     }
     
-    for(int i =deleteIDs.size()-1; i>=0;i--)
-       result.erase(result.begin()+deleteIDs[i]);
+       for(int i =deleteIDs.size()-1; i>=0;i--)
+          result.erase(result.begin()+deleteIDs[i]);
 
-  
+  //cout<<"after"<<result.size()<<endl;
     
     int collisionNum = res.numPairs();
-    return numCoplanarContacts*100+numNoContacts;
+    //return numCoplanarContacts*100+numNoContacts;
     return collisionNum;
 
 }
@@ -285,7 +288,7 @@ void SkeletonCollision::checkCollision(bool bConsiderGround)
     int num_max_contact = 100;
     clearAllContacts();
     int numCollision = 0;
-    
+    //std::cout<<"begin checking cd"<<std::endl;
     for(int i=0; i<mCollisionSkeletonNodeList.size();i++)
         for(int j=i+1;j<mCollisionSkeletonNodeList.size();j++)
         {
@@ -296,11 +299,13 @@ void SkeletonCollision::checkCollision(bool bConsiderGround)
              continue;                       
 
             
-            
+            //std::cout<<i<<" "<<j<<std::endl;
             numCollision+=mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], mContactPointList, num_max_contact);
             
     
         }
+    //std::cout<<mContactPointList.size()<<std::endl;
+    //if(mContactPointList.size()!=0)system("pause");
     mNumTriIntersection = numCollision;
 }
 

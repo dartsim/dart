@@ -1,0 +1,76 @@
+\section{The Equations of Motion}
+We begin our derivation from the following form of the equations of motion:
+\begin{equation}
+\label{eq:motionequations}
+M\ddot{q} + C\dot{q} + kq = \tau + J^T{f_n}\vec{N} + J^TD\vec{f_d}
+\end{equation}
+\\
+The terms of this equation are as follows:
+\begin{packed_item}
+\item $kq$ is a term for elastic forces (used in problems such as FEM, but can be omitted for articulated bodies)
+\item $\tau$ is the vector of external forces
+\item $J$ is the Jacobian from Cartesian to generalized coordinates (with respect to forces)
+\item $f_n$ is the magnitudes of the normal forces
+\item $\vec{N}$ is the normal direction
+\item $D$ is the discretized friction cone bases
+\item $\vec{f_d}$ is a vector of forces along the discretized friction cone bases
+\end{packed_item}
+We can manipulate Equation \ref{eq:motionequations} as follows:
+\begin{equation}
+\label{eq:changemotionequations0}
+M\ddot{q} = M\frac{(\dot{q}^{n+1}-\dot{q}^n)}{\Delta{t}}
+\end{equation}
+\begin{equation}
+\label{eq:changemotionequations1}
+M\frac{(\dot{q}^{n+1}-\dot{q}^n)}{\Delta{t}} = -C\dot{q}^n - kq^n + \tau^n + J^Tf_n\vec{N} + J^TD\vec{f_d} 
+\end{equation}
+\begin{equation}
+\label{eq:changemotionequations2}
+M\dot{q}^{n+1} = M\dot{q}^n - \Delta{t}(C\dot{q}^n + kq^n - \tau^n) + \Delta{t}(J^Tf_n\vec{N} + J^TD\vec{f_d})
+\end{equation}
+The first two terms on the right are known values. 
+We group these into a single term $\tau^*$:
+\begin{equation}
+\label{eq:taustar}
+\tau^* = M\dot{q}^n - \Delta{t}(C\dot{q}^n + kq^n - \tau^n)
+\end{equation}
+We are then left with:
+\begin{equation}
+\label{eq:changemotionequations3}
+M\dot{q}^{n+1} = \tau^* + \Delta{t}(J^Tf_n\vec{N} + J^TD\vec{f_d})
+\end{equation}
+At each time step, let $m$ denote the number of bodies in the system and $c$ denote the number of contact points.
+For simplicity, we will ignore the timestep superscripts ($n$) of the generalized coordinates $q$ and its derivatives.
+\\
+\\
+Additionally, we use the notation $X_{ij}$ to describe a variable $X$, which corresponds to information about a contact between bodies $i$ and $j$.
+For example, we would denote the normal $\vec{N}$ at the contact point between $i$ and $j$ as $\vec{N_{ij}}$.
+\\
+\\
+We illustrate the following derivation using an example environment consisting of $(m = 3)$ rigid bodies in contact at $(c = 2)$ points. Without loss of generality, assume bodies 1 and 2 are in contact, and bodies 2 and 3 are in contact.
+\\
+\\
+Using this example, we can rewrite Equation \ref{eq:changemotionequations3} as follows:
+\begin{equation}
+\label{eq:changemotionequations4}
+\left[\begin{matrix}M_1  & 0 & 0 \\ 0 & M_2 & 0 \\ 0 & 0 & M_3\end{matrix}\right]\left[\begin{matrix}\dot{q_1} \\ \dot{q_2} \\ \dot{q_3}\end{matrix}\right] = \left[\begin{matrix}{\tau_1}^* \\ {\tau_2}^* \\ {\tau_3}^*\end{matrix}\right] + \Delta{t}\left[\begin{matrix}{J_{21}}^T\vec{N_{21}} & 0 \\ {J_{12}}^T\vec{N_{12}} & {J_{32}}^T\vec{N_{32}} \\ 0 & {J_{23}}^T\vec{N_{23}} \end{matrix}\right]\left[\begin{matrix}f_{n1} \\ f_{n2}\end{matrix}\right] + \Delta{t}\left[\begin{matrix}{J_{21}}^TD_{21} & 0 \\ {J_{12}}^TD_{12} & {J_{32}}^TD_{32} \\ 0 & {J_{23}}^TD_{23} \end{matrix}\right]\left[\begin{matrix}f_{d1} \\ f_{d2}\end{matrix}\right]
+\end{equation}
+For simplicity, we'll rewrite some of these terms as variables $N$ and $B$ as follows:
+\begin{equation}
+\label{eq:nbmatrix}
+\begin{array}{cc}
+N = \Delta{t}\left[\begin{matrix}{J_{21}}^T\vec{N_{21}} & 0 \\ {J_{12}}^T\vec{N_{12}} & {J_{32}}^T\vec{N_{32}} \\ 0 & {J_{23}}^T\vec{N_{23}} \end{matrix}\right] \\
+B = \Delta{t}\left[\begin{matrix}{J_{21}}^TD_{21} & 0 \\ {J_{12}}^TD_{12} & {J_{32}}^TD_{32} \\ 0 & {J_{23}}^TD_{23} \end{matrix}\right]
+\end{array}
+\end{equation}
+Note here that $N$ is a matrix, not to be confused with $N_{ij}$, which is a vector.
+\\
+\\
+Also, we note that $N$ is a $(m^* \times c)$ matrix, instead of a full $(m^* \times 2c)$ matrix (as each contact corresponds to two normal vectors). This exploits the fact that $\vec{N_{ij}} = -\vec{N_{ij}}$ and that the magnitude of these vectors (forces) are the same. Thus, we can condense the matrix. Similarly, $B$ takes advantage of this as well. Here $m^*$ depends on both $m$, as well as the DOFs of each $q_i$. ($m^*$ is the product of $m$ and the respective number of DOFs for each $q_i$.)
+\\
+\\
+With these substitutions, Equation \ref{eq:changemotionequations4} reduces to the following:
+\begin{equation}
+\label{eq:changemotionequations5}
+M\dot{q} = \tau^* + N\vec{f_n} + B\vec{f_d}
+\end{equation}

@@ -1,0 +1,79 @@
+\section{LCP Formulation}
+Recall that we need $V_n$ (the relative velocity), which is given by the following expression:
+\begin{equation}
+\label{eq:vn0}
+V_n = N^T\dot{q}
+\end{equation}
+Expanding this out using the example problem yields the following:
+\begin{equation}
+\label{eq:vn1}
+V_n = \left[\begin{matrix}\vec{N_{21}}^TJ_{21} & \vec{N_{12}}^TJ_{12} & 0 \\ 0 & \vec{N_{32}}^TJ_{32} & \vec{N_{23}}^TJ_{23}\end{matrix}\right]\left[\begin{matrix}\dot{q_1} \\ \dot{q_2} \\ \dot{q_3}\end{matrix}\right]
+\end{equation}
+\begin{equation}
+\label{eq:vn2}
+V_n = \left[\begin{matrix}\vec{N_{21}}^TJ_{21}\dot{q_1} + \vec{N_{12}}^TJ_{12}\dot{q_2} \\ \vec{N_{32}}^TJ_{32}\dot{q_2} + \vec{N_{23}}^TJ_{23}\dot{q_3}\end{matrix}\right]
+\end{equation}
+Since $\vec{N_{ij}} = -\vec{N_{ji}}$, we can reduce this further:
+\begin{equation}
+\label{eq:vn3}
+V_n = \left[\begin{matrix}\vec{N_{21}}^T(J_{21}\dot{q_1} - J_{12}\dot{q_2}) \\ \vec{N_{32}}^T(J_{32}\dot{q_2} - J_{23}\dot{q_3})\end{matrix}\right]
+\end{equation}
+
+\subsection{Normal Direction Constraints}
+We now begin revisiting the constraints for LCP.
+\begin{packed_item}
+\item $\vec{f_n} \geq 0$
+\item $\vec{v_n} \geq 0$
+\item $\vec{v_n}^T\vec{f_n} = 0$
+\end{packed_item}
+The first expression ensures there is no pulling force. The second expression prevents penetration with the contact surface. The third expression constrains the normal force based on the velocity. If $\vec{v_n} > 0$, then $\vec{f_n} = 0$ (in takeoff). If $\vec{v_n} = 0$, then $\vec{f_n} \geq 0$ (in contact).
+
+\subsection{Friction Cone Constraints}
+\begin{packed_item}
+\item $\vec{\lambda} \geq 0$
+\item $\mu\vec{f_n} - E^T\vec{f_d} \geq 0$
+\item $\lambda(\mu\vec{f_n} - E^T\vec{f_d}) = 0$
+% Should this be \vec{lamba}?
+\end{packed_item}
+Here $E$ is a $(cd \times c)$ matrix where $d$ is the number of contact (friction cone) directions and $c$ is the number of contacts (as defined above). As an example, the structure of $E$ for a problem with $(d = 3)$ contact directions and $(c = 2)$ contacts would be as follows:
+\begin{equation}
+\label{eq:ematrix}
+E = \left[\begin{matrix}1 & 0 \\ 1 & 0 \\ 1 & 0 \\ 0 & 1 \\ 0 & 1 \\ 0 & 1\end{matrix}\right]
+\end{equation}
+Additionally, $\vec{\lambda}$ is a vector of length $c$ that contains all of the $\lambda$ values.
+\begin{equation}
+\label{eq:lambda}
+\vec{\lambda} = \left[\begin{matrix}\lambda_1 \\ \lambda_2 \\ .. \\ \lambda_c\end{matrix}\right]
+\end{equation}
+
+\subsection{Directional Friction Constraints}
+\begin{packed_item}
+\item $\vec{f_d} \geq 0$
+\item $B^T\dot{q} - E\vec{\lambda} \geq 0$
+\item $(B^T\dot{q} - E\vec{\lambda})^T\vec{f_d} = 0$
+\end{packed_item}
+From this, we can construct the following linear system of equations:
+\begin{equation}
+\label{eq:bigsystem}
+\begin{array}{cc}
+\left[\begin{matrix}0 \\ a \\ b \\ c \end{matrix}\right] = \left[\begin{matrix}M & -N & -B & 0 \\ N^T & 0 & 0 & 0 \\ B^T & 0 & 0 & E \\ 0 & \mu & -E^T & 0\end{matrix}\right]\left[\begin{matrix}\vec{\dot{q}} \\ \vec{f_n} \\ \vec{f_d} \\ \vec{\lambda}\end{matrix}\right] + \left[\begin{matrix}-\tau^* \\ 0 \\ 0 \\0\end{matrix}\right] \\
+\begin{matrix}
+\left[\begin{matrix}\vec{f_n} \\ \vec{f_d} \\ \vec{\lambda}\end{matrix}\right] \geq 0, & 
+\left[\begin{matrix}a \\ b \\ c\end{matrix}\right] \geq 0, &
+\left[\begin{matrix}a \\ b \\ c\end{matrix}\right]^T\left[\begin{matrix}\vec{f_n} \\ \vec{f_d} \\ \vec{\lambda}\end{matrix}\right] = 0
+\end{matrix}
+\end{array}
+\end{equation}
+The first row of the system is based on Equation \ref{eq:changemotionequations5}. The remaining three rows, as well as the constraints, encapsulate the nine LCP conditions described above.
+\\
+\\
+Here $(a, b, c)$ are the results of the following constraints: 
+\begin{packed_item}
+\item $\vec{v_n} \geq 0$
+\item $\mu\vec{f_n} - E^T\vec{f_d} \geq 0$
+\item $B^T\dot{q} - E\vec{\lambda} \geq 0$
+\end{packed_item}
+The expression for $\vec{v_n}$ comes from solving for the relative velocity in Equation \ref{eq:vn3}.
+\\
+\\
+Unfortunately, the construction described is in MLCP (Mixed LCP) form. To convert it to standard form, we need to make a few adjustments.
