@@ -196,7 +196,7 @@ namespace kinematics {
         }
 
 #if _DEBUG
-        for (unsigned int i = 0; i < mDependentDofs.size() - 1; i++) {
+        for (int i = 0; i < (int)mDependentDofs.size() - 1; i++) {
             int now = mDependentDofs[i];
             int next = mDependentDofs[i + 1];
             if (now > next) {

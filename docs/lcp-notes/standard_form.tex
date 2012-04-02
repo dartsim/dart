@@ -1,0 +1,30 @@
+\section{Standard LCP Form}
+Standard LCP is of the following form:
+\begin{equation}
+\begin{array}{cc}
+\vec{w} = A\vec{z} + \vec{q} \\
+\vec{w} \geq 0 \\
+\vec{z} \geq 0 \\
+\vec{w}^T\vec{z} = 0
+\end{array}
+\end{equation}
+If we solve for $\dot{q}$, we get:
+\begin{equation}
+\dot{q} = M^{-1}(V\vec{f_n} + B\vec{f_d} + \tau^*)
+\end{equation}
+We can then reorder Equation \ref{eq:bigsystem} slightly to get the following:
+\begin{equation}
+\label{eq:slcp0}
+\left[\begin{matrix}a \\ b \\ c\end{matrix}\right] = \left[\begin{matrix}N^TM^{-1}N & N^TM^{-1}B & 0 \\ B^TM^{-1}N & B^TM^{-1}B & E \\ \mu & -E^T & 0\end{matrix}\right]\left[\begin{matrix}\vec{f_n} \\ \vec{f_d} \\ \vec{\lambda}\end{matrix}\right] + \left[\begin{matrix}N^TM^{-1}\tau^* \\ B^TM^{-1}\tau^* \\ 0\end{matrix}\right]
+\end{equation}
+Where:
+\begin{equation}
+\label{eq:slcp1}
+\begin{array}{cc}
+\vec{w} = \left[\begin{matrix}a \\ b \\ c\end{matrix}\right] \\
+A = \left[\begin{matrix}N^TM^{-1}N & N^TM^{-1}B & 0 \\ B^TM^{-1}N & B^TM^{-1}B & E \\ \mu & -E^T & 0\end{matrix}\right] \\
+\vec{z} = \left[\begin{matrix}\vec{f_n} \\ \vec{f_d} \\ \vec{\lambda}\end{matrix}\right] \\
+\vec{q} = \left[\begin{matrix}N^TM^{-1}\tau^* \\ B^TM^{-1}\tau^* \\ 0\end{matrix}\right]
+\end{array}
+\end{equation}
+Once we have $\vec{w}$ and $\vec{z}$, we can plug values back into the equations of motion to get $\dot{q}^{n + 1}$.
