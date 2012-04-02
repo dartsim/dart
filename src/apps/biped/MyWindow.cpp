@@ -36,7 +36,7 @@ void MyWindow::initDyn()
     mDofs[1][15] = -0.5;
     mDofs[1][16] = 0.1;
     */
-    mDofs[0][1] = -0.88;
+    mDofs[0][1] = -0.9;
     mDofs[1][19] = -0.1;
     mDofs[1][6] = 0.1;
     mDofs[1][12] = 0.1;
@@ -52,12 +52,14 @@ void MyWindow::initDyn()
     }
     mSkels[0]->setKinematicState(true);
     
-    mController = new Controller(mSkels[1]);
-    for (int i = 0; i < mController->getSkel()->getNumDofs(); i++)
+    mController = new Controller(mSkels[1], mTimeStep);
+    int nDof = mController->getSkel()->getNumDofs();
+    for (int i = 0; i < nDof; i++)
         mController->setDesiredDof(i, mController->getSkel()->getDof(i)->getValue());
 
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
-    
+    mCollisionHandle->setSPDFlag(true);
+    mSkels[1]->setKd(MatrixXd::Identity(nDof, nDof) * 300); 
 }
 
 VectorXd MyWindow::getState() {
@@ -78,9 +80,9 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
+        //VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
         // SPD
-        //VectorXd qddot = (mSkels[i]->getMassMatrix() + mController->getKd() * mTimeStep).fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces() - mController->getKp() * (mDofs[i] + mDofVels[i] * mTimeStep - mController->getDesiredDofs()) - mController->getKd() * mDofVels[i]); // the control
+        VectorXd qddot = (mSkels[i]->getMassMatrix() + mSkels[i]->getKd() * mTimeStep).fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
 
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
@@ -107,7 +109,7 @@ void MyWindow::setPose() {
             mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
             mController->computeTorques(mDofs[1], mDofVels[1]);
-            mController->getSkel()->setInternalForces(mController->getTorques());
+            //            mController->getSkel()->setInternalForces(mController->getTorques());
         }
     }
         mCollisionHandle->applyContactForces();
@@ -269,7 +271,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mShowMarkers = !mShowMarkers;
         break;
     case 'q': // push
-        mForce[0] = 50;
+        mForce[0] = 150;
         cout << "push left arm" << endl;
         break;
     default:
