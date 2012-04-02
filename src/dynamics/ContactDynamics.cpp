@@ -143,6 +143,8 @@ namespace dynamics {
             if (mSkels[i]->getKinematicState())
                 continue;
             MatrixXd skelMass = mSkels[i]->getMassMatrix();
+            //            if (mSPD)
+            //  skelMass += mSkels[i]->getKd() * mDt;
             MatrixXd skelMassInv = skelMass.inverse();
             mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
             startRow+= skelMassInv.rows();

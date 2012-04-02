@@ -9,9 +9,10 @@ using namespace kinematics;
 using namespace Eigen;
 using namespace utils;
 
-Controller::Controller(dynamics::SkeletonDynamics *_skel) {
+Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
     mSkel = _skel;
-    int nDof = mSkel->getNumDofs();        
+    mTimestep = _t;
+    int nDof = mSkel->getNumDofs();
     //    mTorques.resize(nDof);
     mDesiredDofs.resize(nDof);
     //    mKd.resize(nDof);
@@ -31,15 +32,24 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel) {
     
     //    mMassTree /= mMassTree.norm();
 }
-/*
+
 void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel) {
-    for (unsigned int i = 0; i < mTorques.size(); i++) {
-        mTorques[i] = -mKs[i] * (_dof[i] - mDesiredDofs[i])  -mKd[i] * _dofVel[i];
-        mTorques[i] *= mMassTree[i];        
-    }
-    cout << _dofVel[0] << endl;
+
+    int nDof = mSkel->getNumDofs();        
+    VectorXd torque(nDof);
+
+    for (int i = 0; i < nDof; i++)
+        torque[i] = -mKp(i, i) * (_dof[i] + _dofVel[i] * mTimestep - mDesiredDofs[i]) - mSkel->getKd()(i, i) * _dofVel[i];
+    
+    mSkel->setInternalForces(torque);
+
+    //    for (unsigned int i = 0; i < mTorques.size(); i++) {
+    //  mTorques[i] = -mKs[i] * (_dof[i] - mDesiredDofs[i])  -mKd[i] * _dofVel[i];
+    //  mTorques[i] *= mMassTree[i];        
+    //}
 }
 
+/*
 double Controller::computeMassTree(BodyNode *_bd) {
     if (_bd->getNumChildJoints() == 0) {
         return _bd->getMass();
