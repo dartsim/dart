@@ -32,7 +32,7 @@ public:
 
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/5000.0;
-        mController = new Controller(mModel);
+        mController = new Controller(mModel, mTimeStep);
         mForce = Eigen::Vector3d::Zero();
         initDyn();
     }
