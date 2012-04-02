@@ -17,7 +17,7 @@ using namespace utils;
 
 namespace dynamics {
     ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
-        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL), mAccumTime(0) {
+        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL), mAccumTime(0), mSPD(false) {
         initialize();
     }
 
@@ -130,7 +130,11 @@ namespace dynamics {
             if (mSkels[i]->getKinematicState())
                 continue;
             VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
-            VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
+            VectorXd tauStar;
+            if (mSPD)
+                tauStar = (mSkels[i]->getMassMatrix() + mDt * mSkels[i]->getKd()) * mSkels[i]->getQDotVector() - (mDt * (mSkels[i]->getCombinedVector() - tau));
+            else
+                tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
             mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
             startRow += tauStar.rows();
         }
@@ -143,8 +147,8 @@ namespace dynamics {
             if (mSkels[i]->getKinematicState())
                 continue;
             MatrixXd skelMass = mSkels[i]->getMassMatrix();
-            //            if (mSPD)
-            //  skelMass += mSkels[i]->getKd() * mDt;
+            if (mSPD)
+                skelMass += mSkels[i]->getKd() * mDt;
             MatrixXd skelMassInv = skelMass.inverse();
             mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
             startRow+= skelMassInv.rows();

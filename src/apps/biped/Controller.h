@@ -14,7 +14,7 @@ namespace kinematics{
 
 class Controller {
  public:
-    Controller(dynamics::SkeletonDynamics *_skel);
+    Controller(dynamics::SkeletonDynamics *_skel, double _t);
     virtual ~Controller() {};
 
     Eigen::VectorXd getTorques() { return mTorques; };
@@ -33,8 +33,9 @@ class Controller {
     Eigen::VectorXd mDesiredDofs;
     Eigen::VectorXd mMassTree;
     Eigen::MatrixXd mKp;
-    Eigen::MatrixXd mKd;
+    Eigen::MatrixXd mKd; // For SPD, we use mKd defined in skeleton
     int mFrame;
+    double mTimestep;
 };
     
     

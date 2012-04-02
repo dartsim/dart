@@ -9,8 +9,9 @@ using namespace kinematics;
 using namespace Eigen;
 using namespace utils;
 
-Controller::Controller(dynamics::SkeletonDynamics *_skel) {
+Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
     mSkel = _skel;
+    mTimestep = _t;
     int nDof = mSkel->getNumDofs();
     mFrame = 0;
     mKp = MatrixXd::Identity(nDof, nDof);
@@ -86,12 +87,15 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
 
     
     // PD tracking
+    /*  
     for (unsigned int i = 6; i < mTorques.size(); i++) 
         mTorques[i] = -mKp(i, i) * (_dof[i] - mDesiredDofs[i])  -mKd(i, i) * _dofVel[i];
 
     for (int i = 6; i < nDof; i++)
         mTorques[i] *= mMassTree[i];
-    
+    */
+
+    /*
     Vector3d com = mSkel->getWorldCOM();
     BodyNode *lFoot = mSkel->getNode("fullbody_h_foot_left");
     BodyNode *rFoot = mSkel->getNode("fullbody_h_foot_right");
@@ -128,8 +132,10 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
         J.col(index) = jCol;
     }
     //mTorques += J.transpose() * vf / 2.0;
+    */
 
     // gravity compensation for upper body
+    /*
     VectorXd torque(nDof);
     torque.setZero();
     for (int i = 7; i < mSkel->getNumNodes(); i++) { // loop over each node in upperbody
@@ -146,6 +152,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
     }
 
     mTorques += torque;
+    */
     /*
     J.setZero();
     for (int i = 0; i < nNode; i++) {
@@ -154,9 +161,16 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
     }
     mTorques += J.transpose() * vf;
     */
+
+    // SPD control force
+    for (int i = 0; i < nDof; i++)
+        mTorques[i] = -mKp(i, i) * (_dof[i] + _dofVel[i] * mTimestep - mDesiredDofs[i]) - mSkel->getKd()(i, i) * _dofVel[i];
+
+    // Just to make sure no illegal torque is used
     for (int i = 0; i < 6; i++)
         mTorques[i] = 0.0;
     
+    mSkel->setInternalForces(mTorques);
 }
 
 double Controller::computeMassTree(BodyNode *_bd) {
