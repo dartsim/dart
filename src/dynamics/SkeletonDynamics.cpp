@@ -159,7 +159,14 @@ namespace dynamics{
             Joint* jnt = mJoints.at(i);
             switch(jnt->getJointType()){ // only cares about euler and expmap of 3 rotations 
             case Joint::J_FREEEULER:
-                break;
+            {
+                // clamp dof values to the range
+                for(int j=0; j<3; j++){
+                    int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
+                    if( _q[dofIndex]>M_PI ) _q[dofIndex] -= 2*M_PI;
+                    else if( _q[dofIndex]<-M_PI ) _q[dofIndex] += 2*M_PI;
+                }
+            }   break;
             case Joint::J_BALLEULER:
             {
                 // clamp dof values to the range
@@ -170,7 +177,58 @@ namespace dynamics{
                 }
             }   break;
             case Joint::J_FREEEXPMAP:
-                break;
+            {
+                Vector3d exmap;
+                for(int j=0; j<3; j++){
+                    int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
+                    exmap[j] = _q[dofIndex];
+                }
+                
+                double theta = exmap.norm();
+                if( theta > M_PI ){
+                    exmap.normalize();
+                    exmap *= theta-2*M_PI;
+                
+                    BodyNode* node = jnt->getChildNode();
+                    int firstIndex = 0;
+                    if( jnt->getParentNode()!=NULL )
+                        firstIndex = jnt->getParentNode()->getNumDependentDofs();
+                        
+                    // extract the local Jw
+                    Matrix3d oldJwBody;
+                    for(int j=0; j<3; j++){
+                        // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3) * node->getLocalTransform().topLeftCorner(3,3).transpose();
+                        oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                    }
+                
+                    // the new Jw
+                    Matrix3d newJwBody;
+                    // set new dof values to joint for derivative evaluation
+                    for(int j=0; j<3; j++)
+                        jnt->getDof(j + 3)->setValue(exmap[j]);
+
+                    // compute the new Jw from Rq*trans(R)
+                    Matrix4d Tbody = jnt->getLocalTransform();
+                    for(int j=0; j<3; j++){
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
+                        newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                    }
+
+                    // solve new_qdot s.t. newJw*new_qdot = w
+                    // new_qdot = newJw.inverse()*w
+                    Vector3d old_qdot; // extract old_qdot
+                    for(int j=0; j<3; j++)
+                        old_qdot[j] = _qdot[jnt->getDof(j + 3)->getSkelIndex()];
+                    Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
+                    for(int j=0; j<3; j++){
+                        int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
+                        _q[dofIndex] = exmap[j];
+                        _qdot[dofIndex] = new_qdot[j];
+                    }
+                }
+            }   break;
+
 
             case Joint::J_BALLEXPMAP:
             {
