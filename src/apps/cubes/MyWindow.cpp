@@ -92,23 +92,25 @@ void MyWindow::setPose() {
 void MyWindow::displayTimer(int _val)
 {
     int numIter = mDisplayTimeout / (mTimeStep * 1000);
+    numIter = 15;
     if (mPlay) {
-        mPlayFrame += 8;
+        mPlayFrame += 16;
         if (mPlayFrame >= mBakedStates.size())
             mPlayFrame = 0;
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);        
     }else if (mSim) {
-        //    static Timer tSim("Simulation");
+        //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            //        tSim.startTimer();
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
+            cout << "###iter = " << i + mSimFrame << endl;
+            //            tSim.startTimer();
+            //            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
             setPose();
             mIntegrator.integrate(this, mTimeStep);
-            //        tSim.stopTimer();
+            //            tSim.stopTimer();
+            //            tSim.printScreen();
             bake();
         }
-        //    tSim.printScreen();
 
         mForce = Vector3d::Zero();
         mSimFrame += numIter;

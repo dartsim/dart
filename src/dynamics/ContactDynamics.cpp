@@ -44,12 +44,13 @@ namespace dynamics {
         }
         mAccumTime++;
         
-        //cleanupContact();
+        cleanupContact();
+        //cout << "contact # = " << getNumContacts() << endl;
         if (getNumContacts() > 50)
             penaltyMethod();
         else {
             fillMatrices();
-            //    tLCP.startTimer();
+            //            tLCP.startTimer();
             solve();
             //            tLCP.stopTimer();
             //            tLCP.printScreen();
@@ -419,11 +420,29 @@ namespace dynamics {
                 }
             }            
         }
-        if (deleteIDs.size() == 0)
-            return;
+        //        if (deleteIDs.size() == 0)
         for (int i = deleteIDs.size() - 1; i >= 0; i--) {
             mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + deleteIDs[i]);
         }
+        /*
+        // limite to 4 points per pair of bodies
+        MatrixXd pointCount(getNumSkels(), getNumSkels());
+        pointCount.setZero();
+        for (int i = getNumContacts() - 1; i >= 0; i--) {
+            ContactPoint& c = mCollision->getContact(i);
+            int bd1 = c.bdID1;
+            int bd2 = c.bdID2;
+            if (bd1 < bd2) {
+                pointCount(bd2, bd1)++;
+                if (pointCount(bd2, bd1) > 4)
+                    mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + i);
+            } else {
+                pointCount(bd1, bd2)++;
+                if (pointCount(bd1, bd2) > 4)
+                    mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + i);
+                    }
+        }*/
+        //        cout << pointCount << endl;
     }
     
     void ContactDynamics::penaltyMethod() {
