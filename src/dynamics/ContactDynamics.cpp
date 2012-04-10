@@ -424,6 +424,8 @@ namespace dynamics {
         for (int i = deleteIDs.size() - 1; i >= 0; i--) {
             mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + deleteIDs[i]);
         }
+
+        cout << "# of nodes: " << mCollision->mCollisionSkeletonNodeList.size() << endl;
         /*
         // limite to 4 points per pair of bodies
         MatrixXd pointCount(getNumSkels(), getNumSkels());
