@@ -44,7 +44,7 @@ namespace dynamics {
         }
         mAccumTime++;
         
-        cleanupContact();
+        //cleanupContact();
         //cout << "contact # = " << getNumContacts() << endl;
         if (getNumContacts() > 50)
             penaltyMethod();
@@ -412,7 +412,7 @@ namespace dynamics {
 
             bool isUnique = true;
             for (unsigned int j = 0; j < i; j++) {
-                if ((c.point - mCollision->getContact(j).point).norm() > 5e-3){
+                if ((c.point - mCollision->getContact(j).point).norm() > 1e-2){
                     continue;
                 }else{
                     deleteIDs.push_back(i);
@@ -425,10 +425,52 @@ namespace dynamics {
             mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + deleteIDs[i]);
         }
 
-        cout << "# of nodes: " << mCollision->mCollisionSkeletonNodeList.size() << endl;
+        int nNode = mCollision->mCollisionSkeletonNodeList.size();
         /*
+          // choose three most important contact points per pair of bodies
+        vector<vector<int> > contactGroups;
+        contactGroups.resize(nNode * (nNode + 1) / 2);
+        for (int i = 0; i < getNumContacts(); i++) {
+            ContactPoint& c = mCollision->getContact(i);
+            int bd1 = c.bdID1;
+            int bd2 = c.bdID2;
+            int row = bd1;
+            int col = bd2;
+            if(bd1 > bd2) {
+                row = bd2;
+                col = bd1;
+            }
+            int key = nNode * row - row * (row - 1) / 2 + col - row;
+            //            cout << row << " " << col << " " << key << endl;
+            contactGroups[key].push_back(i);
+        }
+        for (int i = 0; i < contactGroups.size(); i++) {
+            if (contactGroups[i].size() < 4)
+                continue;
+            ContactPoint& a = mCollision->getContact(contactGroups[i][0]);
+            ContactPoint& b = mCollision->getContact(contactGroups[i][1]);
+            Vector3d v = b.point - a.point;
+            double currMax = 0.0;
+            int pick = 2;
+            for (int j = 2; j < contactGroups[i].size(); j++) {
+                Vector3d p = mCollision->getContact(contactGroups[i][j]).point;
+                double t = (p - a.point).dot(v) / v.dot(v);
+                Vector3d diff = p - a.point + t * v;
+                double dist = diff.dot(diff);
+                if (dist > currMax)
+                    pick = j;
+            }
+            cout << pick << endl;
+            for (int j = contactGroups[i].size() - 1; j >= 2; j--) {
+                if (j == pick)
+                    continue;                
+                mCollision->mContactPointList.erase(mCollision->mContactPointList.begin()+ contactGroups[i][j]);
+            }
+            }*/
+
         // limite to 4 points per pair of bodies
-        MatrixXd pointCount(getNumSkels(), getNumSkels());
+        //        int nNode = mCollision->mCollisionSkeletonNodeList.size();
+              MatrixXd pointCount(nNode, nNode);
         pointCount.setZero();
         for (int i = getNumContacts() - 1; i >= 0; i--) {
             ContactPoint& c = mCollision->getContact(i);
@@ -442,8 +484,8 @@ namespace dynamics {
                 pointCount(bd1, bd2)++;
                 if (pointCount(bd1, bd2) > 4)
                     mCollision->mContactPointList.erase(mCollision->mContactPointList.begin() + i);
-                    }
-        }*/
+            }
+        }
         //        cout << pointCount << endl;
     }
     
