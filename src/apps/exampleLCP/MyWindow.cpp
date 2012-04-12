@@ -57,6 +57,7 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
+    setPose();
     int size1 = mDofs.size();
     int size2 = mDofVels.size();
     int size3 = mDofs2.size();
@@ -116,7 +117,6 @@ void MyWindow::displayTimer(int _val)
     for (int i = 0; i < numIter; i++) {
         //        tSim.startTimer();
         static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.1, 0.1, 0.1), mForce);
-        setPose();
         mIntegrator.integrate(this, mTimeStep);
         //        tSim.stopTimer();
         bake();

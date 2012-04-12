@@ -29,7 +29,7 @@ public:
         mFrame = 0;
     
         mGravity = Eigen::Vector3d(0.0,-9.8, 0.0);
-        mTimeStep = 1.0/5000.0;
+        mTimeStep = 1.0/1000.0;
         initDyn();
     }
 
@@ -46,8 +46,8 @@ protected:
     int mFrame;
     bool mShowMarker;
     // Select an integrator
-    integration::EulerIntegrator mIntegrator;
-    //    integration::RK4Integrator mIntegrator;
+    //integration::EulerIntegrator mIntegrator;
+    integration::RK4Integrator mIntegrator;
     
     dynamics::SkeletonDynamics* mModel;
     Eigen::VectorXd mDofVels;

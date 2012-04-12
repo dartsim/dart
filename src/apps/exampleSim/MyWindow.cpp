@@ -31,6 +31,7 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
+    setPose();
     VectorXd deriv(mDofs.size() + mDofVels.size());
     VectorXd qddot = -mModel->getMassMatrix().fullPivHouseholderQr().solve( mModel->getCombinedVector() ); 
     mModel->clampRotation(mDofs, mDofVels);
@@ -55,7 +56,6 @@ void MyWindow::displayTimer(int _val)
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for(int i=0; i<numIter; i++){
         tSim.startTimer();
-        setPose();
         mIntegrator.integrate(this, mTimeStep);
         tSim.stopTimer();
     }
