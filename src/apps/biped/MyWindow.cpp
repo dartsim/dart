@@ -74,6 +74,7 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
+    setPose();
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getKinematicState())
@@ -129,7 +130,6 @@ void MyWindow::displayTimer(int _val)
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(11))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
-            setPose();
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
             bake();

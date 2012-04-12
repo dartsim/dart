@@ -56,6 +56,7 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
+    setPose();
     int size1 = mDofs.size();
     int size2 = mDofVels.size();
     int size3 = mDofs2.size();
@@ -111,7 +112,6 @@ void MyWindow::displayTimer(int _val)
 
     int numIter = mDisplayTimeout / (mTimeStep*1000);
     for (int i = 0; i < numIter; i++) {
-        setPose();
         mIntegrator.integrate(this, mTimeStep);
     }
     bake();
