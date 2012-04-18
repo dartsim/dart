@@ -72,8 +72,10 @@ namespace dynamics{
         Eigen::VectorXd getExternalForces() const { return mFext; }
         Eigen::VectorXd getInternalForces() const { return mFint; }
         Eigen::VectorXd getQDotVector() const { return mQdot; }
-        bool getKinematicState() const { return mKinematicState; }
-        void setKinematicState(bool _s) { mKinematicState = _s; }
+        bool getImmobileState() const { return mImmobile; }
+        void setImmobileState(bool _s) { mImmobile = _s; }
+        bool getKinematicState() const { return mKinematic; }
+        void setKinematicState(bool _s) { mKinematic = _s; }
         void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
         Eigen::MatrixXd getKd() const { return mKd; }
         void setKd(Eigen::MatrixXd _m) { mKd = _m; }
@@ -88,7 +90,8 @@ namespace dynamics{
         Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
         Eigen::VectorXd mQdot; ///< the current qdot
 
-        bool mKinematicState; ///< true if the skeleton is currently controlled kinematically
+        bool mImmobile; ///< true if the skeleton is immobile
+        bool mKinematic; ///< true if the skeleton is kinematic
         Eigen::MatrixXd mKd; 
     };
 

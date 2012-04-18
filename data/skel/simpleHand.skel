@@ -29,18 +29,18 @@ dofs {
 
 mass {
 	arm_mass { 0.2 }
-	wrist_mass { 1.0 }
+	wrist_mass { 0.1 }
 	thumb_palm { 0.25 }
 	thumb_prox { 0.2 }
 	thumb_dist { 0.15 } 
-	index_prox { 0.2 }
-	index_mid { 0.1 }
+	index_prox { 0.20 }
+	index_mid { 0.15 }
 	index_dist { 0.07 }
-	mid_prox { 0.2 }
-	mid_mid { 0.1 }
+	mid_prox { 0.20 }
+	mid_mid { 0.10 }
 	mid_dist { 0.07 }
-	ring_prox { 0.2 }
-	ring_mid { 0.1 }
+	ring_prox { 0.20 }
+	ring_mid { 0.10 }
 	ring_dist { 0.07 }
 	pinky_prox { 0.125 }
 	pinky_mid { 0.07 }

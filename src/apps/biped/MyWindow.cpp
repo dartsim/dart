@@ -50,7 +50,7 @@ void MyWindow::initDyn()
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
     }
-    mSkels[0]->setKinematicState(true);
+    mSkels[0]->setImmobileState(true);
     
     mController = new Controller(mSkels[1], mTimeStep);
     int nDof = mController->getSkel()->getNumDofs();
@@ -77,7 +77,7 @@ VectorXd MyWindow::evalDeriv() {
     setPose();
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getKinematicState())
+        if (mSkels[i]->getImmobileState())
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
@@ -104,7 +104,7 @@ void MyWindow::setState(VectorXd newState) {
 
 void MyWindow::setPose() {
     for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getKinematicState()) {
+        if (mSkels[i]->getImmobileState()) {
             mSkels[i]->setPose(mDofs[i], true, false);
         } else {
             mSkels[i]->setPose(mDofs[i], true, true);

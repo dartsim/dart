@@ -81,8 +81,7 @@ namespace dynamics {
                 mBodyIndexToSkelIndex.push_back(i);
             }
 
-            if (!mSkels[i]->getKinematicState()) {
-            // Use these to construct the mass matrix and external forces vector.
+            if (!mSkels[i]->getImmobileState()) {
                 rows += skel->getMassMatrix().rows();
                 cols += skel->getMassMatrix().cols();
             }
@@ -90,7 +89,7 @@ namespace dynamics {
 
         mConstrForces.resize(getNumSkels());
         for (int i = 0; i < getNumSkels(); i++){
-            if (!mSkels[i]->getKinematicState())
+            if (!mSkels[i]->getImmobileState())
                 mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
         }
         mCartesianForces.resize(getNumSkels());
@@ -112,7 +111,7 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             SkeletonDynamics* skel = mSkels[i];
             int nDofs = skel->getNumDofs();
-            if (mSkels[i]->getKinematicState())
+            if (mSkels[i]->getImmobileState())
                 nDofs = 0;
             sumNDofs += nDofs;
             mIndices.push_back(sumNDofs);
@@ -128,8 +127,14 @@ namespace dynamics {
     void ContactDynamics::updateTauStar() {
         int startRow = 0;
         for (int i = 0; i < getNumSkels(); i++) {
-            if (mSkels[i]->getKinematicState())
+            if (mSkels[i]->getImmobileState())
                 continue;
+            if (mSkels[i]->getKinematicState()) {
+                mTauStar.block(startRow, 0, mSkels[i]->getNumDofs(), 1) = mSkels[i]->getQDotVector();
+                startRow += mSkels[i]->getNumDofs();
+                continue;
+            }
+
             VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
             VectorXd tauStar;
             if (mSPD)
@@ -145,8 +150,15 @@ namespace dynamics {
         int startRow = 0;
         int startCol = 0;
         for (int i = 0; i < getNumSkels(); i++) {
-            if (mSkels[i]->getKinematicState())
+            if (mSkels[i]->getImmobileState())
                 continue;
+            if (mSkels[i]->getKinematicState()) {
+                int nDof = mSkels[i]->getNumDofs();
+                mMInv.block(startRow, startCol, nDof, nDof) = MatrixXd::Zero(nDof, nDof);
+                startRow+= nDof;
+                startCol+= nDof;
+                continue;
+            }
             MatrixXd skelMass = mSkels[i]->getMassMatrix();
             if (mSPD)
                 skelMass += mSkels[i]->getKd() * mDt;
@@ -202,18 +214,33 @@ namespace dynamics {
 		
         // Construct Q
         mQBar = VectorXd::Zero(dimA);
-        mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
-        mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
+
+        VectorXd MinvTauStar(Minv.rows());
+        int rowStart = 0;
+        for (int i = 0; i < mSkels.size(); i++) {
+            int nDof = mSkels[i]->getNumDofs();
+            if (mSkels[i]->getImmobileState()) {
+                continue;
+            } else if (mSkels[i]->getKinematicState()) {
+                MinvTauStar.segment(rowStart, nDof) = mTauStar.segment(rowStart, nDof);
+            } else {
+                MinvTauStar.segment(rowStart, nDof) = mMInv.block(rowStart, rowStart, nDof, nDof) * mTauStar.segment(rowStart, nDof);
+            }
+            rowStart += nDof;
+        }
+        mQBar.block(0, 0, c, 1) = Ntranspose * MinvTauStar;
+        mQBar.block(c, 0, cd, 1) = Btranspose * MinvTauStar;
+
+        //        mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
+        //        mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
 
         mQBar /= mDt;
                 
-        //mA *= 1e3;
-        //mQBar *= 1e3;
         /*
-        MatrixXd mat = B;
+        MatrixXd mat = MinvTauStar;
         for(int i = 0; i < mat.rows(); i++)
             for(int j = 0; j < mat.cols(); j++)
-                if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
+                //        if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
                     cout <<"mat[" << i << "][" << j << "]= " << mat(i,j) << endl;
         */
     }
@@ -246,7 +273,7 @@ namespace dynamics {
         // Next, apply the external forces skeleton by skeleton.
         int startRow = 0;
         for (int i = 0; i < getNumSkels(); i++) {
-            if (mSkels[i]->getKinematicState())
+            if (mSkels[i]->getImmobileState())
                 continue;
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
@@ -257,7 +284,7 @@ namespace dynamics {
                 mCartesianForces[i].col(j) = fc;
             }
         }
-        
+        /*       
         VectorXd sum = VectorXd::Zero(mNumDir);
         for (int i = 0; i < c; i++)
             sum += f_d.segment(i * mNumDir, mNumDir);
@@ -265,7 +292,7 @@ namespace dynamics {
         if (f_n.sum() * mMu  < tan) {
             cout << "normal force = " << f_n.sum() << endl;
             cout << "tangent force = " << sum.norm() << endl;
-        }
+            }*/
         //cout << "lambda = " << lambda << endl;
 
         /*
@@ -300,14 +327,14 @@ namespace dynamics {
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
 
-            if (!mSkels[skelID1]->getKinematicState()) {
+            if (!mSkels[skelID1]->getImmobileState()) {
                 int index1 = mIndices[skelID1];
                 int NDOF1 = c.bd1->getSkel()->getNumDofs();
                 Vector3d N21 = c.normal;
                 MatrixXd J21 = getJacobian(c.bd1, p);
                 mN.block(index1, i, NDOF1, 1) = J21.transpose() * N21;
             }
-            if (!mSkels[skelID2]->getKinematicState()) {
+            if (!mSkels[skelID2]->getImmobileState()) {
                 int index2 = mIndices[skelID2];
                 int NDOF2 = c.bd2->getSkel()->getNumDofs();
                 Vector3d N12 = -c.normal;
@@ -356,7 +383,7 @@ namespace dynamics {
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
 
-            if (!mSkels[skelID1]->getKinematicState()) {
+            if (!mSkels[skelID1]->getImmobileState()) {
                 int index1 = mIndices[skelID1];
                 int NDOF1 = c.bd1->getSkel()->getNumDofs();
                 MatrixXd B21 = getTangentBasisMatrix(p, c.normal);
@@ -364,7 +391,7 @@ namespace dynamics {
                 mB.block(index1, i * getNumContactDirections(), NDOF1, getNumContactDirections()) = J21.transpose() * B21;
             }
             
-            if (!mSkels[skelID2]->getKinematicState()) {
+            if (!mSkels[skelID2]->getImmobileState()) {
                 int index2 = mIndices[skelID2];
                 int NDOF2 = c.bd2->getSkel()->getNumDofs();
                 MatrixXd B12 = getTangentBasisMatrix(p, -c.normal);
@@ -505,7 +532,7 @@ namespace dynamics {
             VectorXd qDot = mSkels[sID1]->getQDotVector();
             double ks = 200 * mSkels[sID1]->getMass();
             double kd = 100 * mSkels[sID1]->getMass();
-            if (!mSkels[sID1]->getKinematicState()){
+            if (!mSkels[sID1]->getImmobileState()){
                 for (int j = 0; j < c.bd1->getNumDependentDofs(); j++) {
                     VectorXd Jcol = utils::xformHom(c.bd1->getDerivWorldTransform(j), invP);
                     J.col(c.bd1->getDependentDof(j)) = Jcol;
@@ -532,7 +559,7 @@ namespace dynamics {
             ks = 200 * mSkels[sID2]->getMass();
             kd = 100 * mSkels[sID2]->getMass();
             double ki = 2 * mSkels[sID2]->getMass();
-            if (!mSkels[sID2]->getKinematicState()){
+            if (!mSkels[sID2]->getImmobileState()){
                 for (int j = 0; j < c.bd2->getNumDependentDofs(); j++) {
                     VectorXd Jcol = utils::xformHom(c.bd2->getDerivWorldTransform(j), invP);
                     J.col(c.bd2->getDependentDof(j)) = Jcol;

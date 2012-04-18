@@ -28,14 +28,19 @@ public:
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
 		
-        mRunning = false;
-        mShowMarker = false;
-        mPlayBack = false;
-        mCurrFrame = 0;
+        mSim = false;
+        mPlay = false;
+        mSimFrame = 0;
+        mPlayFrame = 0;
+        mShowMarkers = true;
+        //        mRunning = false;
+        //mShowMarker = false;
+        //mPlayBack = false;
+        //mCurrFrame = 0;
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
-        mFrame = 0;
+        //mFrame = 0;
     
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;
@@ -74,11 +79,17 @@ public:
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(Eigen::VectorXd state);	
  protected:	
-    bool mRunning;
-    int mFrame;
+    int mSimFrame;
+    bool mSim;
+    int mPlayFrame;
+    bool mPlay;
+    bool mShowMarkers;
+
+    //    bool mRunning;
+    // int mFrame;
     bool mShowMarker;
-    bool mPlayBack;
-    int mCurrFrame;
+    // bool mPlayBack;
+    //int mCurrFrame;
     integration::EulerIntegrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
