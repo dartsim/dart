@@ -33,7 +33,7 @@ void MyWindow::initDyn()
     //    mDofVels2[0] = 0.3;
     //    mDofVels2[2] = 0.15;
 
-    mSkels[0]->setKinematicState(true);
+    mSkels[0]->setImmobileState(true);
 
     mSkels[0]->setPose(mDofs,false,false);
     mSkels[1]->setPose(mDofs2, false, false);
