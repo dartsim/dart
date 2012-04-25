@@ -40,6 +40,8 @@ public:
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;
         mForce = Eigen::Vector3d::Zero();
+        mImpulseDuration = 0;
+        mSelectedNode = 1;
 
         if (_mList) {
             mSkels.push_back(_mList);
@@ -79,6 +81,7 @@ public:
     int mPlayFrame;
     bool mPlay;
     bool mShowMarkers;
+    int mSelectedNode;
     integration::EulerIntegrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
@@ -90,6 +93,7 @@ public:
     Eigen::Vector3d mGravity;
     Eigen::Vector3d mForce;
     std::vector<int> mIndices;
+    int mImpulseDuration;
 
     void initDyn();
     void setPose();

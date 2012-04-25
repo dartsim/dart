@@ -44,7 +44,8 @@ void MyWindow::initDyn()
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
     }
     mSkels[0]->setImmobileState(true);
-    mSkels[1]->setKinematicState(true);
+    //    mSkels[1]->setKinematicState(true);
+    mSkels[1]->setHybridState(true);
 
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
 }
@@ -62,13 +63,41 @@ VectorXd MyWindow::getState() {
 
 VectorXd MyWindow::evalDeriv() {
     setPose();
+    VectorXd rootAccel(6);
+    rootAccel.setZero();
+    rootAccel[0]= 0.01;
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState() || mSkels[i]->getKinematicState())
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i)); 
+        VectorXd qddot;
+        if (mSkels[i]->getHybridState() ){
+            int nDof = mSkels[i]->getNumDofs();
+            VectorXd globalInertia = mSkels[i]->getMassMatrix().block(0, 0, nDof, 6) * rootAccel;
+            MatrixXd assembledM(nDof, nDof);
+            assembledM.block(0, 0, 6, 6) = MatrixXd::Identity(6, 6);
+            assembledM.block(6, 0, nDof - 6, 6) = MatrixXd::Zero(nDof - 6, 6);
+            assembledM.block(0, 6, nDof, nDof - 6) = mSkels[i]->getMassMatrix().block(0, 6, nDof, nDof - 6);
+            VectorXd torque(nDof);
+            torque.setZero();
+            for (int j = 0; j < mSkels[i]->getNumNodes(); j++) {
+                BodyNodeDynamics *node = static_cast<BodyNodeDynamics*>(mSkels[i]->getNode(j));
+                node->aggregateGravity(torque);
+            }
+            //            VectorXd torque = assembledM.fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector()  - globalInertia);
+            //torque.setZero();
+            //            torque[1] = mSkels[i]->getMass() * 9.8;
+            //           torque.segment(6, nDof - 6).setZero();
+            //cout << torque << endl;
+            qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + torque);
+            cout << -mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + torque << endl;
+        //cout << qddot << endl;
+            //            qddot.segment(0, 6) = rootAccel;
+        } else {
+            qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
+        }
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -117,7 +146,7 @@ void MyWindow::displayTimer(int _val)
             //            tSim.stopTimer();
             //            tSim.printScreen();
 
-
+            /*
             if(mSimFrame > numIter * 25 && mSimFrame < numIter * 45) {    
                 mDofs[1][0] += 0.005 / numIter;
                 mDofs[1][2] -= 0.005 / numIter;
@@ -164,7 +193,8 @@ void MyWindow::displayTimer(int _val)
                 mDofVels[2][5] = -0.09 / (numIter * mTimeStep);
                 mSkels[2]->setKinematicState(false);
                 mCollisionHandle->reset();
-            }
+                }*/
+
             bake();
         }
 
@@ -213,7 +243,7 @@ void MyWindow::draw()
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
                 Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
                 Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
-                Vector3d f = mCollisionHandle->getCartesianForce(2, k);
+                Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0;
 
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);

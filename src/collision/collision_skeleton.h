@@ -56,6 +56,7 @@ namespace collision_checking {
     struct ContactPoint {
         Eigen::Vector3d point;
         Eigen::Vector3d normal;
+        Eigen::Vector3d force;
         kinematics::BodyNode *bd1;
         kinematics::BodyNode *bd2;
         CollisionSkeletonNode *collisionSkeletonNode1;
