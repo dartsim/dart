@@ -1,0 +1,29 @@
+dofs{
+    root<t-X> { 0.0000, -10.0000, 10.0000 }
+    root<t-Y> { 0.0000, -10.0000, 10.0000 }
+    root<t-Z> { 0.0000, -10.0000, 10.0000 }
+    root<a-X> { 0.0000, -3.1416, 3.1416 }
+    root<a-Y> { 0.0000, -6.1416, 6.1416 }
+    root<a-Z> { 0.0000, -3.1416, 3.1416 }
+    Length { 0.05, 0.0000, 10.0000 }
+   
+}
+
+mass {
+    node_mass { 1 }
+}
+
+node root { 0
+    chain { 2
+	translate { <root<t-X>,root<t-Y>,root<t-Z>> }
+        rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
+    }
+    primitive {<2.0,1.0,2.0>, <0.0,0.0,0.0>, Length, CUBE, node_mass}
+
+    
+}
+
+handles {
+	tip { <0.0,0.0,0.0>, 0, root }
+}
+
