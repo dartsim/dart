@@ -76,6 +76,8 @@ namespace dynamics{
         void setImmobileState(bool _s) { mImmobile = _s; }
         bool getKinematicState() const { return mKinematic; }
         void setKinematicState(bool _s) { mKinematic = _s; }
+        bool getHybridState() const { return mHybrid; }
+        void setHybridState(bool _s) { mHybrid = _s; }
         void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
         Eigen::MatrixXd getKd() const { return mKd; }
         void setKd(Eigen::MatrixXd _m) { mKd = _m; }
@@ -90,8 +92,9 @@ namespace dynamics{
         Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
         Eigen::VectorXd mQdot; ///< the current qdot
 
-        bool mImmobile; ///< true if the skeleton is immobile
-        bool mKinematic; ///< true if the skeleton is kinematic
+        bool mImmobile; ///< if the skeleton is immobile, it cannot move by dynamic nor kinematic forces
+        bool mKinematic; ///< if the skeleton is kinematic, it can be moved kinematically
+        bool mHybrid; ///< hybrid mode is incomplete
         Eigen::MatrixXd mKd; 
     };
 

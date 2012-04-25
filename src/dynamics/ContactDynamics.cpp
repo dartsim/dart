@@ -10,7 +10,6 @@
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 
-
 using namespace Eigen;
 using namespace collision_checking;
 using namespace utils;
@@ -32,11 +31,8 @@ namespace dynamics {
         mCollision->clearAllContacts();
         mCollision->checkCollision(false);
 
-        for (int i = 0; i < getNumSkels(); i++) {
+        for (int i = 0; i < getNumSkels(); i++)
             mConstrForces[i].setZero(); 
-            mCartesianForces[i].resize(3, getNumContacts());
-            mCartesianForces[i].setZero();
-        }
 
         if (getNumContacts() == 0){
             mAccumTime = 0;
@@ -45,7 +41,6 @@ namespace dynamics {
         mAccumTime++;
         
         //cleanupContact();
-        //cout << "contact # = " << getNumContacts() << endl;
         if (getNumContacts() > 50)
             penaltyMethod();
         else {
@@ -92,7 +87,6 @@ namespace dynamics {
             if (!mSkels[i]->getImmobileState())
                 mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
         }
-        mCartesianForces.resize(getNumSkels());
 
         mMInv = MatrixXd::Zero(rows, cols);
         mTauStar = VectorXd::Zero(rows);
@@ -171,7 +165,6 @@ namespace dynamics {
         
     void ContactDynamics::fillMatrices() {
         int c = getNumContacts();
-        //        cout << " contact # = " << c << endl;
         updateMassMat();
         updateTauStar();
 
@@ -196,6 +189,7 @@ namespace dynamics {
         MatrixXd nTmInv = Ntranspose * Minv;
         MatrixXd bTmInv = Btranspose * Minv;
                  
+
         // Construct
         int cd = c * mNumDir;
         //dimA = c;
@@ -228,14 +222,14 @@ namespace dynamics {
             }
             rowStart += nDof;
         }
+
         mQBar.block(0, 0, c, 1) = Ntranspose * MinvTauStar;
         mQBar.block(c, 0, cd, 1) = Btranspose * MinvTauStar;
 
-        //        mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
-        //        mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
-
+        //mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
+        //mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
         mQBar /= mDt;
-                
+
         /*
         MatrixXd mat = MinvTauStar;
         for(int i = 0; i < mat.rows(); i++)
@@ -260,16 +254,8 @@ namespace dynamics {
         VectorXd f_n = mX.block(0, 0, c, 1);
         VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
         VectorXd lambda = mX.tail(c);
-
-        // Note, we need to un-scale by dt (was premultiplied in).
-        // If this turns out to be a perf issue (above, as well as recomputing matrices 
-        // again), consider caching both to improve performance.
-        //        MatrixXd N = getNormalMatrix();
-        //        MatrixXd B = getBasisMatrix();
-        //MatrixXd N = getNormalMatrix() / mDt;
-        //        MatrixXd B = getBasisMatrix() / mDt;        
         forces = (mN * f_n) + (mB * f_d);
-        //forces = N * f_n;
+
         // Next, apply the external forces skeleton by skeleton.
         int startRow = 0;
         for (int i = 0; i < getNumSkels(); i++) {
@@ -278,13 +264,14 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             mConstrForces[i] = forces.block(startRow, 0, nDof, 1); 
             startRow += nDof;
-            for (int j = 0; j < c; j++) {
-                ContactPoint& contact = mCollision->getContact(j);
-                Vector3d fc = -getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(j * mNumDir, mNumDir) - contact.normal * f_n[j];
-                mCartesianForces[i].col(j) = fc;
-            }
         }
-        /*       
+
+        for (int i = 0; i < c; i++) {
+            ContactPoint& contact = mCollision->getContact(i);
+            contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
+        }
+            
+        /*
         VectorXd sum = VectorXd::Zero(mNumDir);
         for (int i = 0; i < c; i++)
             sum += f_d.segment(i * mNumDir, mNumDir);
@@ -383,30 +370,33 @@ namespace dynamics {
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
 
+            MatrixXd B21;
+            MatrixXd B12;
             if (!mSkels[skelID1]->getImmobileState()) {
                 int index1 = mIndices[skelID1];
                 int NDOF1 = c.bd1->getSkel()->getNumDofs();
-                MatrixXd B21 = getTangentBasisMatrix(p, c.normal);
+                B21 = getTangentBasisMatrix(p, c.normal);
                 MatrixXd J21 = getJacobian(c.bd1, p);
+
                 mB.block(index1, i * getNumContactDirections(), NDOF1, getNumContactDirections()) = J21.transpose() * B21;
+
+                //  cout << "B21: " << B21 << endl;
             }
             
             if (!mSkels[skelID2]->getImmobileState()) {
                 int index2 = mIndices[skelID2];
                 int NDOF2 = c.bd2->getSkel()->getNumDofs();
-                MatrixXd B12 = getTangentBasisMatrix(p, -c.normal);
+                if (B21.rows() == 0)
+                    B12 = getTangentBasisMatrix(p, -c.normal);
+                else
+                    B12 = -B21;
                 MatrixXd J12 = getJacobian(c.bd2, p);
                 mB.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()) = J12.transpose() * B12;
+
+                //  cout << "B12: " << B12 << endl;
+
             }
         }
-       /*        
-        MatrixXd mat = B;
-        for(int i = 0; i < mat.rows(); i++)
-            for(int j = 0; j < mat.cols(); j++)
-                //         if(mat(i, j) > 1e-6 || mat(i,j) < -1e-6)
-                    cout <<"mat[" << i << "][" << j << "]= " << mat(i,j) << endl;
-        */
-        //B = B * mDt;        
         return;
     }
 
@@ -424,6 +414,20 @@ namespace dynamics {
 
     MatrixXd ContactDynamics::getMuMatrix() const {
         int c = getNumContacts();
+        // TESTING CODE BEGIN (create a frictionless node)
+        /*        MatrixXd mat(MatrixXd::Identity(c, c));
+        double mu;
+        for (int i = 0; i < c; i++) {
+            ContactPoint& contact = mCollision->getContact(i);
+            if (contact.bdID1 == 0 || contact.bdID2 == 0)
+                mu = 0.0;
+            else
+                mu = mMu;
+            mat(i, i) = mu;
+        }
+        return mat / (mDt * mDt);
+        // TESTING CODE END
+        */
         return (MatrixXd::Identity(c, c) * mMu / (mDt * mDt));
 
     }

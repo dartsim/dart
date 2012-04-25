@@ -183,7 +183,7 @@ void MyWindow::draw()
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
                 Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
                 Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
-                Vector3d f = mCollisionHandle->getCartesianForce(1, k) / 100.0;
+                Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 100.0;
 
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);

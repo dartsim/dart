@@ -26,6 +26,23 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
 
+    
+    mDofs[0][1] = -0.35;
+    mDofs[1][1] = mDofs[0][1] + 0.025;
+    mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
+    
+     //rotate about z
+    /*
+    mDofs[0][1] = -0.35;
+    mDofs[1][1] = -0.35;
+    mDofs[2][1] = -0.35;
+    mDofs[1][0] = mDofs[0][0] + 0.025 + 0.025;
+    mDofs[2][0] = mDofs[1][0] + 0.025 + 0.025;
+    mDofs[0][5] = 1.57;
+    mDofs[1][5] = 1.57;
+    mDofs[2][5] = 1.57;
+    */
+    /*
     mDofs[0][1] = -0.35;
     mDofs[1][0] = 0.06;
     mDofs[1][1] = -0.2;
@@ -33,8 +50,7 @@ void MyWindow::initDyn()
     mDofs[2][2] = 0.04;
     mDofs[3][0] = 0.09;
     mDofs[3][1] = 0.08;
-
-
+    */
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
@@ -63,7 +79,7 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i)); 
+        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -86,7 +102,7 @@ void MyWindow::setPose() {
             mSkels[i]->setPose(mDofs[i], true, false);
         } else {
             mSkels[i]->setPose(mDofs[i], true, true);
-            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
+            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
         }
     }
     mCollisionHandle->applyContactForces();
@@ -107,14 +123,22 @@ void MyWindow::displayTimer(int _val)
         for (int i = 0; i < numIter; i++) {
             cout << "###iter = " << i + mSimFrame << endl;
             //            tSim.startTimer();
-            //            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
+            //            static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(9.8, 0.0, 0.0));
+            //static_cast<BodyNodeDynamics*>(mSkels[2]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(-9.8, 0.0, 0.0));
+            //static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
             //            tSim.stopTimer();
             //            tSim.printScreen();
             bake();
         }
 
-        mForce = Vector3d::Zero();
+        mImpulseDuration--;
+        if (mImpulseDuration <= 0) {
+            mImpulseDuration = 0;
+            mForce.setZero();
+        }
+
         mSimFrame += numIter;
 
         glutPostRedisplay();
@@ -141,12 +165,13 @@ void MyWindow::draw()
                 int nContact = (mBakedStates[mPlayFrame].size() - sumDofs) / 6;
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
-                    Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+                    //            Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+                    Vector3d f = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
-                    glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+                    glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                     glEnd();
-                    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+                    mRI->setPenColor(Vector3d(0.8, 0.2, 0.2));
                     mRI->pushMatrix();
                     glTranslated(v[0], v[1], v[2]);
                     mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
@@ -157,18 +182,22 @@ void MyWindow::draw()
     }else{
         if (mShowMarkers) {
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-                Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-                Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
+                //          if (mCollisionHandle->getCollisionChecker()->getContact(k).bdID1 == mSelectedNode) {
+                    Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+                    Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
+                    //                    Vector3d f = mCollisionHandle->getCartesianForce(1, k) / 10.0;
+                    Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0;
+                    glBegin(GL_LINES);
+                    glVertex3f(v[0], v[1], v[2]);
+                    glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
 
-                glBegin(GL_LINES);
-                glVertex3f(v[0], v[1], v[2]);
-                glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
-                glEnd();
-                mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
-                mRI->pushMatrix();
-                glTranslated(v[0], v[1], v[2]);
-                mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
-                mRI->popMatrix();
+                    glEnd();
+                    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+                    mRI->pushMatrix();
+                    glTranslated(v[0], v[1], v[2]);
+                    mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+                    mRI->popMatrix();
+                    //}
             }
         }
     }
@@ -212,10 +241,12 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case '1': // upper right force
         mForce[0] = 0.4;
         mForce[1] = 0.8;
+        mImpulseDuration = 10.0;
         cout << "push up and right" << endl;
         break;
     case '2': // upper right force
-        mForce[0] = -0.4;
+        mForce[0] = -40;
+        mImpulseDuration = 1.0;
         cout << "push left" << endl;
         break;
     case 'p': // playBack
@@ -259,8 +290,8 @@ void MyWindow::bake()
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
         state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
+        //state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
         state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
     }
-
     mBakedStates.push_back(state);
 }

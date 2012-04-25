@@ -15,11 +15,11 @@ int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model, model2, model3, model4;
     model.loadFile(DART_DATA_PATH"/skel/ground1.skel", kinematics::SKEL);
-    model2.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
+    model2.loadFile(DART_DATA_PATH"/skel/cube2.skel", kinematics::SKEL);
     model3.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
-    model4.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
+    //model4.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
 
-    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), (SkeletonDynamics*)model4.getSkel(), NULL);
+    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), NULL);
 
     cout << "space bar: simulation on/off" << endl;
     cout << "'s': simulate one step" << endl;
