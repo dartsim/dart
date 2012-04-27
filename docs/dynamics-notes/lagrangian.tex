@@ -32,17 +32,17 @@ constraint manifold at a fixed time, written as
     \sJoint_j}\delta \sJoint_j
 \end{equation}
 
-We can write virtual work of force $\vForce{i}$ acting on particle
+We can now write the virtual work done by a force $\vForce{i}$ acting on particle
 $\vGlobalPoint_i$ as
 \begin{equation}\label{eq:virtual_work}
   \vc{f}_{i} \cdot  \delta \vc{r}_i = \vc{f}_{i} \cdot  \sum_j \frac{\partial \vc{r}_i}{\partial
     q_j}\delta q_j \equiv \sum_j Q_{ij} \delta q_j = \vc{Q}_i \cdot \delta \vc{q}
 \end{equation}
 where $Q_{ij} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as the component of the \emph{generalized force}
-associated with coordinate $q_j$. In the vector form, $\vc{Q}_i$ is the generalized force corresponding to the Cartesian force $\vc{f}_i$ with the relation $\vc{Q}_i = J_i^T \vc{f}_i$, where $J_i$ is the Jacobian matrix with the $j^{th}$ column defined as $\frac{\partial \vc{r}_i}{\partial q_j}$.
+associated with coordinate $q_j$. In vector form, $\vc{Q}_i$ is the generalized force corresponding to the Cartesian force $\vc{f}_i$ with the relation $\vc{Q}_i = J_i^T \vc{f}_i$, where $J_i$ is the Jacobian matrix with the $j^{th}$ column defined as $\frac{\partial \vc{r}_i}{\partial q_j}$.
 
 From D'Alembert's principle, we know that the sum of the differences
-between the forces acting on a system and the inertia force of the
+between the forces acting on a system and the inertial force of the
 system along any virtual displacement consistent with the constraints
 of the system, is zero. Therefore, the virtual work at $\vGlobalPoint_i$ can be written as
 \begin{equation}\label{eq:inertial_work}
@@ -52,7 +52,7 @@ of the system, is zero. Therefore, the virtual work at $\vGlobalPoint_i$ can be 
     \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j} \delta \sJoint_j
 \end{equation}
 where $\sInfMass_i$ is the infinitesimal mass associated with
-$\vGlobalPoint_i$. The component of inertia force associated with
+$\vGlobalPoint_i$. The component of inertial force associated with
 $\sJoint_j$ can be written as
 \begin{equation}
 \label{eq:inertia_force}
@@ -98,7 +98,7 @@ and rewrite \eqnref{inertia_force2} as
     \dot{\sJoint}_j}\right) - \frac{\partial \sKinetics_i}{\partial \sJoint_j}
 \end{equation}
 
-Combining the definition of generalized force (\eqnref{virtual_work}), D'Alembert's principle (\eqnref{inertial_work}), and the generalized inertia force (\eqnref{inertia_kinetic}), we arrive at the following equation:
+Combining the definition of generalized force (\eqnref{virtual_work}), D'Alembert's principle (\eqnref{inertial_work}), and the generalized inertial force (\eqnref{inertia_kinetic}), we arrive at the following equation:
 \begin{equation}\label{eq:dynamic_equil}
     \left ( \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
     \sJoint_j}\right ) \delta \sJoint_j = Q_{ij} \delta
@@ -164,9 +164,9 @@ defined as $C = \dot{M} \dot{\vc{q}} - \frac{1}{2}\left( \frac{\partial M}{\part
 \paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that, in general, the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$.
 
 Once we know how to compute the mass matrix, Coriolis and centrifugal
-term, and generalized forces, we can compute the acceleration in
+terms, and generalized forces, we can compute the acceleration in
 generalized coordinates, $\ddot{\vc{q}}$, for forward
-simulation. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
+dynamics. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
 sequence, we can use these equations of motion to derive generalized
 forces for inverse dynamics. 
 

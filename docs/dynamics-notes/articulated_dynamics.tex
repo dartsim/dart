@@ -1,7 +1,7 @@
 \section{Articulated Rigid Body Dynamics}
 We now derive the equations of motion for an articulated rigid body structure. We follow the derivation of rigid body dynamics in generalized coordinates from \secref{rigidbodydyngen}.
 
-An articulated rigid body system is represented as a set of rigid bodies connected through joints in a tree structure. Every rigid link has exactly one \emph{parent} joint. The joint corresponding to the root of the tree is special since it does not link the root to any other rigid link. The generalized coordinates are the DOFs of the root link of the tree (that may represent the global translation and rotation), and the joint angles corresponding to the admissible joint rotations for all the other joints. 
+An articulated rigid body system is represented as a set of rigid bodies connected through joints in a tree structure. Every rigid link has exactly one \emph{parent} joint. The joint corresponding to the root of the tree is special; the root link does not link to any other rigid link. The generalized coordinates are therefore the DOFs of the root link of the tree (that may represent the global translation and rotation) and the joint angles corresponding to the admissible joint rotations for all the other joints. 
 
 \subsection{Definitions}
 The state of an articulated rigid body
@@ -29,9 +29,8 @@ generalized coordinates. We define the generalized state as $(\vc{q},\dot{\vc{q}
 
 We list a few notations and definitions for an articulated rigid body system with $m$ rigid links. 
 \begin{itemize}
-\item $p(k)$ returns the index of the parent link of link $k$. For
-  example in Figure \ref{fig:example1}, $p(4) = 2$. $p(1,k)$ returns the indices of all the links in the chain from the root to the link $k$ (including $k$). For example, $p(1,4) = \{1,2,4\}$
-\item $n(k)$ returns the number of DOFs in the joint that connects the  link $k$ to the parent link $p(k)$. For example in Figure \ref{fig:example1}, $n(2) = 3$, $n(3) = 1$ etc. We denote the total number of DOFs in the system by $n$. \eg $n=7$ in Figure \ref{fig:example1}.
+\item $p(k)$ returns the index of the parent link of link $k$. This is illustrated in Figure \ref{fig:example1}, $p(4) = 2$. $p(1,k)$ returns the indices of all the links in the chain from the root to the link $k$ (including $k$), e.g. $p(1,4) = \{1,2,4\}$
+\item $n(k)$ returns the number of DOFs in the joint that connects the link $k$ to the parent link $p(k)$. For example in Figure \ref{fig:example1}, $n(2) = 3$, $n(3) = 1$ etc. We denote the total number of DOFs in the system by $n$. \eg $n=7$ in Figure \ref{fig:example1}.
 \item $R_k$ is the local rotation matrix for the link $k$ and depends only on the DOFs $\vc{q}_k$. $R^0_k$ is the chain of rotational transformations from the
   world frame to the local frame of the link $k$. Therefore, $R^0_k = R^0_{p(k)}R_k$. Since the link $1$ does not have a parent link, $R^0_{p(1)} = \vc{I}_3$.
 \end{itemize}
@@ -55,8 +54,8 @@ We start with deriving the relation for the angular velocity. The angular veloci
 \end{eqnarray}
 In the above equation, we define [$\hat{\bm{\omega}}_k] = \dot{R_k} R_k^T$ that denotes the angular velocity of the link $k$ in the frame of its parent link $p(k)$ since the rotation matrix $R_k$ is the rotation of the rigid link $k$ with respect to $p(k)$. We can further write $\hat{\bm{\omega}}_k = \hat{J}_{\omega k} \dot{\vc{q}}_k$ where $\hat{J}_{\omega k}$ is the \emph{local} Jacobian matrix that relates the joint velocity of link $k$ to its angular velocity in the frame of the parent link $p(k)$. The dimension of $\hat{J}_{\omega k}$ is $3\times n(k)$. 
 
-Using the property of skew symmetric matrix, $[R \bm{\omega}] = R [\bm{\omega}]
-R^T$, we can express \eqnref{angvelk_recursive} in the vector form as:
+Using a property of skew symmetric matrices, $[R \bm{\omega}] = R [\bm{\omega}]
+R^T$, we can express \eqnref{angvelk_recursive} in vector form as:
 \begin{eqnarray}
 \label{eq:angvelk_iterative}
 \nonumber

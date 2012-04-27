@@ -75,13 +75,13 @@ J_{\omega}
 Typically, the Jacobian $J$ is full column rank because the
 number of DOFs in the maximal representation is more than that in the
 generalized representation, i.e $6m > n$. To compute $\dot{\vc{q}}$ from $\vc{V}$, we
-will end up solving a over-constrained linear system. We can use
+will end up solving an over-constrained linear system. We can use the
 pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
 \begin{equation}
  \dot{\vc{q}} =  J^+\vc{V}
  \end{equation}
 where the pseudo-inverse notation $J^+ = (J^TJ)^{-1}J^T$. If this
-least-square solution does not exactly solve the linear
+least-squared solution does not exactly solve the linear
 system (i.e. $J \dot{\vc{q}} = \vc{V}$), it indicates that $\vc{V}$ cannot be achieved in the
 generalized coordinates without violating constraints of the system
 (e.g. constraints that keep links connected).
@@ -179,7 +179,7 @@ as:
 & = & \mbox{blockdiag}\left(\hat{J}_{\omega 1}^+,\hdots,\hat{J}_{\omega m}^+\right ) \hat{\bm{\omega}}\\
 \mbox{or\ \ } \dot{\vc{q}}_k & = & \hat{J}_{\omega k}^+ \hat{\bm{\omega}}_k \mbox{\ \ , } k \in 1\hdots m
 \end{eqnarray}
-From this formulation, we see that the problem of computing
+From this formulation, we see that the problem of computing the
 pseudo-inverse of a matrix $J_{\omega}$ is reduced to computing $m$
 pseudo-inverses of much smaller constant-sized matrices
 $\hat{J}_{\omega k}$. Note that if $\dot{\vc{q}}$ computed in
@@ -198,7 +198,7 @@ violating the system constraints, $\dot{\vc{q}}$ computed in
 $\vc{v} = J_v \dot{\vc{q}}$.}
 
 
-For systems that include translation DOFs as well, we can separately solve for the rotational DOFs as in \eqnref{angvel_cart2gen} and solve for the translational DOFs for any link $k$ as $\dot{\vc{q}}_k = J_{vk}^+\vc{v}_k$. In most of the cases, only the root joint has translational DOFs making the computation of generalized translational velocities extremely simple as $J_{v1}$ becomes an identity matrix.
+For systems that include translational DOFs as well, we can separately solve for the rotational DOFs as in \eqnref{angvel_cart2gen} and solve for the translational DOFs for any link $k$ as $\dot{\vc{q}}_k = J_{vk}^+\vc{v}_k$. In most of the cases, only the root joint has translational DOFs making the computation of generalized translational velocities extremely simple as $J_{v1}$ becomes an identity matrix.
 
 
 \subsection{Force conversion}
@@ -222,14 +222,44 @@ be found in \eqnref{virtual_work}:
 J^{'}_{vk} = \frac{\partial \vc{r}_k}{\partial \vc{q}}
 \end{equation}
 where $\vc{r}_k$ is the point of application of the Cartesian force
-$\vc{f}_k$ and $\bm{\tau}^{'}_k$ is the \emph{body torque} applied to link $k$ expressed in the world frame.
+$\vc{f}_k$ and $\bm{\tau}^{'}_k$ is the \emph{body torque} applied to
+link $k$ expressed in the world frame.
 
-\paragraph{Note.} Body torque $\bm{\tau}^{'}_k$ is the torque
-applied on link $k$ in the world frame and does \emph{not} include the torque induced by the linear forces $\vc{f}_k$. 
-However, the definition for torque in \eqnref{summary_dynamics} \emph{includes} the torque $[\vc{r}_k-\vc{x}_k] \vc{f}_k$ due to each force $\vc{f}_k$ ($\vc{x}_k$ is the COM of the link $k$). As a result, the linear Jacobian $J_{v}$ in \eqnref{summary_dynamics} is defined for the COM of the respective rigid link and $J^{'}_{v}$ in \eqnref{force_conversion} is defined for the point of application of the force. It is easy to verify that ${J^{'}_{vk}}^T\vc{f}_k = J_{vk}^T\vc{f}_k + J_{\omega k}^T[\vc{r}_k-\vc{x}_k] \vc{f}_k$. \ie $\bm{\tau}_k = \bm{\tau}^{'}_k + [\vc{r}_k-\vc{x}_k] \vc{f}_k$.
+\paragraph{Note.} Body torque $\bm{\tau}^{'}_k$ is different from body
+torque $\bm{\tau}_k$ in \eqnref{summary_dynamics}:
+\begin{equation}
+\vc{Q} =  J_v^T \vc{f} + J_\omega^T \bm{\tau} \nonumber
+\end{equation}
+Here, $\bm{\tau}^{'}_k$ is the torque applied on link $k$ in the world
+frame and does \emph{not} include the torque induced by the linear
+forces $\vc{f}_k$.  However, $\bm{\tau}_k$ in
+\eqnref{summary_dynamics} \emph{includes} the torque
+$[\vc{r}_k-\vc{x}_k] \vc{f}_k$ due to each force $\vc{f}_k$
+($\vc{x}_k$ is the COM of the link $k$). As a result, the linear
+Jacobian $J_{v}$ in \eqnref{summary_dynamics} is computed at the COM
+of the respective rigid link and $J^{'}_{v}$ in
+\eqnref{force_conversion} is defined for the point of application of
+the force. It is easy to verify that ${J^{'}_{vk}}^T\vc{f}_k =
+J_{vk}^T\vc{f}_k + J_{\omega k}^T[\vc{r}_k-\vc{x}_k] \vc{f}_k$. \ie
+$\bm{\tau}_k = \bm{\tau}^{'}_k + [\vc{r}_k-\vc{x}_k] \vc{f}_k$.
 %However, for the sake of clarity, we use the new definition of the Jacobian in \eqnref{force_conversion} and abuse the notation by denoting it by $J_v$.
+\ignorethis{
+\paragraph{Note.} Body torque $\bm{\tau}^{'}_k$ is the torque applied
+on link $k$ in the world frame and does \emph{not} include the torque
+induced by the linear forces $\vc{f}_k$.  However, the definition for
+torque in \eqnref{summary_dynamics} \emph{includes} the torque
+$[\vc{r}_k-\vc{x}_k] \vc{f}_k$ due to each force $\vc{f}_k$
+($\vc{x}_k$ is the COM of the link $k$). As a result, the linear
+Jacobian $J_{v}$ in \eqnref{summary_dynamics} is defined for the COM
+of the respective rigid link and $J^{'}_{v}$ in
+\eqnref{force_conversion} is defined for the point of application of
+the force. It is easy to verify that ${J^{'}_{vk}}^T\vc{f}_k =
+J_{vk}^T\vc{f}_k + J_{\omega k}^T[\vc{r}_k-\vc{x}_k] \vc{f}_k$. \ie
+$\bm{\tau}_k = \bm{\tau}^{'}_k + [\vc{r}_k-\vc{x}_k] \vc{f}_k$.
+%However, for the sake of clarity, we use the new definition of the Jacobian in \eqnref{force_conversion} and abuse the notation by denoting it by $J_v$.
+}
 
-Often many controllers (such as a tracking controller) find it convenient to compute the Cartesian-space \emph{joint torques} in the local frame of the parent link rather than body torques in the world frame. Joint torque $\hat{\bm{\tau}}_k$ in the frame of parent link $p(k)$ is defined such that positive torque in the world frame $R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the link $k$ and negative torque $-R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the parent link $p(k)$. Therefore, the body torque $\bm{\tau}^{'}_k$ applied to the link $k$ can be written in terms of the joint torques as $\bm{\tau}^{'}_k = R^0_{p(k)}\hat{\bm{\tau}}_k - \sum_l R^0_{k} \hat{\bm{\tau}}_l$, $\forall l:k=p(l)$. Collecting the body torques for all the rigid links in the vector $\bm{\tau}$, the relation between the body torques and the joint torques can be defined as:
+Often many controllers (such as a tracking controller) find it convenient to compute the Cartesian-space \emph{joint torques} in the local frame of the parent link rather than body torques in the world frame. Joint torque $\hat{\bm{\tau}}_k$ in the frame of a parent link $p(k)$ is defined such that positive torque in the world frame $R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the link $k$ and negative torque $-R^0_{p(k)}\hat{\bm{\tau}}_k$ is applied to the parent link $p(k)$. Therefore, the body torque $\bm{\tau}^{'}_k$ applied to the link $k$ can be written in terms of the joint torques as $\bm{\tau}^{'}_k = R^0_{p(k)}\hat{\bm{\tau}}_k - \sum_l R^0_{k} \hat{\bm{\tau}}_l$, $\forall l:k=p(l)$. Collecting the body torques for all the rigid links in the vector $\bm{\tau}$, the relation between the body torques and the joint torques can be defined as:
 \begin{eqnarray}
 \label{eq:torquesbodyhat}
 \bm{\tau}^{'} & = & D^T R \hat{\bm{\tau}} = (R^T D)^T \hat{\bm{\tau}}
@@ -279,11 +309,11 @@ where $R, D$ are defined in \eqnref{jacbodyhat}. We now substitute \eqnref{torqu
 
 \eqnref{torques_cart2gen} gives the relation to convert the given cartesian forces \vc{f} and joint torques $\hat{\bm{\tau}}$ to the generalized forces $\vc{Q}$. 
 
-We now describe the process to convert the given generalized forces $\vc{Q}$ to cartesian forces and torques. In general, the transposed Jacobian in \eqnref{force_conversion} can be inverted using pseudo-inverse to get the Cartesian forces and torques. Note that the relation represents an under-constrained system when solving for $\vc{f}$ and $\bm{\tau}^{'}$. This is because the size of the unknowns is $6m$ and the number of constraints are $n$ with $n\le 6m$. Therefore, we get particular solutions for the Cartesian forces and torques out of many possible solutions.
+We now describe the process to convert the given generalized forces $\vc{Q}$ to cartesian forces and torques. In general, the transposed Jacobian in \eqnref{force_conversion} can be inverted using a pseudo-inverse to get the Cartesian forces and torques. Note that the relation represents an under-constrained system when solving for $\vc{f}$ and $\bm{\tau}^{'}$. This is because the size of the unknowns is $6m$ and the number of constraints are $n$ with $n\le 6m$. Therefore, we get particular solutions for the Cartesian forces and torques out of many possible solutions.
 
 Based on the information about the form of $\vc{Q}$, we can solve for the Cartesian forces and torques in different ways. We describe the solutions to the following cases:
 \begin{enumerate}
-\item \textbf{General case. } In the most general case, the points of application of the Cartesian forces are not known. Therefore, we cannot use the Jacobian $J_{v}^{'}$ in \eqnref{force_conversion}. This forces us to assume the points of application to be the COM of each link and compute the torques $\bm{\tau}$ instead of body torques $\bm{\tau}^{'}$. \ie, we can invert the transposed Jacobian by computing its pseudo-inverse and a get a particular least squared solution for $\vc{f}$ and $\bm{\tau}$ as:
+\item \textbf{General case. } In the most general case, the points of application of the Cartesian forces are not known. Therefore, we cannot use the Jacobian $J_{v}^{'}$ in \eqnref{force_conversion}. This forces us to assume the points of application to be the COM of each link and compute the torques $\bm{\tau}$ instead of body torques $\bm{\tau}^{'}$. \ie, we can invert the transposed Jacobian by computing its pseudo-inverse that results in a particular least-squared solution for $\vc{f}$ and $\bm{\tau}$ as:
 \begin{equation}
 \left (
 \begin{array}{c}
@@ -304,8 +334,8 @@ If the points of the force application are known, the Jacobian in \eqnref{torque
 \hat{\bm{\tau}}  & = & (\hat{J}_{\omega}^T)^+ \vc{Q}\\
 \mbox{or } \hat{\bm{\tau}}_k  & = & (\hat{J}_{\omega k}^T)^+ \vc{Q}_k \;\; \forall k \in 1\hdots m
 \end{eqnarray}
-where $\vc{Q}_k$ denotes the components of the generalized forces corresponding to the rotational DOFs $\vc{q}_k$. Note that the size of the matrix $\hat{J}_{\omega k}^T$ is $n(k)\times 3$ and $n(k)\leq 3$. This implies that we get a particular least squared solution for each $\hat{\bm{\tau}}_k$ out of possibly many solutions that would give rise to the same $\vc{Q}_k$ using the relation $\vc{Q}_k = \hat{J}_{\omega k}^T \hat{\bm{\tau}}_k$.
-%\item \textbf{Known points of applied forces. } When the points of application of forces are known, \eqnref{torques_cart2gen} can be used. Instead of inverting the Jacobian,
+where $\vc{Q}_k$ denotes the components of the generalized forces corresponding to the rotational DOFs $\vc{q}_k$. Note that the size of the matrix $\hat{J}_{\omega k}^T$ is $n(k)\times 3$ and $n(k)\leq 3$. This implies that we get a particular least-squared solution for each $\hat{\bm{\tau}}_k$ out of possibly many solutions that would give rise to the same $\vc{Q}_k$ using the relation $\vc{Q}_k = \hat{J}_{\omega k}^T \hat{\bm{\tau}}_k$.
+%\item \textbf{Known points of applied forces. } When the points of application of forces are known, \eqnref{torques_cart2gen} can be used, instead of inverting the Jacobian.
 
 \end{enumerate}
 
