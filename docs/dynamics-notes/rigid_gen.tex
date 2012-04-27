@@ -53,7 +53,7 @@ The angular velocity is computed as:
 \label{eq:Jaccolj}
 & = & \sum_j \frac{\partial R}{\partial q_j}R^T \dot{q}_j \equiv \sum_j [\vc{j}_{j}] \dot{q}_j
 \end{eqnarray}
-$\frac{\partial R}{\partial q_j}R^T$ is always a skew-symmetric matrix that we represent as $[\vc{j}_{j}]$ (skew-symmetric form of the vector $\vc{j}_j$). $\bm{\omega}$ can be now be represented in the vector form as:
+$\frac{\partial R}{\partial q_j}R^T$ is always a skew-symmetric matrix that we represent as $[\vc{j}_{j}]$ (skew-symmetric form of the vector $\vc{j}_j$). $\bm{\omega}$ can now be represented in the vector form as:
 \begin{equation}
 \label{eq:velang}
 \bm{\omega} = J_{\omega} \dot{\vc{q}}
@@ -75,7 +75,7 @@ Substituting the above in \eqnref{kinetic_vec}, we get:
 T = \frac{1}{2}\dot{\vc{q}}^T J^T M_c J \dot{\vc{q}}
 \end{equation}
 
-Using the recipe of Lagrangian dynamics in \eqnref{lagrangian_dyn2}, we first compute $\frac{\partial T}{\partial \dot{q}_j}$ as:
+Using the recipe for Lagrangian dynamics in \eqnref{lagrangian_dyn2}, we first compute $\frac{\partial T}{\partial \dot{q}_j}$ as:
 \begin{eqnarray}
 \nonumber
 \frac{\partial T}{\partial \dot{q}_j} & = & \frac{1}{2}\dot{\vc{q}}^T J^T M_c (J)_j + \frac{1}{2} (J)_j^T M_c J \dot{\vc{q}}\\

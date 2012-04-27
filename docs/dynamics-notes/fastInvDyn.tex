@@ -1,9 +1,9 @@
 \section{Recursive Inverse Dynamics}
 \label{sec:invdyn}
 As Featherstone pointed out, inverse dynamics can be computed
-efficiently by exploiting the recursive structure of an articulated
-rigid body system. Such an algorithm greatly reduces the computation
-time to linear in the number of links in the articulated system. In
+efficiently and much faster by exploiting the recursive structure of an articulated
+rigid body system. A recursive algorithm allows computation of inverse dynamics
+in linear time proportional to the number of links in the articulated system. In
 this chapter, we will use our formulation to construct a recursive
 inverse dynamics algorithm.
 
@@ -54,8 +54,8 @@ m_k (\dot{\vc{v}}_k)^\ell  =  \vc{f}_k^\ell - \sum_{\tilde{i} \in
 The inverse dynamics algorithm visits each link twice in two recursive
 passes. In the first pass, the velocity and acceleration of each link
 is computed and expressed in the local frame. In the second pass,
-these terms are plugged into above Newton-Euler equations to compute
-forces and torques transmitted between links.
+these terms are plugged into the above Newton-Euler equations to compute
+forces and torques transmitted between the links.
 
 \subsection{Pass 1: Compute velocity and acceleration}
 The articulated rigid body system can be represented as a tree
@@ -131,13 +131,19 @@ world frame and then transform it to the local frame.
 (\bm{\omega}_{p(k)}^\ell + \hat{\bm{\omega}}_k)
 \end{eqnarray}
 
-Next, we compute the linear and the angular acceleration for the link
+Next, we compute the linear and angular acceleration for the link
 $k$. Note that the linear acceleration must be computed in the world
 frame first and then transformed into the local frame. If we instead
 take the time derivative on $\vc{v}_k^\ell$,
 i.e. $\dot{\vc{v}}_k^\ell$, the result is different from the true
 linear acceleration $(\dot{\vc{v}}_k)^\ell$, as the former does not
-take into account the Colirios force due to the moving frame. 
+take into account the Coriolis forces due to the moving frame.
+% If the total time derivative of the velocity in the local frame is 
+% taken with respect to the inertial frame you will get the same result
+% The trick is that you also have to take the derivative of the 
+% implicit local coordinates as well as the partial velocities.
+% e.g. v_point_local = vx*i + vy*j + vz*k
+%     d(v_point_local)dt_global = d(vx)dt*i + vx*d(i)dt + d(vy)dt*j + vy*d(j)dt + ...
 \begin{eqnarray}
 \vc{v}_k &=& \vc{R}^0_k \vc{v}_k^\ell = \vc{R}^0_{p(k)} (\vc{v}_{p(k)}^\ell + \bm{\omega}_{p(k)}^\ell \times
 (\vc{d}_k -\vc{c}_{p(k)})) + \vc{R}^0_k \bm{\omega}_k^\ell \times
@@ -196,7 +202,7 @@ Transforming into the local frame of the link $k$, we get
 \vc{v}_k^\ell = \vc{v}_{p(k)}^\ell + \bm{\omega}_{p(k)}^\ell \times (\vc{c}_k + \vc{q}_k - \vc{c}_{p(k)}) + \dot{\vc{q}}_k
 \end{equation}
 
-The angular velocity and accelerations can be derived in the similar
+The angular velocity and accelerations can be derived in a similar
 way.
 \begin{eqnarray}
 \bm{\omega}_k^\ell &=& \bm{\omega}_{p(k)}^\ell \nonumber \\

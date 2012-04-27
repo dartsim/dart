@@ -3,7 +3,7 @@ If you have not read the excellent SIGGRAPH course notes on
 physics-based animation by Witkin and Baraff, you can stop reading
 further right now. Go look for those notes at
 {\tt http://www.cs.cmu.edu/\textasciitilde baraff/sigcourse/} and come back when
-you fully understand everything in the notes.
+you fully understand everything in those notes.
 
 If you are still reading this document, you probably fit the following
 profile. You are a computer scientist with no mechanical engineering
@@ -17,7 +17,7 @@ simulate human behaviors more interesting than ragdoll effects.
 
 Physics-based character animation consists of two parts: simulation
 and control. This document focuses on the simulation part. It's quite
-likely that you do not need to understand how underlying simulation
+likely that you do not need to understand how the underlying simulation
 works if your control algorithm is simple enough. However, complex
 human behaviors often require sophisticated controllers that exploit
 the dynamics of a multibody system. A good understanding of multibody
@@ -39,7 +39,7 @@ answer the following questions.
 M(\vc{q}) \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})  = \vc{Q} \nonumber
 \end{equation}
 
-\item I have seen Lagrangian equation in the following form before, but I
+\item I have seen the Euler-Lagrange equation in the following form before, but I
   don't know how it is related to the equations of motion above.
 \begin{equation}\label{eq:lagrangian_dyn}
     \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial
@@ -49,6 +49,7 @@ M(\vc{q}) \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})  = \vc{Q} \nonumber
 
 \item I use generalized coordinates to compute the control forces, how do I convert them to Cartesian forces such that I can use simulators like ODE, PhysX, or Bullet which represent rigid bodies in the maximal coordinates?
 
-\item I heard inverse dynamics can be computed recursively to improve performance. How does that work?
+\item I heard that inverse dynamics can be computed efficiently using
+  a recursive formulation. How does that work?
 \end{itemize}
 
