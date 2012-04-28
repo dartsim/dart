@@ -241,7 +241,7 @@ namespace dynamics {
 
     bool ContactDynamics::solve() {
         lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-        bool b = solver.Solve(mA, mQBar, mX);
+        bool b = solver.Solve(mA, mQBar, mX, mMu, mNumDir, true);
         return b;
     }
     

@@ -52,26 +52,11 @@ namespace lcpsolver {
 	    LCPSolver();
 	    ~LCPSolver();
     	
-	    bool Solve(const MatrixXd& _A, const VectorXd& _b, VectorXd& _x);
+	    bool Solve(const MatrixXd& _A, const VectorXd& _b, VectorXd& _x, double mu = 0, int numDir = 0, bool bUseODESolver = false);
     private:
-	    typedef vector<int> varIndexList;
-	    MatrixXd mColumns;
-	    varIndexList mBasicVarIndices;
-	    varIndexList mNonBasicVarIndices;
-	    int mDim;
-	    VectorXd mRatios;
-	    int mEnteringVariableId;
-	    void initialize(const MatrixXd& _A, const VectorXd& _b);
-	    bool initStep();
-	    bool pivotStep();
-	    void exchangeBasis(int _i, int _j);
-	    void pivotVariable(int _i);
-	    void formColumns(const MatrixXd& _A, const VectorXd& _b);
-	    void getSolution(VectorXd& _x, VectorXd& _z);
-	    int determineDroppingVariable();
-	    void calculateRatio();
-	    bool checkIfSolution();
-
+		void transferToODEFormulation(const MatrixXd& _A, const VectorXd& _b, MatrixXd& AOut, VectorXd& bOut, int numDir);
+		void transferSolFromODEFormulation(const VectorXd& _x, VectorXd& xOut, int numDir);
+		bool checkIfSolution(const MatrixXd& _A, const VectorXd& _b, const VectorXd& _x);
     };
 } //namespace lcpsolver
 #endif
