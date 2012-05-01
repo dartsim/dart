@@ -131,7 +131,7 @@ MARK_AS_ADVANCED ( ASSIMP_BUILD_ARCHITECTURE ASSIMP_BUILD_COMPILER )
 
 
 ADD_SUBDIRECTORY( code/ )
-SET ( BUILD_ASSIMP_TOOLS ON CACHE BOOL
+SET ( BUILD_ASSIMP_TOOLS OFF CACHE BOOL
 	"If the supplementary tools for Assimp are built in addition to the library."
 )
 IF ( BUILD_ASSIMP_TOOLS )
@@ -141,7 +141,7 @@ IF ( BUILD_ASSIMP_TOOLS )
 	ADD_SUBDIRECTORY( tools/assimp_cmd/ )
 ENDIF ( BUILD_ASSIMP_TOOLS )
 
-SET ( BUILD_ASSIMP_SAMPLES ON CACHE BOOL
+SET ( BUILD_ASSIMP_SAMPLES OFF CACHE BOOL
 	"If the official samples are built as well (needs Glut)."
 )
 
