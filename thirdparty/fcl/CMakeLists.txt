@@ -26,14 +26,14 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories("include")
 
-find_package(PkgConfig)
-pkg_check_modules(FLANN REQUIRED flann)
-include_directories(${FLANN_INCLUDE_DIRS})
-link_directories(${FLANN_LIBRARY_DIRS})
+#find_package(PkgConfig)
+#pkg_check_modules(FLANN REQUIRED flann)
+#include_directories(${FLANN_INCLUDE_DIRS})
+#link_directories(${FLANN_LIBRARY_DIRS})
 
-pkg_check_modules(CCD REQUIRED ccd)
-include_directories(${CCD_INCLUDE_DIRS})
-link_directories(${CCD_LIBRARY_DIRS})
+#pkg_check_modules(CCD REQUIRED ccd)
+#include_directories(${CCD_INCLUDE_DIRS})
+#link_directories(${CCD_LIBRARY_DIRS})
 
 add_definitions(-DUSE_SVMLIGHT=0)
 
