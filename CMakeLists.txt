@@ -95,6 +95,10 @@ message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
+if (PLANNING)
+    ADD_SUBDIRECTORY (thirdparty/assimp)
+endif (PLANNING)
+
 if (SNOPT)
     ADD_SUBDIRECTORY (thirdparty/snopt)
 endif (SNOPT)
