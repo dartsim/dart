@@ -33,6 +33,8 @@ public:
         mSimFrame = 0;
         mPlayFrame = 0;
         mShowMarkers = true;
+        mImpulseDuration = 0;
+
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
@@ -92,6 +94,7 @@ public:
     Eigen::Vector3d mForce;
     std::vector<int> mIndices;
     Controller *mController;
+    int mImpulseDuration;
 
     void initDyn();
     void setPose();
