@@ -86,7 +86,7 @@ namespace kinematics {
         /* bool dependsOn(int _dofIndex) const { return mDependsOnDof[_dofIndex]; } ///< NOTE: not checking index range */
         void setDependDofList(); ///< Set up the list of dependent dofs 
         bool dependsOn(int _dofIndex) const; ///< Test whether this dof is dependent or not \warning{You may want to use getNumDependentDofs / getDependentDof for efficiency}
-        inline int getNumDependentDofs() const { return mDependentDofs.size(); } ///< The number of the dofs which this node is affected
+        inline int getNumDependentDofs() const { return mDependentDofs.size(); } ///< The number of the dofs by which this node is affected
         inline int getDependentDof(int _arrayIndex) { return mDependentDofs[_arrayIndex]; } ///< Return an dof index from the array index (< getNumDependentDofs)
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node

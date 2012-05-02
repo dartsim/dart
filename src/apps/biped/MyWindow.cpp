@@ -129,19 +129,49 @@ void MyWindow::displayTimer(int _val)
         //    static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(11))->addExtForce(Vector3d(0.0, -0.1, 0.0), mForce);
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(12))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
+
             bake();
             cout << "iter " << i + mSimFrame << endl;
         }
         //    tSim.printScreen();
 
-        mForce = Vector3d::Zero();
+
+        mImpulseDuration--;
+         if (mImpulseDuration <= 0) {
+             mImpulseDuration = 0;
+             mForce.setZero();
+
+         }
+
         mSimFrame += numIter;
 
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+
+        if (mSimFrame == numIter * 50) {
+            mForce[0] = 50;
+            mImpulseDuration = 10.0;
+        }
+        if (mSimFrame == numIter * 75) {
+            mForce[0] = 50;
+            mImpulseDuration = 10.0;
+        }
+        if (mSimFrame == numIter * 100) {
+            mForce[0] = 50;
+            mImpulseDuration = 10.0;
+        }
+        if (mSimFrame == numIter * 125) {
+            mForce[0] = 50;
+            mImpulseDuration = 10.0;
+        }
+        if (mSimFrame == numIter * 150) {
+            mForce[0] = 50;
+            mImpulseDuration = 10.0;
+        }
+
     }
 }
 
@@ -236,13 +266,15 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         }
         break;
     case '1': // upper right force
-        mForce[0] = 0.4;
-        mForce[1] = 0.8;
-        cout << "push up and right" << endl;
+        mForce[0] = 50;
+        //        mForce[2] = 75;
+        mImpulseDuration = 10.0;
+        cout << "push forward right" << endl;
         break;
     case '2': // upper right force
-        mForce[0] = -0.4;
-        cout << "push left" << endl;
+        mForce[0] = -50;
+        mImpulseDuration = 10.0;
+        cout << "push backward" << endl;
         break;
     case 'p': // playBack
         mPlay = !mPlay;
@@ -270,10 +302,6 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
         break;
-    case 'q': // push
-        mForce[0] = 150;
-        cout << "push left arm" << endl;
-        break;
     default:
         Win3D::keyboard(key,x,y);
     }
@@ -289,7 +317,7 @@ void MyWindow::bake()
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
         state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
-        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
+        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
     }
 
     mBakedStates.push_back(state);
