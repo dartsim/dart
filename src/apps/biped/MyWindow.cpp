@@ -39,12 +39,11 @@ void MyWindow::initDyn()
     mDofs[0][1] = -0.9;
     mDofs[1][19] = -0.1;
     mDofs[1][6] = 0.1;
-    mDofs[1][12] = 0.1;
     mDofs[1][9] = -0.2;
     mDofs[1][10] = 0.1;
+    mDofs[1][12] = 0.1;
     mDofs[1][15] = -0.2;
-    mDofs[1][16] = 0.1;
-    
+    mDofs[1][16] = 0.1;    
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
@@ -129,7 +128,7 @@ void MyWindow::displayTimer(int _val)
         //    static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //        tSim.startTimer();
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(12))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(8))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
             //        tSim.stopTimer();
 
@@ -150,28 +149,35 @@ void MyWindow::displayTimer(int _val)
 
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
-
+        
+        double forceMag = 55;
         if (mSimFrame == numIter * 50) {
-            mForce[0] = 50;
+            mForce[0] = forceMag;
+            mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
+        
         if (mSimFrame == numIter * 75) {
-            mForce[0] = 50;
+            mForce[0] = forceMag;
+            mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
         if (mSimFrame == numIter * 100) {
-            mForce[0] = 50;
+            mForce[0] = forceMag;
+            mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
         if (mSimFrame == numIter * 125) {
-            mForce[0] = 50;
+            mForce[0] = forceMag;
+            mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
         if (mSimFrame == numIter * 150) {
-            mForce[0] = 50;
+            mForce[0] = forceMag;
+            mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
-
+        
     }
 }
 

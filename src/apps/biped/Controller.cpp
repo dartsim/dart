@@ -57,8 +57,10 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
     mKd(17, 17) = 2 * sqrt(mKp(17, 17));
     
     // lower back
-    mKp(19, 19) = 500.0;
-    mKd(19, 19) = 2 * sqrt(mKp(19, 19));
+    //    mKp(18, 18) = 500.0;
+    //    mKd(18, 18) = 2 * sqrt(mKp(18, 18));
+    //    mKp(19, 19) = 500.0;
+    //    mKd(19, 19) = 2 * sqrt(mKp(19, 19));
 
     // mass tree is only used when SPD is not activated
     mMassTree = VectorXd::Zero(nDof);
@@ -124,7 +126,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
     */
 
     // gravity compensation for upper body
-    
+    /*    
     VectorXd torque(nDof);
     torque.setZero();
     for (int i = 7; i < mSkel->getNumNodes(); i++) { // loop over each node in upperbody
@@ -141,10 +143,10 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
     }
 
     mTorques += torque;
-    
+    */
 
     // virtual force on COM
-        
+      
     Vector3d vf(0.0, 0.0, 0.0);
     Vector3d com = mSkel->getWorldCOM();
     BodyNode *lFoot = mSkel->getNode("fullbody_h_foot_left");
@@ -165,6 +167,55 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof, const Eigen::Vector
     }
     mTorques += J.transpose() / mSkel->getMass() * vf;
     
+    /*
+    // virtual force from ankles
+    Vector3d vf(0.0, 0.0, 0.0);
+    Vector3d com = mSkel->getWorldCOM();
+    BodyNode *lFoot = mSkel->getNode("fullbody_h_foot_left");
+    BodyNode *rFoot = mSkel->getNode("fullbody_h_foot_right");
+    Vector3d cp = (lFoot->evalWorldPos(Vector3d::Zero()) + rFoot->evalWorldPos(Vector3d::Zero())) /2.0;
+    vf = (cp - com) * 1000;
+    vf[0] += 18;
+    vf[1] = 0.0;
+    J.setZero();
+    //    BodyNode *hand = mSkel->getNode("fullbody_h_hand_left");
+    //    BodyNode *abd = mSkel->getNode("fullbody_h_abdomen");
+    BodyNode *node = mSkel->getNode("fullbody_h_spine");
+    BodyNode *foot = mSkel->getNode("fullbody_h_foot_left");
+    //    Vector3d handCOM = hand->getLocalCOM();
+    //    Vector3d abdCOM = abd->getLocalCOM();
+    Vector3d nodeCOM = node->getLocalCOM();
+    for (int i = 0; i < foot->getNumDependentDofs(); i++) {
+        int index = foot->getDependentDof(i);
+        VectorXd jCol = utils::xformHom(foot->getDerivWorldTransform(i).transpose() * node->getWorldTransform(), nodeCOM);
+        if (index == 8)
+            J.col(index) = -jCol;
+        else
+            J.col(index) = jCol;
+    }
+    for (int i = 0; i < node->getNumDependentDofs(); i++) {
+        int index = node->getDependentDof(i);
+        VectorXd jCol = utils::xformHom(foot->getWorldTransform().transpose() * node->getDerivWorldTransform(i), nodeCOM);
+        J.col(index) = jCol;
+    }
+    
+    foot = mSkel->getNode("fullbody_h_foot_right");
+    for (int i = 0; i < foot->getNumDependentDofs(); i++) {
+        int index = foot->getDependentDof(i);
+        VectorXd jCol = utils::xformHom(foot->getDerivWorldTransform(i).transpose() * node->getWorldTransform(), nodeCOM);
+        if (index == 14)
+            J.col(index) -= jCol;
+        else
+            J.col(index) += jCol;
+    }
+    for (int i = 0; i < node->getNumDependentDofs(); i++) {
+        int index = node->getDependentDof(i);
+        VectorXd jCol = utils::xformHom(foot->getWorldTransform().transpose() * node->getDerivWorldTransform(i), nodeCOM);
+        J.col(index) += jCol;
+    }
+        //    vf[2] = -vf[2];
+    mTorques += J.transpose() * vf;
+    */  
     // SPD control force
     for (int i = 0; i < nDof; i++)
         mTorques[i] += -mKp(i, i) * (_dof[i] + _dofVel[i] * mTimestep - mDesiredDofs[i]) - mSkel->getKd()(i, i) * _dofVel[i];
