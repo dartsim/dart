@@ -22,7 +22,7 @@ namespace integration{
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
     //    MyWindow(dynamics::SkeletonDynamics* _m1, dynamics::SkeletonDynamics* _m2)
-    MyWindow(dynamics::SkeletonDynamics* _mList = 0 ...): Win3D() {
+ MyWindow(dynamics::SkeletonDynamics* _mList = 0, ...): Win3D() {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
