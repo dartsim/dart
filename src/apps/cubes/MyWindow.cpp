@@ -30,6 +30,8 @@ void MyWindow::initDyn()
     mDofs[0][1] = -0.35;
     mDofs[1][1] = mDofs[0][1] + 0.025;
     mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
+    mDofs[3][0] = 0.05;
+    mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
     
      //rotate about z
     /*
@@ -239,9 +241,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         }
         break;
     case '1': // upper right force
-        mForce[0] = 0.4;
-        mForce[1] = 0.8;
-        mImpulseDuration = 10.0;
+        mForce[0] = 40;
+        mImpulseDuration = 1.0;
         cout << "push up and right" << endl;
         break;
     case '2': // upper right force
