@@ -25,17 +25,7 @@ void MyWindow::initDyn()
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
-    /*
-    mDofs[0][1] = -1.88;
-    mDofs[1][3] = -1;
-    mDofs[1][19] = 1;
-    mDofs[1][6] = 1.4;
-    mDofs[1][12] = 1.4;
-    mDofs[1][9] = -0.5;
-    mDofs[1][10] = 0.1;
-    mDofs[1][15] = -0.5;
-    mDofs[1][16] = 0.1;
-    */
+    
     mDofs[0][1] = -0.9;
     mDofs[1][19] = -0.1;
     mDofs[1][6] = 0.1;
@@ -44,6 +34,15 @@ void MyWindow::initDyn()
     mDofs[1][12] = 0.1;
     mDofs[1][15] = -0.2;
     mDofs[1][16] = 0.1;    
+      
+    mDofs[1][6] = 0.5;
+    mDofs[1][9] = -0.8;
+    mDofs[1][10] = 0.3;
+    mDofs[1][12] = 0.5;
+    mDofs[1][15] = -0.8;
+    mDofs[1][16] = 0.3;
+    mDofs[1][19] = -0.3;
+    
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->setPose(mDofs[i], false, false);
@@ -58,7 +57,7 @@ void MyWindow::initDyn()
 
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
     mCollisionHandle->setSPDFlag(true);
-    mSkels[1]->setKd(MatrixXd::Identity(nDof, nDof) * 300); 
+    mSkels[1]->setKd(MatrixXd::Identity(nDof, nDof) * 100); 
 }
 
 VectorXd MyWindow::getState() {
@@ -109,7 +108,6 @@ void MyWindow::setPose() {
             mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
             mController->computeTorques(mDofs[1], mDofVels[1]);
-            //            mController->getSkel()->setInternalForces(mController->getTorques());
         }
     }
         mCollisionHandle->applyContactForces();
@@ -119,24 +117,22 @@ void MyWindow::displayTimer(int _val)
 {
     int numIter = mDisplayTimeout / (mTimeStep * 1000);
     if (mPlay) {
-        mPlayFrame += 8;
+        mPlayFrame += 30;
         if (mPlayFrame >= mBakedStates.size())
             mPlayFrame = 0;
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);        
     }else if (mSim) {
-        //    static Timer tSim("Simulation");
+        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            //        tSim.startTimer();
+            //            tSim.startTimer();
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(8))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
-            //        tSim.stopTimer();
-
+            //            tSim.stopTimer();
+            //            tSim.printScreen();
             bake();
             cout << "iter " << i + mSimFrame << endl;
         }
-        //    tSim.printScreen();
-
 
         mImpulseDuration--;
          if (mImpulseDuration <= 0) {
@@ -149,7 +145,18 @@ void MyWindow::displayTimer(int _val)
 
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
-        
+        /*
+        if (mSimFrame == numIter * 25) {
+            mController->setDesiredDof(6, -0.0);
+            mController->setDesiredDof(9, 0.0);
+            mController->setDesiredDof(10, -0.5);
+            mController->setDesiredDof(12, -0.0);
+            mController->setDesiredDof(15, 0.0);
+            mController->setDesiredDof(16, -0.5);
+            mController->setDesiredDof(19, -0.1);
+            }*/
+  
+        /*
         double forceMag = 55;
         if (mSimFrame == numIter * 50) {
             mForce[0] = forceMag;
@@ -177,7 +184,7 @@ void MyWindow::displayTimer(int _val)
             mForce[2] = forceMag;
             mImpulseDuration = 10.0;
         }
-        
+        */
     }
 }
 
@@ -200,11 +207,11 @@ void MyWindow::draw()
                 int nContact = (mBakedStates[mPlayFrame].size() - sumDofs) / 6;
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
-                    Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+                    Vector3d f = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 100.0;
 
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
-                    glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
+                    glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                     glEnd();
                     mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
                     mRI->pushMatrix();
