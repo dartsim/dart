@@ -53,15 +53,12 @@
 
 // Define a macro which returns the "pretty" name of function
 // It should include names of class and functions
-#ifdef __linux
+#if defined(__GNUC__) || defined(__clang__) || defined(__llvm__)
 #define FUNCTION_NAME() (__PRETTY_FUNCTION__)
-#elif defined(__APPLE__)
-#define FUNCTION_NAME() (__PRETTY_FUNCTION__)
-//#error "Define your own FUNCTION_NAME() macro on Apple"
-#elif defined(_WIN32)
+#elif defined(_MSC_VER)
 #define FUNCTION_NAME() (__FUNCSIG__)
 #else
-#error "What's your operating system?"
+#error "Unrecognized compiler. Could not determine the function name macro for your compiler."
 #endif
 
 // Safe Release Ptr
