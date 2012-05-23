@@ -23,7 +23,11 @@
 #include "common.h"
 #include "matrix.h"
 //#include "config.h"
-//#include <malloc.h>
+
+#if defined(_MSC_VER)
+// Required for alloca on MS Visual C++ compilers
+#include <malloc.h>
+#endif
 
 #ifndef EFFICIENT_ALIGNMENT
 #define EFFICIENT_ALIGNMENT 16
