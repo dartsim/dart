@@ -204,7 +204,7 @@ namespace dynamics {
 
         int cfmSize = getNumContacts() * (1 + mNumDir);
         for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
-            mA(i, i) += 0.01 * mA(i, i);
+            mA(i, i) += 0.001 * mA(i, i);
 		
         // Construct Q
         mQBar = VectorXd::Zero(dimA);
