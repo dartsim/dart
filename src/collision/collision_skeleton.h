@@ -70,8 +70,7 @@ namespace collision_checking {
         double penetrationDepth;
 
         bool isAdjacent(ContactPoint &otherPt){
-            return (bd1==otherPt.bd1&&triID1==otherPt.triID1||bd2==otherPt.bd2&&triID2==otherPt.triID2||
-                bd1==otherPt.bd2&&triID1==otherPt.triID2||bd2==otherPt.bd1&&triID2==otherPt.triID1);
+            return (((((((bd1==otherPt.bd1 && triID1==otherPt.triID1) || bd2==otherPt.bd2) && triID2==otherPt.triID2) || bd1==otherPt.bd2) && triID1==otherPt.triID2) || bd2==otherPt.bd1) && triID2==otherPt.triID1);
         }
     };
 

@@ -353,7 +353,7 @@ namespace optimizer {
                 }else if(mConstrEqns[i] == 4){
                     bl[mNumCoef + i] = -1e-2 + x[mNumCoef + i];
                     bu[mNumCoef + i] = 1e-2 + x[mNumCoef + i];
-                }else if(mConstrEqns[i] = 5){
+                }else if(mConstrEqns[i] == 5){
                     bl[mNumCoef + i] = -1e3 + x[mNumCoef + i];
                     bu[mNumCoef + i] = 1e3 + x[mNumCoef + i];
                 }
