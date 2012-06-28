@@ -16,8 +16,7 @@ TAGS
 .project
 bin/
 lib/
-thirdparty/lib/
-thirdparty/include/
+obj/
 *.orig
 *.obj
 *.idb
@@ -31,3 +30,5 @@ thirdparty/include/
 *.rsp
 *.a
 *.so
+*.o
+*~

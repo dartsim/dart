@@ -31,15 +31,17 @@ if (WIN32)
   SET(CMAKE_DEBUG_POSTFIX "d")
   set(CMAKE_EXE_LINKER_FLAGS "/LTCG")# "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
   set(CMAKE_MODULE_LINKER_FLAGS "/LTCG") #"${CMAKE_MODULE_LINKER_FLAGS} /LTCG")
-  SET(CMAKE_INSTALL_PREFIX "C:/Golems" )
+  SET(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
 #elseif (APPLE)
 #elseif (UNIX AND NOT APPLE)
 elseif (UNIX)  
   # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3")
  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -msse2 -g")
-  SET(CMAKE_INSTALL_PREFIX /usr/local )
+  SET(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Install prefix")
 endif()
+
+SET(THIRDPARTY_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/thirdparty CACHE PATH "Root directory for 'installing' thirdparty builds")
 
 ###############################################
 # Generate the path header file
@@ -95,6 +97,18 @@ message(STATUS "Building thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
+ADD_SUBDIRECTORY (thirdparty/glog-0.3.1)
+MESSAGE(STATUS "glog include dir: ${GLOG_INCLUDE_PATH}")
+include_directories( ${GLOG_INCLUDE_PATH} )
+
+ADD_SUBDIRECTORY (thirdparty/gflags-2.0)
+MESSAGE(STATUS "gflags include dir: ${GFLAGS_INCLUDE_PATH}")
+include_directories( ${GFLAGS_INCLUDE_PATH} )
+
+ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
+
+ADD_SUBDIRECTORY (thirdparty/ticpp)
+
 if (PLANNING)
     ADD_SUBDIRECTORY (thirdparty/assimp)
 endif (PLANNING)
@@ -110,6 +124,8 @@ if (FCL)
     ADD_SUBDIRECTORY (thirdparty/fcl)
 endif (FCL)
 
+###############################################
+# DART Source
 message(STATUS "Building DART source")
 ADD_SUBDIRECTORY(src)
 

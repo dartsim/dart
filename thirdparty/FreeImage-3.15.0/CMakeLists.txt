@@ -1,0 +1,14 @@
+PROJECT(freeimage-wrapper)
+
+include(ExternalProject)
+
+ExternalProject_Add(
+	freeimage-ext
+	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+	CONFIGURE_COMMAND ""
+#	BUILD_COMMAND make
+	BUILD_IN_SOURCE 1
+	INSTALL_COMMAND ${CMAKE_COMMAND} -DINSTALL_PREFIX=${THIRDPARTY_INSTALL_PREFIX} -P ${CMAKE_CURRENT_SOURCE_DIR}/Install.cmake
+	)
+
+

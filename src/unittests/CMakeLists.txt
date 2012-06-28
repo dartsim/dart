@@ -24,7 +24,7 @@ LINK_THIRDPARTY_GTEST_MAIN(unittests)
 LINK_THIRDPARTY_TICPP(unittests)
 
 if (APPLE)
-TARGET_LINK_LIBRARIES(unittests pthread snopt gfortran)
+  TARGET_LINK_LIBRARIES(unittests pthread snopt gfortran)
 elseif (UNIX)
   TARGET_LINK_LIBRARIES(unittests pthread glut snopt gfortran)
 endif()

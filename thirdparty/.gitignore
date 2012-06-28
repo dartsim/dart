@@ -1,0 +1,6 @@
+
+*.o
+
+/share
+/include
+/lib
