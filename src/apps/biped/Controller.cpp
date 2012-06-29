@@ -4,7 +4,7 @@
 #include "kinematics/BodyNode.h"
 #include "kinematics/Dof.h"
 #include "kinematics/Joint.h"
-#include "Kinematics/Shape.h"
+#include "kinematics/Shape.h"
 
 using namespace kinematics;
 using namespace Eigen;
