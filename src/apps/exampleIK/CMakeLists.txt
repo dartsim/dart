@@ -1,5 +1,12 @@
 ###############################################
 # apps/exampleIK
+
+# Depends on snopt
+if(NOT SNOPT)
+  MESSAGE(STATUS "Disabling exampleIK. Cannot build without snopt")
+  RETURN()
+endif()
+
 PROJECT(exampleIK)
 FILE(GLOB exampleIK_srcs "*.cpp")
 FILE(GLOB exampleIK_hdrs "*.h")

@@ -1,5 +1,12 @@
 ###############################################
 # Unittests
+
+# Depends on snopt
+if(NOT SNOPT)
+  MESSAGE(STATUS "Disabling unittests. Cannot build without snopt")
+  RETURN()
+endif()
+
 PROJECT(unittests)
 # Search all header and source files
 FILE(GLOB unittests_srcs "*.cpp")

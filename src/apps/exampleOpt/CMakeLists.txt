@@ -1,5 +1,12 @@
 ###############################################
 # apps/exampleOpt
+
+# Depends on snopt
+if(NOT SNOPT)
+  MESSAGE(STATUS "Disabling exampleOpt. Cannot build without snopt")
+  RETURN()
+endif()
+
 PROJECT(exampleOpt)
 FILE(GLOB exampleOpt_srcs "*.cpp")
 FILE(GLOB exampleOpt_hdrs "*.h")

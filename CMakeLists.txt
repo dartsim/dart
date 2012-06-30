@@ -11,9 +11,9 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ( SNOPT "SNOPT" OFF)
+option ( SNOPT "SNOPT" OFF )
 option ( FCL "FCL" OFF )
-option ( PLANNING "PLANNING" OFF)
+option ( PLANNING "PLANNING" OFF )
 
 
 ###############################################
