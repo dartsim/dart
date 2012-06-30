@@ -9,7 +9,7 @@ FILE(GLOB kinematics_hpps "*.hpp")
 
 # Library 
 ADD_LIBRARY(kinematics ${kinematics_srcs} ${kinematics_hdrs} ${kinematics_hpps})
-TARGET_LINK_LIBRARIES(kinematics utils)
+TARGET_LINK_LIBRARIES(kinematics utils tinyxml2)
 SET_TARGET_PROPERTIES(kinematics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 SET_TARGET_PROPERTIES(kinematics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
