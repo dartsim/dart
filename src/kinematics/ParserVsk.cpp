@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2012, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>, Matthew Dutton <MatthewRDutton@gmail.com>
+ * Date: 06/29/2012
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -40,11 +40,12 @@
 // Standard Library
 #include <map>
 #include <sstream>
+#include <stdexcept>
 using namespace std;
 
-// TiCPP library
-// http://code.google.com/p/ticpp/
-#include "ticpp.h"
+// TinyXML-2 Library
+// http://www.grinninglizard.com/tinyxml2/index.html
+#include <tinyxml2.h>
 
 #include <Eigen/Dense>
 using namespace Eigen;
@@ -81,27 +82,126 @@ Vector3d adjustPos(const Vector3d& _pos);
 VectorXd getDofVectorXd(Transformation* trfm);
 
 // Parsing Helper Functions    
-bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
-bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient);
-bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
-bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel);
-bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
-bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
-bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
+bool readJointFree(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel);
+bool readJointBall(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel, Vector3d orient);
+bool readJointHardySpicer(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel);
+bool readJointHinge(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel);
+bool readSegment(tinyxml2::XMLElement*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
+bool readMarker(tinyxml2::XMLElement*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel);
+bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel);
 void autoGenerateShape(Skeleton* skel);
 void autoGenerateShapeParent(Skeleton* skel);
 
+namespace {
+	struct ElementEnumerator
+	{
+	private:
+		typedef tinyxml2::XMLElement XMLElement;
+
+		XMLElement * m_parent;
+		std::string m_name;
+		XMLElement * m_current;
+
+	public:
+		ElementEnumerator(XMLElement * parent, const char * const name)
+			: m_parent(parent)
+			, m_name(name)
+			, m_current(0)
+		{	}
+
+		bool valid() const { return m_current != 0; }
+
+		bool next()
+		{
+			if( !m_parent )
+				return false;
+
+			if( m_current )
+				m_current = m_current->NextSiblingElement(m_name.c_str());
+			else
+				m_current = m_parent->FirstChildElement(m_name.c_str());
+
+			if( !valid() )
+				m_parent = 0;
+
+			return valid();
+		}
+
+		XMLElement * get() const { return m_current; }
+		XMLElement * operator->() const { return m_current; }
+		XMLElement & operator*() const { return *m_current; }
+
+		bool operator==(ElementEnumerator const & rhs) const
+		{
+			// If they point at the same node, then the names must match
+			return (this->m_parent == rhs.m_parent) &&
+				(this->m_current == rhs.m_current) &&
+				(this->m_current != 0 || (this->m_name == rhs.m_name));
+		}
+
+		ElementEnumerator & operator=(ElementEnumerator const & rhs)
+		{
+			this->m_parent = rhs.m_parent;
+			this->m_name = rhs.m_name;
+			this->m_current = rhs.m_current;
+		}
+	};
+} // end anon namespace
+
+
+static void openXMLFile(tinyxml2::XMLDocument & doc, const char* const filename)
+{
+	int const result = doc.LoadFile(filename);
+	switch(result)
+	{
+		case tinyxml2::XML_SUCCESS:
+			break;
+		case tinyxml2::XML_ERROR_FILE_NOT_FOUND:
+			throw std::runtime_error("File not found");
+		case tinyxml2::XML_ERROR_FILE_COULD_NOT_BE_OPENED:
+			throw std::runtime_error("File not found");
+		default:
+		{
+			std::ostringstream oss;
+			oss << "Parse error = " << result;
+			throw std::runtime_error(oss.str());
+		}
+	};
+}
+
+static std::string getAttribute( tinyxml2::XMLElement * element, const char* const name )
+{
+	const char* const result = element->Attribute(name);
+	if( result == 0 )
+	{
+		std::ostringstream oss;
+		oss << "Missing attribute " << name << " on " << element->Name();
+		throw std::runtime_error(oss.str());
+	}
+	return std::string(result);
+}
+
+static void getAttribute( tinyxml2::XMLElement * element, const char* const name, double * d )
+{
+	int result = element->QueryDoubleAttribute(name, d);
+	if( result != tinyxml2::XML_NO_ERROR )
+	{
+		std::ostringstream oss;
+		oss << "Error parsing double attribute " << name << " on " << element->Name();
+		throw std::runtime_error(oss.str());
+	}
+}
 
 int readVSKFile(const char* const filename, Skeleton* _skel){
     VLOG(1) << "Entering Read VSK File" << endl;
 
     // Load xml and create Document
-    ticpp::Document _stateFile(filename);
+    tinyxml2::XMLDocument _stateFile;
     try
     {
-        _stateFile.LoadFile();
+		openXMLFile( _stateFile, filename );
     }
-    catch(ticpp::Exception e)
+    catch(std::exception const & e)
     {
         VLOG(1) << "LoadFile Fails: " << e.what() << endl;
         return VSK_ERROR;
@@ -109,7 +209,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     VLOG(1) << "Load " << filename << " (xml) Successfully" << endl;
 
     // Load Kinematic Model which defines Parameters, Skeletons and Markers
-    ticpp::Element* kinmodel = NULL;
+    tinyxml2::XMLElement* kinmodel = NULL;
     kinmodel = _stateFile.FirstChildElement( "KinematicModel" );
     if(!kinmodel) return VSK_ERROR;
 
@@ -117,15 +217,15 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     map<string, double> paramsList;
     paramsList.clear();
     {
-        ticpp::Element* params = 0;
+        tinyxml2::XMLElement* params = 0;
         params = kinmodel->FirstChildElement( "Parameters" );
         if(!params) return VSK_ERROR;
         // read all params
-        ticpp::Iterator< ticpp::Element > childparam("Parameter");
-        for ( childparam = childparam.begin( params ); childparam != childparam.end(); childparam++ ){
-            string pname = childparam->GetAttribute("NAME");
+		ElementEnumerator childparam(params, "Parameter");
+		while( childparam.next() ) {
+            string pname = getAttribute(childparam.get(), "NAME");
             double val = 0; 
-            childparam->GetAttribute("VALUE", &val);
+            getAttribute(childparam.get(), "VALUE", &val);
             paramsList[pname] = val;
             // VLOG(1) << pname << " = " << val << endl;
         }
@@ -135,14 +235,13 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     map<string, int> segmentindex;
     segmentindex.clear();
     {
-        ticpp::Element* skel= 0;
+        tinyxml2::XMLElement* skel= 0;
         skel = kinmodel->FirstChildElement( "Skeleton" );
         if(!skel) return VSK_ERROR;
         // read all segments
-        ticpp::Iterator< ticpp::Element > childseg("Segment");
-        for ( childseg = childseg.begin( skel ); childseg != childseg.end(); childseg++ ){
-            if(!readSegment(childseg->ToElement(), NULL, paramsList,
-                segmentindex, _skel))
+        ElementEnumerator childseg( skel, "Segment");
+        while( childseg.next() ) {
+            if(!readSegment(childseg.get(), NULL, paramsList, segmentindex, _skel))
             {
                 return VSK_ERROR;
             }
@@ -151,17 +250,16 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
 
     // Read markers and add them to _skel
     {
-        ticpp::Element* markerset = 0;
+        tinyxml2::XMLElement* markerset = 0;
         markerset = kinmodel->FirstChildElement( "MarkerSet" );
         if(!markerset) return VSK_ERROR;
         // read all markers
-        ticpp::Element* markers = 0;
+        tinyxml2::XMLElement* markers = 0;
         markers = markerset->FirstChildElement( "Markers" );
         if(!markers) return VSK_ERROR;
-        ticpp::Iterator< ticpp::Element > childmarker("Marker");
-        for ( childmarker = childmarker.begin( markers ); childmarker != childmarker.end(); childmarker++ ){
-            if(!readMarker(childmarker->ToElement(), paramsList,
-                segmentindex, _skel))
+        ElementEnumerator childmarker(markers, "Marker");
+        while ( childmarker.next() ) {
+            if(!readMarker(childmarker.get(), paramsList, segmentindex, _skel))
             {
                 return VSK_ERROR;
             }
@@ -169,38 +267,43 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     }
 
     // Read masses
-    ticpp::Element* masses = 0;
+    tinyxml2::XMLElement* masses = 0;
     map<string, double> masslist;
     masslist.clear();
     {
         try {
             masses = kinmodel->FirstChildElement( "Masses" );
             if(!masses) return false;
-            ticpp::Iterator< ticpp::Element > childmass("Mass");
-            for ( childmass = childmass.begin( masses ); childmass != childmass.end(); childmass++ ){
-                string mname = childmass->GetAttribute("NAME");
-                double mi=0; childmass->GetAttribute("VALUE", &mi);
-                masslist[mname] = mi;
+            ElementEnumerator childmass(masses, "Mass");
+            while ( childmass.next() ) {
+				string const mname = getAttribute( childmass.get(), "NAME" );
+
+				double mi=0;
+				getAttribute(childmass.get(), "VALUE", &mi);
+
+				masslist[mname] = mi;
                 VLOG(1)<<"mass: "<<mname<<" "<<mi<<endl;
             }
         } 
-        catch( ticpp::Exception ){
-            VLOG(1)<<"no masses found!\n";
+        catch( std::exception const & e ){
+            VLOG(1) << "error parsing masses: " << e.what() << endl;
         }
     }
 
     // Read primitives and fill the _skel
     {
-        ticpp::Element* prims = 0;
+        tinyxml2::XMLElement* prims = 0;
         try {
             prims = kinmodel->FirstChildElement( "Shapes" );
             if(!prims) return false;
-            ticpp::Iterator< ticpp::Element > childprim("Shape");
-            for ( childprim = childprim.begin( prims ); childprim != childprim.end(); childprim++ ){
-                if(!readShape(childprim->ToElement(), paramsList, masslist, segmentindex, _skel)) return false;
+            ElementEnumerator childprim(prims, "Shape");
+            while ( childprim.next() ) {
+                if(!readShape(childprim->ToElement(), paramsList, masslist, segmentindex, _skel))
+					return false;
             }
         } 
-        catch( ticpp::Exception ){}
+        catch( std::exception const & )
+		{	}
 
         // fill in the default if prims absent
     }
@@ -215,8 +318,13 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
 
 
 
-bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel) {
-    string sname = _segment->GetAttribute("NAME");
+bool readSegment(tinyxml2::XMLElement*_segment,
+                 BodyNode* _parent,
+                 map<string, double>& _paramsList,
+				 map<string, int>& _segmentindex,
+				 Skeleton* _skel)
+{
+    string sname = getAttribute(_segment, "NAME");
 
     VLOG(1)<<"\nsegment: "<<sname<<" ";
     if(_parent) VLOG(1)<<"parent: "<<_parent->getName()<<endl;
@@ -233,7 +341,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     if(sname.compare(1, 8, "humerus")!=0)
     {
         VLOG(1) << "THE COMMON CODE!!" << endl;
-        string txyz = _segment->GetAttribute("POSITION");
+        string txyz = getAttribute(_segment, "POSITION");
         vector<string> tokens; utils::tokenize(txyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
@@ -270,7 +378,7 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         }
 
         {
-            string txtOrientation = _segment->GetAttribute("ORIENTATION");
+            string txtOrientation = getAttribute(_segment, "ORIENTATION");
             vector<string> tokens; utils::tokenize(txtOrientation, tokens);
             assert(tokens.size()==3);
             for (int i = 0; i < 3; ++i) {
@@ -320,14 +428,14 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
         hname.insert(hname.begin(), lr);
         VLOG(1)<<hname<<endl;
         // read the childsegment humerus
-        ticpp::Element *humerus = _segment->FirstChildElement( "Segment");
-        string cname = humerus->GetAttribute("NAME");
+        tinyxml2::XMLElement *humerus = _segment->FirstChildElement( "Segment");
+        string cname = getAttribute(humerus, "NAME");
         if(cname.compare(hname)!=0){
             VLOG(1)<<"Error: childname of "<<sname<<" doesnt match: "<<hname<<" vs "<<cname<<endl;
             return false;
         }
         // add telescope and const rot transforms
-        string hxyz = humerus->GetAttribute("POSITION");
+        string hxyz = getAttribute(humerus, "POSITION");
         vector<string> tokens; utils::tokenize(hxyz, tokens);
         assert(tokens.size()==3);
         Vector3d pos(0,0,0);
@@ -371,38 +479,34 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
 
 
     // make transforms
-    ticpp::Element *tf = 0;
+    tinyxml2::XMLElement *tf = 0;
     bool foundJoint = false;
-    if(!foundJoint){
-        try {
-            tf = _segment->FirstChildElement( "JointFree" );
+    if(!foundJoint) {
+		tf = _segment->FirstChildElement( "JointFree" );
+		if( tf ) {
             foundJoint = true;
             readJointFree(tf, jt, _skel);
-        }catch( ticpp::Exception e){
         }
     }
     if(!foundJoint){
-        try {
-            tf = _segment->FirstChildElement( "JointBall" );
+        tf = _segment->FirstChildElement( "JointBall" );
+		if( tf ) {
             foundJoint = true;
             readJointBall(tf, jt, _skel, orientation);
-        }catch( ticpp::Exception e){
         }
     }
     if(!foundJoint){
-        try {
-            tf = _segment->FirstChildElement( "JointHardySpicer" );
+        tf = _segment->FirstChildElement( "JointHardySpicer" );
+		if( tf ) {
             foundJoint = true;
             readJointHardySpicer(tf, jt, _skel);
-        }catch( ticpp::Exception e){
         }
     }
     if(!foundJoint){
-        try {
-            tf = _segment->FirstChildElement( "JointHinge" );
+        tf = _segment->FirstChildElement( "JointHinge" );
+		if( tf ) {
             foundJoint = true;
             readJointHinge(tf, jt, _skel);
-        }catch( ticpp::Exception e){
         }
     }
     if(!foundJoint) VLOG(1)<<"fixed joint!\n";
@@ -421,14 +525,15 @@ bool readSegment(ticpp::Element*_segment, BodyNode* _parent, map<string, double>
     _segmentindex[sname]=blink->getSkelIndex();
 
     // marker the subtree
-    ticpp::Iterator< ticpp::Element > childseg("Segment");
-    for ( childseg = childseg.begin( _segment ); childseg != childseg.end(); childseg++ ){
-        if(!readSegment(childseg->ToElement(), blink, _paramsList, _segmentindex, _skel)) return false;
+    ElementEnumerator childseg( _segment, "Segment" );
+    while ( childseg.next() ) {
+        if(!readSegment(childseg->ToElement(), blink, _paramsList, _segmentindex, _skel))
+			return false;
     }
     return true;
 }
 
-bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
+bool readJointFree(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read free\n";
 
     // create new transformation
@@ -470,7 +575,7 @@ bool readJointFree(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     return true;
 }
 
-bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d orient) {
+bool readJointBall(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel, Vector3d orient) {
     VLOG(1) << "read ball\n";
     VLOG(1) << "orientation = " << orient << endl;
     string tname2 = string(_jt->getChildNode()->getName()) + "_a";
@@ -496,11 +601,11 @@ bool readJointBall(ticpp::Element* _je, Joint* _jt, Skeleton* _skel, Vector3d or
 }
 
 
-bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
+bool readJointHardySpicer(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read hardy spicer\n";
 
     // Read axisxyz and parse it into tokens
-    string axisxyz = _je->GetAttribute("AXIS-PAIR");
+    string axisxyz = getAttribute(_je, "AXIS-PAIR");
     vector<string> tokens;
     tokens.clear();
 
@@ -549,14 +654,14 @@ bool readJointHardySpicer(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
 }
 
 
-bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
+bool readJointHinge(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
     VLOG(1)<<"read hinge\n";
 
     string tname = string(_jt->getChildNode()->getName()) + "_a";
     tname += "Hinge0";
     const char* pTname = tname.c_str();
 
-    string axisxyz = _je->GetAttribute("AXIS");
+    string axisxyz = getAttribute(_je, "AXIS");
     vector<string> tokens;
     tokens.clear();
 
@@ -591,12 +696,12 @@ bool readJointHinge(ticpp::Element* _je, Joint* _jt, Skeleton* _skel) {
     return true;
 }
 
-bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel) {
-    string mname = _marker->GetAttribute("NAME");
-    string sname = _marker->GetAttribute("SEGMENT");
+bool readMarker(tinyxml2::XMLElement*_marker, map<string, double>& _paramsList, map<string, int>& _segmentindex, Skeleton* _skel) {
+    string mname = getAttribute(_marker, "NAME");
+    string sname = getAttribute(_marker, "SEGMENT");
 
     // get the local position
-    string pxyz = _marker->GetAttribute("POSITION");
+    string pxyz = getAttribute(_marker, "POSITION");
     vector<string> tokens;
     utils::tokenize(pxyz, tokens);
     assert(tokens.size()==3);
@@ -643,15 +748,15 @@ bool readMarker(ticpp::Element*_marker, map<string, double>& _paramsList, map<st
 }
 
 
-bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel) {
-    string bname = _prim->GetAttribute("SEGMENT");
+bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, map<string, double>& _massList, map<string, int>& _segmentindex, Skeleton* _skel) {
+    string bname = getAttribute(_prim, "SEGMENT");
     int segIdx = _segmentindex[bname];
     BodyNode* blink = _skel->getNode(segIdx);
 
-    string mname = _prim->GetAttribute("MASS");
+    string mname = getAttribute(_prim, "MASS");
     double mass = _massList[mname];
 
-    string sname = _prim->GetAttribute("SCALE");
+    string sname = getAttribute(_prim, "SCALE");
     double scale = 0;
     map<string, double>::iterator it = _paramsList.find(sname);
     if(it !=_paramsList.end()) scale = it->second;
@@ -660,7 +765,7 @@ bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<stri
         instr >> scale;
     }
 
-    string dimxyz = _prim->GetAttribute("DIMENSION");
+    string dimxyz = getAttribute(_prim, "DIMENSION");
     vector<string> tokens;
     utils::tokenize(dimxyz, tokens);
 
@@ -673,7 +778,7 @@ bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<stri
     }
     dim = adjustPos(dim*scale);
 
-    string offxyz = _prim->GetAttribute("OFFSET");
+    string offxyz = getAttribute(_prim, "OFFSET");
     utils::tokenize(offxyz, tokens);
     assert(tokens.size()==3);
 
@@ -686,7 +791,7 @@ bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<stri
 
 
     Shape *prim = NULL;
-    string ptype = _prim->GetAttribute("TYPE");
+    string ptype = getAttribute(_prim, "TYPE");
     if(ptype.compare("ELLIPSOID")==0){
         prim = new ShapeEllipsoid(dim, mass);
     }
@@ -714,8 +819,10 @@ bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<stri
     }
 
     //set color	
-    try {
-        string cname = _prim->GetAttribute("RGB");
+	const char * const szname = _prim->Attribute("RGB");
+    if( szname != 0 )
+	{
+        string cname(szname);
         tokens.clear();
         utils::tokenize(cname, tokens);
         if (tokens.size() == 3)
@@ -732,8 +839,6 @@ bool readShape(ticpp::Element* _prim, map<string, double>& _paramsList, map<stri
             prim->setColor(Vector3d(0.5, 0.5, 1.0));
         }
     } 
-    catch( ticpp::Exception ){
-    }
 
     blink->setShape(prim);
     blink->setLocalCOM( off );

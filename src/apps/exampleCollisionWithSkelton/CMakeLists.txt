@@ -9,6 +9,5 @@ LINK_THIRDPARTY_FREE_IMAGE(exampleCollisionWithSkelton)
 LINK_THIRDPARTY_GFLAGS(exampleCollisionWithSkelton)
 LINK_THIRDPARTY_GLOG(exampleCollisionWithSkelton)
 LINK_THIRDPARTY_GLUT(exampleCollisionWithSkelton)
-LINK_THIRDPARTY_TICPP(exampleCollisionWithSkelton)
 
 SET_TARGET_PROPERTIES(exampleCollisionWithSkelton PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

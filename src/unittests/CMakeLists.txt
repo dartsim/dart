@@ -21,7 +21,6 @@ LINK_THIRDPARTY_GLOG(unittests)
 LINK_THIRDPARTY_GLUT(unittests)
 LINK_THIRDPARTY_GTEST(unittests)
 LINK_THIRDPARTY_GTEST_MAIN(unittests)
-LINK_THIRDPARTY_TICPP(unittests)
 
 if (APPLE)
   TARGET_LINK_LIBRARIES(unittests pthread snopt gfortran)
