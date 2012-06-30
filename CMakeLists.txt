@@ -107,7 +107,7 @@ include_directories( ${GFLAGS_INCLUDE_PATH} )
 
 ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
 
-ADD_SUBDIRECTORY (thirdparty/ticpp)
+ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
 if (PLANNING)
     ADD_SUBDIRECTORY (thirdparty/assimp)
