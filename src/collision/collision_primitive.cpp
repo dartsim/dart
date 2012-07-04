@@ -136,7 +136,7 @@ void collideRecurse(BVNode<OBB>* tree1, BVNode<OBB>* tree2,
     BVH_REAL penetration;
     Vec3f normal;
     int n_contacts;
-    Vec3f contacts[2];
+    Vec3f contacts[3];
 
 
     if(res->num_max_contacts == 0) // only interested in collision or not
@@ -239,7 +239,7 @@ void collideRecurse(BVNode<RSS>* tree1, BVNode<RSS>* tree2,
     BVH_REAL penetration;
     Vec3f normal;
     int n_contacts;
-    Vec3f contacts[2];
+    Vec3f contacts[3];
 
 
     if(res->num_max_contacts == 0) // only interested in collision or not
