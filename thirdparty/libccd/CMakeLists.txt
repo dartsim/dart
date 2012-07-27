@@ -38,6 +38,8 @@ target_link_libraries(ccd ${MATH})
 set_target_properties(ccd PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_directory_properties(PROPERTIES )
 
+SET_TARGET_PROPERTIES(ccd PROPERTIES FOLDER ThirdParty/ccd )
+
 set(pkg_conf_file "${CMAKE_CURRENT_SOURCE_DIR}/ccd.pc")
 configure_file("${pkg_conf_file}.in" "${pkg_conf_file}" @ONLY)
 

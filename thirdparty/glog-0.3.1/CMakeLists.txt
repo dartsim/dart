@@ -4,6 +4,7 @@ include(ExternalProject)
 
 FUNCTION(INCLUDE_GLOG_VS PJEXT)
     INCLUDE_EXTERNAL_MSPROJECT( glog-ext ${CMAKE_CURRENT_SOURCE_DIR}/vsprojects/libglog/libglog.${PJEXT} )
+    SET_TARGET_PROPERTIES( glog-ext PROPERTIES FOLDER ThirdParty/glog )
     FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/windows/glog
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/glog)
     Set(GLOG_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/include/glog/ PARENT_SCOPE)

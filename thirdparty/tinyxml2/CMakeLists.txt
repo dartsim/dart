@@ -37,5 +37,7 @@ add_library(tinyxml2 SHARED tinyxml2.cpp tinyxml2.h)
 set_target_properties(tinyxml2 PROPERTIES
 	VERSION "${GENERIC_LIB_VERSION}"
 	SOVERSION "${GENERIC_LIB_SOVERSION}")
+    
+set_target_properties(tinyxml2 tinyxml2static PROPERTIES FOLDER ThirdParty/tinyxml2)
 
 
