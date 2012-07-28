@@ -1,17 +1,27 @@
 # A list of applications
-ADD_SUBDIRECTORY(exampleUI)
-ADD_SUBDIRECTORY(loadModel)
-ADD_SUBDIRECTORY(viewer)
-ADD_SUBDIRECTORY(exampleOpt)
-ADD_SUBDIRECTORY(exampleIK)
-ADD_SUBDIRECTORY(exampleDynamics)
-ADD_SUBDIRECTORY(mayaExporter)
-ADD_SUBDIRECTORY(exampleSim)
-#ADD_SUBDIRECTORY(exampleCollision)
-ADD_SUBDIRECTORY(exampleCollisionWithSkelton)
-ADD_SUBDIRECTORY(handTracker)
-ADD_SUBDIRECTORY(exampleLCP)
-ADD_SUBDIRECTORY(exampleJointLimit)
-ADD_SUBDIRECTORY(grab)
-ADD_SUBDIRECTORY(cubes)
-ADD_SUBDIRECTORY(biped)
+
+SET_PROPERTY( DIRECTORY PROPERTY FOLDER Apps )
+SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
+
+# List of all the subdirectories to include
+# disabled:  exampleCollision
+foreach( APPDIR
+            loadModel viewer mayaExporter handTracker grab cubes biped
+            exampleUI exampleDynamics exampleSim ${SNOPT_APPS}
+            exampleCollisionWithSkelton exampleLCP exampleJointLimit )
+    ADD_SUBDIRECTORY( ${APPDIR} )
+endforeach(APPDIR)
+
+# List of all the targets added by the subdirectories
+foreach( APPTARGET
+            loadModel viewer mayaExportMotion mayaExportSkeleton handTracker
+            grab cubes biped
+            exampleUI exampleDynamics exampleSim exampleOpt exampleIK
+            exampleCollisionWithSkelton exampleLCP exampleJointLimit )
+    IF(TARGET ${APPTARGET})
+        SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
+                                FOLDER Apps
+                                #EXCLUDE_FROM_DEFAULT_BUILD ON
+                                )
+    ENDIF(TARGET ${APPTARGET})
+endforeach(APPTARGET)
