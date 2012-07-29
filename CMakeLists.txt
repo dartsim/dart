@@ -69,6 +69,8 @@ message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 
 ###############################################
 # Find important packages
+
+# OpenGL
 FIND_PACKAGE(OpenGL)
 IF (OPENGL_FOUND)
 MESSAGE(STATUS "OPENGL FOUND")
@@ -77,6 +79,7 @@ ELSE (OPENGL_FOUND)
 MESSAGE(STATUS "OPENGL NOT FOUND")
 ENDIF ()
 
+# GLUT
 if (WIN32)
     SET(GLUT_glut_LIBRARY glut32)
     MESSAGE(STATUS "GLUT FOUND")
@@ -91,7 +94,27 @@ else()
     ENDIF ()
 endif()
 
-###############################################
+# Boost and Assimp Boost Workaround
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+FIND_PACKAGE(Boost 1.42.0)
+if(Boost_FOUND)
+    MESSAGE(STATUS "BOOST FOUND. Enabling Boost for Assimp. Use ENABLE_BOOST_WORKAROUND to disable.")
+    add_definitions( -DBOOST_ALL_DYN_LINK )
+    include_directories( ${Boost_INCLUDE_DIRS} )
+    SET( xENABLE_BOOST_WORKAROUND OFF )
+else()
+    MESSAGE(STATUS "BOOST NOT FOUND. Enabling the Assimp Boost workaround (ENABLE_BOOST_WORKAROUND).")
+    SET( xENABLE_BOOST_WORKAROUND ON )
+endif()
+
+# Tells Assimp whether to use boost or some internal boost hacks
+# See http://assimp.sourceforge.net/lib_html/install.html
+SET ( ENABLE_BOOST_WORKAROUND ${xENABLE_BOOST_WORKAROUND} CACHE BOOL
+	"If a simple implementation of the used Boost functions is used. Slightly reduces functionality, but enables builds without Boost available."
+)
+
+###############################################################################
 # Thirdparty libraries
 message(STATUS "Building thirdparty libraries")
 
