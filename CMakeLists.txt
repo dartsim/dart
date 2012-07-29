@@ -1,4 +1,17 @@
+###############################################################################
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+
+###############################################################################
+# These properties must be set before the project(...) line to work properly
+
+# Disables a warning about a change in Cygwin Cmake
+# Remove when CMake >= 2.8.4 is required
+SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
+
+
+###############################################################################
+# Project definition
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
@@ -19,7 +32,7 @@ if( UNIX )
   option ( ENABLE_MSSE2 "Enable -msse2 flag" ON )
 endif( UNIX )
 
-###############################################
+###############################################################################
 # SETTING: Global settings
 INCLUDE_DIRECTORIES("src")
 
@@ -27,7 +40,8 @@ SET(BUILD_SHARED_LIBS OFF)
 SET(CMAKE_CXX_WARNING_LEVEL 4)
 SET(EIGEN_DIR ${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.5)
 
-if (WIN32)
+# Can't test for WIN32 - We might be building on Cygwin
+if (MSVC)
   message(STATUS "Setup Visual Studio Specific Flags")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd /Zi /GL /Gy /W1 /EHsc")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /Zi /GL /Gy /W1 /EHsc")
@@ -46,13 +60,13 @@ endif()
 
 SET(THIRDPARTY_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/thirdparty CACHE PATH "Root directory for 'installing' thirdparty builds")
 
-###############################################
+###############################################################################
 # Generate the path header file
 SET(PATH_HEADER_DIR ${CMAKE_SOURCE_DIR}/src/utils/Paths.h)
 message(STATUS "Generate the path header file to  ${PATH_HEADER_DIR}")
 CONFIGURE_FILE( ${PATH_HEADER_DIR}.in ${PATH_HEADER_DIR} @ONLY )
 
-###############################################
+###############################################################################
 # User specific settings
 INCLUDE(Directories.cmake)
 INCLUDE(ThirdParties.cmake)
@@ -61,7 +75,7 @@ FIND_PATH( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
 message(STATUS "INCLUDES = ${CMAKE_INCLUDE_PATH}")
 message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 
-###############################################
+###############################################################################
 # Find important packages
 
 # OpenGL
@@ -148,7 +162,7 @@ endif (SNOPT)
 message(STATUS "Building DART source")
 ADD_SUBDIRECTORY(src)
 
-###############################################
+###############################################################################
 # Install Targets
 # Generate the Dart CMake Config file
 SET(DART_CONFIG_FILE DART_config.cmake)
@@ -162,7 +176,7 @@ INSTALL(DIRECTORY ${EIGEN_DIR}/Eigen DESTINATION include/eigen-3.0.5)
 INSTALL(DIRECTORY ${EIGEN_DIR}/unsupported DESTINATION include/eigen-3.0.5)
 INSTALL(FILES ${EIGEN_DIR}/signature_of_eigen3_matrix_library DESTINATION include/eigen-3.0.5)
 
-###############################################
+###############################################################################
 # Doxygen
 FIND_PACKAGE(Doxygen)
 IF (DOXYGEN_FOUND)
@@ -190,13 +204,13 @@ IF (DOXYGEN_FOUND)
 
 ENDIF (DOXYGEN_FOUND)
 
-###############################################
+###############################################################################
 # Enable a test targets for running CTest executables
 enable_testing()
 add_test (unittests ${CMAKE_SOURCE_DIR}/bin/unittests)
 add_test (test_core_collision ${CMAKE_SOURCE_DIR}/bin/test_core_collision)
 
-###############################################
+###############################################################################
 # Package Installer
 
 SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
