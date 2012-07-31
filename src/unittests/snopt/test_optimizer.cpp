@@ -52,7 +52,7 @@ public:
         mConstTerm = Eigen::VectorXd::Zero(1);
         mCompletion = Eigen::VectorXd::Zero(1);
     }
-    
+
     virtual Eigen::VectorXd evalCon() {
         std::vector<optimizer::Var *>& vars = mVariables;
         Eigen::VectorXd x(1);
@@ -87,7 +87,7 @@ private:
 
 TEST(SIMPLE_SNOPT, OPTIMIZER) {
     using namespace optimizer;
-    
+
     Problem prob;
     prob.addVariable(0.0, -10.0, 10.0);
     prob.createBoxes();
