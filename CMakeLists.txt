@@ -14,7 +14,9 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 option ( SNOPT "SNOPT" OFF )
 option ( FCL "FCL" OFF )
 option ( PLANNING "PLANNING" OFF )
-
+if( UNIX )
+  option ( ENABLE_MSSE2 "Enable -msse2 flag" ON )
+endif( UNIX )
 
 ###############################################
 # SETTING: Global settings
@@ -34,10 +36,10 @@ if (WIN32)
   SET(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix")
 #elseif (APPLE)
 #elseif (UNIX AND NOT APPLE)
-elseif (UNIX)  
-  # SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3")
- # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -msse2 -g")
+elseif (UNIX)
+  if( ENABLE_MSSE2 )
+    ADD_DEFINITIONS("-msse2")
+  endif( ENABLE_MSSE2 )
   SET(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Install prefix")
 endif()
 
