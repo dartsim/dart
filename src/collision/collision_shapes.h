@@ -10,15 +10,17 @@
 #define _COLLISION_SHAPES_H_
 
 
-#include "collision.h"
-
-
+#include "fcl/BVH_model.h"
 
 namespace collision_checking
 {
+    //! create a cube mesh for collision detection
     template<class BV>
-    BVHModel<BV>* createCube(float sizeX, float sizeY, float sizeZ) //create a cube mesh for collision detection
+    fcl::BVHModel<BV>* createCube(float sizeX, float sizeY, float sizeZ)
     {
+        using fcl::BVHModel;
+        using fcl::Vec3f;
+
         float n[6][3] =
         {
             {-1.0, 0.0, 0.0},

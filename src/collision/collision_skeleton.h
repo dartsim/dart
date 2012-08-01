@@ -38,7 +38,9 @@
 #ifndef COLLISION_SKELTON_H
 #define COLLISION_SKELTON_H
 
-#include "collision.h"
+#include "fcl/collision.h"
+#include "fcl/BVH_model.h"
+#include "fcl/vec_3f.h"
 #include "kinematics/BodyNode.h"
 #include "Eigen/Dense"
 #include <vector>
@@ -48,12 +50,17 @@
 #define ODE_STYLE 0
 
 namespace collision_checking {
+    using namespace fcl;
+
     class CollisionSkeletonNode;
-    struct ConatctTriangle
+
+    struct ContactTriangle
     {
         Vec3f v1, v2, v3, u1, u2, u3;
     };
-    struct ContactPoint {
+
+    struct ContactPoint
+    {
         Eigen::Vector3d point;
         Eigen::Vector3d normal;
         Eigen::Vector3d force;
@@ -65,7 +72,7 @@ namespace collision_checking {
         int bdID2;
         int triID1;
         int triID2;
-        ConatctTriangle contactTri;
+        ContactTriangle contactTri;
 
         double penetrationDepth;
 
@@ -77,14 +84,14 @@ namespace collision_checking {
 
 
     struct CollisionSkeletonNode{
-        BVHModel<RSS>* cdmesh;
+        fcl::BVHModel<fcl::RSS>* cdmesh;
         kinematics::BodyNode *bodyNode;
-        AABB aabb;
+        fcl::AABB aabb;
         int bodynodeID;
         
 
-        Vec3f mR[3];
-        Vec3f mT;
+        fcl::Matrix3f mR;
+        fcl::Vec3f mT;
         Eigen::MatrixXd mWorldTrans;
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
@@ -92,7 +99,7 @@ namespace collision_checking {
         int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
         void evalRT();
         
-        int evalContactPosition(BVH_CollideResult& result, CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2, ConatctTriangle& contactTri);
+        int evalContactPosition(fcl::Contact const & contact, CollisionSkeletonNode* other, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2, ContactTriangle& contactTri);
         void drawCollisionSkeletonNode(bool bTrans = true);
         void drawCollisionTriangle(int tri);
 

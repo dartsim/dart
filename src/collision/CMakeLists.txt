@@ -10,7 +10,7 @@ FILE(GLOB collision_hdrs "*.h")
 # Library 
 
 ADD_LIBRARY(collision ${collision_srcs} ${collision_hdrs})
-TARGET_LINK_LIBRARIES(collision kinematics)
+TARGET_LINK_LIBRARIES(collision kinematics fcl)
 SET_TARGET_PROPERTIES(collision PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 SET_TARGET_PROPERTIES(collision PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
