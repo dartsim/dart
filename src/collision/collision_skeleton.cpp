@@ -8,9 +8,13 @@
 
 namespace collision_checking{
 
-      
 
-    
+inline Eigen::Vector3d convertVec( fcl::Vec3f const & in )
+{
+    return Eigen::Vector3d( in[0], in[1], in[2] );
+}
+
+
 CollisionSkeletonNode::CollisionSkeletonNode(kinematics::BodyNode* _bodyNode)
 {
     bodyNode = _bodyNode;
@@ -30,28 +34,28 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
     Eigen::MatrixXd matCOM;
     
 
-    BVH_CollideResult res;
-    Vec3f R1[3], T1, R2[3], T2;
+    Matrix3f R1, R2;
+    Vec3f T1, T2;
 
 
     evalRT();
     otherNode->evalRT();
 
 
-    res.num_max_contacts = num_max_contact;
-    collide(*cdmesh, mR, mT, *otherNode->cdmesh, otherNode->mR, otherNode->mT, &res);
+    std::vector<fcl::Contact> contactList;
+    collide(cdmesh, SimpleTransform(mR, mT),
+            otherNode->cdmesh, SimpleTransform(otherNode->mR, otherNode->mT),
+            num_max_contact, false, true, contactList);
     
-    int start, size;
-    start = result.size();
-    size = 0;
+    int const start = result.size();
 
     int numCoplanarContacts = 0;
     int numNoContacts = 0;
 
-    for(int i=0;i<res.numPairs();i++)
+    for(int i = 0; i < contactList.size(); ++i)
     {
         ContactPoint pair1, pair2;
-        pair1.bd1 = bodyNode;
+        pair1.bd1 = this->bodyNode;
         pair1.bd2 = otherNode->bodyNode;
 
         pair1.bdID1 = this->bodynodeID;
@@ -60,96 +64,103 @@ int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* otherNode, std:
         pair1.collisionSkeletonNode1 = this;
         pair1.collisionSkeletonNode2 = otherNode;
 
+        fcl::Contact & curContact = contactList[i];
         
+        pair1.triID1 = curContact.b1;
+        pair1.triID2 = curContact.b2;
 
-
-        Vec3f v;
-
-        pair1.triID1 = res.id1(i);
-        pair1.triID2 = res.id2(i);
-
-        
-        pair1.penetrationDepth = res.collidePairs()[i].penetration_depth;
+        pair1.penetrationDepth = curContact.penetration_depth;
 
         pair2 = pair1;
         
-        int contactResult = evalContactPosition(res, otherNode, i, pair1.point, pair2.point, pair1.contactTri);
+        int contactResult = evalContactPosition(curContact, otherNode, pair1.point, pair2.point, pair1.contactTri);
         pair2.contactTri=pair1.contactTri;
-        if(contactResult==COPLANAR_CONTACT)numCoplanarContacts++;
-        if(contactResult==NO_CONTACT)numNoContacts++;
-         if(contactResult == NO_CONTACT||contactResult== COPLANAR_CONTACT)continue;
-         v = res.collidePairs()[i].normal;
-        pair1.normal = Eigen::Vector3d(v[0], v[1], v[2]);
-        pair2.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+
+        if(contactResult==COPLANAR_CONTACT)
+            numCoplanarContacts++;
+        if(contactResult==NO_CONTACT)
+            numNoContacts++;
+        if(contactResult == NO_CONTACT || contactResult == COPLANAR_CONTACT)
+            continue;
+
+        pair1.normal = convertVec( curContact.normal );
+        pair2.normal = convertVec( curContact.normal );
         
         result.push_back(pair1);
         result.push_back(pair2);
-
-        size+=2;
-
     }
 
-   if(res.numPairs()==0)return 0;
+    if( contactList.empty() )
+        return 0;
 
     const double ZERO = 0.000001;
-    const double ZERO2 = ZERO*ZERO;
+    const double ZERO_SQ = ZERO*ZERO;
 
     int cur = start;
     std::vector<int> deleteIDs;
     
-    size = result.size()-start;
+    int size = result.size() - start;
     deleteIDs.clear();
 
-    //cout<<"before"<<result.size()<<endl;
+    //Remove contact points that are close together
     for(int i=start;i<start+size;i++)
         for(int j=i+1;j<start+size;j++)
         {
             Eigen::Vector3d diff = result[i].point - result[j].point;
-            if(diff.dot(diff)<3*ZERO2){
+            if( diff.dot(diff) < 3*ZERO_SQ )
+            {
                 deleteIDs.push_back(i);
                 break;
             }
         }
 
-    for(int i =deleteIDs.size()-1; i>=0;i--)
+    for(int i = deleteIDs.size()-1; i >= 0; --i)
         result.erase(result.begin()+deleteIDs[i]);
-    
-    size = result.size()-start;
     deleteIDs.clear();
     
     
-    bool bremove;
+    size = result.size() - start;
     
-    for(int i=start;i<start+size;i++)
+    int const last = result.size();
+    for(int i = start; i < last; ++i)
     {
-        bremove = false;
-        for(int j=start;j<start+size;j++)
+        bool bremove = false;
+        for(int j = start; j < last; ++j)
         {
-            if(j==i)continue;
-            if(bremove)break;
+            if(j==i)
+                continue;
+
             for(int k=j+1;k<start+size;k++)
             {
-                if(i==k)continue;
-                Eigen::Vector3d  v = (result[i].point-result[j].point).cross(result[i].point-result[k].point);
-                if(v.dot(v)<ZERO2&&
-                    ((result[i].point-result[j].point).dot(result[i].point-result[k].point)<0))
-                {bremove = true;break;}
+                if(i==k)
+                    continue;
                 
+                Eigen::Vector3d const d1 = result[i].point-result[j].point;
+                Eigen::Vector3d const d2 = result[i].point-result[k].point;
+                Eigen::Vector3d const v = d1.cross(d2);
                 
+                if( (v.dot(v) < ZERO_SQ) && (d1.dot(d2) < 0) ) // WTF? When is x.dot(y) < 0?
+                {
+                    bremove = true;
+                    break;
+                }
             }
+
+            if(bremove)
+                break;
         }
-        if(bremove)deleteIDs.push_back(i);
+        if(bremove)
+            deleteIDs.push_back(i);
     }
     
-       for(int i =deleteIDs.size()-1; i>=0;i--)
-          result.erase(result.begin()+deleteIDs[i]);
+    for(int i = deleteIDs.size()-1; i >= 0; --i)
+        result.erase(result.begin()+deleteIDs[i]);
 
-  //cout<<"after"<<result.size()<<endl;
+    //cout<<"after"<<result.size()<<endl;
     
-    int collisionNum = res.numPairs();
+    int collisionNum = contactList.size();
     //return numCoplanarContacts*100+numNoContacts;
     return collisionNum;
-
 }
 
 void CollisionSkeletonNode::evalRT()
@@ -175,14 +186,17 @@ void CollisionSkeletonNode::evalRT()
         mT[i] = worldTrans(i, 3);
 }
 
-int CollisionSkeletonNode::evalContactPosition( BVH_CollideResult& result,  CollisionSkeletonNode* other, int idx, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2, ConatctTriangle& contactTri )
+int CollisionSkeletonNode::evalContactPosition(
+    fcl::Contact const & contact, CollisionSkeletonNode* other,
+    Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2,
+    ContactTriangle& contactTri )
 {
     int id1, id2;
     Triangle tri1, tri2;
     CollisionSkeletonNode* node1 = this;
     CollisionSkeletonNode* node2 = other;
-    id1 = result.id1(idx);
-    id2 = result.id2(idx);
+    id1 = contact.b1;
+    id2 = contact.b2;
     tri1 = node1->cdmesh->tri_indices[id1];
     tri2 = node2->cdmesh->tri_indices[id2];
 

@@ -2,17 +2,18 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "1")
 SET(CPACK_PACKAGE_VERSION_PATCH "2")
 SET(CPACK_PACKAGE_NAME "dart")
 SET(CPACK_SYSTEM_NAME "i386")
-SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>=2.8), cmake-curses-gui (>=2.8)")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>=2.8), cmake-curses-gui (>=2.8), libflann1.7-dev (>=1.7)")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
 option ( SNOPT "SNOPT" OFF )
-option ( FCL "FCL" OFF )
 option ( PLANNING "PLANNING" OFF )
 if( UNIX )
   option ( ENABLE_MSSE2 "Enable -msse2 flag" ON )
@@ -125,6 +126,15 @@ ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
+ADD_SUBDIRECTORY (thirdparty/libccd)
+SET(CCD_FOUND TRUE)
+SET(CCD_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libccd/src")
+SET(CCD_LIBRARY_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libccd/lib")
+SET(CCD_LIBRARIES ccd)
+
+include_directories(thirdparty/fcl/include)
+ADD_SUBDIRECTORY (thirdparty/fcl)
+
 if (PLANNING)
     ADD_SUBDIRECTORY (thirdparty/assimp)
 endif (PLANNING)
@@ -132,13 +142,6 @@ endif (PLANNING)
 if (SNOPT)
     ADD_SUBDIRECTORY (thirdparty/snopt)
 endif (SNOPT)
-
-if (FCL)
-    include_directories(thirdparty/libccd/src)
-    include_directories(thirdparty/fcl/include)
-    ADD_SUBDIRECTORY (thirdparty/libccd)
-    ADD_SUBDIRECTORY (thirdparty/fcl)
-endif (FCL)
 
 ###############################################
 # DART Source
