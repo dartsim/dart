@@ -124,7 +124,14 @@ SET ( ENABLE_BOOST_WORKAROUND ${xENABLE_BOOST_WORKAROUND} CACHE BOOL
 
 ###############################################################################
 # Thirdparty libraries
-message(STATUS "Building thirdparty libraries")
+message(STATUS "Configuring thirdparty libraries")
+
+if(WIN32 AND NOT CYGWIN)
+    SET(FLANN_PREFIX_PATH "C:/Program Files/flann" CACHE PATH "Root directory of FLANN installation")
+endif(WIN32 AND NOT CYGWIN)
+if(DEFINED FLANN_PREFIX_PATH)
+    SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FLANN_PREFIX_PATH})
+endif(DEFINED FLANN_PREFIX_PATH)
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
