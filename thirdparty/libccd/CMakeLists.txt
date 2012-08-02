@@ -23,8 +23,6 @@ endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/ccd/config.h.cmake.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/ccd/config.h")
 
-find_library(MATH m)
-
 set(SOURCE_FILES
   src/alloc.c
   src/ccd.c
@@ -33,10 +31,11 @@ set(SOURCE_FILES
   src/support.c
   src/vec3.c)
 
-add_library(ccd SHARED ${SOURCE_FILES})
-target_link_libraries(ccd ${MATH})
-set_target_properties(ccd PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-set_directory_properties(PROPERTIES )
+add_library(ccd STATIC ${SOURCE_FILES})
+if(UNIX)
+    find_library(MATH m)
+    target_link_libraries(ccd ${MATH})
+endif(UNIX)
 
 SET_TARGET_PROPERTIES(ccd PROPERTIES FOLDER ThirdParty/ccd )
 
