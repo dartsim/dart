@@ -11,3 +11,4 @@ missing
 *~
 src/gjk/config.h.in
 build/*
+ccd.pc
