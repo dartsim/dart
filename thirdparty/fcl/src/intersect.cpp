@@ -39,6 +39,14 @@
 #include <limits>
 #include <vector>
 
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+    #include <boost\math\special_functions\fpclassify.hpp>
+    namespace std
+    {
+        using boost::math::isnan;
+    }
+#endif
+
 namespace fcl
 {
 const BVH_REAL PolySolver::NEAR_ZERO_THRESHOLD = 1e-9;
