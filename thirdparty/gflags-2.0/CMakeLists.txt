@@ -3,7 +3,13 @@ PROJECT(gflags-wrapper)
 include(ExternalProject)
 
 FUNCTION(INCLUDE_GFLAGS_VS)
-    INCLUDE_EXTERNAL_MSPROJECT( gflags-ext ${CMAKE_CURRENT_SOURCE_DIR}/vsprojects/libgflags/libgflags.vcproj )
+    # Work off of a copy to ensure that upgrades don't
+    # show up in git-status and accidentally get checked in
+    SET(VCPROJ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vsprojects/libgflags)
+    CONFIGURE_FILE( ${VCPROJ_DIR}/libgflags.vcproj
+                    ${VCPROJ_DIR}/libgflags.cmake.vcproj
+                    COPY_ONLY )
+    INCLUDE_EXTERNAL_MSPROJECT( gflags-ext ${VCPROJ_DIR}/libgflags.cmake.vcproj )
     SET_TARGET_PROPERTIES( gflags-ext PROPERTIES FOLDER ThirdParty/gflags )
     FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/windows/gflags
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/gflags)
