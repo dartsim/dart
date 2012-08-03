@@ -160,7 +160,7 @@ ADD_SUBDIRECTORY(src)
 ###############################################################################
 # Install Targets
 # Generate the Dart CMake Config file
-SET(DART_CONFIG_FILE DART_config.cmake)
+SET(DART_CONFIG_FILE DARTConfig.cmake)
 SET(DART_CONFIG ${CMAKE_SOURCE_DIR}/${DART_CONFIG_FILE})
 message(STATUS "Generating ${DART_CONFIG_FILE}")
 CONFIGURE_FILE( ${DART_CONFIG}.in ${DART_CONFIG} @ONLY )

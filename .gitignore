@@ -6,7 +6,7 @@ install_manifest.txt
 CPack*
 CTest*
 Testing/
-DART_config.cmake
+DARTConfig.cmake
 src/utils/Paths.h
 Makefile
 docs/
