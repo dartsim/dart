@@ -22,7 +22,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "1")
 SET(CPACK_PACKAGE_VERSION_PATCH "2")
 SET(CPACK_PACKAGE_NAME "dart")
 SET(CPACK_SYSTEM_NAME "i386")
-SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>=2.8), cmake-curses-gui (>=2.8), libflann1.7-dev (>=1.7)")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>=2.8), cmake-curses-gui (>=2.8), libflann1.7-dev (>=1.7), libboost-dev")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
@@ -95,33 +95,17 @@ if(DEFINED GLUT_PREFIX_PATH)
     SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${GLUT_PREFIX_PATH})
 endif(DEFINED GLUT_PREFIX_PATH)
 
-FIND_PACKAGE(GLUT)
-IF (GLUT_FOUND)
-    MESSAGE(STATUS "GLUT FOUND")
-ELSE (GLUT_FOUND)
-    MESSAGE(STATUS "GLUT NOT FOUND")
-ENDIF ()
+FIND_PACKAGE(GLUT REQUIRED)
+INCLUDE_DIRECTORIES( ${GLUT_INCLUDE_DIR} )
 
 
 # Boost and Assimp Boost Workaround
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
-FIND_PACKAGE(Boost 1.42.0)
-if(Boost_FOUND)
-    MESSAGE(STATUS "BOOST FOUND. Enabling Boost for Assimp. Use ENABLE_BOOST_WORKAROUND to disable.")
-    add_definitions( -DBOOST_ALL_DYN_LINK )
-    include_directories( ${Boost_INCLUDE_DIRS} )
-    SET( xENABLE_BOOST_WORKAROUND OFF )
-else()
-    MESSAGE(STATUS "BOOST NOT FOUND. Enabling the Assimp Boost workaround (ENABLE_BOOST_WORKAROUND).")
-    SET( xENABLE_BOOST_WORKAROUND ON )
-endif()
+FIND_PACKAGE(Boost 1.42.0 REQUIRED)
+add_definitions( -DBOOST_ALL_DYN_LINK )
+include_directories( ${Boost_INCLUDE_DIRS} )
 
-# Tells Assimp whether to use boost or some internal boost hacks
-# See http://assimp.sourceforge.net/lib_html/install.html
-SET ( ENABLE_BOOST_WORKAROUND ${xENABLE_BOOST_WORKAROUND} CACHE BOOL
-	"If a simple implementation of the used Boost functions is used. Slightly reduces functionality, but enables builds without Boost available."
-)
 
 # FLANN
 if(WIN32 AND NOT CYGWIN)
