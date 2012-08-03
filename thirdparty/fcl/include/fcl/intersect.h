@@ -41,6 +41,9 @@
 #include "fcl/BVH_internal.h"
 #include "fcl/primitive.h"
 
+#include <cmath>
+#include <boost/math/special_functions/erf.hpp>
+
 #if USE_SVMLIGHT
 extern "C"
 {
@@ -270,7 +273,7 @@ private:
   /** \brief compute the cdf(x) */
   static BVH_REAL gaussianCDF(BVH_REAL x)
   {
-    return 0.5 * erfc(-x / sqrt(2.0));
+    return 0.5 * boost::math::erfc(-x / sqrt(2.0));
   }
 
 #if USE_SVMLIGHT

@@ -14,7 +14,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." OFF)
 option(
   gtest_force_shared_crt
   "Use shared (DLL) run-time lib even when Google Test is built as static lib."
-  OFF)
+  ON)
 
 option(gtest_build_tests "Build all of gtest's own tests." OFF)
 
@@ -71,6 +71,7 @@ cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)
 set_target_properties (gtest_main gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+set_target_properties (gtest_main gtest PROPERTIES FOLDER ThirdParty/gtest)
 file (GLOB gtest_hdrs "include/gtest/*.h")
 #install (TARGETS gtest_main gtest ARCHIVE DESTINATION ${CMAKE_SOURCE_DIR}/../lib)
 #install (FILES ${gtest_hdrs} DESTINATION ${CMAKE_SOURCE_DIR}/../include/gtest)

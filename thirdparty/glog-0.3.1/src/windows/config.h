@@ -25,10 +25,10 @@
 #undef HAVE_LIB_UNWIND
 
 /* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
+#define HAVE_MEMORY_H
 
 /* define if the compiler implements namespaces */
-#undef HAVE_NAMESPACES
+#define HAVE_NAMESPACES
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
@@ -43,13 +43,13 @@
 #undef HAVE_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
+#define HAVE_STDLIB_H
 
 /* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
+#define HAVE_STRINGS_H
 
 /* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
+#define HAVE_STRING_H
 
 /* Define to 1 if you have the <syscall.h> header file. */
 #undef HAVE_SYSCALL_H
