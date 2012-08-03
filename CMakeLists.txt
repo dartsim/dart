@@ -81,26 +81,27 @@ message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 # OpenGL
 FIND_PACKAGE(OpenGL)
 IF (OPENGL_FOUND)
-MESSAGE(STATUS "OPENGL FOUND")
-#MESSAGE(${OPENGL_LIBRARIES})
+  MESSAGE(STATUS "OPENGL FOUND")
 ELSE (OPENGL_FOUND)
-MESSAGE(STATUS "OPENGL NOT FOUND")
+  MESSAGE(STATUS "OPENGL NOT FOUND")
 ENDIF ()
 
 # GLUT
-if (WIN32)
-    SET(GLUT_glut_LIBRARY glut32)
+if(WIN32 AND NOT CYGWIN)
+    MESSAGE(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
+    SET(GLUT_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/glut-win" CACHE PATH "Root directory of GLUT installation")
+endif(WIN32 AND NOT CYGWIN)
+if(DEFINED GLUT_PREFIX_PATH)
+    SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${GLUT_PREFIX_PATH})
+endif(DEFINED GLUT_PREFIX_PATH)
+
+FIND_PACKAGE(GLUT)
+IF (GLUT_FOUND)
     MESSAGE(STATUS "GLUT FOUND")
-    #MESSAGE(${GLUT_glut_LIBRARY})
-else()
-    FIND_PACKAGE(GLUT)
-    IF (GLUT_FOUND)
-        MESSAGE(STATUS "GLUT FOUND")
-        #MESSAGE(${GLUT_glut_LIBRARY})
-    ELSE (GLUT_FOUND)
-        MESSAGE(STATUS "GLUT NOT FOUND")
-    ENDIF ()
-endif()
+ELSE (GLUT_FOUND)
+    MESSAGE(STATUS "GLUT NOT FOUND")
+ENDIF ()
+
 
 # Boost and Assimp Boost Workaround
 set(Boost_USE_MULTITHREADED      ON)
@@ -122,16 +123,18 @@ SET ( ENABLE_BOOST_WORKAROUND ${xENABLE_BOOST_WORKAROUND} CACHE BOOL
 	"If a simple implementation of the used Boost functions is used. Slightly reduces functionality, but enables builds without Boost available."
 )
 
-###############################################################################
-# Thirdparty libraries
-message(STATUS "Configuring thirdparty libraries")
-
+# FLANN
 if(WIN32 AND NOT CYGWIN)
     SET(FLANN_PREFIX_PATH "C:/Program Files/flann" CACHE PATH "Root directory of FLANN installation")
 endif(WIN32 AND NOT CYGWIN)
 if(DEFINED FLANN_PREFIX_PATH)
     SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FLANN_PREFIX_PATH})
 endif(DEFINED FLANN_PREFIX_PATH)
+
+
+###############################################################################
+# Thirdparty libraries
+message(STATUS "Configuring thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
