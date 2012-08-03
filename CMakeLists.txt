@@ -145,7 +145,10 @@ ADD_SUBDIRECTORY (thirdparty/fcl)
 
 if (PLANNING)
     ADD_SUBDIRECTORY (thirdparty/assimp)
-    SET_TARGET_PROPERTIES( assimp zlib PROPERTIES FOLDER ThirdParty/assimp )
+    SET_TARGET_PROPERTIES( assimp PROPERTIES FOLDER ThirdParty/assimp )
+    if(TARGET zlib)
+        SET_TARGET_PROPERTIES( zlib PROPERTIES FOLDER ThirdParty/assimp )
+    endif(TARGET zlib)
 endif (PLANNING)
 
 if (SNOPT)
