@@ -2,14 +2,15 @@
 
 #include <string>
 #include <vector>
-
-#include <assimp.hpp>
-#include <assimp.h>
-#include <aiScene.h>
-#include <aiPostProcess.h>
+#include <memory>
 
 using namespace std;
 
+struct aiMaterial;
+struct aiMesh;
+struct aiNode;
+struct aiScene;
+    
 struct Triangle
 {
 	double v1[3];
@@ -36,7 +37,6 @@ private:
 	void recursiveRender(const struct aiScene *sc, const struct aiNode* nd);
 	void applyMaterial(const struct aiMaterial *mtl);
 
-	Assimp::Importer importer;
 	const aiScene* scene;
 
 };

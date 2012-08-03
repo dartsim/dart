@@ -145,6 +145,7 @@ ADD_SUBDIRECTORY (thirdparty/fcl)
 
 if (PLANNING)
     ADD_SUBDIRECTORY (thirdparty/assimp)
+    INCLUDE_DIRECTORIES(thirdparty/assimp/include)
     SET_TARGET_PROPERTIES( assimp PROPERTIES FOLDER ThirdParty/assimp )
     if(TARGET zlib)
         SET_TARGET_PROPERTIES( zlib PROPERTIES FOLDER ThirdParty/assimp )

@@ -2,10 +2,17 @@
 
 #include <iostream>
 
-#include "GL\glut.h"
+#include <GL/glut.h>
+
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/ai_assert.h>
+
+using namespace Assimp;
 
 // helper functions
-void color4_to_float4(const struct aiColor4D *c, float f[4])
+void color4_to_float4(const aiColor4D *c, float f[4])
 {
 	f[0] = c->r;
 	f[1] = c->g;
@@ -37,13 +44,14 @@ bool Model3D::loadModel(string fileName)
 	// clean up old scene
 	if(scene)
 	{
-		importer.FreeScene();
+		aiReleaseImport(scene);
+		scene = NULL;
 	}
 
 	// And have it read the given file with some example postprocessing
 	// Usually - if speed is not the most important aspect for you - you'll 
 	// propably to request more postprocessing than we do in this example.
-	scene = importer.ReadFile(fileName, 
+	scene = aiImportFile(fileName.c_str(), 
 		aiProcess_CalcTangentSpace       | 
 		aiProcess_Triangulate            |
 		aiProcess_JoinIdenticalVertices  |
@@ -149,7 +157,7 @@ void Model3D::recursiveRender(const struct aiScene *sc, const struct aiNode* nd)
 {
 	unsigned int i;
 	unsigned int n = 0, t;
-	struct aiMatrix4x4 m = nd->mTransformation;
+	aiMatrix4x4 m = nd->mTransformation;
 
 	// update transform
 	aiTransposeMatrix4(&m);
@@ -209,10 +217,10 @@ void Model3D::applyMaterial(const struct aiMaterial *mtl)
 
 	GLenum fill_mode;
 	int ret1, ret2;
-	struct aiColor4D diffuse;
-	struct aiColor4D specular;
-	struct aiColor4D ambient;
-	struct aiColor4D emission;
+	aiColor4D diffuse;
+	aiColor4D specular;
+	aiColor4D ambient;
+	aiColor4D emission;
 	float shininess, strength;
 	int two_sided;
 	int wireframe;
