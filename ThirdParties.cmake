@@ -1,5 +1,5 @@
 FUNCTION(LINK_THIRDPARTY project extpj base)
-  IF (WIN32)
+  IF (MSVC)
     TARGET_LINK_LIBRARIES(${project} debug ${base}_d optimized ${base})
   ELSE()
     TARGET_LINK_LIBRARIES(${project} ${extpj})
