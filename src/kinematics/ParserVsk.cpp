@@ -273,16 +273,20 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     {
         try {
             masses = kinmodel->FirstChildElement( "Masses" );
-            if(!masses) return false;
-            ElementEnumerator childmass(masses, "Mass");
-            while ( childmass.next() ) {
-				string const mname = getAttribute( childmass.get(), "NAME" );
+            if(masses) {
+                ElementEnumerator childmass(masses, "Mass");
+                while ( childmass.next() ) {
+                    string const mname = getAttribute( childmass.get(), "NAME" );
 
-				double mi=0;
-				getAttribute(childmass.get(), "VALUE", &mi);
+                    double mi=0;
+                    getAttribute(childmass.get(), "VALUE", &mi);
 
-				masslist[mname] = mi;
-                VLOG(1)<<"mass: "<<mname<<" "<<mi<<endl;
+                    masslist[mname] = mi;
+                    VLOG(1)<<"mass: "<<mname<<" "<<mi<<endl;
+                }
+            }
+            else {
+                VLOG(1) << "No masses found!" << endl;
             }
         } 
         catch( std::exception const & e ){
@@ -292,14 +296,18 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
 
     // Read primitives and fill the _skel
     {
-        tinyxml2::XMLElement* prims = 0;
+        tinyxml2::XMLElement* shapes = 0;
         try {
-            prims = kinmodel->FirstChildElement( "Shapes" );
-            if(!prims) return false;
-            ElementEnumerator childprim(prims, "Shape");
-            while ( childprim.next() ) {
-                if(!readShape(childprim->ToElement(), paramsList, masslist, segmentindex, _skel))
-					return false;
+            shapes = kinmodel->FirstChildElement( "Shapes" );
+            if(shapes) {
+                ElementEnumerator childshape(shapes, "Shape");
+                while ( childshape.next() ) {
+                    if(!readShape(childshape->ToElement(), paramsList, masslist, segmentindex, _skel))
+                        return false;
+                }
+            }
+            else {
+                VLOG(1) << "No shapes found." << endl;
             }
         } 
         catch( std::exception const & )
