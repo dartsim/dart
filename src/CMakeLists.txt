@@ -14,6 +14,11 @@ if (PLANNING)
     ADD_SUBDIRECTORY(planning)
 endif (PLANNING)
 
+if (ROBOTICS)
+   message( STATUS "Adding robotics library" )
+   ADD_SUBDIRECTORY(robotics)
+endif (ROBOTICS)
+
 # Unit Test
 ADD_SUBDIRECTORY(unittests)
 
