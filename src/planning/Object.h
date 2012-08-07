@@ -43,7 +43,7 @@
 
 #include <vector>
 #include <string>
-#include "Model3DS.h"
+#include "Model3D.h"
 #include "kinematics/Skeleton.h"
 #include <Eigen/Geometry>
 
@@ -58,7 +58,7 @@ namespace planning {
         std::string mPathName; ///< PathName
         int mGripID; /// THIS HAS TO BE REMOVED
         bool mMovable;
-        std::vector<Model3DS*> mModels;
+        std::vector<Model3D*> mModels;
         std::vector<int> mModelIndices;
         
         Object();
@@ -81,8 +81,8 @@ namespace planning {
         void setRotationRPY( double _roll, double _pitch, double _yaw );
         void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
 
-        Model3DS* loadModel( string _filename );
-        void addModel( Model3DS* _model, int _index );
+        Model3D* loadModel( string _filename );
+        void addModel( Model3D* _model, int _index );
 
 
     };

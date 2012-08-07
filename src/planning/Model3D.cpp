@@ -29,12 +29,19 @@ void set_float4(float f[4], float a, float b, float c, float d)
 }
 
 Model3D::Model3D(void) :
-	scene(NULL)
+	scene(NULL),
+    collisionFlag(false)
 {
 }
 
 Model3D::~Model3D(void)
 {
+	// clean up old scene
+	if(scene)
+	{
+		aiReleaseImport(scene);
+		scene = NULL;
+	}
 }
 
 bool Model3D::loadModel(string fileName)
@@ -61,7 +68,7 @@ bool Model3D::loadModel(string fileName)
 	if(!scene)
 	{
 		// error in loading
-		cout << "Error loading file." << endl;
+		cout << "Error loading file:" << aiGetErrorString() << endl;
 		return false;
 	}
 

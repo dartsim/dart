@@ -296,17 +296,21 @@ namespace planning {
     /**
      * @function loadModel
      */
-    Model3DS* Object::loadModel( string _filename )
+    Model3D* Object::loadModel( string _filename )
     {
-       Model3DS* model = new Model3DS();
-       model->Load( _filename );
+       Model3D* model = new Model3D();
+       if( !model->loadModel( _filename ) )
+       {
+           delete model;
+           model = NULL;
+       }
        return model;
     }
 
    /**
     * @function addModel
     */
-   void Object::addModel( Model3DS* _model, int _index )
+   void Object::addModel( Model3D* _model, int _index )
    {
       mModels.push_back( _model );
       mModelIndices.push_back( _index );

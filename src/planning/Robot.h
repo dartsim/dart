@@ -44,7 +44,7 @@
 
 #include <vector>
 #include <string>
-#include "Model3DS.h"
+#include "Model3D.h"
 #include "kinematics/Skeleton.h"
 
 namespace planning {
@@ -56,7 +56,7 @@ namespace planning {
         std::string mName; ///< Name
         std::string mPathName; ///< PathName
         int mGripID; /// THIS HAS TO BE REMOVED
-        std::vector<Model3DS*> mModels;
+        std::vector<Model3D*> mModels;
         std::vector<int> mModelIndices;
 
         Robot();
@@ -92,8 +92,8 @@ namespace planning {
 
         void update();
 
-        Model3DS* loadModel( string _filename );
-        void addModel( Model3DS* _model, int _index );
+        Model3D* loadModel( string _filename );
+        void addModel( Model3D* _model, int _index );
 
     };
 
