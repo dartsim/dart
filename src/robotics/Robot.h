@@ -64,6 +64,7 @@ namespace robotics {
     inline std::string getPathName() { return mPathName; }
     inline void setPathName( std::string _pname ) { mPathName = _pname; }
     inline int getGripID() { return mGripID; }
+    inline void setGripID( int _i ) { mGripID = _i; }
     inline int getNumModels() { return mModels.size(); }
 
     int getNumQuickDofs(); 

@@ -56,8 +56,11 @@ namespace robotics {
     Object();
     virtual ~Object();
     inline std::string getName() { return mName; }
+    inline void setName( std::string _name ) { mName = _name; }
     inline std::string getPathName() { return mPathName; }
+    inline void setPathName( std::string _pname ) { mPathName = _pname; }
     inline int getGripID() { return mGripID; }
+    inline void setGripID( int _i ) { mGripID = _i; }
     inline int getNumModels() { return mModels.size(); }
     inline void setMovable( bool _m ) { mMovable = _m; }
 

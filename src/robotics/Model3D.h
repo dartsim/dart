@@ -11,20 +11,21 @@ struct aiMesh;
 struct aiNode;
 struct aiScene;
     
-struct Triangle
-{
-	double v1[3];
-	double v2[3];
-	double v3[3];
-};
-
 class Model3D
 {
-
 public:
-	Model3D(void);
+    struct Triangle
+    {
+        double v1[3];
+        double v2[3];
+        double v3[3];
+    };
+
+    Model3D(void);
 	~Model3D(void);
 
+    bool collisionFlag;
+    
 	bool loadModel(string fileName);
 	void getTriangles(vector<Triangle> &triangles);
 	void drawScene();
