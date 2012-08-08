@@ -43,9 +43,8 @@
 
 #include <string>
 #include <vector>
-
 #include "dynamics/SkeletonDynamics.h"
-#include "Model3DS.h"
+#include "Model3D.h"
 
 namespace robotics {
   #define MAX_ROBOT_NAME 128
@@ -60,16 +59,52 @@ namespace robotics {
     Robot();
     virtual ~Robot();
 
-    inline std::string getName() { return name_; }
-    inline std::string getPathName() { return path_name_; }
+    inline std::string getName() { return mName; }
+    inline void setName( std::string _name ) { mName = _name; }
+    inline std::string getPathName() { return mPathName; }
+    inline void setPathName( std::string _pname ) { mPathName = _pname; }
+    inline int getGripID() { return mGripID; }
+    inline int getNumModels() { return mModels.size(); }
 
-    int getNumDofs();
-
+    int getNumQuickDofs(); 
+    Eigen::VectorXi getQuickDofsIndices();
+    bool setQuickDofs( Eigen::VectorXd _vals ); 
+    Eigen::VectorXd getQuickDofs( );
+    bool setDofs( Eigen::VectorXd _vals, Eigen::VectorXi _id );
+    Eigen::VectorXd getDofs( Eigen::VectorXi _id );
+    
+    void setPositionX( double _pos );  
+    void getPositionX( double &_pos );
+    
+    void setPositionY( double _pos );
+    void getPositionY( double &_pos );
+    
+    void setPositionZ( double _pos );
+    void getPositionZ( double &_pos );
+    
+    void setPositionXYZ( double _x, double _y, double _z );
+    void getPositionXYZ( double &_x, double &_y, double &_z ); 
+    
+    void setRotationRPY( double _roll, double _pitch, double _yaw );
+    void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+    
+    void getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf );
+    void getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z );
+    void getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot );
+    
+    void update();
+    
+    Model3D* loadModel( string _filename );
+    void addModel( Model3D* _model, int _index );
+    Model3D* getModel( int _i );
+    int getModelIndex( int _i );
+    
   private:
-    std::string name_;
-    std::string path_name_;
-    std::vector<Model3DS*> models_;
-    std::vector<int> model_indices_;
+    std::string mName;
+    std::string mPathName;
+    int mGripID; /// THIS HAS TO BE REMOVED
+    std::vector<Model3D*> mModels;
+    std::vector<int> mModelIndices;
   };
 }
 

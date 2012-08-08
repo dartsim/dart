@@ -42,7 +42,7 @@
 #include <vector>
 #include <string>
 #include <Eigen/Geometry>
-#include "Model3DS.h"
+#include "Model3D.h"
 #include "dynamics/SkeletonDynamics.h"
 
 namespace robotics {
@@ -55,16 +55,42 @@ namespace robotics {
   public:
     Object();
     virtual ~Object();
-    inline std::string getName() { return name_; }
-    inline std::string getPathName() { return path_name_; }
+    inline std::string getName() { return mName; }
+    inline std::string getPathName() { return mPathName; }
+    inline int getGripID() { return mGripID; }
+    inline int getNumModels() { return mModels.size(); }
+    inline void setMovable( bool _m ) { mMovable = _m; }
 
+    void setPositionX( double _pos );
+    void getPositionX( double &_pos );
+    
+    void setPositionY( double _pos );
+    void getPositionY( double &_pos );
+    
+    void setPositionZ( double _pos );
+    void getPositionZ( double &_pos );
+    
+    void setPositionXYZ( double _x, double _y, double _z );
+    void getPositionXYZ( double &_x, double &_y, double &_z );       
+    
+    void setRotationRPY( double _roll, double _pitch, double _yaw );
+    void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+    
+    Model3D* loadModel( string _filename );
+    void addModel( Model3D* _model, int _index );
+    Model3D* getModel( int _i );
+    int getModelIndex( int _i );
+    
   private:
-    std::string name_;
-    std::string path_name_;
-    bool movable_;
-    std::vector<Model3DS*> models_;
-    std::vector<int> model_indices_;
+    std::string mName; 
+    std::string mPathName; 
+    int mGripID; /// THIS HAS TO BE REMOVED
+    bool mMovable;
+    std::vector<Model3D*> mModels;
+    std::vector<int> mModelIndices;
   };
+
 }
 
 #endif /** __DART_ROBOTICS_OBJECT_H__ */
+

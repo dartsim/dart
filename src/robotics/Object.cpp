@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  **
  * @file Object.cpp
- * @brief Implementation of Object subclass (from Skeleton )
+ * @brief Implementation of Object subclass (from SkeletonDynamics )
  */
 
 #include <kinematics/Joint.h>
 #include <kinematics/Transformation.h>
 #include <kinematics/TrfmTranslate.h>
 #include <kinematics/TrfmRotateEuler.h>
-#include <dynamics/BodyNodeDynamics.h>
 #include <kinematics/Dof.h>
+#include <dynamics/BodyNodeDynamics.h>
 
 #include "Object.h"
 
@@ -101,4 +101,232 @@ namespace robotics {
     
   }
 
+
+  /**
+   * @function setPositionX
+   * @brief Set position X of the object in World
+   */
+  void Object::setPositionX( double _pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
+      } 
+    }  
+  }
+  
+  /**
+   * @function getPositionX
+   * @brief Get position X of the object in World
+   */
+  void Object::getPositionX( double &_pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+	_pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
+      } 
+    }  
+  }
+  
+  /**
+   * @function setPositionY
+   * @brief Set position Y of the object in World
+   */
+  void Object::setPositionY( double _pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
+      } 
+    }  
+  }
+  
+  /**
+   * @function getPositionY
+   * @brief Get position Y of the object in World
+   */
+  void Object::getPositionY( double &_pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+	_pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
+      } 
+    }  
+  }
+  
+  
+  /**
+   * @function setPositionZ
+   * @brief Set position Z of the object in World
+   */
+  void Object::setPositionZ( double _pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
+      } 
+    }  
+  }
+  
+  /**
+   * @function getPositionZ
+   * @brief Get position Z of the object in World
+   */
+  void Object::getPositionZ( double &_pos )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+	_pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
+      } 
+    }  
+  }
+  
+  /**
+   * @function setPositionXYZ
+   */
+  void Object::setPositionXYZ( double _x, double _y, double _z ) { 
+    
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+	joint->getTransform(i)->getDof(0)->setValue( _x ); 
+      } 
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+	joint->getTransform(i)->getDof(0)->setValue( _y ); 
+      } 
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+	joint->getTransform(i)->getDof(0)->setValue( _z ); 
+      } 
+    } 
+    
+  }
+  
+  /**
+   * @function getPositionXYZ
+   */
+  void Object::getPositionXYZ( double &_x, double &_y, double &_z ) {
+    
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
+      
+      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
+	_x = joint->getTransform(i)->getDof(0)->getValue(); 
+      } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+	_y = joint->getTransform(i)->getDof(0)->getValue(); 
+      } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+	_z = joint->getTransform(i)->getDof(0)->getValue(); 
+      } 
+    }  
+  }
+  
+  
+  /**
+   * @function setRotationRPY
+   * @brief Set position Y of the object in World
+   */
+  void Object::setRotationRPY( double _roll, double _pitch, double _yaw )
+  {
+    
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
+      {
+	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
+	  {  joint->getTransform(i)->getDof(0)->setValue( _roll ); } 
+	
+	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
+	  {  joint->getTransform(i)->getDof(0)->setValue( _pitch ); } 
+	
+            if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
+	      {  joint->getTransform(i)->getDof(0)->setValue( _yaw ); } 
+      } 
+  } 
+  
+  /**
+   * @function getRotationRPY
+   * @brief Get Roll, Pitch and Yaw of the object in World
+   */
+  void Object::getRotationRPY( double &_roll, double &_pitch, double &_yaw )
+  {
+    kinematics::Joint *joint;
+    joint = getRoot()->getParentJoint();
+    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
+      {
+	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
+	  {  _roll = joint->getTransform(i)->getDof(0)->getValue(); } 
+	
+	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
+	  {  _pitch = joint->getTransform(i)->getDof(0)->getValue(); } 
+	
+	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
+	  {  _yaw = joint->getTransform(i)->getDof(0)->getValue(); } 
+      } 
+    
+  } 
+  
+  /**
+   * @function loadModel
+   */
+  Model3D* Object::loadModel( string _filename )
+  {
+    Model3D* model = new Model3D();
+    if( !model->loadModel( _filename ) )
+      {
+	delete model;
+	model = NULL;
+      }
+    return model;
+  }
+  
+  /**
+   * @function addModel
+   */
+  void Object::addModel( Model3D* _model, int _index )
+  {
+    mModels.push_back( _model );
+    mModelIndices.push_back( _index );
+  }
+  
+
+  /**
+   * @function getModel
+   */
+  Model3D* Object::getModel( int _i ) {
+    return mModels[_i];
+  }
+
+  /**
+   * @function getModelIndex
+   */
+  int Object::getModelIndex( int _i ) {
+    return mModelIndices[_i];
+  }
+  
 } // namespace robotics

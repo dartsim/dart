@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Ana Huaman <ahuaman3@gatech.edu>
- * Date: 07/08/2012
+ * Date: 03-08-2012
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,42 +34,90 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  **
- *   @file Environment.h
- *   @brief Class that contains robot + object descriptions
+ * @file World.cpp
  */
 
-#ifndef __DART_ROBOTICS_ENVIRONMENT_H__
-#define __DART_ROBOTICS_ENVIRONMENT_H__
-
-#include <vector>
-#include <stdio.h>
-#include "Robot.h"
-#include "Object.h"
+#include <iostream>
+#include "World.h"
 
 namespace robotics {
 
-  class Robot;
-  class Object;
+  /**
+   * @function World
+   * @brief Constructor
+   */
+  World::World() {
+    mRobots.resize(0);
+    mObjects.resize(0);
+  }
 
   /**
-   * @class Environment
+   * @function ~World
+   * @brief Destructor
    */
-  class Environment {
+  World::~World() {
+    for( size_t i = 0; i < mRobots.size(); ++i ) {
+      delete mRobots[i];
+    }
+    mRobots.clear();
 
-  public:
-    Environment();
-    virtual ~Environment();
-    
-    int addRobot( Robot* _robot );
-    int addObject( Object* _object );
-    void printStatus();
-    
-    std::vector<Robot*> robots_;
-    std::vector<Object*> objects_;
-    
-  };
+    for( size_t i = 0; i < mObjects.size(); ++i ) {
+      delete mObjects[i];
+    }
+    mObjects.clear();
+  }
+  
+  /**
+   * @function addRobot
+   * @brief Add a pointer to a new robot in the World
+   */
+  int World::addRobot( Robot* _robot ) {
+    mRobots.push_back( _robot );
+    return mRobots.size();
+  }
 
-} // namespace robotics
+  /**
+   * @function addObject
+   * @brief Add a pointer to a new object in the World
+   */
+  int World::addObject( Object* _object ) {
+    mObjects.push_back( _object );
+    return mObjects.size();
+  }
 
+  /**
+   * @function printInfo
+   * @brief Print info w.r.t. robots and objects in World
+   */
+  void World::printInfo() {
 
-#endif /** __DART_ROBOTICS_ENVIRONMENT_H__ */
+    std::cout << "*  World Info * " << std::endl;
+    std::cout << "----------------------" << std::endl;
+
+    //-- Robots
+    for( size_t i = 0; i < mRobots.size(); ++i ) {
+      std::cout << "* Robot["<<i<<"]: "<< mRobots[i]->getName()<<" : "<< mRobots[i]->getNumDofs() <<" DOFs " << std::endl;
+    }
+    //-- Objects
+    for( size_t i = 0; i < mObjects.size(); ++i ) {
+      std::cout << "* Object["<<i<<"]: "<< mObjects[i]->getName() << std::endl;
+    }
+
+  }
+
+  /**
+   * @function getObject
+   */
+  Object* World::getObject( int _i ) {
+    return mObjects[_i];
+  }
+  
+  /**
+   * @function getRobot
+   */
+  Robot* World::getRobot( int _i ) {
+    return mRobots[_i];
+  }
+
+} // end namespace robotics
+
