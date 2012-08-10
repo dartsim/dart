@@ -97,6 +97,92 @@ struct ParseCtx
 };
 
 //---------------------------------------------------------------------------------------
+struct HUBOFile;
+typedef shared_ptr<HUBOFile> HUBOFilePtr;
+
+//---------------------------------------------------------------------------------------
+struct ObjXform
+{
+    ObjXform() : rotation( Matrix3f::Identity() ), translation() { }
+    ObjXform( ObjXform const & rhs )
+        : rotation( rhs.rotation )
+        , translation( rhs.translation )
+    {   }
+
+    // For some reason, rotations and translations are treated separately
+    // http://openrave.programmingvision.com/wiki/index.php/Format:XML#Transformations
+    Matrix3f rotation; // Rotation
+    Vector3f translation; // Translation from parent node
+};
+
+//---------------------------------------------------------------------------------------
+struct Robot
+{
+    string name;
+    ObjXform xform;
+};
+typedef shared_ptr<Robot> RobotPtr;
+
+//---------------------------------------------------------------------------------------
+struct KinBody
+{
+    string name;
+    bool makeJoinedLinksAdjacent;
+    ObjXform xform;
+};
+typedef shared_ptr<KinBody> KinBodyPtr;
+
+//---------------------------------------------------------------------------------------
+struct Body
+{
+    enum Type { Type_Static, Type_Dynamic };
+
+    string name;
+    Type type;
+    string offsetfrom;
+    ObjXform xform;
+};
+typedef shared_ptr<Body> BodyPtr;
+
+//---------------------------------------------------------------------------------------
+struct Geometry
+{
+    ObjXform xform;
+};
+typedef shared_ptr<Geometry> GeometryPtr;
+
+//---------------------------------------------------------------------------------------
+void ParseFile( path const & p );
+
+void ParseEnvironment( ParseCtx const & ctx, XMLElement const & rootElm );
+
+RobotPtr ParseRobot( ParseCtx const & ctx, XMLElement const & rootElm );
+RobotPtr ParseRobotFrom( ModelStore const * pModelStore, path const & p );
+
+KinBodyPtr ParseKinBody( ParseCtx const & ctx, XMLElement const & rootElm );
+KinBodyPtr ParseKinBodyFrom( ModelStore const * pModelStore, path const & p );
+
+BodyPtr ParseBody( ParseCtx const & ctx, XMLElement const & rootElm );
+
+GeometryPtr ParseGeometry( ParseCtx const & ctx, XMLElement const & rootElm );
+GeometryPtr ParseGeometry_Box( ParseCtx const & ctx, XMLElement const & rootElm );
+GeometryPtr ParseGeometry_Cylinder( ParseCtx const & ctx, XMLElement const & rootElm );
+GeometryPtr ParseGeometry_TriMesh( ParseCtx const & ctx, XMLElement const & rootElm );
+
+void ParseMass( ParseCtx const & ctx, XMLElement const & rootElm );
+void ParseJoint( ParseCtx const & ctx, XMLElement const & rootElm );
+
+bool ParseXformFrom( XMLElement const & rootElm, ObjXform & xform );
+Matrix3f ParseRotationAxis( XMLElement const & rootElm );
+Matrix3f ParseRotationMatrix( XMLElement const & rootElm );
+Vector3f ParseTranslation( XMLElement const & rootElm );
+
+
+
+//---------------------------------------------------------------------------------------
+// Utility methods
+
+//---------------------------------------------------------------------------------------
 static inline void PrintName( std::ostream & out, XMLElement const * p )
 {
     if( p == 0 )
@@ -186,77 +272,9 @@ static inline bool ParseBool( string const & val )
     }
 }
 
-//---------------------------------------------------------------------------------------
-struct HUBOFile;
-typedef shared_ptr<HUBOFile> HUBOFilePtr;
 
 //---------------------------------------------------------------------------------------
-struct ObjXform
-{
-    ObjXform() : rotation( Matrix3f::Identity() ), translation() { }
-    ObjXform( ObjXform const & rhs )
-        : rotation( rhs.rotation )
-        , translation( rhs.translation )
-    {   }
-
-    // For some reason, rotations and translations are treated separately
-    // http://openrave.programmingvision.com/wiki/index.php/Format:XML#Transformations
-    Matrix3f rotation; // Rotation
-    Vector3f translation; // Translation from parent node
-};
-
-//---------------------------------------------------------------------------------------
-struct KinBody
-{
-    string name;
-    bool makeJoinedLinksAdjacent;
-    ObjXform xform;
-};
-typedef shared_ptr<KinBody> KinBodyPtr;
-
-//---------------------------------------------------------------------------------------
-struct Body
-{
-    enum Type { Type_Static, Type_Dynamic };
-
-    string name;
-    Type type;
-    string offsetfrom;
-    ObjXform xform;
-};
-typedef shared_ptr<Body> BodyPtr;
-
-//---------------------------------------------------------------------------------------
-struct Geometry
-{
-    ObjXform xform;
-};
-typedef shared_ptr<Geometry> GeometryPtr;
-
-//---------------------------------------------------------------------------------------
-void ParseFile( path const & p );
-
-void ParseEnvironment( ParseCtx const & ctx, XMLElement const & rootElm ) { }
-
-void ParseRobot( ParseCtx const & ctx, XMLElement const & rootElm ) { }
-
-KinBodyPtr ParseKinBody( ParseCtx const & ctx, XMLElement const & rootElm );
-KinBodyPtr ParseKinBodyFrom( ModelStore const * pModelStore, path const & p ) { return KinBodyPtr(); }
-
-BodyPtr ParseBody( ParseCtx const & ctx, XMLElement const & rootElm );
-
-GeometryPtr ParseGeometry( ParseCtx const & ctx, XMLElement const & rootElm );
-GeometryPtr ParseGeometry_Box( ParseCtx const & ctx, XMLElement const & rootElm );
-GeometryPtr ParseGeometry_Cylinder( ParseCtx const & ctx, XMLElement const & rootElm );
-GeometryPtr ParseGeometry_TriMesh( ParseCtx const & ctx, XMLElement const & rootElm );
-
-void ParseMass( ParseCtx const & ctx, XMLElement const & rootElm );
-void ParseJoint( ParseCtx const & ctx, XMLElement const & rootElm );
-
-bool ParseXformFrom( XMLElement const & rootElm, ObjXform & xform );
-Matrix3f ParseRotationAxis( XMLElement const & rootElm );
-Matrix3f ParseRotationMatrix( XMLElement const & rootElm );
-Vector3f ParseTranslation( XMLElement const & rootElm );
+// Impl
 
 //---------------------------------------------------------------------------------------
 void ParseFile( path const & p )
@@ -279,7 +297,7 @@ void ParseFile( path const & p )
     ctx.basePath = p.parent_path();
 
     ModelStore store;
-    store.paths.push_back( current_path() );
+    store.paths.push_back( ctx.basePath );
     ctx.pStore = &store;
 
     cout << "Loading file with root elm: " << rootname << endl;
@@ -296,6 +314,151 @@ void ParseFile( path const & p )
     }
 
     return;
+}
+
+//---------------------------------------------------------------------------------------
+void ParseEnvironment( ParseCtx const & ctx, XMLElement const & rootElm )
+{
+    auto_ptr<ModelStore> pLocalStore;
+    ParseCtx localCtx( ctx );
+
+    for( XMLElement const * pChild = rootElm.FirstChildElement(); pChild;
+         pChild = pChild->NextSiblingElement() )
+    {
+        if( ElementNameIs(*pChild, "robot") )
+            ParseRobot( localCtx, *pChild );
+        else if( ElementNameIs(*pChild, "kinbody") )
+            ParseKinBody( localCtx, *pChild );
+        else if( ElementNameIs(*pChild, "modelsdir") )
+        {
+            if( pLocalStore.get() == 0 )
+            {
+                pLocalStore.reset( new ModelStore );
+                localCtx.pStore = pLocalStore.get();
+            }
+            path p = absolute( path(pChild->GetText()), localCtx.basePath );
+            cout << p << '\t' << localCtx.basePath << endl;
+            localCtx.pStore->paths.push_back( p );
+        }
+        else
+        {
+            cerr << "Ignoring unknown KinBody element: " << pChild->Name() << endl;
+        }
+    }
+
+    return;
+}
+
+//---------------------------------------------------------------------------------------
+RobotPtr ParseRobot( ParseCtx const & ctx, XMLElement const & rootElm )
+{
+    RobotPtr ret;
+    char const * attr;
+
+    if( !ElementNameIs(rootElm, "Robot") )
+    {
+        cerr << "Invalid Robot element: " << rootElm.Name() << endl;
+        return RobotPtr();
+    }
+
+    attr = GetAttrValue(rootElm, "file");
+    if( attr )
+    {
+        path p = ctx.pStore->eval( attr );
+        if( p.empty() )
+        {
+            cerr << "Could not find referenced file: " << attr << endl;
+            return RobotPtr();
+        }
+
+        ret = ParseRobotFrom( ctx.pStore, p );
+        if( ret.get() == 0 )
+        {
+            cerr << "Could not parse referenced file: " << p << endl;
+            return RobotPtr();
+        }
+    }
+    else
+    {
+        ret = RobotPtr( new Robot );
+    }
+
+    attr = GetAttrValue(rootElm, "name");
+    if( attr )
+    {
+        cout << attr << endl;
+        cout << flush << ret->name << endl;
+        cout << "setting" << endl;
+        ret->name = "test";//attr;
+        cout << "set";
+    }
+
+    auto_ptr<ModelStore> pLocalStore;
+    ParseCtx localCtx( ctx );
+
+    cout << "Starting child loop" << endl << flush;
+
+    for( XMLElement const * pChild = rootElm.FirstChildElement(); pChild;
+         pChild = pChild->NextSiblingElement() )
+    {
+        if( ElementNameIs(*pChild, "kinbody") )
+            ParseKinBody( localCtx, *pChild );
+        else if( ElementNameIs(*pChild, "modelsdir") )
+        {
+            if( pLocalStore.get() == 0 )
+            {
+                pLocalStore.reset( new ModelStore );
+                localCtx.pStore = pLocalStore.get();
+            }
+            path p = absolute( path(pChild->GetText()), localCtx.basePath );
+            cout << p << '\t' << localCtx.basePath << endl;
+            localCtx.pStore->paths.push_back( p );
+        }
+        else if( ParseXformFrom(*pChild, ret->xform) )
+            /* Handled in ParseXformFrom */;
+        else
+        {
+            cerr << "Ignoring unknown Robot element: " << pChild->Name() << endl;
+        }
+    }
+
+    return ret;
+}
+
+//---------------------------------------------------------------------------------------
+RobotPtr ParseRobotFrom( ModelStore const * pModelStore, path const & p )
+{
+    XMLDocument doc;
+
+    path p2 = absolute( p, current_path() );
+    cerr << p2 << '\t' << exists(p2) << endl;
+
+    if( XML_NO_ERROR != doc.LoadFile( p2.native().c_str() ) )
+    {
+        cerr << "Could not load file: " << p.native() << endl;
+        return RobotPtr();
+    }
+
+    XMLElement const * pRoot = doc.RootElement();
+    string rootname( pRoot->Name() );
+
+    ParseCtx ctx;
+    ctx.basePath = p.parent_path();
+
+    ModelStore store;
+    store.paths.push_back( ctx.basePath );
+    ctx.pStore = &store;
+
+    if( boost::iequals( rootname, "Robot") )
+    {
+        RobotPtr ptr = ParseRobot( ctx, *pRoot );
+        return ptr;
+    }
+    else
+    {
+        cerr << "Tried to load a Robot from a file containing: " << rootname;
+        return RobotPtr();
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -353,7 +516,7 @@ KinBodyPtr ParseKinBody( ParseCtx const & ctx, XMLElement const & rootElm )
         if( ElementNameIs(*pChild, "adjacent") )
             ;//ParseAdjacent( localCtx, *pChild );
         else if( ElementNameIs(*pChild, "body") )
-            BodyPtr pBody = ParseBody( localCtx, *pChild );
+            ParseBody( localCtx, *pChild );
         else if( ElementNameIs(*pChild, "joint") )
             ParseJoint( localCtx, *pChild );
         else if( ElementNameIs(*pChild, "kinbody") )
@@ -378,6 +541,39 @@ KinBodyPtr ParseKinBody( ParseCtx const & ctx, XMLElement const & rootElm )
     }
 
     return ret;
+}
+
+//---------------------------------------------------------------------------------------
+KinBodyPtr ParseKinBodyFrom( ModelStore const * pModelStore, path const & p )
+{
+    XMLDocument doc;
+
+    path p2 = absolute( p, current_path() );
+    cerr << p2 << '\t' << exists(p2) << endl;
+
+    if( XML_NO_ERROR != doc.LoadFile( p2.native().c_str() ) )
+    {
+        cerr << "Could not load file: " << p.native() << endl;
+        return KinBodyPtr();
+    }
+
+    XMLElement const * pRoot = doc.RootElement();
+    string rootname( pRoot->Name() );
+
+    ParseCtx ctx;
+    ctx.basePath = p.parent_path();
+
+    ModelStore store;
+    store.paths.push_back( current_path() );
+    ctx.pStore = &store;
+
+    if( boost::iequals( rootname, "KinBody") )
+        return ParseKinBody( ctx, *pRoot );
+    else
+    {
+        cerr << "Tried to load a KinBody from a file containing: " << rootname;
+        return KinBodyPtr();
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -441,7 +637,7 @@ BodyPtr ParseBody( ParseCtx const & ctx, XMLElement const & rootElm )
         }
     }
 
-
+    return ret;
 }
 
 //---------------------------------------------------------------------------------------
