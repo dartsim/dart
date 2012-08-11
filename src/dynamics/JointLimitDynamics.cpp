@@ -35,12 +35,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
 #include "JointLimitDynamics.h"
 #include "lcpsolver/LCPSolver.h"
 #include "SkeletonDynamics.h"
 #include "kinematics/Dof.h"
-
+#include <iostream>
 using namespace Eigen;
 using namespace std;
 
@@ -50,8 +49,8 @@ namespace dynamics {
         mTauStar = VectorXd::Zero(mSkel->getNumDofs());
     }
 
-    void JointLimitDynamics::computeTauStar() {
-        VectorXd tau = mSkel->getExternalForces();
+    void JointLimitDynamics::updateTauStar() {
+        VectorXd tau = mSkel->getExternalForces() + mSkel->getInternalForces();
         mTauStar = (mSkel->getMassMatrix() * mSkel->getQDotVector()) - (mDt * (mSkel->getCombinedVector() - tau));
     }
 
@@ -64,11 +63,9 @@ namespace dynamics {
             double lb = mSkel->getDof(i)->getMin();
             if (val >= ub){
                 mLimitingDofIndex.push_back(i + 1);
-                cout << "upper joint limit hit" << endl;
             }
             if (val <= lb){
                 mLimitingDofIndex.push_back(-(i + 1));
-                cout << "lower joint limit hit" << endl;
             }
         }
         if (mLimitingDofIndex.size() == 0)
@@ -76,17 +73,18 @@ namespace dynamics {
 
         fillMatrices();
         bool succ = solve();
-        if (!succ)
+        if (succ)
+            applySolution();
+        else
             cout << "lcp not solved" << endl;
-        applySolution();
 
     }
 
     void JointLimitDynamics::fillMatrices() {
         int dimA = mLimitingDofIndex.size();      
-        MatrixXd Minv = mSkel->getMassMatrix().inverse();
+        MatrixXd Minv = mSkel->getInvMassMatrix();
         mA = MatrixXd::Zero(dimA, dimA);
-        computeTauStar();
+        updateTauStar();
 
         // Construct A
         for (int i = 0; i < dimA; i++)
@@ -98,10 +96,13 @@ namespace dynamics {
         // Construct Q
         MatrixXd JMinv(dimA, Minv.cols());
         for (int i = 0; i < dimA; i++) {
-            if (mLimitingDofIndex[i] > 0)  // hitting upper bound
+            if (mLimitingDofIndex[i] > 0) {  // hitting upper bound
                 JMinv.row(i) = -Minv.row(mLimitingDofIndex[i] - 1);
-            else
+                //                cout << "dof " << mLimitingDofIndex[i] - 1 << " hits upper bound" << endl;
+            } else {
                 JMinv.row(i) = Minv.row(abs(mLimitingDofIndex[i]) - 1);
+                //                cout << "dof " << abs(mLimitingDofIndex[i]) - 1 << " hits lower bound" << endl;
+            }
         }
         mQBar = JMinv * mTauStar;
     }
@@ -119,7 +120,6 @@ namespace dynamics {
                 mConstrForce[mLimitingDofIndex[i] - 1] -= mX[i];
             else
                 mConstrForce[abs(mLimitingDofIndex[i]) - 1] += mX[i];
-            cout << "mConstrForce[" << abs(mLimitingDofIndex[i]) - 1 << "] = " << mConstrForce[abs(mLimitingDofIndex[i]) - 1] << " dof = " <<  mSkel->getDof(abs(mLimitingDofIndex[i]) - 1)->getValue() << endl;
         }
     }
     

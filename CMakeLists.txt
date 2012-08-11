@@ -26,7 +26,7 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option ( DART_UI "DART_UI" OFF )
+option ( DART_UI "DART_UI" ON )
 option ( SNOPT "SNOPT" OFF )
 option ( PLANNING "PLANNING" OFF )
 option ( ROBOTICS "ROBOTICS" ON )

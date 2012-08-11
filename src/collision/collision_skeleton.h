@@ -38,9 +38,7 @@
 #ifndef COLLISION_SKELTON_H
 #define COLLISION_SKELTON_H
 
-#include "fcl/collision.h"
-#include "fcl/BVH_model.h"
-#include "fcl/vec_3f.h"
+#include "collision.h"
 #include "kinematics/BodyNode.h"
 #include "Eigen/Dense"
 #include <vector>
@@ -50,17 +48,12 @@
 #define ODE_STYLE 0
 
 namespace collision_checking {
-    using namespace fcl;
-
     class CollisionSkeletonNode;
-
     struct ContactTriangle
     {
         Vec3f v1, v2, v3, u1, u2, u3;
     };
-
-    struct ContactPoint
-    {
+    struct ContactPoint {
         Eigen::Vector3d point;
         Eigen::Vector3d normal;
         Eigen::Vector3d force;
@@ -75,41 +68,38 @@ namespace collision_checking {
         ContactTriangle contactTri;
 
         double penetrationDepth;
-
-        bool isAdjacent(ContactPoint &otherPt){
-            return (((((((bd1==otherPt.bd1 && triID1==otherPt.triID1) || bd2==otherPt.bd2) && triID2==otherPt.triID2) || bd1==otherPt.bd2) && triID1==otherPt.triID2) || bd2==otherPt.bd1) && triID2==otherPt.triID1);
+        /*        bool isAdjacent(ContactPoint &otherPt){
+        //  return (((((((bd1==otherPt.bd1 && triID1==otherPt.triID1) || bd2==otherPt.bd2) && triID2==otherPt.triID2) || bd1==otherPt.bd2) && triID1==otherPt.triID2) || bd2==otherPt.bd1) && triID2==otherPt.triID1);
         }
+        */
     };
 
-
-
-    struct CollisionSkeletonNode{
-        fcl::BVHModel<fcl::RSS>* cdmesh;
-        kinematics::BodyNode *bodyNode;
-        fcl::AABB aabb;
-        int bodynodeID;
+    class CollisionSkeletonNode {
+    public:
+        BVHModel<RSS>* mMesh;
+        kinematics::BodyNode *mBodyNode;
+        AABB mAABB;
+        int mBodynodeID;
         
 
-        fcl::Matrix3f mR;
-        fcl::Vec3f mT;
+        Vec3f mR[3];
+        Vec3f mT;
         Eigen::MatrixXd mWorldTrans;
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
 
-        int checkCollision(CollisionSkeletonNode* otherNode, std::vector<ContactPoint>& result, int max_num_contact);
+        int checkCollision(CollisionSkeletonNode* _otherNode, std::vector<ContactPoint>& _result, int _max_num_contact);
         void evalRT();
         
-        int evalContactPosition(fcl::Contact const & contact, CollisionSkeletonNode* other, Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2, ContactTriangle& contactTri);
-        void drawCollisionSkeletonNode(bool bTrans = true);
-        void drawCollisionTriangle(int tri);
+        int evalContactPosition(BVH_CollideResult& _result, CollisionSkeletonNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2, ContactTriangle& _contactTri);
+        void drawCollisionSkeletonNode(bool _bTrans = true);
+        void drawCollisionTriangle(int _tri);
 
     private:
         inline int FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2);
         inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
-        inline Vec3f TransformVertex(Vec3f& v);
+        inline Vec3f TransformVertex(Vec3f& _v);
     };
-
-   
 
     class SkeletonCollision {
     public:
@@ -123,29 +113,26 @@ namespace collision_checking {
         inline int getNumTriangleIntersection(){return mNumTriIntersection;}
         void checkCollision(bool bConsiderGround = false);
         void draw();
-        CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *bodyNode){
-            if(mbodyNodeHash.find(bodyNode)!=mbodyNodeHash.end())
-                return mbodyNodeHash[bodyNode];
+        CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *_bodyNode){
+            if(mBodyNodeHash.find(_bodyNode)!=mBodyNodeHash.end())
+                return mBodyNodeHash[_bodyNode];
             else
                 return NULL;
         }
         
-        
-
     public:
         int mNumTriIntersection;
         std::vector<ContactPoint> mContactPointList;
         std::vector<CollisionSkeletonNode*> mCollisionSkeletonNodeList; 
-        std::map<kinematics::BodyNode*, CollisionSkeletonNode*> mbodyNodeHash;
+        std::map<kinematics::BodyNode*, CollisionSkeletonNode*> mBodyNodeHash;
     };
 
-   
     inline bool CollisionSkeletonNode::EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p)
     {
-        const double ZERO = 0.00000001;
+        double ZERO1 = 0.00000001;
         Vec3f n = (r3-r1).cross(r2-r1);
         double s = (p1 - p0).dot(n);
-        if(std::abs(s)<ZERO)return false;
+        if(std::abs(s)<ZERO1)return false;
         double t = (r1-p0).dot(n)/s;
         Vec3f tmp=p0+(p1-p0)*t;
         if(t>=0&&t<=1&&
@@ -154,13 +141,10 @@ namespace collision_checking {
             (((tmp-r3).cross(r1-r3)).dot(n)>=0)
             )
         {
-
              p=tmp;
             return true;
         }
         return false;
-
-
     }
 
     inline bool Vec3fCmp(Vec3f& v1, Vec3f& v2)
@@ -260,16 +244,13 @@ namespace collision_checking {
 
     }  
 
-    inline collision_checking::Vec3f CollisionSkeletonNode::TransformVertex( Vec3f& v )
+    inline Vec3f CollisionSkeletonNode::TransformVertex( Vec3f& _v )
     {
-        Eigen::Vector3d vv(v[0], v[1], v[2]);
-        Eigen::Vector3d res = mWorldTrans.topLeftCorner(3,3)*vv + mWorldTrans.col(3).head(3);
+        Eigen::Vector3d vv(_v[0], _v[1], _v[2]);
+        Eigen::Vector3d res = mWorldTrans.topLeftCorner(3, 3) * vv + mWorldTrans.col(3).head(3);
         return Vec3f(res[0], res[1], res[2]);
     }
     
 } // namespace collision
-
-
-
 
 #endif

@@ -125,7 +125,7 @@ namespace kinematics {
         AngleAxisd angleAxis(q);
         Vector3d a = angleAxis.axis();
         double theta = angleAxis.angle();
-        if(a.dot(a)>EPSILON*EPSILON && theta>EPSILON) {
+        if(a.dot(a)>M_EPSILON*M_EPSILON && theta>M_EPSILON) {
             if (_ri) _ri->rotate(a, theta*180/M_PI);
         }
     }

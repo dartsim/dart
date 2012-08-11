@@ -3,7 +3,6 @@
 
 
 #include <math.h>
-#include <stdio.h>
 
 #define FABS(x) ((float)fabs(x))        /* implement as is fastest on your machine */
 
@@ -139,9 +138,9 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     du0du2=du0*du2;
     du1du2=du1*du2;
 
-    if(du0du1>0.0f && du0du2>0.0f) /* same sign on all of them + not equal 0 ? */
+    if(du0du1>0.0f && du0du2>0.0f) { /* same sign on all of them + not equal 0 ? */
         return NO_CONTACT;                    /* no intersection occurs */
-
+    }
     /* compute plane of triangle (U0,U1,U2) */
     SUB(E1,U1,U0);
     SUB(E2,U2,U0);
@@ -164,9 +163,9 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     dv0dv2=dv0*dv2;
     dv1dv2=dv1*dv2;
 
-    if(dv0dv1>0.0f && dv0dv2>0.0f) /* same sign on all of them + not equal 0 ? */
+    if(dv0dv1>0.0f && dv0dv2>0.0f) { /* same sign on all of them + not equal 0 ? */
         return NO_CONTACT;                    /* no intersection occurs */
-
+    }
     /* compute direction of intersection line */
     CROSS(D,N1,N2);
 
@@ -280,7 +279,6 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
         }
     SET(res1, res[1]);
     SET(res2, res[2]);
-
 
     return 1;
 }

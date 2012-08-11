@@ -533,4 +533,15 @@ namespace dynamics{
         mExtTorqueBody.setZero();
     }
 
+    Vector3d BodyNodeDynamics::evalLinMomentum() {
+        return mMass * mVel;
+    }
+
+    Vector3d BodyNodeDynamics::evalAngMomentum(Vector3d _pivot) {
+        Vector3d d = getWorldCOM() - _pivot;
+        Matrix3d Inew = mIc + mMass * (d.dot(d) * MatrixXd::Identity(3, 3) - d * d.transpose());
+        //        evalOmega();
+        //        cout << mOmega << endl;
+        return Inew * mOmega;
+    }
 }   // namespace dynamics

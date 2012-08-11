@@ -87,7 +87,7 @@ node root { 0
 			rotate_euler { wrist<a-Z>, z }
 			rotate_euler { wrist<a-Y>, y }
 		}
-		primitive {<1.0,0.2,0.7>, <0.5,0.0,0.0>, MidLength, CUBE, wrist_mass}
+		primitive {<1.0,0.2,0.7>, <0.5,0.0,0.0>, MidLength, SPHERE, wrist_mass}
 
 		node CMC { 2
 			chain { 4

@@ -43,6 +43,12 @@
 #define EPSILON 1.0e-6
 #endif
 
+// Added on Aug 11th, 2012 for compatibility with Prof Liu's code
+// M_Epsilon definition
+#ifndef M_EPSILON
+#define M_EPSILON 1.0e-6
+#endif
+
 // PI definition
 #ifndef M_PI
 #define M_PI 3.141592653589793

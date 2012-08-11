@@ -41,13 +41,14 @@
 #include <fstream>
 #include "Skeleton.h"
 #include "Dof.h"
+#include <iostream>
 
 using namespace std;
 
 namespace kinematics{
 
     FileInfoDof::FileInfoDof(Skeleton* _skel, double _fps)
-        : mSkel(_skel),mFPS(_fps),mNumFrames(0){
+        : mSkel(_skel), mFPS(_fps), mNumFrames(0){
     }
 
     FileInfoDof::~FileInfoDof(){
@@ -58,7 +59,7 @@ namespace kinematics{
     bool FileInfoDof::loadFile(const char* _fName)
     {
         ifstream inFile(_fName);
-        if(inFile.fail()==1) return false;
+        if (inFile.fail() == 1) return false;
 
         inFile.precision(20);
         char buffer[256];
@@ -74,28 +75,28 @@ namespace kinematics{
         inFile >> buffer;
         inFile >> nDof;
 
-        if( mSkel==NULL || mSkel->getNumDofs()!=nDof )
+        if (mSkel == NULL || mSkel->getNumDofs()!=nDof)
             return false;
 
         mDofs.resize(mNumFrames);
 
         //dof names
-        for(int i=0; i<nDof; i++)
+        for (int i = 0; i < nDof; i++)
             inFile >> buffer;
-        for(int j=0; j<mNumFrames; j++){
-            for(int i=0; i<nDof; i++){
+        for (int j = 0; j < mNumFrames; j++) {
+            mDofs[j].resize(nDof);
+            for (int i = 0; i < nDof; i++) {
                 double val;
                 inFile >> val;
-                mDofs[j].push_back(val);
+                mDofs[j][i] = val;
             }
         }
 
         // fps
-        inFile>>buffer;
-        if(!inFile.eof()){
+        inFile >> buffer;
+        if (!inFile.eof())
             inFile>>mFPS;
-        }
-
+        
         inFile.close();
 
         string text = _fName;
@@ -106,29 +107,29 @@ namespace kinematics{
     }
 
     bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double _sampleRate ){
-        if(_end<_start) return false;
+        if (_end < _start) return false;
 
         ofstream outFile(_fName, ios::out);
-        if( outFile.fail() ) return false;
+        if (outFile.fail()) return false;
 
         int first = _start<mNumFrames?_start:mNumFrames-1;
         int last = _end<mNumFrames?_end:mNumFrames-1;
 
         outFile.precision(20);
-        outFile<<"frames = " <<last-first+1<<" dofs = "<<mSkel->getNumDofs()<<endl;
+        outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumDofs() << endl;
 
-        for(int i=0; i<mSkel->getNumDofs(); i++)
+        for (int i = 0; i < mSkel->getNumDofs(); i++)
             outFile << mSkel->getDof(i)->getName() << ' ';
         outFile << endl;
 
-        for(int i=first; i<= last; i++){
-            for(int j=0; j<mSkel->getNumDofs(); j++){
-                outFile << mDofs[i][j] <<' ';
+        for (int i = first; i <= last; i++){
+            for (int j = 0; j < mSkel->getNumDofs(); j++){
+                outFile << mDofs[i][j] << ' ';
             }
             outFile << endl;
         }
 
-        outFile<<"FPS "<<mFPS<<endl;
+        outFile << "FPS " << mFPS << endl;
 
         outFile.close();
 
@@ -138,6 +139,4 @@ namespace kinematics{
         strcpy(mFileName, text.c_str());
         return true;
     }
-
 }
-

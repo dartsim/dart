@@ -60,11 +60,11 @@ namespace kinematics {
         virtual ~Skeleton();
 
         virtual BodyNode* createBodyNode(const char* const name = NULL);
-        void addMarker(Marker *h);
-        void addNode(BodyNode *b);
+        void addMarker(Marker *_h);
+        void addNode(BodyNode *_b);
         void addJoint(Joint *_j);
-        void addDof(Dof *d);
-        void addTransform(Transformation *t);
+        void addDof(Dof *_d);
+        void addTransform(Transformation *_t);
 	
         // init the model after parsing
         void initSkel();
@@ -74,12 +74,12 @@ namespace kinematics {
         inline int getNumNodes() { return mNodes.size(); }
         inline int getNumMarkers() { return mMarkers.size(); }
         inline int getNumJoints(){return mJoints.size();}
-        inline Dof* getDof(int i) { return mDofs[i]; }
-        inline BodyNode* getNode(int i) { return mNodes[i]; }
+        inline Dof* getDof(int _i) { return mDofs[_i]; }
+        inline BodyNode* getNode(int _i) { return mNodes[_i]; }
         inline BodyNode* getRoot() { return mRoot; }
         BodyNode* getNode(const char* const name);
         int getNodeIndex(const char* const name);
-        inline Marker* getMarker(int i) { return mMarkers[i]; }
+        inline Marker* getMarker(int _i) { return mMarkers[_i]; }
         inline double getMass() { return mMass; }
         Eigen::Vector3d getWorldCOM();
 

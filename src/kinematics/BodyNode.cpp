@@ -274,19 +274,19 @@ namespace kinematics {
         return mJointParent->isPresent(_q);
     }
 
-    Eigen::Matrix4d BodyNode::getDerivLocalTransform(int index) const {
+    Matrix4d BodyNode::getDerivLocalTransform(int index) const {
         return mTq[index];
     }
     
-    Eigen::Matrix4d BodyNode::getDerivWorldTransform(int index) const {
+    Matrix4d BodyNode::getDerivWorldTransform(int index) const {
         return mWq[index];
     }
     
-    Eigen::MatrixXd BodyNode::getJacobianLinear() const {
+    MatrixXd BodyNode::getJacobianLinear() const {
         return mJv;
     }
     
-    Eigen::MatrixXd BodyNode::getJacobianAngular() const {
+    MatrixXd BodyNode::getJacobianAngular() const {
         return mJw;
     }
     

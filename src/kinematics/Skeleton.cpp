@@ -159,25 +159,19 @@ namespace kinematics {
     }
   
     void Skeleton::setPose(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
-        assert(state.size() == getNumDofs());
-        int k=0;
-        for(k=0; k<getNumDofs(); k++)
-            if(mCurrPose[k]!=state[k]) break;
-        if(k==getNumDofs()) return;
-
         mCurrPose = state;
-        for(int i=0; i<getNumDofs(); i++) {
+        for (int i = 0; i < getNumDofs(); i++) {
             mDofs.at(i)->setValue(state[i]);
         }
 
         if (bCalcTrans) {
-            for(int i = 0; i < getNumNodes(); i++) {
+            for (int i = 0; i < getNumNodes(); i++) {
                 mNodes.at(i)->updateTransform();
             }
         }
 
         if (bCalcDeriv) {
-            for(int i = 0; i < getNumNodes(); i++) {
+            for (int i = 0; i < getNumNodes(); i++) {
                 mNodes.at(i)->updateFirstDerivatives();
             }
         }

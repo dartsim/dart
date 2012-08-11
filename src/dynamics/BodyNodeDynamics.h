@@ -107,6 +107,9 @@ namespace dynamics{
         void addExtTorque( const Eigen::Vector3d& _torque, bool _isLocal); ///< apply Cartesian torque to the node. The torque in local coordinates is accumulated in mExtTorqueBody
         void clearExternalForces(); ///< clean up structures that store external forces: mContacts, mFext, mExtForceBody and mExtTorqueBody; called from @SkeletonDynamics::clearExternalForces
 
+        Eigen::Vector3d evalLinMomentum();
+        Eigen::Vector3d evalAngMomentum(Eigen::Vector3d _pivot);
+
     protected:
 
         bool mInitializedInvDyn;   ///< true if linear inverse dynamics is initialized; init functions initialize only if false

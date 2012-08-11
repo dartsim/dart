@@ -64,13 +64,13 @@ namespace dynamics {
     
     class ContactDynamics {
     public:
-        ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 0.8, int _d = 4);
+        ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
         virtual ~ContactDynamics();
         void applyContactForces();
         void reset();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
-        inline void setSPDFlag(bool _flag) { mSPD = _flag; }
+        int getNumContacts() const;
 
         
     private:
@@ -87,7 +87,6 @@ namespace dynamics {
         inline int getNumSkels() const { return mSkels.size(); }
         inline int getNumTotalDofs() const { return mIndices[mIndices.size() - 1]; }
         inline int getNumContactDirections() const { return mNumDir; }
-        int getNumContacts() const;
 
         Eigen::MatrixXd getJacobian(kinematics::BodyNode* node, const Eigen::Vector3d& p);
 
@@ -101,9 +100,6 @@ namespace dynamics {
         Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
         Eigen::MatrixXd getContactMatrix() const; // E matrix
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
-
-        void cleanupContact();
-        void penaltyMethod();
         
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
@@ -124,8 +120,6 @@ namespace dynamics {
         Eigen::VectorXd mQBar;
         Eigen::VectorXd mX;
         std::vector<Eigen::VectorXd> mConstrForces; // solved constraint force in generalized coordinates; mConstrForces[i] is the constraint force for the ith skeleton
-        int mAccumTime;
-        bool mSPD;
     }; 
 } // namespace dynamics
 

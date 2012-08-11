@@ -53,6 +53,7 @@ namespace dynamics{
 
         virtual kinematics::BodyNode* createBodyNode(const char* const _name = NULL); ///< Creates a derived class of BodyNode that calculates the dynamics quantities
 
+        void initDynamics();
         // inverse dynamics computation
         Eigen::VectorXd computeInverseDynamicsLinear(const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot=NULL, bool _computeJacobians=true, bool _withExternalForces=false); ///< runs recursive inverse dynamics algorithm and returns the generalized forces; if qdd is NULL, it is treated as zero; also computes Jacobian Jv and Jw in iterative manner if the flag is true i.e. replaces updateFirstDerivatives of non-recursive dynamics; when _withExternalForces is true, external forces will be accounted for in the returned generalized forces; when _withExternalForces is false, only the sum of Corolis force and gravity is returned
         
@@ -65,6 +66,7 @@ namespace dynamics{
         ///< It's particularly useful for exponential map because the system will become unstable if the exponential map rotaion is outside this range. For euler angles, the dof values can directly add or subtract 2*pi; for exponential map, once the rotation magnitude is changed, the velocity need to change accordingly to represent the same angular velocity. This function requires the transformations and first derivatives. 
 
         Eigen::MatrixXd getMassMatrix() const { return mM; }
+        Eigen::MatrixXd getInvMassMatrix() const { return mMInv; }
         Eigen::MatrixXd getCoriolisMatrix() const { return mC; }
         Eigen::VectorXd getCoriolisVector() const { return mCvec; }
         Eigen::VectorXd getGravityVector() const { return mG; }
@@ -76,14 +78,16 @@ namespace dynamics{
         void setImmobileState(bool _s) { mImmobile = _s; }
         bool getKinematicState() const { return mKinematic; }
         void setKinematicState(bool _s) { mKinematic = _s; }
-        bool getHybridState() const { return mHybrid; }
-        void setHybridState(bool _s) { mHybrid = _s; }
         void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
-        Eigen::MatrixXd getKd() const { return mKd; }
-        void setKd(Eigen::MatrixXd _m) { mKd = _m; }
+        //        Eigen::MatrixXd getKd() const { return mKd; }
+        //        void setSPD(Eigen::MatrixXd & _m, double _dt) { mKd = _m; mDt = _dt; mSPD = true;}
+        //        void resetSPD() { mSPD = false;}
+        //        void setKd(Eigen::MatrixXd  _m) { mKd = _m; }
+
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
+        Eigen::MatrixXd mMInv;    ///< Inverse of mass matrix for the skeleton
         Eigen::MatrixXd mC;    ///< Coriolis matrix for the skeleton; not being used currently
         Eigen::VectorXd mCvec;    ///< Coriolis vector for the skeleton == mC*qdot
         Eigen::VectorXd mG;    ///< Gravity vector for the skeleton; computed in nonrecursive dynamics only
@@ -94,8 +98,12 @@ namespace dynamics{
 
         bool mImmobile; ///< if the skeleton is immobile, it cannot move by dynamic nor kinematic forces
         bool mKinematic; ///< if the skeleton is kinematic, it can be moved kinematically
-        bool mHybrid; ///< hybrid mode is incomplete
-        Eigen::MatrixXd mKd; 
+ 
+        // for SPD
+        //        bool mSPD;
+        //        double mDt;
+        //        Eigen::MatrixXd mKd;
+        
     };
 
 } // namespace dynamics

@@ -89,7 +89,9 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
     ASSERT_TRUE(loadDofResult);
     /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 
-    vector<double>& pose = dofFile.getPoseAtFrame(0);
+    // Commented on Aug 11th, 2012 to make Prof Liu's code compatible with master
+    //vector<double>& pose = dofFile.getPoseAtFrame(0);
+    Eigen::VectorXd pose = dofFile.getPoseAtFrame(0);
     skel->setPose(pose, true, true);
 
     const int nodeIndex = 1;

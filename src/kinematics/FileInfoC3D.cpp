@@ -67,12 +67,8 @@ namespace kinematics{
         int first = _start<mNumFrames?_start:mNumFrames-1;
         int last = _end<mNumFrames?_end:mNumFrames-1;
 
-		if (last < tmpData.size() - 1) {
-			tmpData.erase( tmpData.begin()+last+1, tmpData.end()+1);
-		}
-		if (first > 0) {
-	        tmpData.erase( tmpData.begin(), tmpData.begin()+first);
-		}
+        tmpData.erase( tmpData.begin()+last+1, tmpData.end()+1);
+        tmpData.erase( tmpData.begin(), tmpData.begin()+first); 
 
         if( saveC3DFile( _fName, tmpData, last-first+1, mData[0].size(), mFPS )){
             string text = _fName;

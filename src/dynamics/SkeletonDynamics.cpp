@@ -46,10 +46,21 @@ using namespace Eigen;
 using namespace kinematics;
 
 namespace dynamics{
-    SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(), mImmobile(false), mKinematic(false), mHybrid(false){
+    SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(), mImmobile(false), mKinematic(false){
     }
 
     SkeletonDynamics::~SkeletonDynamics(){
+    }
+
+    void SkeletonDynamics::initDynamics() {
+        mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mQdot = VectorXd::Zero(getNumDofs());
+        mCvec = VectorXd::Zero(getNumDofs());
+        mG = VectorXd::Zero(getNumDofs());
+        mCg = VectorXd::Zero(getNumDofs());
+        mFint = VectorXd::Zero(getNumDofs());
+        mFext = VectorXd::Zero(getNumDofs());
     }
 
     kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
@@ -59,7 +70,7 @@ namespace dynamics{
     // computes the C term and gravity, excluding external forces
     VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians, bool _withExternalForces ) {
         // FORWARD PASS: compute the velocities recursively - from root to end effectors
-        for(int i=0; i<getNumNodes(); i++){ // increasing order ensures that the parent joints/nodes are evaluated before the child
+        for (int i = 0; i < getNumNodes(); i++) { // increasing order ensures that the parent joints/nodes are evaluated before the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
             // init the node in the first pass
             nodei->initInverseDynamics();
@@ -69,40 +80,41 @@ namespace dynamics{
 
         VectorXd torqueGen = VectorXd::Zero(getNumDofs());
         // BACKWARD PASS: compute the forces recursively -  from end effectors to root
-        for(int i=getNumNodes()-1; i>=0; i--){ // decreasing order ensures that the parent joints/nodes are evaluated after the child
+        for (int i = getNumNodes() - 1; i >= 0; i--) { // decreasing order ensures that the parent joints/nodes are evaluated after the child
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
             nodei->computeInvDynForces(_gravity, _qdot, _qdotdot, _withExternalForces); // compute joint forces in cartesian space
             nodei->getGeneralized(torqueGen); // convert joint forces to generalized coordinates
         }
 
-        if( _withExternalForces ) clearExternalForces();
+        if ( _withExternalForces )
+            clearExternalForces();
 
         return torqueGen;
     }
 
     // after the computation, mM, mCg, and mFext are ready for use
     void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
-        mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
+        mM.setZero();
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
-        mQdot = VectorXd::Zero(getNumDofs());
-        mCvec = VectorXd::Zero(getNumDofs());
-        mG = VectorXd::Zero(getNumDofs());
-        mCg = VectorXd::Zero(getNumDofs());
-        mFint = VectorXd::Zero(getNumDofs());
-        if(_useInvDynamics){
+        mQdot.setZero();
+        mCvec.setZero();
+        mG.setZero();
+        mCg.setZero();
+        if (_useInvDynamics) {
             mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
-            for(int i=0; i<getNumNodes(); i++){
+            for (int i = 0; i < getNumNodes(); i++) {
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
                 // mass matrix M
                 nodei->evalMassMatrix(); // assumes Jacobians mJv and mJw have been computed above: use flag as true in computeInverseDynamicsLinear
                 nodei->aggregateMass(mM);
             }
-        
+
+            mMInv = mM.inverse();
+
             evalExternalForces( true );
             //mCg -= mFext;
             mQdot = _qdot;
-        }
-        else {
+        } else {
             // init the data structures for the dynamics
             for(int i=0; i<getNumNodes(); i++){
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
@@ -128,6 +140,8 @@ namespace dynamics{
                 nodei->aggregateGravity(mG);
             }
 
+            mMInv = mM.inverse();
+
             evalExternalForces( false );
             //mCg = mC*_qdot + mG;
             mQdot = _qdot;
@@ -138,11 +152,11 @@ namespace dynamics{
     }
 
     void SkeletonDynamics::evalExternalForces(bool _useRecursive){
-        mFext = VectorXd::Zero(getNumDofs());
+        mFext.setZero();
         int nNodes = getNumNodes();
-        for(int i=nNodes-1; i>=0; i--){ // recursive from child to parent
+        for (int i = nNodes-1; i >= 0; i--) { // recursive from child to parent
             BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
-            if( _useRecursive )
+            if (_useRecursive)
                 nodei->evalExternalForcesRecursive( mFext );
             else
                 nodei->evalExternalForces( mFext );
@@ -155,7 +169,7 @@ namespace dynamics{
     // XXX
     ///@Warning: dof values and transformations are inconsistent after this computation!
     void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
-        for(unsigned int i=0; i<mJoints.size(); i++){
+        for (unsigned int i = 0; i < mJoints.size(); i++) {
             Joint* jnt = mJoints.at(i);
             switch(jnt->getJointType()){ // only cares about euler and expmap of 3 rotations 
             case Joint::J_FREEEULER:
@@ -179,24 +193,24 @@ namespace dynamics{
             case Joint::J_FREEEXPMAP:
             {
                 Vector3d exmap;
-                for(int j=0; j<3; j++){
+                for (int j = 0; j < 3; j++) {
                     int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
                     exmap[j] = _q[dofIndex];
                 }
                 
                 double theta = exmap.norm();
-                if( theta > M_PI ){
+                if (theta > M_PI) {
                     exmap.normalize();
                     exmap *= theta-2*M_PI;
                 
                     BodyNode* node = jnt->getChildNode();
                     int firstIndex = 0;
-                    if( jnt->getParentNode()!=NULL )
+                    if (jnt->getParentNode() != NULL)
                         firstIndex = jnt->getParentNode()->getNumDependentDofs();
                         
                     // extract the local Jw
                     Matrix3d oldJwBody;
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3) * node->getLocalTransform().topLeftCorner(3,3).transpose();
                         oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
@@ -205,12 +219,12 @@ namespace dynamics{
                     // the new Jw
                     Matrix3d newJwBody;
                     // set new dof values to joint for derivative evaluation
-                    for(int j=0; j<3; j++)
+                    for (int j = 0; j < 3; j++)
                         jnt->getDof(j + 3)->setValue(exmap[j]);
 
                     // compute the new Jw from Rq*trans(R)
                     Matrix4d Tbody = jnt->getLocalTransform();
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
                         newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
                     }
@@ -218,10 +232,10 @@ namespace dynamics{
                     // solve new_qdot s.t. newJw*new_qdot = w
                     // new_qdot = newJw.inverse()*w
                     Vector3d old_qdot; // extract old_qdot
-                    for(int j=0; j<3; j++)
+                    for (int j = 0; j < 3; j++)
                         old_qdot[j] = _qdot[jnt->getDof(j + 3)->getSkelIndex()];
                     Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
                         _q[dofIndex] = exmap[j];
                         _qdot[dofIndex] = new_qdot[j];
@@ -233,24 +247,24 @@ namespace dynamics{
             case Joint::J_BALLEXPMAP:
             {
                 Vector3d exmap;
-                for(int j=0; j<3; j++){
+                for (int j = 0; j < 3; j++) {
                     int dofIndex = jnt->getDof(j)->getSkelIndex();
                     exmap[j] = _q[dofIndex];
                 }
                 
                 double theta = exmap.norm();
-                if( theta > M_PI ){
+                if (theta > M_PI) {
                     exmap.normalize();
                     exmap *= theta-2*M_PI;
                 
                     BodyNode* node = jnt->getChildNode();
                     int firstIndex = 0;
-                    if( jnt->getParentNode()!=NULL )
+                    if (jnt->getParentNode() != NULL)
                         firstIndex = jnt->getParentNode()->getNumDependentDofs();
                         
                     // extract the local Jw
                     Matrix3d oldJwBody;
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)
                             * node->getLocalTransform().topLeftCorner(3,3).transpose();
@@ -260,12 +274,12 @@ namespace dynamics{
                     // the new Jw
                     Matrix3d newJwBody;
                     // set new dof values to joint for derivative evaluation
-                    for(int j=0; j<3; j++)
+                    for (int j = 0; j < 3; j++)
                         jnt->getDof(j)->setValue(exmap[j]);
 
                     // compute the new Jw from Rq*trans(R)
                     Matrix4d Tbody = jnt->getLocalTransform();
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
                         newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
                     }
@@ -273,10 +287,10 @@ namespace dynamics{
                     // solve new_qdot s.t. newJw*new_qdot = w
                     // new_qdot = newJw.inverse()*w
                     Vector3d old_qdot; // extract old_qdot
-                    for(int j=0; j<3; j++)
+                    for (int j = 0; j < 3; j++)
                         old_qdot[j] = _qdot[jnt->getDof(j)->getSkelIndex()];
                     Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
-                    for(int j=0; j<3; j++){
+                    for (int j = 0; j < 3; j++) {
                         int dofIndex = jnt->getDof(j)->getSkelIndex();
                         _q[dofIndex] = exmap[j];
                         _qdot[dofIndex] = new_qdot[j];
@@ -292,7 +306,7 @@ namespace dynamics{
 
     void SkeletonDynamics::clearExternalForces(){
         int nNodes = getNumNodes();
-        for(int i=0; i<nNodes; i++)
+        for (int i = 0; i < nNodes; i++)
             ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
     }
 

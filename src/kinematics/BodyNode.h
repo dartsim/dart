@@ -106,6 +106,7 @@ namespace kinematics {
         
         inline BodyNode* getParentNode() const { return mNodeParent; }
         inline double getMass() const { return mMass; }
+        inline Eigen::Matrix3d getInertia() const { return mIc; }
 
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
         inline int getNumMarkers() const { return mMarkers.size(); }
@@ -126,8 +127,8 @@ namespace kinematics {
         Dof* getDof(int _idx) const;
         bool isPresent(Dof *_q);
 
-        Eigen::Matrix4d getDerivLocalTransform(int index) const;
-        Eigen::Matrix4d getDerivWorldTransform(int index) const;
+        Eigen::Matrix4d getDerivLocalTransform(int _index) const;
+        Eigen::Matrix4d getDerivWorldTransform(int _index) const;
         Eigen::MatrixXd getJacobianLinear() const;
         Eigen::MatrixXd getJacobianAngular() const;
         

@@ -55,23 +55,18 @@ namespace dynamics {
         void applyJointLimitTorques();
         inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
     private:
-        void computeTauStar();
-        
+        void updateTauStar();        
         void fillMatrices();
         bool solve();
         void applySolution();
-
-        //        inline Eigen::VectorXd getTauStarVector() const { return mTauStar; } // tau*
         
         SkeletonDynamics *mSkel;
         std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
         double mDt; // timestep
 
         Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates
-        // Cached (aggregated) tau matrices
         Eigen::VectorXd mTauStar;
 
-        // Matrices to pass to solver
         Eigen::MatrixXd mA;
         Eigen::VectorXd mQBar;
         Eigen::VectorXd mX;
