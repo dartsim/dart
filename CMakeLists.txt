@@ -26,8 +26,9 @@ SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
+option ( DART_UI "DART_UI" OFF )
 option ( SNOPT "SNOPT" OFF )
-option ( PLANNING "PLANNING" ON )
+option ( PLANNING "PLANNING" OFF )
 option ( ROBOTICS "ROBOTICS" ON )
 if( UNIX )
   option ( ENABLE_MSSE2 "Enable -msse2 flag" ON )
@@ -131,7 +132,9 @@ ADD_SUBDIRECTORY (thirdparty/glog-0.3.1)
 MESSAGE(STATUS "glog include dir: ${GLOG_INCLUDE_PATH}")
 include_directories( ${GLOG_INCLUDE_PATH} )
 
-ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
+if(DART_UI)
+	ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
+endif(DART_UI)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2 EXCLUDE_FROM_ALL)
 
