@@ -14,7 +14,9 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 
 foreach( APPDIR
             HandSPD 
-             HandRedBall )
+             HandRedBall
+             cubes
+             exampleJointLimit )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -34,7 +36,9 @@ endforeach(APPDIR)
 
 foreach( APPTARGET
             HandSPD
-            HandRedBall )
+            HandRedBall
+            cubes
+            exampleJointLimits )
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
                                 FOLDER Apps

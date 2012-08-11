@@ -54,6 +54,7 @@ void MyWindow::initDyn()
     mDofs[3][1] = 0.08;
     */
     for (unsigned int i = 0; i < mSkels.size(); i++) {
+        mSkels[i]->initDynamics();
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
     }

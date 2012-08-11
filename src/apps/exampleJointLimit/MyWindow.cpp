@@ -23,6 +23,7 @@ void MyWindow::initDyn()
         mDofs[i] = utils::random(-0.6,0.6);
         mDofVels[i] = utils::random(-3.0,3.0);
     }
+    mModel->initDynamics();	
     mModel->setPose(mDofs,false,false);
     mModel->computeDynamics(mGravity, mDofVels, false);
     mJointLimitConstr = new JointLimitDynamics(mModel, mTimeStep);
