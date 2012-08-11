@@ -13,7 +13,8 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 #endforeach(APPDIR)
 
 foreach( APPDIR
-            HandSPD )
+            HandSPD 
+             HandRedBall )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -32,7 +33,8 @@ endforeach(APPDIR)
 #endforeach(APPTARGET)
 
 foreach( APPTARGET
-            HandSPD )
+            HandSPD
+            HandRedBall )
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
                                 FOLDER Apps
