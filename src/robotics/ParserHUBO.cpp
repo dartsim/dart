@@ -56,7 +56,7 @@
 
 using boost::shared_ptr;
 
-using namespace boost::filesystem;
+//using namespace boost::filesystem;
 using namespace std;
 using namespace tinyxml2;
 
@@ -65,6 +65,26 @@ typedef Eigen::Matrix<float,3,3,Eigen::RowMajor> RowMatrix3f;
 using Eigen::Matrix4f;
 using Eigen::Vector3f;
 
+using boost::filesystem::path;
+using boost::filesystem::current_path;
+using boost::filesystem::exists;
+using boost::filesystem::is_regular_file;
+
+// Wrapper methods to make this compatible with Boost Filesystem v2 and v3
+#if defined(BOOST_FILESYSTEM_VERSION) && (BOOST_FILESYSTEM_VERSION == 3)
+    // Boost Filesystem v3
+    using boost::filesystem::absolute;
+
+    inline string tostring( path const & p ) { return tostring(p); }
+
+#else
+    template<typename T> T absolute( T const & p, T const & base )
+    {
+        return boost::filesystem::complete( p, base );
+    }
+
+    inline string tostring( path const & p ) { return p.string(); }
+#endif
 
 //---------------------------------------------------------------------------------------
 struct ModelStore
@@ -77,7 +97,7 @@ struct ModelStore
     {
         BOOST_FOREACH( path p, paths )
         {
-            path absPath = boost::filesystem::absolute(relPath, p);
+            path absPath = absolute(relPath, p);
             //cout << "Eval: " << endl;
             //cout << '\t' << relPath << endl;
             //cout << '\t' << p << endl;
@@ -284,9 +304,9 @@ void ParseFile( path const & p )
     path p2 = absolute( p, current_path() );
     cerr << p2 << '\t' << exists(p2) << endl;
 
-    if( XML_NO_ERROR != doc.LoadFile( p2.native().c_str() ) )
+    if( XML_NO_ERROR != doc.LoadFile( tostring(p2).c_str() ) )
     {
-        cerr << "Could not load file: " << p.native() << endl;
+        cerr << "Could not load file: " << tostring(p) << endl;
         return;
     }
 
@@ -433,9 +453,9 @@ RobotPtr ParseRobotFrom( ModelStore const * pModelStore, path const & p )
     path p2 = absolute( p, current_path() );
     cerr << p2 << '\t' << exists(p2) << endl;
 
-    if( XML_NO_ERROR != doc.LoadFile( p2.native().c_str() ) )
+    if( XML_NO_ERROR != doc.LoadFile( tostring(p2).c_str() ) )
     {
-        cerr << "Could not load file: " << p.native() << endl;
+        cerr << "Could not load file: " << tostring(p) << endl;
         return RobotPtr();
     }
 
@@ -551,9 +571,9 @@ KinBodyPtr ParseKinBodyFrom( ModelStore const * pModelStore, path const & p )
     path p2 = absolute( p, current_path() );
     cerr << p2 << '\t' << exists(p2) << endl;
 
-    if( XML_NO_ERROR != doc.LoadFile( p2.native().c_str() ) )
+    if( XML_NO_ERROR != doc.LoadFile( tostring(p2).c_str() ) )
     {
-        cerr << "Could not load file: " << p.native() << endl;
+        cerr << "Could not load file: " << tostring(p) << endl;
         return KinBodyPtr();
     }
 
@@ -811,9 +831,9 @@ GeometryPtr ParseGeometry_TriMesh( ParseCtx const & ctx, XMLElement const & root
         }
 
         auto_ptr<Model3D> pModel( new Model3D );
-        if( !pModel->loadModel( filepath.native() ) )
+        if( !pModel->loadModel( tostring(filepath) ) )
         {
-            cerr << "Could not load model file: " << filepath.native() << endl;
+            cerr << "Could not load model file: " << filepath << endl;
             return GeometryPtr();
         }
 
