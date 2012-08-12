@@ -16,7 +16,8 @@ foreach( APPDIR
             HandSPD 
              HandRedBall
              cubes
-             exampleJointLimit )
+             exampleJointLimit
+             meshTest )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -38,7 +39,8 @@ foreach( APPTARGET
             HandSPD
             HandRedBall
             cubes
-            exampleJointLimits )
+            exampleJointLimits
+            meshTest )
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
                                 FOLDER Apps

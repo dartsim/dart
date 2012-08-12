@@ -42,9 +42,12 @@
 #include "Light.h"
 #include "Camera.h"
 
-namespace geometry {
-    class Mesh3D;
-}
+#include "geometry/Mesh3D.h"
+
+// Changed to include to call mesh->draw() by C.E. and A.H.
+//namespace geometry {
+//   class Mesh3D;
+//}
 
 namespace renderer {
     enum DecoBufferType {

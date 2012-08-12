@@ -62,7 +62,7 @@ namespace geometry {
 
         bool readCorners(const char *_file);
         bool writeCorners(const char *_file);
-        inline Eigen::Vector3d getVertex(int _vi){return Eigen::Vector3d(mVertexPos[3*_vi+0], mVertexPos[3*_vi+1], mVertexPos[3*_vi+2]);}
+        inline Eigen::Vector3d getVertex(int _vi) const {return Eigen::Vector3d(mVertexPos[3*_vi+0], mVertexPos[3*_vi+1], mVertexPos[3*_vi+2]);}
         inline void setVertex(int _vi, Eigen::Vector3d &_vp){
             mVertexPos[3*_vi+0] = _vp[0];
             mVertexPos[3*_vi+1] = _vp[1];
@@ -80,7 +80,7 @@ namespace geometry {
             _v3 = mFaces[3*_triIndex+2];
         }
 
-        virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true);
+        virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true) const;
 
         static vector<double> getBarycentricCoords(const Eigen::Vector3d& _p, const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2, const Eigen::Vector3d& _v3);
         // projects the point onto triangle (v1,v2,v3) along normal n and return (a1,a2,a3)

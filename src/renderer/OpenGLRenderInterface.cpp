@@ -144,7 +144,7 @@ namespace renderer {
     
 
     void OpenGLRenderInterface::drawMesh(const geometry::Mesh3D *_mesh) {
-    
+        _mesh->draw(Eigen::Vector4d(0.5, 0.5, 0.5, 0.5), true, true);
     }
 
 

@@ -78,7 +78,7 @@ namespace geometry {
 
         virtual double computeVolume()=0;
 
-        virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true)=0;
+        virtual void draw(const Eigen::Vector4d& _color, bool _drawWireFrame, bool _drawSmooth=true) const=0;
 
     };  // Mesh3D
 
