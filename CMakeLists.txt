@@ -136,7 +136,7 @@ if(DART_UI)
 	ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
 endif(DART_UI)
 
-ADD_SUBDIRECTORY (thirdparty/tinyxml2 EXCLUDE_FROM_ALL)
+ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
 ADD_SUBDIRECTORY (thirdparty/libccd)
 SET(CCD_FOUND TRUE)

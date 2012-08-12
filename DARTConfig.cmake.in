@@ -55,7 +55,7 @@ ENDFOREACH(DART_LIB)
 
 set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} )
 
-#set(DART_LIBRARIES ${DART_LIBRARY} optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
+#set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG

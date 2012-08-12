@@ -39,5 +39,6 @@ set_target_properties(tinyxml2 PROPERTIES
 	SOVERSION "${GENERIC_LIB_SOVERSION}")
     
 set_target_properties(tinyxml2 tinyxml2static PROPERTIES FOLDER ThirdParty/tinyxml2)
-
+install ( TARGETS tinyxml2static DESTINATION lib )
+install ( FILES tinyxml2.h DESTINATION include )
 
