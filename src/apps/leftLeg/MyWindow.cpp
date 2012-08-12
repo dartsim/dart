@@ -16,6 +16,7 @@ using namespace dynamics;
 
 void MyWindow::initDyn()
 {
+    dDOF = 0.1;
     mDofs.resize(mSkels.size());
     mDofVels.resize(mSkels.size());
 
@@ -216,6 +217,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutPostRedisplay();
         }
         break;
+/*
     case '1': // upper right force
         mForce[0] = 40;
         mImpulseDuration = 1.0;
@@ -226,7 +228,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mImpulseDuration = 1.0;
         cout << "push left" << endl;
         break;
-    case 'p': // playBack
+*/ 
+   case 'p': // playBack
         mPlay = !mPlay;
         if (mPlay) {
             mSim = false;
@@ -252,6 +255,29 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
         break;
+
+    // TO ADD DOF
+    case '1': {// Set first value -- Assume I have 6 DOF
+         Eigen::VectorXd pose;
+         mSkels[0]->getPose(pose);
+		     // Increase DOF value (DOF 0)
+         pose(0) = pose(0) + dDOF;
+         mSkels[0]->setPose(pose);
+         std::cout << "Updated pose DOF 0: " << pose.transpose() << std::endl;
+          glutPostRedisplay();
+    } break;
+
+    case '2': {// Set first value -- Assume I have 6 DOF
+         Eigen::VectorXd pose;
+         mSkels[0]->getPose(pose);
+		     // Increase DOF value (DOF 1)
+         pose(1) = pose(1) + dDOF;
+         mSkels[0]->setPose(pose);
+         std::cout << "Updated pose DOF 1: " << pose.transpose() << std::endl;
+          glutPostRedisplay();
+    } break;
+
+
     default:
         Win3D::keyboard(key,x,y);
     }

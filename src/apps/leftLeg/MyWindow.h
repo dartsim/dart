@@ -34,8 +34,8 @@ public:
         mPlayFrame = 0;
         mShowMarkers = true;
 
-        mPersp = 45.f;
-        mTrans[1] = 300.f;
+        mPersp = 15.f;
+        mTrans[1] = 10.f;
     
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;
@@ -76,6 +76,11 @@ public:
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(Eigen::VectorXd state);	
  protected:	
+
+    // TO TEST DOFS
+    double dDOF;
+    ////////////////
+
     int mSimFrame;
     bool mSim;
     int mPlayFrame;

@@ -29,7 +29,7 @@ using namespace dynamics;
 // Function headers
 enum TypeOfDOF { GOLEM_X, GOLEM_Y, GOLEM_Z, GOLEM_ROLL, GOLEM_PITCH, GOLEM_YAW };
 void  add_XyzRpy( kinematics::Joint* _joint, double _x, double _y, double _z, double _rr, double _rp, double _ry );
-void add_DOF( dynamics::SkeletonDynamics* _skel, kinematics::Joint* _joint,  double _val, int _DOF_TYPE );
+void add_DOF( dynamics::SkeletonDynamics* _skel, kinematics::Joint* _joint,  double _val, double _min, double _max, int _DOF_TYPE );
 void   add_Shape( dynamics::BodyNodeDynamics* _node, const char *_meshObjPath, double _mass, Eigen::Matrix3d _inertiaMatrix );
 
 /**
@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
 
     double x, y, z, roll, pitch, yaw; // For Local rigid transformations
     double val; // For DOF
+    double vmin; double vmax;
     Eigen::Matrix3d inertiaMatrix;
     double mass;
 
@@ -61,7 +62,8 @@ int main(int argc, char* argv[])
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -77,12 +79,14 @@ int main(int argc, char* argv[])
     joint = new kinematics::Joint( parent_node, node, "LHR" );
 
    // Add rigids displacement (local)
-    x = 0; y = 0; z = 0; roll = 0; pitch = 0; yaw = 0;
+   roll = 0; pitch = 0; yaw = 0;
+   x = 0.0;  y = -0.08 ; z = 0.0;
 	 add_XyzRpy( joint, x, y, z, roll, pitch, yaw );
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -91,7 +95,7 @@ int main(int argc, char* argv[])
 
    // Add node to Skel
    LeftLegSkel.addNode( node );
-
+/*
     //-- ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR*****
     parent_node = (dynamics::BodyNodeDynamics*) LeftLegSkel.getNode( "LHR" );
     node = (dynamics::BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHP");
@@ -103,7 +107,8 @@ int main(int argc, char* argv[])
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -124,7 +129,8 @@ int main(int argc, char* argv[])
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -145,7 +151,8 @@ int main(int argc, char* argv[])
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -167,7 +174,8 @@ int main(int argc, char* argv[])
 
    // Add DOF
    val = 0;
-   add_DOF( &LeftLegSkel, joint, val, GOLEM_YAW );    
+   vmin = 0; vmax = PI;
+   add_DOF( &LeftLegSkel, joint, val, vmin, vmax, GOLEM_YAW );    
 
    // Add Shape
    inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -176,7 +184,7 @@ int main(int argc, char* argv[])
 
    // Add node to Skel
    LeftLegSkel.addNode( node );
-
+*/
 
    // ********** END, NOW INITIALIZE THIS GUY *********
    //-- Initialize mySkeleton
@@ -227,38 +235,50 @@ void  add_XyzRpy( kinematics::Joint* _joint, double _x, double _y, double _z, do
 /**
   * @function add_DOF
   */
-void add_DOF( dynamics::SkeletonDynamics* _skel, kinematics::Joint* _joint,  double _val, int _DOF_TYPE ) {
+void add_DOF( dynamics::SkeletonDynamics* _skel, kinematics::Joint* _joint,  double _val, double _min, double _max,  int _DOF_TYPE ) {
 
   kinematics::Transformation* trans;
 
     if( _DOF_TYPE == GOLEM_X ) {
     	trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
     	_joint->addTransform( trans, true );
+      _joint->getDof(0)->setMin( DEG2RAD(_min) );
+       _joint->getDof(0)->setMax( DEG2RAD(_max) );
      _skel->addTransform( trans );
    }
    else if ( _DOF_TYPE == GOLEM_Y ) {
     	trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
     	_joint->addTransform( trans, true );
+      _joint->getDof(0)->setMin( DEG2RAD(_min) );
+       _joint->getDof(0)->setMax( DEG2RAD(_max) );
      _skel->addTransform( trans );
    }
    else if ( _DOF_TYPE == GOLEM_Z ) {
     	trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
     	_joint->addTransform( trans, true );
+      _joint->getDof(0)->setMin( DEG2RAD(_min) );
+       _joint->getDof(0)->setMax( DEG2RAD(_max) );
      _skel->addTransform( trans );
    }
    else if ( _DOF_TYPE == GOLEM_YAW ) {
     trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
     _joint->addTransform( trans, true );
+      _joint->getDof(0)->setMin( DEG2RAD(_min) );
+       _joint->getDof(0)->setMax( DEG2RAD(_max) );
     _skel->addTransform( trans );
    }
    else if ( _DOF_TYPE == GOLEM_PITCH ) {
     trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
     _joint->addTransform( trans, true );
+     _joint->getDof(0)->setMin( DEG2RAD(_min) );
+      _joint->getDof(0)->setMax( DEG2RAD(_max) );
     _skel->addTransform( trans );
    }
    else if ( _DOF_TYPE == GOLEM_ROLL ) {
     trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
     _joint->addTransform( trans, true );
+     _joint->getDof(0)->setMin( DEG2RAD(_min) );
+      _joint->getDof(0)->setMax( DEG2RAD(_max) );
     _skel->addTransform( trans );
    }
    else {
