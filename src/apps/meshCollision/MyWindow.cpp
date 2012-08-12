@@ -130,7 +130,7 @@ void MyWindow::displayTimer(int _val)
     }else if (mSim) {
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            cout << "###iter = " << i + mSimFrame << endl;
+//            cout << "###iter = " << i + mSimFrame << endl;
             //            tSim.startTimer();
             //            static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(9.8, 0.0, 0.0));
             //static_cast<BodyNodeDynamics*>(mSkels[2]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(-9.8, 0.0, 0.0));

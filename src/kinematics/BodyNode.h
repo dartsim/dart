@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 #include "renderer/RenderInterface.h"
 #include "utils/EigenHelper.h"
+#include <string>
 
 namespace kinematics {
 #define MAX_NODE3D_NAME 128
@@ -78,7 +79,7 @@ namespace kinematics {
         inline Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
         inline Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordinates of this body node
 
-        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
+        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const; ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
         Eigen::Matrix4d getLocalDeriv(Dof *_q) const; ///< First derivative of the local transformation w.r.t. the input dof
 
@@ -116,7 +117,7 @@ namespace kinematics {
         inline Shape* getShape() const { return mShape; }
         
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
-        inline int getNumChildJoints() { return mJointsChild.size(); }
+        inline int getNumChildJoints() const { return mJointsChild.size(); }
         inline Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
         inline Joint* getParentJoint() const { return mJointParent; }
         void setParentJoint(Joint *_p);
@@ -132,6 +133,8 @@ namespace kinematics {
         Eigen::MatrixXd getJacobianLinear() const;
         Eigen::MatrixXd getJacobianAngular() const;
         
+        void printProperties (const std::string& str) const;
+
     protected:
         
         char mName[MAX_NODE3D_NAME]; ///< Name
