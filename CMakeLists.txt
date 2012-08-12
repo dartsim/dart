@@ -15,6 +15,8 @@ SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
+add_definitions(-g)
+
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
