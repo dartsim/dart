@@ -35,7 +35,7 @@ int main( int argc, char* argv[] )
 
     // Load a Mesh3DTriangle to save in Shape
     geometry::Mesh3DTriangle m3d;
-    bool b = m3d.readMesh( DART_DATA_PATH"/obj/foot.obj", geometry::Mesh3D::OBJ );
+    bool b = m3d.readMesh( DART_DATA_PATH"/obj/BoxSmall.obj", geometry::Mesh3D::OBJ );
     printf("Status of  reading MESH: Reading mesh result was: %d \n", b );
 
     // Save Mesh3D in Shape (vizMesh)

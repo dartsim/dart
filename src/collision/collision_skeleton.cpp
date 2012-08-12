@@ -3,17 +3,28 @@
 #include "kinematics/Shape.h"
 #include <cmath>
 #include "utils/LoadOpengl.h"
+#include <assert.h>
 
 namespace collision_checking{
     
     CollisionSkeletonNode::CollisionSkeletonNode(kinematics::BodyNode* _bodyNode)
     {
-        mBodyNode = _bodyNode;
-        if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
-            mMesh = createEllipsoid<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else {
-            mMesh = createCube<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        }
+	mBodyNode = _bodyNode;
+if(mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
+mMesh = createEllipsoid <RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1],
+mBodyNode->getShape()->getDim()[2]);
+}
+else if(mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
+mMesh = createCube <RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1],
+mBodyNode->getShape()->getDim()[2]);
+}
+else if(mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_MESH) {
+mMesh = createMesh <RSS> ((geometry::Mesh3DTriangle*) (mBodyNode->getShape()->getCollisionMesh()));
+}
+else {
+  assert(false && "Unknown shape");
+}
+
     }
     CollisionSkeletonNode::~CollisionSkeletonNode()
     {

@@ -10,6 +10,7 @@
 #define _COLLISION_SHAPES_H_
 
 #include "collision.h"
+#include "geometry/Mesh3DTriangle.h"
 
 namespace collision_checking
 {
@@ -253,6 +254,26 @@ namespace collision_checking
     }//end createCube
 
 
+/// Create a mesh for collision detection
+template<class BV> BVHModel <BV>* createMesh(geometry::Mesh3DTriangle* mesh) {
+
+BVHModel <BV>* model = new BVHModel <BV>;
+Vec3f p1, p2, p3;
+model->beginModel();
+for(int i = 0; i < mesh->mNumFaces; i++) {
+Eigen::Vector3d _v1 = mesh->getVertex(mesh->mFaces[3*i+0]);
+Eigen::Vector3d _v2 = mesh->getVertex(mesh->mFaces[3*i+1]);
+Eigen::Vector3d _v3 = mesh->getVertex(mesh->mFaces[3*i+2]);
+Vec3f p1 = Vec3f(_v1(0), _v1(1), _v1(2));
+Vec3f p2 = Vec3f(_v2(0), _v2(1), _v2(2));
+Vec3f p3 = Vec3f(_v3(0), _v3(1), _v3(2));
+model->addTriangle(p1, p2, p3);
 }
+model->endModel();
+return model;
+}
+
+
+} // namespace
 
 #endif
