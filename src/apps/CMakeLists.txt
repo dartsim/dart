@@ -20,7 +20,8 @@ foreach( APPDIR
              meshTest
              meshCollision
              leftLeg
-             rightLeg )
+             rightLeg
+             lowerBody )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -46,7 +47,8 @@ foreach( APPTARGET
             meshTest
             meshCollision
             leftLeg
-            rightLeg )
+            rightLeg
+             lowerBody )
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
                                 FOLDER Apps
