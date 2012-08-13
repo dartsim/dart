@@ -102,6 +102,10 @@ void MyWindow::initDyn()
 	// translate Ground
 	mDofs[1][1] = -0.3;
 
+  // Init Dynamics
+  mSkels[0]->initDynamics();
+  mSkels[1]->initDynamics();
+
 	// Set Poses and Other Variables
 	mSkels[0]->setPose(mDofs[0],false,false);
 	mSkels[0]->computeDynamics(mGravity,mDofVels[0],false);

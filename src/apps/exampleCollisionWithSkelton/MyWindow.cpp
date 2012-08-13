@@ -29,6 +29,7 @@ void MyWindow::initDyn()
         mDofs[i] = utils::random(-0.7,0.7);
         mDofVels[i] = utils::random(-0.15,0.15);
     }
+    mModel->initDynamics();
     mModel->setPose(mDofs,false,false);
     mModel->computeDynamics(mGravity, mDofVels, false);
     
@@ -36,6 +37,7 @@ void MyWindow::initDyn()
         mDofs2[i] = 0.0;
         mDofVels2[i] = 0.0;
     }
+    mModel2->initDynamics();
     mModel2->setPose(mDofs2, false, false);
     mModel2->computeDynamics(mGravity, mDofVels2, false);
     
