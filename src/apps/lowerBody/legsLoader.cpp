@@ -6,7 +6,13 @@
 /**
   * @function loadLeftLeg
   */
-void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel ) {
+void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel, Eigen::VectorXd _offset ) {
+
+   // Check if offset has 6 elements
+   if( _offset.size() != 6 ) {
+      printf( "[loadLeftLeg] ERROR: Send me a _offset with 6 elements: x, y, z, roll, pitch and yaw! \n EXITING AND NOT CREATING LEFT LEG\n" );
+      return;
+   }
 
 	// Pointers to be used during the left Leg building
 	kinematics::Joint* joint;
@@ -24,13 +30,13 @@ void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDy
 	node = (dynamics::BodyNodeDynamics*) _lowerBodySkel->createBodyNode("LHY");
 	joint = new kinematics::Joint( _parent_node, node, "LHY");
 
-	// Add rigids displacement (local)
-	x = 0;
-	y = 0;
-	z = 0;
-	roll = 0;
-	pitch = 0;
-	yaw = 0;
+	// Add rigids displacement (local) : OFFSET TO PARENT NODE (HIP)
+	x = _offset(0);
+	y = _offset(1);
+	z = _offset(2);
+	roll = _offset(3);
+	pitch = _offset(4);
+	yaw = _offset(5);
 	add_XyzRpy(joint, x, y, z, roll, pitch, yaw);
 
 	// Add DOF
@@ -194,7 +200,13 @@ void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDy
 /**
   * @function loadRightLeg
   */
-void loadRightLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel ) {
+void loadRightLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel, Eigen::VectorXd _offset ) {
+
+   // Check if offset has 6 elements
+   if( _offset.size() != 6 ) {
+      printf( "[loadRightLeg] ERROR: Send me a _offset with 6 elements: x, y, z, roll, pitch and yaw! \n EXITING AND NOT CREATING RIGHT LEG\n" );
+      return;
+   }
 
 	// Pointers to be used during the Skeleton building
 	kinematics::Joint* joint;
@@ -213,12 +225,12 @@ void loadRightLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonD
 	joint = new kinematics::Joint(_parent_node, node, "RHY");
 
 	// Add rigids displacement (local)
-	x = 0;
-	y = 0;
-	z = 0;
-	roll = 0;
-	pitch = 0;
-	yaw = 0;
+	x = _offset(0);
+	y = _offset(1);
+	z = _offset(2);
+	roll = _offset(3);
+	pitch = _offset(4);
+	yaw = _offset(5);
 	add_XyzRpy(joint, x, y, z, roll, pitch, yaw);
 
 	// Add DOF

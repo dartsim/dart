@@ -11,7 +11,7 @@
 //using namespace kinematics;
 //using namespace dynamics;
 
-void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel );
-void loadRightLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel );
+void loadLeftLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel, Eigen::VectorXd _offset );
+void loadRightLeg( dynamics::BodyNodeDynamics* _parent_node, dynamics::SkeletonDynamics* _lowerBodySkel, Eigen::VectorXd _offset );
 
 #endif  /** __GOLEMS_LEGS_LOADER_H__ */

@@ -74,11 +74,20 @@ int main(int argc, char* argv[]) {
 	// Add node to Skel
 	LowerBodySkel.addNode(HipNode);
 
+   // Offset of Left Leg w.r.t. Hip
+   Eigen::VectorXd leftLegOffset(6);
+   leftLegOffset << 0, 0, 0, 0, 0, 0;
+
+   // Offset of Right Leg w.r.t. Hip
+   Eigen::VectorXd rightLegOffset(6);
+   rightLegOffset << 0, 0, 0, 0, 0, 0;
+
+
   // Load Left Leg
- loadLeftLeg( HipNode, &LowerBodySkel );
+ loadLeftLeg( HipNode, &LowerBodySkel, leftLegOffset );
 
   // Load Right Leg
- loadRightLeg( HipNode, &LowerBodySkel );
+ loadRightLeg( HipNode, &LowerBodySkel, rightLegOffset );
 
 	// ********** END, NOW INITIALIZE THIS GUY *********
 	//-- Initialize mySkeleton
