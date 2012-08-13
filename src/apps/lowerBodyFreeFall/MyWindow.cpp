@@ -44,6 +44,13 @@ void MyWindow::initDyn() {
    mDofs[1][1] = 1.0;
    mDofs[1][2] = 0.035;
 
+   mDofs[1][3] = 0.3;
+   mDofs[1][4] = 0.3;
+   mDofs[1][5] = 0.3;
+   mDofs[1][6] = 0.3;
+   mDofs[1][7] = 0.3;
+   mDofs[1][8] = 0.3;
+
 	for(unsigned int i = 0; i < mSkels.size(); i++) {
 		mSkels[i]->initDynamics();
 		mSkels[i]->setPose(mDofs[i], false, false);
@@ -52,6 +59,10 @@ void MyWindow::initDyn() {
   //-- Set Ground to be immobile
 	mSkels[0]->setImmobileState(true);
 
+  // Set Joint limit dynamics for the lowerBody (Skel[1])
+  mJointLimitConstr = new JointLimitDynamics( mSkels[1], mTimeStep );
+
+  // Set collision handling for all the skels (Ground and LowerBody)
 	mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
 }
 
@@ -80,7 +91,7 @@ VectorXd MyWindow::evalDeriv() {
 		int start = mIndices[i] * 2;
 		int size = mDofs[i].size();
 		VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(
-				-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
+				-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mJointLimitConstr->getConstraintForce() );
 		mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
 		deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep);  // set velocities
 		deriv.segment(start + size, size) = qddot;  // set qddot (accelerations)
@@ -111,6 +122,7 @@ void MyWindow::setPose() {
 		else {
 			mSkels[i]->setPose(mDofs[i], true, true);
 			mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
+       mJointLimitConstr->applyJointLimitTorques();
 		}
 	}
 	mCollisionHandle->applyContactForces();
@@ -129,18 +141,11 @@ void MyWindow::displayTimer(int _val) {
 		glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 	}
 	else if(mSim) {
-		//        static Timer tSim("Simulation");
 		for(int i = 0; i < numIter; i++) {
-            cout << "###iter = " << i + mSimFrame << endl;
-			//            tSim.startTimer();
-			//            static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(9.8, 0.0, 0.0));
-			//static_cast<BodyNodeDynamics*>(mSkels[2]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(-9.8, 0.0, 0.0));
-			//static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+            cout << " ** iter = " << i + mSimFrame << endl;
      // Add a force to lowerBody - mSkels[1] (in this case zero force)
 			static_cast <BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
 			mIntegrator.integrate(this, mTimeStep);
-			//            tSim.stopTimer();
-			//            tSim.printScreen();
 			bake();
 		}
 

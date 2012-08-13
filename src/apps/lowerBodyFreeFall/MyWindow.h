@@ -7,6 +7,7 @@
 #include "integration/RK4Integrator.h"
 #include "collision/collision_skeleton.h"
 #include "dynamics/SkeletonDynamics.h"
+#include "dynamics/JointLimitDynamics.h"
 
 using namespace std;
 
@@ -21,7 +22,6 @@ namespace integration{
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
-    //    MyWindow(dynamics::SkeletonDynamics* _m1, dynamics::SkeletonDynamics* _m2)
  MyWindow(dynamics::SkeletonDynamics* _mList = 0, ...): Win3D() {
         mBackground[0] = 0.8;
         mBackground[1] = 0.2;
@@ -82,6 +82,7 @@ public:
     double dDOF;
     ////////////////
 
+    // Simulation parameters
     int mSimFrame;
     bool mSim;
     int mPlayFrame;
@@ -91,13 +92,16 @@ public:
     integration::EulerIntegrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
+    // Dynamic information
     std::vector<dynamics::SkeletonDynamics*> mSkels;
+     dynamics::JointLimitDynamics *mJointLimitConstr;
     dynamics::ContactDynamics *mCollisionHandle;
     std::vector<Eigen::VectorXd> mDofVels;
     std::vector<Eigen::VectorXd> mDofs;
-    double mTimeStep;
+
     Eigen::Vector3d mGravity;
     Eigen::Vector3d mForce;
+    double mTimeStep;
     std::vector<int> mIndices;
     int mImpulseDuration;
 
