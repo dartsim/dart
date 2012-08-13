@@ -37,6 +37,7 @@
 
 #include "OpenGLRenderInterface.h"
 #include "utils/LoadOpengl.h"
+#include <iostream>
 
 using namespace Eigen;
 
@@ -153,7 +154,7 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector3d& _col) {
-        glColor4d(_col[0], _col[1], _col[2], 1.0);
+        glColor4f(_col[0], _col[1], _col[2], 1.0);
     }
 
     void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels) {

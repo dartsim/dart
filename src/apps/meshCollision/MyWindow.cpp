@@ -28,12 +28,12 @@ void MyWindow::initDyn()
 
     
     mDofs[0][1] = -0.35;
-    mDofs[1][1] = mDofs[0][1] + 0.025;
-    mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
-
-    // Old cube
-    mDofs[3][0] = 0.05 -0.06;
-    mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
+    mDofs[1][3] = -0.425;
+//    mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
+//
+//    // Old cube
+//    mDofs[3][0] = 0.05 -0.06;
+//    mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
     
      // Our Mesh
 //    mDofs[4][0] = 0.05;

@@ -37,7 +37,8 @@
 
 #include "ShapeMesh.h"
 #include "renderer/RenderInterface.h"
-
+#include <stdio.h>
+#include <iostream>
 using namespace Eigen;
 
 namespace kinematics {
@@ -60,8 +61,9 @@ namespace kinematics {
             return;
         if (!_useDefaultColor)
             _ri->setPenColor(_color);
-        else
+        else {
             _ri->setPenColor(mColor);
+        }
         _ri->pushMatrix();
         _ri->drawMesh(mVizMesh);
         _ri->popMatrix();

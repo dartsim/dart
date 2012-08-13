@@ -34,8 +34,9 @@ public:
         mPlayFrame = 0;
         mShowMarkers = true;
 
-        mPersp = 15.f;
-        mTrans[1] = 10.f;
+        mPersp = 30.f;
+        mTrans[1] = 200.f;
+        mTrans[0] = -200.f;
     
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;

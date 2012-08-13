@@ -100,8 +100,8 @@ int main(int argc, char* argv[])
    node->printProperties("\n\n=====================================================\nour node::\n");
 //   exit(0);
 
-//    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), (SkeletonDynamics*)model4.getSkel(), (SkeletonDynamics*)model5.getSkel(), NULL); //
-    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), (SkeletonDynamics*)model4.getSkel(), &MeshSkel, NULL); //
+    MyWindow window((SkeletonDynamics*)model.getSkel(), &MeshSkel, NULL); //
+//    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), (SkeletonDynamics*)model4.getSkel(), &MeshSkel, NULL); //
 
     cout << "space bar: simulation on/off" << endl;
     cout << "'s': simulate one step" << endl;

@@ -173,7 +173,7 @@ namespace geometry {
                 for(unsigned int i=0; i<mNumVertices; i++)	vnormal[i] = vnormal[i].normalized();
             }
 
-            glColor4dv(_color.data());
+//            glColor4dv(_color.data());
             glBegin(GL_TRIANGLES);						// Drawing Using Triangles
             for(unsigned int i=0; i<mNumFaces; i++){
                 Vector3d v0 = getVertex(mFaces[3*i+0]);
@@ -193,7 +193,7 @@ namespace geometry {
             glEnd();
         }
         else{
-            glColor4dv(_color.data());
+//            glColor4dv(_color.data());
             glLineWidth(2.0);
             for(unsigned int i=0; i<mNumFaces; i++){
                 glBegin(GL_LINE_LOOP);
