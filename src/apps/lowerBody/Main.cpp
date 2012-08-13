@@ -67,8 +67,8 @@ int main(int argc, char* argv[]) {
 	add_DOF( &LowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.022766841, 0.000053624, -0.000164219, 0.000053624, 0.009418222, -0.000010039, -0.000164219, -0.000010039, 0.026610520;
+	mass = 4.436339231;
 	add_Shape( HipNode, DART_DATA_PATH"obj/Body_Hip.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
