@@ -79,8 +79,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.000863427, -0.000001238, 0.000042545, -0.000001238, 0.002029641, -0.000000627, 0.000042545, -0.000000627, 0.001473105;
+	mass = 0.483118742;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RHY.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
@@ -107,8 +107,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_ROLL);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.004385578, -0.000224243, -0.000447015, -0.000224243, 0.004633453, 0.000377898, -0.000447015, 0.000377898, 0.004398642;
+	mass = 2.644641101;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RHR.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
@@ -135,8 +135,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.036844807, -0.000255530, -0.000624748, -0.000255530, 0.034557057, -0.000952212, -0.000624748, -0.000952212, 0.009238020;
+	mass = 3.098799394;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RHP.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
@@ -163,8 +163,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.022011968, -0.000117575, -0.000867941, -0.000117575, 0.020299002, -0.002037181, -0.000867941, -0.002037181, 0.005045442;
+	mass = 1.559604102;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RKP.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
@@ -193,8 +193,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.002342287, -0.000114531, 0.000316185, -0.000114531, 0.003019600, -0.000107388, 0.000316185, -0.000107388, 0.002846142;
+	mass = 1.674918070;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RAP.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
@@ -221,8 +221,8 @@ int main(int argc, char* argv[]) {
 	add_DOF(&RightLegSkel, joint, val, vmin, vmax, GOLEM_ROLL);
 
 	// Add Shape
-	inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-	mass = 1.0;
+	inertiaMatrix << 0.001299926, 0.000003599, -0.000096266, 0.000003599, 0.002701794, -0.000026851, -0.000096266, -0.000026851, 0.002753586;
+	mass = 0.525134235;
 	add_Shape(node, DART_DATA_PATH"obj/rightLeg/Body_RAR.obj", mass, inertiaMatrix);
 
 	// Add node to Skel
