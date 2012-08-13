@@ -91,11 +91,14 @@ int main(int argc, char* argv[]) {
 
 	// Add DOF
 	val = 0;
-	vmin = -10;
-	vmax = 10;
+	vmin = -1000;
+	vmax = 1000;
 	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_X);
 	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_Y);
 	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_Z);
+	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_ROLL);
+	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_PITCH);
+	add_DOF( _lowerBodySkel, HipJoint, val, vmin, vmax, GOLEM_YAW);
 
 	// Add Shape
 	inertiaMatrix << 0.022766841, 0.000053624, -0.000164219, 0.000053624, 0.009418222, -0.000010039, -0.000164219, -0.000010039, 0.026610520;
