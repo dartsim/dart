@@ -74,13 +74,13 @@ int main(int argc, char* argv[]) {
 	// Add node to Skel
 	LowerBodySkel.addNode(HipNode);
 
-   // Offset of Left Leg w.r.t. Hip
-   Eigen::VectorXd leftLegOffset(6);
-   leftLegOffset << 0, 0, 0, 0, 0, 0;
+ // Offset of Left Leg w.r.t. Hip
+ Eigen::VectorXd leftLegOffset(6);
+ leftLegOffset << 0.0, -0.085, -0.08, 0, 0, 0;
 
-   // Offset of Right Leg w.r.t. Hip
-   Eigen::VectorXd rightLegOffset(6);
-   rightLegOffset << 0, 0, 0, 0, 0, 0;
+ // Offset of Right Leg w.r.t. Hip
+ Eigen::VectorXd rightLegOffset(6);
+ rightLegOffset << 0.0, -0.085, 0.08, 0, 0, 0;
 
 
   // Load Left Leg
