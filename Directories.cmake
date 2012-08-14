@@ -9,12 +9,8 @@ if (UNIX)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/gtest-1.6.0/include)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/ticpp)
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage-3.15.0/Dist)
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/ann_1.1.2/include)
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/libccd/src)
-    INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/fcl/include)
 
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
-#    LINK_DIRECTORIES(/usr/local/lib)
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/bin)
     LINK_DIRECTORIES(/Developer/SDKs/MacOSX10.6.sdk/usr/lib)
 
