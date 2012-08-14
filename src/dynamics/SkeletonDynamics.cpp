@@ -109,9 +109,6 @@ namespace dynamics{
                 nodei->aggregateMass(mM);
             }
 
-            //            if (mSPD)
-            //                mM += mDt * getKd();
-
             mMInv = mM.inverse();
 
             evalExternalForces( true );
@@ -142,8 +139,6 @@ namespace dynamics{
                 nodei->evalGravityVector(_gravity);
                 nodei->aggregateGravity(mG);
             }
-            //            if (mSPD)
-            //                mM += mDt * getKd();
 
             mMInv = mM.inverse();
 
