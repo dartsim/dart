@@ -1,0 +1,75 @@
+TiCPP (TinyXML C++ wrapper)
+---------------------------------------------------
+Introduction:
+	'TiCPP' is short for the official name TinyXML++. It is a completely new
+	interface to TinyXML (http://http://www.grinninglizard.com/tinyxml/) that
+	uses MANY of the C++ strengths. Templates, exceptions, and much better error
+	handling. It is also fully documented in doxygen. It is really cool because
+	this version let's you interface tiny the exact same way as before or you
+	can choose to use the new 'TiCPP' classes. All you need to do is define
+	TIXML_USE_TICPP. It has been tested in VC 6.0, VC 7.0, VC 7.1, VC 8.0,
+	MinGW gcc 3.4.5, and in Linux GNU gcc 3+.
+
+	TinyXML++ uses Premake as the build system, so you won't find any project files
+	because you generate them for your specific system. Premake is a build script
+	generator. Premake supports creatation of build scripts for:
+
+		* MS Visual Studio 6, 2002, 2003, or 2005
+		* GNU make (including Cygwin and MinGW)
+		* Code::Blocks
+		* And more ...
+
+Build Steps:
+	1) Download Premake from http://premake.sf.net/download
+	2) Checkout the source for TinyXML++ using Subversion.
+		- svn checkout http://ticpp.googlecode.com/svn/trunk/ ticpp
+	3) Place the Premake executable in the root directory of TiCPP or somewhere in your
+	   path.
+	4) To create the needed build files navigate to the TinyXML++ directory (ticpp)
+	   and type:
+
+		* Code::Blocks Projects and workspace:
+			* Premake v3.x:	premake --target cb-gcc [--unicode] [--dynamic-runtime] [--ticpp-shared]
+			* Premake v4.x:	premake4 codeblocks [--unicode] [--dynamic-runtime] [--ticpp-shared]
+
+		* GNU makefiles:
+			* Premake v3.x:	premake --target gnu [--unicode] [--dynamic-runtime] [--ticpp-shared]
+			* Premake v4.x:	premake4 gmake [--unicode] [--dynamic-runtime] [--ticpp-shared]
+
+		* Visual Studio 2005 (8.0) [Windows ONLY]
+			* Premake v3.x:	premake --target vs2005 [--unicode] [--dynamic-runtime] [--ticpp-shared]
+			* Premake v4.x:	premake4 vs2005 [--unicode] [--dynamic-runtime] [--ticpp-shared]
+
+		* Visual Studio 2008 (9.0) [Windows ONLY]
+			* Premake v3.x:	premake --target vs2008 [--unicode] [--dynamic-runtime] [--ticpp-shared]
+			* Premake v4.x:	premake4 vs2008 [--unicode] [--dynamic-runtime] [--ticpp-shared]
+
+	5) Now use the build system of your choice.
+
+		- For Code::Blocks, use the generated .cbp/.workspace to build TinyXML++ as a
+		  static library.
+
+		- For GNU makefiles type: (Assumes you have properly setup your system to build
+		  with gcc or MinGW)
+
+			* Release:
+				make CONFIG=Release
+
+			* Debug:
+				make
+		- For Visual Studio, use the generated .vcproj/.sln to build TinyXML++ as a
+		  static library.
+
+Notes:
+	- Premake can be found here:
+	  http://premake.sourceforge.net
+
+	- Subversion is a great free cross-platform version control manager.
+	  It can be found here:
+	  http://subversion.tigris.org
+
+	- Code::Blocks is a free cross-platform IDE and it can be found here:
+	  http://codeblocks.org
+
+Enjoy,
+  The TiCPP Team

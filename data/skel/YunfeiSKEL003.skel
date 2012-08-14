@@ -1,0 +1,391 @@
+dofs {
+	Hips_tFree0 { 0.000000, -100.000000, 100.000000 }
+	Hips_tFree1 { 0.000000, -100.000000, 100.000000 }
+	Hips_tFree2 { 0.000000, -100.000000, 100.000000 }
+	Hips_aFree3 { 0.000000, -3.141500, 3.141500 }
+	Hips_aFree4 { 0.000000, -3.141500, 3.141500 }
+	Hips_aFree5 { 0.000000, -3.141500, 3.141500 }
+	LeftUpLeg_aBall0 { -0.000000, -3.141500, 3.141500 }
+	LeftUpLeg_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftUpLeg_aBall2 { -0.000000, -3.141500, 3.141500 }
+	LeftLeg_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	LeftFoot_aBall0 { 0.261799, -3.141500, 3.141500 }
+	LeftFoot_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftFoot_aBall2 { 0.000000, -3.141500, 3.141500 }
+	LeftToe_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	RightUpLeg_aBall0 { -0.000000, -3.141500, 3.141500 }
+	RightUpLeg_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightUpLeg_aBall2 { -0.000000, -3.141500, 3.141500 }
+	RightLeg_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	RightFoot_aBall0 { 0.261799, -3.141500, 3.141500 }
+	RightFoot_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightFoot_aBall2 { 0.000000, -3.141500, 3.141500 }
+	RightToe_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	Spine_aBall0 { -0.000000, -3.141500, 3.141500 }
+	Spine_aBall1 { -0.000000, -3.141500, 3.141500 }
+	Spine_aBall2 { -0.000000, -3.141500, 3.141500 }
+	Spine1_aBall0 { -0.000000, -3.141500, 3.141500 }
+	Spine1_aBall1 { -0.000000, -3.141500, 3.141500 }
+	Spine1_aBall2 { -0.000000, -3.141500, 3.141500 }
+	Neck_aBall0 { -0.000000, -3.141500, 3.141500 }
+	Neck_aBall1 { -0.000000, -3.141500, 3.141500 }
+	Neck_aBall2 { -0.000000, -3.141500, 3.141500 }
+	Head_aBall0 { -0.000000, -3.141500, 3.141500 }
+	Head_aBall1 { -0.000000, -3.141500, 3.141500 }
+	Head_aBall2 { -0.000000, -3.141500, 3.141500 }
+	LeftShoulder_aBall0 { -0.000000, -3.141500, 3.141500 }
+	LeftShoulder_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftShoulder_aBall2 { -1.570800, -3.141500, 3.141500 }
+	LeftArm_aBall0 { -0.000000, -3.141500, 3.141500 }
+	LeftArm_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftArm_aBall2 { -0.000000, -3.141500, 3.141500 }
+	LeftForeArm_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	LeftHand_aBall0 { -0.000000, -3.141500, 3.141500 }
+	LeftHand_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftHand_aBall2 { -0.000000, -3.141500, 3.141500 }
+	LeftHandThumb_aBall0 { -0.000000, -3.141500, 3.141500 }
+	LeftHandThumb_aBall1 { -0.000000, -3.141500, 3.141500 }
+	LeftHandThumb_aBall2 { -0.000000, -3.141500, 3.141500 }
+	L_Wrist_End_aBall0 { -0.000000, -3.141500, 3.141500 }
+	L_Wrist_End_aBall1 { -0.000000, -3.141500, 3.141500 }
+	L_Wrist_End_aBall2 { -0.000000, -3.141500, 3.141500 }
+	RightShoulder_aBall0 { 0.000000, -3.141500, 3.141500 }
+	RightShoulder_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightShoulder_aBall2 { 1.570800, -3.141500, 3.141500 }
+	RightArm_aBall0 { -0.000000, -3.141500, 3.141500 }
+	RightArm_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightArm_aBall2 { -0.000000, -3.141500, 3.141500 }
+	RightForeArm_aHinge0 { 0.000000, -3.141500, 3.141500 }
+	RightHand_aBall0 { -0.000000, -3.141500, 3.141500 }
+	RightHand_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightHand_aBall2 { -0.000000, -3.141500, 3.141500 }
+	RightHandThumb_aBall0 { -0.000000, -3.141500, 3.141500 }
+	RightHandThumb_aBall1 { -0.000000, -3.141500, 3.141500 }
+	RightHandThumb_aBall2 { -0.000000, -3.141500, 3.141500 }
+	R_Wrist_End_aBall0 { -0.000000, -3.141500, 3.141500 }
+	R_Wrist_End_aBall1 { -0.000000, -3.141500, 3.141500 }
+	R_Wrist_End_aBall2 { -0.000000, -3.141500, 3.141500 }
+	unitlength { 1.0, 1.0, 1.0 }
+}
+
+mass {
+Hips_mass { 0.000000 }
+LeftUpLeg_mass { 8.119020 }
+LeftLeg_mass { 7.230320 }
+LeftFoot_mass { 1.430984 }
+LeftToe_mass { 0.103359 }
+L_Toe_End_mass { 1.000000 }
+RightUpLeg_mass { 8.119020 }
+RightLeg_mass { 7.230320 }
+RightFoot_mass { 1.430984 }
+RightToe_mass { 0.103359 }
+R_Toe_End_mass { 1.000000 }
+Spine_mass { 2.509410 }
+Spine1_mass { 3.476652 }
+Neck_mass { 2.030086 }
+Head_mass { 0.372614 }
+Head_End_mass { 1.000000 }
+LeftShoulder_mass { 2.179139 }
+LeftArm_mass { 3.677003 }
+LeftForeArm_mass { 3.896097 }
+LeftHand_mass { 0.245000 }
+LeftHandThumb_mass { 0.245000 }
+L_Thumb_End_mass { 1.000000 }
+L_Wrist_End_mass { 1.000000 }
+RightShoulder_mass { 2.179139 }
+RightArm_mass { 3.677003 }
+RightForeArm_mass { 3.896097 }
+RightHand_mass { 0.636904 }
+RightHandThumb_mass { 0.245000 }
+R_Thumb_End_mass { 1.000000 }
+R_Wrist_End_mass { 1.000000 }
+}
+
+node Hips { 0
+chain { 2
+translate { <Hips_tFree0, Hips_tFree1, Hips_tFree2> }
+rotate_expmap { <Hips_aFree3, Hips_aFree4, Hips_aFree5> }
+}
+primitive { <0.000350, 0.001000, 0.000350>, <0.000000, 0.000500, 0.000000>, unitlength, SPHERE, Hips_mass }
+
+node LeftUpLeg { 1
+chain { 2
+telescope { <0.116180, 0.000000, 0.000000>, unitlength }
+rotate_expmap { <LeftUpLeg_aBall0, LeftUpLeg_aBall1, LeftUpLeg_aBall2> }
+}
+primitive { <0.100000, 0.405951, 0.100000>, <0.000000, -0.202976, 0.000000>, unitlength, SPHERE, LeftUpLeg_mass }
+
+node LeftLeg { 2
+chain { 2
+telescope { <0.000000, -0.405951, 0.000000>, unitlength }
+rotate_euler { LeftLeg_aHinge0,  x }
+}
+primitive { <0.100000, 0.361516, 0.100000>, <0.000000, -0.180758, 0.000000>, unitlength, SPHERE, LeftLeg_mass }
+
+node LeftFoot { 3
+chain { 2
+telescope { <0.000000, -0.361516, 0.000000>, unitlength }
+rotate_expmap { <LeftFoot_aBall0, LeftFoot_aBall1, LeftFoot_aBall2> }
+}
+primitive { <0.063031, 0.063031, 0.180090>, <0.000000, 0.000000, 0.090045>, unitlength, SPHERE, LeftFoot_mass }
+
+node LeftToe { 4
+chain { 2
+telescope { <0.000000, 0.000000, 0.180090>, unitlength }
+rotate_euler { LeftToe_aHinge0,  x }
+}
+primitive { <0.026250, 0.026250, 0.075000>, <0.000000, 0.000000, 0.037500>, unitlength, SPHERE, LeftToe_mass }
+
+node L_Toe_End { 5
+chain { 1
+telescope { <0.000000, 0.000000, 0.075000>, unitlength }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, L_Toe_End_mass }
+}
+}
+}
+}
+}
+
+node RightUpLeg { 6
+chain { 2
+telescope { <-0.116180, 0.000000, 0.000000>, unitlength }
+rotate_expmap { <RightUpLeg_aBall0, RightUpLeg_aBall1, RightUpLeg_aBall2> }
+}
+primitive { <0.100000, 0.405951, 0.100000>, <0.000000, -0.202976, 0.000000>, unitlength, SPHERE, RightUpLeg_mass }
+
+node RightLeg { 7
+chain { 2
+telescope { <0.000000, -0.405951, 0.000000>, unitlength }
+rotate_euler { RightLeg_aHinge0,  x }
+}
+primitive { <0.100000, 0.361516, 0.100000>, <0.000000, -0.180758, 0.000000>, unitlength, SPHERE, RightLeg_mass }
+
+node RightFoot { 8
+chain { 2
+telescope { <0.000000, -0.361516, 0.000000>, unitlength }
+rotate_expmap { <RightFoot_aBall0, RightFoot_aBall1, RightFoot_aBall2> }
+}
+primitive { <0.063031, 0.063031, 0.180090>, <0.000000, 0.000000, 0.090045>, unitlength, SPHERE, RightFoot_mass }
+
+node RightToe { 9
+chain { 2
+telescope { <0.000000, 0.000000, 0.180090>, unitlength }
+rotate_euler { RightToe_aHinge0,  x }
+}
+primitive { <0.026250, 0.026250, 0.075000>, <0.000000, 0.000000, 0.037500>, unitlength, SPHERE, RightToe_mass }
+
+node R_Toe_End { 10
+chain { 1
+telescope { <0.000000, 0.000000, 0.075000>, unitlength }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, R_Toe_End_mass }
+}
+}
+}
+}
+}
+
+node Spine { 11
+chain { 2
+telescope { <0.000000, 0.001000, 0.000000>, unitlength }
+rotate_expmap { <Spine_aBall0, Spine_aBall1, Spine_aBall2> }
+}
+primitive { <0.076010, 0.217171, 0.076010>, <0.000000, 0.108586, 0.000000>, unitlength, SPHERE, Spine_mass }
+
+node Spine1 { 12
+chain { 2
+telescope { <0.000000, 0.217171, 0.000000>, unitlength }
+rotate_expmap { <Spine1_aBall0, Spine1_aBall1, Spine1_aBall2> }
+}
+primitive { <0.084736, 0.242102, 0.084736>, <0.000000, 0.121051, 0.000000>, unitlength, SPHERE, Spine1_mass }
+
+node Neck { 13
+chain { 2
+telescope { <0.000000, 0.242102, 0.000000>, unitlength }
+rotate_expmap { <Neck_aBall0, Neck_aBall1, Neck_aBall2> }
+}
+primitive { <0.070825, 0.202356, 0.070825>, <0.000000, 0.101178, 0.000000>, unitlength, SPHERE, Neck_mass }
+
+node Head { 14
+chain { 2
+telescope { <0.000000, 0.202356, 0.000000>, unitlength }
+rotate_expmap { <Head_aBall0, Head_aBall1, Head_aBall2> }
+}
+primitive { <0.040250, 0.115000, 0.040250>, <0.000000, 0.057500, 0.000000>, unitlength, SPHERE, Head_mass }
+
+node Head_End { 15
+chain { 1
+telescope { <0.000000, 0.115000, 0.000000>, unitlength }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, Head_End_mass }
+}
+}
+}
+
+node LeftShoulder { 16
+chain { 2
+telescope { <0.000000, 0.242102, 0.000000>, unitlength }
+rotate_expmap { <LeftShoulder_aBall0, LeftShoulder_aBall1, LeftShoulder_aBall2> }
+}
+primitive { <0.072517, 0.207192, 0.072517>, <0.000000, 0.103596, 0.000000>, unitlength, SPHERE, LeftShoulder_mass }
+
+node LeftArm { 17
+chain { 2
+telescope { <0.000000, 0.207192, 0.000000>, unitlength }
+rotate_expmap { <LeftArm_aBall0, LeftArm_aBall1, LeftArm_aBall2> }
+}
+primitive { <0.086333, 0.246666, 0.086333>, <0.000000, 0.123333, 0.000000>, unitlength, SPHERE, LeftArm_mass }
+
+node LeftForeArm { 18
+chain { 2
+telescope { <0.000000, 0.246666, 0.000000>, unitlength }
+rotate_euler { LeftForeArm_aHinge0,  x }
+}
+primitive { <0.088015, 0.251471, 0.088015>, <0.000000, 0.125736, 0.000000>, unitlength, SPHERE, LeftForeArm_mass }
+
+node LeftHand { 19
+chain { 2
+telescope { <0.000000, 0.251471, 0.000000>, unitlength }
+rotate_expmap { <LeftHand_aBall0, LeftHand_aBall1, LeftHand_aBall2> }
+}
+primitive { <0.035000, 0.100000, 0.035000>, <0.000000, 0.050000, 0.000000>, unitlength, SPHERE, LeftHand_mass }
+
+node LeftHandThumb { 20
+chain { 1
+rotate_expmap { <LeftHandThumb_aBall0, LeftHandThumb_aBall1, LeftHandThumb_aBall2> }
+}
+primitive { <0.035000, 0.035000, 0.100000>, <0.000000, 0.000000, 0.050000>, unitlength, SPHERE, LeftHandThumb_mass }
+
+node L_Thumb_End { 21
+chain { 1
+telescope { <0.000000, 0.000000, 0.100000>, unitlength }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, L_Thumb_End_mass }
+}
+}
+
+node L_Wrist_End { 22
+chain { 2
+telescope { <0.000000, 0.100000, 0.000000>, unitlength }
+rotate_expmap { <L_Wrist_End_aBall0, L_Wrist_End_aBall1, L_Wrist_End_aBall2> }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, L_Wrist_End_mass }
+}
+}
+}
+}
+}
+
+node RightShoulder { 23
+chain { 2
+telescope { <0.000000, 0.242102, 0.000000>, unitlength }
+rotate_expmap { <RightShoulder_aBall0, RightShoulder_aBall1, RightShoulder_aBall2> }
+}
+primitive { <0.072517, 0.207192, 0.072517>, <0.000000, 0.103596, 0.000000>, unitlength, SPHERE, RightShoulder_mass }
+
+node RightArm { 24
+chain { 2
+telescope { <0.000000, 0.207192, 0.000000>, unitlength }
+rotate_expmap { <RightArm_aBall0, RightArm_aBall1, RightArm_aBall2> }
+}
+primitive { <0.086333, 0.246666, 0.086333>, <0.000000, 0.123333, 0.000000>, unitlength, SPHERE, RightArm_mass }
+
+node RightForeArm { 25
+chain { 2
+telescope { <0.000000, 0.246666, 0.000000>, unitlength }
+rotate_euler { RightForeArm_aHinge0,  x }
+}
+primitive { <0.088015, 0.251471, 0.088015>, <0.000000, 0.125736, 0.000000>, unitlength, SPHERE, RightForeArm_mass }
+
+node RightHand { 26
+chain { 2
+telescope { <0.000000, 0.251471, 0.000000>, unitlength }
+rotate_expmap { <RightHand_aBall0, RightHand_aBall1, RightHand_aBall2> }
+}
+primitive { <0.048125, 0.137500, 0.048125>, <0.000000, 0.068750, 0.000000>, unitlength, SPHERE, RightHand_mass }
+
+node RightHandThumb { 27
+chain { 1
+rotate_expmap { <RightHandThumb_aBall0, RightHandThumb_aBall1, RightHandThumb_aBall2> }
+}
+primitive { <0.035000, 0.035000, 0.100000>, <0.000000, 0.000000, 0.050000>, unitlength, SPHERE, RightHandThumb_mass }
+
+node R_Thumb_End { 28
+chain { 1
+telescope { <0.000000, 0.000000, 0.100000>, unitlength }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, R_Thumb_End_mass }
+}
+}
+
+node R_Wrist_End { 29
+chain { 2
+telescope { <0.000000, 0.137500, 0.000000>, unitlength }
+rotate_expmap { <R_Wrist_End_aBall0, R_Wrist_End_aBall1, R_Wrist_End_aBall2> }
+}
+primitive { <0.050000, 0.050000, 0.050000>, <0.000000, 0.000000, 0.000000>, unitlength, SPHERE, R_Wrist_End_mass }
+}
+}
+}
+}
+}
+}
+}
+}
+
+handles {
+ARIEL { <0.005812, 0.219738, -0.033162>, 0, Head } 
+LFHD { <0.094014, 0.140478, 0.039065>, 1, Head } 
+LBHD { <0.084186, 0.102862, -0.071958>, 2, Head } 
+RFHD { <-0.074308, 0.142449, 0.046757>, 3, Head } 
+RBHD { <-0.078631, 0.089658, -0.060277>, 4, Head } 
+C7 { <0.011102, 0.302863, -0.040401>, 5, Spine1 } 
+T10 { <-0.024315, 0.149495, -0.052468>, 6, Spine1 } 
+CLAV { <0.033156, 0.235841, 0.187564>, 7, Spine1 } 
+STRN { <-0.001912, 0.027688, 0.206631>, 8, Spine1 } 
+LFSH { <-0.041613, 0.200226, 0.068918>, 9, LeftShoulder } 
+LBSH { <-0.043849, 0.145823, -0.060325>, 10, LeftShoulder } 
+LUPA { <-0.034874, 0.107229, 0.005934>, 11, LeftArm } 
+LELB { <-0.032957, 0.228774, 0.022171>, 12, LeftArm } 
+LIEL { <0.072903, 0.245150, -0.007737>, 13, LeftArm } 
+LOWR { <-0.017689, 0.236352, -0.019062>, 14, LeftForeArm } 
+LIWR { <-0.000705, 0.236278, 0.029918>, 15, LeftForeArm } 
+LWRE { <-0.024646, 0.115520, 0.008012>, 16, LeftForeArm } 
+LIHAND { <-0.003340, 0.061163, 0.020345>, 17, LeftHand } 
+LOHAND { <-0.010874, 0.050199, -0.017071>, 18, LeftHand } 
+RFSH { <0.021419, 0.199989, 0.073777>, 19, RightShoulder } 
+RBSH { <0.047962, 0.163796, -0.062477>, 20, RightShoulder } 
+RUPA { <0.021169, 0.105849, 0.030589>, 21, RightArm } 
+RELB { <0.029322, 0.221620, 0.027367>, 22, RightArm } 
+RIEL { <-0.076947, 0.251427, -0.005103>, 23, RightArm } 
+ROWR { <0.019243, 0.238869, -0.012112>, 24, RightForeArm } 
+RIWR { <-0.001999, 0.245749, 0.026897>, 25, RightForeArm } 
+RWRE { <0.026937, 0.072970, 0.018547>, 26, RightForeArm } 
+RIHAND { <0.001147, 0.050744, 0.019819>, 27, RightHand } 
+ROHAND { <0.005960, 0.040796, -0.023668>, 28, RightHand } 
+LFWT { <0.000445, 0.068709, 0.148824>, 29, Hips } 
+LMWT { <0.150157, 0.077533, 0.073945>, 30, Hips } 
+LBWT { <0.134968, 0.084113, -0.084851>, 31, Hips } 
+RFWT { <-0.153569, 0.068320, 0.071094>, 32, Hips } 
+RMWT { <-0.121720, 0.075174, -0.086152>, 33, Hips } 
+RBWT { <0.000691, 0.066902, -0.127021>, 34, Hips } 
+LHIP { <0.059444, -0.157084, 0.049545>, 35, LeftUpLeg } 
+LKNE { <0.049765, -0.384970, -0.007823>, 36, LeftUpLeg } 
+LKNI { <-0.089973, -0.415183, 0.016202>, 37, LeftUpLeg } 
+LSHN { <-0.008401, -0.079370, 0.052057>, 38, LeftLeg } 
+LANK { <0.005054, -0.341125, 0.001865>, 39, LeftLeg } 
+LHEL { <-0.048614, 0.010249, -0.041332>, 40, LeftFoot } 
+LMT5 { <0.022473, 0.024085, 0.157376>, 41, LeftFoot } 
+LMT1 { <-0.040917, 0.013870, 0.196978>, 42, LeftFoot } 
+LTOE { <-0.004930, 0.012047, 0.024893>, 43, LeftToe } 
+RHIP { <-0.059336, -0.074171, 0.037556>, 44, RightUpLeg } 
+RKNE { <-0.050808, -0.414406, 0.007430>, 45, RightUpLeg } 
+RKNI { <0.086244, -0.420771, -0.000755>, 46, RightUpLeg } 
+RSHN { <0.010588, -0.169139, 0.060313>, 47, RightLeg } 
+RANK { <-0.018304, -0.339582, 0.022370>, 48, RightLeg } 
+RHEL { <0.025652, 0.021089, -0.038233>, 49, RightFoot } 
+RMT5 { <-0.033146, 0.035650, 0.176142>, 50, RightFoot } 
+RMT1 { <0.050867, 0.036696, 0.210179>, 51, RightFoot } 
+RTOE { <0.006511, 0.012030, 0.049872>, 52, RightToe } 
+}

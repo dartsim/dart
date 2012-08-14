@@ -1,0 +1,39 @@
+#!smake
+#
+# Copyright (c) Mark J. Kilgard, 1995, 1998.
+#
+
+TOP = ..
+include $(TOP)/glutdefs
+include $(ROOT)/usr/include/make/commondefs
+
+# $(TOP)/Fortran.mk should contain the line "FGLUT = fglut" if
+# the Fortran GLUT API binding is to be built.  Note:  This requires
+# IRIX 5.3 and the SGI Fortran compiler and OpenGL Fortran libraries
+# installed.
+sinclude $(TOP)/Fortran.mk
+
+SUBDIRS = \
+  glut$(GLUT_LIB_SUFFIX) \
+  $(FGLUT_DIR)$(GLUT_LIB_SUFFIX) \
+  mui$(GLUT_LIB_SUFFIX) \
+  gle$(GLUT_LIB_SUFFIX) \
+  glsmap$(GLUT_LIB_SUFFIX) \
+
+ALL_SUBDIRS = \
+  glut glut.n32 glut.n64 \
+  fglut fglut.n32 fglut.n64 \
+  mui mui.n32 mui.n64 \
+  gle gle.n32 gle.n64 \
+  glsmap glsmap.n32 glsmap.n64 \
+
+default: $(_FORCE)
+	$(SUBDIRS_MAKERULE)
+
+$(SUBDIRS): $(_FORCE)
+	cd $@; $(MAKE)
+
+$(COMMONTARGS):
+	@for d in $(ALL_SUBDIRS); do $(SUBDIR_MAKERULE); done
+
+$(_FORCE):

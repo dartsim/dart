@@ -1,0 +1,189 @@
+#! smake
+#
+# Copyright (c) Mark J. Kilgard, 1995, 1996.
+#
+include $(ROOT)/usr/include/make/commondefs
+
+TOP = ../..
+
+TARGETS = libfglut.a
+
+LN = ln -s
+MV = mv
+RM = -rm -rf
+
+# .fc must be added to your SUFFIXES between .c and .o
+.SUFFIXES:
+.SUFFIXES: .o .fc .c .s .f
+
+# F2CFLAGS is fancy macro to get the right ABI option for mkf2c
+F2CFLAGS=-l `echo $(CSTYLE) | fmt -1 | grep -v mips | sed s/-o32//g`
+LCOPTS = -fullwarn
+LWOFF = ,813,852,827,826
+LCINCS = -I$(TOP)/include -I$(TOP)/lib/glut
+LF77INCS = -I$(TOP)/include
+
+REFSRCS = \
+  glut_bwidth.c \
+  glut_cindex.c \
+  glut_cursor.c \
+  glut_dstr.c \
+  glut_event.c \
+  glut_ext.c \
+  glut_fullscrn.c \
+  glut_get.c \
+  glut_init.c \
+  glut_input.c \
+  glut_joy.c \
+  glut_key.c \
+  glut_keyctrl.c \
+  glut_keyup.c \
+  glut_menu.c \
+  glut_menu2.c \
+  glut_modifier.c \
+  glut_overlay.c \
+  glut_shapes.c \
+  glut_swap.c \
+  glut_swidth.c \
+  glut_teapot.c \
+  glut_util.c \
+  glut_vidresize.c \
+  glut_warp.c \
+  glut_win.c \
+  glut_winmisc.c
+
+ORIGSRCS = \
+  fglut.c \
+  fglut_8x13.c \
+  fglut_9x15.c \
+  fglut_hel10.c \
+  fglut_hel12.c \
+  fglut_hel18.c \
+  fglut_mroman.c \
+  fglut_roman.c \
+  fglut_tr10.c \
+  fglut_tr24.c
+
+SRCS = \
+  $(REFSRCS) \
+  $(ORIGSRCS)
+
+OBJS = $(SRCS:.c=.o)
+
+FGLUT = libfglut.a
+GLUT = $(TOP)/lib/glut/libglut.a
+LLDLIBS = $(FGLUT) -lfGLU -lfGL $(GLUT) -lGLU -lGL -lXmu -lXi -lXext -lX11
+LDIRT = $(REFSRCS) *.fc *.s *.wo *~ *.bak
+
+sinclude ObjectType.mk
+
+default: $(TARGETS)
+
+libfglut.a : $(OBJS)
+	$(RM) $@
+	$(AR) crl $@ $(OBJS)
+
+$(REFSRCS) :
+	$(RM) $@
+	$(LN) $(TOP)/lib/glut/$@ $@
+
+# note -- each .c file containing routines to be interfaced must have
+# a dependency such as the following
+glut_bitmap.o: glut_bitmap.fc
+glut_bwidth.o: glut_bwidth.fc
+glut_cindex.o: glut_cindex.fc
+glut_cursor.o: glut_cursor.fc
+glut_dstr.o: glut_dstr.fc
+glut_event.o: glut_event.fc
+glut_ext.o: glut_ext.fc
+glut_fullscrn.o: glut_fullscrn.fc
+glut_get.o: glut_get.fc
+glut_init.o: glut_init.fc
+glut_input.o: glut_input.fc
+glut_joy.o: glut_joy.fc
+glut_keyctrl.o: glut_keyctrl.fc
+glut_menu.o: glut_menu.fc
+glut_menu2.o: glut_menu2.fc
+glut_modifier.o: glut_modifier.fc
+glut_overlay.o: glut_overlay.fc
+glut_shapes.o: glut_shapes.fc
+glut_stroke.o: glut_stroke.fc
+glut_swap.o: glut_swap.fc
+glut_swidth.o: glut_swidth.fc
+glut_teapot.o: glut_teapot.fc
+glut_util.o: glut_util.fc
+glut_vidresize.o: glut_vidresize.fc
+glut_warp.o: glut_warp.fc
+glut_win.o: glut_win.fc
+glut_winmisc.o: glut_winmisc.fc
+
+REMAPS = \
+    -Dvoid= \
+    -DAPIENTRY= \
+    '-DGLUTbitmapFont=char*' \
+    '-DGLUTstrokeFont=char*' \
+    '-DGLUTdisplayCB=int*' \
+    '-DGLUTreshapeCB=int*' \
+    '-DGLUTjoystickCB=int*' \
+    '-DGLUTkeyboardCB=int*' \
+    '-DGLUTmouseCB=int*' \
+    '-DGLUTmotionCB=int*' \
+    '-DGLUTpassiveCB=int*' \
+    '-DGLUTentryCB=int*' \
+    '-DGLUTvisibilityCB=int*' \
+    '-DGLUTidleCB=int*' \
+    '-DGLUTtimerCB=int*' \
+    '-DGLUTmenuStateCB=int*' \
+    '-DGLUTmenuStatusCB=int*' \
+    '-DGLUTselectCB=int*' \
+    '-DGLUTspecialCB=int*' \
+    '-DGLUTspaceMotionCB=int*' \
+    '-DGLUTspaceRotateCB=int*' \
+    '-DGLUTspaceButtonCB=int*' \
+    '-DGLUTdialsCB=int*' \
+    '-DGLUTbuttonBoxCB=int*' \
+    '-DGLUTtabletMotionCB=int*' \
+    '-DGLUTtabletButtonCB=int*' \
+    '-DGLUTdisplayFCB=int*' \
+    '-DGLUTreshapeFCB=int*' \
+    '-DGLUTjoystickFCB=int*' \
+    '-DGLUTkeyboardFCB=int*' \
+    '-DGLUTmouseFCB=int*' \
+    '-DGLUTmotionFCB=int*' \
+    '-DGLUTpassiveFCB=int*' \
+    '-DGLUTentryFCB=int*' \
+    '-DGLUTvisibilityFCB=int*' \
+    '-DGLUTidleFCB=int*' \
+    '-DGLUTtimerFCB=int*' \
+    '-DGLUTmenuStateFCB=int*' \
+    '-DGLUTselectFCB=int*' \
+    '-DGLUTspecialFCB=int*' \
+    '-DGLUTspaceMotionFCB=int*' \
+    '-DGLUTspaceRotateFCB=int*' \
+    '-DGLUTspaceButtonFCB=int*' \
+    '-DGLUTdialsFCB=int*' \
+    '-DGLUTbuttonBoxFCB=int*' \
+    '-DGLUTtabletMotionFCB=int*' \
+    '-DGLUTtabletButtonFCB=int*' \
+    '-DGLdouble=double' \
+    '-DGLfloat=float' \
+    '-DGLenum=int' \
+    '-DGLint=int'
+
+fglut.o : fglut.c
+	$(CC) $(CFLAGS) -c $*.c
+	$(CC) -DWRAPPERS_ONLY $(CINCS) -E fglut.c | m4 $(REMAPS) | $(MKF2C) $(F2CFLAGS) > $*.s
+	$(AS) $(ASFLAGS) -o $*.wo $*.s
+	$(LD) $(CSTYLE) -r $*.o $*.wo -o $*.tmp
+	$(MV) $*.tmp $*.o
+	$(RM) $*.s $*.wo
+
+.fc.o:
+	m4 $(REMAPS) $< | $(MKF2C) $(F2CFLAGS) > $*.s
+	$(AS) $(ASFLAGS) -o $*.o $*.s
+	$(RM) $*.s
+
+.c.fc:
+	$(EXTCENTRY) $*.c $*.fc
+
+include $(COMMONRULES)

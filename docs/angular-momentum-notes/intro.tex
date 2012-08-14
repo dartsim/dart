@@ -1,0 +1,177 @@
+\section{Introduction}
+Computing angular momentum for a multibody dynamic system is very
+straightforward in maximal coordinates, where angular velocity of each
+rigid body is readily available. However, if you choose to use
+generalized coordinates and do not want to explicitly convert velocity
+to maximal coordinates at each time step, you can use the following
+alternative formulation to compute angular momentum.
+
+\section{Derivation}
+We begin with the computation of angular momentum for a single
+particle, $\vc{x}$. This is simply a cross product of its position
+vector from the pivot ($\vc{c}$) with its velocity ($\dot{\vc{x}}$),
+scaled by its mass $\mu$
+\begin{equation}
+\vc{L} = \mu (\vc{x} - \vc{c}) \times \dot{\vc{x}}
+\end{equation}
+
+Now let us consider the angular momentum of a multibody system with
+$n$ rigid bodies connected in a hierarchical structure. We assume that
+the pivot is defined at the center of mass of the system $\vc{c}$,
+which could be varying over time ($\dot{\vc{c}} \neq \vc{0}$).
+\begin{equation}
+\vc{L} = \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i (\vc{x}_i(x, y, z) - \vc{c})
+\times (\dot{\vc{x}}_i(x, y, z) - \dot{\vc{c}}) dxdydz
+\end{equation}
+where $\vc{x}_i(x, y, z)$ denotes a particle in $i$-th rigid body. $\mu_i$ is
+the infinitesimal mass of a particle in $i$-th rigid body, assuming
+each rigid body has uniform density.
+
+This equation results in four terms:
+\begin{equation}
+\vc{L} = \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{x}_i \times
+\dot{\vc{x}}_i - \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{x}_i \times
+\dot{\vc{c}} - \vc{c} \times \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i
+\dot{\vc{x}}_i + \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{c}
+\times \dot{\vc{c}}
+\label{eqn:ang_momentum}
+\end{equation}
+We omit the variables of integration (\ie $dx$, $dy$, $dz$) for clarity. To
+compute Equation \ref{eqn:ang_momentum} efficiently, we need to rewrite it in a form
+without any integral. The first term is the most complicated one so we
+will deal with it later. The second, third and fourth terms can be
+simplified as follows:
+
+\paragraph{Second Term:} The integral of $\mu_i \vc{x}_i$ over the
+volume of $i$-th rigid body is equal to $m_i \vc{c}_i$, where
+$m_i$ is the mass of $i$-th rigid body and $\vc{c}_i$ is its
+center of mass in the world coordinates. The second term can then be
+written as:
+\begin{equation}
+-\sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{x}_i \times
+\dot{\vc{c}} = -\sum_{i=1}^n m_i \vc{c}_i \times \dot{\vc{c}} = -m
+\vc{c} \times \dot{\vc{c}}
+\end{equation}
+where $m$ (without subscript $i$) is the total mass of the multibody system and $\vc{c}$ again
+is its center of mass in the world coordinates.
+
+\paragraph{Third Term:} Similarly, we can rewrite the integral part of the
+third term as $m_i \dot{\vc{c}}_i$ and arrive at a simpler third term:
+\begin{equation}
+-\vc{c} \times \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i
+\dot{\vc{x}}_i = -\vc{c} \times \sum_{i=1}^n m_i \dot{\vc{c}}_i = -m
+\vc{c} \times \dot{\vc{c}}
+\end{equation}
+
+\paragraph{Fourth Term:} For this term, we integrate $\mu_i$ over each rigid body and
+sum up all the rigid bodies to obtain the following form:
+\begin{equation}
+\sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{c} \times
+\dot{\vc{c}} = m \vc{c} \times \dot{\vc{c}}
+\end{equation}
+
+Combining these three terms, the angular momentum for the multibody
+system can be simplified to 
+\begin{equation}
+\vc{L} = \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{x}_i \times
+\dot{\vc{x}}_i - m \vc{c} \times \dot{\vc{c}}
+\end{equation}
+
+The only remaining integral is in the first term. Before we work on
+the math, let us first introduce a new operator ''cr()'':
+\begin{equation}
+\mathrm{cr}(\vc{a}\vc{b}^T) = \vc{a} \times \vc{b}
+\end{equation}
+where $\vc{a} \in R^{3 \times 1}$ and $\vc{b} \in R^{3 \times 1}$. Specifically,
+cr() takes a 3 by 3 matrix as input and outputs a 3 by 1 vector
+using the following rule:
+\begin{equation}
+\mathrm{cr}(A) = 
+\left [
+\begin{array}{c}
+a_{23} - a_{32} \\
+a_{31} - a_{13} \\
+a_{12} - a_{21}
+\end{array}
+\right ],\mathrm{\;\;where\;\;} A = \left (
+\begin{array}{ccc}
+a_{11} & a_{12} & a_{13} \\
+a_{21} & a_{22} & a_{23} \\
+a_{31} & a_{32} & a_{33} 
+\end{array}
+\right )
+\end{equation}
+
+With this new operator, we can rewrite the first term as follows:
+\begin{equation}
+\sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \vc{x}_i \times
+\dot{\vc{x}}_i =  \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i
+\mathrm{cr}(\vc{x}_i \dot{\vc{x}}_i^T)
+\label{eqn:first_term}
+\end{equation}
+
+We can also express $\vc{x}_i$ in terms of its coordinates in the
+local frame of $i$-th rigid body: $\vc{x}_i = R_i \bar{\vc{x}}_i +
+\vc{r}_i$, where $R_i$ and $r_i$ are the rotation matrix and
+translation vector from the local frame of $i$-th rigid body to the
+world frame. $\bar{\vc{x}}_i$ denotes the local coordinates of the
+particle. Plugging this expression into Equation \ref{eqn:first_term},
+we continue on our derivation of the first term:
+\begin{eqnarray}
+\sum_{i=1}^n \int \!\! \int \!\! \int \mu_i
+\mathrm{cr}(\vc{x}_i \dot{\vc{x}}_i^T) = \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i
+\mathrm{cr}((R_i \bar{\vc{x}}_i + \vc{r}_i) (\bar{\vc{x}}_i^T \dot{R}_i^T +
+\dot{\vc{r}}_i^T))  \nonumber \\
+= \sum_{i=1}^n \int \!\! \int \!\! \int \mu_i \mathrm{cr}( R_i
+\bar{\vc{x}}_i \bar{\vc{x}}_i^T \dot{R}_i^T + R_i \bar{\vc{x}}_i
+\dot{\vc{r}}_i^T + \vc{r}_i \bar{\vc{x}}_i^T \dot{R}_i^T + \vc{r}_i
+\dot{\vc{r}}_i^T) \nonumber \\
+= \sum_{i=1}^n \mathrm{cr}(R_i \int\!\!\int\!\!\int \mu_i
+\bar{\vc{x}}_i \bar{\vc{x}}_i^T \dot{R}_i^T + m_i R_i \bar{\vc{c}}_i
+\dot{\vc{r}}_i^T + m_i \vc{r}_i \bar{\vc{c}}_i^T \dot{R}_i^T + m_i
+\vc{r}_i \dot{\vc{r}}_i^T)
+\label{eqn:first_term_derivation}
+\end{eqnarray}
+We denote $\bar{\vc{c}}_i$ as the center of mass of $i$-th rigid body
+in its own local frame. Note that the integral of the last three terms
+in Equation \ref{eqn:first_term_derivation} are now expressed in terms
+of aggregated quantity $\bar{\vc{c}}_i$ and $m_i$. The only integral
+term remained is the first term. We then define $M$
+as the integral of outer product of $\bar{\vc{x}}_i$, which can be
+precomputed based on the shape of the rigid body.
+\begin{equation}
+M_i = \int \!\! \int \!\! \int \bar{\vc{x}}_i \bar{\vc{x}}_i^T
+\end{equation} 
+
+Finally, we arrive at the simplified formula of angular momentum: \\
+\\
+\begin{equation}
+\framebox{
+$\vc{L} = \sum_{i=1}^n m_i \mathrm{cr}(R_i M_i \dot{R}_i^T + R_i \bar{\vc{c}}_i
+\dot{\vc{r}}_i^T + \vc{r}_i \bar{\vc{c}}_i^T \dot{R}_i^T + \vc{r}_i
+\dot{\vc{r}}_i^T) - m \vc{c} \times \dot{\vc{c}}$
+}
+\label{eqn:final}
+\end{equation}
+
+
+\section{Angular Momentum in Maximal Coordinates}
+For the sake of completeness, we also provide a formulation
+for computing angular momentum in maximal coordinates.
+
+\begin{equation}
+\vc{L} = \sum_{i=1}^n (m_i (\vc{c}_i - \vc{c}) \times (\dot{\vc{c}}_i -
+\dot{\vc{c}}) + R_i \bar{I}_i R_i^T \omega_i)
+\end{equation}
+where $\bar{I}_i$ is the inertia matrix of $i$-th rigid body in the
+local frame, which can be precomputed based on the shape of the rigid
+body. $\omega_i$ is the angular momentum of $i$-th rigid body in the
+world frame. We can simplify the equation to make it look similar to
+Equation \ref{eqn:final}.
+
+\begin{equation}
+\framebox{
+$\vc{L} = \sum_{i=1}^n (m_i \vc{c}_i \times \dot{\vc{c}}_i + R_i \bar{I}_i
+R_i^T \omega_i) - m \vc{c} \times \dot{\vc{c}}$
+}
+\end{equation}

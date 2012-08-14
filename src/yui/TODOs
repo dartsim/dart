@@ -1,0 +1,17 @@
+Todos:
+1. test on other systems
+
+Desired features:
+1. change zoom to (or add) step forward
+2. print menu on screen and terminal
+4. picking mechanism
+5. rotation and scaling in 2D window
+6. draw shadows
+
+Known Issues:
+1. screen capturing doesn't support window resizing
+2. screen capturing doesn't support 2D drawing of strings
+3. screen capturing not in 2D window
+4. multiple windows cannot communicate (simultaneous refresh)
+5. multiple windows will be closed together
+6. not detecting key up event of special keys (does glut support it?)

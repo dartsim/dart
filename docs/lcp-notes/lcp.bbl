@@ -1,0 +1,10 @@
+\begin{thebibliography}{1}
+
+\bibitem{Stewart:1996}
+David Stewart and J.~C. Trinkle.
+\newblock An implicit time-stepping scheme for rigid body dynamics with
+  {C}oulomb friction.
+\newblock {\em International Journal of Nnumerical Methods in Engineering},
+  39:2673--2691, 1996.
+
+\end{thebibliography}

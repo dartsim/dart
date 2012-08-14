@@ -1,0 +1,179 @@
+\section{Lagrangian Dynamics}
+\label{sec:lagrangian}
+Articulated human motions can be described by a set of dynamic
+equations of motion of multibody systems. Since the direct application
+of Newton's second law becomes difficult when a complex human skeleton
+is considered, we use \emph{Lagrange's equations} derived from
+\emph{D'Alembert's principle} to describe the dynamic of the
+motions. To simplify the math, let's temporarily imagine the entire
+human skeleton consists of a collection of particles
+$\{\vGlobalPoint_1, \vGlobalPoint_2, \ldots,
+\vGlobalPoint_{\sNumParticle}\}$.  Each particle, $\vGlobalPoint_i$,
+is defined by Cartesian coordinates that describe the translation with
+respective to the world coordinates.  We can represent
+$\vGlobalPoint_i$ by a set of \emph{generalized coordinates} that
+indicate the joint configuration of the human skeleton:
+\begin{equation}\label{eq:general_coord}
+    \vGlobalPoint_i = \vGlobalPoint_i(\sJoint_{1},
+\sJoint_{2}, \ldots, \sJoint_{\sNumJoint}, t)
+\end{equation}
+where $t$ is the time and $\sJoint_j$ is a joint degree of freedom (DOF) in
+the skeleton.
+
+The virtual displacement $\delta \vGlobalPoint_i$ refers to an
+infinitesimal change in the system coordinates such that the
+constraint remains satisfied. In the context of human skeleton, the
+system coordinates are the generalized coordinates $\sJoint_j$ and the
+constraint manifold lies in the Cartesian space. The virtual
+displacement $\delta \vGlobalPoint_i$ is a tangent vector to the
+constraint manifold at a fixed time, written as
+\begin{equation}\label{eq:virtual_displace}
+    \delta \vGlobalPoint_i = \sum_j \frac{\partial \vGlobalPoint_i}{\partial
+    \sJoint_j}\delta \sJoint_j
+\end{equation}
+
+We can write virtual work of force $\vForce{i}$ acting on particle
+$\vGlobalPoint_i$ as
+\begin{equation}\label{eq:virtual_work}
+  \vc{f}_{i} \cdot  \delta \vc{r}_i = \vc{f}_{i} \cdot  \sum_j \frac{\partial \vc{r}_i}{\partial
+    q_j}\delta q_j \equiv \sum_j Q_{ij} \delta q_j = \vc{Q}_i \cdot \delta \vc{q}
+\end{equation}
+where $Q_{ij} = \left ( \frac{\partial \vc{r}_i}{\partial q_j} \right )^T \vc{f}_i$ is defined as the component of the \emph{generalized force}
+associated with coordinate $q_j$. In the vector form, $\vc{Q}_i$ is the generalized force corresponding to the Cartesian force $\vc{f}_i$ with the relation $\vc{Q}_i = J_i^T \vc{f}_i$, where $J_i$ is the Jacobian matrix with the $j^{th}$ column defined as $\frac{\partial \vc{r}_i}{\partial q_j}$.
+
+From D'Alembert's principle, we know that the sum of the differences
+between the forces acting on a system and the inertia force of the
+system along any virtual displacement consistent with the constraints
+of the system, is zero. Therefore, the virtual work at $\vGlobalPoint_i$ can be written as
+\begin{equation}\label{eq:inertial_work}
+  \delta \sWork_i = \vForce{i} \cdot  \delta \vGlobalPoint_i =
+  \sInfMass_i \ddot{\vGlobalPoint}_i \cdot \delta \vGlobalPoint_i =
+  \sum_j \sInfMass_i \ddot{\vGlobalPoint}_i \cdot
+    \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j} \delta \sJoint_j
+\end{equation}
+where $\sInfMass_i$ is the infinitesimal mass associated with
+$\vGlobalPoint_i$. The component of inertia force associated with
+$\sJoint_j$ can be written as
+\begin{equation}
+\label{eq:inertia_force}
+  \sInfMass_i \ddot{\vGlobalPoint}_i \cdot \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j} =
+  \frac{d}{dt} \left( \sInfMass_i \dot{\vGlobalPoint}_i \cdot \frac{\partial
+  \vGlobalPoint_i}{\partial \sJoint_j} \right) - \sInfMass_i
+\dot{\vGlobalPoint}_i \cdot \frac{d}{dt} \left( \frac{\partial
+    \vGlobalPoint_i}{\partial \sJoint_j} \right) 
+\end{equation}
+
+Now let us consider the velocity of $\vGlobalPoint_i$ in terms of
+joint velocity $\dot{\sJoint}_j$
+\begin{equation}
+\label{eq:velocity}
+\dot{\vGlobalPoint}_i = \sum_j \frac{\partial
+  \vGlobalPoint_i}{\partial \sJoint_j} \dot{\sJoint}_j
+\end{equation}
+from which we derive the following two identities:
+\begin{eqnarray}
+\frac{\partial \dot{\vGlobalPoint}_i}{\partial \dot{\sJoint}_j} &=&
+\frac{\partial \vGlobalPoint_i}{\partial \sJoint_j}  \\
+\frac{\partial \dot{\vGlobalPoint}_i}{\partial \sJoint_j} &=&
+\sum_k \frac{\partial^2 \vGlobalPoint_i}{\partial \sJoint_j \partial
+  \sJoint_k} \dot{\sJoint}_k = \frac{d}{dt} \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j}
+\end{eqnarray}
+
+Using these two identities, we rewrite \eqnref{inertia_force} as
+\begin{equation}
+\label{eq:inertia_force2}
+\sInfMass_i \ddot{\vGlobalPoint}_i \cdot \frac{\partial \vGlobalPoint_i}{\partial \sJoint_j}   = \frac{d}{dt} \left ( \frac{\partial}{\partial \dot{\sJoint}_j} \left( \frac{1}{2} \sInfMass_i \dot{\vGlobalPoint}_i^{T} \dot{\vGlobalPoint}_i\right) \right)
+   - \frac{\partial}{\partial \sJoint_j} \left( \frac{1}{2} \sInfMass_i \dot{\vGlobalPoint}_i^{T} \dot{\vGlobalPoint}_i \right)
+\end{equation}
+
+We can denote the kinetic energy of $\vGlobalPoint_i$ as
+\begin{equation}\label{eq:kinetic_energy}
+    \sKinetics_i = \frac{1}{2} \sInfMass \dot{\vGlobalPoint}_i^{T}
+    \dot{\vGlobalPoint}_i,
+\end{equation}
+and rewrite \eqnref{inertia_force2} as
+\begin{equation}\label{eq:inertia_kinetic}
+    \sInfMass_i \ddot{\vGlobalPoint}_i \cdot \frac{\partial \vGlobalPoint_i}{\partial
+    \sJoint_j} = \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial
+    \dot{\sJoint}_j}\right) - \frac{\partial \sKinetics_i}{\partial \sJoint_j}
+\end{equation}
+
+Combining the definition of generalized force (\eqnref{virtual_work}), D'Alembert's principle (\eqnref{inertial_work}), and the generalized inertia force (\eqnref{inertia_kinetic}), we arrive at the following equation:
+\begin{equation}\label{eq:dynamic_equil}
+    \left ( \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
+    \sJoint_j}\right ) \delta \sJoint_j = Q_{ij} \delta
+    \sJoint_j
+\end{equation}
+
+If the set of generalized coordinates $\sJoint_j$ is linearly
+independent, \eqnref{dynamic_equil} leads to
+\emph{Lagrangian equation}:
+\begin{equation}\label{eq:lagrangian_dyn2}
+    \frac{d}{dt} \left( \frac{\partial \sKinetics_i}{\partial
+    \dot{\sJoint}_j} \right) - \frac{\partial \sKinetics_i}{\partial
+    \sJoint_j} - Q_{ij} = 0
+\end{equation}
+
+\paragraph{Equations of Motion in Vector Form.} \eqnref{lagrangian_dyn2} is the equation of motion for one generalized coordinate in a
+multibody system. We can combine $\sNumJoint$  scalar equations into
+the familiar vector form
+\begin{equation}\label{eq:lagrangian_vector}
+M(\vc{q}) \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}}) = \vc{Q} 
+\end{equation}
+where $M(\vc{q})$ is the mass matrix, $C(\vc{q}, \dot{\vc{q}})$ is the
+Coriolis and centrifugal term of the equation of motion, and $\vc{Q}$
+is the vector of generalized forces for all the degrees of freedom
+(DOFs) in the system. $M$ only depends on $\vc{q}$ and $C$ depends
+quadratically on $\dot{\vc{q}}$.
+
+How do we derive $M$ and $C$ from \eqnref{lagrangian_dyn2}?
+Let us go back to the velocity of one particle $\vGlobalPoint_i$:
+\begin{equation}
+\dot{\vGlobalPoint}_i = \sum_j \frac{\partial
+  \vGlobalPoint_i}{\partial \sJoint_j} \dot{\sJoint}_j = J_i(\vc{q}) \dot{\vc{q}}
+\end{equation}
+where $J_i$ denotes the Jacobian of $\vGlobalPoint_i$. By summing up
+all the particles in the system, the kinetic
+energy of the system can then be expressed as
+\begin{equation}
+\label{eq:kinetic_vector}
+T = \sum_i T_i = \sum_i \frac{1}{2}  \sInfMass \dot{\vGlobalPoint}_i^{T}
+    \dot{\vGlobalPoint}_i = \sum_i \frac{1}{2}  \sInfMass (J_i
+    \dot{\vc{q}})^T(J_i \dot{\vc{q}}) = \frac{1}{2} \dot{\vc{q}}^T
+    (\sum_i \sInfMass J_i^TJ_i) \dot{\vc{q}} = \frac{1}{2}
+    \dot{\vc{q}}^T M(\vc{q}) \dot{\vc{q}}
+\end{equation}
+where we define the mass matrix, $M(\vc{q}) = \sum_i \sInfMass
+J_i^TJ_i$, and will shortly show it is indeed the mass matrix in
+\eqnref{lagrangian_vector}.
+
+From \eqnref{kinetic_vector}, we can derive the derivative
+terms to construct the Lagrange's equation (\eqnref{lagrangian_dyn2}):
+\begin{equation}
+\label{eq:lagrangian_vector2}
+\frac{d}{dt}\frac{\partial T}{\partial \dot{\vc{q}}} - \frac{\partial
+  T}{\partial \vc{q}} = M\ddot{\vc{q}} + \dot{M} \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T \left ( \frac{\partial M}{\partial \vc{q}} \right )^T \dot{\vc{q}} \equiv M
+\ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}})
+\end{equation}
+
+Comparing \eqnref{lagrangian_vector2} to \eqnref{lagrangian_vector},
+we confirm that the mass matrix is identical in both equations. $C$ is
+the Coriolis and centrifugal term in \eqnref{lagrangian_vector} and is
+defined as $C = \dot{M} \dot{\vc{q}} - \frac{1}{2}\left( \frac{\partial M}{\partial  \vc{q}} \dot{\vc{q}} \right)^T \dot{\vc{q}}$. 
+
+\paragraph{Note.} In the second term of $C$, we introduce tensor notation $\frac{\partial M}{\partial \vc{q}}$, which implies that the $j^{th}$ element of the tensor $\frac{\partial M}{\partial \vc{q}}$ is the matrix $\frac{\partial M}{\partial {q}_j}$. Note that, in general, the quantity with notation $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is \textbf{\emph{not}} equal to $\dot{M}$. This is because, the $j^{th}$ column of the matrix $\frac{\partial M}{\partial \vc{q}} \dot{\vc{q}}$ is the vector $\frac{\partial M}{\partial q_j} \dot{\vc{q}}$ or $\sum_k \frac{\partial (M)_k}{\partial q_j} \dot{{q}_k}$, where the notation $(A)_j$ denotes the $j^{th}$ column of the matrix $A$. In contrast, the $j^{th}$ column of the matrix $\dot{M}$ is $\sum_k \frac{\partial (M)_j}{\partial q_k} \dot{{q}_k}$.
+
+Once we know how to compute the mass matrix, Coriolis and centrifugal
+term, and generalized forces, we can compute the acceleration in
+generalized coordinates, $\ddot{\vc{q}}$, for forward
+simulation. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
+sequence, we can use these equations of motion to derive generalized
+forces for inverse dynamics. 
+
+The above formulation is convenient for a system consisting of finite
+number of mass points. However, for a dynamic system that consists of
+rigid bodies, there are infinitely many points contained in each rigid
+body making the above formulation intractable. In the following two
+sections, we view a rigid body as a continuum and derive compact
+equations of motions in both Cartesian coordinates and generalized
+coordinates.

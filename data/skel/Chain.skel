@@ -1,0 +1,126 @@
+dofs{
+    root<a-X> { 0.0000, -3.1416, 3.1416 }
+    root<a-Y> { 0.0000, -6.1416, 6.1416 }
+    root<a-Z> { 0.0000, -3.1416, 3.1416 }
+    Length { 0.05, 0.0000, 10.0000 }
+    node1<a-X> { 0.0000, -3.1416, 3.1416 }
+    node1<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node1<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node2<a-X> { 0.0000, -3.1416, 3.1416 }
+    node2<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node2<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node3<a-X> { 0.0000, -3.1416, 3.1416 }
+    node3<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node3<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node4<a-X> { 0.0000, -3.1416, 3.1416 }
+    node4<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node4<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node5<a-X> { 0.0000, -3.1416, 3.1416 }
+    node5<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node5<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node6<a-X> { 0.0000, -3.1416, 3.1416 }
+    node6<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node6<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node7<a-X> { 0.0000, -3.1416, 3.1416 }
+    node7<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node7<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node8<a-X> { 0.0000, -3.1416, 3.1416 }
+    node8<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node8<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node9<a-X> { 0.0000, -3.1416, 3.1416 }
+    node9<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node9<a-Z> { 0.0000, -3.1416, 3.1416 }
+    node10<a-X> { 0.0000, -3.1416, 3.1416 }
+    node10<a-Y> { 0.0000, -3.1416, 3.1416 }
+    node10<a-Z> { 0.0000, -3.1416, 3.1416 }
+}
+
+mass {
+    node_mass { 0.1 }
+}
+
+node root { 0
+    chain { 2
+        telescope { <0.0,-0.5,0.0>, Length }
+        rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
+    }
+    primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+    node node1 { 1
+        chain { 2
+            telescope { <0.0,-1.0,0.0>, Length }
+            rotate_expmap { <node1<a-X>, node1<a-Y>, node1<a-Z>> }
+        }
+        primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+        node node2 { 2
+            chain { 2	
+                telescope { <0.0,-1.0,0.0>, Length }
+                rotate_expmap { <node2<a-X>, node2<a-Y>, node2<a-Z>> }
+            }
+            primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+            node node3 { 3
+                chain { 2
+                    telescope { <0.0,-1.0,0.0>, Length }
+                    rotate_expmap { <node3<a-X>, node3<a-Y>, node3<a-Z>> }
+                }
+                primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                node node4 { 4
+                    chain { 2
+                        telescope { <0.0,-1.0,0.0>, Length }
+                        rotate_expmap { <node4<a-X>, node4<a-Y>, node4<a-Z>> }
+                    }
+                    primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                    node node5 { 5
+                        chain { 2
+                            telescope { <0.0,-1.0,0.0>, Length }
+                            rotate_expmap { <node5<a-X>, node5<a-Y>, node5<a-Z>> }
+                        }
+                        primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                        node node6 { 6
+                            chain { 2
+                                telescope { <0.0,-1.0,0.0>, Length }
+                                rotate_expmap { <node6<a-X>, node6<a-Y>, node6<a-Z>> }
+                            }
+                            primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                            node node7 { 7
+                                chain { 2
+                                    telescope { <0.0,-1.0,0.0>, Length }
+                                    rotate_expmap { <node7<a-X>, node7<a-Y>, node7<a-Z>> }
+                                }
+                                primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                                node node8 { 8
+                                    chain { 2
+                                        telescope { <0.0,-1.0,0.0>, Length }
+                                        rotate_expmap { <node8<a-X>, node8<a-Y>, node8<a-Z>> }
+                                    }
+                                    primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                                    node node9 { 9
+                                        chain { 2
+                                            telescope { <0.0,-1.0,0.0>, Length }
+                                            rotate_expmap { <node9<a-X>, node9<a-Y>, node9<a-Z>> }
+                                        }
+                                        primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+
+                                    }
+                                }
+                            }
+                        }
+                    }	
+                }
+            }
+        }
+    }
+}
+
+handles {
+	tip { <0.0,0.0,0.0>, 0, root }
+}
+

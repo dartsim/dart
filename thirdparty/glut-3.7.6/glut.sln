@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glut32", "lib\glut\glut32.vcxproj", "{7FCF3E56-C06E-4611-94EA-2A97FF578408}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7FCF3E56-C06E-4611-94EA-2A97FF578408}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7FCF3E56-C06E-4611-94EA-2A97FF578408}.Debug|Win32.Build.0 = Debug|Win32
+		{7FCF3E56-C06E-4611-94EA-2A97FF578408}.Release|Win32.ActiveCfg = Release|Win32
+		{7FCF3E56-C06E-4611-94EA-2A97FF578408}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
