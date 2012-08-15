@@ -99,8 +99,11 @@ namespace optimizer {
     }
 
     void ObjectiveBox::evalObjGrad() {
-        for(unsigned int i = 0; i < mObjectives.size(); i++) {
-            if(mObjectives[i]->mActive){
+        for (unsigned int i = 0; i < mObjGrad.size(); i++)
+            mObjGrad[i] = 0.0;
+
+        for (unsigned int i = 0; i < mObjectives.size(); i++) {
+            if (mObjectives[i]->mActive){
                 mObjectives[i]->fillObjGrad(mObjGrad);
             }
         }

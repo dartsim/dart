@@ -12,7 +12,6 @@ if (UNIX)
 
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/bin)
-    LINK_DIRECTORIES(/Developer/SDKs/MacOSX10.6.sdk/usr/lib)
 
 else()
     message(STATUS "Operating system = WIN32")
