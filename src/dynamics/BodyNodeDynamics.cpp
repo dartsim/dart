@@ -116,7 +116,6 @@ namespace dynamics{
             mJv.setZero();
             mJw.setZero();
         }
-
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         
@@ -126,7 +125,7 @@ namespace dynamics{
         // Local Rotation matrix transposed
         Matrix3d RjointT = mT.topLeftCorner(3,3).transpose();
 
-        if(mJointParent->getJointType()!=Joint::J_UNKNOWN){
+        if(mJointParent->getJointType() != Joint::J_UNKNOWN && mJointParent->getJointType() != Joint::J_TRANS){
             // ASSUME: trans dofs before rotation dofs
             VectorXd qDotJoint = _qdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
             mJointParent->computeRotationJac(&mJwJoint, &mJwDotJoint, &qDotJoint);
@@ -201,7 +200,6 @@ namespace dynamics{
     void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _withExternalForces ) {
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
-
         Vector3d cl = mCOMLocal;
         Matrix3d Ibody = Matrix3d::Zero();
         if(mShape != NULL)
@@ -446,7 +444,7 @@ namespace dynamics{
 
     void BodyNodeDynamics::jointCartesianToGeneralized( const Vector3d& _cForce, VectorXd& _gForce, bool _isTorque ){
         Joint* joint = getParentJoint();
-        if( joint->getJointType() == Joint::J_UNKNOWN ) return;
+        if( joint->getJointType() == Joint::J_UNKNOWN || joint->getJointType() == Joint::J_TRANS) return;
 
         Matrix3d Ri = getLocalTransform().topLeftCorner(3,3);
         if( _isTorque ){

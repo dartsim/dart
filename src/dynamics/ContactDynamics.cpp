@@ -69,6 +69,7 @@ namespace dynamics {
             }
 
             if (!mSkels[i]->getImmobileState()) {
+                // Immobile objets have mass of infinity
                 rows += skel->getMassMatrix().rows();
                 cols += skel->getMassMatrix().cols();
             }
@@ -115,11 +116,6 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            if (mSkels[i]->getKinematicState()) {
-                mTauStar.block(startRow, 0, mSkels[i]->getNumDofs(), 1) = mSkels[i]->getQDotVector();
-                startRow += mSkels[i]->getNumDofs();
-                continue;
-            }
 
             VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
             VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
@@ -134,13 +130,6 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            if (mSkels[i]->getKinematicState()) {
-                int nDof = mSkels[i]->getNumDofs();
-                mMInv.block(startRow, startCol, nDof, nDof) = MatrixXd::Zero(nDof, nDof);
-                startRow+= nDof;
-                startCol+= nDof;
-                continue;
-            }
             MatrixXd skelMassInv = mSkels[i]->getInvMassMatrix();
             mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
             startRow+= skelMassInv.rows();
@@ -200,8 +189,6 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             if (mSkels[i]->getImmobileState()) {
                 continue;
-            } else if (mSkels[i]->getKinematicState()) {
-                MinvTauStar.segment(rowStart, nDof) = mTauStar.segment(rowStart, nDof);
             } else {
                 MinvTauStar.segment(rowStart, nDof) = mMInv.block(rowStart, rowStart, nDof, nDof) * mTauStar.segment(rowStart, nDof);
             }
