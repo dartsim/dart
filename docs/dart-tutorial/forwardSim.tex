@@ -1,0 +1,62 @@
+\section{Forward Simulation}
+In this section, we will build and simulate a simple chain of rigid
+bodies connected by ball joints. This example demonstrates how an
+articulated rigid body system is represented using DART data
+structures and how a simulation step is formulated using different
+numerical integration methods.
+
+Because this is the first example, we will examine the source code in
+more details. To create and visualize a basic simulation app, we
+integrate DART into Glut framework. All the examples in this tutorial
+use Glut and OpenGL libraries to handle user interface and
+rendering. However, DART does not assume a particular UI or rendering
+package. 
+
+
+\subsection{Source code}
+Let us begin with the main function. The main function does two
+things: loading a skeleton file and creating a window for UI and
+rendering. 
+
+A skeleton comprises a set of body nodes connected by
+joints. We can directly load a skeleton from a file or manually build a new
+skeleton in the code. DART currently supports two formats of skeleton
+file: .vsk and .skel. In this example, we load in a skeleton with 10
+rigid links connected by ball joints. 
+
+Once \textbf{glutMainLoop} is invoked in the main function, Glut
+callback functions will start handling display updates, keyboard
+inputs, etc. The simulation code is called from the callback function
+\textbf{displayTimer()} in MyWindow.cpp.
+
+\ttfamily
+\begin{lstlisting}[label=displayTimer,caption=displayTimer]
+void MyWindow::displayTimer(int _val)
+{
+    int numIter = mDisplayTimeout / (1000 * mTimeStep);
+    for (int i = 0; i < numIter; i++) {
+      mIntegrator.integrate(this, mTimeStep);
+      mFrame++;
+    }
+    glutPostRedisplay();
+    if (mRunning)	
+        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+}
+\end{lstlisting}
+\rmfamily
+\textbf{displayTimer()} is called every \textbf{mDsiplayTimeout}
+millisecond. Because \textbf{mDsiplayTimeout} is typically larger than
+the simulation time step (\textbf{mTimeStep}), we need to run a few
+iterations of simulation steps each time \textbf{displayTimer()} is
+called. The number of iterations is computed as
+\textbf{numIter}. \textbf{mIntegrator} is a data member of
+\textbf{MyWindows} and can be declared as an explicit Euler integrator
+or a RK4 integrator in MyWindows.h.
+
+\subsection{DART libraries}
+
+\paragraph{Skeleton Class:}
+
+\paragraph{BodyNode Class:}
+
+\paragraph{Joint Class:}

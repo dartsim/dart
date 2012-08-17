@@ -50,7 +50,7 @@ void MyWindow::displayTimer(int _val)
 {
     //    static Timer tSim("Simulation");
     int numIter = mDisplayTimeout / (1000 * mTimeStep); // refresh screen every "numIter"time steps
-    for(int i = 0; i < numIter; i++){
+    for (int i = 0; i < numIter; i++) {
         //        tSim.startTimer();
 #ifdef DAMPING
         VectorXd damping = computeDamping();
@@ -62,7 +62,7 @@ void MyWindow::displayTimer(int _val)
         mFrame++;
     }
     glutPostRedisplay();
-    if(mRunning)	
+    if (mRunning)	
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
