@@ -1,13 +1,10 @@
 \contentsline {section}{\numberline {1}Introduction}{2}
-\contentsline {section}{\numberline {2}Forward Simulation}{3}
-\contentsline {subsection}{\numberline {2.1}Source code}{3}
-\contentsline {subsection}{\numberline {2.2}DART libraries}{4}
-\contentsline {paragraph}{Skeleton Class:}{4}
-\contentsline {paragraph}{BodyNode Class:}{4}
-\contentsline {paragraph}{Joint Class:}{4}
+\contentsline {section}{\numberline {2}Forward Simulation}{2}
+\contentsline {subsection}{\numberline {2.1}Simulation step}{3}
+\contentsline {subsection}{\numberline {2.2}Integration}{3}
 \contentsline {section}{\numberline {3}Contacts}{5}
-\contentsline {section}{\numberline {4}Open Loop Control}{6}
-\contentsline {section}{\numberline {5}Proportional-Derivative Control}{7}
-\contentsline {section}{\numberline {6}Inverse Kinematics}{8}
-\contentsline {section}{\numberline {7}Under-actuated Systems}{9}
-\contentsline {section}{\numberline {8}Hybrid Systems}{10}
+\contentsline {section}{\numberline {4}Open Loop Control}{5}
+\contentsline {section}{\numberline {5}Proportional-Derivative Control}{5}
+\contentsline {section}{\numberline {6}Inverse Kinematics}{5}
+\contentsline {section}{\numberline {7}Under-actuated Systems}{5}
+\contentsline {section}{\numberline {8}Hybrid Systems}{5}

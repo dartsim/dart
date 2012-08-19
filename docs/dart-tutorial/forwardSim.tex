@@ -13,7 +13,7 @@ rendering. However, DART does not assume a particular UI or rendering
 package. 
 
 
-\subsection{Source code}
+\subsection{Simulation step}
 Let us begin with the main function. The main function does two
 things: loading a skeleton file and creating a window for UI and
 rendering. 
@@ -51,12 +51,65 @@ iterations of simulation steps each time \textbf{displayTimer()} is
 called. The number of iterations is computed as
 \textbf{numIter}. \textbf{mIntegrator} is a data member of
 \textbf{MyWindows} and can be declared as an explicit Euler integrator
-or a RK4 integrator in MyWindows.h.
+or a RK4 integrator in MyWindows.h. Since we do not have
+internal or external forces applied to the skeleton in this example,
+calling \textbf{integrate()} is the only procedure required to
+simulate.
 
-\subsection{DART libraries}
+\subsection{Integration}
+\textbf{Integrator Class} has three virtual member functions,
+\textbf{getState()}, \textbf{setState()}, and \textbf{evalDeriv},
+which need to be implemented in the app. \textbf{getState()} and
+\textbf{setState()} retrieve and assign the value of current state,
+which includes the current degrees of freedom (DOFs) and the velocity
+of DOFs. The most involved function is \textbf{evalDeriv}, which
+computes the derivative of the current state via equations of motion.
 
-\paragraph{Skeleton Class:}
+\ttfamily
+\begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
+VectorXd MyWindow::evalDeriv() {
+    mModel->setPose(mDofs, false, false);
+    mModel->computeDynamics(mGravity, mDofVels, true);
+    VectorXd deriv(mDofs.size() + mDofVels.size());
+    VectorXd qddot = mModel->getInvMassMatrix() 
+        * (-mModel->getCombinedVector());
+    mModel->clampRotation(mDofs, mDofVels);
+    deriv.head(mDofs.size()) = mDofVels + mTimeStep * qddot;
+    deriv.tail(mDofVels.size()) = qddot;
+    return deriv;
+}
+\end{lstlisting}
+\rmfamily
+In \textbf{evalDeriv}, we first call \textbf{setPose()} to update the
+DOF values in the skeleton. \textbf{setPose()} takes in two boolean
+flags. The first flag indicates whether to update all the
+transformation matrices and the second flag indicates whether to
+update first derivatives of the transformation matrices. Here we set
+both of them to be false because the next function, 
+\textbf{computeDynamics()}, will take care of the update of
+transformation matrices and we do not need the information about first
+derivatives in this app. As a rule of thumb, setting both flags to
+true is the safest option, as it will provide the most complete
+information at the cost of computation time.
 
-\paragraph{BodyNode Class:}
+\textbf{computeDynamics()} updates the mass matrix (and its
+inversion), Coriolis and centrifugal force, generalized gravitational force,
+and generalized external force based on the current DOFs and DOF
+velocity. This is the most important function in DART, and obviously,
+the most computational costly one. To speed up the computation time,
+DART provides an alternative way to compute Coriolis, centrifugal, and
+gravitational force using recursive inverse dynamics (See
+\cite{dynamics-tutorial} for details). If the flag in
+\textbf{computeDynamics()} is true, DART will utilize recursive
+inverse dynamics formula to speed up the computation.
 
-\paragraph{Joint Class:}
+Once the terms in equations of motion are updated, the acceleration of
+DOF (\textbf{qddot}) can be readily computed. Note that
+\textbf{getCombinedVector()} returns the sum of Coriolis, centrifugal,
+and gravitational force, instead of each individual force.
+
+\textbf{clampRotation() } is particularly important when a joint is
+represented as an exponential map rotation. The system will become
+unstable if the exponential map rotation is outside the range of
+2PI. Once the rotation magnitude is changed, the velocity needs to
+change accordingly to represent the same angular velocity.

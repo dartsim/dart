@@ -55,7 +55,6 @@ protected:
     double mTimeStep;
     Eigen::Vector3d mGravity;
     void initDyn();
-    void setPose();
 #ifdef DAMPING    
     Eigen::VectorXd computeDamping();
 #endif

@@ -27,7 +27,8 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
-    setPose();
+    mModel->setPose(mDofs, false, false);
+    mModel->computeDynamics(mGravity, mDofVels, true); // update equations of motion; set flag to use recursive computation
     VectorXd deriv(mDofs.size() + mDofVels.size());        
     VectorXd qddot = mModel->getInvMassMatrix() * (-mModel->getCombinedVector() + mModel->getInternalForces());
     mModel->clampRotation(mDofs, mDofVels);
@@ -39,11 +40,6 @@ VectorXd MyWindow::evalDeriv() {
 void MyWindow::setState(VectorXd newState) {
     mDofVels = newState.tail(mDofVels.size());
     mDofs = newState.head(mDofs.size());
-}
-
-void MyWindow::setPose() {
-    mModel->setPose(mDofs, false, false);
-    mModel->computeDynamics(mGravity, mDofVels, true); // update equations of motion; set flag to use recursive compuataion
 }
 
 void MyWindow::displayTimer(int _val)
