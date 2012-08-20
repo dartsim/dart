@@ -2,7 +2,7 @@
 #ifndef UTILS_PATHS_H
 #define UTILS_PATHS_H
 
-#define DART_ROOT_PATH "/Users/karenliu/Research/dart_light/"
-#define DART_DATA_PATH "/Users/karenliu/Research/dart_light/data/"
+#define DART_ROOT_PATH "/Users/sehoonha/dev/dart_light/"
+#define DART_DATA_PATH "/Users/sehoonha/dev/dart_light/data/"
 
 #endif // ifndef UTILS_PATHS_H

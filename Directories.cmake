@@ -12,7 +12,7 @@ if (UNIX)
 
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/lib)
     LINK_DIRECTORIES(${CMAKE_SOURCE_DIR}/bin)
-
+    # LINK_DIRECTORIES(/Developer/SDKs/MacOSX10.7.sdk/usr/lib)
 else()
     message(STATUS "Operating system = WIN32")
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.5)
