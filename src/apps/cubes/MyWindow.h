@@ -84,7 +84,6 @@ public:
     std::vector<int> mIndices;
 
     void initDyn();
-    void setPose();
     void bake();
 };
 

@@ -1,8 +1,11 @@
 \contentsline {section}{\numberline {1}Introduction}{2}
 \contentsline {section}{\numberline {2}Forward Simulation}{2}
-\contentsline {subsection}{\numberline {2.1}Simulation step}{3}
+\contentsline {subsection}{\numberline {2.1}A simple graphics application}{3}
 \contentsline {subsection}{\numberline {2.2}Integration}{3}
+\contentsline {subsection}{\numberline {2.3}Damping}{5}
 \contentsline {section}{\numberline {3}Contacts}{5}
+\contentsline {subsection}{\numberline {3.1}Simulation step}{5}
+\contentsline {subsection}{\numberline {3.2}Contact dynamics}{5}
 \contentsline {section}{\numberline {4}Open Loop Control}{5}
 \contentsline {section}{\numberline {5}Proportional-Derivative Control}{5}
 \contentsline {section}{\numberline {6}Inverse Kinematics}{5}

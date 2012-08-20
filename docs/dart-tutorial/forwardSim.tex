@@ -13,10 +13,9 @@ rendering. However, DART does not assume a particular UI or rendering
 package. 
 
 
-\subsection{Simulation step}
-Let us begin with the main function. The main function does two
-things: loading a skeleton file and creating a window for UI and
-rendering. 
+\subsection{A simple graphics application}
+Let us begin with the main function, which only does two things:
+loading a skeleton file and creating a window for UI and rendering.
 
 A skeleton comprises a set of body nodes connected by
 joints. We can directly load a skeleton from a file or manually build a new
@@ -104,12 +103,44 @@ gravitational force using recursive inverse dynamics (See
 inverse dynamics formula to speed up the computation.
 
 Once the terms in equations of motion are updated, the acceleration of
-DOF (\textbf{qddot}) can be readily computed. Note that
-\textbf{getCombinedVector()} returns the sum of Coriolis, centrifugal,
-and gravitational force, instead of each individual force.
+DOF (\textbf{qddot}) can be readily computed via Lagrange's equations:
+\begin{equation}
+M \ddot{\vc{q}} + C(\vc{q}, \dot{\vc{q}}) + G(\vc{q}) = \vc{0}
+\end{equation}
+Note that \textbf{getCombinedVector()} returns the sum of Coriolis,
+centrifugal, and gravitational force, instead of each individual
+force. Please refer \cite{dynamic-tutorial} for derivation of
+Lagrange's equations.
 
-\textbf{clampRotation() } is particularly important when a joint is
+\textbf{clampRotation()} is particularly important when a joint is
 represented as an exponential map rotation. The system will become
 unstable if the exponential map rotation is outside the range of
 2PI. Once the rotation magnitude is changed, the velocity needs to
 change accordingly to represent the same angular velocity.
+
+The simulation step for this simple example can be
+summarized as follows:
+
+\framebox{\parbox{9cm}{
+\begin{itemize}
+\item Evaluate derivatives for integration
+\begin{itemize}
+\item Update dofs
+\item Evaluate dynamic equations
+\item Compute derivatives
+\end{itemize}
+\item Integrate
+\end{itemize}
+}}
+
+\subsection{Damping}
+We encourage the reader to modify the example code with different time
+steps and integration methods. RK1 is clearly faster than RK4, but the
+simulation is unstable and bound to blow up after a few second. RK4 is
+more stable, but its stability is still conditional on the time step
+of the simulation. One way to create a more stable passive simulation
+is to introduce damping force at joints. Damping forces can be added
+as internal forces via member function \textbf{setInternalForces()} in
+\textbf{Skeleton} class. Computing appropriate damping force requires
+some tweaking because the explicit integration methods are only
+conditionally stable.
