@@ -1,15 +1,91 @@
 \section{Contacts}
-This section introduces collision detection and handling in DART. We
-will simulate three cubes and the ground and visualize their motion
+This section introduces the collision detection and handling in DART. We
+will simulate three boxes and the ground and visualize their motion
 due to collisions. We follow the same Glut framework described in the
 previous section, but in this example we allow the user to apply
-forces to interact one of the cubes. We also add playback
+forces to interact one of the boxes. We also add playback
 functionality so the user can replay the simulation result.
+
+\subsection{Contact dynamics}
+Collision detection and handling are implemented in
+\textbf{ContactDynamics Class}. To include collision functionality in
+the application, the user needs to create an instance of
+\textbf{ContactDynamics}. The constructor of \textbf{ContactDynamics
+  Class} requires the user to pass in a list of skeletons potentially
+participating collision, the simulation time step, friction
+coefficient (\_mu), and the number of friction cone basis vectors
+(\_d). The default values for \_mu and \_d are 1.0 and 4. In general, a
+smaller \_mu indicates a more slippery the colliding surface, and a
+larger \_d results in more accurate the sliding contact. Please see
+\cite{LCP-tutorial} for detailed implementation of LCP contact
+modeling.
+
+Applying collision detection and handling is very straightforward in
+DART once \textbf{ContactDynamics} is instantiated. The user can call
+the member function, \textbf{applyContactForces()}, every time
+collision and contact forces need to be updated. The resulting contact
+forces are represented in two different
+ways. \textbf{getConstraintForce()} returns the contact forces in
+generalized coordinates of a desired skeleton. Alternatively, the user
+can retrieve the contact forces in the Cartesian space by accessing
+the data structure of each contact point via
+\textbf{getCollisionChecker()}. We will see examples of both cases in
+the next subsection.
 
 \subsection{Simulation step}
 
-- immobile state
+\ttfamily
+\begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
+VectorXd MyWindow::evalDeriv() {
+  // compute dynamic equations
+  for (unsigned int i = 0; i < mSkels.size(); i++) {
+    if (mSkels[i]->getImmobileState()) {
+      // need to update node transformation for collision
+      mSkels[i]->setPose(mDofs[i], true, false);
+    } else {
+      // need to update first derivatives for collision
+      mSkels[i]->setPose(mDofs[i], false, true);
+      mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
+    }
+  }
+  // compute contact forces
+  mCollisionHandle->applyContactForces();
 
-\subsection{Contact dynamics}
+  // compute derivatives for integration
+  VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
+  for (unsigned int i = 0; i < mSkels.size(); i++) {
+    // skip immobile objects in forward simulation
+    if (mSkels[i]->getImmobileState())
+      continue;
+    int start = mIndices[i] * 2;
+    int size = mDofs[i].size();
+    VectorXd qddot = mSkels[i]->getInvMassMatrix() 
+        * (-mSkels[i]->getCombinedVector() 
+        + mSkels[i]->getExternalForces() 
+        + mCollisionHandle->getConstraintForce(i));
+    mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
+    deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep);
+    deriv.segment(start + size, size) = qddot;
+  }
+  return deriv;
+}
+\end{lstlisting}
+\rmfamily
 
-- contact parameters
+
+\framebox{\parbox{9cm}{
+\begin{itemize}
+\item Compute internal forces
+\item Compute external forces
+\item Evaluate derivatives for integration
+\begin{itemize}
+\item Update dofs
+\item Evaluate dynamic equations
+\item Detect collision and compute contact forces
+\item Compute derivatives
+\end{itemize}
+\item Integrate
+\end{itemize}
+}}
+
+

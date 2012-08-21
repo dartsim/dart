@@ -32,50 +32,49 @@ inputs, etc. The simulation code is called from the callback function
 \begin{lstlisting}[label=displayTimer,caption=displayTimer]
 void MyWindow::displayTimer(int _val)
 {
-    int numIter = mDisplayTimeout / (1000 * mTimeStep);
-    for (int i = 0; i < numIter; i++) {
-      mIntegrator.integrate(this, mTimeStep);
-      mFrame++;
-    }
-    glutPostRedisplay();
-    if (mRunning)	
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+  int numIter = mDisplayTimeout / (1000 * mTimeStep);
+  for (int i = 0; i < numIter; i++) {
+    mIntegrator.integrate(this, mTimeStep);
+    mFrame++;
+  }
+  glutPostRedisplay();
+  if (mRunning)	
+    glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 \end{lstlisting}
-\rmfamily
-\textbf{displayTimer()} is called every \textbf{mDsiplayTimeout}
-millisecond. Because \textbf{mDsiplayTimeout} is typically larger than
-the simulation time step (\textbf{mTimeStep}), we need to run a few
+\rmfamily 
+Each time \textbf{integrate()} is called, DART simulates one
+time step forward. The simulation time step is defined by
+\textbf{mTimeStep}. \textbf{displayTimer()} is called every
+\textbf{mDsiplayTimeout} millisecond. Because \textbf{mDsiplayTimeout}
+is typically larger than \textbf{mTimeStep}, we need to run a few
 iterations of simulation steps each time \textbf{displayTimer()} is
-called. The number of iterations is computed as
-\textbf{numIter}. \textbf{mIntegrator} is a data member of
-\textbf{MyWindows} and can be declared as an explicit Euler integrator
-or a RK4 integrator in MyWindows.h. Since we do not have
-internal or external forces applied to the skeleton in this example,
-calling \textbf{integrate()} is the only procedure required to
-simulate.
+called. The number of iterations is computed as \textbf{numIter}.
 
-\subsection{Integration}
-\textbf{Integrator Class} has three virtual member functions,
-\textbf{getState()}, \textbf{setState()}, and \textbf{evalDeriv},
-which need to be implemented in the app. \textbf{getState()} and
-\textbf{setState()} retrieve and assign the value of current state,
-which includes the current degrees of freedom (DOFs) and the velocity
-of DOFs. The most involved function is \textbf{evalDeriv}, which
-computes the derivative of the current state via equations of motion.
+\subsection{Simulation step}
+\textbf{mIntegrator} is a data member of \textbf{MyWindows} and can be
+declared as an explicit Euler integrator or a RK4 integrator in
+MyWindows.h. Both integrators are derived from \textbf{Integrator
+  Class}, which has three virtual member functions,
+\textbf{getState()}, \textbf{setState()}, and
+\textbf{evalDeriv}. \textbf{getState()} and \textbf{setState()}
+retrieve and assign the value of current state, which includes the
+current degrees of freedom (DOFs) and the velocity of DOFs. The most
+involved function to implement is \textbf{evalDeriv}, which computes
+the derivative of the current state via equations of motion.
 
 \ttfamily
 \begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
 VectorXd MyWindow::evalDeriv() {
-    mModel->setPose(mDofs, false, false);
-    mModel->computeDynamics(mGravity, mDofVels, true);
-    VectorXd deriv(mDofs.size() + mDofVels.size());
-    VectorXd qddot = mModel->getInvMassMatrix() 
+  mModel->setPose(mDofs, false, false);
+  mModel->computeDynamics(mGravity, mDofVels, true);
+  VectorXd deriv(mDofs.size() + mDofVels.size());
+  VectorXd qddot = mModel->getInvMassMatrix() 
         * (-mModel->getCombinedVector());
-    mModel->clampRotation(mDofs, mDofVels);
-    deriv.head(mDofs.size()) = mDofVels + mTimeStep * qddot;
-    deriv.tail(mDofVels.size()) = qddot;
-    return deriv;
+  mModel->clampRotation(mDofs, mDofVels);
+  deriv.head(mDofs.size()) = mDofVels + mTimeStep * qddot;
+  deriv.tail(mDofVels.size()) = qddot;
+  return deriv;
 }
 \end{lstlisting}
 \rmfamily
@@ -118,8 +117,10 @@ unstable if the exponential map rotation is outside the range of
 2PI. Once the rotation magnitude is changed, the velocity needs to
 change accordingly to represent the same angular velocity.
 
-The simulation step for this simple example can be
-summarized as follows:
+Since we do not have internal or external forces applied to the
+skeleton in this example, calling \textbf{integrate()} is the only
+procedure required to simulate. The simulation step for this simple
+example can be summarized as follows:
 
 \framebox{\parbox{9cm}{
 \begin{itemize}
@@ -143,4 +144,36 @@ is to introduce damping force at joints. Damping forces can be added
 as internal forces via member function \textbf{setInternalForces()} in
 \textbf{Skeleton} class. Computing appropriate damping force requires
 some tweaking because the explicit integration methods are only
-conditionally stable.
+conditionally stable. 
+
+\ttfamily
+\begin{lstlisting}[label=displayTimer,caption=displayTimer]
+void MyWindow::displayTimer(int _val)
+{
+  .....
+  for (int i = 0; i < numIter; i++) {
+    VectorXd damping = computeDamping();
+    mModel->setInternalForces(damping);
+    mIntegrator.integrate(this, mTimeStep);
+    mFrame++;
+  }
+  .....
+}
+\end{lstlisting}
+\rmfamily
+
+Adding internal forces slightly modify the simulation step as follows:
+
+\framebox{\parbox{9cm}{
+\begin{itemize}
+\item Compute internal forces
+\item Evaluate derivatives for integration
+\begin{itemize}
+\item Update dofs
+\item Evaluate dynamic equations
+\item Compute derivatives
+\end{itemize}
+\item Integrate
+\end{itemize}
+}}
+
