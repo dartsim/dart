@@ -58,16 +58,16 @@ namespace collision_checking{
             pair1.penetrationDepth = res.collidePairs()[i].penetration_depth;
             pair2 = pair1;
             int contactResult = evalContactPosition(res, _otherNode, i, pair1.point, pair2.point, pair1.contactTri);
-            pair2.contactTri=pair1.contactTri;
-            if(contactResult==COPLANAR_CONTACT) {
+            pair2.contactTri = pair1.contactTri;
+            if(contactResult == COPLANAR_CONTACT) {
                 numCoplanarContacts++;      
-                if(numContacts != 0 || numCoplanarContacts > 1)
-                  continue;        
-            }
-            else if(contactResult==NO_CONTACT){
+                //                if(numContacts != 0 || numCoplanarContacts > 1)
+                if(numContacts > 2)
+                  continue; 
+            } else if(contactResult == NO_CONTACT) {
                 numNoContacts++;
                 continue;
-            }else{
+            } else {
                 numContacts++;
             }
             v = res.collidePairs()[i].normal;
