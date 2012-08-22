@@ -3,33 +3,95 @@ In this section, we will build and simulate a simple chain of rigid
 bodies connected by ball joints. This example demonstrates how an
 articulated rigid body system is represented using DART data
 structures and how a simulation step is formulated using different
-numerical integration methods.
+numerical integration methods. Because this is the first example, we
+will examine the source code in more details.
 
-Because this is the first example, we will examine the source code in
-more details. To create and visualize a basic simulation app, we
-integrate DART into Glut framework. All the examples in this tutorial
-use Glut and OpenGL libraries to handle user interface and
-rendering. However, DART does not assume a particular UI or rendering
-package. 
-
-
-\subsection{A simple graphics application}
+\subsection{Basic data structures}
 Let us begin with the main function, which only does two things:
-loading a skeleton file and creating a window for UI and rendering.
+loading a skeleton file and creating a window for UI and rendering. 
 
-A skeleton comprises a set of body nodes connected by
-joints. We can directly load a skeleton from a file or manually build a new
-skeleton in the code. DART currently supports two formats of skeleton
-file: .vsk and .skel. In this example, we load in a skeleton with 10
-rigid links connected by ball joints. 
+\ttfamily
+\begin{lstlisting}[caption=Main.cpp]
+int main(int argc, char* argv[])
+{
+  FileInfoSkel<SkeletonDynamics> model;
+  model.loadFile(DART_DATA_PATH"/skel/Chain.skel", SKEL);
 
-Once \textbf{glutMainLoop} is invoked in the main function, Glut
-callback functions will start handling display updates, keyboard
-inputs, etc. The simulation code is called from the callback function
+  MyWindow window((SkeletonDynamics*)model.getSkel());
+  
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Forward Simulation");
+  glutMainLoop();
+
+  return 0;
+}
+\end{lstlisting}
+\rmfamily 
+
+We first focus on the data structure of skeleton. A skeleton comprises
+a set of body nodes connected by joints. We can directly load a
+skeleton from a file or manually build a new skeleton in the
+code. DART currently supports two formats of skeleton file: .vsk and
+.skel. In this example, we load in a skeleton (Chain.skel) with 10
+rigid links connected by ball joints.
+
+\karen{Add more details on differences between kinematic and dynamic
+  skeleton classes. Introduce Skeleton, BodyNode, and Joint classes}
+
+\subsection{A simple app with graphics and UI}
+To create and visualize a basic simulation app, we integrate DART into
+Glut framework. All the examples in this tutorial use Glut and OpenGL
+libraries to handle user interface and rendering. However, DART does
+not assume a particular UI or rendering package.
+
+In the main function, we create a graphics application based on
+\textbf{MyWindow Class} derived from \textbf{GlutWindow Class}, which
+is a simple API to interface with Glut functions. Based on the
+features of the app, the developer has to implement appropriate
+virtual functions of \textbf{MyWindow Class}. In most graphics apps
+with keyboard user interaction, three basic virtual functions must be
+implemented:
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.h]
+  virtual void draw();
+  virtual void keyboard(unsigned char key, int x, int y);
+  virtual void displayTimer(int _val);
+\end{lstlisting}
+\rmfamily 
+
+After instantiating and initializing \textbf{MyWindow Class} in main
+function, \textbf{glutMainLoop} is invoked and Glut callback functions
+will start handling display updates, keyboard inputs, etc.
+
+\subsection{Simulation}
+Besides graphics and UI capabilities, \textbf{MyWindows Class} is also
+able to forward simulate a passive skeleton. Before the simulation
+begins, we need to initialize simulation state and dynamic parameters
+by calling \textbf{initDyn()}:
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.cpp]
+    mDofs.resize(mModel->getNumDofs());
+    mDofVels.resize(mModel->getNumDofs());
+    for(unsigned int i = 0; i < mModel->getNumDofs(); i++){
+        mDofs[i] = random(-0.5, 0.5);
+        mDofVels[i] = random(-0.1, 0.1);
+    }
+    mModel->initDynamics();
+    mModel->setPose(mDofs, false, false);
+\end{lstlisting}
+\rmfamily 
+
+\textbf{mDofs} and \textbf{mDofVels} together store the current value
+of the simulation state. In this example, the s
+
+
+The simulation code is called from the callback function
 \textbf{displayTimer()} in MyWindow.cpp.
 
 \ttfamily
-\begin{lstlisting}[label=displayTimer,caption=displayTimer]
+\begin{lstlisting}[caption=MyWindows.cpp]
 void MyWindow::displayTimer(int _val)
 {
   int numIter = mDisplayTimeout / (1000 * mTimeStep);
@@ -51,7 +113,7 @@ is typically larger than \textbf{mTimeStep}, we need to run a few
 iterations of simulation steps each time \textbf{displayTimer()} is
 called. The number of iterations is computed as \textbf{numIter}.
 
-\subsection{Simulation step}
+\subsubsection{Integration}
 \textbf{mIntegrator} is a data member of \textbf{MyWindows} and can be
 declared as an explicit Euler integrator or a RK4 integrator in
 MyWindows.h. Both integrators are derived from \textbf{Integrator
@@ -64,7 +126,7 @@ involved function to implement is \textbf{evalDeriv}, which computes
 the derivative of the current state via equations of motion.
 
 \ttfamily
-\begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
+\begin{lstlisting}[caption=MyWindows.cpp]
 VectorXd MyWindow::evalDeriv() {
   mModel->setPose(mDofs, false, false);
   mModel->computeDynamics(mGravity, mDofVels, true);
@@ -117,6 +179,7 @@ unstable if the exponential map rotation is outside the range of
 2PI. Once the rotation magnitude is changed, the velocity needs to
 change accordingly to represent the same angular velocity.
 
+\subsubsection{One step of simulation}
 Since we do not have internal or external forces applied to the
 skeleton in this example, calling \textbf{integrate()} is the only
 procedure required to simulate. The simulation step for this simple
@@ -134,7 +197,7 @@ example can be summarized as follows:
 \end{itemize}
 }}
 
-\subsection{Damping}
+\subsection{Damping force}
 We encourage the reader to modify the example code with different time
 steps and integration methods. RK1 is clearly faster than RK4, but the
 simulation is unstable and bound to blow up after a few second. RK4 is
@@ -147,7 +210,7 @@ some tweaking because the explicit integration methods are only
 conditionally stable. 
 
 \ttfamily
-\begin{lstlisting}[label=displayTimer,caption=displayTimer]
+\begin{lstlisting}[caption=MyWindow.cpp]
 void MyWindow::displayTimer(int _val)
 {
   .....

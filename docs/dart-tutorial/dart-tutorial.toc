@@ -1,13 +1,17 @@
 \contentsline {section}{\numberline {1}Introduction}{2}
 \contentsline {section}{\numberline {2}Forward Simulation}{2}
-\contentsline {subsection}{\numberline {2.1}A simple graphics application}{3}
-\contentsline {subsection}{\numberline {2.2}Simulation step}{3}
-\contentsline {subsection}{\numberline {2.3}Damping}{5}
-\contentsline {section}{\numberline {3}Contacts}{5}
-\contentsline {subsection}{\numberline {3.1}Contact dynamics}{6}
-\contentsline {subsection}{\numberline {3.2}Simulation step}{6}
-\contentsline {section}{\numberline {4}Open Loop Control}{7}
-\contentsline {section}{\numberline {5}Proportional-Derivative Control}{7}
-\contentsline {section}{\numberline {6}Inverse Kinematics}{7}
-\contentsline {section}{\numberline {7}Under-actuated Systems}{7}
-\contentsline {section}{\numberline {8}Hybrid Systems}{7}
+\contentsline {subsection}{\numberline {2.1}Basic data structures}{2}
+\contentsline {subsection}{\numberline {2.2}A simulation app with graphics}{3}
+\contentsline {subsection}{\numberline {2.3}Simulation}{4}
+\contentsline {subsubsection}{\numberline {2.3.1}Integration}{4}
+\contentsline {subsubsection}{\numberline {2.3.2}Dynamics equations}{5}
+\contentsline {subsubsection}{\numberline {2.3.3}One step of simulation}{5}
+\contentsline {subsection}{\numberline {2.4}Damping force}{6}
+\contentsline {section}{\numberline {3}Contacts}{6}
+\contentsline {subsection}{\numberline {3.1}Contact dynamics}{7}
+\contentsline {subsection}{\numberline {3.2}Simulation step}{7}
+\contentsline {section}{\numberline {4}Open Loop Control}{8}
+\contentsline {section}{\numberline {5}Proportional-Derivative Control}{8}
+\contentsline {section}{\numberline {6}Inverse Kinematics}{8}
+\contentsline {section}{\numberline {7}Under-actuated Systems}{8}
+\contentsline {section}{\numberline {8}Hybrid Systems}{8}

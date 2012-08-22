@@ -4,6 +4,7 @@
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 
+using namespace utils;
 
 void MyWindow::initDyn()
 {
@@ -11,8 +12,8 @@ void MyWindow::initDyn()
     mDofs.resize(mModel->getNumDofs());
     mDofVels.resize(mModel->getNumDofs());
     for(unsigned int i = 0; i < mModel->getNumDofs(); i++){
-        mDofs[i] = utils::random(-0.5, 0.5);
-        mDofVels[i] = utils::random(-0.1, 0.1);
+        mDofs[i] = random(-0.5, 0.5);
+        mDofVels[i] = random(-0.1, 0.1);
     }
     // initial dynamic skeleton
     mModel->initDynamics();
