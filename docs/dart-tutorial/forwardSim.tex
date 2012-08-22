@@ -65,27 +65,39 @@ function, \textbf{glutMainLoop} is invoked and Glut callback functions
 will start handling display updates, keyboard inputs, etc.
 
 \subsection{Simulation}
+\subsubsection{Initialization}
 Besides graphics and UI capabilities, \textbf{MyWindows Class} is also
 able to forward simulate a passive skeleton. Before the simulation
-begins, we need to initialize simulation state and dynamic parameters
+begins, we need to initialize simulation state and dynamic variables
 by calling \textbf{initDyn()}:
 
 \ttfamily
 \begin{lstlisting}[caption=MyWindow.cpp]
-    mDofs.resize(mModel->getNumDofs());
-    mDofVels.resize(mModel->getNumDofs());
-    for(unsigned int i = 0; i < mModel->getNumDofs(); i++){
-        mDofs[i] = random(-0.5, 0.5);
-        mDofVels[i] = random(-0.1, 0.1);
-    }
-    mModel->initDynamics();
-    mModel->setPose(mDofs, false, false);
+void MyWindow::initDyn()
+{
+  mDofs.resize(mModel->getNumDofs());
+  mDofVels.resize(mModel->getNumDofs());
+  for(unsigned int i = 0; i < mModel->getNumDofs(); i++){
+    mDofs[i] = random(-0.5, 0.5);
+    mDofVels[i] = random(-0.1, 0.1);
+  }
+  mModel->initDynamics();
+  mModel->setPose(mDofs, false, false);
+}
 \end{lstlisting}
 \rmfamily 
 
 \textbf{mDofs} and \textbf{mDofVels} together store the current value
-of the simulation state. In this example, the s
-
+of the simulation state. In this example, the simulation state
+includes the joint position and velocity of the skeleton. In
+\textbf{initDyn()}, we initialize \textbf{mDofs} and \textbf{mDofVels}
+randomly to give the skeleton a random initial pose and joint
+velocity. Because this app will access dynamic variables for
+simulation, we also need to call the member function
+\textbf{initDynamics()} of the \textbf{SkeletonDynamics
+  Class}. Finally, we set the current pose of the skeleton to
+\textbf{mDofs}. The two flags in \textbf{setPose()} will be explained
+in details later.
 
 The simulation code is called from the callback function
 \textbf{displayTimer()} in MyWindow.cpp.
