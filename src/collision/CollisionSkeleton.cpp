@@ -1,5 +1,5 @@
-#include "collision_skeleton.h"
-#include "collision_shapes.h"
+#include "CollisionSkeleton.h"
+#include "CollisionShapes.h"
 #include "kinematics/Shape.h"
 #include <cmath>
 #include "utils/LoadOpengl.h"

@@ -13,7 +13,7 @@
 #include "optimizer/ConstraintBox.h"
 #include "optimizer/ObjectiveBox.h"
 #include "optimizer/Var.h"
-#include "collision/collision_skeleton.h"
+#include "collision/CollisionSkeleton.h"
 
 #include "LandingProblem.h"
 #include "PositionConstraint.h"

@@ -69,7 +69,7 @@ namespace dynamics {
         void applyContactForces();
         void reset();
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
-        inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollision; }
+        inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollisionChecker; }
         int getNumContacts() const;
 
         
@@ -104,7 +104,7 @@ namespace dynamics {
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
         std::vector<int> mIndices;
-        collision_checking::SkeletonCollision* mCollision;
+        collision_checking::SkeletonCollision* mCollisionChecker;
         double mDt; // timestep
         double mMu; // friction coeff.
         int mNumDir; // number of basis directions

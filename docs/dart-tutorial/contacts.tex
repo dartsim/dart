@@ -32,7 +32,119 @@ the data structure of each contact point via
 \textbf{getCollisionChecker()}. We will see examples of both cases in
 the next subsection.
 
-\subsection{Simulation step}
+\subsection{Simulation}
+
+\subsubsection{Initialization}
+\textbf{initDyn()} for this example is very similar to the one
+described in Section \ref{}: we initialize the simulation state variables, \textbf{mDofs} and
+\textbf{mDofVels}, and then initialize the dynamic variables and the
+pose of the skeleton. The differences in this example are the following.
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.cpp]
+void MyWindow::initDyn()
+{
+  .....
+  mSkels[0]->setImmobileState(true);
+  mCollisionHandle = new dynamics::ContactDynamics(mSkels, 
+      mTimeStep);
+}
+\end{lstlisting}
+\rmfamily First, we set the ``ground'' skeleton to be immobile. If a
+skeleton is immobile, it is not included in the dynamic simulation,
+namely, it cannot be moved by forces. However, it still participates
+in collision detection and will induce contact forces to other
+skeletons. Second, we create an instance of \textbf{ContactDynamics
+  Class}, \textbf{mCollisionHandle}, to handle collisions between all the
+skeletons in the scene, including a ground and three boxes.
+
+\subsubsection{Simulation step}
+Again, simulation code is invoked from the callback function
+\textbf{displayTimer()}. In this example, we add a new feature of
+playback, which bakes and replays the simulation results.
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.cpp]
+void MyWindow::displayTimer(int _val)
+{
+  int numIter = mDisplayTimeout / (mTimeStep * 1000);
+  if (mPlay) {
+    mPlayFrame += 16;
+    if (mPlayFrame >= mBakedStates.size())
+      mPlayFrame = 0;
+ }else if (mSim) {
+    for (int i = 0; i < numIter; i++) {
+      static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))
+          ->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+      mIntegrator.integrate(this, mTimeStep);
+      bake();
+      mSimFrame++;
+    }
+    mForce.setZero();
+  }
+  glutPostRedisplay();
+  glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+}
+\end{lstlisting}
+\rmfamily When the flag \textbf{mPlay} is true, playback mode is
+active and the frame index \textbf{mPlayFrame} is incrementing based
+on the desired playback speed ($16$ is arbitrarily chosen). If
+\textbf{mSim} is true, DART enters the simulation mode and runs
+\textbf{numIter} steps of simulation as described in Section
+\ref{}. The difference in this example is that the user can push the
+largest box on the ground and DART will take into account this
+external force in the simulation. \textbf{addExtForce()} is a member
+function of \textbf{BodyNodeDynamics Class}. It takes input arguments
+as the coordinates of the point of application in the body frame, as
+well as the force vector in the world frame. \textbf{addExtForce()}
+also provides the options to express the point of application in the
+world frame or the force vector in the body frame.
+
+\ttfamily
+\begin{lstlisting}[caption=BodyNodeDynamics.h]
+void addExtForce( const Eigen::Vector3d& _offset, 
+                             const Eigen::Vector3d& _force, 
+                             bool _isOffsetLocal=true, 
+                             bool _isForceLocal=false );
+\end{lstlisting}
+\rmfamily
+
+After each integration step, we call \textbf{bake()} to store the new
+states of the skeletons and the collision results. The information of
+collision is stored in the data structure \textbf{ContactPoint}.
+\ttfamily
+\begin{lstlisting}[caption=CollisionSkeleton.h]
+struct ContactPoint {
+  Eigen::Vector3d point;
+  Eigen::Vector3d normal;
+  Eigen::Vector3d force;
+  .....
+}
+\end{lstlisting}
+\rmfamily
+
+The developer can access the position, normal, and force of any
+contact point via the member data, \textbf{mCollisionChecker} in
+\textbf{ContactDynamics Class}).  
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.cpp]
+void MyWindow::bake()
+{
+  int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
+  VectorXd state(mIndices.back() + 6 * nContact);
+  for (unsigned int i = 0; i < mSkels.size(); i++)
+  state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
+  for (int i = 0; i < nContact; i++) {
+    int begin = mIndices.back() + i * 6;
+    state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
+    state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
+  }
+  mBakedStates.push_back(state);
+}
+\end{lstlisting}
+\rmfamily
+
+\subsubsection{Integration}
 
 \ttfamily
 \begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
@@ -72,20 +184,5 @@ VectorXd MyWindow::evalDeriv() {
 \end{lstlisting}
 \rmfamily
 
-
-\framebox{\parbox{9cm}{
-\begin{itemize}
-\item Compute internal forces
-\item Compute external forces
-\item Evaluate derivatives for integration
-\begin{itemize}
-\item Update dofs
-\item Evaluate dynamic equations
-\item Detect collision and compute contact forces
-\item Compute derivatives
-\end{itemize}
-\item Integrate
-\end{itemize}
-}}
 
 

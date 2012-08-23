@@ -6,7 +6,7 @@ structures and how a simulation step is formulated using different
 numerical integration methods. Because this is the first example, we
 will examine the source code in more details.
 
-\subsection{Basic data structures}
+\subsection{Skeleton data structures}
 Let us begin with the main function, which only does two things:
 loading a skeleton file and creating a window for UI and rendering. 
 
@@ -47,7 +47,7 @@ not assume a particular UI or rendering package.
 In the main function, we create a graphics application based on
 \textbf{MyWindow Class} derived from \textbf{GlutWindow Class}, which
 is a simple API to interface with Glut functions. Based on the
-features of the app, the developer has to implement appropriate
+features of the app, the app developer has to implement appropriate
 virtual functions of \textbf{MyWindow Class}. In most graphics apps
 with keyboard user interaction, three basic virtual functions must be
 implemented:
@@ -99,6 +99,7 @@ simulation, we also need to call the member function
 \textbf{mDofs}. The two flags in \textbf{setPose()} will be explained
 in details later.
 
+\subsubsection{Simulation step}
 The simulation code is called from the callback function
 \textbf{displayTimer()} in MyWindow.cpp.
 
@@ -116,26 +117,52 @@ void MyWindow::displayTimer(int _val)
     glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 \end{lstlisting}
-\rmfamily 
-Each time \textbf{integrate()} is called, DART simulates one
+\rmfamily Each time \textbf{integrate()} is called, DART simulates one
 time step forward. The simulation time step is defined by
 \textbf{mTimeStep}. \textbf{displayTimer()} is called every
 \textbf{mDsiplayTimeout} millisecond. Because \textbf{mDsiplayTimeout}
 is typically larger than \textbf{mTimeStep}, we need to run a few
 iterations of simulation steps each time \textbf{displayTimer()} is
-called. The number of iterations is computed as \textbf{numIter}.
+called. The number of iterations is computed as
+\textbf{numIter}. Typically, a simulation step requires a few
+procedures in the following order:
+
+\framebox{\parbox{9cm}{
+\begin{itemize}
+\item Compute internal forces
+\item Compute external forces
+\item Integrate one step forward
+\end{itemize}
+}}
+
+Since we do not have internal or external forces applied to the
+skeleton in this example, invoking \textbf{integrate()} is the only
+procedure required to simulate. We will see examples in later sections
+that apply internal or external forces to the simulation.
 
 \subsubsection{Integration}
 \textbf{mIntegrator} is a data member of \textbf{MyWindows} and can be
 declared as an explicit Euler integrator or a RK4 integrator in
 MyWindows.h. Both integrators are derived from \textbf{Integrator
-  Class}, which has three virtual member functions,
-\textbf{getState()}, \textbf{setState()}, and
-\textbf{evalDeriv}. \textbf{getState()} and \textbf{setState()}
-retrieve and assign the value of current state, which includes the
-current degrees of freedom (DOFs) and the velocity of DOFs. The most
-involved function to implement is \textbf{evalDeriv}, which computes
-the derivative of the current state via equations of motion.
+  Class}. Although each integration method has its own formula to
+integrate the differential equation, the all explicit integration
+methods can be constructed using three basic operations: \textbf{Get
+  State}, \textbf{Set State}, and \textbf{Evaluate Derivatives}. These
+three operations needed to be implemented by the app developer as
+three virtual functions of \textbf{Integrator Class}:
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.h]
+  virtual Eigen::VectorXd getState();
+  virtual void setState(Eigen::VectorXd state);	
+  virtual Eigen::VectorXd evalDeriv();
+\end{lstlisting}
+\rmfamily 
+
+\textbf{getState()} and \textbf{setState()} retrieve and
+assign the value of current simulation state. The most involved
+function to implement is \textbf{evalDeriv}, which computes the
+derivative of the current state via equations of motion.
 
 \ttfamily
 \begin{lstlisting}[caption=MyWindows.cpp]
@@ -191,24 +218,6 @@ unstable if the exponential map rotation is outside the range of
 2PI. Once the rotation magnitude is changed, the velocity needs to
 change accordingly to represent the same angular velocity.
 
-\subsubsection{One step of simulation}
-Since we do not have internal or external forces applied to the
-skeleton in this example, calling \textbf{integrate()} is the only
-procedure required to simulate. The simulation step for this simple
-example can be summarized as follows:
-
-\framebox{\parbox{9cm}{
-\begin{itemize}
-\item Evaluate derivatives for integration
-\begin{itemize}
-\item Update dofs
-\item Evaluate dynamic equations
-\item Compute derivatives
-\end{itemize}
-\item Integrate
-\end{itemize}
-}}
-
 \subsection{Damping force}
 We encourage the reader to modify the example code with different time
 steps and integration methods. RK1 is clearly faster than RK4, but the
@@ -217,9 +226,7 @@ more stable, but its stability is still conditional on the time step
 of the simulation. One way to create a more stable passive simulation
 is to introduce damping force at joints. Damping forces can be added
 as internal forces via member function \textbf{setInternalForces()} in
-\textbf{Skeleton} class. Computing appropriate damping force requires
-some tweaking because the explicit integration methods are only
-conditionally stable. 
+\textbf{Skeleton} class. 
 
 \ttfamily
 \begin{lstlisting}[caption=MyWindow.cpp]
@@ -237,18 +244,21 @@ void MyWindow::displayTimer(int _val)
 \end{lstlisting}
 \rmfamily
 
-Adding internal forces slightly modify the simulation step as follows:
+Computing appropriate damping force requires some tweaking because the
+explicit integration methods are only conditionally stable. We set the
+damping coefficient to $0.001$ for all the DOFs controlling twisting
+and $0.01$ for the rest of DOFs.
 
-\framebox{\parbox{9cm}{
-\begin{itemize}
-\item Compute internal forces
-\item Evaluate derivatives for integration
-\begin{itemize}
-\item Update dofs
-\item Evaluate dynamic equations
-\item Compute derivatives
-\end{itemize}
-\item Integrate
-\end{itemize}
-}}
-
+\ttfamily
+\begin{lstlisting}[caption=MyWindow.cpp]
+VectorXd MyWindow::computeDamping()
+{
+  VectorXd damping = VectorXd::Zero(mDofVels.size());
+  damping = -0.01 * mDofVels;
+  for (int i = 0; i < damping.size(); i++)
+  if (i % 3 == 1)
+    damping[i] *= 0.1;
+  return damping;
+}
+\end{lstlisting}
+\rmfamily

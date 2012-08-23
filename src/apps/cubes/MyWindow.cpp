@@ -2,7 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/collision_skeleton.h"
+#include "collision/CollisionSkeleton.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -95,8 +95,6 @@ void MyWindow::displayTimer(int _val)
         mPlayFrame += 16;
         if (mPlayFrame >= mBakedStates.size())
             mPlayFrame = 0;
-        glutPostRedisplay();
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);      
     }else if (mSim) {
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
@@ -110,9 +108,9 @@ void MyWindow::displayTimer(int _val)
         }
         mForce.setZero();
 
-        glutPostRedisplay();
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
     }
+    glutPostRedisplay();
+    glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
 void MyWindow::draw()
