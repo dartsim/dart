@@ -113,12 +113,12 @@ void MyWindow::displayTimer(int _val)
     }else if (mSim) {        
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            if (mSimFrame > 1000 && mSimFrame < 1033)
+            if (mSimFrame > 1000 && mSimFrame < 1033) {
+                cout << "push on the ball" << endl;
                 mForce[0] = 60;
-            else
+            } else {
                 mForce[0] = 0.0;
-            cout << "iter = " << mSimFrame << endl;
-            
+            }
             //            tSim.startTimer();
             static_cast<BodyNodeDynamics*>(mSkels[2]->getNode("sphere_root"))->addExtForce(Vector3d(0.0, 0.0, 0), mForce);        
             mController->computeTorques(mDofs[1], mDofVels[1], mDofVels[2]);

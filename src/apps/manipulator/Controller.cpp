@@ -10,6 +10,7 @@ using namespace kinematics;
 using namespace dynamics;
 using namespace utils;
 
+//#define HAND_SHAPE
 
 Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
 
@@ -42,13 +43,11 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, c
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
     VectorXd d = -mKd * _dofVel;
-    VectorXd damping = d - mKd * invM * (-mSkel->getCombinedVector() + d) * mTimestep;
-    VectorXd tracking = p - mKd * invM * p * mTimestep;
-    //    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d);
-    //    mTorques = p + d - mKd * qddot * mTimestep;
-    mTorques += tracking;
-    // change plam orientation 
-    
+    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d);
+    mTorques = p + d - mKd * qddot * mTimestep;
+
+    // change hand shape
+#ifdef HAND_SHAPE    
     if (mFrame > 1015 && mFrame < 1035) {
         BodyNode *midFinger = mSkel->getNode("manipulator_middlePIP");
         BodyNode *ringFinger = mSkel->getNode("manipulator_ringPIP");
@@ -57,9 +56,6 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, c
         //  Vector3d zAxis = xAxis.cross(yAxis);
         Vector3d zAxis(0, 0, 1);
         
-        //        cout << "x " << xAxis << endl;
-        //        cout << "y " << yAxis << endl;
-        //        cout << "z " << zAxis << endl;
         double alpha = 1.0;
         Vector3d omega = zAxis * alpha;
         MatrixXd Jw = midFinger->getJacobianAngular();
@@ -67,9 +63,6 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, c
         VectorXd tau = Jw.transpose() * omega;
         VectorXd torques(mTorques.size());
         torques.setZero();
-        //        cout << "vel " << vel << endl;
-        //        VectorXd tau = (vel - _dofVel.head(4)) / mTimestep;
-        //        cout << "SPD " << mTorques << endl;
         for (int i = 0; i < tau.size(); i++) {
             int dofIndex = midFinger->getDependentDof(i);
             torques[dofIndex] += tau[i] * 3;
@@ -80,12 +73,10 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, c
             int dofIndex = ringFinger->getDependentDof(i);
             torques[dofIndex] += tau[i] * 3;
         }
-        // approximate joint interdependency
-        //        torques[17] = torques[16] * 0.3;
-        //        torques[21] = torques[20] * 0.3;
         mTorques += torques;
     }
-    mTorques += damping;
+#endif
+    // mimic joint interdependency
     if (abs(mTorques[16]) > 0.2)
         mTorques[17] = mTorques[16] * 0.3;
     if (abs(mTorques[20]) > 0.1)
