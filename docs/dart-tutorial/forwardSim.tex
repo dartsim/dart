@@ -244,6 +244,21 @@ void MyWindow::displayTimer(int _val)
 \end{lstlisting}
 \rmfamily
 
+The internal forces also need to be included when evaluating the
+derivatives for integration:
+
+\ttfamily
+\begin{lstlisting}[caption=MyWindows.cpp]
+VectorXd MyWindow::evalDeriv() {
+  .....
+  VectorXd qddot = mModel->getInvMassMatrix() 
+        * (-mModel->getCombinedVector()
+        + mModel->getInternalForces());
+  .....
+}
+\end{lstlisting}
+\rmfamily
+
 Computing appropriate damping force requires some tweaking because the
 explicit integration methods are only conditionally stable. We set the
 damping coefficient to $0.001$ for all the DOFs controlling twisting

@@ -122,51 +122,49 @@ struct ContactPoint {
 \end{lstlisting}
 \rmfamily
 
-The developer can access the position, normal, and force of any
+The developer can access the position, normal, and Cartesian force of any
 contact point via the member data, \textbf{mCollisionChecker} in
-\textbf{ContactDynamics Class}).  
+\textbf{ContactDynamics Class}.  
 
 \ttfamily
 \begin{lstlisting}[caption=MyWindow.cpp]
 void MyWindow::bake()
 {
-  int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
-  VectorXd state(mIndices.back() + 6 * nContact);
-  for (unsigned int i = 0; i < mSkels.size(); i++)
-  state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
+  .....
   for (int i = 0; i < nContact; i++) {
     int begin = mIndices.back() + i * 6;
-    state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
-    state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
+    state.segment(begin, 3) = mCollisionHandle
+      ->getCollisionChecker()->getContact(i).point;
+    state.segment(begin + 3, 3) = mCollisionHandle
+      ->getCollisionChecker()->getContact(i).force;
   }
-  mBakedStates.push_back(state);
+  .....
 }
 \end{lstlisting}
 \rmfamily
 
 \subsubsection{Integration}
+The integration process is very similar to the previous example where
+\textbf{evalDeriv()} updates the degrees of freedom in skeletons
+according to the current simulation state, evaluates the dynamic
+variables of equations of motion, and finally computes the derivatives
+for integration.
 
 \ttfamily
-\begin{lstlisting}[label=evalDeriv,caption=evalDeriv]
+\begin{lstlisting}[caption=MyWindow.cpp]
 VectorXd MyWindow::evalDeriv() {
-  // compute dynamic equations
   for (unsigned int i = 0; i < mSkels.size(); i++) {
     if (mSkels[i]->getImmobileState()) {
-      // need to update node transformation for collision
       mSkels[i]->setPose(mDofs[i], true, false);
     } else {
-      // need to update first derivatives for collision
       mSkels[i]->setPose(mDofs[i], false, true);
       mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
     }
   }
-  // compute contact forces
   mCollisionHandle->applyContactForces();
 
-  // compute derivatives for integration
   VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
   for (unsigned int i = 0; i < mSkels.size(); i++) {
-    // skip immobile objects in forward simulation
     if (mSkels[i]->getImmobileState())
       continue;
     int start = mIndices[i] * 2;
@@ -184,5 +182,22 @@ VectorXd MyWindow::evalDeriv() {
 \end{lstlisting}
 \rmfamily
 
+If a skeleton is immobile, we do not need to evaluate
+its dynamic equations, but we still need to call \textbf{setPose()} to
+update its degrees of freedom for collision detection. Note that the
+first flag is set to true because the updated transformation matrices
+are required in collision detection routine. For a mobile skeleton, we
+call both \textbf{setPose()} and \textbf{computeDynamics()}. Similar
+to the previos example, the first flag in \textbf{setPose()} is
+false. However, the second flag must be true for this example because
+the updated derivative information is needed in collision handling
+routine.
 
-
+Because this app involves collision, we need to invoke
+\textbf{applyContactForces()} in \textbf{evalDeriv()}. The collision
+detection and handling routine compute appropriate contact forces and
+store them in generalized coordinates. When computing the derivatives
+\textbf{qddot}, we need to include the contact forces by calling
+\textbf{getConstraintForce()}. In this example, we also allow for
+external push forces as user input. Therefore,
+\textbf{getExternalForces()} is called when computing \textbf{qddot}.
