@@ -54,8 +54,6 @@
 #include <tinyxml2.h>
 
 
-using boost::shared_ptr;
-
 //using namespace boost::filesystem;
 using namespace std;
 using namespace tinyxml2;
@@ -118,7 +116,7 @@ struct ParseCtx
 
 //---------------------------------------------------------------------------------------
 struct HUBOFile;
-typedef shared_ptr<HUBOFile> HUBOFilePtr;
+typedef boost::shared_ptr<HUBOFile> HUBOFilePtr;
 
 //---------------------------------------------------------------------------------------
 struct ObjXform
@@ -141,7 +139,7 @@ struct Robot
     string name;
     ObjXform xform;
 };
-typedef shared_ptr<Robot> RobotPtr;
+typedef boost::shared_ptr<Robot> RobotPtr;
 
 //---------------------------------------------------------------------------------------
 struct KinBody
@@ -150,7 +148,7 @@ struct KinBody
     bool makeJoinedLinksAdjacent;
     ObjXform xform;
 };
-typedef shared_ptr<KinBody> KinBodyPtr;
+typedef boost::shared_ptr<KinBody> KinBodyPtr;
 
 //---------------------------------------------------------------------------------------
 struct Body
@@ -162,14 +160,14 @@ struct Body
     string offsetfrom;
     ObjXform xform;
 };
-typedef shared_ptr<Body> BodyPtr;
+typedef boost::shared_ptr<Body> BodyPtr;
 
 //---------------------------------------------------------------------------------------
 struct Geometry
 {
     ObjXform xform;
 };
-typedef shared_ptr<Geometry> GeometryPtr;
+typedef boost::shared_ptr<Geometry> GeometryPtr;
 
 //---------------------------------------------------------------------------------------
 void ParseFile( path const & p );

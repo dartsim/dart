@@ -39,7 +39,7 @@
 #include <limits>
 #include <vector>
 
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
+#if defined(_MSC_VER) && (_MSC_VER <= 1600)
     #include <boost\math\special_functions\fpclassify.hpp>
     namespace std
     {
