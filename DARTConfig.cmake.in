@@ -33,7 +33,7 @@ find_path(FCL_INCLUDE_DIR fcl/BVH_model.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
     PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include)
 
-SET( DART_LIBS collision dynamics geometry kinematics renderer utils planning )
+SET( DART_LIBS collision dynamics geometry kinematics renderer utils robotics )
 FOREACH( DART_LIB ${DART_LIBS} )
     find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
         HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
