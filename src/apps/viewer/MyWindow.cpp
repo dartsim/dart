@@ -9,7 +9,7 @@ using namespace kinematics;
 
 void MyWindow::displayTimer(int _val)
 {
-    mFrame++;
+    mFrame += 4;
     if(mFrame == mMaxFrame){
         mFrame = 0;
         mPlaying = false;

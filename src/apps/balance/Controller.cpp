@@ -35,14 +35,14 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ContactDynam
         mKd(i, i) = 0.0;
     }
     for (int i = 6; i < 22; i++)
-        mKp(i, i) = 200.0;
+        mKp(i, i) = 200.0; // lower body + lower back
     for (int i = 22; i < nDof; i++)
         mKp(i, i) = 20.0;
     for (int i = 6; i < 22; i++) 
         mKd(i, i) = 100.0;
     for (int i = 22; i < nDof; i++) 
         mKd(i, i) = 10.0;
-
+        
     mPreOffset = 0.0;
 }
 
@@ -56,48 +56,27 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     mTorques = p + d - mKd * qddot * mTimestep;
 
     // angular momentum control for upper body
-    Vector3d lin = evalLinMomentum(_dofVel);
     Vector3d ang = evalAngMomentum(_dofVel);
-    VectorXd controlledAxis(1);
-    VectorXd deltaMomentum(1);
-    controlledAxis[0] = 5;
-    deltaMomentum[0] = 1000 * -ang[2];
+    VectorXd controlledAxis(2);
+    VectorXd deltaMomentum(2);
+    controlledAxis[0] = 3;
+    controlledAxis[1] = 5;
+    deltaMomentum[0] = 1000 * -ang[0];    
+    deltaMomentum[1] = 1000 * -ang[2];    
     mTorques += adjustAngMomentum(deltaMomentum, controlledAxis);
 
-    // ankle strategy
-    BodyNode *lHeel = mSkel->getNode("fullbody1_h_heel_left");
-    BodyNode *rHeel = mSkel->getNode("fullbody1_h_heel_right");
-    BodyNode *lToe = mSkel->getNode("fullbody1_h_toe_left");
-    BodyNode *rToe = mSkel->getNode("fullbody1_h_toe_right");
+    // ankle strategy for sagital plane
     Vector3d com = mSkel->getWorldCOM();
-    Vector3d cop;
-    Vector3d sum(Vector3d::Zero());
-    int count = 0;
-    if (computeCoP(lHeel, &cop)) {
-            sum += cop;
-            count++;
-    }
-    if (computeCoP(rHeel, &cop)) {
-            sum += cop;
-            count++;
-    }
-    if (computeCoP(lToe, &cop)) {
-            sum += cop;
-            count++;
-    }
-    if (computeCoP(rToe, &cop)) {
-            sum += cop;
-            count++;
-    }
-    if (count > 0) {
-        cop = sum / count;
-        double offset = com[0] - cop[0];
-        double k = 0.01;
-        double d = 1.0;
-        mDesiredDofs[10] += k * (0.022 - offset) + d * (mPreOffset - offset);
-        mDesiredDofs[17] += k * (0.022 - offset) + d * (mPreOffset - offset);
-        mPreOffset = offset;
-    }
+    double cop = 0.02;
+    double offset = com[0] - cop;
+    double k1 = 20.0;
+    double k2 = 10.0;
+    double kd = 100.0;
+    mTorques[10] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[12] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k2 * offset + kd * (mPreOffset - offset);
+    mPreOffset = offset;
 
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++){        

@@ -4,6 +4,7 @@
 
 using namespace kinematics;
 using namespace dynamics;
+using namespace std;
 
 int main(int argc, char* argv[])
 {
@@ -24,6 +25,10 @@ int main(int argc, char* argv[])
 
     MyWindow window(motion, (SkeletonDynamics*)model.getSkel(), NULL);    
    
+    cout << "space bar: simulation on/off" << endl;
+    cout << "'p': playback/stop" << endl;
+    cout << "'[' and ']': play one frame backward and forward" << endl;
+
     glutInit(&argc, argv);
     window.initWindow(640, 480, "Open Loop Control");
     glutMainLoop();

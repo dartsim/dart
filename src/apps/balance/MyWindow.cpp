@@ -25,13 +25,13 @@ void MyWindow::initDyn()
     mDofs[0][1] = -0.9; // ground level
     // default standing pose
     mDofs[1][1] = -0.1;
-    mDofs[1][6] = 0.2;
-    mDofs[1][9] = -0.5;
-    mDofs[1][10] = 0.3;
-    mDofs[1][13] = 0.2;
-    mDofs[1][16] = -0.5;
-    mDofs[1][17] = 0.3;
-    mDofs[1][21] = -0.1;
+    mDofs[1][6] = 0.2; // left hip
+    mDofs[1][9] = -0.5; // left knee
+    mDofs[1][10] = 0.3; // left ankle
+    mDofs[1][13] = 0.2; // right hip
+    mDofs[1][16] = -0.5; // right knee
+    mDofs[1][17] = 0.3; // right ankle
+    mDofs[1][21] = -0.1; // lower back
     
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->initDynamics();
@@ -69,12 +69,11 @@ VectorXd MyWindow::evalDeriv() {
         int size = mDofs[i].size();
         VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
-        deriv.segment(start, size) = mDofVels[i]; // set velocities
-        deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
+        deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // semi-implicit
+        deriv.segment(start + size, size) = qddot;
     }
     return deriv;
 }
-
 
 void MyWindow::setState(VectorXd newState) {
     for (unsigned int i = 0; i < mSkels.size(); i++) {
@@ -228,15 +227,25 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutPostRedisplay();
         }
         break;
-    case '1': // upper right force
+    case '1':
         mForce[0] = 200;
         mImpulseDuration = 10.0;
         cout << "push forward" << endl;
         break;
-    case '2': // upper right force
-        mForce[0] = -200;
+    case '2':
+        mForce[0] = -100;
         mImpulseDuration = 10.0;
         cout << "push backward" << endl;
+        break;
+    case '3':
+        mForce[2] = 300;
+        mImpulseDuration = 10.0;
+        cout << "push right" << endl;
+        break;
+    case '4':
+        mForce[2] = -300;
+        mImpulseDuration = 10.0;
+        cout << "push left" << endl;
         break;
     case 'p': // playBack
         mPlay = !mPlay;

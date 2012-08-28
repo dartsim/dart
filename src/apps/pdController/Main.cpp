@@ -4,6 +4,7 @@
 
 using namespace kinematics;
 using namespace dynamics;
+using namespace std;
 
 int main(int argc, char* argv[])
 {
@@ -23,6 +24,11 @@ int main(int argc, char* argv[])
     motion->loadFile(doffile);
 
     MyWindow window(motion, (SkeletonDynamics*)model.getSkel(), NULL);    
+
+    cout << "space bar: simulation on/off" << endl;
+    cout << "'p': playback/stop" << endl;
+    cout << "'[' and ']': play one frame backward and forward" << endl;
+    cout << "'1' and '2': programmed interaction" << endl;
    
     glutInit(&argc, argv);
     window.initWindow(640, 480, "PD Control");

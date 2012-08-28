@@ -16,13 +16,11 @@ int main(int argc, char* argv[])
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), NULL);
 
     cout << "space bar: simulation on/off" << endl;
-    cout << "'s': simulate one step" << endl;
     cout << "'p': playback/stop" << endl;
     cout << "'[' and ']': play one frame backward and forward" << endl;
     cout << "'v': visualization on/off" << endl;
     cout << "'1' and '2': programmed interaction" << endl;
-    
-   
+       
     glutInit(&argc, argv);
     window.initWindow(640, 480, "Balance");
     glutMainLoop();
