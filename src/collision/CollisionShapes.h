@@ -14,7 +14,8 @@
 namespace collision_checking
 {
     template<class BV> BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
-        float v[58][3] = {
+        float v[59][3] = {
+            {0, 0, 0},
             {0.135299, -0.461940, -0.135299},
             {0.000000, -0.461940, -0.191342},
             {-0.135299, -0.461940, -0.135299},
