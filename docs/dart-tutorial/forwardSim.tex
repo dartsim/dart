@@ -35,8 +35,25 @@ code. DART currently supports two formats of skeleton file: .vsk and
 .skel. In this example, we load in a skeleton (Chain.skel) with 10
 rigid links connected by ball joints.
 
-\karen{Add more details on differences between kinematic and dynamic
-  skeleton classes. Introduce Skeleton, BodyNode, and Joint classes}
+In general, an app developer does not need to know the details of DART
+library. However, a basic understanding of the following classes can
+help one quickly grasp the data structures DART uses for building a
+simulation app.
+
+\begin{itemize}
+\item{Skeleton.} A basic class that contains a list of body nodes, a
+  list of joints, and a list of degrees of freedom. 
+\item{SkeletonDynamics.} A derived class from \textbf{Skeleton
+    Class}. It provides member functions to compute dynamic equations
+  of the skeleton.
+\item{BodyNode.} A basic class that provides member functions to evaluate
+  transformation and first derivatives of transformation, to access
+  physical and geometric parameters of the node, and to compute the
+  linear and angular Jacobian matrices for the node.
+\item{BodyNodeDynamics.} A derived class from \textbf{BodyNode
+    Class}. It provides member functions to compute dynamic variables
+  required in the equations of motion.
+\end{itemize}
 
 \subsection{A simple app with graphics and UI}
 To create and visualize a basic simulation app, we integrate DART into

@@ -21,12 +21,10 @@ class Controller {
     virtual ~Controller() {};
 
     Eigen::VectorXd getTorques() { return mTorques; };
-    double getTorque(int _index) { return mTorques[_index]; };
-    void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; };
     void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
     dynamics::SkeletonDynamics* getSkel() { return mSkel; };
     Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; };
-    Eigen::MatrixXd getKp() {return mKp; };
+    void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; };
 
  protected: 
     kinematics::FileInfoDof *mMotion;
@@ -36,7 +34,7 @@ class Controller {
     Eigen::MatrixXd mKp;
     Eigen::MatrixXd mKd;
     double mTimestep;
-    int mFrame;
+    int mSimFrame;
     int mInterval;
 };
     

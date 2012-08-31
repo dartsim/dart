@@ -1,5 +1,4 @@
 #include "Controller.h"
-
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/Dof.h"
 #include "kinematics/FileInfoDof.h"
@@ -33,17 +32,17 @@ Controller::Controller(kinematics::FileInfoDof *_motion, dynamics::SkeletonDynam
     }
 #endif
 
-    mFrame = 0;
+    mSimFrame = 0;
     mInterval = (1.0 / mMotion->getFPS()) / mTimestep;
 }
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     // feedback control force
-    int frame = mFrame / mInterval;    
-    if (frame >= mMotion->getNumFrames())
-        frame = mMotion->getNumFrames() - 1;
+    int motionFrame = mSimFrame / mInterval;    
+    if (motionFrame >= mMotion->getNumFrames())
+        motionFrame = mMotion->getNumFrames() - 1;
     
-    mDesiredDofs = mMotion->getPoseAtFrame(frame);
+    mDesiredDofs = mMotion->getPoseAtFrame(motionFrame);
 #ifdef SPD
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
@@ -55,5 +54,5 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     mTorques = mSkel->getMassMatrix() * mTorques; // scaled by accumulated mass
 #endif
 
-    mFrame++; 
+    mSimFrame++; 
 }

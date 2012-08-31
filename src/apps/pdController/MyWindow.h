@@ -83,7 +83,6 @@ public:
     Controller *mController;
 
     void initDyn();
-    void setPose();
     void bake();
 };
 

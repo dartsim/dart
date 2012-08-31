@@ -49,7 +49,14 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
-    setPose();
+    for (unsigned int i = 0; i < mSkels.size(); i++) {
+        if (mSkels[i]->getImmobileState()) {
+            mSkels[i]->setPose(mDofs[i], false, false);
+        } else {
+            mSkels[i]->setPose(mDofs[i], false, false);
+            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
+        }
+    }
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         // skip immobile objects in forward simulation
@@ -71,17 +78,6 @@ void MyWindow::setState(VectorXd newState) {
         int size = mDofs[i].size();
         mDofs[i] = newState.segment(start, size);
         mDofVels[i] = newState.segment(start + size, size);
-    }
-}
-
-void MyWindow::setPose() {
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState()) {
-            mSkels[i]->setPose(mDofs[i], false, false);
-        } else {
-            mSkels[i]->setPose(mDofs[i], false, false);
-            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
-        }
     }
 }
 
@@ -152,16 +148,6 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         if (mSim) {
             mPlay = false;
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
-        }
-        break;
-    case 's': // simulate one frame
-        if (!mPlay) {
-            mForce = Vector3d::Zero();
-            setPose();
-            mIntegrator.integrate(this, mTimeStep);
-            mSimFrame++;
-            bake();
-            glutPostRedisplay();
         }
         break;
     case '1':
