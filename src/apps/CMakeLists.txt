@@ -23,7 +23,9 @@ foreach( APPDIR
              meshCollision
              leftLeg
              rightLeg
-             lowerBodyFreeFall )
+             lowerBodyFreeFall 
+			swinging
+						 lowerBodyWalk )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -42,6 +44,7 @@ endforeach(APPDIR)
 #endforeach(APPTARGET)
 
 foreach( APPTARGET
+		swinging
             exampleCollisionWithSkelton
             superCoolSimulation
             HandSPD
@@ -52,7 +55,8 @@ foreach( APPTARGET
             meshCollision
             leftLeg
             rightLeg
-             lowerBodyFreeFall )
+             lowerBodyFreeFall 
+						lowerBodyWalk)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
                                 FOLDER Apps
