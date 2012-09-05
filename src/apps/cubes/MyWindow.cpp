@@ -8,6 +8,7 @@
 #include "yui/GLFuncs.h"
 
 using namespace dynamics;
+using namespace utils;
 
 void MyWindow::initDyn()
 {

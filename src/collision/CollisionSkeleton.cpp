@@ -3,6 +3,11 @@
 #include "kinematics/Shape.h"
 #include <cmath>
 #include "utils/LoadOpengl.h"
+#include "utils/UtilsMath.h"
+
+using namespace std;
+using namespace Eigen;
+using namespace utils;
 
 namespace collision_checking{
     
@@ -11,8 +16,10 @@ namespace collision_checking{
         mBodyNode = _bodyNode;
         if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
             mMesh = createEllipsoid<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else {
+        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
             mMesh = createCube<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
+        } else {
+            mMesh = createMesh<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getVizMesh());
         }
     }
     CollisionSkeletonNode::~CollisionSkeletonNode()
@@ -20,22 +27,14 @@ namespace collision_checking{
         delete mMesh;
     }
 
-    int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* _otherNode, std::vector<ContactPoint>& _result, int _num_max_contact)
-    {
-        using namespace std;
-
-        Eigen::MatrixXd worldTrans(4, 4);
-        Eigen::MatrixXd matCOM;
-    
+    int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* _otherNode, vector<ContactPoint>& _result, int _num_max_contact)
+    {    
         BVH_CollideResult res;
-        Vec3f R1[3], T1, R2[3], T2;
-
         evalRT();
         _otherNode->evalRT();
 
         res.num_max_contacts = _num_max_contact;
         collide(*mMesh, mR, mT, *_otherNode->mMesh, _otherNode->mR, _otherNode->mT, &res);
-    
         int start, size;
         start = _result.size();
         size = 0;
@@ -44,7 +43,8 @@ namespace collision_checking{
         int numNoContacts = 0;
         int numContacts = 0;
 
-        for(int i=0;i<res.numPairs();i++) {
+        for(int i = 0; i < res.numPairs();i++) {
+            // for each pair of intersecting triangles, we create two contact points
             ContactPoint pair1, pair2;
             pair1.bd1 = mBodyNode;
             pair1.bd2 = _otherNode->mBodyNode;
@@ -62,7 +62,7 @@ namespace collision_checking{
             if(contactResult == COPLANAR_CONTACT) {
                 numCoplanarContacts++;      
                 //                if(numContacts != 0 || numCoplanarContacts > 1)
-                if(numContacts > 2)
+                if (numContacts > 2)
                   continue; 
             } else if(contactResult == NO_CONTACT) {
                 numNoContacts++;
@@ -71,14 +71,13 @@ namespace collision_checking{
                 numContacts++;
             }
             v = res.collidePairs()[i].normal;
-            pair1.normal = Eigen::Vector3d(v[0], v[1], v[2]);
-            pair2.normal = Eigen::Vector3d(v[0], v[1], v[2]);
+            pair1.normal = Vector3d(v[0], v[1], v[2]);
+            pair2.normal = Vector3d(v[0], v[1], v[2]);
         
             _result.push_back(pair1);
             _result.push_back(pair2);
 
             size+=2;
-
         }
 
         if(res.numPairs()==0)
@@ -87,51 +86,50 @@ namespace collision_checking{
         const double ZERO = 0.000001;
         const double ZERO2 = ZERO*ZERO;
 
-        int cur = start;
-        std::vector<int> deleteIDs;
-    
-        size = _result.size()-start;
+        vector<int> deleteIDs;
+        size = _result.size() - start;
         deleteIDs.clear();
 
-        //cout<<"before"<<result.size()<<endl;
-        for(int i=start;i<start+size;i++)
-            for(int j=i+1;j<start+size;j++) {
-                Eigen::Vector3d diff = _result[i].point - _result[j].point;
-                if(diff.dot(diff)<3*ZERO2){
+        // mark all the repeated points
+        for (int i = start; i < start + size; i++)
+            for (int j = i + 1; j < start + size; j++) {
+                Vector3d diff = _result[i].point - _result[j].point;
+                if (diff.dot(diff) < 3 * ZERO2) {
                     deleteIDs.push_back(i);
                     break;
                 }
             }
-
-        for(int i =deleteIDs.size()-1; i>=0;i--)
-            _result.erase(_result.begin()+deleteIDs[i]);
-    
-        size = _result.size()-start;
+        // delete repeated points
+        for (int i = deleteIDs.size() - 1; i >= 0; i--)
+            _result.erase(_result.begin() + deleteIDs[i]);
+        
+        size = _result.size() - start;
         deleteIDs.clear();
-    
+
+        // remove all the co-linear contact points
         bool bremove;
-    
-        for(int i=start;i<start+size;i++) {
+        for (int i = start; i < start + size; i++) {
             bremove = false;
-            for(int j=start;j<start+size;j++) {
-                if(j==i)
+            for (int j = start; j < start + size; j++) {
+                if (j == i)
                     continue;
-                if(bremove)
+                if (bremove)
                     break;
-                for(int k=j+1;k<start+size;k++) {
-                    if(i==k)
+                for (int k = j + 1; k < start + size; k++) {
+                    if (i == k)
                         continue;
-                    Eigen::Vector3d  v = (_result[i].point - _result[j].point).cross(_result[i].point - _result[k].point);
-                    if(v.dot(v)<ZERO2&& ((_result[i].point - _result[j].point).dot(_result[i].point - _result[k].point)<0)) {
+                    Vector3d  v = (_result[i].point - _result[j].point).cross(_result[i].point - _result[k].point);
+                    if (v.dot(v) < ZERO2 && ((_result[i].point - _result[j].point).dot(_result[i].point - _result[k].point) < 0)) {
                         bremove = true;
                         break;
                     }
                 }
             }
-            if(bremove)deleteIDs.push_back(i);
+            if (bremove)
+                deleteIDs.push_back(i);
         }
     
-        for(int i =deleteIDs.size()-1; i>=0;i--)
+        for (int i = deleteIDs.size() - 1; i >= 0; i--)
             _result.erase(_result.begin() + deleteIDs[i]);
 
         int collisionNum = res.numPairs();
@@ -139,27 +137,20 @@ namespace collision_checking{
         return collisionNum;
     }
 
-    void CollisionSkeletonNode::evalRT()
-    {
-        Eigen::MatrixXd worldTrans(4, 4);
-        Eigen::MatrixXd matCOM;
-        matCOM.setIdentity(4, 4);
-
-        for(int k=0;k<3;k++) {
-            matCOM(k, 3) = mBodyNode->getLocalCOM()[k];
+    void CollisionSkeletonNode::evalRT() {
+        mWorldTrans = mBodyNode->getWorldTransform();
+        Vector3d p = xformHom(mBodyNode->getWorldTransform(), mBodyNode->getLocalCOM());
+        for (int i = 0; i < 3; i++) {
+            mT[i] = p[i];
+            mWorldTrans(i, 3) = p[i];
         }
-        worldTrans = mBodyNode->getWorldTransform()*matCOM;
-        mWorldTrans = worldTrans;
-
-        for(int i=0;i<3;i++)
-            for(int j=0;j<3;j++)
-                mR[i][j] = worldTrans(i, j);
-
-        for(int i=0;i<3;i++)
-            mT[i] = worldTrans(i, 3);
+        
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                mR[i][j] = mBodyNode->getWorldTransform()(i, j);
     }
 
-    int CollisionSkeletonNode::evalContactPosition(BVH_CollideResult& _result,  CollisionSkeletonNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
+    int CollisionSkeletonNode::evalContactPosition(BVH_CollideResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
         int id1, id2;
         Triangle tri1, tri2;
         CollisionSkeletonNode* node1 = this;
@@ -179,30 +170,36 @@ namespace collision_checking{
         p3 = node2->mMesh->vertices[tri2[2]];
 
         Vec3f contact1, contact2;
-
         v1 = node1->TransformVertex(v1);
         v2 = node1->TransformVertex(v2);
         v3 = node1->TransformVertex(v3);
         p1 = node2->TransformVertex(p1);
         p2 = node2->TransformVertex(p2);
         p3 = node2->TransformVertex(p3);
-        int testRes;
-        testRes = FFtest(v1, v2, v3, p1, p2, p3, contact1, contact2);
-        _contactTri.v1=v1;
-        _contactTri.v2=v2;
-        _contactTri.v3=v3;
-        _contactTri.u1=p1;
-        _contactTri.u2=p2;
-        _contactTri.u3=p3;
+        int testRes = FFtest(v1, v2, v3, p1, p2, p3, contact1, contact2);
+
+        _contactTri.v1 = v1;
+        _contactTri.v2 = v2;
+        _contactTri.v3 = v3;
+        _contactTri.u1 = p1;
+        _contactTri.u2 = p2;
+        _contactTri.u3 = p3;
         if (testRes == COPLANAR_CONTACT) {
-            contact1 = v1 + v2 + v3;
+            double area1 = triArea(v1, v2, v3);
+            double area2 = triArea(p1, p2, p3);
+            //            cout << "this node = " << this->mBodynodeID << " other node = " << _other->mBodynodeID << endl;
+            if (area1 < area2)                 
+                contact1 = v1 + v2 + v3;
+            else 
+                contact1 = p1 + p2 + p3;
             contact1[0] /= 3.0;
             contact1[1] /= 3.0;
             contact1[2] /= 3.0;
             contact2 = contact1;
+            //            cout << contact1[0] << " " << contact1[1] << " " << contact1[2] << endl;
         }
-        _contactPosition1 = Eigen::Vector3d(contact1[0], contact1[1], contact1[2]);
-        _contactPosition2 = Eigen::Vector3d(contact2[0], contact2[1], contact2[2]);
+        _contactPosition1 = Vector3d(contact1[0], contact1[1], contact1[2]);
+        _contactPosition2 = Vector3d(contact2[0], contact2[1], contact2[2]);
         return testRes;
     }
 
@@ -259,9 +256,8 @@ namespace collision_checking{
         int num_max_contact = 100;
         clearAllContacts();
         int numCollision = 0;
-        //std::cout<<"begin checking cd"<<std::endl;
         for (int i = 0; i < mCollisionSkeletonNodeList.size(); i++) {
-            for (int j = i+1; j < mCollisionSkeletonNodeList.size(); j++) {
+            for (int j = i + 1; j < mCollisionSkeletonNodeList.size(); j++) {
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[j]->mBodyNode || mCollisionSkeletonNodeList[j]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode)
                     continue;
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == mCollisionSkeletonNodeList[j]->mBodyNode->getSkel())

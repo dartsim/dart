@@ -45,8 +45,6 @@
 #include "tri_tri_intersection_test.h"
 #include <map>
 
-#define ODE_STYLE 0
-
 namespace collision_checking {
     class CollisionSkeletonNode;
     struct ContactTriangle
@@ -99,6 +97,7 @@ namespace collision_checking {
         inline int FFtest(Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& R1, Vec3f& R2, Vec3f& R3, Vec3f& res1, Vec3f& res2);
         inline bool EFtest(Vec3f& p0, Vec3f&p1, Vec3f& r1, Vec3f& r2, Vec3f& r3, Vec3f& p);
         inline Vec3f TransformVertex(Vec3f& _v);
+        inline double triArea(Vec3f p1, Vec3f p2, Vec3f p3);
     };
 
     class SkeletonCollision {
@@ -167,13 +166,12 @@ namespace collision_checking {
         SET(V1, R2);
         SET(V2, R3);
         
-        int contactResult = tri_tri_intersect(V0,V1,V2,
-            U0,U1,U2, RES1, RES2);
+        int contactResult = tri_tri_intersect(V0, V1, V2, U0, U1, U2, RES1, RES2);
         
         SET(res1, RES1);
         SET(res2, RES2);
         return contactResult;
-
+        /*
         int count1 = 0, count2 = 0, count = 0;
         //Vec3f p1 = Vec3f(0, 0, 0), p2 = Vec3f(0, 0, 0);
         Vec3f tmp;
@@ -194,12 +192,6 @@ namespace collision_checking {
             p[count] = tmp;
             count++;
         }
-//         if(count1==2)
-//         {
-//             //res = p1*0.5;
-//            res1 = p1[0]; res2 = p1[1];
-//             return true;
-//         }
         
         if(EFtest(R1, R2, r1, r2, r3, tmp))
         {
@@ -216,18 +208,6 @@ namespace collision_checking {
             p[count] = tmp;
             count++;
         }
-        //printf("count %d\n",count);
-//         if(count2==2){
-//             res1 = p2[0]; res2 = p2[1];
-//             return true;
-//         }
-       
-//         if(count1==1&&count2==1)
-//         {
-//             res1 = p1[0]; res2 = p2[0];
-//             return true;
-//         }
-//         else return false;
         if(count==0) return false;
         else
         {
@@ -241,7 +221,7 @@ namespace collision_checking {
             }
             return true;
         }
-
+        */
     }  
 
     inline Vec3f CollisionSkeletonNode::TransformVertex( Vec3f& _v )
@@ -251,6 +231,16 @@ namespace collision_checking {
         return Vec3f(res[0], res[1], res[2]);
     }
     
+    inline double CollisionSkeletonNode::triArea(Vec3f p1, Vec3f p2, Vec3f p3) {
+        Vec3f a = p2 - p1;
+        Vec3f b = p3 - p1;
+        double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+        double bMag = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
+        double dp = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        double area =  0.5 * sqrt(aMag * bMag - dp * dp);
+        return area;
+    }
+
 } // namespace collision
 
 #endif
