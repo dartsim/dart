@@ -49,7 +49,7 @@ CONFIGURE_FILE( "${PROJECT_SOURCE_DIR}/assimp.pc.in" "${PROJECT_BINARY_DIR}/assi
 INSTALL( FILES "${PROJECT_BINARY_DIR}/assimp.pc" DESTINATION ${LIB_INSTALL_DIR}/pkgconfig/ COMPONENT assimp-dev)
 
 # Allow the user to build a static library
-SET ( BUILD_STATIC_LIB OFF CACHE BOOL
+SET ( BUILD_STATIC_LIB ON CACHE BOOL
 	"Build a static (.a) version of the library"
 )
 
