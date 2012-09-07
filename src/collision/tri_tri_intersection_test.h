@@ -7,11 +7,11 @@
 #define FABS(x) ((float)fabs(x))        /* implement as is fastest on your machine */
 
 /* if USE_EPSILON_TEST is true then we do a check: 
-         if |dv|<EPSILON then dv=0.0;
+         if |dv|<TTIT_EPSILON then dv=0.0;
    else no check is done (which is less robust)
 */
 #define USE_EPSILON_TEST TRUE  
-#define EPSILON 0.000001
+#define TTIT_EPSILON 0.000001
 
 #define NO_CONTACT 0
 #define COPLANAR_CONTACT -1
@@ -130,9 +130,9 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
 
     /* coplanarity robustness check */
 #if USE_EPSILON_TEST==TRUE
-    if(fabs(du0)<EPSILON) du0=0.0;
-    if(fabs(du1)<EPSILON) du1=0.0;
-    if(fabs(du2)<EPSILON) du2=0.0;
+    if(fabs(du0)<TTIT_EPSILON) du0=0.0;
+    if(fabs(du1)<TTIT_EPSILON) du1=0.0;
+    if(fabs(du2)<TTIT_EPSILON) du2=0.0;
 #endif
     du0du1=du0*du1;
     du0du2=du0*du2;
@@ -154,9 +154,9 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     dv2=DOT(N2,V2)+d2;
 
 #if USE_EPSILON_TEST==TRUE
-    if(fabs(dv0)<EPSILON) dv0=0.0;
-    if(fabs(dv1)<EPSILON) dv1=0.0;
-    if(fabs(dv2)<EPSILON) dv2=0.0;
+    if(fabs(dv0)<TTIT_EPSILON) dv0=0.0;
+    if(fabs(dv1)<TTIT_EPSILON) dv1=0.0;
+    if(fabs(dv2)<TTIT_EPSILON) dv2=0.0;
 #endif
 
     dv0dv1=dv0*dv1;

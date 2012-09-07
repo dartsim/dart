@@ -1,12 +1,12 @@
-#include "MyWindow.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
 #include <time.h>
+#include "collision/collision_skeleton.h"
+#include "kinematics/FileInfoSkel.hpp"
 
 // To load Mesh and Skel
-#include  <kinematics/Joint.h>
+#include <kinematics/Joint.h>
 #include <kinematics/ShapeMesh.h>
 #include <geometry/Mesh3DTriangle.h>
 #include <kinematics/Transformation.h>
@@ -15,7 +15,7 @@
 #include <dynamics/BodyNodeDynamics.h>
 #include <kinematics/Dof.h>
 
-    
+
 
 
 using namespace std;
@@ -74,7 +74,7 @@ void makePolarBear(const char* name, dynamics::SkeletonDynamics* MeshSkel)
     node->setShape( BearShape );
 
     // Load a Mesh3DTriangle to save in Shape
-    geometry::Mesh3DTriangle* m3d = new geometry::Mesh3DTriangle(DART_DATA_PATH"/obj/polarBear.obj", geometry::Mesh3D::OBJ);
+    geometry::Mesh3DTriangle* m3d = new geometry::Mesh3DTriangle(DART_DATA_PATH"obj/polarBear.obj", geometry::Mesh3D::OBJ);
     printf("Read mesh data. Resulting mesh has: %d vertices, %d faces\n", m3d->mNumVertices, m3d->mNumFaces);
 
     // Save Mesh3D in Shape (vizMesh)
@@ -88,19 +88,19 @@ void makePolarBear(const char* name, dynamics::SkeletonDynamics* MeshSkel)
     MeshSkel->addNode( node );
 }
 
-
 int main(int argc, char* argv[])
 {
     const int n = 2;
     const int trials = 10;
     const double stepsize = 0.01;
+	const int numFrames = 2001; //1 + (int)(trials * (2.0 / stepsize))
     
     Eigen::VectorXd pose;
 
     collision_checking::SkeletonCollision* mSkeletonCollision;
 
-    clock_t frameTimes[1 + (int)(trials * (2.0 / stepsize))];
-    int collisionsDetected[1 + (int)(trials * (2.0 / stepsize))];
+    clock_t frameTimes[numFrames];
+    int collisionsDetected[numFrames];
     int frame = 0;
 
     // Create some skeletons, fill them up with polar bears, and
