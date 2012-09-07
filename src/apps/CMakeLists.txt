@@ -24,6 +24,7 @@ foreach( APPDIR
              leftLeg
              rightLeg
              lowerBodyFreeFall 
+             collisionProfiling
 			swinging
 						 lowerBodyWalk )
     ADD_SUBDIRECTORY( ${APPDIR} )
@@ -56,6 +57,7 @@ foreach( APPTARGET
             leftLeg
             rightLeg
              lowerBodyFreeFall 
+             collisionProfiling
 						lowerBodyWalk)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES

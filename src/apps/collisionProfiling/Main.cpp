@@ -3,6 +3,7 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
+#include <time.h>
 
 // To load Mesh and Skel
 #include  <kinematics/Joint.h>
@@ -90,45 +91,66 @@ void makePolarBear(const char* name, dynamics::SkeletonDynamics* MeshSkel)
 
 int main(int argc, char* argv[])
 {
-    // **********
-    //-- Create a skeleton
-    dynamics::SkeletonDynamics MeshSkel1;
-    dynamics::SkeletonDynamics MeshSkel2;
-    dynamics::SkeletonDynamics MeshSkel3;
-    dynamics::SkeletonDynamics MeshSkel4;
-    dynamics::SkeletonDynamics MeshSkel5;
-
-    // fill it up with polar bears
-    makePolarBear("bear1", &MeshSkel1);
-    makePolarBear("bear2", &MeshSkel2);
-    makePolarBear("bear3", &MeshSkel3);
-    makePolarBear("bear4", &MeshSkel4);
-    makePolarBear("bear5", &MeshSkel5);
-
-    //-- Initialize mySkeleton
-    MeshSkel1.initSkel();
-    MeshSkel2.initSkel();
-    MeshSkel3.initSkel();
-    MeshSkel4.initSkel();
-    MeshSkel5.initSkel();
-
-    // // Verify that our skeleton has something inside :)
-    // printf( "Our skeletons have %d nodes \n", MeshSkel.getNumNodes() );
-    // printf( "Our skeletons have %d joints \n", MeshSkel.getNumJoints() );
-    // printf( "Our skeletons have %d DOFs \n", MeshSkel.getNumDofs() );
-
-    MyWindow window(&MeshSkel1, &MeshSkel2, &MeshSkel3, &MeshSkel4, &MeshSkel5, NULL);
-
-    cout << "space bar: simulation on/off" << endl;
-    cout << "'s': simulate one step" << endl;
-    cout << "'p': playback/stop" << endl;
-    cout << "'[' and ']': play one frame backward and forward" << endl;
-    cout << "'v': visualization on/off" << endl;
-    cout << "'1' and '2': programmed interaction" << endl;
+    const int n = 2;
+    const int trials = 10;
+    const double stepsize = 0.01;
     
-    glutInit(&argc, argv);
-    window.initWindow(640, 480, "Collision Profiler");
-    glutMainLoop();
+    Eigen::VectorXd pose;
 
+    collision_checking::SkeletonCollision* mSkeletonCollision;
+
+    clock_t frameTimes[1 + (int)(trials * (2.0 / stepsize))];
+    int collisionsDetected[1 + (int)(trials * (2.0 / stepsize))];
+    int frame = 0;
+
+    // Create some skeletons, fill them up with polar bears, and
+    // initialize them
+    dynamics::SkeletonDynamics* MeshSkels[(n * 2) + 1];
+    for (int i = 0; i < (2 * n) + 1; i++)
+    {
+        MeshSkels[i] = new dynamics::SkeletonDynamics();
+        makePolarBear("bear", MeshSkels[i]);
+        MeshSkels[i]->initSkel();
+        // make sure each skeleton has something inside
+        printf( "Skeleton %d has nodes, %d joints, and %d DOFs \n",
+                i,
+                MeshSkels[i]->getNumNodes(),
+                MeshSkels[i]->getNumJoints(),
+                MeshSkels[i]->getNumDofs());
+        MeshSkels[i]->setImmobileState(true);
+    }
+    mSkeletonCollision = new collision_checking::SkeletonCollision();
+    for (unsigned int i = 0; i < (n * 2) + 1; i++) {
+        for (unsigned int j = 0; j < MeshSkels[i]->getNumNodes(); j++) {
+            mSkeletonCollision->addCollisionSkeletonNode(MeshSkels[i]->getNode(j), false);
+        }
+    }
+
+    clock_t startTime = clock();
+    for (int trial = 0; trial < trials; trial++)
+        for (double position = 1.0; position > -1.0; position -= stepsize)
+        {
+            clock_t frameStartTime = clock();
+            for (int i = -n; i < n; i++)
+            {
+                pose.resize(MeshSkels[n+i]->getNumDofs());
+                pose[2] = position * (double)i;
+                MeshSkels[n+i]->setPose(pose, true, false);
+            }
+            mSkeletonCollision->checkCollision();
+            clock_t frameEndTime = clock();
+            frameTimes[frame] = frameEndTime - frameStartTime;
+            collisionsDetected[frame++] = mSkeletonCollision->getNumContact();
+        }
+    clock_t endTime = clock();
+
+    std::cout << "Time: " << (double)(endTime - startTime) / (double) CLOCKS_PER_SEC / (double)trials << std::endl;
+    std::cout << "frame,seconds,collisions" << std::endl;
+    for (int i = 0; i < 1 + (int)(trials * (2.0 / stepsize)); i++)
+        cout <<
+            i << "," <<
+            (double)frameTimes[i] / (double)CLOCKS_PER_SEC << "," <<
+            collisionsDetected[i] << std::endl;
+    
     return 0;
 }
