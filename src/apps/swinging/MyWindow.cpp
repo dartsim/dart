@@ -257,7 +257,7 @@ bool MyWindow::takeScreenshot() {
 	int tw = glutGet(GLUT_WINDOW_WIDTH);
 	int th = glutGet(GLUT_WINDOW_HEIGHT);
 	bool antiAlias = true;
-	if(yui::screenShot(FIF_PNG, tw, th, fileName, antiAlias)) {
+	if( screenshot()) {
 		cout << fileName << " generated\n";
 		return true;
 	}
