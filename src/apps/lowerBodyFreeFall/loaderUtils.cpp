@@ -87,13 +87,13 @@ void add_DOF(dynamics::SkeletonDynamics* _skel, kinematics::Joint* _joint, doubl
 void add_Shape(dynamics::BodyNodeDynamics* _node, const char *_meshObjPath, double _mass,
 		Eigen::Matrix3d _inertiaMatrix) {
 
-	kinematics::ShapeMesh *shape = new kinematics::ShapeMesh(Eigen::Vector3d(0, 0, 0), 0);
-	_node->setShape(shape);
-
 	// Load a Mesh3DTriangle to save in Shape
 	geometry::Mesh3DTriangle* m3d = new geometry::Mesh3DTriangle();
 	bool success = m3d->readMesh(_meshObjPath, geometry::Mesh3D::OBJ);
 	printf("[AddShape] -- Status of  reading MESH: Reading mesh result was: %d \n", success);
+
+	kinematics::ShapeMesh *shape = new kinematics::ShapeMesh(Eigen::Vector3d(1, 1, 1), 0.0, m3d);
+	_node->setShape(shape);
 
 	printf("Num of Vertices is: %d \n", m3d->mNumVertices);
 

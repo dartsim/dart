@@ -24,7 +24,7 @@ foreach( APPDIR
 	#leftLeg
 	#rightLeg
    lowerBody
-	#lowerBodyFreeFall 
+	lowerBodyFreeFall 
 	#collisionProfiling
 	#swinging
 	#lowerBodyWalk 
