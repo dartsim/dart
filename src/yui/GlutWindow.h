@@ -41,6 +41,7 @@
 #include "utils/LoadOpengl.h"
 #include "renderer/RenderInterface.h"
 #include <vector>
+#include "lodepng.h"
 
 namespace yui {
     class GlutWindow
@@ -89,6 +90,8 @@ namespace yui {
         bool mCapture;
         double mBackground[4];
         renderer::RenderInterface* mRI;
+        std::vector<unsigned char> mScreenshotTemp;
+        std::vector<unsigned char> mScreenshotTemp2;
     };
 
 } // namespace yui
