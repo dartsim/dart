@@ -1,7 +1,0 @@
-# use glob syntax.
-syntax: glob
-
-bin/*
-lib/*.a
-thirdparty/*
-src/utils/Paths.h
