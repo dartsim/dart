@@ -127,25 +127,6 @@ ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
-ADD_SUBDIRECTORY (thirdparty/libccd)
-SET(CCD_FOUND TRUE)
-SET(CCD_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libccd/src")
-SET(CCD_LIBRARY_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libccd/lib")
-SET(CCD_LIBRARIES ccd)
-
-include_directories(thirdparty/fcl/include)
-ADD_SUBDIRECTORY (thirdparty/fcl)
-
-if (PLANNING OR ROBOTICS)
-    if(TARGET zlib)
-        SET_TARGET_PROPERTIES( zlib PROPERTIES FOLDER thirdParty/assimp )
-    endif(TARGET zlib)
-endif (PLANNING OR ROBOTICS)
-
-if (SNOPT)
-    ADD_SUBDIRECTORY (thirdparty/snopt)
-endif (SNOPT)
-
 ###############################################
 # DART Source
 message(STATUS "Building DART source")
