@@ -19,7 +19,6 @@ endif(SNOPT)
 ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs} ${unittests_snopt})
 TARGET_LINK_LIBRARIES(unittests utils kinematics dynamics optimizer ${snopt_lib})
 
-LINK_THIRDPARTY_GFLAGS(unittests)
 LINK_THIRDPARTY_GLUT(unittests)
 LINK_THIRDPARTY_GTEST(unittests)
 LINK_THIRDPARTY_TINYXML(unittests)

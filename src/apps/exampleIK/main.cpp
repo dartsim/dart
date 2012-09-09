@@ -1,8 +1,6 @@
 #include <iostream>
 #include <string>
 using namespace std;
-#include <gflags/gflags.h>
-using namespace google;
 
 #include "kinematics/Skeleton.h"
 #include "kinematics/FileInfoC3D.h"
@@ -32,9 +30,7 @@ int main(int argc, char* argv[]) {
     ParseCommandLineFlags(&argc, &argv, true);
 
     // Define logging flag
-    FLAGS_alsologtostderr = true;
-    FLAGS_minloglevel = INFO;
-    FLAGS_v = 1;
+    cout << "todo: take argv options for log level\n" << endl;
 
     string filename_skel = FLAGS_skel;
     string filename_c3d = FLAGS_c3d;
