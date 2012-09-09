@@ -19,7 +19,7 @@ foreach( APPDIR
 	HandRedBall
 	cubes
 	exampleJointLimit
-	#meshTest
+	meshTest
 	#meshCollision
 	#leftLeg
 	#rightLeg

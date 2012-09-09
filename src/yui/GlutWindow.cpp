@@ -104,6 +104,8 @@ namespace yui {
 
     void GlutWindow::reshape(int w, int h)
     {
+        current()->mScreenshotTemp = vector<unsigned char>(w*h*4);
+        current()->mScreenshotTemp2 = vector<unsigned char>(w*h*4);
         current()->resize(w,h);
     }
 
@@ -161,18 +163,25 @@ namespace yui {
         sprintf(fileName, "%s%.4d.png", fileBase, count++); 
         int tw = glutGet(GLUT_WINDOW_WIDTH);
         int th = glutGet(GLUT_WINDOW_HEIGHT);
-        bool antiAlias = true;
-	/*
-        if(yui::screenShot(FIF_PNG, tw, th, fileName, antiAlias)){
-            cout<<fileName<<" generated\n";
+
+        glReadPixels( 0, 0,  tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
+
+        // reverse temp2 temp1
+        for (int row = 0; row < th; row++) {
+            memcpy(&mScreenshotTemp2[row * tw * 4], &mScreenshotTemp[(th - row - 1) * tw * 4], tw * 4);
+        }
+        
+        unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
+
+        //if there's an error, display it
+        if(result) {
+            std::cout << "lodepng error " << result << ": "<< lodepng_error_text(result) << std::endl;
+            return false;
+        }
+        else {
+            cout << "wrote screenshot " << fileName << "\n";
             return true;
         }
-        //sprintf(fileName, "%s%.4d.tga", fileBase, count++); 
-        //screenShot(tw, th, fileName, antiAlias);
-        return false;
-        */
-	return true;
-	// todo freeimage
     }
 
     inline GlutWindow* GlutWindow::current()

@@ -109,9 +109,17 @@ namespace yui {
                     mRotate = true;
                     mTrackBall.startBall(x,mWinHeight-y);
                 }
-            }else if(button == GLUT_RIGHT_BUTTON)
+            }else if(button == GLUT_RIGHT_BUTTON || button == GLUT_MIDDLE_BUTTON) {
                 mTranslate = true;
-
+            } else if (button == 3 && state == GLUT_DOWN) { // mouse wheel up
+                // each scroll generates a down and an immediate up,
+                // so ignore ups
+                mZoom += 0.1;
+            } else if (button == 4 && state == GLUT_DOWN) { // mouse wheel down?
+                // each scroll generates a down and an immediate up,
+                // so ignore ups
+                mZoom -= 0.1;
+            }
             mMouseX = x;
             mMouseY = y;
         }else{

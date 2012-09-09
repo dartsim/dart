@@ -95,32 +95,55 @@ void MyWindow::setPose() {
     mCollisionHandle->applyContactForces();
 }
 
+void MyWindow::retrieveBakedState(int frame)
+{
+    int nDof1 = mDofs.size();
+    int nDof2 = mDofs2.size();
+    mModel->setPose(mBakedStates[frame].head(nDof1), false, false);
+    mModel2->setPose(mBakedStates[frame].tail(nDof2), false, false);
+}
+
 void MyWindow::displayTimer(int _val)
 {
-    if (mPlayBack) {        
-        if (mCurrFrame < mBakedStates.size()) {
-            int nDof1 = mDofs.size();
-            int nDof2 = mDofs2.size();
-            mModel->setPose(mBakedStates[mCurrFrame].head(nDof1), false, false);
-            mModel2->setPose(mBakedStates[mCurrFrame].tail(nDof2), false, false);
-            mCurrFrame++;
+    switch(mPlayState)
+    {
+    case PLAYBACK:
+        if (mPlayFrame >= mBakedStates.size()) {
+            mPlayFrame = 0;
+        }
+        retrieveBakedState(mPlayFrame);
+        mPlayFrame++;
+        glutPostRedisplay();
+        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+        break;
+    case RECORD:
+        if (screenshotScheduled) { // Wait for every frame to be drawn and captured
             glutPostRedisplay();
-        }else{
-            mCurrFrame = 0;
-        }        
+            glutTimerFunc(mDisplayTimeout + 1000.0, refreshTimer, _val);
+        }
+        else if (mMovieFrame >= mBakedStates.size()) {
+            mPlayState = PAUSED;
+        }
+        else {
+            retrieveBakedState(mMovieFrame);
+            mMovieFrame++;
+            screenshotScheduled = true;
+            glutPostRedisplay();
+            glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+        }
+        break;
+    case SIMULATE:
+        setPose();
+        int numIter = mDisplayTimeout / (mTimeStep*1000);
+        for (int i = 0; i < numIter; i++) {
+            mIntegrator.integrate(this, mTimeStep);
+        }
+        mSimFrame += numIter;   
+        glutPostRedisplay();
+        bake();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
-        return;
+        break;
     }
-
-    int numIter = mDisplayTimeout / (mTimeStep*1000);
-    for (int i = 0; i < numIter; i++) {
-        mIntegrator.integrate(this, mTimeStep);
-    }
-    bake();
-    mFrame += numIter;   
-    glutPostRedisplay();
-    if(mRunning)	
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
 void MyWindow::draw()
@@ -131,7 +154,7 @@ void MyWindow::draw()
     mModel->draw(mRI);
     mModel2->draw(mRI);
 
-    if(!mPlayBack){
+    if(mPlayState == SIMULATE){
         glBegin(GL_LINES);    
         for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
             Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
@@ -150,57 +173,145 @@ void MyWindow::draw()
             mRI->popMatrix();
         }
     }
+
+    if (screenshotScheduled)
+    {
+        screenshotScheduled = false;
+        screenshot();
+    }
+        
     
-    // display the frame count in 2D text
-    char buff[64];
-    sprintf(buff,"%d",mFrame);
-    string frame(buff);
+    // display the frame count, the playback frame, and the movie length in 2D text
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
+    char buff[128];
+    string frame;
+
+    switch(mPlayState)
+    {
+    case PAUSED:
+        sprintf(buff," ");
+        break;
+    case PLAYBACK:
+        sprintf(buff,"Playing");
+        break;
+    case SIMULATE:
+        sprintf(buff,"Simulating");
+        break;
+    case RECORD:
+        sprintf(buff,"Saving a Movie");
+        break;
+    }
+    frame = string(buff);
+    yui::drawStringOnScreen(0.02f,0.17f,frame);
+
+    sprintf(buff,"Sim Frame: %d", mSimFrame);
+    frame = string(buff);
+    yui::drawStringOnScreen(0.02f,0.12f,frame);
+
+    sprintf(buff,"Play Frame: %d", mPlayFrame);
+    frame = string(buff);
+    yui::drawStringOnScreen(0.02f,0.07f,frame);
+
+    sprintf(buff,"Movie Frame: %d", mMovieFrame);
+    frame = string(buff);
     yui::drawStringOnScreen(0.02f,0.02f,frame);
+
     glEnable(GL_LIGHTING);
 }
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
     switch(key){
-    case ' ': // use space key to play or stop the motion
-        mRunning = !mRunning;
-        if(mRunning){
-            mPlayBack = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+    case ' ': // pause or unpause whatever's running; if space is the
+              // first thing that's pressed, simulate
+        if (mPlayState == PAUSED)
+        {
+            if (mPlayStateLast != PAUSED)
+                mPlayState = mPlayStateLast;
+            else
+                mPlayState = SIMULATE;
+            glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+        }
+        else
+        {
+            mPlayStateLast = mPlayState;
+            mPlayState = PAUSED;
         }
         break;
-    case 'r': // reset the motion to the first frame
-        mFrame = 0;
+    case 's': // switch to simulation mode
+        if (mPlayState == SIMULATE) {
+            mPlayState = PAUSED;
+        }
+        else {
+            if (mPlayState == PAUSED)
+                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+            mPlayState = SIMULATE;
+            mPlayStateLast = SIMULATE;
+        }
+        break;
+    case 'm': // switch to movie-saving mode
+        if (mPlayState == RECORD) {
+            mPlayState = PAUSED;
+        }
+        else {
+            if (mPlayState == PAUSED)
+                glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+            mPlayState = RECORD;
+            mPlayStateLast = RECORD;
+        }
+        break;
+    case 'p': // switch to playback mode
+        if (mPlayState == PLAYBACK) {
+            mPlayState = PAUSED;
+        }
+        else {
+            if (mPlayState == PAUSED)
+                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+            mPlayState = PLAYBACK;
+            mPlayStateLast = PLAYBACK;
+        }
+        break;
+
+    case 'o':
+        mPlayFrame += 1;
+        if (mPlayFrame >= mBakedStates.size()) mPlayFrame = 0;
+        retrieveBakedState(mPlayFrame);
+        glutPostRedisplay();
+        break;
+    case 'i':
+        mPlayFrame -= 1;
+        if (mPlayFrame < 0) mPlayFrame = mBakedStates.size()-1;
+        retrieveBakedState(mPlayFrame);
+        glutPostRedisplay();
+        break;
+    case 'r': // set playback to the first frame
+        mPlayFrame = 0;
+        retrieveBakedState(mPlayFrame);
+        glutPostRedisplay();
+        break;
+    case 't': // set playback motion to the newest simulated frame
+        mPlayFrame = mBakedStates.size()-1;
+        retrieveBakedState(mPlayFrame);
+        glutPostRedisplay();
         break;
     case 'h': // show or hide markers
         mShowMarker = !mShowMarker;
         break;
-    case 's': // simulate one frame
-        setPose();
-        mIntegrator.integrate(this, mTimeStep);
-        mFrame++;   
-        glutPostRedisplay();
-        break;
-    case 'p': // playBack
-        mPlayBack = !mPlayBack;
-        if(mPlayBack){
-            mRunning = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
-        }
+    case 'n': // save a single screeNshot
+        screenshot();
         break;
     case 'l': // right force
         mForce[0] = 300.0;
         static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.0, 0.1, 0), mForce);
         mForce[0] = 0.0;
-        cout << "push" << endl;
+        cout << "right" << endl;
         break;
     case 'k': // left force
         mForce[0] = -300.0;
         static_cast<BodyNodeDynamics*>(mModel->getNode(0))->addExtForce(Vector3d(0.0, 0.1, 0), mForce);
         mForce[0] = 0.0;
-        cout << "push" << endl;
+        cout << "left" << endl;
         break;
 
     default:
