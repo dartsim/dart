@@ -54,11 +54,7 @@ node root { 0
         primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
 
         node node2 { 2
-<<<<<<< HEAD
-            chain { 3	
-=======
             chain { 2	
->>>>>>> karen
                 telescope { <0.0,-1.0,0.0>, Length }
                 rotate_expmap { <node2<a-X>, node2<a-Y>, node2<a-Z>> }
             }
@@ -113,16 +109,6 @@ node root { 0
                                         }
                                         primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
 
-<<<<<<< HEAD
-                                        node node10 { 10
-                                            chain { 2
-                                                telescope { <0.0,-1.0,0.0>, Length }
-                                                rotate_expmap { <node10<a-X>, node10<a-Y>, node10<a-Z>> }
-                                            }
-                                            primitive {<0.2,1.0,0.2>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
-                                        }
-=======
->>>>>>> karen
                                     }
                                 }
                             }

@@ -9,15 +9,9 @@ dofs {
 	l_thigh_euler_z { 0.0, -3.1416, 3.1416 }
 	l_thigh_euler_y { 0.0, -3.1416, 3.1416 }
 	l_thigh_euler_x { 0.0, -3.1416, 3.1416 }
-<<<<<<< HEAD
-	thigh_len { 0.3521, 0.0000, 1.0000 }
-	l_knee_euler_z { -0.17, -3.1416, 0.0000 }
-	shin_len { 0.4237, 0.0000, 1.0000 }
-=======
 	thigh_len { 0.3721, 0.0000, 1.0000 }
 	l_knee_euler_z { -0.17, -3.1416, 0.0000 }
 	shin_len { 0.3737, 0.0000, 1.0000 }
->>>>>>> karen
 	l_ankle_euler_z { 0.0000, -0.5236, 0.5236 }
 	l_ankle_euler_y { 0.0000, -0.7854, 0.7854 }
 	foot_len { 0.208, 0.0000, 1.0000 }
@@ -90,11 +84,7 @@ node root { 0
 
 		}
 
-<<<<<<< HEAD
-		primitive {			<0.3000,1.0000,0.3000>, <0.0000,-0.5000,0.0000>, thigh_len, CUBE, thigh_mass
-=======
 		primitive {			<0.2500,1.0000,0.2500>, <0.0000,-0.5000,0.0000>, thigh_len, CUBE, thigh_mass
->>>>>>> karen
 		}
 
 		node h_shin_left { 2
@@ -132,11 +122,7 @@ node root { 0
 		}
 
 		primitive {			
-<<<<<<< HEAD
-			<0.3000,1.0000,0.3000>, <0.0000,-0.5000,0.0000>, thigh_len, CUBE, thigh_mass
-=======
 			<0.2500,1.0000,0.2500>, <0.0000,-0.5000,0.0000>, thigh_len, CUBE, thigh_mass
->>>>>>> karen
 		}
 
 		node h_shin_right { 5
