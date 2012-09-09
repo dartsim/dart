@@ -37,8 +37,13 @@
 
 #include <iostream>
 #include <string.h>
+#include <time.h>
 using namespace std;
 #include "Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
+
+//#if defined _WIN64 || defined _WIN32
+//#define CLOCKS_PER_SEC 1000
+//#endif
 
 namespace utils {
   

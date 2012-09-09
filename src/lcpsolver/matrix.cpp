@@ -23,7 +23,7 @@
 #include "common.h"
 #include "matrix.h"
 //#include "config.h"
-//#include <malloc.h>
+#include <malloc.h>
 
 #ifndef EFFICIENT_ALIGNMENT
 #define EFFICIENT_ALIGNMENT 16

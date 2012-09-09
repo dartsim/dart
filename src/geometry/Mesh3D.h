@@ -55,8 +55,8 @@ namespace geometry {
         unsigned int mNumFaces;
         vector<unsigned int> mNumFaceVertices;
 
-        vector<Eigen::Vector2d> mVertexTextures;
-        vector<Eigen::Vector3d> mVertexNormals;	// may not be same as the number of vertices
+        std::vector<Eigen::VectorXd> mVertexTextures;
+        std::vector<Eigen::VectorXd> mVertexNormals;	// may not be same as the number of vertices
 
         Eigen::VectorXd mVertexPos;	// xyz in sequence
         Eigen::VectorXd mVertexVel;	// xyz in sequence
