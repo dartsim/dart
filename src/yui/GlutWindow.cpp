@@ -3,6 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
+              Saul Reynolds-Haertle <saulrh@gatech.edu>
  * Date: 07/21/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
