@@ -1,4 +1,181 @@
 \section{LCP Formulation}
+<<<<<<< HEAD
+=======
+The problem of contact handling is based on three types of
+constraints: normal direction constraints, directional friction constraints,
+and friction cone constraints. Together with equations of
+motion described earlier, these three sets of constraints constitute a
+LCP for unknown variables $\dot{\vc{q}}$, $\vc{f}_n$, $\vc{f}_d$, and
+auxiliary variables $\lambda$.
+
+\subsection{Normal Direction Constraints}
+\begin{packed_item}
+\item{expression 1:} $\vc{f}_n \geq 0$
+\item{expression 2:} $N \dot{\vc{q}} \geq 0$
+\item{expression 3:} $(N \dot{\vc{q}})^T\vc{f}_n = 0$
+\end{packed_item}
+Expression 1 ensures there is no pulling force. Expression 2 prevents
+penetration by enforcing a nonnegative normal velocity at
+contact. Expression 3 constrains the normal force based on the
+velocity. If $N \dot{\vc{q}} > 0$, then $\vc{f}_n = 0$ (in
+takeoff). If $\vc{f}_n > 0$ then $N \dot{\vc{q}} = 0$ (in contact).
+
+\subsection{Directional Friction Constraints}
+\begin{packed_item}
+\item{expression 4:} $\vc{f}_d \geq 0$
+\item{expression 5:} $B^T\dot{\vc{q}} + E\lambda \geq 0$
+\item{expression 6:} $(B^T\dot{\vc{q}} + E\lambda)^T\vc{f}_d = 0$
+\end{packed_item}
+Here $E \in R^{pd \times p}$ is a binary matrix whose structure is
+defined as follows: 
+\begin{equation}
+\label{eq:ematrix}
+E = \left[\begin{matrix}\vc{e}_1 & & \\  & \ddots & \\  & & \vc{e}_p \end{matrix}\right]
+\end{equation}
+where $\vc{e}$ is a vector of ones in
+$R^d$. Additionally, $\lambda$ is a vector in $R^p$ that contains all
+of the auxiliary variables.
+\begin{equation}
+\label{eq:lambda}
+\lambda = \left[\begin{matrix}\lambda_1 \\  \vdots \\ \lambda_p\end{matrix}\right]
+\end{equation}
+
+The goal of directional friction constraints is to ensure that contact
+slipping on the surface is in the opposite direction of the friction
+force. Let us first exam the first term of Expression 5,
+$B^T\dot{\vc{q}}$, the velocity at contact projected onto each friction
+cone basis vector. The projection will end up in one of the three cases:
+\begin{enumerate}
+\item The projected vector is closer to one of the bases than others. The most
+  negative element in $B^T\dot{\vc{q}}$ is unique.
+\item The projected vector is right in the middle of two basis
+  vectors. The two most negative elements in $B^T\dot{\vc{q}}$ are the
+  same.
+\item The projected vector is a zero vector.
+\end{enumerate}
+Because the smallest possible value for any element
+in $B^T\dot{\vc{q}} + E\lambda$ is zero (by Expression 5), the first case has at most
+one zero element in $B^T\dot{\vc{q}} + E\lambda$. Assuming the index
+of that zero element is $i$, Expression 5 and Expression 6 together
+state that $\vc{f}_d$ must be a zero vector except for the $i$-th
+element. This nonzero element in $\vc{f}_d$ determines the direction
+of the friction force while the corresponding $i$-th element in
+$B^T\dot{\vc{q}} + E\lambda$ indicates the most negative projection of
+tangent velocity. Therefore, given a set of basis directions, the
+friction force is indeed in the most opposite direction of contact
+slipping. The second case rarely happens, but when it does we can
+arbitrary pick one of the two bases to break the tie and apply the
+same reasoning as the first case. The third case indicates either
+static contact (when $\lambda = 0$) or contact breakage (when $\lambda
+> 0$). It will be more clear after we introduce friction cone
+constraints.
+
+Is it valid to choose a large positive $\lambda$ such that all the
+elements of $B^T\dot{\vc{q}} + E\lambda$ are greater than zero? It
+does not seem to violate any of the expressions here, but we will see
+the implication of that in the next subsection.
+
+\ignorethis{
+Assuming
+there exists one zero element in $B^T\dot{\vc{q}} + E\lambda$ whose
+index is $i$, the Expression 5 and Expression 6 together state that
+$\vc{f}_d$ must be a zero vector except for the $i$-th element. This
+nonzero element in $\vc{f}_d$ determines the direction of the friction
+force. Since $B^T\dot{\vc{q}}$ is the velocity at contact projected
+onto friction cone bases, the $i$-th element of $B^T\dot{\vc{q}} +
+E\lambda$ indicates the most negative projection of tangent
+velocity. Therefore, given a set of basis directions, the friction
+force is indeed in the most opposite direction of contact slipping. Is
+it valid to choose a large positive $\lambda$ such that all the
+elements of $B^T\dot{\vc{q}} + E\lambda$ are greater than zero? The
+answer is no but to see that we need to also consider friction cone
+constraints.}
+
+\subsection{Friction Cone Constraints}
+\begin{packed_item}
+\item{expression 7:} $\lambda \geq 0$
+\item{expression 8:} $\mu\vc{f}_n - E^T\vc{f}_d \geq 0$
+\item{expression 9:} $\lambda^T(\mu\vc{f}_n - E^T\vc{f}_d) = 0$
+\end{packed_item}
+Friction cone constraints describe the switch condition between static
+state and slipping state of a contact. From the previous section, we
+know that at most one element of $\vc{f}_d$ can be nonzero for the first (and
+the second) case. Therefore, Expression 8 states that the ratio of tangent
+contact force to normal contact force must be less than or equal to
+the friction coefficient $\mu$. If the contact force is within the
+friction cone (inequality case in Expression 8), $\lambda$ must be
+zero by Expression 9. When $\lambda$ is zero, the corresponding
+Expression 5 becomes $B^T\dot{\vc{q}} \geq 0$. Because the bases of
+friction cones are arranged in pairs of opposite directions (\eg
+$\vc{d}_1 = -\vc{d}_5$, $\vc{d}_2 = -\vc{d}_6$), the only way for all
+elements to be nonnegative is when $B^T\dot{\vc{q}}$ is a zero vector
+(no slipping), hence the friction cone condition.
+
+Now, we can go back to the question about validity of selecting a
+large positive $\lambda$ such that all the elements of
+$B^T\dot{\vc{q}} + E\lambda$ are greater than zero. If we do so,
+$\vc{f}_d$ will be all zeros by Expression 6, which leads to
+$\mu\vc{f}_n \geq 0$ by Expression 8. If $\vc{f}_n > 0$, $\lambda$
+must be zero by Expression 9, contradicting the assumption that
+$\lambda$ is a large positive value. Therefore, $B^T\dot{\vc{q}} +
+E\lambda$ can be greater than zero only when the contact is broken
+($\vc{f}_n = 0$). As long as the contact exists, $\lambda$ will always
+be either zero or a positive value that makes the most negative
+element of $B^T\dot{\vc{q}} + E\lambda$ exactly zero.
+
+\ignorethis{
+ Recall that at most one element
+of $\vc{f}_d$ can be nonzero when $B^T\dot{\vc{q}} + E\lambda$ is not
+a zero vector \footnote{In a special case when the tangent velocity is
+  right in the middle of two basis directions, there are two nonzero
+  elements in $\vc{f}_d$. We can arbitrarily pick one of the two
+  bases.}. Therefore, Expression 8 states that the ratio of tangent
+contact force to normal contact force must be less than or equal to
+the friction coefficient $\mu$. If the contact force is within the
+friction cone (inequality case in Expression 8), $\lambda$ must be
+zero by Expression 9. When lambda is zero, the corresponding
+Expression 5 becomes $B^T\dot{\vc{q}} \geq 0$. Because the bases of
+friction cones are arranged in pairs of opposite directions (\eg
+$\vc{d}_1 = -\vc{d}_5$, $\vc{d}_2 = -\vc{d}_6$), the only way for all
+elements to be nonnegative is when $B^T\dot{\vc{q}}$ is a zero vector
+(no slipping), hence the friction cone condition.
+
+Now, we can go back to the question about validity of selecting a large positive
+$\lambda$ such that all the elements of $B^T\dot{\vc{q}} + E\lambda$
+are greater than zero. If we do so, $\vc{f}_d$ will be all zeros by
+Expression 6. Consequently,
+Expression 8 becomes $\mu\vc{f}_n -
+E^T\vc{f}_d > 0$, which leads to $\lambda = 0$ by Expression 9. This
+contradicts our assumption that $\lambda$ is a large positive
+value. Therefore, if we consider all the constraints together,
+$\lambda$ will always be either zero or a positive value that makes
+the most negative element of $B^T\dot{\vc{q}} + E\lambda$ exactly
+zero.}
+
+\subsection{LCP}
+Putting all the constraints together, we can construct the following linear system of equations:
+\begin{equation}
+\label{eq:bigsystem}
+\begin{array}{cc}
+\left[\begin{matrix}0 \\\vc{a} \\ \vc{b} \\ \vc{c} \end{matrix}\right] =
+\left[\begin{matrix}M & -\Delta t N & -\Delta t B & 0 \\ N^T & 0 & 0 & 0 \\ B^T & 0 & 0 & E \\ 0 & \mu & -E^T & 0\end{matrix}\right]\left[\begin{matrix}\vc{\dot{\vc{q}}} \\ \vc{f}_n \\ \vc{f}_d \\ \lambda\end{matrix}\right] + \left[\begin{matrix}-\tau^* \\ 0 \\ 0 \\0\end{matrix}\right] \\
+\begin{matrix}
+\left[\begin{matrix}\vc{f}_n \\ \vc{f}_d \\ \lambda\end{matrix}\right] \geq 0, & 
+\left[\begin{matrix}\vc{a} \\ \vc{b} \\ \vc{c}\end{matrix}\right] \geq 0, &
+\left[\begin{matrix}\vc{a} \\ \vc{b} \\ \vc{c}\end{matrix}\right]^T\left[\begin{matrix}\vc{f}_n \\ \vc{f}_d \\ \lambda\end{matrix}\right] = 0
+\end{matrix}
+\end{array}
+\end{equation}
+The first row of the system is based on Equation
+\ref{eq:changemotionequations5}. The remaining three rows, as well as
+the constraints, encapsulate the nine LCP conditions described
+above. Unfortunately, the construction described is in MLCP (Mixed
+LCP) form. To convert it to standard form, we need to make a few
+adjustments.
+
+\ignorethis{
+\section{LCP Formulation}
+>>>>>>> karen
 Recall that we need $V_n$ (the relative velocity), which is given by the following expression:
 \begin{equation}
 \label{eq:vn0}
@@ -76,4 +253,11 @@ Here $(a, b, c)$ are the results of the following constraints:
 The expression for $\vec{v_n}$ comes from solving for the relative velocity in Equation \ref{eq:vn3}.
 \\
 \\
+<<<<<<< HEAD
 Unfortunately, the construction described is in MLCP (Mixed LCP) form. To convert it to standard form, we need to make a few adjustments.
+=======
+Unfortunately, the construction described is in MLCP (Mixed LCP)
+form. To convert it to standard form, we need to make a few
+adjustments.
+}
+>>>>>>> karen

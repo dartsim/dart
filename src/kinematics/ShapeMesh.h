@@ -40,23 +40,28 @@
 
 #include "Shape.h"
 
+namespace geometry {
+    class Mesh3D;
+}
+
 namespace kinematics {
 
-class ShapeMesh : public Shape {
-public:
+    class ShapeMesh : public Shape {
+    public:
+        ShapeMesh(Eigen::Vector3d _dim, double _mass, geometry::Mesh3D *_mesh);
 
-	ShapeMesh(Eigen::Vector3d _dim, double _mass);
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
+    private:
+        void computeMassTensor();
+        void computeVolume();
+        void initMeshes(); ///< initialize mVizMesh and mCollisionMesh>
 
-	void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-			bool _default = true) const;
-private:
-	void computeMassTensor();
-	void computeVolume();
-	void initMeshes();  ///< initialize mVizMesh and mCollisionMesh>
-public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
+        geometry::Mesh3D *mMeshData;
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
 
-}  // namespace kinematics
+} // namespace kinematics
 
 #endif // #ifndef KINEMATICS_PRIMITIVE_MESH_H
+

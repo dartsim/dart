@@ -13,20 +13,21 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 #endforeach(APPDIR)
 
 foreach( APPDIR
-            exampleCollisionWithSkelton
-            superCoolSimulation
-            HandSPD 
-             HandRedBall
-             cubes
-             exampleJointLimit
-             meshTest
-             meshCollision
-             leftLeg
-             rightLeg
-             lowerBodyFreeFall 
-             collisionProfiling
-			swinging
-						 lowerBodyWalk )
+	exampleCollisionWithSkelton
+	#superCoolSimulation
+	HandSPD 
+	HandRedBall
+	cubes
+	exampleJointLimit
+	#meshTest
+	#meshCollision
+	#leftLeg
+	#rightLeg
+	#lowerBodyFreeFall 
+	#collisionProfiling
+	#swinging
+	#lowerBodyWalk 
+)
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
@@ -38,31 +39,31 @@ endforeach(APPDIR)
 #            exampleLCP )
 #    IF(TARGET ${APPTARGET})
  #       SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
- #                               FOLDER Apps
- #                               #EXCLUDE_FROM_DEFAULT_BUILD ON
- #                               )
+#                               FOLDER Apps
+#                               #EXCLUDE_FROM_DEFAULT_BUILD ON
+#                               )
  #   ENDIF(TARGET ${APPTARGET})
 #endforeach(APPTARGET)
 
 foreach( APPTARGET
-		swinging
-            exampleCollisionWithSkelton
-            superCoolSimulation
-            HandSPD
-            HandRedBall
-            cubes
-            exampleJointLimits
-            meshTest
-            meshCollision
-            leftLeg
-            rightLeg
-             lowerBodyFreeFall 
-             collisionProfiling
-						lowerBodyWalk)
+	swinging
+	exampleCollisionWithSkelton
+	superCoolSimulation
+	HandSPD
+	HandRedBall
+	cubes
+	exampleJointLimits
+	meshTest
+	meshCollision
+	leftLeg
+	rightLeg
+	lowerBodyFreeFall 
+	collisionProfiling
+	lowerBodyWalk)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
-                                FOLDER Apps
-                                #EXCLUDE_FROM_DEFAULT_BUILD ON
-                                )
+                FOLDER Apps
+                #EXCLUDE_FROM_DEFAULT_BUILD ON
+                )
     ENDIF(TARGET ${APPTARGET})
 endforeach(APPTARGET)

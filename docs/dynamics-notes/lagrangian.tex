@@ -2,11 +2,19 @@
 \label{sec:lagrangian}
 Articulated human motions can be described by a set of dynamic
 equations of motion of multibody systems. Since the direct application
+<<<<<<< HEAD
 of Newton's second law becomes difficult when a complex human skeleton
 is considered, we use \emph{Lagrange's equations} derived from
 \emph{D'Alembert's principle} to describe the dynamic of the
 motions. To simplify the math, let's temporarily imagine the entire
 human skeleton consists of a collection of particles
+=======
+of Newton's second law becomes difficult when a complex articulated
+rigid body system is considered, we use \emph{Lagrange's equations}
+derived from \emph{D'Alembert's principle} to describe the dynamics of
+motion. To simplify the math, let's temporarily imagine that the
+entire human skeleton consists of a collection of particles
+>>>>>>> karen
 $\{\vGlobalPoint_1, \vGlobalPoint_2, \ldots,
 \vGlobalPoint_{\sNumParticle}\}$.  Each particle, $\vGlobalPoint_i$,
 is defined by Cartesian coordinates that describe the translation with
@@ -18,7 +26,12 @@ indicate the joint configuration of the human skeleton:
 \sJoint_{2}, \ldots, \sJoint_{\sNumJoint}, t)
 \end{equation}
 where $t$ is the time and $\sJoint_j$ is a joint degree of freedom (DOF) in
+<<<<<<< HEAD
 the skeleton.
+=======
+the skeleton. Each $\sJoint_j$ is a function of time but we assume that
+$\vGlobalPoint_i$ is not an explicit function of time.
+>>>>>>> karen
 
 The virtual displacement $\delta \vGlobalPoint_i$ refers to an
 infinitesimal change in the system coordinates such that the
@@ -165,10 +178,17 @@ defined as $C = \dot{M} \dot{\vc{q}} - \frac{1}{2}\left( \frac{\partial M}{\part
 
 Once we know how to compute the mass matrix, Coriolis and centrifugal
 terms, and generalized forces, we can compute the acceleration in
+<<<<<<< HEAD
 generalized coordinates, $\ddot{\vc{q}}$, for forward
 dynamics. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
 sequence, we can use these equations of motion to derive generalized
 forces for inverse dynamics. 
+=======
+generalized coordinates, $\ddot{\vc{q}}$, for \emph{forward
+dynamics}. Conversely, if we are given $\ddot{\vc{q}}$ from a motion
+sequence, we can use these equations of motion to derive generalized
+forces for \emph{inverse dynamics}. 
+>>>>>>> karen
 
 The above formulation is convenient for a system consisting of finite
 number of mass points. However, for a dynamic system that consists of

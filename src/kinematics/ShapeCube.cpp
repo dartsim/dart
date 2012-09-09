@@ -81,8 +81,6 @@ namespace kinematics {
     }
 
     void ShapeCube::initMeshes() {
-        mVizMesh = NULL;
-        mCollisionMesh = NULL;
     }
 
 } // namespace kinematics

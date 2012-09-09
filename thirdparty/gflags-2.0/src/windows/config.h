@@ -36,7 +36,11 @@
 #undef HAVE_INTTYPES_H
 
 /* Define to 1 if you have the <memory.h> header file. */
+<<<<<<< HEAD
 #define HAVE_MEMORY_H 1
+=======
+#undef HAVE_MEMORY_H
+>>>>>>> karen
 
 /* define if the compiler implements namespaces */
 #define HAVE_NAMESPACES  1
@@ -57,7 +61,11 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the <strings.h> header file. */
+<<<<<<< HEAD
 #define HAVE_STRINGS_H 1
+=======
+#undef HAVE_STRINGS_H
+>>>>>>> karen
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1

@@ -15,8 +15,12 @@ int main(int argc, char* argv[])
 {
     FileInfoSkel<SkeletonDynamics> model, model2;
     model.loadFile(DART_DATA_PATH"/skel/ground1.skel", kinematics::SKEL);
+<<<<<<< HEAD
     model2.loadFile(DART_DATA_PATH"/skel/fullbody.skel", kinematics::SKEL);
     //model2.loadFile(DART_DATA_PATH"/skel/nunchuck1.skel", kinematics::SKEL);
+=======
+    model2.loadFile(DART_DATA_PATH"/skel/fullbody1.skel", kinematics::SKEL);
+>>>>>>> karen
 
     MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), NULL);
 

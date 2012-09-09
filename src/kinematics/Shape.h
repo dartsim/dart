@@ -61,6 +61,7 @@ namespace kinematics {
         };
 
         Shape();
+        virtual ~Shape(){};
         
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }

@@ -6,7 +6,7 @@
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
 
-#include "collision/collision_skeleton.h"
+#include "collision/CollisionSkeleton.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 
@@ -16,7 +16,7 @@ using namespace utils;
 
 namespace dynamics {
     ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
-        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollision(NULL) {
+        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL) {
         initialize();
     }
 
@@ -28,13 +28,13 @@ namespace dynamics {
         //        static Timer tLCP("LCP Solver");
         if (getNumTotalDofs() == 0)
             return;
-        mCollision->clearAllContacts();
-        mCollision->checkCollision(false);
+        mCollisionChecker->clearAllContacts();
+        mCollisionChecker->checkCollision(false);
 
         for (int i = 0; i < getNumSkels(); i++)
             mConstrForces[i].setZero(); 
 
-        if (mCollision->getNumContact() == 0)
+        if (mCollisionChecker->getNumContact() == 0)
             return;
         
         fillMatrices();
@@ -52,10 +52,10 @@ namespace dynamics {
 
     void ContactDynamics::initialize() {
         // Allocate the Collision Detection class
-        mCollision = new SkeletonCollision();
+        mCollisionChecker = new SkeletonCollision();
 
         mBodyIndexToSkelIndex.clear();
-        // Add all body nodes into mCollision
+        // Add all body nodes into mCollisionChecker
         int rows = 0;
         int cols = 0;
         for (int i = 0; i < getNumSkels(); i++) {
@@ -64,11 +64,12 @@ namespace dynamics {
 
             for (int j = 0; j < nNodes; j++) {
                 kinematics::BodyNode* node = skel->getNode(j);
-                mCollision->addCollisionSkeletonNode(node);
+                mCollisionChecker->addCollisionSkeletonNode(node);
                 mBodyIndexToSkelIndex.push_back(i);
             }
 
             if (!mSkels[i]->getImmobileState()) {
+                // Immobile objets have mass of infinity
                 rows += skel->getMassMatrix().rows();
                 cols += skel->getMassMatrix().cols();
             }
@@ -105,8 +106,8 @@ namespace dynamics {
     }
 
     void ContactDynamics::destroy() {
-        if (mCollision) {
-            delete mCollision;
+        if (mCollisionChecker) {
+            delete mCollisionChecker;
         }
     }
 
@@ -115,11 +116,6 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            if (mSkels[i]->getKinematicState()) {
-                mTauStar.block(startRow, 0, mSkels[i]->getNumDofs(), 1) = mSkels[i]->getQDotVector();
-                startRow += mSkels[i]->getNumDofs();
-                continue;
-            }
 
             VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
             VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
@@ -134,13 +130,6 @@ namespace dynamics {
         for (int i = 0; i < getNumSkels(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            if (mSkels[i]->getKinematicState()) {
-                int nDof = mSkels[i]->getNumDofs();
-                mMInv.block(startRow, startCol, nDof, nDof) = MatrixXd::Zero(nDof, nDof);
-                startRow+= nDof;
-                startCol+= nDof;
-                continue;
-            }
             MatrixXd skelMassInv = mSkels[i]->getInvMassMatrix();
             mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
             startRow+= skelMassInv.rows();
@@ -200,8 +189,6 @@ namespace dynamics {
             int nDof = mSkels[i]->getNumDofs();
             if (mSkels[i]->getImmobileState()) {
                 continue;
-            } else if (mSkels[i]->getKinematicState()) {
-                MinvTauStar.segment(rowStart, nDof) = mTauStar.segment(rowStart, nDof);
             } else {
                 MinvTauStar.segment(rowStart, nDof) = mMInv.block(rowStart, rowStart, nDof, nDof) * mTauStar.segment(rowStart, nDof);
             }
@@ -252,7 +239,7 @@ namespace dynamics {
         }
 
         for (int i = 0; i < c; i++) {
-            ContactPoint& contact = mCollision->getContact(i);
+            ContactPoint& contact = mCollisionChecker->getContact(i);
             contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
         }
             
@@ -294,7 +281,7 @@ namespace dynamics {
         mN = MatrixXd::Zero(getNumTotalDofs(), getNumContacts());
 
         for (int i = 0; i < getNumContacts(); i++) {
-            ContactPoint& c = mCollision->getContact(i);
+            ContactPoint& c = mCollisionChecker->getContact(i);
             Vector3d p = c.point;
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
@@ -350,7 +337,7 @@ namespace dynamics {
     void ContactDynamics::updateBasisMatrix() {
         mB = MatrixXd::Zero(getNumTotalDofs(), getNumContacts() * getNumContactDirections());
         for (int i = 0; i < getNumContacts(); i++) {
-            ContactPoint& c = mCollision->getContact(i);
+            ContactPoint& c = mCollisionChecker->getContact(i);
             Vector3d p = c.point;
             int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
             int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
@@ -403,7 +390,7 @@ namespace dynamics {
         /*        MatrixXd mat(MatrixXd::Identity(c, c));
         double mu;
         for (int i = 0; i < c; i++) {
-            ContactPoint& contact = mCollision->getContact(i);
+            ContactPoint& contact = mCollisionChecker->getContact(i);
             if (contact.bdID1 == 0 || contact.bdID2 == 0)
                 mu = 0.0;
             else
@@ -418,6 +405,6 @@ namespace dynamics {
     }
 
     int ContactDynamics::getNumContacts() const { 
-        return mCollision->getNumContact(); 
+        return mCollisionChecker->getNumContact(); 
     }    
 }

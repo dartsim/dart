@@ -162,6 +162,7 @@ namespace yui {
         int tw = glutGet(GLUT_WINDOW_WIDTH);
         int th = glutGet(GLUT_WINDOW_HEIGHT);
         bool antiAlias = true;
+	/*
         if(yui::screenShot(FIF_PNG, tw, th, fileName, antiAlias)){
             cout<<fileName<<" generated\n";
             return true;
@@ -169,6 +170,9 @@ namespace yui {
         //sprintf(fileName, "%s%.4d.tga", fileBase, count++); 
         //screenShot(tw, th, fileName, antiAlias);
         return false;
+        */
+	return true;
+	// todo freeimage
     }
 
     inline GlutWindow* GlutWindow::current()

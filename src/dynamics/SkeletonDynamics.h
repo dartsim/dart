@@ -63,7 +63,7 @@ namespace dynamics{
         void clearExternalForces(); ///< clear all the contacts of external forces; automatically called after each (forward/inverse) dynamics computation, which marks the end of a cycle.
 
         void clampRotation( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot); ///< Clamp joint rotations to the range of [-pi, pi]. 
-        ///< It's particularly useful for exponential map because the system will become unstable if the exponential map rotaion is outside this range. For euler angles, the dof values can directly add or subtract 2*pi; for exponential map, once the rotation magnitude is changed, the velocity need to change accordingly to represent the same angular velocity. This function requires the transformations and first derivatives. 
+        ///< It's particularly useful for exponential map because the system will become unstable if the exponential map rotaion is outside this range. For euler angles, the dof values can directly add or subtract 2*pi; for exponential map, once the rotation magnitude is changed, the velocity needs to change accordingly to represent the same angular velocity. This function requires the updated transformations. 
 
         Eigen::MatrixXd getMassMatrix() const { return mM; }
         Eigen::MatrixXd getInvMassMatrix() const { return mMInv; }
@@ -76,14 +76,7 @@ namespace dynamics{
         Eigen::VectorXd getQDotVector() const { return mQdot; }
         bool getImmobileState() const { return mImmobile; }
         void setImmobileState(bool _s) { mImmobile = _s; }
-        bool getKinematicState() const { return mKinematic; }
-        void setKinematicState(bool _s) { mKinematic = _s; }
         void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
-        //        Eigen::MatrixXd getKd() const { return mKd; }
-        //        void setSPD(Eigen::MatrixXd & _m, double _dt) { mKd = _m; mDt = _dt; mSPD = true;}
-        //        void resetSPD() { mSPD = false;}
-        //        void setKd(Eigen::MatrixXd  _m) { mKd = _m; }
-
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -96,14 +89,7 @@ namespace dynamics{
         Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
         Eigen::VectorXd mQdot; ///< the current qdot
 
-        bool mImmobile; ///< if the skeleton is immobile, it cannot move by dynamic nor kinematic forces
-        bool mKinematic; ///< if the skeleton is kinematic, it can be moved kinematically
- 
-        // for SPD
-        //        bool mSPD;
-        //        double mDt;
-        //        Eigen::MatrixXd mKd;
-        
+        bool mImmobile; ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct
     };
 
 } // namespace dynamics

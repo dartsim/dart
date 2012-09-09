@@ -9,8 +9,15 @@ TARGET_LINK_LIBRARIES(mayaExportSkeleton kinematics utils)
 TARGET_LINK_LIBRARIES(mayaExportMotion kinematics utils)
 LINK_THIRDPARTY_GFLAGS(mayaExportSkeleton)
 LINK_THIRDPARTY_GLOG(mayaExportSkeleton)
+<<<<<<< HEAD
 LINK_THIRDPARTY_GFLAGS(mayaExportMotion)
 LINK_THIRDPARTY_GLOG(mayaExportMotion)
+=======
+LINK_THIRDPARTY_TICPP(mayaExportSkeleton)
+LINK_THIRDPARTY_GFLAGS(mayaExportMotion)
+LINK_THIRDPARTY_GLOG(mayaExportMotion)
+LINK_THIRDPARTY_TICPP(mayaExportMotion)
+>>>>>>> karen
 
 SET_TARGET_PROPERTIES(mayaExportSkeleton PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 SET_TARGET_PROPERTIES(mayaExportMotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

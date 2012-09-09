@@ -1,13 +1,17 @@
 #include "MyWin3D.h"
 #include "MyWin2D.h"
+<<<<<<< HEAD
 #include <iostream>
 
 using namespace std;
+=======
+>>>>>>> karen
 
 int main(int argc, char* argv[])
 {
 	MyWin3D win3d;
 	MyWin2D win2d;
+<<<<<<< HEAD
         /*
 
         double coffee1 = 638.85;
@@ -24,6 +28,8 @@ int main(int argc, char* argv[])
 
         cout << "deposit = " << deposit << endl;
         cout << "balance = " << balance << endl;*/
+=======
+>>>>>>> karen
 	glutInit(&argc, argv);
 	win2d.initWindow(640,480,"2D Window test");
 	win3d.initWindow(640,480,"3D Window test");

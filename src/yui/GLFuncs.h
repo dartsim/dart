@@ -39,7 +39,7 @@
 #define YUI_GLFUNCS_H
 
 #include <Eigen/Eigen>
-#include "FreeImage.h"
+//#include "FreeImage.h"
 
 namespace yui {
     void drawStringOnScreen(float x, float y, const std::string& s);
@@ -47,9 +47,12 @@ namespace yui {
     void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec, double thickness);
     void drawProgressBar(int currFrame, int totalFrame);
 
+/*
     BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname, bool _antialias);
     BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h, char *fname, bool _antialias);
     bool screenShot(int w, int h, char *fname, bool _antialias=false);
+*/
+// todo freeimage
 } // namespace yui
 
 #endif  //YUI_GLFUNCS_H

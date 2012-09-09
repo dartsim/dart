@@ -6,7 +6,11 @@
 #include "Controller.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
+<<<<<<< HEAD
 #include "collision/collision_skeleton.h"
+=======
+#include "collision/CollisionSkeleton.h"
+>>>>>>> karen
 #include "dynamics/SkeletonDynamics.h"
 
 
@@ -81,24 +85,52 @@ public:
     int mPlayFrame;
     bool mPlay;
     bool mShowMarkers;
+<<<<<<< HEAD
     integration::EulerIntegrator mIntegrator;
     //    integration::RK4Integrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
+=======
+    //integration::EulerIntegrator mIntegrator;
+    integration::RK4Integrator mIntegrator;
+    std::vector<Eigen::VectorXd> mBakedStates;
+    void pushState();
+    void popState();
+    bool evaluateSample(Eigen::VectorXd& _sample);
+    void sampleControl();
+>>>>>>> karen
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;
     dynamics::ContactDynamics *mCollisionHandle;
     std::vector<Eigen::VectorXd> mDofVels;
     std::vector<Eigen::VectorXd> mDofs;
+<<<<<<< HEAD
+=======
+    std::vector<Eigen::VectorXd> mStoredDofVels;
+    std::vector<Eigen::VectorXd> mStoredDofs;
+>>>>>>> karen
     double mTimeStep;
     Eigen::Vector3d mGravity;
     Eigen::Vector3d mForce;
     std::vector<int> mIndices;
     Controller *mController;
     int mImpulseDuration;
+<<<<<<< HEAD
+=======
+    Eigen::VectorXd mControlBias;
+    Eigen::VectorXd mBestTorques;
+    double mBestScore;
+    double mBestAlpha;
+>>>>>>> karen
 
     void initDyn();
     void setPose();
     void bake();
+<<<<<<< HEAD
+=======
+    Eigen::Vector3d evalLinMomentum(dynamics::SkeletonDynamics* _skel, const Eigen::VectorXd& _dofVel);
+    Eigen::Vector3d evalAngMomentum(dynamics::SkeletonDynamics* _skel, const Eigen::VectorXd& _dofVel);
+
+>>>>>>> karen
 };
 
 #endif

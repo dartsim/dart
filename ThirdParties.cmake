@@ -1,3 +1,4 @@
+
 FUNCTION(LINK_THIRDPARTY project extpj base)
   IF (MSVC)
     TARGET_LINK_LIBRARIES(${project} debug ${base}_d optimized ${base})
@@ -10,15 +11,6 @@ FUNCTION(LINK_THIRDPARTY_EXT project extpj base)
   LINK_THIRDPARTY(${project} ${extpj} ${base})
   ADD_DEPENDENCIES(${project} ${extpj}-ext)
 ENDFUNCTION(LINK_THIRDPARTY_EXT)
-
-FUNCTION(LINK_THIRDPARTY_FREE_IMAGE project)
-  IF(MSVC)
-    TARGET_LINK_LIBRARIES(${project} debug FreeImaged.lib optimized FreeImage.lib)
-    ADD_DEPENDENCIES(${project} FreeImage)
-  ELSE()
-    LINK_THIRDPARTY_EXT(${project} freeimage libFreeImage)
-  ENDIF(MSVC)
-ENDFUNCTION(LINK_THIRDPARTY_FREE_IMAGE)
 
 FUNCTION(LINK_THIRDPARTY_GFLAGS project)
   IF(MSVC)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 \section{Rigid Body Dynamics: Newton-Euler equations}
 This section describes the familiar Newton-Euler equations of rigid
 body dynamics. We begin with the momenta of the rigid body whose mass,
@@ -6,6 +7,32 @@ the COM, and angular velocity are $m$, $\vc{x}$, $R$, $\vc{v}$, and
 $\bm{\omega}$ respectively (these definitions are the same as are found
 in Witkin and Baraff's course notes). The linear momentum \vc{P} is computed as:
 \begin{eqnarray}
+=======
+\section{Review: Newton-Euler equations}
+This section reviews Newton-Euler equations for rigid body
+dynamics. The derivation of mass matrix $M(\vc{q})$ and Coriolis and
+centrifugal term $C(\vc{q}, \dot{\vc{q}})$ for a rigid body will be
+presented in the next section. If you are familiar with Newton-Euler
+equations, you can skip this section and continue to the
+next. However, many math notations used in Witkin and Baraff's course
+notes are also reviewed in this section, such as linear momentum,
+angular momentum, skew-symmetric matrix and its properties.
+
+math notations
+and definitions used in Witkin and Baraff's course notes, such as
+linear momentum, angular momentum, and 
+skew-symmetric matrices and their properties, you can safely skip this
+section.
+
+To derive Newton-Euler equations, we begin with the momenta of the
+rigid body whose mass, position of the center of mass (COM),
+orientation, linear velocity of the COM, and angular velocity are $m$,
+$\vc{x}$, $R$, $\vc{v}$, and $\bm{\omega}$ respectively (these
+definitions are the same as are found in Witkin and Baraff's course
+notes). The linear momentum $\vc{P}$ is computed as:
+\begin{eqnarray}
+\label{eq:momentum}
+>>>>>>> karen
 \vc{P} &=& \sum_i \vc{P}_i = \sum_i \sInfMass \dot{\vGlobalPoint}_i = \sum_i  \sInfMass (\vc{v} + \bm{\omega}
     \times \vc{r}_i') \nonumber \\
  &=& m \vc{v}

@@ -14,9 +14,24 @@ int main(int argc, char* argv[])
 {
     const char* modelfile;
     const char* doffile;
+<<<<<<< HEAD
     if(argc!=3){
 		modelfile = DART_DATA_PATH"skel/YutingEuler.skel";
 		doffile = DART_DATA_PATH"dof/RHand.dof";
+=======
+    const char* doffile1;
+    if(argc!=3){
+        //		modelfile = DART_DATA_PATH"skel/YutingEuler.skel";
+        //		modelfile = DART_DATA_PATH"skel/Nick01.vsk";
+        modelfile = DART_DATA_PATH"skel/fullbody1.skel";
+        //                modelfile = DART_DATA_PATH"skel/fixedHand.skel";
+        
+        //doffile = DART_DATA_PATH"dof/RHand.dof";
+                		doffile = DART_DATA_PATH"dof/result01_vertical.dof";
+                //		doffile = DART_DATA_PATH"dof/simMotion.dof";
+                //		doffile = DART_DATA_PATH"dof/fixedHand.dof";
+                //		doffile1 = DART_DATA_PATH"dof/simMotion1.dof";
+>>>>>>> karen
     }else{
         modelfile = argv[1];
         doffile = argv[2];
@@ -28,8 +43,16 @@ int main(int argc, char* argv[])
 
     FileInfoDof motion(model.getSkel());
     motion.loadFile(doffile);
+<<<<<<< HEAD
 
     MyWindow window(motion);
+=======
+    //    FileInfoDof motion1(model.getSkel());
+    //motion1.loadFile(doffile1);
+
+    MyWindow window(motion);
+    //    MyWindow window(motion, motion1);
+>>>>>>> karen
     window.computeMax();
 
     glutInit(&argc, argv);

@@ -61,13 +61,12 @@ namespace lcpsolver {
 
 	    if (_q.minCoeff() > 0)
 	    {
-		    LOG(INFO) << "Trivial solution exists.";
+                //		    LOG(INFO) << "Trivial solution exists.";
 		    _z = VectorXd::Zero(n);
 		    return err;	
 	    }
 
 	    _z = VectorXd::Zero(2 * n);
-            //            cout << "check 1" << endl;
 	    int iter = 0;
 	    double theta = 0;
 	    double ratio = 0;
@@ -87,7 +86,6 @@ namespace lcpsolver {
 		    nonbas.push_back(i);
 		    bas.push_back(i + n);
 	    }
-            //            cout << "check 2" << endl;
 
 	    MatrixXd B = -MatrixXd::Identity(n, n);
 	    VectorXd minuxX = -x;

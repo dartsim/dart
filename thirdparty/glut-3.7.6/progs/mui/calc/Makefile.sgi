@@ -1,0 +1,26 @@
+#!smake
+#
+# Copyright (c) Mark J. Kilgard, 1997.
+#
+
+TOP = ../../..
+include $(TOP)/glutdefs
+include $(ROOT)/usr/include/make/commondefs
+
+LD_QUICKSTART_INFO=
+
+TARGETS = calc
+
+SRCS = calc.c
+OBJS = $(SRCS:.c=.o)
+LLDLIBS = $(MUI) $(GLUT) -lGLU -lGL -lXmu -lXi -lXext -lX11 -lm
+
+LCOPTS = -I$(TOP)/include -fullwarn
+LWOFF = ,813,852,827,826
+LDIRT = *~ *.bak *.pure *.pixie *.Counts *.pix32
+
+default : $(TARGETS)
+
+$(TARGETS) : $(MUI) $(GLUT)
+
+include $(COMMONRULES)

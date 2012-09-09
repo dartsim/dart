@@ -23,7 +23,11 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBGFLAGS_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
+<<<<<<< HEAD
 				RuntimeLibrary="3"
+=======
+				RuntimeLibrary="1"
+>>>>>>> karen
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"/>
@@ -68,7 +72,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBGFLAGS_EXPORTS"
+<<<<<<< HEAD
 				RuntimeLibrary="2"
+=======
+				RuntimeLibrary="0"
+>>>>>>> karen
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"/>

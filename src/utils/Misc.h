@@ -39,12 +39,6 @@
 #define UTILS_MISC_H
 
 // Epsilon definition
-#ifndef EPSILON
-#define EPSILON 1.0e-6
-#endif
-
-// Added on Aug 11th, 2012 for compatibility with Prof Liu's code
-// M_Epsilon definition
 #ifndef M_EPSILON
 #define M_EPSILON 1.0e-6
 #endif
@@ -59,12 +53,15 @@
 
 // Define a macro which returns the "pretty" name of function
 // It should include names of class and functions
-#if defined(__GNUC__) || defined(__clang__) || defined(__llvm__)
+#ifdef __linux
 #define FUNCTION_NAME() (__PRETTY_FUNCTION__)
-#elif defined(_MSC_VER)
+#elif defined(__APPLE__)
+#define FUNCTION_NAME() (__PRETTY_FUNCTION__)
+//#error "Define your own FUNCTION_NAME() macro on Apple"
+#elif defined(_WIN32)
 #define FUNCTION_NAME() (__FUNCSIG__)
 #else
-#error "Unrecognized compiler. Could not determine the function name macro for your compiler."
+#error "What's your operating system?"
 #endif
 
 // Safe Release Ptr

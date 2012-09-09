@@ -1,0 +1,27 @@
+\contentsline {section}{\numberline {1}Introduction}{2}
+\contentsline {section}{\numberline {2}Lagrangian Dynamics}{3}
+\contentsline {paragraph}{Equations of Motion in Vector Form.}{4}
+\contentsline {paragraph}{Note.}{5}
+\contentsline {section}{\numberline {3}Review: Newton-Euler equations}{6}
+\contentsline {section}{\numberline {4}Rigid Body Dynamics: Lagrange's equations}{8}
+\contentsline {paragraph}{Third term:}{9}
+\contentsline {paragraph}{Fourth term:}{10}
+\contentsline {paragraph}{Fifth term:}{10}
+\contentsline {paragraph}{Put it together:}{11}
+\contentsline {paragraph}{Derivation using Newton-Euler equations.}{12}
+\contentsline {section}{\numberline {5}Articulated Rigid Body Dynamics}{13}
+\contentsline {subsection}{\numberline {5.1}Definitions}{13}
+\contentsline {subsection}{\numberline {5.2}Cartesian and generalized velocities}{14}
+\contentsline {subsection}{\numberline {5.3}Equations of motion}{15}
+\contentsline {section}{\numberline {6}Conversion between Cartesian and Generalized Coordinates}{17}
+\contentsline {subsection}{\numberline {6.1}Velocity conversion}{17}
+\contentsline {subsection}{\numberline {6.2}Force conversion}{19}
+\contentsline {paragraph}{Note.}{19}
+\contentsline {section}{\numberline {7}Recursive Inverse Dynamics}{21}
+\contentsline {subsection}{\numberline {7.1}Dynamics in the local frame}{21}
+\contentsline {subsection}{\numberline {7.2}Pass 1: Compute velocity and acceleration}{22}
+\contentsline {paragraph}{Base case:}{23}
+\contentsline {paragraph}{Translational degrees of freedom:}{23}
+\contentsline {subsection}{\numberline {7.3}Pass 2: Compute force and torque}{24}
+\contentsline {paragraph}{Base case:}{24}
+\contentsline {paragraph}{Gravity:}{24}

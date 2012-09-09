@@ -28,7 +28,7 @@ namespace geometry {
         if(mVertexPos.size()!=mVertexVel.size()) mVertexVel = VectorXd::Zero(mVertexPos.size());
         mCornerTable = new CornerTable(this);
         mCornerTable->mNumCorners = 3*mNumFaces;
-        // assert(mCornerTable->mNumCorners==mFaces.size());
+        assert(mCornerTable->mNumCorners==mFaces.size());
         // compute opposites and others
         mCornerTable->initCornerTable();
         fprintf(stderr, "Computed corner table\n");
@@ -151,7 +151,7 @@ namespace geometry {
     }
 
 
-    void Mesh3DTriangle::draw(const Vector4d& _color, bool _drawWireFrame, bool _drawSmooth) const {
+    void Mesh3DTriangle::draw(const Vector4d& _color, bool _drawWireFrame, bool _drawSmooth){
         GLboolean lightstate = glIsEnabled(GL_LIGHTING);
         if(!lightstate) glEnable( GL_LIGHTING );
         if(!_drawWireFrame){
@@ -173,7 +173,7 @@ namespace geometry {
                 for(unsigned int i=0; i<mNumVertices; i++)	vnormal[i] = vnormal[i].normalized();
             }
 
-//            glColor4dv(_color.data());
+            glColor4dv(_color.data());
             glBegin(GL_TRIANGLES);						// Drawing Using Triangles
             for(unsigned int i=0; i<mNumFaces; i++){
                 Vector3d v0 = getVertex(mFaces[3*i+0]);
@@ -193,7 +193,7 @@ namespace geometry {
             glEnd();
         }
         else{
-//            glColor4dv(_color.data());
+            glColor4dv(_color.data());
             glLineWidth(2.0);
             for(unsigned int i=0; i<mNumFaces; i++){
                 glBegin(GL_LINE_LOOP);

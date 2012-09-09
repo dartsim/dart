@@ -42,12 +42,9 @@
 #include "Light.h"
 #include "Camera.h"
 
-#include "geometry/Mesh3D.h"
-
-// Changed to include to call mesh->draw() by C.E. and A.H.
-//namespace geometry {
-//   class Mesh3D;
-//}
+namespace geometry {
+    class Mesh3D;
+}
 
 namespace renderer {
     enum DecoBufferType {
@@ -106,7 +103,7 @@ namespace renderer {
 
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);
         virtual void drawCube(const Eigen::Vector3d& _size);
-        virtual void drawMesh(const geometry::Mesh3D *_mesh);
+        virtual void drawMesh(const Eigen::Vector3d& _size, const geometry::Mesh3D *_mesh);
 
         virtual void setPenColor(const Eigen::Vector4d& _col);
         virtual void setPenColor(const Eigen::Vector3d& _col);

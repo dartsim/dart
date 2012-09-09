@@ -1,0 +1,43 @@
+Begin Problem fort.4
+
+* Printing
+* (These are the default values: to change, uncomment and set.)
+*	Major Print level	1
+*	Minor Print level	0
+*	Summary frequency	1
+*	Print frequency		1
+*	Summary level		0
+*	Solution			Yes
+
+* QP subproblems
+	Iterations limit	1000000
+	Elastic Mode		2
+	Elastic Weight		1.e+4 
+
+* SQP Method
+	Major iterations limit	100
+	Minor iterations limit	5000
+	Superbasics limit		10000
+
+* Convergence Tolerances
+	Major feasibility tolerance		1.0e-5
+	Major optimality tolerance		1.0e-4
+	Minor feasibility tolerance		1.0e-4
+	Minor optimality tolerance		1.0e-4
+
+* Derivative checking
+* (By default, SNOPT does a cheap check. To get detailed derivative 
+*  information, uncomment the Verify level option (set it to 3).)
+*	Verify level						3
+*   Start Constraint Check at Column	135 * not allowed for snOptA
+*   Stop Constraint Check at Column		675 * not allowed for snOptA
+
+* Hessian approximation
+	Hessian 			limited memory	
+	Hessian updates		5
+*   Feasible exit
+
+* Miscellaneous
+	Sticky parameters	Yes
+	Timing level		3
+End Problem

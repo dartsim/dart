@@ -17,7 +17,11 @@ node root { 0
           translate { <rootX, rootY, rootZ> }
           rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
     }
+<<<<<<< HEAD
     primitive {<40.0,1.0,40.0>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+=======
+    primitive {<50.0,1.0,50.0>, <0.0,-0.5,0.0>, Length, CUBE, node_mass}
+>>>>>>> karen
 }
 
 handles {

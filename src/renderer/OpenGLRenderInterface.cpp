@@ -37,9 +37,12 @@
 
 #include "OpenGLRenderInterface.h"
 #include "utils/LoadOpengl.h"
+#include "geometry/Mesh3D.h"
 #include <iostream>
 
+using namespace std;
 using namespace Eigen;
+using namespace geometry;
 
 namespace renderer {
 
@@ -144,8 +147,46 @@ namespace renderer {
     }
     
 
-    void OpenGLRenderInterface::drawMesh(const geometry::Mesh3D *_mesh) {
-        _mesh->draw(Eigen::Vector4d(0.5, 0.5, 0.5, 0.5), true, true);
+    void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const geometry::Mesh3D *_mesh) {        
+        glBegin(GL_TRIANGLES);
+        for (unsigned int i = 0; i < _mesh->mNumFaces; i++) {
+            if (_mesh->mVertexNormals.size() > 0) {
+                int ni0 = _mesh->mFaceNormalIndices[i][0] - 1;
+                int ni1 = _mesh->mFaceNormalIndices[i][1] - 1;
+                int ni2 = _mesh->mFaceNormalIndices[i][2] - 1;
+                Vector3d n0 = _mesh->mVertexNormals[ni0];
+                Vector3d n1 = _mesh->mVertexNormals[ni1];
+                Vector3d n2 = _mesh->mVertexNormals[ni2];
+
+                int pi0 = _mesh->mFaces[i * 3];
+                int pi1 = _mesh->mFaces[i * 3 + 1];
+                int pi2 = _mesh->mFaces[i * 3 + 2];
+
+                Vector3d p0(_mesh->mVertexPos[pi0 * 3] * _size[0], _mesh->mVertexPos[pi0 * 3 + 1] * _size[1], _mesh->mVertexPos[pi0 * 3 + 2] * _size[2]);
+                Vector3d p1(_mesh->mVertexPos[pi1 * 3] * _size[0], _mesh->mVertexPos[pi1 * 3 + 1] * _size[1], _mesh->mVertexPos[pi1 * 3 + 2] * _size[2]);
+                Vector3d p2(_mesh->mVertexPos[pi2 * 3] * _size[0], _mesh->mVertexPos[pi2 * 3 + 1] * _size[1], _mesh->mVertexPos[pi2 * 3 + 2] * _size[2]);
+
+                glNormal3f(n0[0], n0[1], n0[2]);
+                glVertex3f(p0[0], p0[1], p0[2]);
+                glNormal3f(n1[0], n1[1], n1[2]);
+                glVertex3f(p1[0], p1[1], p1[2]);
+                glNormal3f(n2[0], n2[1], n2[2]);
+                glVertex3f(p2[0], p2[1], p2[2]);
+            } else {
+                int pi0 = _mesh->mFaces[i * 3];
+                int pi1 = _mesh->mFaces[i * 3 + 1];
+                int pi2 = _mesh->mFaces[i * 3 + 2];
+
+                Vector3d p0(_mesh->mVertexPos[pi0 * 3] * _size[0], _mesh->mVertexPos[pi0 * 3 + 1] * _size[1], _mesh->mVertexPos[pi0 * 3 + 2] * _size[2]);
+                Vector3d p1(_mesh->mVertexPos[pi1 * 3] * _size[0], _mesh->mVertexPos[pi1 * 3 + 1] * _size[1], _mesh->mVertexPos[pi1 * 3 + 2] * _size[2]);
+                Vector3d p2(_mesh->mVertexPos[pi2 * 3] * _size[0], _mesh->mVertexPos[pi2 * 3 + 1] * _size[1], _mesh->mVertexPos[pi2 * 3 + 2] * _size[2]);
+
+                glVertex3f(p0[0], p0[1], p0[2]);
+                glVertex3f(p1[0], p1[1], p1[2]);
+                glVertex3f(p2[0], p2[1], p2[2]);
+            }
+        }
+        glEnd();         
     }
 
 
@@ -154,7 +195,7 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector3d& _col) {
-        glColor4f(_col[0], _col[1], _col[2], 1.0);
+        glColor4d(_col[0], _col[1], _col[2], 1.0);
     }
 
     void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels) {

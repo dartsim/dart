@@ -21,7 +21,10 @@ VectorXd ExampleConstraint::evalCon() {
     for(unsigned int i = 0; i < mVariables.size(); i++)
         x[i] = mVariables[i]->mVal;
     ret(0) = x.dot(x) - mTarget;
+<<<<<<< HEAD
 
+=======
+>>>>>>> karen
     return ret;
 
 }

@@ -81,7 +81,11 @@ pseudo inverse of $J$ to compute $\dot{\vc{q}}$:
  \dot{\vc{q}} =  J^+\vc{V}
  \end{equation}
 where the pseudo-inverse notation $J^+ = (J^TJ)^{-1}J^T$. If this
+<<<<<<< HEAD
 least-squared solution does not exactly solve the linear
+=======
+least-squares solution does not exactly solve the linear
+>>>>>>> karen
 system (i.e. $J \dot{\vc{q}} = \vc{V}$), it indicates that $\vc{V}$ cannot be achieved in the
 generalized coordinates without violating constraints of the system
 (e.g. constraints that keep links connected).
@@ -313,7 +317,11 @@ We now describe the process to convert the given generalized forces $\vc{Q}$ to 
 
 Based on the information about the form of $\vc{Q}$, we can solve for the Cartesian forces and torques in different ways. We describe the solutions to the following cases:
 \begin{enumerate}
+<<<<<<< HEAD
 \item \textbf{General case. } In the most general case, the points of application of the Cartesian forces are not known. Therefore, we cannot use the Jacobian $J_{v}^{'}$ in \eqnref{force_conversion}. This forces us to assume the points of application to be the COM of each link and compute the torques $\bm{\tau}$ instead of body torques $\bm{\tau}^{'}$. \ie, we can invert the transposed Jacobian by computing its pseudo-inverse that results in a particular least-squared solution for $\vc{f}$ and $\bm{\tau}$ as:
+=======
+\item \textbf{General case. } In the most general case, the points of application of the Cartesian forces are not known. Therefore, we cannot use the Jacobian $J_{v}^{'}$ in \eqnref{force_conversion}. This forces us to assume the points of application to be the COM of each link and compute the torques $\bm{\tau}$ instead of body torques $\bm{\tau}^{'}$. \ie, we can invert the transposed Jacobian by computing its pseudo-inverse that results in a particular least-squares solution for $\vc{f}$ and $\bm{\tau}$ as:
+>>>>>>> karen
 \begin{equation}
 \left (
 \begin{array}{c}
@@ -334,7 +342,11 @@ If the points of the force application are known, the Jacobian in \eqnref{torque
 \hat{\bm{\tau}}  & = & (\hat{J}_{\omega}^T)^+ \vc{Q}\\
 \mbox{or } \hat{\bm{\tau}}_k  & = & (\hat{J}_{\omega k}^T)^+ \vc{Q}_k \;\; \forall k \in 1\hdots m
 \end{eqnarray}
+<<<<<<< HEAD
 where $\vc{Q}_k$ denotes the components of the generalized forces corresponding to the rotational DOFs $\vc{q}_k$. Note that the size of the matrix $\hat{J}_{\omega k}^T$ is $n(k)\times 3$ and $n(k)\leq 3$. This implies that we get a particular least-squared solution for each $\hat{\bm{\tau}}_k$ out of possibly many solutions that would give rise to the same $\vc{Q}_k$ using the relation $\vc{Q}_k = \hat{J}_{\omega k}^T \hat{\bm{\tau}}_k$.
+=======
+where $\vc{Q}_k$ denotes the components of the generalized forces corresponding to the rotational DOFs $\vc{q}_k$. Note that the size of the matrix $\hat{J}_{\omega k}^T$ is $n(k)\times 3$ and $n(k)\leq 3$. This implies that we get a particular least-squares solution for each $\hat{\bm{\tau}}_k$ out of possibly many solutions that would give rise to the same $\vc{Q}_k$ using the relation $\vc{Q}_k = \hat{J}_{\omega k}^T \hat{\bm{\tau}}_k$.
+>>>>>>> karen
 %\item \textbf{Known points of applied forces. } When the points of application of forces are known, \eqnref{torques_cart2gen} can be used, instead of inverting the Jacobian.
 
 \end{enumerate}

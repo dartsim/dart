@@ -88,7 +88,11 @@ int main(int argc, char* argv[]) {
 
         solver.solve();
 
+<<<<<<< HEAD
         vector<double> pose;
+=======
+        VectorXd pose;
+>>>>>>> karen
         prob.getSkel()->getPose(pose);
         resultDof.addDof(pose);
     }

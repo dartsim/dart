@@ -78,13 +78,13 @@ namespace utils {
             double x, y, z;
 
             if(order==XYZ) {
-                if(m(2, 0) > (1.0-EPSILON)) {
+                if(m(2, 0) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     x = atan2(m(0, 1), m(0, 2));
                     y = -M_PI / 2.0;
                     z = 0.0;
                 }
-                if(m(2, 0) < -(1.0-EPSILON)) {
+                if(m(2, 0) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     x = atan2(m(0, 1), m(0, 2));
                     y = M_PI / 2.0;
@@ -97,13 +97,13 @@ namespace utils {
             }
 
             if(order==ZYX) {
-                if(m(0, 2) > (1.0-EPSILON)) {
+                if(m(0, 2) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     z = atan2(m(1, 0), m(1, 1));
                     y = M_PI / 2.0;
                     x = 0.0;
                 }
-                if(m(0, 2) < -(1.0-EPSILON)) {
+                if(m(0, 2) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     z = atan2(m(1, 0), m(1, 1));
                     y = -M_PI / 2.0;
@@ -116,13 +116,13 @@ namespace utils {
             }
 
             if(order==YZX) {
-                if(m(0, 1) > (1.0-EPSILON)) {
+                if(m(0, 1) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     y = atan2(m(1, 2), m(1, 0));
                     z = -M_PI / 2.0;
                     x = 0.0;
                 }
-                if(m(0, 1) < -(1.0-EPSILON)) {
+                if(m(0, 1) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     y = atan2(m(1, 2), m(1, 0));
                     z = M_PI / 2.0;
@@ -135,13 +135,13 @@ namespace utils {
             }
 
             if(order==XZY) {
-                if(m(1, 0) > (1.0-EPSILON)) {
+                if(m(1, 0) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     x = -atan2(m(0, 2), m(0, 1));
                     z = M_PI / 2.0;
                     y = 0.0;
                 }
-                if(m(1, 0) < -(1.0-EPSILON)) {
+                if(m(1, 0) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     x = -atan2(m(0, 2), m(0, 1));
                     z = -M_PI / 2.0;
@@ -154,13 +154,13 @@ namespace utils {
             }
 
             if(order==YXZ){
-                if(m(2, 1) > (1.0-EPSILON)) {
+                if(m(2, 1) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     y = atan2(m(0, 2), m(0, 0));
                     x = M_PI / 2.0;
                     z = 0.0;
                 }
-                if(m(2, 1) < -(1.0-EPSILON)) {
+                if(m(2, 1) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     y = atan2(m(0, 2), m(0, 0));
                     x = -M_PI / 2.0;
@@ -173,13 +173,13 @@ namespace utils {
             }
 
             if(order==ZXY){
-                if(m(1, 2) > (1.0-EPSILON)) {
+                if(m(1, 2) > (1.0-M_EPSILON)) {
                     cout << "North Pole" << endl;
                     z = -atan2(m(0, 1), m(0, 0));
                     x = -M_PI / 2.0;
                     y = 0.0;
                 }
-                if(m(1, 2) < -(1.0-EPSILON)) {
+                if(m(1, 2) < -(1.0-M_EPSILON)) {
                     cout << "South Pole" << endl;
                     z = -atan2(m(0, 1), m(0, 0));
                     x = M_PI / 2.0;

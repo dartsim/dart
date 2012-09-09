@@ -35,6 +35,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \mainpage Dynamic Animation and Robotics Toolkits
+
+DART is an open source library for developing kinematic and dynamic
+applications in robotics and computer animation. DART features two
+main components: a multibody dynamic simulator developed by Georgia
+Tech Graphics Lab and a variety of motion planning algorithms
+developed by Georgia Tech Humanoid Robotics Lab. This document focuses
+only on the dynamic simulator.
+ 
+The multibody dynamics simulator in DART is designed to aid
+development of motion control algorithms. DART uses generalized
+coordinates to represent articulated rigid body systems and computes
+Lagrange’s equations derived from D’Alembert’s principle to describe
+the dynamics of motion. In contrast to many popular physics engines
+which view the simulator as a black box, DART provides full access to
+internal kinematic and dynamic quantities, such as mass matrix,
+Coriolis and centrifugal force, transformation matrices and their
+derivatives, etc. DART also provides efficient computation of Jacobian
+matrices for arbitrary body points and coordinate frames.
+
+The contact and collision are handled using an implicit time-stepping,
+velocity-based LCP (linear-complementarity problem) to guarantee
+non-penetration, directional friction, and approximated Coulombs
+friction cone conditions. The LCP problem is solved efficiently by
+Lemke's algorithm. For the collision detection, DART directly uses FCL
+package developed by UNC Gamma Lab.
+
+In addition, DART supports various joint types (ball-and-socket,
+universal, hinge, and prismatic joints) and arbitrary meshes. DART
+also provides two explicit integration methods: first-order
+Runge-Kutta and fourth-order Runge Kutta.
+
+*/
+
 #ifndef KINEMATICS_BODYNODE_H
 #define KINEMATICS_BODYNODE_H
 
@@ -42,7 +76,6 @@
 #include <Eigen/Dense>
 #include "renderer/RenderInterface.h"
 #include "utils/EigenHelper.h"
-#include <string>
 
 namespace kinematics {
 #define MAX_NODE3D_NAME 128
@@ -79,7 +112,7 @@ namespace kinematics {
         inline Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
         inline Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); } ///< Transformation from the local coordinates of the parent node to the local coordinates of this body node
 
-        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const; ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
+        Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp); ///< Given a 3D vector lp in the local coordinates of this body node, return the world coordinates of this vector
 
         Eigen::Matrix4d getLocalDeriv(Dof *_q) const; ///< First derivative of the local transformation w.r.t. the input dof
 
@@ -117,7 +150,7 @@ namespace kinematics {
         inline Shape* getShape() const { return mShape; }
         
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
-        inline int getNumChildJoints() const { return mJointsChild.size(); }
+        inline int getNumChildJoints() { return mJointsChild.size(); }
         inline Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
         inline Joint* getParentJoint() const { return mJointParent; }
         void setParentJoint(Joint *_p);
@@ -133,8 +166,6 @@ namespace kinematics {
         Eigen::MatrixXd getJacobianLinear() const;
         Eigen::MatrixXd getJacobianAngular() const;
         
-        void printProperties (const std::string& str) const;
-
     protected:
         
         char mName[MAX_NODE3D_NAME]; ///< Name

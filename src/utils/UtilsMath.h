@@ -78,7 +78,7 @@ namespace utils {
     }
 
     inline bool isZero(double theta){
-        return(fabs(theta)<EPSILON);
+        return(fabs(theta)<M_EPSILON);
     }
 
     inline double asinh(double X){
@@ -116,7 +116,7 @@ namespace utils {
     }
 
     inline bool isEqual(double x, double y){
-        return (fabs(x - y) < EPSILON);
+        return (fabs(x - y) < M_EPSILON);
     }
 	
     // check if it is an integer
@@ -180,7 +180,7 @@ namespace utils {
 
     inline Vector3d fromSkewSymmetric(const Matrix3d& m) {
 #if _DEBUG
-        if (fabs(m(0, 0)) > EPSILON || fabs(m(1, 1)) > EPSILON || fabs(m(2, 2)) > EPSILON) {
+        if (fabs(m(0, 0)) > M_EPSILON || fabs(m(1, 1)) > M_EPSILON || fabs(m(2, 2)) > M_EPSILON) {
             cout << "Not skew symmetric matrix" << endl;
             cerr << m <<endl;
             return Vector3d::Zero();
@@ -191,6 +191,14 @@ namespace utils {
         ret(1) = m(0,2);
         ret(2) = m(1,0);
 
+        return ret;
+    }
+
+    inline Vector3d crossOperator(const MatrixXd & m) {
+        Vector3d ret = Vector3d::Zero();
+        ret[0] = m(1, 2) - m(2, 1);
+        ret[1] = m(2, 0) - m(0, 2);
+        ret[2] = m(0, 1) - m(1, 0);
         return ret;
     }
 

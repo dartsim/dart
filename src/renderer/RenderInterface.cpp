@@ -129,7 +129,7 @@ namespace renderer {
 	{
 	}
 
-	void RenderInterface::drawMesh(const geometry::Mesh3D *_mesh)
+    void RenderInterface::drawMesh(const Vector3d& _size, const geometry::Mesh3D *_mesh)
 	{
 	}
 

@@ -2,11 +2,19 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
+<<<<<<< HEAD
+=======
+#include "kinematics/Shape.h"
+>>>>>>> karen
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>
 #include "kinematics/BodyNode.h"
+<<<<<<< HEAD
+=======
+#include <fstream>
+>>>>>>> karen
 
 using namespace Eigen;
 using namespace kinematics;
@@ -18,12 +26,18 @@ void MyWindow::initDyn()
 {
     mDofs.resize(mSkels.size());
     mDofVels.resize(mSkels.size());
+<<<<<<< HEAD
+=======
+    mStoredDofs.resize(mSkels.size());
+    mStoredDofVels.resize(mSkels.size());
+>>>>>>> karen
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mDofs[i].resize(mSkels[i]->getNumDofs());
         mDofVels[i].resize(mSkels[i]->getNumDofs());
         mDofs[i].setZero();
         mDofVels[i].setZero();
+<<<<<<< HEAD
     }
     
     mDofs[0][1] = -0.9;
@@ -45,10 +59,34 @@ void MyWindow::initDyn()
     
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
+=======
+        mStoredDofs[i].resize(mSkels[i]->getNumDofs());
+        mStoredDofVels[i].resize(mSkels[i]->getNumDofs());
+    }
+    
+    mDofs[0][1] = -0.9; // ground level
+    // squat pose
+    mDofs[1][1] = -0.48;
+    mDofs[1][6] = 1.3;
+    mDofs[1][9] = -2.3;
+    mDofs[1][10] = 1;
+    mDofs[1][13] = 1.3;
+    mDofs[1][16] = -2.3;
+    mDofs[1][17] = 1;
+    mDofs[1][21] = -1;
+    mDofs[1][26] = 1.0;
+    mDofs[1][28] = -0.4;
+    mDofs[1][32] = 1.0;
+    mDofs[1][34] = 0.4;
+    
+    for (unsigned int i = 0; i < mSkels.size(); i++) {
+        mSkels[i]->initDynamics();
+>>>>>>> karen
         mSkels[i]->setPose(mDofs[i], false, false);
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
     }
     mSkels[0]->setImmobileState(true);
+<<<<<<< HEAD
     
     mController = new Controller(mSkels[1], mTimeStep);
     int nDof = mController->getSkel()->getNumDofs();
@@ -58,6 +96,34 @@ void MyWindow::initDyn()
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
     mCollisionHandle->setSPDFlag(true);
     mSkels[1]->setKd(MatrixXd::Identity(nDof, nDof) * 100); 
+=======
+
+    int nDof = mSkels[1]->getNumDofs();
+    mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
+    mController = new Controller(mSkels[1], mCollisionHandle, mTimeStep);
+     
+    for (int i = 0; i < nDof; i++)
+        mController->setDesiredDof(i, mController->getSkel()->getDof(i)->getValue());
+    
+    // modfify desired pose to a launch pose
+    mController->setDesiredDof(6, -0.1);
+    mController->setDesiredDof(9, 0.2);
+    mController->setDesiredDof(10, 0.1);
+    mController->setDesiredDof(12, 0.8);
+    mController->setDesiredDof(13, -0.1);
+    mController->setDesiredDof(16, 0.2);
+    mController->setDesiredDof(17, 0.1);
+    mController->setDesiredDof(19, 0.8);
+    mController->setDesiredDof(21, 0.1);
+    mController->setDesiredDof(26, 2.2);
+    mController->setDesiredDof(28, -1.8);
+    mController->setDesiredDof(32, 2.2);
+    mController->setDesiredDof(34, 1.8);
+    
+    // record history of momentum for plotting in Octave
+    mController->mLinHist.push_back(Vector3d::Zero());
+    mController->mAngHist.push_back(Vector3d::Zero());
+>>>>>>> karen
 }
 
 VectorXd MyWindow::getState() {
@@ -79,12 +145,18 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
+<<<<<<< HEAD
         //VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
         // SPD
         VectorXd qddot = (mSkels[i]->getMassMatrix() + mSkels[i]->getKd() * mTimeStep).fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
 
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
+=======
+        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
+        mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
+        deriv.segment(start, size) = mDofVels[i]; // set velocities
+>>>>>>> karen
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
     }
     return deriv;
@@ -105,12 +177,21 @@ void MyWindow::setPose() {
         if (mSkels[i]->getImmobileState()) {
             mSkels[i]->setPose(mDofs[i], true, false);
         } else {
+<<<<<<< HEAD
             mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
             mController->computeTorques(mDofs[1], mDofVels[1]);
         }
     }
         mCollisionHandle->applyContactForces();
+=======
+            mSkels[i]->setPose(mDofs[i], false, true);
+            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);    
+        }
+    }
+    mCollisionHandle->applyContactForces();
+    mController->setConstrForces(mCollisionHandle->getConstraintForce(1));
+>>>>>>> karen
 }
 
 void MyWindow::displayTimer(int _val)
@@ -123,16 +204,36 @@ void MyWindow::displayTimer(int _val)
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);        
     }else if (mSim) {
+<<<<<<< HEAD
         static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //            tSim.startTimer();
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(8))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
+=======
+        //  static Timer tSim("Simulation");
+        for (int i = 0; i < numIter; i++) {
+            //            tSim.startTimer();
+            // push on spine, for perturbation test
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(8))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+
+            mControlBias = mController->computeTorques(mDofs[1], mDofVels[1]);
+            sampleControl();
+            mSkels[1]->setInternalForces(mBestTorques);
+            mIntegrator.integrate(this, mTimeStep);
+
+            Vector3d lin = evalLinMomentum(mSkels[1], mDofVels[1]);
+            mController->mLinHist.push_back(lin);
+            Vector3d ang = evalAngMomentum(mSkels[1], mDofVels[1]);
+            mController->mAngHist.push_back(ang);
+
+>>>>>>> karen
             //            tSim.stopTimer();
             //            tSim.printScreen();
             bake();
             cout << "iter " << i + mSimFrame << endl;
         }
+<<<<<<< HEAD
 
         mImpulseDuration--;
          if (mImpulseDuration <= 0) {
@@ -140,11 +241,20 @@ void MyWindow::displayTimer(int _val)
              mForce.setZero();
 
          }
+=======
+        // for perturbation test
+        mImpulseDuration--;
+        if (mImpulseDuration <= 0) {
+            mImpulseDuration = 0;
+            mForce.setZero();
+        }
+>>>>>>> karen
 
         mSimFrame += numIter;
 
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+<<<<<<< HEAD
         /*
         if (mSimFrame == numIter * 25) {
             mController->setDesiredDof(6, -0.0);
@@ -185,6 +295,8 @@ void MyWindow::displayTimer(int _val)
             mImpulseDuration = 10.0;
         }
         */
+=======
+>>>>>>> karen
     }
 }
 
@@ -200,20 +312,39 @@ void MyWindow::draw()
             for (unsigned int i = 0; i < mSkels.size(); i++) {
                 int start = mIndices[i];
                 int size = mDofs[i].size();
+<<<<<<< HEAD
                 mSkels[i]->setPose(mBakedStates[mPlayFrame].segment(start, size), false, false);
             }
+=======
+                mSkels[i]->setPose(mBakedStates[mPlayFrame].segment(start, size), true, false);
+            }
+            Vector3d com = mSkels[1]->getWorldCOM();
+            mRI->setPenColor(Vector3d(0.8, 0.8, 0.2));
+            mRI->pushMatrix();
+            glTranslated(com[0], com[1], com[2]);
+            mRI->drawEllipsoid(Vector3d(0.05, 0.05, 0.05));
+            mRI->popMatrix();
+
+>>>>>>> karen
             if (mShowMarkers) {
                 int sumDofs = mIndices[mSkels.size()]; 
                 int nContact = (mBakedStates[mPlayFrame].size() - sumDofs) / 6;
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
                     Vector3d f = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 100.0;
+<<<<<<< HEAD
 
+=======
+                    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+>>>>>>> karen
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
                     glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                     glEnd();
+<<<<<<< HEAD
                     mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+=======
+>>>>>>> karen
                     mRI->pushMatrix();
                     glTranslated(v[0], v[1], v[2]);
                     mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
@@ -228,11 +359,18 @@ void MyWindow::draw()
                 Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
                 Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 100.0;
 
+<<<<<<< HEAD
+=======
+                mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+>>>>>>> karen
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);
                 glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                 glEnd();
+<<<<<<< HEAD
                 mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+=======
+>>>>>>> karen
                 mRI->pushMatrix();
                 glTranslated(v[0], v[1], v[2]);
                 mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
@@ -260,6 +398,15 @@ void MyWindow::draw()
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
+<<<<<<< HEAD
+=======
+    ifstream inFile;
+    ofstream outFile("output.txt", ios::out);
+    ofstream dofFile("simMotion.dof", ios::out);
+    char buffer[80];
+    int nFrames;
+    Vector3d val;
+>>>>>>> karen
     switch(key){
     case ' ': // use space key to play or stop the motion
         mSim = !mSim;
@@ -315,6 +462,74 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
         break;
+<<<<<<< HEAD
+=======
+        
+    case 'a': // save deisred momentum
+        outFile.precision(10);
+        outFile << mController->mLinHist.size() << endl;
+        for (int i = 0; i < mController->mLinHist.size(); i++) {
+            outFile << i << endl;
+            outFile << mController->mLinHist[i][0] << " " << mController->mLinHist[i][1] << " " << mController->mLinHist[i][2] << " "<< mController->mAngHist[i][0] << " " << mController->mAngHist[i][1] << " " << mController->mAngHist[i][2] << endl;
+        }
+        break;
+        
+    case 'l': // load desired momentum
+        inFile.open("launch.txt");
+        inFile.precision(10);
+        inFile >> buffer; // nFrames
+        nFrames = atoi(buffer);
+        for (int i = 0; i < nFrames; i++) {
+            inFile >> buffer; // discard the frame number
+            for (int j = 0; j < 3; j++) {
+                inFile >> buffer;
+                val[j] = atof(buffer);
+            }
+            mController->mLaunchLin.push_back(val);
+            for (int j = 0; j < 3; j++) {
+                inFile >> buffer;
+                val[j] = atof(buffer);
+            }
+            mController->mLaunchAng.push_back(val);
+        }
+        cout << "load " << mController->mLaunchAng.size() << " frames from launch.txt" << endl;
+        inFile.close();
+        
+        inFile.open("landing.txt");
+        inFile.precision(10);
+        inFile >> buffer; // nFrames
+        nFrames = atoi(buffer);
+        for (int i = 0; i < nFrames; i++) {
+            inFile >> buffer; // discard the frame number
+            for (int j = 0; j < 3; j++) {
+                inFile >> buffer;
+                val[j] = atof(buffer);
+            }
+            mController->mLandingLin.push_back(val);
+            for (int j = 0; j < 3; j++) {
+                inFile >> buffer;
+                val[j] = atof(buffer);
+            }
+            mController->mLandingAng.push_back(val);
+        }
+        cout << "load " << mController->mLandingAng.size() << " frames from landing.txt" << endl;
+        inFile.close();        
+        break;
+
+    case 'z': // save current dof motion
+        dofFile.precision(10);
+        dofFile << "frame = " << mBakedStates.size() << " dofs = " << mSkels[1]->getNumDofs() << endl;
+        for (int i = 0; i < mSkels[1]->getNumDofs(); i++) 
+            dofFile << mSkels[1]->getDof(i)->getName() << " ";
+        dofFile << endl;
+        for (int i = 0; i < mBakedStates.size(); i++) {
+            for (int j = 0; j < mSkels[1]->getNumDofs(); j++)
+                dofFile << mBakedStates[i][mIndices[1] + j] << " ";
+            dofFile << endl;
+        }
+        break;
+
+>>>>>>> karen
     default:
         Win3D::keyboard(key,x,y);
     }
@@ -335,3 +550,140 @@ void MyWindow::bake()
 
     mBakedStates.push_back(state);
 }
+<<<<<<< HEAD
+=======
+
+Vector3d MyWindow::evalLinMomentum(SkeletonDynamics* _skel, const VectorXd& _dofVel) {
+    MatrixXd J(MatrixXd::Zero(3, _skel->getNumDofs()));
+    for (int i = 0; i < _skel->getNumNodes(); i++) {
+        BodyNodeDynamics *node = (BodyNodeDynamics*)_skel->getNode(i);
+        MatrixXd localJ = node->getJacobianLinear() * node->getMass();
+        for (int j = 0; j < node->getNumDependentDofs(); j++) {
+            int index = node->getDependentDof(j);
+            J.col(index) += localJ.col(j);
+        }
+    }
+    Vector3d cDot = J * _dofVel;
+    return cDot / mSkels[1]->getMass();
+}
+
+Vector3d MyWindow::evalAngMomentum(SkeletonDynamics* _skel, const VectorXd& _dofVel) {
+    Vector3d c = _skel->getWorldCOM();
+    Vector3d sum = Vector3d::Zero();
+    Vector3d temp = Vector3d::Zero();
+    for (int i = 0; i < _skel->getNumNodes(); i++) {
+        BodyNodeDynamics *node = (BodyNodeDynamics*)_skel->getNode(i);
+        node->evalVelocity(_dofVel);
+        node->evalOmega(_dofVel);
+        sum += node->getInertia() * node->mOmega;
+        sum += node->getMass() * (node->getWorldCOM() - c).cross(node->mVel);
+    }
+    return sum;
+}
+
+void MyWindow::sampleControl() {
+    mBestTorques = mController->getTorques();
+    mBestScore = 1e7;
+    mBestAlpha = 0;
+    VectorXd sample(mBestTorques.size());
+    sample.setZero();
+    // set to original control in case all samples are worse
+    mSkels[1]->setInternalForces(mController->getTorques());
+    pushState();
+    mIntegrator.integrate(this, mTimeStep);
+    evaluateSample(sample); // so we can update mBestScore for the original control
+    popState();
+
+    /* // sampling virtual force to meet desired linear momentum
+    for (int i = 0; i < 30; i++) {
+        double alpha = -30 + i * 2;
+        Vector3d vForce(0, 100, 0);
+        vForce *= alpha;
+        sample = mController->computeVirtualTorque(vForce);
+        mSkels[1]->setInternalForces(mController->getTorques() + sample);
+        pushState();
+        mIntegrator.integrate(this, mTimeStep);
+        if (evaluateSample(sample))
+            mBestAlpha = alpha;
+        popState();        
+    }*/
+    
+    // sampilng controlBias to meet desired angular momentum
+    for (int i = 0; i < 10; i++) {
+        double alpha = -10 + i * 2;
+        sample = alpha * mControlBias;
+        // we can compare with stupid random sampling
+        //for (int j = 0; j < sample.size(); j++)
+        //  sample[j] = utils::random(-40, 40);
+        mSkels[1]->setInternalForces(mController->getTorques() + sample);
+        pushState();
+        mIntegrator.integrate(this, mTimeStep);
+        if (evaluateSample(sample))
+            mBestAlpha = alpha;
+        popState();
+    }
+}
+
+bool MyWindow::evaluateSample(VectorXd& _sample) {
+    Vector3d lin = evalLinMomentum(mSkels[1], mDofVels[1]);
+    Vector3d ang = evalAngMomentum(mSkels[1], mDofVels[1]);
+    double sampleVal = ang[2];
+    double target = mController->mLaunchAng[mController->mPrepareFrame][2] * 2.0;
+    if (mBestScore > abs(sampleVal - target)) {
+        mBestScore = abs(sampleVal - target);
+        mBestTorques = mController->getTorques() + _sample;
+        return true;
+    }
+    return false;
+}
+
+void MyWindow::pushState() {
+    for (int i = 0; i < mDofs.size(); i++) 
+        mStoredDofs[i] = mDofs[i];
+
+    for (int i = 0; i < mDofVels.size(); i++) 
+        mStoredDofVels[i] = mDofVels[i];
+}
+
+void MyWindow::popState() {
+    for (int i = 0; i < mDofs.size(); i++) 
+        mDofs[i] = mStoredDofs[i];
+
+    for (int i = 0; i < mDofVels.size(); i++) 
+        mDofVels[i] = mStoredDofVels[i];
+}
+
+/*
+// formulation for generalized coordintates
+Vector3d MyWindow::evalAngMomentum(const VectorXd& _dofVel) {
+    Vector3d ret = Vector3d::Zero();
+    Vector3d c = mSkels[1]->getWorldCOM();
+    for (int i = 0; i < mSkels[1]->getNumNodes(); i++) {
+        BodyNodeDynamics *node = (BodyNodeDynamics*)mSkels[1]->getNode(i);
+        Vector3d localC = node->getLocalCOM();
+        Matrix4d W = node->getWorldTransform();
+        Matrix4d localTranslate = Matrix4d::Identity(4, 4);
+        localTranslate.block(0, 3, 3, 1) = localC;
+        Matrix4d M = localTranslate * node->getShape()->getMassTensor() * localTranslate.transpose();
+        Matrix4d WDot = Matrix4d::Zero();
+        for (int j = 0; j < node->getNumDependentDofs(); j++) {
+            int index = node->getDependentDof(j);
+            WDot += node->getDerivWorldTransform(j) * _dofVel[index];
+        }
+        Matrix3d R = W.block(0, 0, 3, 3);
+        Matrix3d RDot = WDot.block(0, 0, 3, 3);
+        Vector3d r = W.block(0, 3, 3, 1);
+        Vector3d rDot = WDot.block(0, 3, 3, 1);
+
+        Matrix3d rotation = R * M.block(0, 0, 3, 3) * RDot.transpose();
+        Matrix3d translation = node->getMass() * r * rDot.transpose();
+        Matrix3d crossTerm1 = node->getMass() * r * localC.transpose() * RDot.transpose();
+        Matrix3d crossTerm2 = node->getMass() * R * localC * rDot.transpose();
+        ret += utils::crossOperator(rotation + translation + crossTerm1 + crossTerm2);
+
+        ret -= node->getMass() * c.cross(utils::xformHom(WDot, localC));
+    }
+    return ret;
+}
+*/
+>>>>>>> karen

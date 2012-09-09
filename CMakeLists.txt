@@ -130,13 +130,10 @@ ADD_SUBDIRECTORY (thirdparty/gflags-2.0)
 MESSAGE(STATUS "gflags include dir: ${GFLAGS_INCLUDE_PATH}")
 include_directories( ${GFLAGS_INCLUDE_PATH} )
 
-ADD_SUBDIRECTORY (thirdparty/glog-0.3.1)
+ADD_SUBDIRECTORY (thirdparty/glog-0.3.2)
 MESSAGE(STATUS "glog include dir: ${GLOG_INCLUDE_PATH}")
 include_directories( ${GLOG_INCLUDE_PATH} )
 
-if(DART_UI)
-	ADD_SUBDIRECTORY (thirdparty/FreeImage-3.15.0)
-endif(DART_UI)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
@@ -152,9 +149,9 @@ ADD_SUBDIRECTORY (thirdparty/fcl)
 if (PLANNING OR ROBOTICS)
     ADD_SUBDIRECTORY (thirdparty/assimp)
     INCLUDE_DIRECTORIES(thirdparty/assimp/include)
-    SET_TARGET_PROPERTIES( assimp PROPERTIES FOLDER ThirdParty/assimp )
+    SET_TARGET_PROPERTIES( assimp PROPERTIES FOLDER thirdParty/assimp )
     if(TARGET zlib)
-        SET_TARGET_PROPERTIES( zlib PROPERTIES FOLDER ThirdParty/assimp )
+        SET_TARGET_PROPERTIES( zlib PROPERTIES FOLDER thirdParty/assimp )
     endif(TARGET zlib)
 endif (PLANNING OR ROBOTICS)
 

@@ -1,8 +1,23 @@
 \section{Rigid Body Dynamics: Lagrange's equations}
 \label{sec:rigidbodydyngen}
+<<<<<<< HEAD
 The Newton-Euler equations are defined in terms of velocities instead of position and orientation. We now derive the equations in generalized coordinates \vc{q} that define the position and orientation. The first three coordinates are the same as the position of COM. The next three represent the rotation of the rigid body such as an exponential map or three Euler angles (or four coordinates can be used for a quaternion).
 
 We start by computing the kinetic energy of the rigid body:
+=======
+The Newton-Euler equations are defined in terms of velocities instead
+of position and orientation. We now derive the equations in
+generalized coordinates $\vc{q}$ that define the position and
+orientation. The first three coordinates are the same as the position
+of COM. The next three represent the rotation of the rigid body such
+as an exponential map or three Euler angles (or four coordinates can
+be used for a quaternion). In particular, we will show how mass matrix
+and Coriolis and centrifugal term are computed in
+\eqnref{lagrangian_vector}.
+
+We start by computing the kinetic energy of the rigid body using the
+notions in \eqnref{momentum}:
+>>>>>>> karen
 \begin{eqnarray}
 \label{eq:rigid_kinetic}
 T &=& \sum_i T_i = \sum_i \frac{1}{2}  \sInfMass \dot{\vGlobalPoint}_i^{T}
@@ -100,7 +115,17 @@ Using the above equations, we write:
 \frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{q}_j} \right ) - \frac{\partial T}{\partial q_j} & = & (J)_j^T M_c J \ddot{\vc{q}} + (J)_j^T M_c \dot{J} \dot{\vc{q}} + (J)_j^T \dot{M}_c J \dot{\vc{q}} - \frac{1}{2}\dot{\vc{q}}^T J^T \frac{\partial M_c}{\partial q_j} J \dot{\vc{q}} \\ & & + \left ( \dot{(J)}_j^T M_c J \dot{\vc{q}}  - \left( \frac{\partial J}{\partial q_j} \dot{\vc{q}}\right)^T M_c J \dot{\vc{q}} \right )
 \end{eqnarray}
 
+<<<<<<< HEAD
 The second term in the above equation involves the computation of $\dot{J}$ that can be computed as $\sum_k \frac{\partial J}{\partial q_k} \dot{q}_k$. We now simplify the third, fourth and the fifth terms one by one. Let us start with the third term:
+=======
+Comparing \eqnref{lageqn_j} to \eqnref{lagrangian_vector2}, it seems
+that we can view the first term as the mass matrix multiplying by
+$\ddot{\vc{q}}$ and the rest terms as Coriolis and centrifugal
+forces. However, we will show that the third, fourth, and fifth terms
+of this equation can be greatly reduced.
+
+\paragraph{Third term:}
+>>>>>>> karen
 \begin{eqnarray}
 \label{eq:term3}
 \nonumber
@@ -109,6 +134,10 @@ The second term in the above equation involves the computation of $\dot{J}$ that
 & = & \vc{j}_j^T\dot{(RI_0 R^T)}\bm{\omega} \mbox{\ \ ($\vc{j}_j$ represents the $j^{th}$ column of $J_\omega$: see \eqnref{Jaccolj})} \\
 \mbox{term 3} & = & \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega}  \mbox{\ \ (From \eqnref{torque})}
 \end{eqnarray}
+<<<<<<< HEAD
+=======
+\paragraph{Fourth term:}
+>>>>>>> karen
 The fourth term in \eqnref{lageqn_j} can be simplified as:
 \begin{eqnarray}
 \label{eq:term4}
@@ -120,9 +149,18 @@ The fourth term in \eqnref{lageqn_j} can be simplified as:
 & = & \bm{\omega}^T \left ( \frac{\partial R}{\partial q_j}R^T I_c \right ) \bm{\omega}\\
 \nonumber
  & = & \bm{\omega}^T [\vc{j}_j] I_c \bm{\omega} \mbox{\ \ (From \eqnref{Jaccolj})}\\
+<<<<<<< HEAD
 \mbox{term 4}  & = & - \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega} \mbox{\ \ (Using the identity $\vc{a}.(\vc{b}\times\vc{c}) = -\vc{b}.(\vc{a}\times\vc{c}))$}
 \end{eqnarray}
 For simplifying the fifth term in \eqnref{lageqn_j}, we explicitly express it using the linear and angular components:
+=======
+\mbox{term 4}  & = & - \vc{j}_j^T[\bm{\omega}]I_c \bm{\omega} \mbox{\
+  \ (Using the identity $\vc{a}\cdot (\vc{b}\times\vc{c}) = -\vc{b}
+  \cdot (\vc{a}\times\vc{c}))$}
+\end{eqnarray}
+\paragraph{Fifth term:}
+To simplify the fifth term in \eqnref{lageqn_j}, we explicitly express it using the linear and angular components:
+>>>>>>> karen
 \begin{eqnarray}
 \label{eq:term5}
 \left (
@@ -208,6 +246,10 @@ Substituting the above in \eqnref{term5_ang}, we get:
 \mbox{term 5 (angular)} & = & -\vc{j}_j^T [\bm{\omega}] I_c\bm{\omega}
 \end{eqnarray} 
 
+<<<<<<< HEAD
+=======
+\paragraph{Put it together:}
+>>>>>>> karen
 Finally, we substitute the terms computed in \eqnref{term3}, \eqnref{term4}, \eqnref{term5_lin} and \eqnref{term5_ang_final} into \eqnref{lageqn_j} and rewrite it as:
 \begin{eqnarray}
 \label{eq:lageqn_j_final}
@@ -230,6 +272,17 @@ Writing the equations for all the $q_j$ in the vector form, we get:
 \frac{d}{dt} \left ( \frac{\partial T}{\partial \dot{\vc{q}}} \right ) - \frac{\partial T}{\partial \vc{q}} & = & \left( J^T M_c J \right )\ddot{\vc{q}} + \left( J^T M_c \dot{J} + J^T [\tilde{\bm{\omega}}]M_c J \right )\dot{\vc{q}}
 \end{eqnarray}
 
+<<<<<<< HEAD
+=======
+Note that the second term in the above equation involves the
+computation of $\dot{J}$ that can be computed as $\sum_k
+\frac{\partial J}{\partial q_k} \dot{q}_k$. In other words, we will
+need to compute the first and the second derivatives of a rotation
+matrix (\ie $\frac{\partial R}{\partial q_j}$ and $\frac{\partial^2
+  R}{\partial q_i \partial q_k}$) in order to compose Jacobian $J$ and
+its time derivative $\dot{J}$ in \eqnref{dyngen_vec}.
+
+>>>>>>> karen
 
 \paragraph{Derivation using Newton-Euler equations.}
 We can alternatively derive the result in \eqnref{dyngen_vec} from the Newton-Euler equations in \eqnref{newtoneuler}. Using \eqnref{velcartall}, we substitute the Cartesian velocities $\vc{v},\bm{\omega}$ in terms of the generalized velocities $\dot{\vc{q}}$ into \eqnref{newtoneuler} and get:
