@@ -68,14 +68,16 @@ int main(int argc, char* argv[])
     joint->addTransform( trans, true );
     MeshSkel.addTransform( trans );
 
-    //  Create Shape and assign it to node
-	  kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh( Eigen::Vector3d(0, 0, 0), 0 );
-	  node->setShape( Shape0 );
-
     // Load a Mesh3DTriangle to save in Shape
     geometry::Mesh3DTriangle m3d;
     bool b = m3d.readMesh( DART_DATA_PATH"/obj/foot.obj", geometry::Mesh3D::OBJ );
     printf("Status of  reading MESH: Reading mesh result was: %d \n", b );
+
+	 printf("Num vertices: %d \n", m3d.mNumVertices );
+	 printf("Num faces: %d \n", m3d.mNumFaces );
+
+    //  Create Shape and assign it to node
+	  kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh( Eigen::Vector3d(1, 1, 1), 0.0,  &m3d );
 
     // Save Mesh3D in Shape (vizMesh)
     Shape0->setVizMesh( &m3d );
@@ -84,6 +86,8 @@ int main(int argc, char* argv[])
     Matrix3d M;
     M << 0.000416667, 0.0, 0.0, 0.0, 0.000416667, 0.0, 0.0, 0.0, 0.000416667;
     Shape0->setInertia(M);
+
+	  node->setShape( Shape0 );
 
    // Add node to Skel
    MeshSkel.addNode( node );
@@ -96,8 +100,6 @@ int main(int argc, char* argv[])
    printf( "Our skeleton has %d joints \n", MeshSkel.getNumJoints() );
    printf( "Our skeleton has %d DOFs \n", MeshSkel.getNumDofs() );
 
-   ((SkeletonDynamics*)model3.getSkel())->getRoot()->printProperties("model::\n");
-   node->printProperties("\n\n=====================================================\nour node::\n");
 //   exit(0);
 
     MyWindow window((SkeletonDynamics*)model.getSkel(), &MeshSkel, NULL); //

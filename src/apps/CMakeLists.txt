@@ -20,9 +20,10 @@ foreach( APPDIR
 	cubes
 	exampleJointLimit
 	meshTest
-	#meshCollision
+	meshCollision
 	#leftLeg
 	#rightLeg
+   lowerBody
 	#lowerBodyFreeFall 
 	#collisionProfiling
 	#swinging
