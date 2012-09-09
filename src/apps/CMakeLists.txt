@@ -27,7 +27,7 @@ foreach( APPDIR
 	lowerBodyFreeFall 
 	#collisionProfiling
 	swinging
-	#lowerBodyWalk 
+	lowerBodyWalk 
 )
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
