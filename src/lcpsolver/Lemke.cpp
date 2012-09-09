@@ -52,7 +52,8 @@ namespace lcpsolver {
     int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd& _z)
     {
         int n = _q.size();
-        CHECK(_M.rows() == n && _M.cols() == n) << "Matrices are not compatible";
+        if(_M.rows() != n && _M.cols() != n) cout << "Matrices are not compatible";
+        assert(_M.rows() == n && _M.cols() == n);
         
 	    const double zer_tol = 1e-5;
 	    const double piv_tol = 1e-8;
@@ -262,13 +263,13 @@ namespace lcpsolver {
 		}
 
 	    if (err == 1)
-		    LOG(ERROR) << "LCP Solver: Iterations exceeded limit";
+		    cout << "[ERROR]" << "LCP Solver: Iterations exceeded limit";
 	    else if (err == 2)
-		    LOG(ERROR) << "LCP Solver: Unbounded ray";
+		    cout << "[ERROR]" << "LCP Solver: Unbounded ray";
         else if (err == 3)
-            LOG(ERROR) << "LCP Solver: Solver converged with numerical issues. Validation failed.";
+            cout << "[ERROR]" << "LCP Solver: Solver converged with numerical issues. Validation failed.";
         else if (err == 4)
-            LOG(ERROR) << "LCP Solver: Iteration diverged.";
+            cout << "[ERROR]" << "LCP Solver: Iteration diverged.";
 	    return err;
     }
 

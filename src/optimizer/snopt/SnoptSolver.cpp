@@ -12,8 +12,6 @@
 #include <cstdlib>
 using namespace std;
 using namespace Eigen;
-#include <glog/logging.h>
-using namespace google;
 
 #include "optimizer/Problem.h"
 #include "optimizer/Var.h"
@@ -112,8 +110,8 @@ namespace optimizer {
 
             SnoptInterface::Return ret = mSnopt->solve(coef_vals, lower_bounds, upper_bounds,mUnit);
 
-            VLOG(1) << "SnoptSolver " << mOptCount << " : ";
-            VLOG(1) << "obj = " << mSnopt->mReturnedObj << endl;
+            cout << "[VLOG(1)]" << "SnoptSolver " << mOptCount << " : ";
+            cout << "[VLOG(1)]" << "obj = " << mSnopt->mReturnedObj << endl;
 
             delete[] coef_vals;
             delete[] lower_bounds;

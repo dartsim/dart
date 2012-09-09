@@ -37,8 +37,6 @@
 
 #include "Eigen/Dense"
 using namespace Eigen;
-#include "glog/logging.h"
-using namespace google;
 #include <vector>
 using namespace std;
 
