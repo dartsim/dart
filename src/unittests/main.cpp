@@ -1,10 +1,9 @@
 // Standard Libraries
 #include <iostream>
 using namespace std;
-#include <gflags/gflags.h>
 // External Libraries
 #include <gtest/gtest.h>
-using namespace google;
+
 // Local headers
 #include "test_utils.h"
 #include "test_kinematics.h"
@@ -15,7 +14,7 @@ int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
 
     // Init google libraries
-    ParseCommandLineFlags(&argc, &argv, true);
+//    ParseCommandLineFlags(&argc, &argv, true);
 //    InitGoogleLogging(argv[0]);
 //
 //    // Define logging flag

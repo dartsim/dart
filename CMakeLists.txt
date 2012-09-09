@@ -125,11 +125,6 @@ message(STATUS "Configuring thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
-ADD_SUBDIRECTORY (thirdparty/gflags-2.0)
-MESSAGE(STATUS "gflags include dir: ${GFLAGS_INCLUDE_PATH}")
-include_directories( ${GFLAGS_INCLUDE_PATH} )
-
-
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
 ADD_SUBDIRECTORY (thirdparty/libccd)
