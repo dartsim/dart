@@ -1,8 +1,6 @@
 // Standard Libraries
 #include <iostream>
 using namespace std;
-// Google Libraries
-#include <glog/logging.h>
 #include <gflags/gflags.h>
 // External Libraries
 #include <gtest/gtest.h>
@@ -18,13 +16,14 @@ int main(int argc, char* argv[]) {
 
     // Init google libraries
     ParseCommandLineFlags(&argc, &argv, true);
-    InitGoogleLogging(argv[0]);
-
-    // Define logging flag
-    FLAGS_alsologtostderr = true;
-    FLAGS_minloglevel = INFO;
-    FLAGS_v = 0; // Make this value 1 to see the messages from the library
-    //// FLAGS_log_dir = "./glog/";
+//    InitGoogleLogging(argv[0]);
+//
+//    // Define logging flag
+//    FLAGS_alsologtostderr = true;
+//    FLAGS_minloglevel = INFO;
+//    FLAGS_v = 0; // Make this value 1 to see the messages from the library
+//    //// FLAGS_log_dir = "./glog/";
+//    todo replace with a _new_ log library
 
     return RUN_ALL_TESTS();
 }

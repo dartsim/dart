@@ -18,8 +18,6 @@
 
 #include <Eigen/Dense>
 
-#include <glog/logging.h>
-
 #include "renderer/RenderInterface.h"
 #include "Skeleton.h"
 #include "BodyNode.h"
@@ -93,7 +91,7 @@ namespace kinematics {
         } else if (ext == "skel") {
             return loadFile(_fName, SKEL);
         } else {
-            VLOG(1) << "invalid skeleton ext: " << ext;
+            std::cout << "[VLOG(1)]" << "invalid skeleton ext: " << ext;
             return false;
         }
     }

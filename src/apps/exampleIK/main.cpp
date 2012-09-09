@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 using namespace std;
-#include <glog/logging.h>
 #include <gflags/gflags.h>
 using namespace google;
 
@@ -31,7 +30,6 @@ DEFINE_string(dof, DART_DATA_PATH"dof/result.dof",
 int main(int argc, char* argv[]) {
     // Init google libraries
     ParseCommandLineFlags(&argc, &argv, true);
-    InitGoogleLogging(argv[0]);
 
     // Define logging flag
     FLAGS_alsologtostderr = true;
@@ -42,11 +40,11 @@ int main(int argc, char* argv[]) {
     string filename_c3d = FLAGS_c3d;
     string filename_dof = FLAGS_dof;
 
-    LOG(INFO) << "filename_skel = " << filename_skel;
-    LOG(INFO) << "filename_c3d  = " << filename_c3d;
-    LOG(INFO) << "filename_dof  = " << filename_dof;
+    cout << "[INFO]" << "filename_skel = " << filename_skel;
+    cout << "[INFO]" << "filename_c3d  = " << filename_c3d;
+    cout << "[INFO]" << "filename_dof  = " << filename_dof;
 
-    LOG(INFO) << "simpleik begins";
+    cout << "[INFO]" << "simpleik begins";
 
     IKProblem prob(filename_skel.c_str());
 
@@ -58,7 +56,7 @@ int main(int argc, char* argv[]) {
 
     snopt::SnoptSolver solver(&prob);
     for (int i = 0; i < c3dFile.getNumFrames(); i++) {
-        LOG(INFO) << "Frame Index = " << i;
+        cout << "[INFO]" << "Frame Index = " << i;
         for (int j = 0; j < c3dFile.getNumMarkers(); j++) {
             // PositionConstraint* p = dynamic_cast<PositionConstraint*>(prob.objBox()->getConstraint(j));
 
@@ -72,19 +70,19 @@ int main(int argc, char* argv[]) {
 
             if (isMissing && isInBox) {
                 int result = prob.objBox()->remove(p); 
-                LOG(INFO) << "\tDetect missing marker " << j << " ";
-                LOG(INFO) << "TakeOut() = " << result << " "
+                cout << "[INFO]" << "\tDetect missing marker " << j << " ";
+                cout << "[INFO]" << "TakeOut() = " << result << " "
                           << "size = " << prob.objBox()->getNumConstraints();
 
             }
             else if (!isMissing && !isInBox) {
                 prob.objBox()->add(p);
-                LOG(INFO) << "\tWe got the marker " << j << " back!!! ";
-                LOG(INFO) << "size = " << prob.objBox()->getNumConstraints();
+                cout << "[INFO]" << "\tWe got the marker " << j << " back!!! ";
+                cout << "[INFO]" << "size = " << prob.objBox()->getNumConstraints();
             }
 
         }
-        LOG(INFO) << "Update OK";
+        cout << "[INFO]" << "Update OK";
 
         solver.solve();
 
@@ -98,8 +96,8 @@ int main(int argc, char* argv[]) {
     }
     
     resultDof.saveFile(filename_dof.c_str(), 0, resultDof.getNumFrames());
-    LOG(INFO) << "Save the result to [" << filename_dof.c_str() << "]";
-    LOG(INFO) << "Save OK";
+    cout << "[INFO]" << "Save the result to [" << filename_dof.c_str() << "]";
+    cout << "[INFO]" << "Save OK";
 
-    LOG(INFO) << "simpleik OK";
+    cout << "[INFO]" << "simpleik OK";
 }

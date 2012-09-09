@@ -36,10 +36,8 @@
  */
 
 #include <iostream>
+#include <string.h>
 using namespace std;
-// Google Libraries
-#include <glog/logging.h>
-using namespace google;
 #include "Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
 
 namespace utils {
@@ -121,7 +119,7 @@ namespace utils {
 
     void Timer::printLog() {
         if(mCount>0) {
-            VLOG(1) << "Timer [" << mName << "] : "
+            cout << "[VLOG(1)]" << "Timer [" << mName << "] : "
                     << "Last = " << mLastElapsed << " "
                     << "Total " << " "
                     << mTotal << " " << mCount << "; "
@@ -129,7 +127,7 @@ namespace utils {
                     << "FPS : " << mCount / mTotal << "hz ";
        
         } else {
-            VLOG(1) << "Timer " << mName << " doesn't have any record." << endl;
+        	cout << "[VLOG(1)]" << "Timer " << mName << " doesn't have any record." << endl;
         }
     }
 

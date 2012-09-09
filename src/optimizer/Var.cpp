@@ -35,14 +35,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <stdlib.h>
 #include "Var.h"
-#include <glog/logging.h>
+
+using namespace std;
 
 namespace optimizer {
 
     Var::Var(double val, double lower, double upper)
         :mVal(val), mLower(lower), mUpper(upper), mWeight(1.0) {
-        CHECK_LT(mLower, mUpper);
+    	if(mLower >= mUpper) {
+    		cout << mLower << " is greater than " << mUpper << endl;
+    		cout << "Exiting." << endl;
+    		exit(1);
+    	}
     }
 
     void Var::setWeight(double weight) {

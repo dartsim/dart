@@ -15,7 +15,6 @@ SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
-add_definitions(-g)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -129,10 +128,6 @@ ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 ADD_SUBDIRECTORY (thirdparty/gflags-2.0)
 MESSAGE(STATUS "gflags include dir: ${GFLAGS_INCLUDE_PATH}")
 include_directories( ${GFLAGS_INCLUDE_PATH} )
-
-ADD_SUBDIRECTORY (thirdparty/glog-0.3.2)
-MESSAGE(STATUS "glog include dir: ${GLOG_INCLUDE_PATH}")
-include_directories( ${GLOG_INCLUDE_PATH} )
 
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)

@@ -6,12 +6,10 @@
   Date		06/19/2011
 */
 
+#include <iostream>
 #include "SnoptInterface.h"
 using namespace std;
 using namespace Eigen;
-
-#include <glog/logging.h>
-using namespace google;
 
 
 namespace optimizer {
@@ -473,7 +471,7 @@ namespace optimizer {
             delete[] ka;
 
             if(inform != 0)
-                VLOG(1) << "inform = " << inform << endl;
+                cout << "[VLOG(1)]" << "inform = " << inform << endl;
   
             // cout << "objective = " << mReturnedObj << endl;
 
