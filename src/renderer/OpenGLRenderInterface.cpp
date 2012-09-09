@@ -148,6 +148,7 @@ namespace renderer {
     
 
     void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const geometry::Mesh3D *_mesh) {        
+
         glBegin(GL_TRIANGLES);
         for (unsigned int i = 0; i < _mesh->mNumFaces; i++) {
             if (_mesh->mVertexNormals.size() > 0) {
@@ -181,12 +182,13 @@ namespace renderer {
                 Vector3d p1(_mesh->mVertexPos[pi1 * 3] * _size[0], _mesh->mVertexPos[pi1 * 3 + 1] * _size[1], _mesh->mVertexPos[pi1 * 3 + 2] * _size[2]);
                 Vector3d p2(_mesh->mVertexPos[pi2 * 3] * _size[0], _mesh->mVertexPos[pi2 * 3 + 1] * _size[1], _mesh->mVertexPos[pi2 * 3 + 2] * _size[2]);
 
+
                 glVertex3f(p0[0], p0[1], p0[2]);
                 glVertex3f(p1[0], p1[1], p1[2]);
                 glVertex3f(p2[0], p2[1], p2[2]);
             }
         }
-        glEnd();         
+        glEnd();       
     }
 
 

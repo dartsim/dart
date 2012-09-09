@@ -35,7 +35,7 @@ int main( int argc, char* argv[] )
     bool b = m3d.readMesh( DART_DATA_PATH"/obj/BoxSmall.obj", geometry::Mesh3D::OBJ );
 	 printf("Num vertices: %d \n", m3d.mNumVertices );
 	 printf("Num faces: %d \n", m3d.mNumFaces );
-	  kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh( Eigen::Vector3d(0, 0, 0), 0.0, &m3d );
+	  kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh( Eigen::Vector3d(1, 1, 1), 0.0, &m3d );
 
     // Save Mesh3D in Shape (vizMesh)
     Shape0->setVizMesh( &m3d );
