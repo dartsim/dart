@@ -126,6 +126,8 @@ message(STATUS "Configuring thirdparty libraries")
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
+ADD_SUBDIRECTORY (thirdparty/fcl)
+ADD_SUBDIRECTORY (thirdparty/libccd)
 
 ###############################################
 # DART Source
