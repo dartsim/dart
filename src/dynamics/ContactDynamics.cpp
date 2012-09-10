@@ -25,14 +25,14 @@ namespace dynamics {
     }
 
     void ContactDynamics::applyContactForces() {
-        //        static Timer tLCP("LCP Solver");
+        // static Timer tLCP("LCP Solver");
         if (getNumTotalDofs() == 0)
             return;
         mCollisionChecker->clearAllContacts();
         mCollisionChecker->checkCollision(false);
 
         for (int i = 0; i < getNumSkels(); i++)
-            mConstrForces[i].setZero(); 
+            mConstrForces[i].setZero();
 
         if (mCollisionChecker->getNumContact() == 0)
             return;
@@ -42,7 +42,7 @@ namespace dynamics {
         solve();
         //            tLCP.stopTimer();
         //            tLCP.printScreen();
-        applySolution();        
+        applySolution();
     }
 
     void ContactDynamics::reset() {

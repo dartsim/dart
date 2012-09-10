@@ -2,7 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/collision_skeleton.h"
+#include "collision/collisionSkeleton.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -37,7 +37,7 @@ void MyWindow::initDyn()
         mSkels[i]->setPose(mDofs[i], false, false);
          // compute dynamics here because computation of control force at first iteration needs to access mass matrix
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
-   }
+    }
 
     // set the ground to be an immobile object; it will still participate in collision
     mSkels[0]->setImmobileState(true);
