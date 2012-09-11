@@ -92,7 +92,7 @@ ENDIF ()
 # GLUT
 if(WIN32 AND NOT CYGWIN)
     MESSAGE(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
-    SET(GLUT_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/glut-win" CACHE PATH "Root directory of GLUT installation")
+    SET(GLUT_PREFIX_PATH "C:/Golems/glut64" CACHE PATH "Root directory of GLUT installation")
 endif(WIN32 AND NOT CYGWIN)
 if(DEFINED GLUT_PREFIX_PATH)
     SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${GLUT_PREFIX_PATH})
