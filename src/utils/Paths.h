@@ -2,7 +2,7 @@
 #ifndef UTILS_PATHS_H
 #define UTILS_PATHS_H
 
-#define DART_ROOT_PATH "/home/ana/Research/dart/"
-#define DART_DATA_PATH "/home/ana/Research/dart/data/"
+#define DART_ROOT_PATH "C:/Users/Mike/Desktop/dart/"
+#define DART_DATA_PATH "C:/Users/Mike/Desktop/dart/data/"
 
 #endif // ifndef UTILS_PATHS_H
