@@ -36,6 +36,7 @@
 
 
 #define BOOST_TEST_MODULE "FCL_BROADPHASE"
+#define NOMINMAX
 #include <boost/test/unit_test.hpp>
 
 #include "fcl/broadphase/broadphase.h"

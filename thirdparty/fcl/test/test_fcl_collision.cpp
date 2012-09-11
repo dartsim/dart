@@ -35,6 +35,8 @@
 /** \author Jia Pan */
 
 #define BOOST_TEST_MODULE "FCL_COLLISION"
+#define NOMINMAX
+
 #include <boost/test/unit_test.hpp>
 
 #include "fcl/traversal/traversal_node_bvhs.h"
