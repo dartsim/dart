@@ -3,6 +3,7 @@
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
+#include <stdio.h>
 
 using namespace utils;
 
