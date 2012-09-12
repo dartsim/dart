@@ -5,14 +5,24 @@
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
+#include "collision/collision_skeleton.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoDof.h"
 
-class Controller;
+using namespace std;
+
+namespace dynamics{
+    class SkeletonDynamics;
+    class ContactDynamics;
+}
+
+namespace integration{
+    class IntegrableSystem;
+}
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
- MyWindow(kinematics::FileInfoDof *_motion, dynamics::SkeletonDynamics* _mList = 0, ...): Win3D() {
+    //    MyWindow(dynamics::SkeletonDynamics* _m1, dynamics::SkeletonDynamics* _m2)
+ MyWindow(dynamics::SkeletonDynamics* _mList = 0, ...): Win3D() {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
@@ -22,15 +32,17 @@ public:
         mPlay = false;
         mSimFrame = 0;
         mPlayFrame = 0;
+        mShowMarkers = true;
 
-        mPersp = 30.f;
-        mTrans[2] = -1.f;
+        mPersp = 45.f;
+        mTrans[1] = 300.f;
     
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;
         mForce = Eigen::Vector3d::Zero();
+        mImpulseDuration = 0;
+        mSelectedNode = 1;
 
-        mMotion = _motion;
         if (_mList) {
             mSkels.push_back(_mList);
             va_list ap;
@@ -63,26 +75,28 @@ public:
     virtual Eigen::VectorXd getState();
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(Eigen::VectorXd state);	
-
  protected:	
-    kinematics::FileInfoDof *mMotion;
     int mSimFrame;
     bool mSim;
     int mPlayFrame;
     bool mPlay;
+    bool mShowMarkers;
+    int mSelectedNode;
     integration::EulerIntegrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
 
     std::vector<dynamics::SkeletonDynamics*> mSkels;
+    dynamics::ContactDynamics *mCollisionHandle;
     std::vector<Eigen::VectorXd> mDofVels;
     std::vector<Eigen::VectorXd> mDofs;
     double mTimeStep;
     Eigen::Vector3d mGravity;
     Eigen::Vector3d mForce;
     std::vector<int> mIndices;
-    Controller *mController;
+    int mImpulseDuration;
 
     void initDyn();
+    void setPose();
     void bake();
 };
 
