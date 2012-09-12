@@ -6,7 +6,7 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 # List of all the subdirectories to include
 foreach( APPDIR
 	viewer
-#	forwardSim
+	forwardSim
 #	cubes
 #	motionAnalysis
 #	pdController
@@ -20,7 +20,7 @@ endforeach(APPDIR)
 
 foreach( APPTARGET
 	viewer
-#	forwardSim
+	forwardSim
 #	cubes
 #	motionAnalysis
 #	pdController
