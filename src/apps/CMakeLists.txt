@@ -5,21 +5,29 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 
 # List of all the subdirectories to include
 foreach( APPDIR
-	exampleCollisionWithSkelton
-	HandSPD 
-	HandRedBall
-	cubes
-	exampleJointLimit
+	viewer
+#	forwardSim
+#	cubes
+#	motionAnalysis
+#	pdController
+#	balance
+#	ik
+#	hybrid
+#	manipulator
 	)
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
 
 foreach( APPTARGET
-	exampleCollisionWithSkelton
-	HandSPD
-	HandRedBall
-	cubes
-	exampleJointLimits
+	viewer
+#	forwardSim
+#	cubes
+#	motionAnalysis
+#	pdController
+#	balance
+#	ik
+#	hybrid
+#	manipulator
 	)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
