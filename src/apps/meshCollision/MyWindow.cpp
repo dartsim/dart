@@ -131,10 +131,10 @@ void MyWindow::displayTimer(int _val)
     switch(mPlayState)
     {
     case PLAYBACK:
-        mPlayFrame += 16;
-        if (mPlayFrame >= mBakedStates.size()) {
-            mPlayFrame = 0;
+        if (mPlayFrame >= 0 && mPlayFrame >= mBakedStates.size() - mDisplayFrequency) {
+            mPlayFrame = -mDisplayFrequency;
         }
+        mPlayFrame += mDisplayFrequency;
         retrieveBakedState(mPlayFrame);
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
@@ -144,12 +144,12 @@ void MyWindow::displayTimer(int _val)
             glutPostRedisplay();
             glutTimerFunc(mDisplayTimeout + 1000.0, refreshTimer, _val);
         }
-        else if (mMovieFrame >= mBakedStates.size()) {
+        else if (mMovieFrame >= 0 && mMovieFrame >= mBakedStates.size() - mDisplayFrequency) {
             mPlayState = PAUSED;
         }
         else {
+            mMovieFrame += mDisplayFrequency;
             retrieveBakedState(mMovieFrame);
-            mMovieFrame++;
             mScreenshotScheduled = true;
             glutPostRedisplay();
             glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
@@ -243,6 +243,8 @@ void MyWindow::draw()
 
         playstate_enum disp = mPlayState;
         if (mPlayState == PAUSED) disp = mPlayStateLast;
+        // std::cout << "disp: " << disp << std::endl;;
+
 
         if (disp == SIMULATE) {
             penColor = Vector3d(0.2, 0.2, 0.8);
@@ -255,16 +257,13 @@ void MyWindow::draw()
             }
         }
         else { // disp == PLAYBACK || disp == RECORD
+            assert(disp == RECORD || disp == PLAYBACK);
             int frame;
             penColor = Vector3d(0.8, 0.2, 0.2);
             ellipsoidColor = Vector3d(0.02, 0.02, 0.02);
             if (disp == RECORD) frame = mMovieFrame;
             if (disp == PLAYBACK) frame = mPlayFrame;
-            if (frame >= mBakedStates.size())
-            {
-                cout << disp << " " << RECORD << " " << PLAYBACK << endl;
-                cout << frame << endl;
-            }
+            if (frame < 0) frame = 0;
             int sumDofs = mIndices[mSkels.size()]; 
             int nContact = (mBakedStates[frame].size() - sumDofs) / 6;
             for (int k = 0; k < nContact; k++) {

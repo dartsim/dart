@@ -29,10 +29,13 @@ public:
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
 		
+        mDisplayFrequency = 16;
         mPlayState = PAUSED;
+        mPlayStateLast = SIMULATE;
         mSimFrame = 0;
-        mPlayFrame = 0;
-        mMovieFrame = 0;
+        mPlayFrame = -mDisplayFrequency;
+        mMovieFrame = -mDisplayFrequency;
+        mScreenshotScheduled = false;
 
         mShowMarkers = true;
 
@@ -95,10 +98,10 @@ public:
     virtual void setState(Eigen::VectorXd state);	
  protected:	
     enum playstate_enum {
-        SIMULATE,
-        RECORD,
-        PLAYBACK,
-        PAUSED
+        SIMULATE = 3,
+        RECORD = 2,
+        PLAYBACK = 1,
+        PAUSED = 0
     };
     playstate_enum mPlayState;
     playstate_enum mPlayStateLast;
@@ -106,6 +109,7 @@ public:
     int mPlayFrame;
     int mMovieFrame;
     bool mScreenshotScheduled;
+    int mDisplayFrequency;
 
     bool mShowMarkers;
     int mSelectedNode;
