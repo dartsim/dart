@@ -25,11 +25,13 @@ public:
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
 		
-        mPlayState = PAUSED;
-        mSimFrame = 0;
-        mPlayFrame = -1;
-        mMovieFrame = -1;
         mDisplayFrequency = 16;
+        mPlayState = PAUSED;
+        mPlayStateLast = SIMULATE;
+        mSimFrame = 0;
+        mPlayFrame = -mDisplayFrequency;
+        mMovieFrame = -mDisplayFrequency;
+        mScreenshotScheduled = false;
 
         mShowMarkers = true;
 
