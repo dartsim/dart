@@ -7,7 +7,7 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 foreach( APPDIR
 	viewer
 	forwardSim
-#	cubes
+	cubes
 #	motionAnalysis
 #	pdController
 #	balance
@@ -21,7 +21,7 @@ endforeach(APPDIR)
 foreach( APPTARGET
 	viewer
 	forwardSim
-#	cubes
+	cubes
 #	motionAnalysis
 #	pdController
 #	balance

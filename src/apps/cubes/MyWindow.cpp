@@ -2,17 +2,13 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
+#include "collision/CollisionSkeleton.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
-#include <cstdio>
-#include "kinematics/BodyNode.h"
 
-using namespace Eigen;
-using namespace kinematics;
-using namespace utils;
-using namespace integration;
 using namespace dynamics;
+using namespace utils;
 
 void MyWindow::initDyn()
 {
@@ -25,41 +21,20 @@ void MyWindow::initDyn()
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
-
-    
+    // initial position of the boxes
     mDofs[0][1] = -0.35;
     mDofs[1][1] = mDofs[0][1] + 0.025;
     mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
     mDofs[3][0] = 0.05;
     mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
-    
-     //rotate about z
-    /*
-    mDofs[0][1] = -0.35;
-    mDofs[1][1] = -0.35;
-    mDofs[2][1] = -0.35;
-    mDofs[1][0] = mDofs[0][0] + 0.025 + 0.025;
-    mDofs[2][0] = mDofs[1][0] + 0.025 + 0.025;
-    mDofs[0][5] = 1.57;
-    mDofs[1][5] = 1.57;
-    mDofs[2][5] = 1.57;
-    */
-    /*
-    mDofs[0][1] = -0.35;
-    mDofs[1][0] = 0.06;
-    mDofs[1][1] = -0.2;
-    mDofs[2][0] = 0.02;
-    mDofs[2][2] = 0.04;
-    mDofs[3][0] = 0.09;
-    mDofs[3][1] = 0.08;
-    */
+
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->initDynamics();
         mSkels[i]->setPose(mDofs[i], false, false);
-        mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
     }
+    // set the ground to be an immobile object; it will still participate in collision
     mSkels[0]->setImmobileState(true);
-
+    // create a collision handler
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
 }
 
@@ -75,18 +50,33 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
-    setPose();
+    // compute dynamic equations
+    for (unsigned int i = 0; i < mSkels.size(); i++) {
+        if (mSkels[i]->getImmobileState()) {
+            // need to update node transformation for collision
+            mSkels[i]->setPose(mDofs[i], true, false);
+        } else {
+            // need to update first derivatives for collision
+            mSkels[i]->setPose(mDofs[i], false, true);
+            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
+        }
+    }
+    // compute contact forces
+    mCollisionHandle->applyContactForces();
+
+    // compute derivatives for integration
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
+        // skip immobile objects in forward simulation
         if (mSkels[i]->getImmobileState())
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
+        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
-    }        
+    }
     return deriv;
 }
 
@@ -99,61 +89,34 @@ void MyWindow::setState(VectorXd newState) {
     }
 }
 
-void MyWindow::setPose() {
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState()) {
-            mSkels[i]->setPose(mDofs[i], true, false);
-        } else {
-            mSkels[i]->setPose(mDofs[i], true, true);
-            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
-        }
-    }
-    mCollisionHandle->applyContactForces();
-}
-
 void MyWindow::displayTimer(int _val)
 {
     int numIter = mDisplayTimeout / (mTimeStep * 1000);
-    numIter = 15;
     if (mPlay) {
         mPlayFrame += 16;
         if (mPlayFrame >= mBakedStates.size())
             mPlayFrame = 0;
-        glutPostRedisplay();
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);        
     }else if (mSim) {
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            cout << "###iter = " << i + mSimFrame << endl;
             //            tSim.startTimer();
-            //            static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(9.8, 0.0, 0.0));
-            //static_cast<BodyNodeDynamics*>(mSkels[2]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), Vector3d(-9.8, 0.0, 0.0));
-            //static_cast<BodyNodeDynamics*>(mSkels[0]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
             //            tSim.stopTimer();
             //            tSim.printScreen();
             bake();
+            mSimFrame++;
         }
+        mForce.setZero();
 
-        mImpulseDuration--;
-        if (mImpulseDuration <= 0) {
-            mImpulseDuration = 0;
-            mForce.setZero();
-        }
-
-        mSimFrame += numIter;
-
-        glutPostRedisplay();
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
     }
+    glutPostRedisplay();
+    glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
 void MyWindow::draw()
 {
     glDisable(GL_LIGHTING);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     if (!mSim) {
@@ -168,13 +131,12 @@ void MyWindow::draw()
                 int nContact = (mBakedStates[mPlayFrame].size() - sumDofs) / 6;
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
-                    //            Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
                     Vector3d f = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
                     glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
                     glEnd();
-                    mRI->setPenColor(Vector3d(0.8, 0.2, 0.2));
+                    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
                     mRI->pushMatrix();
                     glTranslated(v[0], v[1], v[2]);
                     mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
@@ -185,29 +147,24 @@ void MyWindow::draw()
     }else{
         if (mShowMarkers) {
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-                //          if (mCollisionHandle->getCollisionChecker()->getContact(k).bdID1 == mSelectedNode) {
-                    Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-                    Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
-                    //                    Vector3d f = mCollisionHandle->getCartesianForce(1, k) / 10.0;
-                    Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0;
-                    glBegin(GL_LINES);
-                    glVertex3f(v[0], v[1], v[2]);
-                    glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
-
-                    glEnd();
-                    mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
-                    mRI->pushMatrix();
-                    glTranslated(v[0], v[1], v[2]);
-                    mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
-                    mRI->popMatrix();
-                    //}
+                Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
+                Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0;
+                glBegin(GL_LINES);
+                glVertex3f(v[0], v[1], v[2]);
+                glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
+                glEnd();
+                mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
+                mRI->pushMatrix();
+                glTranslated(v[0], v[1], v[2]);
+                mRI->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
+                mRI->popMatrix();
             }
         }
     }
-
+    
     for (unsigned int i = 0; i < mSkels.size(); i++)
         mSkels[i]->draw(mRI);
-        
+            
     // display the frame count in 2D text
     char buff[64];
     if (!mSim) 
@@ -215,7 +172,6 @@ void MyWindow::draw()
     else
         sprintf(buff, "%d", mSimFrame);
     string frame(buff);
-    glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
     yui::drawStringOnScreen(0.02f,0.02f,frame);
     glEnable(GL_LIGHTING);
@@ -231,25 +187,13 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;
-    case 's': // simulate one frame
-        if (!mPlay) {
-            mForce = Vector3d::Zero();
-            setPose();
-            mIntegrator.integrate(this, mTimeStep);
-            mSimFrame++;
-            bake();
-            glutPostRedisplay();
-        }
-        break;
     case '1': // upper right force
-        mForce[0] = 40;
-        mImpulseDuration = 1.0;
-        cout << "push up and right" << endl;
+        mForce[0] = -40;
+        cout << "push left" << endl;
         break;
     case '2': // upper right force
-        mForce[0] = -40;
-        mImpulseDuration = 1.0;
-        cout << "push left" << endl;
+        mForce[0] = 40;
+        cout << "push right" << endl;
         break;
     case 'p': // playBack
         mPlay = !mPlay;
@@ -292,8 +236,7 @@ void MyWindow::bake()
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
         state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
-        //state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
-        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
+        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
     }
     mBakedStates.push_back(state);
 }
