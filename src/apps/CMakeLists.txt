@@ -10,8 +10,8 @@ foreach( APPDIR
 	cubes
 	motionAnalysis
 	pdController
-#	balance
-#	ik
+#	balance # No snopt
+	ik
 #	hybrid
 #	manipulator
 	)
@@ -24,8 +24,8 @@ foreach( APPTARGET
 	cubes
 	motionAnalysis
 	pdController
-#	balance
-#	ik
+#	balance	# no snopt
+	ik
 #	hybrid
 #	manipulator
 	)
