@@ -235,7 +235,6 @@ void MyWindow::draw()
     glDisable(GL_LIGHTING);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // draw contact points and associated force vectors
     if (mShowMarkers) {
