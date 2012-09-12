@@ -9,7 +9,7 @@ foreach( APPDIR
 	forwardSim
 	cubes
 	motionAnalysis
-#	pdController
+	pdController
 #	balance
 #	ik
 #	hybrid
@@ -23,7 +23,7 @@ foreach( APPTARGET
 	forwardSim
 	cubes
 	motionAnalysis
-#	pdController
+	pdController
 #	balance
 #	ik
 #	hybrid
