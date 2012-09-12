@@ -81,7 +81,7 @@ protected:
     int mSimFrame;
     int mPlayFrame;
     int mMovieFrame;
-    bool screenshotScheduled;
+    bool mScreenshotScheduled;
 
     bool mShowMarker;
     std::vector<Eigen::VectorXd> mBakedStates;

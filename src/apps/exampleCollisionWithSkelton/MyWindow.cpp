@@ -117,7 +117,7 @@ void MyWindow::displayTimer(int _val)
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
         break;
     case RECORD:
-        if (screenshotScheduled) { // Wait for every frame to be drawn and captured
+        if (mScreenshotScheduled) { // Wait for every frame to be drawn and captured
             glutPostRedisplay();
             glutTimerFunc(mDisplayTimeout + 1000.0, refreshTimer, _val);
         }
@@ -127,7 +127,7 @@ void MyWindow::displayTimer(int _val)
         else {
             retrieveBakedState(mMovieFrame);
             mMovieFrame++;
-            screenshotScheduled = true;
+            mScreenshotScheduled = true;
             glutPostRedisplay();
             glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
         }
@@ -174,12 +174,11 @@ void MyWindow::draw()
         }
     }
 
-    if (screenshotScheduled)
+    if (mScreenshotScheduled)
     {
-        screenshotScheduled = false;
+        mScreenshotScheduled = false;
         screenshot();
     }
-        
     
     // display the frame count, the playback frame, and the movie length in 2D text
     glDisable(GL_LIGHTING);
