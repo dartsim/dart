@@ -13,7 +13,7 @@ foreach( APPDIR
 #	balance # No snopt
 	ik
 	hybrid
-#	manipulator
+	manipulator
 	)
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
@@ -27,7 +27,7 @@ foreach( APPTARGET
 #	balance	# no snopt
 	ik
 	hybrid
-#	manipulator
+	manipulator
 	)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
