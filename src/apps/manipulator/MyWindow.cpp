@@ -117,7 +117,6 @@ void MyWindow::retrieveBakedState(int frame)
 
 void MyWindow::displayTimer(int _val)
 {
-    std::cout << "timer" << std::endl;
     switch(mPlayState)
     {
     case PLAYBACK:
@@ -228,8 +227,6 @@ void MyWindow::drawContact(Vector3d vertex, Vector3d force, Vector3d penColor1, 
 
 void MyWindow::draw()
 {
-    std::cout << "draw" << std::endl;
-
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // draw contact points and associated force vectors
@@ -260,22 +257,15 @@ void MyWindow::draw()
             ellipsoidColor = Vector3d(0.01, 0.01, 0.01);
             if (disp == RECORD) frame = mMovieFrame;
             if (disp == PLAYBACK) frame = mPlayFrame;
-            if (frame < 0 || frame >= mBakedStates.size())
-            {
-                cout << "invalid frame during draw" << disp << " " << RECORD << " " << PLAYBACK << endl;
-                cout << frame << " >= " << mBakedStates.size() << endl;
-            }
-            else
-            {
-                int sumDofs = mIndices[mSkels.size()]; 
-                int nContact = (mBakedStates[frame].size() - sumDofs) / 6;
-                for (int k = 0; k < nContact; k++) {
-                    drawContact(mBakedStates[frame].segment(sumDofs + k * 6, 3),
-                                mBakedStates[frame].segment(sumDofs + k * 6 + 3, 3) / 10.0,
-                                penColor1,
-                                penColor2,
-                                ellipsoidColor);
-                }
+            if (frame < 0) frame = 0;
+            int sumDofs = mIndices[mSkels.size()]; 
+            int nContact = (mBakedStates[frame].size() - sumDofs) / 6;
+            for (int k = 0; k < nContact; k++) {
+                drawContact(mBakedStates[frame].segment(sumDofs + k * 6, 3),
+                            mBakedStates[frame].segment(sumDofs + k * 6 + 3, 3) / 10.0,
+                            penColor1,
+                            penColor2,
+                            ellipsoidColor);
             }
         }
     }
@@ -300,10 +290,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
               // first thing that's pressed, simulate
         if (mPlayState == PAUSED)
         {
-            if (mPlayStateLast != PAUSED)
-                mPlayState = mPlayStateLast;
-            else
-                mPlayState = SIMULATE;
+            mPlayState = mPlayStateLast;
             glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
         }
         else
@@ -375,7 +362,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         if (mPlayState == PLAYBACK || mPlayStateLast == PLAYBACK)
         {
             mPlayFrame -= 1;
-            if (mPlayFrame < 0) mPlayFrame = mBakedStates.size();
+            if (mPlayFrame < 0) mPlayFrame = mBakedStates.size()-1;
             retrieveBakedState(mPlayFrame);
             glutPostRedisplay();
         }
