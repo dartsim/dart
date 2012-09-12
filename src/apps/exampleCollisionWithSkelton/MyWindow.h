@@ -47,26 +47,18 @@ MyWindow(dynamics::SkeletonDynamics* _m, dynamics::SkeletonDynamics* _m2): Win3D
         std::cout << 
             "\nKeybindings:\n" <<
             "\n" <<
-            "Press space to pause or unpause the program. When unpaused, it will\n" <<
-            "continue doing whatever it was when you paused it.\n" <<
+            "s: start or continue simulating.\n" <<
             "\n" <<
-            "Switch to simulation mode and start simulating with 's'. Simulation\n" <<
-            "will continue from where it last left off.\n" <<
+            "p: start or continue playback.\n" <<
+            "r, t: move to start or end of playback.\n" <<
+            "[, ]: step through playback by one frame.\n" <<
             "\n" <<
-            "Switch to playback mode and start playing back with 'p'. Press 'r' or\n" <<
-            "'t' to set playback to the beginning or end of what's been simulated\n" <<
-            "so far. Press 'i' to step one frame backward or 'o' to step one frame\n" <<
-            "forward.\n" <<
+            "m: start or continue movie recording.\n" <<
             "\n" <<
-            "Switch to movie recording mode with m. Movie recording will resume\n" <<
-            "from the last frame that was recorded and will automatically end when\n" <<
-            "no new frames are available to record. Press n to take a screenshot\n" <<
-            "directly.\n" <<
+            "space: pause/unpause whatever is happening.\n" <<
             "\n" <<
-            "Press 'escape' or 'q' to quit.\n" <<
+            "q, escape: quit.\n" <<
             std::endl;
-
-
     }
 
     virtual void draw();
