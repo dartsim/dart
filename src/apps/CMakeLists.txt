@@ -8,7 +8,7 @@ foreach( APPDIR
 	viewer
 	forwardSim
 	cubes
-#	motionAnalysis
+	motionAnalysis
 #	pdController
 #	balance
 #	ik
@@ -22,7 +22,7 @@ foreach( APPTARGET
 	viewer
 	forwardSim
 	cubes
-#	motionAnalysis
+	motionAnalysis
 #	pdController
 #	balance
 #	ik
