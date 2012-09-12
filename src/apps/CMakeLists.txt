@@ -12,7 +12,7 @@ foreach( APPDIR
 	pdController
 #	balance # No snopt
 	ik
-#	hybrid
+	hybrid
 #	manipulator
 	)
     ADD_SUBDIRECTORY( ${APPDIR} )
@@ -26,7 +26,7 @@ foreach( APPTARGET
 	pdController
 #	balance	# no snopt
 	ik
-#	hybrid
+	hybrid
 #	manipulator
 	)
     IF(TARGET ${APPTARGET})
