@@ -272,17 +272,23 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         }
         break;
 
-    case 'o':
-        mPlayFrame += 1;
-        if (mPlayFrame >= mBakedStates.size()) mPlayFrame = 0;
-        retrieveBakedState(mPlayFrame);
-        glutPostRedisplay();
+    case '[':
+        if (mPlayState == PLAYBACK || mPlayStateLast == PLAYBACK)
+        {
+            mPlayFrame -= 1;
+            if (mPlayFrame < 0) mPlayFrame = mBakedStates.size()-1;
+            retrieveBakedState(mPlayFrame);
+            glutPostRedisplay();
+        }
         break;
-    case 'i':
-        mPlayFrame -= 1;
-        if (mPlayFrame < 0) mPlayFrame = mBakedStates.size()-1;
-        retrieveBakedState(mPlayFrame);
-        glutPostRedisplay();
+    case ']':
+        if (mPlayState == PLAYBACK || mPlayStateLast == PLAYBACK)
+        {
+            mPlayFrame += 1;
+            if (mPlayFrame >= mBakedStates.size()) mPlayFrame = 0;
+            retrieveBakedState(mPlayFrame);
+            glutPostRedisplay();
+        }
         break;
     case 'r': // set playback to the first frame
         mPlayFrame = 0;
