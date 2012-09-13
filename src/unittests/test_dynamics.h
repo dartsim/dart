@@ -66,7 +66,7 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
         _q[i] = utils::random(-1.0, 1.0);
         _qdot[i] = utils::random(-5.0, 5.0);
     }
-
+    skelDyn->initDynamics();
     return skelDyn;
 }
 
@@ -89,6 +89,7 @@ dynamics::SkeletonDynamics* prepareSkeletonChain( Eigen::VectorXd& _q, Eigen::Ve
 	_q = VectorXd::Zero(skelDyn->getNumDofs());
 	_qdot = VectorXd::Zero(skelDyn->getNumDofs());
 	_q[6] = 1.5707963265;
+        skelDyn->initDynamics();
 	return skelDyn;
 }
 
