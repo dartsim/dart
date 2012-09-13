@@ -133,6 +133,11 @@ ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
+if ( SNOPT )
+ SET( snopt_folder ${CMAKE_SOURCE_DIR}/thirdparty/snopt )
+ ADD_SUBDIRECTORY ( ${snopt_folder} )
+endif ( SNOPT )
+
 ###############################################
 # DART Source
 message(STATUS "Building DART source")
