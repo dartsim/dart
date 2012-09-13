@@ -5,6 +5,8 @@ SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
 
 # List of all the subdirectories to include
 foreach( APPDIR
+    exampleCollisionWithSkelton
+    meshCollision
 	viewer
 	forwardSim
 	cubes
@@ -19,6 +21,8 @@ foreach( APPDIR
 endforeach(APPDIR)
 
 foreach( APPTARGET
+    exampleCollisionWithSkelton
+    meshCollision
 	viewer
 	forwardSim
 	cubes

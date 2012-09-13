@@ -2,16 +2,17 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/CollisionSkeleton.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
-#include "Controller.h"
+#include <cstdio>
+#include "kinematics/BodyNode.h"
 
-using namespace dynamics;
+using namespace Eigen;
+using namespace kinematics;
 using namespace utils;
-
-static double initPose[] = {0.0, 3.14, 0.0, 0.0, -0.868398, -0.256271, -0.794892, -0.129097, 0.147894, -0.690374, -0.605116, -0.148172, -0.243184, -0.220659, -0.4107145, -0.0341097, -0.64186, -0.040947, -0.3300072, 0.014561, -0.570674, -0.0651653, -0.369658, -0.140586, -0.643183, -0.0800537};
+using namespace integration;
+using namespace dynamics;
 
 void MyWindow::initDyn()
 {
@@ -25,28 +26,47 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
 
-    // initial pose for hand
-    for (int i = 0; i < mSkels[1]->getNumDofs(); i++)
-        mDofs[1][i] = initPose[i];
-    // initial position of the box
-    mDofs[2][0] = 0.17;
-    mDofs[2][1] = mDofs[0][1] + 0.25;
+    
+    mDofs[0][1] = -0.35;
+    mDofs[1][3] = -0.425;
+//    mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
+//
+//    // Old cube
+//    mDofs[3][0] = 0.05 -0.06;
+//    mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
+    
+     // Our Mesh
+//    mDofs[4][0] = 0.05;
+    //mDofs[4][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
 
+     //rotate about z
+    /*
+    mDofs[0][1] = -0.35;
+    mDofs[1][1] = -0.35;
+    mDofs[2][1] = -0.35;
+    mDofs[1][0] = mDofs[0][0] + 0.025 + 0.025;
+    mDofs[2][0] = mDofs[1][0] + 0.025 + 0.025;
+    mDofs[0][5] = 1.57;
+    mDofs[1][5] = 1.57;
+    mDofs[2][5] = 1.57;
+    */
+    /*
+    mDofs[0][1] = -0.35;
+    mDofs[1][0] = 0.06;
+    mDofs[1][1] = -0.2;
+    mDofs[2][0] = 0.02;
+    mDofs[2][2] = 0.04;
+    mDofs[3][0] = 0.09;
+    mDofs[3][1] = 0.08;
+    */
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->initDynamics();
         mSkels[i]->setPose(mDofs[i], false, false);
-         // compute dynamics here because computation of control force at first iteration needs to access mass matrix
         mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
-   }
-
-    // set the ground to be an immobile object; it will still participate in collision
+    }
     mSkels[0]->setImmobileState(true);
-    // create a collision handler
+
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
-
-    // create controller
-    mController = new Controller(mSkels[1], mTimeStep);
-
 }
 
 VectorXd MyWindow::getState() {
@@ -64,16 +84,15 @@ VectorXd MyWindow::evalDeriv() {
     setPose();
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
-        // skip immobile objects in forward simulation
         if (mSkels[i]->getImmobileState())
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces() + mCollisionHandle->getConstraintForce(i));
+        VectorXd qddot = mSkels[i]->getMassMatrix().fullPivHouseholderQr().solve(-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i));
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
-    }
+    }        
     return deriv;
 }
 
@@ -89,29 +108,21 @@ void MyWindow::setState(VectorXd newState) {
 void MyWindow::setPose() {
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState()) {
-            // need to update node transformation for collision
             mSkels[i]->setPose(mDofs[i], true, false);
         } else {
-            // need to update first derivatives for collision
-            mSkels[i]->setPose(mDofs[i], false, true);
+            mSkels[i]->setPose(mDofs[i], true, true);
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
         }
     }
-    // compute contact forces
     mCollisionHandle->applyContactForces();
 }
 
 void MyWindow::retrieveBakedState(int frame)
 {
-    if (frame >= mBakedStates.size()) {
-        std::cout << "tried to retrieve an invalid baked state" << std::endl;
-    }
-    else{
-        for (unsigned int i = 0; i < mSkels.size(); i++) {
-            int start = mIndices[i];
-            int size = mDofs[i].size();
-            mSkels[i]->setPose(mBakedStates[frame].segment(start, size), false, false);
-        }
+    for (unsigned int i = 0; i < mSkels.size(); i++) {
+        int start = mIndices[i];
+        int size = mDofs[i].size();
+        mSkels[i]->setPose(mBakedStates[frame].segment(start, size), false, false);
     }
 }
 
@@ -120,12 +131,13 @@ void MyWindow::displayTimer(int _val)
     switch(mPlayState)
     {
     case PLAYBACK:
-        if (mPlayFrame >= 0 && mPlayFrame >= mBakedStates.size() - mDisplayFrequency)
+        if (mPlayFrame >= 0 && mPlayFrame >= mBakedStates.size() - mDisplayFrequency) {
             mPlayFrame = -mDisplayFrequency;
+        }
         mPlayFrame += mDisplayFrequency;
         retrieveBakedState(mPlayFrame);
         glutPostRedisplay();
-        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);      
+        glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
         break;
     case RECORD:
         if (mScreenshotScheduled) { // Wait for every frame to be drawn and captured
@@ -147,21 +159,16 @@ void MyWindow::displayTimer(int _val)
         int numIter = mDisplayTimeout / (mTimeStep * 1000);
         setPose();              // retrieve current simulation state
         for (int i = 0; i < numIter; i++) {
-            // compute and apply mForce
-            if (mSimFrame > 1000 && mSimFrame < 1033) {
-                cout << "push on the ball" << endl;
-                mForce[0] = 60;
-            } else {
-                mForce[0] = 0.0;
-            }
-            static_cast<BodyNodeDynamics*>(mSkels[2]->getNode("sphere_root"))
-                ->addExtForce(Vector3d(0.0, 0.0, 0), mForce);        
-            // compute and apply pd controller value
-            mController->computeTorques(mDofs[1], mDofVels[1], mDofVels[2]);
-            mSkels[1]->setInternalForces(mController->getTorques());
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode(0))->
+                addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             mIntegrator.integrate(this, mTimeStep);
-            bake();
             mSimFrame++;
+            bake();
+        }
+        mImpulseDuration--;
+        if (mImpulseDuration <= 0) {
+            mImpulseDuration = 0;
+            mForce.setZero();
         }
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
@@ -169,6 +176,18 @@ void MyWindow::displayTimer(int _val)
     }
 }
 
+void MyWindow::drawContact(Vector3d vertex, Vector3d force, Vector3d penColor, Vector3d ellipsoidColor)
+{
+    glBegin(GL_LINES);
+    glVertex3f(vertex[0], vertex[1], vertex[2]);
+    glVertex3f(vertex[0] + force[0], vertex[1] + force[1], vertex[2] + force[2]);
+    glEnd();
+    mRI->setPenColor(penColor);
+    mRI->pushMatrix();
+    glTranslated(vertex[0], vertex[1], vertex[2]);
+    mRI->drawEllipsoid(ellipsoidColor);
+    mRI->popMatrix();
+}
 
 void MyWindow::drawText()
 {
@@ -211,50 +230,37 @@ void MyWindow::drawText()
     glEnable(GL_LIGHTING);
 }
 
-void MyWindow::drawContact(Vector3d vertex, Vector3d force, Vector3d penColor1, Vector3d penColor2, Vector3d ellipsoidColor)
-{
-    mRI->setPenColor(penColor1);
-    glBegin(GL_LINES);
-    glVertex3f(vertex[0], vertex[1], vertex[2]);
-    glVertex3f(vertex[0] + force[0], vertex[1] + force[1], vertex[2] + force[2]);
-    glEnd();
-    mRI->setPenColor(penColor2);
-    mRI->pushMatrix();
-    glTranslated(vertex[0], vertex[1], vertex[2]);
-    mRI->drawEllipsoid(ellipsoidColor);
-    mRI->popMatrix();
-}
-
 void MyWindow::draw()
 {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glDisable(GL_LIGHTING);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // draw contact points and associated force vectors
     if (mShowMarkers) {
-        Vector3d penColor1;
-        Vector3d penColor2;
+        Vector3d penColor;
         Vector3d ellipsoidColor;
 
         playstate_enum disp = mPlayState;
         if (mPlayState == PAUSED) disp = mPlayStateLast;
+        // std::cout << "disp: " << disp << std::endl;;
+
 
         if (disp == SIMULATE) {
-            penColor1 = Vector3d(0.2, 0.2, 0.8);
-            penColor2 = Vector3d(0.2, 0.8, 0.2);
-            ellipsoidColor = Vector3d(0.01, 0.01, 0.01);
+            penColor = Vector3d(0.2, 0.2, 0.8);
+            ellipsoidColor = Vector3d(0.02, 0.02, 0.02);
             for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
                 drawContact(mCollisionHandle->getCollisionChecker()->getContact(k).point, 
-                            mCollisionHandle->getCollisionChecker()->getContact(k).force / 100.0,
-                            penColor1,
-                            penColor2,
+                            mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0,
+                            penColor,
                             ellipsoidColor);
             }
         }
         else { // disp == PLAYBACK || disp == RECORD
+            assert(disp == RECORD || disp == PLAYBACK);
             int frame;
-            penColor1 = Vector3d(0.2, 0.2, 0.8);
-            penColor2 = Vector3d(0.2, 0.8, 0.2);
-            ellipsoidColor = Vector3d(0.01, 0.01, 0.01);
+            penColor = Vector3d(0.8, 0.2, 0.2);
+            ellipsoidColor = Vector3d(0.02, 0.02, 0.02);
             if (disp == RECORD) frame = mMovieFrame;
             if (disp == PLAYBACK) frame = mPlayFrame;
             if (frame < 0) frame = 0;
@@ -263,16 +269,16 @@ void MyWindow::draw()
             for (int k = 0; k < nContact; k++) {
                 drawContact(mBakedStates[frame].segment(sumDofs + k * 6, 3),
                             mBakedStates[frame].segment(sumDofs + k * 6 + 3, 3) / 10.0,
-                            penColor1,
-                            penColor2,
+                            penColor,
                             ellipsoidColor);
             }
         }
     }
-    
+
+    // draw the actual skeletons
     for (unsigned int i = 0; i < mSkels.size(); i++)
         mSkels[i]->draw(mRI);
-    
+
     // take screenshots before putting up text
     if (mScreenshotScheduled)
     {
@@ -290,7 +296,10 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
               // first thing that's pressed, simulate
         if (mPlayState == PAUSED)
         {
-            mPlayState = mPlayStateLast;
+            if (mPlayStateLast != PAUSED)
+                mPlayState = mPlayStateLast;
+            else
+                mPlayState = SIMULATE;
             glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
         }
         else
@@ -382,10 +391,12 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
     case '1': // upper right force
         mForce[0] = 40;
+        mImpulseDuration = 1.0;
         cout << "push up and right" << endl;
         break;
     case '2': // upper right force
         mForce[0] = -40;
+        mImpulseDuration = 1.0;
         cout << "push left" << endl;
         break;
 
@@ -404,7 +415,8 @@ void MyWindow::bake()
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
         state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
-        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
+        //state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
+        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
     }
     mBakedStates.push_back(state);
 }

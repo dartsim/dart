@@ -6,6 +6,10 @@
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
 #include "dynamics/SkeletonDynamics.h"
+#include <iostream>
+
+using namespace std;
+using namespace Eigen;
 
 namespace dynamics{
     class ContactDynamics;
@@ -21,10 +25,14 @@ public:
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
 		
-        mSim = false;
-        mPlay = false;
+        mDisplayFrequency = 16;
+        mPlayState = PAUSED;
+        mPlayStateLast = SIMULATE;
         mSimFrame = 0;
-        mPlayFrame = 0;
+        mPlayFrame = -mDisplayFrequency;
+        mMovieFrame = -mDisplayFrequency;
+        mScreenshotScheduled = false;
+
         mShowMarkers = true;
 
         mPersp = 30.f;
@@ -56,6 +64,22 @@ public:
             mIndices.push_back(sumNDofs);
         }
         initDyn();
+
+        std::cout << 
+            "\nKeybindings:\n" <<
+            "\n" <<
+            "s: start or continue simulating.\n" <<
+            "\n" <<
+            "p: start or continue playback.\n" <<
+            "r, t: move to start or end of playback.\n" <<
+            "[, ]: step through playback by one frame.\n" <<
+            "\n" <<
+            "m: start or continue movie recording.\n" <<
+            "\n" <<
+            "space: pause/unpause whatever is happening.\n" <<
+            "\n" <<
+            "q, escape: quit.\n" <<
+            std::endl;
     }
 
     virtual void draw();
@@ -68,10 +92,21 @@ public:
     virtual void setState(Eigen::VectorXd state);	
 
  protected:	
+    enum playstate_enum {
+        SIMULATE,
+        RECORD,
+        PLAYBACK,
+        PAUSED
+    };
+    playstate_enum mPlayState;
+    playstate_enum mPlayStateLast;
     int mSimFrame;
-    bool mSim;
-    int mPlayFrame;
-    bool mPlay;
+    int mPlayFrame;             /* actually frame+1 because threading */
+    int mMovieFrame;            /* actually frame+1 because threading */
+    bool mScreenshotScheduled;
+    
+    int mDisplayFrequency;
+
     bool mShowMarkers;
     integration::EulerIntegrator mIntegrator;
     std::vector<Eigen::VectorXd> mBakedStates;
@@ -86,6 +121,9 @@ public:
     std::vector<int> mIndices;
     Controller *mController;
 
+    void retrieveBakedState(int frame);
+    void drawContact(Vector3d vertex, Vector3d force, Vector3d penColor1, Vector3d penColor2, Vector3d ellipsoidColor);
+    void drawText();
     void initDyn();
     void setPose();
     void bake();
