@@ -15,7 +15,6 @@ foreach( APPDIR
 	balance
 	ik
 	hybrid
-	manipulator
 	)
     ADD_SUBDIRECTORY( ${APPDIR} )
 endforeach(APPDIR)
@@ -31,7 +30,6 @@ foreach( APPTARGET
 	balance
 	ik
 	hybrid
-	manipulator
 	)
     IF(TARGET ${APPTARGET})
         SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
