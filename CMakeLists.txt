@@ -108,7 +108,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 FIND_PACKAGE(Boost 1.42.0 REQUIRED)
 add_definitions( -DBOOST_ALL_DYN_LINK )
 include_directories( ${Boost_INCLUDE_DIRS} )
-
+link_directories( ${Boost_LIBRARY_DIRS} )
 
 # FLANN
 if(WIN32 AND NOT CYGWIN)
@@ -126,8 +126,13 @@ message(STATUS "Configuring thirdparty libraries")
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
-ADD_SUBDIRECTORY (thirdparty/fcl)
+
 ADD_SUBDIRECTORY (thirdparty/libccd)
+
+SET(CCD_INCLUDE_DIRS "${THIRDPARTY_INSTALL_PREFIX}/include")
+SET(CCD_LIBRARY_DIRS "${THIRDPARTY_INSTALL_PREFIX}/lib")
+ADD_SUBDIRECTORY (thirdparty/fcl)
+
 
 ###############################################
 # DART Source
