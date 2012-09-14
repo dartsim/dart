@@ -9,29 +9,30 @@
 #ifndef _COLLISION_SHAPES_H_
 #define _COLLISION_SHAPES_H_
 
-#include "collision.h"
+#include "fcl/collision.h"
+#include "fcl/BVH/BVH_model.h"
 #include "geometry/Mesh3D.h"
 
 namespace collision_checking
 {
-    template<class BV> BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ, geometry::Mesh3D *_mesh) {
-        BVHModel<BV>* model = new BVHModel<BV>;
+    template<class BV> fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ, geometry::Mesh3D *_mesh) {
+        fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
         model->beginModel();
         for (unsigned int i = 0; i < _mesh->mNumFaces; i++) {
             int pi0 = _mesh->mFaces[i * 3];
             int pi1 = _mesh->mFaces[i * 3 + 1];
             int pi2 = _mesh->mFaces[i * 3 + 2];
 
-            Vec3f p0(_mesh->mVertexPos[pi0 * 3] * _sizeX, _mesh->mVertexPos[pi0 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi0 * 3 + 2] * _sizeZ);
-            Vec3f p1(_mesh->mVertexPos[pi1 * 3] * _sizeX, _mesh->mVertexPos[pi1 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi1 * 3 + 2] * _sizeZ);
-            Vec3f p2(_mesh->mVertexPos[pi2 * 3] * _sizeX, _mesh->mVertexPos[pi2 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi2 * 3 + 2] * _sizeZ);
+            fcl::Vec3f p0(_mesh->mVertexPos[pi0 * 3] * _sizeX, _mesh->mVertexPos[pi0 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi0 * 3 + 2] * _sizeZ);
+            fcl::Vec3f p1(_mesh->mVertexPos[pi1 * 3] * _sizeX, _mesh->mVertexPos[pi1 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi1 * 3 + 2] * _sizeZ);
+            fcl::Vec3f p2(_mesh->mVertexPos[pi2 * 3] * _sizeX, _mesh->mVertexPos[pi2 * 3 + 1] * _sizeY, _mesh->mVertexPos[pi2 * 3 + 2] * _sizeZ);
             model->addTriangle(p0, p1, p2);
         }
         model->endModel();
         return model;
     }
     
-    template<class BV> BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
+    template<class BV> fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
         float v[59][3] = {
             {0, 0, 0},
             {0.135299, -0.461940, -0.135299},
@@ -208,14 +209,14 @@ namespace collision_checking
             {56, 49, 58}
         };
         
-        BVHModel<BV>* model = new BVHModel<BV>;
-        Vec3f p1, p2, p3;
+        fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+        fcl::Vec3f p1, p2, p3;
         model->beginModel();
 
         for (int i = 0; i < 112; i++) {
-            p1 = Vec3f(v[f[i][0]][0] * _sizeX, v[f[i][0]][1] * _sizeY, v[f[i][0]][2] * _sizeZ);
-            p2 = Vec3f(v[f[i][1]][0] * _sizeX, v[f[i][1]][1] * _sizeY, v[f[i][1]][2] * _sizeZ);
-            p3 = Vec3f(v[f[i][2]][0] * _sizeX, v[f[i][2]][1] * _sizeY, v[f[i][2]][2] * _sizeZ);
+            p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX, v[f[i][0]][1] * _sizeY, v[f[i][0]][2] * _sizeZ);
+            p2 = fcl::Vec3f(v[f[i][1]][0] * _sizeX, v[f[i][1]][1] * _sizeY, v[f[i][1]][2] * _sizeZ);
+            p3 = fcl::Vec3f(v[f[i][2]][0] * _sizeX, v[f[i][2]][1] * _sizeY, v[f[i][2]][2] * _sizeZ);
             model->addTriangle(p1, p2, p3);
         }
         model->endModel();
@@ -223,7 +224,7 @@ namespace collision_checking
     }
     
     template<class BV>
-    BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) //create a cube mesh for collision detection
+    fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) //create a cube mesh for collision detection
     {
         float n[6][3] =
         {
@@ -252,18 +253,18 @@ namespace collision_checking
         v[0][2] = v[3][2] = v[4][2] = v[7][2] = -_sizeZ / 2;
         v[1][2] = v[2][2] = v[5][2] = v[6][2] = _sizeZ / 2;
 
-        BVHModel<BV>* model = new BVHModel<BV>;
-        Vec3f p1, p2, p3;
+        fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+        fcl::Vec3f p1, p2, p3;
         model->beginModel();
 
         for (int i = 0; i < 6; i++) {
-            p1 = Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-            p2 = Vec3f(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
-            p3 = Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+            p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+            p2 = fcl::Vec3f(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
+            p3 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
             model->addTriangle(p1, p2, p3);
-            p1 = Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-            p2 = Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
-            p3 = Vec3f(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
+            p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+            p2 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+            p3 = fcl::Vec3f(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
             model->addTriangle(p1, p2, p3); 
         }
         model->endModel();

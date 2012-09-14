@@ -15,11 +15,11 @@ namespace collision_checking{
     {
         mBodyNode = _bodyNode;
         if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
-            mMesh = createEllipsoid<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
+            mMesh = createEllipsoid<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
-            mMesh = createCube<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
+            mMesh = createCube<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else {
-            mMesh = createMesh<RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getVizMesh());
+            mMesh = createMesh<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getVizMesh());
         }
     }
     CollisionSkeletonNode::~CollisionSkeletonNode()
@@ -28,13 +28,14 @@ namespace collision_checking{
     }
 
     int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* _otherNode, vector<ContactPoint>& _result, int _num_max_contact)
-    {    
-        BVH_CollideResult res;
+    {
         evalRT();
         _otherNode->evalRT();
+        fcl::CollisionResult res;
+        fcl::CollisionRequest req;
 
-        res.num_max_contacts = _num_max_contact;
-        collide(*mMesh, mR, mT, *_otherNode->mMesh, _otherNode->mR, _otherNode->mT, &res);
+        req.num_max_contacts = _num_max_contact;
+        fcl::collide(mMesh, mFclWorldTrans, _otherNode->mMesh, _otherNode->mFclWorldTrans, req, res);
         int start, size;
         start = _result.size();
         size = 0;
@@ -43,7 +44,7 @@ namespace collision_checking{
         int numNoContacts = 0;
         int numContacts = 0;
 
-        for(int i = 0; i < res.numPairs();i++) {
+        for(int i = 0; i < res.numContacts();i++) {
             // for each pair of intersecting triangles, we create two contact points
             ContactPoint pair1, pair2;
             pair1.bd1 = mBodyNode;
@@ -52,10 +53,10 @@ namespace collision_checking{
             pair1.bdID2 = _otherNode->mBodynodeID;
             pair1.collisionSkeletonNode1 = this;
             pair1.collisionSkeletonNode2 = _otherNode;
-            Vec3f v;
-            pair1.triID1 = res.id1(i);
-            pair1.triID2 = res.id2(i);
-            pair1.penetrationDepth = res.collidePairs()[i].penetration_depth;
+            fcl::Vec3f v;
+            pair1.triID1 = res.getContact(i).b1;
+            pair1.triID2 = res.getContact(i).b2;
+            pair1.penetrationDepth = res.getContact(i).penetration_depth;
             pair2 = pair1;
             int contactResult = evalContactPosition(res, _otherNode, i, pair1.point, pair2.point, pair1.contactTri);
             pair2.contactTri = pair1.contactTri;
@@ -70,7 +71,7 @@ namespace collision_checking{
             } else {
                 numContacts++;
             }
-            v = res.collidePairs()[i].normal;
+            v = res.getContact(i).normal;
             pair1.normal = Vector3d(v[0], v[1], v[2]);
             pair2.normal = Vector3d(v[0], v[1], v[2]);
         
@@ -80,7 +81,7 @@ namespace collision_checking{
             size+=2;
         }
 
-        if(res.numPairs()==0)
+        if(res.numContacts()==0)
             return 0;
 
         const double ZERO = 0.000001;
@@ -132,35 +133,32 @@ namespace collision_checking{
         for (int i = deleteIDs.size() - 1; i >= 0; i--)
             _result.erase(_result.begin() + deleteIDs[i]);
 
-        int collisionNum = res.numPairs();
+        int collisionNum = res.numContacts();
         //return numCoplanarContacts*100+numNoContacts;
         return collisionNum;
     }
 
     void CollisionSkeletonNode::evalRT() {
+        Vector3d p = mBodyNode->getWorldCOM();
         mWorldTrans = mBodyNode->getWorldTransform();
-        Vector3d p = xformHom(mBodyNode->getWorldTransform(), mBodyNode->getLocalCOM());
-        for (int i = 0; i < 3; i++) {
-            mT[i] = p[i];
-            mWorldTrans(i, 3) = p[i];
-        }
-        
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                mR[i][j] = mBodyNode->getWorldTransform()(i, j);
+        mWorldTrans.col(3).topRows(3) = p;
+        mFclWorldTrans = fcl::Transform3f(fcl::Matrix3f(mWorldTrans(0,0), mWorldTrans(0,1), mWorldTrans(0,2), 
+                                                        mWorldTrans(1,0), mWorldTrans(1,1), mWorldTrans(1,2), 
+                                                        mWorldTrans(2,0), mWorldTrans(2,1), mWorldTrans(2,2)),
+                                          fcl::Vec3f(p[0], p[1], p[2]));
     }
 
-    int CollisionSkeletonNode::evalContactPosition(BVH_CollideResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
+    int CollisionSkeletonNode::evalContactPosition(fcl::CollisionResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
         int id1, id2;
-        Triangle tri1, tri2;
+        fcl::Triangle tri1, tri2;
         CollisionSkeletonNode* node1 = this;
         CollisionSkeletonNode* node2 = _other;
-        id1 = _result.id1(_idx);
-        id2 = _result.id2(_idx);
+        id1 = _result.getContact(_idx).b1;
+        id2 = _result.getContact(_idx).b2;
         tri1 = node1->mMesh->tri_indices[id1];
         tri2 = node2->mMesh->tri_indices[id2];
 
-        Vec3f v1, v2, v3, p1, p2, p3;
+        fcl::Vec3f v1, v2, v3, p1, p2, p3;
         v1 = node1->mMesh->vertices[tri1[0]];
         v2 = node1->mMesh->vertices[tri1[1]];
         v3 = node1->mMesh->vertices[tri1[2]];
@@ -169,7 +167,7 @@ namespace collision_checking{
         p2 = node2->mMesh->vertices[tri2[1]];
         p3 = node2->mMesh->vertices[tri2[2]];
 
-        Vec3f contact1, contact2;
+        fcl::Vec3f contact1, contact2;
         v1 = node1->TransformVertex(v1);
         v2 = node1->TransformVertex(v2);
         v3 = node1->TransformVertex(v3);
@@ -204,7 +202,7 @@ namespace collision_checking{
     }
 
     void CollisionSkeletonNode::drawCollisionTriangle(int _tri) {
-        Triangle Tri = mMesh->tri_indices[_tri];
+        fcl::Triangle Tri = mMesh->tri_indices[_tri];
         glVertex3f(mMesh->vertices[Tri[0]][0], mMesh->vertices[Tri[0]][1], mMesh->vertices[Tri[0]][2]);
         glVertex3f(mMesh->vertices[Tri[1]][0], mMesh->vertices[Tri[1]][1], mMesh->vertices[Tri[1]][2]);
         glVertex3f(mMesh->vertices[Tri[2]][0], mMesh->vertices[Tri[2]][1], mMesh->vertices[Tri[2]][2]);
@@ -216,14 +214,14 @@ namespace collision_checking{
         for(int i=0;i<4;i++)
             for(int j=0;j<4;j++)
                 M[j*4+i] = mWorldTrans(i, j);
-        Vec3f v1, v2, v3;
+        fcl::Vec3f v1, v2, v3;
         glPushMatrix();
         if(_bTrans)
             glMultMatrixd(M);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glBegin(GL_TRIANGLES);
         for(int i = 0;i < mMesh->num_tris; i++) {
-            Triangle tri = mMesh->tri_indices[i];
+            fcl::Triangle tri = mMesh->tri_indices[i];
             glVertex3f(mMesh->vertices[tri[0]][0], mMesh->vertices[tri[0]][1], mMesh->vertices[tri[0]][2]);
             glVertex3f(mMesh->vertices[tri[1]][0], mMesh->vertices[tri[1]][1], mMesh->vertices[tri[1]][2]);
             glVertex3f(mMesh->vertices[tri[2]][0], mMesh->vertices[tri[2]][1], mMesh->vertices[tri[2]][2]);
