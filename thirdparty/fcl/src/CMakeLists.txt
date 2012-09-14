@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME}
   BV/AABB.cpp
   BV/OBB.cpp
   BV/RSS.cpp
