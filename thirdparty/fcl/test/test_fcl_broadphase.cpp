@@ -36,7 +36,6 @@
 
 
 #define BOOST_TEST_MODULE "FCL_BROADPHASE"
-#define NOMINMAX  // required to avoid compilation errors with Visual Studio 2010
 #include <boost/test/unit_test.hpp>
 
 #include "fcl/broadphase/broadphase.h"
