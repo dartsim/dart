@@ -34,6 +34,7 @@ namespace collision_checking{
         fcl::CollisionResult res;
         fcl::CollisionRequest req;
 
+        req.enable_contact = true;
         req.num_max_contacts = _num_max_contact;
         fcl::collide(mMesh, mFclWorldTrans, _otherNode->mMesh, _otherNode->mFclWorldTrans, req, res);
         int start, size;
