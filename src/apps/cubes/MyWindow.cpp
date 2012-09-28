@@ -97,9 +97,6 @@ void MyWindow::displayTimer(int _val)
         if (mPlayFrame >= mBakedStates.size())
             mPlayFrame = 0;
     }else if (mSim) {
-		if(mSimFrame > 1000) {
-			mSim = false;
-		}
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
             //            tSim.startTimer();
