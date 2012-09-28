@@ -9,11 +9,7 @@ using namespace kinematics;
 
 void MyWindow::displayTimer(int _val)
 {
-<<<<<<< HEAD
-    mFrame++;
-=======
     mFrame += 4;
->>>>>>> karen
     if(mFrame == mMaxFrame){
         mFrame = 0;
         mPlaying = false;
@@ -25,29 +21,11 @@ void MyWindow::displayTimer(int _val)
 
 void MyWindow::computeMax()
 {
-<<<<<<< HEAD
-    mMaxFrame = mMotion.getNumFrames();
-=======
     mMaxFrame = mMainMotion.getNumFrames();
->>>>>>> karen
 }
 
 void MyWindow::draw()
 {
-<<<<<<< HEAD
-    Skeleton* model = mMotion.getSkel();
-
-    // validate the frame index
-    int nFrames = mMotion.getNumFrames();
-    int fr = mFrame;
-    if(fr>=nFrames) fr = nFrames-1;
-    
-    // update and draw the motion
-    model->setPose(mMotion.getPoseAtFrame(fr));
-    model->draw(mRI);
-    if(mShowMarker) model->drawMarkers(mRI);
-
-=======
     Skeleton* model = mMainMotion.getSkel();
 
     // validate the frame index
@@ -66,7 +44,6 @@ void MyWindow::draw()
     model2->draw(mRI);       
 
     if(mShowMarker) model->drawMarkers(mRI);
->>>>>>> karen
     if(mShowProgress) yui::drawProgressBar(fr,mMaxFrame);
 
     // display the frame count in 2D text

@@ -5,6 +5,7 @@
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include "Controller.h"
+#include <stdio.h>
 
 using namespace dynamics;
 using namespace utils;
