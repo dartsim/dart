@@ -37,16 +37,17 @@
 
 #include "ShapeMesh.h"
 #include "renderer/RenderInterface.h"
-#include "geometry/Mesh3D.h"
 #include <iostream>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/cimport.h>
 
 using namespace Eigen;
-using namespace geometry;
 using namespace std;
 
 namespace kinematics {
 
-    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, Mesh3D *_mesh){
+    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, const aiScene *_mesh){
         mType = P_MESH;
         mDim = _dim;
         mMass = _mass;
@@ -81,19 +82,21 @@ namespace kinematics {
         double min_Y = 1e7;
         double min_Z = 1e7;
 
-        for (unsigned int i = 0; i < mMeshData->mNumVertices; i++) {
-            if (mMeshData->mVertexPos[3 * i] > max_X)
-                max_X = mMeshData->mVertexPos[3 * i];
-            if (mMeshData->mVertexPos[3 * i] < min_X)
-                min_X = mMeshData->mVertexPos[3 * i];
-            if (mMeshData->mVertexPos[3 * i + 1] > max_Y)
-                max_Y = mMeshData->mVertexPos[3 * i + 1];
-            if (mMeshData->mVertexPos[3 * i + 1] < min_Y)
-                min_Y = mMeshData->mVertexPos[3 * i + 1];
-            if (mMeshData->mVertexPos[3 * i + 2] > max_Z)
-                max_Z = mMeshData->mVertexPos[3 * i + 2];
-            if (mMeshData->mVertexPos[3 * i + 2] < min_Z)
-                min_Z = mMeshData->mVertexPos[3 * i + 2];
+        for(unsigned int i = 0; i < mMeshData->mNumMeshes; i++) {
+            for (unsigned int j = 0; j < mMeshData->mMeshes[i]->mNumVertices; j++) {
+                if (mMeshData->mMeshes[i]->mVertices[j].x > max_X)
+                    max_X = mMeshData->mMeshes[i]->mVertices[j].x;
+                if (mMeshData->mMeshes[i]->mVertices[j].x < min_X)
+                    min_X = mMeshData->mMeshes[i]->mVertices[j].x;
+                if (mMeshData->mMeshes[i]->mVertices[j].y > max_Y)
+                    max_Y = mMeshData->mMeshes[i]->mVertices[j].y;
+                if (mMeshData->mMeshes[i]->mVertices[j].y < min_Y)
+                    min_Y = mMeshData->mMeshes[i]->mVertices[j].y;
+                if (mMeshData->mMeshes[i]->mVertices[j].z > max_Z)
+                    max_Z = mMeshData->mMeshes[i]->mVertices[j].z;
+                if (mMeshData->mMeshes[i]->mVertices[j].z < min_Z)
+                    min_Z = mMeshData->mMeshes[i]->mVertices[j].z;
+            }
         }
         double l = mDim[0] * (max_X - min_X);
         double h = mDim[1] * (max_Y - min_Y);
@@ -112,5 +115,19 @@ namespace kinematics {
     }
 
     void ShapeMesh::initMeshes() {
+    }
+
+    const aiScene* ShapeMesh::loadMesh(const string& fileName) {
+        aiPropertyStore* propertyStore = aiCreatePropertyStore();
+        aiSetImportPropertyInteger(propertyStore, AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE ); // remove points and lines
+        const aiScene* scene = aiImportFileExWithProperties(fileName.c_str(), aiProcess_GenNormals             |
+                                                                              aiProcess_Triangulate            |
+                                                                              aiProcess_JoinIdenticalVertices  |
+                                                                              aiProcess_SortByPType            |
+                                                                              aiProcess_PreTransformVertices   |
+                                                                              aiProcess_OptimizeMeshes,
+                                                            NULL, propertyStore);
+        aiReleasePropertyStore(propertyStore);
+        return scene;
     }
 } // namespace kinematics
