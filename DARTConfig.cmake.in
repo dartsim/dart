@@ -29,7 +29,7 @@ find_path(CCD_INCLUDE_DIR ccd/ccd.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
     PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include)
     
-find_path(FCL_INCLUDE_DIR fcl/BVH_model.h
+find_path(FCL_INCLUDE_DIR fcl/collision.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
     PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include)
 
