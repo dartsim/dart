@@ -75,6 +75,8 @@ namespace collision_checking {
 
     class CollisionSkeletonNode {
     public:
+		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         fcl::BVHModel<fcl::RSS>* mMesh;
         kinematics::BodyNode *mBodyNode;
         fcl::AABB mAABB;
@@ -82,7 +84,7 @@ namespace collision_checking {
         
 
         fcl::Transform3f mFclWorldTrans;
-        Eigen::MatrixXd mWorldTrans;
+        Eigen::Matrix4d mWorldTrans;
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
 

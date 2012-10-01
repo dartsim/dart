@@ -140,13 +140,14 @@ namespace collision_checking{
     }
 
     void CollisionSkeletonNode::evalRT() {
-        Vector3d p = mBodyNode->getWorldCOM();
+        //Vector3d p = mBodyNode->getWorldCOM();
         mWorldTrans = mBodyNode->getWorldTransform();
-        mWorldTrans.col(3).topRows(3) = p;
+        //mWorldTrans.col(3).topRows(3) = p;
         mFclWorldTrans = fcl::Transform3f(fcl::Matrix3f(mWorldTrans(0,0), mWorldTrans(0,1), mWorldTrans(0,2), 
                                                         mWorldTrans(1,0), mWorldTrans(1,1), mWorldTrans(1,2), 
                                                         mWorldTrans(2,0), mWorldTrans(2,1), mWorldTrans(2,2)),
-                                          fcl::Vec3f(p[0], p[1], p[2]));
+                                          //fcl::Vec3f(p[0], p[1], p[2]));
+										  fcl::Vec3f(mWorldTrans(0,3), mWorldTrans(1,3), mWorldTrans(2,3)));
     }
 
     int CollisionSkeletonNode::evalContactPosition(fcl::CollisionResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
