@@ -7,12 +7,12 @@
 // To load Mesh and Skel
 #include  <kinematics/Joint.h>
 #include <kinematics/ShapeMesh.h>
-#include <geometry/Mesh3DTriangle.h>
 #include <kinematics/Transformation.h>
 #include <kinematics/TrfmTranslate.h>
 #include <kinematics/TrfmRotateEuler.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include <kinematics/Dof.h>
+#include <assimp/cimport.h>
 
 
 using namespace std;
@@ -69,19 +69,14 @@ int main(int argc, char* argv[])
     MeshSkel.addTransform( trans );
 
     // Load a Mesh3DTriangle to save in Shape
-    geometry::Mesh3DTriangle m3d;
-    bool b = m3d.readMesh( DART_DATA_PATH"/obj/foot.obj", geometry::Mesh3D::OBJ );
-    printf("Status of  reading MESH: Reading mesh result was: %d \n", b );
-
-	 printf("Num vertices: %d \n", m3d.mNumVertices );
-	 printf("Num faces: %d \n", m3d.mNumFaces );
+    const aiScene* m3d = ShapeMesh::loadMesh( DART_DATA_PATH"/obj/polarbear.3ds");//foot.obj");
 
     //  Create Shape and assign it to node
-	  kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh( Eigen::Vector3d(1, 1, 1), 0.0,  &m3d );
+      kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), 0.0, m3d);
 
     // Save Mesh3D in Shape (vizMesh)
-    Shape0->setVizMesh( &m3d );
-    Shape0->setCollisionMesh( &m3d );
+    Shape0->setVizMesh( m3d );
+    Shape0->setCollisionMesh( m3d );
     Shape0->setMass(1); // 1 Kg according to cube1.skel
     Matrix3d M;
     M << 0.000416667, 0.0, 0.0, 0.0, 0.000416667, 0.0, 0.0, 0.0, 0.000416667;
@@ -116,6 +111,8 @@ int main(int argc, char* argv[])
     glutInit(&argc, argv);
     window.initWindow(640, 480, "Cubes");
     glutMainLoop();
+
+    aiReleaseImport(m3d);
 
     return 0;
 }

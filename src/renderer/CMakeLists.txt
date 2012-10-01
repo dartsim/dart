@@ -8,6 +8,7 @@ FILE(GLOB renderer_hdrs "*.h")
 
 # Library 
 ADD_LIBRARY(renderer ${renderer_srcs} ${renderer_hdrs})
+TARGET_LINK_LIBRARIES(renderer assimp)
 SET_TARGET_PROPERTIES(renderer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 SET_TARGET_PROPERTIES(renderer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 

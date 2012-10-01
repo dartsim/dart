@@ -39,13 +39,10 @@
 #define KINEMATICS_SHAPE_H
 
 #include <Eigen/Dense>
+#include <assimp/scene.h>
 
 namespace renderer {
     class RenderInterface;
-}
-
-namespace geometry {
-    class Mesh3D;
 }
 
 namespace kinematics {
@@ -84,11 +81,11 @@ namespace kinematics {
         inline int getID() const { return mID; }
         inline ShapeType getShapeType() const { return mType; }
 
-        inline geometry::Mesh3D* getVizMesh() const { return mVizMesh; }
-        inline void setVizMesh(geometry::Mesh3D *_mesh) { mVizMesh = _mesh; } 
+        inline const aiScene* getVizMesh() const { return mVizMesh; }
+        inline void setVizMesh(const aiScene *_mesh) { mVizMesh = _mesh; } 
 
-        inline geometry::Mesh3D* getCollisionMesh() const { return mCollisionMesh; }
-        inline void setCollisionMesh(geometry::Mesh3D *_mesh) { mCollisionMesh = _mesh; } 
+        inline const aiScene* getCollisionMesh() const { return mCollisionMesh; }
+        inline void setCollisionMesh(const aiScene *_mesh) { mCollisionMesh = _mesh; } 
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -116,8 +113,8 @@ namespace kinematics {
         Eigen::Vector3d mColor;		///< color for the primitive
         Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
 
-        geometry::Mesh3D *mVizMesh; ///< mesh for visualization>
-        geometry::Mesh3D *mCollisionMesh; ///< mesh for collision detection>
+        const aiScene *mVizMesh; ///< mesh for visualization>
+        const aiScene *mCollisionMesh; ///< mesh for collision detection>
 
         static int mCounter;
     public:
