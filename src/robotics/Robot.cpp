@@ -46,6 +46,9 @@
 #include <kinematics/Dof.h>
 #include "Robot.h"
 #include <stdio.h>
+#include <kinematics/ShapeMesh.h>
+
+using namespace std;
 
 namespace robotics {
  
@@ -469,21 +472,15 @@ namespace robotics {
   /**
    * @function loadModel
    */
-  Model3D* Robot::loadModel( string _filename )
+  const aiScene* Robot::loadModel( string _filename )
   {
-    Model3D* model = new Model3D();
-    if( !model->loadModel( _filename ) )
-      {
-	delete model;
-	model = NULL;
-      }
-    return model;
+    return kinematics::ShapeMesh::loadMesh(_filename);
   }
   
   /**
    * @function addModel
    */
-  void Robot::addModel( Model3D* _model, int _index )
+  void Robot::addModel( const aiScene* _model, int _index )
   {
     mModels.push_back( _model );
     mModelIndices.push_back( _index );
@@ -493,7 +490,7 @@ namespace robotics {
   /**
    * @function getModel
    */
-  Model3D*Robot::getModel( int _i ) {
+  const aiScene *Robot::getModel( int _i ) {
     return mModels[_i];
   }
 

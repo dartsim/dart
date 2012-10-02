@@ -42,8 +42,9 @@
 #include <vector>
 #include <string>
 #include <Eigen/Geometry>
-#include "Model3D.h"
 #include "dynamics/SkeletonDynamics.h"
+
+class aiScene;
 
 namespace robotics {
   #define MAX_Object_NAME 128
@@ -79,9 +80,9 @@ namespace robotics {
     void setRotationRPY( double _roll, double _pitch, double _yaw );
     void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
     
-    Model3D* loadModel( string _filename );
-    void addModel( Model3D* _model, int _index );
-    Model3D* getModel( int _i );
+    const aiScene* loadModel( std::string _filename );
+    void addModel( const aiScene* _model, int _index );
+    const aiScene* getModel( int _i );
     int getModelIndex( int _i );
     
   private:
@@ -89,7 +90,7 @@ namespace robotics {
     std::string mPathName; 
     int mGripID; /// THIS HAS TO BE REMOVED
     bool mMovable;
-    std::vector<Model3D*> mModels;
+    std::vector<const aiScene*> mModels;
     std::vector<int> mModelIndices;
   };
 

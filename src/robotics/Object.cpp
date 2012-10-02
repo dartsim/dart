@@ -44,8 +44,11 @@
 #include <kinematics/TrfmRotateEuler.h>
 #include <kinematics/Dof.h>
 #include <dynamics/BodyNodeDynamics.h>
+#include <kinematics/ShapeMesh.h>
 
 #include "Object.h"
+
+using namespace std;
 
 namespace robotics {
   /**
@@ -294,21 +297,15 @@ namespace robotics {
   /**
    * @function loadModel
    */
-  Model3D* Object::loadModel( string _filename )
+  const aiScene* Object::loadModel( string _filename )
   {
-    Model3D* model = new Model3D();
-    if( !model->loadModel( _filename ) )
-      {
-	delete model;
-	model = NULL;
-      }
-    return model;
+    return kinematics::ShapeMesh::loadMesh(_filename);
   }
   
   /**
    * @function addModel
    */
-  void Object::addModel( Model3D* _model, int _index )
+  void Object::addModel( const aiScene* _model, int _index )
   {
     mModels.push_back( _model );
     mModelIndices.push_back( _index );
@@ -318,7 +315,7 @@ namespace robotics {
   /**
    * @function getModel
    */
-  Model3D* Object::getModel( int _i ) {
+  const aiScene* Object::getModel( int _i ) {
     return mModels[_i];
   }
 

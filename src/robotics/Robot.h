@@ -44,7 +44,8 @@
 #include <string>
 #include <vector>
 #include "dynamics/SkeletonDynamics.h"
-#include "Model3D.h"
+
+class aiScene;
 
 namespace robotics {
   #define MAX_ROBOT_NAME 128
@@ -95,16 +96,16 @@ namespace robotics {
     
     void update();
     
-    Model3D* loadModel( string _filename );
-    void addModel( Model3D* _model, int _index );
-    Model3D* getModel( int _i );
+    const aiScene* loadModel( std::string _filename );
+    void addModel( const aiScene* _model, int _index );
+    const aiScene* getModel( int _i );
     int getModelIndex( int _i );
     
   private:
     std::string mName;
     std::string mPathName;
     int mGripID; /// THIS HAS TO BE REMOVED
-    std::vector<Model3D*> mModels;
+    std::vector<const aiScene*> mModels;
     std::vector<int> mModelIndices;
   };
 }
