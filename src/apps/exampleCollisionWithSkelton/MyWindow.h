@@ -4,8 +4,8 @@
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
-#include "collision/collisionShapes.h"
-#include "collision/collisionSkeleton.h"
+#include "collision/CollisionShapes.h"
+#include "collision/CollisionSkeleton.h"
 
 using namespace collision_checking;
 using namespace std;
