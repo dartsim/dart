@@ -33,7 +33,12 @@ find_path(FCL_INCLUDE_DIR fcl/collision.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
     PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include)
 
-SET( DART_LIBS collision dynamics geometry kinematics renderer utils robotics )
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+FIND_PACKAGE(Boost 1.42.0 REQUIRED thread date_time)
+add_definitions( -DBOOST_ALL_DYN_LINK )
+
+SET( DART_LIBS collision dynamics kinematics renderer utils robotics )
 FOREACH( DART_LIB ${DART_LIBS} )
     find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
         HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
@@ -44,7 +49,7 @@ ENDFOREACH(DART_LIB)
 
 SET(DART_LIBRARIES ${DART_LIBRARY})
 
-SET( DART_DEP_LIBS ccd fcl assimp)
+SET( DART_DEP_LIBS ccd fcl assimp )
 FOREACH( DART_LIB ${DART_DEP_LIBS} )
     find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
         HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
@@ -53,7 +58,11 @@ FOREACH( DART_LIB ${DART_DEP_LIBS} )
     SET(DART_VAR_NAMES ${DART_VAR_NAMES} DART_${DART_LIB}_LIBRARY)
 ENDFOREACH(DART_LIB)
 
-set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} )
+SET(DART_LIBRARIES ${DART_LIBRARIES} ${Boost_LIBRARIES})
+
+set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+
+message("${DART_LIBRARIES}")
 
 #set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
 

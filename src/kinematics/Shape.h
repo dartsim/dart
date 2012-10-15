@@ -92,7 +92,7 @@ namespace kinematics {
     protected:
         void setMassTensorFromInertia();    ///< sets the "mass tensor" in lagrangian dynamics from the inertia matrix
         void computeInertiaFromMassTensor();    ///< computes the inertia matrix from the "mass tensor" in lagrangian dynamics
-        virtual void computeMassTensor()=0;
+        virtual void computeMassTensor() {}
         inline virtual void computeInertia() {
             computeMassTensor();
             computeInertiaFromMassTensor();

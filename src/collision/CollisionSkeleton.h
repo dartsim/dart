@@ -88,7 +88,7 @@ namespace collision_checking {
         CollisionSkeletonNode(kinematics::BodyNode* _bodyNode);
         virtual ~CollisionSkeletonNode();
 
-        int checkCollision(CollisionSkeletonNode* _otherNode, std::vector<ContactPoint>& _result, int _max_num_contact);
+        int checkCollision(CollisionSkeletonNode* _otherNode, std::vector<ContactPoint>* _contactPoints, int _max_num_contact);
         void evalRT();
         
         int evalContactPosition(fcl::CollisionResult& _result, CollisionSkeletonNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2, ContactTriangle& _contactTri);
@@ -112,7 +112,7 @@ namespace collision_checking {
         inline ContactPoint& getContact(int idx) { return mContactPointList[idx]; }
         inline int getNumContact(){ return mContactPointList.size();}
         inline int getNumTriangleIntersection(){return mNumTriIntersection;}
-        void checkCollision(bool bConsiderGround = false);
+        bool checkCollision(bool _calculateContactPoints = true);
         void draw();
         CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *_bodyNode){
             if(mBodyNodeHash.find(_bodyNode)!=mBodyNodeHash.end())

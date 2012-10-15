@@ -27,18 +27,23 @@ namespace collision_checking{
         delete mMesh;
     }
 
-    int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* _otherNode, vector<ContactPoint>& _result, int _num_max_contact)
+    int CollisionSkeletonNode::checkCollision(CollisionSkeletonNode* _otherNode, vector<ContactPoint>* _contactPoints, int _num_max_contact)
     {
         evalRT();
         _otherNode->evalRT();
         fcl::CollisionResult res;
         fcl::CollisionRequest req;
 
-        req.enable_contact = true;
+        req.enable_contact = _contactPoints; // only evaluate contact points if data structure for returning the contact points was provided
         req.num_max_contacts = _num_max_contact;
         fcl::collide(mMesh, mFclWorldTrans, _otherNode->mMesh, _otherNode->mFclWorldTrans, req, res);
+
+        if(!_contactPoints) {
+            return res.isCollision() ? 1 : 0;
+        }
+
         int start, size;
-        start = _result.size();
+        start = _contactPoints->size();
         size = 0;
 
         int numCoplanarContacts = 0;
@@ -76,8 +81,8 @@ namespace collision_checking{
             pair1.normal = Vector3d(v[0], v[1], v[2]);
             pair2.normal = Vector3d(v[0], v[1], v[2]);
         
-            _result.push_back(pair1);
-            _result.push_back(pair2);
+            _contactPoints->push_back(pair1);
+            _contactPoints->push_back(pair2);
 
             size+=2;
         }
@@ -89,13 +94,13 @@ namespace collision_checking{
         const double ZERO2 = ZERO*ZERO;
 
         vector<int> deleteIDs;
-        size = _result.size() - start;
+        size = _contactPoints->size() - start;
         deleteIDs.clear();
 
         // mark all the repeated points
         for (int i = start; i < start + size; i++)
             for (int j = i + 1; j < start + size; j++) {
-                Vector3d diff = _result[i].point - _result[j].point;
+                Vector3d diff = (*_contactPoints)[i].point - (*_contactPoints)[j].point;
                 if (diff.dot(diff) < 3 * ZERO2) {
                     deleteIDs.push_back(i);
                     break;
@@ -103,9 +108,9 @@ namespace collision_checking{
             }
         // delete repeated points
         for (int i = deleteIDs.size() - 1; i >= 0; i--)
-            _result.erase(_result.begin() + deleteIDs[i]);
+            _contactPoints->erase(_contactPoints->begin() + deleteIDs[i]);
         
-        size = _result.size() - start;
+        size = _contactPoints->size() - start;
         deleteIDs.clear();
 
         // remove all the co-linear contact points
@@ -120,8 +125,8 @@ namespace collision_checking{
                 for (int k = j + 1; k < start + size; k++) {
                     if (i == k)
                         continue;
-                    Vector3d  v = (_result[i].point - _result[j].point).cross(_result[i].point - _result[k].point);
-                    if (v.dot(v) < ZERO2 && ((_result[i].point - _result[j].point).dot(_result[i].point - _result[k].point) < 0)) {
+                    Vector3d  v = ((*_contactPoints)[i].point - (*_contactPoints)[j].point).cross((*_contactPoints)[i].point - (*_contactPoints)[k].point);
+                    if (v.dot(v) < ZERO2 && (((*_contactPoints)[i].point - (*_contactPoints)[j].point).dot((*_contactPoints)[i].point - (*_contactPoints)[k].point) < 0)) {
                         bremove = true;
                         break;
                     }
@@ -132,7 +137,7 @@ namespace collision_checking{
         }
     
         for (int i = deleteIDs.size() - 1; i >= 0; i--)
-            _result.erase(_result.begin() + deleteIDs[i]);
+            _contactPoints->erase(_contactPoints->begin() + deleteIDs[i]);
 
         int collisionNum = res.numContacts();
         //return numCoplanarContacts*100+numNoContacts;
@@ -140,14 +145,11 @@ namespace collision_checking{
     }
 
     void CollisionSkeletonNode::evalRT() {
-        //Vector3d p = mBodyNode->getWorldCOM();
         mWorldTrans = mBodyNode->getWorldTransform();
-        //mWorldTrans.col(3).topRows(3) = p;
         mFclWorldTrans = fcl::Transform3f(fcl::Matrix3f(mWorldTrans(0,0), mWorldTrans(0,1), mWorldTrans(0,2), 
                                                         mWorldTrans(1,0), mWorldTrans(1,1), mWorldTrans(1,2), 
                                                         mWorldTrans(2,0), mWorldTrans(2,1), mWorldTrans(2,2)),
-                                          //fcl::Vec3f(p[0], p[1], p[2]));
-										  fcl::Vec3f(mWorldTrans(0,3), mWorldTrans(1,3), mWorldTrans(2,3)));
+                                          fcl::Vec3f(mWorldTrans(0,3), mWorldTrans(1,3), mWorldTrans(2,3)));
     }
 
     int CollisionSkeletonNode::evalContactPosition(fcl::CollisionResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
@@ -252,7 +254,7 @@ namespace collision_checking{
         }
     }
 
-    void SkeletonCollision::checkCollision(bool bConsiderGround) {
+    bool SkeletonCollision::checkCollision(bool _calculateContactPoints) {
         int num_max_contact = 100;
         clearAllContacts();
         int numCollision = 0;
@@ -262,10 +264,11 @@ namespace collision_checking{
                     continue;
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == mCollisionSkeletonNodeList[j]->mBodyNode->getSkel())
                     continue;
-                numCollision += mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], mContactPointList, num_max_contact);
+                numCollision += mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
             }
         }
         mNumTriIntersection = numCollision;
+        return (mNumTriIntersection > 0);
     }
 
     void SkeletonCollision::draw() {

@@ -39,6 +39,8 @@
 
 #include <iostream>
 #include "World.h"
+#include <kinematics/BodyNode.h>
+#include <kinematics/Shape.h>
 
 namespace robotics {
 
@@ -73,6 +75,15 @@ namespace robotics {
    */
   int World::addRobot( Robot* _robot ) {
     mRobots.push_back( _robot );
+
+    // add robot to collision skeleton
+    for (int j = 0; j < _robot->getNumNodes(); j++) {
+        kinematics::BodyNode* node = _robot->getNode(j);
+        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
+            mCollisionChecker.addCollisionSkeletonNode(node);
+        }
+    }
+
     return mRobots.size();
   }
 
@@ -82,6 +93,15 @@ namespace robotics {
    */
   int World::addObject( Object* _object ) {
     mObjects.push_back( _object );
+
+    // add object to collision skeleton
+    for(int j = 0; j < _object->getNumNodes(); j++) {
+        kinematics::BodyNode* node = _object->getNode(j);
+        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
+            mCollisionChecker.addCollisionSkeletonNode(node);
+        }
+    }
+
     return mObjects.size();
   }
 
@@ -117,6 +137,10 @@ namespace robotics {
    */
   Robot* World::getRobot( int _i ) {
     return mRobots[_i];
+  }
+
+  bool World::checkCollision() {
+    return mCollisionChecker.checkCollision();
   }
 
 } // end namespace robotics

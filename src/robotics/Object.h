@@ -62,7 +62,6 @@ namespace robotics {
     inline void setPathName( std::string _pname ) { mPathName = _pname; }
     inline int getGripID() { return mGripID; }
     inline void setGripID( int _i ) { mGripID = _i; }
-    inline int getNumModels() { return mModels.size(); }
     inline void setMovable( bool _m ) { mMovable = _m; }
 
     void setPositionX( double _pos );
@@ -80,18 +79,11 @@ namespace robotics {
     void setRotationRPY( double _roll, double _pitch, double _yaw );
     void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
     
-    const aiScene* loadModel( std::string _filename );
-    void addModel( const aiScene* _model, int _index );
-    const aiScene* getModel( int _i );
-    int getModelIndex( int _i );
-    
   private:
     std::string mName; 
     std::string mPathName; 
     int mGripID; /// THIS HAS TO BE REMOVED
     bool mMovable;
-    std::vector<const aiScene*> mModels;
-    std::vector<int> mModelIndices;
   };
 
 }

@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
+#include <collision/CollisionSkeleton.h>
 
 namespace robotics {
 
@@ -68,11 +69,12 @@ namespace robotics {
     inline int getNumRobots() { return mRobots.size(); }
     Object* getObject( int _i );
     Robot* getRobot( int _i );
-    
+    bool checkCollision();
       
   private:
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
+    collision_checking::SkeletonCollision mCollisionChecker;
     
   };
 

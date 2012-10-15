@@ -65,6 +65,7 @@ namespace robotics {
 
     // Set the initial Rootnode that controls the position and orientation of the whole robot
     node = (dynamics::BodyNodeDynamics*) this->createBodyNode("rootBodyNode");
+    node->setShape(new kinematics::Shape());
     joint = new kinematics::Joint( NULL, node, "rootJoint" );
     
     // Add DOFs for RPY and XYZ of the whole robot
@@ -467,38 +468,6 @@ namespace robotics {
     for(int i = 0; i < getNumNodes(); i++) {
       mNodes.at(i)->updateFirstDerivatives();
     }
-  }
-  
-  /**
-   * @function loadModel
-   */
-  const aiScene* Robot::loadModel( string _filename )
-  {
-    return kinematics::ShapeMesh::loadMesh(_filename);
-  }
-  
-  /**
-   * @function addModel
-   */
-  void Robot::addModel( const aiScene* _model, int _index )
-  {
-    mModels.push_back( _model );
-    mModelIndices.push_back( _index );
-  }
-  
-
-  /**
-   * @function getModel
-   */
-  const aiScene *Robot::getModel( int _i ) {
-    return mModels[_i];
-  }
-
-  /**
-   * @function getModelIndex
-   */
-  int Robot::getModelIndex( int _i ) {
-    return mModelIndices[_i];
   }
   
 } // end namespace robotics
