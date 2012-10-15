@@ -51,13 +51,12 @@
 using namespace std;
 
 namespace robotics {
- 
-  /**
-   * @function Robot
-   * @brief Constructor
-   */
-  Robot::Robot() {
 
+  /**
+   * @fuction addDefaultRootNode
+   */
+  void Robot::addDefaultRootNode() {
+    
     // Always set the root node ( 6DOF for rotation and translation )
     kinematics::Joint* joint;
     dynamics::BodyNodeDynamics* node;
@@ -96,6 +95,14 @@ namespace robotics {
     // Set this first node as root node
     this->addNode( node );
     this->initSkel();    
+
+  }
+  
+  /**
+   * @function Robot
+   * @brief Constructor
+   */
+  Robot::Robot() {
   }
   
   /**
