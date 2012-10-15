@@ -51,12 +51,12 @@
 using namespace std;
 
 namespace robotics {
+
   /**
-   * @function Object
-   * @brief Constructor
+   * @fuction addDefaultRootNode
    */
-  Object::Object() {
-    
+  void Object::addDefaultRootNode() {
+
     // Always set the root node ( 6DOF for rotation and translation )
     kinematics::Joint* joint;
     dynamics::BodyNodeDynamics* node;
@@ -96,6 +96,15 @@ namespace robotics {
     this->addNode( node );
     this->initSkel();    
   }
+
+
+  /**
+   * @function Object
+   * @brief Constructor
+   */
+  Object::Object() {
+	}    
+
 
   /**
    * @function ~Object
@@ -294,5 +303,19 @@ namespace robotics {
       } 
     
   } 
+
+  /**
+   * @function update
+   */
+  void Object::update()
+  {
+    for(int i=0; i < getNumDofs(); i++)
+      {  mCurrPose[i] = mDofs.at(i)->getValue();  }
+    for(int i=0; i<getNumNodes(); i++) 
+      {  mNodes.at(i)->updateTransform();  }
+    for(int i = 0; i < getNumNodes(); i++) {
+      mNodes.at(i)->updateFirstDerivatives();
+    }
+  }
 
 } // namespace robotics

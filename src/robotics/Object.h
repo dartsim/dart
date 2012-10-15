@@ -56,6 +56,9 @@ namespace robotics {
   public:
     Object();
     virtual ~Object();
+
+    void addDefaultRootNode();
+
     inline std::string getName() { return mName; }
     inline void setName( std::string _name ) { mName = _name; }
     inline std::string getPathName() { return mPathName; }
@@ -78,7 +81,9 @@ namespace robotics {
     
     void setRotationRPY( double _roll, double _pitch, double _yaw );
     void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
-    
+
+    void update();    
+
   private:
     std::string mName; 
     std::string mPathName; 
