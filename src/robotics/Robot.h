@@ -64,8 +64,6 @@ namespace robotics {
     inline void setName( std::string _name ) { mName = _name; }
     inline std::string getPathName() { return mPathName; }
     inline void setPathName( std::string _pname ) { mPathName = _pname; }
-    inline int getGripID() { return mGripID; }
-    inline void setGripID( int _i ) { mGripID = _i; }
 
     int getNumQuickDofs(); 
     Eigen::VectorXi getQuickDofsIndices();
@@ -98,7 +96,6 @@ namespace robotics {
   private:
     std::string mName;
     std::string mPathName;
-    int mGripID; /// THIS HAS TO BE REMOVED
   };
 }
 

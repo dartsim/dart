@@ -62,8 +62,6 @@ SET(DART_LIBRARIES ${DART_LIBRARIES} ${Boost_LIBRARIES})
 
 set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-message("${DART_LIBRARIES}")
-
 #set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
 
 include(FindPackageHandleStandardArgs)
