@@ -47,6 +47,7 @@
 #include "Robot.h"
 #include <stdio.h>
 #include <kinematics/ShapeMesh.h>
+#include <list>
 
 using namespace std;
 
@@ -470,11 +471,27 @@ namespace robotics {
   {
     for(int i=0; i < getNumDofs(); i++)
       {  mCurrPose[i] = mDofs.at(i)->getValue();  }
-    for(int i=0; i<getNumNodes(); i++) 
-      {  mNodes.at(i)->updateTransform();  }
-    for(int i = 0; i < getNumNodes(); i++) {
-      mNodes.at(i)->updateFirstDerivatives();
+
+    // Update parents first
+    std::list<dynamics::BodyNodeDynamics*> nodeStack;
+    dynamics::BodyNodeDynamics* u;
+    nodeStack.push_back( (dynamics::BodyNodeDynamics*) this->getRoot() );
+
+    int numIter = 0;
+    while( !nodeStack.empty() && numIter < this->getNumNodes() ) {
+      // Get front element on stack and update it
+      u = nodeStack.front();
+      u->updateTransform();
+      // Pop it out
+      nodeStack.pop_front();
+
+      // Add its kids
+      for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
+	nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
+      }
+      numIter++;
     }
+
   }
   
 } // end namespace robotics
