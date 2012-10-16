@@ -60,6 +60,8 @@ namespace robotics {
     Robot();
     virtual ~Robot();
 
+    void addDefaultRootNode();
+
     inline std::string getName() { return mName; }
     inline void setName( std::string _name ) { mName = _name; }
     inline std::string getPathName() { return mPathName; }
