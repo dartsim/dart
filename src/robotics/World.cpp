@@ -140,7 +140,7 @@ namespace robotics {
   }
 
   bool World::checkCollision() {
-    return mCollisionChecker.checkCollision();
+    return mCollisionChecker.checkCollision(false);
   }
 
 } // end namespace robotics

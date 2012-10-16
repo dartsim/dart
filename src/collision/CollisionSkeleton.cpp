@@ -257,17 +257,19 @@ namespace collision_checking{
     bool SkeletonCollision::checkCollision(bool _calculateContactPoints) {
         int num_max_contact = 100;
         clearAllContacts();
-        int numCollision = 0;
+        mNumTriIntersection = 0;
         for (int i = 0; i < mCollisionSkeletonNodeList.size(); i++) {
             for (int j = i + 1; j < mCollisionSkeletonNodeList.size(); j++) {
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[j]->mBodyNode || mCollisionSkeletonNodeList[j]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode)
                     continue;
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == mCollisionSkeletonNodeList[j]->mBodyNode->getSkel())
                     continue;
-                numCollision += mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
+                mNumTriIntersection += mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
+                if(!_calculateContactPoints && mNumTriIntersection > 0) {
+                    return true;
+                }
             }
         }
-        mNumTriIntersection = numCollision;
         return (mNumTriIntersection > 0);
     }
 
