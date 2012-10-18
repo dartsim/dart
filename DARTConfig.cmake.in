@@ -38,7 +38,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 FIND_PACKAGE(Boost 1.42.0 REQUIRED thread date_time)
 add_definitions( -DBOOST_ALL_DYN_LINK )
 
-SET( DART_LIBS collision dynamics kinematics renderer utils robotics )
+SET( DART_LIBS collision dynamics kinematics renderer utils robotics tinyxml )
 FOREACH( DART_LIB ${DART_LIBS} )
     find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
         HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
@@ -62,7 +62,7 @@ SET(DART_LIBRARIES ${DART_LIBRARIES} ${Boost_LIBRARIES})
 
 set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-#set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
+#set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 tinyxml assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG

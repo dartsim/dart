@@ -135,6 +135,8 @@ ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
+ADD_SUBDIRECTORY (thirdparty/tinyxml)
+
 ADD_SUBDIRECTORY (thirdparty/libccd)
 
 SET(CCD_INCLUDE_DIRS "${THIRDPARTY_INSTALL_PREFIX}/include")
