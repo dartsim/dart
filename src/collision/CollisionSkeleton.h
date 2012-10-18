@@ -77,7 +77,7 @@ namespace collision_checking {
     public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        fcl::BVHModel<fcl::RSS>* mMesh;
+        fcl::BVHModel<fcl::OBBRSS>* mMesh;
         kinematics::BodyNode *mBodyNode;
         fcl::AABB mAABB;
         int mBodynodeID;

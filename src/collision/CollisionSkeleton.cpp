@@ -15,11 +15,11 @@ namespace collision_checking{
     {
         mBodyNode = _bodyNode;
         if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
-            mMesh = createEllipsoid<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
+            mMesh = createEllipsoid<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
-            mMesh = createCube<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
+            mMesh = createCube<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else {
-            mMesh = createMesh<fcl::RSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getVizMesh());
+            mMesh = createMesh<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getVizMesh());
         }
     }
     CollisionSkeletonNode::~CollisionSkeletonNode()
