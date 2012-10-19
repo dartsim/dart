@@ -34,7 +34,7 @@ target_link_libraries(urdfdom_sensor ${Boost_LIBRARIES})
 
 set_target_properties (urdfdom_sensor  PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_sensor PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-  install (TARGETS urdfdom_sensor LIBRARY DESTINATION lib)
+  install (TARGETS urdfdom_sensor DESTINATION lib)
 
 #-- urdfdom_model_state
 add_library(urdfdom_model_state SHARED ${urdf_model_state_srcs} )
@@ -43,5 +43,5 @@ target_link_libraries(urdfdom_model_state  ${Boost_LIBRARIES})
 set_target_properties (urdfdom_model_state PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_model_state PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
   install (FILES ${urdf_model_state_srcs} DESTINATION include/dart/Parser/urdf_parser )
-  install (TARGETS urdfdom_model_state LIBRARY DESTINATION lib)
+  install (TARGETS urdfdom_model_state DESTINATION lib)
 
