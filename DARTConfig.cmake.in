@@ -35,7 +35,7 @@ find_path(FCL_INCLUDE_DIR fcl/collision.h
 
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
-FIND_PACKAGE(Boost 1.42.0 REQUIRED thread date_time)
+FIND_PACKAGE(Boost 1.42.0 REQUIRED system thread date_time chrono)
 add_definitions( -DBOOST_ALL_DYN_LINK )
 
 SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor  robotics  collision dynamics kinematics renderer utils tinyxml )
