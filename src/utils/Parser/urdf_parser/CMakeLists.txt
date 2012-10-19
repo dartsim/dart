@@ -29,7 +29,7 @@ set_target_properties (urdfdom_model PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAK
   install (TARGETS urdfdom_model  DESTINATION lib)
 
 #-- urdfdom_sensor
-add_library(urdfdom_sensor SHARED ${urdfdom_sensor_srcs})
+add_library(urdfdom_sensor ${urdfdom_sensor_srcs})
 target_link_libraries(urdfdom_sensor ${Boost_LIBRARIES})
 
 set_target_properties (urdfdom_sensor  PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
@@ -37,7 +37,7 @@ set_target_properties (urdfdom_sensor PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMA
   install (TARGETS urdfdom_sensor  DESTINATION lib)
 
 #-- urdfdom_model_state
-add_library(urdfdom_model_state SHARED ${urdf_model_state_srcs} )
+add_library(urdfdom_model_state ${urdf_model_state_srcs} )
 target_link_libraries(urdfdom_model_state  ${Boost_LIBRARIES})
 
 set_target_properties (urdfdom_model_state PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
