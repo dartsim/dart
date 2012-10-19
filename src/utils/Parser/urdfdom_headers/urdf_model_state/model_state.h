@@ -49,6 +49,15 @@
 
 namespace urdf{
 
+static int my_round (double x) {
+  int i = (int) x;
+  if (x >= 0.0) {
+    return ((x-i) >= 0.5) ? (i + 1) : (i);
+  } else {
+    return (-x+i >= 0.5) ? (i - 1) : (i);
+  }
+}
+
 class Time
 {
 public:
@@ -57,7 +66,7 @@ public:
   void set(double _seconds)
   {
     this->sec = (int32_t)(floor(_seconds));
-    this->nsec = (int32_t)(round((_seconds - this->sec) * 1e9));
+    this->nsec = (int32_t)(my_round((_seconds - this->sec) * 1e9));
     this->Correct();
   };
 
