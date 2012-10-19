@@ -14,8 +14,8 @@ file( GLOB urdf_world_hdrs urdf_world/world.h )
  
   install (FILES ${urdf_model_hdrs} DESTINATION include/dart/utils/Parser/urdfdom_headers/urdf_model )
 
-  install (FILES ${urdf_model_state_hdrs} DESTINATION include/utils/Parser/urdfdom_headers/urdf_model_state )
+  install (FILES ${urdf_model_state_hdrs} DESTINATION include/dart/utils/Parser/urdfdom_headers/urdf_model_state )
 
-  install (FILES ${urdf_sensor_hdrs} DESTINATION include/dart/Parser/urdfdom_headers/urdf_sensor )
+  install (FILES ${urdf_sensor_hdrs} DESTINATION include/dart/utils/Parser/urdfdom_headers/urdf_sensor )
 
-  install (FILES ${urdf_world_hdrs} DESTINATION include/dart/Parser/urdfdom_headers/urdf_world )
+  install (FILES ${urdf_world_hdrs} DESTINATION include/dart/utils/Parser/urdfdom_headers/urdf_world )

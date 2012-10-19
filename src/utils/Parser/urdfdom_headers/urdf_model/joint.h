@@ -41,7 +41,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include "urdf_model/pose.h"
+#include "pose.h"
 
 
 namespace urdf{

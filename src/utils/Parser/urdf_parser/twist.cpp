@@ -35,7 +35,7 @@
 /* Author: John Hsu */
 
 
-#include <urdf_model/twist.h>
+#include "../urdfdom_headers/urdf_model/twist.h"
 #include <fstream>
 #include <sstream>
 #include <boost/lexical_cast.hpp>

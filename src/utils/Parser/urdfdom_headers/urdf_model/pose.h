@@ -43,7 +43,7 @@
 #include <math.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <urdf_exception/exception.h>
+#include "../urdf_exception/exception.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

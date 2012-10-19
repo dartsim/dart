@@ -4,7 +4,7 @@
 
 #include "DartLoader.h"
 #include <map>
-#include "urdf_model/link.h"
+#include "../urdfdom_headers/urdf_model/link.h"
 
 #include <iostream>
 #include <fstream>

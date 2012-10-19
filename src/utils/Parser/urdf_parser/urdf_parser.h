@@ -44,7 +44,7 @@
 //#include <urdf_model/model.h>
 #include "../urdfdom_headers/urdf_model/model.h"
 #include "../urdfdom_headers/urdf_world/world.h"
-#include <urdf_model/color.h>
+#include "../urdfdom_headers/urdf_model/color.h"
 
 namespace urdf_export_helpers {
 

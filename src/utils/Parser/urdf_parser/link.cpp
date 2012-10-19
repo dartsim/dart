@@ -35,8 +35,8 @@
 /* Author: Wim Meeussen */
 
 
-#include <urdf_parser/urdf_parser.h>
-#include <urdf_model/link.h>
+#include "../urdf_parser/urdf_parser.h"
+#include "../urdfdom_headers/urdf_model/link.h"
 #include <fstream>
 #include <sstream>
 #include <boost/lexical_cast.hpp>

@@ -35,10 +35,10 @@
 /* Author: John Hsu */
 
 #include <sstream>
-#include <urdf_model/joint.h>
+#include "../urdfdom_headers/urdf_model/joint.h"
 #include <boost/lexical_cast.hpp>
 #include <tinyxml.h>
-#include <urdf_parser/urdf_parser.h>
+#include "../urdf_parser/urdf_parser.h"
 #include <stdio.h>
 #include <iostream>
 

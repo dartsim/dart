@@ -36,7 +36,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <vector>
-#include "urdf_parser/urdf_parser.h"
+#include "../urdf_parser/urdf_parser.h"
 
 namespace urdf{
 

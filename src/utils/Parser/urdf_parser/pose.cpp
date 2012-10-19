@@ -35,13 +35,13 @@
 /* Author: Wim Meeussen, John Hsu */
 
 
-#include <urdf_model/pose.h>
+#include "../urdfdom_headers/urdf_model/pose.h"
 #include <fstream>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <tinyxml.h>
-#include <urdf_parser/urdf_parser.h>
+#include "../urdf_parser/urdf_parser.h"
 
 namespace urdf_export_helpers {
 

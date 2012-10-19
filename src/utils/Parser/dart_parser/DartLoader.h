@@ -5,7 +5,7 @@
 #ifndef DART_LOADER_H
 #define DART_LOADER_H
 
-#include <urdf_parser/urdf_parser.h>
+#include "../urdf_parser/urdf_parser.h"
 
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
