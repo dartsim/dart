@@ -13,7 +13,7 @@ file( GLOB parser_hdrs DartLoader.h )
 # Add Library
 add_library( parser ${parser_srcs} ${parser_hdrs} )
 target_link_libraries( parser  ${DART_LIBRARIES} )
-target_link_libraries( parser urdfdom_model urdfdom_model_state urdfdom_sensor tinyxml )
+target_link_libraries( parser urdfdom_model urdfdom_model_state urdfdom_sensor tinyxmlstatic )
 
  set_target_properties (parser PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
  set_target_properties (parser PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
