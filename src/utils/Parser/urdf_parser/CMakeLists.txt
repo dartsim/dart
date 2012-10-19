@@ -20,8 +20,8 @@ file( GLOB urdf_model_state_srcs urdf_model_state.cpp twist.cpp )
 # Add Libraries
 
 #-- urdfdom_model
-add_library(urdfdom_model SHARED ${urdfdom_model_srcs} ${urdfdom_model_hdrs} )
-target_link_libraries(urdfdom_model tinyxml ${Boost_LIBRARIES} )
+add_library(urdfdom_model  ${urdfdom_model_srcs} ${urdfdom_model_hdrs} )
+target_link_libraries(urdfdom_model tinyxmlstatic ${Boost_LIBRARIES} )
 
 set_target_properties (urdfdom_model PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_model PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
