@@ -26,7 +26,7 @@ target_link_libraries(urdfdom_model tinyxml ${Boost_LIBRARIES} )
 set_target_properties (urdfdom_model PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_model PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
   install (FILES ${urdfdom_model_hdrs} DESTINATION include/dart/Parser/urdf_parser )
-  install (TARGETS urdfdom_model LIBRARY DESTINATION lib)
+  install (TARGETS urdfdom_model  DESTINATION lib)
 
 #-- urdfdom_sensor
 add_library(urdfdom_sensor SHARED ${urdfdom_sensor_srcs})
