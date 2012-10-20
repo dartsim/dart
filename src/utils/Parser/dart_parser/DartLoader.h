@@ -67,14 +67,15 @@ class DartLoader {
 	       int _DOF_TYPE );
 
   void add_ShapeMesh( dynamics::BodyNodeDynamics* _node, 
-		  const char *_meshPath, 
+		      const char *_meshPath, 
+		      double _mass = 1.0,
+		      Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3),
+		      const char *_collisionMeshPath = NULL );
+  
+  void add_Shape( dynamics::BodyNodeDynamics* _node, 
 		  double _mass = 1.0,
 		  Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3) );
-
-void add_Shape( dynamics::BodyNodeDynamics* _node, 
-			    double _mass = 1.0,
-			    Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3) );
-
+  
   // ToDart utils
   kinematics::Joint* createDartRootJoint( boost::shared_ptr<const urdf::Link> _rootLink,
 					  dynamics::SkeletonDynamics* _skel,

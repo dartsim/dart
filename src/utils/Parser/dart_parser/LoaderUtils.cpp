@@ -104,27 +104,39 @@ void DartLoader::add_Shape( dynamics::BodyNodeDynamics* _node,
  * @function add_ShapeMesh
  */
 void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node, 
-			    const char *_meshPath, 
-			    double _mass,
-			    Eigen::Matrix3d _inertiaMatrix ) {
-
+				const char *_meshPath, 
+				double _mass,
+				Eigen::Matrix3d _inertiaMatrix,
+				const char *_collisionMeshPath  ) {
+  
   kinematics::Shape* shape;
 
-  // Load aiScene
+  // Load aiScene visualization
   const aiScene* model = kinematics::ShapeMesh::loadMesh( _meshPath );
+
+  // Load collision model
+  const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
 
   if( model == NULL ) {
     printf("[add_Shape] [ERROR] Not loading model %s (NULL) \n", _meshPath);
     return;  
   }
   else {
-  	shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
-							    _mass,
-							    model ); 	 
- 		//shape->setInertia( _inertiaMatrix );
-  	shape->setVizMesh( model ); 
- 		shape->setCollisionMesh( model );
-    _node->setShape( shape );
-	} 
+    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
+				       _mass,
+				       model ); 	 
+    shape->setInertia( _inertiaMatrix );
+    shape->setVizMesh( model ); 
 
+    // Check if we have got a collision model
+    if( !collisionModel ) {
+      shape->setCollisionMesh( model );
+    } else {
+      shape->setCollisionMesh( collisionModel );
+    }
+
+    // Set in node
+    _node->setShape( shape );
+  } 
+  
 }
