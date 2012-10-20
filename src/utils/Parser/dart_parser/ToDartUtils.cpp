@@ -127,7 +127,28 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name );
   
   // Mesh Loading
-  double mass = 0.0; Eigen::Matrix3d inertia = Eigen::MatrixXd::Zero(3,3);
+  double mass = 0.0;
+  Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
+
+	if( _lk->inertial ) {
+		boost::shared_ptr<urdf::Inertial>inert= (_lk->inertial);
+
+    mass = inert->mass;
+		inertia(0,0) = inert->ixx;
+		inertia(0,1) = -1*(inert->ixy);
+		inertia(0,2) = -1*(inert->ixz);
+
+		inertia(1,0) = -1*(inert->ixy);
+		inertia(1,1) = (inert->iyy);
+		inertia(1,2) = -1*(inert->iyz);
+
+		inertia(2,0) = -1*(inert->ixz);
+		inertia(2,1) = -1*(inert->iyz);
+		inertia(2,2) = inert->izz;
+
+    printf("* Mass is: %f \n", mass);
+		std::cout<< "* Inertia is: \n"<< inertia << std::endl;
+  }
 
   if( !_lk->visual ) {
           add_Shape( node,  mass, inertia ); 
