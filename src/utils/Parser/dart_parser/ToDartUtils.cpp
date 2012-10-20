@@ -78,35 +78,35 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   // Add DOF if prismatic or revolute joint
   val = 0;
   if( _jt->type == urdf::Joint::REVOLUTE || _jt->type == urdf::Joint::PRISMATIC ) {
-
-		// Revolute
-		if(   _jt->type == urdf::Joint::REVOLUTE ) {  
-    	if( _jt->axis.x == 1  || _jt->axis.x == -1 ) { axis = GOLEM_ROLL; }
-    	else if( _jt->axis.y == 1 || _jt->axis.y == -1 ) { axis = GOLEM_PITCH; }
-    	else if( _jt->axis.z == 1 || _jt->axis.z == -1  ) { axis = GOLEM_YAW; }
-    	else { printf("[ERROR] No axis defined for Revolute DOF! \n"); }
-  	}
-  	// Prismatic
-  	else if( _jt->type == urdf::Joint::PRISMATIC ) {
     
-    	if( _jt->axis.x == 1 || _jt->axis.x == -1  ) { axis = GOLEM_X; }
-    	else if( _jt->axis.y == 1 || _jt->axis.y == -1  ) { axis = GOLEM_Y; }
-    	else if( _jt->axis.z == 1 || _jt->axis.z == -1 ) { axis = GOLEM_Z; }
-    	else { printf(" [ERROR] No axis defined for Prismatic DOF! \n"); }
-  	}
-
-  	vmin = _jt->limits->lower;
-  	vmax = _jt->limits->upper;
+    // Revolute
+    if(   _jt->type == urdf::Joint::REVOLUTE ) {  
+      if( _jt->axis.x == 1  || _jt->axis.x == -1 ) { axis = GOLEM_ROLL; }
+      else if( _jt->axis.y == 1 || _jt->axis.y == -1 ) { axis = GOLEM_PITCH; }
+      else if( _jt->axis.z == 1 || _jt->axis.z == -1  ) { axis = GOLEM_YAW; }
+      else { printf("[ERROR] No axis defined for Revolute DOF! \n"); }
+    }
+    // Prismatic
+    else if( _jt->type == urdf::Joint::PRISMATIC ) {
+      
+      if( _jt->axis.x == 1 || _jt->axis.x == -1  ) { axis = GOLEM_X; }
+      else if( _jt->axis.y == 1 || _jt->axis.y == -1  ) { axis = GOLEM_Y; }
+      else if( _jt->axis.z == 1 || _jt->axis.z == -1 ) { axis = GOLEM_Z; }
+      else { printf(" [ERROR] No axis defined for Prismatic DOF! \n"); }
+    }
+    
+    vmin = _jt->limits->lower;
+    vmax = _jt->limits->upper;
+    
+    add_DOF( _skel, joint, val, vmin, vmax, axis );
+  }
   
-	  add_DOF( _skel, joint, val, vmin, vmax, axis );
-	}
-
-	// Fixed, do not add DOF
+  // Fixed, do not add DOF
   else if( _jt->type == urdf::Joint::FIXED ) {
-		printf("Fixed joint: %s \n", jointName );
-	}
-
-	// None of the above
+    printf("Fixed joint: %s \n", jointName );
+  }
+  
+  // None of the above
   else {
     printf("[createDartJoint] ERROR: Parsing %s joint: No PRISMATIC or REVOLUTE or FIXED \n", jointName );
   }
@@ -120,37 +120,71 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
 dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::Link> _lk,
 							dynamics::SkeletonDynamics* _skel ) {
   
-  std::string fullPath;
+  std::string fullVisualPath;
+  std::string fullCollisionPath;
+
   const char* lk_name = _lk->name.c_str();
   printf("** Creating dart node: %s \n", lk_name );
-
+  
   dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name );
   
   // Mesh Loading
-  double mass = 0.0; Eigen::Matrix3d inertia = Eigen::MatrixXd::Zero(3,3);
-
+  double mass = 0.0;
+  Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
+  
+  if( _lk->inertial ) {
+    boost::shared_ptr<urdf::Inertial>inert= (_lk->inertial);
+    
+    mass = inert->mass;
+    inertia(0,0) = inert->ixx;
+    inertia(0,1) = -1*(inert->ixy);
+    inertia(0,2) = -1*(inert->ixz);
+    
+    inertia(1,0) = -1*(inert->ixy);
+    inertia(1,1) = (inert->iyy);
+    inertia(1,2) = -1*(inert->iyz);
+    
+    inertia(2,0) = -1*(inert->ixz);
+    inertia(2,1) = -1*(inert->iyz);
+    inertia(2,2) = inert->izz;
+    
+    printf("* Mass is: %f \n", mass);
+    std::cout<< "* Inertia is: \n"<< inertia << std::endl;
+  }
+  
   if( !_lk->visual ) {
-          add_Shape( node,  mass, inertia ); 
+    add_Shape( node,  mass, inertia ); 
   }
   else {
-
-    if( _lk->visual->geometry->type == urdf::Geometry::MESH ) {
     
+    if( _lk->visual->geometry->type == urdf::Geometry::MESH ) {
+      
       boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _lk->visual->geometry );
-      fullPath = mPath;
-      fullPath.append( mesh->filename );
-      std::cout<< "  * Mesh geometry. Fullpath: " << fullPath << std::endl;
+      fullVisualPath = mPath;
+      fullVisualPath.append( mesh->filename );
+
+      // Check collision
+      if( _lk->collision ) {
+	if( _lk->collision->geometry->type == urdf::Geometry::MESH ) {
+	  boost::shared_ptr<urdf::Mesh> collisionMesh = boost::static_pointer_cast<urdf::Mesh>( _lk->collision->geometry );
+	  fullCollisionPath = mPath;
+	  fullCollisionPath.append( collisionMesh->filename );
+	}
+      }
+
       add_ShapeMesh( node, 
-		 (fullPath).c_str(), 
-		 mass,
-		 inertia ); 
+		     (fullVisualPath).c_str(), 
+		     mass,
+		     inertia,
+		     (fullCollisionPath).c_str() ); 
+      
     }
     
     // Empty
     else {
       add_Shape( node, mass, inertia ); 
     }
-  }
+  } // end else : We have visual
   
   return node;
 }

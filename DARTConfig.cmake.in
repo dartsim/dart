@@ -40,7 +40,7 @@ FIND_PACKAGE(Boost 1.42.0 REQUIRED)
 add_definitions( -DBOOST_ALL_DYN_LINK )
 set(DART_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
-SET( DART_LIBS collision dynamics kinematics renderer utils robotics parser urdfdom_model urdfdom_model_state urdfdom_sensor tinyxml )
+SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor  robotics  collision dynamics kinematics renderer utils tinyxml )
 FOREACH( DART_LIB ${DART_LIBS} )
     find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
         HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
