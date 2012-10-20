@@ -126,12 +126,14 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				       _mass,
 				       model ); 	 
     shape->setInertia( _inertiaMatrix );
+			printf("** Loading visual model: %s \n", _meshPath );
     shape->setVizMesh( model ); 
 
     // Check if we have got a collision model
     if( !collisionModel ) {
       shape->setCollisionMesh( model );
     } else {
+			printf("** Loading collision model: %s \n", _collisionMeshPath );
       shape->setCollisionMesh( collisionModel );
     }
 

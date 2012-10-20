@@ -162,7 +162,6 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _lk->visual->geometry );
       fullVisualPath = mPath;
       fullVisualPath.append( mesh->filename );
-      std::cout<< "  * Mesh geometry. Fullpath: " << fullVisualPath << std::endl;
 
       // Check collision
       if( _lk->collision ) {
