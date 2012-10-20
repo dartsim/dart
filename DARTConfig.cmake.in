@@ -9,6 +9,7 @@
 # DART_FOUND - True if DART was found.
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES - Libraries needed to use DART.
+# DART_LIBRARY_DIRS
 # DART_DEFINITIONS - Compiler flags for DART.
 
 find_package(PkgConfig)
@@ -35,8 +36,9 @@ find_path(FCL_INCLUDE_DIR fcl/collision.h
 
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
-FIND_PACKAGE(Boost 1.42.0 REQUIRED system thread date_time chrono)
+FIND_PACKAGE(Boost 1.42.0 REQUIRED)
 add_definitions( -DBOOST_ALL_DYN_LINK )
+set(DART_LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
 
 SET( DART_LIBS collision dynamics kinematics renderer utils robotics parser urdfdom_model urdfdom_model_state urdfdom_sensor tinyxml )
 FOREACH( DART_LIB ${DART_LIBS} )
@@ -58,7 +60,6 @@ FOREACH( DART_LIB ${DART_DEP_LIBS} )
     SET(DART_VAR_NAMES ${DART_VAR_NAMES} DART_${DART_LIB}_LIBRARY)
 ENDFOREACH(DART_LIB)
 
-SET(DART_LIBRARIES ${DART_LIBRARIES} ${Boost_LIBRARIES})
 
 set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
