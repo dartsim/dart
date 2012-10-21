@@ -41,6 +41,8 @@
 #include "World.h"
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
+#include <collision/CollisionSkeleton.h>
+#include <integration/EulerIntegrator.h>
 
 namespace robotics {
 
@@ -51,6 +53,9 @@ namespace robotics {
   World::World() {
     mRobots.resize(0);
     mObjects.resize(0);
+    mSkeletons.resize(0);
+
+    mTimeStep = .01;
   }
 
   /**
@@ -67,6 +72,8 @@ namespace robotics {
       delete mObjects[i];
     }
     mObjects.clear();
+
+    mSkeletons.clear();
   }
   
   /**
@@ -74,15 +81,14 @@ namespace robotics {
    * @brief Add a pointer to a new robot in the World
    */
   int World::addRobot( Robot* _robot ) {
+    // add item
     mRobots.push_back( _robot );
+    mSkeletons.push_back( _robot );
 
-    // add robot to collision skeleton
-    for (int j = 0; j < _robot->getNumNodes(); j++) {
-        kinematics::BodyNode* node = _robot->getNode(j);
-        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
-            mCollisionChecker.addCollisionSkeletonNode(node);
-        }
-    }
+    _robot->initDynamics();
+    
+    // create collision dynamics object
+    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
 
     return mRobots.size();
   }
@@ -92,19 +98,20 @@ namespace robotics {
    * @brief Add a pointer to a new object in the World
    */
   int World::addObject( Object* _object ) {
+    // add item
     mObjects.push_back( _object );
+    mSkeletons.push_back( _object );
 
-    // add object to collision skeleton
-    for(int j = 0; j < _object->getNumNodes(); j++) {
-        kinematics::BodyNode* node = _object->getNode(j);
-        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
-            mCollisionChecker.addCollisionSkeletonNode(node);
-        }
-    }
+    _object->initDynamics();
 
+    // create collision dynanmics object
+    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+
+    assert(mObjects.size() + mRobots.size() == mSkeletons.size());
+    
     return mObjects.size();
   }
-
+  
   /**
    * @function printInfo
    * @brief Print info w.r.t. robots and objects in World
@@ -139,9 +146,20 @@ namespace robotics {
     return mRobots[_i];
   }
 
+  /**
+   * @function getSkeleton
+   */
+  dynamics::SkeletonDynamics* World::getSkeleton( int _i ) {
+    return mSkeletons[_i];
+  }
+
   bool World::checkCollision() {
-    return mCollisionChecker.checkCollision(false);
+    return mCollisionHandle->getCollisionChecker()->checkCollision(false);
   }
 
 } // end namespace robotics
 
+
+// Local Variables:
+// c-basic-offset: 2
+// End:

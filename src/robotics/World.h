@@ -45,7 +45,10 @@
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
-#include <collision/CollisionSkeleton.h>
+#include <dynamics/SkeletonDynamics.h>
+#include <dynamics/ContactDynamics.h>
+#include <integration/Integrator.h>
+#include <integration/EulerIntegrator.h>
 
 namespace robotics {
 
@@ -56,7 +59,7 @@ namespace robotics {
    * @class World
    */
   class World {
-
+      
   public:
     World();
     virtual ~World();
@@ -67,15 +70,22 @@ namespace robotics {
     
     inline int getNumObjects() { return mObjects.size(); }
     inline int getNumRobots() { return mRobots.size(); }
+    inline int getNumSkeletons() { return mSkeletons.size(); }
     Object* getObject( int _i );
     Robot* getRobot( int _i );
+    dynamics::SkeletonDynamics* getSkeleton( int _i );
     bool checkCollision();
-      
+
+    /* TODO: figure out a way for this to not be public */
+    dynamics::ContactDynamics* mCollisionHandle;
+
   private:
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
-    collision_checking::SkeletonCollision mCollisionChecker;
-    
+    std::vector<dynamics::SkeletonDynamics*> mSkeletons;
+
+
+    double mTimeStep;
   };
 
 } // namespace robotics

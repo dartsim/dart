@@ -53,7 +53,7 @@ robotics::Robot* DartLoader::parseRobot( std::string _urdfFile ) {
  * @function parseObject
  */
 robotics::Object* DartLoader::parseObject( std::string _urdfFile ) {
-
+  
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
   boost::shared_ptr<urdf::ModelInterface> objectModel = urdf::parseURDF( xml_string );
@@ -86,33 +86,33 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 
   double roll, pitch, yaw;
   for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
-
+    
     object = modelInterfaceToObject(  worldInterface->objectModels[i].model );
-		// Initialize position and RPY 
+    // Initialize position and RPY 
     worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-		object->setRotationRPY( roll, pitch, yaw );
-
-		object->setPositionX( worldInterface->objectModels[i].origin.position.x ); 
-		object->setPositionY( worldInterface->objectModels[i].origin.position.y ); 
-		object->setPositionZ( worldInterface->objectModels[i].origin.position.z );
+    object->setRotationRPY( roll, pitch, yaw );
+    
+    object->setPositionX( worldInterface->objectModels[i].origin.position.x ); 
+    object->setPositionY( worldInterface->objectModels[i].origin.position.y ); 
+    object->setPositionZ( worldInterface->objectModels[i].origin.position.z );
     object->update();
     world->addObject( object );
   }
-
+  
   for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
-
+    
     robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model );
-		// Initialize position and RPY 
+    // Initialize position and RPY 
     worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-		robot->setRotationRPY( roll, pitch, yaw );
-
-		robot->setPositionX( worldInterface->robotModels[i].origin.position.x ); 
-		robot->setPositionY( worldInterface->robotModels[i].origin.position.y ); 
-		robot->setPositionZ( worldInterface->robotModels[i].origin.position.z );
-		robot->update();
+    robot->setRotationRPY( roll, pitch, yaw );
+    
+    robot->setPositionX( worldInterface->robotModels[i].origin.position.x ); 
+    robot->setPositionY( worldInterface->robotModels[i].origin.position.y ); 
+    robot->setPositionZ( worldInterface->robotModels[i].origin.position.z );
+    robot->update();
     world->addRobot( robot );
   }
-
+  
   return world;
 }
 
@@ -125,7 +125,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   dynamics::SkeletonDynamics* mSkeleton = new dynamics::SkeletonDynamics();
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
-
+  
   // BodyNode
   mNodes.resize(0);  
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
@@ -135,41 +135,54 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
     mNodes.push_back( node );
   }
   printf("** Created %d body nodes \n", mNodes.size() );
-
+  
   // Joint
   mJoints.resize(0);
-
+  
   for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
        jt != _model->joints_.end(); 
        jt++ ) {  
     joint = createDartJoint( (*jt).second, mSkeleton );
     mJoints.push_back( joint );
-
+    
   }
- 
+  
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
-  rootJoint = createDartRootJoint( _model->getRoot(), mRobot, false );
+  rootJoint = createDartRootJoint( _model->getRoot(), mSkeleton, false );
   mJoints.push_back( rootJoint );
 
   printf("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
   
-  // 1. Root node
-  mRobot->addNode( rootNode );
+  // Push parents first
+  std::list<dynamics::BodyNodeDynamics*> nodeStack;
+  dynamics::BodyNodeDynamics* u;
+  nodeStack.push_back( rootNode );
   
-  // 2. The rest
-  for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-    if( mNodes[i] != rootNode ) {
-      mRobot->addNode( mNodes[i] );
+  int numIter = 0;
+  while( !nodeStack.empty() && numIter < mNodes.size() ) {
+
+    // Get front element on stack and add it
+    u = nodeStack.front();
+    mSkeleton->addNode(u);
+
+    // Pop it out
+    nodeStack.pop_front();
+    
+    // Add its kids
+    for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
+      nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
     }
+    numIter++;
   }
+  printf("--> Pushed %d nodes in tree-like order \n", numIter );
   
-  // Init robot (skeleton)
-  mRobot->initSkel();
+  // Init skeleton
+  mSkeleton->initSkel();
   
-  return mRobot;
+  return mSkeleton;
 }
 
 /**
@@ -217,16 +230,26 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   printf("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
-  
-  // 1. Root node
-  mRobot->addNode( rootNode );
-  
-  // 2. The rest
-  for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-    if( mNodes[i] != rootNode ) {
-      mRobot->addNode( mNodes[i] );
+     // Push parents first
+    std::list<dynamics::BodyNodeDynamics*> nodeStack;
+    dynamics::BodyNodeDynamics* u;
+    nodeStack.push_back( rootNode );
+
+    int numIter = 0;
+    while( !nodeStack.empty() && numIter < mNodes.size() ) {
+      // Get front element on stack and update it
+      u = nodeStack.front();
+			mRobot->addNode(u);
+      // Pop it out
+      nodeStack.pop_front();
+
+      // Add its kids
+      for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
+	nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
+      }
+      numIter++;
     }
-  }
+		printf("Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
   mRobot->initSkel();
@@ -243,12 +266,12 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
 
-	mObject = new robotics::Object();
+  mObject = new robotics::Object();
   mObject->addDefaultRootNode();
-
+  
   // name
   mObject->setName( _model->getName() );
-
+  
   // BodyNode
   mNodes.resize(0);  
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
@@ -258,10 +281,10 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
     mNodes.push_back( node );
   }
   printf("** Created %d body nodes \n", mNodes.size() );
-
+  
   // Joint
   mJoints.resize(0);
-
+  
   for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
        jt != _model->joints_.end(); 
        jt++ ) {  
@@ -269,12 +292,12 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
     mJoints.push_back( joint );
 
   }
- 
+  
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
   rootJoint = createDartRootJoint( _model->getRoot(), mObject, true );
   mJoints.push_back( rootJoint );
-
+  
   printf("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
@@ -302,7 +325,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
 dynamics::BodyNodeDynamics* DartLoader::getNode( std::string _nodeName ) {
 
   for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-		  std::string node( mNodes[i]->getName() );
+    std::string node( mNodes[i]->getName() );
     if( node ==  _nodeName ) {
       return mNodes[i];
     }
@@ -315,9 +338,9 @@ dynamics::BodyNodeDynamics* DartLoader::getNode( std::string _nodeName ) {
  * @function readXml
  */
 std::string  DartLoader::readXmlToString( std::string _xmlFile ) {
-
+  
   std::string xml_string;
-
+  
   std::fstream xml_file( _xmlFile.c_str(), std::fstream::in );
   
   // Read xml
@@ -327,6 +350,6 @@ std::string  DartLoader::readXmlToString( std::string _xmlFile ) {
     xml_string += (line + "\n");
   }
   xml_file.close();
-
+  
   return xml_string;
 }

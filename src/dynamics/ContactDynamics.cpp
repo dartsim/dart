@@ -2,6 +2,7 @@
 
 #include "kinematics/BodyNode.h"
 #include "lcpsolver/LCPSolver.h"
+#include "kinematics/Shape.h"
 
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
@@ -58,14 +59,18 @@ namespace dynamics {
         // Add all body nodes into mCollisionChecker
         int rows = 0;
         int cols = 0;
+
         for (int i = 0; i < getNumSkels(); i++) {
             SkeletonDynamics* skel = mSkels[i];
             int nNodes = skel->getNumNodes();
 
             for (int j = 0; j < nNodes; j++) {
                 kinematics::BodyNode* node = skel->getNode(j);
-                mCollisionChecker->addCollisionSkeletonNode(node);
-                mBodyIndexToSkelIndex.push_back(i);
+                if (node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
+                {
+                    mCollisionChecker->addCollisionSkeletonNode(node);
+                    mBodyIndexToSkelIndex.push_back(i);
+                }
             }
 
             if (!mSkels[i]->getImmobileState()) {
