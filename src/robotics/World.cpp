@@ -100,56 +100,20 @@ namespace robotics {
    * @brief Add a pointer to a new object in the World
    */
   int World::addObject( Object* _object ) {
-    std::cout << "DEBUG: adding object: " << _object->getName() << std::endl;
-    
     // add item
     mObjects.push_back( _object );
     mSkeletons.push_back( _object );
 
-    std::cout << "DEBUG: pushed back object: " << _object->getName() << std::endl;
-
     _object->initDynamics();
-
-    std::cout << "DEBUG: init dynamics: " << _object->getName() << std::endl;
 
     // recreate collision dynamics object
     if (mCollisionHandle)
       delete mCollisionHandle;
     mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+
+    assert(mObjects.size() + mRobots.size() == mSkeletons.size());
     
     return mObjects.size();
-  }
-
-  int World::totalNumDofs()
-  {
-    int result = 0;
-    for( size_t i = 0; i < mRobots.size(); ++i ) {
-      result += mRobots[i]->getNumDofs();
-    }
-    //-- Objects
-    for( size_t i = 0; i < mObjects.size(); ++i ) {
-      result += mObjects[i]->getNumDofs();
-    }
-  }
-
-  // state is vector of doubles
-  // altnerating position and velocity for every dof in the world
-  // organized straight out of mskeletons
-  Eigen::VectorXd World::getState()
-  {
-    int curStateIndex = 0;
-    Eigen::VectorXd state = Eigen::VectorXd(5);
-    return state;
-  }
-
-  Eigen::VectorXd World::evalDeriv()
-  {
-    Eigen::VectorXd state = Eigen::VectorXd(5);
-    return state;
-  }
-
-  void World::setState(Eigen::VectorXd state)
-  {
   }
   
   /**
