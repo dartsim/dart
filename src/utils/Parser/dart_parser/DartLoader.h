@@ -86,12 +86,11 @@ class DartLoader {
 					      dynamics::SkeletonDynamics* _skel ); 
   
   // Member variables
-  dynamics::SkeletonDynamics* mRobot;
   std::vector<dynamics::BodyNodeDynamics*> mNodes;
   std::vector<kinematics::Joint*> mJoints;
-
-   std::string mWorldPath;
-   std::string mPath;
+  
+  std::string mWorldPath;
+  std::string mPath;
   
 };
 

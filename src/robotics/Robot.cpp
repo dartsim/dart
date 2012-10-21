@@ -472,6 +472,14 @@ namespace robotics {
     for(int i=0; i < getNumDofs(); i++)
       {  mCurrPose[i] = mDofs.at(i)->getValue();  }
 
+    for(int i=0; i<getNumNodes(); i++) {
+      mNodes.at(i)->updateTransform();
+    }
+    
+    for(int i=0; i<getNumNodes(); i++) {
+      mNodes.at(i)->updateFirstDerivatives();
+    }
+
     // Update parents first
     std::list<dynamics::BodyNodeDynamics*> nodeStack;
     dynamics::BodyNodeDynamics* u;
