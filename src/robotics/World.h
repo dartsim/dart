@@ -45,7 +45,10 @@
 #include <stdio.h>
 #include "Robot.h"
 #include "Object.h"
-#include <collision/CollisionSkeleton.h>
+#include <dynamics/SkeletonDynamics.h>
+#include <dynamics/ContactDynamics.h>
+#include <integration/Integrator.h>
+#include <integration/EulerIntegrator.h>
 
 namespace robotics {
 
@@ -55,8 +58,8 @@ namespace robotics {
   /**
    * @class World
    */
-  class World {
-
+  class World : public integration::IntegrableSystem {
+      
   public:
     World();
     virtual ~World();
@@ -70,12 +73,23 @@ namespace robotics {
     Object* getObject( int _i );
     Robot* getRobot( int _i );
     bool checkCollision();
+
+    /* for dynamics */
+    virtual Eigen::VectorXd getState(); /* integration */
+    virtual Eigen::VectorXd evalDeriv(); /* integration */
+    virtual void setState(Eigen::VectorXd state); /* integration */
       
   private:
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
-    collision_checking::SkeletonCollision mCollisionChecker;
-    
+
+    /* for dynamics */
+    double mTimeStep;           /* time step */
+    dynamics::ContactDynamics* mCollisionHandle; /* collisions during dynamics */
+    std::vector<dynamics::SkeletonDynamics*> mSkeletons;   /* easier organization */
+    integration::EulerIntegrator mIntegrator;    /* actually doing things */
+
+    int totalNumDofs();         /* calculate total number of degrees of freedom in the world */
   };
 
 } // namespace robotics

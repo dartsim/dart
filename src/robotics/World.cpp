@@ -41,6 +41,8 @@
 #include "World.h"
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
+#include <collision/CollisionSkeleton.h>
+#include <integration/EulerIntegrator.h>
 
 namespace robotics {
 
@@ -51,6 +53,9 @@ namespace robotics {
   World::World() {
     mRobots.resize(0);
     mObjects.resize(0);
+    mSkeletons.resize(0);
+
+    mTimeStep = .01;
   }
 
   /**
@@ -67,6 +72,8 @@ namespace robotics {
       delete mObjects[i];
     }
     mObjects.clear();
+
+    mSkeletons.clear();
   }
   
   /**
@@ -74,15 +81,16 @@ namespace robotics {
    * @brief Add a pointer to a new robot in the World
    */
   int World::addRobot( Robot* _robot ) {
+    // add item
     mRobots.push_back( _robot );
+    mSkeletons.push_back( _robot );
 
-    // add robot to collision skeleton
-    for (int j = 0; j < _robot->getNumNodes(); j++) {
-        kinematics::BodyNode* node = _robot->getNode(j);
-        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
-            mCollisionChecker.addCollisionSkeletonNode(node);
-        }
-    }
+    _robot->initDynamics();
+    
+    // recreate collision dynamics object
+    if (mCollisionHandle)
+      delete mCollisionHandle;
+    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
 
     return mRobots.size();
   }
@@ -92,19 +100,58 @@ namespace robotics {
    * @brief Add a pointer to a new object in the World
    */
   int World::addObject( Object* _object ) {
+    std::cout << "DEBUG: adding object: " << _object->getName() << std::endl;
+    
+    // add item
     mObjects.push_back( _object );
+    mSkeletons.push_back( _object );
 
-    // add object to collision skeleton
-    for(int j = 0; j < _object->getNumNodes(); j++) {
-        kinematics::BodyNode* node = _object->getNode(j);
-        if(node->getShape()->getShapeType() != kinematics::Shape::P_UNDEFINED) {
-            mCollisionChecker.addCollisionSkeletonNode(node);
-        }
-    }
+    std::cout << "DEBUG: pushed back object: " << _object->getName() << std::endl;
 
+    _object->initDynamics();
+
+    std::cout << "DEBUG: init dynamics: " << _object->getName() << std::endl;
+
+    // recreate collision dynamics object
+    if (mCollisionHandle)
+      delete mCollisionHandle;
+    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+    
     return mObjects.size();
   }
 
+  int World::totalNumDofs()
+  {
+    int result = 0;
+    for( size_t i = 0; i < mRobots.size(); ++i ) {
+      result += mRobots[i]->getNumDofs();
+    }
+    //-- Objects
+    for( size_t i = 0; i < mObjects.size(); ++i ) {
+      result += mObjects[i]->getNumDofs();
+    }
+  }
+
+  // state is vector of doubles
+  // altnerating position and velocity for every dof in the world
+  // organized straight out of mskeletons
+  Eigen::VectorXd World::getState()
+  {
+    int curStateIndex = 0;
+    Eigen::VectorXd state = Eigen::VectorXd(5);
+    return state;
+  }
+
+  Eigen::VectorXd World::evalDeriv()
+  {
+    Eigen::VectorXd state = Eigen::VectorXd(5);
+    return state;
+  }
+
+  void World::setState(Eigen::VectorXd state)
+  {
+  }
+  
   /**
    * @function printInfo
    * @brief Print info w.r.t. robots and objects in World
@@ -140,8 +187,12 @@ namespace robotics {
   }
 
   bool World::checkCollision() {
-    return mCollisionChecker.checkCollision(false);
+    return mCollisionHandle->getCollisionChecker()->checkCollision(false);
   }
 
 } // end namespace robotics
 
+
+// Local Variables:
+// c-basic-offset: 2
+// End:
