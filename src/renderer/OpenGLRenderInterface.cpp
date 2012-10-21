@@ -38,6 +38,7 @@
 #include "OpenGLRenderInterface.h"
 #include "utils/LoadOpengl.h"
 #include <iostream>
+#include <assimp/cimport.h>
 
 using namespace std;
 using namespace Eigen;
@@ -160,6 +161,7 @@ namespace renderer {
         f[3] = d;
     }
 
+    // This function is taken from the examples coming with assimp
     void applyMaterial(const struct aiMaterial *mtl)
     {
         float c[4];
@@ -225,31 +227,68 @@ namespace renderer {
             glEnable(GL_CULL_FACE);
     }
 
-    void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const aiScene *_mesh) {
-        const aiScene* scene = _mesh;
-        glBegin(GL_TRIANGLES);
-        for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
-            const aiMesh* mesh = scene->mMeshes[i];
-            applyMaterial(scene->mMaterials[mesh->mMaterialIndex]);
-            if(mesh->mNormals == NULL)
+
+    // This function is taken from the examples coming with assimp
+    void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
+        unsigned int i;
+        unsigned int n = 0, t;
+        aiMatrix4x4 m = nd->mTransformation;
+
+        // update transform
+        aiTransposeMatrix4(&m);
+        glPushMatrix();
+        glMultMatrixf((float*)&m);
+
+        // draw all meshes assigned to this node
+        for (; n < nd->mNumMeshes; ++n) {
+            const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
+
+            applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
+
+            if(mesh->mNormals == NULL) {
                 glDisable(GL_LIGHTING);
-            else
+            } else {
                 glEnable(GL_LIGHTING);
-            for (unsigned int j = 0; j < mesh->mNumFaces; j++) {
-                const aiFace* face = &mesh->mFaces[j];
-                for(unsigned int k = 0; k < face->mNumIndices; k++) {
-                    int index = face->mIndices[k];
+            }
+
+            for (t = 0; t < mesh->mNumFaces; ++t) {
+                const struct aiFace* face = &mesh->mFaces[t];
+                GLenum face_mode;
+
+                switch(face->mNumIndices) {
+                    case 1: face_mode = GL_POINTS; break;
+                    case 2: face_mode = GL_LINES; break;
+                    case 3: face_mode = GL_TRIANGLES; break;
+                    default: face_mode = GL_POLYGON; break;
+                }
+
+                glBegin(face_mode);
+
+                for(i = 0; i < face->mNumIndices; i++) {
+                    int index = face->mIndices[i];
                     if(mesh->mColors[0] != NULL)
                         glColor4fv((GLfloat*)&mesh->mColors[0][index]);
                     if(mesh->mNormals != NULL) 
                         glNormal3fv(&mesh->mNormals[index].x);
                     glVertex3fv(&mesh->mVertices[index].x);
                 }
+
+                glEnd();
             }
+
         }
-        glEnd();
+
+        // draw all children
+        for (n = 0; n < nd->mNumChildren; ++n) {
+            recursiveRender(sc, nd->mChildren[n]);
+        }
+
+        glPopMatrix();
     }
 
+    void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const aiScene *_mesh) {
+        recursiveRender(_mesh, _mesh->mRootNode);
+    }
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {
         glColor4d(_col[0], _col[1], _col[2], _col[3]);
