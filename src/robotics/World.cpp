@@ -87,9 +87,7 @@ namespace robotics {
 
     _robot->initDynamics();
     
-    // recreate collision dynamics object
-    if (mCollisionHandle)
-      delete mCollisionHandle;
+    // create collision dynamics object
     mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
 
     return mRobots.size();
@@ -106,9 +104,7 @@ namespace robotics {
 
     _object->initDynamics();
 
-    // recreate collision dynamics object
-    if (mCollisionHandle)
-      delete mCollisionHandle;
+    // create collision dynanmics object
     mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
 
     assert(mObjects.size() + mRobots.size() == mSkeletons.size());
