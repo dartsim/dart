@@ -11,3 +11,6 @@ ADD_LIBRARY(lcpsolver ${lcpsolver_srcs} ${lcpsolver_hdrs})
 SET_TARGET_PROPERTIES(lcpsolver PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 SET_TARGET_PROPERTIES(lcpsolver PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 
+INSTALL(FILES ${lcpsolver_hdrs} DESTINATION include/dart/lcpsolver)
+INSTALL(FILES ${lcpsolver_hpps} DESTINATION include/dart/lcpsolver)
+INSTALL(TARGETS lcpsolver DESTINATION lib)
