@@ -58,7 +58,7 @@ namespace robotics {
   /**
    * @class World
    */
-  class World : public integration::IntegrableSystem {
+  class World {
       
   public:
     World();
@@ -70,26 +70,22 @@ namespace robotics {
     
     inline int getNumObjects() { return mObjects.size(); }
     inline int getNumRobots() { return mRobots.size(); }
+    inline int getNumSkeletons() { return mSkeletons.size(); }
     Object* getObject( int _i );
     Robot* getRobot( int _i );
+    dynamics::SkeletonDynamics* getSkeleton( int _i );
     bool checkCollision();
 
-    /* for dynamics */
-    virtual Eigen::VectorXd getState(); /* integration */
-    virtual Eigen::VectorXd evalDeriv(); /* integration */
-    virtual void setState(Eigen::VectorXd state); /* integration */
-      
+    /* TODO: figure out a way for this to not be public */
+    dynamics::ContactDynamics* mCollisionHandle;
+
   private:
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
+    std::vector<dynamics::SkeletonDynamics*> mSkeletons;
 
-    /* for dynamics */
-    double mTimeStep;           /* time step */
-    dynamics::ContactDynamics* mCollisionHandle; /* collisions during dynamics */
-    std::vector<dynamics::SkeletonDynamics*> mSkeletons;   /* easier organization */
-    integration::EulerIntegrator mIntegrator;    /* actually doing things */
 
-    int totalNumDofs();         /* calculate total number of degrees of freedom in the world */
+    double mTimeStep;
   };
 
 } // namespace robotics

@@ -150,6 +150,13 @@ namespace robotics {
     return mRobots[_i];
   }
 
+  /**
+   * @function getSkeleton
+   */
+  dynamics::SkeletonDynamics* World::getSkeleton( int _i ) {
+    return mSkeletons[_i];
+  }
+
   bool World::checkCollision() {
     return mCollisionHandle->getCollisionChecker()->checkCollision(false);
   }
