@@ -17,6 +17,9 @@ target_link_libraries( parser urdfdom_model urdfdom_model_state urdfdom_sensor t
 
  set_target_properties (parser PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
  set_target_properties (parser PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+IF(MSVC)
+  SET_TARGET_PROPERTIES(parser PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+ENDIF()
   install (FILES ${parser_hdrs} DESTINATION include/dart/utils/Parser/dartParser )
   install (TARGETS parser ARCHIVE DESTINATION lib)
 
