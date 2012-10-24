@@ -36,5 +36,8 @@ foreach( APPTARGET
                 FOLDER Apps
                 #EXCLUDE_FROM_DEFAULT_BUILD ON
                 )
+        IF(MSVC)
+            SET_TARGET_PROPERTIES(${APPTARGET} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+        ENDIF()
     ENDIF(TARGET ${APPTARGET})
 endforeach(APPTARGET)

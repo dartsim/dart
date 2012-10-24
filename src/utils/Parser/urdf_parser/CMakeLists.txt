@@ -25,6 +25,9 @@ target_link_libraries(urdfdom_model tinyxmlstatic ${Boost_LIBRARIES} )
 
 set_target_properties (urdfdom_model PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_model PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+IF(MSVC)
+  SET_TARGET_PROPERTIES(urdfdom_model PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+ENDIF()
   install (FILES ${urdfdom_model_hdrs} DESTINATION include/dart/utils/Parser/urdf_parser )
   install (TARGETS urdfdom_model  DESTINATION lib)
 
@@ -34,6 +37,9 @@ target_link_libraries(urdfdom_sensor ${Boost_LIBRARIES})
 
 set_target_properties (urdfdom_sensor  PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_sensor PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+IF(MSVC)
+  SET_TARGET_PROPERTIES(urdfdom_sensor PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+ENDIF()
   install (TARGETS urdfdom_sensor  DESTINATION lib)
 
 #-- urdfdom_model_state
@@ -42,6 +48,9 @@ target_link_libraries(urdfdom_model_state  ${Boost_LIBRARIES})
 
 set_target_properties (urdfdom_model_state PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties (urdfdom_model_state PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+IF(MSVC)
+  SET_TARGET_PROPERTIES(urdfdom_model_state PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+ENDIF()
   install (FILES ${urdf_model_state_srcs} DESTINATION include/dart/utils/Parser/urdf_parser )
   install (TARGETS urdfdom_model_state  DESTINATION lib)
 
