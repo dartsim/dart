@@ -23,7 +23,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "0")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
 SET(CPACK_PACKAGE_NAME "dart")
 SET(CPACK_SYSTEM_NAME "amd64")
-SET(CPACK_DEBIAN_PACKAGE_DEPENDS "glutg3 (>= 3.7), glutg3-dev (>= 3.7), cmake (>=2.8), cmake-curses-gui (>=2.8), libflann1.7-dev (>=1.7), libboost-dev")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, cmake (>=2.8), cmake-curses-gui (>=2.8), libboost-dev")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
