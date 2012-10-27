@@ -55,7 +55,8 @@ namespace robotics {
     mObjects.resize(0);
     mSkeletons.resize(0);
 
-    mTimeStep = .01;
+    mGravity = Eigen::Vector3d(0, 0, -9.8);
+    mTimeStep = 0.001;
   }
 
   /**
@@ -76,6 +77,13 @@ namespace robotics {
     mSkeletons.clear();
   }
   
+  void World::rebuildCollision()
+  {
+    // for(unsigned int i = 0; i < mSkeletons.size(); i++)
+    //   mSkeletons[i]->initDynamics();
+    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+  }
+
   /**
    * @function addRobot
    * @brief Add a pointer to a new robot in the World
@@ -88,7 +96,9 @@ namespace robotics {
     _robot->initDynamics();
     
     // create collision dynamics object
-    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+    // rebuildCollision();
+
+    assert(mObjects.size() + mRobots.size() == mSkeletons.size());
 
     return mRobots.size();
   }
@@ -105,7 +115,7 @@ namespace robotics {
     _object->initDynamics();
 
     // create collision dynanmics object
-    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+    // rebuildCollision();
 
     assert(mObjects.size() + mRobots.size() == mSkeletons.size());
     

@@ -79,13 +79,15 @@ namespace robotics {
     /* TODO: figure out a way for this to not be public */
     dynamics::ContactDynamics* mCollisionHandle;
 
+    Eigen::Vector3d mGravity;   /* meters per second */
+    double mTimeStep;           /* in seconds */
+
+    void rebuildCollision();
+
   private:
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
     std::vector<dynamics::SkeletonDynamics*> mSkeletons;
-
-
-    double mTimeStep;
   };
 
 } // namespace robotics
