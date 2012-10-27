@@ -9,9 +9,12 @@ FILE(GLOB kinematics_hpps "*.hpp")
 
 # Library 
 ADD_LIBRARY(kinematics ${kinematics_srcs} ${kinematics_hdrs} ${kinematics_hpps})
-TARGET_LINK_LIBRARIES(kinematics utils tinyxml2)
+TARGET_LINK_LIBRARIES(kinematics utils tinyxml2 assimp)
 SET_TARGET_PROPERTIES(kinematics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 SET_TARGET_PROPERTIES(kinematics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+IF(MSVC)
+  SET_TARGET_PROPERTIES(kinematics PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+ENDIF()
 
 INSTALL(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics)
 INSTALL(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics)
