@@ -153,8 +153,8 @@ namespace robotics {
     return mSkeletons[_i];
   }
 
-  bool World::checkCollision() {
-    return mCollisionHandle->getCollisionChecker()->checkCollision(false);
+  bool World::checkCollision(bool checkAllCollisions) {
+    return mCollisionHandle->getCollisionChecker()->checkCollision(checkAllCollisions, false);
   }
 
 } // end namespace robotics

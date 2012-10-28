@@ -112,7 +112,7 @@ namespace collision_checking {
         inline ContactPoint& getContact(int idx) { return mContactPointList[idx]; }
         inline int getNumContact(){ return mContactPointList.size();}
         inline int getNumTriangleIntersection(){return mNumTriIntersection;}
-        bool checkCollision(bool _calculateContactPoints = true);
+        bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
         void draw();
         CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *_bodyNode){
             if(mBodyNodeHash.find(_bodyNode)!=mBodyNodeHash.end())

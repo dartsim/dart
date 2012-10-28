@@ -74,7 +74,7 @@ namespace robotics {
     Object* getObject( int _i );
     Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );
-    bool checkCollision();
+    bool checkCollision(bool checkAllCollisions = false);
 
     /* TODO: figure out a way for this to not be public */
     dynamics::ContactDynamics* mCollisionHandle;

@@ -254,18 +254,26 @@ namespace collision_checking{
         }
     }
 
-    bool SkeletonCollision::checkCollision(bool _calculateContactPoints) {
+    bool SkeletonCollision::checkCollision(bool _checkAllCollisions, bool _calculateContactPoints) {
         int num_max_contact = 100;
         clearAllContacts();
         mNumTriIntersection = 0;
+        for (int i = 0; i < mCollisionSkeletonNodeList.size(); i++) {
+            mCollisionSkeletonNodeList[i]->mBodyNode->setColliding(false);
+        }
         for (int i = 0; i < mCollisionSkeletonNodeList.size(); i++) {
             for (int j = i + 1; j < mCollisionSkeletonNodeList.size(); j++) {
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[j]->mBodyNode || mCollisionSkeletonNodeList[j]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode)
                     continue;
                 if (mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == mCollisionSkeletonNodeList[j]->mBodyNode->getSkel())
                     continue;
-                mNumTriIntersection += mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
-                if(!_calculateContactPoints && mNumTriIntersection > 0) {
+                const int numTriIntersection = mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
+                mNumTriIntersection += numTriIntersection;
+                if(numTriIntersection > 0) {
+                    mCollisionSkeletonNodeList[i]->mBodyNode->setColliding(true);
+                    mCollisionSkeletonNodeList[j]->mBodyNode->setColliding(true);
+                }
+                if(!_checkAllCollisions && mNumTriIntersection > 0) {
                     return true;
                 }
             }

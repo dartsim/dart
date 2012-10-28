@@ -155,6 +155,9 @@ namespace kinematics {
         inline Joint* getParentJoint() const { return mJointParent; }
         void setParentJoint(Joint *_p);
 
+        inline void setColliding(bool _colliding) { mColliding = _colliding; }
+        inline bool getColliding() { return mColliding; }
+
         // wrapper functions for joints
         BodyNode* getChildNode(int _idx) const;
         int getNumLocalDofs() const;
@@ -176,6 +179,7 @@ namespace kinematics {
         Joint *mJointParent;    ///< Joint connecting to parent node
         BodyNode *mNodeParent;      ///< Parent node
         std::vector<Marker *> mMarkers; ///< List of markers associated
+        bool mColliding; ///< whether the node is currently in collision with another node
 
         std::vector<int> mDependentDofs; ///< A list of dependent dof indices 
         int mNumRootTrans;  ///< keep track of the root translation DOFs only if they are the first ones

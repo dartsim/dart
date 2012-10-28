@@ -30,7 +30,7 @@ namespace dynamics {
         if (getNumTotalDofs() == 0)
             return;
         mCollisionChecker->clearAllContacts();
-        mCollisionChecker->checkCollision(true);
+        mCollisionChecker->checkCollision(true, true);
 
         for (int i = 0; i < getNumSkels(); i++)
             mConstrForces[i].setZero();
