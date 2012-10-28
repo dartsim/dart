@@ -113,6 +113,7 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     world->addRobot( robot );
   }
   
+  world->rebuildCollision();
   return world;
 }
 
