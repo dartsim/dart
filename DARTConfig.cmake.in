@@ -40,34 +40,21 @@ FIND_PACKAGE(Boost 1.42.0 REQUIRED)
 add_definitions( -DBOOST_ALL_DYN_LINK )
 set(DART_LIBRARY_DIRS "${DART_ROOT_DIR}/lib" ${Boost_LIBRARY_DIRS})
 
-SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor  robotics  collision dynamics kinematics renderer utils tinyxml integration lcpsolver )
+SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor robotics  collision dynamics kinematics renderer utils tinyxml integration lcpsolver ccd fcl )
 FOREACH( DART_LIB ${DART_LIBS} )
-    find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
-        HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
-        PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/lib )
-    SET(DART_LIBRARY ${DART_LIBRARY} ${DART_${DART_LIB}_LIBRARY})
-    SET(DART_VAR_NAMES ${DART_VAR_NAMES} DART_${DART_LIB}_LIBRARY)
+    set(DART_LIBRARIES ${DART_LIBRARIES} optimized ${DART_LIB} debug ${DART_LIB}d)
 ENDFOREACH(DART_LIB)
 
-SET(DART_LIBRARIES ${DART_LIBRARY})
-
-SET( DART_DEP_LIBS ccd fcl assimp )
-FOREACH( DART_LIB ${DART_DEP_LIBS} )
-    find_library(DART_${DART_LIB}_LIBRARY ${DART_LIB} ${DART_LIB}d
-        HINTS ${PC_DART_LIBDIR} ${PC_DART_LIBRARY_DIRS}
-        PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/lib )
-    SET(DART_LIBRARIES ${DART_LIBRARIES} ${DART_${DART_LIB}_LIBRARY})
-    SET(DART_VAR_NAMES ${DART_VAR_NAMES} DART_${DART_LIB}_LIBRARY)
+SET( DART_LIBS_NO_DEBUG assimp )
+FOREACH( DART_LIB ${DART_LIBS_NO_DEBUG} )
+    set(DART_LIBRARIES ${DART_LIBRARIES} ${DART_LIB})
 ENDFOREACH(DART_LIB)
-
 
 set(DART_INCLUDE_DIRS ${DART_INCLUDE_DIR} ${DART_EIGEN_INCLUDE_DIR} ${CCD_INCLUDE_DIR} ${FCL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-#set(DART_LIBRARIES ${DART_LIBRARY} tinyxml2 tinyxml assimp optimized collision optimized dynamics optimized geometry optimized kinematics optimized planning optimized renderer optimized utils debug collisiond debug dynamicsd debug geometryd debug kinematicsd debug planningd debug rendererd debug utilsd)
-
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG
-    DART_LIBRARY DART_INCLUDE_DIR DART_EIGEN_INCLUDE_DIR CCD_INCLUDE_DIR FCL_INCLUDE_DIR ${DART_VAR_NAMES})
+    DART_LIBRARY DART_INCLUDE_DIR DART_EIGEN_INCLUDE_DIR CCD_INCLUDE_DIR FCL_INCLUDE_DIR)
 
 mark_as_advanced(DART_LIBRARY DART_INCLUDE_DIR)
 
