@@ -74,8 +74,9 @@ Runge-Kutta and fourth-order Runge Kutta.
 
 #include <vector>
 #include <Eigen/Dense>
-#include "renderer/RenderInterface.h"
 #include "utils/EigenHelper.h"
+
+namespace renderer { class RenderInterface; };
 
 namespace kinematics {
 #define MAX_NODE3D_NAME 128

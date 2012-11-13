@@ -42,7 +42,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-#include "renderer/RenderInterface.h"
+namespace renderer { class RenderInterface; };
 
 namespace kinematics {
 #define MAX_TRANSFORMATION_NAME 182

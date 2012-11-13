@@ -4,6 +4,8 @@
 #include <cmath>
 #include "utils/LoadOpengl.h"
 #include "utils/UtilsMath.h"
+#include "kinematics/BodyNode.h"
+#include "fcl/collision.h"
 
 using namespace std;
 using namespace Eigen;

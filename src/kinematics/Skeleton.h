@@ -40,7 +40,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "renderer/RenderInterface.h"
+
+namespace renderer { class RenderInterface; };
 
 namespace kinematics {
 

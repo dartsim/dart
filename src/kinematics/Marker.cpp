@@ -39,6 +39,7 @@
 using namespace Eigen;
 
 #include "BodyNode.h"
+#include "renderer/RenderInterface.h"
 
 
 namespace kinematics {

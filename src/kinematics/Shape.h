@@ -39,11 +39,12 @@
 #define KINEMATICS_SHAPE_H
 
 #include <Eigen/Dense>
-#include <assimp/scene.h>
 
 namespace renderer {
     class RenderInterface;
 }
+
+extern "C" { struct aiScene; }
 
 namespace kinematics {
     class Transformation;

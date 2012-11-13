@@ -45,7 +45,7 @@
 #include <vector>
 #include "dynamics/SkeletonDynamics.h"
 
-class aiScene;
+extern "C" { struct aiScene; }
 
 namespace robotics {
   #define MAX_ROBOT_NAME 128

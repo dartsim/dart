@@ -9,7 +9,6 @@
 #ifndef _COLLISION_SHAPES_H_
 #define _COLLISION_SHAPES_H_
 
-#include "fcl/collision.h"
 #include "fcl/BVH/BVH_model.h"
 #include <assimp/scene.h>
 

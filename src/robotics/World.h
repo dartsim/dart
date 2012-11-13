@@ -42,13 +42,12 @@
 #define __DART_ROBOTICS_World_H__
 
 #include <vector>
-#include <stdio.h>
-#include "Robot.h"
-#include "Object.h"
-#include <dynamics/SkeletonDynamics.h>
-#include <dynamics/ContactDynamics.h>
-#include <integration/Integrator.h>
-#include <integration/EulerIntegrator.h>
+#include <Eigen/Core>
+
+namespace dynamics {
+  class SkeletonDynamics;
+  class ContactDynamics;
+}
 
 namespace robotics {
 

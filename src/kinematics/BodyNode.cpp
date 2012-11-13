@@ -45,6 +45,7 @@
 #include "Transformation.h"
 #include "utils/Misc.h"
 #include "utils/UtilsMath.h"
+#include "renderer/RenderInterface.h"
 
 using namespace std;
 using namespace Eigen;

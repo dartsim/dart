@@ -37,6 +37,7 @@
 
 #include "TrfmRotateQuat.h"
 #include "utils/UtilsRotation.h"
+#include "renderer/RenderInterface.h"
 
 #include <cassert>
 using namespace std;

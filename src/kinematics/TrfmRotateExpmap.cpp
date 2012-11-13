@@ -39,6 +39,7 @@
 #include "Dof.h"
 #include "utils/UtilsRotation.h"
 #include "utils/UtilsMath.h"
+#include "renderer/RenderInterface.h"
 
 
 using namespace std;

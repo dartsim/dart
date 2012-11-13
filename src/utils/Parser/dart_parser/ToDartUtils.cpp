@@ -5,6 +5,11 @@
  * @date 2012 / 10 / 12
  */
 #include "DartLoader.h"
+#include <dynamics/SkeletonDynamics.h>
+#include <kinematics/Joint.h>
+#include <kinematics/BodyNode.h>
+#include <dynamics/BodyNodeDynamics.h>
+#include "../urdf_parser/urdf_parser.h"
 
 kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf::Link> _rootLink,
 						    dynamics::SkeletonDynamics* _skel,

@@ -5,27 +5,29 @@
 #ifndef DART_LOADER_H
 #define DART_LOADER_H
 
-#include "../urdf_parser/urdf_parser.h"
-
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/SkeletonDynamics.h"
-#include "robotics/World.h"
-#include "robotics/Robot.h"
-#include "robotics/Object.h"
-#include "utils/Paths.h"
-
-// To load Mesh and Skel
-#include  <kinematics/Joint.h>
-#include <kinematics/ShapeMesh.h>
-#include <kinematics/Transformation.h>
-#include <kinematics/TrfmTranslate.h>
-#include <kinematics/TrfmRotateEuler.h>
-#include <dynamics/BodyNodeDynamics.h>
-#include <kinematics/Dof.h>
-#include <robotics/Constants.h>
-
-
+#include <Eigen/Core>
+#include <vector>
 #include <string>
+#include <boost/shared_ptr.hpp>
+
+namespace dynamics {
+	class SkeletonDynamics;
+	class BodyNodeDynamics;
+}
+namespace robotics {
+	class World;
+	class Robot;
+	class Object;
+}
+namespace kinematics {
+	class Joint;
+}
+namespace urdf {
+	class ModelInterface;
+	class Link;
+	class Joint;
+}
+
 
 // Type of DOF Enum
 enum TypeOfDOF {

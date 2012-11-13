@@ -44,7 +44,7 @@
 #include <Eigen/Geometry>
 #include "dynamics/SkeletonDynamics.h"
 
-class aiScene;
+extern "C" { struct aiScene; }
 
 namespace robotics {
   #define MAX_Object_NAME 128

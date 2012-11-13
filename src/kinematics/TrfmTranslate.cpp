@@ -37,6 +37,7 @@
 
 #include "TrfmTranslate.h"
 #include "Dof.h"
+#include "renderer/RenderInterface.h"
 
 
 #include <iostream>

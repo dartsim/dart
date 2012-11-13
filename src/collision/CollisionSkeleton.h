@@ -38,13 +38,14 @@
 #ifndef COLLISION_SKELTON_H
 #define COLLISION_SKELTON_H
 
-#include "fcl/collision.h"
 #include "fcl/BVH/BVH_model.h"
-#include "kinematics/BodyNode.h"
 #include "Eigen/Dense"
 #include <vector>
 #include "tri_tri_intersection_test.h"
 #include <map>
+
+namespace kinematics { class BodyNode; };
+namespace fcl { class CollisionResult; };
 
 namespace collision_checking {
     class CollisionSkeletonNode;

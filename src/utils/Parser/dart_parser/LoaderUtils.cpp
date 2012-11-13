@@ -4,6 +4,15 @@
  */
 
 #include "DartLoader.h"
+#include <dynamics/SkeletonDynamics.h>
+#include <kinematics/TrfmTranslate.h>
+#include <kinematics/TrfmRotateEuler.h>
+#include <kinematics/Dof.h>
+#include <kinematics/Joint.h>
+#include <kinematics/Shape.h>
+#include <kinematics/ShapeMesh.h>
+#include <dynamics/BodyNodeDynamics.h>
+
 
 /**
  * @function add_XyzRpy

@@ -39,7 +39,8 @@
 #define KINEMATICS_MARKER_H
 
 #include <Eigen/Dense>
-#include "renderer/RenderInterface.h"
+
+namespace renderer { class RenderInterface; };
 
 namespace kinematics {
 #define MAX_MARKER_NAME 256

@@ -37,6 +37,7 @@
 
 #include "TrfmRotateEuler.h"
 #include "Dof.h"
+#include "renderer/RenderInterface.h"
 
 using namespace Eigen;
 

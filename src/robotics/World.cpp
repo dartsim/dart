@@ -43,6 +43,10 @@
 #include <kinematics/Shape.h>
 #include <collision/CollisionSkeleton.h>
 #include <integration/EulerIntegrator.h>
+#include <dynamics/ContactDynamics.h>
+#include <dynamics/SkeletonDynamics.h>
+#include <robotics/Robot.h>
+#include <robotics/Object.h>
 
 namespace robotics {
 
