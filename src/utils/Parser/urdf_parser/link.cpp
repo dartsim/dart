@@ -45,6 +45,8 @@
 
 namespace urdf{
 
+const bool debug = false;
+
 bool parsePose(Pose &pose, TiXmlElement* xml);
 
 bool parseMaterial(Material &material, TiXmlElement *config)
@@ -56,7 +58,7 @@ bool parseMaterial(Material &material, TiXmlElement *config)
 
   if (!config->Attribute("name"))
   {
-    printf("Material must contain a name attribute \n");
+    if(debug) printf ("Material must contain a name attribute \n");
     return false;
   }
   
@@ -106,7 +108,7 @@ bool parseSphere(Sphere &s, TiXmlElement *c)
   s.type = Geometry::SPHERE;
   if (!c->Attribute("radius"))
   {
-    printf("Sphere shape must have a radius attribute \n");
+    if(debug) printf ("Sphere shape must have a radius attribute \n");
     return false;
   }
 
@@ -132,7 +134,7 @@ bool parseBox(Box &b, TiXmlElement *c)
   b.type = Geometry::BOX;
   if (!c->Attribute("size"))
   {
-    printf("Box shape has no size attribute \n");
+    if(debug) printf ("Box shape has no size attribute \n");
     return false;
   }
   try
@@ -156,7 +158,7 @@ bool parseCylinder(Cylinder &y, TiXmlElement *c)
   if (!c->Attribute("length") ||
       !c->Attribute("radius"))
   {
-    printf("Cylinder shape must have both length and radius attributes \n");
+    if(debug) printf ("Cylinder shape must have both length and radius attributes \n");
     return false;
   }
 
@@ -168,7 +170,7 @@ bool parseCylinder(Cylinder &y, TiXmlElement *c)
   {
     std::stringstream stm;
     stm << "length [" << c->Attribute("length") << "] is not a valid float";
-    printf(stm.str().c_str());
+    if(debug) printf (stm.str().c_str());
     return false;
   }
 
@@ -180,7 +182,7 @@ bool parseCylinder(Cylinder &y, TiXmlElement *c)
   {
     std::stringstream stm;
     stm << "radius [" << c->Attribute("radius") << "] is not a valid float";
-    printf(stm.str().c_str());
+    if(debug) printf (stm.str().c_str());
     return false;
   }
   return true;
@@ -193,7 +195,7 @@ bool parseMesh(Mesh &m, TiXmlElement *c)
 
   m.type = Geometry::MESH;
   if (!c->Attribute("filename")) {
-    printf("Mesh must contain a filename attribute \n");
+    if(debug) printf ("Mesh must contain a filename attribute \n");
     return false;
   }
 
@@ -205,7 +207,7 @@ bool parseMesh(Mesh &m, TiXmlElement *c)
     }
     catch (ParseError &e) {
       m.scale.clear();
-      printf("Mesh scale was specified, but could not be parsed: %s", e.what());
+      if(debug) printf ("Mesh scale was specified, but could not be parsed: %s", e.what());
       return false;
     }
   }
@@ -224,7 +226,7 @@ boost::shared_ptr<Geometry> parseGeometry(TiXmlElement *g)
   TiXmlElement *shape = g->FirstChildElement();
   if (!shape)
   {
-    printf("Geometry tag contains no child element. \n");
+    if(debug) printf ("Geometry tag contains no child element. \n");
     return geom;
   }
 
@@ -259,7 +261,7 @@ boost::shared_ptr<Geometry> parseGeometry(TiXmlElement *g)
   }
   else
   {
-    printf("Unknown geometry type '%s' \n", type_name.c_str());
+    if(debug) printf ("Unknown geometry type '%s' \n", type_name.c_str());
     return geom;
   }
   
@@ -281,12 +283,12 @@ bool parseInertial(Inertial &i, TiXmlElement *config)
   TiXmlElement *mass_xml = config->FirstChildElement("mass");
   if (!mass_xml)
   {
-    printf("Inertial element must have a mass element \n");
+    if(debug) printf ("Inertial element must have a mass element \n");
     return false;
   }
   if (!mass_xml->Attribute("value"))
   {
-    printf("Inertial: mass element must have value attribute \n");
+    if(debug) printf ("Inertial: mass element must have value attribute \n");
     return false;
   }
 
@@ -299,21 +301,21 @@ bool parseInertial(Inertial &i, TiXmlElement *config)
     std::stringstream stm;
     stm << "Inertial: mass [" << mass_xml->Attribute("value")
         << "] is not a float";
-    printf(stm.str().c_str());
+    if(debug) printf (stm.str().c_str());
     return false;
   }
 
   TiXmlElement *inertia_xml = config->FirstChildElement("inertia");
   if (!inertia_xml)
   {
-    printf("Inertial element must have inertia element \n");
+    if(debug) printf ("Inertial element must have inertia element \n");
     return false;
   }
   if (!(inertia_xml->Attribute("ixx") && inertia_xml->Attribute("ixy") && inertia_xml->Attribute("ixz") &&
         inertia_xml->Attribute("iyy") && inertia_xml->Attribute("iyz") &&
         inertia_xml->Attribute("izz")))
   {
-    printf("Inertial: inertia element must have ixx,ixy,ixz,iyy,iyz,izz attributes \n");
+    if(debug) printf ("Inertial: inertia element must have ixx,ixy,ixz,iyy,iyz,izz attributes \n");
     return false;
   }
   try
@@ -335,7 +337,7 @@ bool parseInertial(Inertial &i, TiXmlElement *config)
         << " iyy [" << inertia_xml->Attribute("iyy") << "]"
         << " iyz [" << inertia_xml->Attribute("iyz") << "]"
         << " izz [" << inertia_xml->Attribute("izz") << "]";
-    printf(stm.str().c_str());
+    if(debug) printf (stm.str().c_str());
     return false;
   }
   return true;
@@ -363,7 +365,7 @@ bool parseVisual(Visual &vis, TiXmlElement *config)
   if (mat) {
     // get material name
     if (!mat->Attribute("name")) {
-      printf("Visual material must contain a name attribute \n");
+      if(debug) printf ("Visual material must contain a name attribute \n");
       return false;
     }
     vis.material_name = mat->Attribute("name");
@@ -374,7 +376,7 @@ bool parseVisual(Visual &vis, TiXmlElement *config)
     {
       //vis.material.reset();
       //return false;
-      printf("material has only name, actual material definition may be in the model \n");
+      if(debug) printf ("material has only name, actual material definition may be in the model \n");
     }
   }
   
@@ -423,7 +425,7 @@ bool parseLink(Link &link, TiXmlElement* config)
   const char *name_char = config->Attribute("name");
   if (!name_char)
   {
-    printf("No name given for the link. \n");
+    if(debug) printf ("No name given for the link. \n");
     return false;
   }
   link.name = std::string(name_char);
@@ -435,7 +437,7 @@ bool parseLink(Link &link, TiXmlElement* config)
     link.inertial.reset(new Inertial());
     if (!parseInertial(*link.inertial, i))
     {
-      printf("Could not parse inertial element for Link [%s] \n", link.name.c_str());
+      if(debug) printf ("Could not parse inertial element for Link [%s] \n", link.name.c_str());
       return false;
     }
   }
@@ -455,17 +457,17 @@ bool parseLink(Link &link, TiXmlElement* config)
         viss.reset(new std::vector<boost::shared_ptr<Visual > >);
         // new group name, create vector, add vector to map and add Visual to the vector
         link.visual_groups.insert(make_pair(vis->group_name,viss));
-        printf("successfully added a new visual group name '%s' \n",vis->group_name.c_str());
+        if(debug) printf ("successfully added a new visual group name '%s' \n",vis->group_name.c_str());
       }
       
       // group exists, add Visual to the vector in the map
       viss->push_back(vis);
-      printf("successfully added a new visual under group name '%s' \n",vis->group_name.c_str());
+      if(debug) printf ("successfully added a new visual under group name '%s' \n",vis->group_name.c_str());
     }
     else
     {
       vis.reset();
-      printf("Could not parse visual element for Link [%s] \n", link.name.c_str());
+      if(debug) printf ("Could not parse visual element for Link [%s] \n", link.name.c_str());
       return false;
     }
   }
@@ -507,17 +509,17 @@ bool parseLink(Link &link, TiXmlElement* config)
         cols.reset(new std::vector<boost::shared_ptr<Collision > >);
         // new group name, create vector, add vector to map and add Collision to the vector
         link.collision_groups.insert(make_pair(col->group_name,cols));
-        printf("successfully added a new collision group name '%s' \n",col->group_name.c_str());
+        if(debug) printf ("successfully added a new collision group name '%s' \n",col->group_name.c_str());
       }
 
       // group exists, add Collision to the vector in the map
       cols->push_back(col);
-      printf("successfully added a new collision under group name '%s' \n",col->group_name.c_str());
+      if(debug) printf ("successfully added a new collision under group name '%s' \n",col->group_name.c_str());
     }
     else
     {
       col.reset();
-      printf("Could not parse collision element for Link [%s] \n",  link.name.c_str());
+      if(debug) printf ("Could not parse collision element for Link [%s] \n",  link.name.c_str());
       return false;
     }
   }
@@ -529,17 +531,17 @@ bool parseLink(Link &link, TiXmlElement* config)
 
   if (!default_collision)
   {
-    printf("No 'default' collision group for Link '%s' \n", link.name.c_str());
+    if(debug) printf ("No 'default' collision group for Link '%s' \n", link.name.c_str());
   }
   else if (default_collision->empty())
   {
-    printf("'default' collision group is empty for Link '%s' \n", link.name.c_str());
+    if(debug) printf ("'default' collision group is empty for Link '%s' \n", link.name.c_str());
   }
   else
   {
     if (default_collision->size() > 1)
     {
-      printf("'default' collision group has %d collisions for Link '%s', taking the first one as default \n",(int)default_collision->size(), link.name.c_str());
+      if(debug) printf ("'default' collision group has %d collisions for Link '%s', taking the first one as default \n",(int)default_collision->size(), link.name.c_str());
     }
     link.collision = (*default_collision->begin());
   }
@@ -625,7 +627,7 @@ bool exportGeometry(boost::shared_ptr<Geometry> &geom, TiXmlElement *xml)
   }
   else
   {
-    printf("geometry not specified, I'll make one up for you! \n");
+    if(debug) printf ("geometry not specified, I'll make one up for you! \n");
     Sphere *s = new Sphere();
     s->radius = 0.03;
     geom.reset(s);

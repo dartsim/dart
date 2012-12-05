@@ -1,3 +1,6 @@
+thirdparty/fcl/fcl.pc
+thirdparty/fcl/include/fcl/config.h
+build/
 syntax: glob
 CMakeFiles*
 CMakeCache.txt

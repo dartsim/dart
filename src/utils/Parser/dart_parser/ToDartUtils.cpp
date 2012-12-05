@@ -18,7 +18,7 @@ kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf
   // Parent will be NULL. Get root node as child  
   dynamics::BodyNodeDynamics* rootLoadedNode = getNode( _rootLink->name );
   kinematics::Joint* rootLoadedJoint;
-  printf("Root loaded name: %s \n", _rootLink->name.c_str());
+  if(debug) printf ("Root loaded name: %s \n", _rootLink->name.c_str());
 
   if( _createdDummyRoot == false ) {
 
@@ -33,8 +33,8 @@ kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf
 
   else {
     // This body node should connect with dummy Root
-    if( _skel->getRoot() == NULL ) { printf("[X] You did not create the dummy Root! \n"); }
-    printf("Created dummy node name: %s \n", _skel->getRoot()->getName() );
+    if( _skel->getRoot() == NULL ) { if(debug) printf ("[X] You did not create the dummy Root! \n"); }
+    if(debug) printf ("Created dummy node name: %s \n", _skel->getRoot()->getName() );
     rootLoadedJoint = new kinematics::Joint( _skel->getRoot(),
 					     rootLoadedNode,
 					     "RootLoadedJoint" );
@@ -65,7 +65,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   const char* jointName = ( _jt->name).c_str();
   dynamics::BodyNodeDynamics* parent = getNode( _jt->parent_link_name );
   dynamics::BodyNodeDynamics* child = getNode( _jt->child_link_name );
-  printf("Joint: %s Parent: %s child : %s \n",   jointName, parent->getName(), 
+  if(debug) printf ("Joint: %s Parent: %s child : %s \n",   jointName, parent->getName(), 
 	 child->getName() );
   // Create joint
   kinematics::Joint* joint = new kinematics::Joint( parent,
@@ -89,7 +89,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
       if( _jt->axis.x == 1  || _jt->axis.x == -1 ) { axis = GOLEM_ROLL; }
       else if( _jt->axis.y == 1 || _jt->axis.y == -1 ) { axis = GOLEM_PITCH; }
       else if( _jt->axis.z == 1 || _jt->axis.z == -1  ) { axis = GOLEM_YAW; }
-      else { printf("[ERROR] No axis defined for Revolute DOF! \n"); }
+      else { if(debug) printf ("[ERROR] No axis defined for Revolute DOF! \n"); }
     }
     // Prismatic
     else if( _jt->type == urdf::Joint::PRISMATIC ) {
@@ -97,7 +97,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
       if( _jt->axis.x == 1 || _jt->axis.x == -1  ) { axis = GOLEM_X; }
       else if( _jt->axis.y == 1 || _jt->axis.y == -1  ) { axis = GOLEM_Y; }
       else if( _jt->axis.z == 1 || _jt->axis.z == -1 ) { axis = GOLEM_Z; }
-      else { printf(" [ERROR] No axis defined for Prismatic DOF! \n"); }
+      else { if(debug) printf (" [ERROR] No axis defined for Prismatic DOF! \n"); }
     }
     
     vmin = _jt->limits->lower;
@@ -108,12 +108,12 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   
   // Fixed, do not add DOF
   else if( _jt->type == urdf::Joint::FIXED ) {
-    printf("Fixed joint: %s \n", jointName );
+    if(debug) printf ("Fixed joint: %s \n", jointName );
   }
   
   // None of the above
   else {
-    printf("[createDartJoint] ERROR: Parsing %s joint: No PRISMATIC or REVOLUTE or FIXED \n", jointName );
+    if(debug) printf ("[createDartJoint] ERROR: Parsing %s joint: No PRISMATIC or REVOLUTE or FIXED \n", jointName );
   }
   
   return joint;
@@ -129,7 +129,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   std::string fullCollisionPath;
 
   const char* lk_name = _lk->name.c_str();
-  printf("** Creating dart node: %s \n", lk_name );
+  if(debug) printf ("** Creating dart node: %s \n", lk_name );
   
   dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name );
   
@@ -154,7 +154,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
     inertia(2,1) = -1*(inert->iyz);
     inertia(2,2) = inert->izz;
     
-    printf("* Mass is: %f \n", mass);
+    if(debug) printf ("* Mass is: %f \n", mass);
     std::cout<< "* Inertia is: \n"<< inertia << std::endl;
   }
   

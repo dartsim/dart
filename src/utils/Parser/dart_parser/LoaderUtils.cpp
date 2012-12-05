@@ -90,7 +90,7 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
     _skel->addTransform(trans);
   }
   else {
-    printf(" WATCH OUT! THIS SHOULD NOT HAPPEN, NO DOF SET \n");
+    if(debug) printf (" WATCH OUT! THIS SHOULD NOT HAPPEN, NO DOF SET \n");
   }
   
 }
@@ -127,7 +127,7 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
   const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
 
   if( model == NULL ) {
-    printf("[add_Shape] [ERROR] Not loading model %s (NULL) \n", _meshPath);
+    if(debug) printf ("[add_Shape] [ERROR] Not loading model %s (NULL) \n", _meshPath);
     return;  
   }
   else {
@@ -135,14 +135,14 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				       _mass,
 				       model ); 	 
     shape->setInertia( _inertiaMatrix );
-			printf("** Loading visual model: %s \n", _meshPath );
+			if(debug) printf ("** Loading visual model: %s \n", _meshPath );
     shape->setVizMesh( model ); 
 
     // Check if we have got a collision model
     if( !collisionModel ) {
       shape->setCollisionMesh( model );
     } else {
-			printf("** Loading collision model: %s \n", _collisionMeshPath );
+			if(debug) printf ("** Loading collision model: %s \n", _collisionMeshPath );
       shape->setCollisionMesh( collisionModel );
     }
 

@@ -38,6 +38,8 @@
 #include <vector>
 #include "../urdf_parser/urdf_parser.h"
 
+const bool debug = false;
+
 namespace urdf{
 
 bool parseMaterial(Material &material, TiXmlElement *config);
@@ -74,6 +76,7 @@ bool parseJoint(Joint &joint, TiXmlElement *config);
 
 boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
 {
+
   boost::shared_ptr<ModelInterface> model(new ModelInterface);
   model->clear();
 
@@ -87,23 +90,23 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
     // all the rest is the same as original
     robot_xml = xml_doc.FirstChildElement("object");
     if( !robot_xml ) {
-      printf( "Could find neither a robot nor an object element in the xml file \n" );
+      if(debug) printf ( "Could find neither a robot nor an object element in the xml file \n" );
       model.reset();
       return model;
     }
     else {
-      printf("Found an object file in the xml file!  \n");
+      if(debug) printf ("Found an object file in the xml file!  \n");
     }
   }
   else {
-    printf(" Found a robot object in urdf file! \n");
+    if(debug) printf (" Found a robot object in urdf file! \n");
   }
 
   // Get robot name
   const char *name = robot_xml->Attribute("name");
   if (!name)
   {
-    printf("No name given for the robot. \n");
+    if(debug) printf ("No name given for the robot. \n");
     model.reset();
     return model;
   }
@@ -119,7 +122,7 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
       parseMaterial(*material, material_xml);
       if (model->getMaterial(material->name))
       {
-        printf("material '%s' is not unique. \n", material->name.c_str());
+        if(debug) printf ("material '%s' is not unique. \n", material->name.c_str());
         material.reset();
         model.reset();
         return model;
@@ -127,11 +130,11 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
       else
       {
         model->materials_.insert(make_pair(material->name,material));
-        printf("successfully added a new material '%s' \n", material->name.c_str());
+        if(debug) printf ("successfully added a new material '%s' \n", material->name.c_str());
       }
     }
     catch (ParseError &e) {
-      printf("material xml is not initialized correctly \n");
+      if(debug) printf ("material xml is not initialized correctly \n");
       material.reset();
       model.reset();
       return model;
@@ -148,33 +151,33 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
       parseLink(*link, link_xml);
       if (model->getLink(link->name))
       {
-        printf("link '%s' is not unique. \n", link->name.c_str());
+        if(debug) printf ("link '%s' is not unique. \n", link->name.c_str());
         model.reset();
         return model;
       }
       else
       {
         // set link visual material
-        printf("setting link '%s' material \n", link->name.c_str());
+        if(debug) printf ("setting link '%s' material \n", link->name.c_str());
         if (link->visual)
         {
           if (!link->visual->material_name.empty())
           {
             if (model->getMaterial(link->visual->material_name))
             {
-              printf("setting link '%s' material to '%s' \n", link->name.c_str(),link->visual->material_name.c_str());
+              if(debug) printf ("setting link '%s' material to '%s' \n", link->name.c_str(),link->visual->material_name.c_str());
               link->visual->material = model->getMaterial( link->visual->material_name.c_str() );
             }
             else
             {
               if (link->visual->material)
               {
-                printf("link '%s' material '%s' defined in Visual. \n", link->name.c_str(),link->visual->material_name.c_str());
+                if(debug) printf ("link '%s' material '%s' defined in Visual. \n", link->name.c_str(),link->visual->material_name.c_str());
                 model->materials_.insert(make_pair(link->visual->material->name,link->visual->material));
               }
               else
               {
-                printf("link '%s' material '%s' undefined. \n", link->name.c_str(),link->visual->material_name.c_str());
+                if(debug) printf ("link '%s' material '%s' undefined. \n", link->name.c_str(),link->visual->material_name.c_str());
                 model.reset();
                 return model;
               }
@@ -183,17 +186,17 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
         }
 
         model->links_.insert(make_pair(link->name,link));
-        printf("successfully added a new link '%s' \n", link->name.c_str());
+        if(debug) printf ("successfully added a new link '%s' \n", link->name.c_str());
       }
     }
     catch (ParseError &e) {
-      printf("link xml is not initialized correctly \n");
+      if(debug) printf ("link xml is not initialized correctly \n");
       model.reset();
       return model;
     }
   }
   if (model->links_.empty()){
-    printf("No link elements found in urdf file \n");
+    if(debug) printf ("No link elements found in urdf file \n");
     model.reset();
     return model;
   }
@@ -208,19 +211,19 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
     {
       if (model->getJoint(joint->name))
       {
-        printf("joint '%s' is not unique. \n", joint->name.c_str());
+        if(debug) printf ("joint '%s' is not unique. \n", joint->name.c_str());
         model.reset();
         return model;
       }
       else
       {
         model->joints_.insert(make_pair(joint->name,joint));
-        printf("successfully added a new joint '%s' \n", joint->name.c_str());
+        if(debug) printf ("successfully added a new joint '%s' \n", joint->name.c_str());
       }
     }
     else
     {
-      printf("joint xml is not initialized correctly \n");
+      if(debug) printf ("joint xml is not initialized correctly \n");
       model.reset();
       return model;
     }
@@ -239,7 +242,7 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
   }
   catch(ParseError &e)
   {
-    printf("Failed to build tree: %s \n", e.what());
+    if(debug) printf ("Failed to build tree: %s \n", e.what());
     model.reset();
     return model;
   }
@@ -251,7 +254,7 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
   }
   catch(ParseError &e)
   {
-    printf("Failed to find root link: %s \n", e.what());
+    if(debug) printf ("Failed to find root link: %s \n", e.what());
     model.reset();
     return model;
   }
@@ -275,7 +278,7 @@ TiXmlDocument*  exportURDF(boost::shared_ptr<ModelInterface> &model)
 
   for (std::map<std::string, boost::shared_ptr<Joint> >::const_iterator j=model->joints_.begin(); j!=model->joints_.end(); j++)  
   {
-    printf("exporting joint [%s]\n",j->second->name.c_str());
+    if(debug) printf ("exporting joint [%s]\n",j->second->name.c_str());
     exportJoint(*(j->second), robot);
   }
 

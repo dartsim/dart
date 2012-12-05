@@ -10,6 +10,8 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
+const bool debug = false;
+
 namespace dynamics {
 	class SkeletonDynamics;
 	class BodyNodeDynamics;

@@ -77,7 +77,7 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   std::replace( mWorldPath.begin(), mWorldPath.end(), '\\' , '/' );
   mPath = mWorldPath.substr( 0, mWorldPath.rfind("/") + 1 );
 
-  std::cout<< " mPath :" << mPath << std::endl;
+  // std::cout<< " mPath :" << mPath << std::endl;
 
   robotics::World* world = new robotics::World();
 	robotics::Robot* robot;
@@ -139,7 +139,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
     node = createDartNode( (*lk).second, mSkeleton );
     mNodes.push_back( node );
   }
-  printf("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
   
   // Joint
   mJoints.resize(0);
@@ -157,7 +157,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   rootJoint = createDartRootJoint( _model->getRoot(), mSkeleton, false );
   mJoints.push_back( rootJoint );
 
-  printf("** Created %d joints \n", mJoints.size() );
+  if(debug) printf ("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
   
@@ -182,7 +182,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
     }
     numIter++;
   }
-  printf("--> Pushed %d nodes in tree-like order \n", numIter );
+  if(debug) printf ("--> Pushed %d nodes in tree-like order \n", numIter );
   
   // Init skeleton
   mSkeleton->initSkel();
@@ -213,7 +213,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
     node = createDartNode( (*lk).second, mRobot );
     mNodes.push_back( node );
   }
-  printf("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
 
   // Joint
   mJoints.resize(0);
@@ -228,11 +228,11 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
  
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
-  printf("[DartLoader] Root Node: %s \n", rootNode->getName() );
+  if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
   rootJoint = createDartRootJoint( _model->getRoot(), mRobot, true );
   mJoints.push_back( rootJoint );
 
-  printf("** Created %d joints \n", mJoints.size() );
+  if(debug) printf ("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
      // Push parents first
@@ -254,7 +254,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
       }
       numIter++;
     }
-		printf("Pushed %d nodes in order \n", numIter );
+		if(debug) printf ("Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
   mRobot->initSkel();
@@ -285,7 +285,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
     node = createDartNode( (*lk).second, mObject );
     mNodes.push_back( node );
   }
-  printf("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
   
   // Joint
   mJoints.resize(0);
@@ -303,7 +303,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   rootJoint = createDartRootJoint( _model->getRoot(), mObject, true );
   mJoints.push_back( rootJoint );
   
-  printf("** Created %d joints \n", mJoints.size() );
+  if(debug) printf ("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
   
@@ -335,7 +335,7 @@ dynamics::BodyNodeDynamics* DartLoader::getNode( std::string _nodeName ) {
       return mNodes[i];
     }
   }
-  printf("[getNode] ERROR: Returning  NULL for  %s \n", _nodeName.c_str() );
+  if(debug) printf ("[getNode] ERROR: Returning  NULL for  %s \n", _nodeName.c_str() );
   return NULL;
 }
 

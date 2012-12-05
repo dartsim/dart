@@ -43,6 +43,8 @@
 #include <algorithm>
 #include <tinyxml.h>
 
+const bool debug = false;
+
 namespace urdf{
 
   // Added by achq on 2012/10/13 *******//
@@ -64,7 +66,7 @@ namespace urdf{
     TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
     
     if( !world_xml ) {
-      printf( "[parseWorldURDF] ERROR: Could not find a world, exiting! \n" );
+      if(debug) printf ( "[parseWorldURDF] ERROR: Could not find a world, exiting! \n" );
       // world.reset();
       return world;
     }
@@ -72,12 +74,12 @@ namespace urdf{
     // Get world name
     const char *name = world_xml->Attribute("name");
     if(!name) {
-      printf("No name given for the world! \n");
+      if(debug) printf ("No name given for the world! \n");
       // world.reset();
       return world;
     }
     world->name = std::string(name);
-    std::cout<< "World name: "<< world->name << std::endl;
+    if(debug) std::cout<< "World name: "<< world->name << std::endl;
     
     
     // Get all include filenames
@@ -92,9 +94,9 @@ namespace urdf{
       std::string string_filename( filename );
       std::string string_model_name( model_name );
       includedFiles[string_model_name] = string_filename;
-      printf("Include: %s %s \n", model_name, filename);
+      if(debug) printf ("Include: %s %s \n", model_name, filename);
     }
-    printf("Found %d include filenames \n", count);
+    if(debug) printf ("Found %d include filenames \n", count);
     
     // Get all entities
     count = 0;
@@ -109,14 +111,14 @@ namespace urdf{
 	
 	// Find the model
 	if( includedFiles.find( string_entity_model ) == includedFiles.end() ) {
-	  printf("[ERROR] Include the model you want to use \n");
+	  if(debug) printf ("[ERROR] Include the model you want to use \n");
 	  return world;
 	} 
 	else {
 	  std::string modelName = includedFiles.find( string_entity_model )->second;
 	  std::string modelFullName = _path;
 	  modelFullName.append( modelName );
-	  std::cout<< "Model full name: "<< modelFullName << std::endl;
+	  if(debug) std::cout<< "Model full name: "<< modelFullName << std::endl;
 	  
 	  // Parse model
 	  std::string xml_model_string;
@@ -137,7 +139,7 @@ namespace urdf{
 	  TiXmlElement *o = entity_xml->FirstChildElement("origin");
 	  if( o ) {
 	    if( !parsePose( entity.origin, o ) ) {
-	      printf("[ERROR] Write the pose for your entity! \n");
+	      if(debug) printf ("[ERROR] Write the pose for your entity! \n");
 	      return world; }
 	  }
 
@@ -162,14 +164,14 @@ namespace urdf{
 	
       }
       catch( ParseError &e ) {
-	printf("Entity xml not initialized correctly \n");
+	if(debug) printf ("Entity xml not initialized correctly \n");
 	//entity->reset();
 	//world->reset();
 	return world;
       }
       
     } // end for
-    printf("Found %d entities \n", count);
+    if(debug) printf ("Found %d entities \n", count);
     
     return world;
     
