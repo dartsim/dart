@@ -29,7 +29,7 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
 option ( DART_UI "DART_UI" ON )
 option ( SNOPT "SNOPT" OFF )
-option ( PLANNING "PLANNING" OFF )
+option ( PLANNING "PLANNING" ON )
 option ( ROBOTICS "ROBOTICS" ON )
 if( UNIX )
   option ( ENABLE_MSSE2 "Enable -msse2 flag" ON )
