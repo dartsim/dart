@@ -1,0 +1,23 @@
+LINKS
+
+> LINK L0    l0.3ds
+> LINK L1    l1.3ds
+> LINK L2    l2.3ds
+> LINK L3    l3.3ds
+> LINK L4    l4.3ds
+> LINK L5    l5.3ds
+> LINK L6    l6.3ds
+> LINK FT    ft.3ds
+
+CONNECTIVITY
+
+ CON  FROM         TO         X     Y      Z    ROL   PIT   YAW  AXIS    TYPE         RANGE
+----------------------------------------------------------------------------------------------
+> CON WORLD        L0       0.0   0.0    0.0      0   0.0 180.0   PX    FIXED
+> CON	L0         L1      -0.3   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L1         L2       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L2         L3    -0.328   0.0	 0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L3         L4       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L4         L5   -0.2765   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L5         L6       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L6         FT      -0.2   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180

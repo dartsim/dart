@@ -1,18 +1,22 @@
 #include "PathShortener.h"
-#include "Robot.h"
+#include "robotics/World.h"
+#include "robotics/Robot.h"
 #include "RRT.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace robotics;
 
 #define RAND12(N1,N2) N1 + ((N2-N1) * ((double)rand() / ((double)RAND_MAX + 1))) // random # between N&M
 
+namespace planning {
+
 PathShortener::PathShortener() {}
 
-PathShortener::PathShortener(World* world, int robotId, const std::vector<int> &linkIds, double stepSize) :
+PathShortener::PathShortener(World* world, int robotId, const VectorXi &dofs, double stepSize) :
    world(world),
    robotId(robotId),
-   linkIds(linkIds),
+   dofs(dofs),
    stepSize(stepSize)
 {}
 
@@ -77,8 +81,8 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 
 	VectorXd midpoint = (double)n2 / (double)n * config1 + (double)n1 / (double)n * config2;
 	list<VectorXd> intermediatePoints1, intermediatePoints2;
-	world->robots[robotId]->setConf(linkIds, midpoint);
-	if(!world->checkCollisions() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
+	world->getRobot(robotId)->setDofs(midpoint, dofs);
+	if(!world->checkCollision() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
 			&& segmentCollisionFree(intermediatePoints2, midpoint, config2))
 	{
 		intermediatePoints.clear();
@@ -90,4 +94,5 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 	else {
 		return false;
 	}
+}
 }

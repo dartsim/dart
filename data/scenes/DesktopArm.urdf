@@ -1,0 +1,41 @@
+<world name="schunk_with_desktop">
+	
+<!-- Include the models by including either the complete urdf or referencing the file name -->
+<include filename="SchunkArm.urdf" model_name="schunk_arm"/>
+<include filename="table2b.urdf" model_name="table2b"/>
+<include filename="luggage3.urdf" model_name="lugagge3"/>
+<include filename="book.urdf" model_name="book"/>
+<include filename="lamp3.urdf" model_name="lamp3"/>
+<include filename="polarbear.urdf" model_name="polarbear"/>
+
+<!-- Construct the world -->
+<entity model="schunk_arm" name="SchunkArm">
+	<origin xyz="-0.132 1.316 0.721" rpy="-1.57 1.57 0"/>
+</entity>
+
+
+<entity model="table2b">
+	<origin xyz="-1.14 0.789 0" rpy="1.57 0 0"/>
+</entity>
+
+<entity model="lugagge3">
+	<origin xyz="-0.848 1.14 0.721" rpy="1.57 0 1.57"/>
+</entity>
+
+<entity model="book">
+	<origin xyz="0.789  1.102  0.73" rpy="1.57 0 0"/>
+</entity>
+
+<entity model="lamp3">
+	<origin xyz="0.395 1.3 0.65" rpy="1.57 0 1.2"/>
+</entity>
+
+<entity model="polarbear" name="polarbear1">
+	<origin xyz="-1.608 1.328 0.416" rpy="1.57 0 1.4"/>
+</entity>
+
+<entity model="polarbear" name="polarbear2">
+	<origin xyz="2.168 1.188 0.416" rpy="1.57 0 .87"/>
+</entity>
+
+</world> 

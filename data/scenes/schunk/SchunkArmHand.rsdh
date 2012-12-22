@@ -1,0 +1,52 @@
+# LINKS
+> LINK L0	 l0.3ds
+> LINK L1        l1.3ds
+> LINK L2        l2.3ds
+> LINK L3        l3.3ds
+> LINK L4        l4.3ds
+> LINK L5        l5.3ds
+> LINK L6        l6.3ds
+
+> LINK FT	 ft.3ds
+
+> LINK HAND      handbase66.3ds
+> LINK F11       handjoint66.3ds
+> LINK F21       handjoint66.3ds
+> LINK F31       handjoint66.3ds
+> LINK F12       finger66.3ds
+> LINK F22       finger66.3ds
+> LINK F32       finger66.3ds
+> LINK F13       fingertip66.3ds
+> LINK F23       fingertip66.3ds
+> LINK F33       fingertip66.3ds
+
+
+
+# CONNECTIVITY
+ CON  FROM         TO         X     Y     Z     ROL   PIT   YAW  AXIS    TYPE         RANGE
+#---------------------------------------------------------------------------------------------------------------
+> CON WORLD        L0       0.0   0.0    0.0      0   0.0 180.0   PX    FIXED
+> CON	L0         L1      -0.3   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L1         L2       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L2         L3    -0.328   0.0	 0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L3         L4       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L4         L5   -0.2765   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180
+> CON	L5         L6       0.0   0.0    0.0      0   0.0   0.0   PY    REVOL    -120  120
+> CON	L6         FT      -0.2   0.0    0.0      0   0.0   0.0   PX    REVOL    -180  180
+
+> CON	FT         HAND	 -0.018	  0.0  0.0    0.0   0.0   0.0	  PZ	FIXED		-180	180
+
+> CON	HAND       F11	  -0.024   0.033   0.021	0.0	0.0	0.0	PX	REVOL		-180	180
+> CON	HAND	   F21	  -0.024  -0.033   0.021	0.0	0.0	0.0	PX	REVOL		-180	180
+> CON	HAND	   F31	  -0.024     0.0 -0.0381	0.0	0.0	0.0	PX	REVOL		-180	180
+
+> CON	F11        F12     -0.02     0.0     0.0	0.0	0.0	0.0	PY	REVOL		-180	180
+> CON	F21        F22	   -0.02     0.0     0.0	0.0	0.0	0.0	PY	REVOL		-180	180
+> CON	F31        F32	   -0.02     0.0     0.0	0.0	0.0	0.0	PY	REVOL		-180	180
+
+> CON	F12        F13    -.0865     0.0    0.0	        0.0	0.0	0.0	PY	REVOL		-180	180
+> CON	F22        F23	  -.0865     0.0    0.0	        0.0	0.0	0.0     PY	REVOL		-180	180
+> CON	F32        F33	  -.0865     0.0    0.0	        0.0	0.0	0.0     PY      REVOL		-180	180
+
+
+

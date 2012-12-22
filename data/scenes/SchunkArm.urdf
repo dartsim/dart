@@ -1,0 +1,143 @@
+<!-- lwa3.urdf -->
+
+<robot name="lwa3">
+
+       <!-- Link 0 -->
+       <link name = "L0">
+       	     <visual>
+		<geometry>
+			<mesh filename="schunk/l0.3ds" />
+		</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 1 -->
+	<link name = "L1">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l1.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 2 -->
+	<link name = "L2">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l2.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 3 -->
+	<link name = "L3">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l3.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 4 -->
+	<link name = "L4">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l4.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 5 -->
+	<link name = "L5">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l5.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 6 -->
+	<link name = "L6">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/l6.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+
+	<!-- Link 7 -->
+	<link name = "FT">
+		<visual>
+			<geometry>
+				<mesh filename="schunk/ft.3ds" />
+			</geometry>
+		</visual>
+	</link> 	
+	
+
+	<!-- JOINT DEFINITIONS -->
+
+	<!-- J1 -->
+	<joint name="J1" type="revolute">
+		<parent link="L0" />
+		<child link="L1" />
+		<origin xyz = "-0.3 0 0" rpy="0 0 0" />
+		<axis xyz="1 0 0" />
+		<limit effort="1000" lower="-3.1416" upper="3.1416" velocity="0.1" />
+	</joint>
+
+	<!-- J2 -->
+	<joint name="J2" type="revolute">
+		<parent link="L1" />
+		<child link="L2" />
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<axis xyz="0 1 0" />
+		<limit effort="1000" lower="-2.094" upper="2.094" velocity="0.1" />
+	</joint>
+
+	<!-- J3 -->
+	<joint name="J3" type="revolute">
+		<parent link="L2" />
+		<child link="L3" />
+		<origin xyz="-0.328 0 0" rpy="0 0 0" />
+		<axis xyz="1 0 0" />
+		<limit effort="1000" lower="-3.1416" upper="3.1416" velocity="0.1" />
+	</joint>
+
+	<!-- J4 -->
+	<joint name="J4" type="revolute">
+		<parent link="L3" />
+		<child link="L4" />
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<axis xyz="0 1 0" />
+		<limit effort="1000" lower="-2.094" upper="2.094" velocity="0.1" />
+	</joint>
+
+	<!-- J5 -->
+	<joint name="J5" type="revolute">
+		<parent link="L4" />
+		<child link="L5" />
+		<origin xyz="-0.2765 0 0" rpy="0 0 0" />
+		<axis xyz="1 0 0" />
+		<limit effort="1000" lower="-3.1416" upper="3.1416" velocity="0.1" />
+	</joint>
+
+	<!-- J6 -->
+	<joint name="J6" type="revolute">
+		<parent link="L5" />
+		<child link="L6" />
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<axis xyz="0 1 0" />
+		<limit effort="1000" lower="-2.094" upper="2.094" velocity="0.1" />
+	</joint>
+
+	<!-- J7 -->
+	<joint name="JFT" type="revolute">
+		<parent link="L6" />
+		<child link="FT" />
+		<origin xyz="-0.2 0 0" rpy="0 0 0" />
+		<axis xyz="1 0 0" />
+		<limit effort="1000" lower="-2.094" upper="2.094" velocity="0.1" />
+	</joint>
+
+</robot>

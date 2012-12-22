@@ -42,15 +42,12 @@
 
 #include <vector>
 #include <list>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctime>
 #include <Eigen/Core>
-#include "World.h"
-#include "Link.h"
-#include "kdtree/kdtree.h"
+#include <flann/flann.hpp>
 
+namespace robotics { class World; }
 
+namespace planning {
 class RRT {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -68,8 +65,8 @@ public:
 	std::vector<int> parentVector;		// vector of indices to relate configs in RRT
 	std::vector<Eigen::VectorXd> configVector; 	// vector of all visited configs
 
-	RRT(World* world, int robot, const std::vector<int> &links, const Eigen::VectorXd &root, double stepSize = 0.02);
-	RRT(World* world, int robot, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
+	RRT(robotics::World* world, int robot, const Eigen::VectorXi &dofs, const Eigen::VectorXd &root, double stepSize = 0.02);
+	RRT(robotics::World* world, int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
 	virtual ~RRT();
 
 	bool connect();
@@ -97,12 +94,12 @@ public:
 	int numCollisions;
 	int numNoProgress;
 	int numStepTooLarge;
-	int numErrorIncrease;
 protected:
-	World* world;
+	robotics::World* world;
 	int robot;
-	std::vector<int> links;
-	struct kdtree *kdTree;
+	Eigen::VectorXi dofs;
+
+	flann::Index<flann::L2<double> > index;
 
 	double randomInRange(double min, double max);
 
@@ -116,5 +113,6 @@ protected:
 	virtual int addNode(const Eigen::VectorXd &qnew, int parentId);
 
 };
+}
 
 #endif /* RRT_H */

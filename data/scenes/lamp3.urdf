@@ -1,0 +1,14 @@
+<!-- lamp3.urdf -->
+
+<object name="lamp3">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<visual>
+			<geometry>
+				<mesh filename="objects/lamp3.3ds"/>
+			</geometry>
+		</visual>
+	</link>
+
+</object>

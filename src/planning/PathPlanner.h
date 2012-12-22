@@ -1,11 +1,10 @@
 #include <Eigen/Core>
 #include <vector>
 #include <list>
-#include "Link.h"
-#include "World.h"
+#include "robotics/World.h"
 #include "RRT.h"
 #include <iostream>
-#include "Robot.h"
+#include "robotics/Robot.h"
 
 #ifndef _RST_PATH_PLANNER_
 #define _RST_PATH_PLANNER_
@@ -14,17 +13,17 @@ template <class R = RRT>
 class PathPlanner {
 public:
 	PathPlanner(); // You need to call one of the other constructors before the object is usable.
-	PathPlanner(World& world, bool copyWorld = true, double stepsize = 0.1 );
+	PathPlanner(robotics::World& world, bool copyWorld = true, double stepsize = 0.1 );
 	~PathPlanner();
 	double stepsize;
 	World* world;
-	bool planPath(int robotId, const std::vector<int> &linkIds, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
-	bool planPath(int robotId, const std::vector<int> &linkIds, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
+	bool planPath(int robotId, const Eigen::VectorXi &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
+	bool planPath(int robotId, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
 	static inline double randomInRange(double min, double max);
 private:
 	bool copyWorld;
-	bool planSingleTreeRrt(int robot, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
-	bool planBidirectionalRrt(int robot, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
+	bool planSingleTreeRrt(int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
+	bool planBidirectionalRrt(int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
 };
 
 
@@ -32,10 +31,10 @@ template <class R>
 PathPlanner<R>::PathPlanner() : copyWorld(false), world(NULL) {}
 
 template <class R>
-PathPlanner<R>::PathPlanner(World& world, bool copyWorld, double stepSize) {
+PathPlanner<R>::PathPlanner(robotics::World& world, bool copyWorld, double stepSize) {
 	this->copyWorld = copyWorld;
 	if(copyWorld) {
-		this->world = new World(world);
+		this->world = new robotics::World(world);
 	}
 	else {
 		this->world = &world;
@@ -56,34 +55,34 @@ inline double PathPlanner<R>::randomInRange(double min, double max) {
 }
 
 template <class R>
-bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &links, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
-	world->robots[robotId]->setConf(links, start);
+bool PathPlanner<R>::planPath(int robotId, const Eigen::VectorXi &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
+	world->robots[robotId]->setConf(dofs, start);
 	if(world->checkCollisions())
 		return false;
-	world->robots[robotId]->setConf(links, goal);
+	world->robots[robotId]->setConf(dofs, goal);
 	if(world->checkCollisions())
 		return false;
 
 	std::vector<Eigen::VectorXd> startVector, goalVector;
 	startVector.push_back(start);
 	goalVector.push_back(goal);
-	return planPath(robotId, links, startVector, goalVector, path, bidirectional, connect, maxNodes);
+	return planPath(robotId, dofs, startVector, goalVector, path, bidirectional, connect, maxNodes);
 }
 
 template <class R>
-bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
+bool PathPlanner<R>::planPath(int robotId, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
 	bool result;
 	if(bidirectional)
-		result = planBidirectionalRrt(robotId, links, start, goal, path, connect, maxNodes);
+		result = planBidirectionalRrt(robotId, dofs, start, goal, path, connect, maxNodes);
 	else
-		result = planSingleTreeRrt(robotId, links, start, goal.front(), path, connect, maxNodes);
+		result = planSingleTreeRrt(robotId, dofs, start, goal.front(), path, connect, maxNodes);
 	return result;
 }
 
 template <class R>
-bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
+bool PathPlanner<R>::planSingleTreeRrt(int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
 
-	R rrt(world, robot, links, start, stepsize);
+	R rrt(world, robot, dofs, start, stepsize);
 	typename R::StepResult result = R::STEP_PROGRESS;
 	double smallestGap = DBL_MAX;
 	while (result != RRT::STEP_REACHED) {
@@ -111,10 +110,10 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &links,
 }
 
 template <class R>
-bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &links, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
+bool PathPlanner<R>::planBidirectionalRrt(int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
 	
-	R start_rrt(world, robot, links, start, stepsize);
-	R goal_rrt(world, robot, links, goal, stepsize);
+	R start_rrt(world, robot, dofs, start, stepsize);
+	R goal_rrt(world, robot, dofs, goal, stepsize);
 	R* rrt1 = &start_rrt;
 	R* rrt2 = &goal_rrt;
 	

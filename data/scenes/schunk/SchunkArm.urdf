@@ -1,0 +1,128 @@
+<robot name="test_robot">
+  <link name="L0">
+	<visual>
+	  <geometry>
+	    <mesh filename="l0.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L1">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l1.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L2">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l2.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L3">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l3.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L4">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l4.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L5">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l5.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="L6">
+  	<visual>
+	  <geometry>
+	    <mesh filename="l6.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+  
+  <link name="LFT">
+  	<visual>
+	  <geometry>
+	    <mesh filename="ft.3ds"/>
+	  </geometry>
+	</visual>
+  </link>
+
+  <joint name="joint0" type="fixed">
+    <parent link=""/>
+    <child link="L0"/>
+    <origin xyz="0 0 0" rpy="0 0 3.14159265" />
+  </joint>
+  
+  <joint name="joint1" type="revolute">
+    <parent link="L0"/>
+    <child link="L1"/>
+    <origin xyz="-0.3 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+	<limit lower="-3.14159265" upper="3.14159265" />
+  </joint>
+
+  <joint name="joint2" type="revolute">
+    <parent link="L1"/>
+    <child link="L2"/>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />	
+	<limit lower="-2.0943951" upper="2.0943951" />
+  </joint>
+
+  <joint name="joint3" type="revolute">
+    <parent link="L2"/>
+    <child link="L3"/>
+    <origin xyz="-.328 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+	<limit lower="-3.14159265" upper="3.14159265" />
+  </joint>
+  
+  <joint name="joint4" type="revolute">
+    <parent link="L3"/>
+    <child link="L4"/>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+	<limit lower="-2.0943951" upper="2.0943951" />
+  </joint>
+  
+  <joint name="joint5" type="revolute">
+    <parent link="L4"/>
+    <child link="L5"/>
+    <origin xyz="-0.2765 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+	<limit lower="-3.14159265" upper="3.14159265" />
+  </joint>
+  
+  <joint name="joint6" type="revolute">
+    <parent link="L5"/>
+    <child link="L6"/>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+	<limit lower="-2.0943951" upper="2.0943951" />
+  </joint>
+ 
+  <joint name="jointLFT" type="revolute">
+    <parent link="L6"/>
+    <child link="LFT"/>
+    <origin xyz="-.2 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+	<limit lower="-3.14159265" upper="3.14159265" />
+  </joint>
+  
+</robot>

@@ -1,0 +1,14 @@
+<!-- table2b.urdf -->
+
+<object name="table2b">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<visual>
+			<geometry>
+				<mesh filename="objects/table2b.3ds"/>
+			</geometry>
+		</visual>
+	</link>
+
+</object>

@@ -38,52 +38,52 @@
  */
 
 #include "RRT.h"
-#include "Robot.h"
+#include "robotics/World.h"
+#include "robotics/Robot.h"
+#include "kinematics/Dof.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace robotics;
 
-RRT::RRT(World* world, int robot, const vector<int> &links, const VectorXd &root, double stepSize) :
+namespace planning {
+
+RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
-	links(links),
-	ndim(links.size()),
-	stepSize(stepSize),
-	numSamples(0),
-	numCollisions(0),
-	numNoProgress(0),
-	numStepTooLarge(0)
-{
-	srand(time(NULL));
-
-	kdTree = kd_create(ndim);
-	addNode(root, -1);
-}
-
-
-RRT::RRT(World* world, int robot, const vector<int> &links, const vector<VectorXd> &roots, double stepSize) :
-	world(world),
-	robot(robot),
-	links(links),
-	ndim(links.size()),
+	dofs(dofs),
+	ndim(dofs.size()),
 	stepSize(stepSize),
 	numSamples(0),
 	numCollisions(0),
 	numNoProgress(0),
 	numStepTooLarge(0),
-	numErrorIncrease(0)
+	index(flann::KDTreeIndexParams())
 {
 	srand(time(NULL));
+	addNode(root, -1);
+}
 
-	kdTree = kd_create(ndim);
 
+RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const vector<VectorXd> &roots, double stepSize) :
+	world(world),
+	robot(robot),
+	dofs(dofs),
+	ndim(dofs.size()),
+	stepSize(stepSize),
+	numSamples(0),
+	numCollisions(0),
+	numNoProgress(0),
+	numStepTooLarge(0),
+	index(flann::KDTreeIndexParams())
+{
+	srand(time(NULL));
 	for(int i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}
 }
 
 RRT::~RRT() {
-	kd_free(kdTree);
 }
 
 bool RRT::connect() {
@@ -154,17 +154,18 @@ int RRT::addNode(const VectorXd &qnew, int parentId)
 	parentVector.push_back(parentId);
 	
 	uintptr_t id = configVector.size() - 1;
-	kd_insert(kdTree, qnew.data(), (void*)id); //&idVector[id]);
-
+	index.addPoints(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
+	
 	activeNode = id;
 	return id;
 }
 
 inline int RRT::getNearestNeighbor(const VectorXd &qsamp)
 {
-	struct kdres* result = kd_nearest(kdTree, qsamp.data());
-	uintptr_t nearest = (uintptr_t)kd_res_item_data(result);
-	kd_res_free(result);
+	int nearest;
+	double distance;
+	index.knnSearch(flann::Matrix<double>((double*)qsamp.data(), 1, qsamp.size()), 
+		flann::Matrix<int>(&nearest, 1, 1), flann::Matrix<double>(&distance, 1, 1), 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 	activeNode = nearest;
 	return nearest;
 }
@@ -185,7 +186,7 @@ VectorXd RRT::getRandomConfig()
 	 */
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-		config[i] = randomInRange(world->robots[robot]->links[links[i]]->jMin, world->robots[robot]->links[links[i]]->jMax);
+		config[i] = randomInRange(world->getRobot(robot)->getDof(dofs[i])->getMin(), world->getRobot(robot)->getDof(dofs[i])->getMax());
 	}
 	return config;
 }
@@ -211,10 +212,12 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse)
 
 bool RRT::checkCollisions(const VectorXd &c)
 {
-	world->robots[robot]->setConf(links, c);
-	return world->checkCollisions();
+	world->getRobot(robot)->setDofs(c, dofs);
+	return world->checkCollision();
 }
 
 unsigned int RRT::getSize() {
 	return configVector.size();
+}
+
 }

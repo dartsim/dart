@@ -1,0 +1,14 @@
+<!-- polarbear.urdf -->
+
+<object name="polarbear">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<visual>
+			<geometry>
+				<mesh filename="polarbear/polarbear.3ds"/>
+			</geometry>
+		</visual>
+	</link>
+
+</object>

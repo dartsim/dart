@@ -44,6 +44,8 @@
 using namespace Eigen;
 using namespace std;
 
+namespace planning {
+
 const double Trajectory::timeStep = 0.001;
 const double Trajectory::eps = 0.000001;
 
@@ -623,4 +625,5 @@ double Trajectory::getMaxAccelerationError() {
 	}
 
 	return maxAccelerationError;
+}
 }

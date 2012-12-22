@@ -1,0 +1,14 @@
+<!-- book.urdf -->
+
+<object name="book">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<visual>
+			<geometry>
+				<mesh filename="objects/book.3ds"/>
+			</geometry>
+		</visual>
+	</link>
+
+</object>

@@ -1,0 +1,14 @@
+<!-- luggage3.urdf -->
+
+<object name="luggage3">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<visual>
+			<geometry>
+				<mesh filename="objects/luggage3.3ds"/>
+			</geometry>
+		</visual>
+	</link>
+
+</object>

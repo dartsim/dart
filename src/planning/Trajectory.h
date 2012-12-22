@@ -39,8 +39,9 @@
 #pragma once
 
 #include <Eigen/Core>
-#include "Tools/Path.h"
+#include "Path.h"
 
+namespace planning {
 class Trajectory
 {
 public:
@@ -96,3 +97,4 @@ private:
 	mutable double cachedTime;
 	mutable std::list<TrajectoryStep>::const_iterator cachedTrajectorySegment;
 };
+}
