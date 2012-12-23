@@ -15,6 +15,7 @@
 #include "kinematics/ShapeCube.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Joint.h"
+#include "kinematics/ShapeMesh.h"
 
 using namespace collision_checking;
 using namespace std;
@@ -38,7 +39,14 @@ MyWindow(): Win3D() {
         robotics::Object* ground = new robotics::Object();
         ground->addDefaultRootNode();
         dynamics::BodyNodeDynamics* node = new dynamics::BodyNodeDynamics();
-        node->setShape(new kinematics::ShapeCube(Eigen::Vector3d(10.0, 10.0, 0.0001), 1.0));
+        const aiScene* m3d = kinematics::ShapeMesh::loadMesh( DART_DATA_PATH"/scenes/objects/ground.blend");
+        kinematics::ShapeMesh* shape = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), 0.0, m3d);
+        shape->setCollisionMesh(m3d);
+        shape->setVizMesh(m3d);
+        shape->setMass(1.0);
+        shape->setInertia(Eigen::Matrix3d::Identity());
+        node->setShape(shape);
+        //node->setShape(new kinematics::ShapeCube(Eigen::Vector3d(10.0, 10.0, 0.0001), 1.0));
         kinematics::Joint* joint = new kinematics::Joint(ground->getRoot(), node);
         ground->addNode(node);
 		ground->setPositionZ(-0.1);
@@ -79,7 +87,7 @@ MyWindow(): Win3D() {
 
         initDyn();
 
-        std::cout << 
+       std::cout << 
             "\nKeybindings:\n" <<
             "\n" <<
             "s: start or continue simulating.\n" <<
