@@ -200,6 +200,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   kinematics::Joint *joint, *rootJoint;
 
 	mRobot = new robotics::Robot();
+	// Add default root node (*)
   mRobot->addDefaultRootNode();
 
   // name
@@ -218,21 +219,12 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   // Joint
   mJoints.resize(0);
 
-  for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-       jt != _model->joints_.end(); 
-       jt++ ) {  
-    joint = createDartJoint( (*jt).second, mRobot );
-    mJoints.push_back( joint );
-
-  }
- 
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
   if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
+	// Set true argument since default root node was set (*)
   rootJoint = createDartRootJoint( _model->getRoot(), mRobot, true );
   mJoints.push_back( rootJoint );
-
-  if(debug) printf ("** Created %d joints \n", mJoints.size() );
   
   //-- Save DART structure
      // Push parents first
@@ -245,6 +237,16 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
       // Get front element on stack and update it
       u = nodeStack.front();
 			mRobot->addNode(u);
+
+  		for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
+       jt != _model->joints_.end(); 
+       jt++ ) {  
+				if( ( (*jt).second )->parent_link_name == u->getName() ) {
+	    		joint = createDartJoint( (*jt).second, mRobot );
+  	  		mJoints.push_back( joint );
+				}
+  		}
+
       // Pop it out
       nodeStack.pop_front();
 
@@ -253,7 +255,9 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
 	nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
       }
       numIter++;
-    }
+    } // end while
+
+	  if(debug) printf ("** Created %d joints \n", mJoints.size() );
 		if(debug) printf ("Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
