@@ -3,9 +3,10 @@
 PRG=$0
 usage()
 {
-    echo "usage: dart [<args>]" 
+    echo "usage: auto [<args>]" 
     echo ""
     echo "The most commonly used commands are:"
+    echo "  generate_make   Generates a fresh Makefile using CMake"
     echo "  merge_graphics  Merges the graphics branch into master"
     echo "  merge_robotics  Merges the robotics branch into master"
     echo "  generate_debs   Generates debian on 32 or 64 bit machines"
@@ -17,11 +18,16 @@ usage()
 
 debs()
 {
-MACHINE_TYPE=`uname -m`
-if [ ${MACHINE_TYPE} == 'x86_64' ]; then
-  cpack -D CPACK_SYSTEM_NAME=amd64 -D CPACK_DEBIAN_PACKAGE_ARCHITECTURE=amd64 -G DEB
+mac=$(echo `uname -m`)
+echo ${mac}
+if [ ${mac} = "x86_64" ]; then
+  echo "Generating 64 bit deb"
+  cmake -D CPACK_SYSTEM_NAME=amd64 .
+  cpack -G DEB
 else
-  cpack -D CPACK_SYSTEM_NAME=i386 -D CPACK_DEBIAN_PACKAGE_ARCHITECTURE=i386 -G DEB
+  echo "Generating 32 bit deb"
+  cmake -D CPACK_SYSTEM_NAME=i386 .
+  cpack -G DEB
 fi
 }
 
@@ -31,7 +37,7 @@ scp *.deb pushkar7@golems.org:~/dart.golems.org/downloads/
 cd docs
 mv html dart
 tar czf dart.tar.gz dart
-scp dart.tar.gz pushkar7@dart.golems.org:~/dart.golems.org/
+scp dart.tar.gz pushkar7@golems.org:~/dart.golems.org/
 ssh pushkar7@golems.org 'cd dart.golems.org; tar -xvf dart.tar.gz'
 }
 
@@ -42,6 +48,10 @@ while [ $# -gt 0 ]
 do
       arg="$1"
       case "$arg" in
+         generate_make)
+         rm CMakeCache.txt
+         cmake .
+         ;;
          merge_graphics) 
          git checkout master
          git merge graphics
