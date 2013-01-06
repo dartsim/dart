@@ -27,10 +27,12 @@ fi
 
 web()
 {
+scp *.deb pushkar7@golems.org:~/dart.golems.org/downloads/
 cd docs
-tar czf html.tar.gz html
-scp html.tar.gz golems@dart.golems.org:~/
-ssh golems@golems.org 'tar -xvf html.tar.gz'
+mv html dart
+tar czf dart.tar.gz dart
+scp dart.tar.gz pushkar7@dart.golems.org:~/dart.golems.org/
+ssh pushkar7@golems.org 'cd dart.golems.org; tar -xvf dart.tar.gz'
 }
 
 [ "$#" -lt 1 ] && usage
