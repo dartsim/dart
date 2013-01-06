@@ -164,8 +164,9 @@ inline int RRT::getNearestNeighbor(const VectorXd &qsamp)
 {
 	int nearest;
 	double distance;
+	flann::Matrix<int> nearestMatrix(&nearest, 1, 1);
 	index.knnSearch(flann::Matrix<double>((double*)qsamp.data(), 1, qsamp.size()), 
-		flann::Matrix<int>(&nearest, 1, 1), flann::Matrix<double>(&distance, 1, 1), 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+		nearestMatrix, flann::Matrix<double>(&distance, 1, 1), 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 	activeNode = nearest;
 	return nearest;
 }
