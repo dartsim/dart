@@ -213,7 +213,7 @@ namespace robotics {
    */
   Eigen::VectorXd Robot::getDofs( std::vector<int> _id )
   {
-    Eigen::VectorXd dofs( 0 );
+    Eigen::VectorXd dofs;
     int numDofs = getNumDofs();
     
     for( unsigned int i = 0; i < _id.size(); i++ )
