@@ -213,25 +213,25 @@ namespace robotics {
    */
   Eigen::VectorXd Robot::getDofs( std::vector<int> _id )
   {
-    Eigen::VectorXd getDofs( 0 );
-    
+    Eigen::VectorXd dofs( 0 );
     int numDofs = getNumDofs();
     
     for( unsigned int i = 0; i < _id.size(); i++ )
+    {
+      if( _id[i] > numDofs - 1 )
       {
-	if( _id[i] > numDofs - 1 )
-          { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
-            return getDofs;
-          }       
-      }  
+        printf("--(x) You are trying to set an inexisting DOF (x)--\n");
+        return dofs;
+      }
+    }
     
-    getDofs.resize( _id.size() );
+    dofs.resize( _id.size() );
     for( unsigned int i = 0; i < _id.size(); i++ )
-      {
-	getDofs(i) = mDofs.at( _id[i] )->getValue();
-      } 
+    {
+      dofs(i) = mDofs.at( _id[i] )->getValue();
+    }
     
-    return getDofs;
+    return dofs;
   }
   
   /**
