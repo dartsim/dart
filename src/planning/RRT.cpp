@@ -48,7 +48,7 @@ using namespace robotics;
 
 namespace planning {
 
-RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const VectorXd &root, double stepSize) :
+RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -58,14 +58,14 @@ RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const VectorXd &r
 	numCollisions(0),
 	numNoProgress(0),
 	numStepTooLarge(0),
-	index(flann::KDTreeIndexParams())
+	index(flann::KDTreeSingleIndexParams())
 {
 	srand(time(NULL));
 	addNode(root, -1);
 }
 
 
-RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -75,7 +75,7 @@ RRT::RRT(World* world, int robot, const Eigen::VectorXi &dofs, const vector<Vect
 	numCollisions(0),
 	numNoProgress(0),
 	numStepTooLarge(0),
-	index(flann::KDTreeIndexParams())
+	index(flann::KDTreeSingleIndexParams())
 {
 	srand(time(NULL));
 	for(int i = 0; i < roots.size(); i++) {
@@ -153,8 +153,13 @@ int RRT::addNode(const VectorXd &qnew, int parentId)
 	configVector.push_back(qnew);
 	parentVector.push_back(parentId);
 	
-	uintptr_t id = configVector.size() - 1;
-	index.addPoints(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
+	unsigned int id = configVector.size() - 1;
+	if(id == 0) {
+		index.buildIndex(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
+	}
+	else {
+		index.addPoints(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
+	}
 	
 	activeNode = id;
 	return id;
@@ -164,10 +169,10 @@ inline int RRT::getNearestNeighbor(const VectorXd &qsamp)
 {
 	int nearest;
 	double distance;
-	flann::Matrix<double> first((double*)qsamp.data(), 1, qsamp.size());
+	const flann::Matrix<double> queryMatrix((double*)qsamp.data(), 1, qsamp.size());
 	flann::Matrix<int> nearestMatrix(&nearest, 1, 1);
-	flann::Matrix<double> third(flann::Matrix<double>(&distance, 1, 1));
-	index.knnSearch(first, nearestMatrix, third, 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+	flann::Matrix<double> distanceMatrix(flann::Matrix<double>(&distance, 1, 1));
+	index.knnSearch(queryMatrix, nearestMatrix, distanceMatrix, 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 	activeNode = nearest;
 	return nearest;
 }

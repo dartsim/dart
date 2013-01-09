@@ -65,8 +65,8 @@ public:
 	std::vector<int> parentVector;		// vector of indices to relate configs in RRT
 	std::vector<Eigen::VectorXd> configVector; 	// vector of all visited configs
 
-	RRT(robotics::World* world, int robot, const Eigen::VectorXi &dofs, const Eigen::VectorXd &root, double stepSize = 0.02);
-	RRT(robotics::World* world, int robot, const Eigen::VectorXi &dofs, const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
+	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const Eigen::VectorXd &root, double stepSize = 0.02);
+	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
 	virtual ~RRT();
 
 	bool connect();
@@ -97,7 +97,7 @@ public:
 protected:
 	robotics::World* world;
 	int robot;
-	Eigen::VectorXi dofs;
+	std::vector<int> dofs;
 
 	flann::Index<flann::L2<double> > index;
 

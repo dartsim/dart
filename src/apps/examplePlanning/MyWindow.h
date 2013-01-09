@@ -25,84 +25,12 @@ namespace dynamics{
     class ContactDynamics;
 }
 
-namespace integration{
-    class IntegrableSystem;
-}
+namespace integration { class IntegrableSystem; }
+namespace planning { class Controller; }
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
-MyWindow(): Win3D() {
-        DartLoader dl;
-        mWorld = dl.parseWorld(DART_DATA_PATH"/scenes/DesktopArm.urdf");
-        
-        // Add ground plane
-        robotics::Object* ground = new robotics::Object();
-        ground->addDefaultRootNode();
-        dynamics::BodyNodeDynamics* node = new dynamics::BodyNodeDynamics();
-        const aiScene* m3d = kinematics::ShapeMesh::loadMesh( DART_DATA_PATH"/scenes/objects/ground.blend");
-        kinematics::ShapeMesh* shape = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), 0.0, m3d);
-        shape->setCollisionMesh(m3d);
-        shape->setVizMesh(m3d);
-        shape->setMass(1.0);
-        shape->setInertia(Eigen::Matrix3d::Identity());
-        node->setShape(shape);
-        //node->setShape(new kinematics::ShapeCube(Eigen::Vector3d(10.0, 10.0, 0.0001), 1.0));
-        kinematics::Joint* joint = new kinematics::Joint(ground->getRoot(), node);
-        ground->addNode(node);
-		ground->setPositionZ(-0.1);
-        
-		ground->initSkel();
-		ground->update();
-		ground->setImmobileState(true);
-        mWorld->addObject(ground);
-		mWorld->rebuildCollision();
-
-        mBackground[0] = 1.0;
-        mBackground[1] = 1.0;
-        mBackground[2] = 1.0;
-        mBackground[3] = 1.0;
-
-        mPlayState = PAUSED;
-        mSimFrame = 0;
-        mPlayFrame = 0;
-        mMovieFrame = 0;
-
-
-        mShowMarker = false;
-        mForce = Eigen::Vector3d::Zero();
-
-        mPersp = 45.f;
-        mTrans[1] = 300.f;
-    
-        mGravity = Eigen::Vector3d(0.0, 0.0, -9.8);
-        mTimeStep = 1.0/1000.0;
-        
-        int sumNDofs = 0;
-        mIndices.push_back(sumNDofs);
-        for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++) {
-            int nDofs = mWorld->getSkeleton(i)->getNumDofs();
-            sumNDofs += nDofs;
-            mIndices.push_back(sumNDofs);
-        }
-
-        initDyn();
-
-       std::cout << 
-            "\nKeybindings:\n" <<
-            "\n" <<
-            "s: start or continue simulating.\n" <<
-            "\n" <<
-            "p: start or continue playback.\n" <<
-            "r, t: move to start or end of playback.\n" <<
-            "[, ]: step through playback by one frame.\n" <<
-            "\n" <<
-            "m: start or continue movie recording.\n" <<
-            "\n" <<
-            "space: pause/unpause whatever is happening.\n" <<
-            "\n" <<
-            "q, escape: quit.\n" <<
-            std::endl;
-    }
+    MyWindow();
 
     virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
@@ -125,16 +53,17 @@ protected:
     int mPlayFrame;
     int mMovieFrame;
     bool mScreenshotScheduled;
+    double mTime;
 
     bool mShowMarker;
     std::vector<Eigen::VectorXd> mBakedStates;
-    Eigen::Vector3d mForce;
 
     integration::EulerIntegrator mIntegrator;
 
     robotics::World* mWorld;
     std::vector<Eigen::VectorXd> mDofVels;
     std::vector<Eigen::VectorXd> mDofs;
+    planning::Controller* mController;
     double mTimeStep;
     Eigen::Vector3d mGravity;
     std::vector<int> mIndices;

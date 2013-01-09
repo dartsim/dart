@@ -13,7 +13,7 @@ namespace planning {
 
 PathShortener::PathShortener() {}
 
-PathShortener::PathShortener(World* world, int robotId, const VectorXi &dofs, double stepSize) :
+PathShortener::PathShortener(World* world, int robotId, const vector<int> &dofs, double stepSize) :
    world(world),
    robotId(robotId),
    dofs(dofs),

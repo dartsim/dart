@@ -9,19 +9,118 @@
 #include "yui/GLFuncs.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/Shape.h"
+#include "planning/PathPlanner.h"
+#include "planning/Controller.h"
+#include "planning/Trajectory.h"
+#include "robotics/Robot.h"
+#include "kinematics/Dof.h"
 
 using namespace Eigen;
 using namespace kinematics;
 using namespace utils;
 using namespace integration;
 using namespace dynamics;
+using namespace std;
+using namespace planning;
+
+MyWindow::MyWindow(): Win3D() {
+    DartLoader dl;
+    mWorld = dl.parseWorld(DART_DATA_PATH"/scenes/hubo_world.urdf");
+        
+    // Add ground plane
+    robotics::Object* ground = new robotics::Object();
+    ground->addDefaultRootNode();
+    dynamics::BodyNodeDynamics* node = new dynamics::BodyNodeDynamics();
+    node->setShape(new kinematics::ShapeCube(Eigen::Vector3d(10.0, 10.0, 0.0001), 1.0));
+    kinematics::Joint* joint = new kinematics::Joint(ground->getRoot(), node);
+    ground->addNode(node);
+    ground->initSkel();
+    ground->update();
+    ground->setImmobileState(true);
+    mWorld->addObject(ground);
+    mWorld->rebuildCollision();
+
+    mBackground[0] = 1.0;
+    mBackground[1] = 1.0;
+    mBackground[2] = 1.0;
+    mBackground[3] = 1.0;
+
+    mPlayState = PAUSED;
+    mSimFrame = 0;
+    mPlayFrame = 0;
+    mMovieFrame = 0;
+    mTime = 0.0;
+
+    mShowMarker = false;
+
+    mTrans[2] = -2000.f;
+    mEye = Eigen::Vector3d(2.0, -2.0, 2.0);
+    mUp = Eigen::Vector3d(0.0, 0.0, 1.0);
+    
+    mGravity = Eigen::Vector3d(0.0, 0.0, -9.8);
+    mTimeStep = 1.0/1000.0;
+
+    vector<int> trajectoryDofs(7);
+    string trajectoryNodes[] = {"Body_RSP", "Body_RSR", "Body_RSY", "Body_REP", "Body_RWY", "rightUJoint", "rightPalmDummy"}; 
+    for(int i = 0; i < 7; i++) {
+        trajectoryDofs[i] = mWorld->getRobot(0)->getNode(trajectoryNodes[i].c_str())->getDof(0)->getSkelIndex();
+    }
+
+    vector<int> actuatedDofs(mWorld->getRobot(0)->getNumDofs() - 6);
+    for(unsigned int i = 0; i < actuatedDofs.size(); i++) {
+        actuatedDofs[i] = i + 6;
+    }
+
+    // Deactivate collision checking between the feet and the ground during planning
+    mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
+    mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("rightFoot"), ground->getNode(1));
+
+    mController = new planning::Controller(mWorld->getSkeleton(0), actuatedDofs);
+    PathPlanner<> pathPlanner(*mWorld);
+    VectorXd goal(7);
+    goal << 0.0, -M_PI / 2.0, 0.0, -M_PI / 2.0, 0.0, 0.0, 0.0;
+    list<VectorXd> path;
+    if(!pathPlanner.planPath(0, trajectoryDofs, Eigen::VectorXd::Zero(7), goal, path)) {
+        cout << "Path planner could not find a path" << endl;
+    }
+    else {
+        const VectorXd maxVelocity = 0.3 * VectorXd::Ones(7);
+        const VectorXd maxAcceleration = 0.3 * VectorXd::Ones(7);
+        Trajectory* trajectory = new Trajectory(path, maxVelocity, maxAcceleration);
+        mController->setTrajectory(trajectory, 0.1, trajectoryDofs);
+    }
+
+    mWorld->mCollisionHandle->getCollisionChecker()->activatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
+    mWorld->mCollisionHandle->getCollisionChecker()->activatePair(mWorld->getRobot(0)->getNode("rightFoot"), ground->getNode(1));
+
+    initDyn();
+
+    std::cout << 
+        "\nKeybindings:\n" <<
+        "\n" <<
+        "s: start or continue simulating.\n" <<
+        "\n" <<
+        "p: start or continue playback.\n" <<
+        "r, t: move to start or end of playback.\n" <<
+        "[, ]: step through playback by one frame.\n" <<
+        "\n" <<
+        "m: start or continue movie recording.\n" <<
+        "\n" <<
+        "space: pause/unpause whatever is happening.\n" <<
+        "\n" <<
+        "q, escape: quit.\n" <<
+        std::endl;
+}
 
 
 void MyWindow::initDyn()
 {
-    int numDofs = 0;
-    for(int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        numDofs += mWorld->getSkeleton(i)->getNumDofs();
+    int sumNDofs = 0;
+    mIndices.push_back(sumNDofs);
+    for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++) {
+        int nDofs = mWorld->getSkeleton(i)->getNumDofs();
+        sumNDofs += nDofs;
+        mIndices.push_back(sumNDofs);
     }
 
     mDofs.resize(mWorld->getNumSkeletons());
@@ -72,7 +171,10 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        VectorXd qddot = mWorld->getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(-mWorld->getSkeleton(i)->getCombinedVector() + mWorld->getSkeleton(i)->getExternalForces() + mWorld->mCollisionHandle->getConstraintForce(i));
+        VectorXd qddot = mWorld->getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(
+            - mWorld->getSkeleton(i)->getCombinedVector() + mWorld->getSkeleton(i)->getExternalForces()
+            + mWorld->mCollisionHandle->getConstraintForce(i) + mWorld->getSkeleton(i)->getInternalForces());
+
         mWorld->getSkeleton(i)->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
@@ -92,7 +194,7 @@ void MyWindow::setState(VectorXd newState) {
 void MyWindow::retrieveBakedState(int frame)
 {
     for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        int start = mIndices[i] * 2;
+        int start = mIndices[i];
         int size = mDofs[i].size();
         mWorld->getSkeleton(i)->setPose(mBakedStates[frame].segment(start, size), false, false);
     }
@@ -128,11 +230,13 @@ void MyWindow::displayTimer(int _val)
         }
         break;
     case SIMULATE:
-        int numIter = mDisplayTimeout / (mTimeStep*1000);
+        int numIter = (mDisplayTimeout / 1000.0) / mTimeStep;
         for (int i = 0; i < numIter; i++) {
+            mWorld->getSkeleton(0)->setInternalForces(mController->getTorques(mDofs[0], mDofVels[0], mTime));
             mIntegrator.integrate(this, mTimeStep);
+            mTime += mTimeStep;
         }
-        mSimFrame += numIter;   
+        mSimFrame += numIter;
         glutPostRedisplay();
         bake();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
