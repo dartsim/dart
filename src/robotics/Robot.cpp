@@ -183,7 +183,7 @@ namespace robotics {
    * @function setDofs
    * @brief Set only specified DOFs
    */
-  bool Robot::setDofs( Eigen::VectorXd _vals, Eigen::VectorXi _id )
+  bool Robot::setDofs( Eigen::VectorXd _vals, std::vector<int> _id )
   {
     int numDofs = getNumDofs();
     int rootDofs = getRoot()->getNumLocalDofs();
@@ -193,7 +193,7 @@ namespace robotics {
     
     for( unsigned int i = 0; i < _id.size(); i++ )
       {
-	if( _id(i) > numDofs - 1 )
+	if( _id[i] > numDofs - 1 )
           { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
             return false;
           }       
@@ -201,7 +201,7 @@ namespace robotics {
     
     for( unsigned int i = 0; i < _id.size(); i++ )
       {
-	mDofs.at( _id(i) )->setValue( _vals(i) );
+	mDofs.at( _id[i] )->setValue( _vals(i) );
       } 
     
     return true;
@@ -211,15 +211,15 @@ namespace robotics {
    * @function getDofs
    * @brief Get only specified DOFs
    */
-  Eigen::VectorXd Robot::getDofs( Eigen::VectorXi _id )
+  Eigen::VectorXd Robot::getDofs( std::vector<int> _id )
   {
-    Eigen::VectorXd getDofs( (Eigen::VectorXd::Index)0 );
+    Eigen::VectorXd getDofs( 0 );
     
     int numDofs = getNumDofs();
     
     for( unsigned int i = 0; i < _id.size(); i++ )
       {
-	if( _id(i) > numDofs - 1 )
+	if( _id[i] > numDofs - 1 )
           { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
             return getDofs;
           }       
@@ -228,7 +228,7 @@ namespace robotics {
     getDofs.resize( _id.size() );
     for( unsigned int i = 0; i < _id.size(); i++ )
       {
-	getDofs(i) = mDofs.at( _id(i) )->getValue();
+	getDofs(i) = mDofs.at( _id[i] )->getValue();
       } 
     
     return getDofs;
