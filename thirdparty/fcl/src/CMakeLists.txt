@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME}
+set (SRC
   BV/AABB.cpp
   BV/OBB.cpp
   BV/RSS.cpp
@@ -53,6 +53,10 @@ add_library(${PROJECT_NAME}
   profile.cpp
   collision_data.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${CCD_LIBRARIES} ${OCTOMAP_LIBRARIES} ${Boost_LIBRARIES})
+add_library(${PROJECT_NAME} SHARED ${SRC})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${FCL_VERSION} SOVERSION ${FCL_SOVERSION})
+add_library(${PROJECT_NAME}_static STATIC ${SRC})
+set_target_properties(${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} ccd ${OCTOMAP_LIBRARIES} ${Boost_LIBRARIES})
 
-install(TARGETS ${PROJECT_NAME} ARCHIVE DESTINATION lib/ LIBRARY DESTINATION lib/)
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static DESTINATION lib)

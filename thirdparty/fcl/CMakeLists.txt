@@ -5,6 +5,18 @@ set(CMAKE_BUILD_TYPE Release)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
+SET(FCL_VERSION "0") # they use SVN
+SET(FCL_SOVERSION "80") # SVN revision number
+
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev, libccd")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${FCL_VERSION})
+SET(CPACK_PACKAGE_VERSION_MINOR ${FCL_SOVERSION})
+SET(CPACK_PACKAGE_VERSION_PATCH "1") # maintained by Golems
+SET(CPACK_PACKAGE_NAME "libfcl")
+SET(CPACK_SYSTEM_NAME "amd64")
+
+set(PKG_DESC "Fast Collision Library from WillowGarage")
+
 include(FCLVersion)
 
 # Whether to enable SSE
@@ -13,7 +25,7 @@ set(FCL_HAVE_SSE 0)
 if(FCL_USE_SSE)
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(FCL_HAVE_SSE 0) #always disable, for now
-    add_definitions(-march=native)
+    add_definitions(-march=native -std=c++0x)
   endif()
   # TODO: do something similar for other compilers
 endif()
@@ -57,21 +69,19 @@ include_directories("include")
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(CCD REQUIRED ccd)
 endif()
-if(NOT CCD_FOUND)
-    # if pkfconfig is not installed, then fall back on more fragile detection
-    # of ccd
-    find_path(CCD_INCLUDE_DIRS ccd.h
-        PATH_SUFFIXES ccd)
-    find_path(CCD_LIBRARY_DIRS
-        ${CMAKE_SHARED_LIBRARY_PREFIX}ccd${CMAKE_SHARED_LIBRARY_SUFFIX})
-    if(CCD_INCLUDE_DIRS AND CCD_LIBRARY_DIRS)
+# if(NOT CCD_FOUND)
+#    # if pkfconfig is not installed, then fall back on more fragile detection
+#    # of ccd
+#    find_path(CCD_INCLUDE_DIRS ccd.h PATH_SUFFIXES ccd)
+#    find_path(CCD_LIBRARY_DIRS ${CMAKE_SHARED_LIBRARY_PREFIX}ccd${CMAKE_SHARED_LIBRARY_SUFFIX})
+#    if(CCD_INCLUDE_DIRS AND CCD_LIBRARY_DIRS)
         set(CCD_LIBRARIES "ccd")
-    else()
-        message(FATAL_ERROR "Libccd is required by FCL")
-    endif()
-endif()
-include_directories(${CCD_INCLUDE_DIRS})
-link_directories(${CCD_LIBRARY_DIRS})
+#    else()
+#        message(FATAL_ERROR "Libccd is required by FCL")
+#    endif()
+# endif()
+# include_directories(${CCD_INCLUDE_DIRS})
+# link_directories(${CCD_LIBRARY_DIRS})
 
 add_subdirectory(include/fcl)
 add_subdirectory(src)
@@ -87,6 +97,13 @@ install(DIRECTORY include/ DESTINATION include
 
 install(FILES "${pkg_conf_file}" DESTINATION lib/pkgconfig/ COMPONENT pkgconfig)
 
+SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Golems")
+
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PKG_DESC})
+
+INCLUDE(CPack)
 
 #enable_testing()
 #add_subdirectory(test)

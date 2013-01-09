@@ -133,12 +133,6 @@ ADD_SUBDIRECTORY (thirdparty/tinyxml2)
 
 ADD_SUBDIRECTORY (thirdparty/tinyxml)
 
-ADD_SUBDIRECTORY (thirdparty/libccd)
-
-SET(CCD_INCLUDE_DIRS "${THIRDPARTY_INSTALL_PREFIX}/include")
-SET(CCD_LIBRARY_DIRS "${THIRDPARTY_INSTALL_PREFIX}/lib")
-ADD_SUBDIRECTORY (thirdparty/fcl)
-
 if ( SNOPT )
  SET( snopt_folder ${CMAKE_SOURCE_DIR}/thirdparty/snopt )
  ADD_SUBDIRECTORY ( ${snopt_folder} )
