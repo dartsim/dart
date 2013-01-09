@@ -66,6 +66,7 @@ namespace yui {
         Trackball mTrackBall;
         Eigen::Vector3d mTrans;
         Eigen::Vector3d mEye;
+        Eigen::Vector3d mUp;
         float mZoom;
         float mPersp;
 

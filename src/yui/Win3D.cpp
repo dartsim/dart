@@ -44,7 +44,7 @@ using namespace Eigen;
 namespace yui {
 
     Win3D::Win3D()
-        :GlutWindow(), mTrans(0.0,0.0,0.0), mEye(0.0,0.0,1.0), mZoom(1.0), mPersp(45.0), mRotate(false), mTranslate(false), mZooming(false)
+        :GlutWindow(), mTrans(0.0,0.0,0.0), mEye(0.0,0.0,1.0), mUp(0.0,1.0,0.0), mZoom(1.0), mPersp(45.0), mRotate(false), mTranslate(false), mZooming(false)
     {}
 
     void Win3D::initWindow(int w, int h, const char* name)
@@ -165,7 +165,7 @@ namespace yui {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         gluPerspective(mPersp, (double)mWinWidth/(double)mWinHeight,0.1,10.0);
-        gluLookAt(mEye[0],mEye[1],mEye[2],0.0,0.0,-1.0, 0.0,1.0,0.0);
+        gluLookAt(mEye[0],mEye[1],mEye[2],0.0,0.0,-1.0, mUp[0], mUp[1], mUp[2]);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
