@@ -5,9 +5,12 @@
 #include "RRT.h"
 #include <iostream>
 #include "robotics/Robot.h"
+#include <limits>
 
 #ifndef _RST_PATH_PLANNER_
 #define _RST_PATH_PLANNER_
+
+namespace planning {
 
 template <class R = RRT>
 class PathPlanner {
@@ -96,7 +99,7 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs, 
 
 	R rrt(world, robot, dofs, start, stepsize);
 	typename R::StepResult result = R::STEP_PROGRESS;
-	double smallestGap = DBL_MAX;
+	double smallestGap = numeric_limits<double>::infinity();
 	while (result != RRT::STEP_REACHED) {
 		if(connect) {
 			rrt.connect();
@@ -129,7 +132,7 @@ bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dof
 	R* rrt1 = &start_rrt;
 	R* rrt2 = &goal_rrt;
 	
-	double smallestGap = DBL_MAX;
+	double smallestGap = numeric_limits<double>::infinity();
 	bool connected = false;
 	while(!connected) {
 		R* temp = rrt1;
@@ -168,6 +171,6 @@ bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dof
 	
 	return true;
 }
-
+}
 
 #endif /** _RST_PATH_PLANNER_ */
