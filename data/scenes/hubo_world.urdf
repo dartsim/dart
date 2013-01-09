@@ -1,0 +1,9 @@
+<world name="brick_single_world">
+  <!-- include the models here by referenceing their URDFs -->
+  <include filename="jaemiHubo_local.urdf" model_name="jaemi"/>
+
+  <entity model="jaemi" name="GolemHubo">
+    <origin xyz="0 0 1.0" rpy="0 0 0"/>
+  </entity>
+
+</world>
