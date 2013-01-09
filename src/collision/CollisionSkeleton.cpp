@@ -6,6 +6,7 @@
 #include "utils/UtilsMath.h"
 #include "kinematics/BodyNode.h"
 #include "fcl/collision.h"
+#include <algorithm>
 
 using namespace std;
 using namespace Eigen;
@@ -249,6 +250,16 @@ namespace collision_checking{
             csnode->mBodynodeID = mCollisionSkeletonNodeList.size();
             mCollisionSkeletonNodeList.push_back(csnode);
             mBodyNodeHash[_bd] = csnode;
+            mActiveMatrix.push_back(vector<bool>(mCollisionSkeletonNodeList.size() - 1));
+            for(unsigned int i = 0; i < mCollisionSkeletonNodeList.size() - 1; i++) {
+                //if(mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == _bd || _bd->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode) {
+                if(mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == _bd->getSkel()) {
+                    mActiveMatrix.back()[i] = false;
+                }
+                else {
+                    mActiveMatrix.back()[i] = true;
+                }
+            }
         } else {
             addCollisionSkeletonNode(_bd, false);
             for (int i = 0; i < _bd->getNumChildJoints(); i++)
@@ -265,10 +276,9 @@ namespace collision_checking{
         }
         for (int i = 0; i < mCollisionSkeletonNodeList.size(); i++) {
             for (int j = i + 1; j < mCollisionSkeletonNodeList.size(); j++) {
-                if (mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[j]->mBodyNode || mCollisionSkeletonNodeList[j]->mBodyNode->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode)
+                if (!mActiveMatrix[j][i]) {
                     continue;
-                if (mCollisionSkeletonNodeList[i]->mBodyNode->getSkel() == mCollisionSkeletonNodeList[j]->mBodyNode->getSkel())
-                    continue;
+                }
                 const int numTriIntersection = mCollisionSkeletonNodeList[i]->checkCollision(mCollisionSkeletonNodeList[j], _calculateContactPoints ? &mContactPointList : NULL, num_max_contact);
                 mNumTriIntersection += numTriIntersection;
                 if(numTriIntersection > 0) {
@@ -286,5 +296,23 @@ namespace collision_checking{
     void SkeletonCollision::draw() {
         for(int i=0;i<mCollisionSkeletonNodeList.size();i++)
             mCollisionSkeletonNodeList[i]->drawCollisionSkeletonNode();
+    }
+
+    void SkeletonCollision::activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
+        int nodeId1 = getCollisionSkeletonNode(node1)->mBodynodeID;
+        int nodeId2 = getCollisionSkeletonNode(node2)->mBodynodeID;
+        if(nodeId1 < nodeId2) {
+            swap(nodeId1, nodeId2);
+        }
+        mActiveMatrix[nodeId1][nodeId2] = true;
+    }
+
+    void SkeletonCollision::deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
+        int nodeId1 = getCollisionSkeletonNode(node1)->mBodynodeID;
+        int nodeId2 = getCollisionSkeletonNode(node2)->mBodynodeID;
+        if(nodeId1 < nodeId2) {
+            swap(nodeId1, nodeId2);
+        }
+        mActiveMatrix[nodeId1][nodeId2] = false;
     }
 }

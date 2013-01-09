@@ -115,18 +115,21 @@ namespace collision_checking {
         inline int getNumTriangleIntersection(){return mNumTriIntersection;}
         bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
         void draw();
-        CollisionSkeletonNode* getCollisionSkeletonNode(kinematics::BodyNode *_bodyNode){
+        CollisionSkeletonNode* getCollisionSkeletonNode(const kinematics::BodyNode *_bodyNode){
             if(mBodyNodeHash.find(_bodyNode)!=mBodyNodeHash.end())
                 return mBodyNodeHash[_bodyNode];
             else
                 return NULL;
         }
+        void activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
+        void deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
         
     public:
         int mNumTriIntersection;
         std::vector<ContactPoint> mContactPointList;
         std::vector<CollisionSkeletonNode*> mCollisionSkeletonNodeList; 
-        std::map<kinematics::BodyNode*, CollisionSkeletonNode*> mBodyNodeHash;
+        std::map<const kinematics::BodyNode*, CollisionSkeletonNode*> mBodyNodeHash;
+        std::vector<std::vector<bool> > mActiveMatrix;
     };
 
     inline bool CollisionSkeletonNode::EFtest(fcl::Vec3f& p0, fcl::Vec3f&p1, fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& p)
