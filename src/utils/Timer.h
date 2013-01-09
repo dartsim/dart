@@ -39,6 +39,7 @@
 #define UTILS_TIMER_H
 
 #if WIN32
+#define NOMINMAX
 #include <windows.h>
 typedef struct {
     LARGE_INTEGER  start;
