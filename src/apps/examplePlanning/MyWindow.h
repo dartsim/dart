@@ -58,7 +58,7 @@ protected:
     bool mShowMarker;
     std::vector<Eigen::VectorXd> mBakedStates;
 
-    integration::EulerIntegrator mIntegrator;
+    integration::RK4Integrator mIntegrator;
 
     robotics::World* mWorld;
     std::vector<Eigen::VectorXd> mDofVels;

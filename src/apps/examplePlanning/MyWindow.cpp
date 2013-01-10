@@ -75,7 +75,10 @@ MyWindow::MyWindow(): Win3D() {
     mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
     mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("rightFoot"), ground->getNode(1));
 
-    mController = new planning::Controller(mWorld->getSkeleton(0), actuatedDofs);
+    VectorXd kI = 100.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
+    VectorXd kP = 300.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
+    VectorXd kD = 10.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
+    mController = new planning::Controller(mWorld->getSkeleton(0), actuatedDofs, kI, kP, kD);
     PathPlanner<> pathPlanner(*mWorld);
     VectorXd goal(7);
     goal << 0.0, -M_PI / 2.0, 0.0, -M_PI / 2.0, 0.0, 0.0, 0.0;
@@ -87,7 +90,7 @@ MyWindow::MyWindow(): Win3D() {
         const VectorXd maxVelocity = 0.3 * VectorXd::Ones(7);
         const VectorXd maxAcceleration = 0.3 * VectorXd::Ones(7);
         Trajectory* trajectory = new Trajectory(path, maxVelocity, maxAcceleration);
-		cout << "Trajectory duration: " << trajectory->getDuration() << endl;
+        cout << "Trajectory duration: " << trajectory->getDuration() << endl;
         mController->setTrajectory(trajectory, 0.1, trajectoryDofs);
     }
 
