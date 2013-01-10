@@ -4,7 +4,7 @@ PROJECT(pdController)
 FILE(GLOB pdController_srcs "*.cpp")
 FILE(GLOB pdController_hdrs "*.h")
 ADD_EXECUTABLE(pdController ${pdController_srcs} ${pdController_hdrs})
-TARGET_LINK_LIBRARIES(pdController kinematics dynamics yui renderer integration)
+TARGET_LINK_LIBRARIES(pdController kinematics dynamics yui renderer integration optimized fcl debug fcld)
 LINK_THIRDPARTY_GLUT(pdController)
 
 SET_TARGET_PROPERTIES(pdController PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
