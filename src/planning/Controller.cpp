@@ -9,7 +9,7 @@ using namespace Eigen;
 
 namespace planning {
 
-const int mode = 1;
+const int mode = 0;
 
 Controller::Controller(dynamics::SkeletonDynamics* _skel, const vector<int> &_actuatedDofs) :
     mSkel(_skel),
@@ -29,7 +29,7 @@ Controller::Controller(dynamics::SkeletonDynamics* _skel, const vector<int> &_ac
 	else if(mode == 1) {
 		for (int i = 0; i < nDof; i++) {
 			mKp(i, i) = 800.0;
-			mKd(i, i) = 15;
+			mKd(i, i) = 1.5;
 		}
 	}
 	else {
@@ -64,6 +64,9 @@ void Controller::setTrajectory(const Trajectory* _trajectory, double _startTime,
 
 VectorXd Controller::getTorques(const VectorXd& _dof, const VectorXd& _dofVel, double _time) {
     Eigen::VectorXd desiredDofVels = VectorXd::Zero(mSkel->getNumDofs());
+	if(_time - mStartTime > mTrajectory->getDuration()) {
+		cout << "end" << endl;
+	}
     if(mTrajectory && _time - mStartTime >= 0.0) {
         for(unsigned int i = 0; i < mTrajectoryDofs.size(); i++) {
             mDesiredDofs[mTrajectoryDofs[i]] = mTrajectory->getPosition(_time - mStartTime)[i];
@@ -82,15 +85,16 @@ VectorXd Controller::getTorques(const VectorXd& _dof, const VectorXd& _dofVel, d
 		torques = p + d - mKd * qddot * mTimestep;
 	}
 	else if(mode == 1) {
-	    torques = -mKp * (_dof - mDesiredDofs) - mKd * _dofVel;
+	    torques = -mKp * (_dof - mDesiredDofs) - mKd * (_dofVel - desiredDofVels);
 	    //torques = mSkel->getMassMatrix() * torques; // scaled by accumulated mass
 	}
 	else {
 	    const VectorXd accelerations = -mKp * (_dof - mDesiredDofs) - mKd * (_dofVel - desiredDofVels);
 	    torques = mSelectionMatrix * mSkel->getMassMatrix() * (accelerations + mSkel->getCombinedVector());
 	}
-	cout << torques[28] << endl;
-    return mSelectionMatrix * torques;
+	//cout << torques[28] << endl;
+	VectorXd max = 1000.0 * VectorXd::Ones(torques.size());
+    return mSelectionMatrix * torques.cwiseMax(-max).cwiseMin(max);
 }
 
 }

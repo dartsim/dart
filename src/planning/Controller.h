@@ -27,6 +27,7 @@ protected:
     Eigen::MatrixXd mKp;
     Eigen::MatrixXd mKd;
     Eigen::MatrixXd mSelectionMatrix;
+    Eigen::MatrixXd mIntegratedError;
     const Trajectory* mTrajectory;
     double mStartTime;
 };

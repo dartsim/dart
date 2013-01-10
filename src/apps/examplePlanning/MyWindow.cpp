@@ -87,6 +87,7 @@ MyWindow::MyWindow(): Win3D() {
         const VectorXd maxVelocity = 0.3 * VectorXd::Ones(7);
         const VectorXd maxAcceleration = 0.3 * VectorXd::Ones(7);
         Trajectory* trajectory = new Trajectory(path, maxVelocity, maxAcceleration);
+		cout << "Trajectory duration: " << trajectory->getDuration() << endl;
         mController->setTrajectory(trajectory, 0.1, trajectoryDofs);
     }
 

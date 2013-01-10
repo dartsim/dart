@@ -153,11 +153,6 @@ message(STATUS "Generating ${DART_CONFIG_FILE}")
 CONFIGURE_FILE( ${DART_CONFIG}.in ${DART_CONFIG} @ONLY )
 INSTALL(FILES ${DART_CONFIG} DESTINATION share/dart)
 
-# Install Eigen
-INSTALL(DIRECTORY ${EIGEN_DIR}/Eigen DESTINATION include/eigen-3.0.5)
-INSTALL(DIRECTORY ${EIGEN_DIR}/unsupported DESTINATION include/eigen-3.0.5)
-INSTALL(FILES ${EIGEN_DIR}/signature_of_eigen3_matrix_library DESTINATION include/eigen-3.0.5)
-
 ###############################################################################
 # Doxygen
 FIND_PACKAGE(Doxygen)
