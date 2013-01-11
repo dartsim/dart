@@ -15,8 +15,8 @@ SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
-
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+message(STATUS "DART CMake Modules: ${CMAKE_MODULE_PATH}")
 
 SET(CPACK_PACKAGE_VERSION_MAJOR "2")
 SET(CPACK_PACKAGE_VERSION_MINOR "1")
@@ -41,7 +41,6 @@ INCLUDE_DIRECTORIES("src")
 
 SET(BUILD_SHARED_LIBS OFF)
 SET(CMAKE_CXX_WARNING_LEVEL 4)
-SET(EIGEN_DIR ${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.5)
 
 # Can't test for WIN32 - We might be building on Cygwin
 if (WIN32 AND NOT CYGWIN)
@@ -123,6 +122,10 @@ if(DEFINED FLANN_PREFIX_PATH)
     SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FLANN_PREFIX_PATH})
 endif(DEFINED FLANN_PREFIX_PATH)
 
+#Eigen
+FIND_PACKAGE(Eigen3 REQUIRED)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+message (STATUS "Eigen directory is ${EIGEN3_INCLUDE_DIR}")
 
 ###############################################################################
 # Thirdparty libraries
@@ -149,9 +152,11 @@ ADD_SUBDIRECTORY(src)
 # Generate the Dart CMake Config file
 SET(DART_CONFIG_FILE DARTConfig.cmake)
 SET(DART_CONFIG ${CMAKE_SOURCE_DIR}/${DART_CONFIG_FILE})
+FILE(GLOB cmake_mods "cmake/Modules/*.cmake")
 message(STATUS "Generating ${DART_CONFIG_FILE}")
 CONFIGURE_FILE( ${DART_CONFIG}.in ${DART_CONFIG} @ONLY )
 INSTALL(FILES ${DART_CONFIG} DESTINATION share/dart)
+INSTALL(FILES ${cmake_mos} DESTINATION share/dart/cmake)
 
 ###############################################################################
 # Doxygen

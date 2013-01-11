@@ -8,7 +8,6 @@ else()
 endif()
 
 INCLUDE_DIRECTORIES(${THIRDPARTY_INSTALL_PREFIX}/include)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/eigen-3.0.5)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/gtest-1.6.0/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/ann_1.1.2/include)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/thirdparty/libccd/src)
