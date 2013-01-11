@@ -23,7 +23,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "1")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
 SET(CPACK_PACKAGE_NAME "dart")
 SET(CPACK_SYSTEM_NAME "amd64")
-SET(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost-dev, flann (>=1.8), libccd (>=1.4.2), lifcl (>=0.2.7), libeigen3-dev")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost-dev, flann (>=1.8), libccd (>=1.4.2), libfcl (>=0.2.7), libeigen3-dev")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
@@ -156,7 +156,7 @@ FILE(GLOB cmake_mods "cmake/Modules/*.cmake")
 message(STATUS "Generating ${DART_CONFIG_FILE}")
 CONFIGURE_FILE( ${DART_CONFIG}.in ${DART_CONFIG} @ONLY )
 INSTALL(FILES ${DART_CONFIG} DESTINATION share/dart)
-INSTALL(FILES ${cmake_mos} DESTINATION share/dart/cmake)
+INSTALL(FILES ${cmake_mods} DESTINATION share/dart/cmake)
 
 ###############################################################################
 # Doxygen
