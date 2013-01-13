@@ -10,7 +10,7 @@
 #include "kinematics/BodyNode.h"
 #include "kinematics/Shape.h"
 #include "planning/PathPlanner.h"
-#include "planning/Controller.h"
+#include "Controller.h"
 #include "planning/Trajectory.h"
 #include "robotics/Robot.h"
 #include "kinematics/Dof.h"
@@ -71,14 +71,27 @@ MyWindow::MyWindow(): Win3D() {
         actuatedDofs[i] = i + 6;
     }
 
+    mWorld->getRobot(0)->getDof(19)->setValue(-10.0 * M_PI/180.0);
+    mWorld->getRobot(0)->getDof(20)->setValue(-10.0 * M_PI/180.0);
+    mWorld->getRobot(0)->getDof(23)->setValue(20.0 * M_PI/180.0);
+    mWorld->getRobot(0)->getDof(24)->setValue(20.0 * M_PI/180.0);
+    mWorld->getRobot(0)->getDof(27)->setValue(-10.0 * M_PI/180.0);
+    mWorld->getRobot(0)->getDof(28)->setValue(-10.0 * M_PI/180.0);
+
+
     // Deactivate collision checking between the feet and the ground during planning
     mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
     mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("rightFoot"), ground->getNode(1));
 
     VectorXd kI = 100.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
-    VectorXd kP = 300.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
-    VectorXd kD = 10.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
-    mController = new planning::Controller(mWorld->getSkeleton(0), actuatedDofs, kI, kP, kD);
+    VectorXd kP = 500.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
+    VectorXd kD = 100.0 * VectorXd::Ones(mWorld->getSkeleton(0)->getNumDofs());
+    vector<int> ankleDofs(2);
+    ankleDofs[0] = 27;
+    ankleDofs[1] = 28;
+    const VectorXd anklePGains = -1000.0 * VectorXd::Ones(2);
+    const VectorXd ankleDGains = -2000.0 * VectorXd::Ones(2);
+    mController = new Controller(mWorld->getSkeleton(0), actuatedDofs, kP, kD, ankleDofs, anklePGains, ankleDGains);
     PathPlanner<> pathPlanner(*mWorld);
     VectorXd goal(7);
     goal << 0.0, -M_PI / 2.0, 0.0, -M_PI / 2.0, 0.0, 0.0, 0.0;
