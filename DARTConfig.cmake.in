@@ -53,7 +53,7 @@ FIND_PACKAGE(Eigen3 REQUIRED)
 include_directories(EIGEN3_INCLUDE_DIR)
 message (STATUS "Eigen directory is ${EIGEN3_INCLUDE_DIR}")
 
-SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor robotics  collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl )
+SET( DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor planning robotics  collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl )
 FOREACH( DART_LIB ${DART_LIBS} )
     set(DART_LIBRARIES ${DART_LIBRARIES} optimized ${DART_LIB} debug ${DART_LIB}d)
 ENDFOREACH(DART_LIB)
