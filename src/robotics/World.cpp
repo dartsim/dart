@@ -48,18 +48,22 @@
 #include <robotics/Robot.h>
 #include <robotics/Object.h>
 
+using namespace Eigen;
+
 namespace robotics {
 
   /**
    * @function World
    * @brief Constructor
    */
-  World::World() {
+  World::World()
+  {
     mRobots.resize(0);
     mObjects.resize(0);
     mSkeletons.resize(0);
+    mIndices.push_back(0);
 
-    mGravity = Eigen::Vector3d(0, 0, -9.8);
+    mGravity = Eigen::Vector3d(0, 0, -9.81);
     mTimeStep = 0.001;
   }
 
@@ -99,6 +103,14 @@ namespace robotics {
 
     _robot->initDynamics();
     
+    mIndices.push_back(mIndices.back() + _robot->getNumDofs());
+    mDofs.push_back(_robot->getPose());
+    mDofVels.push_back(_robot->getQDotVector());
+
+    if(!_robot->getImmobileState()) {
+      _robot->computeDynamics(mGravity, mDofVels.back(), false); // Not sure if we need this
+    }
+
     // create collision dynamics object
     // rebuildCollision();
 
@@ -115,8 +127,17 @@ namespace robotics {
     // add item
     mObjects.push_back( _object );
     mSkeletons.push_back( _object );
+    mIndices.push_back(mIndices.back() + _object->getNumDofs());
 
     _object->initDynamics();
+
+    mIndices.push_back(mIndices.back() + _object->getNumDofs());
+    mDofs.push_back(_object->getPose());
+    mDofVels.push_back(_object->getQDotVector());
+
+    if(!_object->getImmobileState()) {
+      _object->computeDynamics(mGravity, mDofVels.back(), false); // Not sure if we need this
+    }
 
     // create collision dynanmics object
     // rebuildCollision();
@@ -170,6 +191,65 @@ namespace robotics {
   bool World::checkCollision(bool checkAllCollisions) {
     return mCollisionHandle->getCollisionChecker()->checkCollision(checkAllCollisions, false);
   }
+
+  void World::step() {
+    mIntegrator.integrate(this, mTimeStep);
+    mTime += mTimeStep;
+  }
+
+  VectorXd World::getState() {
+    VectorXd state(mIndices.back() * 2);
+    for (int i = 0; i < getNumSkeletons(); i++) {
+      int start = mIndices[i] * 2;
+      int size = mDofs[i].size();
+      state.segment(start, size) = mDofs[i];
+      state.segment(start + size, size) = mDofVels[i];
+    }
+    return state;
+  }
+
+  VectorXd World::evalDeriv() {
+    // compute dynamic equations
+    for (int i = 0; i < getNumSkeletons(); i++) {
+        if (getSkeleton(i)->getImmobileState()) {
+            // need to update node transformation for collision
+            getSkeleton(i)->setPose(mDofs[i], true, false);
+        } else {
+            // need to update first derivatives for collision
+            getSkeleton(i)->setPose(mDofs[i], false, true);
+            getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], true);
+        }
+    }
+    // compute contact forces
+    mCollisionHandle->applyContactForces();
+
+    // compute derivatives for integration
+    VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);
+    for (int i = 0; i < getNumSkeletons(); i++) {
+        // skip immobile objects in forward simulation
+        if (getSkeleton(i)->getImmobileState())
+            continue;
+        int start = mIndices[i] * 2;
+        int size = mDofs[i].size();
+        VectorXd qddot = getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(
+            - getSkeleton(i)->getCombinedVector() + getSkeleton(i)->getExternalForces()
+            + mCollisionHandle->getConstraintForce(i) + getSkeleton(i)->getInternalForces());
+
+        getSkeleton(i)->clampRotation(mDofs[i], mDofVels[i]);
+        deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
+        deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
+    }
+    return deriv;
+}
+
+void World::setState(VectorXd newState) {
+    for (int i = 0; i < getNumSkeletons(); i++) {
+        int start = mIndices[i] * 2;
+        int size = mDofs[i].size();
+        mDofs[i] = newState.segment(start, size);
+        mDofVels[i] = newState.segment(start + size, size);
+    }
+}
 
 } // end namespace robotics
 

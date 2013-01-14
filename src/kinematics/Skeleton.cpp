@@ -177,37 +177,12 @@ namespace kinematics {
         }
     }
 
-    void Skeleton::setPose(const vector<double>& state, bool bCalcTrans, bool bCalcDeriv) {
-        VectorXd x(state.size());
-        for (unsigned int i = 0; i < state.size(); i++) {
-            x(i) = state[i];
-        }
-        setPose(x, bCalcTrans, bCalcDeriv);
-    }
-
-    //void Skeleton::setPose(const VectorXd& _pose){
-    //    assert(_pose.size() == getNumDofs());
-    //    for(int i=0; i<getNumDofs(); i++)
-    //        mDofs[i]->setValue(_pose(i));
-    //}
-
-    //void Skeleton::setPose(const vector<double>& _pose){
-    //    assert(_pose.size() == getNumDofs());
-    //    for(int i=0; i<getNumDofs(); i++)
-    //        mDofs[i]->setValue(_pose[i]);
-    //}
-
-    void Skeleton::getPose(Eigen::VectorXd& _pose) {
-        _pose.resize(getNumDofs());
+    Eigen::VectorXd Skeleton::getPose() {
+        Eigen::VectorXd pose(getNumDofs());
         for (int i = 0; i < getNumDofs(); i++) {
-            _pose(i) = mDofs[i]->getValue();
+            pose(i) = mDofs[i]->getValue();
         }
-    }
-    void Skeleton::getPose(std::vector<double>& _pose) {
-        _pose.resize(getNumDofs());
-        for (int i = 0; i < getNumDofs(); i++) {
-            _pose[i] = mDofs[i]->getValue();
-        }
+        return pose;
     }
 
     void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

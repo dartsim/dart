@@ -3,6 +3,8 @@
 #include "planning/Trajectory.h"
 #include "kinematics/Dof.h"
 #include <iostream>
+#include "dynamics/BodyNodeDynamics.h"
+#include "utils/UtilsMath.h"
 
 using namespace std;
 using namespace Eigen;
@@ -10,12 +12,13 @@ using namespace Eigen;
 namespace planning {
 
 Controller::Controller(dynamics::SkeletonDynamics* _skel, const vector<int> &_actuatedDofs,
-                       const VectorXd &_kI, const VectorXd &_kP, const VectorXd &_kD) :
+                       const VectorXd &_kP, const VectorXd &_kD, const vector<int> &_ankleDofs, const VectorXd &_anklePGains, const VectorXd &_ankleDGains) :
     mSkel(_skel),
-    mIntegratedError(VectorXd::Zero(mSkel->getNumDofs())),
-    mKi(_kI.asDiagonal()),
     mKp(_kP.asDiagonal()),
     mKd(_kD.asDiagonal()),
+    mAnkleDofs(_ankleDofs),
+    mAnklePGains(_anklePGains),
+    mAnkleDGains(_ankleDGains),
     mTrajectory(NULL)
 {
     const int nDof = mSkel->getNumDofs();
@@ -29,6 +32,8 @@ Controller::Controller(dynamics::SkeletonDynamics* _skel, const vector<int> &_ac
     for (int i = 0; i < nDof; i++) {
         mDesiredDofs[i] = mSkel->getDof(i)->getValue();
     }
+
+    mPreOffset = 0.0;
 }
 
 
@@ -51,10 +56,26 @@ VectorXd Controller::getTorques(const VectorXd& _dof, const VectorXd& _dofVel, d
     
     VectorXd torques;
     const double mTimestep = 0.001;
-    mIntegratedError += mTimestep * (_dof - mDesiredDofs);
-    torques = -mKi * mIntegratedError - mKp * (_dof - mDesiredDofs) - mKd * (_dofVel - desiredDofVels);
-    VectorXd max = 1000.0 * VectorXd::Ones(torques.size());
-    return mSelectionMatrix * torques.cwiseMax(-max).cwiseMin(max);
+
+    // SPD controller
+    MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
+    VectorXd p = -mKp * (_dof - mDesiredDofs + (_dofVel - desiredDofVels) * mTimestep);
+    VectorXd d = -mKd * (_dofVel - desiredDofVels);
+    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d);
+    torques = p + d - mKd * qddot * mTimestep;
+
+    // ankle strategy for sagital plane
+    Vector3d com = mSkel->getWorldCOM();
+    double cop = 0.0;
+    double offset = com[0] - cop;
+
+    for(unsigned int i = 0; i < mAnkleDofs.size(); i++) {
+        torques[mAnkleDofs[i]] = - mAnklePGains[i] * offset - mAnkleDGains[i] * (offset - mPreOffset);
+    }
+
+    mPreOffset = offset;
+
+    return mSelectionMatrix * torques;
 }
 
 }
