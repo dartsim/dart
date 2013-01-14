@@ -12,7 +12,7 @@ FILE( GLOB robotics_hpps "*.hpp" )
 # Library
 INCLUDE_DIRECTORIES( ${GLUT_INCLUDE_DIRS} )
 ADD_LIBRARY( robotics ${robotics_srcs} ${robotics_hdrs} ${robotics_hpps} )
-TARGET_LINK_LIBRARIES( robotics utils tinyxml2static assimp integration lcpsolver ${Boost_LIBRARIES} )
+TARGET_LINK_LIBRARIES( robotics utils tinyxml2static assimp integration lcpsolver dynamics ${Boost_LIBRARIES} )
 LINK_THIRDPARTY_GLUT( robotics )
 SET_TARGET_PROPERTIES( robotics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
 SET_TARGET_PROPERTIES( robotics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY  "${CMAKE_SOURCE_DIR}/lib" )
