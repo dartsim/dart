@@ -26,7 +26,7 @@ using namespace planning;
 MyWindow::MyWindow(): Win3D() {
     DartLoader dl;
     mWorld = dl.parseWorld(DART_DATA_PATH"/scenes/hubo_world.urdf");
-        
+    
     // Add ground plane
     robotics::Object* ground = new robotics::Object();
     ground->addDefaultRootNode();
@@ -49,16 +49,12 @@ MyWindow::MyWindow(): Win3D() {
     mSimFrame = 0;
     mPlayFrame = 0;
     mMovieFrame = 0;
-    mTime = 0.0;
 
     mShowMarker = false;
 
     mTrans[2] = -2000.f;
     mEye = Eigen::Vector3d(2.0, -2.0, 2.0);
     mUp = Eigen::Vector3d(0.0, 0.0, 1.0);
-    
-    mGravity = Eigen::Vector3d(0.0, 0.0, -9.8);
-    mTimeStep = 1.0/1000.0;
 
     vector<int> trajectoryDofs(7);
     string trajectoryNodes[] = {"Body_RSP", "Body_RSR", "Body_RSY", "Body_REP", "Body_RWY", "rightUJoint", "rightPalmDummy"}; 
@@ -77,7 +73,6 @@ MyWindow::MyWindow(): Win3D() {
     mWorld->getRobot(0)->getDof(24)->setValue(20.0 * M_PI/180.0);
     mWorld->getRobot(0)->getDof(27)->setValue(-10.0 * M_PI/180.0);
     mWorld->getRobot(0)->getDof(28)->setValue(-10.0 * M_PI/180.0);
-
 
     // Deactivate collision checking between the feet and the ground during planning
     mWorld->mCollisionHandle->getCollisionChecker()->deactivatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
@@ -110,8 +105,6 @@ MyWindow::MyWindow(): Win3D() {
     mWorld->mCollisionHandle->getCollisionChecker()->activatePair(mWorld->getRobot(0)->getNode("leftFoot"), ground->getNode(1));
     mWorld->mCollisionHandle->getCollisionChecker()->activatePair(mWorld->getRobot(0)->getNode("rightFoot"), ground->getNode(1));
 
-    initDyn();
-
     std::cout << 
         "\nKeybindings:\n" <<
         "\n" <<
@@ -129,90 +122,11 @@ MyWindow::MyWindow(): Win3D() {
         std::endl;
 }
 
-
-void MyWindow::initDyn()
-{
-    int sumNDofs = 0;
-    mIndices.push_back(sumNDofs);
-    for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        int nDofs = mWorld->getSkeleton(i)->getNumDofs();
-        sumNDofs += nDofs;
-        mIndices.push_back(sumNDofs);
-    }
-
-    mDofs.resize(mWorld->getNumSkeletons());
-    mDofVels.resize(mWorld->getNumSkeletons());
-
-    for (unsigned int i = 0; i < mDofs.size(); i++) {
-        mDofs[i].resize(mWorld->getSkeleton(i)->getNumDofs());
-        mDofVels[i].resize(mWorld->getSkeleton(i)->getNumDofs());
-        mWorld->getSkeleton(i)->getPose(mDofs[i]);
-        mDofVels[i] = mWorld->getSkeleton(i)->getQDotVector();
-        if(!mWorld->getSkeleton(i)->getImmobileState()) {
-            mWorld->getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], false);
-        }
-    }
-}
-
-VectorXd MyWindow::getState() {
-    VectorXd state(mIndices.back() * 2);
-    for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        state.segment(start, size) = mDofs[i];
-        state.segment(start + size, size) = mDofVels[i];
-    }
-    return state;
-}
-
-VectorXd MyWindow::evalDeriv() {
-    // compute dynamic equations
-    for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        if (mWorld->getSkeleton(i)->getImmobileState()) {
-            // need to update node transformation for collision
-            mWorld->getSkeleton(i)->setPose(mDofs[i], true, false);
-        } else {
-            // need to update first derivatives for collision
-            mWorld->getSkeleton(i)->setPose(mDofs[i], false, true);
-            mWorld->getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], true);
-        }
-    }
-    // compute contact forces
-    mWorld->mCollisionHandle->applyContactForces();
-
-    // compute derivatives for integration
-    VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);
-    for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        // skip immobile objects in forward simulation
-        if (mWorld->getSkeleton(i)->getImmobileState())
-            continue;
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        VectorXd qddot = mWorld->getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(
-            - mWorld->getSkeleton(i)->getCombinedVector() + mWorld->getSkeleton(i)->getExternalForces()
-            + mWorld->mCollisionHandle->getConstraintForce(i) + mWorld->getSkeleton(i)->getInternalForces());
-
-        mWorld->getSkeleton(i)->clampRotation(mDofs[i], mDofVels[i]);
-        deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
-        deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
-    }
-    return deriv;
-}
-
-void MyWindow::setState(VectorXd newState) {
-    for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        mDofs[i] = newState.segment(start, size);
-        mDofVels[i] = newState.segment(start + size, size);
-    }
-}
-
 void MyWindow::retrieveBakedState(int frame)
 {
     for (int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        int start = mIndices[i];
-        int size = mDofs[i].size();
+        int start = mWorld->mIndices[i];
+        int size = mWorld->mDofs[i].size();
         mWorld->getSkeleton(i)->setPose(mBakedStates[frame].segment(start, size), false, false);
     }
 }
@@ -247,11 +161,10 @@ void MyWindow::displayTimer(int _val)
         }
         break;
     case SIMULATE:
-        int numIter = (mDisplayTimeout / 1000.0) / mTimeStep;
+        int numIter = (mDisplayTimeout / 1000.0) / mWorld->mTimeStep;
         for (int i = 0; i < numIter; i++) {
-            mWorld->getSkeleton(0)->setInternalForces(mController->getTorques(mDofs[0], mDofVels[0], mTime));
-            mIntegrator.integrate(this, mTimeStep);
-            mTime += mTimeStep;
+            mWorld->getSkeleton(0)->setInternalForces(mController->getTorques(mWorld->getRobot(0)->getPose(), mWorld->getRobot(0)->getQDotVector(), mWorld->mTime));
+            mWorld->step();
         }
         mSimFrame += numIter;
         glutPostRedisplay();
@@ -431,9 +344,9 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 void MyWindow::bake()
 {
-    VectorXd state(mIndices.back());
+    VectorXd state(mWorld->mIndices.back());
     for(int i = 0; i < mWorld->getNumSkeletons(); i++) {
-        state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
+        state.segment(mWorld->mIndices[i], mWorld->mDofs[i].size()) = mWorld->mDofs[i];
     }
     mBakedStates.push_back(state);
 }

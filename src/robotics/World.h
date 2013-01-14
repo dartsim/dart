@@ -43,6 +43,7 @@
 
 #include <vector>
 #include <Eigen/Core>
+#include "integration/RK4Integrator.h"
 
 namespace dynamics {
   class SkeletonDynamics;
@@ -57,7 +58,7 @@ namespace robotics {
   /**
    * @class World
    */
-  class World {
+  class World : public integration::IntegrableSystem {
       
   public:
     World();
@@ -74,12 +75,19 @@ namespace robotics {
     Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );
     bool checkCollision(bool checkAllCollisions = false);
+    void step();
 
     /* TODO: figure out a way for this to not be public */
     dynamics::ContactDynamics* mCollisionHandle;
 
     Eigen::Vector3d mGravity;   /* meters per second */
     double mTimeStep;           /* in seconds */
+    double mTime;
+
+    // Needed for integration
+    virtual Eigen::VectorXd getState();
+    virtual Eigen::VectorXd evalDeriv();
+    virtual void setState(Eigen::VectorXd state);
 
     void rebuildCollision();
 
@@ -87,6 +95,11 @@ namespace robotics {
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
     std::vector<dynamics::SkeletonDynamics*> mSkeletons;
+    integration::RK4Integrator mIntegrator;
+  public: // These are public for now to allow the user to record the world state.
+    std::vector<Eigen::VectorXd> mDofs;
+    std::vector<Eigen::VectorXd> mDofVels;
+    std::vector<int> mIndices;
   };
 
 } // namespace robotics
