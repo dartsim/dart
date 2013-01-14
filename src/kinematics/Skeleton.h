@@ -85,15 +85,11 @@ namespace kinematics {
         Eigen::Vector3d getWorldCOM();
 
         virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
-        virtual void setPose(const std::vector<double>&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
         void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
-	
-        //void setPose(const Eigen::VectorXd& _pose);
-        //void setPose(const std::vector<double>& _pose);
-        void getPose(Eigen::VectorXd& _pose);
-        void getPose(std::vector<double>& _pose);
+
+        Eigen::VectorXd getPose();
 
     protected:
         std::vector<Marker*> mMarkers;
