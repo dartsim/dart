@@ -50,17 +50,9 @@ if (WIN32 AND NOT CYGWIN)
   SET(CMAKE_DEBUG_POSTFIX "d")
   SET(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
   SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
-#elseif (APPLE)
-#elseif (UNIX AND NOT APPLE)
-#elseif (UNIX)
-#  if( ENABLE_MSSE2 )
-#    ADD_DEFINITIONS("-msse2")
-#  endif( ENABLE_MSSE2 )
-#  SET(CMAKE_INSTALL_PREFIX /usr/local CACHE PATH "Install prefix")
-#endif()
 elseif (UNIX)  
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3  -std=c++0x")
-  SET(CMAKE_INSTALL_PREFIX /usr/local )
+  SET(CMAKE_INSTALL_PREFIX /usr )
 endif()
 
 SET(THIRDPARTY_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/thirdparty CACHE PATH "Root directory for 'installing' thirdparty builds")
@@ -77,7 +69,6 @@ INCLUDE(Directories.cmake)
 INCLUDE(ThirdParties.cmake)
 
 FIND_PATH( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
-message(STATUS "INCLUDES = ${CMAKE_INCLUDE_PATH}")
 message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 
 ###############################################################################
@@ -86,9 +77,9 @@ message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
 # OpenGL
 FIND_PACKAGE(OpenGL)
 IF (OPENGL_FOUND)
-  MESSAGE(STATUS "OPENGL FOUND")
+  MESSAGE(STATUS "OpenGL Found")
 ELSE (OPENGL_FOUND)
-  MESSAGE(STATUS "OPENGL NOT FOUND")
+  MESSAGE(STATUS "OpenGL Not Found")
 ENDIF ()
 
 # GLUT
@@ -107,34 +98,34 @@ INCLUDE_DIRECTORIES( ${GLUT_INCLUDE_DIR} )
 
 
 # Boost and Assimp Boost Workaround
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
+SET(Boost_USE_MULTITHREADED      ON)
+SET(Boost_USE_STATIC_RUNTIME    OFF)
 FIND_PACKAGE(Boost 1.42.0 REQUIRED)
-add_definitions( -DBOOST_ALL_DYN_LINK )
-include_directories( ${Boost_INCLUDE_DIRS} )
-link_directories( ${Boost_LIBRARY_DIRS} )
+ADD_DEFINITIONS( -DBOOST_ALL_DYN_LINK )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIRS} )
+LINK_DIRECTORIES( ${Boost_LIBRARY_DIRS} )
 
 # FLANN
 if(WIN32 AND NOT CYGWIN)
-    SET(FLANN_PREFIX_PATH "C:/Program Files/flann" CACHE PATH "Root directory of FLANN installation")
+    SET(FLANN_PREFIX_PATH "C:/Program Files/flann" CACHE PATH "Win32 root directory of FLANN installation")
 endif(WIN32 AND NOT CYGWIN)
 if(DEFINED FLANN_PREFIX_PATH)
     SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FLANN_PREFIX_PATH})
 endif(DEFINED FLANN_PREFIX_PATH)
 
 #Eigen
-FIND_PACKAGE(Eigen3 REQUIRED)
-INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
-message (STATUS "Eigen directory is ${EIGEN3_INCLUDE_DIR}")
+if(UNIX)
+    FIND_PACKAGE(Eigen3 REQUIRED)
+    INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+	MESSAGE (STATUS "Eigen Found")
+endif()
 
 ###############################################################################
 # Thirdparty libraries
 message(STATUS "Configuring thirdparty libraries")
 
 ADD_SUBDIRECTORY (thirdparty/gtest-1.6.0)
-
 ADD_SUBDIRECTORY (thirdparty/tinyxml2)
-
 ADD_SUBDIRECTORY (thirdparty/tinyxml)
 
 if ( SNOPT )
@@ -153,10 +144,14 @@ ADD_SUBDIRECTORY(src)
 SET(DART_CONFIG_FILE DARTConfig.cmake)
 SET(DART_CONFIG ${CMAKE_SOURCE_DIR}/${DART_CONFIG_FILE})
 FILE(GLOB cmake_mods "cmake/Modules/*.cmake")
-message(STATUS "Generating ${DART_CONFIG_FILE}")
+MESSAGE(STATUS "Generating ${DART_CONFIG_FILE}")
 CONFIGURE_FILE( ${DART_CONFIG}.in ${DART_CONFIG} @ONLY )
 INSTALL(FILES ${DART_CONFIG} DESTINATION share/dart)
 INSTALL(FILES ${cmake_mods} DESTINATION share/dart/cmake)
+
+# Add an "uninstall" target
+CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
+ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
 ###############################################################################
 # Doxygen

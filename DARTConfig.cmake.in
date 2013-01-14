@@ -25,9 +25,9 @@ find_path(DART_INCLUDE_DIR kinematics/Skeleton.h planning/World.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
     PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include ${DART_ROOT_DIR}/include/dart)    
 
-find_path(DART_EIGEN_INCLUDE_DIR Eigen/Core
-    HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
-    PATHS ${DART_ROOT_DIR} ${DART_ROOT_DIR}/include/eigen-3.0.5/)    
+if(UNIX)
+    SET(DART_EIGEN_INCLUDE_DIR @EIGEN3_INCLUDE_DIR@)
+endif()
     
 find_path(CCD_INCLUDE_DIR ccd/ccd.h
     HINTS ${PC_DART_INCLUDEDIR} ${PC_DART_INCLUDE_DIRS}
