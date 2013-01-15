@@ -83,6 +83,8 @@ namespace kinematics {
         inline Marker* getMarker(int _i) { return mMarkers[_i]; }
         inline double getMass() { return mMass; }
         Eigen::Vector3d getWorldCOM();
+        inline std::string getName() { return mName; }
+        inline void setName( std::string _name ) { mName = _name; }
 
         virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
 
@@ -92,12 +94,12 @@ namespace kinematics {
         Eigen::VectorXd getPose();
 
     protected:
+        std::string mName;
         std::vector<Marker*> mMarkers;
         std::vector<Dof*> mDofs;
         std::vector<Transformation*> mTransforms;
         std::vector<BodyNode*> mNodes;
         std::vector<Joint*> mJoints;
-
         double mMass;
     };
 

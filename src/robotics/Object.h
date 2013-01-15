@@ -59,10 +59,6 @@ namespace robotics {
 
     void addDefaultRootNode();
 
-    inline std::string getName() { return mName; }
-    inline void setName( std::string _name ) { mName = _name; }
-    inline std::string getPathName() { return mPathName; }
-    inline void setPathName( std::string _pname ) { mPathName = _pname; }
     inline void setMovable( bool _m ) { mMovable = _m; }
 
     void setPositionX( double _pos );
@@ -83,8 +79,6 @@ namespace robotics {
     void update();    
 
   private:
-    std::string mName; 
-    std::string mPathName; 
     bool mMovable;
   };
 
