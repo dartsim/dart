@@ -6,9 +6,12 @@ project(collision)
 file(GLOB collision_srcs "*.cpp")
 file(GLOB collision_hdrs "*.h")
 
-# Library 
+# Library
+find_package(Boost REQUIRED system filesystem)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
 add_library(collision ${collision_srcs} ${collision_hdrs})
-target_link_libraries(collision kinematics fcl ccd)
+target_link_libraries(collision kinematics fcl ccd ${Boost_LIBRARIES})
 set_target_properties(collision PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set_target_properties(collision PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 if(MSVC)

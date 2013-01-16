@@ -30,7 +30,7 @@ find_path(DART_INCLDIR kinematics/Skeleton.h planning/World.h
     PATH_SUFFIXES dart)    
    
 # Eigen
-find_path(EIGEN3_INCLUDEDIR NAMES signature_of_eigen3_matrix_library
+find_path(EIGEN3_INCLUDEDIR Eigen/Core
     PATHS ${INCL_DIRS} PATH_SUFFIXES eigen3 eigen)
 
 # OpenGL

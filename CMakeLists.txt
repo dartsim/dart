@@ -75,8 +75,8 @@ endif()
 
 # Boost and Assimp Boost Workaround
 find_package(Boost REQUIRED system filesystem)
-include_directories(${Boost_INCLUDE_DIRS} )
-link_directories(${Boost_LIBRARY_DIRS} )
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
 
 if(MSVC OR MSVC90 OR MSVC10)
     add_definitions(-DBOOST_ALL_NO_LIB)
