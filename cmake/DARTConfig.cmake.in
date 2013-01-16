@@ -37,12 +37,13 @@ find_path(EIGEN3_INCLUDEDIR NAMES signature_of_eigen3_matrix_library
 find_package(OpenGL REQUIRED)
 
 # GLUT
-find_package(GLUT REQUIRED)
 if(WIN32 AND NOT CYGWIN)
     message(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
     set(GLUT_PREFIX_PATH "C:/Golems/" CACHE PATH "Root directory of GLUT installation")
-	include_directories( "C:/Golems/include" )
-	include_directories( "C:/Golems/lib" )
+	include_directories("C:/Golems/include")
+	include_directories("C:/Golems/lib")
+elseif(UNIX)
+    find_package(GLUT REQUIRED)
 endif()
 
 include_directories(${GLUT_INCLUDE_DIR})

@@ -2,7 +2,7 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
 libdir=${prefix}/lib
-includedir=${prefix}/include
+includedir=${prefix}/include/dart
 
 Name: @PROJECT_NAME@
 Description: @PKG_DESC@
