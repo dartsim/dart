@@ -179,60 +179,6 @@ namespace robotics {
   }
   
   
-  /**
-   * @function setDofs
-   * @brief Set only specified DOFs
-   */
-  bool Robot::setDofs( Eigen::VectorXd _vals, std::vector<int> _id )
-  {
-    int numDofs = getNumDofs();
-    int rootDofs = getRoot()->getNumLocalDofs();
-    
-    if( _vals.size() != _id.size() )
-      {  printf("--(x) Size of input does not match the number of DOFs...check! (x)--\n"); return false; }
-    
-    for( unsigned int i = 0; i < _id.size(); i++ )
-      {
-	if( _id[i] > numDofs - 1 )
-          { printf("--(x) You are trying to set an inexisting DOF (x)--\n");
-            return false;
-          }       
-      }  
-    
-    for( unsigned int i = 0; i < _id.size(); i++ )
-      {
-	mDofs.at( _id[i] )->setValue( _vals(i) );
-      } 
-    
-    return true;
-  }
-  
-  /**
-   * @function getDofs
-   * @brief Get only specified DOFs
-   */
-  Eigen::VectorXd Robot::getDofs( std::vector<int> _id )
-  {
-    Eigen::VectorXd dofs;
-    int numDofs = getNumDofs();
-    
-    for( unsigned int i = 0; i < _id.size(); i++ )
-    {
-      if( _id[i] > numDofs - 1 )
-      {
-        printf("--(x) You are trying to set an inexisting DOF (x)--\n");
-        return dofs;
-      }
-    }
-    
-    dofs.resize( _id.size() );
-    for( unsigned int i = 0; i < _id.size(); i++ )
-    {
-      dofs(i) = mDofs.at( _id[i] )->getValue();
-    }
-    
-    return dofs;
-  }
   
   /**
    * @function setPositionX
@@ -479,27 +425,6 @@ namespace robotics {
     for(int i=0; i<getNumNodes(); i++) {
       mNodes.at(i)->updateFirstDerivatives();
     }
-
-    // Update parents first
-    std::list<dynamics::BodyNodeDynamics*> nodeStack;
-    dynamics::BodyNodeDynamics* u;
-    nodeStack.push_back( (dynamics::BodyNodeDynamics*) this->getRoot() );
-
-    int numIter = 0;
-    while( !nodeStack.empty() && numIter < this->getNumNodes() ) {
-      // Get front element on stack and update it
-      u = nodeStack.front();
-      u->updateTransform();
-      // Pop it out
-      nodeStack.pop_front();
-
-      // Add its kids
-      for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
-	nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
-      }
-      numIter++;
-    }
-
   }
   
 } // end namespace robotics

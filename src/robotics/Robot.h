@@ -64,10 +64,8 @@ namespace robotics {
 
     int getNumQuickDofs(); 
     Eigen::VectorXi getQuickDofsIndices();
-    bool setQuickDofs( Eigen::VectorXd _vals ); 
+    bool setQuickDofs( Eigen::VectorXd _vals );
     Eigen::VectorXd getQuickDofs( );
-    bool setDofs( Eigen::VectorXd _vals, std::vector<int> _id );
-    Eigen::VectorXd getDofs( std::vector<int> _id );
     
     void setPositionX( double _pos );  
     void getPositionX( double &_pos );

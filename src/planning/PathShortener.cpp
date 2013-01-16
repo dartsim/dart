@@ -81,7 +81,7 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 
 	VectorXd midpoint = (double)n2 / (double)n * config1 + (double)n1 / (double)n * config2;
 	list<VectorXd> intermediatePoints1, intermediatePoints2;
-	world->getRobot(robotId)->setDofs(midpoint, dofs);
+	world->getRobot(robotId)->setDofs(dofs, midpoint);
 	if(!world->checkCollision() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
 			&& segmentCollisionFree(intermediatePoints2, midpoint, config2))
 	{
