@@ -80,7 +80,7 @@ namespace collision_checking{
             } else {
                 numContacts++;
             }
-            v = res.getContact(i).normal;
+            v = -res.getContact(i).normal;
             pair1.normal = Vector3d(v[0], v[1], v[2]);
             pair2.normal = Vector3d(v[0], v[1], v[2]);
         

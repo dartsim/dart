@@ -127,7 +127,6 @@ namespace robotics {
     // add item
     mObjects.push_back( _object );
     mSkeletons.push_back( _object );
-    mIndices.push_back(mIndices.back() + _object->getNumDofs());
 
     _object->initDynamics();
 

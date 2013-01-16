@@ -20,8 +20,8 @@ public:
 	~PathPlanner();
 	double stepsize;
 	robotics::World* world;
-	bool planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
-	bool planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
+	bool planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = false, bool connect = true, unsigned int maxNodes = 0) const;
+	bool planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = false, bool connect = true, unsigned int maxNodes = 0) const;
 	static inline double randomInRange(double min, double max);
 private:
 	bool planSingleTreeRrt(int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
@@ -63,7 +63,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const s
 
 	std::vector<Eigen::VectorXd> feasibleStart;
 	for(unsigned int i = 0; i < start.size(); i++) {
-		world->getRobot(robotId)->setDofs(start[i], dofs);
+		world->getRobot(robotId)->setDofs(dofs, start[i]);
 		if(!world->checkCollision()) {
 			feasibleStart.push_back(start[i]);
 		}
@@ -74,7 +74,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const s
 
 	std::vector<Eigen::VectorXd> feasibleGoal;
 	for(unsigned int i = 0; i < goal.size(); i++) {
-		world->getRobot(robotId)->setDofs(goal[i], dofs);
+		world->getRobot(robotId)->setDofs(dofs, goal[i]);
 		if(!world->checkCollision()) {
 			feasibleGoal.push_back(goal[i]);
 		}
@@ -89,7 +89,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const s
 	else
 		result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path, connect, maxNodes);
 
-	world->getRobot(robotId)->setDofs(savedDofs, dofs);
+	world->getRobot(robotId)->setDofs(dofs, savedDofs);
 
 	return result;
 }

@@ -62,17 +62,10 @@ namespace robotics {
 
     void addDefaultRootNode();
 
-    inline std::string getName() { return mName; }
-    inline void setName( std::string _name ) { mName = _name; }
-    inline std::string getPathName() { return mPathName; }
-    inline void setPathName( std::string _pname ) { mPathName = _pname; }
-
     int getNumQuickDofs(); 
     Eigen::VectorXi getQuickDofsIndices();
-    bool setQuickDofs( Eigen::VectorXd _vals ); 
+    bool setQuickDofs( Eigen::VectorXd _vals );
     Eigen::VectorXd getQuickDofs( );
-    bool setDofs( Eigen::VectorXd _vals, std::vector<int> _id );
-    Eigen::VectorXd getDofs( std::vector<int> _id );
     
     void setPositionX( double _pos );  
     void getPositionX( double &_pos );
@@ -94,10 +87,6 @@ namespace robotics {
     void getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot );
     
     void update();
-    
-  private:
-    std::string mName;
-    std::string mPathName;
   };
 }
 

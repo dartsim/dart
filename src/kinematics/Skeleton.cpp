@@ -185,6 +185,37 @@ namespace kinematics {
         return pose;
     }
 
+
+    Eigen::VectorXd Skeleton::getDofs(std::vector<int> _id)
+    {
+        Eigen::VectorXd dofs(_id.size());
+        for(unsigned int i = 0; i < _id.size(); i++) {
+            dofs[i] = mDofs[_id[i]]->getValue();
+        }
+        return dofs;
+    }
+
+    void Skeleton::setDofs(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans, bool _calcDeriv) {
+        for( unsigned int i = 0; i < _id.size(); i++ ) {
+            mCurrPose[_id[i]] = _vals(i);
+            mDofs[_id[i]]->setValue(_vals(i));
+        }
+        
+        // TODO: Only do the necessary updates
+        if (_calcTrans) {
+            for (int i = 0; i < getNumNodes(); i++) {
+                mNodes.at(i)->updateTransform();
+            }
+        }
+
+        if (_calcDeriv) {
+            for (int i = 0; i < getNumNodes(); i++) {
+                mNodes.at(i)->updateFirstDerivatives();
+            }
+        }
+  }
+  
+
     void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         mRoot->draw(_ri, _color, _useDefaultColor);
     }
