@@ -63,20 +63,18 @@ find_package(PkgConfig QUIET)
 find_package(OpenGL REQUIRED)
 
 # GLUT
-# find_package(GLUT REQUIRED)
 if(WIN32 AND NOT CYGWIN)
     message(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
     set(GLUT_PREFIX_PATH "C:/Golems/" CACHE PATH "Root directory of GLUT installation")
-	include_directories( "C:/Golems/include" )
-	include_directories( "C:/Golems/lib" )
+	include_directories("C:/Golems/include")
+	include_directories("C:/Golems/lib")
+elseif(UNIX)
+find_package(GLUT REQUIRED)
+    include_directories(${GLUT_INCLUDE_DIR})
 endif()
 
-
-find_package(GLUT REQUIRED)
-include_directories(${GLUT_INCLUDE_DIR})
-
 # Boost and Assimp Boost Workaround
-find_package(Boost 1.42.0 REQUIRED)
+find_package(Boost REQUIRED system filesystem)
 include_directories(${Boost_INCLUDE_DIRS} )
 link_directories(${Boost_LIBRARY_DIRS} )
 
@@ -112,7 +110,7 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 #Eigen
-find_path(EIGEN3_INCLUDEDIR NAMES signature_of_eigen3_matrix_library
+find_path(EIGEN3_INCLUDEDIR Eigen/Core
     PATHS ${CMAKE_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
 
 include_directories(${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${EIGEN3_INCLUDEDIR})
