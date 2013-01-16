@@ -1,28 +1,31 @@
 # all libraries
-ADD_SUBDIRECTORY(utils)
-ADD_SUBDIRECTORY(kinematics)
-ADD_SUBDIRECTORY(optimizer)
-if(DART_UI)
-	ADD_SUBDIRECTORY(yui)
-endif(DART_UI)
-ADD_SUBDIRECTORY(renderer)
-ADD_SUBDIRECTORY(dynamics)
-ADD_SUBDIRECTORY(lcpsolver)
-ADD_SUBDIRECTORY(collision)
-ADD_SUBDIRECTORY(integration)
-if (PLANNING)
-    message( STATUS "Adding planning library")
-    ADD_SUBDIRECTORY(planning)
-endif (PLANNING)
+add_subdirectory(utils)
+add_subdirectory(kinematics)
+add_subdirectory(optimizer)
 
-if (ROBOTICS)
-   message( STATUS "Adding robotics library" )
-   ADD_SUBDIRECTORY(robotics)
-endif (ROBOTICS)
+if(DART_UI)
+	add_subdirectory(yui)
+endif(DART_UI)
+
+add_subdirectory(renderer)
+add_subdirectory(dynamics)
+add_subdirectory(lcpsolver)
+add_subdirectory(collision)
+add_subdirectory(integration)
+
+if(PLANNING)
+    message(STATUS "Adding planning library")
+    add_subdirectory(planning)
+endif()
+
+if(ROBOTICS)
+   message(STATUS "Adding robotics library")
+   add_subdirectory(robotics)
+endif()
 
 # Unit Test
-ADD_SUBDIRECTORY(unittests)
+add_subdirectory(unittests)
 
 # Apps
-ADD_SUBDIRECTORY(apps)
+add_subdirectory(apps)
 

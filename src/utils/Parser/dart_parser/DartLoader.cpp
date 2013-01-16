@@ -139,7 +139,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
     node = createDartNode( (*lk).second, mSkeleton );
     mNodes.push_back( node );
   }
-  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %lu body nodes \n", mNodes.size() );
   
   // Joint
   mJoints.resize(0);
@@ -157,7 +157,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   rootJoint = createDartRootJoint( _model->getRoot(), mSkeleton, false );
   mJoints.push_back( rootJoint );
 
-  if(debug) printf ("** Created %d joints \n", mJoints.size() );
+  if(debug) printf ("** Created %lu joints \n", mJoints.size() );
   
   //-- Save DART structure
   
@@ -214,7 +214,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
     node = createDartNode( (*lk).second, mRobot );
     mNodes.push_back( node );
   }
-  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %lu body nodes \n", mNodes.size() );
 
   // Joint
   mJoints.resize(0);
@@ -257,7 +257,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
       numIter++;
     } // end while
 
-	  if(debug) printf ("** Created %d joints \n", mJoints.size() );
+	  if(debug) printf ("** Created %lu joints \n", mJoints.size() );
 		if(debug) printf ("Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
@@ -289,7 +289,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
     node = createDartNode( (*lk).second, mObject );
     mNodes.push_back( node );
   }
-  if(debug) printf ("** Created %d body nodes \n", mNodes.size() );
+  if(debug) printf ("** Created %lu body nodes \n", mNodes.size() );
   
   // Joint
   mJoints.resize(0);
@@ -307,7 +307,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   rootJoint = createDartRootJoint( _model->getRoot(), mObject, true );
   mJoints.push_back( rootJoint );
   
-  if(debug) printf ("** Created %d joints \n", mJoints.size() );
+  if(debug) printf ("** Created %lu joints \n", mJoints.size() );
   
   //-- Save DART structure
   

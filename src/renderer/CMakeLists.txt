@@ -1,19 +1,21 @@
 ###############################################
 # renderer
-PROJECT(renderer)
+project(renderer)
 
 # Search all header and source files
-FILE(GLOB renderer_srcs "*.cpp")
-FILE(GLOB renderer_hdrs "*.h")
+file(GLOB renderer_srcs "*.cpp")
+file(GLOB renderer_hdrs "*.h")
 
 # Library 
-ADD_LIBRARY(renderer ${renderer_srcs} ${renderer_hdrs})
-TARGET_LINK_LIBRARIES(renderer assimp)
-SET_TARGET_PROPERTIES(renderer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-SET_TARGET_PROPERTIES(renderer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-IF(MSVC)
-  SET_TARGET_PROPERTIES(renderer PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+add_library(renderer ${renderer_srcs} ${renderer_hdrs})
+target_link_libraries(renderer assimp)
+set_target_properties(renderer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+set_target_properties(renderer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(renderer PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
 
-INSTALL(FILES ${renderer_hdrs} DESTINATION include/dart/renderer)
-INSTALL(TARGETS renderer DESTINATION lib)
+install(FILES ${renderer_hdrs} DESTINATION include/dart/renderer)
+install(TARGETS renderer DESTINATION lib)
+
+list(APPEND DART_LIBRARIES renderer)

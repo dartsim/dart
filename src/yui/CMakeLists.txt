@@ -1,12 +1,16 @@
 ###############################################
 # YUI
-PROJECT(yui)
+project(yui)
+
 # Search all header and source files
-FILE(GLOB yui_srcs "*.cpp")
-FILE(GLOB yui_hdrs "*.h")
+file(GLOB yui_srcs "*.cpp")
+file(GLOB yui_hdrs "*.h")
+
 # Library 
-ADD_LIBRARY(yui ${yui_srcs} ${yui_hdrs})
-SET_TARGET_PROPERTIES(yui PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-IF(MSVC)
-  SET_TARGET_PROPERTIES(yui PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+add_library(yui ${yui_srcs} ${yui_hdrs})
+set_target_properties(yui PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(yui PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
+
+list(APPEND DART_LIBRARIES yui)

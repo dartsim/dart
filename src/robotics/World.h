@@ -68,9 +68,9 @@ namespace robotics {
     int addObject( Object* _object );
     void printInfo();
     
-    inline int getNumObjects() { return mObjects.size(); }
-    inline int getNumRobots() { return mRobots.size(); }
-    inline int getNumSkeletons() { return mSkeletons.size(); }
+    inline unsigned int getNumObjects() { return mObjects.size(); }
+    inline unsigned int getNumRobots() { return mRobots.size(); }
+    inline unsigned int getNumSkeletons() { return mSkeletons.size(); }
     Object* getObject( int _i );
     Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );

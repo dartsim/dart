@@ -1,18 +1,20 @@
 ###############################################
 # optimizer
-PROJECT(optimizer)
+project(optimizer)
 
 # Search all header and source files
-FILE(GLOB optimizer_srcs "*.cpp")
-FILE(GLOB optimizer_hdrs "*.h")
-FILE(GLOB optimizer_snopt_srcs "snopt/*.cpp")
-FILE(GLOB optimizer_snopt_hdrs "snopt/*.h")
+file(GLOB optimizer_srcs "*.cpp")
+file(GLOB optimizer_hdrs "*.h")
+file(GLOB optimizer_snopt_srcs "snopt/*.cpp")
+file(GLOB optimizer_snopt_hdrs "snopt/*.h")
 
 # Library 
-ADD_LIBRARY(optimizer ${optimizer_srcs} ${optimizer_hdrs} ${optimizer_snopt_srcs} ${optimizer_snopt_hdrs})
-TARGET_LINK_LIBRARIES(optimizer utils)
-SET_TARGET_PROPERTIES(optimizer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-SET_TARGET_PROPERTIES(optimizer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-IF(MSVC)
-  SET_TARGET_PROPERTIES(optimizer PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+add_library(optimizer ${optimizer_srcs} ${optimizer_hdrs} ${optimizer_snopt_srcs} ${optimizer_snopt_hdrs})
+target_link_libraries(optimizer utils)
+set_target_properties(optimizer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+set_target_properties(optimizer PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(optimizer PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
+
+list(APPEND DART_LIBRARIES optimizer)

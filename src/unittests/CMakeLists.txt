@@ -1,29 +1,29 @@
 ###############################################
 # Unittests
+project(unittests)
 
 # Depends on snopt
 if(NOT SNOPT)
-  MESSAGE(STATUS "Disabling some unittests. Cannot build all tests without snopt")
+  message(STATUS "Disabling some unittests. Cannot build all tests without snopt")
 endif()
 
-PROJECT(unittests)
 # Search all header and source files
-FILE(GLOB unittests_srcs "*.cpp")
-FILE(GLOB unittests_hdrs "*.h")
+file(GLOB unittests_srcs "*.cpp")
+file(GLOB unittests_hdrs "*.h")
 
 if(SNOPT)
-    FILE(GLOB unittests_snopt "*.cpp" "*.h")
-    SET(snopt_lib snopt gfortran)
+    file(GLOB unittests_snopt "*.cpp" "*.h")
+    set(snopt_lib snopt gfortran)
 endif(SNOPT)
 
-ADD_EXECUTABLE(unittests ${unittests_srcs} ${unittests_hdrs} ${unittests_snopt})
-TARGET_LINK_LIBRARIES(unittests utils kinematics dynamics optimizer ${snopt_lib})
+add_executable(unittests ${unittests_srcs} ${unittests_hdrs} ${unittests_snopt})
+target_link_libraries(unittests utils kinematics dynamics optimizer ${snopt_lib})
 
-LINK_THIRDPARTY_GTEST(unittests)
-LINK_THIRDPARTY_TINYXML(unittests)
+link_thirdparty_gtest(unittests)
+link_thirdparty_tinyxml(unittests)
 
-if (APPLE OR UNIX)
-  TARGET_LINK_LIBRARIES(unittests pthread)
-endif(APPLE OR UNIX)
+if(APPLE OR UNIX)
+  target_link_libraries(unittests pthread)
+endif()
 
-SET_TARGET_PROPERTIES(unittests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+set_target_properties(unittests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

@@ -1,25 +1,25 @@
-# Robotics
-
-PROJECT( robotics )
-
-Find_Package(Boost REQUIRED filesystem system)
+###############################################
+# robotics
+project(robotics)
 
 # Search all header and source files
-FILE( GLOB robotics_srcs "*.cpp" )
-FILE( GLOB robotics_hdrs "*.h" )
-FILE( GLOB robotics_hpps "*.hpp" )
+file(GLOB robotics_srcs "*.cpp")
+file(GLOB robotics_hdrs "*.h")
+file(GLOB robotics_hpps "*.hpp")
 
 # Library
-INCLUDE_DIRECTORIES( ${GLUT_INCLUDE_DIRS} )
-ADD_LIBRARY( robotics ${robotics_srcs} ${robotics_hdrs} ${robotics_hpps} )
-TARGET_LINK_LIBRARIES( robotics utils tinyxml2static assimp integration lcpsolver dynamics ${Boost_LIBRARIES} )
-LINK_THIRDPARTY_GLUT( robotics )
-SET_TARGET_PROPERTIES( robotics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
-SET_TARGET_PROPERTIES( robotics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY  "${CMAKE_SOURCE_DIR}/lib" )
-IF(MSVC)
-  SET_TARGET_PROPERTIES(robotics PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+include_directories(${GLUT_INCLUDE_DIRS})
+add_library(robotics ${robotics_srcs} ${robotics_hdrs} ${robotics_hpps})
+target_link_libraries(robotics utils tinyxml2static assimp integration lcpsolver dynamics ${Boost_LIBRARIES})
+link_thirdparty_glut(robotics )
+set_target_properties(robotics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+set_target_properties(robotics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY  "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(robotics PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
 
-INSTALL( FILES ${robotics_hdrs} DESTINATION include/dart/robotics )
-INSTALL( FILES ${robotics_hpps} DESTINATION include/dart/robotics )
-INSTALL( TARGETS robotics DESTINATION lib )
+install(FILES ${robotics_hdrs} DESTINATION include/dart/robotics)
+install(FILES ${robotics_hpps} DESTINATION include/dart/robotics)
+install(TARGETS robotics DESTINATION lib)
+
+list(APPEND DART_LIBRARIES robotics)

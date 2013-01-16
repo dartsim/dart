@@ -1,21 +1,23 @@
 ###############################################
 # Kinematics
-PROJECT(kinematics)
+project(kinematics)
 
 # Search all header and source files
-FILE(GLOB kinematics_srcs "*.cpp")
-FILE(GLOB kinematics_hdrs "*.h")
-FILE(GLOB kinematics_hpps "*.hpp")
+file(GLOB kinematics_srcs "*.cpp")
+file(GLOB kinematics_hdrs "*.h")
+file(GLOB kinematics_hpps "*.hpp")
 
 # Library 
-ADD_LIBRARY(kinematics ${kinematics_srcs} ${kinematics_hdrs} ${kinematics_hpps})
-TARGET_LINK_LIBRARIES(kinematics utils tinyxml2 assimp)
-SET_TARGET_PROPERTIES(kinematics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-SET_TARGET_PROPERTIES(kinematics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-IF(MSVC)
-  SET_TARGET_PROPERTIES(kinematics PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+add_library(kinematics ${kinematics_srcs} ${kinematics_hdrs} ${kinematics_hpps})
+target_link_libraries(kinematics utils tinyxml2 assimp)
+set_target_properties(kinematics PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+set_target_properties(kinematics PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(kinematics PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
 
-INSTALL(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics)
-INSTALL(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics)
-INSTALL(TARGETS kinematics DESTINATION lib)
+install(FILES ${kinematics_hdrs} DESTINATION include/dart/kinematics)
+install(FILES ${kinematics_hpps} DESTINATION include/dart/kinematics)
+install(TARGETS kinematics DESTINATION lib)
+
+list(APPEND DART_LIBRARIES kinematics)

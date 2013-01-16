@@ -1,26 +1,27 @@
-# ----------------------------
-# Planning project
-# ----------------------------
-PROJECT( planning )
+###############################################
+# planning
+project(planning)
 
 # Search all header and source files
-FILE( GLOB planning_srcs "*.cpp" )
-FILE( GLOB planning_hdrs "*.h" )
-FILE( GLOB planning_hpps "*.hpp" )
-FILE( GLOB gl_srcs GL/GLTexture.cpp )
-FILE( GLOB gl_hdrs GL/*.h)
+file(GLOB planning_srcs "*.cpp")
+file(GLOB planning_hdrs "*.h")
+file(GLOB planning_hpps "*.hpp")
+file(GLOB gl_srcs GL/GLTexture.cpp)
+file(GLOB gl_hdrs GL/*.h)
 
 # Library
-INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIRS})
-ADD_LIBRARY( planning ${planning_srcs} ${gl_srcs} ${planning_hdrs} ${planning_hpps} )
-TARGET_LINK_LIBRARIES( planning utils)
-SET_TARGET_PROPERTIES( planning PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
-SET_TARGET_PROPERTIES( planning PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
-IF(MSVC)
-  SET_TARGET_PROPERTIES(planning PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+include_directories(${GLUT_INCLUDE_DIRS})
+add_library(planning ${planning_srcs} ${gl_srcs} ${planning_hdrs} ${planning_hpps})
+target_link_libraries(planning utils)
+set_target_properties(planning PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
+set_target_properties(planning PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib" )
+if(MSVC)
+  set_target_properties(planning PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
 
-INSTALL(FILES ${planning_hdrs} DESTINATION include/dart/planning)
-INSTALL(FILES ${planning_hpps} DESTINATION include/dart/planning)
-INSTALL(FILES ${gl_hdrs} DESTINATION include/dart/planning/GL)
-INSTALL(TARGETS planning DESTINATION lib)
+install(FILES ${planning_hdrs} DESTINATION include/dart/planning)
+install(FILES ${planning_hpps} DESTINATION include/dart/planning)
+install(FILES ${gl_hdrs} DESTINATION include/dart/planning/GL)
+install(TARGETS planning DESTINATION lib)
+
+list(APPEND DART_LIBRARIES planning)

@@ -170,7 +170,7 @@ bool parseCylinder(Cylinder &y, TiXmlElement *c)
   {
     std::stringstream stm;
     stm << "length [" << c->Attribute("length") << "] is not a valid float";
-    if(debug) printf (stm.str().c_str());
+    if(debug) printf ("%s", stm.str().c_str());
     return false;
   }
 
@@ -182,7 +182,7 @@ bool parseCylinder(Cylinder &y, TiXmlElement *c)
   {
     std::stringstream stm;
     stm << "radius [" << c->Attribute("radius") << "] is not a valid float";
-    if(debug) printf (stm.str().c_str());
+    if(debug) printf ("%s", stm.str().c_str());
     return false;
   }
   return true;
@@ -301,7 +301,7 @@ bool parseInertial(Inertial &i, TiXmlElement *config)
     std::stringstream stm;
     stm << "Inertial: mass [" << mass_xml->Attribute("value")
         << "] is not a float";
-    if(debug) printf (stm.str().c_str());
+    if(debug) printf ("%s", stm.str().c_str());
     return false;
   }
 
@@ -337,7 +337,7 @@ bool parseInertial(Inertial &i, TiXmlElement *config)
         << " iyy [" << inertia_xml->Attribute("iyy") << "]"
         << " iyz [" << inertia_xml->Attribute("iyz") << "]"
         << " izz [" << inertia_xml->Attribute("izz") << "]";
-    if(debug) printf (stm.str().c_str());
+    if(debug) printf ("%s", stm.str().c_str());
     return false;
   }
   return true;

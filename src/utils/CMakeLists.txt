@@ -1,20 +1,22 @@
 ###############################################
 # Utils
-PROJECT(utils)
+project(utils)
 
 # Search all header and source files
-FILE(GLOB utils_srcs "*.cpp")
-FILE(GLOB utils_hdrs "*.h")
+file(GLOB utils_srcs "*.cpp")
+file(GLOB utils_hdrs "*.h")
 
 # Library 
-ADD_LIBRARY(utils ${utils_srcs} ${utils_hdrs})
-SET_TARGET_PROPERTIES(utils PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-SET_TARGET_PROPERTIES(utils PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-IF(MSVC)
-  SET_TARGET_PROPERTIES(utils PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-ENDIF()
+add_library(utils ${utils_srcs} ${utils_hdrs})
+set_target_properties(utils PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+set_target_properties(utils PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+if(MSVC)
+  set_target_properties(utils PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+endif()
 
-INSTALL(FILES ${utils_hdrs} DESTINATION include/dart/utils)
-INSTALL(TARGETS utils DESTINATION lib)
+install(FILES ${utils_hdrs} DESTINATION include/dart/utils)
+install(TARGETS utils DESTINATION lib)
 
-add_subdirectory( Parser )
+list(APPEND DART_LIBRARIES utils)
+
+add_subdirectory(Parser)

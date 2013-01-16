@@ -1,12 +1,12 @@
 ###############################################
 # apps/examplePlanning
 if(DART_UI AND PLANNING)
-	PROJECT(examplePlanning)
-	FILE(GLOB srcs "*.cpp")
-	FILE(GLOB hdrs "*.h")
-	ADD_EXECUTABLE(examplePlanning ${srcs} ${hdrs})
-	TARGET_LINK_LIBRARIES(examplePlanning collision kinematics dynamics yui renderer integration planning robotics parser optimized fcl debug fcld ccd)
-	LINK_THIRDPARTY_GLUT(examplePlanning)
+	project(examplePlanning)
+	file(GLOB srcs "*.cpp")
+	file(GLOB hdrs "*.h")
+	add_executable(examplePlanning ${srcs} ${hdrs})
+	target_link_libraries(examplePlanning collision kinematics dynamics yui renderer integration planning robotics parser optimized fcl debug fcld ccd)
+	link_thirdparty_glut(examplePlanning)
 	
-	SET_TARGET_PROPERTIES(examplePlanning PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+	set_target_properties(examplePlanning PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 endif()

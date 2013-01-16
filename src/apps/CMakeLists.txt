@@ -1,10 +1,9 @@
 # A list of applications
-
-SET_PROPERTY( DIRECTORY PROPERTY FOLDER Apps )
-SET_PROPERTY( DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON )
+set_property(DIRECTORY PROPERTY FOLDER Apps)
+set_property(DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON)
 
 # List of all the subdirectories to include
-foreach( APPDIR
+foreach(APPDIR
     examplePlanning
     exampleCollisionWithSkelton
     meshCollision
@@ -17,10 +16,10 @@ foreach( APPDIR
 	ik
 	hybrid
 	)
-    ADD_SUBDIRECTORY( ${APPDIR} )
+    add_subdirectory(${APPDIR})
 endforeach(APPDIR)
 
-foreach( APPTARGET
+foreach(APPTARGET
     examplePlanning
     exampleCollisionWithSkelton
     meshCollision
@@ -33,13 +32,13 @@ foreach( APPTARGET
 	ik
 	hybrid
 	)
-    IF(TARGET ${APPTARGET})
-        SET_TARGET_PROPERTIES( ${APPTARGET} PROPERTIES
+    if(TARGET ${APPTARGET})
+        set_target_properties(${APPTARGET} PROPERTIES
                 FOLDER Apps
                 #EXCLUDE_FROM_DEFAULT_BUILD ON
                 )
-        IF(MSVC)
-            SET_TARGET_PROPERTIES(${APPTARGET} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-        ENDIF()
-    ENDIF(TARGET ${APPTARGET})
+        if(MSVC)
+            set_target_properties(${APPTARGET} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+        endif()
+    endif(TARGET ${APPTARGET})
 endforeach(APPTARGET)
