@@ -28,6 +28,8 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 	printf("--> Start Brute Force Shortener \n"); 
 	srand(time(NULL));
 
+	VectorXd savedDofs = world->getRobot(robotId)->getDofs(dofs);
+
 	const int numShortcuts = path.size() * 5;
 	
 	// Number of checks
@@ -56,6 +58,8 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 			path.splice(node2Iter, intermediatePoints);
         }
 	}
+	world->getRobot(robotId)->setDofs(dofs, savedDofs);
+
 	printf("End Brute Force Shortener \n");
 }
 
