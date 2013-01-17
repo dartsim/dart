@@ -24,6 +24,7 @@ if(PKG_CONFIG_FOUND)
 endif()
 
 SET(CMAKE_MODULE_PATH "@CMAKE_MODULE_PATH@")
+SET( DART_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../.." )
 
 find_path(DART_INCLDIR kinematics/Skeleton.h planning/World.h
     HINTS ${PC_DART_INCLUDEDIR} /usr/local/include
@@ -46,12 +47,9 @@ elseif(UNIX)
     find_package(GLUT REQUIRED)
 endif()
 
-include_directories(${GLUT_INCLUDE_DIR})
-
 # Boost and Assimp Boost Workaround
 find_package(Boost REQUIRED system filesystem)
-include_directories(${Boost_INCLUDE_DIRS} )
-link_directories(${Boost_LIBRARY_DIRS} )
+set(Boost_INCLUDEDIR ${Boost_INCLUDE_DIRS})
 
 if(MSVC OR MSVC90 OR MSVC10)
     add_definitions(-DBOOST_ALL_NO_LIB)
@@ -84,8 +82,10 @@ if(PKG_CONFIG_FOUND)
    set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
 endif()
 
+set(DART_LIBRARY_DIRS "${DART_ROOT_DIR}/lib" ${Boost_LIBRARY_DIRS})
 
-set(DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor planning robotics  collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+set(DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor planning robotics collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl  ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+
 foreach(DART_LIB ${DART_LIBS})
     set(DART_LIBRARIES ${DART_LIBRARIES} optimized ${DART_LIB} debug ${DART_LIB}d)
 endforeach(DART_LIB)
@@ -98,7 +98,7 @@ endforeach(DART_LIB)
 set(DART_INCLUDEDIR ${DART_INCLDIR} ${EIGEN3_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(DART DEFAULT_MSG DART_INCLUDEDIR DART_LIBRARIES)
+find_package_handle_standard_args(DART_LIBRARY_DIRS DART DEFAULT_MSG DART_INCLUDEDIR DART_LIBRARIES Boost_LIBRARIES)
 
 mark_as_advanced(DART_INCLUDEDIR DART_LIBRARIES)
 
