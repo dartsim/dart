@@ -92,6 +92,21 @@ namespace robotics {
     mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
   }
 
+  void World::updateSkeletons()
+  {
+    // compute dynamic equations
+    for (int i = 0; i < getNumSkeletons(); i++) {
+        if (getSkeleton(i)->getImmobileState()) {
+            // need to update node transformation for collision
+            getSkeleton(i)->setPose(mDofs[i], true, false);
+        } else {
+            // need to update first derivatives for collision
+            getSkeleton(i)->setPose(mDofs[i], false, true);
+            getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], true);
+        }
+    }
+  }
+
   /**
    * @function addRobot
    * @brief Add a pointer to a new robot in the World

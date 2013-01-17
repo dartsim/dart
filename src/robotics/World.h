@@ -89,6 +89,7 @@ namespace robotics {
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(Eigen::VectorXd state);
 
+    void updateSkeletons();
     void rebuildCollision();
 
   private:
