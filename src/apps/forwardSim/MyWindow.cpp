@@ -39,7 +39,7 @@ VectorXd MyWindow::evalDeriv() {
     return deriv;
 }
 
-void MyWindow::setState(VectorXd newState) {
+void MyWindow::setState(const VectorXd &newState) {
     mDofVels = newState.tail(mDofVels.size());
     mDofs = newState.head(mDofs.size());
 }

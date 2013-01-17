@@ -76,7 +76,7 @@ VectorXd MyWindow::evalDeriv() {
     return deriv;
 }
 
-void MyWindow::setState(VectorXd newState) {
+void MyWindow::setState(const VectorXd &newState) {
     int size1 = mDofs.size();
     int size2 = mDofVels.size();
     int size3 = mDofs2.size();

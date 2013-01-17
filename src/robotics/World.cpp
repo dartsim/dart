@@ -220,24 +220,28 @@ namespace robotics {
             - getSkeleton(i)->getCombinedVector() + getSkeleton(i)->getExternalForces()
             + mCollisionHandle->getConstraintForce(i) + getSkeleton(i)->getInternalForces());
 
-        getSkeleton(i)->clampRotation(getSkeleton(i)->getPose(), getSkeleton(i)->getQDotVector());
         deriv.segment(start, size) = getSkeleton(i)->getQDotVector() + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
     }
     return deriv;
 }
 
-void World::setState(VectorXd newState) {
+void World::setState(const VectorXd &newState) {
     for (int i = 0; i < getNumSkeletons(); i++) {
         int start = mIndices[i] * 2;
         int size = getSkeleton(i)->getNumDofs();
+
+        VectorXd pose = newState.segment(start, size);
+        VectorXd qDot = newState.segment(start + size, size);
+        getSkeleton(i)->clampRotation(pose, qDot);
+
         if (getSkeleton(i)->getImmobileState()) {
             // need to update node transformation for collision
-            getSkeleton(i)->setPose(newState.segment(start, size), true, false);
+            getSkeleton(i)->setPose(pose, true, false);
         } else {
             // need to update first derivatives for collision
-            getSkeleton(i)->setPose(newState.segment(start, size), false, true);
-            getSkeleton(i)->computeDynamics(mGravity, newState.segment(start + size, size), true);
+            getSkeleton(i)->setPose(pose, false, true);
+            getSkeleton(i)->computeDynamics(mGravity, qDot, true);
         }
     }
 }

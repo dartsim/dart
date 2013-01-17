@@ -41,7 +41,7 @@ public:
     // Needed for integration
     virtual Eigen::VectorXd getState();
     virtual Eigen::VectorXd evalDeriv();
-    virtual void setState(Eigen::VectorXd state);	
+    virtual void setState(const Eigen::VectorXd &state);	
 protected:	
     bool mRunning;
     int mFrame;

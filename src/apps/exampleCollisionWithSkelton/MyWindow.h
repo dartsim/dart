@@ -68,7 +68,7 @@ MyWindow(dynamics::SkeletonDynamics* _m, dynamics::SkeletonDynamics* _m2): Win3D
     // Needed for integration
     virtual Eigen::VectorXd getState();
     virtual Eigen::VectorXd evalDeriv();
-    virtual void setState(Eigen::VectorXd state);	
+    virtual void setState(const Eigen::VectorXd &state);	
 protected:
     enum playstate_enum {
         SIMULATE,

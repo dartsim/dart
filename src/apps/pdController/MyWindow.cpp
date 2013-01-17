@@ -73,7 +73,7 @@ VectorXd MyWindow::evalDeriv() {
     return deriv;
 }
 
-void MyWindow::setState(VectorXd newState) {
+void MyWindow::setState(const VectorXd &newState) {
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
