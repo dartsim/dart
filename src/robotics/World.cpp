@@ -57,7 +57,8 @@ namespace robotics {
    * @brief Constructor
    */
   World::World() :
-    mTimeStep(.001)
+    mTime(0.0),
+    mTimeStep(0.001)
   {
     mRobots.resize(0);
     mObjects.resize(0);

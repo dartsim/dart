@@ -43,7 +43,7 @@
 
 #include <vector>
 #include <Eigen/Core>
-#include "integration/RK4Integrator.h"
+#include "integration/EulerIntegrator.h"
 
 namespace dynamics {
   class SkeletonDynamics;
@@ -95,7 +95,7 @@ namespace robotics {
     std::vector<Robot*> mRobots;
     std::vector<Object*> mObjects;
     std::vector<dynamics::SkeletonDynamics*> mSkeletons;
-    integration::RK4Integrator mIntegrator;
+    integration::EulerIntegrator mIntegrator;
   public: // These are public for now to allow the user to record the world state.
     std::vector<Eigen::VectorXd> mDofs;
     std::vector<Eigen::VectorXd> mDofVels;
