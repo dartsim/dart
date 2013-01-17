@@ -84,13 +84,13 @@ endif()
 
 set(DART_LIBRARY_DIRS "${DART_ROOT_DIR}/lib" ${Boost_LIBRARY_DIRS})
 
-set(DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor planning robotics collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl  ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+set(DART_LIBS parser urdfdom_model urdfdom_model_state urdfdom_sensor planning robotics collision dynamics kinematics renderer utils tinyxml integration lcpsolver fcl)
 
 foreach(DART_LIB ${DART_LIBS})
     set(DART_LIBRARIES ${DART_LIBRARIES} optimized ${DART_LIB} debug ${DART_LIB}d)
 endforeach(DART_LIB)
 
-set(DART_LIBS_NO_DEBUG assimp ccd)
+set(DART_LIBS_NO_DEBUG assimp ccd ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
 foreach(DART_LIB ${DART_LIBS_NO_DEBUG})
     set(DART_LIBRARIES ${DART_LIBRARIES} ${DART_LIB})
 endforeach(DART_LIB)
