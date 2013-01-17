@@ -1,0 +1,25 @@
+<!-- greenBox2.urdf -->
+
+<object name="greenBox2">
+
+	<!-- Link 0 -->
+	<link name="link_0">
+		<inertial>
+			<mass value="3.0" />
+<!--			<inertia ixx="0.06667" ixy="0.0" ixz="0.0" iyy="0.06667" iyz="0.0" izz="0.01667" /> -->
+<inertia ixx="0.0835642" ixy="-6.7976e-05" ixz="0.00249373" iyy="0.0522353" iyz="-0.00120721" izz="0.0757541"/>
+			<origin xyz="0 0 0" />
+		</inertial>
+		<visual>
+			<geometry>
+				<mesh filename="objects/greenBox2.3ds"/>
+			</geometry>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="objects/greenBox2.3ds"/>
+			</geometry>
+		</collision>
+	</link>
+
+</object>
