@@ -56,7 +56,8 @@ namespace robotics {
    * @function World
    * @brief Constructor
    */
-  World::World()
+  World::World() :
+    mTimeStep(.001)
   {
     mRobots.resize(0);
     mObjects.resize(0);
@@ -64,7 +65,6 @@ namespace robotics {
     mIndices.push_back(0);
 
     mGravity = Eigen::Vector3d(0, 0, -9.81);
-    mTimeStep = 0.001;
   }
 
   /**

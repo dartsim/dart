@@ -81,7 +81,7 @@ namespace robotics {
     dynamics::ContactDynamics* mCollisionHandle;
 
     Eigen::Vector3d mGravity;   /* meters per second */
-    double mTimeStep;           /* in seconds */
+    const double mTimeStep; /* in seconds */
     double mTime;
 
     // Needed for integration
