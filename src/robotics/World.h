@@ -89,7 +89,6 @@ namespace robotics {
     virtual Eigen::VectorXd evalDeriv();
     virtual void setState(Eigen::VectorXd state);
 
-    void updateSkeletons();
     void rebuildCollision();
 
   private:
@@ -97,9 +96,6 @@ namespace robotics {
     std::vector<Object*> mObjects;
     std::vector<dynamics::SkeletonDynamics*> mSkeletons;
     integration::EulerIntegrator mIntegrator;
-  public: // These are public for now to allow the user to record the world state.
-    std::vector<Eigen::VectorXd> mDofs;
-    std::vector<Eigen::VectorXd> mDofVels;
     std::vector<int> mIndices;
   };
 

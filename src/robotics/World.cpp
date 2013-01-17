@@ -93,21 +93,6 @@ namespace robotics {
     mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
   }
 
-  void World::updateSkeletons()
-  {
-    // compute dynamic equations
-    for (int i = 0; i < getNumSkeletons(); i++) {
-        if (getSkeleton(i)->getImmobileState()) {
-            // need to update node transformation for collision
-            getSkeleton(i)->setPose(mDofs[i], true, false);
-        } else {
-            // need to update first derivatives for collision
-            getSkeleton(i)->setPose(mDofs[i], false, true);
-            getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], true);
-        }
-    }
-  }
-
   /**
    * @function addRobot
    * @brief Add a pointer to a new robot in the World
@@ -120,11 +105,9 @@ namespace robotics {
     _robot->initDynamics();
     
     mIndices.push_back(mIndices.back() + _robot->getNumDofs());
-    mDofs.push_back(_robot->getPose());
-    mDofVels.push_back(_robot->getQDotVector());
 
     if(!_robot->getImmobileState()) {
-      _robot->computeDynamics(mGravity, mDofVels.back(), false); // Not sure if we need this
+      _robot->computeDynamics(mGravity, _robot->getQDotVector(), false); // Not sure if we need this
     }
 
     // create collision dynamics object
@@ -147,11 +130,9 @@ namespace robotics {
     _object->initDynamics();
 
     mIndices.push_back(mIndices.back() + _object->getNumDofs());
-    mDofs.push_back(_object->getPose());
-    mDofVels.push_back(_object->getQDotVector());
 
     if(!_object->getImmobileState()) {
-      _object->computeDynamics(mGravity, mDofVels.back(), false); // Not sure if we need this
+      _object->computeDynamics(mGravity, _object->getQDotVector(), false); // Not sure if we need this
     }
 
     // create collision dynanmics object
@@ -216,25 +197,14 @@ namespace robotics {
     VectorXd state(mIndices.back() * 2);
     for (int i = 0; i < getNumSkeletons(); i++) {
       int start = mIndices[i] * 2;
-      int size = mDofs[i].size();
-      state.segment(start, size) = mDofs[i];
-      state.segment(start + size, size) = mDofVels[i];
+      int size = getSkeleton(i)->getNumDofs();
+      state.segment(start, size) = getSkeleton(i)->getPose();
+      state.segment(start + size, size) = getSkeleton(i)->getQDotVector();
     }
     return state;
   }
 
   VectorXd World::evalDeriv() {
-    // compute dynamic equations
-    for (int i = 0; i < getNumSkeletons(); i++) {
-        if (getSkeleton(i)->getImmobileState()) {
-            // need to update node transformation for collision
-            getSkeleton(i)->setPose(mDofs[i], true, false);
-        } else {
-            // need to update first derivatives for collision
-            getSkeleton(i)->setPose(mDofs[i], false, true);
-            getSkeleton(i)->computeDynamics(mGravity, mDofVels[i], true);
-        }
-    }
     // compute contact forces
     mCollisionHandle->applyContactForces();
 
@@ -245,13 +215,13 @@ namespace robotics {
         if (getSkeleton(i)->getImmobileState())
             continue;
         int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
+        int size = getSkeleton(i)->getNumDofs();
         VectorXd qddot = getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(
             - getSkeleton(i)->getCombinedVector() + getSkeleton(i)->getExternalForces()
             + mCollisionHandle->getConstraintForce(i) + getSkeleton(i)->getInternalForces());
 
-        getSkeleton(i)->clampRotation(mDofs[i], mDofVels[i]);
-        deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // set velocities
+        getSkeleton(i)->clampRotation(getSkeleton(i)->getPose(), getSkeleton(i)->getQDotVector());
+        deriv.segment(start, size) = getSkeleton(i)->getQDotVector() + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
     }
     return deriv;
@@ -260,9 +230,15 @@ namespace robotics {
 void World::setState(VectorXd newState) {
     for (int i = 0; i < getNumSkeletons(); i++) {
         int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        mDofs[i] = newState.segment(start, size);
-        mDofVels[i] = newState.segment(start + size, size);
+        int size = getSkeleton(i)->getNumDofs();
+        if (getSkeleton(i)->getImmobileState()) {
+            // need to update node transformation for collision
+            getSkeleton(i)->setPose(newState.segment(start, size), true, false);
+        } else {
+            // need to update first derivatives for collision
+            getSkeleton(i)->setPose(newState.segment(start, size), false, true);
+            getSkeleton(i)->computeDynamics(mGravity, newState.segment(start + size, size), true);
+        }
     }
 }
 
