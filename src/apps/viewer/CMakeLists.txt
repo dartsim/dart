@@ -1,10 +1,9 @@
 ###############################################
 # apps/viewer
-PROJECT(viewer)
-FILE(GLOB viewer_srcs "*.cpp")
-FILE(GLOB viewer_hdrs "*.h")
-ADD_EXECUTABLE(viewer ${viewer_srcs} ${viewer_hdrs})
-TARGET_LINK_LIBRARIES(viewer kinematics yui renderer)
-LINK_THIRDPARTY_GLUT(viewer)
-SET_TARGET_PROPERTIES(viewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
+project(viewer)
+file(GLOB viewer_srcs "*.cpp")
+file(GLOB viewer_hdrs "*.h")
+add_executable(viewer ${viewer_srcs} ${viewer_hdrs})
+target_link_libraries(viewer kinematics yui renderer ${DARTExt_LIBRARIES})
+set_target_properties(viewer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

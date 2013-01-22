@@ -59,11 +59,11 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const E
 template <class R>
 bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
 
-	VectorXd savedDofs = world->getRobot(robotId)->getDofs(dofs);
+	VectorXd savedDofs = world->getRobot(robotId)->getConfig(dofs);
 
 	std::vector<Eigen::VectorXd> feasibleStart;
 	for(unsigned int i = 0; i < start.size(); i++) {
-		world->getRobot(robotId)->setDofs(dofs, start[i]);
+		world->getRobot(robotId)->setConfig(dofs, start[i]);
 		if(!world->checkCollision()) {
 			feasibleStart.push_back(start[i]);
 		}
@@ -74,7 +74,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const s
 
 	std::vector<Eigen::VectorXd> feasibleGoal;
 	for(unsigned int i = 0; i < goal.size(); i++) {
-		world->getRobot(robotId)->setDofs(dofs, goal[i]);
+		world->getRobot(robotId)->setConfig(dofs, goal[i]);
 		if(!world->checkCollision()) {
 			feasibleGoal.push_back(goal[i]);
 		}
@@ -89,7 +89,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const s
 	else
 		result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path, connect, maxNodes);
 
-	world->getRobot(robotId)->setDofs(dofs, savedDofs);
+	world->getRobot(robotId)->setConfig(dofs, savedDofs);
 
 	return result;
 }

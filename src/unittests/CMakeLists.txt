@@ -2,25 +2,22 @@
 # Unittests
 project(unittests)
 
-# Depends on snopt
-if(NOT SNOPT)
-  message(STATUS "Disabling some unittests. Cannot build all tests without snopt")
+if(UNIX)
+    file(GLOB gtest_hdrs "/usr/include/gtest/*.h" "/usr/include/gtest/internal/*.h")
+    include_directories(/usr/include/gtest)
+    include_directories(/usr/src/gtest)
+    add_library(gtest /usr/src/gtest/src/gtest-all.cc ${gtest_hdrs})
+    add_library(gtest_main /usr/src/gtest/src/gtest_main.cc ${gtest_hdrs})
+    target_link_libraries(gtest_main gtest)
+    set_target_properties (gtest_main gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 endif()
 
 # Search all header and source files
 file(GLOB unittests_srcs "*.cpp")
 file(GLOB unittests_hdrs "*.h")
 
-if(SNOPT)
-    file(GLOB unittests_snopt "*.cpp" "*.h")
-    set(snopt_lib snopt gfortran)
-endif(SNOPT)
-
-add_executable(unittests ${unittests_srcs} ${unittests_hdrs} ${unittests_snopt})
-target_link_libraries(unittests utils kinematics dynamics optimizer ${snopt_lib})
-
-link_thirdparty_gtest(unittests)
-link_thirdparty_tinyxml(unittests)
+add_executable(unittests ${unittests_srcs} ${unittests_hdrs})
+target_link_libraries(unittests utils kinematics dynamics optimizer gtest gtest_main ${DARTExt_LIBRARIES})
 
 if(APPLE OR UNIX)
   target_link_libraries(unittests pthread)
