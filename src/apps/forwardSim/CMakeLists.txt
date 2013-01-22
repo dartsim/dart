@@ -1,10 +1,10 @@
 ###############################################
 # apps/forwardSim
-PROJECT(forwardSim)
-FILE(GLOB forwardSim_srcs "*.cpp")
-FILE(GLOB forwardSim_hdrs "*.h")
-ADD_EXECUTABLE(forwardSim ${forwardSim_srcs} ${forwardSim_hdrs})
-TARGET_LINK_LIBRARIES(forwardSim kinematics dynamics yui renderer integration optimized fcl debug fcld)
-LINK_THIRDPARTY_GLUT(forwardSim)
 
-SET_TARGET_PROPERTIES(forwardSim PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+project(forwardSim)
+file(GLOB forwardSim_srcs "*.cpp")
+file(GLOB forwardSim_hdrs "*.h")
+add_executable(forwardSim ${forwardSim_srcs} ${forwardSim_hdrs})
+target_link_libraries(forwardSim kinematics dynamics integration yui renderer ${DARTExt_LIBRARIES})
+# kinematics dynamics yui renderer integration optimized fcl debug fcld ${DARTExt_LIBRARIES}
+set_target_properties(forwardSim PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

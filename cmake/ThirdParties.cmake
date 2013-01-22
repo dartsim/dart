@@ -22,7 +22,7 @@ elseif(UNIX)
     find_package(GLUT REQUIRED)
     include_directories(${GLUT_INCLUDE_DIR})
     target_link_libraries(${project} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})
-endif()
+endif(	)
 ENDFUNCTION(LINK_THIRDPARTY_GLUT)
 
 FUNCTION(LINK_THIRDPARTY_GTEST project)

@@ -16,27 +16,12 @@ foreach(APPDIR
 	hybrid
 	)
     add_subdirectory(${APPDIR})
-endforeach(APPDIR)
-
-foreach(APPTARGET
-    exampleCollisionWithSkelton
-    meshCollision
-	viewer
-	forwardSim
-	cubes
-	motionAnalysis
-	pdController
-	balance
-	ik
-	hybrid
-	)
-    if(TARGET ${APPTARGET})
-        set_target_properties(${APPTARGET} PROPERTIES
-                FOLDER Apps
-                #EXCLUDE_FROM_DEFAULT_BUILD ON
-                )
-        if(MSVC)
+    if(WIN32)
+        if(TARGET ${APPTARGET})
+            set_target_properties(${APPTARGET} PROPERTIES FOLDER Apps
+                    #EXCLUDE_FROM_DEFAULT_BUILD ON
+                    )
             set_target_properties(${APPTARGET} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-        endif()
-    endif(TARGET ${APPTARGET})
-endforeach(APPTARGET)
+        endif(TARGET ${APPTARGET})
+    endif(WIN32)
+endforeach(APPDIR)

@@ -1,10 +1,8 @@
 ###############################################
 # apps/cubes
-PROJECT(cubes)
-FILE(GLOB cubes_srcs "*.cpp")
-FILE(GLOB cubes_hdrs "*.h")
-ADD_EXECUTABLE(cubes ${cubes_srcs} ${cubes_hdrs})
-TARGET_LINK_LIBRARIES(cubes lcpsolver collision kinematics dynamics yui renderer integration optimized fcl debug fcld)
-LINK_THIRDPARTY_GLUT(cubes)
-
-SET_TARGET_PROPERTIES(cubes PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+project(cubes)
+file(GLOB cubes_srcs "*.cpp")
+file(GLOB cubes_hdrs "*.h")
+add_executable(cubes ${cubes_srcs} ${cubes_hdrs})
+target_link_libraries(cubes kinematics dynamics collision yui renderer integration lcpsolver ${DARTExt_LIBRARIES})
+set_target_properties(cubes PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

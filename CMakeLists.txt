@@ -6,8 +6,6 @@ set(CMAKE_CXX_WARNING_LEVEL 4)
 project (dart)
 message(STATUS "Generate makefile/project file for DART")
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
-
 set(DART_MAJOR_VERSION "2")
 set(DART_MINOR_VERSION "1")
 set(DART_PATCH_VERSION "1")
@@ -15,141 +13,67 @@ set(PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(PKG_EXTERNAL_DEPS "flann, ccd, fcl")
 
+message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option(DART_UI "Enable DART yui" ON)
-option(SNOPT "Build for SNOPT optimizer" OFF)
-option(PLANNING "Compile Planning Libraries" ON)
-option(ROBOTICS "Compile Robotics API" ON)
-if(UNIX)
-  option(ENABLE_MSSE2 "Enable -msse2 flag" ON)
-endif()
+option(BUILD_SNOPT "Build with SNOPT optimizer" OFF)
+option(BUILD_ROBOTICS "Compile with Robotics API" ON)
 
-# Can't test for WIN32 - We might be building on Cygwin
 if (WIN32 AND NOT CYGWIN)
   message(STATUS "Setup Visual Studio Specific Flags")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd /Zi /Gy /W1 /EHsc")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /Zi /GL /Gy /W1 /EHsc")
   set(CMAKE_DEBUG_POSTFIX "d")
-  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
+  set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 elseif (UNIX)  
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3 -std=c++0x")
-  set(CMAKE_INSTALL_PREFIX /usr )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++0x")
+  option(ENABLE_MSSE2 "Enable -msse2 flag" ON)
+  set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
 endif()
 
-set(THIRDPARTY_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/thirdparty CACHE PATH "Root directory for 'installing' thirdparty builds")
-
 ###############
-# Generate the path header file:i
+# Generate the path header file
 set(PATH_HEADER_DIR ${CMAKE_SOURCE_DIR}/src/utils/Paths.h)
 message(STATUS "Generate the path header file to  ${PATH_HEADER_DIR}")
 configure_file(${PATH_HEADER_DIR}.in ${PATH_HEADER_DIR} @ONLY)
 
 ###############
-# User specific settings
-include(cmake/Directories.cmake)
-include(cmake/ThirdParties.cmake)
-
-find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
-message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
-
-###############
-# Find important packages
-
-find_package(PkgConfig QUIET)
-
-# OpenGL
-find_package(OpenGL REQUIRED)
-
-# GLUT
-if(WIN32 AND NOT CYGWIN)
-    message(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
-    set(GLUT_PREFIX_PATH "C:/Golems/" CACHE PATH "Root directory of GLUT installation")
-	include_directories("C:/Golems/include")
-	include_directories("C:/Golems/lib")
-elseif(UNIX)
-find_package(GLUT REQUIRED)
-    include_directories(${GLUT_INCLUDE_DIR})
-endif()
-
-# Boost and Assimp Boost Workaround
-find_package(Boost REQUIRED system filesystem)
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
-
-if(MSVC OR MSVC90 OR MSVC10)
-    add_definitions(-DBOOST_ALL_NO_LIB)
-endif()
-add_definitions(-DBOOST_TEST_DYN_LINK)
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
-
-# FLANN
-if(PKG_CONFIG_FOUND)
-   pkg_check_modules(PC_FLANN flann)
-   find_path(FLANN_INCLUDEDIR flann/flann.h 
-   PATHS ${CMAKE_INSTALL_PREFIX}/include ${PC_FLANN_INCLUDEDIR} PATH_SUFFIXES flann)
-   set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
-endif()
-
-# CCD
-if(PKG_CONFIG_FOUND)
-   pkg_check_modules(PC_CCD ccd)
-   find_path(CCD_INCLUDEDIR ccd/ccd.h
-   PATHS ${CMAKE_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
-   set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
-endif()
-
-# FCL
-if(PKG_CONFIG_FOUND)
-   pkg_check_modules(PC_FCL fcl)
-   find_path(FCL_INCLUDEDIR fcl/collision.h 
-   PATHS ${CMAKE_INSTALL_PREFIX}/include ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
-   set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
-endif()
-
-#Eigen
-find_path(EIGEN3_INCLUDEDIR Eigen/Core
-    PATHS ${CMAKE_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
-
-include_directories(${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${EIGEN3_INCLUDEDIR})
-
-###############
-# Thirdparty libraries
-message(STATUS "Configuring thirdparty libraries")
-
-add_subdirectory(thirdparty/gtest-1.6.0)
-add_subdirectory(thirdparty/tinyxml2)
-add_subdirectory(thirdparty/tinyxml)
-
-if(SNOPT)
- set(snopt_folder ${CMAKE_SOURCE_DIR}/thirdparty/snopt)
- add_subdirectory(${snopt_folder})
-endif()
-
-###############
-# DART Source
-message(STATUS "Building DART source")
-set(DART_LIBRARIES "")
-set(DART_INCLUDEDIR "")
-include_directories(src)
-add_subdirectory(src)
-
-###############
 # Install Targets
 # Generate the Dart CMake Config file
 file(GLOB cmake_mods "cmake/Modules/*.cmake")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/DARTConfig.cmake @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/FindDART.cmake @ONLY)
-install(FILES ${CMAKE_SOURCE_DIR}/DARTConfig.cmake DESTINATION share/dart)
-install(FILES ${CMAKE_SOURCE_DIR}/FindDART.cmake DESTINATION ${CMAKE_ROOT}/Modules)
-install(FILES ${cmake_mods} DESTINATION share/dart/cmake)
+configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTExtConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake @ONLY)
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION share/dart)
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION share/dart)
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION ${CMAKE_ROOT}/Modules)
 
 set(PC_CONFIG ${CMAKE_SOURCE_DIR}/cmake/dart.pc)
 configure_file(${PC_CONFIG}.in ${PC_CONFIG} @only)
 install(FILES ${PC_CONFIG} DESTINATION lib/pkgconfig)
 
+###############
+# Find important packages
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+find_package(DARTExt REQUIRED)
+
+###############
+# Thirdparty libraries
+# add_subdirectory(thirdparty/tinyxml2)
+
+###############
+find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
+message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
+
+message(STATUS "Building DART source")
+# Since you are developing DART
+include_directories(BEFORE src)
+include_directories(${DARTExt_INCLUDEDIR})
+link_directories(${CMAKE_SOURCE_DIR}/lib)
+add_subdirectory(src)
+
+###############
 # Add an "uninstall" target
 configure_file ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
 add_custom_target (uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
