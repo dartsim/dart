@@ -45,13 +45,12 @@ namespace collision_checking{
             return res.isCollision() ? 1 : 0;
         }
 
-        int start, size;
-        start = _contactPoints->size();
-        size = 0;
-
         int numCoplanarContacts = 0;
         int numNoContacts = 0;
         int numContacts = 0;
+
+        vector<ContactPoint> unfilteredContactPoints;
+        unfilteredContactPoints.reserve(res.numContacts());
 
         for(int i = 0; i < res.numContacts();i++) {
             // for each pair of intersecting triangles, we create two contact points
@@ -67,8 +66,7 @@ namespace collision_checking{
             pair1.triID2 = res.getContact(i).b2;
             pair1.penetrationDepth = res.getContact(i).penetration_depth;
             pair2 = pair1;
-            int contactResult = evalContactPosition(res, _otherNode, i, pair1.point, pair2.point, pair1.contactTri);
-            pair2.contactTri = pair1.contactTri;
+            int contactResult = evalContactPosition(res, _otherNode, i, pair1.point, pair2.point);
             if(contactResult == COPLANAR_CONTACT) {
                 numCoplanarContacts++;      
                 //                if(numContacts != 0 || numCoplanarContacts > 1)
@@ -84,67 +82,55 @@ namespace collision_checking{
             pair1.normal = Vector3d(v[0], v[1], v[2]);
             pair2.normal = Vector3d(v[0], v[1], v[2]);
         
-            _contactPoints->push_back(pair1);
-            _contactPoints->push_back(pair2);
-
-            size+=2;
+            unfilteredContactPoints.push_back(pair1);
+            unfilteredContactPoints.push_back(pair2);
         }
-
-        if(res.numContacts()==0)
-            return 0;
 
         const double ZERO = 0.000001;
         const double ZERO2 = ZERO*ZERO;
 
-        vector<int> deleteIDs;
-        size = _contactPoints->size() - start;
-        deleteIDs.clear();
+        vector<bool> markForDeletion(unfilteredContactPoints.size(), false);
 
         // mark all the repeated points
-        for (int i = start; i < start + size; i++)
-            for (int j = i + 1; j < start + size; j++) {
-                Vector3d diff = (*_contactPoints)[i].point - (*_contactPoints)[j].point;
+        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
+            for (unsigned int j = i + 1; j < unfilteredContactPoints.size(); j++) {
+                Vector3d diff = unfilteredContactPoints[i].point - unfilteredContactPoints[j].point;
                 if (diff.dot(diff) < 3 * ZERO2) {
-                    deleteIDs.push_back(i);
+                    markForDeletion[i] = true;
                     break;
                 }
             }
-        // delete repeated points
-        for (int i = deleteIDs.size() - 1; i >= 0; i--)
-            _contactPoints->erase(_contactPoints->begin() + deleteIDs[i]);
-        
-        size = _contactPoints->size() - start;
-        deleteIDs.clear();
+        }
 
         // remove all the co-linear contact points
         bool bremove;
-        for (int i = start; i < start + size; i++) {
-            bremove = false;
-            for (int j = start; j < start + size; j++) {
-                if (j == i)
+        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
+            if(markForDeletion[i])
+                continue;
+            for (unsigned int j = 0; j < unfilteredContactPoints.size(); j++) {
+                if (j == i || markForDeletion[j])
                     continue;
-                if (bremove)
+                if (markForDeletion[i])
                     break;
-                for (int k = j + 1; k < start + size; k++) {
+                for (int k = j + 1; k < unfilteredContactPoints.size(); k++) {
                     if (i == k)
                         continue;
-                    Vector3d  v = ((*_contactPoints)[i].point - (*_contactPoints)[j].point).cross((*_contactPoints)[i].point - (*_contactPoints)[k].point);
-                    if (v.dot(v) < ZERO2 && (((*_contactPoints)[i].point - (*_contactPoints)[j].point).dot((*_contactPoints)[i].point - (*_contactPoints)[k].point) < 0)) {
-                        bremove = true;
+                    Vector3d  v = (unfilteredContactPoints[i].point - unfilteredContactPoints[j].point).cross(unfilteredContactPoints[i].point - unfilteredContactPoints[k].point);
+                    if (v.dot(v) < ZERO2 && ((unfilteredContactPoints[i].point - unfilteredContactPoints[j].point).dot(unfilteredContactPoints[i].point - unfilteredContactPoints[k].point) < 0)) {
+                        markForDeletion[i] = true;
                         break;
                     }
                 }
             }
-            if (bremove)
-                deleteIDs.push_back(i);
         }
     
-        for (int i = deleteIDs.size() - 1; i >= 0; i--)
-            _contactPoints->erase(_contactPoints->begin() + deleteIDs[i]);
+        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
+            if(!markForDeletion[i]) {
+                _contactPoints->push_back(unfilteredContactPoints[i]);
+            }
+        }
 
-        int collisionNum = res.numContacts();
-        //return numCoplanarContacts*100+numNoContacts;
-        return collisionNum;
+        return res.numContacts();
     }
 
     void CollisionSkeletonNode::evalRT() {
@@ -155,7 +141,7 @@ namespace collision_checking{
                                           fcl::Vec3f(mWorldTrans(0,3), mWorldTrans(1,3), mWorldTrans(2,3)));
     }
 
-    int CollisionSkeletonNode::evalContactPosition(fcl::CollisionResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2, ContactTriangle& _contactTri ) {
+    int CollisionSkeletonNode::evalContactPosition(fcl::CollisionResult& _result,  CollisionSkeletonNode* _other, int _idx, Vector3d& _contactPosition1, Vector3d& _contactPosition2) {
         int id1, id2;
         fcl::Triangle tri1, tri2;
         CollisionSkeletonNode* node1 = this;
@@ -183,12 +169,6 @@ namespace collision_checking{
         p3 = node2->TransformVertex(p3);
         int testRes = FFtest(v1, v2, v3, p1, p2, p3, contact1, contact2);
 
-        _contactTri.v1 = v1;
-        _contactTri.v2 = v2;
-        _contactTri.v3 = v3;
-        _contactTri.u1 = p1;
-        _contactTri.u2 = p2;
-        _contactTri.u3 = p3;
         if (testRes == COPLANAR_CONTACT) {
             double area1 = triArea(v1, v2, v3);
             double area2 = triArea(p1, p2, p3);
