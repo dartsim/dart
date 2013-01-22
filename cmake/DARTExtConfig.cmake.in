@@ -1,6 +1,7 @@
 # Find DART Externals
 #
 # This sets the following variables:
+# DARTExt_FOUND - If all the Dart externals were found or not
 # DARTExt_INCLUDEDIR - Directories containing the DART external include files.
 # DARTExt_LIBRARIES - Libraries needed to use DART External.
 # DARTExt_DEFINITIONS - Compiler flags for DART External.
@@ -8,11 +9,17 @@
 
 set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
 
+set(DARTExt_FOUND TRUE)
+
 find_package(PkgConfig QUIET)
 
 # Eigen
 find_path(EIGEN3_INCLUDEDIR Eigen/Core
     PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
+
+if(NOT EXISTS EIGEN3_INCLUDEDIR/Eigen/Core)
+    set(DARTExt_FOUND FALSE)
+endif()
 
 # OpenGL
 find_package(OpenGL REQUIRED)
@@ -20,8 +27,8 @@ find_package(OpenGL REQUIRED)
 # GLUT
 if(WIN32 AND NOT CYGWIN)
     message(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
-    set(GLUT_PREFIX_PATH "C:/Golems/" CACHE PATH "Root directory of GLUT installation")
-	set(GLUT_INCLUDEDIR "C:/Golems/include")
+    set(GLUT_PREFIX_PATH "@CMAKE_INSTALL_PREFIX@" CACHE PATH "Root directory of GLUT installation")
+	set(GLUT_INCLUDEDIR "@CMAKE_INSTALL_PREFIX@/include")
 	set(GLUT_LIBRARIES glut32)
 elseif(UNIX)
     find_package(GLUT REQUIRED)
@@ -59,8 +66,32 @@ endif()
 if(PKG_CONFIG_FOUND)
    pkg_check_modules(PC_FCL fcl)
    find_path(FCL_INCLUDEDIR fcl/collision.h 
-   PATHS ${INCL_DIRS} ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
+   PATHS ${SYS_INSTALL_PREFIX} ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
    set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
+endif()
+
+#Assimp
+find_path(ASSIMP_INCLUDEDIR assimp/scene.h
+    PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
+    
+if(EXISTS ASSIMP_INCLUDEDIR/assimp/scene.h)
+    set(ASSIMP_LIBRARIES assimp)
+endif()
+
+# Tinyxml
+find_path(TINYXML_INCLUDEDIR tinyxml.h
+    PATHS ${SYS_INSTALL_PREFIX}/include)
+    
+if(EXISTS TINYXML_INCLUDEDIR/tinyxml.h)
+    set(TINYXML_LIBRARIES tinyxml)
+endif()
+
+# Tinyxml2
+find_path(TINYXML2_INCLUDEDIR tinyxml2.h
+    PATHS ${SYS_INSTALL_PREFIX}/include)
+    
+if(EXISTS TINYXML2_INCLUDEDIR/tinyxml2.h)
+    set(TINYXML2_LIBRARIES tinyxml2)
 endif()
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
@@ -72,7 +103,7 @@ if(MSVC OR MSVC90 OR MSVC10)
 	    set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} optimized ${DARTExt_LIB} debug ${DARTExt_LIB}d)
 	endforeach(DARTExt_LIB)
 	
-	set(DARTExt_LIBS_NO_DEBUG assimp ccd ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+	set(DARTExt_LIBS_NO_DEBUG assimp ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
 	foreach(DARTExt_LIB ${DARTExt_LIBS_NO_DEBUG})
 	    set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} ${DARTExt_LIB})
 endforeach(DARTExt_LIB)
