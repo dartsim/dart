@@ -35,6 +35,7 @@ if (WIN32 AND NOT CYGWIN)
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
 elseif (UNIX)  
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -O3 -std=c++0x")
+  set(CMAKE_CXX_FLAGS_PROFILE "-pg" CACHE STRING "Profiling flags") 
   set(CMAKE_INSTALL_PREFIX /usr )
 endif()
 
