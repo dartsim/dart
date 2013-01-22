@@ -28,7 +28,7 @@ endif()
    
 set(DART_LIBRARY_DIRS "@SYS_INSTALL_PREFIX@/lib")
 
-set(DART_LIBS parser planning robotics collision dynamics kinematics renderer utils integration lcpsolver)
+set(DART_LIBS planning robotics collision dynamics kinematics renderer utils integration lcpsolver)
 
 if(MSVC OR MSVC90 OR MSVC10)
 	foreach(DART_LIB ${DART_LIBS})
