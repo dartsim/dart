@@ -3,6 +3,10 @@ thirdparty/fcl/include/fcl/config.h
 build/
 syntax: glob
 CMakeCache.txt
+*.swp
+*.cmake
+cmake/
+CMakeFiles/
 cmake_install.cmake
 install_manifest.txt
 CPack*
