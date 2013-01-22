@@ -49,10 +49,6 @@ namespace fcl { class CollisionResult; };
 
 namespace collision_checking {
     class CollisionSkeletonNode;
-    struct ContactTriangle
-    {
-        fcl::Vec3f v1, v2, v3, u1, u2, u3;
-    };
     struct ContactPoint {
         Eigen::Vector3d point;
         Eigen::Vector3d normal;
@@ -65,7 +61,6 @@ namespace collision_checking {
         int bdID2;
         int triID1;
         int triID2;
-        ContactTriangle contactTri;
 
         double penetrationDepth;
         /*        bool isAdjacent(ContactPoint &otherPt){
@@ -92,7 +87,7 @@ namespace collision_checking {
         int checkCollision(CollisionSkeletonNode* _otherNode, std::vector<ContactPoint>* _contactPoints, int _max_num_contact);
         void evalRT();
         
-        int evalContactPosition(fcl::CollisionResult& _result, CollisionSkeletonNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2, ContactTriangle& _contactTri);
+        int evalContactPosition(fcl::CollisionResult& _result, CollisionSkeletonNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2);
         void drawCollisionSkeletonNode(bool _bTrans = true);
         void drawCollisionTriangle(int _tri);
 

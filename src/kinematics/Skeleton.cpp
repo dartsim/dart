@@ -186,7 +186,7 @@ namespace kinematics {
     }
 
 
-    Eigen::VectorXd Skeleton::getDofs(std::vector<int> _id)
+    Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
     {
         Eigen::VectorXd dofs(_id.size());
         for(unsigned int i = 0; i < _id.size(); i++) {
@@ -195,7 +195,7 @@ namespace kinematics {
         return dofs;
     }
 
-    void Skeleton::setDofs(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans, bool _calcDeriv) {
+    void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans, bool _calcDeriv) {
         for( unsigned int i = 0; i < _id.size(); i++ ) {
             mCurrPose[_id[i]] = _vals(i);
             mDofs[_id[i]]->setValue(_vals(i));
