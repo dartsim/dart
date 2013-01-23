@@ -66,6 +66,7 @@ if(DARTExt_FOUND)
     # Since you are developing DART
     include_directories(BEFORE src)
     include_directories(${DARTExt_INCLUDEDIR})
+	link_directories(${DARTExt_LIBRARY_DIRS})
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     add_subdirectory(src)
 else()
