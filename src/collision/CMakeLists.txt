@@ -1,7 +1,7 @@
 ###############################################
 # Collision
 project(collision)
-message(STATUS "(collision) var is ${VAR_TEMP}")
+
 # Search all header and source files
 file(GLOB collision_srcs "*.cpp")
 file(GLOB collision_hdrs "*.h")

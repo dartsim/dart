@@ -57,22 +57,20 @@ install(FILES ${PC_CONFIG} DESTINATION lib/pkgconfig)
 ###############
 # Find important packages
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(DARTExt REQUIRED)
-
-###############
-# Thirdparty libraries
-# add_subdirectory(thirdparty/tinyxml2)
-
-###############
-find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
-message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
-
-message(STATUS "Building DART source")
-# Since you are developing DART
-include_directories(BEFORE src)
-include_directories(${DARTExt_INCLUDEDIR})
-link_directories(${CMAKE_SOURCE_DIR}/lib)
-add_subdirectory(src)
+find_package(DARTExt)
+if(DARTExt_FOUND)
+    find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
+    message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
+    
+    message(STATUS "Building DART source")
+    # Since you are developing DART
+    include_directories(BEFORE src)
+    include_directories(${DARTExt_INCLUDEDIR})
+    link_directories(${CMAKE_SOURCE_DIR}/lib)
+    add_subdirectory(src)
+else()
+    message(STATUS "Dart dependencies were not satisfied, will not build from source")
+endif()
 
 ###############
 # Add an "uninstall" target
@@ -118,7 +116,7 @@ set(CPACK_SYSTEM_NAME "amd64")
 set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
 set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
 set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost-dev, flann (>=1.8), libccd (>=1.4.2), libfcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost-dev, flann (>=1.8), libccd (>=1.4.2), libfcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev, libassimp3")
 
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}")

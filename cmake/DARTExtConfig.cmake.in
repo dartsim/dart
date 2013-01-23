@@ -17,12 +17,14 @@ find_package(PkgConfig QUIET)
 find_path(EIGEN3_INCLUDEDIR Eigen/Core
     PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
 
-if(NOT EXISTS EIGEN3_INCLUDEDIR/Eigen/Core)
+if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
+    message(STATUS "Could not find Eigen3")
     set(DARTExt_FOUND FALSE)
 endif()
 
 # OpenGL
 find_package(OpenGL REQUIRED)
+set(DARTExt_FOUND ${OPENGL_FOUND})
 
 # GLUT
 if(WIN32 AND NOT CYGWIN)
@@ -38,6 +40,7 @@ endif()
 # Boost and Assimp Boost Workaround
 find_package(Boost REQUIRED system filesystem)
 set(Boost_INCLUDEDIR ${Boost_INCLUDE_DIRS})
+set(DARTExt_FOUND ${Boost_FOUND})
 
 if(MSVC OR MSVC90 OR MSVC10)
     add_definitions(-DBOOST_ALL_NO_LIB)
@@ -51,7 +54,16 @@ if(PKG_CONFIG_FOUND)
    pkg_check_modules(PC_FLANN flann)
    find_path(FLANN_INCLUDEDIR flann/flann.h 
    PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FLANN_INCLUDEDIR} PATH_SUFFIXES flann)
-   set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
+   if(UNIX)
+       set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
+   else()
+       set(FLANN_LIBRARIES "flann_cpp")
+   endif()
+endif()
+
+if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
+    message(STATUS "Could not find flann")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 # CCD
@@ -59,7 +71,16 @@ if(PKG_CONFIG_FOUND)
    pkg_check_modules(PC_CCD ccd)
    find_path(CCD_INCLUDEDIR ccd/ccd.h
    PATHS ${SYS_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
-   set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
+   if(UNIX)
+       set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
+   else()
+       set(CCD_LIBRARIES "ccd")
+   endif()
+endif()
+
+if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
+    message(STATUS "Could not find ccd")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 # FCL
@@ -67,53 +88,70 @@ if(PKG_CONFIG_FOUND)
    pkg_check_modules(PC_FCL fcl)
    find_path(FCL_INCLUDEDIR fcl/collision.h 
    PATHS ${SYS_INSTALL_PREFIX} ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
-   set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
+   if(UNIX)
+       set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
+   else()
+       set(FCL_LIBRARIES "fcl")
+   endif()
+endif()
+
+if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
+    message(STATUS "Could not fcl")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 #Assimp
 find_path(ASSIMP_INCLUDEDIR assimp/scene.h
     PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
+set(ASSIMP_LIBRARIES assimp)
     
-if(EXISTS ASSIMP_INCLUDEDIR/assimp/scene.h)
-    set(ASSIMP_LIBRARIES assimp)
+if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
+    message(STATUS "Could not find assimp")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 # Tinyxml
 find_path(TINYXML_INCLUDEDIR tinyxml.h
     PATHS ${SYS_INSTALL_PREFIX}/include)
+set(TINYXML_LIBRARIES tinyxml)
     
-if(EXISTS TINYXML_INCLUDEDIR/tinyxml.h)
-    set(TINYXML_LIBRARIES tinyxml)
+if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
+    message(STATUS "Could not find tinyxml")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 # Tinyxml2
 find_path(TINYXML2_INCLUDEDIR tinyxml2.h
     PATHS ${SYS_INSTALL_PREFIX}/include)
+set(TINYXML2_LIBRARIES tinyxml2)
     
-if(EXISTS TINYXML2_INCLUDEDIR/tinyxml2.h)
-    set(TINYXML2_LIBRARIES tinyxml2)
+if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
+    message(STATUS "Could not find tinyxml2")
+    set(DARTExt_FOUND FALSE)
 endif()
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
 
-set(DARTExt_LIBS ${FLANN_LIBRARIES} ${CCD_LIBRARIES} ${FCL_LIBRARIES})
+set(DARTExt_LIBS ${FLANN_LIBRARIES}  ${FCL_LIBRARIES})
+set(DARTExt_LIBS_NO_DEBUG ${CCD_LIBRARIES} ${ASSIMP_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
 
 if(MSVC OR MSVC90 OR MSVC10)
 	foreach(DARTExt_LIB ${DARTExt_LIBS})
 	    set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} optimized ${DARTExt_LIB} debug ${DARTExt_LIB}d)
 	endforeach(DARTExt_LIB)
-	
-	set(DARTExt_LIBS_NO_DEBUG assimp ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+		
 	foreach(DARTExt_LIB ${DARTExt_LIBS_NO_DEBUG})
 	    set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} ${DARTExt_LIB})
-endforeach(DARTExt_LIB)
+    endforeach(DARTExt_LIB)
+   
 elseif(UNIX)
-	set(DARTExt_LIBRARIES ${DARTExt_LIBS} ${GLUT_LIBRARIES} ${OPENGL_LIBRARY} tinyxml2 tinyxml assimp)
+	set(DARTExt_LIBRARIES ${DARTExt_LIBS_NO_DEBUG} ${DARTExt_LIBS})
 endif()
 
-set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} ${GLUT_INCLUDEDIR})
+set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} 
+        ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_LIBRARIES)
+find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_FOUND)
 
 mark_as_advanced(DARTExt_LIBRARY_DIRS DARTExt_INCLUDEDIR DARTExt_LIBRARIES FLANN_LIBRARIES CCD_LIBRARIES FCL_LIBRARIES Boost_LIBRARIES)
