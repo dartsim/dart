@@ -4,6 +4,13 @@ project(dart)
 file(GLOB_RECURSE dart_srcs "*.cpp")
 file(GLOB_RECURSE dart_hdrs "*.h")
 
+# Setup directory structure for Visual Studio
+set(SUBDIRS collision dynamics integration kinematics lcpsolver optimizer planning renderer robotics utils yui)
+foreach(SUBDIR ${SUBDIRS})
+	file(GLOB_RECURSE dir_files ${SUBDIR}/*.h ${SUBDIR}/*.cpp)
+	source_group(${SUBDIR} FILES ${dir_files})
+endforeach()
+
 # Library 
 add_library(dart ${dart_srcs} ${dart_hdrs})
 target_link_libraries(dart ${DARTExt_LIBRARIES})
