@@ -3,7 +3,7 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4) 
 # Disables a warning about a change in Cygwin Cmake
 
-project(dart_all)
+project(dart)
 message(STATUS "Generate makefile/project file for DART")
 
 set(DART_MAJOR_VERSION "2")
