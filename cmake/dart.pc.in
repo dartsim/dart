@@ -8,5 +8,5 @@ Name: @PROJECT_NAME@
 Description: @PKG_DESC@
 Version: @DART_VERSION@
 Requires: @PKG_EXTERNAL_DEPS@
-Libs: -L${libdir} -lparser -lurdfdom_model -lurdfdom_model_state -lurdfdom_sensor -lplanning -lrobotics  -lcollision -ldynamics -lkinematics -lrenderer -lutils -ltinyxml -lintegration -llcpsolver -lfcl -lccd
+Libs: -L${libdir} -ldart
 Cflags: @CMAKE_CXX_FLAGS@

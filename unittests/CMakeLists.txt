@@ -18,7 +18,7 @@ file(GLOB unittests_srcs "*.cpp")
 file(GLOB unittests_hdrs "*.h")
 
 add_executable(unittests ${unittests_srcs} ${unittests_hdrs})
-target_link_libraries(unittests utils kinematics dynamics optimizer gtest ${DARTExt_LIBRARIES})
+target_link_libraries(unittests dart gtest ${DARTExt_LIBRARIES})
 
 if(APPLE OR UNIX)
   target_link_libraries(unittests pthread)

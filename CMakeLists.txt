@@ -3,7 +3,7 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4) 
 # Disables a warning about a change in Cygwin Cmake
 
-project(dart)
+project(dart_all)
 message(STATUS "Generate makefile/project file for DART")
 
 set(DART_MAJOR_VERSION "2")
@@ -69,6 +69,9 @@ if(DARTExt_FOUND)
 	link_directories(${DARTExt_LIBRARY_DIRS})
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     add_subdirectory(src)
+    
+    add_subdirectory(unittests)
+    add_subdirectory(apps)
 else()
     message(STATUS "Dart dependencies were not satisfied, will not build from source")
 endif()

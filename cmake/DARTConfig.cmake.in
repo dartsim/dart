@@ -10,17 +10,23 @@
 # DART_LIBRARIES - Libraries needed to use DART.
 # DART_DEFINITIONS - Compiler flags for DART.
 
+set(DART_FOUND FALSE)
 set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
 
-find_package(PkgConfig QUIET)
-if(PKG_CONFIG_FOUND)
-   pkg_check_modules(PC_DART dart)
-   set(DART_DEFINITIONS ${PC_DART_CFLAGS_OTHER})
+set(DART_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include)
+if(EXISTS ${DART_INCLUDEDIR}/kinematics/Skeleton.h)
+    set(DART_FOUND TRUE)
+else()
+    find_package(PkgConfig QUIET)
+    if(PKG_CONFIG_FOUND)
+       pkg_check_modules(PC_DART dart)
+       set(DART_DEFINITIONS ${PC_DART_CFLAGS_OTHER})
+    endif()
+    
+    find_path(DART_INCLUDEDIR kinematics/Skeleton.h
+        PATHS ${PC_DART_INCLUDEDIR} ${SYS_INSTALL_PREFIX}/include
+        PATH_SUFFIXES dart)    
 endif()
-
-find_path(DART_INCLUDEDIR kinematics/Skeleton.h
-    PATHS ${PC_DART_INCLUDEDIR} ${SYS_INSTALL_PREFIX}/include
-    PATH_SUFFIXES dart)    
 
 if(EXISTS DART_INCLUDEDIR/kinematics/Skeleton.h)
     set(DART_FOUND TRUE)
@@ -28,17 +34,10 @@ endif()
    
 set(DART_LIBRARY_DIRS "@SYS_INSTALL_PREFIX@/lib")
 
-set(DART_LIBS utils dynamics kinematics utils collision planning robotics renderer integration lcpsolver)
+set(DART_LIBS dart)
 
 if(MSVC OR MSVC90 OR MSVC10)
-	foreach(DART_LIB ${DART_LIBS})
-	    set(DART_LIBRARIES ${DART_LIBRARIES} optimized ${DART_LIB} debug ${DART_LIB}d)
-	endforeach(DART_LIB)
-	
-	set(DART_LIBS_NO_DEBUG assimp ccd ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
-	foreach(DART_LIB ${DART_LIBS_NO_DEBUG})
-        set(DART_LIBRARIES ${DART_LIBRARIES} ${DART_LIB})
-    endforeach(DART_LIB)
+	set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
 elseif(UNIX)
     set(DART_LIBRARIES ${DART_LIBS})
 endif()
