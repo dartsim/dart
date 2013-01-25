@@ -1,0 +1,185 @@
+# Find DART Externals
+#
+# This sets the following variables:
+# DARTExt_FOUND - If all the Dart externals were found or not
+# DARTExt_INCLUDEDIR - Directories containing the DART external include files.
+# DARTExt_LIBRARIES - Libraries needed to use DART External.
+# DARTExt_DEFINITIONS - Compiler flags for DART External.
+# Boost_LIBRARIES - Boost Libraries required for DART
+
+set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
+
+set(DARTExt_FOUND TRUE)
+
+find_package(PkgConfig QUIET)
+set(DARTExt_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include)
+
+# Eigen
+set(EIGEN3_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
+    unset(EIGEN3_INCLUDEDIR)
+    find_path(EIGEN3_INCLUDEDIR 
+        NAMES Eigen/Core
+        PATHS ${SYS_INSTALL_PREFIX}/include 
+        PATH_SUFFIXES eigen3 eigen)
+endif()
+
+if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
+    message(STATUS "Could not find Eigen3")
+    set(DARTExt_FOUND FALSE)
+endif()
+message(STATUS "EIGEN3_INCLUDEDIR = ${EIGEN3_INCLUDEDIR}")
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+set(DARTExt_FOUND ${OPENGL_FOUND})
+
+# GLUT
+if(WIN32 AND NOT CYGWIN)
+    message(STATUS "Defaulting to provided GLUT libraries. Change GLUT_PREFIX_PATH to use a different version of GLUT")
+    set(GLUT_PREFIX_PATH "@CMAKE_INSTALL_PREFIX@" CACHE PATH "Root directory of GLUT installation")
+    set(GLUT_INCLUDEDIR "@CMAKE_INSTALL_PREFIX@/include")
+    set(GLUT_LIBRARIES glut32)
+elseif(UNIX)
+    find_package(GLUT REQUIRED)
+		include_directories(${GLUT_INCLUDEDIR})
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY}) 
+endif()
+
+# Boost and Assimp Boost Workaround
+find_package(Boost REQUIRED system filesystem)
+set(Boost_INCLUDEDIR ${Boost_INCLUDE_DIRS})
+set(DARTExt_FOUND ${Boost_FOUND})
+
+if(MSVC OR MSVC90 OR MSVC10)
+    add_definitions(-DBOOST_ALL_NO_LIB)
+endif()
+add_definitions(-DBOOST_TEST_DYN_LINK)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+# FLANN
+set(FLANN_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
+    pkg_check_modules(PC_FLANN flann)
+    unset(FLANN_INCLUDEDIR)
+    find_path(FLANN_INCLUDEDIR 
+        NAMES flann/flann.h
+        HINTS ${PC_FLANN_INCLUDEDIR}
+        PATHS ${DARTExt_INCLUDEDIR})
+ 
+    if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
+        message(STATUS "Could not find flann")
+        set(DARTExt_FOUND FALSE)
+    else()
+        if(UNIX)
+           set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
+        endif()
+    endif()
+endif()
+message(STATUS "FLANN_INCLUDEDIR = ${FLANN_INCLUDEDIR}")
+
+# CCD
+set(CCD_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
+    pkg_check_modules(PC_CCD ccd)
+    unset(CCD_INCLUDEDIR)
+		find_path(CCD_INCLUDEDIR ccd/ccd.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${SYS_INSTALL_PREFIX}/local/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
+    
+    if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
+        message(STATUS "Could not find ccd")
+        set(DARTExt_FOUND FALSE)
+    endif()
+endif()
+message(STATUS "CCD_INCLUDEDIR = ${CCD_INCLUDEDIR}")
+set(CCD_LIBRARIES ccd)
+
+# FCL
+set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
+    pkg_check_modules(PC_FCL fcl)
+    unset(FCL_INCLUDEDIR)
+    find_path(FCL_INCLUDEDIR fcl/collision.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
+    
+    if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
+        message(STATUS "Could not find fcl")
+        set(DARTExt_FOUND FALSE)
+    endif()
+endif()
+message(STATUS "FCL_INCLUDEDIR = ${FCL_INCLUDEDIR}")
+set(FCL_LIBRARIES fcl)
+
+
+#Assimp    
+set(ASSIMP_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
+    unset(ASSIMP_INCLUDEDIR)
+    find_path(ASSIMP_INCLUDEDIR assimp/scene.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
+
+    if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
+        message(STATUS "Could not find assimp")
+        set(DARTExt_FOUND FALSE)
+    endif()
+endif()
+message(STATUS "ASSIMP_INCLUDEDIR = ${ASSIMP_INCLUDEDIR}")
+set(ASSIMP_LIBRARIES assimp)
+
+#TinyXML    
+set(TINYXML_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
+    unset(TINYXML_INCLUDEDIR)
+    find_path(TINYXML_INCLUDEDIR tinyxml.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml)
+
+    if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
+        message(STATUS "Could not find tinyxml")
+        set(DARTExt_FOUND FALSE)
+    endif()
+endif()
+set(TINYXML_LIBRARIES tinyxml)
+
+
+# Tinyxml2    
+set(TINYXML2_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
+    unset(TINYXML2_INCLUDEDIR)
+    find_path(TINYXML2_INCLUDEDIR tinyxml2.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml2)
+
+    if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
+        message(STATUS "Could not find tinyxml2")
+        set(DARTExt_FOUND FALSE)
+    endif()
+endif()
+set(TINYXML2_LIBRARIES tinyxml2)
+
+set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
+
+set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES})
+set(DARTExt_LIBS_NO_DEBUG ${CCD_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLUT_LIBRARY} ${OPENGL_LIBRARY})
+
+if(MSVC OR MSVC90 OR MSVC10)
+    foreach(DARTExt_LIB ${DARTExt_LIBS})
+        set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} optimized ${DARTExt_LIB} debug ${DARTExt_LIB}d)
+    endforeach(DARTExt_LIB)
+        
+    foreach(DARTExt_LIB ${DARTExt_LIBS_NO_DEBUG})
+        set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} ${DARTExt_LIB})
+    endforeach(DARTExt_LIB)
+   
+elseif(UNIX)
+    set(DARTExt_LIBRARIES ${DARTExt_LIBS_NO_DEBUG} ${DARTExt_LIBS})
+endif()
+
+list(APPEND DARTExt_LIBRARIES ${Boost_LIBRARIES})
+
+set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} 
+        ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR})
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_FOUND)
+
+mark_as_advanced(DARTExt_LIBRARY_DIRS DARTExt_INCLUDEDIR DARTExt_LIBRARIES FLANN_LIBRARIES CCD_LIBRARIES FCL_LIBRARIES Boost_LIBRARIES)

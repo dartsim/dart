@@ -240,7 +240,7 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     }
     else 
     {
-        printf("contact error\n");
+        std::cerr << "contact error" << std::endl;
     }
 
     if(dv0dv1>0)
@@ -275,7 +275,7 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
     }
     else 
     {
-        printf("contact error\n");
+        std::cerr << "contact error" << std::endl;
     }
             
     for(int i=3;i>0;i--)
