@@ -23,6 +23,7 @@ else()
        set(DART_DEFINITIONS ${PC_DART_CFLAGS_OTHER})
     endif()
     
+    unset(DART_INCLUDEDIR)
     find_path(DART_INCLUDEDIR kinematics/Skeleton.h
         PATHS ${PC_DART_INCLUDEDIR} ${SYS_INSTALL_PREFIX}/include
         PATH_SUFFIXES dart)    

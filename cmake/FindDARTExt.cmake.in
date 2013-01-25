@@ -17,14 +17,18 @@ set(DARTExt_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include)
 # Eigen
 set(EIGEN3_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
-    find_path(EIGEN3_INCLUDEDIR Eigen/Core
-        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
+    unset(EIGEN3_INCLUDEDIR)
+    find_path(EIGEN3_INCLUDEDIR 
+        NAMES Eigen/Core
+        PATHS ${SYS_INSTALL_PREFIX}/include 
+        PATH_SUFFIXES eigen3 eigen)
 endif()
 
 if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
     message(STATUS "Could not find Eigen3")
     set(DARTExt_FOUND FALSE)
 endif()
+message(STATUS "EIGEN3_INCLUDEDIR = ${EIGEN3_INCLUDEDIR}")
 
 # OpenGL
 find_package(OpenGL REQUIRED)
@@ -57,9 +61,12 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 set(FLANN_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
     pkg_check_modules(PC_FLANN flann)
-    find_path(FLANN_INCLUDEDIR flann/flann.h 
-        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FLANN_INCLUDEDIR} PATH_SUFFIXES flann)
-    
+    unset(FLANN_INCLUDEDIR)
+    find_path(FLANN_INCLUDEDIR 
+        NAMES flann/flann.h
+        HINTS ${PC_FLANN_INCLUDEDIR}
+        PATHS ${DARTExt_INCLUDEDIR})
+ 
     if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
         message(STATUS "Could not find flann")
         set(DARTExt_FOUND FALSE)
@@ -69,11 +76,13 @@ if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
         endif()
     endif()
 endif()
+message(STATUS "FLANN_INCLUDEDIR = ${FLANN_INCLUDEDIR}")
 
 # CCD
 set(CCD_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     pkg_check_modules(PC_CCD ccd)
+    unset(CCD_INCLUDEDIR)
     find_path(FLANN_INCLUDEDIR ccd/ccd.h 
         PATHS ${SYS_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
     
@@ -82,13 +91,15 @@ if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
         set(DARTExt_FOUND FALSE)
     endif()
 endif()
+message(STATUS "CCD_INCLUDEDIR = ${CCD_INCLUDEDIR}")
 set(CCD_LIBRARIES ccd)
 
 # FCL
 set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
     pkg_check_modules(PC_FCL fcl)
-    find_path(FLANN_INCLUDEDIR fcl/collision.h 
+    unset(FCL_INCLUDEDIR)
+    find_path(FCL_INCLUDEDIR fcl/collision.h 
         PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
     
     if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
@@ -96,12 +107,14 @@ if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
         set(DARTExt_FOUND FALSE)
     endif()
 endif()
+message(STATUS "FCL_INCLUDEDIR = ${FCL_INCLUDEDIR}")
 set(FCL_LIBRARIES fcl)
 
 
 #Assimp    
 set(ASSIMP_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
+    unset(ASSIMP_INCLUDEDIR)
     find_path(ASSIMP_INCLUDEDIR assimp/scene.h
         PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
 
@@ -110,11 +123,13 @@ if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
         set(DARTExt_FOUND FALSE)
     endif()
 endif()
+message(STATUS "ASSIMP_INCLUDEDIR = ${ASSIMP_INCLUDEDIR}")
 set(ASSIMP_LIBRARIES assimp)
 
 #TinyXML    
 set(TINYXML_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
+    unset(TINYXML_INCLUDEDIR)
     find_path(TINYXML_INCLUDEDIR tinyxml.h
         PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml)
 
@@ -129,6 +144,7 @@ set(TINYXML_LIBRARIES tinyxml)
 # Tinyxml2    
 set(TINYXML2_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
+    unset(TINYXML2_INCLUDEDIR)
     find_path(TINYXML2_INCLUDEDIR tinyxml2.h
         PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml2)
 
