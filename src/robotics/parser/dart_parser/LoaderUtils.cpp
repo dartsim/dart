@@ -12,7 +12,7 @@
 #include <kinematics/Shape.h>
 #include <kinematics/ShapeMesh.h>
 #include <dynamics/BodyNodeDynamics.h>
-
+#include <iostream>
 
 /**
  * @function add_XyzRpy
