@@ -33,7 +33,7 @@ if(EXISTS DART_INCLUDEDIR/kinematics/Skeleton.h)
     set(DART_FOUND TRUE)
 endif()
    
-set(DART_LIBRARY_DIRS "@SYS_INSTALL_PREFIX@/lib")
+set(DART_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib")
 
 set(DART_LIBS dart)
 
