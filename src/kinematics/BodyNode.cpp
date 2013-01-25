@@ -157,7 +157,7 @@ namespace kinematics {
     void BodyNode::evalJacLin() {
         mJv.setZero();
         for (unsigned int i=0; i<mDependentDofs.size(); i++) {
-            VectorXd Ji = utils::xformHom(mWq.at(i), mCOMLocal);
+            Vector3d Ji = utils::xformHom(mWq.at(i), mCOMLocal);
             mJv(0, i) = Ji(0);
             mJv(1, i) = Ji(1);
             mJv(2, i) = Ji(2);
@@ -167,8 +167,8 @@ namespace kinematics {
     void BodyNode::evalJacAng() {
         mJw.setZero();
         for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
-            MatrixXd omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
-            VectorXd omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
+            Matrix3d omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
+            Vector3d omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
 
             mJw(0, i) = omegai(0);
             mJw(1, i) = omegai(1);
