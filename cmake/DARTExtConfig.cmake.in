@@ -12,10 +12,14 @@ set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
 set(DARTExt_FOUND TRUE)
 
 find_package(PkgConfig QUIET)
+set(DARTExt_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include)
 
 # Eigen
-find_path(EIGEN3_INCLUDEDIR Eigen/Core
-    PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
+set(EIGEN3_INCLUDEDIR ${DARTExt_INCLUDEDIR})
+if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
+    find_path(EIGEN3_INCLUDEDIR Eigen/Core
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES eigen3 eigen)
+endif()
 
 if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
     message(STATUS "Could not find Eigen3")
@@ -50,81 +54,102 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 # FLANN
-pkg_check_modules(PC_FLANN flann)
-find_path(FLANN_INCLUDEDIR flann/flann.h 
-PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FLANN_INCLUDEDIR} PATH_SUFFIXES flann)
-if(UNIX)
-   set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
-else()
-   set(FLANN_LIBRARIES "flann_cpp")
-endif()
-
-
+set(FLANN_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
-    message(FATAL "Could not find flann")
-    set(DARTExt_FOUND FALSE)
+    pkg_check_modules(PC_FLANN flann)
+    find_path(FLANN_INCLUDEDIR flann/flann.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FLANN_INCLUDEDIR} PATH_SUFFIXES flann)
+    
+    if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
+        message(STATUS "Could not find flann")
+        set(DARTExt_FOUND FALSE)
+    else()
+        if(UNIX)
+           set(FLANN_LIBRARIES ${PC_FLANN_LIBRARIES})
+        endif()
+    endif()
 endif()
 
 # CCD
-pkg_check_modules(PC_CCD ccd)
-find_path(CCD_INCLUDEDIR ccd/ccd.h
-PATHS ${SYS_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
-if(UNIX)
-    set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
-else()
-    set(CCD_LIBRARIES "ccd")
-endif()
-
-
+set(CCD_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
-    message(FATAL "Could not find ccd")
-    set(DARTExt_FOUND FALSE)
+    pkg_check_modules(PC_CCD ccd)
+    find_path(FLANN_INCLUDEDIR ccd/ccd.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
+    
+    if(NOT EXISTS ${CCd_INCLUDEDIR}/ccd/ccd.h)
+        message(STATUS "Could not find ccd")
+        set(DARTExt_FOUND FALSE)
+    else()
+        if(UNIX)
+           set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
+        else()
+           set(CCD_LIBRARIES ccd)
+        endif()
+    endif()
 endif()
 
 # FCL
-pkg_check_modules(PC_FCL fcl)
-find_path(FCL_INCLUDEDIR fcl/collision.h 
-PATHS ${SYS_INSTALL_PREFIX} ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
-if(UNIX)
-    set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
-else()
-    set(FCL_LIBRARIES "fcl")
-endif()
-
-
+set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
-    message(FATAL "Could not fcl")
-    set(DARTExt_FOUND FALSE)
+    pkg_check_modules(PC_FCL fcl)
+    find_path(FLANN_INCLUDEDIR fcl/collision.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
+    
+    if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
+        message(STATUS "Could not find fcl")
+        set(DARTExt_FOUND FALSE)
+    else()
+        if(UNIX)
+           set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
+        else()
+           set(FCL_LIBRARIES fcl)
+        endif()
+    endif()
 endif()
 
-#Assimp
-find_path(ASSIMP_INCLUDEDIR assimp/scene.h
-    PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
-set(ASSIMP_LIBRARIES assimp)
-    
+
+#Assimp    
+set(ASSIMP_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
-    message(STATUS "Could not find assimp")
-    set(DARTExt_FOUND FALSE)
+    find_path(ASSIMP_INCLUDEDIR assimp/scene.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES assimp)
+
+    if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
+        message(STATUS "Could not find assimp")
+        set(DARTExt_FOUND FALSE)
+    else()
+        set(ASSIMP_LIBRARIES assimp)
+    endif()
 endif()
 
-# Tinyxml
-find_path(TINYXML_INCLUDEDIR tinyxml.h
-    PATHS ${SYS_INSTALL_PREFIX}/include)
-set(TINYXML_LIBRARIES tinyxml)
-    
+#TinyXML    
+set(TINYXML_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
-    message(STATUS "Could not find tinyxml")
-    set(DARTExt_FOUND FALSE)
+    find_path(TINYXML_INCLUDEDIR tinyxml.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml)
+
+    if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
+        message(STATUS "Could not find tinyxml")
+        set(DARTExt_FOUND FALSE)
+    else()
+        set(TINYXML_LIBRARIES tinyxml)
+    endif()
 endif()
 
-# Tinyxml2
-find_path(TINYXML2_INCLUDEDIR tinyxml2.h
-    PATHS ${SYS_INSTALL_PREFIX}/include)
-set(TINYXML2_LIBRARIES tinyxml2)
-    
+
+# Tinyxml2    
+set(TINYXML2_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
-    message(STATUS "Could not find tinyxml2")
-    set(DARTExt_FOUND FALSE)
+    find_path(TINYXML2_INCLUDEDIR tinyxml2.h
+        PATHS ${SYS_INSTALL_PREFIX}/include PATH_SUFFIXES tinyxml2)
+
+    if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
+        message(STATUS "Could not find tinyxml2")
+        set(DARTExt_FOUND FALSE)
+    else()
+        set(TINYXML2_LIBRARIES tinyxml2)
+    endif()
 endif()
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
