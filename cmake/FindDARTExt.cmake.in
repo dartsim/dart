@@ -42,6 +42,7 @@ if(WIN32 AND NOT CYGWIN)
     set(GLUT_LIBRARIES glut32)
 elseif(UNIX)
     find_package(GLUT REQUIRED)
+		include_directories(${GLUT_INCLUDEDIR})
     set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY}) 
 endif()
 
@@ -83,10 +84,10 @@ set(CCD_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     pkg_check_modules(PC_CCD ccd)
     unset(CCD_INCLUDEDIR)
-    find_path(FLANN_INCLUDEDIR ccd/ccd.h 
-        PATHS ${SYS_INSTALL_PREFIX}/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
+		find_path(CCD_INCLUDEDIR ccd/ccd.h 
+        PATHS ${SYS_INSTALL_PREFIX}/include ${SYS_INSTALL_PREFIX}/local/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
     
-    if(NOT EXISTS ${CCd_INCLUDEDIR}/ccd/ccd.h)
+    if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
         message(STATUS "Could not find ccd")
         set(DARTExt_FOUND FALSE)
     endif()

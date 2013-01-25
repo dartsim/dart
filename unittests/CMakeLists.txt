@@ -2,7 +2,7 @@
 # Unittests
 project(unittests)
 
-if(UNIX)
+if(FALSE)
 
     file(GLOB gtest_hdrs "/usr/include/gtest/*.h" "/usr/include/gtest/internal/*.h")
     include_directories(/usr/include/gtest)
