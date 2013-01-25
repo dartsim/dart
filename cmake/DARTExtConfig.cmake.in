@@ -80,14 +80,9 @@ if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     if(NOT EXISTS ${CCd_INCLUDEDIR}/ccd/ccd.h)
         message(STATUS "Could not find ccd")
         set(DARTExt_FOUND FALSE)
-    else()
-        if(UNIX)
-           set(CCD_LIBRARIES ${PC_CCD_LIBRARIES})
-        else()
-           set(CCD_LIBRARIES ccd)
-        endif()
     endif()
 endif()
+set(CCD_LIBRARIES ccd)
 
 # FCL
 set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
@@ -99,14 +94,9 @@ if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
     if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
         message(STATUS "Could not find fcl")
         set(DARTExt_FOUND FALSE)
-    else()
-        if(UNIX)
-           set(FCL_LIBRARIES ${PC_FCL_LIBRARIES})
-        else()
-           set(FCL_LIBRARIES fcl)
-        endif()
     endif()
 endif()
+set(FCL_LIBRARIES fcl)
 
 
 #Assimp    
@@ -118,10 +108,9 @@ if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
     if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
         message(STATUS "Could not find assimp")
         set(DARTExt_FOUND FALSE)
-    else()
-        set(ASSIMP_LIBRARIES assimp)
     endif()
 endif()
+set(ASSIMP_LIBRARIES assimp)
 
 #TinyXML    
 set(TINYXML_INCLUDEDIR ${DARTExt_INCLUDEDIR})
@@ -132,10 +121,9 @@ if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
     if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
         message(STATUS "Could not find tinyxml")
         set(DARTExt_FOUND FALSE)
-    else()
-        set(TINYXML_LIBRARIES tinyxml)
     endif()
 endif()
+set(TINYXML_LIBRARIES tinyxml)
 
 
 # Tinyxml2    
@@ -147,10 +135,9 @@ if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
     if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
         message(STATUS "Could not find tinyxml2")
         set(DARTExt_FOUND FALSE)
-    else()
-        set(TINYXML2_LIBRARIES tinyxml2)
     endif()
 endif()
+set(TINYXML2_LIBRARIES tinyxml2)
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
 
@@ -169,6 +156,8 @@ if(MSVC OR MSVC90 OR MSVC10)
 elseif(UNIX)
     set(DARTExt_LIBRARIES ${DARTExt_LIBS_NO_DEBUG} ${DARTExt_LIBS})
 endif()
+
+list(APPEND DARTExt_LIBRARIES ${Boost_LIBRARIES})
 
 set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} 
         ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR})

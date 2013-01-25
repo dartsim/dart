@@ -46,9 +46,11 @@ file(GLOB cmake_mods "cmake/Modules/*.cmake")
 configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTExtConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake @ONLY)
 install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION share/dart)
-install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION ${CMAKE_ROOT}/Modules)
 install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION share/dart)
-install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+if(UNIX)
+    install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+    install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+endif()
 
 set(PC_CONFIG ${CMAKE_SOURCE_DIR}/cmake/dart.pc)
 configure_file(${PC_CONFIG}.in ${PC_CONFIG} @only)
@@ -57,24 +59,23 @@ install(FILES ${PC_CONFIG} DESTINATION lib/pkgconfig)
 ###############
 # Find important packages
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(DARTExt)
-if(DARTExt_FOUND)
-    find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
-    message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
-    
-    message(STATUS "Building DART source")
-    # Since you are developing DART
-    include_directories(BEFORE src)
-    include_directories(${DARTExt_INCLUDEDIR})
-	link_directories(${DARTExt_LIBRARY_DIRS})
-    link_directories(${CMAKE_SOURCE_DIR}/lib)
-    add_subdirectory(src)
-    
-    add_subdirectory(unittests)
-    add_subdirectory(apps)
-else()
-    message(STATUS "Dart dependencies were not satisfied, will not build from source")
-endif()
+find_package(DARTExt REQUIRED)
+
+find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
+message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
+
+message(STATUS "Building DART source")
+# Since you are developing DART
+include_directories(BEFORE src)
+include_directories(${DARTExt_INCLUDEDIR})
+link_directories(${DARTExt_LIBRARY_DIRS})
+link_directories(${CMAKE_SOURCE_DIR}/lib)
+add_subdirectory(src)
+
+message(STATUS "DARTExt_LIBRARIES is ${DARTExt_LIBRARIES}")
+
+add_subdirectory(unittests)
+add_subdirectory(apps)
 
 ###############
 # Add an "uninstall" target
