@@ -45,14 +45,10 @@ configure_file(${PATH_HEADER_DIR}.in ${PATH_HEADER_DIR} @ONLY)
 # Install Targets
 # Generate the Dart CMake Config file
 file(GLOB cmake_mods "cmake/Modules/*.cmake")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTExtConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake @ONLY)
-install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION share/dart)
+configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake.in ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake @ONLY)
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
 install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION share/dart)
-if(UNIX)
-    install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDART.cmake DESTINATION ${CMAKE_ROOT}/Modules)
-    install(FILES ${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake DESTINATION ${CMAKE_ROOT}/Modules)
-endif()
 
 set(PC_CONFIG ${CMAKE_SOURCE_DIR}/cmake/dart.pc)
 configure_file(${PC_CONFIG}.in ${PC_CONFIG} @only)
@@ -73,8 +69,6 @@ include_directories(${DARTExt_INCLUDEDIR})
 link_directories(${DARTExt_LIBRARY_DIRS})
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 add_subdirectory(src)
-
-message(STATUS "DARTExt_LIBRARIES is ${DARTExt_LIBRARIES}")
 
 add_subdirectory(unittests)
 add_subdirectory(apps)
