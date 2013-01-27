@@ -24,7 +24,7 @@
 #endif
 
 // LINUX
-#ifdef __LINUX__
+#ifdef linux
 	#include <GL/glu.h>
 //	#include <GL/glew.h>
 //	#include <GL/glut.h>
