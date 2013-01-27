@@ -18,12 +18,11 @@ if(NOT WIN32)
 
   target_link_libraries(gtest)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
-
+endif()
 
   # Search all header and source files
   file(GLOB unittests_srcs "*.cpp")
   file(GLOB unittests_hdrs "*.h")
-endif()
 
 add_executable(unittests ${unittests_srcs} ${unittests_hdrs})
 target_link_libraries(unittests dart gtest ${DARTExt_LIBRARIES})
