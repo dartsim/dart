@@ -19,7 +19,7 @@ namespace collision_checking{
         mBodyNode = _bodyNode;
         if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
             mMesh = createEllipsoid<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
+        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_BOX) {
             mMesh = createCube<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else {
             mMesh = createMesh<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getCollisionMesh());

@@ -28,7 +28,7 @@
 #include "Marker.h"
 #include "Transformation.h"
 #include "ShapeEllipsoid.h"
-#include "ShapeCube.h"
+#include "ShapeBox.h"
 
 int readSkelFile( const char* const filename, kinematics::Skeleton* skel );
 

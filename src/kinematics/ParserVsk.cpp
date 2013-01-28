@@ -63,7 +63,7 @@ using namespace Eigen;
 #include "Marker.h"
 #include "Shape.h"
 #include "ShapeEllipsoid.h"
-#include "ShapeCube.h"
+#include "ShapeBox.h"
 #include "utils/UtilsRotation.h"
 #include "utils/UtilsCode.h"
 
@@ -816,7 +816,7 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
     //     prim = new ShapeHead(off, dim, mass);
     // }
     else if(ptype.compare("CUBE")==0){
-        prim = new ShapeCube(dim, mass);
+        prim = new ShapeBox(dim, mass);
     }
     else {
         cout << "VLOG(1)"  << "Shape type " << ptype << " not recognized!\n";

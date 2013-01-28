@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ShapeCube.h"
+#include "ShapeBox.h"
 #include "renderer/RenderInterface.h"
 
 using namespace std;
@@ -43,8 +43,8 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeCube::ShapeCube(Vector3d _dim, double _mass){
-        mType = P_CUBE;
+    ShapeBox::ShapeBox(Vector3d _dim, double _mass){
+        mType = P_BOX;
         mDim = _dim;
         mMass = _mass;
         initMeshes();
@@ -57,7 +57,7 @@ namespace kinematics {
         }
     }
 
-    void ShapeCube::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         if (!_ri) return;
         if (!_useDefaultColor)
             _ri->setPenColor(_color);
@@ -68,7 +68,7 @@ namespace kinematics {
         _ri->popMatrix();
     }
 
-    void ShapeCube::computeMassTensor() {
+    void ShapeBox::computeMassTensor() {
         mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
         mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
         mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
@@ -76,11 +76,11 @@ namespace kinematics {
         mMassTensor *= mMass;
     }
 
-    void ShapeCube::computeVolume() {
+    void ShapeBox::computeVolume() {
         mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
     }
 
-    void ShapeCube::initMeshes() {
+    void ShapeBox::initMeshes() {
     }
 
 } // namespace kinematics
