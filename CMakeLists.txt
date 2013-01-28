@@ -34,7 +34,7 @@ else()
 endif()
 
 # System Install paths
-if(WIN) 
+if(WIN32) 
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 elseif(APPLE)
   set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix" FORCE)
