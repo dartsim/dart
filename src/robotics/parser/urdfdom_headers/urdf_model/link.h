@@ -39,7 +39,6 @@
 
 #include <string>
 #include <vector>
-#include <tinyxml.h>
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -49,213 +48,261 @@
 
 namespace urdf{
 
-class Geometry
-{
-public:
-  enum {SPHERE, BOX, CYLINDER, MESH} type;
+  // ******************************
+  // GEOMETRY STUFF
+  // ******************************
 
-  virtual bool initXml(TiXmlElement *) = 0;
-
-};
-
-class Sphere : public Geometry
-{
-public:
-  Sphere() { this->clear(); };
-  double radius;
-
-  void clear()
-  {
-    radius = 0;
+  /**
+   * @class Geometry
+   */
+  class Geometry {
+  public:
+    enum {SPHERE, BOX, CYLINDER, MESH} type;
+    
+    virtual ~Geometry(void)
+      {
+      }  
   };
-  bool initXml(TiXmlElement *);
-};
 
-class Box : public Geometry
-{
-public:
-  Box() { this->clear(); };
-  Vector3 dim;
-
-  void clear()
-  {
-    dim.clear();
+  /**
+   * @class Sphere
+   */
+  class Sphere : public Geometry {
+  public:
+    Sphere() { this->clear(); };
+    double radius;
+    
+    void clear()
+    {
+      radius = 0;
+    };
   };
-  bool initXml(TiXmlElement *);
-};
 
-class Cylinder : public Geometry
-{
-public:
-  Cylinder() { this->clear(); };
-  double length;
-  double radius;
-
-  void clear()
-  {
-    length = 0;
-    radius = 0;
+  /**
+   * @class Box
+   */
+  class Box : public Geometry {
+  public:
+    Box() { this->clear(); };
+    Vector3 dim;
+    
+    void clear()
+    {
+      this->dim.clear();
+    };
   };
-  bool initXml(TiXmlElement *);
+  
+  /**
+   * @class Cylinder
+   */
+  class Cylinder : public Geometry {
+    
+  public:
+    Cylinder() { this->clear(); };
+    double length;
+    double radius;
+    
+    void clear()
+    {
+      length = 0;
+      radius = 0;
+    };
 };
-
-class Mesh : public Geometry
-{
-public:
-  Mesh() { this->clear(); };
-  std::string filename;
-  Vector3 scale;
-
-  void clear()
-  {
-    filename.clear();
-    // default scale
-    scale.x = 1;
-    scale.y = 1;
-    scale.z = 1;
+  
+  /**
+   * @class Mesh
+   */
+  class Mesh : public Geometry {
+  public:
+    Mesh() { this->clear(); };
+    std::string filename;
+    Vector3 scale;
+    
+    void clear()
+    {
+      filename.clear();
+      // default scale
+      scale.x = 1;
+      scale.y = 1;
+      scale.z = 1;
+    };
   };
-  bool initXml(TiXmlElement *);
-  bool fileExists(std::string filename);
-};
 
-class Material
-{
-public:
-  Material() { this->clear(); };
-  std::string name;
-  std::string texture_filename;
-  Color color;
-
-  void clear()
-  {
-    color.clear();
-    texture_filename.clear();
-    name.clear();
+  // ******************************
+  // MATERIAL STUFF
+  // ******************************
+  
+  /**
+   * @class Material
+   */
+  class Material {
+  public:
+    Material() { this->clear(); };
+    std::string name;
+    std::string texture_filename;
+    Color color;
+    
+    void clear()
+    {
+      color.clear();
+      texture_filename.clear();
+      name.clear();
+    };
   };
-  bool initXml(TiXmlElement* config);
-};
 
-class Inertial
-{
-public:
-  Inertial() { this->clear(); };
-  Pose origin;
-  double mass;
-  double ixx,ixy,ixz,iyy,iyz,izz;
-
-  void clear()
-  {
-    origin.clear();
-    mass = 0;
-    ixx = ixy = ixz = iyy = iyz = izz = 0;
+  // ******************************
+  // INERTIAL STUFF
+  // ******************************
+  
+  /**
+   * @class Inertial
+   */
+  class Inertial {
+  public:
+    Inertial() { this->clear(); };
+    Pose origin;
+    double mass;
+    double ixx,ixy,ixz,iyy,iyz,izz;
+    
+    void clear()
+    {
+      origin.clear();
+      mass = 0;
+      ixx = ixy = ixz = iyy = iyz = izz = 0;
+    };
   };
-  bool initXml(TiXmlElement* config);
-};
+  
+  // ******************************
+  // VISUAL STUFF
+  // ******************************
 
-class Visual
-{
-public:
-  Visual() { this->clear(); };
-  Pose origin;
-  boost::shared_ptr<Geometry> geometry;
-
-  std::string material_name;
-  boost::shared_ptr<Material> material;
-
-  void clear()
-  {
-    origin.clear();
-    material_name.clear();
-    material.reset();
-    geometry.reset();
-    this->group_name.clear();
+  /**
+   * @class Visual
+   */
+  class Visual {
+  public:
+    Visual() { this->clear(); };
+    Pose origin;
+    boost::shared_ptr<Geometry> geometry;
+    
+    std::string material_name;
+    boost::shared_ptr<Material> material;
+    
+    void clear()
+    {
+      origin.clear();
+      material_name.clear();
+      material.reset();
+      geometry.reset();
+      this->group_name.clear();
+    };
+    std::string group_name;
   };
-  bool initXml(TiXmlElement* config);
-  std::string group_name;
-};
+  
+  // ******************************
+  // COLLISION STUFF
+  // ******************************
 
-class Collision
-{
-public:
-  Collision() { this->clear(); };
-  Pose origin;
-  boost::shared_ptr<Geometry> geometry;
-
-  void clear()
-  {
-    origin.clear();
-    geometry.reset();
-    this->group_name.clear();
+  /**
+   * @class Collision
+   */
+  class Collision {
+  public:
+    Collision() { this->clear(); };
+    Pose origin;
+    boost::shared_ptr<Geometry> geometry;
+    
+    void clear()
+    {
+      origin.clear();
+      geometry.reset();
+      this->group_name.clear();
+    };
+    std::string group_name;
   };
-  bool initXml(TiXmlElement* config);
-  std::string group_name;
-};
+  
 
+  // ******************************
+  // LINK STUFF
+  // ******************************
+  
+  /**
+   * @class Link
+   */
+  class Link {
+  public:
+    Link() { this->clear(); };
+    
+    std::string name;
+    
+    /// inertial element
+    boost::shared_ptr<Inertial> inertial;
+    
+    /// visual element
+    boost::shared_ptr<Visual> visual;
+    
+    /// collision element
+    boost::shared_ptr<Collision> collision;
+    
+    /// a collection of visual elements, keyed by a string tag called "group"
+    std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<Visual> > > > visual_groups;
+    
+    /// a collection of collision elements, keyed by a string tag called "group"
+    std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<Collision> > > > collision_groups;
+    
+    /// Parent Joint element
+    ///   explicitly stating "parent" because we want directional-ness for tree structure
+    ///   every link can have one parent
+    boost::shared_ptr<Joint> parent_joint;
+    
+    std::vector<boost::shared_ptr<Joint> > child_joints;
+    std::vector<boost::shared_ptr<Link> > child_links;
+    
+    boost::shared_ptr<Link> getParent() const
+      {return parent_link_.lock();};
+    
+    void setParent(const boost::shared_ptr<Link> &parent)
+    { parent_link_ = parent; }
+    
+    void clear()
+    {
+      this->name.clear();
+      this->inertial.reset();
+      this->visual.reset();
+      this->collision.reset();
+      this->parent_joint.reset();
+      this->child_joints.clear();
+      this->child_links.clear();
+      this->collision_groups.clear();
+    };
+    
+    boost::shared_ptr<std::vector<boost::shared_ptr<Visual > > > getVisuals(const std::string& group_name) const
+      {
+	if (this->visual_groups.find(group_name) != this->visual_groups.end())
+	  return this->visual_groups.at(group_name);
+	return boost::shared_ptr<std::vector<boost::shared_ptr<Visual > > >();
+      }
 
-class Link
-{
-public:
-  Link() { this->clear(); };
-
-  std::string name;
-
-  /// inertial element
-  boost::shared_ptr<Inertial> inertial;
-
-  /// visual element
-  boost::shared_ptr<Visual> visual;
-
-  /// collision element
-  boost::shared_ptr<Collision> collision;
-
-  /// a collection of visual elements, keyed by a string tag called "group"
-  std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<Visual> > > > visual_groups;
-
-  /// a collection of collision elements, keyed by a string tag called "group"
-  std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<Collision> > > > collision_groups;
-
-  /// Parent Joint element
-  ///   explicitly stating "parent" because we want directional-ness for tree structure
-  ///   every link can have one parent
-  boost::shared_ptr<Joint> parent_joint;
-
-  std::vector<boost::shared_ptr<Joint> > child_joints;
-  std::vector<boost::shared_ptr<Link> > child_links;
-
-  bool initXml(TiXmlElement* config);
-
-  boost::shared_ptr<Link> getParent() const
-  {return parent_link_.lock();};
-
-  void setParent(boost::shared_ptr<Link> parent);
-
-  void clear()
-  {
-    this->name.clear();
-    this->inertial.reset();
-    this->visual.reset();
-    this->collision.reset();
-    this->parent_joint.reset();
-    this->child_joints.clear();
-    this->child_links.clear();
-    this->collision_groups.clear();
+    boost::shared_ptr<std::vector<boost::shared_ptr<Collision > > > getCollisions(const std::string& group_name) const
+      {
+	if (this->collision_groups.find(group_name) != this->collision_groups.end())
+	  return this->collision_groups.at(group_name);
+	return boost::shared_ptr<std::vector<boost::shared_ptr<Collision > > >();
+      }
+    
+    /*
+      void setParentJoint(boost::shared_ptr<Joint> child);
+      void addChild(boost::shared_ptr<Link> child);
+      void addChildJoint(boost::shared_ptr<Joint> child);
+      
+      
+    */
+  private:
+    boost::weak_ptr<Link> parent_link_;
+    
   };
-  void setParentJoint(boost::shared_ptr<Joint> child);
-  void addChild(boost::shared_ptr<Link> child);
-  void addChildJoint(boost::shared_ptr<Joint> child);
+  
+  
+} // namespace urdf
 
-  void addVisual(std::string group_name, boost::shared_ptr<Visual> visual);
-  boost::shared_ptr<std::vector<boost::shared_ptr<Visual > > > getVisuals(const std::string& group_name) const;
-  void addCollision(std::string group_name, boost::shared_ptr<Collision> collision);
-  boost::shared_ptr<std::vector<boost::shared_ptr<Collision > > > getCollisions(const std::string& group_name) const;
-private:
-  boost::weak_ptr<Link> parent_link_;
-
-};
-
-
-
-
-}
-
-#endif
+#endif /** URDF_INTERFACE_LINK_H */

@@ -38,12 +38,16 @@
 #define URDF_INTERFACE_POSE_H
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <math.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include "../urdf_exception/exception.h"
 
-#include <tinyxml.h> // FIXME: remove parser from here
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace urdf{
 
@@ -57,37 +61,31 @@ public:
   double z;
 
   void clear() {this->x=this->y=this->z=0.0;};
-  bool init(const std::string &vector_str)
-  {
+  void init(const std::string &vector_str)
+  { 
     this->clear();
     std::vector<std::string> pieces;
     std::vector<double> xyz;
     boost::split( pieces, vector_str, boost::is_any_of(" "));
     for (unsigned int i = 0; i < pieces.size(); ++i){
       if (pieces[i] != ""){
-        try
-        {
+        try {
           xyz.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
         }
-        catch (boost::bad_lexical_cast &e)
-        {
-          printf("[ERROR]  Vector3 xyz element (%s) is not a valid float",pieces[i].c_str());
-          return false;
+        catch (boost::bad_lexical_cast &e) {
+          throw ParseError("Unable to parse component [" + pieces[i] + "] to a double (while parsing a vector value)");
         }
       }
     }
-
-    if (xyz.size() != 3) {
-	printf("[ERROR]  Vector contains %i elements instead of 3 elements", (int)xyz.size()); 
-      return false;
-    }
-
+    
+    if (xyz.size() != 3)
+      throw ParseError("Parser found " + boost::lexical_cast<std::string>(xyz.size())  + " elements but 3 expected while parsing vector [" + vector_str + "]");
+    
     this->x = xyz[0];
     this->y = xyz[1];
     this->z = xyz[2];
-
-    return true;
-  };
+  }
+  
   Vector3 operator+(Vector3 vec)
   {
     return Vector3(this->x+vec.x,this->y+vec.y,this->z+vec.z);
@@ -150,22 +148,14 @@ public:
 
   double x,y,z,w;
 
-  bool init(const std::string &rotation_str)
-  {
+  void init(const std::string &rotation_str)
+  { 
     this->clear();
-
     Vector3 rpy;
-    
-    if (!rpy.init(rotation_str))
-      return false;
-    else
-    {
-      this->setFromRPY(rpy.x,rpy.y,rpy.z);
-      return true;
-    }
-      
-  };
-
+    rpy.init(rotation_str);
+    setFromRPY(rpy.x, rpy.y, rpy.z);
+  }
+  
   void clear() { this->x=this->y=this->z=0.0;this->w=1.0; }
 
   void normalize()
@@ -254,51 +244,6 @@ public:
   {
     this->position.clear();
     this->rotation.clear();
-  };
-  bool initXml(TiXmlElement* xml)
-  {
-    this->clear();
-    if (!xml)
-    {
-      printf("[debug]  parsing pose: xml empty");
-      return false;
-    }
-    else
-    {
-      const char* xyz_str = xml->Attribute("xyz");
-      if (xyz_str == NULL)
-      {
-        printf("[debug]  parsing pose: no xyz, using default values.");
-        return true;
-      }
-      else
-      {
-        if (!this->position.init(xyz_str))
-        {
-          printf("[ERROR]  malformed xyz");
-          this->position.clear();
-          return false;
-        }
-      }
-
-      const char* rpy_str = xml->Attribute("rpy");
-      if (rpy_str == NULL)
-      {
-        printf("[debug]  parsing pose: no rpy, using default values.");
-        return true;
-      }
-      else
-      {
-        if (!this->rotation.init(rpy_str))
-        {
-          printf("[ERROR]  malformed rpy");
-          return false;
-          this->rotation.clear();
-        }
-      }
-
-      return true;
-    }
   };
 };
 

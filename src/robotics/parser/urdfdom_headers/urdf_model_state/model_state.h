@@ -1,13 +1,13 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
-*
+* 
 *  Copyright (c) 2008, Willow Garage, Inc.
 *  All rights reserved.
-*
+* 
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:
-*
+* 
 *   * Redistributions of source code must retain the above copyright
 *     notice, this list of conditions and the following disclaimer.
 *   * Redistributions in binary form must reproduce the above
@@ -17,7 +17,7 @@
 *   * Neither the name of the Willow Garage nor the names of its
 *     contributors may be used to endorse or promote products derived
 *     from this software without specific prior written permission.
-*
+* 
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -32,73 +32,119 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Josh Faust */
+/* Author: John Hsu */
 
-#ifndef URDF_INTERFACE_COLOR_H
-#define URDF_INTERFACE_COLOR_H
+#ifndef URDF_MODEL_STATE_H
+#define URDF_MODEL_STATE_H
 
 #include <string>
 #include <vector>
-#include <math.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <map>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
-namespace urdf
-{
+#include "../urdf_model/pose.h"
+#include "../urdf_model/twist.h"
 
-/**
- * @class Color
- */
-class Color
+
+namespace urdf{
+
+static int my_round (double x) {
+  int i = (int) x;
+  if (x >= 0.0) {
+    return ((x-i) >= 0.5) ? (i + 1) : (i);
+  } else {
+    return (-x+i >= 0.5) ? (i - 1) : (i);
+  }
+}
+
+class Time
 {
 public:
-  Color() {this->clear();};
-  float r;
-  float g;
-  float b;
-  float a;
+  Time() { this->clear(); };
+
+  void set(double _seconds)
+  {
+    this->sec = (int32_t)(floor(_seconds));
+    this->nsec = (int32_t)(my_round((_seconds - this->sec) * 1e9));
+    this->Correct();
+  };
+
+  operator double ()
+  {
+    return (static_cast<double>(this->sec) +
+            static_cast<double>(this->nsec)*1e-9);
+  };
+
+  int32_t sec;
+  int32_t nsec;
 
   void clear()
   {
-    r = g = b = 0.0f;
-    a = 1.0f;
-  }
-  bool init(const std::string &vector_str)
-  {
-    this->clear();
-    std::vector<std::string> pieces;
-    std::vector<float> rgba;
-    boost::split( pieces, vector_str, boost::is_any_of(" "));
-    for (unsigned int i = 0; i < pieces.size(); ++i)
-    {
-      if (!pieces[i].empty())
-      {
-        try
-        {
-          rgba.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
-        }
-        catch (boost::bad_lexical_cast &e)
-        {
-          return false;
-        }
-      }
-    }
-
-    if (rgba.size() != 4)
-    {
-      return false;
-    }
-
-    this->r = rgba[0];
-    this->g = rgba[1];
-    this->b = rgba[2];
-    this->a = rgba[3];
-
-    return true;
+    this->sec = 0;
+    this->nsec = 0;
   };
+private:
+  void Correct()
+  {
+    // Make any corrections
+    if (this->nsec >= 1e9)
+    {
+      this->sec++;
+      this->nsec = (int32_t)(this->nsec - 1e9);
+    }
+    else if (this->nsec < 0)
+    {
+      this->sec--;
+      this->nsec = (int32_t)(this->nsec + 1e9);
+    }
+  };
+};
+
+
+class JointState
+{
+public:
+  JointState() { this->clear(); };
+
+  /// joint name
+  std::string joint;
+
+  std::vector<double> position;
+  std::vector<double> velocity;
+  std::vector<double> effort;
+
+  void clear()
+  {
+    this->joint.clear();
+    this->position.clear();
+    this->velocity.clear();
+    this->effort.clear();
+  }
+};
+
+class ModelState
+{
+public:
+  ModelState() { this->clear(); };
+
+  /// state name must be unique
+  std::string name;
+
+  Time time_stamp;
+
+  void clear()
+  {
+    this->name.clear();
+    this->time_stamp.set(0);
+    this->joint_states.clear();
+  };
+
+  std::vector<boost::shared_ptr<JointState> > joint_states;
+
 };
 
 }
 
-#endif /** URDF_INTERFACE_COLOR_H  */
+#endif
 

@@ -59,6 +59,7 @@ std::string values2str(double d);
 namespace urdf{
 
   boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string);
+  TiXmlDocument*  exportURDF(boost::shared_ptr<ModelInterface> &model);
    // Added functions by achq on 2012/10/13  ********* //
   bool isObjectURDF( const std::string &_xml_string );
   bool isRobotURDF( const std::string &_xml_string );
