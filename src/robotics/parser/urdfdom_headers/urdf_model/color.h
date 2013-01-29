@@ -40,15 +40,13 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include <ros/console.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace urdf
 {
 
-/**
- * @class Color
- */
 class Color
 {
 public:
@@ -79,6 +77,7 @@ public:
         }
         catch (boost::bad_lexical_cast &e)
         {
+          printf("[ERROR]  color rgba element (%s) is not a valid float",pieces[i].c_str());
           return false;
         }
       }
@@ -86,6 +85,7 @@ public:
 
     if (rgba.size() != 4)
     {
+	printf("[ERROR]  Color contains %i elements instead of 4 elements", (int)rgba.size());
       return false;
     }
 
@@ -100,5 +100,5 @@ public:
 
 }
 
-#endif /** URDF_INTERFACE_COLOR_H  */
+#endif
 

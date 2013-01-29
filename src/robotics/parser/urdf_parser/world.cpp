@@ -104,7 +104,7 @@ namespace urdf{
 	 entity_xml; entity_xml = entity_xml->NextSiblingElement("entity") ) {
       count++;
       Entity entity;
-      try {
+      //try {
 
 	const char* entity_model = entity_xml->Attribute("model");
 	std::string string_entity_model( entity_model );
@@ -162,13 +162,13 @@ namespace urdf{
 	} // end of include read
 	
 	
-      }
-      catch( ParseError &e ) {
+      //}
+      /*catch( ParseError &e ) {
 	if(debug) printf ("Entity xml not initialized correctly \n");
 	//entity->reset();
 	//world->reset();
 	return world;
-      }
+      }*/
       
     } // end for
     if(debug) printf ("Found %d entities \n", count);
@@ -202,4 +202,32 @@ bool exportWorld(World &world, TiXmlElement* xml)
   return true;
 }
 
+
+bool parsePose(Pose &pose, TiXmlElement* xml)
+{
+  pose.clear();
+  if (xml)
+  {
+    const char* xyz_str = xml->Attribute("xyz");
+    if (xyz_str != NULL)
+    {
+      if( !pose.position.init(xyz_str) ) {
+  	printf("Parsing position in world.cpp did not work out! Default to (0,0,0) \n");
+        return false;
+      }
+    }
+
+    const char* rpy_str = xml->Attribute("rpy");
+    if (rpy_str != NULL)
+    {
+      if( !pose.rotation.init(rpy_str) ) {
+  	printf("Parsing orientation in world.cpp did not work out! Default to (0,0,0) \n");
+        return false;
+      }
+    }
+  }
+  return true;
 }
+
+
+} // end interface namespace

@@ -39,18 +39,15 @@
 
 #include <string>
 #include <vector>
+#include <tinyxml.h>
 #include <boost/shared_ptr.hpp>
 
 #include "pose.h"
-
 
 namespace urdf{
 
 class Link;
 
-/**
- * @class JointDynamics
- */
 class JointDynamics
 {
 public:
@@ -63,6 +60,7 @@ public:
     damping = 0;
     friction = 0;
   };
+  bool initXml(TiXmlElement* config);
 };
 
 class JointLimits
@@ -81,6 +79,7 @@ public:
     effort = 0;
     velocity = 0;
   };
+  bool initXml(TiXmlElement* config);
 };
 
 /// \brief Parameters for Joint Safety Controllers
@@ -133,6 +132,7 @@ public:
     k_position = 0;
     k_velocity = 0;
   };
+  bool initXml(TiXmlElement* config);
 };
 
 
@@ -147,6 +147,7 @@ public:
   {
     reference_position = 0;
   };
+  bool initXml(TiXmlElement* config);
 };
 
 class JointMimic
@@ -159,10 +160,11 @@ public:
 
   void clear()
   {
-    offset = 0.0;
-    multiplier = 0.0;
+    offset = 0;
+    multiplier = 0;
     joint_name.clear();
   };
+  bool initXml(TiXmlElement* config);
 };
 
 
@@ -213,6 +215,7 @@ public:
   /// Option to Mimic another Joint
   boost::shared_ptr<JointMimic> mimic;
 
+  bool initXml(TiXmlElement* xml);
   void clear()
   {
     this->axis.clear();

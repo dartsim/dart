@@ -79,7 +79,6 @@
 
 #include "../urdf_model/model.h"
 #include "../urdf_model/pose.h"
-#include "../urdf_model/twist.h"
 
 namespace urdf{
 
@@ -88,7 +87,6 @@ class Entity
 public:
   boost::shared_ptr<ModelInterface> model;
   Pose origin;
-  Twist twist;
 };
 
 class World

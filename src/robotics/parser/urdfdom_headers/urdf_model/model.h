@@ -41,199 +41,185 @@
 #include <map>
 #include <boost/function.hpp>
 #include "link.h"
-#include "../urdf_exception/exception.h"
 
 namespace urdf {
 
-  /**
-   * @class ModelInterface
-   */
-  class ModelInterface
+const bool debug_h = false;
+
+class ModelInterface
+{
+public:
+  boost::shared_ptr<const Link> getRoot(void) const{return this->root_link_;};
+  boost::shared_ptr<const Link> getLink(const std::string& name) const
   {
-  public:
+    boost::shared_ptr<const Link> ptr;
+    if (this->links_.find(name) == this->links_.end())
+      ptr.reset();
+    else
+      ptr = this->links_.find(name)->second;
+    return ptr;
+  };
 
-    /**
-     * @function getRoot
-     */
-    boost::shared_ptr<const Link> getRoot(void) const{
-      return this->root_link_;
-    };
+  boost::shared_ptr<const Joint> getJoint(const std::string& name) const
+  {
+    boost::shared_ptr<const Joint> ptr;
+    if (this->joints_.find(name) == this->joints_.end())
+      ptr.reset();
+    else
+      ptr = this->joints_.find(name)->second;
+    return ptr;
+  };
 
-    /**
-     * @function getLink
-     */
-    boost::shared_ptr<const Link> getLink(const std::string& name) const {
-      boost::shared_ptr<const Link> ptr;
-      if (this->links_.find(name) == this->links_.end())
-	ptr.reset();
+
+  const std::string& getName() const {return name_;};
+  void getLinks(std::vector<boost::shared_ptr<Link> >& links) const
+  {
+    for (std::map<std::string,boost::shared_ptr<Link> >::const_iterator link = this->links_.begin();link != this->links_.end(); link++)
+    {
+      links.push_back(link->second);
+    }
+  };
+
+  void clear()
+  {
+    name_.clear();
+    this->links_.clear();
+    this->joints_.clear();
+    this->materials_.clear();
+    this->root_link_.reset();
+  };
+
+  /// non-const getLink()
+  void getLink(const std::string& name,boost::shared_ptr<Link> &link) const
+  {
+    boost::shared_ptr<Link> ptr;
+    if (this->links_.find(name) == this->links_.end())
+      ptr.reset();
+    else
+      ptr = this->links_.find(name)->second;
+    link = ptr;
+  };
+
+  /// non-const getMaterial()
+  boost::shared_ptr<Material> getMaterial(const std::string& name) const
+  {
+    boost::shared_ptr<Material> ptr;
+    if (this->materials_.find(name) == this->materials_.end())
+      ptr.reset();
+    else
+      ptr = this->materials_.find(name)->second;
+    return ptr;
+  };
+
+  /// in initXml(), onece all links are loaded,
+  /// it's time to build a tree
+  bool initTree(std::map<std::string, std::string> &parent_link_tree)
+  {
+    // loop through all joints, for every link, assign children links and children joints
+    for (std::map<std::string,boost::shared_ptr<Joint> >::iterator joint = this->joints_.begin();joint != this->joints_.end(); joint++)
+    {
+      std::string parent_link_name = joint->second->parent_link_name;
+      std::string child_link_name = joint->second->child_link_name;
+
+      if(debug_h)   printf("[debug]  build tree: joint: '%s' has parent link '%s' and child  link '%s'", joint->first.c_str(), parent_link_name.c_str(),child_link_name.c_str());
+      if (parent_link_name.empty() || child_link_name.empty())
+      {
+        printf("[ERROR]      Joint %s is missing a parent and/or child link specification.",(joint->second)->name.c_str());
+        return false;
+      }
       else
-	ptr = this->links_.find(name)->second;
-      return ptr;
-    };
-    
-    /**
-     * @function getJoint
-     */
-    boost::shared_ptr<const Joint> getJoint(const std::string& name) const {
-      boost::shared_ptr<const Joint> ptr;
-      if (this->joints_.find(name) == this->joints_.end())
-	ptr.reset();
-      else
-	ptr = this->joints_.find(name)->second;
-      return ptr;
-    };
-    
-    /**
-     * @function getName
-     */
-    const std::string& getName() const {
-      return name_;
-    };
-    
-    /**
-     * @function getLinks()
-     */
-    void getLinks(std::vector<boost::shared_ptr<Link> >& links) const {
-      for (std::map<std::string,boost::shared_ptr<Link> >::const_iterator link = this->links_.begin();
-	   link != this->links_.end(); link++)
-	{
-	  links.push_back(link->second);
-	}
-    };
-    
-    /**
-     * @function clear()
-     */
-    void clear() {
-      name_.clear();
-      this->links_.clear();
-      this->joints_.clear();
-      this->materials_.clear();
-      this->root_link_.reset();
-    };
-    
-    /**
-     * @function getLink()
-     * @brief non-const getLink()
-     */
-    void getLink(const std::string& name,boost::shared_ptr<Link> &link) const {
-      boost::shared_ptr<Link> ptr;
-      if (this->links_.find(name) == this->links_.end())
-	ptr.reset();
-      else
-	ptr = this->links_.find(name)->second;
-      link = ptr;
-    };
-    
-    /**
-     * @function getMaterial
-     * @brief non-const getMaterial()
-     */
-    boost::shared_ptr<Material> getMaterial(const std::string& name) const {
-      boost::shared_ptr<Material> ptr;
-      if (this->materials_.find(name) == this->materials_.end())
-	ptr.reset();
-      else
-	ptr = this->materials_.find(name)->second;
-      return ptr;
-    };
-    
-    /**
-     * @function initTree
-     * @brief Loop through all joints, for every link, assign children links and children joints
-     */
-    void initTree(std::map<std::string, std::string> &parent_link_tree) {
+      {
+        // find child and parent links
+        boost::shared_ptr<Link> child_link, parent_link;
+        this->getLink(child_link_name, child_link);
+        if (!child_link)
+        {
+          printf("[ERROR]      child link '%s' of joint '%s' not found", child_link_name.c_str(), joint->first.c_str() );
+          return false;
+        }
+        this->getLink(parent_link_name, parent_link);
+        if (!parent_link)
+        {
+          printf("[ERROR]      parent link '%s' of joint '%s' not found.  The Boxturtle urdf parser used to automatically add this link for you, but this is not valid according to the URDF spec. Every link you refer to from a joint needs to be explicitly defined in the robot description. To fix this problem you can either remove this joint from your urdf file, or add \"<link name=\"%s\" />\" to your urdf file.", parent_link_name.c_str(), joint->first.c_str(), parent_link_name.c_str() );
+          return false;
+        }
+
+        //set parent link for child link
+        child_link->setParent(parent_link);
+
+        //set parent joint for child link
+        child_link->setParentJoint(joint->second);
+
+        //set child joint for parent link
+        parent_link->addChildJoint(joint->second);
       
-      for (std::map<std::string,boost::shared_ptr<Joint> >::iterator joint = this->joints_.begin();
-	   joint != this->joints_.end(); joint++) {
-	std::string parent_link_name = joint->second->parent_link_name;
-	std::string child_link_name = joint->second->child_link_name;
-	
-	if (parent_link_name.empty() || child_link_name.empty())
-	  {
-	    throw ParseError("Joint [" + joint->second->name + "] is missing a parent and/or child link specification.");
-	  }
-	else
-	  {
-	    // find child and parent links
-	    boost::shared_ptr<Link> child_link, parent_link;
-	    this->getLink(child_link_name, child_link);
-	    if (!child_link)
-	      {
-		throw ParseError("child link [" + child_link_name + "] of joint [" + joint->first + "] not found");
-	      }
-	    this->getLink(parent_link_name, parent_link);
-	    if (!parent_link)
-	      {
-		throw ParseError("parent link [" + parent_link_name + "] of joint [" + joint->first + "] not found.  This is not valid according to the URDF spec. Every link you refer to from a joint needs to be explicitly defined in the robot description. To fix this problem you can either remove this joint [" + joint->first + "] from your urdf file, or add \"<link name=\"" + parent_link_name + "\" />\" to your urdf file.");
-	      }
-	    
-	    //set parent link for child link
-	    child_link->setParent(parent_link);
-	    
-	    //set parent joint for child link        
-	    child_link->parent_joint = joint->second;
-	    
-	    //set child joint for parent link
-	    parent_link->child_joints.push_back(joint->second);
-	    
-	    //set child link for parent link
-	    parent_link->child_links.push_back(child_link);
-	      
-	    // fill in child/parent string map
-	    parent_link_tree[child_link->name] = parent_link_name;
-	  }
+        //set child link for parent link
+        parent_link->addChild(child_link);
+      
+        // fill in child/parent string map
+        parent_link_tree[child_link->name] = parent_link_name;
+      
+        if(debug_h)   printf("[debug]      now Link '%s' has %i children ", parent_link->name.c_str(), (int)parent_link->child_links.size());
       }
     }
-    
-    /**
-     * @function initRoot
-     */
-    void initRoot(const std::map<std::string, std::string> &parent_link_tree) { 
-      this->root_link_.reset();
-      
-      // find the links that have no parent in the tree
-      for (std::map<std::string, boost::shared_ptr<Link> >::const_iterator l=this->links_.begin(); l!=this->links_.end(); l++)  
-	{
-	  std::map<std::string, std::string >::const_iterator parent = parent_link_tree.find(l->first);
-	  if (parent == parent_link_tree.end())
-	    {
-	      // store root link
-	      if (!this->root_link_)
-		{
-		  getLink(l->first, this->root_link_);
-		}
-	      // we already found a root link
-	      else
-		{
-		  throw ParseError("Two root links found: [" + this->root_link_->name + "] and [" + l->first + "]");
-		}
-	    }
-	}
-      if (!this->root_link_)
-	{
-	  throw ParseError("No root link found. The robot xml is not a valid tree.");
-	}
-    }
-    
-    
-    /// \brief complete list of Links
-    std::map<std::string, boost::shared_ptr<Link> > links_;
-    /// \brief complete list of Joints
-    std::map<std::string, boost::shared_ptr<Joint> > joints_;
-    /// \brief complete list of Materials
-    std::map<std::string, boost::shared_ptr<Material> > materials_;
-    
-    std::string name_;
 
-    /// ModelInterface is restricted to a tree for now, which means there exists one root link
-    ///  typically, root link is the world(inertial).  Where world is a special link
-    /// or is the root_link_ the link attached to the world by PLANAR/FLOATING joint?
-    ///  hmm...
-    boost::shared_ptr<Link> root_link_;
-    
+    return true;
   };
+
+
+  /// in initXml(), onece tree is built,
+  /// it's time to find the root Link
+  bool initRoot(std::map<std::string, std::string> &parent_link_tree)
+  {
+    this->root_link_.reset();
+
+    // find the links that have no parent in the tree
+    for (std::map<std::string, boost::shared_ptr<Link> >::iterator l=this->links_.begin(); l!=this->links_.end(); l++)  
+    {
+      std::map<std::string, std::string >::iterator parent = parent_link_tree.find(l->first);
+      if (parent == parent_link_tree.end())
+      {
+        // store root link
+        if (!this->root_link_)
+        {
+          getLink(l->first, this->root_link_);
+        }
+        // we already found a root link
+        else{
+          printf("[ERROR]  Two root links found: '%s' and '%s'", this->root_link_->name.c_str(), l->first.c_str());
+          return false;
+        }
+      }
+    }
+    if (!this->root_link_)
+    {
+      printf("[ERROR]  No root link found. The robot xml is not a valid tree.");
+      return false;
+    }
+    if(debug_h)   printf("[debug]  Link '%s' is the root link", this->root_link_->name.c_str());
+
+    return true;
+  };
+
+  /// \brief complete list of Links
+  std::map<std::string, boost::shared_ptr<Link> > links_;
+  /// \brief complete list of Joints
+  std::map<std::string, boost::shared_ptr<Joint> > joints_;
+  /// \brief complete list of Materials
+  std::map<std::string, boost::shared_ptr<Material> > materials_;
+
+  std::string name_;
+
+  /// ModelInterface is restricted to a tree for now, which means there exists one root link
+  ///  typically, root link is the world(inertial).  Where world is a special link
+  /// or is the root_link_ the link attached to the world by PLANAR/FLOATING joint?
+  ///  hmm...
+  boost::shared_ptr<Link> root_link_;
+
+
+
+};
 
 }
 
-#endif /** URDF_INTERFACE_MODEL_H */
+#endif
