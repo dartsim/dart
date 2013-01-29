@@ -233,7 +233,7 @@ namespace kinematics {
 
         Shape* prim = _b->getShape();
         ShapeEllipsoid* elp = dynamic_cast<ShapeEllipsoid*>(prim);
-        ShapeCube* box = dynamic_cast<ShapeCube*>(prim);
+        ShapeBox* box = dynamic_cast<ShapeBox*>(prim);
 
         if(elp) _outfile<<", SPHERE";
         else if(box) _outfile<<", CUBE";
