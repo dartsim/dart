@@ -139,7 +139,7 @@ using namespace kinematics;
 #include "TrfmRotateExpmap.h"
 #include "TrfmRotateQuat.h"
 #include "TrfmTranslate.h"
-#include "ShapeCube.h"
+#include "ShapeBox.h"
 #include "ShapeEllipsoid.h"
 //#include "Capsule.h"
 //#include "PrimMesh.h"
@@ -2294,7 +2294,7 @@ Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
@@ -2326,7 +2326,7 @@ Shape* __setGeometry(const char *shape, const char *massName)
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
@@ -2347,7 +2347,7 @@ Shape* __setGeometry(const char *shape, doubleVec3 color)
     // create new primitive by shape
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
@@ -2388,7 +2388,7 @@ Shape* __setGeometry(const char *shape)
     Shape *prim = NULL;
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeCube(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0), massValue);
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "SPHERE") || !strcmp(shape, ""))

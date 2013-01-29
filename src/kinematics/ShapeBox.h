@@ -43,9 +43,9 @@
 
 namespace kinematics {
 
-    class ShapeCube : public Shape {
+    class ShapeBox : public Shape {
     public:
-        ShapeCube(Eigen::Vector3d _dim, double _mass);
+        ShapeBox(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
     private:

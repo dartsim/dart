@@ -53,7 +53,7 @@ namespace kinematics {
     public:
         enum ShapeType {
             P_UNDEFINED,
-            P_CUBE,
+            P_BOX,
             P_ELLIPSOID,
             P_MESH
         };
