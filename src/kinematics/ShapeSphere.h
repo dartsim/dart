@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Tobias Kunz <tobias@gatech.edu>
+ * Date: 01/29/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,49 +35,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ShapeBox.h"
-#include "renderer/RenderInterface.h"
+#ifndef KINEMATICS_SHAPE_SPHERE_H
+#define KINEMATICS_SHAPE_SPHERE_H
 
-using namespace std;
-using namespace Eigen;
+#include "Shape.h"
 
 namespace kinematics {
 
-    ShapeBox::ShapeBox(Vector3d _dim, double _mass){
-        mType = P_BOX;
-        mDim = _dim;
-        mMass = _mass;
-        initMeshes();
-        if (_dim != Vector3d::Zero())
-            computeVolume();
-        if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
-            computeVolume();
-        }
-    }
+    class ShapeSphere : public Shape {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        ShapeSphere(double _radius, double _mass);
 
-    void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri) return;
-        if (!_useDefaultColor)
-            _ri->setPenColor(_color);
-        else
-            _ri->setPenColor(mColor);
-        _ri->pushMatrix();
-        _ri->drawCube(mDim);
-        _ri->popMatrix();
-    }
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+    private:
+        void computeVolume();
+        void computeInertia();
 
-    void ShapeBox::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
-    }
-
-    void ShapeBox::computeVolume() {
-        mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
-    }
+        double mRadius;
+    };
 
 } // namespace kinematics
+
+#endif

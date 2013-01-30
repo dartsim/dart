@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Tobias Kunz <tobias@gatech.edu>
+ * Date: 01/29/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ShapeBox.h"
+#include "ShapeSphere.h"
 #include "renderer/RenderInterface.h"
 
 using namespace std;
@@ -43,41 +43,27 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeBox::ShapeBox(Vector3d _dim, double _mass){
-        mType = P_BOX;
-        mDim = _dim;
-        mMass = _mass;
-        initMeshes();
-        if (_dim != Vector3d::Zero())
+    ShapeSphere::ShapeSphere(double _radius, double _mass) : Shape(P_SPHERE, _mass),
+        mRadius(_radius)
+    {
+        if (_radius > 0.0) {
             computeVolume();
-        if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
-            computeVolume();
+        }
+        if (mMass > 0.0) {
+            computeInertia();
         }
     }
 
-    void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri) return;
-        if (!_useDefaultColor)
-            _ri->setPenColor(_color);
-        else
-            _ri->setPenColor(mColor);
-        _ri->pushMatrix();
-        _ri->drawCube(mDim);
-        _ri->popMatrix();
+    void ShapeSphere::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        // TODO
     }
 
-    void ShapeBox::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
+    void ShapeSphere::computeVolume() {
+        mVolume = 4.0 / 3.0 * M_PI * mRadius * mRadius * mRadius;
     }
 
-    void ShapeBox::computeVolume() {
-        mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
+    void ShapeSphere::computeInertia() {
+        mInertia = 0.4 * mMass * mRadius * mRadius * Matrix3d::Identity();
     }
 
 } // namespace kinematics

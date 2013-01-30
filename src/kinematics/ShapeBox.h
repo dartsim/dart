@@ -51,7 +51,6 @@ namespace kinematics {
     private:
         void computeMassTensor();
         void computeVolume();
-        void initMeshes();
         
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -60,4 +59,3 @@ namespace kinematics {
 } // namespace kinematics
 
 #endif // #ifndef KINEMATICS_PRIMITIVE_CUBE_H
-

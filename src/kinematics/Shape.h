@@ -55,11 +55,13 @@ namespace kinematics {
             P_UNDEFINED,
             P_BOX,
             P_ELLIPSOID,
+            P_SPHERE,
+            P_CYLINDER,
             P_MESH
         };
 
-        Shape();
-        virtual ~Shape(){};
+        Shape(ShapeType _type = P_UNDEFINED, double _mass = 0.0);
+        virtual ~Shape() {};
         
         void setInertia(const Eigen::Matrix3d& _inertia);
         inline Eigen::Matrix3d getInertia() const { return mInertia; }
