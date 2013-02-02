@@ -229,22 +229,22 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         }
         break;
     case '1':
-        mForce[0] = 200;
+        mForce[0] = 20;
         mImpulseDuration = 10.0;
         cout << "push forward" << endl;
         break;
     case '2':
-        mForce[0] = -100;
+        mForce[0] = -10;
         mImpulseDuration = 10.0;
         cout << "push backward" << endl;
         break;
     case '3':
-        mForce[2] = 300;
+        mForce[2] = 50;
         mImpulseDuration = 10.0;
         cout << "push right" << endl;
         break;
     case '4':
-        mForce[2] = -300;
+        mForce[2] = -50;
         mImpulseDuration = 10.0;
         cout << "push left" << endl;
         break;
