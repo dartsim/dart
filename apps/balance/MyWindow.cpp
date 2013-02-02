@@ -23,7 +23,7 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
     
-    mDofs[0][1] = -0.9; // ground level
+    mDofs[0][1] = -0.92; // ground level
     // default standing pose
     mDofs[1][1] = -0.1;
     mDofs[1][6] = 0.2; // left hip
