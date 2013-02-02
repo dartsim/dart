@@ -177,6 +177,10 @@ namespace utils {
                 cout<<"Shape type undefined for body "<<_b->getName()<<endl;
                 return false;
                 break;
+            case Shape::P_MESH:
+                cout << "Shape not implemented yet" << endl;
+                return false;
+                break;
             }
             return true;
         }
