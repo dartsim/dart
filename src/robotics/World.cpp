@@ -184,6 +184,15 @@ namespace robotics {
     return mSkeletons[_i];
   }
 
+  dynamics::SkeletonDynamics* World::getSkeleton(const std::string& _name) {\
+    for(unsigned int i = 0; i < mSkeletons.size(); i++) {
+      if(mSkeletons[i]->getName().compare(_name) == 0) {
+        return mSkeletons[i];
+      }
+    }
+    return NULL;
+  }
+  
   bool World::checkCollision(bool checkAllCollisions) {
     return mCollisionHandle->getCollisionChecker()->checkCollision(checkAllCollisions, false);
   }
