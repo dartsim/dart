@@ -23,17 +23,17 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
 	static const double dDOF = 0.1;
 	switch(key) {
 		case '-': {
-			inverse = true;
+			inverse = !inverse;
 		}	break;
 		case '1':
-		case '2': {
+		case '2': 
+		case '3': {
 			size_t dofIdx = key - 49;
 			Eigen::VectorXd pose = skel->getPose();
 			pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
 			skel->setPose(pose);
 			std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose() << std::endl;
 			glutPostRedisplay();
-			if(inverse) inverse = false;
 		}	break;
 		default:
 			Win3D::keyboard(key, x, y);

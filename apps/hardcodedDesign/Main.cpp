@@ -22,8 +22,8 @@ enum TypeOfDOF {
 // Argp documentation
 static char doc[] = "\nThis application shows the creation of a kinematic skeleton from scratch "
 	"without the use of a model file. Run the program without arguments and you can use the buttons "
-	"{1,2} to move the corresponding joints. The key '-' will make the immediate joint move in the "
-	"negative direction.\n\nCan Erdogan\nFeb 02, 2013";
+	"{1,2} to move the corresponding joints. The key '-' will make the joints move in the negative "
+	"direction.\n\nCan Erdogan\nFeb 02, 2013";
 static struct argp argp = {NULL, NULL, NULL, doc};
 
 /* ********************************************************************************************* */
@@ -62,22 +62,6 @@ void add_DOF(SkeletonDynamics* skel, Joint* joint, double val, double min, doubl
 }
 
 /* ********************************************************************************************* */
-/// Add a shape imported from a .obj file to a body node
-void add_Shape(BodyNodeDynamics* node, Vector3d dim, Vector3d off, double mass, Matrix3d inertia) {
-
-	// Create a shape either from a rectangular prism
-	Shape *shape = new ShapeBox(dim, mass);
-
-	// Set as the viewed and collision mesh
-	//shape->setVizMesh(m3d);
-	//shape->setCollisionMesh(m3d);
-
-	// Set the shape to the node
-	shape->setOffset(off);
-	node->setShape(shape);
-}
-
-/* ********************************************************************************************* */
 int main(int argc, char* argv[]) {
 
 	// Handle argp call
@@ -96,27 +80,30 @@ int main(int argc, char* argv[]) {
 	Joint* joint = new Joint(NULL, node, "LHY");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_YAW);
-	add_Shape(node, Vector3d(0.3, 0.3, 1.0), Vector3d(), mass, inertiaMatrix);
+	node->setShape(new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass));
 	LeftLegSkel.addNode(node);
 
 	// ***** BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY *****
 	BodyNodeDynamics* parent_node = (BodyNodeDynamics*) LeftLegSkel.getNode("LHY");
 	node = (BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHR");
 	joint = new Joint(parent_node, node, "LHR");
-	add_XyzRpy(joint, 0.0, 0.02, 0.3, 0.0, 0.0, 0.0);
+	add_XyzRpy(joint, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
-	add_Shape(node, Vector3d(0.3, 0.3, 1.0), Vector3d(0.0, 1.0, 0.0), mass, inertiaMatrix);
+	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
+	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
+	node->setShape(shape);
 	LeftLegSkel.addNode(node);
 
-	/***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR ***** *
+	// ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
 	parent_node = (BodyNodeDynamics*) LeftLegSkel.getNode("LHR");
 	node = (BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHP");
 	joint = new Joint(parent_node, node, "LHP");
-	add_XyzRpy(joint, 0.0, 0.0, 0.054, 0.0, 0.0, 0.0);
-	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_YAW);
-	add_Shape(node, Vector3d(0.3, 0.3, 1.0), mass, inertiaMatrix);
+	add_XyzRpy(joint, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
+	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
+	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
+	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
+	node->setShape(shape);
 	LeftLegSkel.addNode(node);
-  */
 
 	// Initialize the skeleton
 	LeftLegSkel.initSkel();
