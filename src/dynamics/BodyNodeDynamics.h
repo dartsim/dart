@@ -75,6 +75,8 @@ namespace dynamics{
 
         // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
         void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
+        void updateSecondDerivatives(Eigen::Vector3d _offset);  ///< Update the second derivatives of the transformations
+
         Eigen::Vector3d mVel; ///< Linear velocity in the world frame
         Eigen::Vector3d mOmega; ///< Angular velocity in the world frame
         Eigen::MatrixXd mM; ///< Mass matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
@@ -110,6 +112,8 @@ namespace dynamics{
         Eigen::Vector3d evalLinMomentum();
         Eigen::Vector3d evalAngMomentum(Eigen::Vector3d _pivot);
 
+        inline Eigen::MatrixXd getJvDeriv(int _qIndex) const { return mJvq[_qIndex]; };
+
     protected:
 
         bool mInitializedInvDyn;   ///< true if linear inverse dynamics is initialized; init functions initialize only if false
@@ -127,7 +131,7 @@ namespace dynamics{
         ///< contact points are a pair of (local point offset, Cartesian force in local coordinates) 
         
         Eigen::Matrix4d getLocalSecondDeriv(const kinematics::Dof *_q1, const kinematics::Dof *_q2) const;
-        void evalJacDerivLin(int _qi);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
+            void evalJacDerivLin(int _qi, Eigen::Vector3d _offset);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
         void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacDotAng(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)

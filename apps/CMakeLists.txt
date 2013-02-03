@@ -13,6 +13,7 @@ foreach(APPDIR
 	balance
 	ik
 	hybrid
+        hanging
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
