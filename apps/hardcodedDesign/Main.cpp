@@ -2,11 +2,13 @@
  * @file Main.cpp
  * @author Can Erdogan
  * @date Feb 02, 2013
- * @brief Simple example of a skeleton created from scratch.
+ * @brief This application shows the creation of a kinematic skeleton from scratch without
+ * the use of a model file. Run the program without arguments and you can use the buttons 
+ * {1,2} to move the corresponding joints. The key '-' will make the joints move in the negative 
+ * direction. 
  */
 
 #include "MyWindow.h"
-#include <argp.h>
 
 using namespace std;
 using namespace Eigen;
@@ -17,14 +19,6 @@ using namespace dynamics;
 enum TypeOfDOF {
 	DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
-
-/* ********************************************************************************************* */
-// Argp documentation
-static char doc[] = "\nThis application shows the creation of a kinematic skeleton from scratch "
-	"without the use of a model file. Run the program without arguments and you can use the buttons "
-	"{1,2} to move the corresponding joints. The key '-' will make the joints move in the negative "
-	"direction.\n\nCan Erdogan\nFeb 02, 2013";
-static struct argp argp = {NULL, NULL, NULL, doc};
 
 /* ********************************************************************************************* */
 /// Add a transformation to a joint
@@ -63,9 +57,6 @@ void add_DOF(SkeletonDynamics* skel, Joint* joint, double val, double min, doubl
 
 /* ********************************************************************************************* */
 int main(int argc, char* argv[]) {
-
-	// Handle argp call
-	argp_parse (&argp, argc, argv, 0, 0, NULL);
 
 	// Create Left Leg skeleton
 	SkeletonDynamics LeftLegSkel;
