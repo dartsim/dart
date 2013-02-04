@@ -28,7 +28,7 @@
 #include "Marker.h"
 #include "Transformation.h"
 #include "ShapeEllipsoid.h"
-#include "ShapeCube.h"
+#include "ShapeBox.h"
 
 int readSkelFile( const char* const filename, kinematics::Skeleton* skel );
 
@@ -233,7 +233,7 @@ namespace kinematics {
 
         Shape* prim = _b->getShape();
         ShapeEllipsoid* elp = dynamic_cast<ShapeEllipsoid*>(prim);
-        ShapeCube* box = dynamic_cast<ShapeCube*>(prim);
+        ShapeBox* box = dynamic_cast<ShapeBox*>(prim);
 
         if(elp) _outfile<<", SPHERE";
         else if(box) _outfile<<", CUBE";

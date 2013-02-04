@@ -19,7 +19,7 @@ namespace collision_checking{
         mBodyNode = _bodyNode;
         if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
             mMesh = createEllipsoid<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_CUBE) {
+        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_BOX) {
             mMesh = createCube<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
         } else {
             mMesh = createMesh<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getCollisionMesh());
@@ -135,6 +135,8 @@ namespace collision_checking{
 
     void CollisionSkeletonNode::evalRT() {
         mWorldTrans = mBodyNode->getWorldTransform();
+        Vector3d p = xformHom(mWorldTrans, mBodyNode->getLocalCOM());
+        mWorldTrans.block(0, 3, 3, 1) = p;
         mFclWorldTrans = fcl::Transform3f(fcl::Matrix3f(mWorldTrans(0,0), mWorldTrans(0,1), mWorldTrans(0,2), 
                                                         mWorldTrans(1,0), mWorldTrans(1,1), mWorldTrans(1,2), 
                                                         mWorldTrans(2,0), mWorldTrans(2,1), mWorldTrans(2,2)),

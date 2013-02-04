@@ -35,72 +35,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Shape.h"
+#include "ShapeBox.h"
+#include "renderer/RenderInterface.h"
+
+using namespace std;
 using namespace Eigen;
-
-
-#define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace kinematics {
 
-    // initialize in the same order as declaration
-    Shape::Shape(ShapeType _type, double _mass) :
-          mType(_type),
-          mDim(0, 0, 0),
-          mMass(_mass),
-          mVolume(0), 
-          mInertia(Matrix3d::Zero()),
-          mMassTensor(Matrix4d::Zero()),
-          mOffset(0, 0, 0),
-          mVizMesh(NULL),
-          mCollisionMesh(NULL),
-          mID(mCounter++),
-          mColor(0.5, 0.5, 1.0) {
-    }
-
-    void Shape::setInertia(const Eigen::Matrix3d& _inertia) {
-        mInertia = _inertia;
-        setMassTensorFromInertia();
-    }
-
-    void Shape::setDim(const Eigen::Vector3d& _dim) {
+    ShapeBox::ShapeBox(Vector3d _dim, double _mass){
+        mType = P_BOX;
         mDim = _dim;
-        computeVolume();
-        computeMassTensor();
-        computeInertiaFromMassTensor();
-    }
-
-    void Shape::setMass(double _m) {
-        mMass = _m;
-        computeMassTensor();
-        computeInertiaFromMassTensor();
-    }
-
-    int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
-
-    void Shape::setMassTensorFromInertia() {
-        // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
-	
-        double halftrace = 0.5* mInertia.trace();
-        for(int i=0; i<3; i++) {
-            for(int j=0; j<3; j++) {
-                mMassTensor(i, j) = -mInertia(i, j);
-            }
+        mMass = _mass;
+        initMeshes();
+        if (_dim != Vector3d::Zero())
+            computeVolume();
+        if (mMass != 0){
+            computeMassTensor();
+            computeInertiaFromMassTensor();
+            computeVolume();
         }
-        mMassTensor(0, 0) += halftrace;
-        mMassTensor(1, 1) += halftrace;
-        mMassTensor(2, 2) += halftrace;
-        mMassTensor(3, 3) = mMass;
     }
 
-    void Shape::computeInertiaFromMassTensor(){
-        double trace = mMassTensor(0, 0) + mMassTensor(1, 1) + mMassTensor(2, 2);
-        for(int i=0; i<3; i++)
-            for(int j=0; j<3; j++)
-                mInertia(i, j) = -mMassTensor(i, j);
-        mInertia(0, 0) += trace;
-        mInertia(1, 1) += trace;
-        mInertia(2, 2) += trace;
+    void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        if (!_ri) return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->drawCube(mDim);
+        _ri->popMatrix();
+    }
+
+    void ShapeBox::computeMassTensor() {
+        mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
+        mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
+        mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
+        mMassTensor(3, 3) = 1;
+        mMassTensor *= mMass;
+    }
+
+    void ShapeBox::computeVolume() {
+        mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
     }
 
 } // namespace kinematics

@@ -138,10 +138,14 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
   inertia *= 0.1;
   
+  // Load Inertial information
   if( _lk->inertial ) {
     boost::shared_ptr<urdf::Inertial>inert= (_lk->inertial);
     
+    // Load mass
     mass = inert->mass;
+
+    // Load Inertia matrix
     inertia(0,0) = inert->ixx;
     inertia(0,1) = -1*(inert->ixy);
     inertia(0,2) = -1*(inert->ixz);
@@ -154,6 +158,14 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
     inertia(2,1) = -1*(inert->iyz);
     inertia(2,2) = inert->izz;
     
+    // Load local CoM
+      Eigen::Vector3d localCOM;
+      localCOM << inert->origin.position.x, 
+	inert->origin.position.y, 
+	inert->origin.position.z;
+      // Set it to Node
+      node->setLocalCOM( localCOM );
+
     if(debug) printf ("* Mass is: %f \n", mass);
     std::cout<< "* Inertia is: \n"<< inertia << std::endl;
   }

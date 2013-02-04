@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Tobias Kunz <tobias@gatech.edu>
+ * Date: 01/29/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,29 +35,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_CUBE_H
-#define KINEMATICS_SHAPE_CUBE_H
+#ifndef KINEMATICS_SHAPE_SPHERE_H
+#define KINEMATICS_SHAPE_SPHERE_H
 
 #include "Shape.h"
 
-
 namespace kinematics {
 
-    class ShapeCube : public Shape {
-    public:
-        ShapeCube(Eigen::Vector3d _dim, double _mass);
-
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
-    private:
-        void computeMassTensor();
-        void computeVolume();
-        void initMeshes();
-        
+    class ShapeSphere : public Shape {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        ShapeSphere(double _radius, double _mass);
+
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+    private:
+        void computeVolume();
+        void computeInertia();
+
+        double mRadius;
     };
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_CUBE_H
-
+#endif

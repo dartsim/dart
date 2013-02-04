@@ -13,7 +13,8 @@ foreach(APPDIR
 	balance
 	ik
 	hybrid
-        hanging
+	hanging
+	hardcodedDesign
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
