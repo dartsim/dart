@@ -74,6 +74,7 @@ namespace robotics {
     Object* getObject( int _i );
     Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );
+    dynamics::SkeletonDynamics* getSkeleton(const std::string& name);
     bool checkCollision(bool checkAllCollisions = false);
     void step();
 
