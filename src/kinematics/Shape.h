@@ -73,6 +73,7 @@ namespace kinematics {
         void setDim(const Eigen::Vector3d& _dim);
         inline Eigen::Vector3d getDim() const { return mDim; }
 
+				inline void setOffset(Eigen::Vector3d _offset) { mOffset = _offset; }
         inline Eigen::Vector3d getOffset() const { return mOffset; }
 
         void setMass(const double _m);
