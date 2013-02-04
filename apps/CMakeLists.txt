@@ -14,7 +14,7 @@ foreach(APPDIR
 	balance
 	ik
 	hybrid
-	skeleton
+	hardcodedDesign
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
