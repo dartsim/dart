@@ -14,6 +14,7 @@
 #include <dynamics/BodyNodeDynamics.h>
 #include <iostream>
 
+
 /**
  * @function add_XyzRpy
  */
@@ -116,7 +117,8 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				const char *_meshPath, 
 				double _mass,
 				Eigen::Matrix3d _inertiaMatrix,
-				const char *_collisionMeshPath  ) {
+				const char *_collisionMeshPath,
+				urdf::Pose _pose ) {
   
   kinematics::Shape* shape;
 
@@ -127,25 +129,34 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
   const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
 
   if( model == NULL ) {
-    if(debug) std::cerr << "[add_Shape] [ERROR] Not loading model " << _meshPath << " (NULL)" << std:: endl;
+    std::cout<< "[add_Shape] [ERROR] Not loading model "<<_meshPath<<" (NULL) \n";
     return;  
   }
   else {
     shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
 				       _mass,
-				       model ); 	 
-    shape->setInertia( _inertiaMatrix );
-			if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
-    shape->setVizMesh( model ); 
+				       model ); 
 
+  // Set the visPose
+  Eigen::Matrix4d visTransform = Eigen::Matrix4d::Identity();
+  visTransform(0,3) = _pose.position.x;
+  visTransform(1,3) = _pose.position.y;  
+  visTransform(2,3) = _pose.position.z;
+  std::cout << "Vis transform after: " << visTransform << std::endl;
+  shape->setVisTransform( visTransform );
+	 
+    shape->setInertia( _inertiaMatrix );
+    if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
+    shape->setVizMesh( model ); 
+    
     // Check if we have got a collision model
     if( !collisionModel ) {
       shape->setCollisionMesh( model );
     } else {
-			if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
+      if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
       shape->setCollisionMesh( collisionModel );
     }
-
+    
     // Set in node
     _node->setShape( shape );
   } 

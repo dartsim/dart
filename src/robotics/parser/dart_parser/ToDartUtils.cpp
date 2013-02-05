@@ -173,15 +173,15 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
     inertia(2,2) = inert->izz;
     
     // Load local CoM
-      Eigen::Vector3d localCOM;
-      localCOM << inert->origin.position.x, 
-	inert->origin.position.y, 
-	inert->origin.position.z;
-      // Set it to Node
-      node->setLocalCOM( localCOM );
-
-      if( debug ) { printf ("* Mass is: %f \n", mass); }
-      if( debug ) { std::cout<< "* Inertia is: \n"<< inertia << std::endl; }
+    Eigen::Vector3d localCOM;
+    localCOM << inert->origin.position.x, 
+      inert->origin.position.y, 
+      inert->origin.position.z;
+    // Set it to Node
+    node->setLocalCOM( localCOM );
+    
+    if( debug ) { printf ("* Mass is: %f \n", mass); }
+    if( debug ) { std::cout<< "* Inertia is: \n"<< inertia << std::endl; }
   }
   
   if( !_lk->visual ) {
@@ -189,6 +189,10 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   }
   else {
     
+    // Get the visTransform from visual
+    // origin
+    urdf::Pose visPose = _lk->visual->origin;
+
     if( _lk->visual->geometry->type == urdf::Geometry::MESH ) {
       
       boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _lk->visual->geometry );
@@ -208,7 +212,8 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
 		     (fullVisualPath).c_str(), 
 		     mass,
 		     inertia,
-		     (fullCollisionPath).c_str() ); 
+		     (fullCollisionPath).c_str(),
+		     visPose ); 
       
     }
     
