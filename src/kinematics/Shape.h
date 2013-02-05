@@ -76,7 +76,7 @@ namespace kinematics {
 	inline void setOffset(Eigen::Vector3d _offset) { mOffset = _offset; }
         inline Eigen::Vector3d getOffset() const { return mOffset; }
 
-	inline void setVisTransform(Eigen::Matrix4d _visTransf ) { mVisTransform = _visTransf; }
+        inline void setVisTransform(const Eigen::Matrix4d &_visTransform ) { mVisTransform = _visTransform; }
         inline Eigen::Matrix4d getVisTransform() const { return mVisTransform; }
 
 

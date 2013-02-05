@@ -52,7 +52,7 @@ namespace kinematics {
           mInertia(Matrix3d::Zero()),
           mMassTensor(Matrix4d::Zero()),
           mOffset(0, 0, 0),
-	  mVisTransform( Matrix4d::Identity() ),
+          mVisTransform(Matrix4d::Identity()),
           mVizMesh(NULL),
           mCollisionMesh(NULL),
           mID(mCounter++),
