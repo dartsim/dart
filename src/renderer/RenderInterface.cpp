@@ -133,6 +133,15 @@ namespace renderer {
 	{
 	}
 
+    void RenderInterface::drawList(unsigned int indeX)
+    {
+    }
+
+    unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh)
+    {
+    	return 0;
+    }
+
 	void RenderInterface::drawCube(const Vector3d& _size)
 	{
 	}

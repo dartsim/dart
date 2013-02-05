@@ -122,6 +122,9 @@ namespace kinematics {
 
         static int mCounter;
     public:
+
+        unsigned int listIndex;
+
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 

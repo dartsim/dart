@@ -287,7 +287,25 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const aiScene *_mesh) {
-        recursiveRender(_mesh, _mesh->mRootNode);
+    	recursiveRender(_mesh, _mesh->mRootNode);
+    }
+
+    void OpenGLRenderInterface::drawList(unsigned int index) {
+    	glCallList(index);
+    }
+
+    unsigned int OpenGLRenderInterface::compileDisplayList(const Vector3d& _size, const aiScene *_mesh) {
+    	if(_mesh == NULL)
+    		return 0;
+    	// create one display list
+    	GLuint index = glGenLists(1);
+
+    	// compile the display list
+    	glNewList(index, GL_COMPILE);
+    	    recursiveRender(_mesh, _mesh->mRootNode);
+    	glEndList();
+
+    	return index;
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {

@@ -101,6 +101,9 @@ namespace renderer {
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);
         virtual void drawCube(const Eigen::Vector3d& _size);
         virtual void drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh);
+        virtual void drawList(unsigned int index);
+
+        virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh);
 
         virtual void setPenColor(const Eigen::Vector4d& _col);
         virtual void setPenColor(const Eigen::Vector3d& _col);

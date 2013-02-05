@@ -59,6 +59,8 @@ namespace kinematics {
             computeMassTensor();
             computeInertiaFromMassTensor();
         }
+
+        listIndex = 0;
     }
 
     void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
@@ -69,7 +71,17 @@ namespace kinematics {
         else
             _ri->setPenColor(mColor);
         _ri->pushMatrix();
-        _ri->drawMesh(mDim, mVizMesh);
+
+        if(listIndex == 0) {
+        	unsigned int * lptr = const_cast<unsigned int*>(&listIndex);
+        	*lptr = _ri->compileDisplayList(mDim, mVizMesh);
+        }
+
+        if(listIndex)
+        	_ri->drawList(listIndex);
+        else
+            _ri->drawMesh(mDim, mVizMesh);
+
         _ri->popMatrix();
     }
 
