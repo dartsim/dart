@@ -61,6 +61,7 @@ namespace kinematics {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         enum TransFormType {
+            T_ROTATEAXIS,
             T_ROTATEX,
             T_ROTATEY,
             T_ROTATEZ,
