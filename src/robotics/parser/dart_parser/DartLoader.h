@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
+#include <robotics/parser/urdfdom_headers/urdf_model/pose.h>
 
 const bool debug = false;
 
@@ -74,7 +75,8 @@ class DartLoader {
 		      const char *_meshPath, 
 		      double _mass = 1.0,
 		      Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3),
-		      const char *_collisionMeshPath = NULL );
+		      const char *_collisionMeshPath = NULL,
+		      urdf::Pose _pose = urdf::Pose() );
   
   void add_Shape( dynamics::BodyNodeDynamics* _node, 
 		  double _mass = 1.0,

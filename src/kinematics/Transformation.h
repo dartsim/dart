@@ -69,7 +69,8 @@ namespace kinematics {
             T_TRANSLATE,
             T_TRANSLATEX,
             T_TRANSLATEY,
-            T_TRANSLATEZ
+            T_TRANSLATEZ,
+            T_ROTATEAXIS
         };
 
     public:
