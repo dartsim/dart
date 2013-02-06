@@ -49,42 +49,42 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
   kinematics::Transformation* trans;
   
   if(_DOF_TYPE == GOLEM_X) {
-    trans = new kinematics::TrfmTranslateX(new kinematics::Dof(0, "rootX"), "Tx");
+    trans = new kinematics::TrfmTranslateX(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_Y) {
-    trans = new kinematics::TrfmTranslateY(new kinematics::Dof(0, "rootY"), "Ty");
+    trans = new kinematics::TrfmTranslateY(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_Z) {
-    trans = new kinematics::TrfmTranslateZ(new kinematics::Dof(0, "rootZ"), "Tz");
+    trans = new kinematics::TrfmTranslateZ(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_YAW) {
-    trans = new kinematics::TrfmRotateEulerZ(new kinematics::Dof(0, "rootYaw"), "Try");
+    trans = new kinematics::TrfmRotateEulerZ(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_PITCH) {
-    trans = new kinematics::TrfmRotateEulerY(new kinematics::Dof(0, "rootPitch"), "Trp");
+    trans = new kinematics::TrfmRotateEulerY(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_ROLL) {
-    trans = new kinematics::TrfmRotateEulerX(new kinematics::Dof(0, "rootRoll"), "Trr");
+    trans = new kinematics::TrfmRotateEulerX(new kinematics::Dof(0,  _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
