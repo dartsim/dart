@@ -121,13 +121,13 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				urdf::Pose _pose ) {
   
   kinematics::Shape* shape;
-
+  
   // Load aiScene visualization
   const aiScene* model = kinematics::ShapeMesh::loadMesh( _meshPath );
-
+  
   // Load collision model
   const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
-
+  
   if( model == NULL ) {
     std::cout<< "[add_Shape] [ERROR] Not loading model "<<_meshPath<<" (NULL) \n";
     return;  
@@ -136,15 +136,22 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
 				       _mass,
 				       model ); 
-
-  // Set the visPose
-  Eigen::Matrix4d visTransform = Eigen::Matrix4d::Identity();
-  visTransform(0,3) = _pose.position.x;
-  visTransform(1,3) = _pose.position.y;  
-  visTransform(2,3) = _pose.position.z;
-  std::cout << "Vis transform after: " << visTransform << std::endl;
-  shape->setVisTransform( visTransform );
-	 
+    
+    // Set the visPose
+    Eigen::Matrix4d visTransform = Eigen::Matrix4d::Identity();
+    // Set xyz
+    visTransform(0,3) = _pose.position.x;
+    visTransform(1,3) = _pose.position.y;  
+    visTransform(2,3) = _pose.position.z;
+    // Set rpy
+    double roll, pitch, yaw;
+    _pose.rotation.getRPY( roll, pitch, yaw );
+    Eigen::Matrix3d rot; 
+    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
+    visTransform.block(0,0,3,3) = rot;
+    // Set into the shape
+    shape->setVisTransform( visTransform );
+    
     shape->setInertia( _inertiaMatrix );
     if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
     shape->setVizMesh( model ); 
