@@ -23,7 +23,6 @@ if(MSVC)
   message(STATUS "Setup Visual Studio Specific Flags")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd /Zi /Gy /W1 /EHsc")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /Zi /GL /Gy /W1 /EHsc")
-  set(CMAKE_DEBUG_POSTFIX "d")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
 elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
@@ -34,6 +33,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 else()
   message(SEND_ERROR "Compiler not supported.")
 endif()
+
+set(CMAKE_DEBUG_POSTFIX "d")
 
 # System Install paths
 if(WIN32) 

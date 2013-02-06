@@ -37,11 +37,7 @@ set(DART_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib")
 
 set(DART_LIBS dart)
 
-if(MSVC OR MSVC90 OR MSVC10)
-	set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
-elseif(UNIX)
-    set(DART_LIBRARIES ${DART_LIBS})
-endif()
+set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND)
