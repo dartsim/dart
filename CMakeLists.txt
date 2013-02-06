@@ -80,6 +80,7 @@ link_directories(${DARTExt_LIBRARY_DIRS})
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 add_subdirectory(src)
 
+enable_testing()
 add_subdirectory(unittests)
 add_subdirectory(apps)
 
@@ -113,12 +114,6 @@ if(DOXYGEN_FOUND)
     COMMAND ${CMAKE_COMMAND} -E echo "Done."
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
-###############
-# Enable a test targets for running CTest executables
-enable_testing()
-add_test (unittests ${CMAKE_SOURCE_DIR}/bin/unittests)
-add_test (test_core_collision ${CMAKE_SOURCE_DIR}/bin/test_core_collision)
 
 ###############
 # Package Installer

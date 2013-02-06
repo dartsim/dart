@@ -32,16 +32,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UNITTESTS_TEST_OPTIMIZER_H
-#define UNITTESTS_TEST_OPTIMIZER_H
-
 // For problem
 #include "optimizer/Var.h"
 #include "optimizer/Constraint.h"
 #include "optimizer/Problem.h"
 #include "optimizer/ObjectiveBox.h"
 #include "optimizer/snopt/SnoptSolver.h"
+#include <iostream>
+#include <gtest/gtest.h>
+#include <Eigen/Dense>
 
+using namespace std;
+using namespace Eigen;
+
+/* ********************************************************************************************* *
 class SampleConstraint : public optimizer::Constraint {
 public:
     SampleConstraint(std::vector<optimizer::Var *>& var, int index, double target)
@@ -84,7 +88,7 @@ private:
     double mTarget;
 };
 
-
+/* ********************************************************************************************* *
 TEST(SIMPLE_SNOPT, OPTIMIZER) {
     using namespace optimizer;
     
@@ -105,5 +109,9 @@ TEST(SIMPLE_SNOPT, OPTIMIZER) {
     EXPECT_NEAR(sol(0), 3.0, TOLERANCE);
 }
 
-
-#endif
+/* ********************************************************************************************* */
+int main(int argc, char* argv[]) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+/* ********************************************************************************************* */

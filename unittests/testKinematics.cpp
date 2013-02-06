@@ -32,16 +32,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SRC_UNITTESTS_TEST_KINEMATICS_H
-#define SRC_UNITTESTS_TEST_KINEMATICS_H
-
 #include "kinematics/FileInfoSkel.hpp"
 #include "kinematics/Skeleton.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/FileInfoDof.h"
 #include "kinematics/FileInfoC3D.h"
 #include "utils/Paths.h"
+#include <iostream>
+#include <gtest/gtest.h>
 
+using namespace std;
+
+/* ********************************************************************************************* */
 TEST(KINEMATICS, VSK_LOADER) {
     using namespace Eigen;
     using namespace kinematics;
@@ -57,6 +59,7 @@ TEST(KINEMATICS, VSK_LOADER) {
     EXPECT_EQ(skel->getNumMarkers(), 53);
 }
 
+/* ********************************************************************************************* */
 TEST(KINEMATICS, C3D_LOADER) {
     using namespace Eigen;
     using namespace kinematics;
@@ -69,7 +72,7 @@ TEST(KINEMATICS, C3D_LOADER) {
     EXPECT_EQ(c3dFile.getNumFrames(), 2539);
 }
 
-
+/* ********************************************************************************************* */
 TEST(KINEMATICS, TRANS_AND_DERIV) {
     using namespace Eigen;
     using namespace kinematics;
@@ -110,7 +113,6 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
             EXPECT_NEAR(W(i, j), W_truth(i, j), TOLERANCE);
         }
     }
-
 
     // Check the derivative of one global transform matrix
     // const Matrix4d& Wq = skel->getNode(10)->mWq.at(4);
@@ -157,6 +159,9 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
     }
 }
 
-
-#endif // #ifndef SRC_UNITTESTS_TEST_KINEMATICS_H
-
+/* ********************************************************************************************* */
+int main(int argc, char* argv[]) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+/* ********************************************************************************************* */
