@@ -50,8 +50,7 @@ namespace kinematics {
         if (mDim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
+            computeInertia();
         }
     }
 
@@ -67,12 +66,11 @@ namespace kinematics {
         _ri->popMatrix();
     }
 
-    void ShapeEllipsoid::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/20;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/20;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/20;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
+    void ShapeEllipsoid::computeInertia() {
+        mInertia = Matrix3d::Zero();
+        mInertia(0, 0) = mMass / 20.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
+        mInertia(1, 1) = mMass / 20.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
+        mInertia(1, 1) = mMass / 20.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
     }
 
     void ShapeEllipsoid::computeVolume() {
