@@ -32,18 +32,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UNITTESTS_TESTDYNAMICS_H
-#define UNITTESTS_TESTDYNAMICS_H
-
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/FileInfoSkel.hpp"
 #include "kinematics/FileInfoDof.h"
 #include "kinematics/BodyNode.h"
 #include "utils/Paths.h"
+#include "utils/UtilsRotation.h"
+#include "utils/UtilsMath.h"
 #include <iostream>
 #include <Eigen/Dense>
+#include <iostream>
+#include <gtest/gtest.h>
 
+using namespace std;
+
+/* ********************************************************************************************* */
 dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot) {
     using namespace std;
     using namespace Eigen;
@@ -67,9 +71,9 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
         _qdot[i] = utils::random(-5.0, 5.0);
     }
     skelDyn->initDynamics();
-    return skelDyn;
-}
+    return skelDyn; }
 
+/* ********************************************************************************************* */
 dynamics::SkeletonDynamics* prepareSkeletonChain( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot) {
 	using namespace std;
 	using namespace Eigen;
@@ -93,6 +97,7 @@ dynamics::SkeletonDynamics* prepareSkeletonChain( Eigen::VectorXd& _q, Eigen::Ve
 	return skelDyn;
 }
 
+/* ********************************************************************************************* */
 void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     using namespace std;
     using namespace Eigen;
@@ -105,6 +110,7 @@ void addExternalForces(dynamics::SkeletonDynamics* skelDyn) {
     ((BodyNodeDynamics*)skelDyn->getNode(2))->addExtTorque(Vector3d(30,20,10), false );
 }
 
+/* ********************************************************************************************* */
 void addExternalForcesChain(dynamics::SkeletonDynamics* skelDyn) {
 	using namespace std;
 	using namespace Eigen;
@@ -114,6 +120,7 @@ void addExternalForcesChain(dynamics::SkeletonDynamics* skelDyn) {
 	((BodyNodeDynamics*)skelDyn->getNode(2))->addExtForce(skelDyn->getNode(2)->getLocalCOM(), Vector3d(0,19.6,0), true, false );
 }
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_VELOCITIES) {
     using namespace std;
     using namespace Eigen;
@@ -170,6 +177,8 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
         }
     }
 }
+
+/* ********************************************************************************************* */
 TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
     using namespace std;
     using namespace Eigen;
@@ -223,6 +232,7 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
     }
 }
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_CORIOLIS) {
     using namespace std;
     using namespace Eigen;
@@ -245,6 +255,7 @@ TEST(DYNAMICS, COMPARE_CORIOLIS) {
     }
 }
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_MASS) {
     using namespace std;
     using namespace Eigen;
@@ -273,6 +284,7 @@ TEST(DYNAMICS, COMPARE_MASS) {
 }
 
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
@@ -301,6 +313,7 @@ TEST(DYNAMICS, COMPARE_EXTERNAL_FORCES) {
 }
 
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_DYN_EXTERNAL_FORCES) {
     using namespace std;
     using namespace Eigen;
@@ -332,6 +345,7 @@ TEST(DYNAMICS, COMPARE_DYN_EXTERNAL_FORCES) {
             EXPECT_NEAR(MRec(i,j), MNon(i,j), TOLERANCE_EXACT);
 }
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, COMPARE_JOINT_TOQUE_W_EXTERNAL_FORCES) {
 	using namespace std;
 	using namespace Eigen;
@@ -354,12 +368,18 @@ TEST(DYNAMICS, COMPARE_JOINT_TOQUE_W_EXTERNAL_FORCES) {
 		EXPECT_NEAR(Cginvdyn(i), 0.0, TOLERANCE_EXACT);
 }
 
+/* ********************************************************************************************* */
 // TODO
 TEST(DYNAMICS, CONVERSION_VELOCITY) {
 }
 
+/* ********************************************************************************************* */
 TEST(DYNAMICS, CONVERSION_FORCES) {
 }
 
-#endif // #ifndef UNITTESTS_TESTDYNAMICS_H
-
+/* ********************************************************************************************* */
+int main(int argc, char* argv[]) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+/* ********************************************************************************************* */

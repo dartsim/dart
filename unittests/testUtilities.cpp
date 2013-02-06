@@ -32,12 +32,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SRC_UNITTESTS_TEST_UTILS_H
-#define SRC_UNITTESTS_TEST_UTILS_H
-
 #include "utils/UtilsRotation.h"
 #include "utils/UtilsMath.h"
+#include <iostream>
+#include <gtest/gtest.h>
+#include <Eigen/Dense>
 
+using namespace std;
+using namespace Eigen;
+
+/* ********************************************************************************************* */
 TEST(UTILS, ROTATION) {
   using namespace utils::rotation;
   
@@ -65,6 +69,7 @@ TEST(UTILS, ROTATION) {
     << "Orig: " << m << " Reconstructed: " << m2;
 }
 
+/* ********************************************************************************************* */
 TEST(UTILS, UTILS) {
   // Test CR Matrix
   EXPECT_DOUBLE_EQ(utils::CR(0, 1), -1.0);
@@ -88,5 +93,9 @@ TEST(UTILS, UTILS) {
   
 }
 
-
-#endif
+/* ********************************************************************************************* */
+int main(int argc, char* argv[]) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+/* ********************************************************************************************* */
