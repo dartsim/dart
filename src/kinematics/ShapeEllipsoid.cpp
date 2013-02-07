@@ -70,7 +70,7 @@ namespace kinematics {
         mInertia = Matrix3d::Zero();
         mInertia(0, 0) = mMass / 20.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
         mInertia(1, 1) = mMass / 20.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
-        mInertia(1, 1) = mMass / 20.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
+        mInertia(2, 2) = mMass / 20.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
     }
 
     void ShapeEllipsoid::computeVolume() {
