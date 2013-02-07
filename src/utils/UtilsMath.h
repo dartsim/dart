@@ -186,11 +186,8 @@ namespace utils {
             return Vector3d::Zero();
         }
 #endif
-        Vector3d ret = Vector3d::Zero();
-        ret(0) = m(2,1);
-        ret(1) = m(0,2);
-        ret(2) = m(1,0);
-
+        Vector3d ret;
+        ret << m(2,1), m(0,2), m(1,0);
         return ret;
     }
 
