@@ -33,8 +33,12 @@
  *
  */
 
-/** @file RRT.cpp
- *  @author Tobias Kunz
+/** 
+ * @file RRT.cpp
+ * @author Tobias Kunz, Can Erdogan
+ * @date Jan 31, 2013
+ * @brief The generic RRT implementation. It can be inherited for modifications to collision
+ * checking, sampling and etc.
  */
 
 #include "RRT.h"
@@ -48,183 +52,275 @@ using namespace robotics;
 
 namespace planning {
 
+/* ********************************************************************************************* */
 RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
 	ndim(dofs.size()),
 	stepSize(stepSize),
-	numSamples(0),
-	numCollisions(0),
-	numNoProgress(0),
-	numStepTooLarge(0),
 	index(flann::KDTreeSingleIndexParams())
 {
+	// Reset the random number generator and add the given start configuration to the flann structure
 	srand(time(NULL));
 	addNode(root, -1);
 }
 
-
+/* ********************************************************************************************* */
 RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
 	ndim(dofs.size()),
 	stepSize(stepSize),
-	numSamples(0),
-	numCollisions(0),
-	numNoProgress(0),
-	numStepTooLarge(0),
 	index(flann::KDTreeSingleIndexParams())
 {
+	// Reset the random number generator and add the given start configurations to the flann structure
 	srand(time(NULL));
 	for(int i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}
 }
 
-RRT::~RRT() {
-}
-
+/* ********************************************************************************************* */
 bool RRT::connect() {
 	VectorXd qtry = getRandomConfig();
 	return connect(qtry);
 }
 
-bool RRT::connect(const VectorXd &target)
-{
+/* ********************************************************************************************* */
+bool RRT::connect(const VectorXd &target) {
+
+	// Get the index of the nearest neighbor in the tree to the given target
 	int NNidx = getNearestNeighbor(target);
+
+	// Keep taking steps towards the target until a collision happens
 	StepResult result = STEP_PROGRESS;
-	int i = 0;
 	while(result == STEP_PROGRESS) {
 		result = tryStepFromNode(target, NNidx);
 		NNidx = configVector.size() - 1;
-		i++;
 	}
 	return (result == STEP_REACHED);
 }
 
+/* ********************************************************************************************* */
 RRT::StepResult RRT::tryStep() {
 	VectorXd qtry = getRandomConfig();
 	return tryStep(qtry);
 }
 
+/* ********************************************************************************************* */
 RRT::StepResult RRT::tryStep(const VectorXd &qtry) {
 	int NNidx = getNearestNeighbor(qtry);
 	return tryStepFromNode(qtry, NNidx);
 }
 
-RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx)
-{
-	/*
-	 * Calculates a new node to grow towards qtry, checks for collisions, and adds
-	 */
+/* ********************************************************************************************* */
+RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx) {
 
-	VectorXd qnear = configVector[NNidx];
-	
+	// Get the configuration of the nearest neighbor and check if already reached
+	const VectorXd& qnear = *(configVector[NNidx]);
 	if((qtry - qnear).norm() < stepSize) {
 		return STEP_REACHED;
 	}
 
-	// Scale this vector to step_size and add to end of qnear
+	// Create the new node: scale the direction vector to stepSize and add to qnear
 	VectorXd qnew = qnear + stepSize * (qtry - qnear).normalized();
-	list<VectorXd> intermediatePoints;
 
-	if(!newConfig(intermediatePoints, qnew, qnear, qtry)) {
-		return STEP_COLLISION;
-	}
-	else {
-		for(list<VectorXd>::iterator it = intermediatePoints.begin(); it != intermediatePoints.end(); it++) {
-			NNidx = addNode(*it, NNidx);
-		}
-		addNode(qnew, NNidx);
-		return STEP_PROGRESS;
-	}
+	// Check for collision, make changes to the qNew and create intermediate points if necessary
+	// NOTE: This is largely implementation dependent and in default, no points are created.
+	list<VectorXd> intermediatePoints;
+	bool collisionClear = newConfig(intermediatePoints, qnew, qnear, qtry);
+	if(!collisionClear) return STEP_COLLISION;
+
+	// Add the intermediate nodes and the final new node to the tree
+	list <VectorXd>::iterator it = intermediatePoints.begin();
+	for(; it != intermediatePoints.end(); it++) 
+		NNidx = addNode(*it, NNidx);
+	addNode(qnew, NNidx);
+	return STEP_PROGRESS;
 }
 
-// Provides a hook for child classes to alter a new config before it gets added to the tree
+/* ********************************************************************************************* */
 bool RRT::newConfig(list<VectorXd> &intermediatePoints, VectorXd &qnew, const VectorXd &qnear, const VectorXd &qtarget) {
 	return !checkCollisions(qnew);
 }
 
-int RRT::addNode(const VectorXd &qnew, int parentId)
-{
-	// Update graph vectors
-	configVector.push_back(qnew);
-	parentVector.push_back(parentId);
+/* ********************************************************************************************* */
+int RRT::addNode(const VectorXd &qnew, int parentId) {
 	
+	// Update the graph vector
+	VectorXd* temp = new VectorXd(qnew);
+	configVector.push_back(temp);
+	parentVector.push_back(parentId);
+
+	// Update the underlying flann structure (the kdtree)
 	unsigned int id = configVector.size() - 1;
-	if(id == 0) {
-		index.buildIndex(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
-	}
-	else {
-		index.addPoints(flann::Matrix<double>((double*)qnew.data(), 1, qnew.size()));
-	}
+	if(id == 0) 
+		index.buildIndex(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
+	else 
+		index.addPoints(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
 	
 	activeNode = id;
 	return id;
 }
 
-inline int RRT::getNearestNeighbor(const VectorXd &qsamp)
-{
+/* ********************************************************************************************* */
+inline int RRT::getNearestNeighbor(const VectorXd &qsamp) {
 	int nearest;
 	double distance;
 	const flann::Matrix<double> queryMatrix((double*)qsamp.data(), 1, qsamp.size());
 	flann::Matrix<int> nearestMatrix(&nearest, 1, 1);
 	flann::Matrix<double> distanceMatrix(flann::Matrix<double>(&distance, 1, 1));
-	index.knnSearch(queryMatrix, nearestMatrix, distanceMatrix, 1, flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+	index.knnSearch(queryMatrix, nearestMatrix, distanceMatrix, 1, 
+		flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 	activeNode = nearest;
 	return nearest;
 }
 
+/* ********************************************************************************************* */
 // random # between min & max
 inline double RRT::randomInRange(double min, double max) {
-	if(min == max) {
-		return min;
-	}
+	if(min == max) return min;
 	return min + ((max-min) * ((double)rand() / ((double)RAND_MAX + 1)));
 }
 
-VectorXd RRT::getRandomConfig()
-{
-	/*
-	 * Samples a random point for qtmp in the configuration space,
-	 * bounded by the provided configuration vectors (and returns ref to it)
-	 */
+/* ********************************************************************************************* */
+VectorXd RRT::getRandomConfig() {
+	// Samples a random point for qtmp in the configuration space, bounded by the provided 
+	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-		config[i] = randomInRange(world->getRobot(robot)->getDof(dofs[i])->getMin(), world->getRobot(robot)->getDof(dofs[i])->getMax());
+		config[i] = randomInRange(world->getRobot(robot)->getDof(dofs[i])->getMin(), 
+			world->getRobot(robot)->getDof(dofs[i])->getMax());
 	}
 	return config;
 }
 
+/* ********************************************************************************************* */
 double RRT::getGap(const VectorXd &target) {
-	return (target - configVector[activeNode]).norm();
+	return (target - *(configVector[activeNode])).norm();
 }
 
-void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse)
-{
+/* ********************************************************************************************* */
+void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
+
+	// Keep following the "linked list" in the given direction
 	int x = node;
-	
 	while(x != -1) {
-		if(!reverse) {
-			path.push_front(configVector[x]);
-		}
-		else {
-			path.push_back(configVector[x]);
-		}
+		if(!reverse) path.push_front(*(configVector[x]));	
+		else path.push_back(*(configVector[x]));
 		x = parentVector[x];
 	}
 }
 
-bool RRT::checkCollisions(const VectorXd &c)
-{
+/* ********************************************************************************************* */
+bool RRT::checkCollisions(const VectorXd &c) {
 	world->getRobot(robot)->setConfig(dofs, c);
 	return world->checkCollision();
 }
 
-unsigned int RRT::getSize() {
+/* ********************************************************************************************* */
+size_t RRT::getSize() {
 	return configVector.size();
 }
 
+/* ********************************************************************************************* */
+inline void RRT::saveLine (char* l1, char* l2, size_t off, const VectorXd& n1, const VectorXd& n2) {
+	if(n1.size() == 2) {
+		sprintf(l1 + off, "%+02.3lf %+02.3lf ", n1(0), n1(1));
+		sprintf(l2 + off, "%+02.3lf %+02.3lf ", n2(0), n2(1));
+	}
+	else if(n1.size() == 3) {
+		sprintf(l1 + off, "%+02.3lf %+02.3lf %+02.3lf ", n1(0), n1(1), n1(2));
+		sprintf(l2 + off, "%+02.3lf %+02.3lf %+02.3lf ", n2(0), n2(1), n2(2));
+	}
 }
+
+/* ********************************************************************************************* */
+inline void RRT::drawLine (FILE* f, size_t numDofs, const char* color, size_t i, bool last) {
+	if(numDofs == 2) {
+		fprintf(f, "\".data\" u %lu:%lu with linespoints notitle ps 1 pt 6 lc rgb '#%s'%s ", 
+			2*i+1, 2*i+2, color, (last ? "" : ","));
+	}
+	else if (numDofs == 3) {
+		fprintf(f, "\".data\" u %lu:%lu:%lu with linespoints notitle ps 1 pt 6 lc rgb '#%s'%s ", 
+			3*i+1, 3*i+2, 3*i+3, color, (last ? "" : ","));
+	}
+}
+
+/* ********************************************************************************************* */
+void RRT::draw () {
+
+	// Check the size of a data point - we can only visualize 2 or 3
+	size_t numDofs = dofs.size();
+	if((numDofs != 2) && (numDofs != 3)) return;
+
+	// ====================================================================
+	// Write the data to a file
+
+	// File contains two lines, one for each endpoint of an edge
+	FILE* data = fopen(".data", "w");
+	size_t step = numDofs * 7;											// 7 characters per double
+	size_t numEdges = configVector.size() - 1;
+	char* line1 = new char[numEdges * step];
+	char* line2 = new char[numEdges * step];
+
+	// Write each node and its parent in the respective lines
+	size_t lineIndex = 0;
+	for(size_t i = 0; i < numEdges; i++, lineIndex += step) {
+		const VectorXd& node = *configVector[i + 1];
+		const VectorXd& parent = *configVector[parentVector[i + 1]];
+		saveLine(line1, line2, lineIndex, node, parent);
+	}
+
+	// Print the start/goal to draw with a special color (we draw a 0 length edge)
+	const VectorXd& goal = *configVector[0];
+	saveLine(line1, line2, lineIndex, goal, goal);
+	lineIndex += step;
+
+	// Write the lines to the file
+	fprintf(data, "%s\n", line1);
+	fprintf(data, "%s\n", line2);
+	fclose(data);
+
+    delete[] line1;
+    delete[] line2;
+
+	// ====================================================================
+	// Run gnuplot with the pipe call
+
+	// Open gnuplot in a shell terminal
+	FILE* gnuplot;
+	gnuplot = fopen(".gnuplot", "w");
+
+	// Set options
+	fprintf(gnuplot, "");
+	fprintf(gnuplot, "set terminal wxt size 600,600;\n");
+	fprintf(gnuplot, "set xrange [-3.14:3.14];\n");
+	fprintf(gnuplot, "set yrange [-3.14:3.14];\n");
+	fprintf(gnuplot, "set size ratio -1;\n");
+	if(numDofs == 3) {
+		fprintf(gnuplot, "set zrange [-3.14:3.14];\n");
+		fprintf(gnuplot, "set xyplane at -3.14;\n");
+	}
+
+	// Draw the edges in the file but leave the last edge to draw a special color for the goal
+	fprintf(gnuplot, "%s ", ((numDofs == 2) ? "plot" : "splot"));
+	for(size_t i = 0; i < numEdges; i++) 
+		drawLine(gnuplot, numDofs, "0000ff", i);
+	
+	// Draw the goal point (fake edge)
+	drawLine(gnuplot, numDofs, "00ff00", numEdges, true); 
+
+	// Close the pipe
+	fprintf(gnuplot, "\n");
+	fprintf(gnuplot, "\n");
+	fclose(gnuplot);
+
+	// Make the system call
+	int status = system("gnuplot -persist .gnuplot");
+	assert((status != -1) && "Error in system call in RRT::draw()");
+}
+
+}	//< End of namespace

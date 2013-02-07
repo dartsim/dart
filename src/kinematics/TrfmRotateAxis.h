@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Tobias Kunz <tobias@gatech.edu>
+ * Date: 02/02/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,27 +35,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_CUBE_H
-#define KINEMATICS_SHAPE_CUBE_H
+#ifndef KINEMATICS_TRFM_ROTATE_AXIS_H
+#define KINEMATICS_TRFM_ROTATE_AXIS_H
 
-#include "Shape.h"
-
+#include "Transformation.h"
+#include <cassert>
 
 namespace kinematics {
-
-    class ShapeBox : public Shape {
+    class TrfmRotateAxis: public Transformation {
     public:
-        ShapeBox(Eigen::Vector3d _dim, double _mass);
+        TrfmRotateAxis(const Eigen::Vector3d& _axis, Dof* _angle, const char* _name = NULL);
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
-    private:
-        void computeInertia();
-        void computeVolume();
-        
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        Eigen::Matrix4d getInvTransform();
+        void applyGLTransform(renderer::RenderInterface* _ri) const;
+        void computeTransform();
+        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+
+    protected:
+        Eigen::Vector3d mAxis;
     };
-
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_CUBE_H
+#endif
+

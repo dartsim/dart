@@ -16,6 +16,7 @@
 namespace collision_checking
 {
     template<class BV> fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ, const aiScene *_mesh) {
+        assert(_mesh);
         fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
         model->beginModel();
         for(unsigned int i = 0; i < _mesh->mNumMeshes; i++) {

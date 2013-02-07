@@ -48,7 +48,7 @@ namespace kinematics {
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
     private:
-        void computeMassTensor();
+        void computeInertia();
         void computeVolume();
         void initMeshes();
     public:

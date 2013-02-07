@@ -1,6 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
+ *
+ * Author(s): Tobias Kunz <tobias@gatech.edu>
+ * Date: 02/02/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -32,61 +35,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SRC_UNITTESTS_TEST_UTILS_H
-#define SRC_UNITTESTS_TEST_UTILS_H
+#include "TrfmRotateAxis.h"
+#include "Dof.h"
+#include "renderer/RenderInterface.h"
 
-#include "utils/UtilsRotation.h"
-#include "utils/UtilsMath.h"
+using namespace Eigen;
 
-TEST(UTILS, ROTATION) {
-  using namespace utils::rotation;
-  
-  // Create Initial ExpMap
-  Vector3d axis(2.0, 1.0, 1.0);
-  axis.normalize();
-  double angle = 1.2;
-  EXPECT_DOUBLE_EQ(axis.norm(), 1.0);
-  Vector3d expmap = axis * angle;
+namespace kinematics {
+    TrfmRotateAxis::TrfmRotateAxis(const Eigen::Vector3d& _axis, Dof* _angle, const char* _name) :
+        mAxis(_axis)
+    {
+        mDofs.push_back(_angle);
+        _angle->setTrans(this);
+        mType = Transformation::T_ROTATEAXIS;
+        if(_name!=NULL)
+            strcpy(mName, _name);
+        else
+            strcpy(mName, "RotateAxis");
+    }
 
+    void TrfmRotateAxis::applyGLTransform(renderer::RenderInterface* _ri) const{
+        if (_ri)
+            _ri->rotate(mAxis, mDofs[0]->getValue() * 180.0 / M_PI);
+    }
 
-  // Test conversion between expmap and quaternion
-  Quaterniond q = expToQuat(expmap);
-  Vector3d expmap2 = quatToExp(q);
+    void TrfmRotateAxis::computeTransform(){
+        mTransform = ((Affine3d)AngleAxis<double>(mDofs[0]->getValue(), mAxis)).matrix();
+    }
 
-  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, M_EPSILON)
-    << "Orig: " << expmap << " Reconstructed: " << expmap2;
-  
-  // Test conversion between matrix and euler
-  Matrix3d m = quatToMatrix(q);
-  Vector3d e = matrixToEuler(m, XYZ);
-  Matrix3d m2 = eulerToMatrix(e, XYZ);
+    Matrix4d TrfmRotateAxis::getDeriv(const Dof *q){
+        if(q == mDofs[0])
+            return ((Affine3d)AngleAxis<double>(mDofs[0]->getValue() + M_PI / 2.0, mAxis)).matrix();
+        else
+            return Matrix4d::Zero();
+    }
 
-  EXPECT_NEAR((m - m2).norm(), 0.0, M_EPSILON)
-    << "Orig: " << m << " Reconstructed: " << m2;
-}
+    Matrix4d TrfmRotateAxis::getSecondDeriv(const Dof *q1, const Dof *q2){
+        if(mDofs[0] == q1 && mDofs[0] == q2)
+            return ((Affine3d)AngleAxis<double>(mDofs[0]->getValue() + M_PI, mAxis)).matrix();
+        else {
+            return Matrix4d::Zero();
+        }
+    }
 
-TEST(UTILS, UTILS) {
-  // Test CR Matrix
-  EXPECT_DOUBLE_EQ(utils::CR(0, 1), -1.0);
+    Matrix4d TrfmRotateAxis::getInvTransform(){
+        return ((Affine3d)AngleAxis<double>(-mDofs[0]->getValue(), mAxis)).matrix();
+    }
 
-  // Test randomize function
-  double x = utils::random(0.0, 2.0);
-  EXPECT_LT(0.0, x);
-  EXPECT_LT(x, 2.0);
-
-  // Test transform
-  Matrix4d M;
-  M << 1.0, 0.0, 0.0, 3.0,
-    0.0, 1.0, 0.0, 2.0,
-    0.0, 0.0, 1.0, 1.0,
-    0.0, 0.0, 0.0, 1.0;
-  Vector3d pt(1.0, 0.5, 1.0);
-  Vector3d result = utils::xformHom(M, pt);
-  Vector3d expected(4.0, 2.5, 2.0);
-  EXPECT_NEAR( (result - expected).norm(), 0.0, M_EPSILON)
-    << "result = " << result << " expected = " << expected;
-  
-}
-
-
-#endif
+} // namespace kinematics

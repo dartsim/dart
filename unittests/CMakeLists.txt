@@ -1,7 +1,22 @@
-###############################################
-# Unittests
-project(unittests)
+# @file CMakeLists.txt
+# @author Can Erdogan
+# @date Feb 02, 2013
+# @brief The CMakefile for the tests for the RRT implementations. NOTE Assumes every .cpp file is 
+# a test file with a "main" function.
 
+project(UnitTests)
+
+# Create a macro to check if a list contains a value
+macro(list_contains var value)
+  set(${var})
+  foreach (value2 ${ARGN})
+    if(${value} STREQUAL ${value2})
+      set(${var} true)
+    endif (${value} STREQUAL ${value2})
+  endforeach (value2)
+endmacro(list_contains)
+
+# Include and link to gtest
 if(NOT WIN32)
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     file(GLOB gtest_hdrs "/usr/include/gtest/*.h" "/usr/include/gtest/internal/*.h")
@@ -20,16 +35,27 @@ if(NOT WIN32)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 endif()
 
-  # Search all header and source files
-  file(GLOB unittests_srcs "*.cpp")
-  file(GLOB unittests_hdrs "*.h")
+# Compile each test file
+file(GLOB tests "*.cpp")
+set(dontTest testDrawRRT;)
+foreach(test ${tests})
 
-add_executable(unittests ${unittests_srcs} ${unittests_hdrs})
-target_link_libraries(unittests optimized dart debug dartd optimized gtest debug gtestd ${DARTExt_LIBRARIES})
+	# Get the name (i.e. bla.cpp => bla)
+	get_filename_component(base ${test} NAME_WE)
+	add_executable(${base} ${test})
+	target_link_libraries(${base} optimized dart debug dartd optimized gtest debug gtestd ${DARTExt_LIBRARIES})
 
-if(APPLE OR UNIX)
-  target_link_libraries(unittests pthread)
-endif()
+	# Link to pthread if necessary
+	if(APPLE OR UNIX)
+		target_link_libraries(${base} pthread)
+	endif()
+	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/tests")
 
-set_target_properties(unittests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+	# Add the executable if not to be ignored
+	list_contains(contains ${base} ${dontTest})
+	if(NOT contains)
+		add_test(${base} ${CMAKE_SOURCE_DIR}/bin/tests/${base})
+		message("-- Adding test: " ${base})
+	endif(NOT contains) 
+endforeach(test)
 
