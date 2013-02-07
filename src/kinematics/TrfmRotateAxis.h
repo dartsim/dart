@@ -54,6 +54,10 @@ namespace kinematics {
 
     protected:
         Eigen::Vector3d mAxis;
+
+        // precalculated variables to speed up transform computation
+        Eigen::Matrix3d mSinCoefficients;
+        Eigen::Matrix3d mCosCoefficients;
     };
 } // namespace kinematics
 
