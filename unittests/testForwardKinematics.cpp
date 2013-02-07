@@ -28,8 +28,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL) {
 	const size_t numTests = 2;
 	double temp = sqrt(0.5*l2*l2);
 	Vector2d joints [numTests] = {Vector2d(M_PI/4.0, M_PI/2.0), Vector2d(-M_PI/4.0, -M_PI/4.0)};
-	Vector3d expectedPos [numTests] = {Vector3d(temp, -temp, l1),
-		Vector3d(temp / sqrt(2), temp / sqrt(2), l1+temp)};
+	Vector3d expectedPos [numTests] = {Vector3d(temp, -temp, l1), Vector3d(temp / sqrt(2.0), temp / sqrt(2.0), l1+temp)};
 
 	// Check each case by setting the joint values and obtaining the end-effector position
 	for(size_t i = 0; i < numTests; i++) {

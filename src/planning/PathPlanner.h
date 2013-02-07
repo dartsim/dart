@@ -41,7 +41,7 @@ public:
 	PathPlanner() : world(NULL) {} 
 
 	/// The desired constructor - you should use this one.
-	PathPlanner(robotics::World& world, bool bidirectional_, bool connect_, double stepSize_ = 0.1, 
+	PathPlanner(robotics::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1, 
 		size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_), 
 		connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
 	}

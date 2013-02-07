@@ -53,20 +53,28 @@ using namespace robotics;
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &root, 
-		double stepSize) : world(world), robot(robot), dofs(dofs), ndim(dofs.size()), 
-		stepSize(stepSize),	index(flann::KDTreeSingleIndexParams()) {
-	
+RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
+	world(world),
+	robot(robot),
+	dofs(dofs),
+	ndim(dofs.size()),
+	stepSize(stepSize),
+	index(flann::KDTreeSingleIndexParams())
+{
 	// Reset the random number generator and add the given start configuration to the flann structure
 	srand(time(NULL));
 	addNode(root, -1);
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, 
-		double stepSize) : world(world), robot(robot), dofs(dofs), ndim(dofs.size()), 
-		stepSize(stepSize), index(flann::KDTreeSingleIndexParams()) {
-
+RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
+	world(world),
+	robot(robot),
+	dofs(dofs),
+	ndim(dofs.size()),
+	stepSize(stepSize),
+	index(flann::KDTreeSingleIndexParams())
+{
 	// Reset the random number generator and add the given start configurations to the flann structure
 	srand(time(NULL));
 	for(int i = 0; i < roots.size(); i++) {
@@ -134,8 +142,7 @@ RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx) {
 }
 
 /* ********************************************************************************************* */
-bool RRT::newConfig(list<VectorXd> &intermediatePoints, VectorXd &qnew, const VectorXd &qnear, 
-		const VectorXd &qtarget) {
+bool RRT::newConfig(list<VectorXd> &intermediatePoints, VectorXd &qnew, const VectorXd &qnear, const VectorXd &qtarget) {
 	return !checkCollisions(qnew);
 }
 
@@ -256,8 +263,8 @@ void RRT::draw () {
 	FILE* data = fopen(".data", "w");
 	size_t step = numDofs * 7;											// 7 characters per double
 	size_t numEdges = configVector.size() - 1;
-	char line1 [numEdges * step];
-	char line2 [numEdges * step];
+	char* line1 = new char[numEdges * step];
+	char* line2 = new char[numEdges * step];
 
 	// Write each node and its parent in the respective lines
 	size_t lineIndex = 0;
@@ -276,6 +283,9 @@ void RRT::draw () {
 	fprintf(data, "%s\n", line1);
 	fprintf(data, "%s\n", line2);
 	fclose(data);
+
+    delete[] line1;
+    delete[] line2;
 
 	// ====================================================================
 	// Run gnuplot with the pipe call
@@ -306,7 +316,7 @@ void RRT::draw () {
 	// Close the pipe
 	fprintf(gnuplot, "\n");
 	fprintf(gnuplot, "\n");
-	pclose(gnuplot);
+	fclose(gnuplot);
 
 	// Make the system call
 	int status = system("gnuplot -persist .gnuplot");
