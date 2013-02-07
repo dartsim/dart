@@ -141,7 +141,7 @@ namespace utils {
                 _outFile<<"\t setAttr \".sa\" 20;"<<endl;	// subdivision axis
                 _outFile<<"\t setAttr \".sh\" 20;"<<endl;	// subdivision height
                 break;
-            case Shape::P_CUBE:
+            case Shape::P_BOX:
                 _outFile<<"createNode polyCube -n \""<<ngeom.c_str()<<"\";"<<endl;
                 _outFile<<"\t setAttr \".w\" "<<dim[0]<<";"<<endl;	// width
                 _outFile<<"\t setAttr \".h\" "<<dim[1]<<";"<<endl;	// height
