@@ -105,7 +105,7 @@ namespace kinematics {
         mInertia = Matrix3d::Zero();
         mInertia(0, 0) = mMass / 12.0 * (h * h + w * w);
         mInertia(1, 1) = mMass / 12.0 * (l * l + w * w);
-        mInertia(1, 1) = mMass / 12.0 * (l * l + h * h);
+        mInertia(2, 2) = mMass / 12.0 * (l * l + h * h);
     }
 
     void ShapeMesh::computeVolume() {

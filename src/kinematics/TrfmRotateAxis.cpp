@@ -52,33 +52,45 @@ namespace kinematics {
             strcpy(mName, _name);
         else
             strcpy(mName, "RotateAxis");
+
+        // precompute coefficients to speed up calculation of the transformation
+        const double x = _axis[0];
+        const double y = _axis[1];
+        const double z = _axis[2];
+        mCosCoefficients << 0.0,   -z,    y,
+                              z,  0.0,   -x,
+                             -y,    x,  0.0;  // cross product matrix of _axis
+        mSinCoefficients << x * x - 1.0,  x * y,        x * z,
+                            y * x,        y * y - 1.0,  y * z,
+                            z * x,        z * y,        z * z - 1.0;  // tensor product of _axis with itself minus identity
     }
 
-    void TrfmRotateAxis::applyGLTransform(renderer::RenderInterface* _ri) const{
+    void TrfmRotateAxis::applyGLTransform(renderer::RenderInterface* _ri) const {
         if (_ri)
             _ri->rotate(mAxis, mDofs[0]->getValue() * 180.0 / M_PI);
     }
 
-    void TrfmRotateAxis::computeTransform(){
+    void TrfmRotateAxis::computeTransform() {
         mTransform = ((Affine3d)AngleAxis<double>(mDofs[0]->getValue(), mAxis)).matrix();
     }
 
-    Matrix4d TrfmRotateAxis::getDeriv(const Dof *q){
-        if(q == mDofs[0])
-            return ((Affine3d)AngleAxis<double>(mDofs[0]->getValue() + M_PI / 2.0, mAxis)).matrix();
-        else
-            return Matrix4d::Zero();
-    }
-
-    Matrix4d TrfmRotateAxis::getSecondDeriv(const Dof *q1, const Dof *q2){
-        if(mDofs[0] == q1 && mDofs[0] == q2)
-            return ((Affine3d)AngleAxis<double>(mDofs[0]->getValue() + M_PI, mAxis)).matrix();
-        else {
-            return Matrix4d::Zero();
+    Matrix4d TrfmRotateAxis::getDeriv(const Dof *q) {
+        Matrix4d m = Matrix4d::Zero();
+        if(q == mDofs[0]) {
+            m.topLeftCorner<3, 3>() = mCosCoefficients * cos(mDofs[0]->getValue()) + mSinCoefficients * sin(mDofs[0]->getValue());
         }
+        return m;
     }
 
-    Matrix4d TrfmRotateAxis::getInvTransform(){
+    Matrix4d TrfmRotateAxis::getSecondDeriv(const Dof *q1, const Dof *q2) {
+        Matrix4d m = Matrix4d::Zero();
+        if(mDofs[0] == q1 && mDofs[0] == q2) {
+            m.topLeftCorner<3, 3>() = -mCosCoefficients * sin(mDofs[0]->getValue()) + mSinCoefficients * cos(mDofs[0]->getValue());
+        }
+        return m;
+    }
+
+    Matrix4d TrfmRotateAxis::getInvTransform() {
         return ((Affine3d)AngleAxis<double>(-mDofs[0]->getValue(), mAxis)).matrix();
     }
 

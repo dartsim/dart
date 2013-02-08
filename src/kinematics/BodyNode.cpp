@@ -167,12 +167,8 @@ namespace kinematics {
     void BodyNode::evalJacAng() {
         mJw.setZero();
         for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
-            Matrix3d omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();
-            Vector3d omegai = utils::fromSkewSymmetric(omegaSkewSymmetric);
-
-            mJw(0, i) = omegai(0);
-            mJw(1, i) = omegai(1);
-            mJw(2, i) = omegai(2);
+            Matrix3d omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();  // wikipedia calls this the angular velocity tensor
+            mJw.col(i) = utils::fromSkewSymmetric(omegaSkewSymmetric);
         }
     }
 
