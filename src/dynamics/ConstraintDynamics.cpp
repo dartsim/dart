@@ -1,15 +1,9 @@
-/*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
- * Date: 02/01/2013
- *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- *
+ * Georgia Tech Graphics Lab
+ * 
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -20,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine 
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights 
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow 
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -54,76 +54,48 @@ namespace dynamics {
     ConstraintDynamics::~ConstraintDynamics() {
     }
 
-    void ConstraintDynamics::applyConstraintForces(VectorXd& _qddot) {
-        if (mBodies.size() == 0)
-            return;
+    void ConstraintDynamics::addConstraint(Constraint *_constr) {
+        mConstraints.push_back(_constr);
+        int nConstr = mConstraints.size();
+        mJGlobal = MatrixXd::Zero(3 * nConstr, mSkel->getNumDofs());
+        mJDotGlobal = MatrixXd::Zero(3 * nConstr, mSkel->getNumDofs());
+        mCGlobal = VectorXd(3 * nConstr);
+        mCDotGlobal = VectorXd(3 * nConstr);
+    }
 
+    void ConstraintDynamics::deleteConstraint(int _index) {
+        delete mConstraints[_index];
+        mConstraints.erase(mConstraints.begin() + _index);
+        int nConstr = mConstraints.size();
+        mJGlobal = MatrixXd::Zero(3 * nConstr, mSkel->getNumDofs());
+        mJDotGlobal = MatrixXd::Zero(3 * nConstr, mSkel->getNumDofs());
+        mCGlobal = VectorXd(3 * nConstr);
+        mCDotGlobal = VectorXd(3 * nConstr);
+    }            
+
+    void ConstraintDynamics::applyConstraintForces(VectorXd& _qddot) {
         double ks = 100;
         double kd = 10;
-        int nConstrs = mBodies.size();
+        int nConstrs = mConstraints.size();
         int nDofs = mSkel->getNumDofs();
         VectorXd qDot = mSkel->getQDotVector();
-        MatrixXd J(MatrixXd::Zero(3 * nConstrs, nDofs));
-        MatrixXd JDot(MatrixXd::Zero(3 * nConstrs, nDofs));
-        VectorXd C(3 * nConstrs);
-        VectorXd CDot(3 * nConstrs);
-
+        /*            MatrixXd J(MatrixXd::Zero(3 * nConstrs, nDofs));
+                      MatrixXd JDot(MatrixXd::Zero(3 * nConstrs, nDofs));
+                      VectorXd C(3 * nConstrs);
+                      VectorXd CDot(3 * nConstrs);
+        */
         for (int i = 0; i < nConstrs; i++) {
-            J.block(i * 3, 0, 3, nDofs) = getJacobian(mBodies[i], mOffsets[i]);
-            JDot.block(i * 3, 0, 3, nDofs) = getJacobianDot(mBodies[i], mOffsets[i]);
-            Vector3d worldP = xformHom(mBodies[i]->getWorldTransform(), mOffsets[i]);
-            C.segment(i * 3, 3) = worldP - mTargets[i];
-            CDot.segment(i * 3, 3) = J.block(i * 3, 0, 3, nDofs) * qDot;
-
+            mConstraints[i]->updateDynamics();
+            mJGlobal.block(i * 3, 0, 3, nDofs) = mConstraints[i]->getJ();
+            mJDotGlobal.block(i * 3, 0, 3, nDofs) = mConstraints[i]->getJDot();
+            mCGlobal.segment(i * 3, 3) = mConstraints[i]->getC();
+            mCDotGlobal.segment(i * 3, 3) = mConstraints[i]->getCDot();
         }
             
-        mA = J * mSkel->getInvMassMatrix() * J.transpose();
-        mB = -JDot * qDot - J * _qddot - C * ks - CDot * kd;
-        VectorXd lambda = mA.inverse() * mB;
-        mConstrForce = J.transpose() * lambda;
+        MatrixXd A = mJGlobal * mSkel->getInvMassMatrix() * mJGlobal.transpose();
+        VectorXd b = -mJDotGlobal * qDot - mJGlobal * _qddot - mCGlobal * ks - mCDotGlobal * kd;
+        VectorXd lambda = A.inverse() * b;
+        mConstrForce = mJGlobal.transpose() * lambda;
     }
-
-    void ConstraintDynamics::addConstraint(BodyNodeDynamics *_body, Vector3d _offset) {
-        mBodies.push_back(_body);
-        mOffsets.push_back(_offset);
-        Vector3d worldP = xformHom(_body->getWorldTransform(), _offset);
-        mTargets.push_back(worldP);
-    }
-    void ConstraintDynamics::reset() {
-        mBodies.clear();
-        mOffsets.clear();
-    }
-
-    MatrixXd ConstraintDynamics::getJacobian(BodyNodeDynamics* _node, const Vector3d& _localP) {
-        int nDof = mSkel->getNumDofs();
-        MatrixXd J( MatrixXd::Zero(3, nDof));
- 
-        for(int i = 0; i < _node->getNumDependentDofs(); i++) {
-            int dofIndex = _node->getDependentDof(i);
-            VectorXd Jcol = xformHom(_node->getDerivWorldTransform(i), _localP);
-            J.col(dofIndex) = Jcol;
-        }
-        return J;
-    }
-
-    MatrixXd ConstraintDynamics::getJacobianDot(BodyNodeDynamics* _node, const Vector3d& _localP) {
-        int nDof = mSkel->getNumDofs();
-        int nLocalDof = _node->getNumDependentDofs();
-        VectorXd qDot = mSkel->getQDotVector();
-        MatrixXd JDot(MatrixXd::Zero(3, nDof));
-        MatrixXd sum(MatrixXd::Zero(3, nLocalDof));
-        _node->updateSecondDerivatives(_localP);
-        for (int i = 0; i < nLocalDof; i++) {
-            int dofIndex = _node->getDependentDof(i);
-            sum += _node->getJvDeriv(i) * qDot[dofIndex];
-        }
-        for (int i = 0; i < nLocalDof; i++) {
-            int dofIndex = _node->getDependentDof(i);
-            JDot.col(dofIndex) = sum.col(i);
-        }
-        return JDot;
-    }
-
-
 } // namespace dynamics
 

@@ -7,6 +7,7 @@
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <stdio.h>
+#include "dynamics/PointConstraint.h"
 
 using namespace dynamics;
 using namespace yui;
@@ -33,6 +34,8 @@ void MyWindow::initDyn()
     mDofs[1][16] = -0.5; // right knee
     mDofs[1][17] = 0.3; // right ankle
     mDofs[1][21] = -0.1; // lower back
+    mDofs[1][28] = 0.5; // left shoulder
+    mDofs[1][34] = -0.5; // right shoulder
     
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->initDynamics();
@@ -50,11 +53,12 @@ void MyWindow::initDyn()
 
     // initialize constraint on the hand
     mConstraintHandle = new ConstraintDynamics(mSkels[1]);
-    Vector3d offset = mSkels[1]->getNode("fullbody1_h_hand_left")->getLocalCOM();
-    offset[1] -= 0.05;
-    mConstraintHandle->addConstraint((BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_left"), offset);
-    mConstraintHandle->addConstraint((BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_right"), offset);
-
+    BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_left");
+    PointConstraint *point1 = new PointConstraint(mSkels[1], bd, bd->getLocalCOM(), bd->getWorldCOM(), true, mTimeStep);
+    mConstraintHandle->addConstraint(point1);
+    bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_right");
+    PointConstraint *point2 = new PointConstraint(mSkels[1], bd, bd->getLocalCOM(), bd->getWorldCOM(), true, mTimeStep);
+    mConstraintHandle->addConstraint(point2);
 }
 
 VectorXd MyWindow::getState() {

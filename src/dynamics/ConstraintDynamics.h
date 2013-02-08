@@ -1,15 +1,9 @@
-/*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
- * Date: 02/01/2013
- *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- *
+ * Georgia Tech Graphics Lab
+ * 
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -20,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine 
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights 
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow 
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,6 +40,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "Constraint.h"
 
 /*
   // Sample Usage
@@ -55,22 +56,18 @@ namespace dynamics {
         ConstraintDynamics(SkeletonDynamics *_skel);
         virtual ~ConstraintDynamics();
         void applyConstraintForces(Eigen::VectorXd& _qddot);
-        void addConstraint(BodyNodeDynamics *_body, Eigen::Vector3d _offset);
-        void reset();
+        void addConstraint(Constraint *_constr);
+        void deleteConstraint(int _index);
         inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
 
     private:
-        Eigen::MatrixXd getJacobian(BodyNodeDynamics* _node, const Eigen::Vector3d& _localP);
-        Eigen::MatrixXd getJacobianDot(BodyNodeDynamics* _node, const Eigen::Vector3d& _localP);
-
         SkeletonDynamics *mSkel;
-        std::vector<BodyNodeDynamics*> mBodies;
-        std::vector<Eigen::Vector3d> mOffsets;
-        std::vector<Eigen::Vector3d> mTargets;
-
+        std::vector<Constraint*> mConstraints;
         // Matrices to pass to solver
-        Eigen::MatrixXd mA;
-        Eigen::VectorXd mB;
+        Eigen::MatrixXd mJGlobal;
+        Eigen::MatrixXd mJDotGlobal;
+        Eigen::VectorXd mCGlobal;
+        Eigen::VectorXd mCDotGlobal;
         Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates;
     };
 } // namespace dynamics
