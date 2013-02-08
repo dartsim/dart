@@ -15,6 +15,7 @@ foreach(APPDIR
 	hybrid
 	hanging
 	hardcodedDesign
+        closedLoop
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

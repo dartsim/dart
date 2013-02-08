@@ -35,42 +35,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
-#define DYNAMICS_CONSTRAINT_DYNAMICS_H
+#ifndef DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
+#define DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
 
-#include <vector>
-#include <Eigen/Dense>
 #include "Constraint.h"
 
-/*
-  // Sample Usage
-  dynamics::ConstraintDynamics constraint();
-  constraint.addConstraint(body, offset);
-  constraint.applyConstraintForces(qddot); // call this function after qddot is computed
- */
-namespace dynamics {
-    class BodyNodeDynamics;
-    class SkeletonDynamics;
-    class ConstraintDynamics {
-    public:
-        ConstraintDynamics(SkeletonDynamics *_skel);
-        virtual ~ConstraintDynamics();
-        void applyConstraintForces(Eigen::VectorXd& _qddot);
-        void addConstraint(Constraint *_constr);
-        void deleteConstraint(int _index);
-        inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
+    namespace dynamics {
+        class BodyNodeDynamics;
+        class SkeletonDynamics;
+        class ClosedLoopConstraint : public Constraint {
+        public:
+            ClosedLoopConstraint(SkeletonDynamics *_skel, BodyNodeDynamics *_body1, BodyNodeDynamics *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2, bool _approx = false, double _timestep = 0.0);
+            virtual ~ClosedLoopConstraint();
+            virtual void updateDynamics();
 
-    private:
-        SkeletonDynamics *mSkel;
-        std::vector<Constraint*> mConstraints;
-        // Matrices to pass to solver
-        Eigen::MatrixXd mJGlobal;
-        Eigen::MatrixXd mJDotGlobal;
-        Eigen::VectorXd mCGlobal;
-        Eigen::VectorXd mCDotGlobal;
-        Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates;
-    };
-} // namespace dynamics
+        private:
+            void getJacobian();
+            void getJacobianDot();
 
-#endif // #ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
+            Eigen::MatrixXd mPreJ;
+            SkeletonDynamics *mSkel;
+            BodyNodeDynamics* mBody1;
+            BodyNodeDynamics* mBody2;
+            Eigen::Vector3d mOffset1;
+            Eigen::Vector3d mOffset2;
+            bool mApproxJDot;
+            double mTimestep;
+        };
+    } // namespace dynamics
+
+#endif // #ifndef DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
 

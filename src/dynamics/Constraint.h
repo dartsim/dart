@@ -35,42 +35,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
-#define DYNAMICS_CONSTRAINT_DYNAMICS_H
+#ifndef DYNAMICS_CONSTRAINT_H
+#define DYNAMICS_CONSTRAINT_H
 
 #include <vector>
 #include <Eigen/Dense>
-#include "Constraint.h"
 
-/*
-  // Sample Usage
-  dynamics::ConstraintDynamics constraint();
-  constraint.addConstraint(body, offset);
-  constraint.applyConstraintForces(qddot); // call this function after qddot is computed
- */
 namespace dynamics {
-    class BodyNodeDynamics;
-    class SkeletonDynamics;
-    class ConstraintDynamics {
+    class Constraint {
     public:
-        ConstraintDynamics(SkeletonDynamics *_skel);
-        virtual ~ConstraintDynamics();
-        void applyConstraintForces(Eigen::VectorXd& _qddot);
-        void addConstraint(Constraint *_constr);
-        void deleteConstraint(int _index);
-        inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
+        Constraint(){};
+        virtual ~Constraint(){};
 
-    private:
-        SkeletonDynamics *mSkel;
-        std::vector<Constraint*> mConstraints;
-        // Matrices to pass to solver
-        Eigen::MatrixXd mJGlobal;
-        Eigen::MatrixXd mJDotGlobal;
-        Eigen::VectorXd mCGlobal;
-        Eigen::VectorXd mCDotGlobal;
-        Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates;
+        virtual void updateDynamics(){};
+        inline Eigen::VectorXd getC() const { return mC; };
+        inline Eigen::VectorXd getCDot() const { return mCVel; };
+        inline Eigen::MatrixXd getJ() const { return mJ; };
+        inline Eigen::MatrixXd getJDot() const { return mJDot; };
+
+    protected:
+        Eigen::VectorXd mC;
+        Eigen::VectorXd mCVel;
+        Eigen::MatrixXd mJ;
+        Eigen::MatrixXd mJDot;
     };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
+#endif // #ifndef DYNAMICS_CONSTRAINT_H
 

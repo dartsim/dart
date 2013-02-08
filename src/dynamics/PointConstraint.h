@@ -35,42 +35,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
-#define DYNAMICS_CONSTRAINT_DYNAMICS_H
+#ifndef DYNAMICS_POINT_CONSTRAINT_H
+#define DYNAMICS_POINT_CONSTRAINT_H
 
-#include <vector>
-#include <Eigen/Dense>
 #include "Constraint.h"
 
-/*
-  // Sample Usage
-  dynamics::ConstraintDynamics constraint();
-  constraint.addConstraint(body, offset);
-  constraint.applyConstraintForces(qddot); // call this function after qddot is computed
- */
 namespace dynamics {
     class BodyNodeDynamics;
     class SkeletonDynamics;
-    class ConstraintDynamics {
+    class PointConstraint : public Constraint {
     public:
-        ConstraintDynamics(SkeletonDynamics *_skel);
-        virtual ~ConstraintDynamics();
-        void applyConstraintForces(Eigen::VectorXd& _qddot);
-        void addConstraint(Constraint *_constr);
-        void deleteConstraint(int _index);
-        inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
+        PointConstraint(SkeletonDynamics *_skel, BodyNodeDynamics *_body, Eigen::Vector3d _offset, Eigen::Vector3d _target, bool _approx = false, double _timestep = 0.0);
+        virtual ~PointConstraint();
+
+        virtual void updateDynamics();
 
     private:
+        void getJacobian();
+        void getJacobianDot();
+
+        Eigen::MatrixXd mPreJ;
         SkeletonDynamics *mSkel;
-        std::vector<Constraint*> mConstraints;
-        // Matrices to pass to solver
-        Eigen::MatrixXd mJGlobal;
-        Eigen::MatrixXd mJDotGlobal;
-        Eigen::VectorXd mCGlobal;
-        Eigen::VectorXd mCDotGlobal;
-        Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates;
+        BodyNodeDynamics* mBody;
+        Eigen::Vector3d mOffset;
+        Eigen::Vector3d mTarget;
+        bool mApproxJDot;
+        double mTimestep;
+
     };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
+#endif // #ifndef DYNAMICS_POINT_CONSTRAINT_DYNAMICS_H
 
