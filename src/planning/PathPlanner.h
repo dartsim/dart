@@ -86,6 +86,8 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
 		const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, 
 		std::list<Eigen::VectorXd> &path) {
 
+	VectorXd savedConfiguration = world->getRobot(robotId)->getConfig(dofs);
+
 	// ====================================================================
 	// Check for collisions in the start and goal configurations
 
@@ -126,6 +128,9 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
 		if(feasibleGoal.size() > 1) fprintf(stderr, "WARNING: planPath is using ONLY the first goal!\n");
 		result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path);
 	}
+
+	// Restore previous robot configuration
+	world->getRobot(robotId)->setConfig(dofs, savedConfiguration);
 
 	return result;
 }
