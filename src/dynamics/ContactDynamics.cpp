@@ -233,12 +233,11 @@ namespace dynamics {
         MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
             int nDofs = node->getSkel()->getNumDofs();
             MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-            VectorXd invP = utils::xformHom(node->getWorldInvTransform(), p);
+            Vector3d invP = utils::xformHom(node->getWorldInvTransform(), p);
 
             for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
                 int i = node->getDependentDof(dofIndex);
-                VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
-                Jt.row(i) = Jcol;
+                Jt.row(i) = utils::xformHom(node->getDerivWorldTransform(dofIndex), invP);
             }
 
             return Jt;
