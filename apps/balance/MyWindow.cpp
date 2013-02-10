@@ -23,7 +23,7 @@ void MyWindow::initDyn()
         mDofVels[i].setZero();
     }
     
-    mDofs[0][1] = -0.9; // ground level
+    mDofs[0][1] = -0.92; // ground level
     // default standing pose
     mDofs[1][1] = -0.1;
     mDofs[1][6] = 0.2; // left hip
@@ -229,22 +229,22 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         }
         break;
     case '1':
-        mForce[0] = 200;
+        mForce[0] = 20;
         mImpulseDuration = 10.0;
         cout << "push forward" << endl;
         break;
     case '2':
-        mForce[0] = -100;
+        mForce[0] = -10;
         mImpulseDuration = 10.0;
         cout << "push backward" << endl;
         break;
     case '3':
-        mForce[2] = 300;
+        mForce[2] = 50;
         mImpulseDuration = 10.0;
         cout << "push right" << endl;
         break;
     case '4':
-        mForce[2] = -300;
+        mForce[2] = -50;
         mImpulseDuration = 10.0;
         cout << "push left" << endl;
         break;

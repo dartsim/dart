@@ -263,31 +263,79 @@ namespace dynamics{
             }
         }
         // local dofs i
-        for(int i = 0; i < numLocalDofs; i++){
+        for (int i = 0; i < numLocalDofs; i++) {
             if(numParentDofs + i<mNumRootTrans) continue;
             // parent dofs j
-            for(int j = mNumRootTrans; j < numParentDofs; j++) {
+            for (int j = mNumRootTrans; j < numParentDofs; j++) {
                 mWqq.at(numParentDofs + i).at(j) = nodeParentDyn->mWq.at(j) * mTq.at(i);
             }
             // local dofs j
-            for(int j = 0; j < numLocalDofs; j++) {
-                if(numParentDofs + j<mNumRootTrans) continue;
-                if(nodeParentDyn) mWqq.at(numParentDofs + i).at(numParentDofs + j) = nodeParentDyn->mW * mTqq.at(i).at(j);
+            for (int j = 0; j < numLocalDofs; j++) {
+                if (numParentDofs + j<mNumRootTrans) continue;
+                if (nodeParentDyn) mWqq.at(numParentDofs + i).at(numParentDofs + j) = nodeParentDyn->mW * mTqq.at(i).at(j);
                 else mWqq.at(numParentDofs + i).at(numParentDofs + j) = mTqq.at(i).at(j);
             }
         }
 
-        for(int i=0; i<numParentDofs+numLocalDofs; i++){
-            evalJacDerivLin(i);
+        for (int i = 0; i < numParentDofs+numLocalDofs; i++) {
+            evalJacDerivLin(i, getLocalCOM());
             evalJacDerivAng(i);
         }
     }
 
-    void BodyNodeDynamics::evalJacDerivLin(int _qi){
+    void BodyNodeDynamics::updateSecondDerivatives(Vector3d _offset) {
+        const int numLocalDofs = getNumLocalDofs();
+        const int numParentDofs = getNumDependentDofs()-numLocalDofs;
+        BodyNodeDynamics *nodeParentDyn = static_cast<BodyNodeDynamics*>(mNodeParent);
+
+        // Update Local Derivatives
+        for(int i = 0; i < numLocalDofs; i++) {
+            if(numParentDofs + i<mNumRootTrans) continue;   // since mTq is a constant
+            for(int j=0; j<numLocalDofs; j++) {
+                if(numParentDofs + j<mNumRootTrans) continue;   // since mTq is a constant
+                mTqq.at(i).at(j) = getLocalSecondDeriv(getDof(i), getDof(j));
+            }
+        }
+
+        // Update World Derivatives
+        // parent dofs i
+        for (int i = mNumRootTrans; i < numParentDofs; i++) {
+            assert(nodeParentDyn);    // should always have a parent if enters this for loop
+            // parent dofs j
+            for(int j = mNumRootTrans; j < numParentDofs; j++) {
+                mWqq.at(i).at(j) = nodeParentDyn->mWqq.at(i).at(j) * mT;
+            }
+            // local dofs j
+            for(int j = 0; j < numLocalDofs; j++) {
+                mWqq.at(i).at(numParentDofs + j) = nodeParentDyn->mWq.at(i) * mTq.at(j);
+            }
+        }
+        // local dofs i
+        for (int i = 0; i < numLocalDofs; i++) {
+            if(numParentDofs + i<mNumRootTrans) continue;
+            // parent dofs j
+            for (int j = mNumRootTrans; j < numParentDofs; j++) {
+                mWqq.at(numParentDofs + i).at(j) = nodeParentDyn->mWq.at(j) * mTq.at(i);
+            }
+            // local dofs j
+            for (int j = 0; j < numLocalDofs; j++) {
+                if (numParentDofs + j<mNumRootTrans) continue;
+                if (nodeParentDyn) mWqq.at(numParentDofs + i).at(numParentDofs + j) = nodeParentDyn->mW * mTqq.at(i).at(j);
+                else mWqq.at(numParentDofs + i).at(numParentDofs + j) = mTqq.at(i).at(j);
+            }
+        }
+
+        for (int i = 0; i < numParentDofs+numLocalDofs; i++) {
+            evalJacDerivLin(i, _offset);
+            evalJacDerivAng(i);
+        }
+    }
+
+    void BodyNodeDynamics::evalJacDerivLin(int _qi, Vector3d _offset){
         mJvq.at(_qi).setZero();
-        if(_qi<mNumRootTrans) return;
-        for(int j=mNumRootTrans; j<getNumDependentDofs(); j++){
-            VectorXd Jvqi = utils::xformHom(mWqq.at(_qi).at(j), getLocalCOM());
+        if (_qi<mNumRootTrans) return;
+        for (int j = mNumRootTrans; j < getNumDependentDofs(); j++) {
+            VectorXd Jvqi = utils::xformHom(mWqq.at(_qi).at(j), _offset);
             mJvq.at(_qi)(0,j) = Jvqi[0];
             mJvq.at(_qi)(1,j) = Jvqi[1];
             mJvq.at(_qi)(2,j) = Jvqi[2];

@@ -51,9 +51,7 @@ namespace kinematics {
         if (_dim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
-            computeVolume();
+            computeInertia();
         }
     }
 
@@ -68,12 +66,11 @@ namespace kinematics {
         _ri->popMatrix();
     }
 
-    void ShapeBox::computeMassTensor() {
-        mMassTensor(0, 0) = (mDim(0)*mDim(0))/12;
-        mMassTensor(1, 1) = (mDim(1)*mDim(1))/12;
-        mMassTensor(2, 2) = (mDim(2)*mDim(2))/12;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
+    void ShapeBox::computeInertia() {
+        mInertia = Matrix3d::Zero();
+        mInertia(0, 0) = mMass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
+        mInertia(1, 1) = mMass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
+        mInertia(2, 2) = mMass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
     }
 
     void ShapeBox::computeVolume() {

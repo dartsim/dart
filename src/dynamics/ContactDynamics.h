@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 10/21/2011
+ * Author(s): Karen Liu
+ * Date:
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -63,7 +63,7 @@ namespace dynamics {
     class SkeletonDynamics;
     
     class ContactDynamics {
-    public:
+        public:
         ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
         virtual ~ContactDynamics();
         void applyContactForces();
@@ -72,14 +72,14 @@ namespace dynamics {
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollisionChecker; }
         int getNumContacts() const;
 
-        
+
     private:
         void initialize();
         void destroy();
-       
+        
         void updateMassMat();
         void updateTauStar();
-       
+
         void fillMatrices();
         bool solve();
         void applySolution();
@@ -95,12 +95,13 @@ namespace dynamics {
         // Mqddot + Cqdot + kq = tau + (J^T)(f_n)N + (J^T)D(f_d) -> Mqdot = tau* + N(f_n) + B(f_d)
         //        inline Eigen::MatrixXd getMassMatrix() const { return mM; } // M matrix
         //        inline Eigen::VectorXd getTauStarVector() const { return mTauStar; } // T* vector (not T)
-        void updateNormalMatrix(); // N matrix
-        void updateBasisMatrix() ; // B matrix 
+        //        void updateNormalMatrix(); // N matrix
+        //        void updateBasisMatrix() ; // B matrix
+        void updateNBMatrices();
         Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
         Eigen::MatrixXd getContactMatrix() const; // E matrix
         Eigen::MatrixXd getMuMatrix() const; // mu matrix
-        
+
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
         std::vector<int> mIndices;
@@ -120,7 +121,7 @@ namespace dynamics {
         Eigen::VectorXd mQBar;
         Eigen::VectorXd mX;
         std::vector<Eigen::VectorXd> mConstrForces; // solved constraint force in generalized coordinates; mConstrForces[i] is the constraint force for the ith skeleton
-    }; 
+        };
 } // namespace dynamics
 
 #endif // #ifndef DYNAMICS_CONTACT_DYNAMICS_H

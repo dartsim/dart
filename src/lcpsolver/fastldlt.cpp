@@ -376,7 +376,7 @@ void _dFactorLDLT (dReal *A, dReal *d, int n, int nskip1)
     /* done factorizing 1 x 1 block */
     break;
     
-    default: *((char*)0)=0;  /* this should never happen! */
+    //default: *((char*)0)=0;  /* this should never happen! */
   }
 }
 

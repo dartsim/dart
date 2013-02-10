@@ -1,176 +1,274 @@
+/**
+ * @file PathPlanner.h
+ * @author Tobias Kunz (?), Can Erdogan
+ * @date Jan 30, 2013
+ * @brief Contains the path planner class definition which is templated on a RRT implementation and
+ * creates an interface to generate trajectories with different RRT algorithms such as goal-biased,
+ * bidirectional, connect and etc.
+ */
+
 #include <Eigen/Core>
-#include <vector>
+#include <iostream>
+#include <limits>
 #include <list>
+#include <vector>
+#include "robotics/Robot.h"
 #include "robotics/World.h"
 #include "RRT.h"
-#include <iostream>
-#include "robotics/Robot.h"
-#include <limits>
-
-#ifndef _RST_PATH_PLANNER_
-#define _RST_PATH_PLANNER_
 
 namespace planning {
 
+/* ********************************************************************************************* */
+/// The path planner class - a common interface to motion planners
 template <class R = RRT>
 class PathPlanner {
 public:
-	PathPlanner(); // You need to call one of the other constructors before the object is usable.
-	PathPlanner(robotics::World& world, double stepsize = 0.1 );
-	~PathPlanner();
-	double stepsize;
-	robotics::World* world;
-	bool planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
-	bool planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional = true, bool connect = true, unsigned int maxNodes = 0) const;
-	static inline double randomInRange(double min, double max);
+
+	bool connect;						///< Whether we take a small step or shoot for the target node
+	bool bidirectional;			///< Whether two trees try to meet each other or one goes for the goal
+	double stepSize;				///< Step size from a node in the tree to the random/goal node
+	double goalBias;				///< Choose btw goal and random value (for goal-biased search)
+	size_t maxNodes;				///< Maximum number of iterations the sampling would continue
+	robotics::World* world;	///< The world that the robot is in (for obstacles and etc.)
+
+	// NOTE: It is useful to keep the rrts around after planning for reuse, analysis, and etc.
+	R* start_rrt;						///< The rrt for unidirectional search
+	R* goal_rrt;							///< The second rrt if bidirectional search is executed
+
+public:
+
+	/// The default constructor 
+	PathPlanner() : world(NULL) {} 
+
+	/// The desired constructor - you should use this one.
+	PathPlanner(robotics::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1, 
+		size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_), 
+		connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
+	}
+
+	/// The destructor
+	~PathPlanner() {}
+
+	/// Plan a path from a single start configuration to a single goal
+	bool planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start, 
+			const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path) {
+		std::vector<Eigen::VectorXd> startVector, goalVector;
+		startVector.push_back(start);
+		goalVector.push_back(goal);
+		return planPath(robotId, dofs, startVector, goalVector, path);
+	}
+
+	/// Plan a path from a _set_ of start configurations to a _set_ of goals
+	bool planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, 
+		const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
+
 private:
-	bool planSingleTreeRrt(int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
-	bool planBidirectionalRrt(int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const;
+
+	/// Performs a unidirectional RRT with the given options.
+	bool planSingleTreeRrt(int robot, const std::vector<int> &dofs, 
+		const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, 
+		std::list<Eigen::VectorXd> &path);
+
+	/// Performs bidirectional RRT with the given options. 
+	/// NOTE This algorithm has several different popular implementations. The implementation in the
+	/// kinodynamic paper (1999) by LaValle and Kuffner extend the two RRTs towards a common random
+	/// configurations whereas here, first, start rrt extends towards a random node and creates
+	/// some node N. Afterwards, the second rrt extends towards _the node N_ and they continue
+	/// swapping roles.
+	bool planBidirectionalRrt(int robot, const std::vector<int> &dofs, 
+		const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, 
+		std::list<Eigen::VectorXd> &path);
 };
 
+/* ********************************************************************************************* */
+template <class R> 
+bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, 
+		const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, 
+		std::list<Eigen::VectorXd> &path) {
 
-template <class R>
-PathPlanner<R>::PathPlanner() : world(NULL) {}
+	VectorXd savedConfiguration = world->getRobot(robotId)->getConfig(dofs);
 
-template <class R>
-PathPlanner<R>::PathPlanner(robotics::World& world, double stepsize) :
-	world(&world),
-	stepsize(stepsize)
-{
-}
+	// ====================================================================
+	// Check for collisions in the start and goal configurations
 
-template <class R>
-PathPlanner<R>::~PathPlanner() {
-}
-
-template <class R>
-inline double PathPlanner<R>::randomInRange(double min, double max) {
-	return min + ((max-min) * ((double)rand() / ((double)RAND_MAX + 1)));
-}
-
-template <class R>
-bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
-	std::vector<Eigen::VectorXd> startVector, goalVector;
-	startVector.push_back(start);
-	goalVector.push_back(goal);
-	return planPath(robotId, dofs, startVector, goalVector, path, bidirectional, connect, maxNodes);
-}
-
-template <class R>
-bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool bidirectional, bool connect, unsigned int maxNodes) const {
-
-	VectorXd savedDofs = world->getRobot(robotId)->getConfig(dofs);
-
+	// Sift through the possible start configurations and eliminate those that are in collision
 	std::vector<Eigen::VectorXd> feasibleStart;
 	for(unsigned int i = 0; i < start.size(); i++) {
 		world->getRobot(robotId)->setConfig(dofs, start[i]);
-		if(!world->checkCollision()) {
-			feasibleStart.push_back(start[i]);
-		}
-	}
-	if(feasibleStart.empty()) {
-		return false;
+		if(!world->checkCollision()) feasibleStart.push_back(start[i]);
 	}
 
-	std::vector<Eigen::VectorXd> feasibleGoal;
-	for(unsigned int i = 0; i < goal.size(); i++) {
-		world->getRobot(robotId)->setConfig(dofs, goal[i]);
-		if(!world->checkCollision()) {
-			feasibleGoal.push_back(goal[i]);
-		}
-	}
-	if(feasibleGoal.empty()) {
+	// Return false if there are no feasible start configurations
+	if(feasibleStart.empty()) {
+		printf("WARNING: PathPlanner: Feasible start points are empty!\n");
 		return false;
 	}
 	
-	bool result;
-	if(bidirectional)
-		result = planBidirectionalRrt(robotId, dofs, feasibleStart, feasibleGoal, path, connect, maxNodes);
-	else
-		result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path, connect, maxNodes);
+	// Sift through the possible goal configurations and eliminate those that are in collision
+	std::vector<Eigen::VectorXd> feasibleGoal;
+	for(unsigned int i = 0; i < goal.size(); i++) {
+		world->getRobot(robotId)->setConfig(dofs, goal[i]);
+		if(!world->checkCollision()) feasibleGoal.push_back(goal[i]);
+	}
 
-	world->getRobot(robotId)->setConfig(dofs, savedDofs);
+	// Return false if there are no feasible goal configurations
+	if(feasibleGoal.empty()) {
+		printf("WARNING: PathPlanner: Feasible goal points are empty!\n");
+		return false;
+	}
+	
+	// ====================================================================
+	// Make the correct RRT algorithm for the given method
+	
+	// Direct the search towards single or bidirectional
+	bool result = false;
+	if(bidirectional) 
+		result = planBidirectionalRrt(robotId, dofs, feasibleStart, feasibleGoal, path);
+	else {
+		if(feasibleGoal.size() > 1) fprintf(stderr, "WARNING: planPath is using ONLY the first goal!\n");
+		result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path);
+	}
+
+	// Restore previous robot configuration
+	world->getRobot(robotId)->setConfig(dofs, savedConfiguration);
 
 	return result;
 }
 
+/* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
+bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs, 
+		const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal, 
+		std::list<Eigen::VectorXd> &path) {
 
-	R rrt(world, robot, dofs, start, stepsize);
+	const bool debug = false;
+
+	// Initialize the RRT
+	start_rrt = new R (world, robot, dofs, start, stepSize);
+
+	// Expand the tree until the goal is reached or the max # nodes is passed	
 	typename R::StepResult result = R::STEP_PROGRESS;
-	double smallestGap = numeric_limits<double>::infinity();
-	while (result != RRT::STEP_REACHED) {
-		if(connect) {
-			rrt.connect();
-			if(rrt.connect(goal)) {
-				result = RRT::STEP_REACHED;
+	double smallestGap = std::numeric_limits<double>::infinity();
+	size_t numNodes = start_rrt->getSize();
+	while(numNodes <= maxNodes) {
+
+		// Get the target node based on the bias
+		// NOTE: If the target is the goal node, as we reach for it (connect or step), we will check
+		// if we have completed the search.
+		VectorXd target;
+		double randomValue = ((double) rand()) / RAND_MAX;
+		bool checkForReach = false;
+		if(randomValue < goalBias) {
+			checkForReach = true;
+			target = goal;
+		}
+		else target = start_rrt->getRandomConfig();
+		
+
+		// Based on the method, either attempt to connect to the target directly or take a small step
+		bool stepResult = false;
+		if(connect) stepResult = start_rrt->connect(target);
+		else stepResult = start_rrt->tryStep(target);
+
+		if(stepResult == RRT::STEP_COLLISION) {
+			printf("COLLISION!\n");
+			getchar();
+		}
+
+		// Check if the goal is reached and create the path, if so
+		if(checkForReach && stepResult) {
+			start_rrt->tracePath(start_rrt->activeNode, path);
+			return true;
+		}
+
+		// Print the smallest gap in the debug mode
+		if(debug) {
+			double gap = start_rrt->getGap(goal);
+			if(gap < smallestGap) {
+				smallestGap = gap;
+				if(debug) std::cout << "Gap: " << smallestGap << ", tree size: " << 
+					start_rrt->configVector.size() << std::endl;
 			}
 		}
-		else {
-			rrt.tryStep();
-			result = rrt.tryStep(goal);
-		}
-		if(maxNodes > 0 && rrt.getSize() > maxNodes)
-			return false;
-		double gap = rrt.getGap(goal);
-		if(gap < smallestGap) {
-			smallestGap = gap;
-			cout << "Gap: " << smallestGap << "    Tree size: " << rrt.configVector.size() << endl;
-		}
+	
+		// Update the number of nodes
+		numNodes = start_rrt->getSize();
 	}
 
-	rrt.tracePath(rrt.activeNode, path);
-	return true;
+	printf("numNodes: %lu\n", numNodes);
+	// Maximum # of iterations are reached and path is not found - failed.
+	return false;
 }
 
+/* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path, bool connect, unsigned int maxNodes) const {
+bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dofs, 
+		const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal, 
+		std::list<Eigen::VectorXd> &path) {
 	
-	R start_rrt(world, robot, dofs, start, stepsize);
-	R goal_rrt(world, robot, dofs, goal, stepsize);
-	R* rrt1 = &start_rrt;
-	R* rrt2 = &goal_rrt;
+	const bool debug = false;
+
+	// Initialize both the start and goal RRTs. 
+	// NOTE: We use the pointers for the RRTs to swap their roles in extending towards a target 
+	// (random or goal) node.
+	start_rrt = new R(world, robot, dofs, start, stepSize);
+	goal_rrt = new R(world, robot, dofs, goal, stepSize);
+	R* rrt1 = start_rrt;
+	R* rrt2 = goal_rrt;
 	
-	double smallestGap = numeric_limits<double>::infinity();
-	bool connected = false;
-	while(!connected) {
+	// Expand the tree until the trees meet or the max # nodes is passed	
+	double smallestGap = std::numeric_limits<double>::infinity();
+	size_t numNodes = rrt1->getSize() + rrt2->getSize();
+	while(numNodes < maxNodes) {
+
+		// Swap the roles of the two RRTs. Remember, the first rrt reaches out to a target node and 
+		// creates a new node and the second rrt reaches to _the new node_.
 		R* temp = rrt1;
 		rrt1 = rrt2;
 		rrt2 = temp;
 
-		if(connect) {
-			rrt1->connect();
-			//rrt1->tryStep();
-			connected = rrt2->connect(rrt1->configVector[rrt1->activeNode]);
+ 		// Get the target node based on the bias
+		VectorXd target;
+		double randomValue = ((double) rand()) / RAND_MAX;
+		if(randomValue < goalBias) target = goal[0];
+		else target = rrt1->getRandomConfig();
+
+		// Based on the method, rrt1 either attempt to connect to the target directly or takes a step
+		if(connect) rrt1->connect(target);
+		else rrt1->tryStep(target);
+
+		// rrt2 uses the last added node of rrt1 as a target and reaches out to it (connect or step)
+		// NOTE: If a node was not added, the nearest neighbor to the random node in rrt1 is used.
+		// NOTE: connect(x) and tryStep(x) functions return true if rrt2 can add the given node
+		// in the tree. In this case, this would imply that the two trees meet.
+		bool treesMet = false;
+		const VectorXd& rrt2target = *(rrt1->configVector[rrt1->activeNode]);
+		if(connect) treesMet = rrt2->connect(rrt2target);
+		else treesMet = rrt2->tryStep(rrt2target); 
+
+		// Check if the trees have met and create the path, if so.
+		if(treesMet) {
+			start_rrt->tracePath(start_rrt->activeNode, path);
+			goal_rrt->tracePath(goal_rrt->activeNode, path, true);
+			return true;
 		}
-		else {
-			if(rrt1->tryStep() != RRT::STEP_COLLISION) {
-				connected = (RRT::STEP_REACHED == rrt2->tryStep(rrt1->configVector[rrt1->activeNode]));
+
+		// Update the number of nodes in the two trees
+		numNodes = rrt1->getSize() + rrt2->getSize();
+
+		// Print the gap between the trees in debug mode
+		if(debug) {
+			double gap = rrt2->getGap(*(rrt1->configVector[rrt1->activeNode]));
+			if(gap < smallestGap) {
+				smallestGap = gap;
+				std::cout << "Gap: " << smallestGap << "	Sizes: " << start_rrt->configVector.size() 
+					<< "/" << goal_rrt->configVector.size() << std::endl;
 			}
-		}
-
-		if(maxNodes > 0 && rrt1->getSize() + rrt2->getSize() > maxNodes) {
-			cout << "Max number of nodes reached." << endl;
-			return false;
-		}
-
-		double gap = rrt2->getGap(rrt1->configVector[rrt1->activeNode]);
-		if(gap < smallestGap) {
-			smallestGap = gap;
-			cout << "Gap: " << smallestGap << "  Sizes: " << start_rrt.configVector.size() << "/" << goal_rrt.configVector.size() << endl;
-			cout << "  Coll.: " << start_rrt.numCollisions + goal_rrt.numCollisions
-				<< "  Progress: " << start_rrt.numNoProgress + goal_rrt.numNoProgress
-				<< "  Step: " << start_rrt.numStepTooLarge + goal_rrt.numStepTooLarge
-				<< endl;
 		}
 	}
 	
-	start_rrt.tracePath(start_rrt.activeNode, path);
-	goal_rrt.tracePath(goal_rrt.activeNode, path, true);
-	
-	return true;
-}
+	// Maximum # of iterations are reached and path is not found - failed.
+	return false;
 }
 
-#endif /** _RST_PATH_PLANNER_ */
+}	//< End of namespace

@@ -55,7 +55,7 @@ ODE_API dReal dRandReal(void);
 
 /* print out a matrix */
 #ifdef __cplusplus
-ODE_API void dPrintMatrix (const dReal *A, int n, int m, char *fmt = "%10.4f ",
+ODE_API void dPrintMatrix (const dReal *A, int n, int m, char *fmt,
 		   FILE *f=stdout);
 #else
 ODE_API void dPrintMatrix (const dReal *A, int n, int m, char *fmt, FILE *f);

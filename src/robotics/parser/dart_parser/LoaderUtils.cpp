@@ -14,6 +14,7 @@
 #include <dynamics/BodyNodeDynamics.h>
 #include <iostream>
 
+
 /**
  * @function add_XyzRpy
  */
@@ -48,42 +49,42 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
   kinematics::Transformation* trans;
   
   if(_DOF_TYPE == GOLEM_X) {
-    trans = new kinematics::TrfmTranslateX(new kinematics::Dof(0, "rootX"), "Tx");
+    trans = new kinematics::TrfmTranslateX(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_Y) {
-    trans = new kinematics::TrfmTranslateY(new kinematics::Dof(0, "rootY"), "Ty");
+    trans = new kinematics::TrfmTranslateY(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_Z) {
-    trans = new kinematics::TrfmTranslateZ(new kinematics::Dof(0, "rootZ"), "Tz");
+    trans = new kinematics::TrfmTranslateZ(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_YAW) {
-    trans = new kinematics::TrfmRotateEulerZ(new kinematics::Dof(0, "rootYaw"), "Try");
+    trans = new kinematics::TrfmRotateEulerZ(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_PITCH) {
-    trans = new kinematics::TrfmRotateEulerY(new kinematics::Dof(0, "rootPitch"), "Trp");
+    trans = new kinematics::TrfmRotateEulerY(new kinematics::Dof(0, _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
   else if(_DOF_TYPE == GOLEM_ROLL) {
-    trans = new kinematics::TrfmRotateEulerX(new kinematics::Dof(0, "rootRoll"), "Trr");
+    trans = new kinematics::TrfmRotateEulerX(new kinematics::Dof(0,  _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
@@ -116,36 +117,53 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				const char *_meshPath, 
 				double _mass,
 				Eigen::Matrix3d _inertiaMatrix,
-				const char *_collisionMeshPath  ) {
+				const char *_collisionMeshPath,
+				urdf::Pose _pose ) {
   
   kinematics::Shape* shape;
-
+  
   // Load aiScene visualization
   const aiScene* model = kinematics::ShapeMesh::loadMesh( _meshPath );
-
+  
   // Load collision model
   const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
-
+  
   if( model == NULL ) {
-    if(debug) std::cerr << "[add_Shape] [ERROR] Not loading model " << _meshPath << " (NULL)" << std:: endl;
+    std::cout<< "[add_Shape] [ERROR] Not loading model "<<_meshPath<<" (NULL) \n";
     return;  
   }
   else {
     shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
 				       _mass,
-				       model ); 	 
+				       model ); 
+    
+    // Set the visPose
+    Eigen::Matrix4d visTransform = Eigen::Matrix4d::Identity();
+    // Set xyz
+    visTransform(0,3) = _pose.position.x;
+    visTransform(1,3) = _pose.position.y;  
+    visTransform(2,3) = _pose.position.z;
+    // Set rpy
+    double roll, pitch, yaw;
+    _pose.rotation.getRPY( roll, pitch, yaw );
+    Eigen::Matrix3d rot; 
+    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
+    visTransform.block(0,0,3,3) = rot;
+    // Set into the shape
+    shape->setVisTransform( visTransform );
+    
     shape->setInertia( _inertiaMatrix );
-			if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
+    if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
     shape->setVizMesh( model ); 
-
+    
     // Check if we have got a collision model
     if( !collisionModel ) {
       shape->setCollisionMesh( model );
     } else {
-			if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
+      if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
       shape->setCollisionMesh( collisionModel );
     }
-
+    
     // Set in node
     _node->setShape( shape );
   } 

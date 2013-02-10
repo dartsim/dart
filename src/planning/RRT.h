@@ -33,86 +33,140 @@
  *
  */
 
-/** @file RRT.h
- *  @author Tobias Kunz
+/** 
+ * @file RRT.h
+ * @author Tobias Kunz, Can Erdogan
+ * @date Jan 31, 2013
+ * @brief The generic RRT implementation. It can be inherited for modifications to collision
+ * checking, sampling and etc.
  */
 
-#ifndef RRT_H
-#define RRT_H
+#pragma once
 
 #include <vector>
 #include <list>
 #include <Eigen/Core>
 #include <flann/flann.hpp>
 
+/// Forward declare the world class
 namespace robotics { class World; }
 
 namespace planning {
+
+/// The rapidly-expanding random tree implementation
 class RRT {
 public:
+
+	/// To get byte-aligned Eigen vectors
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+	/// The result of attempting to create a new node to reach a target node
 	typedef enum {
 		STEP_COLLISION, // Collided with obstacle. No node added.
-		STEP_REACHED, // The configuration that we grow to is less than stepSize away from the node we grow from. No node added.
-		STEP_PROGRESS // One node added.
+		STEP_REACHED,	 // The target node is closer than step size (so reached). No node added.
+		STEP_PROGRESS	 // One node added.
 	} StepResult;
 
-	int ndim;
-	double stepSize;
+public:
+	// Initialization constants and search variables
 
-	int activeNode;
-	std::vector<int> parentVector;		// vector of indices to relate configs in RRT
-	std::vector<Eigen::VectorXd> configVector; 	// vector of all visited configs
+	const int ndim;				 ///< Number of dof we can manipulate (may be less than robot's)
+	const double stepSize;	///< Step size at each node creation
 
-	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const Eigen::VectorXd &root, double stepSize = 0.02);
-	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
-	virtual ~RRT();
+	int activeNode;	 								///< Last added node or the nearest node found after a search
+	std::vector<int> parentVector;		///< The ith node in configVector has parent with index pV[i]
 
+	/// All visited configs
+	// NOTE We are using pointers for the VectorXd's because flann copies the pointers for the
+	// data points and we give it the copies made in the heap
+	std::vector<const Eigen::VectorXd*> configVector; 	
+
+public:
+
+	//// Constructor with a single root 
+	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const Eigen::VectorXd &root, 
+			double stepSize = 0.02);
+
+	/// Constructor with multiple roots (so, multiple trees)
+	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, 
+			const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
+
+	/// Destructor
+	virtual ~RRT() {}
+
+	/// Reach for a random node by repeatedly extending nodes from the nearest neighbor in the tree.
+	/// Stop if there is a collision.
 	bool connect();
+
+	/// Reach for a target by repeatedly extending nodes from the nearest neighbor. Stop if collide.
 	bool connect(const Eigen::VectorXd &target);
+
+	/// Try a single step with the given "stepSize" to a random configuration. Fail if collide.
 	StepResult tryStep();
+	
+	/// Try a single step with the given "stepSize" to the given configuration. Fail if collide.
 	StepResult tryStep(const Eigen::VectorXd &qtry);
 
-	// Tries to extend tree towards provided sample (must be overridden for MBP)
+	/// Tries to extend tree towards provided sample
 	virtual StepResult tryStepFromNode(const Eigen::VectorXd &qtry, int NNidx);
 
-	virtual bool newConfig(std::list<Eigen::VectorXd> &intermediatePoints, Eigen::VectorXd &qnew, const Eigen::VectorXd &qnear, const Eigen::VectorXd &qtarget);
+	/// Checks if the given new configuration is in collision with an obstacle. Moreover, it is a
+	/// an opportunity for child classes to change the new configuration if there is a need. For 
+	/// instance, task constrained planners might want to sample around this point and replace it with
+	/// a better (less erroroneous due to constraint) node.
+	virtual bool newConfig(std::list<Eigen::VectorXd> &intermediatePoints, Eigen::VectorXd &qnew, 
+			const Eigen::VectorXd &qnear, const Eigen::VectorXd &qtarget);
 
+	/// Returns the distance between the current active node and the given node.
+	/// TODO This might mislead the users to thinking returning the distance between the given target
+	/// and the nearest neighbor.
 	double getGap(const Eigen::VectorXd &target);
 
-	// traces the path from some node to the initConfig node
+	/// Traces the path from some node to the initConfig node - useful in creating the full path
+	/// after the goal is reached.
 	void tracePath(int node, std::list<Eigen::VectorXd> &path, bool reverse = false);
 
-	unsigned int getSize();
+	/// Returns the number of nodes in the tree.
+	size_t getSize();
 
-	// Implementation-specific function for checking collisions  (must be overridden for MBP)
+	/// Implementation-specific function for checking collisions 
 	virtual bool checkCollisions(const Eigen::VectorXd &c);
 
-
-	int numSamples;
-	int numCollisions;
-	int numNoProgress;
-	int numStepTooLarge;
-protected:
-	robotics::World* world;
-	int robot;
-	std::vector<int> dofs;
-
-	flann::Index<flann::L2<double> > index;
-
-	double randomInRange(double min, double max);
-
-	// Returns NN to query point
-	virtual int getNearestNeighbor(const Eigen::VectorXd &qsamp);
-
-	// returns a random configuration (may be overridden you want to do something else with sampled states)
+	/// Returns a random configuration with the specified node IDs 
 	virtual Eigen::VectorXd getRandomConfig();
 
-	// Adds qnew to the tree
+public:
+	// Visualization functions
+
+	/// Visualize an RRT using gnuplot
+	void draw ();
+
+	/// Write a line segment to the two lines that represent each end (with some offset to the lines)
+	void saveLine (char* l1, char* l2, size_t off, const Eigen::VectorXd& n1, const Eigen::VectorXd& n2); 
+
+	/// Write a gnuplot command to a file descriptor to draw a line segment
+	// NOTE Index is the index to the line gnuplot loads 
+	// NOTE Last line does not have a comma at the end.
+	void drawLine (FILE* f, size_t numDofs, const char* color, size_t index, bool last = false);
+
+protected:
+
+	robotics::World* world;										///< The world that the robot is in
+	int robot;																///< The ID of the robot for which a plan is generated
+	std::vector<int> dofs;										///< The dofs of the robot the planner can manipulate
+
+	/// The underlying flann data structure for fast nearest neighbor searches 
+	flann::Index<flann::L2<double> > index;		
+
+	/// Returns a random value between the given minimum and maximum value
+	double randomInRange(double min, double max);
+
+	/// Returns the nearest neighbor to query point
+	virtual int getNearestNeighbor(const Eigen::VectorXd &qsamp);
+
+	/// Adds a new node to the tree
 	virtual int addNode(const Eigen::VectorXd &qnew, int parentId);
-
 };
-}
 
-#endif /* RRT_H */
+}	//< End of namespace
+

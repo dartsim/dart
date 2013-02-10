@@ -56,8 +56,7 @@ namespace kinematics {
         if (mDim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
-            computeMassTensor();
-            computeInertiaFromMassTensor();
+            computeInertia();
         }
 
         listIndex = 0;
@@ -85,7 +84,7 @@ namespace kinematics {
         _ri->popMatrix();
     }
 
-    void ShapeMesh::computeMassTensor() {
+    void ShapeMesh::computeInertia() {
         // use bounding box to represent the mesh
         double max_X = -1e7;
         double max_Y = -1e7;
@@ -115,11 +114,10 @@ namespace kinematics {
         double w = mDim[2] * (max_Z - min_Z);
 
 
-        mMassTensor(0, 0) = l * l / 12;
-        mMassTensor(1, 1) = h * h / 12;
-        mMassTensor(2, 2) = w * w / 12;
-        mMassTensor(3, 3) = 1;
-        mMassTensor *= mMass;
+        mInertia = Matrix3d::Zero();
+        mInertia(0, 0) = mMass / 12.0 * (h * h + w * w);
+        mInertia(1, 1) = mMass / 12.0 * (l * l + w * w);
+        mInertia(2, 2) = mMass / 12.0 * (l * l + h * h);
     }
 
     void ShapeMesh::computeVolume() {

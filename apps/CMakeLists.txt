@@ -4,7 +4,6 @@ set_property(DIRECTORY PROPERTY EXCLUDE_FROM_DEFAULT_BUILD ON)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-    exampleCollisionWithSkelton
     meshCollision
 	viewer
 	forwardSim
@@ -14,7 +13,9 @@ foreach(APPDIR
 	balance
 	ik
 	hybrid
+	hanging
 	hardcodedDesign
+        closedLoop
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

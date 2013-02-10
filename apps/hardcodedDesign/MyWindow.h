@@ -14,8 +14,6 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
-#include "integration/EulerIntegrator.h"
-#include "integration/RK4Integrator.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/Dof.h"
 #include "kinematics/Joint.h"
@@ -38,11 +36,7 @@ namespace dynamics{
 	class ContactDynamics;
 }
 
-namespace integration{
-	class IntegrableSystem;
-}
-
-class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
+class MyWindow : public yui::Win3D {
 public:
 
 	/// The constructor - set the position of the skeleton
@@ -57,13 +51,6 @@ public:
 	/// Move the joints with the {1,2,3} keys and '-' to change direction
 	virtual void keyboard(unsigned char key, int x, int y);
 
-public:
-	// Virtual functions normally set
-	
-	virtual void displayTimer(int _val) {}
-	virtual Eigen::VectorXd getState() {}
-	virtual Eigen::VectorXd evalDeriv() {}
-	virtual void setState(const Eigen::VectorXd& state) {}
-
+	/// Hardcoded skeleton
 	dynamics::SkeletonDynamics* skel;
 };
