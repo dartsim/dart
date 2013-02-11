@@ -1,1 +1,0 @@
-DART Repository Developed by the Graphics and Humanoid Robotics Labs at Georgia Tech.
