@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
-set(CMAKE_CXX_WARNING_LEVEL 4) 
+set(CMAKE_CXX_WARNING_LEVEL 4)
 # Disables a warning about a change in Cygwin Cmake
 
 project(dart)
@@ -38,7 +38,7 @@ endif()
 set(CMAKE_DEBUG_POSTFIX "d")
 
 # System Install paths
-if(WIN32) 
+if(WIN32)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 elseif(APPLE)
   set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix" FORCE)
