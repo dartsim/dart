@@ -154,7 +154,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
-  rootJoint = createDartRootJoint( _model->getRoot(), mSkeleton, false );
+  rootJoint = createDartRootJoint( rootNode, mSkeleton );
   mJoints.push_back( rootJoint );
 
   if(debug) printf ("** Created %u joints \n", mJoints.size() );
@@ -200,8 +200,6 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   kinematics::Joint *joint, *rootJoint;
   
   mRobot = new robotics::Robot();
-  // Add default root node (*)
-  //mRobot->addDefaultRootNode();
   
   // name
   mRobot->setName( _model->getName() );
@@ -222,8 +220,8 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
   if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
-	// Set true argument since default root node was set (*)
-  rootJoint = createDartRootJoint( _model->getRoot(), mRobot, false );
+     
+  rootJoint = createDartRootJoint( rootNode, mRobot );
   mJoints.push_back( rootJoint );
   
   //-- Save DART structure
@@ -236,6 +234,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   while( !nodeStack.empty() && numIter < mNodes.size() ) {
     // Get front element on stack and update it
     u = nodeStack.front();
+    // Root node was added in rootJoint
     if( u != rootNode ) {
     mRobot->addNode(u);
     }
@@ -259,8 +258,8 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
     numIter++;
   } // end while
   
-  if(debug) printf ("** Created %u joints \n", mJoints.size() );
-  if(debug) printf ("Pushed %d nodes in order \n", numIter );
+  if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );
+  if(debug) printf ("[debug] Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
   mRobot->initSkel();
@@ -278,7 +277,6 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   kinematics::Joint *joint, *rootJoint;
 
   mObject = new robotics::Object();
-  //mObject->addDefaultRootNode();
   
   // name
   mObject->setName( _model->getName() );
@@ -291,8 +289,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
     node = createDartNode( (*lk).second, mObject );
     mNodes.push_back( node );
   }
-  //  if(debug) 
-printf ("** Created %u body nodes \n", mNodes.size() );
+    if(debug) printf ("[debug] Created %u body nodes \n", mNodes.size() );
   
   // Joint
   mJoints.resize(0);
@@ -307,18 +304,16 @@ printf ("** Created %u body nodes \n", mNodes.size() );
   
   //-- root joint
   rootNode = getNode( _model->getRoot()->name ); // no rootnode
-  rootJoint = createDartRootJoint( _model->getRoot(), mObject, false );
+  rootJoint = createDartRootJoint( rootNode, mObject );
   mJoints.push_back( rootJoint );
   
-  //  if(debug) 
-printf ("** Created %u joints \n", mJoints.size() );
+  if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );
   
   //-- Save DART structure
+
+  // 1. Root node was added already so add...
   
-  // 1. Root node
-// mObject->addNode( rootNode );
-  
-  // 2. The rest
+  // 2. The rest of nodes
   for( unsigned int i = 0; i < mNodes.size(); ++i ) {
     if( mNodes[i] != rootNode ) {
       mObject->addNode( mNodes[i] );

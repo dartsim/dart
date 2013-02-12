@@ -85,9 +85,8 @@ class DartLoader {
 		  Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3) );
   
   // ToDart utils
-  kinematics::Joint* createDartRootJoint( boost::shared_ptr<const urdf::Link> _rootLink,
-					  dynamics::SkeletonDynamics* _skel,
-					  bool _createdDummyRoot = false );
+  kinematics::Joint* createDartRootJoint( dynamics::BodyNodeDynamics* _node,
+					  dynamics::SkeletonDynamics* _skel );
   kinematics::Joint* createDartJoint( boost::shared_ptr<urdf::Joint> _jt,
 				      dynamics::SkeletonDynamics* _skel );
   dynamics::BodyNodeDynamics* createDartNode( boost::shared_ptr<urdf::Link> _lk,

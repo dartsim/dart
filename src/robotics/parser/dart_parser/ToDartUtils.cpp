@@ -15,74 +15,57 @@
 #include <dynamics/BodyNodeDynamics.h>
 #include "../urdf_parser/urdf_parser.h"
 
-kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf::Link> _rootLink,
-						    dynamics::SkeletonDynamics* _skel,
-						    bool _createdDummyRoot ) {
+
+/**
+ * @function createDartRootJoint
+ * @brief Create a joint if floating root node, nothing if world is root
+ */
+kinematics::Joint* DartLoader::createDartRootJoint( dynamics::BodyNodeDynamics* _node,
+						    dynamics::SkeletonDynamics* _skel ) {
+
   
-  // Parent will be NULL. Get root node as child  
-  dynamics::BodyNodeDynamics* rootLoadedNode = getNode( _rootLink->name );
-  kinematics::Joint* rootLoadedJoint;
-  if(debug) printf ("Root loaded name: %s \n", _rootLink->name.c_str());
+  // Parent will be NULL.   
+  kinematics::Joint* rootJoint;
+  if(debug) std::cout<<"[debug] Creating joint for root node: "<< _node->getName() <<std::endl;
 
-  if( _createdDummyRoot == false ) {
-
-    // This joint connects with the world 
-    rootLoadedJoint = new kinematics::Joint( NULL,
-					     rootLoadedNode,
-					     "RootLoadedJoint" );
+  // This joint connects with the world 
+  rootJoint = new kinematics::Joint( NULL, _node, "worldJoint" );
    
-    // Add DOF to the node
-    // Always set the root node ( 6DOF for rotation and translation )
-    kinematics::Transformation* trans;
+  // This will be a FREEEULER joint type. We have 3 DOF for rotation and 3 DOF for translation
+  kinematics::Transformation* trans;
 
     
     // Add DOFs for RPY and XYZ of the whole robot
     trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
     
     trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
 
     trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
    
     trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
  
     trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
 
     trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
-    rootLoadedJoint->addTransform( trans, true );
+    rootJoint->addTransform( trans, true );
     _skel->addTransform( trans );
 
     // Set this first node as root node
-    _skel->addNode( rootLoadedNode );
+    _skel->addNode( _node );
     _skel->initSkel();    
  
-    // Add Rigid transform 
-    //add_XyzRpy( rootLoadedJoint, 0, 0, 0, 0, 0, 0 );  
-  }
 
-  else {
-    // This body node should connect with dummy Root
-    if( _skel->getRoot() == NULL ) { if(debug) printf ("[X] You did not create the dummy Root! \n"); }
-    if(debug) printf ("Created dummy node name: %s \n", _skel->getRoot()->getName() );
-    rootLoadedJoint = new kinematics::Joint( _skel->getRoot(),
-					     rootLoadedNode,
-					     "RootLoadedJoint" );
-    
-    // Add Rigid transform 
-    add_XyzRpy( rootLoadedJoint, 0, 0, 0, 0, 0, 0 );  
-
-  }
-
-  return rootLoadedJoint;
+  return rootJoint;
 }
 
 
@@ -152,8 +135,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   
   // Fixed, do not add DOF
   else if( _jt->type == urdf::Joint::FIXED ) {
-    //if(debug) 
-      printf ("Fixed joint: %s \n", jointName );
+    if(debug)  printf ("[debug] Fixed joint: %s \n", jointName );
   }
   
   // None of the above
