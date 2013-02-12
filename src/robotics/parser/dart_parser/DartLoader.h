@@ -35,7 +35,8 @@ namespace urdf {
 // Type of DOF Enum
 enum TypeOfDOF {
   GOLEM_X, GOLEM_Y, GOLEM_Z, 
-  GOLEM_ROLL, GOLEM_PITCH, GOLEM_YAW
+  GOLEM_ROLL, GOLEM_PITCH, GOLEM_YAW,
+  GOLEM_ARBITRARY_ROTATION
 };
 
 /**
@@ -65,11 +66,12 @@ class DartLoader {
   void add_XyzRpy(kinematics::Joint* _joint, 
 		  double _x, double _y, double _z, 
 		  double _rr, double _rp, double _ry );
-
+  
   void add_DOF(dynamics::SkeletonDynamics* _skel, 
 	       kinematics::Joint* _joint, 
 	       double _val, double _min, double _max,
-	       int _DOF_TYPE );
+	       int _DOF_TYPE,
+	       double _x = 0, double _y = 0, double _z = 0 );
 
   void add_ShapeMesh( dynamics::BodyNodeDynamics* _node, 
 		      const char *_meshPath, 

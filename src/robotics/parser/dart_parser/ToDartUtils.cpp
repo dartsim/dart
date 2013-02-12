@@ -85,23 +85,14 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
     
     // Revolute
     if(   _jt->type == urdf::Joint::REVOLUTE ) {  
-      if( _jt->axis.x == 1 /*&& _jt->axis.y == 0 && _jt->axis.z == 0 */) {
+      if( _jt->axis.x == 1 ||  _jt->axis.x == -1/*&& _jt->axis.y == 0 && _jt->axis.z == 0 */) {
 	axis = GOLEM_ROLL; 
-      } else if( _jt->axis.y == 1 /* && _jt->axis.x == 0 && _jt->axis.z == 0 */ ) {
+      } else if( _jt->axis.y == 1  ||  _jt->axis.y == -1 /* && _jt->axis.x == 0 && _jt->axis.z == 0 */ ) {
 	axis = GOLEM_PITCH; 
-      } else if( _jt->axis.z == 1  /* && _jt->axis.x == 0 && _jt->axis.y == 0 */) {
+      } else if( _jt->axis.z == 1  ||  _jt->axis.z == -1 /* && _jt->axis.x == 0 && _jt->axis.y == 0 */) {
 	axis = GOLEM_YAW; 
-      } else if( _jt->axis.x == -1  /* && _jt->axis.y == 0 && _jt->axis.z == 0 */) {
-	axis = GOLEM_ROLL; printf("Joint %s has negative x \n", jointName );
-      } else if( _jt->axis.y == -1 /* && _jt->axis.x == 0 && _jt->axis.z == 0 */ ) { 
-	axis = GOLEM_PITCH;  printf("Joint %s has negative y \n", jointName );
-      }
-      else if(  _jt->axis.z == -1 /* && _jt->axis.x == 0 && _jt->axis.y == 0 */ ) { 
-	axis = GOLEM_YAW;  printf("Joint %s has negative z \n", jointName );
-      }
-      else { 
-	//if(debug) 
-	printf ("[ERROR] [%s] No axis defined for Revolute DOF (%f %f %f) !  \n", jointName, _jt->axis.x, _jt->axis.y, _jt->axis.z ); 
+      } else { 
+	axis = GOLEM_ARBITRARY_ROTATION;
       }
     }
     // Prismatic
@@ -116,7 +107,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
     vmin = _jt->limits->lower;
     vmax = _jt->limits->upper;
     
-    add_DOF( _skel, joint, val, vmin, vmax, axis );
+    add_DOF( _skel, joint, val, vmin, vmax, axis, _jt->axis.x, _jt->axis.y, _jt->axis.z );
   }
   
   // Fixed, do not add DOF

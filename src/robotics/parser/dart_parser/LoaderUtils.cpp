@@ -7,6 +7,7 @@
 #include <dynamics/SkeletonDynamics.h>
 #include <kinematics/TrfmTranslate.h>
 #include <kinematics/TrfmRotateEuler.h>
+#include <kinematics/TrfmRotateAxis.h>
 #include <kinematics/Dof.h>
 #include <kinematics/Joint.h>
 #include <kinematics/Shape.h>
@@ -44,7 +45,8 @@ void DartLoader::add_XyzRpy( kinematics::Joint* _joint,
 void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel, 
 			  kinematics::Joint* _joint, 
 			  double _val, double _min, double _max,
-			  int _DOF_TYPE ) {
+			  int _DOF_TYPE,
+			  double _x, double _y, double _z  ) {
 
   kinematics::Transformation* trans;
   
@@ -85,6 +87,14 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
   }
   else if(_DOF_TYPE == GOLEM_ROLL) {
     trans = new kinematics::TrfmRotateEulerX(new kinematics::Dof(0,  _joint->getName() ), "T_dof");
+    _joint->addTransform(trans, true);
+    _joint->getDof(0)->setMin(_min);
+    _joint->getDof(0)->setMax(_max);
+    _skel->addTransform(trans);
+  }
+  else if( _DOF_TYPE == GOLEM_ARBITRARY_ROTATION ) {
+    Eigen::Vector3d axis; axis << _x, _y, _z;
+    trans = new kinematics::TrfmRotateAxis( axis, new kinematics::Dof(0,  _joint->getName() ), "T_dof");
     _joint->addTransform(trans, true);
     _joint->getDof(0)->setMin(_min);
     _joint->getDof(0)->setMax(_max);
