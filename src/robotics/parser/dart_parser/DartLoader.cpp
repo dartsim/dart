@@ -127,40 +127,75 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
  */
 dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model ) {
   
-  dynamics::SkeletonDynamics* mSkeleton = new dynamics::SkeletonDynamics();
+  dynamics::SkeletonDynamics* mSkeleton; 
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
   
-  // BodyNode
+  /** Create new skeleton object */
+  mSkeleton = new dynamics::SkeletonDynamics();
+
+  /** Set skeleton name */
+  mSkeleton->setName( _model->getName() );
+
+  /** Load links and convert them to DART BodyNodes */
   mNodes.resize(0);  
+  
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
     node = createDartNode( (*lk).second, mSkeleton );
-    mNodes.push_back( node );
+    // We return NULL for "world" link, hence this if condition
+    if( node != NULL ) { mNodes.push_back( node ); }
   }
+  
   if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
   
-  // Joint
+  /** Initialize Joint store vector */
   mJoints.resize(0);
   
-  for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-       jt != _model->joints_.end(); 
-       jt++ ) {  
-    joint = createDartJoint( (*jt).second, mSkeleton );
-    mJoints.push_back( joint );
-    
-  }
+  /** root joint */
+  std::string rootName = _model->getRoot()->name;
+  rootNode = getNode( rootName );
   
-  //-- root joint
-  rootNode = getNode( _model->getRoot()->name );
-  rootJoint = createDartRootJoint( rootNode, mSkeleton );
-  mJoints.push_back( rootJoint );
-
-  if(debug) printf ("** Created %u joints \n", mJoints.size() );
+  if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
+  
+  /** If root node is NULL, nothing to create */
+  if( rootNode == NULL ) {
+    // Good, we have to set the node attached to world as root
+    if( rootName == "world" ) {
+      int numRoots = _model->getRoot()->child_links.size();
+      if( numRoots != 1 ) { 
+	std::cout<< "[ERROR] Not unique link attached to world" <<std::endl; 
+      } else {
+	rootName = (_model->getRoot()->child_links)[0]->name;
+	rootNode = getNode( rootName );
+	if( rootNode == NULL ) { return NULL; }
+	std::cout<<"[info] World specified in URDF. Root node considered:"<< rootName <<std::endl;
+	
+	// Since the original rootName was world, add the joint that had it as its parent (only one)
+	for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
+	     jt != _model->joints_.end(); jt++ ) {  
+	  if( ( (*jt).second )->parent_link_name == "world" ) {
+	    joint = createDartJoint( (*jt).second, mSkeleton );
+	    mJoints.push_back( joint );
+	  }
+	} // end of else
+      } // end of rootName == "world"
+    } 
+    // Bad. Either the URDF is bad or the structure is not tree-like
+    else {
+      std::cout << "[ERROR] No root node found!" << std::endl;
+      return NULL;
+    }
+  }
+  else {
+    /** Create a joint for floating */
+    rootJoint =  createDartRootJoint( rootNode, mSkeleton ); 
+    mJoints.push_back( rootJoint );
+  }   
   
   //-- Save DART structure
-  
+
   // Push parents first
   std::list<dynamics::BodyNodeDynamics*> nodeStack;
   dynamics::BodyNodeDynamics* u;
@@ -168,11 +203,21 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   
   int numIter = 0;
   while( !nodeStack.empty() && numIter < mNodes.size() ) {
-
-    // Get front element on stack and add it
+    // Get front element on stack and update it
     u = nodeStack.front();
+    // Add it to the Skeleton
     mSkeleton->addNode(u);
 
+
+    for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
+	 jt != _model->joints_.end(); 
+	 jt++ ) {  
+      if( ( (*jt).second )->parent_link_name == u->getName() ) {
+	joint = createDartJoint( (*jt).second, mSkeleton );
+	mJoints.push_back( joint );
+      }
+    }
+    
     // Pop it out
     nodeStack.pop_front();
     
@@ -181,10 +226,12 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
       nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
     }
     numIter++;
-  }
-  if(debug) printf ("--> Pushed %d nodes in tree-like order \n", numIter );
+  } // end while
   
-  // Init skeleton
+  if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );
+  if(debug) printf ("[debug] Pushed %d nodes in order \n", numIter );
+  
+  // Init robot (skeleton)
   mSkeleton->initSkel();
   
   return mSkeleton;
@@ -273,10 +320,8 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   while( !nodeStack.empty() && numIter < mNodes.size() ) {
     // Get front element on stack and update it
     u = nodeStack.front();
-    // Root node was added in rootJoint
-    //if( u != rootNode ) {
+    // Add it to the Robot
     mRobot->addNode(u);
-    //}
 
     for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
 	 jt != _model->joints_.end(); 
@@ -354,12 +399,11 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   
   // 2. The rest of nodes
   for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-    //if( mNodes[i] != rootNode ) {
+    // Add nodes to the object
       mObject->addNode( mNodes[i] );
-      //}
   }
   
-  // Init robot (skeleton)
+  // Init object (skeleton)
   mObject->initSkel();
   mObject->update();
   
