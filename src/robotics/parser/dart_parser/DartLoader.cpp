@@ -194,18 +194,18 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
  * @function modelInterfaceToRobot
  */
 robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model ) {
-
+  
   robotics::Robot* mRobot;
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
-
-	mRobot = new robotics::Robot();
-	// Add default root node (*)
-  mRobot->addDefaultRootNode();
-
+  
+  mRobot = new robotics::Robot();
+  // Add default root node (*)
+  //mRobot->addDefaultRootNode();
+  
   // name
   mRobot->setName( _model->getName() );
-
+  
   // BodyNode
   mNodes.resize(0);  
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
@@ -215,50 +215,52 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
     mNodes.push_back( node );
   }
   if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
-
+  
   // Joint
   mJoints.resize(0);
-
+  
   //-- root joint
   rootNode = getNode( _model->getRoot()->name );
   if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
 	// Set true argument since default root node was set (*)
-  rootJoint = createDartRootJoint( _model->getRoot(), mRobot, true );
+  rootJoint = createDartRootJoint( _model->getRoot(), mRobot, false );
   mJoints.push_back( rootJoint );
   
   //-- Save DART structure
-     // Push parents first
-    std::list<dynamics::BodyNodeDynamics*> nodeStack;
-    dynamics::BodyNodeDynamics* u;
-    nodeStack.push_back( rootNode );
+  // Push parents first
+  std::list<dynamics::BodyNodeDynamics*> nodeStack;
+  dynamics::BodyNodeDynamics* u;
+  nodeStack.push_back( rootNode );
+  
+  int numIter = 0;
+  while( !nodeStack.empty() && numIter < mNodes.size() ) {
+    // Get front element on stack and update it
+    u = nodeStack.front();
+    if( u != rootNode ) {
+    mRobot->addNode(u);
+    }
 
-    int numIter = 0;
-    while( !nodeStack.empty() && numIter < mNodes.size() ) {
-      // Get front element on stack and update it
-      u = nodeStack.front();
-			mRobot->addNode(u);
-
-  		for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-       jt != _model->joints_.end(); 
-       jt++ ) {  
-				if( ( (*jt).second )->parent_link_name == u->getName() ) {
-	    		joint = createDartJoint( (*jt).second, mRobot );
-  	  		mJoints.push_back( joint );
-				}
-  		}
-
-      // Pop it out
-      nodeStack.pop_front();
-
-      // Add its kids
-      for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
-	nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
+    for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
+	 jt != _model->joints_.end(); 
+	 jt++ ) {  
+      if( ( (*jt).second )->parent_link_name == u->getName() ) {
+	joint = createDartJoint( (*jt).second, mRobot );
+	mJoints.push_back( joint );
       }
-      numIter++;
-    } // end while
-
-	  if(debug) printf ("** Created %u joints \n", mJoints.size() );
-		if(debug) printf ("Pushed %d nodes in order \n", numIter );
+    }
+    
+    // Pop it out
+    nodeStack.pop_front();
+    
+    // Add its kids
+    for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
+      nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
+    }
+    numIter++;
+  } // end while
+  
+  if(debug) printf ("** Created %u joints \n", mJoints.size() );
+  if(debug) printf ("Pushed %d nodes in order \n", numIter );
   
   // Init robot (skeleton)
   mRobot->initSkel();
