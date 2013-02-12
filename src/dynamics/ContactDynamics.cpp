@@ -157,7 +157,7 @@ namespace dynamics {
             int c = getNumContacts();
             int cd = c * mNumDir;
             int dimA = c * (2 + mNumDir); // dimension of A is c + cd + c
-            mA = MatrixXd::Zero(dimA, dimA);
+            mA.resize(dimA, dimA);
             mA.topLeftCorner(c, c) = nTmInv * mN;
             mA.block(0, c, c, cd) = nTmInv * mB;
             mA.block(c, 0, cd, c) = bTmInv * mN;
@@ -165,9 +165,10 @@ namespace dynamics {
             //        mA.block(c, c + cd, cd, c) = E * (mDt * mDt);
             mA.block(c, c + cd, cd, c) = E;
             //        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
-            mA.bottomLeftCorner(c, c) = mu;
+            mA.bottomLeftCorner(c, c) = mu; // Note: mu is a diagonal matrix, but we also set the surrounding zeros
             //        mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
             mA.bottomRightCorner(c, cd) = -E.transpose();
+            mA.topRightCorner(c, c) = MatrixXd::Zero(c, c);
 
             int cfmSize = getNumContacts() * (1 + mNumDir);
             for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
