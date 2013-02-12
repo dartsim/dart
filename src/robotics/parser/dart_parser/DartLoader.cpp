@@ -199,32 +199,71 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
   
+  /** Create new robot object */
   mRobot = new robotics::Robot();
   
-  // name
+  /** Set robot name */
   mRobot->setName( _model->getName() );
   
-  // BodyNode
+  /** Load links and convert them to DART BodyNodes */
   mNodes.resize(0);  
+
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
     node = createDartNode( (*lk).second, mRobot );
-    mNodes.push_back( node );
+    // We return NULL for "world" link, hence this if condition
+    if( node != NULL ) { mNodes.push_back( node ); }
   }
+
   if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
   
-  // Joint
+  /** Initialize Joint store vector */
   mJoints.resize(0);
   
-  //-- root joint
-  rootNode = getNode( _model->getRoot()->name );
+  /** root joint */
+  std::string rootName = _model->getRoot()->name;
+  rootNode = getNode( rootName );
+  
   if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
-     
-  rootJoint = createDartRootJoint( rootNode, mRobot );
-  mJoints.push_back( rootJoint );
+
+  /** If root node is NULL, nothing to create */
+  if( rootNode == NULL ) {
+    // Good, we have to set the node attached to world as root
+    if( rootName == "world" ) {
+      int numRoots = _model->getRoot()->child_links.size();
+      if( numRoots != 1 ) { 
+	std::cout<< "[ERROR] Not unique link attached to world" <<std::endl; 
+      } else {
+	rootName = (_model->getRoot()->child_links)[0]->name;
+	rootNode = getNode( rootName );
+	if( rootNode == NULL ) { return NULL; }
+	std::cout<<"[info] World specified in URDF. Root node considered:"<< rootName <<std::endl;
+
+	// Since the original rootName was world, add the joint that had it as its parent (only one)
+	for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
+	     jt != _model->joints_.end(); jt++ ) {  
+	  if( ( (*jt).second )->parent_link_name == "world" ) {
+	    joint = createDartJoint( (*jt).second, mRobot );
+	    mJoints.push_back( joint );
+	  }
+	} // end of else
+      } // end of rootName == "world"
+    } 
+    // Bad. Either the URDF is bad or the structure is not tree-like
+    else {
+      std::cout << "[ERROR] No root node found!" << std::endl;
+      return NULL;
+    }
+  }
+  else {
+    /** Create a joint for floating */
+    rootJoint =  createDartRootJoint( rootNode, mRobot ); 
+    mJoints.push_back( rootJoint );
+  }   
   
   //-- Save DART structure
+
   // Push parents first
   std::list<dynamics::BodyNodeDynamics*> nodeStack;
   dynamics::BodyNodeDynamics* u;

@@ -85,15 +85,22 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   int axis;
  
   // Get parent and child body Nodes
-  const char* jointName = ( _jt->name).c_str();
-  dynamics::BodyNodeDynamics* parent = getNode( _jt->parent_link_name );
-  dynamics::BodyNodeDynamics* child = getNode( _jt->child_link_name );
-  if(debug) printf ("Joint: %s Parent: %s child : %s \n",   jointName, parent->getName(), 
-		    child->getName() );
+  std::string jointName = ( _jt->name);
+  std::string parentName = (_jt->parent_link_name);
+  std::string childName =  (_jt->child_link_name);
+  dynamics::BodyNodeDynamics* parent = getNode( parentName );
+  dynamics::BodyNodeDynamics* child = getNode( childName );
+
   // Create joint
-  kinematics::Joint* joint = new kinematics::Joint( parent,
-						    child,
-						    jointName );
+  kinematics::Joint* joint;
+  if( parent == NULL && parentName == "world" ) {    
+    joint = new kinematics::Joint( NULL, child, jointName.c_str() );
+    std::cout<<"Creating joint between world and "<<childName<<std::endl;
+  } else {
+    joint = new kinematics::Joint( parent, child, jointName.c_str() );
+  }
+
+
   // Add Rigid transform
   urdf::Pose p = _jt->parent_to_joint_origin_transform;
   x = p.position.x;
@@ -135,12 +142,12 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   
   // Fixed, do not add DOF
   else if( _jt->type == urdf::Joint::FIXED ) {
-    if(debug)  printf ("[debug] Fixed joint: %s \n", jointName );
+    if(debug) std::cout<<"[debug] Fixed joint: "<< jointName <<std::endl;  
   }
   
   // None of the above
   else {
-    printf ("[createDartJoint] ERROR: Parsing %s joint: No PRISMATIC or REVOLUTE or FIXED \n", jointName );
+    std::cout<<"[createDartJoint] ERROR: Parsing "<<  jointName <<" joint: No PRISMATIC or REVOLUTE or FIXED \n";
   }
   
   return joint;
@@ -155,10 +162,16 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   std::string fullVisualPath;
   std::string fullCollisionPath;
 
-  const char* lk_name = _lk->name.c_str();
-  if(debug) printf ("** Creating dart node: %s \n", lk_name );
+  std::string lk_name = _lk->name;
+
+  if( lk_name == "world" ) {
+    std::cout << "[info] world is not parsed as a link" << std::endl;
+    return NULL;
+  }
+
+  if(debug) std::cout<<"[debug] Creating dart node:"<< lk_name <<std::endl;
   
-  dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name );
+  dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name.c_str() );
   
   // Mesh Loading
   double mass = 0.1;
@@ -193,8 +206,8 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
     // Set it to Node
     //node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
     
-    if( debug ) { printf ("* Mass is: %f \n", mass); }
-    if( debug ) { std::cout<< "* Inertia is: \n"<< inertia << std::endl; }
+    if( debug ) { std::cout<< "[debug] Mass is: "<< mass << std::endl; }
+    if( debug ) { std::cout<< "[debug] Inertia is: \n"<< inertia << std::endl; }
   }
   
   if( !_lk->visual ) {
