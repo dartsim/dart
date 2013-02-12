@@ -7,6 +7,10 @@
 #include "DartLoader.h"
 #include <dynamics/SkeletonDynamics.h>
 #include <kinematics/Joint.h>
+#include <kinematics/Transformation.h>
+#include <kinematics/TrfmTranslate.h>
+#include <kinematics/TrfmRotateEuler.h>
+#include <kinematics/Dof.h>
 #include <kinematics/BodyNode.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include "../urdf_parser/urdf_parser.h"
@@ -26,9 +30,43 @@ kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf
     rootLoadedJoint = new kinematics::Joint( NULL,
 					     rootLoadedNode,
 					     "RootLoadedJoint" );
+   
+    // Add DOF to the node
+    // Always set the root node ( 6DOF for rotation and translation )
+    kinematics::Transformation* trans;
+
     
+    // Add DOFs for RPY and XYZ of the whole robot
+    trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+    
+    trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+    trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+   
+    trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+ 
+    trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+    trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
+    rootLoadedJoint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+    // Set this first node as root node
+    _skel->addNode( rootLoadedNode );
+    _skel->initSkel();    
+ 
     // Add Rigid transform 
-    add_XyzRpy( rootLoadedJoint, 0, 0, 0, 0, 0, 0 );  
+    //add_XyzRpy( rootLoadedJoint, 0, 0, 0, 0, 0, 0 );  
   }
 
   else {
@@ -46,6 +84,8 @@ kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<const urdf
 
   return rootLoadedJoint;
 }
+
+
 
 
 /**
