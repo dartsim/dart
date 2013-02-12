@@ -61,8 +61,8 @@ kinematics::Joint* DartLoader::createDartRootJoint( dynamics::BodyNodeDynamics* 
     _skel->addTransform( trans );
 
     // Set this first node as root node
-    _skel->addNode( _node );
-    _skel->initSkel();    
+    //_skel->addNode( _node );
+    //_skel->initSkel();    
  
 
   return rootJoint;

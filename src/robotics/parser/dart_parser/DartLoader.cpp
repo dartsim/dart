@@ -274,9 +274,9 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
     // Get front element on stack and update it
     u = nodeStack.front();
     // Root node was added in rootJoint
-    if( u != rootNode ) {
+    //if( u != rootNode ) {
     mRobot->addNode(u);
-    }
+    //}
 
     for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
 	 jt != _model->joints_.end(); 
@@ -354,9 +354,9 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   
   // 2. The rest of nodes
   for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-    if( mNodes[i] != rootNode ) {
+    //if( mNodes[i] != rootNode ) {
       mObject->addNode( mNodes[i] );
-    }
+      //}
   }
   
   // Init robot (skeleton)
