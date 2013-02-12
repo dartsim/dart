@@ -118,7 +118,7 @@ namespace dynamics {
 
                 VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
                 VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
-                mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
+                mTauStar.segment(startRow, tauStar.rows()) = tauStar;
                 startRow += tauStar.rows();
             }
         }
@@ -158,16 +158,16 @@ namespace dynamics {
             int cd = c * mNumDir;
             int dimA = c * (2 + mNumDir); // dimension of A is c + cd + c
             mA = MatrixXd::Zero(dimA, dimA);
-            mA.block(0, 0, c, c) = nTmInv * mN;
+            mA.topLeftCorner(c, c) = nTmInv * mN;
             mA.block(0, c, c, cd) = nTmInv * mB;
             mA.block(c, 0, cd, c) = bTmInv * mN;
             mA.block(c, c, cd, cd) = bTmInv * mB;
             //        mA.block(c, c + cd, cd, c) = E * (mDt * mDt);
             mA.block(c, c + cd, cd, c) = E;
             //        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
-            mA.block(c + cd, 0, c, c) = mu;
+            mA.bottomLeftCorner(c, c) = mu;
             //        mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
-            mA.block(c + cd, c, c, cd) = -E.transpose();
+            mA.bottomRightCorner(c, cd) = -E.transpose();
 
             int cfmSize = getNumContacts() * (1 + mNumDir);
             for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
@@ -192,8 +192,8 @@ namespace dynamics {
             //mQBar.block(0, 0, c, 1) = Ntranspose * MinvTauStar;
             //mQBar.block(c, 0, cd, 1) = Btranspose * MinvTauStar;
 
-            mQBar.block(0, 0, c, 1) = nTmInv * mTauStar;
-            mQBar.block(c, 0, cd, 1) = bTmInv * mTauStar;
+            mQBar.head(c) = nTmInv * mTauStar;
+            mQBar.segment(c,cd) = bTmInv * mTauStar;
             mQBar /= mDt;
         }
 
@@ -209,8 +209,8 @@ namespace dynamics {
             // First compute the external forces
             int nRows = mMInv.rows(); // a hacky way to get the dimension
             VectorXd forces(VectorXd::Zero(nRows));
-            VectorXd f_n = mX.block(0, 0, c, 1);
-            VectorXd f_d = mX.block(c, 0, c * mNumDir, 1);
+            VectorXd f_n = mX.head(c);
+            VectorXd f_d = mX.segment(c, c * mNumDir);
             VectorXd lambda = mX.tail(c);
             forces = (mN * f_n) + (mB * f_d);
 
@@ -220,7 +220,7 @@ namespace dynamics {
                 if (mSkels[i]->getImmobileState())
                     continue;
                 int nDof = mSkels[i]->getNumDofs();
-                mConstrForces[i] = forces.block(startRow, 0, nDof, 1);
+                mConstrForces[i] = forces.segment(startRow, nDof);
                 startRow += nDof;
             }
 
