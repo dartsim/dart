@@ -167,8 +167,9 @@ namespace dynamics {
             //        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
             mA.bottomLeftCorner(c, c) = mu; // Note: mu is a diagonal matrix, but we also set the surrounding zeros
             //        mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
-            mA.bottomRightCorner(c, cd) = -E.transpose();
+            mA.block(c + cd, c, c, cd) = -E.transpose();
             mA.topRightCorner(c, c) = MatrixXd::Zero(c, c);
+            mA.bottomRightCorner(c, c) = MatrixXd::Zero(c, c);
 
             int cfmSize = getNumContacts() * (1 + mNumDir);
             for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
