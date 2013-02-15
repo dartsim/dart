@@ -58,10 +58,6 @@ namespace kinematics {
         if (mMass != 0){
             computeInertia();
         }
-
-        listIndex = 0;
-        mVizList = 0;
-        mColList = 0;
     }
 
     void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

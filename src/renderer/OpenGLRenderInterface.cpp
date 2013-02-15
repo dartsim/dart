@@ -303,16 +303,25 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::compileList(kinematics::Skeleton *_skel) {
+    	if(_skel == 0)
+    		return;
+
     	for(int i=0; i < _skel->getNumNodes(); i++) {
     		compileList(_skel->getNode(i));
     	}
     }
 
     void OpenGLRenderInterface::compileList(kinematics::BodyNode *_node) {
+    	if(_node == 0)
+    		return;
+
     	compileList(_node->getShape());
     }
 
     void OpenGLRenderInterface::compileList(kinematics::Shape *_shape) {
+    	if(_shape == 0)
+    		return;
+
     	//FIXME: Separate these calls once BodyNode is refactored to contain
     	// both a col Shape and vis Shape.
     	_shape->setVizList(compileList(_shape->getVizMesh()));
@@ -334,20 +343,11 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::draw(kinematics::Skeleton *_skel, bool _vizCol, bool _colMesh) {
+    	if(_skel == 0)
+    		return;
+
     	for(int i=0; i < _skel->getNumNodes(); i++) {
     		draw(_skel->getNode(i), _vizCol, _colMesh);
-    	}
-    }
-
-    void OpenGLRenderInterface::draw(robotics::Object *_skel) {
-    	for(int i=0; i < _skel->getNumNodes(); i++) {
-    		draw(_skel->getNode(i), false, false);
-    	}
-    }
-
-    void OpenGLRenderInterface::draw(robotics::Robot *_skel) {
-    	for(int i=0; i < _skel->getNumNodes(); i++) {
-    		draw(_skel->getNode(i), false, false);
     	}
     }
 
@@ -363,11 +363,6 @@ namespace renderer {
     	Transform<double,3,Affine> pose;
     	pose.matrix() = poseMatrix;
 
-    	kinematics::Shape *shape = _node->getShape();
-    	// FIXME: We assume we are rendering a ShapeMesh.
-    	const aiScene* model = _colMesh ? shape->getCollisionMesh() : shape->getVizMesh();
-    	const GLuint index = _colMesh ? shape->getColList() : shape->getVizList();
-
     	// GL calls
     	if(_vizCol && _node->getColliding()) {
     		glDisable(GL_TEXTURE_2D);
@@ -378,18 +373,27 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	if(model) {
-    		if(index) {
-    			drawList(index);
-    		} else {
-    			drawMesh(Vector3d::Ones(), model);
-    		}
-    	}
+    	draw(_node->getShape());
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );
 		glDisable(GL_COLOR_MATERIAL);
 		glPopMatrix();
+    }
+
+    void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
+    	if(_shape == 0)
+    		return;
+
+    	// FIXME: We assume we are rendering a ShapeMesh.
+    	const aiScene* model = _colMesh ? _shape->getCollisionMesh() : _shape->getVizMesh();
+    	const GLuint index = _colMesh ? _shape->getColList() : _shape->getVizList();
+
+    	if(index) {
+    		drawList(index);
+    	} else {
+    		drawMesh(Vector3d::Ones(), model);
+    	}
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {

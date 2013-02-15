@@ -95,8 +95,7 @@ namespace renderer {
 
         virtual void draw(kinematics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
         virtual void draw(kinematics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
-        void draw(robotics::Object *_skel);
-        void draw(robotics::Robot *_skel);
+        virtual void draw(kinematics::Shape *_shape, bool _colMesh = false);
 
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);
         virtual void drawCube(const Eigen::Vector3d& _size);
