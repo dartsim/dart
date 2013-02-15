@@ -54,7 +54,7 @@ namespace kinematics {
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(const char *_name) 
-        : mSkelIndex(-1), mShape(NULL), mJointParent(NULL), mNodeParent(NULL), mColliding(false), mMass(0), mCOMLocal(0,0,0)
+        : mSkelIndex(-1), mShape(NULL), mJointParent(NULL), mNodeParent(NULL), mColliding(false), mMass(0), mCOMLocal(0,0,0), mSkel(NULL)
     {
         mJointsChild.clear();
         mMarkers.clear();
@@ -83,6 +83,8 @@ namespace kinematics {
     }
 
     void BodyNode::init() {
+        assert(mSkel);
+
         if (mShape != NULL) {
             mMass = mShape->getMass();
         } else {
