@@ -15,6 +15,8 @@
 #include <dynamics/BodyNodeDynamics.h>
 #include "../urdf_parser/urdf_parser.h"
 
+// For continuous joint limit
+#include <limits>
 
 /**
  * @function createDartRootJoint
@@ -111,20 +113,26 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   
   // Add DOF if prismatic or revolute joint
   val = 0;
-  if( _jt->type == urdf::Joint::REVOLUTE || _jt->type == urdf::Joint::PRISMATIC ) {
+  if( _jt->type == urdf::Joint::REVOLUTE || 
+      _jt->type == urdf::Joint::PRISMATIC || 
+      _jt->type == urdf::Joint::CONTINUOUS ) {
     
     // Revolute
     if(   _jt->type == urdf::Joint::REVOLUTE ) {  
-      if( _jt->axis.x == 1 ||  _jt->axis.x == -1/*&& _jt->axis.y == 0 && _jt->axis.z == 0 */) {
+      if( _jt->axis.x == 1 /*&& _jt->axis.y == 0 && _jt->axis.z == 0 */) {
 	axis = GOLEM_ROLL; 
-      } else if( _jt->axis.y == 1  ||  _jt->axis.y == -1 /* && _jt->axis.x == 0 && _jt->axis.z == 0 */ ) {
+      } else if( _jt->axis.y == 1  /* && _jt->axis.x == 0 && _jt->axis.z == 0 */ ) {
 	axis = GOLEM_PITCH; 
-      } else if( _jt->axis.z == 1  ||  _jt->axis.z == -1 /* && _jt->axis.x == 0 && _jt->axis.y == 0 */) {
+      } else if( _jt->axis.z == 1   /* && _jt->axis.x == 0 && _jt->axis.y == 0 */) {
 	axis = GOLEM_YAW; 
       } else { 
 	axis = GOLEM_ARBITRARY_ROTATION;
       }
+      
+      vmin = _jt->limits->lower;
+      vmax = _jt->limits->upper;
     }
+
     // Prismatic
     else if( _jt->type == urdf::Joint::PRISMATIC ) {
       
@@ -132,12 +140,30 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
       else if( _jt->axis.y == 1 || _jt->axis.y == -1  ) { axis = GOLEM_Y; }
       else if( _jt->axis.z == 1 || _jt->axis.z == -1 ) { axis = GOLEM_Z; }
       else { printf (" [ERROR] No axis defined for Prismatic DOF! \n"); }
+      
+      vmin = _jt->limits->lower;
+      vmax = _jt->limits->upper;
     }
-    
-    vmin = _jt->limits->lower;
-    vmax = _jt->limits->upper;
-    
+ 
+
+    // Continuous
+    else if( _jt->type == urdf::Joint::CONTINUOUS ) {
+      if( _jt->axis.x == 1 && _jt->axis.y == 0 && _jt->axis.z == 0 ) {
+	axis = GOLEM_ROLL; 
+      } else if( _jt->axis.y == 1 && _jt->axis.x == 0 && _jt->axis.z == 0  ) {
+	axis = GOLEM_PITCH; 
+      } else if( _jt->axis.z == 1 && _jt->axis.x == 0 && _jt->axis.y == 0 ) {
+	axis = GOLEM_YAW; 
+      } else { 
+	axis = GOLEM_ARBITRARY_ROTATION;
+      }
+      // Define infinity limits
+      vmin = -1*std::numeric_limits<double>::infinity();
+      vmax = std::numeric_limits<double>::infinity();
+    }
+      
     add_DOF( _skel, joint, val, vmin, vmax, axis, _jt->axis.x, _jt->axis.y, _jt->axis.z );
+     
   }
   
   // Fixed, do not add DOF
@@ -147,7 +173,7 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
   
   // None of the above
   else {
-    std::cout<<"[createDartJoint] ERROR: Parsing "<<  jointName <<" joint: No PRISMATIC or REVOLUTE or FIXED \n";
+    std::cout<<"[createDartJoint] ERROR: Parsing "<<  jointName <<" joint: No PRISMATIC or REVOLUTE or CONTINUOUS or FIXED \n";
   }
   
   return joint;
@@ -204,7 +230,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       inert->origin.position.y, 
       inert->origin.position.z;
     // Set it to Node
-    //node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
+    node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
     
     if( debug ) { std::cout<< "[debug] Mass is: "<< mass << std::endl; }
     if( debug ) { std::cout<< "[debug] Inertia is: \n"<< inertia << std::endl; }

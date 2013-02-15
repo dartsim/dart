@@ -115,6 +115,8 @@ void DartLoader::add_Shape( dynamics::BodyNodeDynamics* _node,
 
   kinematics::Shape* shape;
 	shape = new kinematics::Shape();
+	shape->setMass(_mass);
+	shape->setInertia(_inertiaMatrix);
 	_node->setShape(shape);
 
 }
