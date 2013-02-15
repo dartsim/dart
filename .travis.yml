@@ -16,7 +16,9 @@ before_install:
   - cd fcl; cmake .; make && sudo make install ; cd ..
   - cd dart
 before_script: cmake .
-script: make
+script:
+  - make
+  - make test
 branches:
   only:
     - master
