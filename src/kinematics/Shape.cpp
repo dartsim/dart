@@ -48,14 +48,16 @@ namespace kinematics {
           mType(_type),
           mDim(0, 0, 0),
           mMass(_mass),
-          mVolume(0), 
+          mVolume(0),
           mInertia(Matrix3d::Zero()),
+          mID(mCounter++),
+          mColor(0.5, 0.5, 1.0),
           mOffset(0, 0, 0),
-          mVisTransform(Matrix4d::Identity()),
           mVizMesh(NULL),
           mCollisionMesh(NULL),
-          mID(mCounter++),
-          mColor(0.5, 0.5, 1.0) {
+          mVisTransform(Matrix4d::Identity()),
+          mVizList(0),
+          mColList(0) {
     }
 
     void Shape::setInertia(const Eigen::Matrix3d& _inertia) {

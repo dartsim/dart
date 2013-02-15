@@ -41,8 +41,20 @@
 #include <list>
 #include <vector>
 #include "RenderInterface.h"
+#include "utils/LoadOpengl.h"
 
 using namespace std;
+
+namespace kinematics {
+	class Skeleton;
+	class BodyNode;
+	class Shape;
+}
+
+namespace robotics {
+	class Object;
+	class Robot;
+}
 
 namespace renderer {
     class OpenGLRenderInterface : public RenderInterface {
@@ -76,12 +88,20 @@ namespace renderer {
         virtual void rotate(const Eigen::Vector3d& _axis, double _rad); //glRotate
         virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
+        void compileList(kinematics::Skeleton *_skel);
+        void compileList(kinematics::BodyNode *_node);
+        void compileList(kinematics::Shape *_shape);
+        GLuint compileList(const aiScene *_mesh);
+
+        virtual void draw(kinematics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
+        virtual void draw(kinematics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
+        void draw(robotics::Object *_skel);
+        void draw(robotics::Robot *_skel);
+
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);
         virtual void drawCube(const Eigen::Vector3d& _size);
         virtual void drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh);
-        virtual void drawList(unsigned int index);
-
-        virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh);
+        virtual void drawList(GLuint index);
 
         virtual void setPenColor(const Eigen::Vector4d& _col);
         virtual void setPenColor(const Eigen::Vector3d& _col);
@@ -91,8 +111,6 @@ namespace renderer {
 
     private:
         int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
-
-        unsigned int listIndex;
 
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -40,6 +40,13 @@
 #include <iostream>
 #include <assimp/cimport.h>
 
+#include <kinematics/Skeleton.h>
+#include <kinematics/BodyNode.h>
+#include <kinematics/Shape.h>
+
+#include <robotics/Object.h>
+#include <robotics/Robot.h>
+
 using namespace std;
 using namespace Eigen;
 
@@ -287,25 +294,105 @@ namespace renderer {
     }
 
     void OpenGLRenderInterface::drawMesh(const Vector3d& _size, const aiScene *_mesh) {
-    	recursiveRender(_mesh, _mesh->mRootNode);
+    	if(_mesh)
+    		recursiveRender(_mesh, _mesh->mRootNode);
     }
 
-    void OpenGLRenderInterface::drawList(unsigned int index) {
+    void OpenGLRenderInterface::drawList(GLuint index) {
     	glCallList(index);
     }
 
-    unsigned int OpenGLRenderInterface::compileDisplayList(const Vector3d& _size, const aiScene *_mesh) {
-    	if(_mesh == NULL)
-    		return 0;
-    	// create one display list
-    	GLuint index = glGenLists(1);
+    void OpenGLRenderInterface::compileList(kinematics::Skeleton *_skel) {
+    	for(int i=0; i < _skel->getNumNodes(); i++) {
+    		compileList(_skel->getNode(i));
+    	}
+    }
 
-    	// compile the display list
+    void OpenGLRenderInterface::compileList(kinematics::BodyNode *_node) {
+    	compileList(_node->getShape());
+    }
+
+    void OpenGLRenderInterface::compileList(kinematics::Shape *_shape) {
+    	//FIXME: Separate these calls once BodyNode is refactored to contain
+    	// both a col Shape and vis Shape.
+    	_shape->setVizList(compileList(_shape->getVizMesh()));
+    	_shape->setColList(compileList(_shape->getCollisionMesh()));
+    }
+
+    GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
+    	if(!_mesh)
+    		return 0;
+
+    	// Generate one list
+    	GLuint index = glGenLists(1);
+    	// Compile list
     	glNewList(index, GL_COMPILE);
-    	    recursiveRender(_mesh, _mesh->mRootNode);
+    	drawMesh(Vector3d::Ones(), _mesh);
     	glEndList();
 
     	return index;
+    }
+
+    void OpenGLRenderInterface::draw(kinematics::Skeleton *_skel, bool _vizCol, bool _colMesh) {
+    	for(int i=0; i < _skel->getNumNodes(); i++) {
+    		draw(_skel->getNode(i), _vizCol, _colMesh);
+    	}
+    }
+
+    void OpenGLRenderInterface::draw(robotics::Object *_skel) {
+    	for(int i=0; i < _skel->getNumNodes(); i++) {
+    		draw(_skel->getNode(i), false, false);
+    	}
+    }
+
+    void OpenGLRenderInterface::draw(robotics::Robot *_skel) {
+    	for(int i=0; i < _skel->getNumNodes(); i++) {
+    		draw(_skel->getNode(i), false, false);
+    	}
+    }
+
+    void OpenGLRenderInterface::draw(kinematics::BodyNode *_node, bool _vizCol, bool _colMesh) {
+    	if(_node == 0)
+    		return;
+
+    	// Get world transform
+    	Eigen::Matrix4d poseMatrix = _node->getWorldTransform();
+    	// FIXME: Use visTransform?
+    	// Eigen::Matrix4d visTransform = _node->getShape()->getVisTransform();
+    	// poseMatrix = poseMatrix*visTransform;
+    	Transform<double,3,Affine> pose;
+    	pose.matrix() = poseMatrix;
+
+    	kinematics::Shape *shape = _node->getShape();
+    	// FIXME: We assume we are rendering a ShapeMesh.
+    	// const aiScene* model = _colMesh ? shape->getCollisionMesh() : shape->getVizMesh();
+    	// const GLuint index = _colMesh ? shape->getColList() : shape->getVizList();
+
+    	const aiScene *model = shape->getVizMesh();
+    	GLuint index = shape->getVizList();
+
+    	// GL calls
+    	if(_vizCol && _node->getColliding()) {
+    		glDisable(GL_TEXTURE_2D);
+			glEnable(GL_COLOR_MATERIAL);
+			glColor3f(1.0f, .1f, .1f);
+    	}
+
+    	glPushMatrix();
+    	glMultMatrixd(pose.data());
+
+    	if(model) {
+    		if(index) {
+    			drawList(index);
+    		} else {
+    			drawMesh(Vector3d::Ones(), model);
+    		}
+    	}
+
+    	glColor3f(1.0f,1.0f,1.0f);
+		glEnable( GL_TEXTURE_2D );
+		glDisable(GL_COLOR_MATERIAL);
+		glPopMatrix();
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {

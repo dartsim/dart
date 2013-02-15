@@ -89,10 +89,14 @@ namespace kinematics {
         inline ShapeType getShapeType() const { return mType; }
 
         inline const aiScene* getVizMesh() const { return mVizMesh; }
-        inline void setVizMesh(const aiScene *_mesh) { mVizMesh = _mesh; } 
+        inline void setVizMesh(const aiScene *_mesh) { mVizMesh = _mesh; }
+        inline int getVizList() { return mVizList; }
+        inline void setVizList(int id) { mVizList = id; }
 
         inline const aiScene* getCollisionMesh() const { return mCollisionMesh; }
-        inline void setCollisionMesh(const aiScene *_mesh) { mCollisionMesh = _mesh; } 
+        inline void setCollisionMesh(const aiScene *_mesh) { mCollisionMesh = _mesh; }
+        inline int getColList() { return mColList; }
+        inline void setColList(int id) { mColList = id; }
 
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
@@ -112,11 +116,13 @@ namespace kinematics {
         int mID; // unique id
         Eigen::Vector3d mColor;		///< color for the primitive
         Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
-	Eigen::Matrix4d mVisTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
+        Eigen::Matrix4d mVisTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
 
 
         const aiScene *mVizMesh; ///< mesh for visualization>
         const aiScene *mCollisionMesh; ///< mesh for collision detection>
+        int mVizList; ///< opengl list id for rendering
+        int mColList; ///< opengl list id for rendering
 
         static int mCounter;
     public:

@@ -60,6 +60,8 @@ namespace kinematics {
         }
 
         listIndex = 0;
+        mVizList = 0;
+        mColList = 0;
     }
 
     void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
@@ -71,15 +73,7 @@ namespace kinematics {
             _ri->setPenColor(mColor);
         _ri->pushMatrix();
 
-        if(listIndex == 0) {
-        	unsigned int * lptr = const_cast<unsigned int*>(&listIndex);
-        	*lptr = _ri->compileDisplayList(mDim, mVizMesh);
-        }
-
-        if(listIndex)
-        	_ri->drawList(listIndex);
-        else
-            _ri->drawMesh(mDim, mVizMesh);
+        _ri->drawMesh(mDim, mVizMesh);
 
         _ri->popMatrix();
     }
