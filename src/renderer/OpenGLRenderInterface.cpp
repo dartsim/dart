@@ -373,7 +373,7 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	draw(_node->getShape());
+    	draw(_node->getShape(), _colMesh);
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );
