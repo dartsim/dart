@@ -365,11 +365,8 @@ namespace renderer {
 
     	kinematics::Shape *shape = _node->getShape();
     	// FIXME: We assume we are rendering a ShapeMesh.
-    	// const aiScene* model = _colMesh ? shape->getCollisionMesh() : shape->getVizMesh();
-    	// const GLuint index = _colMesh ? shape->getColList() : shape->getVizList();
-
-    	const aiScene *model = shape->getVizMesh();
-    	GLuint index = shape->getVizList();
+    	const aiScene* model = _colMesh ? shape->getCollisionMesh() : shape->getVizMesh();
+    	const GLuint index = _colMesh ? shape->getColList() : shape->getVizList();
 
     	// GL calls
     	if(_vizCol && _node->getColliding()) {
