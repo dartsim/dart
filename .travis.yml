@@ -19,6 +19,9 @@ before_script: cmake .
 script:
   - make
   - make test
+after_failure:
+  - cat Testing/Temporary/LastTest.log
+  - cat Testing/Temporary/LastTestsFailed.log
 branches:
   only:
     - master
