@@ -190,7 +190,7 @@ static void getAttribute( tinyxml2::XMLElement * element, const char* const name
 }
 
 int readVSKFile(const char* const filename, Skeleton* _skel){
-    cout << "VLOG(1)"  << "Entering Read VSK File" << endl;
+    // cout << "Entering Read VSK File" << endl;
 
     // Load xml and create Document
     tinyxml2::XMLDocument _stateFile;
@@ -200,10 +200,10 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
     }
     catch(std::exception const & e)
     {
-        cout << "VLOG(1)"  << "LoadFile Fails: " << e.what() << endl;
+        // cout << "LoadFile Fails: " << e.what() << endl;
         return VSK_ERROR;
     }
-    cout << "VLOG(1)"  << "Load " << filename << " (xml) Successfully" << endl;
+    // cout << "Load " << filename << " (xml) Successfully" << endl;
 
     // Load Kinematic Model which defines Parameters, Skeletons and Markers
     tinyxml2::XMLElement* kinmodel = NULL;
@@ -224,7 +224,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
             double val = 0; 
             getAttribute(childparam.get(), "VALUE", &val);
             paramsList[pname] = val;
-            // cout << "VLOG(1)"  << pname << " = " << val << endl;
+            // // cout << pname << " = " << val << endl;
         }
     }
 
@@ -279,15 +279,15 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
                     getAttribute(childmass.get(), "VALUE", &mi);
 
                     masslist[mname] = mi;
-                    cout << "VLOG(1)" <<"mass: "<<mname<<" "<<mi<<endl;
+                    // cout<<"mass: "<<mname<<" "<<mi<<endl;
                 }
             }
             else {
-                cout << "VLOG(1)"  << "No masses found!" << endl;
+                // cout << "No masses found!" << endl;
             }
         } 
         catch( std::exception const & e ){
-            cout << "VLOG(1)"  << "error parsing masses: " << e.what() << endl;
+            // cout << "error parsing masses: " << e.what() << endl;
         }
     }
 
@@ -304,7 +304,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
                 }
             }
             else {
-                cout << "VLOG(1)"  << "No shapes found." << endl;
+                // cout << "No shapes found." << endl;
             }
         } 
         catch( std::exception const & )
@@ -317,7 +317,7 @@ int readVSKFile(const char* const filename, Skeleton* _skel){
 
     _skel->initSkel();
     // 
-    cout << "VLOG(1)"  << "VSK Parser exiting successfully" << endl;
+    // cout << "VSK Parser exiting successfully" << endl;
     return VSK_OK;
 }
 
@@ -331,9 +331,9 @@ bool readSegment(tinyxml2::XMLElement*_segment,
 {
     string sname = getAttribute(_segment, "NAME");
 
-    cout << "VLOG(1)" <<"\nsegment: "<<sname<<" ";
-    if(_parent) cout << "VLOG(1)" <<"parent: "<<_parent->getName()<<endl;
-    else cout << "VLOG(1)" <<"parent: NULL\n";
+    // cout<<"\nsegment: "<<sname<<" ";
+    // if(_parent) cout<<"parent: "<<_parent->getName()<<endl;
+    // else cout<<"parent: NULL\n";
 
     // make bodylink out of current segment
     BodyNode* blink = _skel->createBodyNode( sname.c_str() );
@@ -345,7 +345,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
     // HARDCODED: constant rotation for humerus and changed translation
     if(sname.compare(1, 8, "humerus")!=0)
     {
-        cout << "VLOG(1)"  << "THE COMMON CODE!!" << endl;
+        // cout << "THE COMMON CODE!!" << endl;
         string txyz = getAttribute(_segment, "POSITION");
         vector<string> tokens; utils::tokenize(txyz, tokens);
         assert(tokens.size()==3);
@@ -379,7 +379,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
             // add transformation to joint
             jt->addTransform(tele, false);	
             // don't add to model because it's not variable
-            cout << "VLOG(1)" <<"telescope: "<<pos2<<endl;
+            // cout<<"telescope: "<<pos2<<endl;
         }
 
         {
@@ -388,7 +388,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
             assert(tokens.size()==3);
             for (int i = 0; i < 3; ++i) {
                 orientation[i] = utils::strTodouble(tokens[i]);
-                // cout << "VLOG(1)"  << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
+                // // cout << "ORI = " << orientation[i] << " <== " << tokens[i] << endl;
             }
             orientation = adjustPos(orientation) / SCALE_VSK;
         }
@@ -396,7 +396,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
     }
     // HARDCODED: constant rotation for humerus and changed translation
     else {
-        cout << "VLOG(1)"  << "HUMERUS SPECIAL CODE!!!!!" << endl;
+        // cout << "HUMERUS SPECIAL CODE!!!!!" << endl;
         char lr = sname[0];
         //adjusted: +-Shoulder ShoulderHeight 0 
         string paramShoulder = "ShoulderLen";
@@ -406,14 +406,14 @@ bool readSegment(tinyxml2::XMLElement*_segment,
         // telescope
         Vector3d pos(0.0, 1.0, 0.0);	// adjusted for skel
         pos *= _paramsList[paramShoulder];
-        cout << "VLOG(1)" <<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
+        // cout<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
         Dof** dofs = new Dof*[3];
         for(int i=0; i<3; i++) dofs[i] = new Dof(pos[i]);
         TrfmTranslate* tele = new TrfmTranslate(dofs[0],dofs[1],dofs[2]);
         // add transformation to joint
         jt->addTransform(tele, false);	
         // don't add to model because it's not variable
-        cout << "VLOG(1)" <<"telescope: "<<pos<<endl;
+        // cout<<"telescope: "<<pos<<endl;
 
         // const rotation
         Dof *dofx = new Dof(-expShoulder[0]);
@@ -422,21 +422,21 @@ bool readSegment(tinyxml2::XMLElement*_segment,
         TrfmRotateExpMap *consrot= new TrfmRotateExpMap(dofx, dofy, dofz);
         jt->addTransform(consrot, false);	
         // don't add to model because it's not variable
-        cout << "VLOG(1)" <<"const rotation: "<<-expShoulder<<endl;
+        // cout<<"const rotation: "<<-expShoulder<<endl;
     }
 
     // HARDCODED: constant rotation for clavicle
     if(sname.compare(1, 8, "clavicle")==0){
-        cout << "VLOG(1)"  << "CLAVICLE SPECIAL CODE!!" << endl;
+        // cout << "CLAVICLE SPECIAL CODE!!" << endl;
         char lr = sname[0];
         string hname = "humerus";
         hname.insert(hname.begin(), lr);
-        cout << "VLOG(1)" <<hname<<endl;
+        // cout<<hname<<endl;
         // read the childsegment humerus
         tinyxml2::XMLElement *humerus = _segment->FirstChildElement( "Segment");
         string cname = getAttribute(humerus, "NAME");
         if(cname.compare(hname)!=0){
-            cout << "VLOG(1)" <<"Error: childname of "<<sname<<" doesnt match: "<<hname<<" vs "<<cname<<endl;
+            // cout<<"Error: childname of "<<sname<<" doesnt match: "<<hname<<" vs "<<cname<<endl;
             return false;
         }
         // add telescope and const rot transforms
@@ -463,7 +463,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
         string paramShoulder = "ShoulderLen";
         paramShoulder.push_back(lr);
         _paramsList[paramShoulder] = lenShoulder;
-        cout << "VLOG(1)" <<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
+        // cout<<"shoulder len: "<<_paramsList[paramShoulder]<<endl;
         //adjusted: +-Shoulder ShoulderHeight z 
 
         pos.normalize();
@@ -479,7 +479,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
         TrfmRotateExpMap *consrot= new TrfmRotateExpMap(dofx, dofy, dofz);
         jt->addTransform(consrot, false);	
         // don't add to model because it's not variable
-        cout << "VLOG(1)" <<"const rotation: "<<expShoulder<<endl;
+        // cout<<"const rotation: "<<expShoulder<<endl;
     }
 
 
@@ -514,14 +514,14 @@ bool readSegment(tinyxml2::XMLElement*_segment,
             readJointHinge(tf, jt, _skel);
         }
     }
-    if(!foundJoint) cout << "VLOG(1)" <<"fixed joint!\n";
+    // if(!foundJoint) cout<<"fixed joint!\n";
 
     for(int i=0; i<jt->getNumTransforms(); i++){
         if(!jt->getTransform(i)->getVariable()) continue;
         for(int j=0; j<jt->getTransform(i)->getNumDofs(); j++){
-            cout << "VLOG(1)" <<jt->getTransform(i)->getDof(j)->getName()<<" ";
+            // cout<<jt->getTransform(i)->getDof(j)->getName()<<" ";
         }
-        cout << "VLOG(1)" <<endl;
+        // cout<<endl;
     }
 
     // add to the model
@@ -539,7 +539,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
 }
 
 bool readJointFree(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
-    cout << "VLOG(1)" <<"read free\n";
+    // cout<<"read free\n";
 
     // create new transformation
     string tname1 = string(_jt->getChildNode()->getName()) + "_t";
@@ -581,8 +581,8 @@ bool readJointFree(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
 }
 
 bool readJointBall(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel, Vector3d orient) {
-    cout << "VLOG(1)"  << "read ball\n";
-    cout << "VLOG(1)"  << "orientation = " << orient << endl;
+    // cout << "read ball\n";
+    // cout << "orientation = " << orient << endl;
     string tname2 = string(_jt->getChildNode()->getName()) + "_a";
     string tname2_0 = tname2 + "Ball0";
     string tname2_1 = tname2 + "Ball1";
@@ -607,7 +607,7 @@ bool readJointBall(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel, Vecto
 
 
 bool readJointHardySpicer(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
-    cout << "VLOG(1)" <<"read hardy spicer\n";
+    // cout<<"read hardy spicer\n";
 
     // Read axisxyz and parse it into tokens
     string axisxyz = getAttribute(_je, "AXIS-PAIR");
@@ -660,7 +660,7 @@ bool readJointHardySpicer(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel
 
 
 bool readJointHinge(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
-    cout << "VLOG(1)" <<"read hinge\n";
+    // cout<<"read hinge\n";
 
     string tname = string(_jt->getChildNode()->getName()) + "_a";
     tname += "Hinge0";
@@ -682,17 +682,17 @@ bool readJointHinge(tinyxml2::XMLElement* _je, Joint* _jt, Skeleton* _skel) {
     // if(tokens[1].compare("1")==0){
     if ((axis - adjustPos(Vector3d(1.0, 0.0, 0.0)) / SCALE_VSK ).norm() < 0.01) {
         r1 = new TrfmRotateEulerX(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "VLOG(1)"  << "RotateEulerX" << endl;
+        // cout << "RotateEulerX" << endl;
     }
     else if ((axis - adjustPos(Vector3d(0.0, 1.0, 0.0)) / SCALE_VSK ).norm() < 0.01) {
         // else if(tokens[2].compare("1")==0){
         r1 = new TrfmRotateEulerY(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "VLOG(1)"  << "RotateEulerY" << endl;
+        // cout << "RotateEulerY" << endl;
     }
     else if ((axis - adjustPos(Vector3d(0.0, 0.0, 1.0)) / SCALE_VSK ).norm() < 0.01) {
         // else if(tokens[0].compare("1")==0){
         r1 = new TrfmRotateEulerZ(new Dof(0.0, pTname, -3.1415, 3.1415));
-        cout << "VLOG(1)"  << "RotateEulerZ" << endl;
+        // cout << "RotateEulerZ" << endl;
     }
     assert(r1!=NULL);
     _jt->addTransform(r1);	
@@ -745,10 +745,10 @@ bool readMarker(tinyxml2::XMLElement*_marker, map<string, double>& _paramsList, 
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));
     _skel->addMarker(m);
-    cout << "VLOG(1)" <<"marker: "<<mname<<" ";
-    cout << "VLOG(1)" <<"segment: "<<sname<<" ";
-    cout << "VLOG(1)" <<"sindex: "<<_segmentindex[sname]<<" ";
-    cout << "VLOG(1)" <<"lpos: "<<lpos2<<endl;
+    // cout<<"marker: "<<mname<<" ";
+    // cout<<"segment: "<<sname<<" ";
+    // cout<<"sindex: "<<_segmentindex[sname]<<" ";
+    // cout<<"lpos: "<<lpos2<<endl;
     return true;
 }
 
@@ -819,7 +819,7 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
         prim = new ShapeBox(dim, mass);
     }
     else {
-        cout << "VLOG(1)"  << "Shape type " << ptype << " not recognized!\n";
+        // cout << "Shape type " << ptype << " not recognized!\n";
         return false;
     }
 
@@ -887,7 +887,7 @@ void autoGenerateShapeParent(Skeleton* skel)
 {
     // autoGenerateShape(skel); return;
 
-    cout << "VLOG(1)"  << "Auto-generating primitives" << endl;
+    // cout << "Auto-generating primitives" << endl;
 
     double massSum = 0.0;
     for(int i=0; i<skel->getNumNodes(); i++){
@@ -897,17 +897,17 @@ void autoGenerateShapeParent(Skeleton* skel)
         // Search translate matrix
         Vector3d size = 0.1 * Vector3d(1,1,1);
         Vector3d offset(0,0,0);
-        cout << "VLOG(1)"  << endl;
-        cout << "VLOG(1)"  << "Node = " << node->getName() << endl;
+        // cout << endl;
+        // cout << "Node = " << node->getName() << endl;
         if (node->getParentNode() == NULL)
         {
-            cout << "VLOG(1)"  << "computing size for the root" << endl;
+            // cout << "computing size for the root" << endl;
             size = 0.1 * Vector3d(1,1,1);
             continue;
         }
         BodyNode* parent = node->getParentNode();
 
-        cout << "VLOG(1)"  << "Parent Node = " << node->getParentNode()->getName() << endl;
+        // cout << "Parent Node = " << node->getParentNode()->getName() << endl;
         for (int j = 0; j < joint->getNumTransforms(); ++j)
         {
             Transformation* trfm = joint->getTransform(j);
@@ -939,9 +939,9 @@ void autoGenerateShapeParent(Skeleton* skel)
         double density = 2000.0;
         double mass = density * size[0] * size[1] * size[2];
         massSum += mass;
-        cout << "VLOG(1)"  << "Size = " << size << endl;
-        cout << "VLOG(1)"  << "Offset = " << offset << endl;
-        cout << "VLOG(1)"  << "Mass = " << mass << endl;
+        // cout << "Size = " << size << endl;
+        // cout << "Offset = " << offset << endl;
+        // cout << "Mass = " << mass << endl;
 
         // size = 0.1 * Vector3d(vl_1);
         // offset = Vector3d(vl_0);
@@ -955,6 +955,6 @@ void autoGenerateShapeParent(Skeleton* skel)
     }
 
     autoGenerateShape(skel);
-    cout << "VLOG(1)"  << "Sum of mass = " << massSum << endl;
+    // cout << "Sum of mass = " << massSum << endl;
 }
 

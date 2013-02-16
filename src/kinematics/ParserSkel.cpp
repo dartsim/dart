@@ -1966,7 +1966,7 @@ void __createMarker( char* name, doubleVec3 offset, int id, char* node_name ) {
 
     BodyNode *node = NULL;
 
-    cout << "VLOG(1)"  << "   reading marker: name\n";
+    // cout << "   reading marker: name\n";
 
     char fullNodeName[256];
     strcpy(fullNodeName, namePrefix);
@@ -2026,7 +2026,7 @@ Dof* __createDOF( char* name, double val, double lo, double hi ) {
     dof_lookup[num_dofs].dof = d;
     num_dofs++;
 
-    cout << "VLOG(1)"  << "   reading dof: name\n";
+    // cout << "   reading dof: name\n";
 
     return d;
 }
@@ -2061,7 +2061,7 @@ void __startNode( const char* s, int id ) {
     // create a new node
     // BodyNode* newNode = new BodyNode( fullName );
     BodyNode* newNode = gSkel->createBodyNode( fullName );
-    cout << "VLOG(1)"  << "   reading node: s\n";
+    // cout << "   reading node: s\n";
 
     // push the cur_node (parent) to the stack
     if( cur_node != NULL ){
@@ -2121,7 +2121,7 @@ void __createTranslate( dofVec3 v )
     char *commonName = new char[pos + 1];
     strncpy(commonName, v[0]->getName(), pos);
     commonName[pos] = '\0';
-    cout << "VLOG(1)"  << "common name is commonName\n";
+    // cout << "common name is commonName\n";
     //----------
 
     // create new transformation
@@ -2204,7 +2204,7 @@ void __createRotateQuat( dofVec4 v )
     commonName[pos] = '\0';
     //--------
 
-    cout << "VLOG(1)"  << "    assuming the last value is w for quaternion\n";
+    // cout << "    assuming the last value is w for quaternion\n";
     // create a new transformation
     TrfmRotateQuat*  quat = new TrfmRotateQuat(v[3], v[0], v[1], v[2], commonName);;
 
