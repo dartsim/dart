@@ -37,7 +37,6 @@ endif()
 
 # Compile each test file
 file(GLOB tests "*.cpp")
-set(dontTest testDrawRRT;)
 foreach(test ${tests})
 
 	# Get the name (i.e. bla.cpp => bla)
