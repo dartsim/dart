@@ -5,6 +5,12 @@ DART Simulator
 
 Dart can be used with Windows 7, Linux Ubuntu and Mac OS 10.7 or greater. Installation instructions can be found on [Dart wiki](https://github.com/golems/dart/wiki).
 
+Docs
+----
+
+We have [online doxygen documentation][docs] and you can also generate it
+yourself with `make docs`.
+
 Issues
 -------
 
@@ -27,3 +33,4 @@ Developers
 * [Golems Humanoids Lab, Georgia Tech](http://golems.org/)
 
 [1]: https://help.github.com/articles/using-pull-requests
+[docs]: http://dart.golems.org/dart/index.html
