@@ -329,6 +329,7 @@ namespace kinematics {
             case Transformation::T_ROTATEY:
             case Transformation::T_ROTATEZ:
             case Transformation::T_ROTATEEXPMAP:
+            case Transformation::T_ROTATEAXIS:
                 mNumDofsRot+=_t->getNumDofs();
                 mRotTransformIndex.push_back(mTransforms.size()-1);
                 break;
