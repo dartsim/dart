@@ -8,7 +8,7 @@ message(STATUS "Generate makefile/project file for DART")
 
 set(DART_MAJOR_VERSION "2")
 set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "0")
+set(DART_PATCH_VERSION "0precise")
 set(PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -134,7 +134,7 @@ set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost1.48-all-dev, libflann-dev (>=1.8), libccd (>=1.4.2), fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev, libtinyxml2-dev, libassimp3")
 
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}")
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_SYSTEM_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karen Liu (www.cc.gatech.edu/~karenliu/)")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PKG_DESC}")
