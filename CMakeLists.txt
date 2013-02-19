@@ -119,11 +119,14 @@ endif()
 ###############
 # Package Installer
 set(CPACK_PACKAGE_NAME "dart")
-set(CPACK_SYSTEM_NAME "amd64")
+set(CPACK_SYSTEM_NAME "i386")
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    set(CPACK_SYSTEM_NAME "amd64")    
+endif()
 set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
 set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
 set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost-dev, flann (>=1.8), libccd (>=1.4.2), libfcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev, libassimp3")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost1.48-all-dev, libflann-dev (>=1.8), libccd (>=1.4.2), fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev, libtinyxml2-dev, libassimp3")
 
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}")
