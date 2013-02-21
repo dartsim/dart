@@ -318,14 +318,29 @@ namespace renderer {
     	compileList(_node->getShape());
     }
 
+    //FIXME: Use polymorphism instead of switch statements
     void OpenGLRenderInterface::compileList(kinematics::Shape *_shape) {
     	if(_shape == 0)
     		return;
 
-    	//FIXME: Separate these calls once BodyNode is refactored to contain
-    	// both a col Shape and vis Shape.
-    	_shape->setVizList(compileList(_shape->getVizMesh()));
-    	_shape->setColList(compileList(_shape->getCollisionMesh()));
+    	switch(_shape->getShapeType()) {
+    	case kinematics::Shape::P_UNDEFINED:
+    		break;
+    	case kinematics::Shape::P_BOX:
+    		break;
+    	case kinematics::Shape::P_CYLINDER:
+    		break;
+    	case kinematics::Shape::P_ELLIPSOID:
+    		break;
+    	case kinematics::Shape::P_SPHERE:
+    		break;
+    	case kinematics::Shape::P_MESH:
+    		//FIXME: Separate these calls once BodyNode is refactored to contain
+    		// both a col Shape and vis Shape.
+    		_shape->setVizList(compileList(_shape->getVizMesh()));
+    		_shape->setColList(compileList(_shape->getCollisionMesh()));
+    		break;
+    	}
     }
 
     GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
@@ -381,18 +396,39 @@ namespace renderer {
 		glPopMatrix();
     }
 
+    //FIXME: Refactor this to use polymorphism.
     void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
     	if(_shape == 0)
     		return;
 
-    	// FIXME: We assume we are rendering a ShapeMesh.
-    	const aiScene* model = _colMesh ? _shape->getCollisionMesh() : _shape->getVizMesh();
-    	const GLuint index = _colMesh ? _shape->getColList() : _shape->getVizList();
+    	switch(_shape->getShapeType()) {
+    	case kinematics::Shape::P_UNDEFINED:
+    		break;
+    	case kinematics::Shape::P_BOX:
+    		//FIXME: We are not in a glut instance
+    		//drawCube(_shape->getDim());
+    		break;
+    	case kinematics::Shape::P_CYLINDER:
+    		//FIXME: Implement this
+    		break;
+    	case kinematics::Shape::P_ELLIPSOID:
+    		//FIXME: We are not in a glut instance
+    		//drawEllipsoid(_shape->getDim());
+    		break;
+    	case kinematics::Shape::P_SPHERE:
+    		//FIXME: We are not in a glut instance
+    		//drawEllipsoid(_shape->getDim());
+    		break;
+    	case kinematics::Shape::P_MESH:
+    		const aiScene* model = _colMesh ? _shape->getCollisionMesh() : _shape->getVizMesh();
+    		const GLuint index = _colMesh ? _shape->getColList() : _shape->getVizList();
 
-    	if(index) {
-    		drawList(index);
-    	} else {
-    		drawMesh(Vector3d::Ones(), model);
+    		if(index) {
+    			drawList(index);
+    		} else {
+    			drawMesh(Vector3d::Ones(), model);
+    		}
+    		break;
     	}
     }
 
