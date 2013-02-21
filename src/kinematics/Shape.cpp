@@ -55,7 +55,6 @@ namespace kinematics {
           mOffset(0, 0, 0),
           mCollisionMesh(NULL),
           mVisTransform(Matrix4d::Identity()),
-          mVizList(0),
           mColList(0) {
     }
 

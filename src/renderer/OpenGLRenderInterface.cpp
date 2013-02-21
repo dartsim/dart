@@ -338,7 +338,13 @@ namespace renderer {
     	case kinematics::Shape::P_MESH:
     		//FIXME: Separate these calls once BodyNode is refactored to contain
     		// both a col Shape and vis Shape.
-    		_shape->setVizList(compileList(((kinematics::ShapeMesh*)_shape)->getMesh()));
+    		kinematics::ShapeMesh* shapeMesh = dynamic_cast<kinematics::ShapeMesh*>(_shape);
+
+			if(shapeMesh == 0)
+				return;
+
+			shapeMesh->setDisplayList(compileList(shapeMesh->getMesh()));
+
     		_shape->setColList(compileList(_shape->getCollisionMesh()));
     		break;
     	}
@@ -421,8 +427,13 @@ namespace renderer {
     		//drawEllipsoid(_shape->getDim());
     		break;
     	case kinematics::Shape::P_MESH:
-    		const aiScene* model = _colMesh ? _shape->getCollisionMesh() : ((kinematics::ShapeMesh*)_shape)->getMesh();
-    		const GLuint index = _colMesh ? _shape->getColList() : _shape->getVizList();
+    		kinematics::ShapeMesh* shapeMesh = dynamic_cast<kinematics::ShapeMesh*>(_shape);
+
+    		if(shapeMesh == 0)
+    			return;
+
+    		const aiScene* model = _colMesh ? shapeMesh->getCollisionMesh() : shapeMesh->getMesh();
+    		const GLuint index = _colMesh ? shapeMesh->getColList() : shapeMesh->getDisplayList();
 
     		if(index) {
     			drawList(index);

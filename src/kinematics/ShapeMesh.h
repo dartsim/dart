@@ -49,6 +49,9 @@ namespace kinematics {
         inline const aiScene* getMesh() const { return mMesh; }
         inline void setMesh(const aiScene* _mesh) { mMesh = _mesh; }
 
+        inline int getDisplayList() const { return mDisplayList; }
+        inline void setDisplayList(int _index) { mDisplayList = _index; }
+
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(), bool _default = true) const;
         static const aiScene* loadMesh(const std::string& fileName);
     private:
@@ -56,6 +59,7 @@ namespace kinematics {
         void computeVolume();
 
         const aiScene *mMesh;
+        int mDisplayList;	///< OpenGL DisplayList id for rendering
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

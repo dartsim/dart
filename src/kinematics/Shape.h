@@ -88,9 +88,6 @@ namespace kinematics {
         inline int getID() const { return mID; }
         inline ShapeType getShapeType() const { return mType; }
 
-        inline int getVizList() { return mVizList; }
-        inline void setVizList(int id) { mVizList = id; }
-
         inline const aiScene* getCollisionMesh() const { return mCollisionMesh; }
         inline void setCollisionMesh(const aiScene *_mesh) { mCollisionMesh = _mesh; }
         inline int getColList() { return mColList; }
@@ -118,7 +115,6 @@ namespace kinematics {
 
 
         const aiScene *mCollisionMesh; ///< mesh for collision detection>
-        int mVizList; ///< opengl list id for rendering
         int mColList; ///< opengl list id for rendering
 
         static int mCounter;
