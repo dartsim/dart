@@ -46,14 +46,16 @@ namespace kinematics {
     public:
         ShapeMesh(Eigen::Vector3d _dim, double _mass, const aiScene *_mesh);
 
+        inline const aiScene* getMesh() const { return mMesh; }
+        inline void setMesh(const aiScene* _mesh) { mMesh = _mesh; }
+
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(), bool _default = true) const;
         static const aiScene* loadMesh(const std::string& fileName);
     private:
         virtual Eigen::Matrix3d computeInertia(double _mass);
         void computeVolume();
-        void initMeshes(); ///< initialize mVizMesh and mCollisionMesh>
 
-        const aiScene *mMeshData;
+        const aiScene *mMesh;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

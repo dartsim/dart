@@ -43,6 +43,7 @@
 #include <kinematics/Skeleton.h>
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
+#include <kinematics/ShapeMesh.h>
 
 #include <robotics/Object.h>
 #include <robotics/Robot.h>
@@ -337,7 +338,7 @@ namespace renderer {
     	case kinematics::Shape::P_MESH:
     		//FIXME: Separate these calls once BodyNode is refactored to contain
     		// both a col Shape and vis Shape.
-    		_shape->setVizList(compileList(_shape->getVizMesh()));
+    		_shape->setVizList(compileList(((kinematics::ShapeMesh*)_shape)->getMesh()));
     		_shape->setColList(compileList(_shape->getCollisionMesh()));
     		break;
     	}
@@ -420,7 +421,7 @@ namespace renderer {
     		//drawEllipsoid(_shape->getDim());
     		break;
     	case kinematics::Shape::P_MESH:
-    		const aiScene* model = _colMesh ? _shape->getCollisionMesh() : _shape->getVizMesh();
+    		const aiScene* model = _colMesh ? _shape->getCollisionMesh() : ((kinematics::ShapeMesh*)_shape)->getMesh();
     		const GLuint index = _colMesh ? _shape->getColList() : _shape->getVizList();
 
     		if(index) {

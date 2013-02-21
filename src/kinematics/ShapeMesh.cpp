@@ -51,7 +51,7 @@ namespace kinematics {
         mType = P_MESH;
         mDim = _dim;
         mMass = _mass;
-        mMeshData = _mesh;
+        mMesh = _mesh;
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
@@ -69,7 +69,7 @@ namespace kinematics {
             _ri->setPenColor(mColor);
         _ri->pushMatrix();
 
-        _ri->drawMesh(mDim, mVizMesh);
+        _ri->drawMesh(mDim, mMesh);
 
         _ri->popMatrix();
     }
@@ -83,20 +83,20 @@ namespace kinematics {
         double min_Y = 1e7;
         double min_Z = 1e7;
 
-        for(unsigned int i = 0; i < mMeshData->mNumMeshes; i++) {
-            for (unsigned int j = 0; j < mMeshData->mMeshes[i]->mNumVertices; j++) {
-                if (mMeshData->mMeshes[i]->mVertices[j].x > max_X)
-                    max_X = mMeshData->mMeshes[i]->mVertices[j].x;
-                if (mMeshData->mMeshes[i]->mVertices[j].x < min_X)
-                    min_X = mMeshData->mMeshes[i]->mVertices[j].x;
-                if (mMeshData->mMeshes[i]->mVertices[j].y > max_Y)
-                    max_Y = mMeshData->mMeshes[i]->mVertices[j].y;
-                if (mMeshData->mMeshes[i]->mVertices[j].y < min_Y)
-                    min_Y = mMeshData->mMeshes[i]->mVertices[j].y;
-                if (mMeshData->mMeshes[i]->mVertices[j].z > max_Z)
-                    max_Z = mMeshData->mMeshes[i]->mVertices[j].z;
-                if (mMeshData->mMeshes[i]->mVertices[j].z < min_Z)
-                    min_Z = mMeshData->mMeshes[i]->mVertices[j].z;
+        for(unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
+            for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
+                if (mMesh->mMeshes[i]->mVertices[j].x > max_X)
+                    max_X = mMesh->mMeshes[i]->mVertices[j].x;
+                if (mMesh->mMeshes[i]->mVertices[j].x < min_X)
+                    min_X = mMesh->mMeshes[i]->mVertices[j].x;
+                if (mMesh->mMeshes[i]->mVertices[j].y > max_Y)
+                    max_Y = mMesh->mMeshes[i]->mVertices[j].y;
+                if (mMesh->mMeshes[i]->mVertices[j].y < min_Y)
+                    min_Y = mMesh->mMeshes[i]->mVertices[j].y;
+                if (mMesh->mMeshes[i]->mVertices[j].z > max_Z)
+                    max_Z = mMesh->mMeshes[i]->mVertices[j].z;
+                if (mMesh->mMeshes[i]->mVertices[j].z < min_Z)
+                    min_Z = mMesh->mMeshes[i]->mVertices[j].z;
             }
         }
         double l = mDim[0] * (max_X - min_X);
@@ -113,9 +113,6 @@ namespace kinematics {
 
     void ShapeMesh::computeVolume() {
         mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
-    }
-
-    void ShapeMesh::initMeshes() {
     }
 
     const aiScene* ShapeMesh::loadMesh(const string& fileName) {

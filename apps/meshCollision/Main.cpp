@@ -72,10 +72,9 @@ int main(int argc, char* argv[])
     const aiScene* m3d = ShapeMesh::loadMesh( DART_DATA_PATH"/obj/foot.obj");
 
     //  Create Shape and assign it to node
-      kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), 0.0, m3d);
+    kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), 0.0, m3d);
 
-    // Save Mesh3D in Shape (vizMesh)
-    Shape0->setVizMesh( m3d );
+    // Save Mesh3D in Shape
     Shape0->setCollisionMesh( m3d );
     Shape0->setMass(1); // 1 Kg according to cube1.skel
     Matrix3d M;

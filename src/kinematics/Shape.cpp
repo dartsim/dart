@@ -53,7 +53,6 @@ namespace kinematics {
           mID(mCounter++),
           mColor(0.5, 0.5, 1.0),
           mOffset(0, 0, 0),
-          mVizMesh(NULL),
           mCollisionMesh(NULL),
           mVisTransform(Matrix4d::Identity()),
           mVizList(0),

@@ -88,8 +88,6 @@ namespace kinematics {
         inline int getID() const { return mID; }
         inline ShapeType getShapeType() const { return mType; }
 
-        inline const aiScene* getVizMesh() const { return mVizMesh; }
-        inline void setVizMesh(const aiScene *_mesh) { mVizMesh = _mesh; }
         inline int getVizList() { return mVizList; }
         inline void setVizList(int id) { mVizList = id; }
 
@@ -119,7 +117,6 @@ namespace kinematics {
         Eigen::Matrix4d mVisTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
 
 
-        const aiScene *mVizMesh; ///< mesh for visualization>
         const aiScene *mCollisionMesh; ///< mesh for collision detection>
         int mVizList; ///< opengl list id for rendering
         int mColList; ///< opengl list id for rendering
