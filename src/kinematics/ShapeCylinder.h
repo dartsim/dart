@@ -49,8 +49,9 @@ namespace kinematics {
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
     private:
+        virtual Eigen::Matrix3d computeInertia(double _mass);
         void computeVolume();
-        void computeInertia();
+
 
         double mRadius;
         double mHeight; // along z-axis

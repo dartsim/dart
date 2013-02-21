@@ -72,7 +72,7 @@ namespace kinematics {
         void setDim(const Eigen::Vector3d& _dim);
         inline Eigen::Vector3d getDim() const { return mDim; }
 
-	inline void setOffset(Eigen::Vector3d _offset) { mOffset = _offset; }
+        inline void setOffset(Eigen::Vector3d _offset) { mOffset = _offset; }
         inline Eigen::Vector3d getOffset() const { return mOffset; }
 
         inline void setVisTransform(const Eigen::Matrix4d &_visTransform ) { mVisTransform = _visTransform; }
@@ -101,7 +101,7 @@ namespace kinematics {
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
     protected:
-        virtual void computeInertia() {}
+        virtual Eigen::Matrix3d computeInertia(double _mass) { return Eigen::Matrix3d::Zero(); }
         virtual void computeVolume() {}
 
         virtual void initMeshes() {}

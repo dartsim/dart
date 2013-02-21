@@ -52,7 +52,7 @@ namespace kinematics {
             computeVolume();
         }
         if (mMass > 0.0) {
-            computeInertia();
+            mInertia = computeInertia(mMass);
         }
     }
 
@@ -64,11 +64,13 @@ namespace kinematics {
         mVolume = M_PI * mRadius * mRadius * mHeight;
     }
 
-    void ShapeCylinder::computeInertia() {
-        mInertia = Matrix3d::Zero();
-        mInertia(0, 0) = mMass * (3.0 * mRadius * mRadius + mHeight * mHeight) / 12.0;
-        mInertia(1, 1) = mInertia(0, 0);
-        mInertia(2, 2) = 0.5 * mMass * mRadius * mRadius;
+    Matrix3d ShapeCylinder::computeInertia(double _mass) {
+        Matrix3d inertia = Matrix3d::Zero();
+        inertia(0, 0) = _mass * (3.0 * mRadius * mRadius + mHeight * mHeight) / 12.0;
+        inertia(1, 1) = inertia(0, 0);
+        inertia(2, 2) = 0.5 * _mass * mRadius * mRadius;
+
+        return inertia;
     }
 
 } // namespace kinematics

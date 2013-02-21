@@ -67,12 +67,12 @@ namespace kinematics {
     void Shape::setDim(const Eigen::Vector3d& _dim) {
         mDim = _dim;
         computeVolume();
-        computeInertia();
+        mInertia = computeInertia(mMass);
     }
 
     void Shape::setMass(double _m) {
         mMass = _m;
-        computeInertia();
+        mInertia = computeInertia(mMass);
     }
 
     int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;

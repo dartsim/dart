@@ -49,7 +49,7 @@ namespace kinematics {
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(), bool _default = true) const;
         static const aiScene* loadMesh(const std::string& fileName);
     private:
-        void computeInertia();
+        virtual Eigen::Matrix3d computeInertia(double _mass);
         void computeVolume();
         void initMeshes(); ///< initialize mVizMesh and mCollisionMesh>
 

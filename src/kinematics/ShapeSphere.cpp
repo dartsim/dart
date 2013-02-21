@@ -50,7 +50,7 @@ namespace kinematics {
             computeVolume();
         }
         if (mMass > 0.0) {
-            computeInertia();
+            mInertia = computeInertia(mMass);
         }
     }
 
@@ -62,8 +62,8 @@ namespace kinematics {
         mVolume = 4.0 / 3.0 * M_PI * mRadius * mRadius * mRadius;
     }
 
-    void ShapeSphere::computeInertia() {
-        mInertia = 0.4 * mMass * mRadius * mRadius * Matrix3d::Identity();
+    Matrix3d ShapeSphere::computeInertia(double _mass) {
+        return 0.4 * _mass * mRadius * mRadius * Matrix3d::Identity();
     }
 
 } // namespace kinematics
