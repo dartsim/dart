@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <vector>
 #include <string>
+#include <map>
 #include <boost/shared_ptr.hpp>
 #include <robotics/parser/urdfdom_headers/urdf_model/pose.h>
 
@@ -55,8 +56,10 @@ class DartLoader {
   robotics::World* parseWorld( std::string _urdfFile );
 
   dynamics::SkeletonDynamics* modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model );
-  robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model );
-  robotics::Object* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model );
+  robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
+					  std::string _rootToRobotPath = NULL );
+  robotics::Object* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
+					    std::string _rootToObjectPath = NULL );
 
   // Utilities
   dynamics::BodyNodeDynamics* getNode( std::string _nodeName );
@@ -90,14 +93,16 @@ class DartLoader {
   kinematics::Joint* createDartJoint( boost::shared_ptr<urdf::Joint> _jt,
 				      dynamics::SkeletonDynamics* _skel );
   dynamics::BodyNodeDynamics* createDartNode( boost::shared_ptr<urdf::Link> _lk,
-					      dynamics::SkeletonDynamics* _skel ); 
+					      dynamics::SkeletonDynamics* _skel,
+					      std::string _rootToSkelPath = NULL ); 
   
   // Member variables
   std::vector<dynamics::BodyNodeDynamics*> mNodes;
   std::vector<kinematics::Joint*> mJoints;
   
-  std::string mWorldPath;
-  std::string mPath;
+  std::string mRoot_To_World_Path;
+  std::map<std::string, std::string> mWorld_To_Entity_Paths;
+  void parseWorldToEntityPaths( const std::string &_xml_string );
   
 };
 

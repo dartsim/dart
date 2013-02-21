@@ -55,7 +55,7 @@ namespace urdf{
   /**
    * @function parseWorldURDF
    */
-  boost::shared_ptr<World> parseWorldURDF(const std::string &_xml_string, std::string _path ) {
+  boost::shared_ptr<World> parseWorldURDF(const std::string &_xml_string, std::string _root_to_world_path ) {
     
     boost::shared_ptr<World> world( new World );
     world->clear();
@@ -94,7 +94,7 @@ namespace urdf{
       std::string string_filename( filename );
       std::string string_model_name( model_name );
       includedFiles[string_model_name] = string_filename;
-      if(debug) printf ("Include: %s %s \n", model_name, filename);
+      if(debug) printf ("Include: Model name: %s filename: %s \n", model_name, filename);
     }
     if(debug) printf ("Found %d include filenames \n", count);
     
@@ -115,15 +115,15 @@ namespace urdf{
 	  return world;
 	} 
 	else {
-	  std::string modelName = includedFiles.find( string_entity_model )->second;
-	  std::string modelFullName = _path;
-	  modelFullName.append( modelName );
-	  if(debug) std::cout<< "Model full name: "<< modelFullName << std::endl;
+	  std::string fileName = includedFiles.find( string_entity_model )->second;
+	  std::string fileFullName = _root_to_world_path;
+	  fileFullName.append( fileName );
+	  if(debug) {}std::cout<< "Entity full filename: "<< fileFullName << std::endl;
 	  
 	  // Parse model
 	  std::string xml_model_string;
 	  
-	  std::fstream xml_file( modelFullName.c_str(), std::fstream::in );
+	  std::fstream xml_file( fileFullName.c_str(), std::fstream::in );
 	  while( xml_file.good() ) {
 	    std::string line;
 	    std::getline( xml_file, line );

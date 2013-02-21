@@ -70,30 +70,39 @@ robotics::Object* DartLoader::parseObject( std::string _urdfFile ) {
  */
 robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 
-  mWorldPath = _urdfFile;
+  std::string raw_World_Path = _urdfFile;
  
   // Change path to a Unix-style path if given a Windows one
   // Windows can handle Unix-style paths (apparently)
-  std::replace( mWorldPath.begin(), mWorldPath.end(), '\\' , '/' );
-  mPath = mWorldPath.substr( 0, mWorldPath.rfind("/") + 1 );
+  std::replace( raw_World_Path.begin(), raw_World_Path.end(), '\\' , '/' );
+  mRoot_To_World_Path = raw_World_Path.substr( 0, raw_World_Path.rfind("/") + 1 );
 
-  // std::cout<< " mPath :" << mPath << std::endl;
+  std::cout<< " mRoot_To_World_Path :" << mRoot_To_World_Path << std::endl;
 
   robotics::World* world = new robotics::World();
-	robotics::Robot* robot;
+  robotics::Robot* robot;
   robotics::Object* object;
-
+  
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
 
-  boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF(xml_string, mPath );
+  // Store paths from wrold to entities
+  parseWorldToEntityPaths( xml_string );
+
+  boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF(xml_string, mRoot_To_World_Path );
 
   if( !worldInterface->name.empty() ) {
     
     double roll, pitch, yaw;
     for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
       
-      object = modelInterfaceToObject(  worldInterface->objectModels[i].model );
+      // Set the corresponding path
+      std::string model_globalpath = mRoot_To_World_Path;
+      std::string model_filepath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
+      model_globalpath.append(model_filepath);
+      std::cout<<"Filepath global for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<model_globalpath<<std::endl;
+
+      object = modelInterfaceToObject(  worldInterface->objectModels[i].model, model_globalpath );
       // Initialize position and RPY 
       worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
       object->setRotationRPY( roll, pitch, yaw );
@@ -107,7 +116,13 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     
     for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
       
-      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model );
+      // Set the corresponding path
+      std::string model_globalpath = mRoot_To_World_Path;
+      std::string model_filepath = mWorld_To_Entity_Paths.find( worldInterface->robotModels[i].model->getName() )->second;
+      model_globalpath.append(model_filepath);
+      std::cout<<"Filepath global for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<model_globalpath<<std::endl;
+
+      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, model_globalpath );
       // Initialize position and RPY 
       worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
       robot->setRotationRPY( roll, pitch, yaw );
@@ -123,10 +138,71 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   }
   
   else {
-    std::cout<< "[!] Either you loaded a world without name or the urdf does not contain a world element. Exiting and no loading!"<<std::endl;
+    std::cout<< "[DartLoader][!] Either you loaded a world without name or the urdf does not contain a world element. Exiting and no loading!"<<std::endl;
   }
 
     return world;
+}
+
+/**
+ * @function parseWorldToEntityPaths
+ */
+void DartLoader::parseWorldToEntityPaths( const std::string &_xml_string ) {
+    
+    TiXmlDocument xml_doc;
+    xml_doc.Parse( _xml_string.c_str() );
+    
+    TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
+    
+    if( !world_xml ) {
+      return;
+    }
+        
+    // Get all include filenames
+    std::map<std::string, std::string> includedFiles;
+
+    for( TiXmlElement* include_xml = world_xml->FirstChildElement("include");
+	 include_xml; include_xml = include_xml->NextSiblingElement("include") ) {
+      
+      const char *filename = include_xml->Attribute("filename");
+      const char *model_name = include_xml->Attribute("model_name");
+      std::string string_filename( filename );
+      std::string string_filepath = string_filename.substr( 0, string_filename.rfind("/") + 1 );
+      std::string string_model_name( model_name );
+
+      includedFiles[string_model_name] = string_filepath;
+    }
+    
+    // Get all entities
+    for( TiXmlElement* entity_xml = world_xml->FirstChildElement("entity");
+	 entity_xml; entity_xml = entity_xml->NextSiblingElement("entity") ) {
+
+      // Find model and name for entity, if not, error
+	const char* entity_model = entity_xml->Attribute("model");
+	const char* entity_name = entity_xml->Attribute("name");
+	
+	if( entity_name && entity_model ) {
+	  std::string string_entity_model( entity_model );  
+	  std::string string_entity_name( entity_name ); 
+	  // Find the model
+	  if( includedFiles.find( string_entity_model ) == includedFiles.end() ) {
+	    std::cout<<"[!] Did not find entity model included. Weird things may happen"<<std::endl;
+	    return;
+	  } 
+	  // Add it
+	  else {
+	    std::string string_entity_filepath = includedFiles.find( string_entity_model )->second;
+	    mWorld_To_Entity_Paths[string_entity_name] = string_entity_filepath;	    
+	    std::cout<<"Entity name: "<<string_entity_name<<" filepath: "<<string_entity_filepath << std::endl;
+	  }
+	}
+	// If no name or model is defined
+	else {
+	  std::cout<< "[!] Entity was not defined. Weird things will happen" <<std::endl;
+	}
+
+    } // for all entities
+
 }
 
 /**
@@ -248,7 +324,8 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
 /**
  * @function modelInterfaceToRobot
  */
-robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model ) {
+robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
+						    std::string _rootToRobotPath ) {
   
   robotics::Robot* mRobot;
   dynamics::BodyNodeDynamics *node, *rootNode;
@@ -266,7 +343,7 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
-    node = createDartNode( (*lk).second, mRobot );
+    node = createDartNode( (*lk).second, mRobot, _rootToRobotPath );
     // We return NULL for "world" link, hence this if condition
     if( node != NULL ) { mNodes.push_back( node ); }
   }
@@ -362,7 +439,8 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
 /**
  * @function modelInterfaceToObject
  */
-robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model ) {
+robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
+						      std::string _rootToObjectPath ) {
   
   robotics::Object* mObject;
   dynamics::BodyNodeDynamics *node, *rootNode;
@@ -378,7 +456,7 @@ robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mo
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
-    node = createDartNode( (*lk).second, mObject );
+    node = createDartNode( (*lk).second, mObject, _rootToObjectPath );
     mNodes.push_back( node );
   }
     if(debug) printf ("[debug] Created %u body nodes \n", mNodes.size() );

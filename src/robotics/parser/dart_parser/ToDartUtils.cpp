@@ -183,7 +183,8 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
  * @function createDartNode
  */
 dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::Link> _lk,
-							dynamics::SkeletonDynamics* _skel ) {
+							dynamics::SkeletonDynamics* _skel,
+							std::string _rootToSkelPath ) {
   
   std::string fullVisualPath;
   std::string fullCollisionPath;
@@ -248,14 +249,14 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
     if( _lk->visual->geometry->type == urdf::Geometry::MESH ) {
       
       boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _lk->visual->geometry );
-      fullVisualPath = mPath;
+      fullVisualPath = _rootToSkelPath;
       fullVisualPath.append( mesh->filename );
-
+      
       // Check collision
       if( _lk->collision ) {
 	if( _lk->collision->geometry->type == urdf::Geometry::MESH ) {
 	  boost::shared_ptr<urdf::Mesh> collisionMesh = boost::static_pointer_cast<urdf::Mesh>( _lk->collision->geometry );
-	  fullCollisionPath = mPath;
+	  fullCollisionPath = _rootToSkelPath;
 	  fullCollisionPath.append( collisionMesh->filename );
 	}
       }
