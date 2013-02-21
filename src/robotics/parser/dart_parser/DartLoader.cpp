@@ -88,37 +88,45 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 
   boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF(xml_string, mPath );
 
-  double roll, pitch, yaw;
-  for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
+  if( !worldInterface->name.empty() ) {
     
-    object = modelInterfaceToObject(  worldInterface->objectModels[i].model );
-    // Initialize position and RPY 
-    worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-    object->setRotationRPY( roll, pitch, yaw );
+    double roll, pitch, yaw;
+    for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
+      
+      object = modelInterfaceToObject(  worldInterface->objectModels[i].model );
+      // Initialize position and RPY 
+      worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
+      object->setRotationRPY( roll, pitch, yaw );
+      
+      object->setPositionX( worldInterface->objectModels[i].origin.position.x ); 
+      object->setPositionY( worldInterface->objectModels[i].origin.position.y ); 
+      object->setPositionZ( worldInterface->objectModels[i].origin.position.z );
+      object->update();
+      world->addObject( object );
+    }
     
-    object->setPositionX( worldInterface->objectModels[i].origin.position.x ); 
-    object->setPositionY( worldInterface->objectModels[i].origin.position.y ); 
-    object->setPositionZ( worldInterface->objectModels[i].origin.position.z );
-    object->update();
-    world->addObject( object );
+    for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
+      
+      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model );
+      // Initialize position and RPY 
+      worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
+      robot->setRotationRPY( roll, pitch, yaw );
+      
+      robot->setPositionX( worldInterface->robotModels[i].origin.position.x ); 
+      robot->setPositionY( worldInterface->robotModels[i].origin.position.y ); 
+      robot->setPositionZ( worldInterface->robotModels[i].origin.position.z );
+      robot->update();
+      world->addRobot( robot );
+    }
+    
+    world->rebuildCollision();
   }
   
-  for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
-    
-    robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model );
-    // Initialize position and RPY 
-    worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-    robot->setRotationRPY( roll, pitch, yaw );
-    
-    robot->setPositionX( worldInterface->robotModels[i].origin.position.x ); 
-    robot->setPositionY( worldInterface->robotModels[i].origin.position.y ); 
-    robot->setPositionZ( worldInterface->robotModels[i].origin.position.z );
-    robot->update();
-    world->addRobot( robot );
+  else {
+    std::cout<< "[!] Either you loaded a world without name or the urdf does not contain a world element. Exiting and no loading!"<<std::endl;
   }
-  
-  world->rebuildCollision();
-  return world;
+
+    return world;
 }
 
 /**
