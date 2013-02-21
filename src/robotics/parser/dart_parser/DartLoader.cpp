@@ -31,37 +31,40 @@ DartLoader::~DartLoader() {
 /**
  * @function parseSkeleton
  */
-dynamics::SkeletonDynamics* DartLoader::parseSkeleton( std::string _urdfFile ) {
+dynamics::SkeletonDynamics* DartLoader::parseSkeleton( std::string _urdfFile,
+						       std::string _rootToSkelPath ) {
 
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
 
   boost::shared_ptr<urdf::ModelInterface> skeletonModel = urdf::parseURDF( xml_string );
   
-  return modelInterfaceToSkeleton( skeletonModel );
+  return modelInterfaceToSkeleton( skeletonModel, _rootToSkelPath );
 
 }
 
 /**
  * @function parseRobot
  */
-robotics::Robot* DartLoader::parseRobot( std::string _urdfFile ) {
+robotics::Robot* DartLoader::parseRobot( std::string _urdfFile,
+					 std::string _rootToRobotPath ) {
 
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
   boost::shared_ptr<urdf::ModelInterface> robotModel = urdf::parseURDF( xml_string );
-  return modelInterfaceToRobot( robotModel );
+  return modelInterfaceToRobot( robotModel, _rootToRobotPath );
 }
 
 /**
  * @function parseObject
  */
-robotics::Object* DartLoader::parseObject( std::string _urdfFile ) {
+robotics::Object* DartLoader::parseObject( std::string _urdfFile,
+					   std::string _rootToObjectPath) {
   
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
   boost::shared_ptr<urdf::ModelInterface> objectModel = urdf::parseURDF( xml_string );
-  return modelInterfaceToObject( objectModel );
+  return modelInterfaceToObject( objectModel, _rootToObjectPath );
 
 }
 
@@ -77,8 +80,10 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   std::replace( raw_World_Path.begin(), raw_World_Path.end(), '\\' , '/' );
   mRoot_To_World_Path = raw_World_Path.substr( 0, raw_World_Path.rfind("/") + 1 );
 
-  std::cout<< " mRoot_To_World_Path :" << mRoot_To_World_Path << std::endl;
-
+  if(debug) { 
+    std::cout<< "[parseWorld] mRoot_To_World_Path :" << mRoot_To_World_Path << std::endl;
+  }
+  
   robotics::World* world = new robotics::World();
   robotics::Robot* robot;
   robotics::Object* object;
@@ -86,10 +91,11 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
 
-  // Store paths from wrold to entities
+  // Store paths from world to entities
   parseWorldToEntityPaths( xml_string );
 
-  boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF(xml_string, mRoot_To_World_Path );
+  boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF( xml_string, 
+									 mRoot_To_World_Path );
 
   if( !worldInterface->name.empty() ) {
     
@@ -97,12 +103,13 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
       
       // Set the corresponding path
-      std::string model_globalpath = mRoot_To_World_Path;
-      std::string model_filepath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
-      model_globalpath.append(model_filepath);
-      std::cout<<"Filepath global for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<model_globalpath<<std::endl;
-
-      object = modelInterfaceToObject(  worldInterface->objectModels[i].model, model_globalpath );
+      std::string object_path = mRoot_To_World_Path;
+      std::string object_localPath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
+      object_path.append(object_localPath);
+      if( debug ) {
+	std::cout<<"Global filepath for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<object_path<<std::endl;
+      }     
+      object = modelInterfaceToObject(  worldInterface->objectModels[i].model, object_path );
       // Initialize position and RPY 
       worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
       object->setRotationRPY( roll, pitch, yaw );
@@ -117,12 +124,13 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
       
       // Set the corresponding path
-      std::string model_globalpath = mRoot_To_World_Path;
-      std::string model_filepath = mWorld_To_Entity_Paths.find( worldInterface->robotModels[i].model->getName() )->second;
-      model_globalpath.append(model_filepath);
-      std::cout<<"Filepath global for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<model_globalpath<<std::endl;
-
-      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, model_globalpath );
+      std::string robot_path = mRoot_To_World_Path;
+      std::string robot_localPath = mWorld_To_Entity_Paths.find( worldInterface->robotModels[i].model->getName() )->second;
+      robot_path.append(robot_localPath);
+      if( debug ) {
+	std::cout<<"Global filepath for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<robot_path<<std::endl;
+      }
+      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, robot_path );
       // Initialize position and RPY 
       worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
       robot->setRotationRPY( roll, pitch, yaw );
@@ -193,7 +201,7 @@ void DartLoader::parseWorldToEntityPaths( const std::string &_xml_string ) {
 	  else {
 	    std::string string_entity_filepath = includedFiles.find( string_entity_model )->second;
 	    mWorld_To_Entity_Paths[string_entity_name] = string_entity_filepath;	    
-	    std::cout<<"Entity name: "<<string_entity_name<<" filepath: "<<string_entity_filepath << std::endl;
+	    if(debug) { std::cout<<"Entity name: "<<string_entity_name<<" filepath: "<<string_entity_filepath << std::endl; }
 	  }
 	}
 	// If no name or model is defined
@@ -209,8 +217,13 @@ void DartLoader::parseWorldToEntityPaths( const std::string &_xml_string ) {
  * @function modelInterfaceToSkeleton
  * @brief Read the ModelInterface and spits out a SkeletonDynamics object
  */
-dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model ) {
+dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model,
+								  std::string _rootToSkelPath ) {
   
+  if( _rootToSkelPath.empty() ) {
+    std::cout<< "[DartLoader] Absolute path to skeleton "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
+  }
+
   dynamics::SkeletonDynamics* mSkeleton; 
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
@@ -227,7 +240,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
-    node = createDartNode( (*lk).second, mSkeleton );
+    node = createDartNode( (*lk).second, mSkeleton, _rootToSkelPath );
     // We return NULL for "world" link, hence this if condition
     if( node != NULL ) { mNodes.push_back( node ); }
   }
@@ -327,6 +340,11 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
 robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
 						    std::string _rootToRobotPath ) {
   
+
+  if( _rootToRobotPath.empty() ) {
+    std::cout<< "[DartLoader] Absolute path to robot "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
+  }
+
   robotics::Robot* mRobot;
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
@@ -442,6 +460,10 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
 robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
 						      std::string _rootToObjectPath ) {
   
+  if( _rootToObjectPath.empty() ) {
+    std::cout<< "[DartLoader] Absolute path to object "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
+    }
+
   robotics::Object* mObject;
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;

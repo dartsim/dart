@@ -44,18 +44,24 @@ enum TypeOfDOF {
  * @class DartLoader
  */
 class DartLoader {
-
+  
  public:
   DartLoader();
   ~DartLoader();
-
-  dynamics::SkeletonDynamics* parseSkeleton( std::string _urdfFile );
-
-  robotics::Robot* parseRobot( std::string _urdfFile );
-  robotics::Object* parseObject( std::string _urdfFile );
+  
+  dynamics::SkeletonDynamics* parseSkeleton( std::string _urdfFile,
+					     std::string _rootToSkelPath = NULL );
+  
+  robotics::Robot* parseRobot( std::string _urdfFile, 
+			       std::string _rootToRobotPath = NULL );
+  robotics::Object* parseObject( std::string _urdfFile, 
+				 std::string _rootToObjectPath = NULL );
   robotics::World* parseWorld( std::string _urdfFile );
+  
+  void parseWorldToEntityPaths( const std::string &_xml_string );
 
-  dynamics::SkeletonDynamics* modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model );
+  dynamics::SkeletonDynamics* modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model,
+							std::string _rootToSkelPath = NULL );
   robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
 					  std::string _rootToRobotPath = NULL );
   robotics::Object* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
@@ -102,7 +108,6 @@ class DartLoader {
   
   std::string mRoot_To_World_Path;
   std::map<std::string, std::string> mWorld_To_Entity_Paths;
-  void parseWorldToEntityPaths( const std::string &_xml_string );
   
 };
 

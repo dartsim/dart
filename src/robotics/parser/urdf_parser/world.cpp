@@ -118,7 +118,7 @@ namespace urdf{
 	  std::string fileName = includedFiles.find( string_entity_model )->second;
 	  std::string fileFullName = _root_to_world_path;
 	  fileFullName.append( fileName );
-	  if(debug) {}std::cout<< "Entity full filename: "<< fileFullName << std::endl;
+	  if(debug) std::cout<< "Entity full filename: "<< fileFullName << std::endl;
 	  
 	  // Parse model
 	  std::string xml_model_string;
