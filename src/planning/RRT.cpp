@@ -262,13 +262,13 @@ void RRT::draw () {
 	// File contains two lines, one for each endpoint of an edge
 	FILE* data = fopen(".data", "w");
 	size_t step = numDofs * 7;											// 7 characters per double
-	size_t numEdges = configVector.size() - 1;
-	char* line1 = new char[numEdges * step];
-	char* line2 = new char[numEdges * step];
+	size_t numTreeEdges = configVector.size() - 1;
+	char* line1 = new char[(numTreeEdges + 1) * step];
+	char* line2 = new char[(numTreeEdges + 1) * step];
 
 	// Write each node and its parent in the respective lines
 	size_t lineIndex = 0;
-	for(size_t i = 0; i < numEdges; i++, lineIndex += step) {
+	for(size_t i = 0; i < numTreeEdges; i++, lineIndex += step) {
 		const VectorXd& node = *configVector[i + 1];
 		const VectorXd& parent = *configVector[parentVector[i + 1]];
 		saveLine(line1, line2, lineIndex, node, parent);
@@ -284,8 +284,8 @@ void RRT::draw () {
 	fprintf(data, "%s\n", line2);
 	fclose(data);
 
-    delete[] line1;
-    delete[] line2;
+	delete[] line1;
+	delete[] line2;
 
 	// ====================================================================
 	// Run gnuplot with the pipe call
@@ -307,11 +307,11 @@ void RRT::draw () {
 
 	// Draw the edges in the file but leave the last edge to draw a special color for the goal
 	fprintf(gnuplot, "%s ", ((numDofs == 2) ? "plot" : "splot"));
-	for(size_t i = 0; i < numEdges; i++) 
+	for(size_t i = 0; i < numTreeEdges; i++) 
 		drawLine(gnuplot, numDofs, "0000ff", i);
 	
 	// Draw the goal point (fake edge)
-	drawLine(gnuplot, numDofs, "00ff00", numEdges, true); 
+	drawLine(gnuplot, numDofs, "00ff00", numTreeEdges, true); 
 
 	// Close the pipe
 	fprintf(gnuplot, "\n");
