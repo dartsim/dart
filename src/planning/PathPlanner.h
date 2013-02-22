@@ -168,15 +168,11 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs,
     // Based on the method, either attempt to connect to the target directly or take a small step
     bool stepResult = false;
     if(connect) stepResult = start_rrt->connect(target);
-    else stepResult = start_rrt->tryStep(target);
-
-    if(stepResult == RRT::STEP_COLLISION) {
-      printf("COLLISION!\n");
-      getchar();
-    }
+    else stepResult = (start_rrt->tryStep(target) == R::STEP_REACHED);
 
     // Check if the goal is reached and create the path, if so
     if(checkForReach && stepResult) {
+      if(debug) std::cout << "Returning true, reached the goal" << std::endl;
       start_rrt->tracePath(start_rrt->activeNode, path);
       return true;
     }
@@ -195,7 +191,8 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs,
     numNodes = start_rrt->getSize();
   }
 
-  printf("numNodes: %lu\n", numNodes);
+  if(debug) printf("numNodes: %lu\n", numNodes);
+
   // Maximum # of iterations are reached and path is not found - failed.
   return false;
 }
@@ -244,7 +241,7 @@ bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dof
     bool treesMet = false;
     const Eigen::VectorXd& rrt2target = *(rrt1->configVector[rrt1->activeNode]);
     if(connect) treesMet = rrt2->connect(rrt2target);
-    else treesMet = rrt2->tryStep(rrt2target);
+    else treesMet = (rrt2->tryStep(rrt2target) == R::STEP_REACHED);
 
     // Check if the trees have met and create the path, if so.
     if(treesMet) {
