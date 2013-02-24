@@ -250,10 +250,10 @@ inline void RRT::drawLine (FILE* f, size_t numDofs, const char* color, size_t i,
 }
 
 /* ********************************************************************************************* */
-void RRT::draw () {
+void RRT::draw (const RRT* t1, const RRT* t2) {
 
 	// Check the size of a data point - we can only visualize 2 or 3
-	size_t numDofs = dofs.size();
+	size_t numDofs = t1->dofs.size();
 	if((numDofs != 2) && (numDofs != 3)) return;
 
 	// ====================================================================
@@ -262,20 +262,30 @@ void RRT::draw () {
 	// File contains two lines, one for each endpoint of an edge
 	FILE* data = fopen(".data", "w");
 	size_t step = numDofs * 7;											// 7 characters per double
-	size_t numTreeEdges = configVector.size() - 1;
-	char* line1 = new char[(numTreeEdges + 1) * step];
-	char* line2 = new char[(numTreeEdges + 1) * step];
+	size_t numEdges1 = (t1->configVector.size() - 1);
+	size_t numEdges2 = ((t2 == NULL) ? 0 : t2->configVector.size() - 1);
+	char* line1 = new char[(numEdges1 + numEdges2 + 5) * step];
+	char* line2 = new char[(numEdges1 + numEdges2 + 5) * step];
 
 	// Write each node and its parent in the respective lines
 	size_t lineIndex = 0;
-	for(size_t i = 0; i < numTreeEdges; i++, lineIndex += step) {
-		const VectorXd& node = *configVector[i + 1];
-		const VectorXd& parent = *configVector[parentVector[i + 1]];
-		saveLine(line1, line2, lineIndex, node, parent);
+	const RRT* trees [2] = {t1, t2};
+	for(size_t t = 0; t < 2; t++) {
+
+		// Skip the tree if not there
+		if(trees[t] == NULL) continue;
+
+		// Draw the edges
+		size_t numEdges = trees[t]->configVector.size() - 1;
+		for(size_t i = 0; i < numEdges; i++, lineIndex += step) {
+			const VectorXd& node = *trees[t]->configVector[i + 1];
+			const VectorXd& parent = *trees[t]->configVector[trees[t]->parentVector[i + 1]];
+			saveLine(line1, line2, lineIndex, node, parent);
+		}
 	}
 
-	// Print the start/goal to draw with a special color (we draw a 0 length edge)
-	const VectorXd& goal = *configVector[0];
+	// Print the start to draw with a special color (we draw a 0 length edge)
+	const VectorXd& goal = *t1->configVector[0];
 	saveLine(line1, line2, lineIndex, goal, goal);
 	lineIndex += step;
 
@@ -307,11 +317,13 @@ void RRT::draw () {
 
 	// Draw the edges in the file but leave the last edge to draw a special color for the goal
 	fprintf(gnuplot, "%s ", ((numDofs == 2) ? "plot" : "splot"));
-	for(size_t i = 0; i < numTreeEdges; i++) 
+	for(size_t i = 0; i < numEdges1; i++) 
 		drawLine(gnuplot, numDofs, "0000ff", i);
+	for(size_t i = 0; i < numEdges2; i++) 
+		drawLine(gnuplot, numDofs, "00ffff", i + numEdges1);
 	
 	// Draw the goal point (fake edge)
-	drawLine(gnuplot, numDofs, "00ff00", numTreeEdges, true); 
+	drawLine(gnuplot, numDofs, "00ff00", numEdges1 + numEdges2, true); 
 
 	// Close the pipe
 	fprintf(gnuplot, "\n");
