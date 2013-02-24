@@ -153,38 +153,21 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs,
   while(numNodes <= maxNodes) {
 
     // Get the target node based on the bias
-    // NOTE: If the target is the goal node, as we reach for it (connect or step), we will check
-    // if we have completed the search.
     Eigen::VectorXd target;
     double randomValue = ((double) rand()) / RAND_MAX;
-    bool checkForReach = false;
-    if(randomValue < goalBias) {
-      checkForReach = true;
-      target = goal;
-    }
+    if(randomValue < goalBias) target = goal;
     else target = start_rrt->getRandomConfig();
 
-
     // Based on the method, either attempt to connect to the target directly or take a small step
-    bool stepResult = false;
-    if(connect) stepResult = start_rrt->connect(target);
-    else stepResult = (start_rrt->tryStep(target) == R::STEP_REACHED);
+    if(connect) start_rrt->connect(target);
+    else start_rrt->tryStep(target);
 
     // Check if the goal is reached and create the path, if so
-    if(checkForReach && stepResult) {
+    double gap = start_rrt->getGap(goal);
+    if(gap < stepSize) {
       if(debug) std::cout << "Returning true, reached the goal" << std::endl;
       start_rrt->tracePath(start_rrt->activeNode, path);
       return true;
-    }
-
-    // Print the smallest gap in the debug mode
-    if(debug) {
-      double gap = start_rrt->getGap(goal);
-      if(gap < smallestGap) {
-        smallestGap = gap;
-        if(debug) std::cout << "Gap: " << smallestGap << ", tree size: " <<
-          start_rrt->configVector.size() << std::endl;
-      }
     }
 
     // Update the number of nodes
