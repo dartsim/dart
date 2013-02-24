@@ -143,3 +143,52 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 	return robot;
 }
 
+/* ********************************************************************************************* */
+/// Creates a two link manipulator with the given dimensions where the first link rotates around
+/// z-axis and second rotates around x in the zero configuration.
+Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, 
+		Vector3d dim3, TypeOfDOF type3, bool unfinished = false) {
+
+	Robot* robot = new Robot;
+
+	// Create the first link, the joint with the ground and its shape
+	double mass = 1.0;
+	BodyNodeDynamics* node = (BodyNodeDynamics*) robot->createBodyNode("link1");
+	Joint* joint = new Joint(NULL, node, "joint1");
+	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type1);
+	Shape* shape = new ShapeBox(dim1, mass);
+	node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
+	node->setShape(shape);
+	robot->addNode(node);
+
+	// Create the second link, the joint with link1 and its shape
+	BodyNodeDynamics* parent_node = (BodyNodeDynamics*) robot->getNode("link1");
+	node = (BodyNodeDynamics*) robot->createBodyNode("link2");
+	joint = new Joint(parent_node, node, "joint2");
+	add_XyzRpy(joint, 0.0, 0.0, dim1(2), 0.0, 0.0, 0.0);
+	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type2);
+	shape = new ShapeBox(dim2, mass);
+	node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
+	node->setShape(shape);
+	robot->addNode(node);
+
+	// Create the third link, the joint with link2 and its shape
+	parent_node = (BodyNodeDynamics*) robot->getNode("link2");
+	node = (BodyNodeDynamics*) robot->createBodyNode("link3");
+	joint = new Joint(parent_node, node, "joint3");
+	add_XyzRpy(joint, 0.0, 0.0, dim2(2), 0.0, 0.0, 0.0);
+	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type3);
+	shape = new ShapeBox(dim3, mass);
+	node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
+	node->setShape(shape);
+	robot->addNode(node);
+
+	// If finished, initialize the skeleton
+	if(!unfinished) {
+		addEndEffector(robot, node, dim3);
+		robot->initSkel();
+	}
+	return robot;
+}
+
