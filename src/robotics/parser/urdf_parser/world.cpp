@@ -59,14 +59,11 @@ namespace urdf{
     
     boost::shared_ptr<World> world( new World );
     world->clear();
-    
     TiXmlDocument xml_doc;
     xml_doc.Parse( _xml_string.c_str() );
-    
     TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
-    
     if( !world_xml ) {
-      if(debug) printf ( "[parseWorldURDF] ERROR: Could not find a world, exiting! \n" );
+      printf ( "[parseWorldURDF] ERROR: Could not find a world, exiting! \n" );
       // world.reset();
       return world;
     }
@@ -74,7 +71,7 @@ namespace urdf{
     // Get world name
     const char *name = world_xml->Attribute("name");
     if(!name) {
-      if(debug) printf ("No name given for the world! \n");
+      printf ("[!] [parseWorldURDF] No name given for the world! Exiting \n");
       // world.reset();
       return world;
     }
@@ -122,7 +119,6 @@ namespace urdf{
 	  
 	  // Parse model
 	  std::string xml_model_string;
-	  
 	  std::fstream xml_file( fileFullName.c_str(), std::fstream::in );
 	  while( xml_file.good() ) {
 	    std::string line;
@@ -130,34 +126,40 @@ namespace urdf{
 	    xml_model_string += (line + "\n");
 	  }
 	  xml_file.close();
-
 	  boost::shared_ptr<ModelInterface> model;
 	  model = parseURDF( xml_model_string );
-	  entity.model = model;  
 
-	  // Parse location
-	  TiXmlElement *o = entity_xml->FirstChildElement("origin");
-	  if( o ) {
-	    if( !parsePose( entity.origin, o ) ) {
-	      if(debug) printf ("[ERROR] Write the pose for your entity! \n");
-	      return world; }
+	  if( !model ) {
+	    std::cout<< "[parseWorldURDF] Model in "<<fileFullName<<" not found. It won't be included in the world" <<std::endl;
+	    continue;
 	  }
-
-	// If name is defined
-	const char* entity_name = entity_xml->Attribute("name");
-	if( entity_name ) {
-		std::string string_entity_name( entity_name );
-		entity.model->name_ = string_entity_name;	
-	}
-	  
-	  // Store in world
-	  if( urdf::isRobotURDF( xml_model_string ) ) {
-	    world->robotModels.push_back( entity  );
+	  else {
+	    entity.model = model;  
+	    
+	    // Parse location
+	    TiXmlElement *o = entity_xml->FirstChildElement("origin");
+	    if( o ) {
+	      if( !parsePose( entity.origin, o ) ) {
+		printf ("[ERROR] Write the pose for your entity! \n");
+		return world;
+	      }
+	    }
+	    
+	    // If name is defined
+	    const char* entity_name = entity_xml->Attribute("name");
+	    if( entity_name ) {
+	      std::string string_entity_name( entity_name );
+	      entity.model->name_ = string_entity_name;	
+	    }
+	    
+	    // Store in world
+	    if( urdf::isRobotURDF( xml_model_string ) ) {
+	      world->robotModels.push_back( entity  );
+	    }
+	    else if( urdf::isObjectURDF( xml_model_string ) ) {
+	      world->objectModels.push_back( entity );
+	    } 
 	  }
-	  else if( urdf::isObjectURDF( xml_model_string ) ) {
-	    world->objectModels.push_back( entity );
-	  } 
-
 	  
 	} // end of include read
 	

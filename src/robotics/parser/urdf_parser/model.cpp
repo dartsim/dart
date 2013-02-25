@@ -76,7 +76,6 @@ bool parseJoint(Joint &joint, TiXmlElement *config);
 
 boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
 {
-
   boost::shared_ptr<ModelInterface> model(new ModelInterface);
   model->clear();
 
@@ -90,7 +89,7 @@ boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
     // all the rest is the same as original
     robot_xml = xml_doc.FirstChildElement("object");
     if( !robot_xml ) {
-      if(debug) printf ( "Could find neither a robot nor an object element in the xml file \n" );
+      printf ( "[parseURDF] Could find neither a robot nor an object element in the xml file \n" );
       model.reset();
       return model;
     }
