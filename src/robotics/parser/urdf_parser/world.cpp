@@ -64,8 +64,8 @@ namespace urdf{
     TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
     if( !world_xml ) {
       printf ( "[parseWorldURDF] ERROR: Could not find a <world> element in XML, exiting and not loading! \n" );
-      // world.reset();
-      world->clear();
+      world.reset();
+      //world->clear();
       return world;
     }
     
@@ -73,8 +73,8 @@ namespace urdf{
     const char *name = world_xml->Attribute("name");
     if(!name) {
       printf ("[parseWorldURDF] ERROR: World does not have a name specified. Exiting and not loading! \n");
-      // world.reset();
-      world->clear();
+      world.reset();
+      //world->clear();
       return world;
     }
     world->name = std::string(name);
@@ -111,7 +111,8 @@ namespace urdf{
 	// Find the model
 	if( includedFiles.find( string_entity_model ) == includedFiles.end() ) {
 	  std::cout<<"[parseWorldURDF] ERROR: I cannot find the model you want to use, did you write the name right? Exiting and not loading! \n"<<std::endl;
-	  world->clear();
+	  world.reset();
+	  //world->clear();
 	  return world;
 	} 
 	else {
@@ -134,7 +135,8 @@ namespace urdf{
 
 	  if( !model ) {
 	    std::cout<< "[parseWorldURDF] Model in "<<fileFullName<<" not found. Exiting and not loading!" <<std::endl;
-	    world->clear();
+	    world.reset();
+	    //world->clear();
 	    return world;
 	  }
 	  else {
