@@ -378,12 +378,8 @@ namespace renderer {
     		return;
 
     	// Get world transform
-    	Eigen::Matrix4d poseMatrix = _node->getWorldTransform();
-    	// FIXME: Use visTransform?
-    	// Eigen::Matrix4d visTransform = _node->getShape()->getVisTransform();
-    	// poseMatrix = poseMatrix*visTransform;
     	Transform<double,3,Affine> pose;
-    	pose.matrix() = poseMatrix;
+    	pose.matrix() = _node->getWorldTransform();
 
     	// GL calls
     	if(_vizCol && _node->getColliding()) {
@@ -407,6 +403,12 @@ namespace renderer {
     void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
     	if(_shape == 0)
     		return;
+
+		Transform<double,3,Affine> pose;
+		pose.matrix() = _shape->getTransform();
+
+		glPushMatrix();
+		glMultMatrixd(pose.data());
 
     	switch(_shape->getShapeType()) {
     	case kinematics::Shape::P_UNDEFINED:
@@ -442,6 +444,8 @@ namespace renderer {
     		}
     		break;
     	}
+
+    	glPopMatrix();
     }
 
     void OpenGLRenderInterface::setPenColor(const Vector4d& _col) {
