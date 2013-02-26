@@ -75,8 +75,8 @@ namespace kinematics {
         inline void setOffset(Eigen::Vector3d _offset) { mOffset = _offset; }
         inline Eigen::Vector3d getOffset() const { return mOffset; }
 
-        inline void setVisTransform(const Eigen::Matrix4d &_visTransform ) { mVisTransform = _visTransform; }
-        inline Eigen::Matrix4d getVisTransform() const { return mVisTransform; }
+        inline void setTransform(const Eigen::Matrix4d &_visTransform ) { mTransform = _visTransform; }
+        inline Eigen::Matrix4d getTransform() const { return mTransform; }
 
 
         void setMass(const double _m);
@@ -111,7 +111,7 @@ namespace kinematics {
         int mID; // unique id
         Eigen::Vector3d mColor;		///< color for the primitive
         Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
-        Eigen::Matrix4d mVisTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
+        Eigen::Matrix4d mTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
 
 
         const aiScene *mCollisionMesh; ///< mesh for collision detection>

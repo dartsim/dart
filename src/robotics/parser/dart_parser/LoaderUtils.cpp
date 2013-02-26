@@ -162,7 +162,7 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
     visTransform.block(0,0,3,3) = rot;
     // Set into the shape
-    shape->setVisTransform( visTransform );
+    shape->setTransform( visTransform );
     
     shape->setInertia( _inertiaMatrix );
     if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
