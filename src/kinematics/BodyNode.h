@@ -96,7 +96,7 @@ namespace kinematics {
        Mostly automatically constructed by FileInfoSkel. @see FileInfoSkel.
     */
     class BodyNode {
-    public:      
+    public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
         BodyNode(const char *_name = NULL); ///< Default constructor. The name can be up to 128
@@ -140,6 +140,8 @@ namespace kinematics {
         inline int getSkelIndex() const { return mSkelIndex; }
         
         inline BodyNode* getParentNode() const { return mNodeParent; }
+
+        inline void setMass(double _mass) { mMass = _mass; }
         inline double getMass() const { return mMass; }
         inline Eigen::Matrix3d getInertia() const { return mIc; }
 
