@@ -84,7 +84,7 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     std::cout<< "[parseWorld] mRoot_To_World_Path :" << mRoot_To_World_Path << std::endl;
   }
   
-  robotics::World* world = new robotics::World();
+  robotics::World* world;
   robotics::Robot* robot;
   robotics::Object* object;
   
@@ -97,8 +97,15 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   boost::shared_ptr<urdf::World> worldInterface =  urdf::parseWorldURDF( xml_string, 
 									 mRoot_To_World_Path );
 
-  if( !worldInterface->name.empty() ) {
-    
+  // If an empty worldInterface pointer returns
+  if( !worldInterface ) {
+    std::cout<< "[parseWorldURDF] Null world pointer. No loading and exiting!"<<std::endl;
+    world = NULL;
+    return world;
+  }
+  else {
+    world = new robotics::World();
+
     double roll, pitch, yaw;
     for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
       
@@ -143,13 +150,9 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
     }
     
     world->rebuildCollision();
-  }
+  } // end else(worldInterface)
   
-  else {
-    std::cout<< "[DartLoader][!] Either you loaded a world without name or the urdf does not contain a world element. Exiting and no loading!"<<std::endl;
-  }
-
-    return world;
+  return world;
 }
 
 /**

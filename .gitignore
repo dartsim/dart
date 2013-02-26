@@ -4,6 +4,7 @@ build/
 syntax: glob
 CMakeCache.txt
 *.swp
+*.swo
 *.cmake
 cmake/
 CMakeFiles/
