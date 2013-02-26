@@ -43,16 +43,28 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeBox::ShapeBox(Vector3d _dim, double _mass){
-        mType = P_BOX;
-        mDim = _dim;
-        mMass = _mass;
+    ShapeBox::ShapeBox(Vector3d _dim)
+    	: Shape(P_BOX, 0)
+    {
+    	mDim = _dim;
         initMeshes();
         if (_dim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
             mInertia = computeInertia(mMass);
         }
+    }
+
+    ShapeBox::ShapeBox(Vector3d _dim, double _mass)
+    	: Shape(P_BOX, _mass)
+    {
+    	mDim = _dim;
+		initMeshes();
+		if (_dim != Vector3d::Zero())
+			computeVolume();
+		if (mMass != 0){
+			mInertia = computeInertia(mMass);
+		}
     }
 
     void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

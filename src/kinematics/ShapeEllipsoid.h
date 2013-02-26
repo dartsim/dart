@@ -44,7 +44,8 @@ namespace kinematics {
 
     class ShapeEllipsoid : public Shape {
     public:
-        ShapeEllipsoid(Eigen::Vector3d _dim, double Mass); 
+        ShapeEllipsoid(Eigen::Vector3d _dim);
+        ShapeEllipsoid(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
     private:

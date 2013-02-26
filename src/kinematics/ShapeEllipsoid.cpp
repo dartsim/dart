@@ -42,16 +42,28 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeEllipsoid::ShapeEllipsoid(Vector3d _dim, double _mass){
-        mType = P_ELLIPSOID;
+    ShapeEllipsoid::ShapeEllipsoid(Vector3d _dim)
+    	: Shape(P_ELLIPSOID, 0)
+    {
         mDim = _dim;
-        mMass = _mass;
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
             mInertia = computeInertia(mMass);
         }
+    }
+
+    ShapeEllipsoid::ShapeEllipsoid(Vector3d _dim, double _mass)
+    	: Shape(P_ELLIPSOID, _mass)
+    {
+    	mDim = _dim;
+    	initMeshes();
+    	if (mDim != Vector3d::Zero())
+    		computeVolume();
+    	if (mMass != 0){
+    		mInertia = computeInertia(mMass);
+    	}
     }
 
     void ShapeEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

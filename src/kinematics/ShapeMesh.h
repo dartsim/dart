@@ -44,6 +44,7 @@ namespace kinematics {
 
     class ShapeMesh : public Shape {
     public:
+        ShapeMesh(Eigen::Vector3d _dim, const aiScene *_mesh);
         ShapeMesh(Eigen::Vector3d _dim, double _mass, const aiScene *_mesh);
 
         inline const aiScene* getMesh() const { return mMesh; }

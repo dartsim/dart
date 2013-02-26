@@ -45,6 +45,8 @@ namespace kinematics {
     class ShapeSphere : public Shape {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        ShapeSphere(double _radius);
         ShapeSphere(double _radius, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;

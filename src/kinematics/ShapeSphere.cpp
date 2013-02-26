@@ -43,8 +43,9 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeSphere::ShapeSphere(double _radius, double _mass) : Shape(P_SPHERE, _mass),
-        mRadius(_radius)
+    ShapeSphere::ShapeSphere(double _radius)
+    	: Shape(P_SPHERE, 0),
+    	  mRadius(_radius)
     {
         if (_radius > 0.0) {
             computeVolume();
@@ -53,6 +54,18 @@ namespace kinematics {
             mInertia = computeInertia(mMass);
         }
     }
+
+    ShapeSphere::ShapeSphere(double _radius, double _mass)
+		: Shape(P_SPHERE, _mass),
+		  mRadius(_radius)
+	{
+		if (_radius > 0.0) {
+			computeVolume();
+		}
+		if (mMass > 0.0) {
+			mInertia = computeInertia(mMass);
+		}
+	}
 
     void ShapeSphere::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         // TODO

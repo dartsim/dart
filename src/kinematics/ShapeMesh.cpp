@@ -47,17 +47,33 @@ using namespace std;
 
 namespace kinematics {
 
-    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, const aiScene *_mesh){
-        mType = P_MESH;
-        mDim = _dim;
-        mMass = _mass;
-        mMesh = _mesh;
+    ShapeMesh::ShapeMesh(Vector3d _dim, const aiScene *_mesh)
+    	: Shape(P_MESH, 0),
+    	  mMesh(_mesh),
+    	  mDisplayList(0)
+    {
+    	mDim = _dim;
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
         if (mMass != 0){
             mInertia = computeInertia(mMass);
         }
+    }
+
+    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, const aiScene *_mesh)
+    	: Shape(P_MESH, _mass),
+    	  mMesh(_mesh),
+    	  mDisplayList(0)
+    {
+    	mDim = _dim;
+    	initMeshes();
+    	if(mDim != Vector3d::Zero()) {
+    		computeVolume();
+    	}
+    	if(mMass != 0) {
+    		mInertia = computeInertia(mMass);
+    	}
     }
 
     void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

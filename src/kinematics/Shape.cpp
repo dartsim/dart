@@ -43,20 +43,19 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    // initialize in the same order as declaration
     Shape::Shape(ShapeType _type, double _mass) :
-          mType(_type),
-          mDim(0, 0, 0),
-          mMass(_mass),
-          mVolume(0),
-          mInertia(Matrix3d::Zero()),
-          mID(mCounter++),
-          mColor(0.5, 0.5, 1.0),
-          mOffset(0, 0, 0),
-          mCollisionMesh(NULL),
-          mVisTransform(Matrix4d::Identity()),
-          mColList(0) {
-    }
+		  mType(_type),
+		  mDim(0, 0, 0),
+		  mMass(_mass),
+		  mVolume(0),
+		  mInertia(Matrix3d::Zero()),
+		  mID(mCounter++),
+		  mColor(0.5, 0.5, 1.0),
+		  mOffset(0, 0, 0),
+		  mCollisionMesh(NULL),
+		  mVisTransform(Matrix4d::Identity()),
+		  mColList(0) {
+	}
 
     void Shape::setInertia(const Eigen::Matrix3d& _inertia) {
         mInertia = _inertia;

@@ -43,9 +43,10 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeCylinder::ShapeCylinder(double _radius, double _height, double _mass) : Shape(P_CYLINDER, _mass),
-        mRadius(_radius),
-        mHeight(_height)
+    ShapeCylinder::ShapeCylinder(double _radius, double _height)
+    	: Shape(P_CYLINDER, 0),
+    	  mRadius(_radius),
+    	  mHeight(_height)
     {
         initMeshes();
         if (mRadius > 0.0 && mHeight > 0.0) {
@@ -54,6 +55,20 @@ namespace kinematics {
         if (mMass > 0.0) {
             mInertia = computeInertia(mMass);
         }
+    }
+
+    ShapeCylinder::ShapeCylinder(double _radius, double _height, double _mass)
+		: Shape(P_CYLINDER, _mass),
+		  mRadius(_radius),
+		  mHeight(_height)
+    {
+    	initMeshes();
+    	if (mRadius > 0.0 && mHeight > 0.0) {
+    		computeVolume();
+    	}
+    	if (mMass > 0.0) {
+    		mInertia = computeInertia(mMass);
+    	}
     }
 
     void ShapeCylinder::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
