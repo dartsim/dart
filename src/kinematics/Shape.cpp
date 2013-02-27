@@ -53,7 +53,7 @@ namespace kinematics {
 		  mColor(0.5, 0.5, 1.0),
 		  mOffset(0, 0, 0),
 		  mCollisionMesh(NULL),
-		  mTransform(Matrix4d::Identity()),
+		  mTransform(Affine3d::Identity()),
 		  mColList(0) {
 	}
 

@@ -798,25 +798,25 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
     Shape *prim = NULL;
     string ptype = getAttribute(_prim, "TYPE");
     if(ptype.compare("ELLIPSOID")==0){
-        prim = new ShapeEllipsoid(dim, mass);
+        prim = new ShapeEllipsoid(dim);
     }
     // else if(ptype.compare("SPHERE")==0){
-    //     prim = new ShapeSphere(off, dim[0], mass);
+    //     prim = new ShapeSphere(off, dim[0]);
     // }
     // else if(ptype.compare("CYLINDER")==0){
-    //     prim = new ShapeCylinder(off, dim, mass);
+    //     prim = new ShapeCylinder(off, dim);
     // }
     // else if(ptype.compare("CYLINDERX")==0){
-    //     prim = new ShapeCylinderX(off, dim, mass);
+    //     prim = new ShapeCylinderX(off, dim);
     // }
     // else if(ptype.compare("CYLINDERZ")==0){
-    //     prim = new ShapeCylinderZ(off, dim, mass);
+    //     prim = new ShapeCylinderZ(off, dim);
     // }
     // else if(ptype.compare("HEAD")==0){
-    //     prim = new ShapeHead(off, dim, mass);
+    //     prim = new ShapeHead(off, dim);
     // }
     else if(ptype.compare("CUBE")==0){
-        prim = new ShapeBox(dim, mass);
+        prim = new ShapeBox(dim);
     }
     else {
         // cout << "Shape type " << ptype << " not recognized!\n";
@@ -843,9 +843,14 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
         {
             prim->setColor(Vector3d(0.5, 0.5, 1.0));
         }
-    } 
+    }
+    //set local transform
+    if(prim) {
+    	prim->setOffset(off);
+    }
 
     blink->setShape(prim);
+    blink->setMass(mass);
     blink->setLocalCOM( off );
     return true;
 }
@@ -874,12 +879,14 @@ VectorXd getDofVectorXd(Transformation* tr) {
 void autoGenerateShape(Skeleton* skel) {
     for(int i=0; i<skel->getNumNodes(); i++){
         if(skel->getNode(i)->getShape()) continue;
-        ShapeEllipsoid *pm = new ShapeEllipsoid(0.05 * Vector3d(1.0,1.0,1.0), 1.0);
+        ShapeEllipsoid *pm = new ShapeEllipsoid(0.05 * Vector3d(1.0,1.0,1.0));
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
         BodyNode* node = skel->getNode(i);
         node->setShape(pm);
+        node->setMass(1.0);
         Vector3d vecZero(0,0,0);
         node->setLocalCOM(vecZero);
+        pm->setOffset(vecZero);
     }
 }
 
@@ -946,12 +953,14 @@ void autoGenerateShapeParent(Skeleton* skel)
         // size = 0.1 * Vector3d(vl_1);
         // offset = Vector3d(vl_0);
         // Ellipsoid *pm = new Ellipsoid(vl_0, 0.1*Vector3d(vl_1), 1.0);
-        ShapeEllipsoid *pm = new ShapeEllipsoid(size, mass);
+        ShapeEllipsoid *pm = new ShapeEllipsoid(size);
+        pm->setColor(Vector3d(0.5, 0.5, 1.0));
+        pm->setOffset(offset);
+
         BodyNode* target = parent;
         target->setLocalCOM(offset);
-        pm->setColor(Vector3d(0.5, 0.5, 1.0));
         target->setShape(pm);
-
+        target->setMass(mass);
     }
 
     autoGenerateShape(skel);

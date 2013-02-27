@@ -2085,12 +2085,15 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
 
     Vector3d vecScale(s[0],s[1],s[2]);
     vecScale *= bone_length;
-    Shape* prim = new ShapeEllipsoid(vecScale, 0);
+    Shape* prim = new ShapeEllipsoid(vecScale);
+    // Set COM to be Shape offset
+	prim->setOffset(vecScale);
 
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
     cur_node->setShape(prim);
     cur_node->setLocalCOM( vecTrans );
+    cur_node->setMass(0);
 }
 
 /* set offset and dimension of an existing primitive */
@@ -2103,6 +2106,8 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
     cur_node->setLocalCOM(vecTrans);
+    // Set COM to be Shape offset
+    geo->setOffset(vecTrans);
 }
 
 /* create translation transformation */
@@ -2377,7 +2382,7 @@ Shape* __setGeometry(const char *shape, doubleVec3 color)
 /* create new primitive */
 Shape* __setGeometry(doubleVec3 color)
 {
-    Shape *prim = new ShapeEllipsoid(Vector3d(0,0,0), 0);
+    Shape *prim = new ShapeEllipsoid(Vector3d(0,0,0));
     prim->setColor(Vector3d(color[0], color[1], color[2]));
     return prim;
 }

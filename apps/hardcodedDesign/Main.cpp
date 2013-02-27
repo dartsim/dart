@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
 	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
+	shape->setOffset(node->getLocalCOM());
 	node->setShape(shape);
 	LeftLegSkel.addNode(node);
 
@@ -93,6 +94,7 @@ int main(int argc, char* argv[]) {
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
 	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
+	shape->setOffset(node->getLocalCOM());
 	node->setShape(shape);
 	LeftLegSkel.addNode(node);
 

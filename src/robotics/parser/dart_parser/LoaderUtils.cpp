@@ -150,17 +150,19 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				       model ); 
     
     // Set the visPose
-    Eigen::Matrix4d visTransform = Eigen::Matrix4d::Identity();
+    Eigen::Affine3d visTransform = Eigen::Affine3d::Identity();
     // Set xyz
-    visTransform(0,3) = _pose.position.x;
-    visTransform(1,3) = _pose.position.y;  
-    visTransform(2,3) = _pose.position.z;
+    Eigen::Vector3d t;
+    t[0] = _pose.position.x;
+    t[1] = _pose.position.y;
+    t[2] = _pose.position.z;
+    visTransform.translation() = t;
     // Set rpy
     double roll, pitch, yaw;
     _pose.rotation.getRPY( roll, pitch, yaw );
-    Eigen::Matrix3d rot; 
+    Eigen::Matrix3d rot;
     rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    visTransform.block(0,0,3,3) = rot;
+    visTransform.matrix().block(0,0,3,3) = rot;
     // Set into the shape
     shape->setTransform( visTransform );
     

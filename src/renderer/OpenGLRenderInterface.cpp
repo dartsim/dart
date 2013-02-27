@@ -378,7 +378,7 @@ namespace renderer {
     		return;
 
     	// Get world transform
-    	Transform<double,3,Affine> pose;
+    	Affine3d pose;
     	pose.matrix() = _node->getWorldTransform();
 
     	// GL calls
@@ -404,8 +404,7 @@ namespace renderer {
     	if(_shape == 0)
     		return;
 
-		Transform<double,3,Affine> pose;
-		pose.matrix() = _shape->getTransform();
+		Affine3d pose = _shape->getTransform();
 
 		glPushMatrix();
 		glMultMatrixd(pose.data());
