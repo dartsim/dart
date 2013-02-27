@@ -74,6 +74,7 @@ namespace kinematics {
         else
             _ri->setPenColor(mColor);
         _ri->pushMatrix();
+        _ri->translate(mTransform.translation());
         _ri->drawEllipsoid(mDim);
         _ri->popMatrix();
     }

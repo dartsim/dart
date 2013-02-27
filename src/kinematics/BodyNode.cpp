@@ -226,7 +226,6 @@ namespace kinematics {
         if (mShape != NULL) {
             _ri->pushName((unsigned)mID);
             _ri->pushMatrix();
-            _ri->translate(mCOMLocal);
             mShape->draw(_ri, _color, _useDefaultColor);
             _ri->popMatrix();
             _ri->popName();

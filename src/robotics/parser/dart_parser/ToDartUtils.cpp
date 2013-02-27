@@ -231,7 +231,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       inert->origin.position.y, 
       inert->origin.position.z;
     // Set it to Node
-    //node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
+    node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
     
     if( debug ) { std::cout<< "[debug] Mass is: "<< mass << std::endl; }
     if( debug ) { std::cout<< "[debug] Inertia is: \n"<< inertia << std::endl; }
