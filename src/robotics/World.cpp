@@ -46,7 +46,6 @@
 #include <dynamics/ContactDynamics.h>
 #include <dynamics/SkeletonDynamics.h>
 #include <robotics/Robot.h>
-#include <robotics/Object.h>
 
 using namespace Eigen;
 
@@ -122,7 +121,7 @@ namespace robotics {
    * @function addObject
    * @brief Add a pointer to a new object in the World
    */
-  int World::addObject( Object* _object ) {
+  int World::addObject( Robot* _object ) {
     // add item
     mObjects.push_back( _object );
     mSkeletons.push_back( _object );
@@ -166,7 +165,7 @@ namespace robotics {
   /**
    * @function getObject
    */
-  Object* World::getObject( int _i ) {
+  Robot* World::getObject( int _i ) {
     return mObjects[_i];
   }
   

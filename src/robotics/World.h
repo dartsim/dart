@@ -53,7 +53,6 @@ namespace dynamics {
 namespace robotics {
 
   class Robot;
-  class Object;
 
   /**
    * @class World
@@ -65,13 +64,13 @@ namespace robotics {
     virtual ~World();
     
     int addRobot( Robot* _robot );
-    int addObject( Object* _object );
+    int addObject( Robot* _object );
     void printInfo();
     
     inline unsigned int getNumObjects() { return mObjects.size(); }
     inline unsigned int getNumRobots() { return mRobots.size(); }
     inline unsigned int getNumSkeletons() { return mSkeletons.size(); }
-    Object* getObject( int _i );
+    Robot* getObject( int _i );
     Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );
     dynamics::SkeletonDynamics* getSkeleton(const std::string& name);
@@ -94,7 +93,7 @@ namespace robotics {
 
   private:
     std::vector<Robot*> mRobots;
-    std::vector<Object*> mObjects;
+    std::vector<Robot*> mObjects;
     std::vector<dynamics::SkeletonDynamics*> mSkeletons;
     integration::EulerIntegrator mIntegrator;
     std::vector<int> mIndices;

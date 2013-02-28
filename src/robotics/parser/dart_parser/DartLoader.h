@@ -21,7 +21,6 @@ namespace dynamics {
 namespace robotics {
 	class World;
 	class Robot;
-	class Object;
 }
 namespace kinematics {
 	class Joint;
@@ -54,7 +53,7 @@ class DartLoader {
   
   robotics::Robot* parseRobot( std::string _urdfFile, 
 			       std::string _rootToRobotPath = NULL );
-  robotics::Object* parseObject( std::string _urdfFile, 
+  robotics::Robot* parseObject( std::string _urdfFile, 
 				 std::string _rootToObjectPath = NULL );
   robotics::World* parseWorld( std::string _urdfFile );
   
@@ -64,7 +63,7 @@ class DartLoader {
 							std::string _rootToSkelPath = NULL );
   robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
 					  std::string _rootToRobotPath = NULL );
-  robotics::Object* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
+  robotics::Robot* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
 					    std::string _rootToObjectPath = NULL );
 
   // Utilities

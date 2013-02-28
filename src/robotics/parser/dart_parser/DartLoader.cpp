@@ -11,7 +11,6 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "robotics/World.h"
 #include "robotics/Robot.h"
-#include "robotics/Object.h"
 
 /**
  * @function DartLoader
@@ -58,7 +57,7 @@ robotics::Robot* DartLoader::parseRobot( std::string _urdfFile,
 /**
  * @function parseObject
  */
-robotics::Object* DartLoader::parseObject( std::string _urdfFile,
+robotics::Robot* DartLoader::parseObject( std::string _urdfFile,
 					   std::string _rootToObjectPath) {
   
   std::string xml_string;
@@ -86,7 +85,7 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   
   robotics::World* world;
   robotics::Robot* robot;
-  robotics::Object* object;
+  robotics::Robot* object;
   
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
@@ -463,18 +462,18 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
 /**
  * @function modelInterfaceToObject
  */
-robotics::Object* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
+robotics::Robot* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
 						      std::string _rootToObjectPath ) {
   
   if( _rootToObjectPath.empty() ) {
     std::cout<< "[DartLoader] Absolute path to object "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
     }
 
-  robotics::Object* mObject;
+  robotics::Robot* mObject;
   dynamics::BodyNodeDynamics *node, *rootNode;
   kinematics::Joint *joint, *rootJoint;
 
-  mObject = new robotics::Object();
+  mObject = new robotics::Robot();
   
   // name
   mObject->setName( _model->getName() );
