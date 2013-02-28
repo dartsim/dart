@@ -69,109 +69,16 @@ namespace robotics {
     
   }
 
-   
   /**
-   * @function setPositionX
-   * @brief Set position X of the object in World
+   * @function setRootTransform
+   * @brief Set x, y, z, roll, pitch and yaw
    */
-  void Robot::setPositionX( double _pos )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
-      } 
-    }  
-  }
-  
-  /**
-   * @function getPositionX
-   * @brief Get position X of the object in World
-   */
-  void Robot::getPositionX( double &_pos )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	_pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
-      } 
-    }  
-  }
-  
-  /**
-   * @function setPositionY
-   * @brief Set position Y of the object in World
-   */
-  void Robot::setPositionY( double _pos )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
-      } 
-    }  
-  }
-  
-  /**
-   * @function getPositionY
-   * @brief Get position Y of the object in World
-   */
-    void Robot::getPositionY( double &_pos )
-    {
-      kinematics::Joint *joint;
-      joint = getRoot()->getParentJoint();
-      
-      for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	  _pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
-	} 
-      }  
+  void Robot::setRootTransform( Eigen::VectorXd _pose ) {
+
+    if( _pose.size() != 6 ) {
+      printf( "[setPoseTransform] Argument should have a size of 6 (x,y,z,r,p,y). Exiting! \n" );
+      return;
     }
-  
-  
-  /**
-   * @function setPositionZ
-   * @brief Set position Z of the object in World
-   */
-  void Robot::setPositionZ( double _pos )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pos ); break; 
-      } 
-    }  
-  }
-  
-  /**
-   * @function getPositionZ
-   * @brief Get position Z of the object in World
-   */
-  void Robot::getPositionZ( double &_pos )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	_pos = joint->getTransform(i)->getDof(0)->getValue(); break; 
-      } 
-    }  
-  }
-  
-  
-  /**
-   * @function setPositionXYZ
-   */
-  void Robot::setPositionXYZ( double _x, double _y, double _z ) { 
     
     kinematics::Joint *joint;
     joint = getRoot()->getParentJoint();
@@ -179,86 +86,73 @@ namespace robotics {
     for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
       
       if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	joint->getTransform(i)->getDof(0)->setValue( _x ); 
+	joint->getTransform(i)->getDof(0)->setValue( _pose(0) ); 
       } 
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	joint->getTransform(i)->getDof(0)->setValue( _y ); 
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
+	joint->getTransform(i)->getDof(0)->setValue( _pose(1) ); 
       } 
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	joint->getTransform(i)->getDof(0)->setValue( _z ); 
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
+	joint->getTransform(i)->getDof(0)->setValue( _pose(2) ); 
       } 
+
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
+	{  joint->getTransform(i)->getDof(0)->setValue( _pose(3) ); } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
+	{  joint->getTransform(i)->getDof(0)->setValue( _pose(4) ); } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
+	{  joint->getTransform(i)->getDof(0)->setValue( _pose(5) ); } 
     } 
-    
+    // Update values
+    update();
+
   }
-  
+
   /**
-   * @function getPositionXYZ
+   * @function getRootTransform
+   * @brief Get x, y, z, roll, pitch and yaw
    */
-  void Robot::getPositionXYZ( double &_x, double &_y, double &_z ) {
-    
+  Eigen::VectorXd Robot::getRootTransform() {
+
+    Eigen::VectorXd pose(6);
+    pose << 0, 0, 0, 0, 0, 0;
+
     kinematics::Joint *joint;
     joint = getRoot()->getParentJoint();
     
     for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
       
       if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	_x = joint->getTransform(i)->getDof(0)->getValue(); 
+	pose(0) = joint->getTransform(i)->getDof(0)->getValue(); 
       } 
       
       else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	_y = joint->getTransform(i)->getDof(0)->getValue(); 
+	pose(1) = joint->getTransform(i)->getDof(0)->getValue(); 
       } 
       
       else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	_z = joint->getTransform(i)->getDof(0)->getValue(); 
+	pose(2) = joint->getTransform(i)->getDof(0)->getValue(); 
       } 
-    }  
-  }
-  
-  
-  /**
-   * @function setRotationRPY
-   * @brief Set position Y of the object in World
-   */
-  void Robot::setRotationRPY( double _roll, double _pitch, double _yaw )
-  {
+
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX ) {  
+	pose(3) = joint->getTransform(i)->getDof(0)->getValue(); 
+      } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY ) { 
+	pose(4) = joint->getTransform(i)->getDof(0)->getValue();
+      } 
+      
+      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ ) { 
+	pose(5) = joint->getTransform(i)->getDof(0)->getValue(); 
+      } 
+            
+    } // end for  
     
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
-      {
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
-	  {  joint->getTransform(i)->getDof(0)->setValue( _roll ); } 
-	
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
-	  {  joint->getTransform(i)->getDof(0)->setValue( _pitch ); } 
-	
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
-	  {  joint->getTransform(i)->getDof(0)->setValue( _yaw ); } 
-      } 
-  } 
-  
-  /**
-   * @function getRotationRPY
-   * @brief Get Roll, Pitch and Yaw of the object in World
-   */
-  void Robot::getRotationRPY( double &_roll, double &_pitch, double &_yaw )
-  {
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ )
-      {
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
-	  {  _roll = joint->getTransform(i)->getDof(0)->getValue(); } 
-	
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
-	  {  _pitch = joint->getTransform(i)->getDof(0)->getValue(); } 
-	
-	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
-	  {  _yaw = joint->getTransform(i)->getDof(0)->getValue(); } 
-      } 
-    
-  } 
+    return pose;
+
+  }  
+   
  
   /**
    * @function update

@@ -59,20 +59,8 @@ namespace robotics {
 
     inline void setMovable( bool _m ) { mMovable = _m; }
 
-    void setPositionX( double _pos );
-    void getPositionX( double &_pos );
-    
-    void setPositionY( double _pos );
-    void getPositionY( double &_pos );
-    
-    void setPositionZ( double _pos );
-    void getPositionZ( double &_pos );
-    
-    void setPositionXYZ( double _x, double _y, double _z );
-    void getPositionXYZ( double &_x, double &_y, double &_z );       
-    
-    void setRotationRPY( double _roll, double _pitch, double _yaw );
-    void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
+    void setRootTransform( Eigen::VectorXd _pose ); /**< Set 6 values x,y,z,r,p,y */
+    Eigen::VectorXd getRootTransform(); /**< Get 6 values x,y,z,r,p,y */
 
     void update();    
 

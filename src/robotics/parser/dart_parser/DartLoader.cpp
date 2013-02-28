@@ -106,9 +106,10 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   else {
     world = new robotics::World();
 
-    double roll, pitch, yaw;
+    Eigen::VectorXd pose(6); 
+
     for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
-      
+
       // Set the corresponding path
       std::string object_path = mRoot_To_World_Path;
       std::string object_localPath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
@@ -117,14 +118,15 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 	std::cout<<"Global filepath for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<object_path<<std::endl;
       }     
       object = modelInterfaceToObject(  worldInterface->objectModels[i].model, object_path );
+
       // Initialize position and RPY 
-      worldInterface->objectModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-      object->setRotationRPY( roll, pitch, yaw );
-      
-      object->setPositionX( worldInterface->objectModels[i].origin.position.x ); 
-      object->setPositionY( worldInterface->objectModels[i].origin.position.y ); 
-      object->setPositionZ( worldInterface->objectModels[i].origin.position.z );
-      object->update();
+      pose << 0, 0, 0, 0, 0, 0;
+      pose(0) = worldInterface->objectModels[i].origin.position.x;
+      pose(1) = worldInterface->objectModels[i].origin.position.y;
+      pose(2) = worldInterface->objectModels[i].origin.position.z;
+      worldInterface->objectModels[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
+
+      object->setRootTransform( pose );
       world->addObject( object );
     }
     
@@ -138,14 +140,15 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 	std::cout<<"Global filepath for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<robot_path<<std::endl;
       }
       robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, robot_path );
+
       // Initialize position and RPY 
-      worldInterface->robotModels[i].origin.rotation.getRPY( roll, pitch, yaw );
-      robot->setRotationRPY( roll, pitch, yaw );
-      
-      robot->setPositionX( worldInterface->robotModels[i].origin.position.x ); 
-      robot->setPositionY( worldInterface->robotModels[i].origin.position.y ); 
-      robot->setPositionZ( worldInterface->robotModels[i].origin.position.z );
-      robot->update();
+      pose << 0, 0, 0, 0, 0, 0;
+      pose(0) = worldInterface->robotModels[i].origin.position.x;
+      pose(1) = worldInterface->robotModels[i].origin.position.y;
+      pose(2) = worldInterface->robotModels[i].origin.position.z;
+      worldInterface->robotModels[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
+
+      robot->setRootTransform( pose );
       world->addRobot( robot );
     }
     
