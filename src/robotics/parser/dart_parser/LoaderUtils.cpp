@@ -25,9 +25,14 @@ void DartLoader::add_XyzRpy( kinematics::Joint* _joint,
 
   kinematics::Transformation* trans;
   
-  trans = new kinematics::TrfmTranslate( new kinematics::Dof(_x), new kinematics::Dof(_y), new kinematics::Dof(_z),
-					 "Translate" );
-  _joint->addTransform(trans, false);
+  trans = new kinematics::TrfmTranslateX( new kinematics::Dof(_x) );
+  _joint->addTransform( trans, false );
+
+  trans = new kinematics::TrfmTranslateY( new kinematics::Dof(_y) );
+  _joint->addTransform( trans, false );
+
+  trans = new kinematics::TrfmTranslateZ( new kinematics::Dof(_z) );
+  _joint->addTransform( trans, false );
   
   trans = new kinematics::TrfmRotateEulerZ(new ::kinematics::Dof(_ry ));
   _joint->addTransform(trans, false);
