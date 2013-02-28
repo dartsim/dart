@@ -59,13 +59,6 @@ namespace robotics {
   public:
     Robot();
     virtual ~Robot();
-
-    void addDefaultRootNode();
-
-    int getNumQuickDofs(); 
-    Eigen::VectorXi getQuickDofsIndices();
-    bool setQuickDofs( Eigen::VectorXd _vals );
-    Eigen::VectorXd getQuickDofs( );
     
     void setPositionX( double _pos );  
     void getPositionX( double &_pos );
@@ -81,10 +74,6 @@ namespace robotics {
     
     void setRotationRPY( double _roll, double _pitch, double _yaw );
     void getRotationRPY( double &_roll, double &_pitch, double &_yaw );
-    
-    void getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf );
-    void getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z );
-    void getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot );
     
     void update();
   };

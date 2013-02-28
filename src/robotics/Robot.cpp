@@ -53,51 +53,6 @@ using namespace std;
 
 namespace robotics {
 
-  /**
-   * @fuction addDefaultRootNode
-   */
-  void Robot::addDefaultRootNode() {
-    
-    // Always set the root node ( 6DOF for rotation and translation )
-    kinematics::Joint* joint;
-    dynamics::BodyNodeDynamics* node;
-    kinematics::Transformation* trans;
-
-    // Set the initial Rootnode that controls the position and orientation of the whole robot
-    node = (dynamics::BodyNodeDynamics*) this->createBodyNode("rootBodyNode");
-    node->setShape(new kinematics::Shape());
-    joint = new kinematics::Joint( NULL, node, "rootJoint" );
-    
-    // Add DOFs for RPY and XYZ of the whole robot
-    trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-    
-    trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-   
-    trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
- 
-    trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    // Set this first node as root node
-    this->addNode( node );
-    this->initSkel();    
-
-  }
   
   /**
    * @function Robot
@@ -114,72 +69,7 @@ namespace robotics {
     
   }
 
-  /**
-   * @function getNumQuickDOF
-   * @brief Returns the number of DOF NOT considering the 6 default DOF (XYZ, RPY)
-   */
-  int Robot::getNumQuickDofs() {
-    return ( getNumDofs() - getRoot()->getNumLocalDofs() );
-  }
-
-  /**
-   * @function getQuickDofsIndices
-   */
-  Eigen::VectorXi Robot::getQuickDofsIndices() {
-    
-    int numDofs = getNumDofs();
-    int rootDofs = getRoot()->getNumLocalDofs();
-    int n = numDofs - rootDofs;
-    
-    Eigen::VectorXi indices(n);
-    
-    for( unsigned int i = 0; i < n; i++ )
-      {  indices(i) = rootDofs + i; } 
-    
-    return indices;
-  }
-  
-  /**
-   * @function setQuickDofs
-   * @brief Set ALL DOFs but the 6 first ones
-   */
-  bool Robot::setQuickDofs( Eigen::VectorXd _vals )
-  {
-    int numDofs = getNumDofs();
-    int rootDofs = getRoot()->getNumLocalDofs();
-    
-    if( _vals.size() != (numDofs - rootDofs) )
-      {  printf("--(x) Size of input does not match the number of DOFs...check! (x)--\n"); return false; }
-    
-    for( unsigned int i = 0; i < numDofs - rootDofs; i++ )
-      {
-	mDofs.at(rootDofs + i)->setValue( _vals(i) );
-      } 
-    
-    return true;
-  }
-  
-  
-  /**
-   * @function getQuickDofs
-   * @brief Get ALL DOFs but the 6 first ones
-   */
-  Eigen::VectorXd Robot::getQuickDofs( )
-  {
-    int numDofs = getNumDofs();
-    int rootDofs = getRoot()->getNumLocalDofs();
-    Eigen::VectorXd quickDofs( numDofs - rootDofs );
-    
-    for( unsigned int i = 0; i < numDofs - rootDofs; i++ )
-      {
-	quickDofs(i) = mDofs.at(rootDofs + i)->getValue();
-      } 
-    
-    return quickDofs;
-  }
-  
-  
-  
+   
   /**
    * @function setPositionX
    * @brief Set position X of the object in World
@@ -366,50 +256,10 @@ namespace robotics {
 	
 	if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
 	  {  _yaw = joint->getTransform(i)->getDof(0)->getValue(); } 
-        } 
+      } 
     
   } 
-  
-  /**
-   * @function getBodyNodeTransform
-   * @brief Get World Transform of a bodyNode of Robot
-   */
-  void Robot::getBodyNodeTransform( std::string _name, Eigen::Transform< double, 3,Eigen::Affine > &_tf )
-  {
-    const char* name = _name.c_str();
-    
-    kinematics::BodyNode* bodyNode = getNode( name );
-    Eigen::Matrix4d tfm= bodyNode->getWorldTransform();
-    
-    _tf.setIdentity();
-    _tf.matrix() = tfm;       
-  }
-  
-  /**
-   * @function getBodyNode Position XYZ
-   * @brief Get XYZ in World Coordinates
-   */
-  void Robot::getBodyNodePositionXYZ( std::string _name, double &_x, double &_y, double &_z )
-  {
-    Eigen::Transform< double, 3,Eigen::Affine > tf;
-    getBodyNodeTransform( _name, tf );
-    Eigen::Vector3d xyz = tf.translation();
-    
-    _x = xyz(0); _y = xyz(1); _z = xyz(2);      
-  }
-  
-  /**
-   * @function getBodyNode Rotation Matrix
-   * @brief Get Rotation matrix (Global)
-   */
-  void Robot::getBodyNodeRotationMatrix( std::string _name, Eigen::MatrixXd &_rot )
-  {
-    Eigen::Transform< double, 3,Eigen::Affine > tf;
-    getBodyNodeTransform( _name, tf );
-    //_rot = tf.block<3,3>(0,0);
-    _rot = tf.rotation();
-  }
-
+ 
   /**
    * @function update
    */

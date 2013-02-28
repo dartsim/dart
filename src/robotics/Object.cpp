@@ -53,58 +53,12 @@ using namespace std;
 namespace robotics {
 
   /**
-   * @fuction addDefaultRootNode
-   */
-  void Object::addDefaultRootNode() {
-
-    // Always set the root node ( 6DOF for rotation and translation )
-    kinematics::Joint* joint;
-    dynamics::BodyNodeDynamics* node;
-    kinematics::Transformation* trans;
-
-    // Set the initial Rootnode that controls the position and orientation of the whole robot
-    node = (dynamics::BodyNodeDynamics*) this->createBodyNode("rootBodyNode");
-    node->setShape(new kinematics::Shape());
-    joint = new kinematics::Joint( NULL, node, "rootJoint" );
-    
-    // Add DOFs for RPY and XYZ of the whole robot
-    trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-    
-    trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-   
-    trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
- 
-    trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
-    joint->addTransform( trans, true );
-    this->addTransform( trans );
-
-    // Set this first node as root node
-    this->addNode( node );
-    this->initSkel();    
-  }
-
-
-  /**
    * @function Object
    * @brief Constructor
    */
   Object::Object() {
-	}    
-
+  }    
+  
 
   /**
    * @function ~Object

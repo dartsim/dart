@@ -57,8 +57,6 @@ namespace robotics {
     Object();
     virtual ~Object();
 
-    void addDefaultRootNode();
-
     inline void setMovable( bool _m ) { mMovable = _m; }
 
     void setPositionX( double _pos );
