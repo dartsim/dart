@@ -17,7 +17,6 @@
 #include "kinematics/Transformation.h"
 #include "kinematics/TrfmTranslate.h"
 #include "kinematics/TrfmRotateEuler.h"
-#include "robotics/Constants.h"
 #include <robotics/Robot.h>
 #include <robotics/World.h>
 #include <boost/math/special_functions/fpclassify.hpp>

@@ -27,11 +27,11 @@ void add_XyzRpy(Joint* joint, double x, double y, double z, double rr, double rp
 	Transformation* trans;
 	trans = new TrfmTranslate(new Dof(x), new Dof(y), new Dof(z), "Translate");
 	joint->addTransform(trans, false);
-	trans = new TrfmRotateEulerZ(new ::Dof(DEG2RAD(ry)));
+	trans = new TrfmRotateEulerZ(new ::Dof(ry));
 	joint->addTransform(trans, false);
-	trans = new TrfmRotateEulerY(new ::Dof(DEG2RAD(rp)));
+	trans = new TrfmRotateEulerY(new ::Dof(rp));
 	joint->addTransform(trans, false);
-	trans = new TrfmRotateEulerX(new ::Dof(DEG2RAD(rr)));
+	trans = new TrfmRotateEulerX(new ::Dof(rr));
 	joint->addTransform(trans, false);
 }
 
@@ -50,8 +50,8 @@ void add_DOF(SkeletonDynamics* skel, Joint* joint, double val, double min, doubl
 
 	// Add the transformation to the joint, set the min/max values and set it to the skeleton
 	joint->addTransform(trans, true);
-	joint->getDof(0)->setMin(DEG2RAD(min));
-	joint->getDof(0)->setMax(DEG2RAD(max));
+	joint->getDof(0)->setMin(min);
+	joint->getDof(0)->setMax(max);
 	skel->addTransform(trans);
 }
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 	BodyNodeDynamics* node = (BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHY");
 	Joint* joint = new Joint(NULL, node, "LHY");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_YAW);
+	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_YAW);
 	node->setShape(new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass));
 	LeftLegSkel.addNode(node);
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 	node = (BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHR");
 	joint = new Joint(parent_node, node, "LHR");
 	add_XyzRpy(joint, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0);
-	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
+	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_ROLL);
 	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
 	shape->setOffset(node->getLocalCOM());
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 	node = (BodyNodeDynamics*) LeftLegSkel.createBodyNode("LHP");
 	joint = new Joint(parent_node, node, "LHP");
 	add_XyzRpy(joint, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
-	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, PI, DOF_ROLL);
+	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_ROLL);
 	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
 	shape->setOffset(node->getLocalCOM());

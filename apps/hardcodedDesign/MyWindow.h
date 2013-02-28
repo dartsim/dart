@@ -22,7 +22,6 @@
 #include "kinematics/Transformation.h"
 #include "kinematics/TrfmTranslate.h"
 #include "kinematics/TrfmRotateEuler.h"
-#include "robotics/Constants.h"
 #include "utils/Paths.h"
 #include "utils/Timer.h"
 #include "utils/UtilsMath.h"
