@@ -320,18 +320,11 @@ namespace renderer {
     void OpenGLRenderInterface::compileList(kinematics::Shape *_shape) {
     	if(_shape == 0)
     		return;
-		GLuint index;
     	switch(_shape->getShapeType()) {
     	case kinematics::Shape::P_UNDEFINED:
     		break;
     	case kinematics::Shape::P_BOX:
-    		
-    		index = glGenLists(1);
-    		glNewList(index, GL_COMPILE);
-    		OpenGLRenderInterface::drawCube(_shape->getDim());
-    		glEndList();
-			_shape->setColList(index);
-			break;
+    		break;
     	case kinematics::Shape::P_CYLINDER:
     		break;
     	case kinematics::Shape::P_ELLIPSOID:
