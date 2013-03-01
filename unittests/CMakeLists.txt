@@ -41,6 +41,7 @@ foreach(test ${tests})
 
 	# Get the name (i.e. bla.cpp => bla)
 	get_filename_component(base ${test} NAME_WE)
+	link_directories(${DARTExt_LIBRARY_DIRS})
 	add_executable(${base} ${test})
 	target_link_libraries(${base} optimized dart debug dartd optimized gtest debug gtestd ${DARTExt_LIBRARIES})
 
