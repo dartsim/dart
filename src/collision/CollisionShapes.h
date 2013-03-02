@@ -279,7 +279,7 @@ namespace collision_checking
     fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
     		double _height, int _slices, int _stacks)
 	{
-    	int CACHE_SIZE = 240;
+    	const int CACHE_SIZE = 240;
     	float PI = 3.14159265358979323846;
 
 		int i,j;

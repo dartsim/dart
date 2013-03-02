@@ -399,7 +399,7 @@ namespace renderer {
     	if(_node == 0)
     		return;
 
-    	compileList(_node->getVizShape());
+    	compileList(_node->getShape());
     	compileList(_node->getColShape());
     }
 
@@ -474,7 +474,7 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	kinematics::Shape *shape = _colMesh ? _node->getColShape() : _node->getVizShape();
+    	kinematics::Shape *shape = _colMesh ? _node->getColShape() : _node->getShape();
     	draw(shape, _colMesh);
 
     	glColor3f(1.0f,1.0f,1.0f);
