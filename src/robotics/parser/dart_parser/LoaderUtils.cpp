@@ -179,9 +179,37 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
   //-- BOX
   else if( _viz->geometry->type == urdf::Geometry::BOX ) {
 
+    boost::shared_ptr<urdf::Box> box = boost::static_pointer_cast<urdf::Box>( _viz->geometry );
+    Eigen::Vector3d dim; dim<< box->dim.x, box->dim.y, box->dim.z;
+    shape = new kinematics::ShapeBox( dim );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setVizShape(shape);
+
   }
 
+  //-- CYLINDER
   else if( _viz->geometry->type == urdf::Geometry::CYLINDER ) {
+
+    boost::shared_ptr<urdf::Cylinder> cylinder = boost::static_pointer_cast<urdf::Cylinder>( _viz->geometry );
+    shape = new kinematics::ShapeCylinder( cylinder->radius, cylinder->length );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setVizShape(shape);
 
   }
 
