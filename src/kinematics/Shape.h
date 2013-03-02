@@ -60,7 +60,7 @@ namespace kinematics {
             P_MESH
         };
 
-        Shape(ShapeType _type = P_UNDEFINED, double _mass = 0.0);
+        Shape(ShapeType _type = P_UNDEFINED);
         virtual ~Shape() {};
 
         inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
@@ -74,10 +74,6 @@ namespace kinematics {
 
         inline void setOffset(Eigen::Vector3d _offset) { mTransform.translation() = _offset; }
         inline Eigen::Vector3d getOffset() const { return mTransform.translation(); }
-
-
-        void setMass(const double _m);
-        inline double getMass() { return mMass; }
 
         virtual Eigen::Matrix3d computeInertia(double _mass) { return Eigen::Matrix3d::Zero(); }
 
@@ -101,7 +97,6 @@ namespace kinematics {
 
         ShapeType mType;    ///< Type of primitive; unknown in the general case
         Eigen::Vector3d mDim; ///< dimensions for bounding box
-        double mMass;	///< mass of the body
         double mVolume; ///< volume enclosed by the geometry
 
         int mID; // unique id

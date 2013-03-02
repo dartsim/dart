@@ -46,7 +46,6 @@ namespace kinematics {
     class ShapeBox : public Shape {
     public:
         ShapeBox(Eigen::Vector3d _dim);
-        ShapeBox(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
 

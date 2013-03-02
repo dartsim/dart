@@ -94,10 +94,6 @@ namespace kinematics {
     void BodyNode::init() {
         assert(mSkel);
 
-        if (mShape != NULL && mMass == 0) {
-            mMass = mShape->getMass();
-        }
-
         if(mShape && mI.isZero()) {
         	mI = mShape->computeInertia(mMass);
         }

@@ -44,21 +44,12 @@ using namespace Eigen;
 namespace kinematics {
 
     ShapeBox::ShapeBox(Vector3d _dim)
-    	: Shape(P_BOX, 0)
+    	: Shape(P_BOX)
     {
     	mDim = _dim;
         initMeshes();
         if (_dim != Vector3d::Zero())
             computeVolume();
-    }
-
-    ShapeBox::ShapeBox(Vector3d _dim, double _mass)
-    	: Shape(P_BOX, _mass)
-    {
-    	mDim = _dim;
-		initMeshes();
-		if (_dim != Vector3d::Zero())
-			computeVolume();
     }
 
     void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

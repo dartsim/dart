@@ -48,7 +48,7 @@ using namespace std;
 namespace kinematics {
 
     ShapeMesh::ShapeMesh(Vector3d _dim, const aiScene *_mesh)
-    	: Shape(P_MESH, 0),
+    	: Shape(P_MESH),
     	  mMesh(_mesh),
     	  mDisplayList(0)
     {
@@ -56,18 +56,6 @@ namespace kinematics {
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
-    }
-
-    ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, const aiScene *_mesh)
-    	: Shape(P_MESH, _mass),
-    	  mMesh(_mesh),
-    	  mDisplayList(0)
-    {
-    	mDim = _dim;
-    	initMeshes();
-    	if(mDim != Vector3d::Zero()) {
-    		computeVolume();
-    	}
     }
 
     void ShapeMesh::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

@@ -43,10 +43,9 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    Shape::Shape(ShapeType _type, double _mass) :
+    Shape::Shape(ShapeType _type) :
 		  mType(_type),
 		  mDim(0, 0, 0),
-		  mMass(_mass),
 		  mVolume(0),
 		  mID(mCounter++),
 		  mColor(0.5, 0.5, 1.0),
@@ -59,10 +58,6 @@ namespace kinematics {
     void Shape::setDim(const Eigen::Vector3d& _dim) {
         mDim = _dim;
         computeVolume();
-    }
-
-    void Shape::setMass(double _m) {
-        mMass = _m;
     }
 
     int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;

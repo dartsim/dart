@@ -44,22 +44,13 @@ using namespace Eigen;
 namespace kinematics {
 
     ShapeSphere::ShapeSphere(double _radius)
-    	: Shape(P_SPHERE, 0),
+    	: Shape(P_SPHERE),
     	  mRadius(_radius)
     {
         if (_radius > 0.0) {
             computeVolume();
         }
     }
-
-    ShapeSphere::ShapeSphere(double _radius, double _mass)
-		: Shape(P_SPHERE, _mass),
-		  mRadius(_radius)
-	{
-		if (_radius > 0.0) {
-			computeVolume();
-		}
-	}
 
     void ShapeSphere::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         // TODO
