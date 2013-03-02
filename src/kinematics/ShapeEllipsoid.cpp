@@ -49,9 +49,6 @@ namespace kinematics {
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
-        if (mMass != 0){
-            mInertia = computeInertia(mMass);
-        }
     }
 
     ShapeEllipsoid::ShapeEllipsoid(Vector3d _dim, double _mass)
@@ -61,9 +58,6 @@ namespace kinematics {
     	initMeshes();
     	if (mDim != Vector3d::Zero())
     		computeVolume();
-    	if (mMass != 0){
-    		mInertia = computeInertia(mMass);
-    	}
     }
 
     void ShapeEllipsoid::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

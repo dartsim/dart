@@ -50,9 +50,6 @@ namespace kinematics {
         initMeshes();
         if (_dim != Vector3d::Zero())
             computeVolume();
-        if (mMass != 0){
-            mInertia = computeInertia(mMass);
-        }
     }
 
     ShapeBox::ShapeBox(Vector3d _dim, double _mass)
@@ -62,9 +59,6 @@ namespace kinematics {
 		initMeshes();
 		if (_dim != Vector3d::Zero())
 			computeVolume();
-		if (mMass != 0){
-			mInertia = computeInertia(mMass);
-		}
     }
 
     void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {

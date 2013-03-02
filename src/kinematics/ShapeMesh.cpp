@@ -56,9 +56,6 @@ namespace kinematics {
         initMeshes();
         if (mDim != Vector3d::Zero())
             computeVolume();
-        if (mMass != 0){
-            mInertia = computeInertia(mMass);
-        }
     }
 
     ShapeMesh::ShapeMesh(Vector3d _dim, double _mass, const aiScene *_mesh)
@@ -70,9 +67,6 @@ namespace kinematics {
     	initMeshes();
     	if(mDim != Vector3d::Zero()) {
     		computeVolume();
-    	}
-    	if(mMass != 0) {
-    		mInertia = computeInertia(mMass);
     	}
     }
 

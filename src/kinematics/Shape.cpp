@@ -48,7 +48,6 @@ namespace kinematics {
 		  mDim(0, 0, 0),
 		  mMass(_mass),
 		  mVolume(0),
-		  mInertia(Matrix3d::Zero()),
 		  mID(mCounter++),
 		  mColor(0.5, 0.5, 1.0),
 		  mOffset(0, 0, 0),
@@ -57,19 +56,13 @@ namespace kinematics {
 		  mColList(0) {
 	}
 
-    void Shape::setInertia(const Eigen::Matrix3d& _inertia) {
-        mInertia = _inertia;
-    }
-
     void Shape::setDim(const Eigen::Vector3d& _dim) {
         mDim = _dim;
         computeVolume();
-        mInertia = computeInertia(mMass);
     }
 
     void Shape::setMass(double _m) {
         mMass = _m;
-        mInertia = computeInertia(mMass);
     }
 
     int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;

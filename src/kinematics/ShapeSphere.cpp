@@ -50,9 +50,6 @@ namespace kinematics {
         if (_radius > 0.0) {
             computeVolume();
         }
-        if (mMass > 0.0) {
-            mInertia = computeInertia(mMass);
-        }
     }
 
     ShapeSphere::ShapeSphere(double _radius, double _mass)
@@ -61,9 +58,6 @@ namespace kinematics {
 	{
 		if (_radius > 0.0) {
 			computeVolume();
-		}
-		if (mMass > 0.0) {
-			mInertia = computeInertia(mMass);
 		}
 	}
 

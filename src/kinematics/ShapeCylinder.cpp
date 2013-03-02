@@ -52,9 +52,6 @@ namespace kinematics {
         if (mRadius > 0.0 && mHeight > 0.0) {
             computeVolume();
         }
-        if (mMass > 0.0) {
-            mInertia = computeInertia(mMass);
-        }
     }
 
     ShapeCylinder::ShapeCylinder(double _radius, double _height, double _mass)
@@ -65,9 +62,6 @@ namespace kinematics {
     	initMeshes();
     	if (mRadius > 0.0 && mHeight > 0.0) {
     		computeVolume();
-    	}
-    	if (mMass > 0.0) {
-    		mInertia = computeInertia(mMass);
     	}
     }
 
