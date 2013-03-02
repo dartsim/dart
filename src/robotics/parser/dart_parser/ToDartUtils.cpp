@@ -201,6 +201,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   dynamics::BodyNodeDynamics* node =  (dynamics::BodyNodeDynamics*) _skel->createBodyNode( lk_name.c_str() );
   
   // Mesh Loading
+  //FIXME: Shouldn't mass and inertia default to 0?
   double mass = 0.1;
   Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
   inertia *= 0.1;
@@ -231,12 +232,16 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       inert->origin.position.y, 
       inert->origin.position.z;
     // Set it to Node
-    node->setLocalCOM( localCOM );  // Temporary Hack: Do not set COM since DART uses that as the location of the mesh
+    node->setLocalCOM( localCOM );
     
     if( debug ) { std::cout<< "[debug] Mass is: "<< mass << std::endl; }
     if( debug ) { std::cout<< "[debug] Inertia is: \n"<< inertia << std::endl; }
   }
-  
+
+  // Set inertial information
+  //FIXME: Set mass
+  node->setLocalInertia(inertia);
+
   if( !_lk->visual ) {
     add_Shape( node,  mass, inertia ); 
   }
@@ -254,22 +259,20 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       
       // Check collision
       if( _lk->collision ) {
-	if( _lk->collision->geometry->type == urdf::Geometry::MESH ) {
-	  boost::shared_ptr<urdf::Mesh> collisionMesh = boost::static_pointer_cast<urdf::Mesh>( _lk->collision->geometry );
-	  fullCollisionPath = _rootToSkelPath;
-	  fullCollisionPath.append( collisionMesh->filename );
-	}
+	    if( _lk->collision->geometry->type == urdf::Geometry::MESH ) {
+	      boost::shared_ptr<urdf::Mesh> collisionMesh = boost::static_pointer_cast<urdf::Mesh>( _lk->collision->geometry );
+	      fullCollisionPath = _rootToSkelPath;
+	      fullCollisionPath.append( collisionMesh->filename );
+	    }
       }
 
-      add_ShapeMesh( node, 
+      add_ShapeMesh( node,
 		     (fullVisualPath).c_str(), 
 		     mass,
 		     inertia,
 		     (fullCollisionPath).c_str(),
-		     visPose ); 
-      
+		     visPose );
     }
-    
     // Empty
     else {
       add_Shape( node, mass, inertia ); 
