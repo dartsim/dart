@@ -55,7 +55,7 @@ namespace kinematics {
   
     BodyNode::BodyNode(const char *_name) 
         : mSkelIndex(-1),
-          mShape(NULL),
+          mVizShape(NULL),
           mJointParent(NULL),
           mNodeParent(NULL),
           mColliding(false),
@@ -84,9 +84,9 @@ namespace kinematics {
         }
         mMarkers.clear();
 
-        if (mShape != NULL) {
-            delete mShape;
-            mShape = NULL;
+        if (mVizShape != NULL) {
+            delete mVizShape;
+            mVizShape = NULL;
         }
         mJointsChild.clear();
     }
@@ -94,8 +94,8 @@ namespace kinematics {
     void BodyNode::init() {
         assert(mSkel);
 
-        if(mShape && mI.isZero()) {
-        	mI = mShape->computeInertia(mMass);
+        if(mVizShape && mI.isZero()) {
+        	mI = mVizShape->computeInertia(mMass);
         }
 
         mT = Matrix4d::Identity();
@@ -129,7 +129,7 @@ namespace kinematics {
 
         // update the inertia matrix 
         Matrix3d R = mW.topLeftCorner(3,3);
-        if(mShape!=NULL)
+        if(mVizShape!=NULL)
             mIc = R*mI*R.transpose();
     }
 
@@ -224,10 +224,10 @@ namespace kinematics {
         for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
             mJointParent->getTransform(i)->applyGLTransform(_ri);
         }
-        if (mShape != NULL) {
+        if (mVizShape != NULL) {
             _ri->pushName((unsigned)mID);
             _ri->pushMatrix();
-            mShape->draw(_ri, _color, _useDefaultColor);
+            mVizShape->draw(_ri, _color, _useDefaultColor);
             _ri->popMatrix();
             _ri->popName();
         }

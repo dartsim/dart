@@ -203,7 +203,7 @@ namespace dynamics{
         Vector3d cl = mCOMLocal;
 
         // base case: end effectors
-        if(mShape!=NULL){
+        if(mVizShape!=NULL){
             mForceJointBody = mMass*mVelDotBody;
             mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(mI*mOmegaBody) + mI*mOmegaDotBody;
         }
@@ -382,7 +382,7 @@ namespace dynamics{
     void BodyNodeDynamics::evalMassMatrix(){
         //mM = MatrixXd::Zero(getNumDependentDofs(),getNumDependentDofs());;
         mM.setZero();
-        if(mShape!=NULL)
+        if(mVizShape!=NULL)
             mM = getMass()*mJv.transpose()*mJv + mJw.transpose()*mIc*mJw;
     }
 
@@ -393,7 +393,7 @@ namespace dynamics{
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        if(mShape!=NULL){
+        if(mVizShape!=NULL){
             Matrix3d R = mW.topLeftCorner(3,3);
             // term 1
             mC = getMass()*mJv.transpose()*mJvDot + mJw.transpose()*mIc*mJwDot;
@@ -417,7 +417,7 @@ namespace dynamics{
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependentDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependentDofs[i]];
         }
-        if( mShape!=NULL ){
+        if( mVizShape!=NULL ){
             mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
             // term 2
             mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
@@ -430,7 +430,7 @@ namespace dynamics{
 
     void BodyNodeDynamics::evalGravityVector(const Vector3d &_gravity){
         mG.setZero();
-        if( mShape!=NULL ){
+        if( mVizShape!=NULL ){
             for(int i=0; i<mJv.cols(); i++){
                 mG[i] = -getMass()*_gravity.dot(mJv.col(i));    // '-' sign as term is on the left side of dynamics equation
             }
@@ -526,7 +526,7 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::aggregateMass(Eigen::MatrixXd &_M){
-        if(mShape==NULL) return;
+        if(mVizShape==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             for(int j=0; j<getNumDependentDofs(); j++){
                 _M(mDependentDofs[i], mDependentDofs[j]) += mM(i, j);
@@ -546,7 +546,7 @@ namespace dynamics{
         }
     }
     void BodyNodeDynamics::aggregateGravity(Eigen::VectorXd &_G){
-        if(mShape==NULL) return;
+        if(mVizShape==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             _G[mDependentDofs[i]] += mG[i];
         }

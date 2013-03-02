@@ -152,8 +152,8 @@ namespace kinematics {
         inline int getNumMarkers() const { return mMarkers.size(); }
         inline Marker* getMarker(int _idx) const { return mMarkers[_idx]; }
 
-        inline void setShape(Shape *_p) { mShape = _p; }
-        inline Shape* getShape() const { return mShape; }
+        inline void setShape(Shape *_p) { mVizShape = _p; }
+        inline Shape* getShape() const { return mVizShape; }
         
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
         inline int getNumChildJoints() { return mJointsChild.size(); }
@@ -180,7 +180,7 @@ namespace kinematics {
         char mName[MAX_NODE3D_NAME]; ///< Name
         int mSkelIndex;    ///< Index in the model
 
-        Shape *mShape;  ///< Geometry of this body node
+        Shape *mVizShape;  ///< Geometry of this body node
         std::vector<Joint *> mJointsChild; ///< List of joints that link to child nodes
         Joint *mJointParent;    ///< Joint connecting to parent node
         BodyNode *mNodeParent;      ///< Parent node
