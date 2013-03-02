@@ -226,12 +226,12 @@ namespace kinematics {
         _outfile<<"}\n";	// chain
 
         // primitive
-        Eigen::Vector3d pdim = _b->getVizShape()->getDim(); // Default to VizShape in graphics context
+        Eigen::Vector3d pdim = _b->getShape()->getDim(); // Default to VizShape in graphics context
         Eigen::Vector3d off = _b->getLocalCOM();
         _outfile<<"primitive { <"<<pdim[0]<<", "<<pdim[1]<<", "<<pdim[2]<<">, <"<<off[0]<<", "<<off[1]<<", "<<off[2]<<">, "<<unitlength;
         // different types
 
-        Shape* prim = _b->getVizShape();
+        Shape* prim = _b->getShape();
         ShapeEllipsoid* elp = dynamic_cast<ShapeEllipsoid*>(prim);
         ShapeBox* box = dynamic_cast<ShapeBox*>(prim);
 

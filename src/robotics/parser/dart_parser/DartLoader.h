@@ -6,6 +6,7 @@
 #define DART_LOADER_H
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <vector>
 #include <string>
 #include <map>
@@ -102,7 +103,10 @@ class DartLoader {
   dynamics::BodyNodeDynamics* createDartNode( boost::shared_ptr<urdf::Link> _lk,
 					      dynamics::SkeletonDynamics* _skel,
 					      std::string _rootToSkelPath = NULL ); 
-  
+
+  // Useful helpers
+  Eigen::Affine3d pose2Affine3d( urdf::Pose _pose );
+
   // Member variables
   std::vector<dynamics::BodyNodeDynamics*> mNodes;
   std::vector<kinematics::Joint*> mJoints;

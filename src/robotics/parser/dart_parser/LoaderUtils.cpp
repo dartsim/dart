@@ -12,6 +12,9 @@
 #include <kinematics/Joint.h>
 #include <kinematics/Shape.h>
 #include <kinematics/ShapeMesh.h>
+#include <kinematics/ShapeSphere.h>
+#include <kinematics/ShapeBox.h>
+#include <kinematics/ShapeCylinder.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include <iostream>
 
@@ -154,9 +157,38 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
   pose = _viz->origin;  
   
   // Type of Geometry
-  
+
+  //-- SPHERE
+  if( _viz->geometry->type == urdf::Geometry::SPHERE ) {
+    
+    boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _viz->geometry );
+    shape = new kinematics::ShapeSphere( sphere->radius );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setVizShape(shape);
+
+  }
+
+  //-- BOX
+  else if( _viz->geometry->type == urdf::Geometry::BOX ) {
+
+  }
+
+  else if( _viz->geometry->type == urdf::Geometry::CYLINDER ) {
+
+  }
+
+
+
   //-- Mesh : Save the path
-  if( _viz->geometry->type == urdf::Geometry::MESH ) {
+  else if( _viz->geometry->type == urdf::Geometry::MESH ) {
 
     boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _viz->geometry );
     std::string fullPath = _rootToSkelPath;
@@ -166,7 +198,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     model = kinematics::ShapeMesh::loadMesh( fullPath );    
     
     if( model == NULL ) {
-      std::cout<< "[add_Shape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
+      std::cout<< "[add_VizShape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
       return false;  
     }
     
@@ -174,19 +206,8 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
     
     // Set its pose
-    Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-    // Set xyz
-    Eigen::Vector3d t;
-    t[0] = pose.position.x;
-    t[1] = pose.position.y;
-    t[2] = pose.position.z;
-    transform.translation() = t;
-    // Set rpy
-    double roll, pitch, yaw;
-    pose.rotation.getRPY( roll, pitch, yaw );
-    Eigen::Matrix3d rot;
-    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    transform.matrix().block(0,0,3,3) = rot;
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
     
     // Set it into shape
     shape->setTransform( transform );
@@ -199,11 +220,35 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
   } // end if (mesh)
 
   else {
-    std::cout<< "No visual type defined!"<<std::endl;
+    std::cout<< "[set_VizShape] No MESH, BOX, CYLINDER OR SPHERE! Exiting"<<std::endl;
     return false;
   }
 
   return true;
+}
+
+/**
+ * @function pose2Affine3d
+ */
+Eigen::Affine3d DartLoader::pose2Affine3d( urdf::Pose _pose ) {
+
+  Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+
+    // Set xyz
+    Eigen::Vector3d t;
+    t[0] = _pose.position.x;
+    t[1] = _pose.position.y;
+    t[2] = _pose.position.z;
+    transform.translation() = t;
+
+    // Set rpy
+    double roll, pitch, yaw;
+    _pose.rotation.getRPY( roll, pitch, yaw );
+    Eigen::Matrix3d rot;
+    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
+    transform.matrix().block(0,0,3,3) = rot;
+
+    return transform;
 }
 
 /**
@@ -234,7 +279,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     model = kinematics::ShapeMesh::loadMesh( fullPath );    
     
     if( model == NULL ) {
-      std::cout<< "[add_Shape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
+      std::cout<< "[add_ColShape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
       return false;  
     }
     
@@ -267,7 +312,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
   } // end if (mesh)
 
   else {
-    std::cout<< "No collision type defined!"<<std::endl;
+    std::cout<< "[set_ColShape] No MESH, BOX, CYLINDER OR SPHERE! Exiting"<<std::endl;
     return false;
   }
 
