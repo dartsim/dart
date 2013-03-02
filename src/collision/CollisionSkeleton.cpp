@@ -17,14 +17,25 @@ namespace collision_checking{
     CollisionSkeletonNode::CollisionSkeletonNode(kinematics::BodyNode* _bodyNode)
     {
         mBodyNode = _bodyNode;
-        if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_ELLIPSOID) {
-            mMesh = createEllipsoid<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else if (mBodyNode->getShape()->getShapeType() == kinematics::Shape::P_BOX) {
-            mMesh = createCube<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2]);
-        } else {
-            mMesh = createMesh<fcl::OBBRSS>(mBodyNode->getShape()->getDim()[0], mBodyNode->getShape()->getDim()[1], mBodyNode->getShape()->getDim()[2], _bodyNode->getShape()->getCollisionMesh());
+
+        kinematics::Shape *shape = _bodyNode->getShape();
+
+        switch (shape->getShapeType()) {
+        case kinematics::Shape::P_ELLIPSOID:
+        	mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+        	break;
+        case kinematics::Shape::P_BOX:
+        	mMesh = createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+        	break;
+        case kinematics::Shape::P_MESH:
+        	mMesh = createMesh<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shape->getCollisionMesh());
+        	break;
+        default:
+        	cout << "ERROR: Collision checking does not support " << _bodyNode->getName() << "'s Shape type\n";
+        	break;
         }
     }
+
     CollisionSkeletonNode::~CollisionSkeletonNode()
     {
         delete mMesh;
