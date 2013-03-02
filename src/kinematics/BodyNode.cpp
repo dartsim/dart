@@ -134,7 +134,7 @@ namespace kinematics {
         // update the inertia matrix 
         Matrix3d R = mW.topLeftCorner(3,3);
         if(mShape!=NULL)
-            mIc = R*mShape->getInertia()*R.transpose();
+            mIc = R*mI*R.transpose();
     }
 
     void BodyNode::updateFirstDerivatives() {

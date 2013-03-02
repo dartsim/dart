@@ -201,14 +201,11 @@ namespace dynamics{
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
         Vector3d cl = mCOMLocal;
-        Matrix3d Ibody = Matrix3d::Zero();
-        if(mShape != NULL)
-           Ibody =  mShape->getInertia();
 
         // base case: end effectors
         if(mShape!=NULL){
             mForceJointBody = mMass*mVelDotBody;
-            mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(Ibody*mOmegaBody) + Ibody*mOmegaDotBody;
+            mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(mI*mOmegaBody) + mI*mOmegaDotBody;
         }
         // general case
         for(unsigned int j=0; j<mJointsChild.size(); j++){
