@@ -143,7 +143,10 @@ namespace kinematics {
 
         inline void setMass(double _mass) { mMass = _mass; }
         inline double getMass() const { return mMass; }
-        inline Eigen::Matrix3d getInertia() const { return mIc; }
+
+        inline void setLocalInertia(const Eigen::Matrix3d& _inertia) { mI = _inertia; }
+        inline Eigen::Matrix3d getLocalInertia() const { return mI; }
+        inline Eigen::Matrix3d getWorldInertia() const { return mIc; }
 
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
         inline int getNumMarkers() const { return mMarkers.size(); }

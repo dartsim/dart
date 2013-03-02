@@ -91,7 +91,7 @@ Vector3d Analyzer::evalAngMomentum(const VectorXd& _dofVel) {
         BodyNodeDynamics *node = (BodyNodeDynamics*)mSkel->getNode(i);
         node->evalVelocity(_dofVel);
         node->evalOmega(_dofVel);
-        sum += node->getInertia() * node->mOmega;
+        sum += node->getWorldInertia() * node->mOmega;
         sum += node->getMass() * (node->getWorldCOM() - c).cross(node->mVel);
     }
     return sum;

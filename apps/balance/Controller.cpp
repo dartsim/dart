@@ -107,7 +107,7 @@ Vector3d Controller::evalAngMomentum(const VectorXd& _dofVel) {
         BodyNodeDynamics *node = (BodyNodeDynamics*)mSkel->getNode(i);
         node->evalVelocity(_dofVel);
         node->evalOmega(_dofVel);
-        sum += node->getInertia() * node->mOmega;
+        sum += node->getWorldInertia() * node->mOmega;
         sum += node->getMass() * (node->getWorldCOM() - c).cross(node->mVel);
     }
     return sum;
@@ -134,7 +134,7 @@ VectorXd Controller::adjustAngMomentum(VectorXd _deltaMomentum, VectorXd _contro
             Jw.col(dofIndex) += localJw.col(j);
         }
         A.block(0, 0, 3, nDof) += m_i * Jv / mass;
-        A.block(3, 0, 3, nDof) += m_i * (c_i - c) * Jv + node->getInertia() * Jw;
+        A.block(3, 0, 3, nDof) += m_i * (c_i - c) * Jv + node->getWorldInertia() * Jw;
     }
     for ( int i = 0; i < 6; i++)
         A.col(i).setZero(); // try to realize momentum without using root acceleration

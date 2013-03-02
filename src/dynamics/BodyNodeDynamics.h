@@ -131,7 +131,7 @@ namespace dynamics{
         ///< contact points are a pair of (local point offset, Cartesian force in local coordinates) 
         
         Eigen::Matrix4d getLocalSecondDeriv(const kinematics::Dof *_q1, const kinematics::Dof *_q2) const;
-            void evalJacDerivLin(int _qi, Eigen::Vector3d _offset);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
+        void evalJacDerivLin(int _qi, Eigen::Vector3d _offset);    ///< Evaluate the first derivatives of the linear Jacobian wrt to the dependent dofs
         void evalJacDerivAng(int _qi);    ///< Evaluate the first derivatives of the angular Jacobian wrt to the dependent dofs
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacDotAng(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
