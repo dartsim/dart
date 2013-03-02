@@ -99,7 +99,7 @@ namespace kinematics {
         }
 
         if(mShape && mI.isZero()) {
-        	mI = mShape->getInertia();
+        	mI = mShape->computeInertia(mMass);
         }
 
         mT = Matrix4d::Identity();
