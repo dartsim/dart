@@ -99,6 +99,7 @@ namespace renderer {
 
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);
         virtual void drawCube(const Eigen::Vector3d& _size);
+        virtual void drawCylinder(double _radius, double _height);
         virtual void drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh);
         virtual void drawList(GLuint index);
 
