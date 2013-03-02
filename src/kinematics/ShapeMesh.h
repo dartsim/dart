@@ -55,12 +55,15 @@ namespace kinematics {
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(), bool _default = true) const;
         static const aiScene* loadMesh(const std::string& fileName);
-    private:
+
         virtual Eigen::Matrix3d computeInertia(double _mass);
+
+    private:
         void computeVolume();
 
         const aiScene *mMesh;
         int mDisplayList;	///< OpenGL DisplayList id for rendering
+
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

@@ -48,10 +48,13 @@ namespace kinematics {
         ShapeEllipsoid(Eigen::Vector3d _dim, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-    private:
+
         virtual Eigen::Matrix3d computeInertia(double _mass);
+
+    private:
         void computeVolume();
         void initMeshes();
+
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

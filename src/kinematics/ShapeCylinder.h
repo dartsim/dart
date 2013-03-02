@@ -50,10 +50,11 @@ namespace kinematics {
         ShapeCylinder(double _radius, double _height, double _mass);
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-    private:
-        virtual Eigen::Matrix3d computeInertia(double _mass);
-        void computeVolume();
 
+        virtual Eigen::Matrix3d computeInertia(double _mass);
+
+    private:
+        void computeVolume();
 
         double mRadius;
         double mHeight; // along z-axis

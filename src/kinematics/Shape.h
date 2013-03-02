@@ -82,6 +82,8 @@ namespace kinematics {
         void setMass(const double _m);
         inline double getMass() { return mMass; }
 
+        virtual Eigen::Matrix3d computeInertia(double _mass) { return Eigen::Matrix3d::Zero(); }
+
         inline void setVolume(double _v) { mVolume = _v; }
         inline double getVolume() const { return mVolume; }
 
@@ -96,7 +98,6 @@ namespace kinematics {
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
     protected:
-        virtual Eigen::Matrix3d computeInertia(double _mass) { return Eigen::Matrix3d::Zero(); }
         virtual void computeVolume() {}
 
         virtual void initMeshes() {}
