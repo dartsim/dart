@@ -194,6 +194,7 @@ namespace kinematics {
         // transformations
         Eigen::Matrix4d mT; ///< Local transformation from parent to itself
         Eigen::Matrix4d mW; ///< Global transformation
+        Eigen::Matrix3d mI;	///< Inertia matrix in the body frame; defaults to Shape's inertia matrix
         Eigen::Matrix3d mIc;    ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
 
         // first derivatives

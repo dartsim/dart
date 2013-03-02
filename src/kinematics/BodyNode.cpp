@@ -62,7 +62,8 @@ namespace kinematics {
           mNumRootTrans(0),
           mMass(0),
           mCOMLocal(0,0,0),
-          mSkel(NULL)
+          mSkel(NULL),
+          mI(Matrix3d::Zero())
     {
         mJointsChild.clear();
         mMarkers.clear();
@@ -95,6 +96,10 @@ namespace kinematics {
 
         if (mShape != NULL && mMass == 0) {
             mMass = mShape->getMass();
+        }
+
+        if(mShape && mI.isZero()) {
+        	mI = mShape->getInertia();
         }
 
         mT = Matrix4d::Identity();
