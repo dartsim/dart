@@ -100,7 +100,7 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
   if( !worldInterface ) {
     std::cout<< "[parseWorldURDF] Null world pointer. No loading and exiting!"<<std::endl;
     world = NULL;
-    return world;
+    return NULL;
   }
   else {
     world = new robotics::World();
@@ -113,10 +113,18 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
       std::string object_path = mRoot_To_World_Path;
       std::string object_localPath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
       object_path.append(object_localPath);
+
       if( debug ) {
 	std::cout<<"Global filepath for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<object_path<<std::endl;
       }     
+
       object = modelInterfaceToObject(  worldInterface->objectModels[i].model, object_path );
+
+      if( object == NULL ) {
+	std::cout<< "[ERROR] Object "<< worldInterface->objectModels[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
+	world = NULL; 
+	return world;
+      }
 
       // Initialize position and RPY 
       pose << 0, 0, 0, 0, 0, 0;
@@ -139,6 +147,12 @@ robotics::World* DartLoader::parseWorld( std::string _urdfFile ) {
 	std::cout<<"Global filepath for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<robot_path<<std::endl;
       }
       robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, robot_path );
+
+      if( robot == NULL ) {
+	std::cout<< "[ERROR] Robot "<< worldInterface->robotModels[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
+	world = NULL; 
+	return world;
+      }
 
       // Initialize position and RPY 
       pose << 0, 0, 0, 0, 0, 0;
@@ -278,8 +292,9 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
 	for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
 	     jt != _model->joints_.end(); jt++ ) {  
 	  if( ( (*jt).second )->parent_link_name == "world" ) {
-	    joint = createDartJoint( (*jt).second, mSkeleton );
-	    mJoints.push_back( joint );
+	    rootJoint = createDartRootJoint( (*jt).second, mSkeleton );
+	    if( rootJoint == NULL ) { return NULL; }
+	    mJoints.push_back( rootJoint );
 	  }
 	} // end of else
       } // end of rootName == "world"
@@ -292,7 +307,8 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   }
   else {
     /** Create a joint for floating */
-    rootJoint =  createDartRootJoint( rootNode, mSkeleton ); 
+    rootJoint =  createNewDartRootJoint( rootNode, mSkeleton ); 
+    if( rootJoint == NULL ) { return NULL; }
     mJoints.push_back( rootJoint );
   }   
   
@@ -399,21 +415,26 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
 	for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
 	     jt != _model->joints_.end(); jt++ ) {  
 	  if( ( (*jt).second )->parent_link_name == "world" ) {
-	    joint = createDartJoint( (*jt).second, mRobot );
-	    mJoints.push_back( joint );
+	    rootJoint = createDartRootJoint( (*jt).second, mRobot );
+	    if( rootJoint == NULL ) { return NULL; }
+	    mJoints.push_back( rootJoint );
 	  }
-	} // end of else
-      } // end of rootName == "world"
-    } 
+	} // end of for (joint iterator)
+      } // end of else ( if there is a unique node attached to world)
+
+    } // end of rootName == "world" (when rootNode == NULL )
     // Bad. Either the URDF is bad or the structure is not tree-like
     else {
       std::cout << "[ERROR] No root node found!" << std::endl;
       return NULL;
     }
-  }
+  } // end of rootNode == NULL 
+
+  // If rootNode is not NULL and world link is not defined, then we assume the user wants a free floating robot
   else {
     /** Create a joint for floating */
-    rootJoint =  createDartRootJoint( rootNode, mRobot ); 
+    rootJoint =  createNewDartRootJoint( rootNode, mRobot );
+    if( rootJoint == NULL ) { return NULL; } 
     mJoints.push_back( rootJoint );
   }   
   
@@ -494,14 +515,16 @@ robotics::Robot* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mod
   for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
        jt != _model->joints_.end(); 
        jt++ ) {  
-    joint = createDartJoint( (*jt).second, mObject );
+    rootJoint = createDartRootJoint( (*jt).second, mObject );
+    if( rootJoint == NULL ) { return NULL; }
     mJoints.push_back( joint );
 
   }
   
   //-- root joint
   rootNode = getNode( _model->getRoot()->name ); // no rootnode
-  rootJoint = createDartRootJoint( rootNode, mObject );
+  rootJoint = createNewDartRootJoint( rootNode, mObject );
+  if( rootJoint == NULL ) { return NULL; }
   mJoints.push_back( rootJoint );
   
   if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );

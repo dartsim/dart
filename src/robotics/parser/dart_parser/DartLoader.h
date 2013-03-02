@@ -36,7 +36,8 @@ namespace urdf {
 enum TypeOfDOF {
   GOLEM_X, GOLEM_Y, GOLEM_Z, 
   GOLEM_ROLL, GOLEM_PITCH, GOLEM_YAW,
-  GOLEM_ARBITRARY_ROTATION
+  GOLEM_ARBITRARY_ROTATION,
+  GOLEM_FLOATING
 };
 
 /**
@@ -93,8 +94,12 @@ class DartLoader {
 		  Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3) );
   
   // ToDart utils
-  kinematics::Joint* createDartRootJoint( dynamics::BodyNodeDynamics* _node,
-					  dynamics::SkeletonDynamics* _skel );
+  kinematics::Joint* createDartRootJoint( boost::shared_ptr<urdf::Joint> _jt,
+					  dynamics::SkeletonDynamics* _skel ); 
+  kinematics::Joint* createNewDartRootJoint( dynamics::BodyNodeDynamics* _node,
+					     dynamics::SkeletonDynamics* _skel );
+
+
   kinematics::Joint* createDartJoint( boost::shared_ptr<urdf::Joint> _jt,
 				      dynamics::SkeletonDynamics* _skel );
   dynamics::BodyNodeDynamics* createDartNode( boost::shared_ptr<urdf::Link> _lk,

@@ -105,6 +105,34 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
     _joint->getDof(0)->setMax(_max);
     _skel->addTransform(trans);
   }
+  else if( _DOF_TYPE == GOLEM_FLOATING ) {
+
+    trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "floatingX" ), "Tfx" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+    
+    trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "floatingY" ), "Tfy" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+    trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "floatingZ" ), "Tfz" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+   
+    trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "floatingYaw" ), "Tfry" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+ 
+    trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "floatingPitch" ), "Tfrp" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+    trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "floatingRoll" ), "Tfrr" );
+    _joint->addTransform( trans, true );
+    _skel->addTransform( trans );
+
+  }
+
   else {
     if(debug) std::cerr << " WATCH OUT! THIS SHOULD NOT HAPPEN, NO DOF SET" << std::endl;
   }
