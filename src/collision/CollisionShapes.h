@@ -11,6 +11,9 @@
 
 #include "fcl/BVH/BVH_model.h"
 #include <assimp/scene.h>
+#include <math.h>
+
+#include <iostream>
 
 
 namespace collision_checking
@@ -266,13 +269,105 @@ namespace collision_checking
             p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
             p2 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
             p3 = fcl::Vec3f(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
-            model->addTriangle(p1, p2, p3); 
+            model->addTriangle(p1, p2, p3);
         }
         model->endModel();
         return model;
     }//end createCube
 
+    template<class BV>
+    fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
+    		double _height, int _slices, int _stacks)
+	{
+    	int CACHE_SIZE = 240;
+    	float PI = 3.14159265358979323846;
 
+		int i,j;
+		float sinCache[CACHE_SIZE];
+		float cosCache[CACHE_SIZE];
+		float angle;
+		float zBase;
+		float zLow, zHigh;
+		float sintemp, costemp;
+		float deltaRadius;
+		float radiusLow, radiusHigh;
+
+		if (_slices >= CACHE_SIZE) _slices = CACHE_SIZE-1;
+
+		if (_slices < 2 || _stacks < 1 || _baseRadius < 0.0 || _topRadius < 0.0 ||
+			_height < 0.0) {
+			return NULL;
+		}
+
+		/* Center at CoM */
+		zBase = -_height/2;
+
+		/* Compute delta */
+		deltaRadius = _baseRadius - _topRadius;
+
+		/* Cache is the vertex locations cache */
+		for (i = 0; i < _slices; i++) {
+			angle = 2 * PI * i / _slices;
+			sinCache[i] = sin(angle);
+			cosCache[i] = cos(angle);
+		}
+
+		sinCache[_slices] = sinCache[0];
+		cosCache[_slices] = cosCache[0];
+
+		fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+		fcl::Vec3f p1, p2, p3, p4;
+
+		model->beginModel();
+
+		/* Base of cylinder */
+		sintemp = sinCache[0];
+		costemp = cosCache[0];
+		radiusLow = _baseRadius;
+		zLow = zBase;
+		p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+		for(i = 1; i < _slices; i++) {
+			p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+			p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+			model->addTriangle(p1, p2, p3);
+
+			Eigen::Vector3d v(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+		}
+
+		/* Body of cylinder */
+		for (i = 0; i < _slices; i++) {
+			for (j = 0; j < _stacks; j++) {
+				zLow = j * _height / _stacks + zBase;
+				zHigh = (j + 1) * _height / _stacks + zBase;
+				radiusLow = _baseRadius - deltaRadius * ((float) j / _stacks);
+				radiusHigh = _baseRadius - deltaRadius * ((float) (j + 1) / _stacks);
+
+				p1 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+				p2 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+
+				p3 = fcl::Vec3f(radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
+				p4 = fcl::Vec3f(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
+
+				model->addTriangle(p1, p2, p3);
+				model->addTriangle(p2, p3, p4);
+			}
+		}
+
+		/* Top of cylinder */
+		sintemp = sinCache[0];
+		costemp = cosCache[0];
+		radiusLow = _topRadius;
+		zLow = zBase + _height;
+		p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+		for(i = 1; i < _slices; i++) {
+			p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+			p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+			model->addTriangle(p1, p2, p3);
+		}
+
+		model->endModel();
+		return model;
+	}
 }
 
 #endif

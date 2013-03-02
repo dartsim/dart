@@ -218,7 +218,7 @@ namespace renderer {
     void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
     	glScaled(_radius, _radius, _height);
 
-    	GLdouble radius = 0.5;
+    	GLdouble radius = 1;
     	GLdouble height = 1;
 		GLint slices = 16;
 		GLint stacks = 16;

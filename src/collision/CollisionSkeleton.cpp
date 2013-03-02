@@ -2,6 +2,7 @@
 #include "CollisionShapes.h"
 #include "kinematics/Shape.h"
 #include "kinematics/ShapeMesh.h"
+#include "kinematics/ShapeCylinder.h"
 #include <cmath>
 #include "utils/LoadOpengl.h"
 #include "utils/UtilsMath.h"
@@ -28,6 +29,16 @@ namespace collision_checking{
         case kinematics::Shape::P_BOX:
         	mMesh = createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
         	break;
+        case kinematics::Shape::P_CYLINDER:
+        {
+        	kinematics::ShapeCylinder *cylinder = dynamic_cast<kinematics::ShapeCylinder *>(shape);
+        	if(cylinder) {
+        		double radius = cylinder->getRadius();
+        		double height = cylinder->getHeight();
+        		mMesh = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+        	}
+        	break;
+        }
         case kinematics::Shape::P_MESH:
         {
         	kinematics::ShapeMesh *shapeMesh = dynamic_cast<kinematics::ShapeMesh *>(shape);
