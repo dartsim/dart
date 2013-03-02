@@ -2086,11 +2086,12 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
     Vector3d vecScale(s[0],s[1],s[2]);
     vecScale *= bone_length;
     Shape* prim = new ShapeEllipsoid(vecScale);
-    // Set COM to be Shape offset
-	prim->setOffset(vecScale);
 
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
+    // Set COM to be Shape offset
+    prim->setOffset(vecTrans);
+
     cur_node->setShape(prim);
     cur_node->setLocalCOM( vecTrans );
     cur_node->setMass(0);
@@ -2102,12 +2103,13 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
 
     geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
 
-    cur_node->setShape(geo);
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
-    cur_node->setLocalCOM(vecTrans);
     // Set COM to be Shape offset
     geo->setOffset(vecTrans);
+
+    cur_node->setShape(geo);
+    cur_node->setLocalCOM(vecTrans);
 }
 
 /* create translation transformation */
