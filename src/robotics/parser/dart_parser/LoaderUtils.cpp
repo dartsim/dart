@@ -213,8 +213,6 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
 
   }
 
-
-
   //-- Mesh : Save the path
   else if( _viz->geometry->type == urdf::Geometry::MESH ) {
 
@@ -256,30 +254,6 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
 }
 
 /**
- * @function pose2Affine3d
- */
-Eigen::Affine3d DartLoader::pose2Affine3d( urdf::Pose _pose ) {
-
-  Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-
-    // Set xyz
-    Eigen::Vector3d t;
-    t[0] = _pose.position.x;
-    t[1] = _pose.position.y;
-    t[2] = _pose.position.z;
-    transform.translation() = t;
-
-    // Set rpy
-    double roll, pitch, yaw;
-    _pose.rotation.getRPY( roll, pitch, yaw );
-    Eigen::Matrix3d rot;
-    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    transform.matrix().block(0,0,3,3) = rot;
-
-    return transform;
-}
-
-/**
  * @function add_ColShape
  */
 bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
@@ -296,7 +270,62 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
   
   // Type of Geometry
   
-  //-- Mesh : Save the path
+  //-- SPHERE
+  if( _col->geometry->type == urdf::Geometry::SPHERE ) {
+    
+    boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _col->geometry );
+    shape = new kinematics::ShapeSphere( sphere->radius );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setColShape(shape);
+
+  }
+
+  //-- BOX
+  else if( _col->geometry->type == urdf::Geometry::BOX ) {
+
+    boost::shared_ptr<urdf::Box> box = boost::static_pointer_cast<urdf::Box>( _col->geometry );
+    Eigen::Vector3d dim; dim<< box->dim.x, box->dim.y, box->dim.z;
+    shape = new kinematics::ShapeBox( dim );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setColShape(shape);
+
+  }
+
+  //-- CYLINDER
+  else if( _col->geometry->type == urdf::Geometry::CYLINDER ) {
+
+    boost::shared_ptr<urdf::Cylinder> cylinder = boost::static_pointer_cast<urdf::Cylinder>( _col->geometry );
+    shape = new kinematics::ShapeCylinder( cylinder->radius, cylinder->length );
+    
+    // Set its pose
+    Eigen::Affine3d transform;
+    transform = pose2Affine3d( pose );
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    // Set in node
+    _node->setColShape(shape);
+
+  }
+  
+  //-- Mesh
   if( _col->geometry->type == urdf::Geometry::MESH ) {
 
     boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _col->geometry );
@@ -348,3 +377,26 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
 
 }
 
+/**
+ * @function pose2Affine3d
+ */
+Eigen::Affine3d DartLoader::pose2Affine3d( urdf::Pose _pose ) {
+
+  Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+
+    // Set xyz
+    Eigen::Vector3d t;
+    t[0] = _pose.position.x;
+    t[1] = _pose.position.y;
+    t[2] = _pose.position.z;
+    transform.translation() = t;
+
+    // Set rpy
+    double roll, pitch, yaw;
+    _pose.rotation.getRPY( roll, pitch, yaw );
+    Eigen::Matrix3d rot;
+    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
+    transform.matrix().block(0,0,3,3) = rot;
+
+    return transform;
+}
