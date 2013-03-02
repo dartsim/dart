@@ -259,9 +259,13 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
+    // If it is world, don't parse (gazebo hack to define rootJoint)
+    if( strcmp( (*lk).second->name.c_str(), "world" ) == 0 ) { continue; }
+
     node = createDartNode( (*lk).second, mSkeleton, _rootToSkelPath );
-    // We return NULL for "world" link, hence this if condition
-    if( node != NULL ) { mNodes.push_back( node ); }
+    if( node == NULL ) { return NULL; }
+
+    mNodes.push_back( node );
   }
   
   if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
@@ -382,9 +386,14 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
+
+    // If it is world, don't parse (gazebo hack to define rootJoint)
+    if( strcmp( (*lk).second->name.c_str(), "world" ) == 0 ) { continue; }
+
     node = createDartNode( (*lk).second, mRobot, _rootToRobotPath );
-    // We return NULL for "world" link, hence this if condition
-    if( node != NULL ) { mNodes.push_back( node ); }
+    if( node == NULL ) { return NULL; }
+
+    mNodes.push_back( node ); 
   }
 
   if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
@@ -504,7 +513,13 @@ robotics::Robot* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mod
   for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
        lk != _model->links_.end(); 
        lk++ ) {
+
+    // If it is world, don't parse (gazebo hack to define rootJoint)
+    if( strcmp( (*lk).second->name.c_str(), "world" ) == 0 ) { continue; }
+
     node = createDartNode( (*lk).second, mObject, _rootToObjectPath );
+    if( node == NULL ) { return NULL; }
+
     mNodes.push_back( node );
   }
     if(debug) printf ("[debug] Created %u body nodes \n", mNodes.size() );

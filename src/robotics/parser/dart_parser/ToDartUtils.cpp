@@ -312,7 +312,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
 
   // Set visual information
   if( _lk->visual ) {
-    add_VizShape( node, _lk->visual, _rootToSkelPath );
+    if( !add_VizShape( node, _lk->visual, _rootToSkelPath ) ) { return NULL; }
   }
   else {
     // Add default
@@ -322,7 +322,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   }
   // Set collision information
   if( _lk->collision ) {
-    add_ColShape( node, _lk->collision, _rootToSkelPath );
+    if( !add_ColShape( node, _lk->collision, _rootToSkelPath ) ) { return NULL; }
   }
   else {
     // Add default
