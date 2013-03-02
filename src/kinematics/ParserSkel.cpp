@@ -2094,12 +2094,20 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
 
     cur_node->setShape(prim);
     cur_node->setLocalCOM( vecTrans );
-    cur_node->setMass(0);
 }
 
 /* set offset and dimension of an existing primitive */
 void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
     double bone_length = bone->getValue();
+
+    /* SHAPE MASS IS DEPRECIATED **************************************************/
+	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
+    /* SHAPE SETDIM SILENTLY CALLS COMPUTEVOLUME WHICH OVERWRITES VOLUME **********/
+    /* DO NOT MOVE ****************************************************************/
+		//FIXME: Refactor grammer: Move massName into __setShape()
+		double mass = geo->getVolume();
+		cur_node->setMass(mass);
+	/******************************************************************************/
 
     geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
 
@@ -2301,18 +2309,24 @@ Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeBox(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0));
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0));
     else{
         cout<<"Unknown primitive type "<<shape<<endl;
         exit(0);
     }
 
     //set color
-    prim->setColor(Vector3d(color[0], color[1], color[2]));	
+    prim->setColor(Vector3d(color[0], color[1], color[2]));
+
+	/* SHAPE MASS IS DEPRECIATED **************************************************/
+	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
+		//FIXME: Refactor grammer: Move massName into __setShape()
+		prim->setVolume(massValue);
+	/******************************************************************************/
 
     return prim;
 }
@@ -2333,15 +2347,21 @@ Shape* __setGeometry(const char *shape, const char *massName)
 
     // create new primitive according to the shape
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeBox(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0));
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0));
     else{
         cout<<"Unknown primitive type "<<shape<<endl;
         exit(0);
     }
+
+	/* SHAPE MASS IS DEPRECIATED **************************************************/
+	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
+		//FIXME: Refactor grammer: Move massName into __setShape()
+		prim->setVolume(massValue);
+	/******************************************************************************/
 
     return prim;
 }
@@ -2354,11 +2374,11 @@ Shape* __setGeometry(const char *shape, doubleVec3 color)
     // create new primitive by shape
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeBox(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0));
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "") || !strcmp(shape, "SPHERE"))
-        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);	
+        prim = new ShapeEllipsoid(Vector3d(0,0,0));
     else{
         // mass name instead of shape is specified
         //lookup mass by name
@@ -2372,11 +2392,17 @@ Shape* __setGeometry(const char *shape, doubleVec3 color)
         }
         // create new ellipsoid primitive
         if(found)
-            prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
+            prim = new ShapeEllipsoid(Vector3d(0,0,0));
     }
 
     // set color
     prim->setColor(Vector3d(color[0], color[1], color[2]));
+
+    /* SHAPE MASS IS DEPRECIATED **************************************************/
+    /* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
+        //FIXME: Refactor grammer: Move massName into __setShape()
+        prim->setVolume(massValue);
+    /******************************************************************************/
 
     return prim;
 }
@@ -2395,11 +2421,11 @@ Shape* __setGeometry(const char *shape)
     Shape *prim = NULL;
     double massValue = 0.0;
     if(!strcmp(shape, "CUBE"))
-        prim = new ShapeBox(Vector3d(0,0,0), massValue);
+        prim = new ShapeBox(Vector3d(0,0,0));
     //	else if(!strcmp(shape, "CAPSULE"))
     //		prim = new Capsule(Vector3d(0,0,0), massValue);
     else if(!strcmp(shape, "SPHERE") || !strcmp(shape, ""))
-        prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
+        prim = new ShapeEllipsoid(Vector3d(0,0,0));
     else{
         // mass name instead of shape is specified
         //lookup mass by name
@@ -2413,8 +2439,15 @@ Shape* __setGeometry(const char *shape)
         }
         // create new ellipsoid primitive
         if(found)
-            prim = new ShapeEllipsoid(Vector3d(0,0,0), massValue);
+            prim = new ShapeEllipsoid(Vector3d(0,0,0));
     }
+
+    /* SHAPE MASS IS DEPRECIATED **************************************************/
+    /* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
+        //FIXME: Refactor grammer: Move massName into __setShape()
+    if(prim)
+        prim->setVolume(massValue);
+    /******************************************************************************/
 
     return prim;
 }

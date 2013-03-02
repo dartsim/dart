@@ -98,8 +98,9 @@ void addEndEffector (Robot* robot, BodyNodeDynamics* parent_node, Vector3d dim) 
 	BodyNodeDynamics* node = (BodyNodeDynamics*) robot->createBodyNode("ee");
 	Joint* joint = new Joint(parent_node, node, "eeJoint");
 	add_XyzRpy(joint, 0.0, 0.0, dim(2), 0.0, 0.0, 0.0);
-	Shape* shape = new ShapeBox(Vector3d(0.2, 0.2, 0.2), 1.0);
+	Shape* shape = new ShapeBox(Vector3d(0.2, 0.2, 0.2));
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.0));
+	node->setMass(1.0);
 	node->setShape(shape);
 	robot->addNode(node);
 }
@@ -118,8 +119,9 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 	Joint* joint = new Joint(NULL, node, "joint1");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type1);
-	Shape* shape = new ShapeBox(dim1, mass);
+	Shape* shape = new ShapeBox(dim1);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
+	node->setMass(mass);
 	node->setShape(shape);
 	robot->addNode(node);
 
@@ -129,9 +131,10 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 	joint = new Joint(parent_node, node, "joint2");
 	add_XyzRpy(joint, 0.0, 0.0, dim1(2), 0.0, 0.0, 0.0);
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type2);
-	shape = new ShapeBox(dim2, mass);
+	shape = new ShapeBox(dim2);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
 	node->setShape(shape);
+	node->setMass(mass);
 	robot->addNode(node);
 
 	// If finished, initialize the skeleton
@@ -156,9 +159,10 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	Joint* joint = new Joint(NULL, node, "joint1");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type1);
-	Shape* shape = new ShapeBox(dim1, mass);
+	Shape* shape = new ShapeBox(dim1);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
 	node->setShape(shape);
+	node->setMass(mass);
 	robot->addNode(node);
 
 	// Create the second link, the joint with link1 and its shape
@@ -167,9 +171,10 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	joint = new Joint(parent_node, node, "joint2");
 	add_XyzRpy(joint, 0.0, 0.0, dim1(2), 0.0, 0.0, 0.0);
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type2);
-	shape = new ShapeBox(dim2, mass);
+	shape = new ShapeBox(dim2);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
 	node->setShape(shape);
+	node->setMass(mass);
 	robot->addNode(node);
 
 	// Create the third link, the joint with link2 and its shape
@@ -178,9 +183,10 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	joint = new Joint(parent_node, node, "joint3");
 	add_XyzRpy(joint, 0.0, 0.0, dim2(2), 0.0, 0.0, 0.0);
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type3);
-	shape = new ShapeBox(dim3, mass);
+	shape = new ShapeBox(dim3);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
 	node->setShape(shape);
+	node->setMass(mass);
 	robot->addNode(node);
 
 	// If finished, initialize the skeleton

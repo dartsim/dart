@@ -120,7 +120,6 @@ void DartLoader::add_Shape( dynamics::BodyNodeDynamics* _node,
 
   kinematics::Shape* shape;
 	shape = new kinematics::Shape();
-	shape->setMass(_mass);
 	_node->setShape(shape);
 
 }
@@ -149,9 +148,7 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     return;  
   }
   else {
-    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1),
-				       _mass,
-				       model ); 
+    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
     
     // Set the visPose
     Eigen::Affine3d visTransform = Eigen::Affine3d::Identity();
@@ -182,6 +179,7 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     
     // Set in node
     _node->setShape( shape );
+    _node->setMass(_mass);
   } 
   
 }

@@ -71,7 +71,8 @@ int main(int argc, char* argv[]) {
 	Joint* joint = new Joint(NULL, node, "LHY");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_YAW);
-	node->setShape(new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass));
+	node->setShape(new ShapeBox(Vector3d(0.3, 0.3, 1.0)));
+	node->setMass(mass);
 	LeftLegSkel.addNode(node);
 
 	// ***** BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY *****
@@ -80,9 +81,10 @@ int main(int argc, char* argv[]) {
 	joint = new Joint(parent_node, node, "LHR");
 	add_XyzRpy(joint, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_ROLL);
-	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
-	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
-	shape->setOffset(node->getLocalCOM());
+	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0));
+	shape->setOffset(Vector3d(0.0, 0.0, 0.5));
+	node->setLocalCOM(shape->getOffset());
+	node->setMass(mass);
 	node->setShape(shape);
 	LeftLegSkel.addNode(node);
 
@@ -92,9 +94,10 @@ int main(int argc, char* argv[]) {
 	joint = new Joint(parent_node, node, "LHP");
 	add_XyzRpy(joint, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_ROLL);
-	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0), mass);
-	node->setLocalCOM(Vector3d(0.0, 0.0, 0.5));
-	shape->setOffset(node->getLocalCOM());
+	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0));
+	shape->setOffset(Vector3d(0.0, 0.0, 0.5));
+	node->setLocalCOM(shape->getOffset());
+	node->setMass(mass);
 	node->setShape(shape);
 	LeftLegSkel.addNode(node);
 

@@ -239,7 +239,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   }
 
   // Set inertial information
-  //FIXME: Set mass
+  node->setMass(mass);
   node->setLocalInertia(inertia);
 
   if( !_lk->visual ) {
