@@ -50,9 +50,7 @@ namespace kinematics {
 		  mID(mCounter++),
 		  mColor(0.5, 0.5, 1.0),
 		  mOffset(0, 0, 0),
-		  mCollisionMesh(NULL),
-		  mTransform(Affine3d::Identity()),
-		  mColList(0) {
+		  mTransform(Affine3d::Identity()) {
 	}
 
     void Shape::setDim(const Eigen::Vector3d& _dim) {

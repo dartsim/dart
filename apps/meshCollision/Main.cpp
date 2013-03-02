@@ -74,9 +74,6 @@ int main(int argc, char* argv[])
 	//  Create Shape and assign it to node
 	kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), m3d);
 
-	// Save Mesh3D in Shape
-	Shape0->setCollisionMesh( m3d );
-
 	node->setVizShape(Shape0);
 	node->setColShape(Shape0);
 	Matrix3d M;

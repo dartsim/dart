@@ -83,11 +83,6 @@ namespace kinematics {
         inline int getID() const { return mID; }
         inline ShapeType getShapeType() const { return mType; }
 
-        inline const aiScene* getCollisionMesh() const { return mCollisionMesh; }
-        inline void setCollisionMesh(const aiScene *_mesh) { mCollisionMesh = _mesh; }
-        inline int getColList() { return mColList; }
-        inline void setColList(int id) { mColList = id; }
-
         virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
 
     protected:
@@ -103,10 +98,6 @@ namespace kinematics {
         Eigen::Vector3d mColor;		///< color for the primitive
         Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
         Eigen::Affine3d mTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
-
-
-        const aiScene *mCollisionMesh; ///< mesh for collision detection>
-        int mColList; ///< opengl list id for rendering
 
         static int mCounter;
     public:

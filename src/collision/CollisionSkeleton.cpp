@@ -1,6 +1,7 @@
 #include "CollisionSkeleton.h"
 #include "CollisionShapes.h"
 #include "kinematics/Shape.h"
+#include "kinematics/ShapeMesh.h"
 #include <cmath>
 #include "utils/LoadOpengl.h"
 #include "utils/UtilsMath.h"
@@ -28,8 +29,13 @@ namespace collision_checking{
         	mMesh = createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
         	break;
         case kinematics::Shape::P_MESH:
-        	mMesh = createMesh<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shape->getCollisionMesh());
+        {
+        	kinematics::ShapeMesh *shapeMesh = dynamic_cast<kinematics::ShapeMesh *>(shape);
+        	if(shapeMesh) {
+        		mMesh = createMesh<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shapeMesh->getMesh());
+        	}
         	break;
+        }
         default:
         	cout << "ERROR: Collision checking does not support " << _bodyNode->getName() << "'s Shape type\n";
         	break;

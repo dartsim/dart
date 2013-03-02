@@ -136,7 +136,7 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
 				const char *_collisionMeshPath,
 				urdf::Pose _pose ) {
   
-  kinematics::Shape* shape;
+  kinematics::Shape* vizShape, *colShape;
   
   // Load aiScene visualization
   const aiScene* model = kinematics::ShapeMesh::loadMesh( _meshPath );
@@ -149,38 +149,40 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     return;  
   }
   else {
-    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
+    vizShape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
+    colShape = new kinematics::ShapeMesh(Eigen::Vector3d(1,1,1), collisionModel);
+
+    // Use colShape only if collision model exists
+    if(!collisionModel) {
+    	delete colShape;
+    	colShape = vizShape;
+    }
     
     // Set the visPose
-    Eigen::Affine3d visTransform = Eigen::Affine3d::Identity();
+    Eigen::Affine3d transform = Eigen::Affine3d::Identity();
     // Set xyz
     Eigen::Vector3d t;
     t[0] = _pose.position.x;
     t[1] = _pose.position.y;
     t[2] = _pose.position.z;
-    visTransform.translation() = t;
+    transform.translation() = t;
     // Set rpy
     double roll, pitch, yaw;
     _pose.rotation.getRPY( roll, pitch, yaw );
     Eigen::Matrix3d rot;
     rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    visTransform.matrix().block(0,0,3,3) = rot;
+    transform.matrix().block(0,0,3,3) = rot;
+
     // Set into the shape
-    shape->setTransform( visTransform );
+    vizShape->setTransform( transform );
+    colShape->setTransform(transform);
     
     if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
-    
-    // Check if we have got a collision model
-    if( !collisionModel ) {
-      shape->setCollisionMesh( model );
-    } else {
-      if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
-      shape->setCollisionMesh( collisionModel );
-    }
+    if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
     
     // Set in node
-    _node->setVizShape(shape);
-    _node->setColShape(shape);
+    _node->setVizShape(vizShape);
+    _node->setColShape(colShape);
     _node->setMass(_mass);
   } 
   

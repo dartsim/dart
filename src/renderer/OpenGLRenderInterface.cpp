@@ -314,12 +314,14 @@ namespace renderer {
     		return;
 
     	compileList(_node->getVizShape());
+    	compileList(_node->getColShape());
     }
 
     //FIXME: Use polymorphism instead of switch statements
     void OpenGLRenderInterface::compileList(kinematics::Shape *_shape) {
     	if(_shape == 0)
     		return;
+
     	switch(_shape->getShapeType()) {
     	case kinematics::Shape::P_UNDEFINED:
     		break;
@@ -341,7 +343,6 @@ namespace renderer {
 
 			shapeMesh->setDisplayList(compileList(shapeMesh->getMesh()));
 
-    		_shape->setColList(compileList(_shape->getCollisionMesh()));
     		break;
     	}
     }
@@ -387,7 +388,8 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	draw(_node->getVizShape(), _colMesh);
+    	kinematics::Shape *shape = _colMesh ? _node->getColShape() : _node->getVizShape();
+    	draw(shape, _colMesh);
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );
@@ -429,8 +431,8 @@ namespace renderer {
     		if(shapeMesh == 0)
     			return;
 
-    		const aiScene* model = _colMesh ? shapeMesh->getCollisionMesh() : shapeMesh->getMesh();
-    		const GLuint index = _colMesh ? shapeMesh->getColList() : shapeMesh->getDisplayList();
+    		const aiScene* model = shapeMesh->getMesh();
+    		const GLuint index = shapeMesh->getDisplayList();
 
     		if(index) {
     			drawList(index);
