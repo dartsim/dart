@@ -56,6 +56,7 @@ namespace kinematics {
     BodyNode::BodyNode(const char *_name) 
         : mSkelIndex(-1),
           mVizShape(NULL),
+          mColShape(NULL),
           mJointParent(NULL),
           mNodeParent(NULL),
           mColliding(false),

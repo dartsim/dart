@@ -158,6 +158,9 @@ namespace kinematics {
         inline void setVizShape(Shape *_p) { mVizShape = _p; }
         inline Shape* getVizShape() const { return mVizShape; }
 
+        inline void setColShape(Shape *_p) { mColShape = _p; }
+        inline Shape* getColShape() const { return mColShape; }
+
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
         inline int getNumChildJoints() { return mJointsChild.size(); }
         inline Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }
@@ -183,7 +186,8 @@ namespace kinematics {
         char mName[MAX_NODE3D_NAME]; ///< Name
         int mSkelIndex;    ///< Index in the model
 
-        Shape *mVizShape;  ///< Geometry of this body node
+        Shape *mVizShape;  ///< Visual geometry of this body node
+        Shape *mColShape;  ///< Collision geometry of this body node
         std::vector<Joint *> mJointsChild; ///< List of joints that link to child nodes
         Joint *mJointParent;    ///< Joint connecting to parent node
         BodyNode *mNodeParent;      ///< Parent node
