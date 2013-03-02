@@ -11,6 +11,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <robotics/parser/urdfdom_headers/urdf_model/pose.h>
+#include <robotics/parser/urdfdom_headers/urdf_model/link.h>
 
 const bool debug = false;
 
@@ -28,7 +29,7 @@ namespace kinematics {
 namespace urdf {
 	class ModelInterface;
 	class Link;
-	class Joint;
+	class Joint;	 
 }
 
 
@@ -65,8 +66,8 @@ class DartLoader {
   robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
 					  std::string _rootToRobotPath = NULL );
   robotics::Robot* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
-					    std::string _rootToObjectPath = NULL );
-
+					   std::string _rootToObjectPath = NULL );
+  
   // Utilities
   dynamics::BodyNodeDynamics* getNode( std::string _nodeName );
   std::string readXmlToString( std::string _xmlFile );
@@ -82,17 +83,13 @@ class DartLoader {
 	       int _DOF_TYPE,
 	       double _x = 0, double _y = 0, double _z = 0 );
 
-  void add_ShapeMesh( dynamics::BodyNodeDynamics* _node, 
-		      const char *_meshPath, 
-		      double _mass = 1.0,
-		      Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3),
-		      const char *_collisionMeshPath = NULL,
-		      urdf::Pose _pose = urdf::Pose() );
-  
-  void add_Shape( dynamics::BodyNodeDynamics* _node, 
-		  double _mass = 1.0,
-		  Eigen::Matrix3d _inertiaMatrix = Eigen::MatrixXd::Identity(3,3) );
-  
+  bool add_VizShape( dynamics::BodyNodeDynamics* _node,
+		     boost::shared_ptr<urdf::Visual> _viz,
+		     std::string  _rootToSkelPath );
+  bool add_ColShape( dynamics::BodyNodeDynamics* _node,
+		     boost::shared_ptr<urdf::Collision> _col,
+		     std::string _rootToSkelPath );
+
   // ToDart utils
   kinematics::Joint* createDartRootJoint( boost::shared_ptr<urdf::Joint> _jt,
 					  dynamics::SkeletonDynamics* _skel ); 

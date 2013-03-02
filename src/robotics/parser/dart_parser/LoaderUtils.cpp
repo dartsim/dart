@@ -140,78 +140,138 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
 }
 
 /**
- * @function add_Shape
+ * @function add_VizShape
  */
-void DartLoader::add_Shape( dynamics::BodyNodeDynamics* _node, 
-			    double _mass,
-			    Eigen::Matrix3d _inertiaMatrix ) {
-
+bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
+				boost::shared_ptr<urdf::Visual> _viz,
+				std::string _rootToSkelPath ) {
+  // Variables to use
   kinematics::Shape* shape;
-  shape = new kinematics::Shape();
-  _node->setVizShape(shape);
-  _node->setColShape(shape);
+  const aiScene* model;
+  urdf::Pose pose;
 
-}
+  // Origin
+  pose = _viz->origin;  
+  
+  // Type of Geometry
+  
+  //-- Mesh : Save the path
+  if( _viz->geometry->type == urdf::Geometry::MESH ) {
 
+    boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _viz->geometry );
+    std::string fullPath = _rootToSkelPath;
+    fullPath.append( mesh->filename );
 
-/**
- * @function add_ShapeMesh
- */
-void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node, 
-				const char *_meshPath, 
-				double _mass,
-				Eigen::Matrix3d _inertiaMatrix,
-				const char *_collisionMeshPath,
-				urdf::Pose _pose ) {
-  
-  kinematics::Shape* vizShape, *colShape;
-  
-  // Load aiScene visualization
-  const aiScene* model = kinematics::ShapeMesh::loadMesh( _meshPath );
-  
-  // Load collision model
-  const aiScene* collisionModel = kinematics::ShapeMesh::loadMesh( _collisionMeshPath );
-  
-  if( model == NULL ) {
-    std::cout<< "[add_Shape] [ERROR] Not loading model "<<_meshPath<<" (NULL) \n";
-    return;  
-  }
-  else {
-    vizShape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
-    colShape = new kinematics::ShapeMesh(Eigen::Vector3d(1,1,1), collisionModel);
-
-    // Use colShape only if collision model exists
-    if(!collisionModel) {
-    	delete colShape;
-    	colShape = vizShape;
+    // Load aiScene visualization
+    model = kinematics::ShapeMesh::loadMesh( fullPath );    
+    
+    if( model == NULL ) {
+      std::cout<< "[add_Shape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
+      return false;  
     }
     
-    // Set the visPose
+    // Set shape as mesh
+    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
+    
+    // Set its pose
     Eigen::Affine3d transform = Eigen::Affine3d::Identity();
     // Set xyz
     Eigen::Vector3d t;
-    t[0] = _pose.position.x;
-    t[1] = _pose.position.y;
-    t[2] = _pose.position.z;
+    t[0] = pose.position.x;
+    t[1] = pose.position.y;
+    t[2] = pose.position.z;
     transform.translation() = t;
     // Set rpy
     double roll, pitch, yaw;
-    _pose.rotation.getRPY( roll, pitch, yaw );
+    pose.rotation.getRPY( roll, pitch, yaw );
     Eigen::Matrix3d rot;
     rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
     transform.matrix().block(0,0,3,3) = rot;
-
-    // Set into the shape
-    vizShape->setTransform( transform );
-    colShape->setTransform(transform);
     
-    if(debug) std::cerr << "** Loading visual model: " << _meshPath << std::endl;
-    if(debug) std::cerr << "** Loading collision model: " <<  _collisionMeshPath << std::endl ;
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
     
     // Set in node
-    _node->setVizShape(vizShape);
-    _node->setColShape(colShape);
-    _node->setMass(_mass);
-  } 
-  
+    _node->setVizShape(shape);
+    
+  } // end if (mesh)
+
+  else {
+    std::cout<< "No visual type defined!"<<std::endl;
+    return false;
+  }
+
+  return true;
 }
+
+/**
+ * @function add_ColShape
+ */
+bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
+				boost::shared_ptr<urdf::Collision> _col,
+				std::string _rootToSkelPath ) {
+
+  // Variables to use
+  kinematics::Shape* shape;
+  const aiScene* model;
+  urdf::Pose pose;
+
+  // Origin
+  pose = _col->origin;  
+  
+  // Type of Geometry
+  
+  //-- Mesh : Save the path
+  if( _col->geometry->type == urdf::Geometry::MESH ) {
+
+    boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _col->geometry );
+    std::string fullPath = _rootToSkelPath;
+    fullPath.append( mesh->filename );
+
+    // Load aiScene visualization
+    model = kinematics::ShapeMesh::loadMesh( fullPath );    
+    
+    if( model == NULL ) {
+      std::cout<< "[add_Shape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
+      return false;  
+    }
+    
+    // Set shape as mesh
+    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
+    
+    // Set its pose
+    Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+    // Set xyz
+    Eigen::Vector3d t;
+    t[0] = pose.position.x;
+    t[1] = pose.position.y;
+    t[2] = pose.position.z;
+    transform.translation() = t;
+    // Set rpy
+    double roll, pitch, yaw;
+    pose.rotation.getRPY( roll, pitch, yaw );
+    Eigen::Matrix3d rot;
+    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
+    transform.matrix().block(0,0,3,3) = rot;
+    
+    // Set it into shape
+    shape->setTransform( transform );
+    
+    if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
+    
+    // Set in node
+    _node->setColShape(shape);
+    
+  } // end if (mesh)
+
+  else {
+    std::cout<< "No collision type defined!"<<std::endl;
+    return false;
+  }
+
+  return true;
+
+}
+

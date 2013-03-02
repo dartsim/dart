@@ -12,8 +12,10 @@
 #include <kinematics/TrfmRotateEuler.h>
 #include <kinematics/Dof.h>
 #include <kinematics/BodyNode.h>
+#include <kinematics/Shape.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include "../urdf_parser/urdf_parser.h"
+#include "../urdfdom_headers/urdf_model/link.h"
 
 // For continuous joint limit
 #include <limits>
@@ -254,9 +256,6 @@ kinematics::Joint* DartLoader::createDartJoint( boost::shared_ptr<urdf::Joint> _
 dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::Link> _lk,
 							dynamics::SkeletonDynamics* _skel,
 							std::string _rootToSkelPath ) {
-  
-  std::string fullVisualPath;
-  std::string fullCollisionPath;
 
   std::string lk_name = _lk->name;
 
@@ -311,42 +310,26 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   node->setMass(mass);
   node->setLocalInertia(inertia);
 
-  if( !_lk->visual ) {
-    add_Shape( node,  mass, inertia ); 
+  // Set visual information
+  if( _lk->visual ) {
+    add_VizShape( node, _lk->visual, _rootToSkelPath );
   }
   else {
-    
-    // Get the visTransform from visual
-    // origin
-    urdf::Pose visPose = _lk->visual->origin;
+    // Add default
+    kinematics::Shape* shape = new kinematics::Shape();
+    node->setVizShape( shape );
+    if(debug) { std::cout<< "No Visualization element defined. Using default empty VizShape"<<std::endl; }
+  }
+  // Set collision information
+  if( _lk->collision ) {
+    add_ColShape( node, _lk->collision, _rootToSkelPath );
+  }
+  else {
+    // Add default
+    kinematics::Shape* shape = new kinematics::Shape();
+    node->setColShape( shape );
+    if(debug) { std::cout<< "No Collision element defined. Using default empty ColShape"<<std::endl; }
+  }
 
-    if( _lk->visual->geometry->type == urdf::Geometry::MESH ) {
-      
-      boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _lk->visual->geometry );
-      fullVisualPath = _rootToSkelPath;
-      fullVisualPath.append( mesh->filename );
-      
-      // Check collision
-      if( _lk->collision ) {
-	    if( _lk->collision->geometry->type == urdf::Geometry::MESH ) {
-	      boost::shared_ptr<urdf::Mesh> collisionMesh = boost::static_pointer_cast<urdf::Mesh>( _lk->collision->geometry );
-	      fullCollisionPath = _rootToSkelPath;
-	      fullCollisionPath.append( collisionMesh->filename );
-	    }
-      }
-
-      add_ShapeMesh( node,
-		     (fullVisualPath).c_str(), 
-		     mass,
-		     inertia,
-		     (fullCollisionPath).c_str(),
-		     visPose );
-    }
-    // Empty
-    else {
-      add_Shape( node, mass, inertia ); 
-    }
-  } // end else : We have visual
-  
   return node;
 }
