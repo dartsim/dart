@@ -101,7 +101,9 @@ int main(int argc, char* argv[]) {
 	shape->setOffset(Vector3d(0.0, 0.0, 0.5));
 	node->setLocalCOM(shape->getOffset());
 	node->setMass(mass);
-	node->setVizShape(shape);
+	Shape* shape1 = new ShapeEllipsoid(Vector3d(0.3, 0.3, 1.0));
+	shape1->setOffset(Vector3d(0.0, 0.0, 0.5));
+	node->setVizShape(shape1);
 	node->setColShape(shape);
 	LeftLegSkel.addNode(node);
 

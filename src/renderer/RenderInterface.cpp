@@ -146,6 +146,10 @@ namespace renderer {
 	{
 	}
 
+    void RenderInterface::drawCylinder(double _radius, double _height)
+    {
+    }
+
 	void RenderInterface::setPenColor(const Vector4d& _col)
 	{
 	}

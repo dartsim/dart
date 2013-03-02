@@ -48,6 +48,11 @@ namespace kinematics {
 
         ShapeCylinder(double _radius, double _height);
 
+        inline double getRadius() const { return mRadius; }
+        inline void setRadius(double _radius) { mRadius = _radius; }
+        inline double getHeight() const { return mHeight; }
+        inline void setHeight(double _height) { mHeight = _height; }
+
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
 
         virtual Eigen::Matrix3d computeInertia(double _mass);

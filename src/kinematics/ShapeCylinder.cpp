@@ -55,7 +55,15 @@ namespace kinematics {
     }
 
     void ShapeCylinder::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        // TODO
+    	if (!_ri) return;
+		if (!_useDefaultColor)
+			_ri->setPenColor(_color);
+		else
+			_ri->setPenColor(mColor);
+		_ri->pushMatrix();
+		_ri->translate(mTransform.translation());
+		_ri->drawCylinder(mRadius, mHeight);
+		_ri->popMatrix();
     }
 
     void ShapeCylinder::computeVolume() {

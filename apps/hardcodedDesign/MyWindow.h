@@ -19,6 +19,8 @@
 #include "kinematics/Joint.h"
 #include "kinematics/ShapeMesh.h"
 #include "kinematics/ShapeBox.h"
+#include "kinematics/ShapeCylinder.h"
+#include "kinematics/ShapeEllipsoid.h"
 #include "kinematics/Transformation.h"
 #include "kinematics/TrfmTranslate.h"
 #include "kinematics/TrfmRotateEuler.h"

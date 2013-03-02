@@ -48,6 +48,20 @@
 using namespace std;
 using namespace Eigen;
 
+// Code taken from glut/lib/glut_shapes.c
+static GLUquadricObj *quadObj;
+
+#define QUAD_OBJ_INIT { if(!quadObj) initQuadObj(); }
+
+static void initQuadObj(void)
+{
+	quadObj = gluNewQuadric();
+	if(!quadObj)
+		// DART modified error output
+		cerr << "OpenGL: Fatal Error in DART: out of memory." << endl;
+}
+//glut/lib/glut_shapes.c
+
 namespace renderer {
 
     void OpenGLRenderInterface::initialize() {
@@ -142,12 +156,84 @@ namespace renderer {
 
     void OpenGLRenderInterface::drawEllipsoid(const Vector3d& _size) {
         glScaled(_size(0), _size(1), _size(2));
-        glutSolidSphere(0.5, 16, 16);
+
+        GLdouble radius = 0.5;
+        GLint slices = 16;
+        GLint stacks = 16;
+
+        // Code taken from glut/lib/glut_shapes.c
+        QUAD_OBJ_INIT;
+        gluQuadricDrawStyle(quadObj, GLU_LINE);
+        gluQuadricNormals(quadObj, GLU_SMOOTH);
+
+        gluSphere(quadObj, radius, slices, stacks);
+        //glut/lib/glut_shapes.c
     }
 
     void OpenGLRenderInterface::drawCube(const Vector3d& _size) {
         glScaled(_size(0), _size(1), _size(2));
-        glutSolidCube(1.0);
+
+        // Code taken from glut/lib/glut_shapes.c
+        static GLfloat n[6][3] =
+        {
+        		{-1.0, 0.0, 0.0},
+        		{0.0, 1.0, 0.0},
+        		{1.0, 0.0, 0.0},
+        		{0.0, -1.0, 0.0},
+        		{0.0, 0.0, 1.0},
+        		{0.0, 0.0, -1.0}
+        };
+        static GLint faces[6][4] =
+        {
+        		{0, 1, 2, 3},
+        		{3, 2, 6, 7},
+        		{7, 6, 5, 4},
+        		{4, 5, 1, 0},
+        		{5, 6, 2, 1},
+        		{7, 4, 0, 3}
+        };
+        GLfloat v[8][3];
+        GLint i;
+        GLfloat size = 1;
+
+        v[0][0] = v[1][0] = v[2][0] = v[3][0] = -size / 2;
+        v[4][0] = v[5][0] = v[6][0] = v[7][0] = size / 2;
+        v[0][1] = v[1][1] = v[4][1] = v[5][1] = -size / 2;
+        v[2][1] = v[3][1] = v[6][1] = v[7][1] = size / 2;
+        v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
+        v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
+
+        for (i = 5; i >= 0; i--) {
+        	glBegin(GL_QUADS);
+        	glNormal3fv(&n[i][0]);
+        	glVertex3fv(&v[faces[i][0]][0]);
+        	glVertex3fv(&v[faces[i][1]][0]);
+        	glVertex3fv(&v[faces[i][2]][0]);
+        	glVertex3fv(&v[faces[i][3]][0]);
+        	glEnd();
+        }
+        //glut/lib/glut_shapes.c
+    }
+
+    void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
+    	glScaled(_radius, _radius, _height);
+
+    	GLdouble radius = 1;
+    	GLdouble height = 1;
+		GLint slices = 16;
+		GLint stacks = 16;
+
+		// Graphics assumes Cylinder is centered at CoM
+		// gluCylinder places base at z = 0 and top at z = height
+		glTranslated(0.0, 0.0, -0.5);
+
+		// Code taken from glut/lib/glut_shapes.c
+		QUAD_OBJ_INIT;
+		gluQuadricDrawStyle(quadObj, GLU_LINE);
+		gluQuadricNormals(quadObj, GLU_SMOOTH);
+
+		gluCylinder(quadObj, radius, radius, height, slices, stacks);
+		//glut/lib/glut_shapes.c
     }
 
     void color4_to_float4(const aiColor4D *c, float f[4])
@@ -412,14 +498,14 @@ namespace renderer {
     		break;
     	case kinematics::Shape::P_BOX:
     		//FIXME: We are not in a glut instance
-    		//drawCube(_shape->getDim());
+    		drawCube(_shape->getDim());
     		break;
     	case kinematics::Shape::P_CYLINDER:
     		//FIXME: Implement this
     		break;
     	case kinematics::Shape::P_ELLIPSOID:
     		//FIXME: We are not in a glut instance
-    		//drawEllipsoid(_shape->getDim());
+    		drawEllipsoid(_shape->getDim());
     		break;
     	case kinematics::Shape::P_SPHERE:
     		//FIXME: We are not in a glut instance
