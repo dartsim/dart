@@ -99,6 +99,10 @@ namespace kinematics {
         	mI = mVizShape->computeInertia(mMass);
         }
 
+        if((mVizShape && !mColShape) || (!mVizShape && mColShape)) {
+        	cout << "ERROR TWO SHAPES NOT BOTH ASSIGNED" << endl;
+        }
+
         mT = Matrix4d::Identity();
         mW = Matrix4d::Identity();
         mIc = Matrix3d::Zero();

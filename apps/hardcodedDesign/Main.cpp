@@ -71,7 +71,9 @@ int main(int argc, char* argv[]) {
 	Joint* joint = new Joint(NULL, node, "LHY");
 	add_XyzRpy(joint, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_YAW);
-	node->setShape(new ShapeBox(Vector3d(0.3, 0.3, 1.0)));
+	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0));
+	node->setVizShape(shape);
+	node->setColShape(shape);
 	node->setMass(mass);
 	LeftLegSkel.addNode(node);
 
@@ -81,11 +83,12 @@ int main(int argc, char* argv[]) {
 	joint = new Joint(parent_node, node, "LHR");
 	add_XyzRpy(joint, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0);
 	add_DOF(&LeftLegSkel, joint, 0.0, 0.0, M_PI, DOF_ROLL);
-	Shape* shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0));
+	shape = new ShapeBox(Vector3d(0.3, 0.3, 1.0));
 	shape->setOffset(Vector3d(0.0, 0.0, 0.5));
 	node->setLocalCOM(shape->getOffset());
 	node->setMass(mass);
-	node->setShape(shape);
+	node->setVizShape(shape);
+	node->setColShape(shape);
 	LeftLegSkel.addNode(node);
 
 	// ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
@@ -98,7 +101,8 @@ int main(int argc, char* argv[]) {
 	shape->setOffset(Vector3d(0.0, 0.0, 0.5));
 	node->setLocalCOM(shape->getOffset());
 	node->setMass(mass);
-	node->setShape(shape);
+	node->setVizShape(shape);
+	node->setColShape(shape);
 	LeftLegSkel.addNode(node);
 
 	// Initialize the skeleton

@@ -18,7 +18,7 @@ namespace collision_checking{
     {
         mBodyNode = _bodyNode;
 
-        kinematics::Shape *shape = _bodyNode->getShape();
+        kinematics::Shape *shape = _bodyNode->getColShape();
 
         switch (shape->getShapeType()) {
         case kinematics::Shape::P_ELLIPSOID:
@@ -146,7 +146,7 @@ namespace collision_checking{
 
     void CollisionSkeletonNode::evalRT() {
         mWorldTrans = mBodyNode->getWorldTransform();
-        Vector3d p = xformHom(mWorldTrans, mBodyNode->getShape()->getOffset());
+        Vector3d p = xformHom(mWorldTrans, mBodyNode->getColShape()->getOffset());
         mWorldTrans.block(0, 3, 3, 1) = p;
         mFclWorldTrans = fcl::Transform3f(fcl::Matrix3f(mWorldTrans(0,0), mWorldTrans(0,1), mWorldTrans(0,2), 
                                                         mWorldTrans(1,0), mWorldTrans(1,1), mWorldTrans(1,2), 

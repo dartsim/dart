@@ -151,9 +151,6 @@ namespace kinematics {
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
         inline int getNumMarkers() const { return mMarkers.size(); }
         inline Marker* getMarker(int _idx) const { return mMarkers[_idx]; }
-
-        inline void setShape(Shape *_p) { mVizShape = _p; }
-        inline Shape* getShape() const { return mVizShape; }
         
         inline void setVizShape(Shape *_p) { mVizShape = _p; }
         inline Shape* getVizShape() const { return mVizShape; }

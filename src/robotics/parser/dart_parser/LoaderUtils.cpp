@@ -119,8 +119,9 @@ void DartLoader::add_Shape( dynamics::BodyNodeDynamics* _node,
 			    Eigen::Matrix3d _inertiaMatrix ) {
 
   kinematics::Shape* shape;
-	shape = new kinematics::Shape();
-	_node->setShape(shape);
+  shape = new kinematics::Shape();
+  _node->setVizShape(shape);
+  _node->setColShape(shape);
 
 }
 
@@ -178,7 +179,8 @@ void DartLoader::add_ShapeMesh( dynamics::BodyNodeDynamics* _node,
     }
     
     // Set in node
-    _node->setShape( shape );
+    _node->setVizShape(shape);
+    _node->setColShape(shape);
     _node->setMass(_mass);
   } 
   

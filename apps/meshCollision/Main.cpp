@@ -77,7 +77,8 @@ int main(int argc, char* argv[])
 	// Save Mesh3D in Shape
 	Shape0->setCollisionMesh( m3d );
 
-	node->setShape( Shape0 );
+	node->setVizShape(Shape0);
+	node->setColShape(Shape0);
 	Matrix3d M;
 	M << 0.000416667, 0.0, 0.0, 0.0, 0.000416667, 0.0, 0.0, 0.0, 0.000416667;
 	node->setLocalInertia(M);

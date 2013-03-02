@@ -849,7 +849,8 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
     	prim->setOffset(off);
     }
 
-    blink->setShape(prim);
+    blink->setVizShape(prim);
+    blink->setColShape(prim);
     blink->setMass(mass);
     blink->setLocalCOM( off );
     return true;
@@ -879,13 +880,14 @@ VectorXd getDofVectorXd(Transformation* tr) {
 void autoGenerateShape(Skeleton* skel) {
     for(int i=0; i<skel->getNumNodes(); i++){
 
-        if(skel->getNode(i)->getVizShape() /*&& getColShape*/)
+        if(skel->getNode(i)->getVizShape() && skel->getNode(i)->getColShape())
         	continue;
 
         ShapeEllipsoid *pm = new ShapeEllipsoid(0.05 * Vector3d(1.0,1.0,1.0));
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
         BodyNode* node = skel->getNode(i);
         node->setVizShape(pm);
+        node->setColShape(pm);
         node->setMass(1.0);
         Vector3d vecZero(0,0,0);
         node->setLocalCOM(vecZero);
@@ -904,7 +906,7 @@ void autoGenerateShapeParent(Skeleton* skel)
         BodyNode* node = skel->getNode(i);
         Joint* joint = node->getParentJoint();
 
-        if(node->getVizShape() /*&& getColShape*/)
+        if(node->getVizShape() && node->getColShape())
         	continue;
 
         // Search translate matrix
@@ -966,6 +968,7 @@ void autoGenerateShapeParent(Skeleton* skel)
         BodyNode* target = parent;
         target->setLocalCOM(offset);
         target->setVizShape(pm);
+        target->setColShape(pm);
         target->setMass(mass);
     }
 
