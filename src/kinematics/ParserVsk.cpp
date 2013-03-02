@@ -878,11 +878,14 @@ VectorXd getDofVectorXd(Transformation* tr) {
 
 void autoGenerateShape(Skeleton* skel) {
     for(int i=0; i<skel->getNumNodes(); i++){
-        if(skel->getNode(i)->getShape()) continue;
+
+        if(skel->getNode(i)->getVizShape() /*&& getColShape*/)
+        	continue;
+
         ShapeEllipsoid *pm = new ShapeEllipsoid(0.05 * Vector3d(1.0,1.0,1.0));
         pm->setColor(Vector3d(0.5, 0.5, 1.0));
         BodyNode* node = skel->getNode(i);
-        node->setShape(pm);
+        node->setVizShape(pm);
         node->setMass(1.0);
         Vector3d vecZero(0,0,0);
         node->setLocalCOM(vecZero);
@@ -900,7 +903,10 @@ void autoGenerateShapeParent(Skeleton* skel)
     for(int i=0; i<skel->getNumNodes(); i++){
         BodyNode* node = skel->getNode(i);
         Joint* joint = node->getParentJoint();
-        if(node->getShape()) continue;
+
+        if(node->getVizShape() /*&& getColShape*/)
+        	continue;
+
         // Search translate matrix
         Vector3d size = 0.1 * Vector3d(1,1,1);
         Vector3d offset(0,0,0);
@@ -959,7 +965,7 @@ void autoGenerateShapeParent(Skeleton* skel)
 
         BodyNode* target = parent;
         target->setLocalCOM(offset);
-        target->setShape(pm);
+        target->setVizShape(pm);
         target->setMass(mass);
     }
 

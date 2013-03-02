@@ -155,6 +155,9 @@ namespace kinematics {
         inline void setShape(Shape *_p) { mVizShape = _p; }
         inline Shape* getShape() const { return mVizShape; }
         
+        inline void setVizShape(Shape *_p) { mVizShape = _p; }
+        inline Shape* getVizShape() const { return mVizShape; }
+
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
         inline int getNumChildJoints() { return mJointsChild.size(); }
         inline Joint* getChildJoint(int _idx) const { return mJointsChild[_idx]; }

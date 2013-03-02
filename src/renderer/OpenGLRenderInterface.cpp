@@ -313,7 +313,7 @@ namespace renderer {
     	if(_node == 0)
     		return;
 
-    	compileList(_node->getShape());
+    	compileList(_node->getVizShape());
     }
 
     //FIXME: Use polymorphism instead of switch statements
@@ -387,7 +387,7 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	draw(_node->getShape(), _colMesh);
+    	draw(_node->getVizShape(), _colMesh);
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );

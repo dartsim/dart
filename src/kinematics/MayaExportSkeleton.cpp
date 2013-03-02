@@ -110,7 +110,7 @@ namespace utils {
         }
 
         bool MayaExportSkeleton::exportMayaAsciiShape(BodyNode* _b, ofstream &_outFile, const string &_prefix, const string &_suffix  ){
-            Shape *prim = _b->getShape();
+            Shape *prim = _b->getVizShape(); // Default to VizShape in graphics context
             if(prim==NULL) return false; // an dummy node
         
             Vector3d dim = prim->getDim();
