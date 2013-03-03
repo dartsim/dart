@@ -368,7 +368,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
   }
   
   //-- Mesh
-  if( _col->geometry->type == urdf::Geometry::MESH ) {
+  else if( _col->geometry->type == urdf::Geometry::MESH ) {
 
     boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _col->geometry );
     std::string fullPath = _rootToSkelPath;
