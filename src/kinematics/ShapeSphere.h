@@ -48,6 +48,8 @@ namespace kinematics {
 
         ShapeSphere(double _radius);
 
+        inline double getRadius() const { return mRadius; }
+        inline void setRadius(double _radius) { mRadius = _radius; }
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
 
         virtual Eigen::Matrix3d computeInertia(double _mass);

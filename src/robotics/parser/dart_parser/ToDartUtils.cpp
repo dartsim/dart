@@ -312,23 +312,23 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
 
   // Set visual information
   if( _lk->visual ) {
-    if( !add_VizShape( node, _lk->visual, _rootToSkelPath ) ) { return NULL; }
+    if( add_VizShape( node, _lk->visual, _rootToSkelPath ) == false ) { std::cout<< "Error loading VizShape" <<std::endl; return NULL; }
   }
   else {
     // Add default
     kinematics::Shape* shape = new kinematics::Shape();
     node->setVizShape( shape );
-    if(debug) { std::cout<< "No Visualization element defined. Using default empty VizShape"<<std::endl; }
+    if(debug) {  std::cout<< "No Visualization element defined for node "<<node->getName() <<". Using default empty VizShape"<<std::endl; }
   }
   // Set collision information
   if( _lk->collision ) {
-    if( !add_ColShape( node, _lk->collision, _rootToSkelPath ) ) { return NULL; }
+    if( add_ColShape( node, _lk->collision, _rootToSkelPath ) == false ) {  std::cout<< "Error loading ColShape" <<std::endl; return NULL; }
   }
   else {
     // Add default
     kinematics::Shape* shape = new kinematics::Shape();
     node->setColShape( shape );
-    if(debug) { std::cout<< "No Collision element defined. Using default empty ColShape"<<std::endl; }
+    if(debug) { std::cout<< "No Collision element defined for node "<<node->getName() <<". Using default empty ColShape"<<std::endl; }
   }
 
   return node;

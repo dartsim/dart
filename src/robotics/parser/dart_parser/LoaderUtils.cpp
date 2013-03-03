@@ -155,7 +155,9 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
 
   // Origin
   pose = _viz->origin;  
-  
+
+  if(debug) { std::cout<< "Loading vizShape for node "<< _node->getName() << std::endl; }  
+
   // Type of Geometry
 
   //-- SPHERE
@@ -173,7 +175,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     
     // Set in node
     _node->setVizShape(shape);
-
+    if(debug) { std::cout<< "Loading a sphere vizMesh of radius:" << sphere->radius << std::endl; }
   }
 
   //-- BOX
@@ -193,6 +195,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     // Set in node
     _node->setVizShape(shape);
 
+    if(debug) { std::cout<< "Loading a box vizMesh of dim:" << dim.transpose() << std::endl; }
   }
 
   //-- CYLINDER
@@ -211,6 +214,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     // Set in node
     _node->setVizShape(shape);
 
+    if(debug) { std::cout<< "Loading a cylinder vizMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
   }
 
   //-- Mesh : Save the path
@@ -267,6 +271,8 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
 
   // Origin
   pose = _col->origin;  
+
+  if(debug) { std::cout<< "Loading colShape for node "<< _node->getName() << std::endl; }
   
   // Type of Geometry
   
@@ -285,6 +291,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     
     // Set in node
     _node->setColShape(shape);
+    if(debug) { std::cout<< "Loading a sphere colMesh of radius:" << sphere->radius << std::endl; }
 
   }
 
@@ -304,6 +311,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     
     // Set in node
     _node->setColShape(shape);
+    if(debug) { std::cout<< "Loading a box colMesh of dim:" << dim.transpose() << std::endl; }
 
   }
 
@@ -322,7 +330,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     
     // Set in node
     _node->setColShape(shape);
-
+    if(debug) { std::cout<< "Loading a cylinder colMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
   }
   
   //-- Mesh

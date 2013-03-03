@@ -43,6 +43,8 @@
 #include <kinematics/Skeleton.h>
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
+#include <kinematics/ShapeCylinder.h>
+#include <kinematics/ShapeSphere.h>
 #include <kinematics/ShapeMesh.h>
 
 using namespace std;
@@ -501,15 +503,20 @@ namespace renderer {
     		drawCube(_shape->getDim());
     		break;
     	case kinematics::Shape::P_CYLINDER:
-    		//FIXME: Implement this
+    		//FIXME: We are not in a glut instance
+	        drawCylinder( ((kinematics::ShapeCylinder*)_shape)->getRadius(), ((kinematics::ShapeCylinder*)_shape)->getHeight() );
     		break;
     	case kinematics::Shape::P_ELLIPSOID:
     		//FIXME: We are not in a glut instance
     		drawEllipsoid(_shape->getDim());
     		break;
-    	case kinematics::Shape::P_SPHERE:
+    	case kinematics::Shape::P_SPHERE: {
     		//FIXME: We are not in a glut instance
-    		//drawEllipsoid(_shape->getDim());
+	        Eigen::Vector3d dim; 
+	        double r = ((kinematics::ShapeSphere*)_shape)->getRadius(); 
+	        dim << r, r, r;
+    		drawEllipsoid( dim );
+	}
     		break;
     	case kinematics::Shape::P_MESH:
     		kinematics::ShapeMesh* shapeMesh = dynamic_cast<kinematics::ShapeMesh*>(_shape);
