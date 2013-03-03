@@ -44,7 +44,6 @@
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
 #include <kinematics/ShapeCylinder.h>
-#include <kinematics/ShapeSphere.h>
 #include <kinematics/ShapeMesh.h>
 
 using namespace std;
@@ -419,8 +418,6 @@ namespace renderer {
     		break;
     	case kinematics::Shape::P_ELLIPSOID:
     		break;
-    	case kinematics::Shape::P_SPHERE:
-    		break;
     	case kinematics::Shape::P_MESH:
     		//FIXME: Separate these calls once BodyNode is refactored to contain
     		// both a col Shape and vis Shape.
@@ -509,14 +506,6 @@ namespace renderer {
     	case kinematics::Shape::P_ELLIPSOID:
     		//FIXME: We are not in a glut instance
     		drawEllipsoid(_shape->getDim());
-    		break;
-    	case kinematics::Shape::P_SPHERE: {
-    		//FIXME: We are not in a glut instance
-	        Eigen::Vector3d dim; 
-	        double r = ((kinematics::ShapeSphere*)_shape)->getRadius(); 
-	        dim << r, r, r;
-    		drawEllipsoid( dim );
-	}
     		break;
     	case kinematics::Shape::P_MESH:
     		kinematics::ShapeMesh* shapeMesh = dynamic_cast<kinematics::ShapeMesh*>(_shape);

@@ -12,9 +12,9 @@
 #include <kinematics/Joint.h>
 #include <kinematics/Shape.h>
 #include <kinematics/ShapeMesh.h>
-#include <kinematics/ShapeSphere.h>
 #include <kinematics/ShapeBox.h>
 #include <kinematics/ShapeCylinder.h>
+#include <kinematics/ShapeEllipsoid.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include <iostream>
 
@@ -164,7 +164,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
   if( _viz->geometry->type == urdf::Geometry::SPHERE ) {
     
     boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _viz->geometry );
-    shape = new kinematics::ShapeSphere( sphere->radius );
+    shape = new kinematics::ShapeEllipsoid(2.0 * sphere->radius * Eigen::Vector3d::Ones());
     
     // Set its pose
     Eigen::Affine3d transform;
@@ -314,7 +314,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
   if( _col->geometry->type == urdf::Geometry::SPHERE ) {
     
     boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _col->geometry );
-    shape = new kinematics::ShapeSphere( sphere->radius );
+    shape = new kinematics::ShapeEllipsoid(2.0 * sphere->radius * Eigen::Vector3d::Ones());
     
     // Set its pose
     Eigen::Affine3d transform;
