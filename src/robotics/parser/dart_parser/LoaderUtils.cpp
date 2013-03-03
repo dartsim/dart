@@ -173,6 +173,17 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     // Set it into shape
     shape->setTransform( transform );
     
+    // Set color
+    if( _viz->material ) {
+      if( (_viz->material)->color.r != 0  &&  
+	  (_viz->material)->color.g != 0 &&  
+	  (_viz->material)->color.b != 0 ) {
+	Eigen::Vector3d color;
+	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
+	shape->setColor(color);
+      }
+    }
+    
     // Set in node
     _node->setVizShape(shape);
     if(debug) { std::cout<< "Loading a sphere vizMesh of radius:" << sphere->radius << std::endl; }
@@ -192,6 +203,18 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     // Set it into shape
     shape->setTransform( transform );
     
+    // Set color
+    if( _viz->material ) {
+      if( (_viz->material)->color.r != 0  &&  
+	  (_viz->material)->color.g != 0 &&  
+	  (_viz->material)->color.b != 0 ) {
+	Eigen::Vector3d color;
+	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
+	shape->setColor(color);
+      }
+    }
+    
+
     // Set in node
     _node->setVizShape(shape);
 
@@ -210,6 +233,17 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     
     // Set it into shape
     shape->setTransform( transform );
+    
+    // Set color
+    if( _viz->material ) {
+      if( (_viz->material)->color.r != 0  &&  
+	  (_viz->material)->color.g != 0 &&  
+	  (_viz->material)->color.b != 0 ) {
+	Eigen::Vector3d color;
+	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
+	shape->setColor(color);
+      }
+    }
     
     // Set in node
     _node->setVizShape(shape);
