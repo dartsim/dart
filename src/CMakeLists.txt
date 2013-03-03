@@ -8,13 +8,13 @@ if(MSVC)
 endif()
 
 # Search all header and source files
-file(GLOB_RECURSE dart_srcs "*.cpp")
-file(GLOB_RECURSE dart_hdrs "*.h")
+file(GLOB_RECURSE dart_srcs *.cpp)
+file(GLOB_RECURSE dart_hdrs *.h *.hpp)
 
 # Setup directory structure for Visual Studio
 set(SUBDIRS collision dynamics integration kinematics lcpsolver optimizer planning renderer robotics utils yui)
 foreach(SUBDIR ${SUBDIRS})
-	file(GLOB_RECURSE dir_files ${SUBDIR}/*.h ${SUBDIR}/*.cpp)
+	file(GLOB_RECURSE dir_files ${SUBDIR}/*.h ${SUBDIR}/*.hpp ${SUBDIR}/*.cpp)
 	source_group(${SUBDIR} FILES ${dir_files})
 endforeach()
 
