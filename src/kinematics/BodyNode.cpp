@@ -85,10 +85,20 @@ namespace kinematics {
         }
         mMarkers.clear();
 
-        if (mVizShape != NULL) {
+        if(mVizShape && mVizShape == mColShape) {
+        	delete mVizShape;
+        	mVizShape = NULL;
+        	mColShape = NULL;
+        }
+        if(mVizShape) {
             delete mVizShape;
             mVizShape = NULL;
         }
+        if(mColShape) {
+        	delete mColShape;
+        	mColShape = NULL;
+        }
+
         mJointsChild.clear();
     }
 
