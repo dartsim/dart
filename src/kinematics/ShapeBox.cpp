@@ -59,7 +59,7 @@ namespace kinematics {
         else
             _ri->setPenColor(mColor);
         _ri->pushMatrix();
-        _ri->translate(mTransform.translation());
+        _ri->transform(mTransform);
         _ri->drawCube(mDim);
         _ri->popMatrix();
     }

@@ -151,6 +151,10 @@ namespace renderer {
         glRotated(_rad, _axis[0], _axis[1], _axis[2]);
     }
 
+    void OpenGLRenderInterface::transform(const Affine3d& _transform) {
+    	glMultMatrixd(_transform.data());
+    }
+
     void OpenGLRenderInterface::scale(const Vector3d& _scale) {
         glScaled(_scale[0], _scale[1], _scale[2]);
     }

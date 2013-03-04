@@ -42,6 +42,7 @@
 #include "Light.h"
 #include "Camera.h"
 #include <assimp/scene.h>
+#include <Eigen/Dense>
 
 namespace renderer {
     enum DecoBufferType {
@@ -96,6 +97,7 @@ namespace renderer {
 
         virtual void translate(const Eigen::Vector3d& _offset); //glTranslate 
         virtual void rotate(const Eigen::Vector3d& _axis, double _rad); //glRotate
+        virtual void transform(const Eigen::Affine3d& _transform); //glMultMatrix
         virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
         virtual void drawEllipsoid(const Eigen::Vector3d& _size);

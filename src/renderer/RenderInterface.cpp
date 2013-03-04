@@ -121,6 +121,10 @@ namespace renderer {
 	{
 	}
 
+	void RenderInterface::transform(const Affine3d& _transform)
+	{
+	}
+
 	void RenderInterface::scale(const Vector3d& _scale)
 	{
 	}
