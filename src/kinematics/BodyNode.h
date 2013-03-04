@@ -159,9 +159,10 @@ namespace kinematics {
             mColShape = _p;
         }
         inline Shape* getShape() const { return mVizShape; }
-        inline void setVizShape(Shape *_p) { mVizShape = _p; }
-        inline void setColShape(Shape *_p) { mColShape = _p; }
-        inline Shape* getColShape() const { return mColShape; }
+        inline void setVisualizationShape(Shape *_p) { mVizShape = _p; }
+        inline Shape* getVisualizationShape() { return mVizShape; }
+        inline void setCollisionShape(Shape *_p) { mColShape = _p; }
+        inline Shape* getCollisionShape() const { return mColShape; }
 
         inline void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
         inline int getNumChildJoints() { return mJointsChild.size(); }

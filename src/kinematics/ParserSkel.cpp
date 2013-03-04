@@ -2092,8 +2092,8 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
     // Set COM to be Shape offset
     prim->setOffset(vecTrans);
 
-    cur_node->setVizShape(prim);
-    cur_node->setColShape(prim);
+    cur_node->setVisualizationShape(prim);
+    cur_node->setCollisionShape(prim);
     cur_node->setLocalCOM( vecTrans );
 }
 
@@ -2117,8 +2117,8 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
     // Set COM to be Shape offset
     geo->setOffset(vecTrans);
 
-    cur_node->setVizShape(geo);
-    cur_node->setColShape(geo);
+    cur_node->setVisualizationShape(geo);
+    cur_node->setCollisionShape(geo);
     cur_node->setLocalCOM(vecTrans);
 }
 

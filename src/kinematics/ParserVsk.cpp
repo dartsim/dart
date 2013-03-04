@@ -849,8 +849,8 @@ bool readShape(tinyxml2::XMLElement* _prim, map<string, double>& _paramsList, ma
     	prim->setOffset(off);
     }
 
-    blink->setVizShape(prim);
-    blink->setColShape(prim);
+    blink->setVisualizationShape(prim);
+    blink->setCollisionShape(prim);
     blink->setMass(mass);
     blink->setLocalCOM( off );
     return true;
@@ -966,8 +966,8 @@ void autoGenerateShapeParent(Skeleton* skel)
 
         BodyNode* target = parent;
         target->setLocalCOM(offset);
-        target->setVizShape(pm);
-        target->setColShape(pm);
+        target->setVisualizationShape(pm);
+        target->setCollisionShape(pm);
         target->setMass(mass);
     }
 

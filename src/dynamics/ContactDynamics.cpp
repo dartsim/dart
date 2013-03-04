@@ -60,7 +60,7 @@ namespace dynamics {
 
                 for (int j = 0; j < nNodes; j++) {
                     kinematics::BodyNode* node = skel->getNode(j);
-                    if (node->getColShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
+                    if (node->getCollisionShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
                     {
                         mCollisionChecker->addCollisionSkeletonNode(node);
                         mBodyIndexToSkelIndex.push_back(i);

@@ -101,8 +101,8 @@ void addEndEffector (Robot* robot, BodyNodeDynamics* parent_node, Vector3d dim) 
 	Shape* shape = new ShapeBox(Vector3d(0.2, 0.2, 0.2));
 	node->setLocalCOM(Vector3d(0.0, 0.0, 0.0));
 	node->setMass(1.0);
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	robot->addNode(node);
 }
 
@@ -123,8 +123,8 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 	Shape* shape = new ShapeBox(dim1);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
 	node->setMass(mass);
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	robot->addNode(node);
 
 	// Create the second link, the joint with link1 and its shape
@@ -135,8 +135,8 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type2);
 	shape = new ShapeBox(dim2);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	node->setMass(mass);
 	robot->addNode(node);
 
@@ -164,8 +164,8 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type1);
 	Shape* shape = new ShapeBox(dim1);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	node->setMass(mass);
 	robot->addNode(node);
 
@@ -177,8 +177,8 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type2);
 	shape = new ShapeBox(dim2);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	node->setMass(mass);
 	robot->addNode(node);
 
@@ -190,8 +190,8 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	add_DOF(robot, joint, 0.0, -M_PI, M_PI, type3);
 	shape = new ShapeBox(dim3);
 	node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
-	node->setVizShape(shape);
-	node->setColShape(shape);
+	node->setVisualizationShape(shape);
+	node->setCollisionShape(shape);
 	node->setMass(mass);
 	robot->addNode(node);
 

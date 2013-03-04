@@ -317,7 +317,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   else {
     // Add default
     kinematics::Shape* shape = new kinematics::Shape();
-    node->setVizShape( shape );
+    node->setVisualizationShape( shape );
     if(debug) {  std::cout<< "No Visualization element defined for node "<<node->getName() <<". Using default empty VizShape"<<std::endl; }
   }
   // Set collision information
@@ -327,7 +327,7 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   else {
     // Add default
     kinematics::Shape* shape = new kinematics::Shape();
-    node->setColShape( shape );
+    node->setCollisionShape( shape );
     if(debug) { std::cout<< "No Collision element defined for node "<<node->getName() <<". Using default empty ColShape"<<std::endl; }
   }
 

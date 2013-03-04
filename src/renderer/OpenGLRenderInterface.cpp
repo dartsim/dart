@@ -400,8 +400,8 @@ namespace renderer {
     	if(_node == 0)
     		return;
 
-    	compileList(_node->getShape());
-    	compileList(_node->getColShape());
+    	compileList(_node->getVisualizationShape());
+    	compileList(_node->getCollisionShape());
     }
 
     //FIXME: Use polymorphism instead of switch statements
@@ -473,7 +473,7 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	kinematics::Shape *shape = _colMesh ? _node->getColShape() : _node->getShape();
+    	kinematics::Shape *shape = _colMesh ? _node->getCollisionShape() : _node->getVisualizationShape();
     	draw(shape, _colMesh);
 
     	glColor3f(1.0f,1.0f,1.0f);
