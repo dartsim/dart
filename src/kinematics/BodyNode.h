@@ -75,6 +75,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include <vector>
 #include <Eigen/Dense>
 #include "utils/EigenHelper.h"
+#include "utils/Deprecated.h"
 
 namespace renderer { class RenderInterface; };
 
@@ -147,6 +148,7 @@ namespace kinematics {
         inline void setLocalInertia(const Eigen::Matrix3d& _inertia) { mI = _inertia; }
         inline Eigen::Matrix3d getLocalInertia() const { return mI; }
         inline Eigen::Matrix3d getWorldInertia() const { return mIc; }
+        DEPRECATED inline Eigen::Matrix3d getInertia() const { return mIc; }
 
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
         inline int getNumMarkers() const { return mMarkers.size(); }
