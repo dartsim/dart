@@ -149,6 +149,7 @@ namespace kinematics {
         inline Eigen::Matrix3d getLocalInertia() const { return mI; }
         inline Eigen::Matrix3d getWorldInertia() const { return mIc; }
         DEPRECATED inline Eigen::Matrix3d getInertia() const { return mIc; }
+        Eigen::Matrix4d getMassTensor(); ///< Computes the "mass tensor" in lagrangian dynamics from the inertia matrix
 
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }
         inline int getNumMarkers() const { return mMarkers.size(); }
@@ -201,7 +202,7 @@ namespace kinematics {
         int mNumRootTrans;  ///< keep track of the root translation DOFs only if they are the first ones
 
         double mMass; ///< Mass of this node; zero if no primitive
-        Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame
+        Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate fram
         Skeleton *mSkel; ///< Pointer to the model this body node belongs to
 
         // transformations
