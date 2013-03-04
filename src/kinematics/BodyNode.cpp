@@ -259,6 +259,14 @@ namespace kinematics {
 
     }
 
+    Eigen::Matrix4d BodyNode::getMassTensor() {
+        const double halftrace = 0.5 * mI.trace(); // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
+        Eigen::Matrix4d massTensor;
+        massTensor << halftrace * Matrix3d::Identity() - mI, Vector3d::Zero(),
+                      RowVector3d::Zero()                  , mMass;
+        return massTensor;
+    }
+
     void BodyNode::setParentJoint(Joint *_p) {
         mJointParent = _p; 
         mNodeParent = _p->getParentNode();
