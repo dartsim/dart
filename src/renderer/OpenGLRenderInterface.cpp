@@ -164,8 +164,9 @@ namespace renderer {
 
         // Code taken from glut/lib/glut_shapes.c
         QUAD_OBJ_INIT;
-        gluQuadricDrawStyle(quadObj, GLU_LINE);
+        gluQuadricDrawStyle(quadObj, GLU_FILL);
         gluQuadricNormals(quadObj, GLU_SMOOTH);
+        //gluQuadricTexture(quadObj, GL_TRUE);
 
         gluSphere(quadObj, radius, slices, stacks);
         //glut/lib/glut_shapes.c
@@ -230,11 +231,14 @@ namespace renderer {
 
 		// Code taken from glut/lib/glut_shapes.c
 		QUAD_OBJ_INIT;
-		gluQuadricDrawStyle(quadObj, GLU_LINE);
+		gluQuadricDrawStyle(quadObj, GLU_FILL);
 		gluQuadricNormals(quadObj, GLU_SMOOTH);
+		//gluQuadricTexture(quadObj, GL_TRUE);
 
-		gluCylinder(quadObj, radius, radius, height, slices, stacks);
-		//glut/lib/glut_shapes.c
+		gluCylinder(quadObj, radius, radius, height, slices, stacks); //glut/lib/glut_shapes.c
+		gluDisk(quadObj, 0, radius, slices, stacks);
+		glTranslated(0.0,0.0,1.0);
+		gluDisk(quadObj, 0, radius, slices, stacks);
     }
 
     void color4_to_float4(const aiColor4D *c, float f[4])
@@ -360,7 +364,7 @@ namespace renderer {
                     int index = face->mIndices[i];
                     if(mesh->mColors[0] != NULL)
                         glColor4fv((GLfloat*)&mesh->mColors[0][index]);
-                    if(mesh->mNormals != NULL) 
+                    if(mesh->mNormals != NULL)
                         glNormal3fv(&mesh->mNormals[index].x);
                     glVertex3fv(&mesh->mVertices[index].x);
                 }
@@ -488,8 +492,15 @@ namespace renderer {
     		return;
 
 		Affine3d pose = _shape->getTransform();
+		Vector3d color = _shape->getColor() * 0.02;
 
 		glPushMatrix();
+
+		glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+		glEnable ( GL_COLOR_MATERIAL );
+
+		glColor3d(color[0], color[1], color[2]);
+
 		glMultMatrixd(pose.data());
 
     	switch(_shape->getShapeType()) {
@@ -508,22 +519,21 @@ namespace renderer {
     		drawEllipsoid(_shape->getDim());
     		break;
     	case kinematics::Shape::P_MESH:
+    		glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
+
     		kinematics::ShapeMesh* shapeMesh = dynamic_cast<kinematics::ShapeMesh*>(_shape);
 
-    		if(shapeMesh == 0)
-    			return;
+    		if(!shapeMesh)
+    			break;
+    		else if(shapeMesh->getDisplayList())
+    			drawList(shapeMesh->getDisplayList());
+    		else
+    			drawMesh(Vector3d::Ones(), shapeMesh->getMesh());
 
-    		const aiScene* model = shapeMesh->getMesh();
-    		const GLuint index = shapeMesh->getDisplayList();
-
-    		if(index) {
-    			drawList(index);
-    		} else {
-    			drawMesh(Vector3d::Ones(), model);
-    		}
     		break;
     	}
 
+    	glDisable(GL_COLOR_MATERIAL);
     	glPopMatrix();
     }
 
