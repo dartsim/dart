@@ -2,19 +2,7 @@ language: cpp
 compiler:
   - gcc
 before_install:
-  - cd ..
-  - sudo apt-get install freeglut3 freeglut3-dev libglu1-mesa-dev libboost-all-dev cmake cmake-curses-gui libeigen3-dev libxmu-dev libxi-dev libwxgtk2.8-dev libgtest-dev libtinyxml-dev libgtest-dev
-  - git clone git://github.com/golems/tinyxml2.git
-  - git clone git://github.com/golems/assimp.git
-  - git clone git://github.com/golems/flann.git
-  - git clone git://github.com/golems/libccd.git
-  - git clone git://github.com/golems/fcl.git
-  - cd tinyxml2; cmake .; make && sudo make install ; cd ..
-  - cd assimp; cmake .; make && sudo make install ; cd ..
-  - cd flann; cmake .; make && sudo make install ; cd ..
-  - cd libccd; cmake .; make && sudo make install ; cd ..
-  - cd fcl; cmake .; make && sudo make install ; cd ..
-  - cd dart
+  - 'ci/before_install.sh'
 before_script: cmake .
 script:
   - make
