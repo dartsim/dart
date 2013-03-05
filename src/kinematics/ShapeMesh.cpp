@@ -132,6 +132,7 @@ namespace kinematics {
         if(fileName.length() >= 4 && fileName.substr(fileName.length() - 4, 4) == ".dae") {
             scene->mRootNode->mTransformation = aiMatrix4x4();
         }
+        scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
 
         return scene;
     }
