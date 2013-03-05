@@ -44,6 +44,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include "integration/EulerIntegrator.h"
+#include "utils/Deprecated.h"
 
 namespace dynamics {
   class SkeletonDynamics;
@@ -67,11 +68,11 @@ namespace robotics {
     int addObject( Robot* _object );
     void printInfo();
     
-    inline unsigned int getNumObjects() { return mObjects.size(); }
-    inline unsigned int getNumRobots() { return mRobots.size(); }
+    DEPRECATED inline unsigned int getNumObjects() { return mObjects.size(); }
+    DEPRECATED inline unsigned int getNumRobots() { return mRobots.size(); }
     inline unsigned int getNumSkeletons() { return mSkeletons.size(); }
-    Robot* getObject( int _i );
-    Robot* getRobot( int _i );
+    DEPRECATED Robot* getObject( int _i );
+    DEPRECATED Robot* getRobot( int _i );
     dynamics::SkeletonDynamics* getSkeleton( int _i );
     dynamics::SkeletonDynamics* getSkeleton(const std::string& name);
     bool checkCollision(bool checkAllCollisions = false);
