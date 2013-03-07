@@ -121,10 +121,19 @@ namespace kinematics {
                                                                               aiProcess_Triangulate            |
                                                                               aiProcess_JoinIdenticalVertices  |
                                                                               aiProcess_SortByPType            |
-                                                                              aiProcess_PreTransformVertices   |
                                                                               aiProcess_OptimizeMeshes,
                                                             NULL, propertyStore);
         aiReleasePropertyStore(propertyStore);
+
+        // Assimp rotates collada files such that the up-axis (specified in the collada file) aligns with assimp's y-axis.
+        // Here we are reverting this rotation.
+        // We are only catching files with the .dae file ending here. We might miss files with an .xml file ending,
+        // which would need to be looked into to figure out whether they are collada files.
+        if(fileName.length() >= 4 && fileName.substr(fileName.length() - 4, 4) == ".dae") {
+            scene->mRootNode->mTransformation = aiMatrix4x4();
+        }
+        scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
+
         return scene;
     }
 } // namespace kinematics

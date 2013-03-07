@@ -148,7 +148,7 @@ namespace kinematics {
         inline void setLocalInertia(const Eigen::Matrix3d& _inertia) { mI = _inertia; }
         inline Eigen::Matrix3d getLocalInertia() const { return mI; }
         inline Eigen::Matrix3d getWorldInertia() const { return mIc; }
-        DEPRECATED inline Eigen::Matrix3d getInertia() const { return mIc; }
+        DEPRECATED inline Eigen::Matrix3d getInertia() const { return mIc; } ///< Superseded by getWorldInertia()
         Eigen::Matrix4d getMassTensor(); ///< Computes the "mass tensor" in lagrangian dynamics from the inertia matrix
 
         inline void addMarker(Marker *_h) { mMarkers.push_back(_h); }

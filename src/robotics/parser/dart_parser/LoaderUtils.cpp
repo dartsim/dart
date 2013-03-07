@@ -423,22 +423,9 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
  * @function pose2Affine3d
  */
 Eigen::Affine3d DartLoader::pose2Affine3d( urdf::Pose _pose ) {
-
-  Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-
-    // Set xyz
-    Eigen::Vector3d t;
-    t[0] = _pose.position.x;
-    t[1] = _pose.position.y;
-    t[2] = _pose.position.z;
-    transform.translation() = t;
-
-    // Set rpy
-    double roll, pitch, yaw;
-    _pose.rotation.getRPY( roll, pitch, yaw );
-    Eigen::Matrix3d rot;
-    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    transform.matrix().block(0,0,3,3) = rot;
-
+    Eigen::Quaterniond quat;
+    _pose.rotation.getQuaternion(quat.x(), quat.y(), quat.z(), quat.w());
+    Eigen::Affine3d transform(quat);
+    transform.translation() = Eigen::Vector3d(_pose.position.x, _pose.position.y, _pose.position.z);
     return transform;
 }

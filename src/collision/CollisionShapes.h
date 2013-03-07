@@ -280,7 +280,6 @@ namespace collision_checking
     		double _height, int _slices, int _stacks)
 	{
     	const int CACHE_SIZE = 240;
-    	float PI = 3.14159265358979323846;
 
 		int i,j;
 		float sinCache[CACHE_SIZE];
@@ -307,7 +306,7 @@ namespace collision_checking
 
 		/* Cache is the vertex locations cache */
 		for (i = 0; i < _slices; i++) {
-			angle = 2 * PI * i / _slices;
+			angle = 2 * M_PI * i / _slices;
 			sinCache[i] = sin(angle);
 			cosCache[i] = cos(angle);
 		}

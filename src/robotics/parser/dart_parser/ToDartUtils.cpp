@@ -28,76 +28,51 @@
 kinematics::Joint* DartLoader::createDartRootJoint( boost::shared_ptr<urdf::Joint> _jt,
 						    dynamics::SkeletonDynamics* _skel ) {
 
-  // Currently we support 2 root joints: Fixed and floating
-  // other type of joints (revolute and prismatic) appear as fixed so don't use them by the time being
-  // (joints located on nodes other than root can  be anything)
-
-  double x, y, z; 
-  double roll, pitch, yaw;
-  double val;
-  double vmin, vmax;
-  int axis;
-  double xAxis, yAxis, zAxis;
- 
-  // Parent is NULL
-  if( strcmp( (_jt->parent_link_name).c_str(), "world") != 0 ) {
-    std::cout<< "Error, createDartRootJoint should receive a joint with world as parent. No creating joint" << std::endl;
-    return NULL;
-  }
-
-  // Get child body Nodes
-  kinematics::Joint* joint;
-  std::string jointName = ( _jt->name);
-  std::string childName =  (_jt->child_link_name);
-  dynamics::BodyNodeDynamics* child = getNode( childName );
-
-  joint = new kinematics::Joint( NULL, child, jointName.c_str() );
-
+    // Currently we support 2 root joints: Fixed and floating
+    // other type of joints (revolute and prismatic) appear as fixed so don't use them by the time being
+    // (joints located on nodes other than root can be anything)
   
-  // Add DOF if prismatic or revolute joint
-  val = 0;
-  if( _jt->type == urdf::Joint::FLOATING ) {
-    
-    // Here will go the rest of joints (revolute, prismatic, hence the next if)
-
-    // Floating
-    if( _jt->type == urdf::Joint::FLOATING ) {
-      
-      axis = GOLEM_FLOATING;
-
-      // Define infinity limits
-      vmin = -1*std::numeric_limits<double>::infinity();
-      vmax = std::numeric_limits<double>::infinity();
-
-      xAxis = 0; yAxis = 0; zAxis = 0;
+    double x, y, z;
+    double roll, pitch, yaw;
+    double val;
+    double vmin, vmax;
+    int axis;
+    double xAxis, yAxis, zAxis;
+  
+    // Parent is NULL (World).
+    if( strcmp( (_jt->parent_link_name).c_str(), "world") != 0 ) {
+        std::cout<< "Error, createDartRootJoint should receive a joint with world as parent. No creating joint" << std::endl;
+        return NULL;
     }
-    
-    add_DOF( _skel, joint, val, vmin, vmax, axis, xAxis, yAxis, zAxis );
-    
-    return joint;
-  }
-  
-  // Fixed, do not add DOF
-  else if( _jt->type == urdf::Joint::FIXED ) {
-    if(debug) std::cout<<"[debug] Fixed Root joint: "<< jointName <<std::endl;  
-    
-    // Add Rigid transform
-    urdf::Pose p = _jt->parent_to_joint_origin_transform;
-    x = p.position.x;
-    y = p.position.y;
-    z = p.position.z;
-    p.rotation.getRPY( roll, pitch, yaw );
-    add_XyzRpy( joint, x, y, z, roll, pitch, yaw );
-    
-    return joint;
-  }
-  
-  // None of the above
-  else {
-    std::cout<<"[createDartRootJoint] ERROR: Parsing "<<  jointName <<" joint: No FLOATING or FIXED \n";
-    return NULL;
-  }
 
+    // Get child body Nodes
+    kinematics::Joint* joint;
+    std::string jointName = ( _jt->name);
+    std::string childName = (_jt->child_link_name);
+    dynamics::BodyNodeDynamics* child = getNode( childName );
+
+    joint = new kinematics::Joint( NULL, child, jointName.c_str() );
+
+  
+    // For FLOATING root joint we do NOT use createDartJoint since it automatically adds a transform xyzRPY (fixed)
+    // before the DOF. This would make the root joint to behave as a fixed joint with the current setup
+    val = 0;
+    if( _jt->type == urdf::Joint::FLOATING ) {
+    
+        axis = GOLEM_FLOATING;
+
+        // Define infinity limits
+        vmin = -1*std::numeric_limits<double>::infinity();
+        vmax = std::numeric_limits<double>::infinity();
+        xAxis = 0; yAxis = 0; zAxis = 0;
+    
+        add_DOF( _skel, joint, val, vmin, vmax, axis, xAxis, yAxis, zAxis );
+        return joint;
+    }
+  
+    else {
+        return createDartJoint( _jt, _skel );
+    }
 
 }
 
