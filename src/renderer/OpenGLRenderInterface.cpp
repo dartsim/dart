@@ -496,7 +496,7 @@ namespace renderer {
     		return;
 
 		Affine3d pose = _shape->getTransform();
-		Vector3d color = _shape->getColor() * 0.02;
+		Vector3d color = _shape->getColor();
 
 		glPushMatrix();
 
