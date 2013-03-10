@@ -39,6 +39,7 @@
 
 #include "Dof.h"
 #include "Transformation.h"
+#include "TrfmRotateAxis.h"
 #include "BodyNode.h"
 #include <iostream>
 #include <map>
@@ -131,7 +132,10 @@ namespace kinematics {
         if(mType==J_HINGE){
             assert(mNumDofsRot==1);
             assert(mRotTransformIndex.size()==1);
-            (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
+            if(TrfmRotateAxis* rotateAxisTransform = dynamic_cast<TrfmRotateAxis*>(mTransforms[mRotTransformIndex[0]]))
+                _J->topLeftCorner<3, 1>() = rotateAxisTransform->getAxis();
+            else 
+                (*_J)(rotEulerMap[mTransforms[mRotTransformIndex[0]]->getType()], 0) = 1.0;
             // _Jdot is zero
         }
         else if(mType==J_UNIVERSAL){
@@ -196,16 +200,12 @@ namespace kinematics {
             cout<<"computeRotationJac not implemented yet for this joint type\n";
         }
 
-        // adjust for the constant rotation transformation: ASSUME that its position can be only at transform index 0
-        if(mTransforms.size()>0 
-            && !mTransforms[0]->getVariable() 
-            && (mTransforms[0]->getType()==Transformation::T_ROTATEX 
-                || mTransforms[0]->getType()==Transformation::T_ROTATEY 
-                || mTransforms[0]->getType()==Transformation::T_ROTATEZ ))
+        // adjust for the constant rotation transformations: ASSUME that they are only positioned before variable transforms
+        for(int i = mRotTransformIndex[0] - 1; i >= 0; i--)
         {
-            Matrix3d rotConst = mTransforms[0]->getTransform().topLeftCorner(3,3);
-            (*_J) = rotConst*(*_J);
-            if(_Jdot) (*_Jdot) = rotConst*(*_Jdot);
+            Matrix3d rotConst = mTransforms[i]->getTransform().topLeftCorner<3,3>();
+            (*_J) = rotConst * (*_J);
+            if(_Jdot) (*_Jdot) = rotConst * (*_Jdot);
         }
     }
 

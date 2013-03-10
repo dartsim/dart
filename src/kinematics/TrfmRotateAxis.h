@@ -51,6 +51,7 @@ namespace kinematics {
         void computeTransform();
         Eigen::Matrix4d getDeriv(const Dof *q);
         Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        inline Eigen::Vector3d getAxis() { return mAxis; }
 
     protected:
         Eigen::Vector3d mAxis;
