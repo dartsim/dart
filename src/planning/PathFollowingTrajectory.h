@@ -42,11 +42,11 @@
 #include "Path.h"
 
 namespace planning {
-class Trajectory
+class PathFollowingTrajectory
 {
 public:
-	Trajectory(const Path &path, const Eigen::VectorXd &maxVelocity, const Eigen::VectorXd &maxAcceleration);
-	~Trajectory(void);
+	PathFollowingTrajectory(const Path &path, const Eigen::VectorXd &maxVelocity, const Eigen::VectorXd &maxAcceleration);
+	~PathFollowingTrajectory(void);
 
 	bool isValid() const;
 	double getDuration() const;

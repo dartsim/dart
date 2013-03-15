@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Trajectory.h"
+#include "PathFollowingTrajectory.h"
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -46,8 +46,8 @@ using namespace std;
 
 namespace planning {
 
-const double Trajectory::timeStep = 0.001;
-const double Trajectory::eps = 0.000001;
+const double PathFollowingTrajectory::timeStep = 0.001;
+const double PathFollowingTrajectory::eps = 0.000001;
 
 static double squared(double d) {
 	return d * d;
@@ -61,7 +61,7 @@ static string toString(int number)
 }
 
 
-Trajectory::Trajectory(const Path &path, const VectorXd &maxVelocity, const VectorXd &maxAcceleration) :
+PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorXd &maxVelocity, const VectorXd &maxAcceleration) :
 	path(path),
 	maxVelocity(maxVelocity),
 	maxAcceleration(maxAcceleration),
@@ -122,12 +122,12 @@ Trajectory::Trajectory(const Path &path, const VectorXd &maxVelocity, const Vect
 	//file.close();
 }
 
-Trajectory::~Trajectory(void) {
+PathFollowingTrajectory::~PathFollowingTrajectory(void) {
 }
 
 
 // returns true if end of path is reached.
-bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
+bool PathFollowingTrajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
 	TrajectoryStep accelerationSwitchingPoint(pathPos, 0.0);
 	double accelerationBeforeAcceleration, accelerationAfterAcceleration;
 	bool accelerationReachedEnd;
@@ -162,7 +162,7 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 	}
 }
 
-bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
+bool PathFollowingTrajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
 	double switchingPathPos = pathPos;
 	double switchingPathVel;
 	while(true) {
@@ -203,7 +203,7 @@ bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectorySte
 	return false;
 }
 
-bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
+bool PathFollowingTrajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
 	const double stepSize = 0.001;
 	const double accuracy = 0.000001;
 
@@ -241,7 +241,7 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 	return false;
 }
 
-bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double acceleration) {
+bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory, double acceleration) {
 	
 	double pathPos = trajectory.back().pathPos;
 	double pathVel = trajectory.back().pathVel;
@@ -338,7 +338,7 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 }
 
 
-void Trajectory::integrateBackward(list<TrajectoryStep> &trajectory, list<TrajectoryStep> &startTrajectory, double acceleration) {
+void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory, list<TrajectoryStep> &startTrajectory, double acceleration) {
 	list<TrajectoryStep>::reverse_iterator before = startTrajectory.rbegin();
 	double pathPos = trajectory.front().pathPos;
 	double pathVel = trajectory.front().pathVel;
@@ -432,17 +432,17 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &trajectory, list<Trajec
 	}
 }
 
-inline double Trajectory::getSlope(const TrajectoryStep &point1, const TrajectoryStep &point2) {
+inline double PathFollowingTrajectory::getSlope(const TrajectoryStep &point1, const TrajectoryStep &point2) {
 	return (point2.pathVel - point1.pathVel) / (point2.pathPos - point1.pathPos);
 }
 
-inline double Trajectory::getSlope(list<TrajectoryStep>::const_iterator lineEnd) {
+inline double PathFollowingTrajectory::getSlope(list<TrajectoryStep>::const_iterator lineEnd) {
 	list<TrajectoryStep>::const_iterator lineStart = lineEnd;
 	lineStart--;
 	return getSlope(*lineStart, *lineEnd);
 }
 
-Trajectory::TrajectoryStep Trajectory::getIntersection(const list<TrajectoryStep> &trajectory, list<TrajectoryStep>::iterator &it, const TrajectoryStep &linePoint1, const TrajectoryStep &linePoint2) {
+PathFollowingTrajectory::TrajectoryStep PathFollowingTrajectory::getIntersection(const list<TrajectoryStep> &trajectory, list<TrajectoryStep>::iterator &it, const TrajectoryStep &linePoint1, const TrajectoryStep &linePoint2) {
 	
 	const double lineSlope = getSlope(linePoint1, linePoint2);
 	it--;
@@ -469,7 +469,7 @@ Trajectory::TrajectoryStep Trajectory::getIntersection(const list<TrajectoryStep
 }
 
 
-double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, bool max) {
+double PathFollowingTrajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, bool max) {
 	VectorXd configDeriv = path.getTangent(pathPos);
 	VectorXd configDeriv2 = path.getCurvature(pathPos);
 	double factor = max ? 1.0 : -1.0;
@@ -483,11 +483,11 @@ double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, boo
 	return factor * maxPathAcceleration;
 }
 
-double Trajectory::getMinMaxPhaseSlope(double pathPos, double pathVel, bool max) {
+double PathFollowingTrajectory::getMinMaxPhaseSlope(double pathPos, double pathVel, bool max) {
 	return getMinMaxPathAcceleration(pathPos, pathVel, max) / pathVel;
 }
 
-double Trajectory::getAccelerationMaxPathVelocity(double pathPos) {
+double PathFollowingTrajectory::getAccelerationMaxPathVelocity(double pathPos) {
 	double maxPathVelocity = numeric_limits<double>::infinity();
 	const VectorXd configDeriv = path.getTangent(pathPos);
 	const VectorXd configDeriv2 = path.getCurvature(pathPos);
@@ -512,7 +512,7 @@ double Trajectory::getAccelerationMaxPathVelocity(double pathPos) {
 }
 
 
-double Trajectory::getVelocityMaxPathVelocity(double pathPos) {
+double PathFollowingTrajectory::getVelocityMaxPathVelocity(double pathPos) {
 	const VectorXd tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
 	for(unsigned int i = 0; i < n; i++) {
@@ -521,11 +521,11 @@ double Trajectory::getVelocityMaxPathVelocity(double pathPos) {
 	return maxPathVelocity;
 }
 
-double Trajectory::getAccelerationMaxPathVelocityDeriv(double pathPos) {
+double PathFollowingTrajectory::getAccelerationMaxPathVelocityDeriv(double pathPos) {
 	return (getAccelerationMaxPathVelocity(pathPos + eps) - getAccelerationMaxPathVelocity(pathPos - eps)) / (2.0 * eps);
 }
 
-double Trajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
+double PathFollowingTrajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
 	const VectorXd tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
 	unsigned int activeConstraint;
@@ -540,15 +540,15 @@ double Trajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
 		/ (tangent[activeConstraint] * abs(tangent[activeConstraint]));
 }
 
-bool Trajectory::isValid() const {
+bool PathFollowingTrajectory::isValid() const {
 	return valid;
 }
 
-double Trajectory::getDuration() const {
+double PathFollowingTrajectory::getDuration() const {
 	return trajectory.back().time;
 }
 
-list<Trajectory::TrajectoryStep>::const_iterator Trajectory::getTrajectorySegment(double time) const {
+list<PathFollowingTrajectory::TrajectoryStep>::const_iterator PathFollowingTrajectory::getTrajectorySegment(double time) const {
 	if(time >= trajectory.back().time) {
 		list<TrajectoryStep>::const_iterator last = trajectory.end();
 		last--;
@@ -566,7 +566,7 @@ list<Trajectory::TrajectoryStep>::const_iterator Trajectory::getTrajectorySegmen
 	}
 }
 
-VectorXd Trajectory::getPosition(double time) const {
+VectorXd PathFollowingTrajectory::getPosition(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
 	previous--;
@@ -582,7 +582,7 @@ VectorXd Trajectory::getPosition(double time) const {
 	return path.getConfig(pathPos);
 }
 
-VectorXd Trajectory::getVelocity(double time) const {
+VectorXd PathFollowingTrajectory::getVelocity(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
 	previous--;
@@ -599,7 +599,7 @@ VectorXd Trajectory::getVelocity(double time) const {
 	return path.getTangent(pathPos) * pathVel;
 }
 
-double Trajectory::getMaxAccelerationError() {
+double PathFollowingTrajectory::getMaxAccelerationError() {
 	double maxAccelerationError = 0.0;
 
 	for(double time = 0.0; time < getDuration(); time += 0.000001) {
