@@ -40,9 +40,10 @@
 
 #include <Eigen/Core>
 #include "Path.h"
+#include "Trajectory.h"
 
 namespace planning {
-class PathFollowingTrajectory
+class PathFollowingTrajectory : public Trajectory
 {
 public:
 	PathFollowingTrajectory(const Path &path, const Eigen::VectorXd &maxVelocity, const Eigen::VectorXd &maxAcceleration);
