@@ -40,16 +40,10 @@
 
 #include <kinematics/Joint.h>
 #include <kinematics/Transformation.h>
-#include <kinematics/TrfmTranslate.h>
-#include <kinematics/TrfmRotateEuler.h>
 #include <dynamics/BodyNodeDynamics.h>
 #include <kinematics/Dof.h>
 #include "Robot.h"
-#include <stdio.h>
-#include <kinematics/ShapeMesh.h>
-#include <list>
 
-using namespace std;
 
 namespace robotics {
 
@@ -73,87 +67,53 @@ namespace robotics {
    * @function setRootTransform
    * @brief Set x, y, z, roll, pitch and yaw
    */
-  void Robot::setRootTransform( Eigen::VectorXd _pose ) {
+  void Robot::setRootTransform(const Eigen::Matrix<double, 6, 1>& _pose) {
 
-    if( _pose.size() != 6 ) {
-      printf( "[setPoseTransform] Argument should have a size of 6 (x,y,z,r,p,y). Exiting! \n" );
-      return;
-    }
-    
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pose(0) ); 
-      } 
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pose(1) ); 
-      } 
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	joint->getTransform(i)->getDof(0)->setValue( _pose(2) ); 
-      } 
+    kinematics::Joint* joint = getRoot()->getParentJoint();
 
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX )
-	{  joint->getTransform(i)->getDof(0)->setValue( _pose(3) ); } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY )
-	{  joint->getTransform(i)->getDof(0)->setValue( _pose(4) ); } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ )
-	{  joint->getTransform(i)->getDof(0)->setValue( _pose(5) ); } 
-    } 
-    // Update values
+    assert(joint->getNumTransforms() >= 4);
+    assert(joint->getTransform(0)->getType() == kinematics::Transformation::T_TRANSLATE);
+    assert(joint->getTransform(1)->getType() == kinematics::Transformation::T_ROTATEZ);
+    assert(joint->getTransform(2)->getType() == kinematics::Transformation::T_ROTATEY);
+    assert(joint->getTransform(3)->getType() == kinematics::Transformation::T_ROTATEX);
+
+    joint->getTransform(0)->getDof(0)->setValue(_pose(0));
+    joint->getTransform(0)->getDof(1)->setValue(_pose(1));
+    joint->getTransform(0)->getDof(2)->setValue(_pose(2));
+    joint->getTransform(1)->getDof(0)->setValue(_pose(5));
+    joint->getTransform(2)->getDof(0)->setValue(_pose(4));
+    joint->getTransform(3)->getDof(0)->setValue(_pose(3));
+
+    joint->updateStaticTransform();
     update();
-
   }
 
   /**
    * @function getRootTransform
    * @brief Get x, y, z, roll, pitch and yaw
    */
-  Eigen::VectorXd Robot::getRootTransform() {
+  Eigen::Matrix<double, 6, 1> Robot::getRootTransform() {
 
-    Eigen::VectorXd pose(6);
-    pose << 0, 0, 0, 0, 0, 0;
+    kinematics::Joint *joint = getRoot()->getParentJoint();
 
-    kinematics::Joint *joint;
-    joint = getRoot()->getParentJoint();
-    
-    for( unsigned int i = 0; i < joint->getNumTransforms(); i++ ) {
-      
-      if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEX ) {
-	pose(0) = joint->getTransform(i)->getDof(0)->getValue(); 
-      } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEY ) {
-	pose(1) = joint->getTransform(i)->getDof(0)->getValue(); 
-      } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_TRANSLATEZ ) {
-	pose(2) = joint->getTransform(i)->getDof(0)->getValue(); 
-      } 
+    assert(joint->getNumTransforms() >= 4);
+    assert(joint->getTransform(0)->getType() == kinematics::Transformation::T_TRANSLATE);
+    assert(joint->getTransform(1)->getType() == kinematics::Transformation::T_ROTATEZ);
+    assert(joint->getTransform(2)->getType() == kinematics::Transformation::T_ROTATEY);
+    assert(joint->getTransform(3)->getType() == kinematics::Transformation::T_ROTATEX);
 
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEX ) {  
-	pose(3) = joint->getTransform(i)->getDof(0)->getValue(); 
-      } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEY ) { 
-	pose(4) = joint->getTransform(i)->getDof(0)->getValue();
-      } 
-      
-      else if( joint->getTransform(i)->getType() == kinematics::Transformation::T_ROTATEZ ) { 
-	pose(5) = joint->getTransform(i)->getDof(0)->getValue(); 
-      } 
-            
-    } // end for  
+    Eigen::Matrix<double, 6, 1> pose;
+    pose(0) = joint->getTransform(0)->getDof(0)->getValue();
+    pose(1) = joint->getTransform(0)->getDof(1)->getValue();
+    pose(2) = joint->getTransform(0)->getDof(2)->getValue();
+    pose(3) = joint->getTransform(3)->getDof(0)->getValue();
+    pose(4) = joint->getTransform(2)->getDof(0)->getValue();
+    pose(5) = joint->getTransform(1)->getDof(0)->getValue(); 
     
     return pose;
+  }
 
-  }  
-   
- 
+
   /**
    * @function update
    */

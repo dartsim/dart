@@ -55,6 +55,8 @@ namespace kinematics {
         mNodeChild=_bOut;
         if(mNodeParent != NULL) mNodeParent->addChildJoint(this);
         if(mNodeChild != NULL) mNodeChild->setParentJoint(this);
+        mStaticTransform = Matrix4d::Identity();
+        mFirstVariableTransformIndex = 0;
         mNumDofsRot=0;
         mNumDofsTrans=0;
         mRotTransformIndex.clear();
@@ -94,10 +96,10 @@ namespace kinematics {
         return mDofs[0]->getSkelIndex();
     }
 
-    Matrix4d Joint::getLocalTransform(){
-        Matrix4d m = Matrix4d::Identity();
-        for(int i= mTransforms.size()-1; i>=0; i--) {
-            mTransforms[i]->applyTransform(m);
+    Matrix4d Joint::getLocalTransform() {
+        Matrix4d m = mStaticTransform;
+        for(int i = mFirstVariableTransformIndex; i < mTransforms.size(); i++) {
+            m *= mTransforms[i]->getTransform();
         }
         return m;
     }
@@ -200,13 +202,9 @@ namespace kinematics {
             cout<<"computeRotationJac not implemented yet for this joint type\n";
         }
 
-        // adjust for the constant rotation transformations: ASSUME that they are only positioned before variable transforms
-        for(int i = mRotTransformIndex[0] - 1; i >= 0; i--)
-        {
-            Matrix3d rotConst = mTransforms[i]->getTransform().topLeftCorner<3,3>();
-            (*_J) = rotConst * (*_J);
-            if(_Jdot) (*_Jdot) = rotConst * (*_Jdot);
-        }
+        // adjust for the static rotation transformations: ASSUME that they are only positioned before variable transforms
+        (*_J) = mStaticTransform.topLeftCorner<3,3>() * (*_J);
+        if(_Jdot) (*_Jdot) = mStaticTransform.topLeftCorner<3,3>() * (*_Jdot);
     }
 
     utils::rotation::RotationOrder Joint::getEulerOrder(){
@@ -237,16 +235,17 @@ namespace kinematics {
         if(rot->getType()==Transformation::T_ROTATEX) return Vector3d::UnitX();
         if(rot->getType()==Transformation::T_ROTATEY) return Vector3d::UnitY();
         if(rot->getType()==Transformation::T_ROTATEZ) return Vector3d::UnitZ();
+        if(rot->getType()==Transformation::T_ROTATEAXIS) return ((TrfmRotateAxis*)rot)->getAxis();
         return Vector3d::Zero();
     }
 
-    Matrix4d Joint::getDeriv(const Dof* _q){
-        Matrix4d m = Matrix4d::Identity();
-        for(int i=mTransforms.size()-1; i>=0; i--){
+    Matrix4d Joint::getDeriv(const Dof* _q) {
+        Matrix4d m = mStaticTransform;
+        for(int i = mFirstVariableTransformIndex; i < mTransforms.size(); i++) {
             if(mTransforms[i]->isPresent(_q))
-                mTransforms[i]->applyDeriv(_q, m);
-            else	
-                mTransforms[i]->applyTransform(m);
+                m *= mTransforms[i]->getDeriv(_q);
+            else
+                m *= mTransforms[i]->getTransform();
         }
         return m;
     }
@@ -269,19 +268,18 @@ namespace kinematics {
         }
     }
 
-    Matrix4d Joint::getSecondDeriv(const Dof* _q1, const Dof* _q2){
-        Matrix4d m = Matrix4d::Identity();
-        for(int i=mTransforms.size()-1; i>=0; i--){
+    Matrix4d Joint::getSecondDeriv(const Dof* _q1, const Dof* _q2) {
+        Matrix4d m = mStaticTransform;
+        for(int i = mFirstVariableTransformIndex; i < mTransforms.size(); i++) {
             Transformation* transf = mTransforms[i];
-            if(transf->isPresent(_q1) && transf->isPresent(_q2)){
-                transf->applySecondDeriv(_q1, _q2, m);
-            }else if(transf->isPresent(_q1)){
-                transf->applyDeriv(_q1, m);
-            }else if(transf->isPresent(_q2)){
-                transf->applyDeriv(_q2, m);
-            }else{
-                transf->applyTransform(m);
-            }
+            if(transf->isPresent(_q1) && transf->isPresent(_q2))
+                m *= transf->getSecondDeriv(_q1, _q2);
+            else if(transf->isPresent(_q1))
+                m *= transf->getDeriv(_q1);
+            else if(transf->isPresent(_q2))
+                m *= transf->getDeriv(_q2);
+            else
+                m *= transf->getTransform();
         }
         return m;
     }
@@ -349,11 +347,22 @@ namespace kinematics {
                 //cout<<"Type of joint not recognized\n";
             }
         }
+        else if(mFirstVariableTransformIndex == mTransforms.size() - 1) {
+            mFirstVariableTransformIndex++;
+            mStaticTransform *= _t->getTransform();
+        }
     }
 
     void Joint::addDof(Dof *_d) {
         mDofs.push_back(_d);
         _d->setJoint(this);
+    }
+
+    void Joint::updateStaticTransform() {
+        mStaticTransform = Matrix4d::Identity();
+        for(int i = 0; i < mFirstVariableTransformIndex; i++) {
+            mStaticTransform *= mTransforms[i]->getTransform();
+        }
     }
 
 } // namespace kinematics

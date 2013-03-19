@@ -111,6 +111,8 @@ namespace kinematics {
         inline void setName(const char *_name){
             strcpy(mName, _name);
         }
+        
+        void updateStaticTransform();
 
     protected:
         BodyNode *mNodeParent; ///< parent node
@@ -122,6 +124,8 @@ namespace kinematics {
         std::vector<Transformation*> mTransforms;	///< transformations for mNodeChild
         std::vector<Dof*> mDofs;	///< associated dofs
 
+        Eigen::Matrix4d mStaticTransform; ///< The product of all static transforms before the first variable one. Precalculated for efficiency.
+        int mFirstVariableTransformIndex; ///< index of the first variable transform (rotation or translation)
         int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
         int mNumDofsTrans;   ///< number of DOFs for corresponding to translation
         std::vector<int> mRotTransformIndex; ///< indices of the rotation transforms

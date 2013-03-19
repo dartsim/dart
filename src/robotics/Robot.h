@@ -41,15 +41,10 @@
 #ifndef __DART_ROBOTICS_ROBOT_H__
 #define __DART_ROBOTICS_ROBOT_H__
 
-#include <string>
-#include <vector>
 #include "dynamics/SkeletonDynamics.h"
 
-extern "C" { struct aiScene; }
-
 namespace robotics {
-  #define MAX_ROBOT_NAME 128
-  
+
   /**
    * @class Robot
    * @brief Subclass of Dynamic Skeleton
@@ -60,10 +55,9 @@ namespace robotics {
     Robot();
     virtual ~Robot();
 
-    void setRootTransform( Eigen::VectorXd _pose ); /**< Set 6 values x,y,z,r,p,y */
-    Eigen::VectorXd getRootTransform(); /**< Get 6 values x,y,z,r,p,y */
-        
-    void update();
+    void setRootTransform(const Eigen::Matrix<double, 6, 1>& _pose ); /**< Set 6 values x,y,z,r,p,y */
+    Eigen::Matrix<double, 6, 1> getRootTransform(); /**< Get 6 values x,y,z,r,p,y */
+    void update(); ///< deprecated for external calls
   };
 }
 

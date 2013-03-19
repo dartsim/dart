@@ -485,7 +485,6 @@ robotics::Robot* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::Mode
   
   // Init robot (skeleton)
   mRobot->initSkel();
-  mRobot->update();
   return mRobot;
 }
 
@@ -556,7 +555,6 @@ robotics::Robot* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::Mod
   
   // Init object (skeleton)
   mObject->initSkel();
-  mObject->update();
   
   return mObject;
 }
