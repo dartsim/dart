@@ -135,13 +135,12 @@ namespace kinematics {
 
     void BodyNode::updateTransform() {
         mT = mJointParent->getLocalTransform();
-        if (mNodeParent) mW = mNodeParent->mW * mT;
+        if (mNodeParent) mW.noalias() = mNodeParent->mW * mT;
         else mW = mT;
 
         // update the inertia matrix 
-        Matrix3d R = mW.topLeftCorner(3,3);
-        if(mVizShape!=NULL)
-            mIc = R*mI*R.transpose();
+        Matrix3d R = mW.topLeftCorner<3,3>();
+        mIc.noalias() = R*mI*R.transpose();
     }
 
     void BodyNode::updateFirstDerivatives() {
@@ -150,7 +149,7 @@ namespace kinematics {
 
         // Update Local Derivatives
         for(int i = 0; i < numLocalDofs; i++) {
-            mTq.at(i) = getLocalDeriv(getDof(i));
+            mTq[i] = getLocalDeriv(getDof(i));
         }
 
         // Update World Derivatives
@@ -158,16 +157,16 @@ namespace kinematics {
         for (int i = 0; i < numParentDofs; i++) {
             assert(mNodeParent);    // should always have a parent if enters this for loop
             if(i<mNumRootTrans) 
-                mWq.at(i) = mNodeParent->mWq.at(i); // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
+                mWq[i] = mNodeParent->mWq.at(i); // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
             else 
-                mWq.at(i) = mNodeParent->mWq.at(i) * mT;
+                mWq[i].noalias() = mNodeParent->mWq[i] * mT;
         }
         // local dofs
         for(int i = 0; i < numLocalDofs; i++){
             if(mNodeParent) 
-                mWq.at(numParentDofs+i) = mNodeParent->mW * mTq.at(i);
+                mWq[numParentDofs+i].noalias() = mNodeParent->mW * mTq[i];
             else 
-                mWq.at(i) = mTq.at(i);
+                mWq[i] = mTq[i];
         }
 
         evalJacLin();
@@ -175,26 +174,23 @@ namespace kinematics {
     }
 
     void BodyNode::evalJacLin() {
-        mJv.setZero();
-        for (unsigned int i=0; i<mDependentDofs.size(); i++) {
-            Vector3d Ji = utils::xformHom(mWq.at(i), mCOMLocal);
-            mJv(0, i) = Ji(0);
-            mJv(1, i) = Ji(1);
-            mJv(2, i) = Ji(2);
+        assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
+
+        for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
+            mJv.col(i) = utils::xformHom(mWq[i], mCOMLocal);
         }
     }
 
     void BodyNode::evalJacAng() {
         mJw.setZero();
         for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
-            Matrix3d omegaSkewSymmetric = mWq.at(i).topLeftCorner(3, 3) * mW.topLeftCorner(3,3).transpose();  // wikipedia calls this the angular velocity tensor
+            Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
             mJw.col(i) = utils::fromSkewSymmetric(omegaSkewSymmetric);
         }
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        Vector3d result = utils::xformHom(mW, _lp);
-        return result;
+        return utils::xformHom(mW, _lp);
     }
 
     Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {

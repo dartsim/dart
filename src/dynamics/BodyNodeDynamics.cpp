@@ -123,7 +123,7 @@ namespace dynamics{
         Vector3d omegaDotJoint = Vector3d::Zero();
 
         // Local Rotation matrix transposed
-        Matrix3d RjointT = mT.topLeftCorner(3,3).transpose();
+        Matrix3d RjointT = mT.topLeftCorner<3,3>().transpose();
 
         if(mJointParent->getJointType() != Joint::J_UNKNOWN && mJointParent->getJointType() != Joint::J_TRANS){
             // ASSUME: trans dofs before rotation dofs
@@ -131,11 +131,11 @@ namespace dynamics{
             mJointParent->computeRotationJac(&mJwJoint, &mJwDotJoint, &qDotJoint);
 
             // Local angular velocity and angular acceleration
-            omegaJoint = mJwJoint*qDotJoint;
-            omegaDotJoint = mJwDotJoint*qDotJoint;
+            omegaJoint.noalias() = mJwJoint * qDotJoint;
+            omegaDotJoint.noalias() = mJwDotJoint * qDotJoint;
             if(_qdotdot){
                 VectorXd qDotDotJoint = _qdotdot->segment(mJointParent->getFirstRotDofIndex(), mJointParent->getNumDofsRot());
-                omegaDotJoint += mJwJoint*qDotDotJoint;
+                omegaDotJoint.noalias() += mJwJoint * qDotDotJoint;
             }
         }
 
@@ -144,29 +144,31 @@ namespace dynamics{
         if(nodeParent){
             assert(mJointParent->getNumDofsTrans()==0); // assuming no internal translation dofs
             Vector3d clparent = nodeParent->getLocalCOM();
-            Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
+            Vector3d rl = mT.topRightCorner<3,1>();    // translation from parent's origin to self origin
 
-            mOmegaBody = RjointT*(nodeParent->mOmegaBody + omegaJoint);
-            mOmegaDotBody = RjointT*(nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaBody.cross(omegaJoint));
-            mVelBody = mOmegaBody.cross(cl) + RjointT*(nodeParent->mVelBody + nodeParent->mOmegaBody.cross(rl-clparent));
-            mVelDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl)) + RjointT*(nodeParent->mVelDotBody + nodeParent->mOmegaDotBody.cross(rl-clparent) + nodeParent->mOmegaBody.cross(nodeParent->mOmegaBody.cross(rl-clparent)));
+            mOmegaBody.noalias() = RjointT * (nodeParent->mOmegaBody + omegaJoint);
+            mOmegaDotBody.noalias() = RjointT * (nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaBody.cross(omegaJoint));
+            mVelBody = mOmegaBody.cross(cl);
+            mVelBody.noalias() += RjointT * (nodeParent->mVelBody + nodeParent->mOmegaBody.cross(rl-clparent));
+            mVelDotBody = mOmegaDotBody.cross(cl);
+            mVelDotBody.noalias() += RjointT * (nodeParent->mVelDotBody + nodeParent->mOmegaDotBody.cross(rl-clparent) + nodeParent->mOmegaBody.cross(nodeParent->mOmegaBody.cross(rl-clparent)));
         }
         // base case: root
         else {
-            mOmegaBody = RjointT*omegaJoint;
-            mOmegaDotBody = RjointT*omegaDotJoint;
+            mOmegaBody.noalias() = RjointT * omegaJoint;
+            mOmegaDotBody.noalias() = RjointT * omegaDotJoint;
             mVelBody = mOmegaBody.cross(cl);
             mVelDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl));
             // incorporate gravity as part of acceleration by changing frame to the one accelerating with g
             // Therefore real acceleration == W*mVelDotBody + g;
-            mVelDotBody -= RjointT*_gravity;
+            mVelDotBody.noalias() -= RjointT * _gravity;
             // if root has translation DOFs
             if(mJointParent->getNumDofsTrans()>0){
                 VectorXd qDotTransJoint = _qdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
-                mVelBody += RjointT*qDotTransJoint;
+                mVelBody.noalias() += RjointT * qDotTransJoint;
                 if(_qdotdot){
                     VectorXd qDotDotTransJoint = _qdotdot->segment(mJointParent->getFirstTransDofIndex(), mJointParent->getNumDofsTrans());
-                    mVelDotBody += RjointT*qDotDotTransJoint;
+                    mVelDotBody.noalias() += RjointT * qDotDotTransJoint;
                 }
             }
         }
@@ -176,16 +178,17 @@ namespace dynamics{
             // compute the Angular Jacobian first - use it for Linear jacobian as well
             if(nodeParent){
                 mJw.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJw;
-                mJw.rightCols(getNumLocalDofs()) = nodeParent->mW.topLeftCorner(3,3)*mJwJoint;
+                mJw.rightCols(getNumLocalDofs()).noalias() = nodeParent->mW.topLeftCorner<3,3>() * mJwJoint;
                 Vector3d clparent = nodeParent->getLocalCOM();
-                Vector3d rl = mT.col(3).head(3);    // translation from parent's origin to self origin
-                mJv.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJv - utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent))*nodeParent->mJw;
-                mJv -= utils::makeSkewSymmetric(mW.topLeftCorner(3,3)*mCOMLocal)*mJw;
+                Vector3d rl = mT.topRightCorner<3,1>();    // translation from parent's origin to self origin
+                mJv.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJv;
+                mJv.leftCols(nodeParent->getNumDependentDofs()).noalias() -= utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent)) * nodeParent->mJw;
+                mJv.noalias() -= utils::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
             }
             // base case: root
             else {
                 mJw.rightCols(mJointParent->getNumDofsRot()) = mJwJoint;
-                mJv -= utils::makeSkewSymmetric(mW.topLeftCorner(3,3)*mCOMLocal)*mJw;
+                mJv.noalias() -= utils::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
                 // if root has translation DOFs
                 if(mJointParent->getNumDofsTrans()>0){
                     // ASSUME - 3 translational dofs
@@ -379,37 +382,30 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::evalMassMatrix(){
-        //mM = MatrixXd::Zero(getNumDependentDofs(),getNumDependentDofs());;
-        mM.setZero();
-        if(mVizShape!=NULL)
-            mM = getMass()*mJv.transpose()*mJv + mJw.transpose()*mIc*mJw;
+    void BodyNodeDynamics::evalMassMatrix() {
+        mM.noalias() = getMass() * mJv.transpose() * mJv;
+        mM.noalias() += mJw.transpose() * mIc * mJw;
     }
 
     void BodyNodeDynamics::evalCoriolisMatrix(const VectorXd &_qDotSkel){
-        mC.setZero();
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        if(mVizShape!=NULL){
-            Matrix3d R = mW.topLeftCorner(3,3);
-            // term 1
-            mC = getMass()*mJv.transpose()*mJvDot + mJw.transpose()*mIc*mJwDot;
-            // term 2
-            mC += mJw.transpose()*utils::makeSkewSymmetric(mOmega)*mIc*mJw;
-        }
+        // term 1
+        mC.noalias() = getMass() * mJv.transpose() * mJvDot;
+        mC.noalias() += mJw.transpose() * mIc * mJwDot;
+        // term 2
+        mC.noalias() += mJw.transpose() * utils::makeSkewSymmetric(mOmega) * mIc * mJw;
     }
 
     void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
-        mCvec.setZero();
         // evaluate the Dot terms
         evalJacDotLin(_qDotSkel);   // evaluates mJvDot
         evalJacDotAng(_qDotSkel);   // evaluates mJwDot
         evalOmega(_qDotSkel);   // evaluates mOmega vector
 
-        Matrix3d R = mW.topLeftCorner(3,3);
         // term 1
         Vector3d Jvdqd = Vector3d::Zero();
         Vector3d Jwdqd = Vector3d::Zero();
@@ -417,11 +413,10 @@ namespace dynamics{
             Jvdqd += mJvDot.col(i)*_qDotSkel[mDependentDofs[i]];
             Jwdqd += mJwDot.col(i)*_qDotSkel[mDependentDofs[i]];
         }
-        if( mVizShape!=NULL ){
-            mCvec = getMass()*(mJv.transpose()*Jvdqd) + mJw.transpose()*(mIc*Jwdqd);
-            // term 2
-            mCvec += mJw.transpose()*(mOmega.cross(mIc*mOmega));
-        }
+        mCvec.noalias() = getMass() * mJv.transpose() * Jvdqd;
+        mCvec.noalias() += mJw.transpose() * (mIc * Jwdqd);
+        // term 2
+        mCvec.noalias() += mJw.transpose() * (mOmega.cross(mIc*mOmega));
 
         //// test
         //evalCoriolisMatrix(_qDotSkel);
@@ -429,33 +424,30 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::evalGravityVector(const Vector3d &_gravity){
-        mG.setZero();
-        if( mVizShape!=NULL ){
-            for(int i=0; i<mJv.cols(); i++){
-                mG[i] = -getMass()*_gravity.dot(mJv.col(i));    // '-' sign as term is on the left side of dynamics equation
-            }
+        assert(mG.rows() == getNumDependentDofs() && mJv.cols() == getNumDependentDofs());
+
+        for(unsigned int i = 0; i < getNumDependentDofs(); i++) {
+            mG[i] = -getMass()*_gravity.dot(mJv.col(i));    // '-' sign as term is on the left side of dynamics equation
         }
     }
 
     void BodyNodeDynamics::evalExternalForces( VectorXd& _extForce ){
-        int numDepDofs = getNumDependentDofs();
-        mFext = VectorXd::Zero(numDepDofs);
+        mFext = VectorXd::Zero(getNumDependentDofs());
 
         // contribution of linear force
-        int nContacts = mContacts.size();
-        for(int i=0; i<nContacts; i++){
+        for(unsigned int i = 0; i < mContacts.size(); i++){
             // compute J
-            MatrixXd J = MatrixXd::Zero(3, numDepDofs);
-            Vector3d force = mW.topLeftCorner(3,3)*mContacts.at(i).second;
-            for(int j=0; j<numDepDofs; j++)
-                J.col(j) = utils::xformHom(mWq.at(j),mContacts.at(i).first);
+            MatrixXd J = MatrixXd::Zero(3, getNumDependentDofs());
+            Vector3d force = mW.topLeftCorner<3,3>() * mContacts[i].second;
+            for(int j = 0; j < getNumDependentDofs(); j++)
+                J.col(j) = utils::xformHom(mWq[j],mContacts[i].first);
             // compute J^TF
-            mFext += J.transpose()*force;
+            mFext.noalias() += J.transpose() * force;
         }
 
         // contribution of torque
         if(mExtTorqueBody.norm()>0){
-            mFext += mJw.transpose()*mW.topLeftCorner(3,3)*mExtTorqueBody;
+            mFext.noalias() += mJw.transpose() * mW.topLeftCorner<3,3>() * mExtTorqueBody;
         }
 
         for(int i=0; i<getNumDependentDofs(); i++)
@@ -463,21 +455,21 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::evalExternalForcesRecursive( VectorXd& _extForce ){
-        int nContacts = mContacts.size();
-        for(int i=0; i<nContacts; i++){ // transform forces from com to joint
-            mExtForceBody += mContacts.at(i).second;
-            mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
+        for(unsigned int i = 0; i < mContacts.size(); i++) { // transform forces from com to joint
+            mExtForceBody += mContacts[i].second;
+            mExtTorqueBody += mContacts[i].first.cross(mContacts[i].second);
         }
 
         for(unsigned int i=0; i<mJointsChild.size(); i++){ // recursion
             BodyNodeDynamics* childNode = (BodyNodeDynamics*)mJointsChild[i]->getChildNode();
             
-            Matrix3d Rchild = childNode->mT.topLeftCorner(3,3); // rotation from parent to child
+            Matrix3d Rchild = childNode->mT.topLeftCorner<3,3>(); // rotation from parent to child
             Vector3d forceChild = Rchild*childNode->mExtForceBody; // convert external force of child to parent frame
             mExtForceBody += forceChild;
 
-            Vector3d rlchild = childNode->mT.col(3).head(3); // child com in parent frame
-            mExtTorqueBody += rlchild.cross(forceChild) + Rchild*childNode->mExtTorqueBody; // torque induced by linear force in child node, and the torque in child node
+            Vector3d rlchild = childNode->mT.topRightCorner<3,1>(); // child com in parent frame
+            mExtTorqueBody += rlchild.cross(forceChild);
+            mExtTorqueBody.noalias() += Rchild * childNode->mExtTorqueBody; // torque induced by linear force in child node, and the torque in child node
         }
    
         // convert mExtForceBody and mExtTorqueBody from cartesian space to generalized coordinates (_extForce)
@@ -491,7 +483,7 @@ namespace dynamics{
         Joint* joint = getParentJoint();
         if( joint->getJointType() == Joint::J_UNKNOWN || joint->getJointType() == Joint::J_TRANS) return;
 
-        Matrix3d Ri = getLocalTransform().topLeftCorner(3,3);
+        Matrix3d Ri = getLocalTransform().topLeftCorner<3,3>();
         if( _isTorque ){
             VectorXd torque = mJwJoint.transpose()*Ri*_cForce;
             int firstRotDof = joint->getFirstRotDofIndex();
@@ -500,7 +492,7 @@ namespace dynamics{
         }else{
             if(joint->getNumDofsTrans()>0){
                 assert(joint->getNumDofsTrans()==3); // assume translational dofs are always for all three
-                _gForce.segment(joint->getFirstTransDofIndex(), 3) += Ri*_cForce;
+                _gForce.segment(joint->getFirstTransDofIndex(), 3).noalias() += Ri * _cForce;
             }
         }
     }
@@ -526,7 +518,6 @@ namespace dynamics{
     }
 
     void BodyNodeDynamics::aggregateMass(Eigen::MatrixXd &_M){
-        if(mVizShape==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             for(int j=0; j<getNumDependentDofs(); j++){
                 _M(mDependentDofs[i], mDependentDofs[j]) += mM(i, j);
@@ -546,7 +537,6 @@ namespace dynamics{
         }
     }
     void BodyNodeDynamics::aggregateGravity(Eigen::VectorXd &_G){
-        if(mVizShape==NULL) return;
         for(int i=0; i<getNumDependentDofs(); i++){
             _G[mDependentDofs[i]] += mG[i];
         }
@@ -582,7 +572,7 @@ namespace dynamics{
 
     Vector3d BodyNodeDynamics::evalAngMomentum(Vector3d _pivot) {
         Vector3d d = getWorldCOM() - _pivot;
-        Matrix3d Inew = mIc + mMass * (d.dot(d) * MatrixXd::Identity(3, 3) - d * d.transpose());
+        Matrix3d Inew = mIc + mMass * (d.dot(d) * Matrix3d::Identity() - d * d.transpose());
         //        evalOmega();
         //        cout << mOmega << endl;
         return Inew * mOmega;

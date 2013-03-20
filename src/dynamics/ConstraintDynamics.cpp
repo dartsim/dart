@@ -52,14 +52,14 @@ namespace dynamics {
             mConstraints[i]->updateDynamics();
             mJGlobal.block(i * 3, 0, 3, nDofs) = mConstraints[i]->getJ();
             mJDotGlobal.block(i * 3, 0, 3, nDofs) = mConstraints[i]->getJDot();
-            mCGlobal.segment(i * 3, 3) = mConstraints[i]->getC();
-            mCDotGlobal.segment(i * 3, 3) = mConstraints[i]->getCDot();
+            mCGlobal.segment<3>(i * 3) = mConstraints[i]->getC();
+            mCDotGlobal.segment<3>(i * 3) = mConstraints[i]->getCDot();
         }
             
         MatrixXd A = mJGlobal * mSkel->getInvMassMatrix() * mJGlobal.transpose();
         VectorXd b = -mJDotGlobal * qDot - mJGlobal * _qddot - mCGlobal * ks - mCDotGlobal * kd;
         VectorXd lambda = A.inverse() * b;
-        mConstrForce = mJGlobal.transpose() * lambda;
+        mConstrForce.noalias() = mJGlobal.transpose() * lambda;
     }
 } // namespace dynamics
 
