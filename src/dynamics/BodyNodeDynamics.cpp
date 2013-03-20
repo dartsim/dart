@@ -150,7 +150,7 @@ namespace dynamics{
             mOmegaDotBody.noalias() = RjointT * (nodeParent->mOmegaDotBody + omegaDotJoint + nodeParent->mOmegaBody.cross(omegaJoint));
             mVelBody = mOmegaBody.cross(cl);
             mVelBody.noalias() += RjointT * (nodeParent->mVelBody + nodeParent->mOmegaBody.cross(rl-clparent));
-            mVelDotBody = mOmegaDotBody.cross(cl);
+            mVelDotBody = mOmegaDotBody.cross(cl) + mOmegaBody.cross(mOmegaBody.cross(cl));
             mVelDotBody.noalias() += RjointT * (nodeParent->mVelDotBody + nodeParent->mOmegaDotBody.cross(rl-clparent) + nodeParent->mOmegaBody.cross(nodeParent->mOmegaBody.cross(rl-clparent)));
         }
         // base case: root
