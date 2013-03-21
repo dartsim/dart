@@ -142,7 +142,7 @@ namespace dynamics{
         mQdot = _qdot;
 
         if(_calcMInv) {
-            mMInv = mM.inverse();
+            mMInv = mM.ldlt().solve(MatrixXd::Identity(getNumDofs(), getNumDofs()));
         }
         
         clearExternalForces();

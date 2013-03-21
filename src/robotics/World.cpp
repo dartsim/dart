@@ -224,7 +224,7 @@ namespace robotics {
             continue;
         int start = mIndices[i] * 2;
         int size = getSkeleton(i)->getNumDofs();
-        VectorXd qddot = getSkeleton(i)->getMassMatrix().fullPivHouseholderQr().solve(
+        VectorXd qddot = getSkeleton(i)->getMassMatrix().ldlt().solve(
             - getSkeleton(i)->getCombinedVector() + getSkeleton(i)->getExternalForces()
             + mCollisionHandle->getConstraintForce(i) + getSkeleton(i)->getInternalForces());
 
