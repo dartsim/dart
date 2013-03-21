@@ -77,7 +77,6 @@ namespace dynamics {
         void initialize();
         void destroy();
         
-        void updateMassMat();
         void updateTauStar();
 
         void fillMatrices();
@@ -111,7 +110,6 @@ namespace dynamics {
         int mNumDir; // number of basis directions
 
         // Cached (aggregated) mass/tau matrices
-        Eigen::MatrixXd mMInv;
         Eigen::VectorXd mTauStar;
         Eigen::MatrixXd mN;
         Eigen::MatrixXd mB;

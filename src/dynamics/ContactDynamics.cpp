@@ -80,7 +80,6 @@ namespace dynamics {
                     mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
             }
 
-            mMInv = MatrixXd::Zero(rows, cols);
             mTauStar = VectorXd::Zero(rows);
 
             // Initialize the index vector:
@@ -124,21 +123,7 @@ namespace dynamics {
             }
         }
 
-        void ContactDynamics::updateMassMat() {
-            int startRow = 0;
-            int startCol = 0;
-            for (int i = 0; i < getNumSkels(); i++) {
-                if (mSkels[i]->getImmobileState())
-                    continue;
-                MatrixXd skelMassInv = mSkels[i]->getInvMassMatrix();
-                mMInv.block(startRow, startCol, skelMassInv.rows(), skelMassInv.cols()) = skelMassInv;
-                startRow+= skelMassInv.rows();
-                startCol+= skelMassInv.cols();
-            }
-        }
-
         void ContactDynamics::fillMatrices() {
-            updateMassMat();
             updateTauStar();
 
             updateNBMatrices();
@@ -146,15 +131,27 @@ namespace dynamics {
             //        updateBasisMatrix();
 
             MatrixXd E = getContactMatrix();
-            MatrixXd mu = getMuMatrix();
 
-            // Construct the intermediary blocks.
-            MatrixXd nTmInv = mN.transpose() * mMInv;
-            MatrixXd bTmInv = mB.transpose() * mMInv;
-
-            // Construct
             int c = getNumContacts();
             int cd = c * mNumDir;
+
+            // Construct the intermediary blocks.
+            // nTmInv = mN.transpose() * MInv
+            // bTmInv = mB.transpose() * MInv
+            // Where MInv is the imaginary diagonal block matrix that combines the inverted mass matrices of all skeletons.
+            // Muliplying each block independently is more efficient that multiplyting the whole MInv matrix.
+            MatrixXd nTmInv(c, getNumTotalDofs());
+            MatrixXd bTmInv(cd, getNumTotalDofs());
+            for (int i = 0; i < getNumSkels(); i++) {
+               if (mSkels[i]->getImmobileState())
+                   continue;
+               const MatrixXd skelMInv = mSkels[i]->getInvMassMatrix();
+               const int skelNumDofs = mSkels[i]->getNumDofs();
+               nTmInv.middleCols(mIndices[i], skelNumDofs).noalias() = mN.transpose().middleCols(mIndices[i], skelNumDofs) * skelMInv;
+               bTmInv.middleCols(mIndices[i], skelNumDofs).noalias() = mB.transpose().middleCols(mIndices[i], skelNumDofs) * skelMInv;
+            }
+
+            // Construct
             int dimA = c * (2 + mNumDir); // dimension of A is c + cd + c
             mA.resize(dimA, dimA);
             mA.topLeftCorner(c, c).noalias() = nTmInv * mN;
@@ -164,7 +161,7 @@ namespace dynamics {
             //        mA.block(c, c + cd, cd, c) = E * (mDt * mDt);
             mA.block(c, c + cd, cd, c) = E;
             //        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
-            mA.bottomLeftCorner(c, c) = mu; // Note: mu is a diagonal matrix, but we also set the surrounding zeros
+            mA.bottomLeftCorner(c, c) = getMuMatrix(); // Note: mu is a diagonal matrix, but we also set the surrounding zeros
             //        mA.block(c + cd, c, c, cd) = -E.transpose() * (mDt * mDt);
             mA.block(c + cd, c, c, cd) = -E.transpose();
             mA.topRightCorner(c, c).setZero();
