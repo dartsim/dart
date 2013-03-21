@@ -158,11 +158,11 @@ namespace utils {
         //Vector4d x(_x(0), _x(1), _x(2), 1.0);
         //Vector4d y = _W * x;
         //return Vector3d(y(0), y(1), y(2));
-        return _W.topLeftCorner(3,3)*_x + _W.col(3).head(3);
+        return _W.topLeftCorner<3,3>() * _x + _W.topRightCorner<3,1>();
     }
 
     inline Vector3d xformHomDir(const Matrix4d& _W, const Vector3d& _v) { ///< homogeneous transformation of the vector _v treated as a direction: last value 0
-        return _W.topLeftCorner(3,3)*_v;
+        return _W.topLeftCorner<3,3>() * _v;
     }
 
     inline Matrix3d makeSkewSymmetric(const Vector3d& v){

@@ -226,7 +226,8 @@ namespace dynamics {
 
             for (int i = 0; i < c; i++) {
                 ContactPoint& contact = mCollisionChecker->getContact(i);
-                contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
+                contact.force.noalias() = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir);
+                contact.force += contact.normal * f_n[i];
             }
         }
 
@@ -352,10 +353,10 @@ namespace dynamics {
             int iter = (mNumDir % 2 == 0) ? mNumDir / 2 : mNumDir;
             for (int i = 0; i < iter; i++) {
                 Vector3d basis = Quaterniond(AngleAxisd(i * angle, n)) * tangent;
-                T.block(0, i, 3, 1) = basis;
+                T.block<3,1>(0, i) = basis;
 
                 if (mNumDir % 2 == 0) {
-                    T.block(0, i + iter, 3, 1) = -basis;
+                    T.block<3,1>(0, i + iter) = -basis;
                 }
             }
             return T;

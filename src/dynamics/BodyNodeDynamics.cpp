@@ -107,15 +107,6 @@ namespace dynamics{
         // update the local transform mT and the world transform mW
         BodyNode::updateTransform();
 
-        mVelBody.setZero();
-        mVelDotBody.setZero();
-        mOmegaBody.setZero();
-        mOmegaDotBody.setZero();
-
-        if(_computeJacobians){
-            mJv.setZero();
-            mJw.setZero();
-        }
         mJwJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         mJwDotJoint = MatrixXd::Zero(3, mJointParent->getNumDofsRot());
         
@@ -175,6 +166,9 @@ namespace dynamics{
 
         // compute Jacobians iteratively
         if(_computeJacobians){
+            mJv.setZero();
+            mJw.setZero();
+
             // compute the Angular Jacobian first - use it for Linear jacobian as well
             if(nodeParent){
                 mJw.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJw;
@@ -485,14 +479,14 @@ namespace dynamics{
 
         Matrix3d Ri = getLocalTransform().topLeftCorner<3,3>();
         if( _isTorque ){
-            VectorXd torque = mJwJoint.transpose()*Ri*_cForce;
+            VectorXd torque = mJwJoint.transpose() * (Ri * _cForce);
             int firstRotDof = joint->getFirstRotDofIndex();
             for(int i=0; i<joint->getNumDofsRot(); i++)
                 _gForce(firstRotDof+i) += torque(i);
         }else{
             if(joint->getNumDofsTrans()>0){
                 assert(joint->getNumDofsTrans()==3); // assume translational dofs are always for all three
-                _gForce.segment(joint->getFirstTransDofIndex(), 3).noalias() += Ri * _cForce;
+                _gForce.segment<3>(joint->getFirstTransDofIndex()).noalias() += Ri * _cForce;
             }
         }
     }
@@ -548,7 +542,7 @@ namespace dynamics{
         if( !_isOffsetLocal )
             pos = utils::xformHom( getWorldInvTransform(), _offset );
         if( !_isForceLocal )
-            force = mW.topLeftCorner(3,3).transpose()*_force;
+            force.noalias() = mW.topLeftCorner<3,3>().transpose() * _force;
         mContacts.push_back( pair<Vector3d, Vector3d>(pos, force) );
     }
 

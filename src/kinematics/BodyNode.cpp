@@ -157,7 +157,7 @@ namespace kinematics {
         for (int i = 0; i < numParentDofs; i++) {
             assert(mNodeParent);    // should always have a parent if enters this for loop
             if(i<mNumRootTrans) 
-                mWq[i] = mNodeParent->mWq.at(i); // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
+                mWq[i] = mNodeParent->mWq[i]; // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
             else 
                 mWq[i].noalias() = mNodeParent->mWq[i] * mT;
         }
