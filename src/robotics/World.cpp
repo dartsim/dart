@@ -248,7 +248,7 @@ void World::setState(const VectorXd &newState) {
             getSkeleton(i)->setPose(pose, true, false);
         } else {
             // need to update first derivatives for collision
-            getSkeleton(i)->setPose(pose, false, true);
+            getSkeleton(i)->setPose(pose, false, false);
             getSkeleton(i)->computeDynamics(mGravity, qDot, true);
         }
     }
