@@ -93,13 +93,11 @@ namespace dynamics{
     }
 
     // after the computation, mM, mCg, and mFext are ready for use
-    void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics){
+    void SkeletonDynamics::computeDynamics(const Vector3d &_gravity, const VectorXd &_qdot, bool _useInvDynamics, bool _calcMInv){
         mM.setZero();
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
-        mQdot.setZero();
         mCvec.setZero();
         mG.setZero();
-        mCg.setZero();
         if (_useInvDynamics) {
             mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
             for (int i = 0; i < getNumNodes(); i++) {
@@ -109,11 +107,8 @@ namespace dynamics{
                 nodei->aggregateMass(mM);
             }
 
-            mMInv = mM.inverse();
-
             evalExternalForces( true );
             //mCg -= mFext;
-            mQdot = _qdot;
         } else {
             // init the data structures for the dynamics
             for(int i=0; i<getNumNodes(); i++){
@@ -140,13 +135,15 @@ namespace dynamics{
                 nodei->aggregateGravity(mG);
             }
 
-            mMInv = mM.inverse();
-
             evalExternalForces( false );
             //mCg = mC*_qdot + mG;
-            mQdot = _qdot;
             mCg = mCvec + mG; //- mFext;
         } 
+        mQdot = _qdot;
+
+        if(_calcMInv) {
+            mMInv = mM.inverse();
+        }
         
         clearExternalForces();
     }
