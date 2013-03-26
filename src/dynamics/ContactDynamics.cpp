@@ -154,10 +154,12 @@ namespace dynamics {
             // Construct
             int dimA = c * (2 + mNumDir); // dimension of A is c + cd + c
             mA.resize(dimA, dimA);
-            mA.topLeftCorner(c, c).noalias() = nTmInv * mN;
+            mA.topLeftCorner(c, c).triangularView<Upper>() = nTmInv * mN;
+            mA.topLeftCorner(c, c).triangularView<StrictlyLower>() = mA.topLeftCorner(c, c).transpose();
             mA.block(0, c, c, cd).noalias() = nTmInv * mB;
-            mA.block(c, 0, cd, c).noalias() = bTmInv * mN;
-            mA.block(c, c, cd, cd).noalias() = bTmInv * mB;
+            mA.block(c, 0, cd, c) = mA.block(0, c, c, cd).transpose(); // since B^T * Minv * N = (N^T * Minv * B)^T
+            mA.block(c, c, cd, cd).triangularView<Upper>() = bTmInv * mB;
+            mA.block(c, c, cd, cd).triangularView<StrictlyLower>() = mA.block(c, c, cd, cd).transpose();
             //        mA.block(c, c + cd, cd, c) = E * (mDt * mDt);
             mA.block(c, c + cd, cd, c) = E;
             //        mA.block(c + cd, 0, c, c) = mu * (mDt * mDt);
