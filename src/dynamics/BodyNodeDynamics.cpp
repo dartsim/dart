@@ -67,6 +67,7 @@ namespace dynamics{
         if(mInitializedInvDyn) return;
         BodyNode::init();
 
+        mM = MatrixXd::Zero(getNumDependentDofs(), getNumDependentDofs());
         mJwJoint = MatrixXd::Zero(3, getNumDependentDofs());
         mJwDotJoint = MatrixXd::Zero(3, getNumDependentDofs());
         mVelBody.setZero();
