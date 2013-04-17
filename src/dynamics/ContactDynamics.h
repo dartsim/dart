@@ -84,7 +84,7 @@ namespace dynamics {
         void applySolution();
 
         inline int getNumSkels() const { return mSkels.size(); }
-        inline int getNumTotalDofs() const { return mIndices[mIndices.size() - 1]; }
+        inline int getNumTotalDofs() const { return mIndices.back(); }
         inline int getNumContactDirections() const { return mNumDir; }
 
         Eigen::MatrixXd getJacobian(kinematics::BodyNode* node, const Eigen::Vector3d& p);

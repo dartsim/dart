@@ -28,6 +28,7 @@ namespace dynamics {
         void ContactDynamics::applyContactForces() {
             if (getNumTotalDofs() == 0)
                 return;
+
             mCollisionChecker->clearAllContacts();
             mCollisionChecker->checkCollision(true, true);
 
@@ -52,8 +53,6 @@ namespace dynamics {
 
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
-            int rows = 0;
-            int cols = 0;
             for (int i = 0; i < getNumSkels(); i++) {
                 SkeletonDynamics* skel = mSkels[i];
                 int nNodes = skel->getNumNodes();
@@ -66,12 +65,6 @@ namespace dynamics {
                         mBodyIndexToSkelIndex.push_back(i);
                     }
                 }
-
-                if (!mSkels[i]->getImmobileState()) {
-                    // Immobile objets have mass of infinity
-                    rows += skel->getMassMatrix().rows();
-                    cols += skel->getMassMatrix().cols();
-                }
             }
 
             mConstrForces.resize(getNumSkels());
@@ -80,27 +73,16 @@ namespace dynamics {
                     mConstrForces[i] = VectorXd::Zero(mSkels[i]->getNumDofs());
             }
 
-            mTauStar = VectorXd::Zero(rows);
-
-            // Initialize the index vector:
-            // If we have 3 skeletons,
-            // mIndices[0] = 0
-            // mIndices[1] = nDof0
-            // mIndices[2] = nDof0 + nDof1
-            // mIndices[3] = nDof0 + nDof1 + nDof2
-
             mIndices.clear();
             int sumNDofs = 0;
             mIndices.push_back(sumNDofs);
-
             for (int i = 0; i < getNumSkels(); i++) {
-                SkeletonDynamics* skel = mSkels[i];
-                int nDofs = skel->getNumDofs();
-                if (mSkels[i]->getImmobileState())
-                    nDofs = 0;
-                sumNDofs += nDofs;
+                if (!mSkels[i]->getImmobileState())
+                    sumNDofs += mSkels[i]->getNumDofs();
                 mIndices.push_back(sumNDofs);
             }
+
+            mTauStar = VectorXd::Zero(getNumTotalDofs());
         }
 
         void ContactDynamics::destroy() {
@@ -143,8 +125,10 @@ namespace dynamics {
             MatrixXd nTmInv(c, getNumTotalDofs());
             MatrixXd bTmInv(cd, getNumTotalDofs());
             for (int i = 0; i < getNumSkels(); i++) {
-               if (mSkels[i]->getImmobileState())
+               if (mSkels[i]->getImmobileState()) {
+                   assert(mIndices[i] == mIndices[i+1]); // If the user sets a skeleton to be immobile without reinitializing ContactDynamics, this assertion will fail.
                    continue;
+               }
                const MatrixXd skelMInv = mSkels[i]->getInvMassMatrix();
                const int skelNumDofs = mSkels[i]->getNumDofs();
                nTmInv.middleCols(mIndices[i], skelNumDofs).noalias() = mN.transpose().middleCols(mIndices[i], skelNumDofs) * skelMInv;
