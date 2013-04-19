@@ -1,9 +1,11 @@
-[![Build Status](https://travis-ci.org/golems/dart.png?branch=master)](https://travis-ci.org/golems/dart)
+[![Build
+Status](https://travis-ci.org/dartsim/dart.png?branch=master)](https://travis-ci.org/dartsim/dart)
 
 DART Simulator
 ===============
 
-Dart can be used with Windows 7, Linux Ubuntu and Mac OS 10.7 or greater. Installation instructions can be found on [Dart wiki](https://github.com/golems/dart/wiki).
+Dart can be used with Windows 7, Linux Ubuntu and Mac OS 10.7 or greater.
+Installation instructions can be found on [Dart wiki](https://github.com/dartsim/dart/wiki).
 
 Docs
 ----
@@ -14,7 +16,7 @@ yourself with `make docs`.
 Issues
 -------
 
-Before reporting any issues visit our [FAQ section](https://github.com/golems/dart/wiki/Faq). For checking on current bugs or report a bug visit our [Issues page](https://github.com/golems/dart/issues?state=open).
+Before reporting any issues visit our [FAQ section](https://github.com/dartsim/dart/wiki/Faq). For checking on current bugs or report a bug visit our [Issues page](https://github.com/dartsim/dart/issues?state=open).
 
 Contributing
 ------------
