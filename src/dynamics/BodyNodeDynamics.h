@@ -58,6 +58,17 @@ namespace dynamics{
         void initInverseDynamics();  ///< initialize data structures for linear inverse dynamics computation
         void initDynamics();  ///< initialize data structures for non-recursive dynamics computation
 
+        /// @brief Set gravity mode.
+        /// @param[in] _gravityMode
+        /// TODO: Not implemented yet!
+        void setGravityMode(bool _gravityMode) { mGravityMode = _gravityMode; }
+
+        /// @brief If the gravity mode is false, this body node does not
+        /// being affected by gravity.
+        /// @return
+        ////// TODO: Not implemented yet!
+        bool getGravityMode(void) const { return mGravityMode; }
+
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
         Eigen::MatrixXd mJwDotJoint;    ///< Time derivative of the Jacobian matrix for the parent joint
@@ -112,7 +123,7 @@ namespace dynamics{
         Eigen::Vector3d evalLinMomentum();
         Eigen::Vector3d evalAngMomentum(Eigen::Vector3d _pivot);
 
-        inline Eigen::MatrixXd getJvDeriv(int _qIndex) const { return mJvq[_qIndex]; };
+        inline Eigen::MatrixXd getJvDeriv(int _qIndex) const { return mJvq[_qIndex]; }
 
     protected:
 
@@ -136,6 +147,10 @@ namespace dynamics{
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacDotAng(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
 
+        /// @brief If the gravity mode is false, this body node does not
+        /// being affected by gravity.
+        /// TODO: Not implemented yet!
+        bool mGravityMode;
     };
 
 } // namespace dynamics

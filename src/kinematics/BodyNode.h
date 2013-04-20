@@ -109,6 +109,8 @@ namespace kinematics {
         void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
 
+        inline void setWorldTransform(const Eigen::Matrix4d& _W) { mW = _W; }
+
         inline Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
         inline Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
         inline Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent

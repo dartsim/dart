@@ -68,6 +68,7 @@ namespace dynamics {
         virtual ~ContactDynamics();
         void applyContactForces();
         void reset();
+        void addSkeleton(SkeletonDynamics* _newSkel);
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
         inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollisionChecker; }
         int getNumContacts() const;
