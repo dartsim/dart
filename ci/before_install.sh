@@ -3,7 +3,7 @@ before_install() {
   PROJECTS='tinyxml2 assimp flann libccd fcl'
   for REPO in $PROJECTS
   do
-    git clone git://github.com/golems/$REPO.git
+    git clone git://github.com/dartsim/$REPO.git
     (cd $REPO; cmake .; make && sudo make install)
   done
 }
