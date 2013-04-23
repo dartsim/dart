@@ -39,3 +39,4 @@ obj/
 *.so
 *.o
 *~
+/nbproject/

@@ -65,7 +65,6 @@ public:
     virtual ~World();
 
     /// @brief .
-    //
     void init();
 
     /// @brief

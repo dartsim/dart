@@ -51,6 +51,7 @@ using namespace std;
 using namespace Eigen;
 
 namespace kinematics {
+
     int BodyNode::msBodyNodeCount = 0;
   
     BodyNode::BodyNode(const char *_name) 
@@ -264,6 +265,13 @@ namespace kinematics {
         _ri->popMatrix();
 
     }
+
+//    void BodyNode::setLocalInertia2(double _Ixx, double _Iyy, double _Izz,
+//                                    double _Ixy, double _Ixz, double _Iyz) {
+//        mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
+//        mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
+//        mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
+//    }
 
     Eigen::Matrix4d BodyNode::getMassTensor() {
         const double halftrace = 0.5 * mI.trace(); // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes

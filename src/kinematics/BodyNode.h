@@ -77,7 +77,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include "utils/EigenHelper.h"
 #include "utils/Deprecated.h"
 
-namespace renderer { class RenderInterface; };
+namespace renderer { class RenderInterface; }
 
 namespace kinematics {
 #define MAX_NODE3D_NAME 128
@@ -147,6 +147,12 @@ namespace kinematics {
         inline void setMass(double _mass) { mMass = _mass; }
         inline double getMass() const { return mMass; }
 
+        inline void setLocalInertia(double _Ixx, double _Iyy, double _Izz,
+                                    double _Ixy, double _Ixz, double _Iyz) {
+            mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
+            mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
+            mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
+        }
         inline void setLocalInertia(const Eigen::Matrix3d& _inertia) { mI = _inertia; }
         inline Eigen::Matrix3d getLocalInertia() const { return mI; }
         inline Eigen::Matrix3d getWorldInertia() const { return mIc; }

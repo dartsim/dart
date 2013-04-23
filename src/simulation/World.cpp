@@ -48,7 +48,7 @@ namespace simulation {
 
 ////////////////////////////////////////////////////////////////////////////////
 World::World()
-    : mGravity(0, 0, 9.81),
+    : mGravity(0, 0, -9.81),
       mCollisionHandle(NULL),
       mTimeStep(0.001),
       mRunning(false),
@@ -112,7 +112,6 @@ bool World::updatePhysics() {
 
     // Calculate (q, qdot) by integrating with (qdot, qdotdot).
     mIntegrator.integrate(this, mTimeStep);
-
 
     // Calculate body node's
     dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;

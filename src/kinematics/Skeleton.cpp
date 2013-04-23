@@ -77,10 +77,12 @@ namespace kinematics {
         body->addMarker(_h);
     }
 
-    void Skeleton::addNode(BodyNode *_b) {
+    void Skeleton::addNode(BodyNode *_b, bool _addParentJoint) {
         mNodes.push_back(_b);
         _b->setSkelIndex(mNodes.size()-1);
-        addJoint(_b->getParentJoint());
+        // The parent joint possibly be null
+        if (_addParentJoint)
+            addJoint(_b->getParentJoint());
     }
 
     void Skeleton::addJoint(Joint *_j) {

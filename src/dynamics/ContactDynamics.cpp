@@ -16,8 +16,16 @@ using namespace collision_checking;
 using namespace utils;
 
 namespace dynamics {
-ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
-    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL) {
+
+ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels,
+                                 double _dt,
+                                 double _mu,
+                                 int _d)
+    : mSkels(_skels),
+      mDt(_dt),
+      mMu(_mu),
+      mNumDir(_d),
+      mCollisionChecker(NULL) {
     initialize();
 }
 
@@ -37,6 +45,7 @@ void ContactDynamics::applyContactForces() {
 
     if (mCollisionChecker->getNumContact() == 0)
         return;
+
     fillMatrices();
     solve();
     applySolution();
@@ -59,6 +68,13 @@ void ContactDynamics::initialize() {
 
         for (int j = 0; j < nNodes; j++) {
             kinematics::BodyNode* node = skel->getNode(j);
+
+            // If the collision shape of the node is NULL, then the node is
+            // uncollidable object. We don't care uncollidable object in
+            // ContactDynamics.
+            if (node->getCollisionShape() == NULL)
+                continue;
+
             if (node->getCollisionShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
             {
                 mCollisionChecker->addCollisionSkeletonNode(node);
@@ -94,6 +110,13 @@ void ContactDynamics::addSkeleton(SkeletonDynamics* _newSkel) {
 
     for (int j = 0; j < nNodes; j++) {
         kinematics::BodyNode* node = _newSkel->getNode(j);
+
+        // If the collision shape of the node is NULL, then the node is
+        // uncollidable object. We don't care uncollidable object in
+        // ContactDynamics.
+        if (node->getCollisionShape() == NULL)
+            continue;
+
         if (node->getCollisionShape()->getShapeType()
                 != kinematics::Shape::P_UNDEFINED) {
             mCollisionChecker->addCollisionSkeletonNode(node);
@@ -459,5 +482,4 @@ int ContactDynamics::getNumContacts() const {
     return mCollisionChecker->getNumContact();
 }
 
-
-}
+} // namespace dynamics

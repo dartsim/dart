@@ -43,11 +43,11 @@
 #include "kinematics/BodyNode.h"
 #include "utils/EigenHelper.h"
 
-namespace dynamics{
+namespace dynamics {
     /**
     @brief BodyNodeDynamics class represents a single node of the skeleton for dynamics
     */
-    class BodyNodeDynamics : public kinematics::BodyNode{
+    class BodyNodeDynamics : public kinematics::BodyNode {
     public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 

@@ -62,7 +62,7 @@ namespace kinematics {
 
         virtual BodyNode* createBodyNode(const char* const name = NULL);
         void addMarker(Marker *_h);
-        void addNode(BodyNode *_b);
+        void addNode(BodyNode *_b, bool _addParentJoint = true);
         void addJoint(Joint *_j);
         void addDof(Dof *_d);
         void addTransform(Transformation *_t);
