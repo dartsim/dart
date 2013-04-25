@@ -10,29 +10,26 @@ using namespace Eigen;
 using namespace utils;
 
 namespace dynamics {
-    PointConstraint::PointConstraint(SkeletonDynamics *_skel, BodyNodeDynamics *_body, Vector3d _offset, Vector3d _target, bool _approx, double _timestep) {
-        mSkel = _skel;
+    PointConstraint::PointConstraint(BodyNodeDynamics *_body, Vector3d _offset, Vector3d _target, int _skelIndex) {
         mBody = _body;
         mOffset = _offset;
         mTarget = _target;
-        mApproxJDot = _approx;
-        mTimestep = _timestep;
-        mJ = MatrixXd::Zero(3, mSkel->getNumDofs());
-        mPreJ = MatrixXd::Zero(3, mSkel->getNumDofs());
-        mJDot = MatrixXd::Zero(3, mSkel->getNumDofs());
+        mSkelIndex = _skelIndex;
+        mJ = MatrixXd::Zero(3, mBody->getSkel()->getNumDofs());
+        mNumRows = 3;
     }
 
     PointConstraint::~PointConstraint() {
     }
         
-    void PointConstraint::updateDynamics() {
-        mPreJ = mJ;
+    void PointConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
         getJacobian();
-        getJacobianDot();
+        SkeletonDynamics *skel = (SkeletonDynamics*)mBody->getSkel();
+        _J[mSkelIndex].block(_rowIndex, 0, 3, skel->getNumDofs()) = mJ;
         Vector3d worldP = xformHom(mBody->getWorldTransform(), mOffset);
-        VectorXd qDot = mSkel->getQDotVector();
-        mC = worldP - mTarget;
-        mCVel = mJ * qDot;
+        VectorXd qDot = skel->getQDotVector();
+        _C.segment(_rowIndex, 3) = worldP - mTarget;
+        _CDot.segment(_rowIndex, 3) = mJ * qDot;
     }
 
     void PointConstraint::getJacobian() {
@@ -40,25 +37,6 @@ namespace dynamics {
             int dofIndex = mBody->getDependentDof(i);
             VectorXd Jcol = xformHom(mBody->getDerivWorldTransform(i), mOffset);
             mJ.col(dofIndex) = Jcol;
-        }
-    }
-
-    void PointConstraint::getJacobianDot() {
-        if (mApproxJDot) {
-            mJDot = (mJ - mPreJ) / mTimestep;
-        } else {
-            int nLocalDof = mBody->getNumDependentDofs();
-            VectorXd qDot = mSkel->getQDotVector();
-            MatrixXd sum(MatrixXd::Zero(3, nLocalDof));
-            mBody->updateSecondDerivatives(mOffset);
-            for (int i = 0; i < nLocalDof; i++) {
-                int dofIndex = mBody->getDependentDof(i);
-                sum += mBody->getJvDeriv(i) * qDot[dofIndex];
-            }
-            for (int i = 0; i < nLocalDof; i++) {
-                int dofIndex = mBody->getDependentDof(i);
-                mJDot.col(dofIndex) = sum.col(i);
-            }
         }
     }
 } // namespace dynamics

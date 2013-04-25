@@ -45,23 +45,20 @@ namespace dynamics {
     class SkeletonDynamics;
     class PointConstraint : public Constraint {
     public:
-        PointConstraint(SkeletonDynamics *_skel, BodyNodeDynamics *_body, Eigen::Vector3d _offset, Eigen::Vector3d _target, bool _approx = false, double _timestep = 0.0);
+        PointConstraint(BodyNodeDynamics *_body, Eigen::Vector3d _offset, Eigen::Vector3d _target, int _skelIndex);
         virtual ~PointConstraint();
 
-        virtual void updateDynamics();
+        virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
 
     private:
         void getJacobian();
-        void getJacobianDot();
 
-        Eigen::MatrixXd mPreJ;
-        SkeletonDynamics *mSkel;
         BodyNodeDynamics* mBody;
         Eigen::Vector3d mOffset;
         Eigen::Vector3d mTarget;
-        bool mApproxJDot;
-        double mTimestep;
+        Eigen::MatrixXd mJ;
 
+        int mSkelIndex;
     };
 } // namespace dynamics
 

@@ -45,19 +45,18 @@ void MyWindow::initDyn()
     }
     mSkels[0]->setImmobileState(true);
 
-    mCollisionHandle = new ContactDynamics(mSkels, mTimeStep);
-    mController = new Controller(mSkels[1], mCollisionHandle, mTimeStep);
+    mController = new Controller(mSkels[1], mConstraintHandle, mTimeStep);
      
     for (int i = 0; i < mSkels[1]->getNumDofs(); i++)
         mController->setDesiredDof(i, mController->getSkel()->getDof(i)->getValue());
 
     // initialize constraint on the hand
-    mConstraintHandle = new ConstraintDynamics(mSkels[1]);
+    mConstraintHandle = new ConstraintDynamics(mSkels, mTimeStep);
     BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_left");
-    PointConstraint *point1 = new PointConstraint(mSkels[1], bd, bd->getLocalCOM(), bd->getWorldCOM(), true, mTimeStep);
+    PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 1);
     mConstraintHandle->addConstraint(point1);
     bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_right");
-    PointConstraint *point2 = new PointConstraint(mSkels[1], bd, bd->getLocalCOM(), bd->getWorldCOM(), true, mTimeStep);
+    PointConstraint *point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 1);
     mConstraintHandle->addConstraint(point2);
 }
 
@@ -81,8 +80,8 @@ VectorXd MyWindow::evalDeriv() {
             mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
         }
     }
-    mCollisionHandle->applyContactForces();
-    mController->setConstrForces(mCollisionHandle->getConstraintForce(1));
+    mConstraintHandle->computeConstraintForces();
+    mController->setConstrForces(mConstraintHandle->getTotalConstraintForce(1));
 
     VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
     for (unsigned int i = 0; i < mSkels.size(); i++) {
@@ -90,12 +89,8 @@ VectorXd MyWindow::evalDeriv() {
             continue;
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
-        //VectorXd b = -mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces();
-        //        VectorXd qddot = mSkels[i]->getCholesky().solve(b);
 
-        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mCollisionHandle->getConstraintForce(i) + mSkels[i]->getInternalForces());
-        mConstraintHandle->applyConstraintForces(qddot);
-        qddot += mSkels[i]->getInvMassMatrix() * mConstraintHandle->getConstraintForce();
+        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mConstraintHandle->getTotalConstraintForce(i) + mSkels[i]->getInternalForces());
         mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
         deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // semi-implicit
         deriv.segment(start + size, size) = qddot;
@@ -103,7 +98,7 @@ VectorXd MyWindow::evalDeriv() {
     return deriv;
 }
 
-void MyWindow::setState(const VectorXd &newState) {
+void MyWindow::setState(const VectorXd & newState) {
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         int start = mIndices[i] * 2;
         int size = mDofs[i].size();
@@ -124,7 +119,7 @@ void MyWindow::displayTimer(int _val)
     }else if (mSim) {
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode("fullbody1_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode("fullbody1_root"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             //  tSim.startTimer();
             mController->computeTorques(mDofs[1], mDofVels[1]);
             mSkels[1]->setInternalForces(mController->getTorques());
@@ -186,10 +181,10 @@ void MyWindow::draw()
         }
     }else{
         if (mShowMarkers) {
-            for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-                Vector3d  v = mCollisionHandle->getCollisionChecker()->getContact(k).point;
-                Vector3d n = mCollisionHandle->getCollisionChecker()->getContact(k).normal / 10.0;
-                Vector3d f = mCollisionHandle->getCollisionChecker()->getContact(k).force / 100.0;
+            for (int k = 0; k < mConstraintHandle->getCollisionChecker()->getNumContact(); k++) {
+                Vector3d  v = mConstraintHandle->getCollisionChecker()->getContact(k).point;
+                Vector3d n = mConstraintHandle->getCollisionChecker()->getContact(k).normal / 10.0;
+                Vector3d f = mConstraintHandle->getCollisionChecker()->getContact(k).force / 100.0;
 
                 mRI->setPenColor(Vector3d(0.2, 0.2, 0.8));
                 glBegin(GL_LINES);
@@ -202,6 +197,26 @@ void MyWindow::draw()
                 mRI->popMatrix();
             }
         }
+    }
+
+    // draw hand hold
+    mRI->setPenColor(Vector3d(0.2, 0.2, 0.2));
+    mRI->pushMatrix();
+    glTranslated(0.0, -0.06, -0.52);
+    mRI->drawEllipsoid(Vector3d(0.1, 0.1, 0.1));
+    mRI->popMatrix();
+    mRI->setPenColor(Vector3d(0.2, 0.2, 0.2));
+    mRI->pushMatrix();
+    glTranslated(0.0, -0.06, 0.52);
+    mRI->drawEllipsoid(Vector3d(0.1, 0.1, 0.1));
+    mRI->popMatrix();
+
+    // draw arrow
+    if (mImpulseDuration > 0) {
+        Vector3d poa = xformHom(mSkels[1]->getNode("fullbody1_root")->getWorldTransform(), Vector3d(0.0, 0.0, 0.0));
+        Vector3d start = poa - mForce / 10.0;
+        double len = mForce.norm() / 10.0;
+        drawArrow3D(start, mForce, len, 0.05, 0.1);
     }
 
     for (unsigned int i = 0; i < mSkels.size(); i++)
@@ -242,8 +257,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
                     mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
                 }
             }
-            mCollisionHandle->applyContactForces();
-            mController->setConstrForces(mCollisionHandle->getConstraintForce(1));
+            mConstraintHandle->computeConstraintForces();
+            mController->setConstrForces(mConstraintHandle->getTotalConstraintForce(1));
             mIntegrator.integrate(this, mTimeStep);
             mSimFrame++;
             bake();
@@ -305,14 +320,14 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 void MyWindow::bake()
 {
-    int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
+    int nContact = mConstraintHandle->getCollisionChecker()->getNumContact();
     VectorXd state(mIndices.back() + 6 * nContact);
     for (unsigned int i = 0; i < mSkels.size(); i++)
         state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
-        state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
-        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
+        state.segment(begin, 3) = mConstraintHandle->getCollisionChecker()->getContact(i).point;
+        state.segment(begin + 3, 3) = mConstraintHandle->getCollisionChecker()->getContact(i).force;
     }
 
     mBakedStates.push_back(state);
