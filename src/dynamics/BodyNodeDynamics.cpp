@@ -39,7 +39,7 @@
 #include "kinematics/Joint.h"
 #include "kinematics/Shape.h"
 #include "kinematics/Transformation.h"
-#include "utils/UtilsMath.h"
+//#include "utils/UtilsMath.h"
 #include <iostream>
 
 using namespace std;
@@ -47,17 +47,19 @@ using namespace Eigen;
 using namespace kinematics;
 
 namespace dynamics{
-    BodyNodeDynamics::BodyNodeDynamics( const char *_name ) : BodyNode(_name){
-        mJwJoint = MatrixXd::Zero(3,0);
-        mJwDotJoint = MatrixXd::Zero(3,0);
-        mVelBody = Vector3d::Zero();
-        mVelDotBody = Vector3d::Zero();
-        mOmegaBody = Vector3d::Zero();
-        mOmegaDotBody = Vector3d::Zero();
-        mExtForceBody = Vector3d::Zero();
-        mExtTorqueBody = Vector3d::Zero();
-        mInitializedInvDyn = false;
-        mInitializedNonRecursiveDyn = false;
+    BodyNodeDynamics::BodyNodeDynamics( const char *_name )
+        : BodyNode(_name),
+          mJwJoint(MatrixXd::Zero(3,0)),
+          mJwDotJoint(MatrixXd::Zero(3,0)),
+          mVelBody(Vector3d::Zero()),
+          mVelDotBody(Vector3d::Zero()),
+          mOmegaBody(Vector3d::Zero()),
+          mOmegaDotBody(Vector3d::Zero()),
+          mExtForceBody(Vector3d::Zero()),
+          mExtTorqueBody(Vector3d::Zero()),
+          mInitializedInvDyn(false),
+          mInitializedNonRecursiveDyn(false),
+          mGravityMode(true) {
     }
 
     BodyNodeDynamics::~BodyNodeDynamics(){
@@ -103,6 +105,48 @@ namespace dynamics{
 
         mInitializedNonRecursiveDyn = true;
     }
+
+//    utils::Vector6d BodyNodeDynamics::getWorldGenVel() {
+//        utils::Vector6d worldGenVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        worldGenVel = utils::Ad(mW, bodyGenVel);
+
+//        return worldGenVel;
+//    }
+
+//    Eigen::Vector3d BodyNodeDynamics::getWorldAngularVel() {
+//        Eigen::Vector3d worldAngularVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        utils::Vector6d worldGenVel
+//                = utils::Ad(mW, bodyGenVel);
+
+//        worldAngularVel = worldGenVel.segment(0,3);
+
+//        return worldAngularVel;
+//    }
+
+//    Eigen::Vector3d BodyNodeDynamics::getWorldLinearVel() {
+//        Eigen::Vector3d worldLinearVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        utils::Vector6d worldGenVel
+//                = utils::Ad(mW, bodyGenVel);
+
+//        worldLinearVel = worldGenVel.segment(3,3);
+
+//        return worldLinearVel;
+//    }
 
     void BodyNodeDynamics::computeInvDynVelocities( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
         // update the local transform mT and the world transform mW
@@ -195,19 +239,26 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::computeInvDynForces( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _withExternalForces ) {
+    void BodyNodeDynamics::computeInvDynForces(const Vector3d& /*_gravity*/,
+                                               const VectorXd* /*_qdot*/,
+                                               const VectorXd* /*_qdotdot*/,
+                                               bool _withExternalForces) {
         mForceJointBody.setZero();
         mTorqueJointBody.setZero();
         Vector3d cl = mCOMLocal;
 
         // base case: end effectors
-        if(mVizShape!=NULL){
+        if(mVizShape != NULL) {
             mForceJointBody = mMass*mVelDotBody;
-            mTorqueJointBody = cl.cross(mMass*mVelDotBody) + mOmegaBody.cross(mI*mOmegaBody) + mI*mOmegaDotBody;
+            mTorqueJointBody = cl.cross(mMass*mVelDotBody)
+                               + mOmegaBody.cross(mI*mOmegaBody)
+                               + mI*mOmegaDotBody;
         }
+
         // general case
-        for(unsigned int j=0; j<mJointsChild.size(); j++){
-            BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(mJointsChild[j]->getChildNode());
+        for(unsigned int j = 0; j < mJointsChild.size(); j++) {
+            BodyNodeDynamics *bchild = static_cast<BodyNodeDynamics*>(
+                                           mJointsChild[j]->getChildNode());
             Matrix3d Rchild = bchild->mT.topLeftCorner(3,3);
             Vector3d forceChildNode = Rchild*bchild->mForceJointBody;
             mForceJointBody += forceChildNode;
@@ -215,7 +266,7 @@ namespace dynamics{
             mTorqueJointBody += (rlchild).cross(forceChildNode) + Rchild*bchild->mTorqueJointBody;
         }
 
-        if( _withExternalForces ){
+        if( _withExternalForces ) {
             int nContacts = mContacts.size();
             for(int i=0; i<nContacts; i++){
                 mExtForceBody += mContacts.at(i).second;
@@ -532,8 +583,8 @@ namespace dynamics{
             _Cvec[mDependentDofs[i]] += mCvec[i];
         }
     }
-    void BodyNodeDynamics::aggregateGravity(Eigen::VectorXd &_G){
-        for(int i=0; i<getNumDependentDofs(); i++){
+    void BodyNodeDynamics::aggregateGravity(Eigen::VectorXd &_G) {
+        for(int i=0; i<getNumDependentDofs(); i++) {
             _G[mDependentDofs[i]] += mG[i];
         }
     }

@@ -77,7 +77,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include "utils/EigenHelper.h"
 #include "utils/Deprecated.h"
 
-namespace renderer { class RenderInterface; };
+namespace renderer { class RenderInterface; }
 
 namespace kinematics {
 #define MAX_NODE3D_NAME 128
@@ -109,6 +109,8 @@ namespace kinematics {
         void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
 
+        inline void setWorldTransform(const Eigen::Matrix4d& _W) { mW = _W; }
+
         inline Eigen::Matrix4d getWorldTransform() const { return mW; } ///< Transformation from the local coordinates of this body node to the world coordinates
         inline Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); } ///< Transformation from the world coordinates to the local coordinates of this body node
         inline Eigen::Matrix4d getLocalTransform() const { return mT; } ///< Transformation from the local coordinates of this body node to the local coordinates of its parent
@@ -128,6 +130,7 @@ namespace kinematics {
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
         void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the markers
 
+        inline void setName(const char* _name) { strcpy(mName, _name); }
         inline char* getName() { return mName; }
 
         inline void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }
@@ -145,6 +148,12 @@ namespace kinematics {
         inline void setMass(double _mass) { mMass = _mass; }
         inline double getMass() const { return mMass; }
 
+        inline void setLocalInertia(double _Ixx, double _Iyy, double _Izz,
+                                    double _Ixy, double _Ixz, double _Iyz) {
+            mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
+            mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
+            mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
+        }
         inline void setLocalInertia(const Eigen::Matrix3d& _inertia) { mI = _inertia; }
         inline Eigen::Matrix3d getLocalInertia() const { return mI; }
         inline Eigen::Matrix3d getWorldInertia() const { return mIc; }

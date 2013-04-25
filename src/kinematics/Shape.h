@@ -60,7 +60,7 @@ namespace kinematics {
         };
 
         Shape(ShapeType _type = P_UNDEFINED);
-        virtual ~Shape() {};
+        virtual ~Shape() {}
 
         inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
         inline Eigen::Vector3d getColor() const { return mColor; }

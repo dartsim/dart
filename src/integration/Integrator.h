@@ -46,7 +46,7 @@ namespace integration {
     class IntegrableSystem {
     public:
         virtual Eigen::VectorXd getState() = 0;
-        virtual void setState(const Eigen::VectorXd&) = 0;
+        virtual void setState(const Eigen::VectorXd& _state) = 0;
         virtual Eigen::VectorXd evalDeriv() = 0;
     };
 
