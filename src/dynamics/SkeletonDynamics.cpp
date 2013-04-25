@@ -60,7 +60,11 @@ namespace dynamics{
         mG = VectorXd::Zero(getNumDofs());
         mCg = VectorXd::Zero(getNumDofs());
         mFint = VectorXd::Zero(getNumDofs());
+        mFintMin = VectorXd::Zero(getNumDofs());
+        mFintMax = VectorXd::Zero(getNumDofs());
         mFext = VectorXd::Zero(getNumDofs());
+
+        //dtdbg << "SkeletonDynamics is initialized.\n";
     }
 
     kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
@@ -68,21 +72,45 @@ namespace dynamics{
     }
 
     // computes the C term and gravity, excluding external forces
-    VectorXd SkeletonDynamics::computeInverseDynamicsLinear( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians, bool _withExternalForces ) {
-        // FORWARD PASS: compute the velocities recursively - from root to end effectors
-        for (int i = 0; i < getNumNodes(); i++) { // increasing order ensures that the parent joints/nodes are evaluated before the child
-            BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
+    VectorXd SkeletonDynamics::computeInverseDynamicsLinear(
+            const Vector3d &_gravity,
+            const VectorXd *_qdot,
+            const VectorXd *_qdotdot,
+            bool _computeJacobians,
+            bool _withExternalForces)
+    {
+        // FORWARD PASS: compute the velocities recursively - from root to end
+        // effectors
+        for (int i = 0; i < getNumNodes(); i++)
+        {
+            // increasing order ensures that the parent joints/nodes are
+            // evaluated before the child.
+            BodyNodeDynamics *nodei
+                    = static_cast<BodyNodeDynamics*>(getNode(i));
             // init the node in the first pass
             nodei->initInverseDynamics();
             // compute the velocities
-            nodei->computeInvDynVelocities(_gravity, _qdot, _qdotdot, _computeJacobians);
+            nodei->computeInvDynVelocities(_gravity,
+                                           _qdot,
+                                           _qdotdot,
+                                           _computeJacobians);
         }
 
         VectorXd torqueGen = VectorXd::Zero(getNumDofs());
-        // BACKWARD PASS: compute the forces recursively -  from end effectors to root
-        for (int i = getNumNodes() - 1; i >= 0; i--) { // decreasing order ensures that the parent joints/nodes are evaluated after the child
-            BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
-            nodei->computeInvDynForces(_gravity, _qdot, _qdotdot, _withExternalForces); // compute joint forces in cartesian space
+        // BACKWARD PASS: compute the forces recursively -  from end effectors
+        // to root
+        for (int i = getNumNodes() - 1; i >= 0; i--)
+        {
+            // decreasing order ensures that the parent joints/nodes are
+            // evaluated after the child
+            BodyNodeDynamics *nodei
+                    = static_cast<BodyNodeDynamics*>(getNode(i));
+
+            // compute joint forces in cartesian space
+            nodei->computeInvDynForces(_gravity,
+                                       _qdot,
+                                       _qdotdot,
+                                       _withExternalForces);
             nodei->getGeneralized(torqueGen); // convert joint forces to generalized coordinates
         }
 
@@ -98,7 +126,8 @@ namespace dynamics{
         //mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
         mCvec.setZero();
         mG.setZero();
-        if (_useInvDynamics) {
+        if (_useInvDynamics)
+        {
             mCg = computeInverseDynamicsLinear(_gravity, &_qdot, NULL, true, false);
             for (int i = 0; i < getNumNodes(); i++) {
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
@@ -109,7 +138,9 @@ namespace dynamics{
 
             evalExternalForces( true );
             //mCg -= mFext;
-        } else {
+        }
+        else
+        {
             // init the data structures for the dynamics
             for(int i=0; i<getNumNodes(); i++){
                 BodyNodeDynamics *nodei = static_cast<BodyNodeDynamics*>(getNode(i));
@@ -141,7 +172,8 @@ namespace dynamics{
         } 
         mQdot = _qdot;
 
-        if(_calcMInv) {
+        if(_calcMInv)
+        {
             mMInv = mM.ldlt().solve(MatrixXd::Identity(getNumDofs(), getNumDofs()));
         }
         

@@ -42,12 +42,13 @@
 #include <Eigen/Dense>
 #include "kinematics/BodyNode.h"
 #include "utils/EigenHelper.h"
+#include "utils/UtilsMath.h"
 
-namespace dynamics{
+namespace dynamics {
     /**
     @brief BodyNodeDynamics class represents a single node of the skeleton for dynamics
     */
-    class BodyNodeDynamics : public kinematics::BodyNode{
+    class BodyNodeDynamics : public kinematics::BodyNode {
     public:      
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
 
@@ -57,6 +58,34 @@ namespace dynamics{
         // Following functions called automatically by the skeleton: computeInverseDynamicsLinear and computeDynamics respectively
         void initInverseDynamics();  ///< initialize data structures for linear inverse dynamics computation
         void initDynamics();  ///< initialize data structures for non-recursive dynamics computation
+
+        /// @brief Set gravity mode.
+        /// @param[in] _gravityMode
+        /// TODO: Not implemented yet!
+        void setGravityMode(bool _gravityMode) { mGravityMode = _gravityMode; }
+
+        /// @brief If the gravity mode is false, this body node does not
+        /// being affected by gravity.
+        /// @return
+        /// TODO: Not implemented yet!
+        bool getGravityMode(void) const { return mGravityMode; }
+
+//        /// @brief Get generalized velocity (angular velocity + linear velocity)
+//        /// represented in world frame.
+//        /// @return Generalized velocity represented in world frame.
+//        utils::Vector6d getWorldGenVel();
+
+//        /// @brief Get angular velocity represented in world frame.
+//        /// @return Angular velocity represented in world frame.
+//        /// @note This function calculate linear velocity also but returns
+//        /// angular velocity only.
+//        Eigen::Vector3d getWorldAngularVel();
+
+//        /// @brief Get linear velocity represented in world frame.
+//        /// @return Linear velocity represented in world frame.
+//        /// @note This function calculate angular velocity also but returns
+//        /// linear velocity only.
+//        Eigen::Vector3d getWorldLinearVel();
 
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
@@ -74,7 +103,7 @@ namespace dynamics{
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _withExternalForces );   ///< computes the forces in the second pass of the algorithm
 
         // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
-        void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
+        void updateSecondDerivatives();  ///< Update the second derivatives of the transformations
         void updateSecondDerivatives(Eigen::Vector3d _offset);  ///< Update the second derivatives of the transformations
 
         Eigen::Vector3d mVel; ///< Linear velocity in the world frame
@@ -112,7 +141,7 @@ namespace dynamics{
         Eigen::Vector3d evalLinMomentum();
         Eigen::Vector3d evalAngMomentum(Eigen::Vector3d _pivot);
 
-        inline Eigen::MatrixXd getJvDeriv(int _qIndex) const { return mJvq[_qIndex]; };
+        inline Eigen::MatrixXd getJvDeriv(int _qIndex) const { return mJvq[_qIndex]; }
 
     protected:
 
@@ -136,6 +165,10 @@ namespace dynamics{
         void evalJacDotLin(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the linear Jacobian of this body node (num cols == num dependent dofs)
         void evalJacDotAng(const Eigen::VectorXd &_qDotSkel); ///< Evaluate time derivative of the angular Jacobian of this body node (num cols == num dependent dofs)
 
+        /// @brief If the gravity mode is false, this body node does not
+        /// being affected by gravity.
+        /// TODO: Not implemented yet!
+        bool mGravityMode;
     };
 
 } // namespace dynamics

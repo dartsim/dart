@@ -70,6 +70,22 @@ namespace kinematics {
             _ri->rotate(mAxis, mDofs[0]->getValue() * 180.0 / M_PI);
     }
 
+    void TrfmRotateAxis::setAxis(const Eigen::Vector3d& _axis)
+    {
+        mAxis = _axis;
+
+        // precompute coefficients to speed up calculation of the transformation
+        const double x = _axis[0];
+        const double y = _axis[1];
+        const double z = _axis[2];
+        mCosCoefficients << 0.0,   -z,    y,
+                              z,  0.0,   -x,
+                             -y,    x,  0.0;  // cross product matrix of _axis
+        mSinCoefficients << x * x - 1.0,  x * y,        x * z,
+                            y * x,        y * y - 1.0,  y * z,
+                            z * x,        z * y,        z * z - 1.0;  // tensor product of _axis with itself minus identity
+    }
+
     void TrfmRotateAxis::computeTransform() {
         mTransform = ((Affine3d)AngleAxis<double>(mDofs[0]->getValue(), mAxis)).matrix();
     }

@@ -54,6 +54,9 @@ using namespace Eigen;
 
 namespace utils {
 
+    // TODO: Is here right place?
+    typedef Matrix<double, 6, 1> Vector6d;
+
     // a cross b = (CR*a) dot b
     /* const Matd CR(2,2,0.0,-1.0,1.0,0.0); */
     const Matrix2d CR( (Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished() );
@@ -197,6 +200,60 @@ namespace utils {
         ret[1] = m(2, 0) - m(0, 2);
         ret[2] = m(0, 1) - m(1, 0);
         return ret;
+    }
+
+    /// @brief Transform the reference frame of the generalized velocity
+    /// (angular velocity + linear velocity) from frame 2 to frame 1.
+    /// @param[in] _T12 Transformation matrix from frame 1 to frame 2.
+    /// @param[in] _vel2 Generalized velocity represented in frame 2.
+    /// @return Generalized velocity represented in frame 1.
+    inline Vector6d Ad(Eigen::Matrix4d& _T12, const Vector6d& _vel2) {
+        // _T12 = | R p |, vel1 = | w1 |, _vel2 = | w2 |
+        //        | 0 1 |         | v1 |          | v2 |
+        //
+        // vel1 = Ad(_T12, _vel2)
+        //      = Ad(_T12) * _vel2
+        //      = | R    0 | * | w2 |
+        //        | [p]R R | * | v2 |
+        //      = | Rw2         |
+        //        | [p]Rw2 + Rv2 |
+        // w1 = R * w2
+        // v1 = [p]R * w2 + R * v2
+
+        Vector6d vel1;
+
+        vel1(0) = _T12(0,0) * _vel2(0) + _T12(0,1) * _vel2(1) + _T12(0,2) * _vel2(2);
+        vel1(1) = _T12(1,0) * _vel2(0) + _T12(1,1) * _vel2(1) + _T12(1,2) * _vel2(2);
+        vel1(2) = _T12(2,0) * _vel2(0) + _T12(2,1) * _vel2(1) + _T12(2,2) * _vel2(2);
+        vel1(3) = _T12(1,3) * vel1(2) - _T12(2,3) * vel1(1)
+                + _T12(0,0) * _vel2(3) + _T12(0,1) * _vel2(4) + _T12(0,2) * _vel2(5);
+        vel1(4) = _T12(2,3) * vel1(0) - _T12(0,3) * vel1(2)
+                + _T12(1,0) * _vel2(3) + _T12(1,1) * _vel2(4) + _T12(1,2) * _vel2(5);
+        vel1(5) = _T12(0,3) * vel1(1) - _T12(1,3) * vel1(0)
+                + _T12(2,0) * _vel2(3) + _T12(2,1) * _vel2(4) + _T12(2,2) * _vel2(5);
+
+        return vel1;
+    }
+
+    /// @brief Transform the reference frame of the generalized velocity
+    /// (angular velocity + linear velocity) from frame 1 to frame 2.
+    /// @param[in] _T12 Transformation matrix from frame 1 to frame 2.
+    /// @param[in] _vel1 Generalized velocity represented in frame 1.
+    /// @return Generalized velocity represented in frame 2.
+    inline Vector6d InvAd(Eigen::Matrix4d& _T12, const Vector6d& _vel1) {
+        Vector6d vel2;
+
+		double _tmp[3] = { _vel1(3) + _vel1(1) * _T12(2,3) - _vel1(2) * _T12(1,3),
+						   _vel1(4) + _vel1(2) * _T12(0,3) - _vel1(0) * _T12(2,3),
+						   _vel1(5) + _vel1(0) * _T12(1,3) - _vel1(1) * _T12(0,3) };
+		vel2(0) = _T12(0,0) * _vel1(0) + _T12(1,0) * _vel1(1) + _T12(2,0) * _vel1(2);
+		vel2(1) = _T12(0,1) * _vel1(0) + _T12(1,1) * _vel1(1) + _T12(2,1) * _vel1(2);
+		vel2(2) = _T12(0,2) * _vel1(0) + _T12(1,2) * _vel1(1) + _T12(2,2) * _vel1(2);
+		vel2(3) = _T12(0,0) * _tmp[0] + _T12(1,0) * _tmp[1] + _T12(2,0) * _tmp[2];
+		vel2(4) = _T12(0,1) * _tmp[0] + _T12(1,1) * _tmp[1] + _T12(2,1) * _tmp[2];
+		vel2(5) = _T12(0,2) * _tmp[0] + _T12(1,2) * _tmp[1] + _T12(2,2) * _tmp[2];
+
+        return vel2;
     }
 
 } // namespace utils
