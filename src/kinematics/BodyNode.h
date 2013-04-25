@@ -130,6 +130,7 @@ namespace kinematics {
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true, int _depth = 0) const ;    ///< Render the entire subtree rooted at this body node
         void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const ;    ///< Render the markers
 
+        inline void setName(const char* _name) { strcpy(mName, _name); }
         inline char* getName() { return mName; }
 
         inline void setLocalCOM(const Eigen::Vector3d& _off) { mCOMLocal = _off; }

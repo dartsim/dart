@@ -225,5 +225,36 @@ namespace kinematics {
         mRoot->drawMarkers(_ri, _color, _useDefaultColor);
     }
 
+    BodyNode* Skeleton::getBodyNode(const char* const _name) const
+    {
+        BodyNode* result = NULL;
+
+        for (unsigned int i = 0; i < mNodes.size(); ++i)
+        {
+            if (mNodes[i]->getName() == _name)
+            {
+                result = mNodes[i];
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    Joint* Skeleton::getJoint(const char* const _name) const
+    {
+        Joint* result = NULL;
+
+        for (unsigned int i = 0; i < mJoints.size(); ++i)
+        {
+            if (mJoints[i]->getName() == _name)
+            {
+                result = mJoints[i];
+                break;
+            }
+        }
+
+        return result;
+    }
 
 } // namespace kinematics

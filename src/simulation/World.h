@@ -46,9 +46,11 @@
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
 #include "dynamics/SkeletonDynamics.h"
+//#include "utils/Console.h"
 
 namespace dynamics {
 class ContactDynamics;
+class BodyNodeDynamics;
 } // namespace dynamics
 
 namespace simulation {
@@ -64,54 +66,184 @@ public:
     /// @brief Destructor.
     virtual ~World();
 
-    /// @brief .
+    /// @brief Initialize the world.
     void init();
 
-    /// @brief
-    // TODO: not implemented yet.
+    /// @brief Finalize the world.
     void fini();
 
-    /// @breif
-    // TODO: not implemented yet.
+    /// @breif Reset the world.
+    ///
+    /// Set Dofs and DofVels as zero (or initial value) and update all
+    /// transformations and velocities of each links.
     void reset();
-
-    /// @brief
-    void prestep();
 
     /// @brief Calculate the dynamics and integrate the world with it.
     /// @return true if the physics is updated, false if not.
     bool updatePhysics();
 
+    /// @brief Calculate the dynamics and integrate the world with it.
+    /// @param[in] _timeStep The time step.
+    /// @return true if the physics is updated, false if not.
+    bool updatePhysics(double _timeStep);
+
     /// @brief .
     /// @param[in] _gravity
-    void setGravity(const Eigen::Vector3d& _gravity);
+    inline void setGravity(const Eigen::Vector3d& _gravity)
+    {
+        mGravity = _gravity;
+    }
+
+    /// @brief .
+    inline const Eigen::Vector3d& getGravity(void) const
+    {
+        return mGravity;
+    }
 
     /// @brief .
     /// @param[in] _timeStep
-    void setTimeStep(double _timeStep);
-
-    /// @brief .
-    const Eigen::Vector3d& getGravity(void) const;
+    inline void setTimeStep(double _timeStep)
+    {
+        mTimeStep = _timeStep;
+    }
 
     /// @brief Get the time step.
-    double getTimeStep(void) const;
+    inline double getTimeStep(void) const
+    {
+        return mTimeStep;
+    }
 
-    /// @brief .
+    /// @brief
+    inline void resetTime()
+    {
+        mTime = 0.0;
+    }
+
+    /// @brief Get the time step.
+    /// @return Time step.
+    inline double getTime(void) const
+    {
+        return mTime;
+    }
+
+    /// @brief Get the indexed skeleton.
+    /// @param[in] _index
+    inline dynamics::SkeletonDynamics* getSkel(int _index) const
+    {
+        return mSkels[_index];
+    }
+
+    /// @brief Find body node by name.
+    /// @param[in] The name of body node looking for.
+    /// @return Searched body node. If the skeleton does not have a body
+    /// node with _name, then return NULL.
+    inline dynamics::SkeletonDynamics* getSkel(const char* const _name) const
+    {
+        dynamics::SkeletonDynamics* result = NULL;
+
+        for (unsigned int i = 0; i < mSkels.size(); ++i)
+        {
+            if (mSkels[i]->getName() == _name)
+            {
+                result = mSkels[i];
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /// \brief Find body node dynamics by name.
+    /// \param[in] _name The name of body node dynamics looking for.
+    /// \return Searched body node dynamics. If the skeleton does not have a
+    /// body node dynamics with _name, then return NULL.
+    dynamics::BodyNodeDynamics* getBodyNodeDynamics(
+            const char* const _name) const;
+
+    /// \brief Find joint by name.
+    /// \param[in] _name The name of joint looking for.
+    /// \return Searched joint. If the skeleton does not have a joint with
+    ///_name, then return NULL.
+    kinematics::Joint* getJoint(const char* const _name) const;
+
+    /// @brief Get the number of skeletons.
+    inline int getNumSkels() const
+    {
+        return mSkels.size();
+    }
+
+    /// @brief Get the number of simulated frames.
+    inline int getSimFrames() const
+    {
+        return mFrame;
+    }
+
+    /// @brief Get the collision handler.
+    inline dynamics::ContactDynamics* getCollisionHandle() const
+    {
+        return mCollisionHandle;
+    }
+
+    /// @brief Get the dofs for the indexed skeleton.
+    /// @param[in] _index
+    inline Eigen::VectorXd getDofs(int _index) const
+    {
+        return mDofs[_index];
+    }
+
+    /// @brief Set the dofs for the indexed skeleton.
+    /// @param[in] _index
+    inline void setDofs(Eigen::VectorXd& _dofs, int _index)
+    {
+        mDofs[_index] = _dofs;
+    }
+
+    /// @brief Get the dof velocity for the indexed skeleton.
+    /// @param[in] _index
+    inline Eigen::VectorXd getDofVels(int _index) const
+    {
+        return mDofVels[_index];
+    }
+
+    /// @brief Set the dof velocity for the indexed skeleton.
+    /// @param[in] _index
+    inline void setDofVels(Eigen::VectorXd& _dofVels, int _index)
+    {
+        mDofVels[_index] = _dofVels;
+    }
+
+    /// @brief Get the dof index for the indexed skeleton.
+    /// @param[in] _index
+    inline int getIndex(int _index) const
+    {
+        return mIndices[_index];
+    }
+
+    /// @brief Get the simulating flag.
+    inline bool isSimulating() const
+    {
+        return mSimulating;
+    }
+
+    /// @brief Get the dof index for the indexed skeleton.
+    /// @param[in] _index
+    inline void setSimulatingFlag(int _flag)
+    {
+        mSimulating = _flag;
+    }
+
+    // Documentation inherited.
     virtual Eigen::VectorXd getState();
 
-    /// @brief .
-    /// @param[in] _state
+    // Documentation inherited.
     virtual void setState(const Eigen::VectorXd& _state);
 
-    /// @brief .
+    // Documentation inherited.
     virtual Eigen::VectorXd evalDeriv();
 
     /// @brief .
     /// @param[in] _skel
     bool addSkeleton(dynamics::SkeletonDynamics* _skel);
-
-    /// @brief .
-    std::vector<Eigen::VectorXd> getDofs() {return mDofs;}
 
 protected:
     /// @brief Skeletones in this world.
@@ -141,9 +273,12 @@ protected:
     /// @brief The time step.
     double mTimeStep;
 
-    /// @brief The running indicator.
+    /// @brief
+    double mTime;
+
+    /// @brief The indicator of simulation in progress.
     /// (true: running, false: not running)
-    bool mRunning;
+    bool mSimulating;
 
     /// @brief The simulated frame number.
     int mFrame;

@@ -39,7 +39,7 @@
 #include "kinematics/Joint.h"
 #include "kinematics/Shape.h"
 #include "kinematics/Transformation.h"
-#include "utils/UtilsMath.h"
+//#include "utils/UtilsMath.h"
 #include <iostream>
 
 using namespace std;
@@ -105,6 +105,48 @@ namespace dynamics{
 
         mInitializedNonRecursiveDyn = true;
     }
+
+//    utils::Vector6d BodyNodeDynamics::getWorldGenVel() {
+//        utils::Vector6d worldGenVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        worldGenVel = utils::Ad(mW, bodyGenVel);
+
+//        return worldGenVel;
+//    }
+
+//    Eigen::Vector3d BodyNodeDynamics::getWorldAngularVel() {
+//        Eigen::Vector3d worldAngularVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        utils::Vector6d worldGenVel
+//                = utils::Ad(mW, bodyGenVel);
+
+//        worldAngularVel = worldGenVel.segment(0,3);
+
+//        return worldAngularVel;
+//    }
+
+//    Eigen::Vector3d BodyNodeDynamics::getWorldLinearVel() {
+//        Eigen::Vector3d worldLinearVel;
+
+//        utils::Vector6d bodyGenVel;
+//        bodyGenVel.segment(0,3) = mOmegaBody;
+//        bodyGenVel.segment(3,3) = mVelBody;
+
+//        utils::Vector6d worldGenVel
+//                = utils::Ad(mW, bodyGenVel);
+
+//        worldLinearVel = worldGenVel.segment(3,3);
+
+//        return worldLinearVel;
+//    }
 
     void BodyNodeDynamics::computeInvDynVelocities( const Vector3d &_gravity, const VectorXd *_qdot, const VectorXd *_qdotdot, bool _computeJacobians ) {
         // update the local transform mT and the world transform mW

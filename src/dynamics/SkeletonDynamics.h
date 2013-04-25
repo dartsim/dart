@@ -41,6 +41,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "kinematics/Skeleton.h"
+//#include "utils/Console.h"
 
 namespace dynamics{
 
@@ -76,7 +77,26 @@ namespace dynamics{
         Eigen::VectorXd getQDotVector() const { return mQdot; }
         bool getImmobileState() const { return mImmobile; }
         void setImmobileState(bool _s) { mImmobile = _s; }
-        void setInternalForces(Eigen::VectorXd _q) { mFint = _q; } 
+        void setInternalForces(Eigen::VectorXd _forces)
+        {
+            for (int i = 0; i < mFint.size(); ++i)
+            {
+                if (mFintMin(i) > _forces(i))
+                {
+                    mFint(i) = mFintMin(i);
+                }
+                if (mFintMax(i) < _forces(i))
+                {
+                    mFint(i) = mFintMax(i);
+                }
+                else
+                    mFint(i) = _forces(i);
+            }
+        }
+        void setMinInternalForces(Eigen::VectorXd _minForces) { mFintMin = _minForces; }
+        Eigen::VectorXd getMinInternalForces() const { return mFintMin; }
+        void setMaxInternalForces(Eigen::VectorXd _maxForces) { mFintMax = _maxForces; }
+        Eigen::VectorXd getMaxInternalForces() const { return mFintMax; }
 
     protected:
         Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -87,6 +107,8 @@ namespace dynamics{
         Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
         Eigen::VectorXd mFext; ///< external forces vector for the skeleton
         Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
+        Eigen::VectorXd mFintMin; ///< minimum internal forces
+        Eigen::VectorXd mFintMax; ///< maximum internal forces
         Eigen::VectorXd mQdot; ///< the current qdot
 
         bool mImmobile; ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct

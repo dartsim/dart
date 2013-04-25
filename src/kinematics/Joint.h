@@ -107,10 +107,8 @@ namespace kinematics {
 
 		inline JointType getJointType(){return mType;}
 
-        inline const char *getName(){return mName;}
-        inline void setName(const char *_name){
-            strcpy(mName, _name);
-        }
+        inline const char *getName() { return mName; }
+        inline void setName(const char *_name){ strcpy(mName, _name); }
         
         void updateStaticTransform();
 

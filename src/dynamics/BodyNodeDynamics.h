@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 #include "kinematics/BodyNode.h"
 #include "utils/EigenHelper.h"
+#include "utils/UtilsMath.h"
 
 namespace dynamics {
     /**
@@ -66,8 +67,25 @@ namespace dynamics {
         /// @brief If the gravity mode is false, this body node does not
         /// being affected by gravity.
         /// @return
-        ////// TODO: Not implemented yet!
+        /// TODO: Not implemented yet!
         bool getGravityMode(void) const { return mGravityMode; }
+
+//        /// @brief Get generalized velocity (angular velocity + linear velocity)
+//        /// represented in world frame.
+//        /// @return Generalized velocity represented in world frame.
+//        utils::Vector6d getWorldGenVel();
+
+//        /// @brief Get angular velocity represented in world frame.
+//        /// @return Angular velocity represented in world frame.
+//        /// @note This function calculate linear velocity also but returns
+//        /// angular velocity only.
+//        Eigen::Vector3d getWorldAngularVel();
+
+//        /// @brief Get linear velocity represented in world frame.
+//        /// @return Linear velocity represented in world frame.
+//        /// @note This function calculate angular velocity also but returns
+//        /// linear velocity only.
+//        Eigen::Vector3d getWorldLinearVel();
 
         // Inverse Dynamics
         Eigen::MatrixXd mJwJoint;    ///< Jacobian matrix for the parent joint
@@ -85,7 +103,7 @@ namespace dynamics {
         void computeInvDynForces( const Eigen::Vector3d &_gravity, const Eigen::VectorXd *_qdot, const Eigen::VectorXd *_qdotdot, bool _withExternalForces );   ///< computes the forces in the second pass of the algorithm
 
         // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
-        void updateSecondDerivatives();  ///< Update the second derivatives of the transformations 
+        void updateSecondDerivatives();  ///< Update the second derivatives of the transformations
         void updateSecondDerivatives(Eigen::Vector3d _offset);  ///< Update the second derivatives of the transformations
 
         Eigen::Vector3d mVel; ///< Linear velocity in the world frame
