@@ -1,10 +1,13 @@
-/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+/* Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  * Date: 03/25/2013
  *
- * Georgia Tech Graphics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,7 +53,7 @@ namespace simulation {
 World::World()
     : mGravity(0, 0, -9.81),
       mCollisionHandle(NULL),
-//      mTimeStep(0.001),
+      mTimeStep(0.001),
       mTime(0.0),
       mSimulating(false),
       mFrame(0),
@@ -92,15 +95,15 @@ void World::init()
         }
         mDofVels[i].setZero();
     }
-
-//    for (unsigned int i = 0; i < mSkels.size(); i++)
-//    {
-//        mSkels[i]->initDynamics();
+    
+    for (unsigned int i = 0; i < mSkels.size(); i++)
+        {
+            mSkels[i]->initDynamics();
 
 //        // Set flags to skip transformation and first-derivatives
 //        // updates.
-//        //mSkels[i]->setPose(mDofs[i], false, false);
-//    }
+            mSkels[i]->setPose(mDofs[i], false, false);
+        }
 
     // create a collision handler
     mCollisionHandle = new dynamics::ContactDynamics(mSkels, mTimeStep);
@@ -172,7 +175,7 @@ dynamics::BodyNodeDynamics* World::getBodyNodeDynamics(
         }
     }
 
-    result;
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,7 +194,7 @@ kinematics::Joint* World::getJoint(const char* const _name) const
         }
     }
 
-    result;
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,6 +204,7 @@ bool World::updatePhysics()
 
     // Calculate (q, qdot) by integrating with (qdot, qdotdot).
     mIntegrator.integrate(this, mTimeStep);
+    mFrame++;
 
     // Calculate body node's velocities represented in world frame.
     dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
