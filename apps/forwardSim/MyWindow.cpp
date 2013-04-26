@@ -6,13 +6,13 @@ using namespace Eigen;
 void MyWindow::timeStepping()
 {
     VectorXd damping = computeDamping();
-    mWorld->getSkel(0)->setInternalForces(damping);
-    mWorld->updatePhysics();
+    mWorld->getSkeleton(0)->setInternalForces(damping);
+    mWorld->step();
 }
 
 VectorXd MyWindow::computeDamping()
 {
-    int nDof = mWorld->getSkel(0)->getNumDofs();
+    int nDof = mWorld->getSkeleton(0)->getNumDofs();
     VectorXd damping = VectorXd::Zero(nDof);
     // add damping to each joint; twist-dof has smaller damping
     damping = -0.01 * mWorld->getDofVels(0);

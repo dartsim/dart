@@ -64,6 +64,12 @@ namespace dynamics{
         mFintMax = VectorXd::Zero(getNumDofs());
         mFext = VectorXd::Zero(getNumDofs());
 
+        for (unsigned int i = 0; i < mFint.size(); ++i)
+        {
+            mFintMin[i] = -std::numeric_limits<double>::infinity();
+            mFintMax[i] = std::numeric_limits<double>::infinity();
+        }
+
         //dtdbg << "SkeletonDynamics is initialized.\n";
     }
 
@@ -337,6 +343,23 @@ namespace dynamics{
         int nNodes = getNumNodes();
         for (int i = 0; i < nNodes; i++)
             ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
+    }
+
+    void SkeletonDynamics::setInternalForces(const Eigen::VectorXd& _forces)
+    {
+        for (int i = 0; i < mFint.size(); ++i)
+        {
+            if (mFintMin(i) > _forces(i))
+            {
+                mFint(i) = mFintMin(i);
+            }
+            if (mFintMax(i) < _forces(i))
+            {
+                mFint(i) = mFintMax(i);
+            }
+            else
+                mFint(i) = _forces(i);
+        }
     }
 
 }   // namespace dynamics
