@@ -22,13 +22,13 @@ int main(int argc, char* argv[])
     Vector3d gravity(0.0, -9.81, 0.0);
     myWorld->setGravity(gravity);
     myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());
-    int nDof =  myWorld->getSkel(0)->getNumDofs();
+    int nDof =  myWorld->getSkeleton(0)->getNumDofs();
     VectorXd initPose(nDof);
     for (int i = 0; i < nDof; i++)
         initPose[i] = random(-0.5, 0.5);
-    myWorld->getSkel(0)->setPose(initPose);
+    myWorld->getSkeleton(0)->setPose(initPose);
     myWorld->setTimeStep(1.0/2000);
-    myWorld->init();
+    myWorld->initialize();
 
     // create a window and link it to the world
     MyWindow window;

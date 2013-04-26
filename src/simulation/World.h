@@ -132,7 +132,7 @@ public:
 
     /// @brief Get the indexed skeleton.
     /// @param[in] _index
-    inline dynamics::SkeletonDynamics* getSkeletonDynamics(int _index) const
+    inline dynamics::SkeletonDynamics* getSkeleton(int _index) const
     {
         return mSkels[_index];
     }
@@ -141,7 +141,7 @@ public:
     /// @param[in] The name of body node looking for.
     /// @return Searched body node. If the skeleton does not have a body
     /// node with _name, then return NULL.
-    inline dynamics::SkeletonDynamics* getSkeletonDynamics(const char* const _name) const
+    inline dynamics::SkeletonDynamics* getSkeleton(const char* const _name) const
     {
         dynamics::SkeletonDynamics* result = NULL;
 
@@ -234,7 +234,7 @@ public:
 
     /// @brief .
     /// @param[in] _skel
-    bool addSkeletonDynamics(dynamics::SkeletonDynamics* _skel);
+    bool addSkeleton(dynamics::SkeletonDynamics* _skel);
 
 protected:
     /// @brief Skeletones in this world.
