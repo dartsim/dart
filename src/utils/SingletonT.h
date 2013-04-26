@@ -4,27 +4,30 @@
 template <class T>
 class SingletonT
 {
-  /// \brief Get an instance of the singleton
-  public: static T *Instance()
-          {
-            return &getInstance();
-          }
+public:
+    /// \brief Get an instance of the singleton
+    static T *Instance()
+    {
+        return &getInstance();
+    }
 
-  /// \brief Constructor
-  protected: SingletonT() {}
+protected:
+    /// \brief Constructor
+    SingletonT() {}
 
-  /// \brief Destructor
-  protected: virtual ~SingletonT() {}
+    /// \brief Destructor
+    virtual ~SingletonT() {}
 
-  /// \brief Creates and returns a reference to the unique (static) instance
-  private: static T &getInstance()
-           {
-             static T t;
-             return static_cast<T &>(t);
-           }
+private:
+    /// \brief Creates and returns a reference to the unique (static) instance
+    static T &getInstance()
+    {
+        static T t;
+        return static_cast<T &>(t);
+    }
 
-  /// \brief A reference to the unique instance
-  private: static T &myself;
+    /// \brief A reference to the unique instance
+    static T &myself;
 };
 
 /// \brief Initialization of the singleton instance.
