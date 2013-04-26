@@ -45,8 +45,6 @@
 using namespace Eigen;
 using namespace kinematics;
 
-#define DART_INF 1e9;
-
 namespace dynamics{
     SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(), mImmobile(false){
     }
@@ -68,8 +66,8 @@ namespace dynamics{
 
         for (unsigned int i = 0; i < mFint.size(); ++i)
         {
-            mFintMin[i] = -DART_INF;
-            mFintMax[i] = DART_INF;
+            mFintMin[i] = -std::numeric_limits<double>::infinity();
+            mFintMax[i] = std::numeric_limits<double>::infinity();
         }
 
         //dtdbg << "SkeletonDynamics is initialized.\n";
