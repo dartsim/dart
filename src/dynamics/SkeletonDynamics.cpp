@@ -45,6 +45,8 @@
 using namespace Eigen;
 using namespace kinematics;
 
+#define DART_INF 1e9;
+
 namespace dynamics{
     SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(), mImmobile(false){
     }
@@ -63,6 +65,12 @@ namespace dynamics{
         mFintMin = VectorXd::Zero(getNumDofs());
         mFintMax = VectorXd::Zero(getNumDofs());
         mFext = VectorXd::Zero(getNumDofs());
+
+        for (unsigned int i = 0; i < mFint.size(); ++i)
+        {
+            mFintMin[i] = -DART_INF;
+            mFintMax[i] = DART_INF;
+        }
 
         //dtdbg << "SkeletonDynamics is initialized.\n";
     }
@@ -337,6 +345,23 @@ namespace dynamics{
         int nNodes = getNumNodes();
         for (int i = 0; i < nNodes; i++)
             ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
+    }
+
+    void SkeletonDynamics::setInternalForces(const Eigen::VectorXd& _forces)
+    {
+        for (int i = 0; i < mFint.size(); ++i)
+        {
+            if (mFintMin(i) > _forces(i))
+            {
+                mFint(i) = mFintMin(i);
+            }
+            if (mFintMax(i) < _forces(i))
+            {
+                mFint(i) = mFintMax(i);
+            }
+            else
+                mFint(i) = _forces(i);
+        }
     }
 
 }   // namespace dynamics
