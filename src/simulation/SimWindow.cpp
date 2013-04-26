@@ -55,7 +55,7 @@ namespace simulation
     void SimWindow::drawSkels() 
     {
         for (int i = 0; i < mWorld->getNumSkels(); i++)
-            mWorld->getSkel(i)->draw(mRI);
+            mWorld->getSkeleton(i)->draw(mRI);
     }
 
     void SimWindow::displayTimer(int _val)
@@ -85,7 +85,7 @@ namespace simulation
                 for (unsigned int i = 0; i < nSkels; i++) {
                     int start = mWorld->getIndex(i);
                     int size = mWorld->getDofs(i).size();
-                    mWorld->getSkel(i)->setPose(mBakedStates[mPlayFrame].segment(start, size), false, false);
+                    mWorld->getSkeleton(i)->setPose(mBakedStates[mPlayFrame].segment(start, size), false, false);
                 }
                 if (mShowMarkers) {
                     int sumDofs = mWorld->getIndex(nSkels);

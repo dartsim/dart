@@ -67,7 +67,7 @@ World::~World()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void World::init()
+void World::initialize()
 {
     int sumNDofs = 0;
     mIndices.clear();
@@ -114,12 +114,6 @@ void World::init()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void World::fini()
-{
-    mIsInitialized = false;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 void World::reset()
 {
     // Assume that the world is initialized.
@@ -157,75 +151,13 @@ void World::reset()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-dynamics::BodyNodeDynamics* World::getBodyNodeDynamics(
-        const char* const _name) const
+void World::step()
 {
-    dynamics::BodyNodeDynamics* result = NULL;
-
-    for (unsigned int i = 0; i < mSkels.size(); ++i)
-    {
-        dynamics::BodyNodeDynamics* skelResult
-                = static_cast<dynamics::BodyNodeDynamics*>(
-                      mSkels[i]->getBodyNode(_name));
-
-        if (skelResult != NULL)
-        {
-            result = skelResult;
-            return result;
-        }
-    }
-
-    return result;
+    step(mTimeStep);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-kinematics::Joint* World::getJoint(const char* const _name) const
-{
-    kinematics::Joint* result = NULL;
-
-    for (unsigned int i = 0; i < mSkels.size(); ++i)
-    {
-        kinematics::Joint* skelResult = mSkels[i]->getJoint(_name);
-
-        if (skelResult != NULL)
-        {
-            result = skelResult;
-            return result;
-        }
-    }
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool World::updatePhysics()
-{
-    assert(mIsInitialized);
-
-    // Calculate (q, qdot) by integrating with (qdot, qdotdot).
-    mIntegrator.integrate(this, mTimeStep);
-    mFrame++;
-
-    // Calculate body node's velocities represented in world frame.
-    dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
-    for (unsigned int i = 0; i < mSkels.size(); ++i)
-    {
-        for (unsigned int j = 0; j < mSkels[i]->getNumNodes(); j++)
-        {
-            itrBodyNodeDyn
-                    = static_cast<dynamics::BodyNodeDynamics*>(mSkels[i]->getNode(j));
-            itrBodyNodeDyn->evalVelocity(mDofVels[i]);
-        }
-    }
-
-    // Add time
-    mTime += mTimeStep;
-
-    return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-bool World::updatePhysics(double _timeStep)
+void World::step(double _timeStep)
 {
     assert(mIsInitialized);
 
@@ -245,8 +177,14 @@ bool World::updatePhysics(double _timeStep)
     }
 
     mTime += _timeStep;
+    mFrame++;
+}
 
-    return true;
+////////////////////////////////////////////////////////////////////////////////
+void World::steps(int _steps)
+{
+    for (int i = 0; i < _steps; ++i)
+        step();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

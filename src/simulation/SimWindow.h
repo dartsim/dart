@@ -69,7 +69,7 @@ namespace simulation
                 }
             virtual void timeStepping() 
             {
-                mWorld->updatePhysics();
+                mWorld->step();
             }
             virtual void drawSkels();
             virtual void displayTimer(int _val);

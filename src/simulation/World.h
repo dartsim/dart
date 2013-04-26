@@ -50,6 +50,7 @@
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
 #include "dynamics/SkeletonDynamics.h"
+#include "utils/Deprecated.h"
 //#include "utils/Console.h"
 
 namespace dynamics {
@@ -71,10 +72,7 @@ public:
     virtual ~World();
 
     /// @brief Initialize the world.
-    void init();
-
-    /// @brief Finalize the world.
-    void fini();
+    void initialize();
 
     /// @breif Reset the world.
     ///
@@ -83,13 +81,15 @@ public:
     void reset();
 
     /// @brief Calculate the dynamics and integrate the world with it.
-    /// @return true if the physics is updated, false if not.
-    bool updatePhysics();
+    void step();
 
     /// @brief Calculate the dynamics and integrate the world with it.
     /// @param[in] _timeStep The time step.
-    /// @return true if the physics is updated, false if not.
-    bool updatePhysics(double _timeStep);
+    void step(double _timeStep);
+
+    /// @brief
+    /// @param[in] _steps
+    void steps(int _steps);
 
     /// @brief .
     /// @param[in] _gravity
@@ -132,7 +132,7 @@ public:
 
     /// @brief Get the indexed skeleton.
     /// @param[in] _index
-    inline dynamics::SkeletonDynamics* getSkel(int _index) const
+    inline dynamics::SkeletonDynamics* getSkeleton(int _index) const
     {
         return mSkels[_index];
     }
@@ -141,7 +141,7 @@ public:
     /// @param[in] The name of body node looking for.
     /// @return Searched body node. If the skeleton does not have a body
     /// node with _name, then return NULL.
-    inline dynamics::SkeletonDynamics* getSkel(const char* const _name) const
+    inline dynamics::SkeletonDynamics* getSkeleton(const char* const _name) const
     {
         dynamics::SkeletonDynamics* result = NULL;
 
@@ -156,19 +156,6 @@ public:
 
         return result;
     }
-
-    /// \brief Find body node dynamics by name.
-    /// \param[in] _name The name of body node dynamics looking for.
-    /// \return Searched body node dynamics. If the skeleton does not have a
-    /// body node dynamics with _name, then return NULL.
-    dynamics::BodyNodeDynamics* getBodyNodeDynamics(
-            const char* const _name) const;
-
-    /// \brief Find joint by name.
-    /// \param[in] _name The name of joint looking for.
-    /// \return Searched joint. If the skeleton does not have a joint with
-    ///_name, then return NULL.
-    kinematics::Joint* getJoint(const char* const _name) const;
 
     /// @brief Get the number of skeletons.
     inline int getNumSkels() const
