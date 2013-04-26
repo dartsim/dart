@@ -77,22 +77,7 @@ namespace dynamics{
         Eigen::VectorXd getQDotVector() const { return mQdot; }
         bool getImmobileState() const { return mImmobile; }
         void setImmobileState(bool _s) { mImmobile = _s; }
-        void setInternalForces(Eigen::VectorXd _forces)
-        {
-            for (int i = 0; i < mFint.size(); ++i)
-            {
-                if (mFintMin(i) > _forces(i))
-                {
-                    mFint(i) = mFintMin(i);
-                }
-                if (mFintMax(i) < _forces(i))
-                {
-                    mFint(i) = mFintMax(i);
-                }
-                else
-                    mFint(i) = _forces(i);
-            }
-        }
+        void setInternalForces(const Eigen::VectorXd& _forces);
         void setMinInternalForces(Eigen::VectorXd _minForces) { mFintMin = _minForces; }
         Eigen::VectorXd getMinInternalForces() const { return mFintMin; }
         void setMaxInternalForces(Eigen::VectorXd _maxForces) { mFintMax = _maxForces; }
