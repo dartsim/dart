@@ -42,33 +42,100 @@
 #include <Eigen/Dense>
 #include "Constraint.h"
 
-/*
-  // Sample Usage
-  dynamics::ConstraintDynamics constraint();
-  constraint.addConstraint(body, offset);
-  constraint.applyConstraintForces(qddot); // call this function after qddot is computed
- */
+#include <vector>
+#include <Eigen/Dense>
+#include <dynamics/Constraint.h>
+#include <collision/CollisionSkeleton.h>
+
+namespace kinematics {
+    class BodyNode;
+} // namespace kinematics
+
+namespace lcpsolver {
+    class LCPSolver;
+} //namespace lcpsolver
+
+
 namespace dynamics {
-    class BodyNodeDynamics;
     class SkeletonDynamics;
+    class BodyNodeDynamics;
+
     class ConstraintDynamics {
     public:
-        ConstraintDynamics(SkeletonDynamics *_skel);
+        ConstraintDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
         virtual ~ConstraintDynamics();
-        void applyConstraintForces(Eigen::VectorXd& _qddot);
+        void computeConstraintForces();            
+        inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { 
+            return mTotalConstrForces[_skelIndex]; 
+        }
+        inline Eigen::VectorXd getContactForce(int _skelIndex) const { 
+            return mContactForces[_skelIndex]; 
+        }
+        inline collision_checking::SkeletonCollision* getCollisionChecker() const {
+            return mCollisionChecker; 
+        }
+        inline int getNumContacts() const { 
+            return mCollisionChecker->getNumContact();
+        }
+
+        inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }; 
         void addConstraint(Constraint *_constr);
         void deleteConstraint(int _index);
-        inline Eigen::VectorXd getConstraintForce() const { return mConstrForce; }
 
     private:
-        SkeletonDynamics *mSkel;
-        std::vector<Constraint*> mConstraints;
+        void initialize();
+
+        void updateMassMat();
+        void updateTauStar();
+
+        void fillMatrices();
+        bool solve();
+        void applySolution();
+
+        inline int getTotalNumDofs() const { return mIndices[mIndices.size() - 1]; }
+
+        Eigen::MatrixXd getJacobian(kinematics::BodyNode* node, const Eigen::Vector3d& p);
+        void updateNBMatrices();
+        Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
+        Eigen::MatrixXd getContactMatrix() const; // E matrix
+        Eigen::MatrixXd getMuMatrix() const; // mu matrix
+        void updateConstraintTerms();
+        void computeConstraintWithoutContact();
+
+            
+        std::vector<SkeletonDynamics*> mSkels;
+        std::vector<int> mBodyIndexToSkelIndex;
+        std::vector<int> mIndices;
+        collision_checking::SkeletonCollision* mCollisionChecker;
+        double mDt; // timestep
+        double mMu; // friction coeff.
+        int mNumDir; // number of basis directions            
+
+        // Cached (aggregated) mass/tau matrices
+        Eigen::MatrixXd mMInv;
+        Eigen::VectorXd mTauStar;
+        Eigen::MatrixXd mN;
+        Eigen::MatrixXd mB;
+            
         // Matrices to pass to solver
-        Eigen::MatrixXd mJGlobal;
-        Eigen::MatrixXd mJDotGlobal;
-        Eigen::VectorXd mCGlobal;
-        Eigen::VectorXd mCDotGlobal;
-        Eigen::VectorXd mConstrForce; // solved constraint force in generalized coordinates;
+        Eigen::MatrixXd mA;
+        Eigen::VectorXd mQBar;
+        Eigen::VectorXd mX;
+
+        std::vector<Eigen::VectorXd> mContactForces; 
+        std::vector<Eigen::VectorXd> mTotalConstrForces; // solved constraint force in generalized coordinates; mConstrForces[i] is the constraint force for the ith skeleton
+        // constraints
+        std::vector<Constraint*> mConstraints;
+        int mTotalRows;
+
+        Eigen::MatrixXd mZ; // N x N
+        Eigen::VectorXd mTauHat; // M x 1
+        Eigen::MatrixXd mGInv; // M x M
+        std::vector<Eigen::MatrixXd> mJMInv; // M x N
+        std::vector<Eigen::MatrixXd> mJ; // M x N
+        std::vector<Eigen::MatrixXd> mPreJ; // M x N
+        Eigen::VectorXd mC; // M * 1
+        Eigen::VectorXd mCDot; // M * 1
     };
 } // namespace dynamics
 

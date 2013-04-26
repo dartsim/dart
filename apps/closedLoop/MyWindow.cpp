@@ -15,25 +15,25 @@ using namespace dynamics;
 void MyWindow::initDyn()
 {
     // set random initial conditions
-    mDofs.resize(mModel->getNumDofs());
-    mDofVels.resize(mModel->getNumDofs());
+    mDofs.resize(mSkels[0]->getNumDofs());
+    mDofVels.resize(mSkels[0]->getNumDofs());
     mDofs[20] = 3.14159 * 0.4;
     mDofs[23] = 3.14159 * 0.4;
     mDofs[26] = 3.14159 * 0.4;
     mDofs[29] = 3.14159 * 0.4;
     // initial dynamic skeleton
-    mModel->initDynamics();
-    mModel->setPose(mDofs, false, false); // set flags to skip transformation and first-derivatives updates
-    mModel->computeDynamics(mGravity, mDofVels, false);
+    mSkels[0]->initDynamics();
+    mSkels[0]->setPose(mDofs, false, false); // set flags to skip transformation and first-derivatives updates
+    mSkels[0]->computeDynamics(mGravity, mDofVels, false);
 
     // initialize closed loop constraint
-    mConstraintHandle = new ConstraintDynamics(mModel);
-    BodyNodeDynamics *bd1 = (BodyNodeDynamics*)mModel->getNode("Chain_node5");
-    BodyNodeDynamics *bd2 = (BodyNodeDynamics*)mModel->getNode("Chain_node9");
+    mConstraintHandle = new ConstraintDynamics(mSkels, mTimeStep);
+    BodyNodeDynamics *bd1 = (BodyNodeDynamics*)mSkels[0]->getNode("Chain_node5");
+    BodyNodeDynamics *bd2 = (BodyNodeDynamics*)mSkels[0]->getNode("Chain_node9");
     Vector3d offset1(0, 0, 0);
     Vector3d offset2 = bd2->getLocalCOM();
     offset2[1] *= 2;
-    ClosedLoopConstraint *cl = new ClosedLoopConstraint(mModel, bd1, bd2, offset1, offset2, true, mTimeStep);
+    ClosedLoopConstraint *cl = new ClosedLoopConstraint(bd1, bd2, offset1, offset2, 0, 0);
     mConstraintHandle->addConstraint(cl);
 }
 
@@ -45,16 +45,13 @@ VectorXd MyWindow::getState() {
 }
 
 VectorXd MyWindow::evalDeriv() {
-    mModel->setPose(mDofs, false, true);
-    mModel->computeDynamics(mGravity, mDofVels, true); // update equations of motion; set flag to use recursive computation
+    mSkels[0]->setPose(mDofs, false, true);
+    mSkels[0]->computeDynamics(mGravity, mDofVels, true); // update equations of motion; set flag to use recursive computation
     VectorXd deriv(mDofs.size() + mDofVels.size());
-    //VectorXd b = -mModel->getCombinedVector() + mModel->getInternalForces();
-    //VectorXd qddot = mModel->getCholesky().solve(b);
-    VectorXd qddot = mModel->getInvMassMatrix() * (-mModel->getCombinedVector() + mModel->getInternalForces());
-    mConstraintHandle->applyConstraintForces(qddot);
-    qddot += mModel->getInvMassMatrix() * mConstraintHandle->getConstraintForce();
+    mConstraintHandle->computeConstraintForces();
+    VectorXd qddot = mSkels[0]->getInvMassMatrix() * (-mSkels[0]->getCombinedVector() + mSkels[0]->getInternalForces() + mConstraintHandle->getTotalConstraintForce(0));
 
-    mModel->clampRotation(mDofs, mDofVels);
+    mSkels[0]->clampRotation(mDofs, mDofVels);
     deriv.head(mDofs.size()) = mDofVels + mTimeStep * qddot;
     deriv.tail(mDofVels.size()) = qddot;
     return deriv;
@@ -73,7 +70,7 @@ void MyWindow::displayTimer(int _val)
         //        tSim.startTimer();
 #ifdef DAMPING
         VectorXd damping = computeDamping();
-        mModel->setInternalForces(damping);
+        mSkels[0]->setInternalForces(damping);
 #endif
         mIntegrator.integrate(this, mTimeStep);
         //        tSim.stopTimer();
@@ -87,7 +84,7 @@ void MyWindow::displayTimer(int _val)
 
 void MyWindow::draw()
 {
-    mModel->draw(mRI);
+    mSkels[0]->draw(mRI);
     
     // display the frame count in 2D text
     char buff[64];

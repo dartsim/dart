@@ -6,7 +6,7 @@
 
     namespace dynamics {
         class SkeletonDynamics;
-        class ContactDynamics;
+        class ConstraintDynamics;
     }
 
     namespace kinematics {
@@ -15,7 +15,7 @@
 
 class Controller {
  public:
-    Controller(dynamics::SkeletonDynamics *_skel, dynamics::ContactDynamics *_collisionHandle, double _t);
+    Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_constraintHandle, double _t);
     virtual ~Controller() {};
 
     Eigen::VectorXd getTorques() { return mTorques; };
@@ -29,11 +29,8 @@ class Controller {
     void setConstrForces(const Eigen::VectorXd& _constrForce) { mConstrForces = _constrForce; }
 
  protected:
-    Eigen::Vector3d evalLinMomentum(const Eigen::VectorXd& _dofVel);
-    Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
-    Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum, Eigen::VectorXd _controlledAxis);
     dynamics::SkeletonDynamics *mSkel;
-    dynamics::ContactDynamics *mCollisionHandle;
+    dynamics::ConstraintDynamics *mConstraintHandle;
     Eigen::VectorXd mTorques;
     Eigen::VectorXd mDesiredDofs;
     Eigen::MatrixXd mKp;
@@ -41,7 +38,6 @@ class Controller {
     int mFrame;
     double mTimestep;
     double mPreOffset;
-    Eigen::VectorXd mConstrForces; // SPD utilizes the current info about contact forces
+    Eigen::VectorXd mConstrForces; // SPD utilizes the current info about constraint forces
 };
-
 #endif // #CONTROLLER_H

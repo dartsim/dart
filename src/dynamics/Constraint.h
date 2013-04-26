@@ -44,22 +44,21 @@
 namespace dynamics {
     class Constraint {
     public:
-        Constraint(){};
+        Constraint(){
+        };
         virtual ~Constraint(){};
 
-        virtual void updateDynamics(){};
-        inline Eigen::VectorXd getC() const { return mC; };
-        inline Eigen::VectorXd getCDot() const { return mCVel; };
-        inline Eigen::MatrixXd getJ() const { return mJ; };
-        inline Eigen::MatrixXd getJDot() const { return mJDot; };
+        virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex){};
+        inline int getNumRows() const { return mNumRows; };
+        inline Eigen::VectorXd getLagrangeMultipliers() const { return mLagrangeMultipliers; };
+        inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; };
 
     protected:
-        Eigen::VectorXd mC;
-        Eigen::VectorXd mCVel;
-        Eigen::MatrixXd mJ;
-        Eigen::MatrixXd mJDot;
+        int mNumRows;
+        Eigen::VectorXd mLagrangeMultipliers;
     };
 } // namespace dynamics
+
 
 #endif // #ifndef DYNAMICS_CONSTRAINT_H
 

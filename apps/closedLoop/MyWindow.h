@@ -7,18 +7,18 @@
 
 #define DAMPING
 
-namespace dynamics {
-    class SkeletonDynamics;
-    class ConstraintDynamics;
-}
+    namespace dynamics {
+        class SkeletonDynamics;
+        class ConstraintDynamics;
+    }
 
-namespace integration {
-    class IntegrableSystem;
-}
+    namespace integration {
+        class IntegrableSystem;
+    }
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:
-    MyWindow(dynamics::SkeletonDynamics* _m): Win3D(), mModel(_m) {
+    MyWindow(dynamics::SkeletonDynamics* _m): Win3D() {
         mBackground[0] = 1.0;
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
@@ -30,6 +30,8 @@ public:
         mTrans[1] = 300.f;
         mFrame = 0;
     
+        mSkels.push_back(_m);
+
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/2000.0;
         initDyn();
@@ -50,7 +52,7 @@ protected:
     integration::EulerIntegrator mIntegrator;
     //integration::RK4Integrator mIntegrator;
     
-    dynamics::SkeletonDynamics* mModel;
+    std::vector<dynamics::SkeletonDynamics*> mSkels;
     dynamics::ConstraintDynamics *mConstraintHandle;
     Eigen::VectorXd mDofVels;
     Eigen::VectorXd mDofs;

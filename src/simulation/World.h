@@ -1,10 +1,14 @@
-/* RTQL8, Copyright (c) 2011, Georgia Tech Research Corporation
+/* Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  * Date: 03/25/2013
  *
- * Georgia Tech Graphics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or

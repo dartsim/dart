@@ -194,6 +194,9 @@ namespace kinematics {
         Eigen::MatrixXd getJacobianLinear() const;
         Eigen::MatrixXd getJacobianAngular() const;
         
+        inline bool getCollideState() const { return mCollidable; }
+        inline void setCollideState(bool _c) { mCollidable = _c; }
+
     protected:
         
         char mName[MAX_NODE3D_NAME]; ///< Name
@@ -230,6 +233,7 @@ namespace kinematics {
     private:
         int mID; ///< A unique ID of this node globally 
         static int msBodyNodeCount; ///< Counts the number of nodes globally
+        bool mCollidable; ///< Indicating whether this node is collidable
     };
 
 } // namespace kinematics
