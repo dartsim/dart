@@ -350,16 +350,27 @@ namespace dynamics{
         for (int i = 0; i < mFint.size(); ++i)
         {
             if (mFintMin(i) > _forces(i))
-            {
                 mFint(i) = mFintMin(i);
-            }
             if (mFintMax(i) < _forces(i))
-            {
                 mFint(i) = mFintMax(i);
-            }
             else
                 mFint(i) = _forces(i);
         }
+    }
+
+    void SkeletonDynamics::backupInitState()
+    {
+        mPoseInit = getPose();
+        mQdotInit = getQDotVector();
+    }
+
+    void SkeletonDynamics::restoreInitState()
+    {
+        setPose(mPoseInit, false, false);
+
+        // TODO: The only reason we call this function is to store mQdotInit in
+        // this class. At some point, we need to fix this.
+        computeDynamics(Eigen::Vector3d(0, 0, -9.81), mQdotInit, true);
     }
 
 }   // namespace dynamics

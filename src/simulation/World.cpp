@@ -72,23 +72,14 @@ World::~World()
 ////////////////////////////////////////////////////////////////////////////////
 void World::reset()
 {
-    // Assume that the world is initialized.
-    //assert(mIsInitialized == true);
-
-    // Reset all states: mDofs and mDofVels.
-    for (unsigned int i = 0; i < getNumSkeletons(); i++)
-    {
-        //        mDofs[i].setZero(mSkels[i]->getNumDofs());
-        //        mDofVels[i].setZero(mSkels[i]->getNumDofs());
-    }
-
     // Claculate transformations (forward kinematics).
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
     {
-        //        mSkels[i]->setPose(mDofs[i], true, false);
+        mSkeletons[i]->restoreInitState();
     }
 
     // Calculate velocities represented in world frame (forward kinematics).
+    // TODO: We need to consider better way.
     dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
     {
@@ -96,7 +87,7 @@ void World::reset()
         {
             itrBodyNodeDyn
                     = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
-            //            itrBodyNodeDyn->evalVelocity(mDofVels[i]);
+            itrBodyNodeDyn->evalVelocity(mSkeletons[i]->getQDotVector());
         }
     }
 
@@ -279,7 +270,11 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
         _skeleton->computeDynamics(mGravity,
                                    _skeleton->getQDotVector(),
                                    false);
+
+
     }
+
+    _skeleton->backupInitState();
 
     // create a collision handler
     mCollisionHandle->addSkeleton(_skeleton);
