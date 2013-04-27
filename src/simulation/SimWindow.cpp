@@ -54,7 +54,7 @@ namespace simulation
 {
     void SimWindow::drawSkels() 
     {
-        for (int i = 0; i < mWorld->getNumSkels(); i++)
+        for (int i = 0; i < mWorld->getNumSkeletons(); i++)
             mWorld->getSkeleton(i)->draw(mRI);
     }
 
@@ -81,10 +81,11 @@ namespace simulation
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         if (!mWorld->isSimulating()) {
             if (mPlayFrame < mBakedStates.size()) {
-                int nSkels = mWorld->getNumSkels();
+                int nSkels = mWorld->getNumSkeletons();
                 for (unsigned int i = 0; i < nSkels; i++) {
                     int start = mWorld->getIndex(i);
-                    int size = mWorld->getDofs(i).size();
+                    //int size = mWorld->getDofs(i).size();
+                    int size = mWorld->getSkeleton(i)->getNumDofs();
                     mWorld->getSkeleton(i)->setPose(mBakedStates[mPlayFrame].segment(start, size), false, false);
                 }
                 if (mShowMarkers) {
@@ -181,11 +182,11 @@ namespace simulation
     void SimWindow::bake()
     {
         int nContact = mWorld->getCollisionHandle()->getCollisionChecker()->getNumContact();
-        VectorXd state(mWorld->getIndex(mWorld->getNumSkels()) + 6 * nContact);
-        for (unsigned int i = 0; i < mWorld->getNumSkels(); i++)
-            state.segment(mWorld->getIndex(i), mWorld->getDofs(i).size()) = mWorld->getDofs(i);
+        VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
+        for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
+            state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumDofs()) = mWorld->getSkeleton(i)->getPose();
         for (int i = 0; i < nContact; i++) {
-            int begin = mWorld->getIndex(mWorld->getNumSkels()) + i * 6;
+            int begin = mWorld->getIndex(mWorld->getNumSkeletons()) + i * 6;
             state.segment(begin, 3) = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(i).point;
             state.segment(begin + 3, 3) = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(i).force;
         }
