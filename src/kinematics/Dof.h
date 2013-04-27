@@ -62,6 +62,9 @@ namespace kinematics {
 	
         void setValue(double _v);
         inline double getValue() const { return mVal; }
+
+//        inline void setDefaultValue(double _newDefaultValue) { mDefaultValue = _newDefaultValue; }
+//        inline double getDefaultValue() { return mDefaultValue; }
 	
         inline double getMin() const { return mMinVal; }
         inline double getMax() const { return mMaxVal; }
@@ -85,6 +88,8 @@ namespace kinematics {
         char mName[MAX_DOF_NAME];
         int mSkelIndex; // Unique to dof in model
 
+//        /// @brief Default value.
+//        double mDefaultValue;
         double mVal;	// Value of the joint angle
         double mMinVal;	// Min value allowed
         double mMaxVal;	// Max value allowed
