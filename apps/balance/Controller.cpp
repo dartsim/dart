@@ -81,7 +81,7 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++){        
         mTorques[i] = 0.0;
-    }
+    }    
     mFrame++;
 }
 
