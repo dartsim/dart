@@ -46,6 +46,7 @@ using namespace Eigen;
 #include "BodyNode.h"
 #include "Marker.h"
 #include "Transformation.h"
+#include "utils/UtilsMath.h"
 
 #include "renderer/RenderInterface.h"
 
@@ -217,6 +218,16 @@ namespace kinematics {
         }
   }
   
+    MatrixXd Skeleton::getJacobian(BodyNode* _bd, Vector3d& _localOffset) {
+        MatrixXd J(3, mDofs.size());
+        J.setZero();
+        for(int i = 0; i < _bd->getNumDependentDofs(); i++) {
+            int dofindex = _bd->getDependentDof(i);
+            VectorXd deriv = utils::xformHom(_bd->getDerivWorldTransform(i), _localOffset);
+            J.col(dofindex) = deriv;
+        }
+        return J;
+    }
 
     void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
         mRoot->draw(_ri, _color, _useDefaultColor);

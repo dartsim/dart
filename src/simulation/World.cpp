@@ -55,8 +55,7 @@ World::World()
       mCollisionHandle(NULL),
       mTime(0.0),
       mTimeStep(0.001),
-      mFrame(0),
-      mSimulating(false)
+      mFrame(0)
 {
     mIndices.push_back(0);
 

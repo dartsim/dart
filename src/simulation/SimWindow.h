@@ -80,10 +80,15 @@ namespace simulation
                 mWorld = _world;
             }
 
+            //            inline bool isSimulating() const { return mSimulating; }
+
+            //            inline void setSimulatingFlag(int _flag) { mSimulating = _flag; }
+
         protected:    
             simulation::World* mWorld;
             int mPlayFrame;
             bool mPlay;
+            bool mSimulating;
             bool mShowMarkers;
             std::vector<Eigen::VectorXd> mBakedStates;
 

@@ -65,7 +65,7 @@ namespace simulation
             mPlayFrame += 16;
             if (mPlayFrame >= mBakedStates.size())
                 mPlayFrame = 0;
-        }else if (mWorld->isSimulating()) {
+        }else if (mSimulating) {
             for (int i = 0; i < numIter; i++) {
                 timeStepping();
                 bake();
@@ -79,7 +79,7 @@ namespace simulation
     {
         glDisable(GL_LIGHTING);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        if (!mWorld->isSimulating()) {
+        if (!mSimulating) {
             if (mPlayFrame < mBakedStates.size()) {
                 int nSkels = mWorld->getNumSkeletons();
                 for (unsigned int i = 0; i < nSkels; i++) {
@@ -127,7 +127,7 @@ namespace simulation
             
         // display the frame count in 2D text
         char buff[64];
-        if (!mWorld->isSimulating()) 
+        if (!mSimulating) 
             sprintf(buff, "%d", mPlayFrame);
         else
             sprintf(buff, "%d", mWorld->getSimFrames());
@@ -141,8 +141,8 @@ namespace simulation
     {
         switch(key){
         case ' ': // use space key to play or stop the motion
-            mWorld->setSimulatingFlag(!mWorld->isSimulating());
-            if(mWorld->isSimulating()) {
+            mSimulating = !mSimulating;
+            if(mSimulating) {
                 mPlay = false;
                 glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
             }
@@ -150,12 +150,12 @@ namespace simulation
         case 'p': // playBack
             mPlay = !mPlay;
             if (mPlay) {
-                mWorld->setSimulatingFlag(false);
+                mSimulating = false;
                 glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
             }
             break;
         case '[': // step backward
-            if (!mWorld->isSimulating()) {
+            if (!mSimulating) {
                 mPlayFrame--;
                 if(mPlayFrame < 0)
                     mPlayFrame = 0;
@@ -163,7 +163,7 @@ namespace simulation
             }
             break;
         case ']': // step forwardward
-            if (!mWorld->isSimulating()) {
+            if (!mSimulating) {
                 mPlayFrame++;
                 if(mPlayFrame >= mBakedStates.size())
                     mPlayFrame = 0;
