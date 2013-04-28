@@ -11,7 +11,6 @@
 using namespace kinematics;
 using namespace dynamics;
 using namespace utils;
-
 Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ContactDynamics *_collisionHandle, double _t) {
     mSkel = _skel;
     mCollisionHandle = _collisionHandle;
@@ -54,29 +53,33 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     VectorXd d = -mKd * _dofVel;
     VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
     mTorques = p + d - mKd * qddot * mTimestep;
-
-    // angular momentum control for upper body
-    Vector3d ang = evalAngMomentum(_dofVel);
-    VectorXd controlledAxis(2);
-    VectorXd deltaMomentum(2);
-    controlledAxis[0] = 3;
-    controlledAxis[1] = 5;
-    deltaMomentum[0] = 1000 * -ang[0];    
-    deltaMomentum[1] = 1000 * -ang[2];    
-    mTorques += adjustAngMomentum(deltaMomentum, controlledAxis);
-
+    
     // ankle strategy for sagital plane
-    Vector3d com = mSkel->getWorldCOM();
-    double cop = 0.02;
-    double offset = com[0] - cop;
-    double k1 = 20.0;
-    double k2 = 10.0;
-    double kd = 100.0;
-    mTorques[10] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[12] += -k2 * offset + kd * (mPreOffset - offset);
-    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[19] += -k2 * offset + kd * (mPreOffset - offset);
-    mPreOffset = offset;
+    Vector3d com = mSkel->getWorldCOM();    
+    Vector3d cop = xformHom(mSkel->getNode("fullbody1_h_heel_left")->getWorldTransform(), Vector3d(0.05, 0, 0));
+    //    double cop = 0.02;
+    Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
+    if (diff.norm() < 0.15) {
+        double offset = com[0] - cop[0];
+        double k1 = 20.0;
+        double k2 = 10.0;
+        double kd = 100.0;
+        mTorques[10] += -k1 * offset + kd * (mPreOffset - offset);
+        mTorques[12] += -k2 * offset + kd * (mPreOffset - offset);
+        mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+        mTorques[19] += -k2 * offset + kd * (mPreOffset - offset);
+        mPreOffset = offset;
+
+        // angular momentum control for upper body
+        Vector3d ang = evalAngMomentum(_dofVel);
+        VectorXd controlledAxis(2);
+        VectorXd deltaMomentum(2);
+        controlledAxis[0] = 3;
+        controlledAxis[1] = 5;
+        deltaMomentum[0] = 1000 * -ang[0];    
+        deltaMomentum[1] = 1000 * -ang[2];    
+        mTorques += adjustAngMomentum(deltaMomentum, controlledAxis);
+    }
 
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++){        
@@ -107,7 +110,7 @@ Vector3d Controller::evalAngMomentum(const VectorXd& _dofVel) {
         BodyNodeDynamics *node = (BodyNodeDynamics*)mSkel->getNode(i);
         node->evalVelocity(_dofVel);
         node->evalOmega(_dofVel);
-        sum += node->getWorldInertia() * node->mOmega;
+        sum += node->getInertia() * node->mOmega;
         sum += node->getMass() * (node->getWorldCOM() - c).cross(node->mVel);
     }
     return sum;
@@ -116,13 +119,13 @@ Vector3d Controller::evalAngMomentum(const VectorXd& _dofVel) {
 VectorXd Controller::adjustAngMomentum(VectorXd _deltaMomentum, VectorXd _controlledAxis) {
     int nDof = mSkel->getNumDofs();
     double mass = mSkel->getMass();
-    Matrix3d c = utils::makeSkewSymmetric(mSkel->getWorldCOM());
+    Matrix3d c = makeSkewSymmetric(mSkel->getWorldCOM());
     MatrixXd A(MatrixXd::Zero(6, nDof));
     MatrixXd Jv(MatrixXd::Zero(3, nDof));
     MatrixXd Jw(MatrixXd::Zero(3, nDof));
     for (int i = 0; i < mSkel->getNumNodes(); i++) {
         BodyNodeDynamics *node = (BodyNodeDynamics*)mSkel->getNode(i);
-        Matrix3d c_i = utils::makeSkewSymmetric(node->getWorldCOM());
+        Matrix3d c_i = makeSkewSymmetric(node->getWorldCOM());
         double m_i = node->getMass();
         MatrixXd localJv = node->getJacobianLinear();
         MatrixXd localJw = node->getJacobianAngular();
@@ -134,7 +137,7 @@ VectorXd Controller::adjustAngMomentum(VectorXd _deltaMomentum, VectorXd _contro
             Jw.col(dofIndex) += localJw.col(j);
         }
         A.block(0, 0, 3, nDof) += m_i * Jv / mass;
-        A.block(3, 0, 3, nDof) += m_i * (c_i - c) * Jv + node->getWorldInertia() * Jw;
+        A.block(3, 0, 3, nDof) += m_i * (c_i - c) * Jv + node->getInertia() * Jw;
     }
     for ( int i = 0; i < 6; i++)
         A.col(i).setZero(); // try to realize momentum without using root acceleration
@@ -150,22 +153,3 @@ VectorXd Controller::adjustAngMomentum(VectorXd _deltaMomentum, VectorXd _contro
     return deltaQdot;
 }
 
-bool Controller::computeCoP(BodyNode *_node, Vector3d *_cop) {
-    Vector3d sum(0, 0, 0);
-    double pressure = 0.0;
-    
-    for (int i = 0; i < mCollisionHandle->getCollisionChecker()->getNumContact(); i++) {
-        if (mCollisionHandle->getCollisionChecker()->getContact(i).bd1 == _node || mCollisionHandle->getCollisionChecker()->getContact(i).bd2 == _node) {
-            sum += mCollisionHandle->getCollisionChecker()->getContact(i).point * -mCollisionHandle->getCollisionChecker()->getContact(i).force(1);
-            pressure += -mCollisionHandle->getCollisionChecker()->getContact(i).force(1);
-        }        
-    }
-    if (pressure > 1e-7) {
-        sum = sum / pressure;
-        *_cop = xformHom(_node->getWorldInvTransform(), sum);
-        return true;
-    } else {
-        *_cop = sum;
-        return false;
-    }
-}

@@ -28,7 +28,6 @@ int main(int argc, char* argv[])
         initPose[i] = random(-0.5, 0.5);
     myWorld->getSkeleton(0)->setPose(initPose);
     myWorld->setTimeStep(1.0/2000);
-    //myWorld->initialize();
 
     // create a window and link it to the world
     MyWindow window;

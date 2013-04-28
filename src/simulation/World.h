@@ -132,13 +132,6 @@ public:
     /// @param[in] _index
     inline int getIndex(int _index) const { return mIndices[_index]; }
 
-    /// @brief Get the simulating flag.
-    inline bool isSimulating() const { return mSimulating; }
-
-    /// @brief Get the dof index for the indexed skeleton.
-    /// @param[in] _index
-    inline void setSimulatingFlag(int _flag) { mSimulating = _flag; }
-
     // Documentation inherited.
     virtual Eigen::VectorXd getState();
 
@@ -176,10 +169,6 @@ protected:
 
     /// @brief
     double mTime;
-
-    /// @brief The indicator of simulation in progress.
-    /// (true: running, false: not running)
-    bool mSimulating;
 
     /// @brief The simulated frame number.
     int mFrame;

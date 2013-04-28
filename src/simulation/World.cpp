@@ -55,8 +55,7 @@ World::World()
       mCollisionHandle(NULL),
       mTime(0.0),
       mTimeStep(0.001),
-      mFrame(0),
-      mSimulating(false)
+      mFrame(0)
 {
     mIndices.push_back(0);
 
@@ -185,11 +184,6 @@ void World::setState(const Eigen::VectorXd& _newState)
         VectorXd pose = _newState.segment(start, size);
         VectorXd qDot = _newState.segment(start + size, size);
         getSkeleton(i)->clampRotation(pose, qDot);
-
-        // The root follows the desired acceleration and the rest of the
-        // body follows dynamic equations. The root acceleration will impact
-        // the rest of the body correctly. Collision or other external
-        // forces will alter the root acceleration
         if (getSkeleton(i)->getImmobileState())
         {
             // need to update node transformation for collision
@@ -198,9 +192,10 @@ void World::setState(const Eigen::VectorXd& _newState)
         else
         {
             // need to update first derivatives for collision
-            getSkeleton(i)->setPose(pose, false, false);
+            getSkeleton(i)->setPose(pose, false, true);
             getSkeleton(i)->computeDynamics(mGravity, qDot, true);
         }
+
     }
 }
 
@@ -266,7 +261,6 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
 
     if(!_skeleton->getImmobileState())
     {
-        // Not sure if we need this
         _skeleton->computeDynamics(mGravity,
                                    _skeleton->getQDotVector(),
                                    false);
@@ -281,5 +275,4 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
 
     return true;
 }
-
 } // namespace simulation
