@@ -39,12 +39,12 @@ int main(int argc, char* argv[])
 
     initPose = myWorld->getSkeleton(2)->getPose();
     initPose[0] = 0.10;            // x-axis
-    initPose[1] = -0.35 + 0.05;
+    initPose[1] = -0.35 + 0.05;    // y-axis
     myWorld->getSkeleton(2)->setPose(initPose);
 
     initPose = myWorld->getSkeleton(3)->getPose();
-    initPose[0] = 0.20;
-    initPose[1] = -0.35 + 0.05 + 0.08;
+    initPose[0] = 0.20;                 // x-axis
+    initPose[1] = -0.35 + 0.05 + 0.08;  // y-axis
     myWorld->getSkeleton(3)->setPose(initPose);
 
     // create a window and link it to the world
