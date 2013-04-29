@@ -66,6 +66,12 @@ namespace dynamics{
         void clampRotation( Eigen::VectorXd& _q, Eigen::VectorXd& _qdot); ///< Clamp joint rotations to the range of [-pi, pi]. 
         ///< It's particularly useful for exponential map because the system will become unstable if the exponential map rotaion is outside this range. For euler angles, the dof values can directly add or subtract 2*pi; for exponential map, once the rotation magnitude is changed, the velocity needs to change accordingly to represent the same angular velocity. This function requires the updated transformations. 
 
+        /// @brief Backup current state as initial state.
+        void backupInitState();
+
+        /// @brief Restore the stored initial state.
+        void restoreInitState();
+
         Eigen::MatrixXd getMassMatrix() const { return mM; }
         Eigen::MatrixXd getInvMassMatrix() const { return mMInv; }
         Eigen::MatrixXd getCoriolisMatrix() const { return mC; }
@@ -95,6 +101,8 @@ namespace dynamics{
         Eigen::VectorXd mFintMin; ///< minimum internal forces
         Eigen::VectorXd mFintMax; ///< maximum internal forces
         Eigen::VectorXd mQdot; ///< the current qdot
+
+        Eigen::VectorXd mQdotInit; ///< the initial qdot
 
         bool mImmobile; ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct
     };

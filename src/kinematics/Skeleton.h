@@ -114,6 +114,7 @@ namespace kinematics {
         std::vector<Transformation*> mTransforms;
         std::vector<BodyNode*> mNodes;
         std::vector<Joint*> mJoints;
+        Eigen::VectorXd mPoseInit; ///< Initial pose (Q)
         double mMass;
     };
 
