@@ -80,15 +80,6 @@ public:
     /// @brief Calculate the dynamics and integrate the world for one step.
     void step();
 
-    /// @brief Calculate the dynamics and integrate the world for one step.
-    /// @param[in] _timeStep The time step.
-    void step(double _timeStep);
-
-    /// @brief Calculate the dynamics and integrate the world for multiple
-    /// steps.
-    /// @param[in] _steps The number of steps to proceed.
-    void steps(int _steps);
-
     /// @brief .
     /// @param[in] _gravity
     inline void setGravity(const Eigen::Vector3d& _gravity)
@@ -99,7 +90,7 @@ public:
 
     /// @brief .
     /// @param[in] _timeStep
-    inline void setTimeStep(double _timeStep) { mTimeStep = _timeStep; }
+    void setTimeStep(double _timeStep);
 
     /// @brief Get the time step.
     inline double getTimeStep(void) const { return mTimeStep; }

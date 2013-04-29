@@ -69,6 +69,13 @@ World::~World()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void World::setTimeStep(double _timeStep)
+{
+    mTimeStep = _timeStep;
+    mCollisionHandle->setTimeStep(_timeStep);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void World::reset()
 {
     // Assume that the world is initialized.
@@ -110,14 +117,8 @@ void World::reset()
 ////////////////////////////////////////////////////////////////////////////////
 void World::step()
 {
-    step(mTimeStep);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void World::step(double _timeStep)
-{
     // Calculate (q, qdot) by integrating with (qdot, qdotdot).
-    mIntegrator.integrate(this, _timeStep);
+    mIntegrator.integrate(this, mTimeStep);
 
     // TODO: We need to consider better way.
     // Calculate body node's velocities represented in world frame.
@@ -132,15 +133,8 @@ void World::step(double _timeStep)
         }
     }
 
-    mTime += _timeStep;
+    mTime += mTimeStep;
     mFrame++;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void World::steps(int _steps)
-{
-    for (int i = 0; i < _steps; ++i)
-        step();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -277,6 +271,9 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
 
     // create a collision handler
     mCollisionHandle->addSkeleton(_skeleton);
+//    if (mCollisionHandle != NULL)
+//        delete mCollisionHandle;
+//    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
 
     return true;
 }
