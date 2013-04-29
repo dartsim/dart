@@ -62,6 +62,7 @@ namespace simulation
                     mBackground[3] = 1.0;
 		
                     mPlay = false;
+                    mSimulating = false;
                     mPlayFrame = 0;
                     mShowMarkers = true;
                     mPersp = 45.f;
