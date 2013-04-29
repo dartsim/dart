@@ -63,9 +63,16 @@ namespace dynamics {
     class SkeletonDynamics;
     
     class ContactDynamics {
-        public:
+    public:
         ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
         virtual ~ContactDynamics();
+
+        /// @brief Get the time step.
+        inline void setTimeStep(double _timeStep) { mDt = _timeStep; }
+
+        /// @brief Set the time step.
+        inline double getTimeStep() const { return mDt; }
+
         void applyContactForces();
         void reset();
         void addSkeleton(SkeletonDynamics* _newSkel);
