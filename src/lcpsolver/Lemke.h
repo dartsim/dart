@@ -2,7 +2,7 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
+ * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu> and Yunfei Bai <byf1658@gmail.com>
  * Date: 07/28/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab

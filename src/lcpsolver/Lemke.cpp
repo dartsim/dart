@@ -1,9 +1,9 @@
 #include "Lemke.h"
 #include <iostream>
 #include <cmath>
-using namespace std;
-
 #include <math.h>
+
+using namespace std;
 
 #ifndef isnan
 # define isnan(x) \
@@ -52,8 +52,6 @@ namespace lcpsolver {
     int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd& _z)
     {
         int n = _q.size();
-        if(_M.rows() != n && _M.cols() != n) cout << "Matrices are not compatible";
-        assert(_M.rows() == n && _M.cols() == n);
         
 	    const double zer_tol = 1e-5;
 	    const double piv_tol = 1e-8;
@@ -80,21 +78,28 @@ namespace lcpsolver {
 	    int t = 2 * n + 1;
 	    int entering = t;
 
-
 	    bas.clear();
-	    for (int i = 0; i < n; ++i)
-	    {
-		    nonbas.push_back(i);
-		    bas.push_back(i + n);
-	    }
+		nonbas.clear();
 
+		for (int i = 0; i < n; ++i)
+		{
+			bas.push_back(i);
+		}
+		
 	    MatrixXd B = -MatrixXd::Identity(n, n);
-	    VectorXd minuxX = -x;
+
+		for (int i = 0; i < bas.size(); ++i) {
+			B.col(bas[i]) = _M.col(bas[i]);
+		}
+
+		x = -B.partialPivLu().solve(_q);
+
+		VectorXd minuxX = -x;
 	    int lvindex;
 	    double tval = minuxX.maxCoeff(&lvindex);
 	    leaving = bas[lvindex];
-
 	    bas[lvindex] = t;
+
 	    VectorXd U = VectorXd::Zero(n);
 	    for (int i = 0; i < n; ++i)
 	    {
@@ -123,8 +128,9 @@ namespace lcpsolver {
 			    entering = leaving - n;
 			    Be = _M.col(entering);
 		    }
-		    VectorXd d = B.fullPivLu().solve(Be);
 
+		    VectorXd d = B.partialPivLu().solve(Be);
+			
 		    vector<int> j;
 		    for (int i = 0; i < n; ++i)
 		    {
@@ -133,9 +139,10 @@ namespace lcpsolver {
 		    }
 		    if (j.empty())
 		    {
-			    err = 2;
+// 			    err = 2;
 			    break;
 		    }
+
 		    int jSize = static_cast<int>(j.size());
 		    VectorXd minRatio(jSize);
 		    for (int i = 0; i < jSize; ++i)
@@ -143,8 +150,9 @@ namespace lcpsolver {
 			    minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
 		    }
 		    double theta = minRatio.minCoeff();
+
 		    vector<int> tmpJ;
-                    vector<double> tmpMinRatio;
+            vector<double> tmpMinRatio;
 		    for (int i = 0; i < jSize; ++i)
 		    {
                 if (x[j[i]] / d[j[i]] <= theta)
@@ -172,6 +180,7 @@ namespace lcpsolver {
                 break;
             }
 		    lvindex = -1;
+
 		    for (int i = 0; i < jSize; ++i)
 		    {
 			    if (bas[j[i]] == t)
@@ -184,27 +193,16 @@ namespace lcpsolver {
 		    else
 		    {
                 theta = tmpMinRatio[0];
+				lvindex = 0;
+
                 for (int i = 0; i < jSize; ++i)
                 {
-                    if (tmpMinRatio[i] <= theta)
-                    {
-                        theta = tmpMinRatio[i];
-                        lvindex = i;
-                    }
+					if (tmpMinRatio[i]-theta > piv_tol)
+					{
+						theta = tmpMinRatio[i];
+						lvindex = i;
+					}
                 }
-// 			    VectorXd dj(jSize);
-// 			    for (int i = 0; i < jSize; ++i)
-// 			    {
-// 				    dj[i] = d[j[i]];
-// 			    }
-// 			    theta = dj.maxCoeff(&lvindex);
-// 			    vector<int> lvindexSet;
-// 			    for (int i = 0; i < jSize; ++i)
-// 			    {
-// 				    if (dj[i] == theta)
-// 					    lvindexSet.push_back(i);
-// 			    }
-//			    lvindex = lvindexSet[static_cast<int>((lvindexSet.size() * RandDouble(0, 1)))];
 			    lvindex = j[lvindex];
 
 		    }
@@ -233,43 +231,41 @@ namespace lcpsolver {
 		    bas[lvindex] = entering;
     		
 	    }
-            //            cout << "check 6" << endl;
 
 	    if (iter >= maxiter && leaving != t)
 		    err = 1;
 
-	    //for (size_t i = 0; i < bas.size(); ++i)
-     //           cout << "bas[i] = " << bas[i] << " ";
-     //       cout << endl;
-
 		if (err == 0)
 		{
 			for (size_t i = 0; i < bas.size(); ++i) {
-				_z[bas[i]] = x[i];
+				if (bas[i] < _z.size()) {
+					_z[bas[i]] = x[i];
+				}
 			}
 
 			VectorXd realZ = _z.segment(0, n);
 			_z = realZ;
 
-            if (!validate(_M, _z, _q))
-            {
-                _z = VectorXd::Zero(n);
-                err = 3;
-            }
+			if (!validate(_M, _z, _q))
+			{
+// 				_z = VectorXd::Zero(n);
+				err = 3;
+			}
 		}
 		else
 		{
 			_z = VectorXd::Zero(n); //solve failed, return a 0 vector
 		}
 
-	    if (err == 1)
-		    cout << "[ERROR]" << "LCP Solver: Iterations exceeded limit";
-	    else if (err == 2)
-		    cout << "[ERROR]" << "LCP Solver: Unbounded ray";
-        else if (err == 3)
-            cout << "[ERROR]" << "LCP Solver: Solver converged with numerical issues. Validation failed.";
-        else if (err == 4)
-            cout << "[ERROR]" << "LCP Solver: Iteration diverged.";
+// 	    if (err == 1)
+// 		    LOG(ERROR) << "LCP Solver: Iterations exceeded limit";
+// 	    else if (err == 2)
+// 		    LOG(ERROR) << "LCP Solver: Unbounded ray";
+//         else if (err == 3)
+//             LOG(ERROR) << "LCP Solver: Solver converged with numerical issues. Validation failed.";
+//         else if (err == 4)
+//             LOG(ERROR) << "LCP Solver: Iteration diverged.";
+
 	    return err;
     }
 
@@ -290,3 +286,4 @@ namespace lcpsolver {
     }
 
 } //namespace lcpsolver
+
