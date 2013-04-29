@@ -106,7 +106,7 @@ namespace robotics {
     mIndices.push_back(mIndices.back() + _robot->getNumDofs());
 
     if(!_robot->getImmobileState()) {
-      _robot->computeDynamics(mGravity, _robot->getQDotVector(), false); // Not sure if we need this
+      _robot->computeDynamics(mGravity, _robot->getPoseVelocity(), false); // Not sure if we need this
     }
 
     // create collision dynamics object
@@ -131,7 +131,7 @@ namespace robotics {
     mIndices.push_back(mIndices.back() + _object->getNumDofs());
 
     if(!_object->getImmobileState()) {
-      _object->computeDynamics(mGravity, _object->getQDotVector(), false); // Not sure if we need this
+      _object->computeDynamics(mGravity, _object->getPoseVelocity(), false); // Not sure if we need this
     }
 
     // create collision dynanmics object
@@ -207,7 +207,7 @@ namespace robotics {
       int start = mIndices[i] * 2;
       int size = getSkeleton(i)->getNumDofs();
       state.segment(start, size) = getSkeleton(i)->getPose();
-      state.segment(start + size, size) = getSkeleton(i)->getQDotVector();
+      state.segment(start + size, size) = getSkeleton(i)->getPoseVelocity();
     }
     return state;
   }
@@ -228,7 +228,7 @@ namespace robotics {
             - getSkeleton(i)->getCombinedVector() + getSkeleton(i)->getExternalForces()
             + mCollisionHandle->getConstraintForce(i) + getSkeleton(i)->getInternalForces());
 
-        deriv.segment(start, size) = getSkeleton(i)->getQDotVector() + (qddot * mTimeStep); // set velocities
+        deriv.segment(start, size) = getSkeleton(i)->getPoseVelocity() + (qddot * mTimeStep); // set velocities
         deriv.segment(start + size, size) = qddot; // set qddot (accelerations)
     }
     return deriv;

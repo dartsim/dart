@@ -27,7 +27,7 @@ namespace dynamics {
         SkeletonDynamics *skel = (SkeletonDynamics*)mBody->getSkel();
         _J[mSkelIndex].block(_rowIndex, 0, 3, skel->getNumDofs()) = mJ;
         Vector3d worldP = xformHom(mBody->getWorldTransform(), mOffset);
-        VectorXd qDot = skel->getQDotVector();
+        VectorXd qDot = skel->getPoseVelocity();
         _C.segment(_rowIndex, 3) = worldP - mTarget;
         _CDot.segment(_rowIndex, 3) = mJ * qDot;
     }

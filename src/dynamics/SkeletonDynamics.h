@@ -74,7 +74,7 @@ namespace dynamics{
         Eigen::VectorXd getCombinedVector() const { return mCg; }
         Eigen::VectorXd getExternalForces() const { return mFext; }
         Eigen::VectorXd getInternalForces() const { return mFint; }
-        Eigen::VectorXd getQDotVector() const { return mQdot; }
+        Eigen::VectorXd getPoseVelocity() const { return mQdot; }
         bool getImmobileState() const { return mImmobile; }
         void setImmobileState(bool _s) { mImmobile = _s; }
         void setInternalForces(const Eigen::VectorXd& _forces);
