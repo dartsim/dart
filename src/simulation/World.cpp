@@ -121,6 +121,7 @@ void World::step()
             itrBodyNodeDyn
                     = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
             itrBodyNodeDyn->evalVelocity(mSkeletons[i]->getQDotVector());
+            itrBodyNodeDyn->evalOmega(mSkeletons[i]->getQDotVector());
         }
     }
 
