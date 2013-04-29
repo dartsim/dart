@@ -121,7 +121,7 @@ using namespace utils;
                     continue;
 
                 VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
-                VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
+                VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getPoseVelocity()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
                 mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
                 startRow += tauStar.rows();
             }
@@ -368,7 +368,7 @@ using namespace utils;
             for (int i = 0; i < mSkels.size(); i++) {
                 if (mSkels[i]->getImmobileState())
                     continue;
-                VectorXd qDot = mSkels[i]->getQDotVector();
+                VectorXd qDot = mSkels[i]->getPoseVelocity();
                 mTauHat += -(mJ[i] - mPreJ[i]) / mDt * qDot - mJMInv[i] * (mSkels[i]->getInternalForces() + mSkels[i]->getExternalForces() - mSkels[i]->getCombinedVector());
             }
             mTauHat -= ks * mC + kd * mCDot;

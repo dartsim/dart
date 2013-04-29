@@ -361,7 +361,7 @@ namespace dynamics{
     void SkeletonDynamics::backupInitState()
     {
         mPoseInit = getPose();
-        mQdotInit = getQDotVector();
+        mQdotInit = getPoseVelocity();
     }
 
     void SkeletonDynamics::restoreInitState()

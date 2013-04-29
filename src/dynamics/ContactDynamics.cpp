@@ -161,7 +161,7 @@ void ContactDynamics::updateTauStar() {
             continue;
 
         VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
-        VectorXd tauStar = mSkels[i]->getMassMatrix() * mSkels[i]->getQDotVector();
+        VectorXd tauStar = mSkels[i]->getMassMatrix() * mSkels[i]->getPoseVelocity();
         tauStar.noalias() -= (mDt * (mSkels[i]->getCombinedVector() - tau));
         mTauStar.segment(startRow, tauStar.rows()) = tauStar;
         startRow += tauStar.rows();

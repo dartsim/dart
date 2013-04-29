@@ -51,7 +51,7 @@ namespace dynamics {
 
     void JointLimitDynamics::updateTauStar() {
         VectorXd tau = mSkel->getExternalForces() + mSkel->getInternalForces();
-        mTauStar = (mSkel->getMassMatrix() * mSkel->getQDotVector()) - (mDt * (mSkel->getCombinedVector() - tau));
+        mTauStar = (mSkel->getMassMatrix() * mSkel->getPoseVelocity()) - (mDt * (mSkel->getCombinedVector() - tau));
     }
 
     void JointLimitDynamics::applyJointLimitTorques() {
