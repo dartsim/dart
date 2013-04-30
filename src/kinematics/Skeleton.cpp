@@ -268,4 +268,22 @@ namespace kinematics {
         return result;
     }
 
+    void Skeleton::updateBodyNodeTransformations()
+    {
+    }
+
+    void Skeleton::updateBodyNodeVelocities()
+    {
+        unsigned int numNodes = 0;
+        BodyNode* pMass = NULL;
+
+        numNodes = mNodes.size();
+        for (unsigned int i = 1; i < numNodes; i++)
+        {
+            pMass = mNodes[i];
+//            pMass->mVel = InvAd(pMass->FS_GetSE3(), pMass->m_ParentLink->m_Vel)
+//                + pMass->m_ParentJoint->FS_UpdateLocalVelocity();
+        }
+    }
+
 } // namespace kinematics
