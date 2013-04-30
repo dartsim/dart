@@ -79,25 +79,7 @@ void World::setTimeStep(double _timeStep)
 void World::reset()
 {
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
-    {
         mSkeletons[i]->restoreInitState();
-    }
-
-    // Calculate velocities represented in world frame (forward kinematics).
-    // TODO: We need to consider better way.
-//    dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
-//    for (unsigned int i = 0; i < getNumSkeletons(); ++i)
-//    {
-//        for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
-//        {
-//            itrBodyNodeDyn
-//                    = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
-//            itrBodyNodeDyn->evalVelocity(mSkeletons[i]->getQDotVector());
-//        }
-//    }
-
-    // Contact reset.
-    //mCollisionHandle->reset();
 
     // Reset time and number of frames.
     mTime = 0;
@@ -112,15 +94,14 @@ void World::step()
 
     // TODO: We need to consider better way.
     // Calculate body node's velocities represented in world frame.
-    dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
+    kinematics::BodyNode* itrBodyNode = NULL;
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
     {
         for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
         {
-            itrBodyNodeDyn
-                    = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
-            itrBodyNodeDyn->evalVelocity(mSkeletons[i]->getPoseVelocity());
-            itrBodyNodeDyn->evalOmega(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode = mSkeletons[i]->getNode(j);
+            itrBodyNode->evalVelocity(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode->evalOmega(mSkeletons[i]->getPoseVelocity());
         }
     }
 
