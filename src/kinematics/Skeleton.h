@@ -107,6 +107,10 @@ namespace kinematics {
         /// _name, then return NULL.
         Joint* getJoint(const char* const _name) const;
 
+        void updateBodyNodeTransformations();
+
+        void updateBodyNodeVelocities();
+
     protected:
         std::string mName;
         std::vector<Marker*> mMarkers;
