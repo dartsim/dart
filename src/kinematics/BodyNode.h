@@ -197,6 +197,11 @@ namespace kinematics {
         inline bool getCollideState() const { return mCollidable; }
         inline void setCollideState(bool _c) { mCollidable = _c; }
 
+        void evalVelocity(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the velocity of the COM in the world frame
+        void evalOmega(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the Omega in the world frame
+
+        Eigen::Vector3d mVel; ///< Linear velocity in the world frame
+        Eigen::Vector3d mOmega; ///< Angular velocity in the world frame
     protected:
         
         char mName[MAX_NODE3D_NAME]; ///< Name

@@ -414,20 +414,6 @@ namespace dynamics{
         }
     }
 
-    void BodyNodeDynamics::evalVelocity(const VectorXd &_qDotSkel){
-        mVel.setZero();
-        for(int i=0; i<getNumDependentDofs(); i++){
-            mVel += mJv.col(i)*_qDotSkel[mDependentDofs[i]];
-        }
-    }
-
-    void BodyNodeDynamics::evalOmega(const VectorXd &_qDotSkel){
-        mOmega.setZero();
-        for(int i=mNumRootTrans; i<getNumDependentDofs(); i++){
-            mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
-        }
-    }
-
     void BodyNodeDynamics::evalMassMatrix() {
         mM.triangularView<Upper>() = getMass() * mJv.transpose() * mJv;
         mM.triangularView<Upper>() += mJw.transpose() * mIc * mJw;

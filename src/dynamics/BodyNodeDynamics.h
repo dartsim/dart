@@ -106,16 +106,12 @@ namespace dynamics {
         void updateSecondDerivatives();  ///< Update the second derivatives of the transformations
         void updateSecondDerivatives(Eigen::Vector3d _offset);  ///< Update the second derivatives of the transformations
 
-        Eigen::Vector3d mVel; ///< Linear velocity in the world frame
-        Eigen::Vector3d mOmega; ///< Angular velocity in the world frame
         Eigen::MatrixXd mM; ///< Mass matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton mass matrix
         Eigen::MatrixXd mC; ///< Coriolis matrix of dimension numDependentDofs x numDependentDofs; to be added carefully to the skeleton Coriolis matrix
         Eigen::VectorXd mCvec; ///< Coriolis vector of dimension numDependentDofs x 1; mCvec = mC*qdot
         Eigen::VectorXd mG; ///< Gravity vector or generalized gravity forces; dimension numDependentDofs x 1
         Eigen::VectorXd mFext; ///< generalized external forces this node contributes: J^TF; dimension numDependentDofs x 1
         
-        void evalVelocity(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the velocity of the COM in the world frame
-        void evalOmega(const Eigen::VectorXd &_qDotSkel);   ///< evaluates the Omega in the world frame
         void evalMassMatrix();  ///< evaluates the mass matrix mM
         void evalCoriolisMatrix(const Eigen::VectorXd &_qDotSkel);  ///< evaluates the Coriolis matrix mC
         void evalCoriolisVector(const Eigen::VectorXd &_qDotSkel);  ///< evaluates the Coriolis vector mCvec directy: i.e. shortcut for mC*qdot

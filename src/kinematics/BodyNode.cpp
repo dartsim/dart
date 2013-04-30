@@ -317,6 +317,20 @@ namespace kinematics {
     MatrixXd BodyNode::getJacobianAngular() const {
         return mJw;
     }
+
+    void BodyNode::evalVelocity(const VectorXd &_qDotSkel) {
+        mVel.setZero();
+        for(int i = 0; i < getNumDependentDofs(); i++) {
+            mVel += mJv.col(i)*_qDotSkel[mDependentDofs[i]];
+        }
+    }
+
+    void BodyNode::evalOmega(const VectorXd &_qDotSkel) {
+        mOmega.setZero();
+        for(int i = mNumRootTrans; i < getNumDependentDofs(); i++) {
+            mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
+        }
+    }
     
 } // namespace kinematics
 
