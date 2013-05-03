@@ -237,11 +237,11 @@ using namespace utils;
         MatrixXd ConstraintDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
             int nDofs = node->getSkel()->getNumDofs();
             MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-            VectorXd invP = utils::xformHom(node->getWorldInvTransform(), p);
+            VectorXd invP = math::xformHom(node->getWorldInvTransform(), p);
 
             for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
                 int i = node->getDependentDof(dofIndex);
-                VectorXd Jcol = utils::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
+                VectorXd Jcol = math::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
                 Jt.row(i) = Jcol;
             }
 

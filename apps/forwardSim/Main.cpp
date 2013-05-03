@@ -9,7 +9,7 @@
 using namespace kinematics;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace math;
 
 int main(int argc, char* argv[])
 {

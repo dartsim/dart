@@ -221,13 +221,13 @@ namespace dynamics{
                 Vector3d clparent = nodeParent->getLocalCOM();
                 Vector3d rl = mT.topRightCorner<3,1>();    // translation from parent's origin to self origin
                 mJv.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJv;
-                mJv.leftCols(nodeParent->getNumDependentDofs()).noalias() -= utils::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent)) * nodeParent->mJw;
-                mJv.noalias() -= utils::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
+                mJv.leftCols(nodeParent->getNumDependentDofs()).noalias() -= math::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent)) * nodeParent->mJw;
+                mJv.noalias() -= math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
             }
             // base case: root
             else {
                 mJw.rightCols(mJointParent->getNumDofsRot()) = mJwJoint;
-                mJv.noalias() -= utils::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
+                mJv.noalias() -= math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
                 // if root has translation DOFs
                 if(mJointParent->getNumDofsTrans()>0){
                     // ASSUME - 3 translational dofs
@@ -381,7 +381,7 @@ namespace dynamics{
         mJvq.at(_qi).setZero();
         if (_qi<mNumRootTrans) return;
         for (int j = mNumRootTrans; j < getNumDependentDofs(); j++) {
-            VectorXd Jvqi = utils::xformHom(mWqq.at(_qi).at(j), _offset);
+            VectorXd Jvqi = math::xformHom(mWqq.at(_qi).at(j), _offset);
             mJvq.at(_qi)(0,j) = Jvqi[0];
             mJvq.at(_qi)(1,j) = Jvqi[1];
             mJvq.at(_qi)(2,j) = Jvqi[2];
@@ -393,7 +393,7 @@ namespace dynamics{
         if(_qi<mNumRootTrans) return;
         for(int j=mNumRootTrans; j<getNumDependentDofs(); j++){
             Matrix3d JwqijSkewSymm = mWqq.at(_qi).at(j).topLeftCorner(3,3)*mW.topLeftCorner(3,3).transpose() + mWq.at(j).topLeftCorner(3,3)*mWq.at(_qi).topLeftCorner(3,3).transpose();
-            Vector3d Jwqij = utils::fromSkewSymmetric(JwqijSkewSymm);
+            Vector3d Jwqij = math::fromSkewSymmetric(JwqijSkewSymm);
             mJwq.at(_qi)(0,j) = Jwqij[0];
             mJwq.at(_qi)(1,j) = Jwqij[1];
             mJwq.at(_qi)(2,j) = Jwqij[2];
@@ -444,7 +444,7 @@ namespace dynamics{
         mC.noalias() = getMass() * mJv.transpose() * mJvDot;
         mC.noalias() += mJw.transpose() * mIc * mJwDot;
         // term 2
-        mC.noalias() += mJw.transpose() * utils::makeSkewSymmetric(mOmega) * mIc * mJw;
+        mC.noalias() += mJw.transpose() * math::makeSkewSymmetric(mOmega) * mIc * mJw;
     }
 
     void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
@@ -487,7 +487,7 @@ namespace dynamics{
             MatrixXd J = MatrixXd::Zero(3, getNumDependentDofs());
             Vector3d force = mW.topLeftCorner<3,3>() * mContacts[i].second;
             for(int j = 0; j < getNumDependentDofs(); j++)
-                J.col(j) = utils::xformHom(mWq[j],mContacts[i].first);
+                J.col(j) = math::xformHom(mWq[j],mContacts[i].first);
             // compute J^TF
             mFext.noalias() += J.transpose() * force;
         }
@@ -593,7 +593,7 @@ namespace dynamics{
         Vector3d pos = _offset;
         Vector3d force = _force;
         if( !_isOffsetLocal )
-            pos = utils::xformHom( getWorldInvTransform(), _offset );
+            pos = math::xformHom( getWorldInvTransform(), _offset );
         if( !_isForceLocal )
             force.noalias() = mW.topLeftCorner<3,3>().transpose() * _force;
         mContacts.push_back( pair<Vector3d, Vector3d>(pos, force) );

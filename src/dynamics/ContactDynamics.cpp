@@ -280,11 +280,11 @@ void ContactDynamics::applySolution() {
 MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
     int nDofs = node->getSkel()->getNumDofs();
     MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-    Vector3d invP = utils::xformHom(node->getWorldInvTransform(), p);
+    Vector3d invP = math::xformHom(node->getWorldInvTransform(), p);
 
     for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
         int i = node->getDependentDof(dofIndex);
-        Jt.row(i) = utils::xformHom(node->getDerivWorldTransform(dofIndex), invP);
+        Jt.row(i) = math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
     }
 
     return Jt;
@@ -356,12 +356,12 @@ void ContactDynamics::updateNBMatrices() {
                     Vector3d N12 = -c.normal;
                     int nDofs = c.bd2->getSkel()->getNumDofs();
                     MatrixXd J12( MatrixXd::Zero(3, nDofs) );
-                    VectorXd invP = utils::xformHom(c.bd2->getWorldInvTransform(), p);
+                    VectorXd invP = math::xformHom(c.bd2->getWorldInvTransform(), p);
 
                     t2.startTimer();
                     for(int dofIndex = 0; dofIndex < c.bd2->getNumDependentDofs(); dofIndex++) {
                         int index = c.bd2->getDependentDof(dofIndex);
-                        VectorXd Jcol = utils::xformHom(c.bd2->getDerivWorldTransform(dofIndex), (Vector3d)invP);
+                        VectorXd Jcol = math::xformHom(c.bd2->getDerivWorldTransform(dofIndex), (Vector3d)invP);
                         J12.col(index) = Jcol;
                     }
                     t2.stopTimer();

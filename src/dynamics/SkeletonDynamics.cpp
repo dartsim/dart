@@ -248,7 +248,7 @@ namespace dynamics{
                     for (int j = 0; j < 3; j++) {
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3) * node->getLocalTransform().topLeftCorner(3,3).transpose();
-                        oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                        oldJwBody.col(j) = math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
                 
                     // the new Jw
@@ -261,7 +261,7 @@ namespace dynamics{
                     Matrix4d Tbody = jnt->getLocalTransform();
                     for (int j = 0; j < 3; j++) {
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
-                        newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                        newJwBody.col(j) = math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
                     // solve new_qdot s.t. newJw*new_qdot = w
@@ -303,7 +303,7 @@ namespace dynamics{
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)
                             * node->getLocalTransform().topLeftCorner(3,3).transpose();
-                        oldJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                        oldJwBody.col(j) = math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
                 
                     // the new Jw
@@ -316,7 +316,7 @@ namespace dynamics{
                     Matrix4d Tbody = jnt->getLocalTransform();
                     for (int j = 0; j < 3; j++) {
                         Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
-                        newJwBody.col(j) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+                        newJwBody.col(j) = math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
                     // solve new_qdot s.t. newJw*new_qdot = w

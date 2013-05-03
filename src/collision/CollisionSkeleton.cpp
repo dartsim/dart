@@ -12,7 +12,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace utils;
+using namespace math;
 
 namespace collision_checking{
     

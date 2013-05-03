@@ -5,7 +5,7 @@
 #include "math/UtilsMath.h"
 
 using namespace kinematics;
-using namespace utils;
+using namespace math;
 
 namespace optimizer {
     
