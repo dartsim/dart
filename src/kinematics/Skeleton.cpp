@@ -128,22 +128,44 @@ namespace kinematics {
         }
     }
 
-    BodyNode* Skeleton::getNode(const char* const name) {
+    BodyNode* Skeleton::getNode(const char* const _name) const {
         const int nNodes = getNumNodes();
         for(int i = 0; i < nNodes; i++){
             BodyNode* node = getNode(i);
-            if (strcmp(name, node->getName()) == 0) {
+            if (strcmp(_name, node->getName()) == 0) {
                 return node;
             }
         }
         return NULL;
     }
 
-    int Skeleton::getNodeIndex(const char* const name) {
+    int Skeleton::getNodeIndex(const char* const _name) const {
         const int nNodes = getNumNodes();
         for(int i = 0; i < nNodes; i++){
             BodyNode* node = getNode(i);
-            if (strcmp(name, node->getName()) == 0) {
+            if (strcmp(_name, node->getName()) == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    Joint* Skeleton::getJoint(const char* const _name) const {
+        const int nJoints = getNumJoints();
+        for (int i = 0; i < nJoints; ++i) {
+            Joint* joint = getJoint(i);
+            if (strcmp(_name, joint->getName()) == 0) {
+                return joint;
+            }
+        }
+        return NULL;
+    }
+
+    int Skeleton::getJointIndex(const char* const _name) const {
+        const int nJoints = getNumJoints();
+        for (int i = 0; i < nJoints; ++i) {
+            Joint* joint = getJoint(i);
+            if (strcmp(_name, joint->getName()) == 0) {
                 return i;
             }
         }
@@ -236,36 +258,6 @@ namespace kinematics {
         mRoot->drawMarkers(_ri, _color, _useDefaultColor);
     }
 
-    BodyNode* Skeleton::getBodyNode(const char* const _name) const
-    {
-        BodyNode* result = NULL;
 
-        for (unsigned int i = 0; i < mNodes.size(); ++i)
-        {
-            if (mNodes[i]->getName() == _name)
-            {
-                result = mNodes[i];
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    Joint* Skeleton::getJoint(const char* const _name) const
-    {
-        Joint* result = NULL;
-
-        for (unsigned int i = 0; i < mJoints.size(); ++i)
-        {
-            if (mJoints[i]->getName() == _name)
-            {
-                result = mJoints[i];
-                break;
-            }
-        }
-
-        return result;
-    }
 
 } // namespace kinematics
