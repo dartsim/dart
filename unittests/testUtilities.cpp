@@ -32,8 +32,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utils/UtilsRotation.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsRotation.h"
+#include "math/UtilsMath.h"
 #include <iostream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
@@ -43,7 +43,7 @@ using namespace Eigen;
 
 /* ********************************************************************************************* */
 TEST(UTILS, ROTATION) {
-  using namespace utils::rotation;
+  using namespace math;
   
   // Create Initial ExpMap
   Vector3d axis(2.0, 1.0, 1.0);

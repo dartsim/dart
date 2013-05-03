@@ -3,7 +3,7 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/Dof.h"
 #include "dynamics/BodyNodeDynamics.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 using namespace Eigen;
 using namespace kinematics;

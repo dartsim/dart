@@ -41,8 +41,8 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "kinematics/BodyNode.h"
-#include "utils/EigenHelper.h"
-#include "utils/UtilsMath.h"
+#include "math/EigenHelper.h"
+#include "math/UtilsMath.h"
 
 namespace dynamics {
     /**

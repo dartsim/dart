@@ -4,7 +4,7 @@
 #include "kinematics/BodyNode.h"
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 using namespace Eigen;
 using namespace utils;

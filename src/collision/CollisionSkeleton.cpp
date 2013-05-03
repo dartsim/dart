@@ -4,8 +4,8 @@
 #include "kinematics/ShapeMesh.h"
 #include "kinematics/ShapeCylinder.h"
 #include <cmath>
-#include "utils/LoadOpengl.h"
-#include "utils/UtilsMath.h"
+#include "renderer/LoadOpengl.h"
+#include "math/UtilsMath.h"
 #include "kinematics/BodyNode.h"
 #include "fcl/collision.h"
 #include <algorithm>

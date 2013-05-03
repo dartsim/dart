@@ -50,7 +50,7 @@ jittering for depth of field effects. Use in conjunction with the
 accwindow() routine.
 */
 
-#include <utils/LoadOpengl.h>
+#include <renderer/LoadOpengl.h>
 
 typedef struct 
 {

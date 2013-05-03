@@ -1,6 +1,6 @@
 #include "MyWindow.h"
 #include "PositionConstraint.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include "optimizer/ObjectiveBox.h"

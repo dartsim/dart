@@ -46,7 +46,7 @@ using namespace Eigen;
 #include "BodyNode.h"
 #include "Marker.h"
 #include "Transformation.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 #include "renderer/RenderInterface.h"
 

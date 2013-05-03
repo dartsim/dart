@@ -8,7 +8,7 @@
 #include "BodyNodeDynamics.h"
 
 #include "collision/CollisionSkeleton.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 
 using namespace Eigen;

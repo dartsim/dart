@@ -50,7 +50,7 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 // Local Headers
-#include "Misc.h"
+#include "utils/Misc.h"
 
 namespace utils {
 

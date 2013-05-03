@@ -36,7 +36,7 @@
  */
 
 #include "TrfmRotateQuat.h"
-#include "utils/UtilsRotation.h"
+#include "math/UtilsRotation.h"
 #include "renderer/RenderInterface.h"
 
 #include <cassert>
@@ -86,7 +86,7 @@ namespace kinematics {
         int el=-1;
         for(int i=0; i<4; i++) if(d==mDofs[i]) el=i;
         assert(el!=-1);
-        mat = utils::rotation::quatDeriv(q, el);
+        mat = math::quatDeriv(q, el);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)
@@ -110,7 +110,7 @@ namespace kinematics {
         }
         assert(el1!=-1);
         assert(el2!=-1);
-        mat = utils::rotation::quatSecondDeriv(q, el1, el2);
+        mat = math::quatSecondDeriv(q, el1, el2);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)

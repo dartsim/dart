@@ -40,7 +40,7 @@
 #include "kinematics/Joint.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/Dof.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 using namespace Eigen;
 using namespace kinematics;

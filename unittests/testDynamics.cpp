@@ -38,8 +38,8 @@
 #include "kinematics/FileInfoDof.h"
 #include "kinematics/BodyNode.h"
 #include "utils/Paths.h"
-#include "utils/UtilsRotation.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsRotation.h"
+#include "math/UtilsMath.h"
 #include <iostream>
 #include <Eigen/Dense>
 #include <iostream>

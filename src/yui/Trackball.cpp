@@ -36,7 +36,7 @@
  */
 
 #include "Trackball.h"
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 
 using namespace Eigen;
 

@@ -2,7 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <cstdio>

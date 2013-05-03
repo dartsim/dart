@@ -40,7 +40,7 @@
 
 #include <fstream>
 #include <string>
-#include "utils/UtilsRotation.h"
+#include "math/UtilsRotation.h"
 
 using namespace std;
 
@@ -62,7 +62,7 @@ namespace utils {
             static const string mSuffixPrim;
             static const string mSuffixShape;
             static const string mSuffixGeom;
-            static const utils::rotation::RotationOrder mRotOrder;
+            static const math::RotationOrder mRotOrder;
 
             static bool exportMayaAsciiHeader(ofstream &_outFile );
             static bool exportMayaAsciiShape(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);

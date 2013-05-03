@@ -39,7 +39,7 @@
 #ifndef YUI_GLUTWINDOW_H
 #define YUI_GLUTWINDOW_H
 
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 #include "renderer/RenderInterface.h"
 #include <vector>
 #include "lodepng.h"

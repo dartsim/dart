@@ -1,7 +1,7 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "simulation/World.h"
 
 #include "MyWindow.h"

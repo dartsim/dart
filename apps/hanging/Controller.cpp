@@ -5,7 +5,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
 #include "kinematics/Shape.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "collision/CollisionSkeleton.h"
 
 using namespace kinematics;

@@ -38,7 +38,7 @@
 #include "Transformation.h"
 
 #include "utils/Misc.h" // For M_PI
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "renderer/RenderInterface.h"
 
 #include "Dof.h"
