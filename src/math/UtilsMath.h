@@ -52,7 +52,7 @@ using namespace Eigen;
 // Local Headers
 #include "utils/Misc.h"
 
-namespace utils {
+namespace math {
 
     // TODO: Is here right place?
     typedef Matrix<double, 6, 1> Vector6d;

@@ -421,7 +421,7 @@ namespace math {
         double theta = _q.norm();
 
         Matrix3d R = Matrix3d::Zero();
-        Matrix3d qss =  utils::makeSkewSymmetric(_q);
+        Matrix3d qss =  math::makeSkewSymmetric(_q);
         Matrix3d qss2 =  qss*qss;
 
         if(theta<EPSILON_EXPMAP_THETA){
@@ -437,7 +437,7 @@ namespace math {
         double theta = _q.norm();
 
         Matrix3d J = Matrix3d::Zero();
-        Matrix3d qss =  utils::makeSkewSymmetric(_q);
+        Matrix3d qss =  math::makeSkewSymmetric(_q);
         Matrix3d qss2 =  qss*qss;
 
         if(theta<EPSILON_EXPMAP_THETA){
@@ -453,9 +453,9 @@ namespace math {
         double theta = _q.norm();
 
         Matrix3d Jdot = Matrix3d::Zero();
-        Matrix3d qss =  utils::makeSkewSymmetric(_q);
+        Matrix3d qss =  math::makeSkewSymmetric(_q);
         Matrix3d qss2 =  qss*qss;
-        Matrix3d qdss = utils::makeSkewSymmetric(_qdot);
+        Matrix3d qdss = math::makeSkewSymmetric(_qdot);
         double ttdot = _q.dot(_qdot);   // theta*thetaDot
         double st = sin(theta);
         double ct = cos(theta);

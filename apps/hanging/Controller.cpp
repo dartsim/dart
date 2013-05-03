@@ -10,7 +10,7 @@
 
 using namespace kinematics;
 using namespace dynamics;
-using namespace utils;
+using namespace math;
 
 Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_constraintHandle, double _t) {
     mSkel = _skel;

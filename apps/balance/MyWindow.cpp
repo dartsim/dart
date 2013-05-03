@@ -9,7 +9,7 @@ using namespace Eigen;
 using namespace std;
 using namespace dynamics;
 using namespace yui;
-using namespace utils;
+using namespace math;
 
 void MyWindow::timeStepping()
 {

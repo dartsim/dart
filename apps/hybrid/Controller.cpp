@@ -8,7 +8,7 @@
 using namespace Eigen;
 using namespace kinematics;
 using namespace dynamics;
-using namespace utils;
+using namespace math;
 
 
 Controller::Controller(dynamics::SkeletonDynamics *_skel) {
