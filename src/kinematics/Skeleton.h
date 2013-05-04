@@ -111,6 +111,9 @@ namespace kinematics {
 
         void updateBodyNodeVelocities();
 
+        void setSelfCollidable(bool _selfCollidable) { mSelfCollidable = _selfCollidable; }
+        bool getSelfCollidable() const { return mSelfCollidable; }
+
     protected:
         std::string mName;
         std::vector<Marker*> mMarkers;
@@ -120,6 +123,7 @@ namespace kinematics {
         std::vector<Joint*> mJoints;
         Eigen::VectorXd mPoseInit; ///< Initial pose (Q)
         double mMass;
+        bool mSelfCollidable;
     };
 
 } // namespace kinematics

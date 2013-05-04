@@ -2,7 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/fcl2/FCL2CollisionDetector.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -181,7 +181,7 @@ void MyWindow::draw()
         }
     }else{
         if (mShowMarkers) {
-            for (int k = 0; k < mConstraintHandle->getCollisionChecker()->getNumContact(); k++) {
+            for (int k = 0; k < mConstraintHandle->getCollisionChecker()->getNumContacts(); k++) {
                 Vector3d  v = mConstraintHandle->getCollisionChecker()->getContact(k).point;
                 Vector3d n = mConstraintHandle->getCollisionChecker()->getContact(k).normal / 10.0;
                 Vector3d f = mConstraintHandle->getCollisionChecker()->getContact(k).force / 100.0;
@@ -320,7 +320,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 void MyWindow::bake()
 {
-    int nContact = mConstraintHandle->getCollisionChecker()->getNumContact();
+    int nContact = mConstraintHandle->getCollisionChecker()->getNumContacts();
     VectorXd state(mIndices.back() + 6 * nContact);
     for (unsigned int i = 0; i < mSkels.size(); i++)
         state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];

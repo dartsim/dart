@@ -6,7 +6,7 @@
 #include "kinematics/Dof.h"
 #include "kinematics/Shape.h"
 #include "utils/UtilsMath.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/fcl2/FCL2CollisionDetector.h"
 
 using namespace kinematics;
 using namespace dynamics;

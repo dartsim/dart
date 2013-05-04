@@ -2,6 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
+#include "collision/CollisionDetector.h"
 #include "utils/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -249,9 +250,9 @@ void MyWindow::draw()
         if (disp == SIMULATE) {
             penColor = Vector3d(0.2, 0.2, 0.8);
             ellipsoidColor = Vector3d(0.02, 0.02, 0.02);
-            for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
-                drawContact(mCollisionHandle->getCollisionChecker()->getContact(k).point, 
-                            mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0,
+            for (int k = 0; k < mCollisionHandle->getCollisionDetector()->getNumContacts(); k++) {
+                drawContact(mCollisionHandle->getCollisionDetector()->getContact(k).point, 
+                            mCollisionHandle->getCollisionDetector()->getContact(k).force / 10.0,
                             penColor,
                             ellipsoidColor);
             }
@@ -408,15 +409,15 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 void MyWindow::bake()
 {
-    int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
+    int nContact = mCollisionHandle->getCollisionDetector()->getNumContacts();
     VectorXd state(mIndices.back() + 6 * nContact);
     for (unsigned int i = 0; i < mSkels.size(); i++)
         state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
     for (int i = 0; i < nContact; i++) {
         int begin = mIndices.back() + i * 6;
-        state.segment(begin, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).point;
+        state.segment(begin, 3) = mCollisionHandle->getCollisionDetector()->getContact(i).point;
         //state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).force;
-        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionChecker()->getContact(i).normal;
+        state.segment(begin + 3, 3) = mCollisionHandle->getCollisionDetector()->getContact(i).normal;
     }
     mBakedStates.push_back(state);
 }

@@ -46,7 +46,9 @@ using namespace Eigen;
 using namespace kinematics;
 
 namespace dynamics{
-    SkeletonDynamics::SkeletonDynamics(): kinematics::Skeleton(), mImmobile(false){
+    SkeletonDynamics::SkeletonDynamics()
+        : kinematics::Skeleton(),
+          mImmobile(false) {
     }
 
     SkeletonDynamics::~SkeletonDynamics(){
