@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTILS_UTILSROTATION_H
-#define UTILS_UTILSROTATION_H
+#ifndef MATH_UTILSROTATION_H
+#define MATH_UTILSROTATION_H
 
 // External Libraries
 #include <Eigen/Dense>

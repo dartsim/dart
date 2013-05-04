@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTILS_UTILSMATH_H
-#define UTILS_UTILSMATH_H
+#ifndef MATH_UTILSMATH_H
+#define MATH_UTILSMATH_H
 
 // Standard Libraries
 #include <vector>

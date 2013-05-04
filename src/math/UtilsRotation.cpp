@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "UtilsRotation.h"
-#include "UtilsMath.h"
+#include "math/UtilsRotation.h"
+#include "math/UtilsMath.h"
 
 // Standard Libraries
 #include <cstdio>
