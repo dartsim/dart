@@ -46,7 +46,7 @@
 #include "kinematics/ShapeCylinder.h"
 #include "kinematics/BodyNode.h"
 
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 
 #include "collision/fcl/CollisionShapes.h"
 #include "collision/fcl/FCLCollisionDetector.h"

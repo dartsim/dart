@@ -2,8 +2,8 @@
 #include <cmath>
 #include <fcl/collision.h>
 
-#include "utils/LoadOpengl.h"
-#include "utils/UtilsMath.h"
+#include "renderer/LoadOpengl.h"
+#include "math/UtilsMath.h"
 
 #include "kinematics/BodyNode.h"
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace utils;
+using namespace math;
 
 namespace collision
 {

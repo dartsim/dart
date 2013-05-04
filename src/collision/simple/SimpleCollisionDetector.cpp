@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 #include "kinematics/Shape.h"
 #include "kinematics/BodyNode.h"
