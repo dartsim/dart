@@ -36,7 +36,7 @@
  */
 
 #include "GLFuncs.h"
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 #include <string>
 #include <iostream>
 #include <Eigen/Eigen>

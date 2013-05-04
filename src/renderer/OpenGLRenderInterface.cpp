@@ -36,7 +36,7 @@
  */
 
 #include "OpenGLRenderInterface.h"
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 #include <iostream>
 #include <assimp/cimport.h>
 

@@ -1,7 +1,7 @@
 #include "MyWindow.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include "Controller.h"

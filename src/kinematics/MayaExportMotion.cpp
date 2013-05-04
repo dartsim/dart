@@ -37,7 +37,7 @@
 
 #include "MayaExportMotion.h"
 #include "MayaExportSkeleton.h"
-#include "utils/UtilsRotation.h"
+#include "math/UtilsRotation.h"
 
 #include "kinematics/Skeleton.h"
 #include "kinematics/FileInfoDof.h"
@@ -149,17 +149,17 @@ namespace utils {
                             if(tf->getVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
                             else vals[di] = tf->getDof(0)->getValue();
                         }
-                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = utils::rotation::eulerToMatrixX(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = utils::rotation::eulerToMatrixY(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = utils::rotation::eulerToMatrixZ(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = math::eulerToMatrixX(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = math::eulerToMatrixY(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = math::eulerToMatrixZ(vals[0])*(rotdofs);
                         if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                             Vector3d exmap(vals[0],vals[1],vals[2]);
-                            Quaterniond quat = utils::rotation::expToQuat(exmap);
-                            rotdofs = utils::rotation::quatToMatrix(quat)*(rotdofs);
+                            Quaterniond quat = math::expToQuat(exmap);
+                            rotdofs = math::quatToMatrix(quat)*(rotdofs);
                         }
                     }
                     // convert to euler angles
-                    Vector3d erot = utils::rotation::matrixToEuler(rotdofs, utils::rotation::XYZ);	// leave to radians
+                    Vector3d erot = math::matrixToEuler(rotdofs, math::XYZ);	// leave to radians
                     eulerValues.push_back(erot);
                 }
                 // write out the euler values
@@ -214,9 +214,9 @@ namespace utils {
                         vector<Vector3d> eulerValues;
                         for(int i=_first; i<=_last; i++){
                             Vector3d exmap(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex()));
-                            Quaterniond q = utils::rotation::expToQuat(exmap);
+                            Quaterniond q = math::expToQuat(exmap);
                             Matrix3d rot = q.matrix();
-                            Vector3d angles = utils::rotation::matrixToEuler(rot, utils::rotation::XYZ);
+                            Vector3d angles = math::matrixToEuler(rot, math::XYZ);
                             eulerValues.push_back(angles);
                         }
 
@@ -455,13 +455,13 @@ namespace utils {
                     for(int jj=0; jj<3; jj++) Rl(ii, jj) = Wl(ii, jj);
                     tl[ii]=Wl(ii, 3);
                 }
-                Vector3d ei = utils::rotation::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
+                Vector3d ei = math::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
                 eulerAngles.push_back(ei);
                 transVals.push_back(tl);
             }
 
 
-            assert(MayaExportSkeleton::mRotOrder==utils::rotation::XYZ);	// else change the euler angle order
+            assert(MayaExportSkeleton::mRotOrder==math::XYZ);	// else change the euler angle order
             // X rotation
             outFile0<<"anim rotate.rotateX rotateX "<<bodyname.c_str()<<" "<<level<<" "<<numChildJoints<<" "<<dofNum++<<endl;
             outFile0<<"animData {\n";

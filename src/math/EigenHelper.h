@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTILS_EIGEN_HELPER_H
-#define UTILS_EIGEN_HELPER_H
+#ifndef MATH_EIGEN_HELPER_H
+#define MATH_EIGEN_HELPER_H
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>

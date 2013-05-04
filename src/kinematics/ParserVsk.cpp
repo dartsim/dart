@@ -64,7 +64,7 @@ using namespace Eigen;
 #include "Shape.h"
 #include "ShapeEllipsoid.h"
 #include "ShapeBox.h"
-#include "utils/UtilsRotation.h"
+#include "math/UtilsRotation.h"
 #include "utils/UtilsCode.h"
 
 #define SCALE_VSK 1.0e-3
@@ -739,8 +739,8 @@ bool readMarker(tinyxml2::XMLElement*_marker, map<string, double>& _paramsList, 
 
         // create new  position
         Vector3d negExpShoulder = -expShoulder;
-        Quaterniond qr = utils::rotation::expToQuat(negExpShoulder);	// negative for the markers
-        utils::rotation::rotatePoint(qr, lpos2);
+        Quaterniond qr = math::expToQuat(negExpShoulder);	// negative for the markers
+        math::rotatePoint(qr, lpos2);
     }
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));

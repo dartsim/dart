@@ -41,7 +41,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "utils/EigenHelper.h"
+#include "math/EigenHelper.h"
 
 namespace kinematics {
     class FileInfoC3D {

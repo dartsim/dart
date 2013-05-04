@@ -74,7 +74,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 
 #include <vector>
 #include <Eigen/Dense>
-#include "utils/EigenHelper.h"
+#include "math/EigenHelper.h"
 #include "utils/Deprecated.h"
 
 namespace renderer { class RenderInterface; }

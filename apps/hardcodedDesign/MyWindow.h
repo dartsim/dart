@@ -26,7 +26,7 @@
 #include "kinematics/TrfmRotateEuler.h"
 #include "utils/Paths.h"
 #include "utils/Timer.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "yui/GLFuncs.h"
 #include "yui/Win3D.h"
 

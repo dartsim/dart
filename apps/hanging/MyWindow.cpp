@@ -3,7 +3,7 @@
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
 #include "collision/fcl2/FCL2CollisionDetector.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 #include <stdio.h>
@@ -12,6 +12,7 @@
 using namespace dynamics;
 using namespace yui;
 using namespace utils;
+using namespace math;
 
 void MyWindow::initDyn()
 {

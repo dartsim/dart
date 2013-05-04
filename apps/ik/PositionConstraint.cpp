@@ -2,10 +2,10 @@
 #include "kinematics/BodyNode.h"
 #include "kinematics/Skeleton.h"
 #include "optimizer/Var.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 using namespace kinematics;
-using namespace utils;
+using namespace math;
 
 namespace optimizer {
     

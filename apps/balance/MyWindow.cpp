@@ -3,13 +3,13 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "yui/GLFuncs.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 
 using namespace Eigen;
 using namespace std;
 using namespace dynamics;
 using namespace yui;
-using namespace utils;
+using namespace math;
 
 void MyWindow::timeStepping()
 {

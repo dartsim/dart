@@ -18,8 +18,6 @@ foreach(APPDIR
 	closedLoop
 	drawRRT
 	spheres
-    activity1
-    activity2
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

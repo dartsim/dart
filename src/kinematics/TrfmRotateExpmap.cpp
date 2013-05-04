@@ -37,8 +37,8 @@
 
 #include "TrfmRotateExpmap.h"
 #include "Dof.h"
-#include "utils/UtilsRotation.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsRotation.h"
+#include "math/UtilsMath.h"
 #include "renderer/RenderInterface.h"
 
 
@@ -65,7 +65,7 @@ namespace kinematics {
     void TrfmRotateExpMap::computeTransform(){
         Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
-        Matrix3d rot = utils::rotation::expMapRot(q);
+        Matrix3d rot = math::expMapRot(q);
         mTransform.setZero();
         mTransform.topLeftCorner(3,3) = rot;
         mTransform(3, 3) = 1.0;
@@ -89,9 +89,9 @@ namespace kinematics {
         assert(j!=-1);
         assert(j>=0 && j<=2);
 
-        Matrix3d R = utils::rotation::expMapRot(q);
-        Matrix3d J = utils::rotation::expMapJac(q);
-        Matrix3d dRdj = utils::makeSkewSymmetric(J.col(j))*R;
+        Matrix3d R = math::expMapRot(q);
+        Matrix3d J = math::expMapJac(q);
+        Matrix3d dRdj = math::makeSkewSymmetric(J.col(j))*R;
 
         Matrix4d dRdj4d = Matrix4d::Zero();
         dRdj4d.topLeftCorner(3,3) = dRdj;
@@ -113,11 +113,11 @@ namespace kinematics {
         assert(j>=0 && j<=2);
         assert(k>=0 && k<=2);
 
-        Matrix3d R = utils::rotation::expMapRot(q);
-        Matrix3d J = utils::rotation::expMapJac(q);
-        Matrix3d Jjss = utils::makeSkewSymmetric(J.col(j));
-        Matrix3d Jkss = utils::makeSkewSymmetric(J.col(k));
-        Matrix3d dJjdkss = utils::makeSkewSymmetric(utils::rotation::expMapJacDeriv(q, k).col(j));
+        Matrix3d R = math::expMapRot(q);
+        Matrix3d J = math::expMapJac(q);
+        Matrix3d Jjss = math::makeSkewSymmetric(J.col(j));
+        Matrix3d Jkss = math::makeSkewSymmetric(J.col(k));
+        Matrix3d dJjdkss = math::makeSkewSymmetric(math::expMapJacDeriv(q, k).col(j));
 
         Matrix3d d2Rdidj = (Jjss*Jkss + dJjdkss)*R;
 
@@ -131,7 +131,7 @@ namespace kinematics {
         Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
         double theta = v.norm();
         Vector3d vhat = Vector3d::Zero();
-        if(!utils::isZero(theta)) {
+        if(!math::isZero(theta)) {
             vhat= v/theta;
             _ri->rotate(vhat, theta * 180 / M_PI);
         }

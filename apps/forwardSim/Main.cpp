@@ -1,7 +1,7 @@
 #include "dynamics/SkeletonDynamics.h"
 #include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "simulation/World.h"
 
 #include "MyWindow.h"
@@ -9,7 +9,7 @@
 using namespace kinematics;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace math;
 
 int main(int argc, char* argv[])
 {

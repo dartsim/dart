@@ -44,7 +44,7 @@
 #include "Skeleton.h"
 #include "Transformation.h"
 #include "utils/Misc.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "renderer/RenderInterface.h"
 
 using namespace std;
@@ -178,7 +178,7 @@ namespace kinematics {
         assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
 
         for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
-            mJv.col(i) = utils::xformHom(mWq[i], mCOMLocal);
+            mJv.col(i) = math::xformHom(mWq[i], mCOMLocal);
         }
     }
 
@@ -186,12 +186,12 @@ namespace kinematics {
         mJw.setZero();
         for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
             Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
-            mJw.col(i) = utils::fromSkewSymmetric(omegaSkewSymmetric);
+            mJw.col(i) = math::fromSkewSymmetric(omegaSkewSymmetric);
         }
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        return utils::xformHom(mW, _lp);
+        return math::xformHom(mW, _lp);
     }
 
     Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {

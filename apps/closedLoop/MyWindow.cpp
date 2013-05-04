@@ -5,7 +5,7 @@
 #include "dynamics/ClosedLoopConstraint.h"
 #include "dynamics/ConstraintDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
-#include "utils/UtilsMath.h"
+#include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
 

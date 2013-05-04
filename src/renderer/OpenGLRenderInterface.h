@@ -41,7 +41,7 @@
 #include <list>
 #include <vector>
 #include "RenderInterface.h"
-#include "utils/LoadOpengl.h"
+#include "renderer/LoadOpengl.h"
 
 using namespace std;
 

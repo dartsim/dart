@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTILS_UTILSMATH_H
-#define UTILS_UTILSMATH_H
+#ifndef MATH_UTILSMATH_H
+#define MATH_UTILSMATH_H
 
 // Standard Libraries
 #include <vector>
@@ -50,9 +50,9 @@ using namespace std;
 #include <Eigen/Dense>
 using namespace Eigen;
 // Local Headers
-#include "Misc.h"
+#include "utils/Misc.h"
 
-namespace utils {
+namespace math {
 
     // TODO: Is here right place?
     typedef Matrix<double, 6, 1> Vector6d;

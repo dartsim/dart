@@ -71,15 +71,19 @@ namespace kinematics {
         void initSkel();
 	
         // inline access functions
-        inline int getNumDofs() { return mDofs.size(); }
-        inline int getNumNodes() { return mNodes.size(); }
-        inline int getNumMarkers() { return mMarkers.size(); }
-        inline int getNumJoints(){return mJoints.size();}
+        inline int getNumDofs() const { return mDofs.size(); }
+        inline int getNumNodes() const { return mNodes.size(); }
+        inline int getNumMarkers() const { return mMarkers.size(); }
+        inline int getNumJoints() const { return mJoints.size();}
         inline Dof* getDof(int _i) { return mDofs[_i]; }
-        inline BodyNode* getNode(int _i) { return mNodes[_i]; }
+        inline BodyNode* getNode(int _i) const { return mNodes[_i]; }
         inline BodyNode* getRoot() { return mRoot; }
-        BodyNode* getNode(const char* const name);
-        int getNodeIndex(const char* const name);
+        BodyNode* getNode(const char* const _name) const;
+        int getNodeIndex(const char* const _name) const;
+        inline Joint* getJoint(int _i) const { return mJoints[_i]; }
+        Joint* getJoint(const char* const _name) const;
+        int getJointIndex(const char* const _name) const;
+
         inline Marker* getMarker(int _i) { return mMarkers[_i]; }
         inline double getMass() { return mMass; }
         Eigen::Vector3d getWorldCOM();
@@ -91,24 +95,10 @@ namespace kinematics {
         void setConfig(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans = true, bool _calcDeriv = true);
         Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
 
-
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
         void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 
-        /// @brief Find body node by name.
-        /// @param[in] _name The name of body node looking for.
-        /// @return Searched body node. If the skeleton does not have a body
-        /// node with _name, then return NULL.
-        BodyNode* getBodyNode(const char* const _name) const;
-
-        /// @brief Find joint by name.
-        /// @param[in] _name The name of joint looking for.
-        /// @return Searched joint. If the skeleton does not have a joint with
-        /// _name, then return NULL.
-        Joint* getJoint(const char* const _name) const;
-
         void updateBodyNodeTransformations();
-
         void updateBodyNodeVelocities();
 
         void setSelfCollidable(bool _selfCollidable) { mSelfCollidable = _selfCollidable; }
