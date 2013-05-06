@@ -7,7 +7,7 @@
 #include "math/UtilsMath.h"
 
 using namespace Eigen;
-using namespace math;
+using namespace dart_math;
 
 namespace dynamics {
     PointConstraint::PointConstraint(BodyNodeDynamics *_body, Vector3d _offset, Vector3d _target, int _skelIndex) {

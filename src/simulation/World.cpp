@@ -235,7 +235,7 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
     {
         _skeleton->computeDynamics(mGravity,
                                    _skeleton->getPoseVelocity(),
-                                   false);
+                                   true);
     }
 
     _skeleton->backupInitState();

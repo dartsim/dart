@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/05/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,26 +35,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <fcl/shape/geometric_shapes.h>
-#include <fcl/BVH/BVH_model.h>
+#ifndef DYNAMICS_INERTIA_H
+#define DYNAMICS_INERTIA_H
 
-#include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
+#include <Eigen/Dense>
 
-#include "collision/CollisionNode.h"
-
-namespace collision
+namespace dynamics
 {
 
-CollisionNode::CollisionNode(kinematics::BodyNode* _bodyNode)
+/// @brief
+class Inertia
 {
-    mBodyNode = _bodyNode;
-}
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-CollisionNode::~CollisionNode()
-{
-}
+    /// @brief
+    Inertia();
 
+    /// @brief
+    virtual ~Inertia();
 
+    /// @brief
+    void setMass(double _mass) { mMass = _mass; }
 
-} // namespace collision
+    /// @brief
+    double getMass(void) const { return mMass; }
+
+    /// @brief
+    void setMomentsOfInertia(const Eigen::Matrix3d& _moi);
+
+    /// @brief
+    Eigen::Matrix3d getMomentsOfInertia() const;
+
+    /// @brief
+    void setCenterOfMass(const Eigen::Vector3d& _com);
+
+    /// @brief
+    const Eigen::Vector3d& getCenterOfMass(void) { return mCenterOfMass; }
+
+protected:
+    /// @brief Mass the object. Default is 1.0.
+    double mMass;
+
+    /// @brief Principal moments of inertia. Default is (1.0 1.0 1.0)
+    /// These Moments of Inertia are specified in the local Inertial frame.
+    Eigen::Vector3d mPrincipals;
+
+    /// @brief Product moments of inertia. Default is (0.0 0.0 0.0)
+    /// These MOI off-diagonals are specified in the local Inertial frame.
+    /// Where products.x is Ixy, products.y is Ixz and products.z is Iyz.
+    Eigen::Vector3d mProducts;
+
+    /// \brief Center of gravity in the Link frame.
+    ///        Default is (0.0 0.0 0.0  0.0 0.0 0.0)
+    Eigen::Vector3d mCenterOfMass;
+private:
+};
+
+} // namespace dynamics
+
+#endif // DYNAMICS_INERTIA_H

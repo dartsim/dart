@@ -53,9 +53,9 @@ class CollisionNode;
 ///
 /// CollisionDetector creates all possible BodyNode pairs for collision
 /// checking.
-class CollisionNodePair
+struct CollisionNodePair
 {
-public:
+//public:
     /// @brief
     CollisionNode* collisionNode1;
 
@@ -65,12 +65,15 @@ public:
     /// @brief Collision detector conduct collision detection if collidable is
     /// true.
     bool collidable;
+
+    /// @brief
+    void* userData;
 };
 
 /// @brief
-class Contact
+struct Contact
 {
-public:
+//public:
     /// @brief
     Eigen::Vector3d point;
 
@@ -102,12 +105,15 @@ public:
 //    CollisionSkeletonNode *collisionSkeletonNode2;
     int triID1;
     int triID2;
+
+    /// @brief
+    void* userData;
 };
 
 /// @brief
 class CollisionDetector
 {
-public:
+public: // Constructers and destructer
     /// @brief
     CollisionDetector();
 
@@ -118,19 +124,22 @@ public:
     virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd,
                                   bool _bRecursive = false);
 
+public: // Virtual functions
     virtual CollisionNode* createCollisionNode(
             kinematics::BodyNode* _bodyNode) = 0;
 
     /// @brief
     virtual bool checkCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) = 0;
+                                bool _calculateContactPoints) = 0;
 
+public: // Setters and getters
     /// @brief
     unsigned int getNumContacts() { return mContacts.size(); }
 
     /// @brief
     Contact& getContact(int _idx) { return mContacts[_idx]; }
 
+public:
     /// @brief
     void clearAllContacts() { mContacts.clear(); }
 
@@ -152,10 +161,6 @@ protected:
 
     /// @brief
     std::vector<CollisionNodePair> mCollisionNodePairs;
-
-    /// @brief
-    //std::map<const kinematics::BodyNode*, CollisionNode*> mBodyCollisionMap;
-    //std::vector<std::vector<bool> > mActiveMatrix;
 
 private:
 

@@ -5,7 +5,7 @@
 #include "math/UtilsMath.h"
 
 using namespace kinematics;
-using namespace math;
+using namespace dart_math;
 
 namespace optimizer {
     

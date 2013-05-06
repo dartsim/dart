@@ -77,7 +77,7 @@ bool FCL2CollisionDetector::checkCollision(bool _checkAllCollisions,
     // points was provided
     fcl::CollisionRequest request;
     request.enable_contact = true;
-    request.num_max_contacts = 10;
+    request.num_max_contacts = 100;
 //    request.enable_cost;
 //    request.num_max_cost_sources;
 //    request.use_approximate_cost;
@@ -98,15 +98,15 @@ bool FCL2CollisionDetector::checkCollision(bool _checkAllCollisions,
         collGeom1 = static_cast<FCL2CollisionNode*>(collisionNodePair.collisionNode1)->mCollisionGeometry;
         collGeom2 = static_cast<FCL2CollisionNode*>(collisionNodePair.collisionNode2)->mCollisionGeometry;
 
-        Eigen::Matrix4d mWorldTrans1 = collisionNodePair.collisionNode1->mBodyNode->getWorldTransform();
-        mWorldTrans1 = mWorldTrans1 * collisionNodePair.collisionNode1->mBodyNode->getCollisionShape()->getTransform().matrix();
+        Eigen::Matrix4d mWorldTrans1 = collisionNodePair.collisionNode1->getBodyNode()->getWorldTransform();
+        mWorldTrans1 = mWorldTrans1 * collisionNodePair.collisionNode1->getBodyNode()->getCollisionShape()->getTransform().matrix();
         transf1 = fcl::Transform3f(fcl::Matrix3f(mWorldTrans1(0,0), mWorldTrans1(0,1), mWorldTrans1(0,2),
                                                  mWorldTrans1(1,0), mWorldTrans1(1,1), mWorldTrans1(1,2),
                                                  mWorldTrans1(2,0), mWorldTrans1(2,1), mWorldTrans1(2,2)),
                                    fcl::Vec3f(mWorldTrans1(0,3), mWorldTrans1(1,3), mWorldTrans1(2,3)));
 
-        Eigen::Matrix4d mWorldTrans2 = collisionNodePair.collisionNode2->mBodyNode->getWorldTransform();
-        mWorldTrans2 = mWorldTrans2 * collisionNodePair.collisionNode2->mBodyNode->getCollisionShape()->getTransform().matrix();
+        Eigen::Matrix4d mWorldTrans2 = collisionNodePair.collisionNode2->getBodyNode()->getWorldTransform();
+        mWorldTrans2 = mWorldTrans2 * collisionNodePair.collisionNode2->getBodyNode()->getCollisionShape()->getTransform().matrix();
         transf2 = fcl::Transform3f(fcl::Matrix3f(mWorldTrans2(0,0), mWorldTrans2(0,1), mWorldTrans2(0,2),
                                                  mWorldTrans2(1,0), mWorldTrans2(1,1), mWorldTrans2(1,2),
                                                  mWorldTrans2(2,0), mWorldTrans2(2,1), mWorldTrans2(2,2)),
@@ -130,8 +130,8 @@ bool FCL2CollisionDetector::checkCollision(bool _checkAllCollisions,
 //            contactPair.bodyNode2 = bodyNodePair.bodyNode2;
             contactPair.collisionNode1 = collisionNodePair.collisionNode1;
             contactPair.collisionNode2 = collisionNodePair.collisionNode2;
-            contactPair.bdID1 = collisionNodePair.collisionNode1->mBodyNodeID;
-            contactPair.bdID2 = collisionNodePair.collisionNode2->mBodyNodeID;
+            contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
+            contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
             contactPair.penetrationDepth = contact.penetration_depth;
 
             mContacts.push_back(contactPair);

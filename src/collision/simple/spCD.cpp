@@ -2274,9 +2274,9 @@ unsigned int collide(const CollisionNode* _collNode1,/* const Eigen::Matrix4d& _
 	kinematics::Shape* shape2 = _collNode2->getBodyNode()->getCollisionShape();
 
 	Eigen::Matrix4d EigenT1 = _collNode1->getBodyNode()->getWorldTransform();
-	EigenT1 = EigenT1 * _collNode1->mBodyNode->getCollisionShape()->getTransform().matrix();
+	EigenT1 = EigenT1 * _collNode1->getBodyNode()->getCollisionShape()->getTransform().matrix();
 	Eigen::Matrix4d EigenT2 = _collNode2->getBodyNode()->getWorldTransform();
-	EigenT2 = EigenT2 * _collNode2->mBodyNode->getCollisionShape()->getTransform().matrix();
+	EigenT2 = EigenT2 * _collNode2->getBodyNode()->getCollisionShape()->getTransform().matrix();
 
 	SE3 SE3T1;
 	SE3 SE3T2;

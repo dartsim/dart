@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/04/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,26 +35,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <fcl/shape/geometric_shapes.h>
-#include <fcl/BVH/BVH_model.h>
+#ifndef MATH_ROTATION_H
+#define MATH_ROTATION_H
 
-#include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
+#include <Eigen/Dense>
 
-#include "collision/CollisionNode.h"
+namespace dart_math {
 
-namespace collision
-{
+    class Rotation : public Eigen::Matrix3d
+    {
+    public:
+        Rotation();
 
-CollisionNode::CollisionNode(kinematics::BodyNode* _bodyNode)
-{
-    mBodyNode = _bodyNode;
-}
+        virtual ~Rotation();
 
-CollisionNode::~CollisionNode()
-{
-}
+    protected:
+    private:
+    };
 
+} // namespace math
 
-
-} // namespace collision
+#endif // #ifndef MATH_ROTATION_H

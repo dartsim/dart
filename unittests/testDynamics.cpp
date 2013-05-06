@@ -67,8 +67,8 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
     _q = VectorXd::Zero(skelDyn->getNumDofs());
     _qdot = VectorXd::Zero(skelDyn->getNumDofs());
     for(int i=0; i<skelDyn->getNumDofs(); i++){
-        _q[i] = math::random(-1.0, 1.0);
-        _qdot[i] = math::random(-5.0, 5.0);
+        _q[i] = dart_math::random(-1.0, 1.0);
+        _qdot[i] = dart_math::random(-5.0, 5.0);
     }
     skelDyn->initDynamics();
     return skelDyn; }
@@ -350,7 +350,7 @@ TEST(DYNAMICS, COMPARE_JOINT_TOQUE_W_EXTERNAL_FORCES) {
 	using namespace std;
 	using namespace Eigen;
 	using namespace kinematics;
-    using namespace math;
+    using namespace dart_math;
 	using namespace dynamics;
 
 	const double TOLERANCE_EXACT = 1.0e-10;

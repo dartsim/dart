@@ -116,8 +116,8 @@ bool SimpleCollisionDetector::checkCollision(bool _checkAllCollisions,
 //            contactPair.bodyNode2 = bodyNodePair.bodyNode2;
             contactPair.collisionNode1 = collisionNodePair.collisionNode1;
             contactPair.collisionNode2 = collisionNodePair.collisionNode2;
-            contactPair.bdID1 = collisionNodePair.collisionNode1->mBodyNodeID;
-            contactPair.bdID2 = collisionNodePair.collisionNode2->mBodyNodeID;
+            contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
+            contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
             contactPair.penetrationDepth = contact.penetrationDepth;
 
             mContacts.push_back(contactPair);

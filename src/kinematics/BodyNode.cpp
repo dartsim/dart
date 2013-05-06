@@ -178,7 +178,7 @@ namespace kinematics {
         assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
 
         for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
-            mJv.col(i) = math::xformHom(mWq[i], mCOMLocal);
+            mJv.col(i) = dart_math::xformHom(mWq[i], mCOMLocal);
         }
     }
 
@@ -186,12 +186,12 @@ namespace kinematics {
         mJw.setZero();
         for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
             Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
-            mJw.col(i) = math::fromSkewSymmetric(omegaSkewSymmetric);
+            mJw.col(i) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
         }
     }
 
     Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        return math::xformHom(mW, _lp);
+        return dart_math::xformHom(mW, _lp);
     }
 
     Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {

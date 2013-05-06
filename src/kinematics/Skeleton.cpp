@@ -246,7 +246,7 @@ namespace kinematics {
         J.setZero();
         for(int i = 0; i < _bd->getNumDependentDofs(); i++) {
             int dofindex = _bd->getDependentDof(i);
-            VectorXd deriv = math::xformHom(_bd->getDerivWorldTransform(i), _localOffset);
+            VectorXd deriv = dart_math::xformHom(_bd->getDerivWorldTransform(i), _localOffset);
             J.col(dofindex) = deriv;
         }
         return J;
@@ -260,13 +260,14 @@ namespace kinematics {
     }
 
 
-
     void Skeleton::updateBodyNodeTransformations()
     {
+        // TODO: Not implemented yet !
     }
 
     void Skeleton::updateBodyNodeVelocities()
     {
+        // TODO: Not implemented yet !
         unsigned int numNodes = 0;
         BodyNode* pMass = NULL;
 

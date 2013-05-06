@@ -10,7 +10,7 @@
 
 using namespace kinematics;
 using namespace dynamics;
-using namespace math;
+using namespace dart_math;
 
 Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_constraintHandle, double _t) {
     mSkel = _skel;

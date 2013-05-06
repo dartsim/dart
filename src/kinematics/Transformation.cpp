@@ -89,7 +89,7 @@ namespace kinematics {
     }
 
     void Transformation::applyTransform(Vector3d& _v) {
-        _v= math::xformHom(getTransform(), _v);
+        _v= dart_math::xformHom(getTransform(), _v);
         Vector4d v4d( _v[0], _v[1], _v[2], 1 );
         v4d = getTransform() *v4d;
         _v = Vector3d( v4d[0], v4d[1], v4d[2] );
@@ -100,7 +100,7 @@ namespace kinematics {
     }
 
     void Transformation::applyInvTransform(Vector3d& _v) {
-        _v = math::xformHom(getInvTransform(), _v);
+        _v = dart_math::xformHom(getInvTransform(), _v);
     }
 
     void Transformation::applyInvTransform(Matrix4d& _m) {
@@ -108,7 +108,7 @@ namespace kinematics {
     }
 
     void Transformation::applyDeriv(const Dof*_q, Vector3d& _v) {
-        _v = math::xformHom(getDeriv(_q), _v);
+        _v = dart_math::xformHom(getDeriv(_q), _v);
     }
 
     void Transformation::applyDeriv(const Dof*_q, Matrix4d& _m)  {
@@ -116,7 +116,7 @@ namespace kinematics {
     }
 
     void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Vector3d& _v) {
-        _v = math::xformHom(getSecondDeriv(_q1, _q2), _v);
+        _v = dart_math::xformHom(getSecondDeriv(_q1, _q2), _v);
     }
 
     void Transformation::applySecondDeriv(const Dof*_q1, const Dof*_q2, Matrix4d& _m) {

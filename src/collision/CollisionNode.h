@@ -49,24 +49,34 @@ namespace collision
 /// @brief
 class CollisionNode
 {
-public:
+public: // constructors and destructor
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    /// @brief
+    /// @brief Default constructor
     CollisionNode(kinematics::BodyNode* _bodyNode);
 
-    /// @brief
+    /// @brief Default destructor
     virtual ~CollisionNode();
 
+public: // setters and getters
+    /// @brief
     void setBodyNode(kinematics::BodyNode* _bodyNode) { mBodyNode = _bodyNode; }
 
+    /// @brief
     kinematics::BodyNode* getBodyNode() const { return mBodyNode; }
 
-    kinematics::BodyNode* mBodyNode;
+    /// @brief
+    void setBodyNodeID(int _id) { mBodyNodeID = _id; }
 
-    int mBodyNodeID;
+    /// @brief
+    int getBodyNodeID() const { return mBodyNodeID; }
 
 protected:
+    /// @brief
+    kinematics::BodyNode* mBodyNode;
+
+    /// @brief
+    int mBodyNodeID;
 
 private:
 };

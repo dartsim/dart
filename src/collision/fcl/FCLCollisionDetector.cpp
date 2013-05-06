@@ -14,13 +14,13 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace math;
+using namespace dart_math;
 
 namespace collision
 {
 
 FCLCollisionDetector::~FCLCollisionDetector() {
-    for(int i=0;i<mCollisionNodes.size();i++)
+    for(int i = 0; i < mCollisionNodes.size(); i++)
         delete mCollisionNodes[i];
 }
 
@@ -30,7 +30,7 @@ void FCLCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_bd,
     if (_bRecursive == false || _bd->getNumChildJoints() == 0)
     {
         FCLCollisionNode* csnode = new FCLCollisionNode(_bd);
-        csnode->mBodyNodeID = mCollisionNodes.size();
+        csnode->setBodyNodeID(mCollisionNodes.size());
         mCollisionNodes.push_back(csnode);
         mBodyCollisionMap[_bd] = csnode;
         mActiveMatrix.push_back(vector<bool>(mCollisionNodes.size() - 1));
@@ -38,7 +38,7 @@ void FCLCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_bd,
         for(unsigned int i = 0; i < mCollisionNodes.size() - 1; i++)
         {
             //if(mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == _bd || _bd->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode) {
-            if(mCollisionNodes[i]->mBodyNode->getSkel() == _bd->getSkel()) {
+            if(mCollisionNodes[i]->getBodyNode()->getSkel() == _bd->getSkel()) {
                 mActiveMatrix.back()[i] = false;
             }
             else
@@ -77,7 +77,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 
     for (int i = 0; i < mCollisionNodes.size(); i++)
     {
-        mCollisionNodes[i]->mBodyNode->setColliding(false);
+        mCollisionNodes[i]->getBodyNode()->setColliding(false);
     }
 
     for (int i = 0; i < mCollisionNodes.size(); i++)
@@ -102,8 +102,8 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 
             if(numTriIntersection > 0)
             {
-                mCollisionNodes[i]->mBodyNode->setColliding(true);
-                mCollisionNodes[j]->mBodyNode->setColliding(true);
+                mCollisionNodes[i]->getBodyNode()->setColliding(true);
+                mCollisionNodes[j]->getBodyNode()->setColliding(true);
             }
 
             if(!_checkAllCollisions && mNumTriIntersection > 0)
@@ -122,8 +122,8 @@ void FCLCollisionDetector::draw() {
 }
 
 void FCLCollisionDetector::activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
-    int nodeId1 = getCollisionSkeletonNode(node1)->mBodyNodeID;
-    int nodeId2 = getCollisionSkeletonNode(node2)->mBodyNodeID;
+    int nodeId1 = getCollisionSkeletonNode(node1)->getBodyNodeID();
+    int nodeId2 = getCollisionSkeletonNode(node2)->getBodyNodeID();
     if(nodeId1 < nodeId2) {
         swap(nodeId1, nodeId2);
     }
@@ -131,8 +131,8 @@ void FCLCollisionDetector::activatePair(const kinematics::BodyNode* node1, const
 }
 
 void FCLCollisionDetector::deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
-    int nodeId1 = getCollisionSkeletonNode(node1)->mBodyNodeID;
-    int nodeId2 = getCollisionSkeletonNode(node2)->mBodyNodeID;
+    int nodeId1 = getCollisionSkeletonNode(node1)->getBodyNodeID();
+    int nodeId2 = getCollisionSkeletonNode(node2)->getBodyNodeID();
     if(nodeId1 < nodeId2) {
         swap(nodeId1, nodeId2);
     }

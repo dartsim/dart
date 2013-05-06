@@ -7,7 +7,7 @@
 #include "math/UtilsMath.h"
 
 using namespace Eigen;
-using namespace math;
+using namespace dart_math;
 
 namespace dynamics {
     ClosedLoopConstraint::ClosedLoopConstraint(BodyNodeDynamics *_body1, BodyNodeDynamics *_body2, Vector3d _offset1, Vector3d _offset2, int _skelIndex1, int _skelIndex2) {

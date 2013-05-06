@@ -86,7 +86,7 @@ namespace kinematics {
         int el=-1;
         for(int i=0; i<4; i++) if(d==mDofs[i]) el=i;
         assert(el!=-1);
-        mat = math::quatDeriv(q, el);
+        mat = dart_math::quatDeriv(q, el);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)
@@ -110,7 +110,7 @@ namespace kinematics {
         }
         assert(el1!=-1);
         assert(el2!=-1);
-        mat = math::quatSecondDeriv(q, el1, el2);
+        mat = dart_math::quatSecondDeriv(q, el1, el2);
 	
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++)

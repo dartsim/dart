@@ -61,7 +61,7 @@ void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode
     if (_bRecursive == false || _bodyNode->getNumChildJoints() == 0)
     {
         CollisionNode* collNode = createCollisionNode(_bodyNode);
-        collNode->mBodyNodeID = mCollisionNodes.size();
+        collNode->setBodyNodeID(mCollisionNodes.size());
         mCollisionNodes.push_back(collNode);
         //mBodyCollisionMap[_bodyNode] = collNode;
     }
@@ -119,10 +119,10 @@ void CollisionDetector::eliminateSelfCollision()
     {
         itrCollisionNodePair = mCollisionNodePairs[i];
 
-        if (itrCollisionNodePair.collisionNode1->mBodyNode->getSkel()
-                == itrCollisionNodePair.collisionNode2->mBodyNode->getSkel())
+        if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()
+                == itrCollisionNodePair.collisionNode2->getBodyNode()->getSkel())
         {
-            if (itrCollisionNodePair.collisionNode1->mBodyNode->getSkel()->getSelfCollidable() == false)
+            if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()->getSelfCollidable() == false)
             {
                 itrCollisionNodePair.collidable = false;
             }

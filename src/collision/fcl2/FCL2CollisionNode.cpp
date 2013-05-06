@@ -104,11 +104,11 @@ FCL2CollisionNode::FCL2CollisionNode(kinematics::BodyNode* _bodyNode)
             mCollisionGeometry = new fcl::Sphere(shape->getDim()[0]*0.5);
             break;
         case kinematics::Shape::P_BOX:
-//            mCollisionGeometry = new fcl::Box(shape->getDim()[0],
-//                    shape->getDim()[1], shape->getDim()[2]);
-            mCollisionGeometry = createCube<fcl::OBBRSS>(shape->getDim()[0],
-                    shape->getDim()[1],
-                    shape->getDim()[2]);
+            mCollisionGeometry = new fcl::Box(shape->getDim()[0],
+                    shape->getDim()[1], shape->getDim()[2]);
+//            mCollisionGeometry = createCube<fcl::OBBRSS>(shape->getDim()[0],
+//                    shape->getDim()[1],
+//                    shape->getDim()[2]);
             break;
 //        case kinematics::Shape::P_CYLINDER:
 //        {

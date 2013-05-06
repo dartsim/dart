@@ -66,9 +66,9 @@ void ContactDynamics::reset() {
 void ContactDynamics::initialize() {
     // Allocate the Collision Detection class
     //mCollisionDetector = new SkeletonCollision();
-    //mCollisionDetector = new FCLCollisionDetector();
+    mCollisionDetector = new FCLCollisionDetector();
     //mCollisionDetector = new FCL2CollisionDetector();
-    mCollisionDetector = new SimpleCollisionDetector();
+    //mCollisionDetector = new SimpleCollisionDetector();
 
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionChecker
@@ -291,11 +291,11 @@ void ContactDynamics::applySolution() {
 MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
     int nDofs = node->getSkel()->getNumDofs();
     MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-    Vector3d invP = math::xformHom(node->getWorldInvTransform(), p);
+    Vector3d invP = dart_math::xformHom(node->getWorldInvTransform(), p);
 
     for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
         int i = node->getDependentDof(dofIndex);
-        Jt.row(i) = math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
+        Jt.row(i) = dart_math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
     }
 
     return Jt;
@@ -320,9 +320,9 @@ void ContactDynamics::updateNBMatrices()
 
         if (!mSkels[skelID1]->getImmobileState()) {
             int index1 = mIndices[skelID1];
-            int NDOF1 = c.collisionNode1->mBodyNode->getSkel()->getNumDofs();
+            int NDOF1 = c.collisionNode1->getBodyNode()->getSkel()->getNumDofs();
             //    Vector3d N21 = c.normal;
-            MatrixXd J21t = getJacobian(c.collisionNode1->mBodyNode, p);
+            MatrixXd J21t = getJacobian(c.collisionNode1->getBodyNode(), p);
             mN.block(index1, i, NDOF1, 1).noalias() = J21t * N21;
             //B21 = getTangentBasisMatrix(p, N21);
             mB.block(index1, i * getNumContactDirections(), NDOF1, getNumContactDirections()).noalias() = J21t * B21;
@@ -330,13 +330,13 @@ void ContactDynamics::updateNBMatrices()
 
         if (!mSkels[skelID2]->getImmobileState()) {
             int index2 = mIndices[skelID2];
-            int NDOF2 = c.collisionNode2->mBodyNode->getSkel()->getNumDofs();
+            int NDOF2 = c.collisionNode2->getBodyNode()->getSkel()->getNumDofs();
             //Vector3d N12 = -c.normal;
             //if (B21.rows() == 0)
             //  B12 = getTangentBasisMatrix(p, N12);
             //else
             //   B12 = -B21;
-            MatrixXd J12t = getJacobian(c.collisionNode2->mBodyNode, p);
+            MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
             mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
             mB.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()).noalias() = J12t * B12;
         }

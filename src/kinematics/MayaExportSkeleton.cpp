@@ -55,7 +55,7 @@ namespace utils {
         const string MayaExportSkeleton::mSuffixPrim = "_prim";
         const string MayaExportSkeleton::mSuffixShape = "_shape";
         const string MayaExportSkeleton::mSuffixGeom = "_geom";
-        const math::RotationOrder MayaExportSkeleton::mRotOrder = math::XYZ;
+        const dart_math::RotationOrder MayaExportSkeleton::mRotOrder = dart_math::XYZ;
 
 
         bool MayaExportSkeleton::exportMayaAscii( Skeleton* _skel, ofstream &_outFile ){
@@ -271,13 +271,13 @@ namespace utils {
                     Transformation *tf = _b->getParentJoint()->getTransform(i);
                     Matrix3d *rotPtr = NULL;
                     if(i>=separateRots) rotPtr = &rotdofs; else rotPtr = &rotcons;
-                    if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = math::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
-                    if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = math::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
-                    if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = math::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = dart_math::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = dart_math::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = dart_math::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                     if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                         Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
-                        Quaterniond q = math::expToQuat(exmap);
-                        *rotPtr = math::quatToMatrix(q)*(*rotPtr);
+                        Quaterniond q = dart_math::expToQuat(exmap);
+                        *rotPtr = dart_math::quatToMatrix(q)*(*rotPtr);
                     }
                 }
             }
@@ -287,26 +287,26 @@ namespace utils {
                     //if(tf->getVariable()) continue;	// only constant dofs should contribute to the ".jo" attribute; rest to ".r"
                     Matrix3d *rotPtr = NULL;
                     if(tf->getVariable()) rotPtr = &rotdofs; else rotPtr = &rotcons;
-                    if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = math::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
-                    if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = math::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
-                    if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = math::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = dart_math::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = dart_math::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
+                    if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = dart_math::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);
                     if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                         Vector3d exmap(tf->getDof(0)->getValue(), tf->getDof(1)->getValue(), tf->getDof(2)->getValue());
-                        Quaterniond q = math::expToQuat(exmap);
-                        *rotPtr = math::quatToMatrix(q)*(*rotPtr);
+                        Quaterniond q = dart_math::expToQuat(exmap);
+                        *rotPtr = dart_math::quatToMatrix(q)*(*rotPtr);
                     }
                 }
             }
             // variable dofs: ".r"
             if(ro!=-1){
-                math::RotationOrder rotorder;	// should match the above
-                if(ro==0) rotorder=math::XYZ;
-                else if(ro==1) rotorder=math::YZX;
-                else if(ro==2) rotorder=math::ZXY;
-                else if(ro==3) rotorder=math::XZY;
-                else if(ro==4) rotorder=math::YXZ;
-                else if(ro==5) rotorder=math::ZYX;
-                Vector3d edofs= math::matrixToEuler(rotdofs, rotorder)*180/M_PI;	// convert to degrees
+                dart_math::RotationOrder rotorder;	// should match the above
+                if(ro==0) rotorder=dart_math::XYZ;
+                else if(ro==1) rotorder=dart_math::YZX;
+                else if(ro==2) rotorder=dart_math::ZXY;
+                else if(ro==3) rotorder=dart_math::XZY;
+                else if(ro==4) rotorder=dart_math::YXZ;
+                else if(ro==5) rotorder=dart_math::ZYX;
+                Vector3d edofs= dart_math::matrixToEuler(rotdofs, rotorder)*180/M_PI;	// convert to degrees
                 if(rotdofs != Matrix3d::Identity()) {
                     // write in the correct order
                     double ax, ay, az;
@@ -327,7 +327,7 @@ namespace utils {
             }
 
             // constant dofs: ".jo"
-            Vector3d econs = math::matrixToEuler(rotcons, math::XYZ)*180/M_PI;	// convert to degrees
+            Vector3d econs = dart_math::matrixToEuler(rotcons, dart_math::XYZ)*180/M_PI;	// convert to degrees
             if(rotcons!=Matrix3d::Identity()) _outFile<<"\t setAttr \".jo\" -type \"double3\" "<<econs[0]<<" "<<econs[1]<<" "<<econs[2]<<";"<<endl;
 
             // repeat the same for children
@@ -349,12 +349,12 @@ namespace utils {
             _outFile<<"\t addAttr -ci true -sn \"liw\" -ln \"lockInfluenceWeights\" -bt \"lock\" -min 0 -max 1 -at \"bool\";"<<endl;
 
             int ro=-1;
-            if(mRotOrder==math::XYZ) ro=0;
-            else if(mRotOrder==math::YZX) ro=1;
-            else if(mRotOrder==math::ZXY) ro=2;
-            else if(mRotOrder==math::XZY) ro=3;
-            else if(mRotOrder==math::YXZ) ro=4;
-            else if(mRotOrder==math::ZYX) ro=5;
+            if(mRotOrder==dart_math::XYZ) ro=0;
+            else if(mRotOrder==dart_math::YZX) ro=1;
+            else if(mRotOrder==dart_math::ZXY) ro=2;
+            else if(mRotOrder==dart_math::XZY) ro=3;
+            else if(mRotOrder==dart_math::YXZ) ro=4;
+            else if(mRotOrder==dart_math::ZYX) ro=5;
 
             if(ro!=-1) _outFile<<"\t setAttr \".ro\" "<<ro<<";"<<endl;
 

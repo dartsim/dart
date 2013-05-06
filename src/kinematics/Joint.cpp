@@ -193,9 +193,9 @@ namespace kinematics {
             assert(mRotTransformIndex.size()==1);
             Transformation *em = mTransforms[mRotTransformIndex[0]];
             Vector3d q(em->getDof(0)->getValue(), em->getDof(1)->getValue(), em->getDof(2)->getValue());
-            *_J = math::expMapJac(q);
+            *_J = dart_math::expMapJac(q);
             if(_Jdot){
-                *_Jdot = math::expMapJacDot(q, *_qdot);
+                *_Jdot = dart_math::expMapJacDot(q, *_qdot);
             }
         }
         else {
@@ -207,8 +207,8 @@ namespace kinematics {
         if(_Jdot) (*_Jdot) = mStaticTransform.topLeftCorner<3,3>() * (*_Jdot);
     }
 
-    math::RotationOrder Joint::getEulerOrder(){
-        if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return math::UNKNOWN;
+    dart_math::RotationOrder Joint::getEulerOrder(){
+        if(mType == J_BALLEXPMAP || mType == J_FREEEXPMAP) return dart_math::UNKNOWN;
 
         assert(mNumDofsRot==mRotTransformIndex.size());
         string rot="";
@@ -218,14 +218,14 @@ namespace kinematics {
             else if(mTransforms[mRotTransformIndex[i]]->getType()==Transformation::T_ROTATEZ) rot+="z";
         }
 
-        if(rot.compare("xyz")==0 || rot.compare("xy")==0 || rot.compare("yz")==0 || rot.compare("xz")==0 || rot.compare("x")==0 || rot.compare("y")==0 || rot.compare("z")==0) return math::XYZ;
-        if(rot.compare("yzx")==0 ) return math::YZX;
-        if(rot.compare("zxy")==0 ) return math::ZXY;
-        if(rot.compare("xzy")==0 ) return math::XZY;
-        if(rot.compare("yxz")==0 ) return math::YXZ;
-        if(rot.compare("zyx")==0 || rot.compare("zy")==0|| rot.compare("yx")==0|| rot.compare("zx")==0 ) return math::ZYX;
+        if(rot.compare("xyz")==0 || rot.compare("xy")==0 || rot.compare("yz")==0 || rot.compare("xz")==0 || rot.compare("x")==0 || rot.compare("y")==0 || rot.compare("z")==0) return dart_math::XYZ;
+        if(rot.compare("yzx")==0 ) return dart_math::YZX;
+        if(rot.compare("zxy")==0 ) return dart_math::ZXY;
+        if(rot.compare("xzy")==0 ) return dart_math::XZY;
+        if(rot.compare("yxz")==0 ) return dart_math::YXZ;
+        if(rot.compare("zyx")==0 || rot.compare("zy")==0|| rot.compare("yx")==0|| rot.compare("zx")==0 ) return dart_math::ZYX;
 
-        return math::UNKNOWN;
+        return dart_math::UNKNOWN;
     }
 
     Vector3d Joint::getAxis( unsigned int _i ){

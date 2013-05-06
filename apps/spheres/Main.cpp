@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     model2.loadFile(DART_DATA_PATH"/skel/sphere.skel", SKEL);
     model3.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
     model4.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
-    model5.loadFile(DART_DATA_PATH"/skel/cube2.skel", SKEL);
+    model5.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
     
     // create and initialize the world
     World *myWorld = new World();

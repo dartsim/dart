@@ -221,13 +221,13 @@ namespace dynamics{
                 Vector3d clparent = nodeParent->getLocalCOM();
                 Vector3d rl = mT.topRightCorner<3,1>();    // translation from parent's origin to self origin
                 mJv.leftCols(nodeParent->getNumDependentDofs()) = nodeParent->mJv;
-                mJv.leftCols(nodeParent->getNumDependentDofs()).noalias() -= math::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent)) * nodeParent->mJw;
-                mJv.noalias() -= math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
+                mJv.leftCols(nodeParent->getNumDependentDofs()).noalias() -= dart_math::makeSkewSymmetric(nodeParent->mW.topLeftCorner(3,3)*(rl-clparent)) * nodeParent->mJw;
+                mJv.noalias() -= dart_math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
             }
             // base case: root
             else {
                 mJw.rightCols(mJointParent->getNumDofsRot()) = mJwJoint;
-                mJv.noalias() -= math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
+                mJv.noalias() -= dart_math::makeSkewSymmetric(mW.topLeftCorner<3,3>()*mCOMLocal) * mJw;
                 // if root has translation DOFs
                 if(mJointParent->getNumDofsTrans()>0){
                     // ASSUME - 3 translational dofs
@@ -269,6 +269,53 @@ namespace dynamics{
         if( _withExternalForces ) {
             int nContacts = mContacts.size();
             for(int i=0; i<nContacts; i++){
+                mExtForceBody += mContacts.at(i).second;
+                mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
+            }
+            mForceJointBody -= mExtForceBody;
+            mTorqueJointBody -= mExtTorqueBody;
+        }// endif compute external forces
+    }
+
+    void BodyNodeDynamics::computeInvDynForces_JS(
+            const Eigen::Vector3d& _gravity,
+            const Eigen::VectorXd* _qdot,
+            const Eigen::VectorXd* _qdotdot,
+            bool _withExternalForces)
+    {
+        mForceJointBody.setZero();
+        mTorqueJointBody.setZero();
+        Vector3d cl = mCOMLocal;
+
+        // base case: end effectors
+        mForceJointBody = mMass*mVelDotBody;
+        mTorqueJointBody = cl.cross(mMass*mVelDotBody)
+                           + mOmegaBody.cross(mI*mOmegaBody)
+                           + mI*mOmegaDotBody;
+
+
+        mForceJointBody = -mMass*cl.cross(mOmegaDotBody) + mMass*mVelDotBody
+                          + mOmegaBody.cross(-mMass*cl.cross(mOmegaBody) + mMass*mVelBody);
+        mTorqueJointBody = mI*mOmegaDotBody - mMass*cl.cross(cl.cross(mOmegaDotBody)) + mMass*cl.cross(mVelDotBody)
+                           + mOmegaBody.cross(mI*mOmegaBody - mMass*cl.cross(cl.cross(mOmegaBody)) + mMass*cl.cross(mVelBody))
+                           + mVelBody.cross(-mMass*cl.cross(mOmegaBody) + mMass*mVelBody);
+
+        // general case
+        for(unsigned int j = 0; j < mJointsChild.size(); j++) {
+            BodyNodeDynamics* bchild = static_cast<BodyNodeDynamics*>(
+                                           mJointsChild[j]->getChildNode());
+            Matrix3d Rchild = bchild->mT.topLeftCorner<3,3>();
+            Vector3d forceChildNode = Rchild*bchild->mForceJointBody;
+            mForceJointBody += forceChildNode;
+            //Vector3d rlchild = bchild->mT.col(3).head(3);
+            Vector3d rlchild = bchild->mT.topRightCorner<3,1>();
+            mTorqueJointBody += (rlchild).cross(forceChildNode)
+                                + Rchild*bchild->mTorqueJointBody;
+        }
+
+        if( _withExternalForces ) {
+            int nContacts = mContacts.size();
+            for(int i=0; i<nContacts; i++) {
                 mExtForceBody += mContacts.at(i).second;
                 mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
             }
@@ -381,7 +428,7 @@ namespace dynamics{
         mJvq.at(_qi).setZero();
         if (_qi<mNumRootTrans) return;
         for (int j = mNumRootTrans; j < getNumDependentDofs(); j++) {
-            VectorXd Jvqi = math::xformHom(mWqq.at(_qi).at(j), _offset);
+            VectorXd Jvqi = dart_math::xformHom(mWqq.at(_qi).at(j), _offset);
             mJvq.at(_qi)(0,j) = Jvqi[0];
             mJvq.at(_qi)(1,j) = Jvqi[1];
             mJvq.at(_qi)(2,j) = Jvqi[2];
@@ -393,7 +440,7 @@ namespace dynamics{
         if(_qi<mNumRootTrans) return;
         for(int j=mNumRootTrans; j<getNumDependentDofs(); j++){
             Matrix3d JwqijSkewSymm = mWqq.at(_qi).at(j).topLeftCorner(3,3)*mW.topLeftCorner(3,3).transpose() + mWq.at(j).topLeftCorner(3,3)*mWq.at(_qi).topLeftCorner(3,3).transpose();
-            Vector3d Jwqij = math::fromSkewSymmetric(JwqijSkewSymm);
+            Vector3d Jwqij = dart_math::fromSkewSymmetric(JwqijSkewSymm);
             mJwq.at(_qi)(0,j) = Jwqij[0];
             mJwq.at(_qi)(1,j) = Jwqij[1];
             mJwq.at(_qi)(2,j) = Jwqij[2];
@@ -430,7 +477,7 @@ namespace dynamics{
         mC.noalias() = getMass() * mJv.transpose() * mJvDot;
         mC.noalias() += mJw.transpose() * mIc * mJwDot;
         // term 2
-        mC.noalias() += mJw.transpose() * math::makeSkewSymmetric(mOmega) * mIc * mJw;
+        mC.noalias() += mJw.transpose() * dart_math::makeSkewSymmetric(mOmega) * mIc * mJw;
     }
 
     void BodyNodeDynamics::evalCoriolisVector(const VectorXd &_qDotSkel){
@@ -473,7 +520,7 @@ namespace dynamics{
             MatrixXd J = MatrixXd::Zero(3, getNumDependentDofs());
             Vector3d force = mW.topLeftCorner<3,3>() * mContacts[i].second;
             for(int j = 0; j < getNumDependentDofs(); j++)
-                J.col(j) = math::xformHom(mWq[j],mContacts[i].first);
+                J.col(j) = dart_math::xformHom(mWq[j],mContacts[i].first);
             // compute J^TF
             mFext.noalias() += J.transpose() * force;
         }
@@ -579,7 +626,7 @@ namespace dynamics{
         Vector3d pos = _offset;
         Vector3d force = _force;
         if( !_isOffsetLocal )
-            pos = math::xformHom( getWorldInvTransform(), _offset );
+            pos = dart_math::xformHom( getWorldInvTransform(), _offset );
         if( !_isForceLocal )
             force.noalias() = mW.topLeftCorner<3,3>().transpose() * _force;
         mContacts.push_back( pair<Vector3d, Vector3d>(pos, force) );
