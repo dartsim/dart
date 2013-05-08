@@ -187,13 +187,13 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 }
 
 /* ********************************************************************************************* */
-//TEST_F(COLLISION, BOX_BOX_X) {
-//	approaching(0); // x-axis
-//}
+TEST_F(COLLISION, BOX_BOX_X) {
+	approaching(0); // x-axis
+}
 
-//TEST_F(COLLISION, BOX_BOX_Y) {
-//	approaching(1); // y-axis
-//}
+TEST_F(COLLISION, BOX_BOX_Y) {
+	approaching(1); // y-axis
+}
 
 TEST_F(COLLISION, BOX_BOX_Z) {
     approaching(2); // z-axis
