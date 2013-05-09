@@ -20,8 +20,6 @@ namespace collision
 {
 
 FCLCollisionDetector::~FCLCollisionDetector() {
-    for(int i = 0; i < mCollisionNodes.size(); i++)
-        delete mCollisionNodes[i];
 }
 
 void FCLCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_bd,

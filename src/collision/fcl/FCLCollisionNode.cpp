@@ -55,7 +55,8 @@
 namespace collision {
 
 FCLCollisionNode::FCLCollisionNode(kinematics::BodyNode* _bodyNode)
-    : CollisionNode(_bodyNode)
+    : CollisionNode(_bodyNode),
+      mMesh(NULL)
 {
     kinematics::Shape *shape = _bodyNode->getCollisionShape();
 
@@ -92,7 +93,8 @@ FCLCollisionNode::FCLCollisionNode(kinematics::BodyNode* _bodyNode)
 
 FCLCollisionNode::~FCLCollisionNode()
 {
-    delete mMesh;
+    if (mMesh)
+        delete mMesh;
 }
 
 int FCLCollisionNode::checkCollision(

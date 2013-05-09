@@ -41,12 +41,47 @@ namespace math
 {
 
 #define LIEGROUP_EPS 10e-9
-
 Inertia::Inertia()
-    : mMass(0.0),
-      mPrincipals(Eigen::Vector3d::Zero()),
+    : mMass(1.0),
+      mPrincipals(Eigen::Vector3d::Ones()),
       mProducts(Eigen::Vector3d::Zero()),
-      mCenterOfMass(Eigen::Vector3d::Zero())
+      mCOM(Eigen::Vector3d::Zero())
+{
+}
+
+Inertia::Inertia(const Inertia& _I)
+    : mMass(_I.mMass),
+      mPrincipals(_I.mPrincipals),
+      mProducts(_I.mProducts),
+      mCOM(_I.mCOM)
+{
+}
+
+Inertia::Inertia(double _mass, double _Ixx, double _Iyy, double _Izz)
+    : mMass(_mass),
+      mProducts(Eigen::Vector3d::Zero()),
+      mCOM(Eigen::Vector3d::Zero())
+{
+    mPrincipals << _Ixx, _Iyy, _Izz;
+}
+
+Inertia::Inertia(double _mass,
+                 double _Ixx, double _Iyy, double _Izz,
+                 double _Ixy, double _Ixz, double _Iyz,
+                 double _comX, double _comY, double _comZ)
+    : mMass(_mass)
+{
+    mPrincipals << _Ixx, _Iyy, _Izz;
+    mProducts << _Ixy, _Ixz, _Iyz;
+    mCOM << _comX, _comY, _comZ;
+}
+
+Inertia::Inertia(double _mass, const Eigen::Vector3d& _principals,
+                 const Eigen::Vector3d& _products, const Eigen::Vector3d& _com)
+    : mMass(_mass),
+      mPrincipals(_principals),
+      mProducts(_products),
+      mCOM(_com)
 {
 }
 
@@ -54,7 +89,19 @@ Inertia::~Inertia()
 {
 }
 
-dse3 Inertia::operator*(const se3& _V)
+const Inertia& Inertia::operator = (const Inertia& _I)
+{
+	if(this != &_I)
+	{
+		mMass = _I.mMass;
+		mPrincipals = _I.mPrincipals;
+		mProducts = _I.mProducts;
+		mCOM = _I.mCOM;
+	}
+	return (*this);
+}
+
+dse3 Inertia::operator * (const se3& _V) const
 {
 	//
 	// (angluar) M = I * w + m * (r X v - r X (r X w))
@@ -77,10 +124,20 @@ dse3 Inertia::operator*(const se3& _V)
 			+ mProducts(2) * w(1)
 			+ mPrincipals(2) * w(2);
 
-	res.setLinear(mMass * (v - mCenterOfMass.cross(w)));
-	res.setAngular(Iw + mCenterOfMass.cross(res.getLinear()));
+	res.setLinear(mMass * (v - mCOM.cross(w)));
+	res.setAngular(Iw + mCOM.cross(res.getLinear()));
 
 	return res;
+}
+
+Inertia Inertia::getTransformed(const SE3& _T12)
+{
+	// TODO: Not implemented.
+}
+
+Inertia Inertia::getTransformedInverse(const SE3& _T21)
+{
+	// TODO: Not implemented.
 }
 
 //==============================================================================

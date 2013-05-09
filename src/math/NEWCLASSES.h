@@ -51,7 +51,7 @@ class se3;
 class SE3; // Special Euclidean group (4x4 transformation matrix)
 class dse3;
 
-/// @brief Inertia class
+/// @brief Inertia is a class for representing generalized inertia tensor.
 ///
 /// Generalized inertia, G = | Inertia  0 |
 ///                          | 0       mI |
@@ -61,16 +61,51 @@ class dse3;
 /// and [r] is skew-symmetrix matrix of cog offset.
 class Inertia
 {
-public:
-    //
+
+public: // Constructors and destructor
+    // Aligned allocator for Eigen member variable.
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     /// @brief
     Inertia();
 
     /// @brief
-    virtual ~Inertia();
+    Inertia(const Inertia& _I);
 
+    /// @brief
+    explicit Inertia(double _mass, double _Ixx, double _Iyy, double _Izz);
+
+    /// @brief
+    explicit Inertia(double _mass,
+                     double _Ixx, double _Iyy, double _Izz,
+                     double _Ixy, double _Ixz, double _Iyz,
+                     double _comX, double _comY, double _comZ);
+
+    /// @brief
+    explicit Inertia(double _mass,
+                     const Eigen::Vector3d& _principals,
+                     const Eigen::Vector3d& _products,
+                     const Eigen::Vector3d& _com);
+
+    /// @brief
+    ~Inertia();
+
+public: // Operators
+	/// @brief Substitution operator.
+	const Inertia& operator = (const Inertia& _I);
+
+	/// @brief Casting operator.
+	Inertia* operator&() { return this; }
+
+	/// @brief Const Casting operator.
+	const Inertia* operator&() const { return this; }
+
+	/// @brief Multiplication operator.
+	/// @note \f$J V = ( Iw + r\times v,~ mv-r\times w)\in se(3)^*\f$,
+	/// where \f$J = (I,m,r)\in\f$ Inertia, \f$V = (w,v)\in se(3)\f$.
+	dse3 operator*(const se3& _V) const;
+
+public: // Others
     /// @brief
     void setMass(double _mass) { mMass = _mass; }
 
@@ -78,7 +113,33 @@ public:
     double getMass(void) const { return mMass; }
 
     /// @brief
-    dse3 operator*(const se3& _V);
+    void setPrincipals(double _Ixx, double _Iyy, double _Izz)
+    {
+        mPrincipals(0) = _Ixx;
+        mPrincipals(1) = _Iyy;
+        mPrincipals(2) = _Izz;
+    }
+
+    void setProducts(double _Ixy, double _Ixz, double _Iyz)
+    {
+        mProducts(0) = _Ixy;
+        mProducts(1) = _Ixz;
+        mProducts(2) = _Iyz;
+    }
+
+    /// @brief
+    void setPrincipals(const Eigen::Vector3d& _principals)
+    { mPrincipals = _principals; }
+
+    /// @brief
+    const Eigen::Vector3d& getPrincicpals(void) const { return mPrincipals; }
+
+    /// @brief
+    void setProducts(const Eigen::Vector3d& _products)
+    { mProducts = _products; }
+
+    /// @brief
+    const Eigen::Vector3d& getProducts(void) const { return mProducts; }
 
     /// @brief
     void setMomentsOfInertia(const Eigen::Matrix3d& _moi);
@@ -90,34 +151,43 @@ public:
     void setCenterOfMass(const Eigen::Vector3d& _com);
 
     /// @brief
-    const Eigen::Vector3d& getCenterOfMass(void) { return mCenterOfMass; }
+    const Eigen::Vector3d& getCenterOfMass(void) { return mCOM; }
 
-    /// @brief
+    // TODO: Not implemented.
+    /// @brief Get trnasformed generalized inertia.
+    /// @param[in] _T12 Transformation matrix from frame(1) to frame(2)
+    /// @return Generalized inertia in frame(1)
     ///
     /// \f$ Ad_{T12^{-1}}^{*} G2 Ad_{T12^{-1}} \f$.
-    Inertia getdAdInertiaAd(const SE3& _T12);
+    Inertia getTransformed(const SE3& _T12);
 
-    /// @brief
+    // TODO: Not implemented.
+    /// @brief Get trnasformed generalized inertia.
+    /// @param[in] _T21 Transformation matrix from frame(2) to frame(1)
+    /// @return Generalized inertia in frame(1)
     ///
     /// \f$ Ad_{T21}^{*} G2 Ad_{T21} \f$.
-    Inertia getInvdAdInertiaAd(const SE3& _T21);
+    Inertia getTransformedInverse(const SE3& _T21);
 
 protected:
     /// @brief Mass the object. Default is 1.0.
     double mMass;
 
     /// @brief Principal moments of inertia. Default is (1.0 1.0 1.0)
+    ///
+    /// Ixx = mPrincipals(0), Iyy = mPrincipals(1), Izz = mPrincipals(2).
     /// These Moments of Inertia are specified in the local Inertial frame.
     Eigen::Vector3d mPrincipals;
 
     /// @brief Product moments of inertia. Default is (0.0 0.0 0.0)
     /// These MOI off-diagonals are specified in the local Inertial frame.
-    /// Where products.x is Ixy, products.y is Ixz and products.z is Iyz.
+    /// Where mProducts(0) is Ixy, mProducts(1) is Ixz and mProducts(2) is Iyz.
     Eigen::Vector3d mProducts;
 
-    /// \brief Center of gravity in the Link frame.
-    ///        Default is (0.0 0.0 0.0  0.0 0.0 0.0)
-    Eigen::Vector3d mCenterOfMass;
+    /// @brief Center of mass in the Link frame.
+    /// Default is (0.0 0.0 0.0  0.0 0.0 0.0)
+    Eigen::Vector3d mCOM;
+
 private:
 };
 

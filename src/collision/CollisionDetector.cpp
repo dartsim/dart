@@ -52,7 +52,8 @@ CollisionDetector::CollisionDetector()
 CollisionDetector::~CollisionDetector()
 {
     for(int i = 0; i < mCollisionNodes.size(); i++)
-        delete mCollisionNodes[i];
+        if (mCollisionNodes[i])
+            delete mCollisionNodes[i];
 }
 
 void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode,

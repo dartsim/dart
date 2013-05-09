@@ -149,7 +149,8 @@ namespace kinematics {
         inline double getMass() const { return mMass; }
 
         inline void setLocalInertia(double _Ixx, double _Iyy, double _Izz,
-                                    double _Ixy, double _Ixz, double _Iyz) {
+                                    double _Ixy, double _Ixz, double _Iyz)
+        {
             mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
             mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
             mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
@@ -220,6 +221,7 @@ namespace kinematics {
 
         double mMass; ///< Mass of this node; zero if no primitive
         Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate fram
+        Eigen::Vector3d mComOffset;
         Skeleton *mSkel; ///< Pointer to the model this body node belongs to
 
         // transformations

@@ -123,7 +123,7 @@ namespace kinematics {
         mJw = MatrixXd::Zero(3, numDepDofs);
 
         mNumRootTrans = 0;
-        for(int i=0; i<mSkel->getNumDofs(); i++){
+        for(int i=0; i<mSkel->getNumDofs(); i++) {
             if(!(mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATE 
                 || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEX  
                 || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEY 
@@ -266,8 +266,8 @@ namespace kinematics {
 
     }
 
-//    void BodyNode::setLocalInertia2(double _Ixx, double _Iyy, double _Izz,
-//                                    double _Ixy, double _Ixz, double _Iyz) {
+//    void BodyNode::setLocalInertia(double _Ixx, double _Iyy, double _Izz, double _Ixy, double _Ixz, double _Iyz)
+//    {
 //        mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
 //        mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
 //        mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
