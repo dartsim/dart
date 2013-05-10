@@ -104,6 +104,8 @@ public:
     /// @brief Get the time step.
     inline double getTimeStep(void) const { return mTimeStep; }
 
+    inline void setTime(double _time) { mTime = _time; }
+
     /// @brief Get the time step.
     /// @return Time step.
     inline double getTime(void) const { return mTime; }
@@ -144,6 +146,8 @@ public:
     /// @brief .
     /// @param[in] _skel
     bool addSkeleton(dynamics::SkeletonDynamics* _skeleton);
+
+    bool checkCollision(bool checkAllCollisions = false);
 
 protected:
     /// @brief Skeletones in this world.

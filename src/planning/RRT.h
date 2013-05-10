@@ -48,8 +48,8 @@
 #include <Eigen/Core>
 #include <flann/flann.hpp>
 
-/// Forward declare the world class
-namespace robotics { class World; }
+namespace simulation { class World; }
+namespace dynamics { class SkeletonDynamics; }
 
 namespace planning {
 
@@ -84,11 +84,11 @@ public:
 public:
 
 	//// Constructor with a single root 
-	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, const Eigen::VectorXd &root, 
+	RRT(simulation::World* world, dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const Eigen::VectorXd &root, 
 			double stepSize = 0.02);
 
 	/// Constructor with multiple roots (so, multiple trees)
-	RRT(robotics::World* world, int robot, const std::vector<int> &dofs, 
+	RRT(simulation::World* world, dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, 
 			const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
 
 	/// Destructor
@@ -151,9 +151,9 @@ public:
 
 protected:
 
-	robotics::World* world;										///< The world that the robot is in
-	int robot;																///< The ID of the robot for which a plan is generated
-	std::vector<int> dofs;										///< The dofs of the robot the planner can manipulate
+	simulation::World* world;                 ///< The world that the robot is in
+	dynamics::SkeletonDynamics* robot;        ///< The ID of the robot for which a plan is generated
+	std::vector<int> dofs;                    ///< The dofs of the robot the planner can manipulate
 
 	/// The underlying flann data structure for fast nearest neighbor searches 
 	flann::Index<flann::L2<double> > index;		
