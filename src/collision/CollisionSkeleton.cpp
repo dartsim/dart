@@ -1,14 +1,15 @@
-#include "CollisionSkeleton.h"
-#include "CollisionShapes.h"
+#include <cmath>
+#include <algorithm>
+#include <fcl/collision.h>
+#include "math/UtilsMath.h"
 #include "kinematics/Shape.h"
 #include "kinematics/ShapeMesh.h"
 #include "kinematics/ShapeCylinder.h"
-#include <cmath>
-#include "renderer/LoadOpengl.h"
-#include "math/UtilsMath.h"
+#include "kinematics/ShapeSphere.h"
 #include "kinematics/BodyNode.h"
-#include "fcl/collision.h"
-#include <algorithm>
+#include "renderer/LoadOpengl.h"
+#include "collision/CollisionShapes.h"
+#include "collision/CollisionSkeleton.h"
 
 using namespace std;
 using namespace Eigen;
@@ -24,8 +25,19 @@ namespace collision_checking{
 
         switch (shape->getShapeType()) {
         case kinematics::Shape::P_ELLIPSOID:
-        	mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
-        	break;
+            mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+            break;
+        case kinematics::Shape::P_SPHERE:
+        {
+            mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+
+            kinematics::ShapeSphere* sphere = dynamic_cast<kinematics::ShapeSphere*>(shape);
+            if(sphere) {
+                double radius = sphere->getRadius();
+                mMesh = createEllipsoid<fcl::OBBRSS>(2.0 * radius, 2.0 * radius, 2.0 * radius);
+            }
+        }
+            break;
         case kinematics::Shape::P_BOX:
         	mMesh = createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
         	break;
