@@ -41,6 +41,7 @@
 #include <vector>
 #include <map>
 #include <Eigen/Dense>
+#include "collision/CollisionNode.h"
 
 namespace kinematics { class BodyNode; }
 
@@ -48,27 +49,6 @@ namespace collision
 {
 
 class CollisionNode;
-
-/// @brief BodyNode pair
-///
-/// CollisionDetector creates all possible BodyNode pairs for collision
-/// checking.
-struct CollisionNodePair
-{
-//public:
-    /// @brief
-    CollisionNode* collisionNode1;
-
-    /// @brief
-    CollisionNode* collisionNode2;
-
-    /// @brief Collision detector conduct collision detection if collidable is
-    /// true.
-    bool collidable;
-
-    /// @brief
-    void* userData;
-};
 
 /// @brief
 struct Contact
