@@ -44,7 +44,7 @@
 #include "simulation/World.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/ContactDynamics.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/CollisionDetector.h"
 #include "yui/GLFuncs.h"
 
 using namespace Eigen;
@@ -108,7 +108,7 @@ namespace simulation
             }
         }else{
             if (mShowMarkers) {
-                for (int k = 0; k < mWorld->getCollisionHandle()->getCollisionChecker()->getNumContact(); k++) {
+                for (int k = 0; k < mWorld->getCollisionHandle()->getCollisionChecker()->getNumContacts(); k++) {
                     Vector3d  v = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(k).point;
                     Vector3d f = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(k).force / 10.0;
                     glBegin(GL_LINES);
@@ -181,7 +181,7 @@ namespace simulation
 
     void SimWindow::bake()
     {
-        int nContact = mWorld->getCollisionHandle()->getCollisionChecker()->getNumContact();
+        int nContact = mWorld->getCollisionHandle()->getCollisionChecker()->getNumContacts();
         VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
         for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
             state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumDofs()) = mWorld->getSkeleton(i)->getPose();

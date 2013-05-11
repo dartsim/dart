@@ -45,8 +45,8 @@ namespace kinematics {
     class BodyNode;
 } // namespace kinematics
 
-namespace collision_checking {
-    class SkeletonCollision;
+namespace collision {
+    class CollisionDetector;
 } // namespace collision
 
 namespace lcpsolver {
@@ -70,7 +70,7 @@ namespace dynamics {
         void reset();
         void addSkeleton(SkeletonDynamics* _newSkel);
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
-        inline collision_checking::SkeletonCollision* getCollisionChecker() const {return mCollisionChecker; }
+        inline collision::CollisionDetector* getCollisionChecker() const {return mCollisionChecker; }
         int getNumContacts() const;
 
 
@@ -105,7 +105,7 @@ namespace dynamics {
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
         std::vector<int> mIndices;
-        collision_checking::SkeletonCollision* mCollisionChecker;
+        collision::CollisionDetector* mCollisionChecker;
         double mDt; // timestep
         double mMu; // friction coeff.
         int mNumDir; // number of basis directions

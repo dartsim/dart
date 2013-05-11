@@ -53,7 +53,9 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    Skeleton::Skeleton() {
+    Skeleton::Skeleton()
+        : mMass(0.0),
+          mSelfCollidable(false) {
         mMass = 0;
     }
 

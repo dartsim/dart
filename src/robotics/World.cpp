@@ -41,7 +41,7 @@
 #include "World.h"
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
-#include <collision/CollisionSkeleton.h>
+#include <collision/CollisionDetector.h>
 #include <integration/EulerIntegrator.h>
 #include <dynamics/ContactDynamics.h>
 #include <dynamics/SkeletonDynamics.h>

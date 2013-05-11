@@ -7,13 +7,15 @@
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
 
-#include "collision/CollisionSkeleton.h"
+#include "collision/fcl/FCLCollisionDetector.h"
 #include "math/UtilsMath.h"
 #include "utils/Timer.h"
 
 using namespace Eigen;
-using namespace collision_checking;
+using namespace collision;
 using namespace utils;
+
+#define EPSILON 0.000001
 
     namespace dynamics {
         ConstraintDynamics::ConstraintDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
@@ -32,7 +34,7 @@ using namespace utils;
             mCollisionChecker->clearAllContacts();
             mCollisionChecker->checkCollision(true, true);
 
-            if (mCollisionChecker->getNumContact() == 0) {
+            if (mCollisionChecker->getNumContacts() == 0) {
                 for (int i = 0; i < mSkels.size(); i++)
                     mContactForces[i].setZero();
                 if (mConstraints.size() == 0) {
@@ -50,7 +52,7 @@ using namespace utils;
 
         void ConstraintDynamics::initialize() {
             // Allocate the Collision Detection class
-            mCollisionChecker = new SkeletonCollision();
+            mCollisionChecker = new FCLCollisionDetector();
 
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
@@ -229,7 +231,7 @@ using namespace utils;
             }
 
             for (int i = 0; i < getNumContacts(); i++) {
-                ContactPoint& contact = mCollisionChecker->getContact(i);
+                Contact& contact = mCollisionChecker->getContact(i);
                 contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
             }
         }
@@ -252,10 +254,10 @@ using namespace utils;
             mN = MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
             mB = MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * mNumDir);
             for (int i = 0; i < getNumContacts(); i++) {
-                ContactPoint& c = mCollisionChecker->getContact(i);
+                Contact& c = mCollisionChecker->getContact(i);
                 Vector3d p = c.point;
-                int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
-                int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
+                int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getBodyNodeID()];
+                int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getBodyNodeID()];
 
                 Vector3d N21 = c.normal;
                 Vector3d N12 = -c.normal;
@@ -264,9 +266,9 @@ using namespace utils;
 
                 if (!mSkels[skelID1]->getImmobileState()) {
                     int index1 = mIndices[skelID1];
-                    int NDOF1 = c.bd1->getSkel()->getNumDofs();
+                    int NDOF1 = c.collisionNode1->getBodyNode()->getSkel()->getNumDofs();
                     //    Vector3d N21 = c.normal;
-                    MatrixXd J21t = getJacobian(c.bd1, p);
+                    MatrixXd J21t = getJacobian(c.collisionNode1->getBodyNode(), p);
                     mN.block(index1, i, NDOF1, 1) = J21t * N21;
                     //B21 = getTangentBasisMatrix(p, N21);
                     mB.block(index1, i * mNumDir, NDOF1, mNumDir) = J21t * B21;
@@ -274,13 +276,13 @@ using namespace utils;
 
                 if (!mSkels[skelID2]->getImmobileState()) {
                     int index2 = mIndices[skelID2];
-                    int NDOF2 = c.bd2->getSkel()->getNumDofs();
+                    int NDOF2 = c.collisionNode2->getBodyNode()->getSkel()->getNumDofs();
                     //Vector3d N12 = -c.normal;
                     //if (B21.rows() == 0)
                     //  B12 = getTangentBasisMatrix(p, N12);
                     //else
                     //   B12 = -B21;
-                    MatrixXd J12t = getJacobian(c.bd2, p);
+                    MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
                     mN.block(index2, i, NDOF2, 1) = J12t * N12;
                     mB.block(index2, i * mNumDir, NDOF2, mNumDir) = J12t * B12;
 
