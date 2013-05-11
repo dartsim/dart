@@ -17,14 +17,11 @@
 #include "kinematics/Transformation.h"
 #include "kinematics/TrfmTranslate.h"
 #include "kinematics/TrfmRotateEuler.h"
-#include <robotics/Robot.h>
-#include <robotics/World.h>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 
 using namespace kinematics;
 using namespace dynamics;
-using namespace robotics;
 using namespace Eigen;
 
 /// Function headers
@@ -92,7 +89,7 @@ void add_DOF(SkeletonDynamics* skel, Joint* joint, double val, double min, doubl
 
 /* ********************************************************************************************* */
 /// Add an end-effector to the last link of the given robot
-void addEndEffector (Robot* robot, BodyNodeDynamics* parent_node, Vector3d dim) {
+void addEndEffector (SkeletonDynamics* robot, BodyNodeDynamics* parent_node, Vector3d dim) {
 
 	// Create the end-effector node with a random dimension
 	BodyNodeDynamics* node = (BodyNodeDynamics*) robot->createBodyNode("ee");
@@ -109,10 +106,10 @@ void addEndEffector (Robot* robot, BodyNodeDynamics* parent_node, Vector3d dim) 
 /* ********************************************************************************************* */
 /// Creates a two link manipulator with the given dimensions where the first link rotates around
 /// z-axis and second rotates around x in the zero configuration.
-Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, bool 
+SkeletonDynamics* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, bool 
 		unfinished = false) {
 
-	Robot* robot = new Robot;
+	SkeletonDynamics* robot = new SkeletonDynamics();
 
 	// Create the first link, the joint with the ground and its shape
 	double mass = 1.0;
@@ -151,10 +148,10 @@ Robot* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOf
 /* ********************************************************************************************* */
 /// Creates a two link manipulator with the given dimensions where the first link rotates around
 /// z-axis and second rotates around x in the zero configuration.
-Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, 
+SkeletonDynamics* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, 
 		Vector3d dim3, TypeOfDOF type3, bool unfinished = false) {
 
-	Robot* robot = new Robot;
+	SkeletonDynamics* robot = new SkeletonDynamics();
 
 	// Create the first link, the joint with the ground and its shape
 	double mass = 1.0;
@@ -202,4 +199,3 @@ Robot* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Type
 	}
 	return robot;
 }
-

@@ -1,11 +1,13 @@
 #include "PathShortener.h"
-#include "robotics/World.h"
-#include "robotics/Robot.h"
+#include "simulation/World.h"
 #include "RRT.h"
+#include "dynamics/ContactDynamics.h"
+#include "collision/CollisionSkeleton.h"
+#include "dynamics/SkeletonDynamics.h"
 
 using namespace std;
 using namespace Eigen;
-using namespace robotics;
+using namespace simulation;
 
 #define RAND12(N1,N2) N1 + ((N2-N1) * ((double)rand() / ((double)RAND_MAX + 1))) // random # between N&M
 
@@ -13,9 +15,9 @@ namespace planning {
 
 PathShortener::PathShortener() {}
 
-PathShortener::PathShortener(World* world, int robotId, const vector<int> &dofs, double stepSize) :
+PathShortener::PathShortener(World* world, dynamics::SkeletonDynamics* robot, const vector<int> &dofs, double stepSize) :
    world(world),
-   robotId(robotId),
+   robot(robot),
    dofs(dofs),
    stepSize(stepSize)
 {}
@@ -28,7 +30,7 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 	printf("--> Start Brute Force Shortener \n"); 
 	srand(time(NULL));
 
-	VectorXd savedDofs = world->getRobot(robotId)->getConfig(dofs);
+	VectorXd savedDofs = robot->getConfig(dofs);
 
 	const int numShortcuts = path.size() * 5;
 	
@@ -56,9 +58,9 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 			node1NextIter++;
 			path.erase(node1NextIter, node2Iter);
 			path.splice(node2Iter, intermediatePoints);
-        }
+		}
 	}
-	world->getRobot(robotId)->setConfig(dofs, savedDofs);
+	robot->setConfig(dofs, savedDofs);
 
 	printf("End Brute Force Shortener \n");
 }
@@ -85,7 +87,7 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 
 	VectorXd midpoint = (double)n2 / (double)n * config1 + (double)n1 / (double)n * config2;
 	list<VectorXd> intermediatePoints1, intermediatePoints2;
-	world->getRobot(robotId)->setConfig(dofs, midpoint);
+	robot->setConfig(dofs, midpoint);
 	if(!world->checkCollision() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
 			&& segmentCollisionFree(intermediatePoints2, midpoint, config2))
 	{

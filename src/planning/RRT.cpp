@@ -42,18 +42,19 @@
  */
 
 #include "RRT.h"
-#include "robotics/World.h"
-#include "robotics/Robot.h"
+#include "simulation/World.h"
 #include "kinematics/Dof.h"
+#include "dynamics/SkeletonDynamics.h"
 
 using namespace std;
 using namespace Eigen;
-using namespace robotics;
+using namespace simulation;
+using namespace dynamics;
 
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
+RRT::RRT(World* world, SkeletonDynamics* robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -67,7 +68,7 @@ RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const VectorXd &
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, int robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(World* world, dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -191,8 +192,7 @@ VectorXd RRT::getRandomConfig() {
 	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-		config[i] = randomInRange(world->getRobot(robot)->getDof(dofs[i])->getMin(), 
-			world->getRobot(robot)->getDof(dofs[i])->getMax());
+		config[i] = randomInRange(robot->getDof(dofs[i])->getMin(), robot->getDof(dofs[i])->getMax());
 	}
 	return config;
 }
@@ -216,7 +216,7 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-	world->getRobot(robot)->setConfig(dofs, c);
+	robot->setConfig(dofs, c);
 	return world->checkCollision();
 }
 

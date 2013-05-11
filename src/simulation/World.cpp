@@ -44,6 +44,7 @@
 #include "dynamics/ContactDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
+#include "collision/CollisionSkeleton.h"
 
 #include <iostream>
 
@@ -280,4 +281,9 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
 
     return true;
 }
+
+bool World::checkCollision(bool checkAllCollisions) {
+    return mCollisionHandle->getCollisionChecker()->checkCollision(checkAllCollisions, false);
+}
+
 } // namespace simulation
