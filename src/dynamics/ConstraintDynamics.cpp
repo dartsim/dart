@@ -8,6 +8,7 @@
 #include "BodyNodeDynamics.h"
 
 #include "collision/fcl/FCLCollisionDetector.h"
+#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 #include "math/UtilsMath.h"
 #include "utils/Timer.h"
 
@@ -52,7 +53,8 @@ using namespace utils;
 
         void ConstraintDynamics::initialize() {
             // Allocate the Collision Detection class
-            mCollisionChecker = new FCLCollisionDetector();
+            //mCollisionChecker = new FCLCollisionDetector();
+            mCollisionChecker = new FCLMESHCollisionDetector();
 
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
