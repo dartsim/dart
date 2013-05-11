@@ -2,7 +2,7 @@
 #include "simulation/World.h"
 #include "RRT.h"
 #include "dynamics/ContactDynamics.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/CollisionDetector.h"
 #include "dynamics/SkeletonDynamics.h"
 
 using namespace std;
