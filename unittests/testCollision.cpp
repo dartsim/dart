@@ -46,6 +46,8 @@ class COLLISION : public testing::Test
 {
 public:
 	void approaching(int idx);
+	void unrotatedTest(fcl::CollisionGeometry* _coll1,
+								  fcl::CollisionGeometry* _coll2, double expectedContactPoint, int _idxAxis);
 	void printResult(const fcl::CollisionResult& _result);
 };
 
@@ -80,7 +82,7 @@ void COLLISION::approaching(int idx)
 	EXPECT_EQ(fcl::collide(&box1, box1_transform,
 						   &box2, box2_transform,
 						   request, result), 0);
-	printResult(result);
+	//printResult(result);
 
 	//--------------------------------------------------------------------------
 	// CASE 2: Contact, no penetration
@@ -94,7 +96,7 @@ void COLLISION::approaching(int idx)
 	{
 		EXPECT_EQ(result.getContact(i).pos[idx], realContactPoint);
 	}
-	printResult(result);
+	//printResult(result);
 
 	//--------------------------------------------------------------------------
 	// CASE 3: Contact, penetration
@@ -104,7 +106,7 @@ void COLLISION::approaching(int idx)
 	EXPECT_GE(fcl::collide(&box1, box1_transform,
 						   &box2, box2_transform,
 						   request, result), 1);
-	printResult(result);
+	//printResult(result);
 
 	//--------------------------------------------------------------------------
 	// CASE 4: Contact, in the same position
@@ -114,7 +116,7 @@ void COLLISION::approaching(int idx)
 	EXPECT_GE(fcl::collide(&box1, box1_transform,
 						   &box2, box2_transform,
 						   request, result), 1);
-	printResult(result);
+	//printResult(result);
 
 	//==========================================================================
 	// Approaching test
@@ -162,11 +164,69 @@ void COLLISION::approaching(int idx)
 	if (idx == 2)
 		std::cout << "Box1 is collided when its z-axis position is: " << (z - dz) << std::endl;
 
-	printResult(result);
+	//printResult(result);
 
 	for (int i = 0; i < result.numContacts(); ++i)
 	{
 		EXPECT_NEAR(result.getContact(i).pos[idx], realContactPoint, -dz*2.0);
+	}
+}
+
+void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
+							  fcl::CollisionGeometry* _coll2,
+							  double expectedContactPoint,
+							  int _idxAxis)
+{
+	fcl::CollisionResult result;
+	fcl::CollisionRequest request;
+	request.enable_contact = true;
+	request.num_max_contacts = 100;
+
+	fcl::Vec3f position(0, 0, 0);
+
+	fcl::Transform3f coll1_transform;
+	fcl::Transform3f coll2_transform;
+
+	//==========================================================================
+	// Approaching test
+	//==========================================================================
+	result.clear();
+	double dpos = -0.001;
+	double pos = 10.0;
+
+	coll1_transform.setIdentity();
+	coll1_transform.setTranslation(fcl::Vec3f(0, 0, 0));
+	coll2_transform.setIdentity();
+
+	// Let's drop box2 until it collide with box1
+	do {
+		position[_idxAxis] = pos;
+		coll2_transform.setTranslation(position);
+
+		fcl::collide(_coll1, coll1_transform,
+					 _coll2, coll2_transform,
+					 request, result);
+
+		pos += dpos;
+	}
+	while (result.numContacts() == 0);
+
+	//
+	if (_idxAxis == 0)
+		std::cout << "The object is collided when its x-axis position is: " << (pos - dpos) << std::endl;
+	if (_idxAxis == 1)
+		std::cout << "The object is collided when its y-axis position is: " << (pos - dpos) << std::endl;
+	if (_idxAxis == 2)
+		std::cout << "The object is collided when its z-axis position is: " << (pos - dpos) << std::endl;
+
+	//printResult(result);
+
+	for (int i = 0; i < result.numContacts(); ++i)
+	{
+		EXPECT_GE(result.getContact(i).penetration_depth, 0.0);
+//		EXPECT_NEAR(result.getContact(i).normal[_idxAxis], -1.0);
+		EXPECT_EQ(result.getContact(i).normal.length(), nan);
+		EXPECT_NEAR(result.getContact(i).pos[_idxAxis], expectedContactPoint, -dpos*2.0);
 	}
 }
 
@@ -187,16 +247,70 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 }
 
 /* ********************************************************************************************* */
+//TEST_F(COLLISION, BOX_BOX_X_2) {
+//	approaching(0); // x-axis
+//}
+
+//TEST_F(COLLISION, BOX_BOX_Y_2) {
+//	approaching(1); // y-axis
+//}
+
+//TEST_F(COLLISION, BOX_BOX_Z_2) {
+//	approaching(2); // z-axis
+//}
+
 TEST_F(COLLISION, BOX_BOX_X) {
-	approaching(0); // x-axis
+	fcl::Box box1(2, 2, 2);
+	fcl::Box box2(1, 1, 1);
+	unrotatedTest(&box1, &box2, 1.0, 0); // x-axis
 }
 
 TEST_F(COLLISION, BOX_BOX_Y) {
-	approaching(1); // y-axis
+	fcl::Box box1(2, 2, 2);
+	fcl::Box box2(1, 1, 1);
+	unrotatedTest(&box1, &box2, 1.0, 1); // y-axis
 }
 
 TEST_F(COLLISION, BOX_BOX_Z) {
-    approaching(2); // z-axis
+	fcl::Box box1(2, 2, 2);
+	fcl::Box box2(1, 1, 1);
+	unrotatedTest(&box1, &box2, 1.0, 2); // z-axis
+}
+
+TEST_F(COLLISION, BOX_SPHERE_X) {
+	fcl::Box box1(2, 2, 2);
+	fcl::Sphere sphere(0.5);
+	unrotatedTest(&box1, &sphere, 1.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, BOX_SPHERE_Y) {
+	fcl::Box box1(2, 2, 2);
+	fcl::Sphere sphere(0.5);
+	unrotatedTest(&box1, &sphere, 1.0, 1); // y-axis
+}
+
+TEST_F(COLLISION, BOX_SPHERE_Z) {
+	fcl::Box box1(2, 2, 2);
+	fcl::Sphere sphere(0.5);
+	unrotatedTest(&box1, &sphere, 1.0, 2); // z-axis
+}
+
+TEST_F(COLLISION, SPHERE_SPHERE_X) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, SPHERE_SPHERE_Y) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 1); // y-axis
+}
+
+TEST_F(COLLISION, SPHERE_SPHERE_Z) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
 }
 
 /* ********************************************************************************************* */
@@ -205,3 +319,4 @@ int main(int argc, char* argv[]) {
     return RUN_ALL_TESTS();
 }
 /* ********************************************************************************************* */
+
