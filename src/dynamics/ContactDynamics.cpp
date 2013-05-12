@@ -1,28 +1,24 @@
-#include "math/UtilsMath.h"
-#include "utils/Timer.h"
+#include "ContactDynamics.h"
 
 #include "kinematics/BodyNode.h"
+#include "lcpsolver/LCPSolver.h"
 #include "kinematics/Shape.h"
 
-#include "lcpsolver/LCPSolver.h"
+#include "SkeletonDynamics.h"
+#include "BodyNodeDynamics.h"
 
-#include "collision/CollisionNode.h"
-#include "collision/CollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
-#include "collision/simple/SimpleCollisionDetector.h"
-
-#include "dynamics/SkeletonDynamics.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/ContactDynamics.h"
+#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
+#include "math/UtilsMath.h"
+#include "utils/Timer.h"
 
 using namespace Eigen;
 using namespace collision;
 using namespace utils;
 
-namespace dynamics {
-
 #define EPSILON 0.000001
+
+namespace dynamics {
 
 ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels,
                                  double _dt,
@@ -32,7 +28,7 @@ ContactDynamics::ContactDynamics(const std::vector<SkeletonDynamics*>& _skels,
       mDt(_dt),
       mMu(_mu),
       mNumDir(_d),
-      mCollisionDetector(NULL) {
+      mCollisionChecker(NULL) {
     initialize();
 }
 
@@ -44,13 +40,13 @@ void ContactDynamics::applyContactForces() {
     if (getNumTotalDofs() == 0)
         return;
 
-    mCollisionDetector->clearAllContacts();
-    mCollisionDetector->checkCollision(true, true);
+    mCollisionChecker->clearAllContacts();
+    mCollisionChecker->checkCollision(true, true);
 
     for (int i = 0; i < getNumSkels(); i++)
         mConstrForces[i].setZero();
 
-    if (mCollisionDetector->getNumContacts() == 0)
+    if (mCollisionChecker->getNumContacts() == 0)
         return;
 
     fillMatrices();
@@ -65,10 +61,8 @@ void ContactDynamics::reset() {
 
 void ContactDynamics::initialize() {
     // Allocate the Collision Detection class
-    //mCollisionDetector = new SkeletonCollision();
-    mCollisionDetector = new FCLCollisionDetector();
-    //mCollisionDetector = new FCL2CollisionDetector();
-    //mCollisionDetector = new SimpleCollisionDetector();
+    //mCollisionChecker = new FCLCollisionDetector();
+    mCollisionChecker = new FCLMESHCollisionDetector();
 
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionChecker
@@ -87,7 +81,7 @@ void ContactDynamics::initialize() {
 
             if (node->getCollisionShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
             {
-                mCollisionDetector->addCollisionSkeletonNode(node);
+                mCollisionChecker->addCollisionSkeletonNode(node);
                 mBodyIndexToSkelIndex.push_back(i);
             }
         }
@@ -129,7 +123,7 @@ void ContactDynamics::addSkeleton(SkeletonDynamics* _newSkel) {
 
         if (node->getCollisionShape()->getShapeType()
                 != kinematics::Shape::P_UNDEFINED) {
-            mCollisionDetector->addCollisionSkeletonNode(node);
+            mCollisionChecker->addCollisionSkeletonNode(node);
             mBodyIndexToSkelIndex.push_back(nSkels-1);
         }
     }
@@ -159,8 +153,8 @@ void ContactDynamics::addSkeleton(SkeletonDynamics* _newSkel) {
 }
 
 void ContactDynamics::destroy() {
-    if (mCollisionDetector) {
-        delete mCollisionDetector;
+    if (mCollisionChecker) {
+        delete mCollisionChecker;
     }
 }
 
@@ -281,8 +275,7 @@ void ContactDynamics::applySolution() {
     }
 
     for (int i = 0; i < c; i++) {
-        //ContactPoint& contact = mCollisionDetector->getContact(i);
-        Contact& contact = mCollisionDetector->getContact(i);
+        Contact& contact = mCollisionChecker->getContact(i);
         contact.force.noalias() = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir);
         contact.force += contact.normal * f_n[i];
     }
@@ -291,27 +284,24 @@ void ContactDynamics::applySolution() {
 MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
     int nDofs = node->getSkel()->getNumDofs();
     MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-    Vector3d invP = dart_math::xformHom(node->getWorldInvTransform(), p);
+    Vector3d invP = math::xformHom(node->getWorldInvTransform(), p);
 
     for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
         int i = node->getDependentDof(dofIndex);
-        Jt.row(i) = dart_math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
+        Jt.row(i) = math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
     }
 
     return Jt;
 }
 
-void ContactDynamics::updateNBMatrices()
-{
+void ContactDynamics::updateNBMatrices() {
     mN = MatrixXd::Zero(getNumTotalDofs(), getNumContacts());
     mB = MatrixXd::Zero(getNumTotalDofs(), getNumContacts() * getNumContactDirections());
-
     for (int i = 0; i < getNumContacts(); i++) {
-        //ContactPoint& c = mCollisionDetector->getContact(i);
-        Contact& c = mCollisionDetector->getContact(i);
+        Contact& c = mCollisionChecker->getContact(i);
         Vector3d p = c.point;
-        int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
-        int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
+        int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getBodyNodeID()];
+        int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getBodyNodeID()];
 
         Vector3d N21 = c.normal;
         Vector3d N12 = -c.normal;
@@ -339,6 +329,7 @@ void ContactDynamics::updateNBMatrices()
             MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
             mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
             mB.block(index2, i * getNumContactDirections(), NDOF2, getNumContactDirections()).noalias() = J12t * B12;
+
         }
     }
 }
@@ -492,7 +483,7 @@ MatrixXd ContactDynamics::getMuMatrix() const {
 }
 
 int ContactDynamics::getNumContacts() const {
-    return mCollisionDetector->getNumContacts();
+    return mCollisionChecker->getNumContacts();
 }
 
 } // namespace dynamics

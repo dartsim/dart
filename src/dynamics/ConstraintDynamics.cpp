@@ -7,10 +7,8 @@
 #include "SkeletonDynamics.h"
 #include "BodyNodeDynamics.h"
 
-#include "collision/CollisionNode.h"
-#include "collision/CollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
+#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 #include "math/UtilsMath.h"
 #include "utils/Timer.h"
 
@@ -18,10 +16,9 @@ using namespace Eigen;
 using namespace collision;
 using namespace utils;
 
+#define EPSILON 0.000001
+
     namespace dynamics {
-
-    #define EPSILON 0.000001
-
         ConstraintDynamics::ConstraintDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
             : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL) {
             initialize();
@@ -56,10 +53,8 @@ using namespace utils;
 
         void ConstraintDynamics::initialize() {
             // Allocate the Collision Detection class
-            // TODO: IN TEST
-            //mCollisionChecker = new SkeletonCollision();
-            mCollisionChecker = new FCLCollisionDetector();
-            //mCollisionChecker = new FCL2CollisionDetector();
+            //mCollisionChecker = new FCLCollisionDetector();
+            mCollisionChecker = new FCLMESHCollisionDetector();
 
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
@@ -246,11 +241,11 @@ using namespace utils;
         MatrixXd ConstraintDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
             int nDofs = node->getSkel()->getNumDofs();
             MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-            VectorXd invP = dart_math::xformHom(node->getWorldInvTransform(), p);
+            VectorXd invP = math::xformHom(node->getWorldInvTransform(), p);
 
             for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
                 int i = node->getDependentDof(dofIndex);
-                VectorXd Jcol = dart_math::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
+                VectorXd Jcol = math::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
                 Jt.row(i) = Jcol;
             }
 
@@ -263,8 +258,8 @@ using namespace utils;
             for (int i = 0; i < getNumContacts(); i++) {
                 Contact& c = mCollisionChecker->getContact(i);
                 Vector3d p = c.point;
-                int skelID1 = mBodyIndexToSkelIndex[c.bdID1];
-                int skelID2 = mBodyIndexToSkelIndex[c.bdID2];
+                int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getBodyNodeID()];
+                int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getBodyNodeID()];
 
                 Vector3d N21 = c.normal;
                 Vector3d N12 = -c.normal;

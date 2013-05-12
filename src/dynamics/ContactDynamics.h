@@ -46,7 +46,6 @@ namespace kinematics {
 } // namespace kinematics
 
 namespace collision {
-    class FCLCollisionDetector;
     class CollisionDetector;
 } // namespace collision
 
@@ -64,22 +63,14 @@ namespace dynamics {
     class SkeletonDynamics;
     
     class ContactDynamics {
-    public:
+        public:
         ContactDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
         virtual ~ContactDynamics();
-
-        /// @brief Get the time step.
-        inline void setTimeStep(double _timeStep) { mDt = _timeStep; }
-
-        /// @brief Set the time step.
-        inline double getTimeStep() const { return mDt; }
-
         void applyContactForces();
         void reset();
         void addSkeleton(SkeletonDynamics* _newSkel);
         inline Eigen::VectorXd getConstraintForce(int _skelIndex) const { return mConstrForces[_skelIndex]; }
-        //inline collision::SkeletonCollision* getCollisionChecker() const {return mCollisionChecker; }
-        inline collision::CollisionDetector* getCollisionDetector() const {return mCollisionDetector; }
+        inline collision::CollisionDetector* getCollisionChecker() const {return mCollisionChecker; }
         int getNumContacts() const;
 
 
@@ -114,8 +105,7 @@ namespace dynamics {
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
         std::vector<int> mIndices;
-        //collision::SkeletonCollision* mCollisionChecker;
-        collision::CollisionDetector* mCollisionDetector;
+        collision::CollisionDetector* mCollisionChecker;
         double mDt; // timestep
         double mMu; // friction coeff.
         int mNumDir; // number of basis directions

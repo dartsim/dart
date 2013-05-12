@@ -61,6 +61,7 @@ namespace kinematics {
           mJointParent(NULL),
           mNodeParent(NULL),
           mColliding(false),
+          mCollidable(true),
           mNumRootTrans(0),
           mMass(0),
           mCOMLocal(0,0,0),

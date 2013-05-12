@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/11/2013
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Date: 06/12/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,55 +35,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_CONLLISION_NODE_H
-#define COLLISION_FCL_CONLLISION_NODE_H
+#ifndef KINEMATICS_SHAPE_SPHERE_H
+#define KINEMATICS_SHAPE_SPHERE_H
 
-#include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
+#include "kinematics/Shape.h"
 
-#include "collision/CollisionNode.h"
+namespace kinematics {
 
-namespace kinematics { class BodyNode; }
+    class ShapeSphere : public Shape {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-namespace collision
-{
+        ShapeSphere(double _radius);
 
-/// @brief
-class FCLCollisionNode : public CollisionNode
-{
-public:
-    /// @brief
-    FCLCollisionNode(kinematics::BodyNode* _bodyNode);
+        inline void setRadius(double _radius) { mRadius = _radius; }
+        inline double getRadius(void) const { return mRadius; }
 
-    /// @brief
-    virtual ~FCLCollisionNode();
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
 
-    /// @brief
-    void setCollisionGeometry(fcl::CollisionGeometry* _geom)
-    { mCollisionGeometry = _geom; }
+        virtual Eigen::Matrix3d computeInertia(double _mass);
 
-    /// @brief
-    fcl::CollisionGeometry* getCollisionGeometry() const
-    { return mCollisionGeometry; }
+    private:
+        void computeVolume();
+        void initMeshes();
 
-    /// @brief
-    fcl::Transform3f getFCLTransform(void) const;
+        double mRadius;
+    public:
+    };
 
-protected:
+} // namespace kinematics
 
-private:
-    fcl::CollisionGeometry* mCollisionGeometry;
+#endif // #ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
 
-};
 
-template<class BV>
-fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
-                              const aiScene *_mesh);
-
-template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
-
-} // namespace collision
-
-#endif // COLLISION_FCL2_CONLLISION_NODE_H

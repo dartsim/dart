@@ -2,7 +2,7 @@
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
+#include "collision/CollisionDetector.h"
 #include "math/UtilsMath.h"
 #include "utils/Timer.h"
 #include "yui/GLFuncs.h"
@@ -12,7 +12,7 @@
 using namespace dynamics;
 using namespace yui;
 using namespace utils;
-using namespace dart_math;
+using namespace math;
 
 void MyWindow::initDyn()
 {

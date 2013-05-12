@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -55,7 +55,6 @@ class CollisionNodePair;
 /// checking.
 struct CollisionNodePair
 {
-//public:
     /// @brief
     CollisionNode* collisionNode1;
 
@@ -65,17 +64,12 @@ struct CollisionNodePair
     /// @brief Collision detector conduct collision detection if collidable is
     /// true.
     bool collidable;
-
-    /// @brief
-    void* userData;
 };
 
 /// @brief
 class CollisionNode
 {
 public: // constructors and destructor
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     /// @brief Default constructor
     CollisionNode(kinematics::BodyNode* _bodyNode);
 

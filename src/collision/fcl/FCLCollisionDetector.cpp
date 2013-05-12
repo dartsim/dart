@@ -1,60 +1,61 @@
-#include <algorithm>
-#include <cmath>
-#include <fcl/collision.h>
+/*
+ * Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/01/2013
+ *
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
-#include "renderer/LoadOpengl.h"
-#include "math/UtilsMath.h"
-
+#include "kinematics/Shape.h"
 #include "kinematics/BodyNode.h"
+#include "kinematics/Skeleton.h"
 
-#include "collision/CollisionNode.h"
-#include "collision/fcl/CollisionShapes.h"
 #include "collision/fcl/FCLCollisionNode.h"
 #include "collision/fcl/FCLCollisionDetector.h"
-
-using namespace std;
-using namespace Eigen;
-using namespace dart_math;
 
 namespace collision
 {
 
-FCLCollisionDetector::~FCLCollisionDetector() {
-}
-
-void FCLCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_bd,
-                                                    bool _bRecursive)
+FCLCollisionDetector::FCLCollisionDetector()
+    : CollisionDetector(),
+      mNumMaxContacts(100)
 {
-    if (_bRecursive == false || _bd->getNumChildJoints() == 0)
-    {
-        FCLCollisionNode* csnode = new FCLCollisionNode(_bd);
-        csnode->setBodyNodeID(mCollisionNodes.size());
-        mCollisionNodes.push_back(csnode);
-        mBodyCollisionMap[_bd] = csnode;
-        mActiveMatrix.push_back(vector<bool>(mCollisionNodes.size() - 1));
-
-        for(unsigned int i = 0; i < mCollisionNodes.size() - 1; i++)
-        {
-            //if(mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == _bd || _bd->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode) {
-            if(mCollisionNodes[i]->getBodyNode()->getSkel() == _bd->getSkel()) {
-                mActiveMatrix.back()[i] = false;
-            }
-            else
-            {
-                mActiveMatrix.back()[i] = true;
-            }
-        }
-    }
-    else
-    {
-        addCollisionSkeletonNode(_bd, false);
-
-        for (int i = 0; i < _bd->getNumChildJoints(); i++)
-            addCollisionSkeletonNode(_bd->getChildNode(i), true);
-    }
 }
 
-CollisionNode*FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _bodyNode)
+FCLCollisionDetector::~FCLCollisionDetector()
+{
+}
+
+CollisionNode* FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _bodyNode)
 {
     CollisionNode* collisionNode = NULL;
 
@@ -64,76 +65,66 @@ CollisionNode*FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _b
 }
 
 bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
-                                       bool _calculateContactPoints)
+                                          bool _calculateContactPoints)
 {
-    int num_max_contact = 100;
+    // TODO: _checkAllCollisions
+
     clearAllContacts();
-    mNumTriIntersection = 0;
 
-    FCLCollisionNode* fclCollisionNode1 = NULL;
-    FCLCollisionNode* fclCollisionNode2 = NULL;
+    fcl::CollisionResult result;
 
-    for (int i = 0; i < mCollisionNodes.size(); i++)
+    // only evaluate contact points if data structure for returning the contact
+    // points was provided
+    fcl::CollisionRequest request;
+    request.enable_contact = _calculateContactPoints;
+    request.num_max_contacts = mNumMaxContacts;
+//    request.enable_cost;
+//    request.num_max_cost_sources;
+//    request.use_approximate_cost;
+
+    unsigned int numCollisionNodePairs = mCollisionNodePairs.size();
+    FCLCollisionNode* collNode1 = NULL;
+    FCLCollisionNode* collNode2 = NULL;
+
+    for (unsigned int i = 0; i < numCollisionNodePairs; ++i)
     {
-        mCollisionNodes[i]->getBodyNode()->setColliding(false);
-    }
+        const CollisionNodePair& collisionNodePair = mCollisionNodePairs[i];
 
-    for (int i = 0; i < mCollisionNodes.size(); i++)
-    {
-        fclCollisionNode1 = static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
+        if (collisionNodePair.collidable == false)
+            continue;
 
-        for (int j = i + 1; j < mCollisionNodes.size(); j++)
+        collNode1 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode1);
+        collNode2 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode2);
+
+        fcl::collide(collNode1->getCollisionGeometry(),
+                     collNode1->getFCLTransform(),
+                     collNode2->getCollisionGeometry(),
+                     collNode2->getFCLTransform(),
+                     request, result);
+
+        unsigned int numContacts = result.numContacts();
+        for (unsigned int j = 0; j < numContacts; ++j)
         {
-            fclCollisionNode2 = static_cast<FCLCollisionNode*>(mCollisionNodes[j]);
+            const fcl::Contact& contact = result.getContact(j);
 
-            if (!mActiveMatrix[j][i])
-            {
-                continue;
-            }
-            const int numTriIntersection
-                    = fclCollisionNode1->checkCollision(
-                          fclCollisionNode2,
-                          _calculateContactPoints ? &mContacts : NULL,
-                          num_max_contact);
+            Contact contactPair;
+            contactPair.point(0) = contact.pos[0];
+            contactPair.point(1) = contact.pos[1];
+            contactPair.point(2) = contact.pos[2];
+            contactPair.normal(0) = contact.normal[0];
+            contactPair.normal(1) = contact.normal[1];
+            contactPair.normal(2) = contact.normal[2];
+            contactPair.collisionNode1 = collisionNodePair.collisionNode1;
+            contactPair.collisionNode2 = collisionNodePair.collisionNode2;
+            //contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
+            //contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
+            contactPair.penetrationDepth = contact.penetration_depth;
 
-            mNumTriIntersection += numTriIntersection;
-
-            if(numTriIntersection > 0)
-            {
-                mCollisionNodes[i]->getBodyNode()->setColliding(true);
-                mCollisionNodes[j]->getBodyNode()->setColliding(true);
-            }
-
-            if(!_checkAllCollisions && mNumTriIntersection > 0)
-            {
-                return true;
-            }
+            mContacts.push_back(contactPair);
         }
     }
 
-    return (mNumTriIntersection > 0);
+    return !mContacts.empty();
 }
 
-void FCLCollisionDetector::draw() {
-    for(int i=0;i<mCollisionNodes.size();i++)
-        static_cast<FCLCollisionNode*>(mCollisionNodes[i])->drawCollisionSkeletonNode();
-}
-
-void FCLCollisionDetector::activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
-    int nodeId1 = getCollisionSkeletonNode(node1)->getBodyNodeID();
-    int nodeId2 = getCollisionSkeletonNode(node2)->getBodyNodeID();
-    if(nodeId1 < nodeId2) {
-        swap(nodeId1, nodeId2);
-    }
-    mActiveMatrix[nodeId1][nodeId2] = true;
-}
-
-void FCLCollisionDetector::deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2) {
-    int nodeId1 = getCollisionSkeletonNode(node1)->getBodyNodeID();
-    int nodeId2 = getCollisionSkeletonNode(node2)->getBodyNodeID();
-    if(nodeId1 < nodeId2) {
-        swap(nodeId1, nodeId2);
-    }
-    mActiveMatrix[nodeId1][nodeId2] = false;
-}
-}
+} // namespace collision

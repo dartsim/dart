@@ -44,8 +44,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include <dynamics/Constraint.h>
-#include "collision/fcl2/FCL2CollisionDetector.h"
+#include "dynamics/Constraint.h"
+#include "collision/CollisionDetector.h"
 
 namespace kinematics {
     class BodyNode;

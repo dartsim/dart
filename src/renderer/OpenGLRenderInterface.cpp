@@ -44,6 +44,7 @@
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
 #include <kinematics/ShapeCylinder.h>
+#include <kinematics/ShapeSphere.h>
 #include <kinematics/ShapeMesh.h>
 
 using namespace std;
@@ -424,7 +425,9 @@ namespace renderer {
     		break;
     	case kinematics::Shape::P_CYLINDER:
     		break;
-    	case kinematics::Shape::P_ELLIPSOID:
+        case kinematics::Shape::P_ELLIPSOID:
+            break;
+        case kinematics::Shape::P_SPHERE:
     		break;
     	case kinematics::Shape::P_MESH:
     		//FIXME: Separate these calls once BodyNode is refactored to contain
@@ -517,11 +520,26 @@ namespace renderer {
     	case kinematics::Shape::P_CYLINDER:
     		//FIXME: We are not in a glut instance
 	        drawCylinder( ((kinematics::ShapeCylinder*)_shape)->getRadius(), ((kinematics::ShapeCylinder*)_shape)->getHeight() );
-    		break;
-    	case kinematics::Shape::P_ELLIPSOID:
+            break;
+        case kinematics::Shape::P_ELLIPSOID:
     		//FIXME: We are not in a glut instance
     		drawEllipsoid(_shape->getDim());
     		break;
+        case kinematics::Shape::P_SPHERE:
+            //FIXME: We are not in a glut instance
+        {
+            kinematics::ShapeSphere* sphere
+                    = dynamic_cast<kinematics::ShapeSphere*>(_shape);
+            if (sphere)
+            {
+                Eigen::Vector3d dim;
+                dim(0) = 2.0 * sphere->getRadius();
+                dim(1) = dim(0);
+                dim(2) = dim(0);
+                drawEllipsoid(dim);
+            }
+        }
+            break;
     	case kinematics::Shape::P_MESH:
     		glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 

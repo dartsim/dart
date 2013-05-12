@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
     cout << "'1'--'4': programmed interaction" << endl;
 
     glutInit(&argc, argv);
-    window.initWindow(640, 480, "Boxes");
+    window.initWindow(640, 480, "Spheres");
     glutMainLoop();
 
     return 0;

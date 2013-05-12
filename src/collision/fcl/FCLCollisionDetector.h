@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>
- * Date: 09/30/2011
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/01/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,106 +35,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_COLLISION_DETECTOR_H
-#define COLLISION_FCL_COLLISION_DETECTOR_H
+#ifndef COLLISION_FCL_CONLLISION_DETECTOR_H
+#define COLLISION_FCL_CONLLISION_DETECTOR_H
 
 #include <vector>
 #include <map>
-#include <fcl/BVH/BVH_model.h>
 #include <Eigen/Dense>
 
 #include "collision/CollisionDetector.h"
-#include "collision/fcl/tri_tri_intersection_test.h"
 
-namespace kinematics { class BodyNode; }
-namespace fcl { class CollisionResult; }
-
-namespace collision 
+namespace collision
 {
 
 class FCLCollisionNode;
 
-//class FCLContact : public Contact
-//{
-//public:
-//    kinematics::BodyNode *bd1;
-//    kinematics::BodyNode *bd2;
-//    CollisionSkeletonNode *collisionSkeletonNode1;
-//    CollisionSkeletonNode *collisionSkeletonNode2;
-//    int triID1;
-//    int triID2;
-//    /*        bool isAdjacent(ContactPoint &otherPt){
-//        //  return (((((((bd1==otherPt.bd1 && triID1==otherPt.triID1) || bd2==otherPt.bd2) && triID2==otherPt.triID2) || bd1==otherPt.bd2) && triID1==otherPt.triID2) || bd2==otherPt.bd1) && triID2==otherPt.triID1);
-//        }
-//        */
-//};
-
-
+/// @brief
 class FCLCollisionDetector : public CollisionDetector
 {
 public:
     /// @brief
-    FCLCollisionDetector() { mNumTriIntersection = 0; }
+    FCLCollisionDetector();
 
     /// @brief
     virtual ~FCLCollisionDetector();
 
     // Documentation inherited
-    virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd, bool _bRecursive = false);
-
     virtual CollisionNode* createCollisionNode(kinematics::BodyNode* _bodyNode);
 
-    /// @brief
-    inline void clearAllCollisionSkeletonNode() {mCollisionNodes.clear();}
-
-    /// @brief
-    inline int getNumTriangleIntersection(){return mNumTriIntersection;}
-
     // Documentation inherited
-    virtual bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
+    virtual bool checkCollision(bool _checkAllCollisions,
+                                bool _calculateContactPoints);
 
     /// @brief
-    void draw();
+    int getNumMaxContacts() const { return mNumMaxContacts; }
 
     /// @brief
-    FCLCollisionNode* getCollisionSkeletonNode(const kinematics::BodyNode *_bodyNode)
-    {
-        if(mBodyCollisionMap.find(_bodyNode)!=mBodyCollisionMap.end())
-            return mBodyCollisionMap[_bodyNode];
-        else
-            return NULL;
-    }
+    void setNumMaxContacts(int _num) { mNumMaxContacts = _num; }
 
-    /// @brief
-    void activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
+protected:
 
-    /// @brief
-    void deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
-
-public:
-    /// @brief
-    int mNumTriIntersection;
-
-    /// @brief
-    std::map<const kinematics::BodyNode*, FCLCollisionNode*> mBodyCollisionMap;
-
-    /// @brief
-    std::vector<std::vector<bool> > mActiveMatrix;
+private:
+    int mNumMaxContacts;
 };
-
-
-
-inline bool Vec3fCmp(fcl::Vec3f& v1, fcl::Vec3f& v2)
-{
-    if(v1[0]!=v2[0])
-        return v1[0]<v2[0];
-    else if(v1[1]!=v2[1])
-        return v1[1]<v2[1];
-    else
-        return v1[2]<v2[2];
-}
-
 
 } // namespace collision
 
-#endif // COLLISION_FCL_COLLISION_DETECTOR_H
+#endif // COLLISION_FCL_CONLLISION_DETECTOR_H

@@ -6,11 +6,11 @@
 #include "kinematics/Dof.h"
 #include "kinematics/Shape.h"
 #include "math/UtilsMath.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
+#include "collision/CollisionDetector.h"
 
 using namespace kinematics;
 using namespace dynamics;
-using namespace dart_math;
+using namespace math;
 Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ContactDynamics *_collisionHandle, double _t) {
     mSkel = _skel;
     mCollisionHandle = _collisionHandle;

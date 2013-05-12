@@ -98,12 +98,6 @@ namespace kinematics {
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
         void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
 
-        // TODO: Not implemented yet !
-        void updateBodyNodeTransformations();
-
-        // TODO: Not implemented yet !
-        void updateBodyNodeVelocities();
-
         void setSelfCollidable(bool _selfCollidable) { mSelfCollidable = _selfCollidable; }
         bool getSelfCollidable() const { return mSelfCollidable; }
 
@@ -114,7 +108,6 @@ namespace kinematics {
         std::vector<Transformation*> mTransforms;
         std::vector<BodyNode*> mNodes;
         std::vector<Joint*> mJoints;
-        Eigen::VectorXd mPoseInit; ///< Initial pose (Q)
         double mMass;
         bool mSelfCollidable;
     };

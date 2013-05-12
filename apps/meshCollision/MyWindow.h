@@ -1,12 +1,11 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include <iostream>
 #include <stdarg.h>
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
+#include "collision/CollisionDetector.h"
 #include "dynamics/SkeletonDynamics.h"
 
 using namespace std;

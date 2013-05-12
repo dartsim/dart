@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,7 +35,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kinematics/Shape.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/Skeleton.h"
 
@@ -64,7 +63,6 @@ void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode
         CollisionNode* collNode = createCollisionNode(_bodyNode);
         collNode->setBodyNodeID(mCollisionNodes.size());
         mCollisionNodes.push_back(collNode);
-        //mBodyCollisionMap[_bodyNode] = collNode;
     }
     else
     {
@@ -74,11 +72,12 @@ void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode
             addCollisionSkeletonNode(_bodyNode->getChildNode(i), true);
     }
 
-    rebuildBodyNodePairs();
-    eliminateSelfCollision();
+    _rebuildBodyNodePairs();
+    updateSkeletonSelfCollidableState();
+    updateBodyNodeCollidableState();
 }
 
-void CollisionDetector::rebuildBodyNodePairs()
+void CollisionDetector::_rebuildBodyNodePairs()
 {
     // TODO: Need better way
     mCollisionNodePairs.clear();
@@ -99,7 +98,7 @@ void CollisionDetector::rebuildBodyNodePairs()
     }
 }
 
-void CollisionDetector::setAllBodyNodePairsCollidable(bool _collidable)
+void CollisionDetector::_setAllBodyNodePairsCollidable(bool _collidable)
 {
     unsigned int numCollisionNodes = mCollisionNodes.size();
 
@@ -109,12 +108,10 @@ void CollisionDetector::setAllBodyNodePairsCollidable(bool _collidable)
     }
 }
 
-void CollisionDetector::eliminateSelfCollision()
+void CollisionDetector::updateSkeletonSelfCollidableState()
 {
     unsigned int numCollisionNodes = mCollisionNodePairs.size();
     CollisionNodePair itrCollisionNodePair;
-//    kinematics::BodyNode* bodyNodeLeft = NULL;
-//    kinematics::BodyNode* bodyNodeRight = NULL;
 
     for (unsigned int i = 0; i < numCollisionNodes; ++i)
     {
@@ -128,6 +125,21 @@ void CollisionDetector::eliminateSelfCollision()
                 itrCollisionNodePair.collidable = false;
             }
         }
+    }
+}
+
+void CollisionDetector::updateBodyNodeCollidableState()
+{
+    unsigned int numCollisionNodes = mCollisionNodePairs.size();
+    CollisionNodePair itrCollisionNodePair;
+
+    for (unsigned int i = 0; i < numCollisionNodes; ++i)
+    {
+        itrCollisionNodePair = mCollisionNodePairs[i];
+
+        if (itrCollisionNodePair.collisionNode1->getBodyNode()->getCollideState() == false
+                || itrCollisionNodePair.collisionNode2->getBodyNode()->getCollideState() == false)
+            itrCollisionNodePair.collidable = false;
     }
 }
 

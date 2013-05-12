@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/11/2013
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Date: 06/12/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,55 +35,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_CONLLISION_NODE_H
-#define COLLISION_FCL_CONLLISION_NODE_H
+#include "renderer/RenderInterface.h"
+#include "kinematics/ShapeSphere.h"
 
-#include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
+using namespace Eigen;
 
-#include "collision/CollisionNode.h"
+namespace kinematics {
 
-namespace kinematics { class BodyNode; }
+    ShapeSphere::ShapeSphere(double _radius)
+        : Shape(P_SPHERE),
+          mRadius(_radius)
+    {
+        initMeshes();
+        if (mRadius > 0.0)
+            computeVolume();
+    }
 
-namespace collision
-{
+    void ShapeSphere::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+        Eigen::Vector3d dim;
+        dim(0) = 2.0 * mRadius;
+        dim(1) = dim(0);
+        dim(2) = dim(0);
 
-/// @brief
-class FCLCollisionNode : public CollisionNode
-{
-public:
-    /// @brief
-    FCLCollisionNode(kinematics::BodyNode* _bodyNode);
+        if (!_ri)
+            return;
+        if (!_useDefaultColor)
+            _ri->setPenColor(_color);
+        else
+            _ri->setPenColor(mColor);
+        _ri->pushMatrix();
+        _ri->transform(mTransform);
+        _ri->drawEllipsoid(dim);
+        _ri->popMatrix();
+    }
 
-    /// @brief
-    virtual ~FCLCollisionNode();
+    Matrix3d ShapeSphere::computeInertia(double _mass) {
+        Matrix3d inertia = Matrix3d::Zero();
+        inertia(0, 0) = _mass * 0.4 * mRadius * mRadius;
+        inertia(1, 1) = inertia(0, 0);
+        inertia(2, 2) = inertia(0, 0);
 
-    /// @brief
-    void setCollisionGeometry(fcl::CollisionGeometry* _geom)
-    { mCollisionGeometry = _geom; }
+        return inertia;
+    }
 
-    /// @brief
-    fcl::CollisionGeometry* getCollisionGeometry() const
-    { return mCollisionGeometry; }
+    void ShapeSphere::computeVolume() {
+        mVolume = 0.75 * M_PI * mRadius * mRadius * mRadius;
+    }
+    void ShapeSphere::initMeshes() {
+    }
 
-    /// @brief
-    fcl::Transform3f getFCLTransform(void) const;
-
-protected:
-
-private:
-    fcl::CollisionGeometry* mCollisionGeometry;
-
-};
-
-template<class BV>
-fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
-                              const aiScene *_mesh);
-
-template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
-
-} // namespace collision
-
-#endif // COLLISION_FCL2_CONLLISION_NODE_H
+} // namespace kinematics

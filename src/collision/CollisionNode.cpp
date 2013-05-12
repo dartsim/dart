@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,20 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <fcl/shape/geometric_shapes.h>
-#include <fcl/BVH/BVH_model.h>
-
-#include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
-
 #include "collision/CollisionNode.h"
 
 namespace collision
 {
 
 CollisionNode::CollisionNode(kinematics::BodyNode* _bodyNode)
+    : mBodyNode(_bodyNode)
 {
-    mBodyNode = _bodyNode;
 }
 
 CollisionNode::~CollisionNode()

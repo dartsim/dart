@@ -40,16 +40,12 @@
 
 #include <cstdio>
 
-#include "collision/CollisionDetector.h"
-#include "collision/fcl2/FCL2CollisionDetector.h"
-
+#include "SimWindow.h"
+#include "simulation/World.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/ContactDynamics.h"
-
+#include "collision/CollisionDetector.h"
 #include "yui/GLFuncs.h"
-
-#include "simulation/SimWindow.h"
-#include "simulation/World.h"
 
 using namespace Eigen;
 using namespace std;
@@ -112,10 +108,9 @@ namespace simulation
             }
         }else{
             if (mShowMarkers) {
-                //TODO: TEST JS
-                for (int k = 0; k < mWorld->getCollisionHandle()->getCollisionDetector()->getNumContacts(); k++) {
-                    Vector3d  v = mWorld->getCollisionHandle()->getCollisionDetector()->getContact(k).point;
-                    Vector3d f = mWorld->getCollisionHandle()->getCollisionDetector()->getContact(k).force / 10.0;
+                for (int k = 0; k < mWorld->getCollisionHandle()->getCollisionChecker()->getNumContacts(); k++) {
+                    Vector3d  v = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(k).point;
+                    Vector3d f = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(k).force / 10.0;
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
                     glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
@@ -186,14 +181,14 @@ namespace simulation
 
     void SimWindow::bake()
     {
-        int nContact = mWorld->getCollisionHandle()->getCollisionDetector()->getNumContacts();
+        int nContact = mWorld->getCollisionHandle()->getCollisionChecker()->getNumContacts();
         VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
         for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
             state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumDofs()) = mWorld->getSkeleton(i)->getPose();
         for (int i = 0; i < nContact; i++) {
             int begin = mWorld->getIndex(mWorld->getNumSkeletons()) + i * 6;
-            state.segment(begin, 3) = mWorld->getCollisionHandle()->getCollisionDetector()->getContact(i).point;
-            state.segment(begin + 3, 3) = mWorld->getCollisionHandle()->getCollisionDetector()->getContact(i).force;
+            state.segment(begin, 3) = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(i).point;
+            state.segment(begin + 3, 3) = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(i).force;
         }
         mBakedStates.push_back(state);
     }

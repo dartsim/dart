@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -39,7 +39,6 @@
 #define COLLISION_CONLLISION_DETECTOR_H
 
 #include <vector>
-#include <map>
 #include <Eigen/Dense>
 #include "collision/CollisionNode.h"
 
@@ -53,7 +52,8 @@ class CollisionNode;
 /// @brief
 struct Contact
 {
-//public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     /// @brief
     Eigen::Vector3d point;
 
@@ -70,41 +70,33 @@ struct Contact
     CollisionNode* collisionNode2;
 
     /// @brief
-    int bdID1;
-
-    /// @brief
-    int bdID2;
-
-    /// @brief
     double penetrationDepth;
 
-    // TODO: IN TEST
-    kinematics::BodyNode *bd1;
-    kinematics::BodyNode *bd2;
-//    CollisionSkeletonNode *collisionSkeletonNode1;
-//    CollisionSkeletonNode *collisionSkeletonNode2;
-    int triID1;
-    int triID2;
-
+    // TODO: triID1 will be deprecated when we don't use fcl_mesh
     /// @brief
-    void* userData;
+    int triID1;
+
+    // TODO: triID1 will be deprecated when we don't use fcl_mesh
+    /// @brief
+    int triID2;
 };
 
 /// @brief
 class CollisionDetector
 {
-public: // Constructers and destructer
+    // CONSTRUCTORS AND DESTRUCTOR ---------------------------------------------
+public:
     /// @brief
     CollisionDetector();
 
     /// @brief
     virtual ~CollisionDetector();
 
+public:
     /// @brief
     virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd,
-                                  bool _bRecursive = false);
+                                          bool _bRecursive = false);
 
-public: // Virtual functions
     virtual CollisionNode* createCollisionNode(
             kinematics::BodyNode* _bodyNode) = 0;
 
@@ -112,26 +104,27 @@ public: // Virtual functions
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
-public: // Setters and getters
     /// @brief
     unsigned int getNumContacts() { return mContacts.size(); }
 
     /// @brief
     Contact& getContact(int _idx) { return mContacts[_idx]; }
 
-public:
     /// @brief
     void clearAllContacts() { mContacts.clear(); }
 
+    /// @brief
+    void updateSkeletonSelfCollidableState();
+
+    /// @brief
+    void updateBodyNodeCollidableState();
+
 protected:
     /// @brief
-    void rebuildBodyNodePairs();
+    void _rebuildBodyNodePairs();
 
     /// @brief
-    void setAllBodyNodePairsCollidable(bool _collidable);
-
-    /// @brief
-    void eliminateSelfCollision();
+    void _setAllBodyNodePairsCollidable(bool _collidable);
 
     /// @brief
     std::vector<Contact> mContacts;
