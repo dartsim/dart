@@ -53,14 +53,6 @@ static double squared(double d) {
 	return d * d;
 }
 
-static string toString(int number)
-{
-   stringstream ss;//create a stringstream
-   ss << number;//add number to the stream
-   return ss.str();//return a string with the contents of the stream
-}
-
-
 PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorXd &maxVelocity, const VectorXd &maxAcceleration) :
 	path(path),
 	maxVelocity(maxVelocity),

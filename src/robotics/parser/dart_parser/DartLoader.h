@@ -21,9 +21,8 @@ namespace dynamics {
 	class SkeletonDynamics;
 	class BodyNodeDynamics;
 }
-namespace robotics {
+namespace simulation {
 	class World;
-	class Robot;
 }
 namespace kinematics {
 	class Joint;
@@ -55,19 +54,19 @@ class DartLoader {
   dynamics::SkeletonDynamics* parseSkeleton( std::string _urdfFile,
 					     std::string _rootToSkelPath = NULL );
   
-  robotics::Robot* parseRobot( std::string _urdfFile, 
+  dynamics::SkeletonDynamics* parseRobot( std::string _urdfFile, 
 			       std::string _rootToRobotPath = NULL );
-  robotics::Robot* parseObject( std::string _urdfFile, 
+  dynamics::SkeletonDynamics* parseObject( std::string _urdfFile, 
 				 std::string _rootToObjectPath = NULL );
-  robotics::World* parseWorld( std::string _urdfFile );
+  simulation::World* parseWorld( std::string _urdfFile );
   
   void parseWorldToEntityPaths( const std::string &_xml_string );
 
   dynamics::SkeletonDynamics* modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model,
 							std::string _rootToSkelPath = NULL );
-  robotics::Robot* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
+  dynamics::SkeletonDynamics* modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
 					  std::string _rootToRobotPath = NULL );
-  robotics::Robot* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
+  dynamics::SkeletonDynamics* modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
 					   std::string _rootToObjectPath = NULL );
   
   // Utilities

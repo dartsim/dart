@@ -12,8 +12,7 @@
 #include <limits>
 #include <list>
 #include <vector>
-#include "robotics/Robot.h"
-#include "robotics/World.h"
+#include "simulation/World.h"
 #include "RRT.h"
 
 namespace planning {
@@ -29,7 +28,7 @@ public:
   double stepSize;        ///< Step size from a node in the tree to the random/goal node
   double goalBias;        ///< Choose btw goal and random value (for goal-biased search)
   size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
-  robotics::World* world;  ///< The world that the robot is in (for obstacles and etc.)
+  simulation::World* world;  ///< The world that the robot is in (for obstacles and etc.)
 
   // NOTE: It is useful to keep the rrts around after planning for reuse, analysis, and etc.
   R* start_rrt;            ///< The rrt for unidirectional search
@@ -41,7 +40,7 @@ public:
   PathPlanner() : world(NULL) {}
 
   /// The desired constructor - you should use this one.
-  PathPlanner(robotics::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
+  PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
     size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
     connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
   }
@@ -50,22 +49,22 @@ public:
   ~PathPlanner() {}
 
   /// Plan a path from a single start configuration to a single goal
-  bool planPath(int robotId, const std::vector<int> &dofs, const Eigen::VectorXd &start,
+  bool planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const Eigen::VectorXd &start,
       const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path) {
     std::vector<Eigen::VectorXd> startVector, goalVector;
     startVector.push_back(start);
     goalVector.push_back(goal);
-    return planPath(robotId, dofs, startVector, goalVector, path);
+    return planPath(robot, dofs, startVector, goalVector, path);
   }
 
   /// Plan a path from a _set_ of start configurations to a _set_ of goals
-  bool planPath(int robotId, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start,
+  bool planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start,
     const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
 
 private:
 
   /// Performs a unidirectional RRT with the given options.
-  bool planSingleTreeRrt(int robot, const std::vector<int> &dofs,
+  bool planSingleTreeRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal,
     std::list<Eigen::VectorXd> &path);
 
@@ -75,18 +74,18 @@ private:
   /// configurations whereas here, first, start rrt extends towards a random node and creates
   /// some node N. Afterwards, the second rrt extends towards _the node N_ and they continue
   /// swapping roles.
-  bool planBidirectionalRrt(int robot, const std::vector<int> &dofs,
+  bool planBidirectionalRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path);
 };
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
+bool PathPlanner<R>::planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
-  Eigen::VectorXd savedConfiguration = world->getRobot(robotId)->getConfig(dofs);
+  Eigen::VectorXd savedConfiguration = robot->getConfig(dofs);
 
   // ====================================================================
   // Check for collisions in the start and goal configurations
@@ -94,7 +93,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
   // Sift through the possible start configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleStart;
   for(unsigned int i = 0; i < start.size(); i++) {
-    world->getRobot(robotId)->setConfig(dofs, start[i]);
+    robot->setConfig(dofs, start[i]);
     if(!world->checkCollision()) feasibleStart.push_back(start[i]);
   }
 
@@ -107,7 +106,7 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
   // Sift through the possible goal configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleGoal;
   for(unsigned int i = 0; i < goal.size(); i++) {
-    world->getRobot(robotId)->setConfig(dofs, goal[i]);
+    robot->setConfig(dofs, goal[i]);
     if(!world->checkCollision()) feasibleGoal.push_back(goal[i]);
   }
 
@@ -123,21 +122,21 @@ bool PathPlanner<R>::planPath(int robotId, const std::vector<int> &dofs,
   // Direct the search towards single or bidirectional
   bool result = false;
   if(bidirectional)
-    result = planBidirectionalRrt(robotId, dofs, feasibleStart, feasibleGoal, path);
+    result = planBidirectionalRrt(robot, dofs, feasibleStart, feasibleGoal, path);
   else {
     if(feasibleGoal.size() > 1) fprintf(stderr, "WARNING: planPath is using ONLY the first goal!\n");
-    result = planSingleTreeRrt(robotId, dofs, feasibleStart, feasibleGoal.front(), path);
+    result = planSingleTreeRrt(robot, dofs, feasibleStart, feasibleGoal.front(), path);
   }
 
   // Restore previous robot configuration
-  world->getRobot(robotId)->setConfig(dofs, savedConfiguration);
+  robot->setConfig(dofs, savedConfiguration);
 
   return result;
 }
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planSingleTreeRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -182,7 +181,7 @@ bool PathPlanner<R>::planSingleTreeRrt(int robot, const std::vector<int> &dofs,
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planBidirectionalRrt(int robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planBidirectionalRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
