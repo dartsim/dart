@@ -284,11 +284,11 @@ void ContactDynamics::applySolution() {
 MatrixXd ContactDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
     int nDofs = node->getSkel()->getNumDofs();
     MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-    Vector3d invP = math::xformHom(node->getWorldInvTransform(), p);
+    Vector3d invP = dart_math::xformHom(node->getWorldInvTransform(), p);
 
     for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
         int i = node->getDependentDof(dofIndex);
-        Jt.row(i) = math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
+        Jt.row(i) = dart_math::xformHom(node->getDerivWorldTransform(dofIndex), invP);
     }
 
     return Jt;

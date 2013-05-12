@@ -12,7 +12,7 @@
 using namespace dynamics;
 using namespace yui;
 using namespace utils;
-using namespace math;
+using namespace dart_math;
 
 void MyWindow::initDyn()
 {
