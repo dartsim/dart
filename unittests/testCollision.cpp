@@ -45,132 +45,11 @@
 class COLLISION : public testing::Test
 {
 public:
-	void approaching(int idx);
 	void unrotatedTest(fcl::CollisionGeometry* _coll1,
-								  fcl::CollisionGeometry* _coll2, double expectedContactPoint, int _idxAxis);
+					   fcl::CollisionGeometry* _coll2,
+					   double expectedContactPoint, int _idxAxis);
 	void printResult(const fcl::CollisionResult& _result);
 };
-
-void COLLISION::approaching(int idx)
-{
-	fcl::CollisionResult result;
-	fcl::CollisionRequest request;
-	request.enable_contact = true;
-	request.num_max_contacts = 100;
-
-	fcl::Vec3f position(0, 0, 0);
-
-	fcl::Box box1(2, 2, 2);
-	fcl::Transform3f box1_transform;
-
-	fcl::Box box2(1, 1, 1);
-	fcl::Transform3f box2_transform;
-
-	double realContactPoint = 1.0;
-
-	//==========================================================================
-	// Key positions test
-	//==========================================================================
-
-	//--------------------------------------------------------------------------
-	// CASE 1: No contact
-	result.clear();
-	position.setValue(0, 0, 0);
-	box1_transform.setTranslation(position);
-	position[idx] = 2;
-	box2_transform.setTranslation(position);
-	EXPECT_EQ(fcl::collide(&box1, box1_transform,
-						   &box2, box2_transform,
-						   request, result), 0);
-	//printResult(result);
-
-	//--------------------------------------------------------------------------
-	// CASE 2: Contact, no penetration
-	result.clear();
-	position[idx] = 1.5;
-	box2_transform.setTranslation(position);
-	EXPECT_GE(fcl::collide(&box1, box1_transform,
-						   &box2, box2_transform,
-						   request, result), 1);
-	for (int i = 0; i < result.numContacts(); ++i)
-	{
-		EXPECT_EQ(result.getContact(i).pos[idx], realContactPoint);
-	}
-	//printResult(result);
-
-	//--------------------------------------------------------------------------
-	// CASE 3: Contact, penetration
-	result.clear();
-	position[idx] = 1.0;
-	box2_transform.setTranslation(position);
-	EXPECT_GE(fcl::collide(&box1, box1_transform,
-						   &box2, box2_transform,
-						   request, result), 1);
-	//printResult(result);
-
-	//--------------------------------------------------------------------------
-	// CASE 4: Contact, in the same position
-	result.clear();
-	position[idx] = 0.0;
-	box2_transform.setTranslation(position);
-	EXPECT_GE(fcl::collide(&box1, box1_transform,
-						   &box2, box2_transform,
-						   request, result), 1);
-	//printResult(result);
-
-	//==========================================================================
-	// Approaching test
-	//==========================================================================
-	result.clear();
-	double dz = -0.001;
-	double z = 5.0;
-
-	box1_transform.setIdentity();
-	box1_transform.setTranslation(fcl::Vec3f(0, 0, 0));
-	//fcl::Matrix3f rotation;
-	//rotation.setEulerZYX(0.0, 0.5, 0.5);
-	box2_transform.setIdentity();
-	//box2_transform.setRotation(rotation);
-
-	//std::cout << "box1" << std::endl;
-	//std::cout << "rotation: " << box1_transform.getRotation() << std::endl;
-	//std::cout << "position: " << box1_transform.getTranslation() << std::endl;
-
-	//std::cout << "box2" << std::endl;
-	//std::cout << "rotation: " << box2_transform.getRotation() << std::endl;
-
-	// Let's drop box2 until it collide with box1
-	do {
-		position[idx] = z;
-		box2_transform.setTranslation(position);
-
-		//std::cout << "position: " << box2_transform.getTranslation() << std::endl;
-
-		fcl::collide(&box1, box1_transform,
-					 &box2, box2_transform,
-					 request, result);
-
-		//std::cout << "num_contact: " << result.numContacts() << std::endl;
-
-		z += dz;
-	}
-	while (result.numContacts() == 0);
-
-	//
-	if (idx == 0)
-		std::cout << "Box1 is collided when its x-axis position is: " << (z - dz) << std::endl;
-	if (idx == 1)
-		std::cout << "Box1 is collided when its y-axis position is: " << (z - dz) << std::endl;
-	if (idx == 2)
-		std::cout << "Box1 is collided when its z-axis position is: " << (z - dz) << std::endl;
-
-	//printResult(result);
-
-	for (int i = 0; i < result.numContacts(); ++i)
-	{
-		EXPECT_NEAR(result.getContact(i).pos[idx], realContactPoint, -dz*2.0);
-	}
-}
 
 void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
 							  fcl::CollisionGeometry* _coll2,
@@ -247,17 +126,6 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 }
 
 /* ********************************************************************************************* */
-//TEST_F(COLLISION, BOX_BOX_X_2) {
-//	approaching(0); // x-axis
-//}
-
-//TEST_F(COLLISION, BOX_BOX_Y_2) {
-//	approaching(1); // y-axis
-//}
-
-//TEST_F(COLLISION, BOX_BOX_Z_2) {
-//	approaching(2); // z-axis
-//}
 
 TEST_F(COLLISION, BOX_BOX_X) {
 	fcl::Box box1(2, 2, 2);
@@ -312,6 +180,96 @@ TEST_F(COLLISION, BOX_SPHERE_Z) {
 //	fcl::Sphere sphere2(0.5);
 //	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
 //}
+
+TEST_F(COLLISION, PLANE_BOX_X) {
+	fcl::Plane obj1(1, 0, 0, 0);
+	fcl::Box obj2(1, 1, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_BOX_Y) {
+	fcl::Plane obj1(0, 1, 0, 0);
+	fcl::Box obj2(1, 1, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_BOX_Z) {
+	fcl::Plane obj1(0, 0, 1, 0);
+	fcl::Box obj2(1, 1, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_SPHERE_X) {
+	fcl::Plane obj1(1, 0, 0, 0);
+	fcl::Sphere obj2(0.5);
+	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_SPHERE_Y) {
+	fcl::Plane obj1(0, 1, 0, 0);
+	fcl::Sphere obj2(0.5);
+	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_SPHERE_Z) {
+	fcl::Plane obj1(0, 0, 1, 0);
+	fcl::Sphere obj2(0.5);
+	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CYLINDER_X) {
+	fcl::Plane obj1(1, 0, 0, 0);
+	fcl::Cylinder obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CYLINDER_Y) {
+	fcl::Plane obj1(0, 1, 0, 0);
+	fcl::Cylinder obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CYLINDER_Z) {
+	fcl::Plane obj1(0, 0, 1, 0);
+	fcl::Cylinder obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CAPSULE_X) {
+	fcl::Plane obj1(1, 0, 0, 0);
+	fcl::Capsule obj2(0.5, 2);
+	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CAPSULE_Y) {
+	fcl::Plane obj1(0, 1, 0, 0);
+	fcl::Capsule obj2(0.5, 2);
+	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CAPSULE_Z) {
+	fcl::Plane obj1(0, 0, 1, 0);
+	fcl::Capsule obj2(0.5, 2);
+	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CONE_X) {
+	fcl::Plane obj1(1, 0, 0, 0);
+	fcl::Cone obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CONE_Y) {
+	fcl::Plane obj1(0, 1, 0, 0);
+	fcl::Cone obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+}
+
+TEST_F(COLLISION, PLANE_CONE_Z) {
+	fcl::Plane obj1(0, 0, 1, 0);
+	fcl::Cone obj2(0.5, 1);
+	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+}
 
 /* ********************************************************************************************* */
 int main(int argc, char* argv[]) {
