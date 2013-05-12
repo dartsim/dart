@@ -181,95 +181,95 @@ TEST_F(COLLISION, BOX_SPHERE_Z) {
 //	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
 //}
 
-TEST_F(COLLISION, PLANE_BOX_X) {
-	fcl::Plane obj1(1, 0, 0, 0);
-	fcl::Box obj2(1, 1, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-}
+//TEST_F(COLLISION, PLANE_BOX_X) {
+//	fcl::Plane obj1(1, 0, 0, 0);
+//	fcl::Box obj2(1, 1, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_BOX_Y) {
-	fcl::Plane obj1(0, 1, 0, 0);
-	fcl::Box obj2(1, 1, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-}
+//TEST_F(COLLISION, PLANE_BOX_Y) {
+//	fcl::Plane obj1(0, 1, 0, 0);
+//	fcl::Box obj2(1, 1, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_BOX_Z) {
-	fcl::Plane obj1(0, 0, 1, 0);
-	fcl::Box obj2(1, 1, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-}
+//TEST_F(COLLISION, PLANE_BOX_Z) {
+//	fcl::Plane obj1(0, 0, 1, 0);
+//	fcl::Box obj2(1, 1, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_SPHERE_X) {
-	fcl::Plane obj1(1, 0, 0, 0);
-	fcl::Sphere obj2(0.5);
-	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-}
+//TEST_F(COLLISION, PLANE_SPHERE_X) {
+//	fcl::Plane obj1(1, 0, 0, 0);
+//	fcl::Sphere obj2(0.5);
+//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_SPHERE_Y) {
-	fcl::Plane obj1(0, 1, 0, 0);
-	fcl::Sphere obj2(0.5);
-	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-}
+//TEST_F(COLLISION, PLANE_SPHERE_Y) {
+//	fcl::Plane obj1(0, 1, 0, 0);
+//	fcl::Sphere obj2(0.5);
+//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_SPHERE_Z) {
-	fcl::Plane obj1(0, 0, 1, 0);
-	fcl::Sphere obj2(0.5);
-	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-}
+//TEST_F(COLLISION, PLANE_SPHERE_Z) {
+//	fcl::Plane obj1(0, 0, 1, 0);
+//	fcl::Sphere obj2(0.5);
+//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CYLINDER_X) {
-	fcl::Plane obj1(1, 0, 0, 0);
-	fcl::Cylinder obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CYLINDER_X) {
+//	fcl::Plane obj1(1, 0, 0, 0);
+//	fcl::Cylinder obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CYLINDER_Y) {
-	fcl::Plane obj1(0, 1, 0, 0);
-	fcl::Cylinder obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CYLINDER_Y) {
+//	fcl::Plane obj1(0, 1, 0, 0);
+//	fcl::Cylinder obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CYLINDER_Z) {
-	fcl::Plane obj1(0, 0, 1, 0);
-	fcl::Cylinder obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CYLINDER_Z) {
+//	fcl::Plane obj1(0, 0, 1, 0);
+//	fcl::Cylinder obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CAPSULE_X) {
-	fcl::Plane obj1(1, 0, 0, 0);
-	fcl::Capsule obj2(0.5, 2);
-	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CAPSULE_X) {
+//	fcl::Plane obj1(1, 0, 0, 0);
+//	fcl::Capsule obj2(0.5, 2);
+//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CAPSULE_Y) {
-	fcl::Plane obj1(0, 1, 0, 0);
-	fcl::Capsule obj2(0.5, 2);
-	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CAPSULE_Y) {
+//	fcl::Plane obj1(0, 1, 0, 0);
+//	fcl::Capsule obj2(0.5, 2);
+//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CAPSULE_Z) {
-	fcl::Plane obj1(0, 0, 1, 0);
-	fcl::Capsule obj2(0.5, 2);
-	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CAPSULE_Z) {
+//	fcl::Plane obj1(0, 0, 1, 0);
+//	fcl::Capsule obj2(0.5, 2);
+//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CONE_X) {
-	fcl::Plane obj1(1, 0, 0, 0);
-	fcl::Cone obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CONE_X) {
+//	fcl::Plane obj1(1, 0, 0, 0);
+//	fcl::Cone obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CONE_Y) {
-	fcl::Plane obj1(0, 1, 0, 0);
-	fcl::Cone obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CONE_Y) {
+//	fcl::Plane obj1(0, 1, 0, 0);
+//	fcl::Cone obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
+//}
 
-TEST_F(COLLISION, PLANE_CONE_Z) {
-	fcl::Plane obj1(0, 0, 1, 0);
-	fcl::Cone obj2(0.5, 1);
-	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
-}
+//TEST_F(COLLISION, PLANE_CONE_Z) {
+//	fcl::Plane obj1(0, 0, 1, 0);
+//	fcl::Cone obj2(0.5, 1);
+//	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
+//}
 
 /* ********************************************************************************************* */
 int main(int argc, char* argv[]) {
