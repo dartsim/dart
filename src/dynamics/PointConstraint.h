@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_POINT_CONSTRAINT_H
-#define DYNAMICS_POINT_CONSTRAINT_H
+#ifndef DART_DYNAMICS_POINT_CONSTRAINT_H
+#define DART_DYNAMICS_POINT_CONSTRAINT_H
 
 #include "Constraint.h"
 
@@ -62,5 +62,5 @@ namespace dynamics {
     };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_POINT_CONSTRAINT_DYNAMICS_H
+#endif // #ifndef DART_DYNAMICS_POINT_CONSTRAINT_DYNAMICS_H
 

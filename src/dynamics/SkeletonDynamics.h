@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_SKELETONDYNAMICS_H
-#define DYNAMICS_SKELETONDYNAMICS_H
+#ifndef DART_DYNAMICS_SKELETONDYNAMICS_H
+#define DART_DYNAMICS_SKELETONDYNAMICS_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -109,4 +109,4 @@ namespace dynamics{
 
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_SKELETONDYNAMICS_H
+#endif // #ifndef DART_DYNAMICS_SKELETONDYNAMICS_H

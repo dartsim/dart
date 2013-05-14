@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_C3D_H
-#define KINEMATICS_C3D_H
+#ifndef DART_KINEMATICS_C3D_H
+#define DART_KINEMATICS_C3D_H
 
 #include <vector>
 #include <ctime>
@@ -95,6 +95,6 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_C3D_H
+#endif // #ifndef DART_KINEMATICS_C3D_H
 
 

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_SPHERE_H
-#define KINEMATICS_SHAPE_SPHERE_H
+#ifndef DART_KINEMATICS_SHAPE_SPHERE_H
+#define DART_KINEMATICS_SHAPE_SPHERE_H
 
 #include "kinematics/Shape.h"
 
@@ -65,6 +65,6 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_ELLIPSOID_H
 
 

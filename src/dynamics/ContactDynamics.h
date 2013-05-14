@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CONTACT_DYNAMICS_H
-#define DYNAMICS_CONTACT_DYNAMICS_H
+#ifndef DART_DYNAMICS_CONTACT_DYNAMICS_H
+#define DART_DYNAMICS_CONTACT_DYNAMICS_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -124,5 +124,5 @@ namespace dynamics {
         };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_CONTACT_DYNAMICS_H
+#endif // #ifndef DART_DYNAMICS_CONTACT_DYNAMICS_H
 

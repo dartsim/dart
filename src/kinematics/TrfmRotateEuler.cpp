@@ -97,6 +97,13 @@ namespace kinematics {
         return ret;
     }
 
+    Eigen::MatrixXd TrfmRotateEulerX::getJacobian(void) {
+        Eigen::Matrix<double,6,1> J = Eigen::Matrix<double,6,1>::Zero();
+        J(0) = 1.0;
+        return J;
+        Vector3d a;
+    }
+
     Matrix4d TrfmRotateEulerX::getInvTransform(){
         Matrix4d ret = Matrix4d::Identity();
         double cosq = cos(mDofs[0]->getValue());
@@ -164,6 +171,12 @@ namespace kinematics {
         return ret;
     }
 
+    Eigen::MatrixXd TrfmRotateEulerY::getJacobian(void) {
+        Eigen::Matrix<double,6,1> J = Eigen::Matrix<double,6,1>::Zero();
+        J(1) = 1.0;
+        return J;
+    }
+
     Matrix4d TrfmRotateEulerY::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
         double cosq = cos(mDofs[0]->getValue());
@@ -228,6 +241,12 @@ namespace kinematics {
             ret(A_Y, A_Y) = -cosq;
         }
         return ret;
+    }
+
+    Eigen::MatrixXd TrfmRotateEulerZ::getJacobian(void) {
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,1>::Zero();
+        J(2) = 1.0;
+        return J;
     }
 
     Matrix4d TrfmRotateEulerZ::getInvTransform(){

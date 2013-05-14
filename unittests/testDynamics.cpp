@@ -142,8 +142,9 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
         // compute velocities using regular method
         nodei->updateTransform();
         nodei->updateFirstDerivatives();
-        nodei->evalJacLin();
-        nodei->evalJacAng();
+        //nodei->evalJacLin();
+        //nodei->evalJacAng();
+        nodei->evalJacobian();
         Vector3d v1 = Vector3d::Zero();
         Vector3d w1 = Vector3d::Zero();
         for(int j=0; j<nodei->getNumDependentDofs(); j++){

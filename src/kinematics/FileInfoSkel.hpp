@@ -7,8 +7,8 @@
 */
 
 
-#ifndef KINEMATICS_FILEINFO_SKEL_H
-#define KINEMATICS_FILEINFO_SKEL_H
+#ifndef DART_KINEMATICS_FILEINFO_SKEL_H
+#define DART_KINEMATICS_FILEINFO_SKEL_H
 
 #include <fstream>
 #include <iomanip>
@@ -253,5 +253,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_FILEINFO_SKEL_H
+#endif // #ifndef DART_KINEMATICS_FILEINFO_SKEL_H
 

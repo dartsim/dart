@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_TRFM_ROTATE_EXPMAP_H
-#define KINEMATICS_TRFM_ROTATE_EXPMAP_H
+#ifndef DART_KINEMATICS_TRFM_ROTATE_EXPMAP_H
+#define DART_KINEMATICS_TRFM_ROTATE_EXPMAP_H
 
 #include "Transformation.h"
 
@@ -45,16 +45,27 @@
 
 namespace kinematics {
 
-    class TrfmRotateExpMap: public Transformation{
+    class TrfmRotateExpMap: public Transformation {
     public:
         TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, const char* name = NULL);
 
+        // Documentation inherited.
         Eigen::Matrix4d getInvTransform();
 
+        // Documentation inherited.
         void applyGLTransform(renderer::RenderInterface* _ri) const;
+
+        // Documentation inherited.
         void computeTransform();
+
+        // Documentation inherited.
         Eigen::Matrix4d getDeriv(const Dof *);
+
+        // Documentation inherited.
         Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+
+        // Documentation inherited.
+        virtual Eigen::MatrixXd getJacobian(void);
 
     protected:
 

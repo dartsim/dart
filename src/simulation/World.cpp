@@ -199,6 +199,12 @@ Eigen::VectorXd World::evalDeriv()
                                    + mCollisionHandle->getConstraintForce(i)
                                    );
 
+        Eigen::MatrixXd InvM = mSkeletons[i]->getInvMassMatrix();
+        Eigen::MatrixXd Cdq_G = -mSkeletons[i]->getCombinedVector();
+        Eigen::MatrixXd ExtForce = mSkeletons[i]->getExternalForces();
+        Eigen::MatrixXd IntForce = mSkeletons[i]->getInternalForces();
+        Eigen::MatrixXd constForce = mCollisionHandle->getConstraintForce(i);
+
         //        Eigen::VectorXd qddot = mSkeletons[i]->getMassMatrix().ldlt().solve(
         //                                    -mSkeletons[i]->getCombinedVector()
         //                                    + mSkeletons[i]->getExternalForces()

@@ -35,17 +35,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Joint.h"
-
-#include "Dof.h"
-#include "Transformation.h"
-#include "TrfmRotateAxis.h"
-#include "BodyNode.h"
 #include <iostream>
 #include <map>
+
+#include "math/UtilsMath.h"
+#include "kinematics/Dof.h"
+#include "kinematics/Transformation.h"
+#include "kinematics/TrfmRotateAxis.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Joint.h"
+
 using namespace Eigen;
 using namespace std;
-
 
 namespace kinematics {
     Joint::Joint(BodyNode *_bIn, BodyNode *_bOut, const char *_name){
@@ -363,6 +364,37 @@ namespace kinematics {
         for(int i = 0; i < mFirstVariableTransformIndex; i++) {
             mStaticTransform *= mTransforms[i]->getTransform();
         }
+    }
+
+    Eigen::MatrixXd Joint::getLocalJacobian() const
+    {
+        int numTransforms = getNumTransforms();
+        int numDofs = getNumDofs();
+        Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6,numDofs);
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+
+        for (int i = numTransforms - 1; i > -1; --i)
+        {
+            int numTransformDofs = mTransforms[i]->getNumDofs();
+
+            if (mTransforms[i]->getVariable())
+            {
+                Eigen::MatrixXd jointJ = mTransforms[i]->getJacobian();
+
+                for (int j = 0; j < numTransformDofs; ++j)
+                    jointJ.col(j) = dart_math::InvAd(T, jointJ.col(j));
+
+                T = mTransforms[i]->getTransform() * T;
+
+                J.block(0,(numDofs - 1) - (numTransformDofs - 1),6,numTransformDofs) = jointJ;
+            }
+            else
+            {
+                T = mTransforms[i]->getTransform() * T;
+            }
+        }
+
+        return J;
     }
 
 } // namespace kinematics

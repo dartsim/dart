@@ -3,7 +3,8 @@
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ *            Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -41,41 +42,81 @@
 double inf = 1e9;
 
 namespace kinematics {
-    Dof::Dof(){
-        init(0, "dof", -inf , inf );
-    }
 
-    Dof::Dof(double _v){
-        init(_v, "dof", -inf , inf );
-    }
+Dof::Dof()
+    : q(0.0),
+      qMin(-inf),
+      qMax(inf),
+      mSkelIndex(-1),
+      mVariable(false),
+      mTrans(NULL),
+      mJoint(NULL) {
+    strcpy(mName, "dof");
+}
 
-    Dof::Dof(double _v, const char * _name){
-        init(_v, _name, -inf , inf );
-    }
+Dof::Dof(double _v)
+    : q(_v),
+      qMin(-inf),
+      qMax(inf),
+      mSkelIndex(-1),
+      mVariable(false),
+      mTrans(NULL),
+      mJoint(NULL) {
+    strcpy(mName, "dof");
+}
 
-    Dof::Dof(double _v, double _min, double _max){
-        init(_v, "dof", _min, _max);
-    }
+Dof::Dof(double _v, const char *_name)
+    : q(_v),
+      qMin(-inf),
+      qMax(inf),
+      mSkelIndex(-1),
+      mVariable(false),
+      mTrans(NULL),
+      mJoint(NULL) {
+    strcpy(mName, _name);
+}
 
-    Dof::Dof(double _v, const char * _name, double _min, double _max){
-        init(_v, _name, _min, _max);
-    }
+Dof::Dof(double _v, double _min, double _max)
+    : q(_v),
+      qMin(_min),
+      qMax(_max),
+      mSkelIndex(-1),
+      mVariable(false),
+      mTrans(NULL),
+      mJoint(NULL) {
+    strcpy(mName, "dof");
+}
 
-    void Dof::setValue(double _v){
-        mVal = _v; 
-        if (mTrans != NULL) mTrans->setDirty();
-    }
+Dof::Dof(double _v, const char *_name, double _min, double _max)
+    : q(_v),
+      qMin(_min),
+      qMax(_max),
+      mSkelIndex(-1),
+      mVariable(false),
+      mTrans(NULL),
+      mJoint(NULL) {
+    strcpy(mName, _name);
+}
 
-    void Dof::init(double _v, const char * _name, double _min, double _max){
-        strcpy(mName, _name);
-        mVal = _v;
-        mMinVal = _min;
-        mMaxVal = _max;
-        mSkelIndex = -1;
-        mVariable = false;
-        mTrans = NULL;
-        mJoint = NULL;	// remains null if const dof
-    }
+void Dof::setValue(double _v) {
+    q = _v;
+    if (mTrans != NULL)
+        mTrans->setDirty();
+}
+
+void Dof::init() {
+    strcpy(mName, "dof");
+
+    q = dq = ddq = tau = 0.0;
+    qMin = dqMin = ddqMin = tauMin = -inf;
+    qMax = dqMax = ddqMax = tauMax = inf;
+    DqDp = DdqDp = DddqDp = DtauDp = 0.0;
+
+    mSkelIndex = -1;
+    mVariable = false;
+    mTrans = NULL;
+    mJoint = NULL;	// remains null if const dof
+}
 
 } // namespace kinematics
 

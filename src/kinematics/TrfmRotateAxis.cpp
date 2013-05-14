@@ -83,7 +83,13 @@ namespace kinematics {
                              -y,    x,  0.0;  // cross product matrix of _axis
         mSinCoefficients << x * x - 1.0,  x * y,        x * z,
                             y * x,        y * y - 1.0,  y * z,
-                            z * x,        z * y,        z * z - 1.0;  // tensor product of _axis with itself minus identity
+                z * x,        z * y,        z * z - 1.0;  // tensor product of _axis with itself minus identity
+    }
+
+    Eigen::MatrixXd TrfmRotateAxis::getJacobian(void) {
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,1>::Zero();
+        J.topLeftCorner<3,1>() = mAxis; // Angular part
+        return J;
     }
 
     void TrfmRotateAxis::computeTransform() {

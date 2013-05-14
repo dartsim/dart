@@ -78,7 +78,7 @@ namespace kinematics {
 
     Matrix4d TrfmRotateQuat::getDeriv(const Dof *d){
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
-        q.normalize();	
+        q.normalize();
 
         Matrix3d mat = Matrix3d::Zero();
         Matrix4d ret = Matrix4d::Zero();
@@ -88,10 +88,10 @@ namespace kinematics {
         assert(el!=-1);
         mat = dart_math::quatDeriv(q, el);
 	
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++)
-                ret(i, j) = mat(i, j);
-        }
+		for(int i=0; i<3; i++){
+			for(int j=0; j<3; j++)
+				ret(i, j) = mat(i, j);
+		}
 
         return ret;
     }
@@ -100,8 +100,8 @@ namespace kinematics {
         Quaterniond q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue(), mDofs[3]->getValue());
         q.normalize();
 	
-        Matrix3d mat = Matrix3d::Zero();
-        Matrix4d ret = Matrix4d::Identity();
+		Matrix3d mat = Matrix3d::Zero();
+		Matrix4d ret = Matrix4d::Identity();
 
         int el1=-1, el2=-1;
         for(int i=0; i<4; i++) {
@@ -112,11 +112,22 @@ namespace kinematics {
         assert(el2!=-1);
         mat = dart_math::quatSecondDeriv(q, el1, el2);
 	
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++)
-                ret(i, j) = mat(i, j);
-        }
-        return ret;
+		for(int i=0; i<3; i++){
+			for(int j=0; j<3; j++)
+				ret(i, j) = mat(i, j);
+		}
+		return ret;
+	}
+
+    Eigen::MatrixXd TrfmRotateQuat::getJacobian(void) {
+        assert(getNumDofs() == 4);
+
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,4>::Zero();
+
+        // TODO: NOT IMPLEMENTED !
+        J.topLeftCorner<3,3>() = Eigen::Matrix3d::Identity();
+
+        return J;
     }
 
     void TrfmRotateQuat::applyGLTransform(renderer::RenderInterface* _ri) const {

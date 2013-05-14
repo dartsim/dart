@@ -62,7 +62,7 @@ namespace kinematics {
             strcpy(mName, "EXPMAP");
     }
 
-    void TrfmRotateExpMap::computeTransform(){
+    void TrfmRotateExpMap::computeTransform() {
         Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
 
         Matrix3d rot = dart_math::expMapRot(q);
@@ -125,6 +125,17 @@ namespace kinematics {
         d2Rdidj4.topLeftCorner(3,3) = d2Rdidj;
 
         return d2Rdidj4;
+    }
+
+    Eigen::MatrixXd TrfmRotateExpMap::getJacobian(void) {
+        // Assume the number of dofs is 3.
+        assert(getNumDofs() == 3);
+
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,3>::Zero();
+
+        J.topLeftCorner<3,3>() = Eigen::Matrix3d::Identity();
+
+        return J;
     }
 
     void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{

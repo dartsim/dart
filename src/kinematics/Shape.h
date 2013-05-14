@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_H
-#define KINEMATICS_SHAPE_H
+#ifndef DART_KINEMATICS_SHAPE_H
+#define DART_KINEMATICS_SHAPE_H
 
 #include <Eigen/Dense>
 
@@ -107,5 +107,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_H
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_H
 

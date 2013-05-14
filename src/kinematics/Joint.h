@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_JOINT_H
-#define KINEMATICS_JOINT_H
+#ifndef DART_KINEMATICS_JOINT_H
+#define DART_KINEMATICS_JOINT_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -112,6 +112,9 @@ namespace kinematics {
         
         void updateStaticTransform();
 
+        /// @brief Local Jacobian from parent link to child link.
+        Eigen::MatrixXd getLocalJacobian(void) const;
+
     protected:
         BodyNode *mNodeParent; ///< parent node
         BodyNode *mNodeChild; ///< child node
@@ -133,5 +136,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_JOINT_H
+#endif // #ifndef DART_KINEMATICS_JOINT_H
 

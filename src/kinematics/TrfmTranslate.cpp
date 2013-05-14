@@ -113,6 +113,23 @@ namespace kinematics {
         m.setZero();
     }
 
+    Eigen::MatrixXd TrfmTranslate::getJacobian(void) {
+        assert(getNumDofs() == 3);
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,3>::Zero();
+
+        Eigen::Matrix<double,6,1> J1 = Eigen::Matrix<double,6,1>::Zero();
+        J1(A_X+3) = 1.0;
+        J.col(0) = J1;
+        Eigen::Matrix<double,6,1> J2 = Eigen::Matrix<double,6,1>::Zero();
+        J2(A_Y+3) = 1.0;
+        J.col(1) = J2;
+        Eigen::Matrix<double,6,1> J3 = Eigen::Matrix<double,6,1>::Zero();
+        J3(A_Z+3) = 1.0;
+        J.col(2) = J3;
+
+        return J;
+    }
+
 
     Matrix4d TrfmTranslate::getInvTransform(){
         Matrix4d ret = Matrix4d::Identity();
@@ -204,6 +221,15 @@ namespace kinematics {
         m.setZero();
     }
 
+    Eigen::MatrixXd TrfmTranslateX::getJacobian(void)
+    {
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,1>::Zero();
+
+        J(A_X+3, 1) = 1.0;
+
+        return J;
+    }
+
     Matrix4d TrfmTranslateX::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
         ret(A_X, 3) = -mDofs[0]->getValue();
@@ -285,6 +311,14 @@ namespace kinematics {
         m.setZero();
     }
 
+    Eigen::MatrixXd TrfmTranslateY::getJacobian(void) {
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,1>::Zero();
+
+        J(A_Y+3, 1) = 1.0;
+
+        return J;
+    }
+
     Matrix4d TrfmTranslateY::getInvTransform(){
         Matrix4d ret = Matrix4d::Ones();
         ret(A_Y, 3) = -mDofs[0]->getValue();
@@ -362,6 +396,14 @@ namespace kinematics {
 
     void TrfmTranslateZ::applySecondDeriv( const Dof* q1, const Dof* q2, Eigen::Matrix4d& m ) {
         m.setZero();
+    }
+
+    Eigen::MatrixXd TrfmTranslateZ::getJacobian(void) {
+        Eigen::MatrixXd J = Eigen::Matrix<double,6,1>::Zero();
+
+        J(A_Z+3, 1) = 1.0;
+
+        return J;
     }
 
     Matrix4d TrfmTranslateZ::getInvTransform(){
