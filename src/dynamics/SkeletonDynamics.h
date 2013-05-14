@@ -77,6 +77,8 @@ namespace dynamics{
         Eigen::VectorXd getPoseVelocity() const { return mQdot; }
         bool getImmobileState() const { return mImmobile; }
         void setImmobileState(bool _s) { mImmobile = _s; }
+        bool getJointLimitState() const { return mJointLimit; }
+        void setJointLimitState(bool _s) { mJointLimit = _s; }
         void setInternalForces(const Eigen::VectorXd& _forces);
         void setMinInternalForces(Eigen::VectorXd _minForces) { mFintMin = _minForces; }
         Eigen::VectorXd getMinInternalForces() const { return mFintMin; }
@@ -97,6 +99,8 @@ namespace dynamics{
         Eigen::VectorXd mQdot; ///< the current qdot
 
         bool mImmobile; ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct
+        bool mJointLimit; ///<True if the joint limits are enforced in dynamic simulation
+
     };
 
 } // namespace dynamics
