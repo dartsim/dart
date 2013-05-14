@@ -15,7 +15,7 @@
 
 using namespace Eigen;
 using namespace collision;
-using namespace math;
+using namespace dart_math;
 
 #define EPSILON 0.000001
 
