@@ -41,12 +41,10 @@ namespace collision
 {
 
 CollisionNode::CollisionNode(kinematics::BodyNode* _bodyNode)
-    : mBodyNode(_bodyNode)
-{
+    : mBodyNode(_bodyNode) {
 }
 
-CollisionNode::~CollisionNode()
-{
+CollisionNode::~CollisionNode() {
 }
 
 

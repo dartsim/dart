@@ -41,69 +41,113 @@
 #include <Eigen/Dense>
 
 namespace renderer {
-    class RenderInterface;
+class RenderInterface;
 }
 
 extern "C" { struct aiScene; }
 
 namespace kinematics {
-    class Transformation;
+class Transformation;
 
-    class Shape {
-    public:
-        enum ShapeType {
-            P_UNDEFINED,
-            P_BOX,
-            P_ELLIPSOID,
-            P_SPHERE,
-            P_CYLINDER,
-            P_MESH
-        };
-
-        Shape(ShapeType _type = P_UNDEFINED);
-        virtual ~Shape() {}
-
-        inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
-        inline Eigen::Vector3d getColor() const { return mColor; }
-
-        void setDim(const Eigen::Vector3d& _dim);
-        inline Eigen::Vector3d getDim() const { return mDim; }
-
-        inline void setTransform(const Eigen::Affine3d& _Transform ) { mTransform = _Transform; }
-        inline Eigen::Affine3d getTransform() const { return mTransform; }
-
-        inline void setOffset(Eigen::Vector3d _offset) { mTransform.translation() = _offset; }
-        inline Eigen::Vector3d getOffset() const { return mTransform.translation(); }
-
-        virtual Eigen::Matrix3d computeInertia(double _mass) { return Eigen::Matrix3d::Zero(); }
-
-        inline void setVolume(double _v) { mVolume = _v; }
-        inline double getVolume() const { return mVolume; }
-
-        inline int getID() const { return mID; }
-        inline ShapeType getShapeType() const { return mType; }
-
-        virtual void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const {}
-
-    protected:
-        virtual void computeVolume() {}
-
-        virtual void initMeshes() {}
-
-        ShapeType mType;    ///< Type of primitive; unknown in the general case
-        Eigen::Vector3d mDim; ///< dimensions for bounding box
-        double mVolume; ///< volume enclosed by the geometry
-
-        int mID; // unique id
-        Eigen::Vector3d mColor;		///< color for the primitive
-        Eigen::Vector3d mOffset; ///< the origin of this primitive in the bodynode frame>
-        Eigen::Affine3d mTransform; ///< Local Geometric transformation of the Shape w.r.t. parent frame
-
-        static int mCounter;
-    public:
-
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+class Shape {
+public:
+    enum ShapeType {
+        P_UNDEFINED,
+        P_BOX,
+        P_ELLIPSOID,
+        P_CYLINDER,
+        P_MESH
     };
+
+    /// @brief
+    Shape(ShapeType _type = P_UNDEFINED);
+
+    /// @brief
+    virtual ~Shape() {}
+
+    /// @brief
+    inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
+
+    /// @brief
+    inline Eigen::Vector3d getColor() const { return mColor; }
+
+    /// @brief
+    void setDim(const Eigen::Vector3d& _dim);
+
+    /// @brief
+    inline Eigen::Vector3d getDim() const { return mDim; }
+
+    /// @brief
+    inline void setTransform(const Eigen::Affine3d& _Transform )
+    { mTransform = _Transform; }
+
+    /// @brief
+    inline Eigen::Affine3d getTransform() const { return mTransform; }
+
+    /// @brief
+    inline void setOffset(Eigen::Vector3d _offset)
+    { mTransform.translation() = _offset; }
+
+    /// @brief
+    inline Eigen::Vector3d getOffset() const
+    { return mTransform.translation(); }
+
+    /// @brief
+    virtual Eigen::Matrix3d computeInertia(double _mass)
+    { return Eigen::Matrix3d::Zero(); }
+
+    /// @brief
+    inline void setVolume(double _v) { mVolume = _v; }
+
+    /// @brief
+    inline double getVolume() const { return mVolume; }
+
+    /// @brief
+    inline int getID() const { return mID; }
+
+    /// @brief
+    inline ShapeType getShapeType() const { return mType; }
+
+    /// @brief
+    virtual void draw(renderer::RenderInterface* _ri = NULL,
+                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                      bool _useDefaultColor = true) const {}
+
+protected:
+    /// @brief
+    virtual void computeVolume() {}
+
+    /// @brief
+    virtual void initMeshes() {}
+
+    /// @brief Type of primitive; unknown in the general case.
+    ShapeType mType;
+
+    /// @brief Dimensions for bounding box.
+    Eigen::Vector3d mDim;
+
+    /// @brief Volume enclosed by the geometry.
+    double mVolume;
+
+    /// @brief Unique id.
+    int mID;
+
+    /// @brief Color for the primitive.
+    Eigen::Vector3d mColor;
+
+    /// @brief The origin of this primitive in the bodynode frame.
+    Eigen::Vector3d mOffset;
+
+    /// @brief Local Geometric transformation of the Shape w.r.t. parent frame.
+    Eigen::Affine3d mTransform;
+
+    /// @brief
+    static int mCounter;
+
+public:
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
 
 } // namespace kinematics
 
