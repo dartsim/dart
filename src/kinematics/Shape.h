@@ -55,6 +55,7 @@ namespace kinematics {
             P_UNDEFINED,
             P_BOX,
             P_ELLIPSOID,
+            P_SPHERE,
             P_CYLINDER,
             P_MESH
         };
