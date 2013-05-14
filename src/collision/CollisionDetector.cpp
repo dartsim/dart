@@ -44,28 +44,23 @@
 namespace collision
 {
 
-CollisionDetector::CollisionDetector()
-{
+CollisionDetector::CollisionDetector() {
 }
 
-CollisionDetector::~CollisionDetector()
-{
+CollisionDetector::~CollisionDetector() {
     for(int i = 0; i < mCollisionNodes.size(); i++)
         if (mCollisionNodes[i])
             delete mCollisionNodes[i];
 }
 
 void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode,
-                                                 bool _bRecursive)
-{
-    if (_bRecursive == false || _bodyNode->getNumChildJoints() == 0)
-    {
+                                                 bool _bRecursive) {
+    if (_bRecursive == false || _bodyNode->getNumChildJoints() == 0) {
         CollisionNode* collNode = createCollisionNode(_bodyNode);
         collNode->setBodyNodeID(mCollisionNodes.size());
         mCollisionNodes.push_back(collNode);
     }
-    else
-    {
+    else {
         addCollisionSkeletonNode(_bodyNode, false);
 
         for (int i = 0; i < _bodyNode->getNumChildJoints(); i++)
@@ -77,20 +72,17 @@ void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode
     updateBodyNodeCollidableState();
 }
 
-void CollisionDetector::_rebuildBodyNodePairs()
-{
+void CollisionDetector::_rebuildBodyNodePairs() {
     // TODO: Need better way
     mCollisionNodePairs.clear();
 
     CollisionNodePair collisionNodePair;
     unsigned int numCollisionNodes = mCollisionNodes.size();
 
-    for (unsigned int i = 0; i < numCollisionNodes; i++)
-    {
+    for (unsigned int i = 0; i < numCollisionNodes; i++) {
         collisionNodePair.collisionNode1 = mCollisionNodes[i];
 
-        for (unsigned int j = i + 1; j < numCollisionNodes; j++)
-        {
+        for (unsigned int j = i + 1; j < numCollisionNodes; j++) {
             collisionNodePair.collisionNode2 = mCollisionNodes[j];
             collisionNodePair.collidable = true;
             mCollisionNodePairs.push_back(collisionNodePair);
@@ -98,43 +90,35 @@ void CollisionDetector::_rebuildBodyNodePairs()
     }
 }
 
-void CollisionDetector::_setAllBodyNodePairsCollidable(bool _collidable)
-{
+void CollisionDetector::_setAllBodyNodePairsCollidable(bool _collidable) {
     unsigned int numCollisionNodes = mCollisionNodes.size();
 
-    for (unsigned int i = 0; i < numCollisionNodes; ++i)
-    {
+    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
         mCollisionNodePairs[i].collidable = _collidable;
     }
 }
 
-void CollisionDetector::updateSkeletonSelfCollidableState()
-{
+void CollisionDetector::updateSkeletonSelfCollidableState() {
     unsigned int numCollisionNodes = mCollisionNodePairs.size();
     CollisionNodePair itrCollisionNodePair;
 
-    for (unsigned int i = 0; i < numCollisionNodes; ++i)
-    {
+    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
         itrCollisionNodePair = mCollisionNodePairs[i];
 
         if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()
-                == itrCollisionNodePair.collisionNode2->getBodyNode()->getSkel())
-        {
-            if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()->getSelfCollidable() == false)
-            {
+                == itrCollisionNodePair.collisionNode2->getBodyNode()->getSkel()) {
+            if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()->getSelfCollidable() == false) {
                 itrCollisionNodePair.collidable = false;
             }
         }
     }
 }
 
-void CollisionDetector::updateBodyNodeCollidableState()
-{
+void CollisionDetector::updateBodyNodeCollidableState() {
     unsigned int numCollisionNodes = mCollisionNodePairs.size();
     CollisionNodePair itrCollisionNodePair;
 
-    for (unsigned int i = 0; i < numCollisionNodes; ++i)
-    {
+    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
         itrCollisionNodePair = mCollisionNodePairs[i];
 
         if (itrCollisionNodePair.collisionNode1->getBodyNode()->getCollideState() == false
@@ -142,7 +126,5 @@ void CollisionDetector::updateBodyNodeCollidableState()
             itrCollisionNodePair.collidable = false;
     }
 }
-
-
 
 } // namespace collision

@@ -47,16 +47,13 @@ namespace collision
 
 FCLCollisionDetector::FCLCollisionDetector()
     : CollisionDetector(),
-      mNumMaxContacts(100)
-{
+      mNumMaxContacts(100) {
 }
 
-FCLCollisionDetector::~FCLCollisionDetector()
-{
+FCLCollisionDetector::~FCLCollisionDetector() {
 }
 
-CollisionNode* FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _bodyNode)
-{
+CollisionNode* FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _bodyNode) {
     CollisionNode* collisionNode = NULL;
 
     collisionNode = new FCLCollisionNode(_bodyNode);
@@ -65,8 +62,7 @@ CollisionNode* FCLCollisionDetector::createCollisionNode(kinematics::BodyNode* _
 }
 
 bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
-                                          bool _calculateContactPoints)
-{
+                                          bool _calculateContactPoints) {
     // TODO: _checkAllCollisions
 
     clearAllContacts();
@@ -86,8 +82,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
     FCLCollisionNode* collNode1 = NULL;
     FCLCollisionNode* collNode2 = NULL;
 
-    for (unsigned int i = 0; i < numCollisionNodePairs; ++i)
-    {
+    for (unsigned int i = 0; i < numCollisionNodePairs; ++i) {
         const CollisionNodePair& collisionNodePair = mCollisionNodePairs[i];
 
         if (collisionNodePair.collidable == false)
@@ -103,8 +98,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
                      request, result);
 
         unsigned int numContacts = result.numContacts();
-        for (unsigned int j = 0; j < numContacts; ++j)
-        {
+        for (unsigned int j = 0; j < numContacts; ++j) {
             const fcl::Contact& contact = result.getContact(j);
 
             Contact contactPair;

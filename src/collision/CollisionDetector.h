@@ -44,14 +44,12 @@
 
 namespace kinematics { class BodyNode; }
 
-namespace collision
-{
+namespace collision {
 
 class CollisionNode;
 
 /// @brief
-struct Contact
-{
+struct Contact {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     /// @brief
@@ -76,14 +74,13 @@ struct Contact
     /// @brief
     int triID1;
 
-    // TODO: triID1 will be deprecated when we don't use fcl_mesh
+    // TODO: triID2 will be deprecated when we don't use fcl_mesh
     /// @brief
     int triID2;
 };
 
 /// @brief
-class CollisionDetector
-{
+class CollisionDetector {
     // CONSTRUCTORS AND DESTRUCTOR ---------------------------------------------
 public:
     /// @brief
@@ -97,6 +94,7 @@ public:
     virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd,
                                           bool _bRecursive = false);
 
+    /// @brief
     virtual CollisionNode* createCollisionNode(
             kinematics::BodyNode* _bodyNode) = 0;
 

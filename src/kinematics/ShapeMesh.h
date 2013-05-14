@@ -44,24 +44,41 @@ namespace kinematics {
 
     class ShapeMesh : public Shape {
     public:
+        /// @brief Constructor.
         ShapeMesh(Eigen::Vector3d _dim, const aiScene *_mesh);
 
+        /// @brief
         inline const aiScene* getMesh() const { return mMesh; }
+
+        /// @brief
         inline void setMesh(const aiScene* _mesh) { mMesh = _mesh; }
 
+        /// @brief
         inline int getDisplayList() const { return mDisplayList; }
+
+        /// @brief
         inline void setDisplayList(int _index) { mDisplayList = _index; }
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(), bool _default = true) const;
+        // Documentation inherited.
+        void draw(renderer::RenderInterface* _ri = NULL,
+                  const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+                  bool _default = true) const;
+
+        /// @brief
         static const aiScene* loadMesh(const std::string& fileName);
 
+        // Documentation inherited.
         virtual Eigen::Matrix3d computeInertia(double _mass);
 
     private:
+        // Documentation inherited.
         void computeVolume();
 
+        /// @brief
         const aiScene *mMesh;
-        int mDisplayList;	///< OpenGL DisplayList id for rendering
+
+        /// @brief OpenGL DisplayList id for rendering
+        int mDisplayList;
 
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
