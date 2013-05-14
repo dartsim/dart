@@ -49,14 +49,14 @@ namespace lcpsolver {
     class LCPSolver
     {
     public:
-	    LCPSolver();
-	    ~LCPSolver();
-    	
-	    bool Solve(const MatrixXd& _A, const VectorXd& _b, VectorXd& _x, double mu = 0, int numDir = 0, bool bUseODESolver = false);
+        LCPSolver();
+        ~LCPSolver();
+
+        bool Solve(const MatrixXd& _A, const VectorXd& _b, VectorXd& _x, int numContacts, double mu = 0, int numDir = 0, bool bUseODESolver = false);
     private:
-		void transferToODEFormulation(const MatrixXd& _A, const VectorXd& _b, MatrixXd& AOut, VectorXd& bOut, int numDir);
-		void transferSolFromODEFormulation(const VectorXd& _x, VectorXd& xOut, int numDir);
-		bool checkIfSolution(const MatrixXd& _A, const VectorXd& _b, const VectorXd& _x);
+        void transferToODEFormulation(const MatrixXd& _A, const VectorXd& _b, MatrixXd& _AOut, VectorXd& _bOut, int _numDir, int _numContacts);
+        void transferSolFromODEFormulation(const VectorXd& _x, VectorXd& _xOut, int _numDir, int _numContacts);
+        bool checkIfSolution(const MatrixXd& _A, const VectorXd& _b, const VectorXd& _x);
     };
-} //namespace lcpsolver
+} // namespace lcpsolver
 #endif
