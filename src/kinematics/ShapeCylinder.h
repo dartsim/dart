@@ -42,27 +42,43 @@
 
 namespace kinematics {
 
-    class ShapeCylinder : public Shape {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+class ShapeCylinder : public Shape {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        ShapeCylinder(double _radius, double _height);
+    /// @brief Constructor.
+    ShapeCylinder(double _radius, double _height);
 
-        inline double getRadius() const { return mRadius; }
-        inline void setRadius(double _radius) { mRadius = _radius; }
-        inline double getHeight() const { return mHeight; }
-        inline void setHeight(double _height) { mHeight = _height; }
+    /// @brief
+    inline double getRadius() const { return mRadius; }
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+    /// @brief
+    inline void setRadius(double _radius) { mRadius = _radius; }
 
-        virtual Eigen::Matrix3d computeInertia(double _mass);
+    /// @brief
+    inline double getHeight() const { return mHeight; }
 
-    private:
-        void computeVolume();
+    /// @brief
+    inline void setHeight(double _height) { mHeight = _height; }
 
-        double mRadius;
-        double mHeight; // along z-axis
-    };
+    // Documentation inherited.
+    void draw(renderer::RenderInterface* _ri = NULL,
+              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+              bool _useDefaultColor = true) const;
+
+    // Documentation inherited.
+    virtual Eigen::Matrix3d computeInertia(double _mass);
+
+private:
+    // Documentation inherited.
+    void computeVolume();
+
+    /// @brief
+    double mRadius;
+
+    /// @brief Height along z-axis.
+    double mHeight;
+};
 
 } // namespace kinematics
 
