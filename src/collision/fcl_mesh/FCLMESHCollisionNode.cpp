@@ -2,7 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Chen Tang <ctang40@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  * Date: 05/01/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab

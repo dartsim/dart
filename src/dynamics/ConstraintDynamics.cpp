@@ -2,6 +2,7 @@
 #include "ConstraintDynamics.h"
 
 #include "kinematics/BodyNode.h"
+#include "kinematics/Dof.h"
 #include "lcpsolver/LCPSolver.h"
 
 #include "SkeletonDynamics.h"
@@ -14,7 +15,7 @@
 
 using namespace Eigen;
 using namespace collision;
-using namespace utils;
+using namespace math;
 
 #define EPSILON 0.000001
 
@@ -29,13 +30,43 @@ using namespace utils;
                 delete mCollisionChecker;
         }
 
+        void ConstraintDynamics::reset()
+        {
+            destroy();
+            initialize();
+        }
+
         void ConstraintDynamics::computeConstraintForces() {
+            //            static Timer t1("t1");
+
             if (getTotalNumDofs() == 0)
                 return;
             mCollisionChecker->clearAllContacts();
             mCollisionChecker->checkCollision(true, true);
 
-            if (mCollisionChecker->getNumContacts() == 0) {
+            //            t1.startTimer();
+            mLimitingDofIndex.clear();
+            
+            for (int i = 0; i < mSkels.size(); i++) {
+                if (mSkels[i]->getImmobileState() || !mSkels[i]->getJointLimitState())
+                    continue;
+                for (int j = 0; j < mSkels[i]->getNumDofs(); j++) {
+                    double val = mSkels[i]->getDof(j)->getValue();
+                    double ub = mSkels[i]->getDof(j)->getMax();
+                    double lb = mSkels[i]->getDof(j)->getMin();
+                    if (val >= ub){
+                        mLimitingDofIndex.push_back(mIndices[i] + j + 1);
+                        //        cout << "Skeleton " << i << " Dof " << j << " hits upper bound" << endl;
+                    }
+                    if (val <= lb){
+                        mLimitingDofIndex.push_back(-(mIndices[i] + j + 1));
+                        //      cout << "Skeleton " << i << " Dof " << j << " hits lower bound" << endl;
+                    }
+                }
+            }
+            
+            
+            if (mCollisionChecker->getNumContacts() == 0 && mLimitingDofIndex.size() == 0) {
                 for (int i = 0; i < mSkels.size(); i++)
                     mContactForces[i].setZero();
                 if (mConstraints.size() == 0) {
@@ -49,11 +80,100 @@ using namespace utils;
                 solve();
                 applySolution();
             }
+            //            t1.stopTimer();
+            //            t1.printScreen();
+        }
+
+        void ConstraintDynamics::addConstraint(Constraint *_constr) {
+            mConstraints.push_back(_constr);
+            mTotalRows += _constr->getNumRows();
+            for (int i = 0; i < mSkels.size(); i++) {
+                mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumDofs());
+                mJ[i].bottomRows(_constr->getNumRows()).setZero();
+            } 
+            mC = VectorXd(mTotalRows);
+            mCDot = VectorXd(mTotalRows);
+            mGInv = MatrixXd::Zero(mTotalRows, mTotalRows);
+            mTauHat = VectorXd(mTotalRows);
+        }
+
+        void ConstraintDynamics::deleteConstraint(int _index) {
+            int count = 0;
+            for (int i = 0; i < _index; i++)
+                count += mConstraints[i]->getNumRows();
+            int shiftRows = mTotalRows - count - mConstraints[_index]->getNumRows();
+            mTotalRows -= mConstraints[_index]->getNumRows();
+
+            for (int i = 0; i < mSkels.size(); i++) {
+                mJ[i].block(count, 0, shiftRows, mSkels[i]->getNumDofs()) = mJ[i].bottomRows(shiftRows);
+                mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumDofs());
+            } 
+            mC.resize(mTotalRows);
+            mCDot.resize(mTotalRows);
+            mGInv.resize(mTotalRows, mTotalRows);
+            mTauHat.resize(mTotalRows);
+
+            mConstraints.erase(mConstraints.begin() + _index);
+            delete mConstraints[_index];
+        }
+
+        void ConstraintDynamics::addSkeleton(SkeletonDynamics* _newSkel)
+        {
+            mSkels.push_back(_newSkel);
+
+            int nSkels = mSkels.size();
+            int nNodes = _newSkel->getNumNodes();
+
+            for (int j = 0; j < nNodes; j++)
+                {
+                    kinematics::BodyNode* node = _newSkel->getNode(j);
+                    // TODO: (test)
+                    if (node->getCollisionShape() == NULL)
+                        continue;
+                    mCollisionChecker->addCollisionSkeletonNode(node);
+                    mBodyIndexToSkelIndex.push_back(nSkels-1);
+                }
+
+            // Add all body nodes into mCollisionChecker
+            int rows = mMInv.rows();
+            int cols = mMInv.cols();
+
+            if (!_newSkel->getImmobileState())
+                {
+                    // Immobile objets have mass of infinity
+                    rows += _newSkel->getMassMatrix().rows();
+                    cols += _newSkel->getMassMatrix().cols();
+                }
+
+            Eigen::VectorXd newConstrForce;
+            if (!_newSkel->getImmobileState())
+                newConstrForce = VectorXd::Zero(_newSkel->getNumDofs());
+            mContactForces.push_back(newConstrForce);
+            mTotalConstrForces.push_back(newConstrForce);
+
+            mMInv = MatrixXd::Zero(rows, cols);
+            mTauStar = VectorXd::Zero(rows);
+
+            mIndices.clear();
+            int sumNDofs = 0;
+            mIndices.push_back(sumNDofs);
+
+            for (int i = 0; i < mSkels.size(); i++) {
+                SkeletonDynamics* skel = mSkels[i];
+                int nDofs = skel->getNumDofs();
+                if (mSkels[i]->getImmobileState())
+                    nDofs = 0;
+                sumNDofs += nDofs;
+                mIndices.push_back(sumNDofs);
+            }
+            mJ.resize(mSkels.size());
+            mPreJ.resize(mSkels.size());
+            mJMInv.resize(mSkels.size());
+            mZ = MatrixXd(rows, cols);
         }
 
         void ConstraintDynamics::initialize() {
             // Allocate the Collision Detection class
-            //mCollisionChecker = new FCLCollisionDetector();
             mCollisionChecker = new FCLMESHCollisionDetector();
 
             mBodyIndexToSkelIndex.clear();
@@ -118,17 +238,174 @@ using namespace utils;
             mZ = MatrixXd(rows, cols);
         }
 
-        void ConstraintDynamics::updateTauStar() {
-            int startRow = 0;
+        void ConstraintDynamics::destroy()
+        {
+            if (mCollisionChecker)
+                delete mCollisionChecker;
+        }
+
+        void ConstraintDynamics::computeConstraintWithoutContact() {
+            updateMassMat();
+            updateConstraintTerms();
+            VectorXd lambda = mGInv * mTauHat;
+
             for (int i = 0; i < mSkels.size(); i++) {
                 if (mSkels[i]->getImmobileState())
                     continue;
-
-                VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
-                VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getPoseVelocity()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
-                mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
-                startRow += tauStar.rows();
+                mTotalConstrForces[i] = mJ[i].transpose() * lambda;                
             }
+        }
+
+        void ConstraintDynamics::fillMatrices() {
+            int nContacts = getNumContacts();
+            int nJointLimits = mLimitingDofIndex.size();
+            int nConstrs = mConstraints.size();
+            int cd = nContacts * mNumDir;
+            int dimA = nContacts * (2 + mNumDir) + nJointLimits;
+            mA = MatrixXd::Zero(dimA, dimA);
+            mQBar = VectorXd::Zero(dimA);
+            updateMassMat();
+            updateTauStar();
+            
+            MatrixXd augMInv = mMInv;
+            VectorXd tauVec = VectorXd::Zero(getTotalNumDofs());
+            if (nConstrs > 0) {
+                updateConstraintTerms();
+                augMInv -= mZ;
+
+                VectorXd tempVec = mDt * mGInv * mTauHat;
+                for (int i = 0; i < mSkels.size(); i++) {
+                    if (mSkels[i]->getImmobileState())
+                        continue;
+                    tauVec.segment(mIndices[i], mSkels[i]->getNumDofs()) = mJ[i].transpose() * tempVec;
+                }
+            }
+            tauVec = mMInv * (tauVec + mTauStar);
+
+            MatrixXd Ntranspose(nContacts, getTotalNumDofs());
+            MatrixXd Btranspose(cd, getTotalNumDofs());
+            MatrixXd NTerm(getTotalNumDofs(), nContacts);
+            MatrixXd BTerm(getTotalNumDofs(), cd);
+
+            if (nContacts > 0) {
+                updateNBMatrices();
+                MatrixXd E = getContactMatrix();
+                MatrixXd mu = getMuMatrix();
+                // Construct the intermediary blocks.
+                Ntranspose = mN.transpose();
+                Btranspose = mB.transpose();
+                // Compute NTerm and BTerm
+                NTerm = augMInv * mN;
+                BTerm = augMInv * mB;
+                mA.block(0, 0, nContacts, nContacts) = Ntranspose * NTerm;
+                mA.block(0, nContacts, nContacts, cd) = Ntranspose * BTerm;
+                mA.block(nContacts, 0, cd, nContacts) = Btranspose * NTerm;
+                mA.block(nContacts, nContacts, cd, cd) = Btranspose * BTerm;
+                mA.block(nContacts, nContacts + cd, cd, nContacts) = E;
+                mA.block(nContacts + cd, 0, nContacts, nContacts) = mu;
+                mA.block(nContacts + cd, nContacts, nContacts, cd) = -E.transpose();
+
+                mQBar.segment(0, nContacts) = Ntranspose * tauVec;
+                mQBar.segment(nContacts, cd) = Btranspose * tauVec;
+
+            }
+
+            if (nJointLimits > 0) {
+                int jointStart = 2 * nContacts + cd;
+                for (int i = 0; i < nJointLimits; i++)
+                    for (int j = 0; j < nJointLimits; j++) {
+                        if (mLimitingDofIndex[i] * mLimitingDofIndex[j] < 0)
+                            mA(jointStart + i, jointStart + j) = -augMInv(abs(mLimitingDofIndex[i]) - 1, abs(mLimitingDofIndex[j]) - 1);
+                        else
+                            mA(jointStart + i, jointStart + j) = augMInv(abs(mLimitingDofIndex[i]) - 1, abs(mLimitingDofIndex[j]) - 1);
+                    }
+                for (int i = 0; i < nJointLimits; i++) {
+                    if (mLimitingDofIndex[i] > 0) // hitting upper bound
+                        mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1];
+                    else // hitting lower bound
+                        mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1];
+                }
+
+                if (nContacts > 0) {
+
+                    MatrixXd STerm(mMInv.rows(), nJointLimits);
+                    for (int i = 0; i < nJointLimits; i++) {
+                        if (mLimitingDofIndex[i] > 0) // hitting upper bound
+                            STerm.col(i) = -augMInv.col(mLimitingDofIndex[i] - 1);
+                        else                            
+                            STerm.col(i) = augMInv.col(abs(mLimitingDofIndex[i]) - 1);
+                    }
+                    mA.block(0, jointStart, nContacts, nJointLimits) = Ntranspose * STerm;
+
+                    mA.block(nContacts, jointStart, cd, nJointLimits) = Btranspose * STerm;
+
+                    for (int i = 0; i < nJointLimits; i++) {
+                        if (mLimitingDofIndex[i] > 0) { //hitting uppder bound
+                            mA.block(jointStart + i, 0, 1, nContacts) = -NTerm.row(mLimitingDofIndex[i] - 1);
+                            mA.block(jointStart + i, nContacts, 1, cd) = -BTerm.row(mLimitingDofIndex[i] - 1);
+                        } else {
+                            mA.block(jointStart + i, 0, 1, nContacts) = NTerm.row(abs(mLimitingDofIndex[i]) - 1);
+                            mA.block(jointStart + i, nContacts, 1, cd) = BTerm.row(abs(mLimitingDofIndex[i]) - 1);
+                        }
+                    }
+
+                }
+            }
+            mQBar /= mDt;
+            
+            int cfmSize = getNumContacts() * (1 + mNumDir);
+            for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
+                mA(i, i) += 0.001 * mA(i, i);
+        }
+
+        bool ConstraintDynamics::solve() {
+            lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
+            bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
+            return b;
+        }
+
+        void ConstraintDynamics::applySolution() {
+            VectorXd contactForces(VectorXd::Zero(getTotalNumDofs()));
+            VectorXd jointLimitForces(VectorXd::Zero(getTotalNumDofs()));
+
+            if (getNumContacts() > 0) {
+                VectorXd f_n = mX.head(getNumContacts());
+                VectorXd f_d = mX.segment(getNumContacts(), getNumContacts() * mNumDir);
+                contactForces = (mN * f_n) + (mB * f_d);
+                for (int i = 0; i < getNumContacts(); i++) {
+                    Contact& contact = mCollisionChecker->getContact(i);
+                    contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
+                }
+            }
+            for (int i = 0; i < mLimitingDofIndex.size(); i++) {
+                if (mLimitingDofIndex[i] > 0) { // hitting upper bound
+                    jointLimitForces[mLimitingDofIndex[i] - 1] = -mX[getNumContacts() * (2 + mNumDir) + i];
+                }else{
+                    jointLimitForces[abs(mLimitingDofIndex[i]) - 1] = mX[getNumContacts() * (2 + mNumDir) + i];
+                }
+            }
+            
+            VectorXd lambda = VectorXd::Zero(mGInv.rows());
+            for (int i = 0; i < mSkels.size(); i++) {
+                if (mSkels[i]->getImmobileState())
+                    continue;
+                mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumDofs());
+
+                mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumDofs());
+                
+                if (mConstraints.size() > 0) {
+                    VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getNumDofs()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumDofs())));
+                    mTotalConstrForces[i] += mJ[i].transpose() * tempVec;
+                    lambda += tempVec;
+                }
+            }
+
+            int count = 0;
+            for (int i = 0; i < mConstraints.size(); i++) {
+                mConstraints[i]->setLagrangeMultipliers(lambda.segment(count, mConstraints[i]->getNumRows()));
+                count += mConstraints[i]->getNumRows();
+            }
+            
         }
 
         void ConstraintDynamics::updateMassMat() {
@@ -144,112 +421,17 @@ using namespace utils;
             }
         }
 
-        void ConstraintDynamics::fillMatrices() {
-            updateMassMat();
-            updateTauStar();
-
-            updateNBMatrices();
-            if (mConstraints.size() > 0)
-                updateConstraintTerms();
-
-            MatrixXd E = getContactMatrix();
-            MatrixXd mu = getMuMatrix();
-
-            // Construct the intermediary blocks.
-            MatrixXd Ntranspose = mN.transpose();
-            MatrixXd Btranspose = mB.transpose();
-            // Compute NTerm and BTerm
-            MatrixXd tempMat = mMInv;
-            if (mConstraints.size() > 0)
-                tempMat -= mZ;
-            MatrixXd NTerm = tempMat * mN;
-            MatrixXd BTerm = tempMat * mB;
-
-            // Construct
-            int c = getNumContacts();
-            int cd = c * mNumDir;
-            int dimA = c * (2 + mNumDir); // dimension of A is c + cd + c
-            mA = MatrixXd::Zero(dimA, dimA);
-            mA.block(0, 0, c, c) = Ntranspose * NTerm;
-            mA.block(0, c, c, cd) = Ntranspose * BTerm;
-            mA.block(c, 0, cd, c) = Btranspose * NTerm;
-            mA.block(c, c, cd, cd) = Btranspose * BTerm;
-            mA.block(c, c + cd, cd, c) = E;
-            mA.block(c + cd, 0, c, c) = mu;
-            mA.block(c + cd, c, c, cd) = -E.transpose();
-
-            int cfmSize = getNumContacts() * (1 + mNumDir);
-            for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
-                mA(i, i) += 0.001 * mA(i, i);
-
-            // Construct Q
-            mQBar = VectorXd::Zero(dimA);
-            VectorXd tauVec = VectorXd::Zero(getTotalNumDofs());
-            if (mConstraints.size() > 0) {
-                VectorXd tempVec = mDt * mGInv * mTauHat;
-                for (int i = 0; i < mSkels.size(); i++) {
-                    if (mSkels[i]->getImmobileState())
-                        continue;
-                    tauVec.segment(mIndices[i], mSkels[i]->getNumDofs()) = mJ[i].transpose() * tempVec;
-                }
-            }
-            tauVec = mMInv * (tauVec + mTauStar);
-            mQBar.block(0, 0, c, 1) = Ntranspose * tauVec;
-            mQBar.block(c, 0, cd, 1) = Btranspose * tauVec;
-            mQBar /= mDt;
-        }
-
-        bool ConstraintDynamics::solve() {
-            lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-            bool b = solver.Solve(mA, mQBar, mX, mMu, mNumDir, true);
-            return b;
-        }
-
-        void ConstraintDynamics::applySolution() {
-            // First compute the external forces
-            int nRows = mMInv.rows(); // a hacky way to get the dimension
-            VectorXd forces(VectorXd::Zero(nRows));
-            VectorXd f_n = mX.block(0, 0, getNumContacts(), 1);
-            VectorXd f_d = mX.block(getNumContacts(), 0, getNumContacts() * mNumDir, 1);
-            forces = (mN * f_n) + (mB * f_d);
-
-            VectorXd lambda = VectorXd::Zero(mGInv.rows());
+        void ConstraintDynamics::updateTauStar() {
+            int startRow = 0;
             for (int i = 0; i < mSkels.size(); i++) {
                 if (mSkels[i]->getImmobileState())
                     continue;
-                mContactForces[i] = forces.segment(mIndices[i], mSkels[i]->getNumDofs());
 
-                mTotalConstrForces[i] = mContactForces[i];
-                if (mConstraints.size() > 0) {
-                    VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * forces.segment(mIndices[i], mSkels[i]->getNumDofs()));                    
-                    mTotalConstrForces[i] += mJ[i].transpose() * tempVec;
-                    lambda += tempVec;
-                }
+                VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
+                VectorXd tauStar = (mSkels[i]->getMassMatrix() * mSkels[i]->getPoseVelocity()) - (mDt * (mSkels[i]->getCombinedVector() - tau));
+                mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
+                startRow += tauStar.rows();
             }
-            int count = 0;
-            for (int i = 0; i < mConstraints.size(); i++) {
-                mConstraints[i]->setLagrangeMultipliers(lambda.segment(count, mConstraints[i]->getNumRows()));
-                count += mConstraints[i]->getNumRows();
-            }
-
-            for (int i = 0; i < getNumContacts(); i++) {
-                Contact& contact = mCollisionChecker->getContact(i);
-                contact.force = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir) + contact.normal * f_n[i];
-            }
-        }
-
-        MatrixXd ConstraintDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
-            int nDofs = node->getSkel()->getNumDofs();
-            MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
-            VectorXd invP = dart_math::xformHom(node->getWorldInvTransform(), p);
-
-            for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
-                int i = node->getDependentDof(dofIndex);
-                VectorXd Jcol = dart_math::xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
-                Jt.row(i) = Jcol;
-            }
-
-            return Jt;
         }
 
         void ConstraintDynamics::updateNBMatrices() {
@@ -291,6 +473,21 @@ using namespace utils;
                 }
             }
         }
+
+        MatrixXd ConstraintDynamics::getJacobian(kinematics::BodyNode* node, const Vector3d& p) {
+            int nDofs = node->getSkel()->getNumDofs();
+            MatrixXd Jt( MatrixXd::Zero(nDofs, 3) );
+            VectorXd invP = xformHom(node->getWorldInvTransform(), p);
+
+            for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++) {
+                int i = node->getDependentDof(dofIndex);
+                VectorXd Jcol = xformHom(node->getDerivWorldTransform(dofIndex), (Vector3d)invP);
+                Jt.row(i) = Jcol;
+            }
+
+            return Jt;
+        }
+
         MatrixXd ConstraintDynamics::getTangentBasisMatrix(const Vector3d& p, const Vector3d& n)  {
             MatrixXd T(MatrixXd::Zero(3, mNumDir));
 
@@ -366,8 +563,8 @@ using namespace utils;
             }
 
             // compute tauHat
-            double ks = 100;
-            double kd = 10;
+            double ks = 500;
+            double kd = 50;
             mTauHat.setZero();
             for (int i = 0; i < mSkels.size(); i++) {
                 if (mSkels[i]->getImmobileState())
@@ -376,51 +573,5 @@ using namespace utils;
                 mTauHat += -(mJ[i] - mPreJ[i]) / mDt * qDot - mJMInv[i] * (mSkels[i]->getInternalForces() + mSkels[i]->getExternalForces() - mSkels[i]->getCombinedVector());
             }
             mTauHat -= ks * mC + kd * mCDot;
-        }
-
-        void ConstraintDynamics::addConstraint(Constraint *_constr) {
-            mConstraints.push_back(_constr);
-            mTotalRows += _constr->getNumRows();
-            for (int i = 0; i < mSkels.size(); i++) {
-                mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumDofs());
-                mJ[i].bottomRows(_constr->getNumRows()).setZero();
-            } 
-            mC = VectorXd(mTotalRows);
-            mCDot = VectorXd(mTotalRows);
-            mGInv = MatrixXd::Zero(mTotalRows, mTotalRows);
-            mTauHat = VectorXd(mTotalRows);
-        }
-
-        void ConstraintDynamics::deleteConstraint(int _index) {
-            int count = 0;
-            for (int i = 0; i < _index; i++)
-                count += mConstraints[i]->getNumRows();
-            int shiftRows = mTotalRows - count - mConstraints[_index]->getNumRows();
-            mTotalRows -= mConstraints[_index]->getNumRows();
-
-            for (int i = 0; i < mSkels.size(); i++) {
-                mJ[i].block(count, 0, shiftRows, mSkels[i]->getNumDofs()) = mJ[i].bottomRows(shiftRows);
-                mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumDofs());
-            } 
-            mC.resize(mTotalRows);
-            mCDot.resize(mTotalRows);
-            mGInv.resize(mTotalRows, mTotalRows);
-            mTauHat.resize(mTotalRows);
-
-            mConstraints.erase(mConstraints.begin() + _index);
-            delete mConstraints[_index];
-        }
-        
-        void ConstraintDynamics::computeConstraintWithoutContact() {
-            updateMassMat();
-            updateConstraintTerms();
-            VectorXd lambda = mGInv * mTauHat;
-
-            for (int i = 0; i < mSkels.size(); i++) {
-                if (mSkels[i]->getImmobileState())
-                    continue;
-                mTotalConstrForces[i] = mJ[i].transpose() * lambda;                
-            }
-        }
+        }        
     }
-

@@ -163,23 +163,23 @@ TEST_F(COLLISION, BOX_SPHERE_Z) {
 	unrotatedTest(&box1, &sphere, 1.0, 2); // z-axis
 }
 
-//TEST_F(COLLISION, SPHERE_SPHERE_X) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 0); // x-axis
-//}
+TEST_F(COLLISION, SPHERE_SPHERE_X) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 0); // x-axis
+}
 
-//TEST_F(COLLISION, SPHERE_SPHERE_Y) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 1); // y-axis
-//}
+TEST_F(COLLISION, SPHERE_SPHERE_Y) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 1); // y-axis
+}
 
-//TEST_F(COLLISION, SPHERE_SPHERE_Z) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
-//	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
-//}
+TEST_F(COLLISION, SPHERE_SPHERE_Z) {
+	fcl::Sphere sphere1(1);
+	fcl::Sphere sphere2(0.5);
+	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
+}
 
 //TEST_F(COLLISION, PLANE_BOX_X) {
 //	fcl::Plane obj1(1, 0, 0, 0);

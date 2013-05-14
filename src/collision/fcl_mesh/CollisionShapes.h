@@ -45,7 +45,8 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
     return model;
 }
 
-template<class BV> fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
+template<class BV>
+fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
     float v[59][3] = {
         {0, 0, 0},
         {0.135299, -0.461940, -0.135299},

@@ -48,7 +48,8 @@ using namespace kinematics;
 namespace dynamics{
     SkeletonDynamics::SkeletonDynamics()
         : kinematics::Skeleton(),
-          mImmobile(false) {
+          mImmobile(false),
+          mJointLimit(true) {
     }
 
     SkeletonDynamics::~SkeletonDynamics(){
