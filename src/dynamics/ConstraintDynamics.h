@@ -44,8 +44,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include <dynamics/Constraint.h>
-#include <collision/CollisionSkeleton.h>
+#include "dynamics/Constraint.h"
+#include "collision/CollisionDetector.h"
 
 namespace kinematics {
     class BodyNode;
@@ -71,11 +71,11 @@ namespace dynamics {
         inline Eigen::VectorXd getContactForce(int _skelIndex) const { 
             return mContactForces[_skelIndex]; 
         }
-        inline collision_checking::SkeletonCollision* getCollisionChecker() const {
+        inline collision::CollisionDetector* getCollisionChecker() const {
             return mCollisionChecker; 
         }
         inline int getNumContacts() const { 
-            return mCollisionChecker->getNumContact();
+            return mCollisionChecker->getNumContacts();
         }
 
         inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }; 
@@ -106,7 +106,7 @@ namespace dynamics {
         std::vector<SkeletonDynamics*> mSkels;
         std::vector<int> mBodyIndexToSkelIndex;
         std::vector<int> mIndices;
-        collision_checking::SkeletonCollision* mCollisionChecker;
+        collision::CollisionDetector* mCollisionChecker;
         double mDt; // timestep
         double mMu; // friction coeff.
         int mNumDir; // number of basis directions            

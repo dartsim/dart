@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <stdarg.h>
 
-#include "collision/CollisionSkeleton.h"
+#include "collision/CollisionDetector.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "dynamics/ContactDynamics.h"

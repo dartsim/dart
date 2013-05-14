@@ -5,7 +5,7 @@
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/CollisionDetector.h"
 #include "dynamics/SkeletonDynamics.h"
 
 using namespace std;

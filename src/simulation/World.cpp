@@ -44,7 +44,7 @@
 #include "dynamics/ContactDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
-#include "collision/CollisionSkeleton.h"
+#include "collision/CollisionDetector.h"
 
 #include <iostream>
 

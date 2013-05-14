@@ -249,7 +249,7 @@ void MyWindow::draw()
         if (disp == SIMULATE) {
             penColor = Vector3d(0.2, 0.2, 0.8);
             ellipsoidColor = Vector3d(0.02, 0.02, 0.02);
-            for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContact(); k++) {
+            for (int k = 0; k < mCollisionHandle->getCollisionChecker()->getNumContacts(); k++) {
                 drawContact(mCollisionHandle->getCollisionChecker()->getContact(k).point, 
                             mCollisionHandle->getCollisionChecker()->getContact(k).force / 10.0,
                             penColor,
@@ -408,7 +408,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
 void MyWindow::bake()
 {
-    int nContact = mCollisionHandle->getCollisionChecker()->getNumContact();
+    int nContact = mCollisionHandle->getCollisionChecker()->getNumContacts();
     VectorXd state(mIndices.back() + 6 * nContact);
     for (unsigned int i = 0; i < mSkels.size(); i++)
         state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
