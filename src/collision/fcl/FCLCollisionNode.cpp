@@ -39,7 +39,7 @@
 #include <fcl/shape/geometric_shapes.h>
 
 #include "kinematics/BodyNode.h"
-#include "kinematics/ShapeSphere.h"
+#include "kinematics/ShapeEllipsoid.h"
 #include "kinematics/ShapeCylinder.h"
 #include "kinematics/ShapeMesh.h"
 
@@ -64,17 +64,15 @@ FCLCollisionNode::FCLCollisionNode(kinematics::BodyNode* _bodyNode)
         }
         case kinematics::Shape::P_ELLIPSOID:
         {
-            mCollisionGeometry = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0],
-                                                              shape->getDim()[1],
-                                                              shape->getDim()[2]);
-            //mCollisionGeometry = new fcl::Sphere(shape->getDim()[0] * 0.5);
-            break;
-        }
-        case kinematics::Shape::P_SPHERE:
-        {
-            kinematics::ShapeSphere* sphere
-                    = dynamic_cast<kinematics::ShapeSphere*>(shape);
-            mCollisionGeometry = new fcl::Sphere(sphere->getRadius());
+            kinematics::ShapeEllipsoid* ellipsoid
+                    = dynamic_cast<kinematics::ShapeEllipsoid*>(shape);
+
+            if (ellipsoid->isSphere())
+                mCollisionGeometry = new fcl::Sphere(ellipsoid->getDim()[0] * 0.5);
+            else
+                mCollisionGeometry = createEllipsoid<fcl::OBBRSS>(ellipsoid->getDim()[0],
+                                                                  ellipsoid->getDim()[1],
+                                                                  ellipsoid->getDim()[2]);
             break;
         }
         case kinematics::Shape::P_CYLINDER:
@@ -95,7 +93,6 @@ FCLCollisionNode::FCLCollisionNode(kinematics::BodyNode* _bodyNode)
                                                              shape->getDim()[1],
                                                              shape->getDim()[2],
                                                              shapeMesh->getMesh());
-
             break;
         }
         default:
@@ -108,12 +105,10 @@ FCLCollisionNode::FCLCollisionNode(kinematics::BodyNode* _bodyNode)
     }
 }
 
-FCLCollisionNode::~FCLCollisionNode()
-{
+FCLCollisionNode::~FCLCollisionNode() {
 }
 
-fcl::Transform3f FCLCollisionNode::getFCLTransform() const
-{
+fcl::Transform3f FCLCollisionNode::getFCLTransform() const {
     Eigen::Matrix4d worldTrans
             = mBodyNode->getWorldTransform()
               * mBodyNode->getCollisionShape()->getTransform().matrix();
@@ -126,18 +121,14 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform() const
 
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
-                              const aiScene *_mesh)
-{
+                              const aiScene *_mesh) {
     assert(_mesh);
     fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
     model->beginModel();
-    for(unsigned int i = 0; i < _mesh->mNumMeshes; i++)
-    {
-        for(unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
-        {
+    for(unsigned int i = 0; i < _mesh->mNumMeshes; i++) {
+        for(unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
             fcl::Vec3f vertices[3];
-            for(unsigned int k = 0; k < 3; k++)
-            {
+            for(unsigned int k = 0; k < 3; k++) {
                 const aiVector3D& vertex
                         = _mesh->mMeshes[i]->mVertices[
                               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
@@ -153,10 +144,8 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
 }
 
 template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
-{
-    float v[59][3] =
-    {
+fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
+    float v[59][3] = {
         {0, 0, 0},
         {0.135299, -0.461940, -0.135299},
         {0.000000, -0.461940, -0.191342},
@@ -218,8 +207,7 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
         {0.000000, 0.500000, 0.000000}
     };
 
-    int f[112][3] =
-    {
+    int f[112][3] = {
         {1, 2, 9},
         {9, 2, 10},
         {2, 3, 10},
@@ -338,8 +326,7 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
     fcl::Vec3f p1, p2, p3;
     model->beginModel();
 
-    for (int i = 0; i < 112; i++)
-    {
+    for (int i = 0; i < 112; i++) {
         p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX,
                         v[f[i][0]][1] * _sizeY,
                         v[f[i][0]][2] * _sizeZ);
@@ -357,6 +344,5 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
 
     return model;
 }
-
 
 } // namespace collision

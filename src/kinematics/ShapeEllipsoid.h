@@ -42,21 +42,32 @@
 
 namespace kinematics {
 
-    class ShapeEllipsoid : public Shape {
-    public:
-        ShapeEllipsoid(Eigen::Vector3d _dim);
+class ShapeEllipsoid : public Shape {
+public:
+    /// @brief Constructor.
+    ShapeEllipsoid(Eigen::Vector3d _dim);
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+    // Documentation inherited.
+    void draw(renderer::RenderInterface* _ri = NULL,
+              const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+              bool _useDefaultColor = true) const;
 
-        virtual Eigen::Matrix3d computeInertia(double _mass);
+    // Documentation inherited.
+    virtual Eigen::Matrix3d computeInertia(double _mass);
 
-    private:
-        void computeVolume();
-        void initMeshes();
+    /// @brief True if (mDim[0] == mDim[1] == mDim[2]).
+    bool isSphere(void) const;
 
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+private:
+    // Documentation inherited.
+    void computeVolume();
+
+    // Documentation inherited.
+    void initMeshes();
+
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
 
 } // namespace kinematics
 

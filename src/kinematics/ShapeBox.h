@@ -40,23 +40,28 @@
 
 #include "Shape.h"
 
-
 namespace kinematics {
 
-    class ShapeBox : public Shape {
-    public:
-        ShapeBox(Eigen::Vector3d _dim);
+class ShapeBox : public Shape {
+public:
+    /// @brief Constructor.
+    ShapeBox(Eigen::Vector3d _dim);
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _default = true) const;
+    // Documentation inherited.
+    void draw(renderer::RenderInterface* _ri = NULL,
+              const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+              bool _default = true) const;
 
-        virtual Eigen::Matrix3d computeInertia(double _mass);
+    // Documentation inherited.
+    virtual Eigen::Matrix3d computeInertia(double _mass);
 
-    private:
-        void computeVolume();
-        
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+private:
+    // Documentation inherited.
+    void computeVolume();
+
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
 
 } // namespace kinematics
 

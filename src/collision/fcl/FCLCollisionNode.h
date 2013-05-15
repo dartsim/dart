@@ -46,8 +46,7 @@
 
 namespace kinematics { class BodyNode; }
 
-namespace collision
-{
+namespace collision {
 
 /// @brief
 class FCLCollisionNode : public CollisionNode
@@ -73,14 +72,16 @@ public:
 protected:
 
 private:
+    /// @brief
     fcl::CollisionGeometry* mCollisionGeometry;
-
 };
 
+/// @brief
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
                               const aiScene *_mesh);
 
+/// @brief
 template<class BV>
 fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
 
