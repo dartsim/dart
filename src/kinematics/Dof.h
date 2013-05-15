@@ -41,6 +41,8 @@
 
 #include <cstring>
 #include <Eigen/Dense>
+#include <vector>
+
 #include "utils/Deprecated.h"
 
 namespace kinematics {
@@ -52,6 +54,8 @@ class Transformation;
 
 class Dof {
 public:
+    // TODO: All publics? class vs struct?
+
     //--------------------------------------------------------------------------
     // Position
     //--------------------------------------------------------------------------
@@ -90,6 +94,8 @@ public:
     double init_q;
     double init_dq;
     double init_ddq;
+
+    std::vector<double> q_history;
 
 public:
     /// @brief
