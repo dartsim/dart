@@ -101,8 +101,8 @@ void World::step()
         for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
         {
             itrBodyNode = mSkeletons[i]->getNode(j);
-            itrBodyNode->evalVelocity(mSkeletons[i]->getPoseVelocity());
-            itrBodyNode->evalOmega(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode->evalVelocity(mSkeletons[i]->get_dq());
+            itrBodyNode->evalOmega(mSkeletons[i]->get_dq());
         }
     }
 
@@ -142,8 +142,8 @@ Eigen::VectorXd World::getState()
     {
         int start = mIndices[i] * 2;
         int size = getSkeleton(i)->getNumDofs();
-        state.segment(start, size) = getSkeleton(i)->getPose();
-        state.segment(start + size, size) = getSkeleton(i)->getPoseVelocity();
+        state.segment(start, size) = getSkeleton(i)->get_q();
+        state.segment(start + size, size) = getSkeleton(i)->get_dq();
     }
 
     return state;
@@ -213,7 +213,7 @@ Eigen::VectorXd World::evalDeriv()
         //                                    );
         
         // set velocities
-        deriv.segment(start, size) = getSkeleton(i)->getPoseVelocity() + (qddot * mTimeStep);
+        deriv.segment(start, size) = getSkeleton(i)->get_dq() + (qddot * mTimeStep);
 
         // set qddot (accelerations)
         deriv.segment(start + size, size) = qddot;
@@ -241,7 +241,7 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
     if(!_skeleton->getImmobileState())
     {
         _skeleton->computeDynamics(mGravity,
-                                   _skeleton->getPoseVelocity(),
+                                   _skeleton->get_dq(),
                                    true);
     }
 

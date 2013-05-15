@@ -3,7 +3,8 @@
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ *            Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -50,215 +51,234 @@ using namespace Eigen;
 
 #include "renderer/RenderInterface.h"
 
-
 namespace kinematics {
 
-    Skeleton::Skeleton()
-        : mMass(0.0),
-          mSelfCollidable(false) {
-        mMass = 0;
+Skeleton::Skeleton()
+    : System(),
+      mMass(0.0),
+      mSelfCollidable(false) {
+}
+
+Skeleton::~Skeleton(){
+    for(unsigned int i = 0; i < mJoints.size(); i++)
+        delete mJoints[i];
+    mJoints.clear();
+    mTransforms.clear();
+    for(unsigned int i=0; i<mNodes.size(); i++)
+        delete mNodes[i];
+    mNodes.clear();
+    mMarkers.clear();
+}
+
+BodyNode* Skeleton::createBodyNode(const char* const _name) {
+    return new BodyNode(_name);
+}
+
+void Skeleton::addMarker(Marker *_h) {
+    mMarkers.push_back(_h);
+    _h->setSkelIndex(mMarkers.size()-1);
+    BodyNode *body = _h->getNode();
+    body->addMarker(_h);
+}
+
+void Skeleton::addNode(BodyNode *_b, bool _addParentJoint) {
+    mNodes.push_back(_b);
+    _b->setSkelIndex(mNodes.size()-1);
+    // The parent joint possibly be null
+    if (_addParentJoint)
+        addJoint(_b->getParentJoint());
+}
+
+void Skeleton::addJoint(Joint *_j) {
+    mJoints.push_back(_j);
+    _j->setSkelIndex(mJoints.size()-1);
+}
+
+void Skeleton::addDof(Dof *_q) {
+    mDofs.push_back(_q);
+    _q->setSkelIndex(mDofs.size()-1);
+    _q->setVariable();
+}
+
+void Skeleton::addTransform(Transformation *_t) {
+    mTransforms.push_back(_t);
+    _t->setVariable(true);
+    _t->setSkelIndex(mTransforms.size()-1);
+    for(int i=0; i<_t->getNumDofs(); i++) {
+        addDof(_t->getDof(i));
+    }
+}
+
+void Skeleton::initSkel() {
+    mRoot = mNodes[0];
+
+    // calculate mass
+    // init the dependsOnDof stucture for each bodylink
+    for(int i=0; i<getNumNodes(); i++) {
+        mNodes[i]->setSkel(this);
+        // mNodes[i]->setDependDofMap(getNumDofs());
+        mNodes[i]->setDependDofList();
+        mNodes.at(i)->init();
+        mMass += mNodes[i]->getMass();
     }
 
-    Skeleton::~Skeleton(){
-        for(unsigned int i = 0; i < mJoints.size(); i++) delete mJoints[i];
-        mJoints.clear();
-        mDofs.clear();
-        mTransforms.clear();
-        for(unsigned int i=0; i<mNodes.size(); i++) delete mNodes[i];
-        mNodes.clear();
-        mMarkers.clear();
-    }
+    mCurrPose = VectorXd::Zero(getNumDofs());
 
-    BodyNode* Skeleton::createBodyNode(const char* const _name) {
-        return new BodyNode(_name);
+    for(int i=0; i<getNumDofs(); i++)
+        mCurrPose[i] = mDofs.at(i)->getValue();
+    for(int i=0; i<getNumNodes(); i++) {
+        mNodes.at(i)->updateTransform();
     }
+}
 
-    void Skeleton::addMarker(Marker *_h) {
-        mMarkers.push_back(_h);
-        _h->setSkelIndex(mMarkers.size()-1);
-        BodyNode *body = _h->getNode();
-        body->addMarker(_h);
-    }
-
-    void Skeleton::addNode(BodyNode *_b, bool _addParentJoint) {
-        mNodes.push_back(_b);
-        _b->setSkelIndex(mNodes.size()-1);
-        // The parent joint possibly be null
-        if (_addParentJoint)
-            addJoint(_b->getParentJoint());
-    }
-
-    void Skeleton::addJoint(Joint *_j) {
-        mJoints.push_back(_j);
-        _j->setSkelIndex(mJoints.size()-1);
-    }
-
-    void Skeleton::addDof(Dof *_q) {
-        mDofs.push_back(_q);
-        _q->setSkelIndex(mDofs.size()-1);
-        _q->setVariable();
-    }
-
-    void Skeleton::addTransform(Transformation *_t) {
-        mTransforms.push_back(_t);
-        _t->setVariable(true);
-        _t->setSkelIndex(mTransforms.size()-1);
-        for(int i=0; i<_t->getNumDofs(); i++) {
-            addDof(_t->getDof(i));
+BodyNode* Skeleton::getNode(const char* const _name) const {
+    const int nNodes = getNumNodes();
+    for(int i = 0; i < nNodes; i++){
+        BodyNode* node = getNode(i);
+        if (strcmp(_name, node->getName()) == 0) {
+            return node;
         }
     }
-  
-    void Skeleton::initSkel() {
-        mRoot = mNodes[0];
+    return NULL;
+}
 
-        // calculate mass
-        // init the dependsOnDof stucture for each bodylink
-        for(int i=0; i<getNumNodes(); i++) {
-            mNodes[i]->setSkel(this);
-            // mNodes[i]->setDependDofMap(getNumDofs());
-            mNodes[i]->setDependDofList();
-            mNodes.at(i)->init();
-            mMass += mNodes[i]->getMass();
+int Skeleton::getNodeIndex(const char* const _name) const {
+    const int nNodes = getNumNodes();
+    for(int i = 0; i < nNodes; i++){
+        BodyNode* node = getNode(i);
+        if (strcmp(_name, node->getName()) == 0) {
+            return i;
         }
+    }
+    return -1;
+}
 
-        mCurrPose = VectorXd::Zero(getNumDofs());
+Joint* Skeleton::getJoint(const char* const _name) const {
+    const int nJoints = getNumJoints();
+    for (int i = 0; i < nJoints; ++i) {
+        Joint* joint = getJoint(i);
+        if (strcmp(_name, joint->getName()) == 0) {
+            return joint;
+        }
+    }
+    return NULL;
+}
 
-        for(int i=0; i<getNumDofs(); i++)
-            mCurrPose[i] = mDofs.at(i)->getValue();
-        for(int i=0; i<getNumNodes(); i++) {
+int Skeleton::getJointIndex(const char* const _name) const {
+    const int nJoints = getNumJoints();
+    for (int i = 0; i < nJoints; ++i) {
+        Joint* joint = getJoint(i);
+        if (strcmp(_name, joint->getName()) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+Vector3d Skeleton::getWorldCOM() {
+    assert(mMass != 0);
+    Vector3d com(0, 0, 0);
+    const int nNodes = getNumNodes();
+    for(int i = 0; i < nNodes; i++) {
+        BodyNode* node = getNode(i);
+        com += (node->getMass() * node->getWorldCOM());
+    }
+    return com / mMass;
+}
+
+void Skeleton::setPose(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
+    mCurrPose = state;
+    for (int i = 0; i < getNumDofs(); i++) {
+        mDofs.at(i)->setValue(state[i]);
+    }
+
+    if (bCalcTrans) {
+        for (int i = 0; i < getNumNodes(); i++) {
             mNodes.at(i)->updateTransform();
         }
     }
 
-    BodyNode* Skeleton::getNode(const char* const _name) const {
-        const int nNodes = getNumNodes();
-        for(int i = 0; i < nNodes; i++){
-            BodyNode* node = getNode(i);
-            if (strcmp(_name, node->getName()) == 0) {
-                return node;
-            }
+    if (bCalcDeriv) {
+        for (int i = 0; i < getNumNodes(); i++) {
+            mNodes.at(i)->updateFirstDerivatives();
         }
-        return NULL;
+    }
+}
+
+Eigen::VectorXd Skeleton::getPose() {
+    Eigen::VectorXd pose(getNumDofs());
+    for (int i = 0; i < getNumDofs(); i++) {
+        pose(i) = mDofs[i]->getValue();
+    }
+    return pose;
+}
+
+Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
+{
+    Eigen::VectorXd dofs(_id.size());
+    for(unsigned int i = 0; i < _id.size(); i++) {
+        dofs[i] = mDofs[_id[i]]->getValue();
+    }
+    return dofs;
+}
+
+void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
+                         bool _calcTrans, bool _calcDeriv) {
+    for( unsigned int i = 0; i < _id.size(); i++ ) {
+        mCurrPose[_id[i]] = _vals(i);
+        mDofs[_id[i]]->setValue(_vals(i));
     }
 
-    int Skeleton::getNodeIndex(const char* const _name) const {
-        const int nNodes = getNumNodes();
-        for(int i = 0; i < nNodes; i++){
-            BodyNode* node = getNode(i);
-            if (strcmp(_name, node->getName()) == 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    Joint* Skeleton::getJoint(const char* const _name) const {
-        const int nJoints = getNumJoints();
-        for (int i = 0; i < nJoints; ++i) {
-            Joint* joint = getJoint(i);
-            if (strcmp(_name, joint->getName()) == 0) {
-                return joint;
-            }
-        }
-        return NULL;
-    }
-
-    int Skeleton::getJointIndex(const char* const _name) const {
-        const int nJoints = getNumJoints();
-        for (int i = 0; i < nJoints; ++i) {
-            Joint* joint = getJoint(i);
-            if (strcmp(_name, joint->getName()) == 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    Vector3d Skeleton::getWorldCOM() {
-        assert(mMass != 0);
-        Vector3d com(0, 0, 0);
-        const int nNodes = getNumNodes();
-        for(int i = 0; i < nNodes; i++) {
-            BodyNode* node = getNode(i);
-            com += (node->getMass() * node->getWorldCOM());
-        }
-        return com / mMass;
-    }
-  
-    void Skeleton::setPose(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv) {
-        mCurrPose = state;
-        for (int i = 0; i < getNumDofs(); i++) {
-            mDofs.at(i)->setValue(state[i]);
-        }
-
-        if (bCalcTrans) {
-            for (int i = 0; i < getNumNodes(); i++) {
-                mNodes.at(i)->updateTransform();
-            }
-        }
-
-        if (bCalcDeriv) {
-            for (int i = 0; i < getNumNodes(); i++) {
-                mNodes.at(i)->updateFirstDerivatives();
-            }
+    // TODO: Only do the necessary updates
+    if (_calcTrans) {
+        for (int i = 0; i < getNumNodes(); i++) {
+            mNodes.at(i)->updateTransform();
         }
     }
 
-    Eigen::VectorXd Skeleton::getPose() {
-        Eigen::VectorXd pose(getNumDofs());
-        for (int i = 0; i < getNumDofs(); i++) {
-            pose(i) = mDofs[i]->getValue();
+    if (_calcDeriv) {
+        for (int i = 0; i < getNumNodes(); i++) {
+            mNodes.at(i)->updateFirstDerivatives();
         }
-        return pose;
     }
+}
 
-
-    Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
-    {
-        Eigen::VectorXd dofs(_id.size());
-        for(unsigned int i = 0; i < _id.size(); i++) {
-            dofs[i] = mDofs[_id[i]]->getValue();
-        }
-        return dofs;
+MatrixXd Skeleton::getJacobian(BodyNode* _bd, Vector3d& _localOffset) {
+    MatrixXd J(3, mDofs.size());
+    J.setZero();
+    for(int i = 0; i < _bd->getNumDependentDofs(); i++) {
+        int dofindex = _bd->getDependentDof(i);
+        VectorXd deriv
+                = dart_math::xformHom(_bd->getDerivWorldTransform(i), _localOffset);
+        J.col(dofindex) = deriv;
     }
+    return J;
+}
 
-    void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans, bool _calcDeriv) {
-        for( unsigned int i = 0; i < _id.size(); i++ ) {
-            mCurrPose[_id[i]] = _vals(i);
-            mDofs[_id[i]]->setValue(_vals(i));
-        }
-        
-        // TODO: Only do the necessary updates
-        if (_calcTrans) {
-            for (int i = 0; i < getNumNodes(); i++) {
-                mNodes.at(i)->updateTransform();
-            }
-        }
+void Skeleton::draw(renderer::RenderInterface* _ri,
+                    const Vector4d& _color,
+                    bool _useDefaultColor) const {
+    mRoot->draw(_ri, _color, _useDefaultColor);
+}
+void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
+                           const Vector4d& _color,
+                           bool _useDefaultColor) const {
+    mRoot->drawMarkers(_ri, _color, _useDefaultColor);
+}
 
-        if (_calcDeriv) {
-            for (int i = 0; i < getNumNodes(); i++) {
-                mNodes.at(i)->updateFirstDerivatives();
-            }
-        }
-  }
-  
-    MatrixXd Skeleton::getJacobian(BodyNode* _bd, Vector3d& _localOffset) {
-        MatrixXd J(3, mDofs.size());
-        J.setZero();
-        for(int i = 0; i < _bd->getNumDependentDofs(); i++) {
-            int dofindex = _bd->getDependentDof(i);
-            VectorXd deriv = dart_math::xformHom(_bd->getDerivWorldTransform(i), _localOffset);
-            J.col(dofindex) = deriv;
-        }
-        return J;
-    }
+//bool Skeleton::_scanDofs() {
+//    int numJoints = mJoints.size();
 
-    void Skeleton::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->draw(_ri, _color, _useDefaultColor);
-    }
-    void Skeleton::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        mRoot->drawMarkers(_ri, _color, _useDefaultColor);
-    }
+//    for (int i = 0; i < numJoints; ++i) {
+//        int numJointDofs = mJoints[i]->getNumDofs();
+
+//        for (int j = 0; j < numJointDofs; ++j) {
+//            mDofs.push_back(mJoints[i]->getDof(j));
+//        }
+//    }
+
+//    return true;
+//}
 
 
 

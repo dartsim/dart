@@ -84,6 +84,13 @@ public:
     double tauMax;    ///< Max value allowed.
     double DtauDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
 
+    //--------------------------------------------------------------------------
+    // Initial values
+    //--------------------------------------------------------------------------
+    double init_q;
+    double init_dq;
+    double init_ddq;
+
 public:
     /// @brief
     Dof();
@@ -110,7 +117,7 @@ public:
     void setName(char *_n) { strcpy(mName, _n); }
 
     /// @brief
-    inline char* getName() { return mName; }
+    char* getName() { return mName; }
 
     /// @brief
     void setValue(double _v);
@@ -161,7 +168,6 @@ protected:
 
     /// @brief Unique to dof in model.
     int mSkelIndex;
-
 
     /// @brief Transformation associated with
     Transformation *mTrans;

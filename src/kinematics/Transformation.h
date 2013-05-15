@@ -42,6 +42,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+#include "kinematics/System.h"
+
 namespace renderer { class RenderInterface; }
 
 namespace kinematics {
@@ -52,12 +54,12 @@ class Joint;
 class Dof;
 
 enum AxisType {
-    A_X=0,
-    A_Y=1,
-    A_Z=2
+    A_X = 0,
+    A_Y = 1,
+    A_Z = 2
 };
 
-class Transformation {
+class Transformation : public System {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -99,12 +101,6 @@ public:
 
     /// @brief
     inline void setJoint(Joint *_joint) { mJoint = _joint; }
-
-    /// @brief
-    inline int getNumDofs() const { return mDofs.size(); }
-
-    /// @brief
-    inline Dof* getDof(int i) const { return mDofs[i]; }
 
     /// @brief
     // TODO: What about changing the function name getVariable() to
@@ -172,9 +168,6 @@ public:
     virtual Eigen::MatrixXd getJacobian(void) = 0;
 
 protected:
-    /// @brief
-    std::vector<Dof *> mDofs;	// collection of Dofs
-
     /// @brief
     TransFormType mType;
 

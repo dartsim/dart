@@ -49,7 +49,8 @@ using namespace Eigen;
 using namespace std;
 
 namespace kinematics {
-    Joint::Joint(BodyNode *_bIn, BodyNode *_bOut, const char *_name){
+    Joint::Joint(BodyNode *_bIn, BodyNode *_bOut, const char *_name)
+        : System() {
 		mType = J_UNKNOWN;
         mSkelIndex=-1;
         mNodeParent=_bIn;

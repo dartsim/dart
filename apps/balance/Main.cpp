@@ -26,11 +26,11 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
 
-    VectorXd initPose = myWorld->getSkeleton(0)->getPose();
+    VectorXd initPose = myWorld->getSkeleton(0)->get_q();
     initPose[1] = -0.92;
     myWorld->getSkeleton(0)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(1)->getPose();
+    initPose = myWorld->getSkeleton(1)->get_q();
     initPose[1] = -0.1;
     initPose[6] = 0.2; // left hip
     initPose[9] = -0.5; // left knee

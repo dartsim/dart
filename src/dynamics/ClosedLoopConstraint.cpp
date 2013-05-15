@@ -33,8 +33,8 @@ namespace dynamics {
 
         Vector3d worldP1 = xformHom(mBody1->getWorldTransform(), mOffset1);
         Vector3d worldP2 = xformHom(mBody2->getWorldTransform(), mOffset2);
-        VectorXd qDot1 = ((SkeletonDynamics*)mBody1->getSkel())->getPoseVelocity();
-        VectorXd qDot2 = ((SkeletonDynamics*)mBody2->getSkel())->getPoseVelocity();
+        VectorXd qDot1 = ((SkeletonDynamics*)mBody1->getSkel())->get_dq();
+        VectorXd qDot2 = ((SkeletonDynamics*)mBody2->getSkel())->get_dq();
         _C.segment(_rowIndex, 3) = worldP1 - worldP2;
         _CDot.segment(_rowIndex, 3) = mJ1 * qDot1 + mJ2 * qDot2;
     }

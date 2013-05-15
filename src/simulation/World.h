@@ -138,6 +138,7 @@ public:
     /// @param[in] _skel
     bool addSkeleton(dynamics::SkeletonDynamics* _skeleton);
 
+    /// @brief
     bool checkCollision(bool checkAllCollisions = false);
 
 protected:

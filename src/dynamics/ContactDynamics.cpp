@@ -165,7 +165,7 @@ void ContactDynamics::updateTauStar() {
             continue;
 
         VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces();
-        VectorXd tauStar = mSkels[i]->getMassMatrix() * mSkels[i]->getPoseVelocity();
+        VectorXd tauStar = mSkels[i]->getMassMatrix() * mSkels[i]->get_dq();
         tauStar.noalias() -= (mDt * (mSkels[i]->getCombinedVector() - tau));
         mTauStar.segment(startRow, tauStar.rows()) = tauStar;
         startRow += tauStar.rows();
@@ -250,7 +250,7 @@ void ContactDynamics::fillMatrices() {
 
 bool ContactDynamics::solve() {
     lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-    bool b = solver.Solve(mA, mQBar, mX, mMu, mNumDir, true);
+    bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
     return b;
 }
 
