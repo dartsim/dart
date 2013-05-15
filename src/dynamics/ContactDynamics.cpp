@@ -250,7 +250,7 @@ void ContactDynamics::fillMatrices() {
 
 bool ContactDynamics::solve() {
     lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-    bool b = solver.Solve(mA, mQBar, mX, mMu, mNumDir, true);
+    bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
     return b;
 }
 
