@@ -58,6 +58,7 @@ Dof* System::getDof(int _idx) const
 Dof* System::getDof(const char* const _name) const
 {
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         if (strcmp(mDofs[i]->getName(), _name))
             return mDofs[i];
@@ -68,6 +69,7 @@ Dof* System::getDof(const char* const _name) const
 void System::backupInitState()
 {
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
     {
         mDofs[i]->init_q = mDofs[i]->q;
@@ -79,6 +81,7 @@ void System::backupInitState()
 void System::restoreInitState()
 {
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
     {
         mDofs[i]->q = mDofs[i]->init_q;
@@ -92,6 +95,7 @@ void System::set_q(const Eigen::VectorXd& _q)
     assert(_q.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->q = _q[i];
 }
@@ -101,6 +105,7 @@ void System::set_dq(const Eigen::VectorXd& _dq)
     assert(_dq.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->dq = _dq[i];
 }
@@ -110,6 +115,7 @@ void System::set_ddq(const Eigen::VectorXd& _ddq)
     assert(_ddq.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->ddq = _ddq[i];
 }
@@ -119,6 +125,7 @@ void System::set_tau(const Eigen::VectorXd& _tau)
     assert(_tau.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->tau = _tau[i];
 }
@@ -128,6 +135,7 @@ void System::set_qMin(const Eigen::VectorXd& _qMin)
     assert(_qMin.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->qMin = _qMin[i];
 }
@@ -137,6 +145,7 @@ void System::set_dqMin(const Eigen::VectorXd& _dqMin)
     assert(_dqMin.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->dqMin = _dqMin[i];
 }
@@ -146,6 +155,7 @@ void System::set_ddqMin(const Eigen::VectorXd& _ddqMin)
     assert(_ddqMin.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->ddqMin = _ddqMin[i];
 }
@@ -155,6 +165,7 @@ void System::set_tauMin(const Eigen::VectorXd& _tauMin)
     assert(_tauMin.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->tauMin = _tauMin[i];
 }
@@ -165,6 +176,7 @@ void System::set_qMax(const Eigen::VectorXd& _qMax)
     assert(_qMax.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->qMax = _qMax[i];
 }
@@ -174,6 +186,7 @@ void System::set_dqMax(const Eigen::VectorXd& _dqMax)
     assert(_dqMax.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->dqMax = _dqMax[i];
 }
@@ -183,6 +196,7 @@ void System::set_ddqMax(const Eigen::VectorXd& _ddqMax)
     assert(_ddqMax.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->ddqMax = _ddqMax[i];
 }
@@ -192,6 +206,7 @@ void System::set_tauMax(const Eigen::VectorXd& _tauMax)
     assert(_tauMax.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->tauMax = _tauMax[i];
 }
@@ -201,6 +216,7 @@ void System::set_DqDp(const Eigen::VectorXd& _DqDp)
     assert(_DqDp.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->DqDp = _DqDp[i];
 }
@@ -210,6 +226,7 @@ void System::set_DdqDp(const Eigen::VectorXd& _DdqDp)
     assert(_DdqDp.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->DdqDp = _DdqDp[i];
 }
@@ -219,6 +236,7 @@ void System::set_DddqDp(const Eigen::VectorXd& _DddqDp)
     assert(_DddqDp.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->DddqDp = _DddqDp[i];
 }
@@ -228,6 +246,7 @@ void System::set_DtauDp(const Eigen::VectorXd& _DtauDp)
     assert(_DtauDp.size() == getNumDofs());
 
     int size = getNumDofs();
+
     for (int i = 0; i < size; ++i)
         mDofs[i]->DtauDp = _DtauDp[i];
 }

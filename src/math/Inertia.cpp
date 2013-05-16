@@ -37,7 +37,7 @@
 
 #include "math/Inertia.h"
 
-namespace math
+namespace dart_math
 {
 
 #define LIEGROUP_EPS 10e-9
@@ -132,12 +132,12 @@ dart_math::Vector6d Inertia::operator*(const dart_math::Vector6d& _V) const
 	return res;
 }
 
-Inertia Inertia::getTransformed(const Eigen::Matrix4d& _T12)
+Inertia Inertia::getTransformed(const Eigen::Matrix4d& _T12) const
 {
 	// TODO: Not implemented.
 }
 
-Inertia Inertia::getTransformedInverse(const Eigen::Matrix4d& _T21)
+Inertia Inertia::getTransformedInverse(const Eigen::Matrix4d& _T21) const
 {
 	// TODO: Not implemented.
 }

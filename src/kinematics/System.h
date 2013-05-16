@@ -58,7 +58,7 @@ public:
     int getNumDofs() const { return mDofs.size(); }
 
     /// @brief
-    const std::vector<Dof *>& getDofs() const { return mDofs; }
+    const std::vector<Dof*>& getDofs() const { return mDofs; }
 
     /// @brief
     Dof* getDof(int _idx) const;
@@ -121,8 +121,7 @@ public:
 
 protected:
     /// @brief Pointers to Dofs.
-    // TODO: Use mSystemDofs to avoid name conflict.
-    std::vector<Dof *> mDofs;
+    std::vector<Dof*> mDofs;
 
 private:
 

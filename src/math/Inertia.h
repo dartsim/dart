@@ -41,7 +41,7 @@
 #include <Eigen/Dense>
 #include "math/UtilsMath.h"
 
-namespace math
+namespace dart_math
 {
 class Inertia; // Inertia with cog offset (6x6 matrix)
 
@@ -157,7 +157,7 @@ public: // Others
     /// @return Generalized inertia in frame(1)
     ///
     /// \f$ Ad_{T12^{-1}}^{*} G2 Ad_{T12^{-1}} \f$.
-    Inertia getTransformed(const Eigen::Matrix4d& _T12);
+    Inertia getTransformed(const Eigen::Matrix4d& _T12) const;
     
     // TODO: Not implemented.
     /// @brief Get trnasformed generalized inertia.
@@ -165,7 +165,7 @@ public: // Others
     /// @return Generalized inertia in frame(1)
     ///
     /// \f$ Ad_{T21}^{*} G2 Ad_{T21} \f$.
-    Inertia getTransformedInverse(const Eigen::Matrix4d& _T21);
+    Inertia getTransformedInverse(const Eigen::Matrix4d& _T21) const;
     
 protected:
     /// @brief Mass the object. Default is 1.0.

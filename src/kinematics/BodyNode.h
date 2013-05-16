@@ -75,14 +75,16 @@ Runge-Kutta and fourth-order Runge Kutta.
 
 #include <vector>
 #include <Eigen/Dense>
+
+#include "utils/Deprecated.h"
 #include "math/EigenHelper.h"
 #include "math/UtilsMath.h"
-#include "utils/Deprecated.h"
 #include "math/Inertia.h"
 
 namespace renderer { class RenderInterface; }
 
-namespace kinematics {
+namespace kinematics
+{
 
 #define MAX_NODE3D_NAME 128
 
@@ -109,6 +111,11 @@ class Joint;
 /// F: generalized body force (6x1 vector)
 /// I: generalized body inertia (6x6 matrix)
 class BodyNode {
+public:
+    // We need this aligned allocator because we have Matrix4d as members in
+    // this class.
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 public:
     //--------------------------------------------------------------------------
     // DEPRECATED
@@ -139,9 +146,6 @@ protected:
     Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
 
 public:
-    // We need this aligned allocator because we have Matrix4d as members in
-    // this class.
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     /// @brief Default constructor. The name can be up to 128.
     BodyNode(const char *_name = NULL);
@@ -173,7 +177,7 @@ public:
 
     /// @brief Given a 3D vector lp in the local coordinates of this body node.
     /// @return The world coordinates of this vector
-    Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp);
+    Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const;
 
     /// @brief Set up the list of dependent dofs.
     void setDependDofList();
@@ -213,7 +217,7 @@ public:
     const Eigen::Vector3d& getLocalCOM() const { return mCOMLocal; }
 
     /// @brief
-    Eigen::Vector3d getWorldCOM() { return evalWorldPos(mCOMLocal); }
+    Eigen::Vector3d getWorldCOM() const { return evalWorldPos(mCOMLocal); }
 
     /// @brief
     void setSkel(Skeleton* _skel) { mSkel = _skel; }
@@ -238,7 +242,7 @@ public:
 
     /// @brief
     void setLocalInertia(double _Ixx, double _Iyy, double _Izz,
-                                double _Ixy, double _Ixz, double _Iyz)
+                         double _Ixy, double _Ixz, double _Iyz)
     {
         mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
         mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
@@ -295,7 +299,7 @@ public:
     Joint* getParentJoint() const { return mParentJoint; }
 
     /// @brief
-    void setParentJoint(Joint *_p);
+    void setParentJoint(Joint* _p);
 
     /// @brief
     void setColliding(bool _colliding) { mColliding = _colliding; }
@@ -314,7 +318,7 @@ public:
     Dof* getDof(int _idx) const;
 
     /// @brief
-    bool isPresent(Dof *_q);
+    bool isPresent(const Dof* _q);
 
     /// @brief
     bool getCollideState() const { return mCollidable; }
@@ -411,7 +415,7 @@ protected:
     Skeleton* mSkel;
 
     /// @brief Generalized inertia w.r.t. body frame.
-    math::Inertia mInertia;
+    dart_math::Inertia mInertia;
 
     //--------------------------------------------------------------------------
     // TRANSFORMATIONS

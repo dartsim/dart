@@ -285,11 +285,9 @@ void BodyNode::evalJacobian()
 
     mJw;
     mJv;
-
-    int a = 10;
 }
 
-Vector3d BodyNode::evalWorldPos(const Vector3d& _lp)
+Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) const
 {
     return dart_math::xformHom(mW, _lp);
 }
@@ -399,7 +397,7 @@ Eigen::Matrix4d BodyNode::getMassTensor() const
     Eigen::Matrix4d massTensor;
 
     massTensor << halftrace * Matrix3d::Identity() - mI, Vector3d::Zero(),
-            RowVector3d::Zero()                  , mMass;
+                  RowVector3d::Zero()                  , mMass;
 
     return massTensor;
 }
@@ -425,7 +423,7 @@ Dof* BodyNode::getDof(int _idx) const
     return mParentJoint->getDof(_idx);
 }
 
-bool BodyNode::isPresent(Dof* _q)
+bool BodyNode::isPresent(const Dof* _q)
 {
     return mParentJoint->isPresent(_q);
 }

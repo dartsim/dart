@@ -178,7 +178,7 @@ inline int FCLMESHCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec
 inline fcl::Vec3f FCLMESHCollisionNode::TransformVertex( fcl::Vec3f& _v )
 {
     Eigen::Vector3d vv(_v[0], _v[1], _v[2]);
-    Eigen::Vector3d res = mWorldTrans.topLeftCorner(3, 3) * vv + mWorldTrans.col(3).head(3);
+    Eigen::Vector3d res = mWorldTrans.topLeftCorner<3,3>() * vv + mWorldTrans.col(3).head(3);
     return fcl::Vec3f(res[0], res[1], res[2]);
 }
 
