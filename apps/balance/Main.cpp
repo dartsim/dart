@@ -42,7 +42,9 @@ int main(int argc, char* argv[])
     myWorld->getSkeleton(1)->setPose(initPose);
     
     // create controller
-    Controller *myController = new Controller(myWorld->getSkeleton(1), myWorld->getCollisionHandle(), myWorld->getTimeStep());
+    Controller *myController = new Controller(myWorld->getSkeleton(1),
+                                              myWorld->getCollisionHandle(),
+                                              myWorld->getTimeStep());
 
     // create a window and link it to the world
     MyWindow window;

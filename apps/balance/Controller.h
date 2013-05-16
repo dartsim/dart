@@ -7,6 +7,7 @@
 namespace dynamics{
     class SkeletonDynamics;
     class ContactDynamics;
+    class ConstraintDynamics;
 }
 
 namespace kinematics{
@@ -15,7 +16,9 @@ namespace kinematics{
 
 class Controller {
  public:
-    Controller(dynamics::SkeletonDynamics *_skel, dynamics::ContactDynamics *_collisionHandle, double _t);
+    Controller(dynamics::SkeletonDynamics *_skel,
+               //dynamics::ContactDynamics *_collisionHandle, double _t);
+               dynamics::ConstraintDynamics *_collisionHandle, double _t);
     virtual ~Controller() {};
 
     Eigen::VectorXd getTorques() { return mTorques; };
@@ -34,7 +37,8 @@ class Controller {
     Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
     Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum, Eigen::VectorXd _controlledAxis);
     dynamics::SkeletonDynamics *mSkel;
-    dynamics::ContactDynamics *mCollisionHandle;
+    //dynamics::ContactDynamics *mCollisionHandle;
+    dynamics::ConstraintDynamics *mCollisionHandle;
     Eigen::VectorXd mTorques;
     Eigen::VectorXd mDesiredDofs;
     Eigen::MatrixXd mKp;

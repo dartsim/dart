@@ -65,6 +65,7 @@ namespace dynamics {
         void addConstraint(Constraint *_constr);
         void deleteConstraint(int _index);
         void addSkeleton(SkeletonDynamics* _newSkel);
+        void setTimeStep(double _timeStep) { mDt = _timeStep; }
 
         inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { 
             return mTotalConstrForces[_skelIndex]; 

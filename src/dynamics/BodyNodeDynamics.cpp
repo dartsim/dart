@@ -117,6 +117,11 @@ void BodyNodeDynamics::computeInvDynVelocities(const Vector3d &_gravity,
                                                const VectorXd *_qdotdot,
                                                bool _computeJacobians)
 {
+    // TODO: TEMP CODE for Gravity Mode
+    Vector3d gravity = _gravity;
+    if (mGravityMode == false)
+        gravity.setZero();
+
     // update the local transform mT and the world transform mW
     BodyNode::updateTransform();
 
@@ -188,7 +193,7 @@ void BodyNodeDynamics::computeInvDynVelocities(const Vector3d &_gravity,
         // Incorporate gravity as part of acceleration by changing frame to the
         // one accelerating with g.
         // Therefore, real acceleration == W*mVelDotBody + g;
-        mVelDotBody.noalias() -= RjointT * _gravity;
+        mVelDotBody.noalias() -= RjointT * gravity;
 
         // if root has translation DOFs
         if (mParentJoint->getNumDofsTrans() > 0)

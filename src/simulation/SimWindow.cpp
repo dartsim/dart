@@ -44,6 +44,7 @@
 #include "simulation/World.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "dynamics/ContactDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
 #include "collision/CollisionDetector.h"
 #include "yui/GLFuncs.h"
 

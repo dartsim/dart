@@ -55,6 +55,7 @@
 
 namespace dynamics {
 class ContactDynamics;
+class ConstraintDynamics;
 class BodyNodeDynamics;
 } // namespace dynamics
 
@@ -121,7 +122,8 @@ public:
     int getSimFrames() const { return mFrame; }
 
     /// @brief Get the collision handler.
-    dynamics::ContactDynamics* getCollisionHandle() const
+    //dynamics::ContactDynamics* getCollisionHandle() const
+    dynamics::ConstraintDynamics* getCollisionHandle() const
     { return mCollisionHandle; }
 
     /// @brief Get the dof index for the indexed skeleton.
@@ -158,7 +160,8 @@ protected:
     integration::EulerIntegrator mIntegrator;
 
     /// @brief The collision handler.
-    dynamics::ContactDynamics* mCollisionHandle;
+    //dynamics::ContactDynamics* mCollisionHandle;
+    dynamics::ConstraintDynamics* mCollisionHandle;
 
     /// @brief The gravity.
     Eigen::Vector3d mGravity;
