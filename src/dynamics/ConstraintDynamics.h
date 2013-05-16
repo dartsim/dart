@@ -40,10 +40,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "Constraint.h"
 
-#include <vector>
-#include <Eigen/Dense>
 #include "dynamics/Constraint.h"
 #include "collision/CollisionDetector.h"
 
