@@ -85,33 +85,33 @@ public:
     virtual ~Transformation();
 
     /// @brief
-    inline TransFormType getType() const { return mType; }
+    TransFormType getType() const { return mType; }
 
     /// @brief
-    inline char* getName() { return mName; }
+    char* getName() { return mName; }
 
     /// @brief
-    inline int getSkelIndex() const { return mSkelIndex; }
+    int getSkelIndex() const { return mSkelIndex; }
 
     /// @brief
-    inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+    void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
     /// @brief
-    inline Joint* getJoint() const { return mJoint; }
+    Joint* getJoint() const { return mJoint; }
 
     /// @brief
-    inline void setJoint(Joint *_joint) { mJoint = _joint; }
+    void setJoint(Joint *_joint) { mJoint = _joint; }
 
     /// @brief
     // TODO: What about changing the function name getVariable() to
     // isVariable() instead.
-    inline bool getVariable() const { return mVariable; }
+    bool isVariable() const { return mVariable; }
 
     /// @brief
-    inline void setVariable(bool _var) { mVariable = _var; }
+    void setVariable(bool _var) { mVariable = _var; }
 
     /// @brief
-    inline void setDirty() { mDirty = true; }
+    void setDirty() { mDirty = true; }
 
     /// @brief
     Eigen::Matrix4d getTransform();
@@ -155,17 +155,17 @@ public:
     virtual void computeTransform() = 0;
 
     /// @brief Get derivative wrt to a dof.
-    virtual Eigen::Matrix4d getDeriv(const Dof *_q) = 0;
+    virtual Eigen::Matrix4d getDeriv(const Dof *_q) const = 0;
 
     /// @brief Get derivative wrt to 2 dofs present in a transformation.
     virtual Eigen::Matrix4d getSecondDeriv(const Dof *_q1,
-                                           const Dof *_q2) = 0;
+                                           const Dof *_q2) const = 0;
 
     /// @brief Local Jacobian
     /// @return \f$ J \in R^{6 \times n} \f$ where \f$ n \f$ is a number of
     /// Dofs.
     // TODO: Use this instead of getDeriv
-    virtual Eigen::MatrixXd getJacobian(void) = 0;
+    virtual Eigen::MatrixXd getJacobian() const = 0;
 
 protected:
     /// @brief

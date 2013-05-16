@@ -37,21 +37,26 @@
 
 #include "kinematics/System.h"
 
-namespace kinematics {
+namespace kinematics
+{
 
-System::System() {
+System::System()
+{
 }
 
-System::~System() {
+System::~System()
+{
 }
 
-Dof* System::getDof(int _idx) const {
+Dof* System::getDof(int _idx) const
+{
     assert(0 <= _idx && _idx < getNumDofs());
 
     return mDofs[_idx];
 }
 
-Dof* System::getDof(const char* const _name) const {
+Dof* System::getDof(const char* const _name) const
+{
     int size = getNumDofs();
     for (int i = 0; i < size; ++i)
         if (strcmp(mDofs[i]->getName(), _name))
@@ -63,7 +68,8 @@ Dof* System::getDof(const char* const _name) const {
 void System::backupInitState()
 {
     int size = getNumDofs();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < size; ++i)
+    {
         mDofs[i]->init_q = mDofs[i]->q;
         mDofs[i]->init_dq = mDofs[i]->dq;
         mDofs[i]->init_ddq = mDofs[i]->ddq;
@@ -73,14 +79,16 @@ void System::backupInitState()
 void System::restoreInitState()
 {
     int size = getNumDofs();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < size; ++i)
+    {
         mDofs[i]->q = mDofs[i]->init_q;
         mDofs[i]->dq = mDofs[i]->init_dq;
         mDofs[i]->ddq = mDofs[i]->init_ddq;
     }
 }
 
-void System::set_q(const Eigen::VectorXd& _q) {
+void System::set_q(const Eigen::VectorXd& _q)
+{
     assert(_q.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -88,7 +96,8 @@ void System::set_q(const Eigen::VectorXd& _q) {
         mDofs[i]->q = _q[i];
 }
 
-void System::set_dq(const Eigen::VectorXd& _dq) {
+void System::set_dq(const Eigen::VectorXd& _dq)
+{
     assert(_dq.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -96,7 +105,8 @@ void System::set_dq(const Eigen::VectorXd& _dq) {
         mDofs[i]->dq = _dq[i];
 }
 
-void System::set_ddq(const Eigen::VectorXd& _ddq) {
+void System::set_ddq(const Eigen::VectorXd& _ddq)
+{
     assert(_ddq.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -104,7 +114,8 @@ void System::set_ddq(const Eigen::VectorXd& _ddq) {
         mDofs[i]->ddq = _ddq[i];
 }
 
-void System::set_tau(const Eigen::VectorXd& _tau) {
+void System::set_tau(const Eigen::VectorXd& _tau)
+{
     assert(_tau.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -112,7 +123,8 @@ void System::set_tau(const Eigen::VectorXd& _tau) {
         mDofs[i]->tau = _tau[i];
 }
 
-void System::set_qMin(const Eigen::VectorXd& _qMin) {
+void System::set_qMin(const Eigen::VectorXd& _qMin)
+{
     assert(_qMin.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -120,7 +132,8 @@ void System::set_qMin(const Eigen::VectorXd& _qMin) {
         mDofs[i]->qMin = _qMin[i];
 }
 
-void System::set_dqMin(const Eigen::VectorXd& _dqMin) {
+void System::set_dqMin(const Eigen::VectorXd& _dqMin)
+{
     assert(_dqMin.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -128,7 +141,8 @@ void System::set_dqMin(const Eigen::VectorXd& _dqMin) {
         mDofs[i]->dqMin = _dqMin[i];
 }
 
-void System::set_ddqMin(const Eigen::VectorXd& _ddqMin) {
+void System::set_ddqMin(const Eigen::VectorXd& _ddqMin)
+{
     assert(_ddqMin.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -136,7 +150,8 @@ void System::set_ddqMin(const Eigen::VectorXd& _ddqMin) {
         mDofs[i]->ddqMin = _ddqMin[i];
 }
 
-void System::set_tauMin(const Eigen::VectorXd& _tauMin) {
+void System::set_tauMin(const Eigen::VectorXd& _tauMin)
+{
     assert(_tauMin.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -145,7 +160,8 @@ void System::set_tauMin(const Eigen::VectorXd& _tauMin) {
 }
 
 
-void System::set_qMax(const Eigen::VectorXd& _qMax) {
+void System::set_qMax(const Eigen::VectorXd& _qMax)
+{
     assert(_qMax.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -153,7 +169,8 @@ void System::set_qMax(const Eigen::VectorXd& _qMax) {
         mDofs[i]->qMax = _qMax[i];
 }
 
-void System::set_dqMax(const Eigen::VectorXd& _dqMax) {
+void System::set_dqMax(const Eigen::VectorXd& _dqMax)
+{
     assert(_dqMax.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -161,7 +178,8 @@ void System::set_dqMax(const Eigen::VectorXd& _dqMax) {
         mDofs[i]->dqMax = _dqMax[i];
 }
 
-void System::set_ddqMax(const Eigen::VectorXd& _ddqMax) {
+void System::set_ddqMax(const Eigen::VectorXd& _ddqMax)
+{
     assert(_ddqMax.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -169,7 +187,8 @@ void System::set_ddqMax(const Eigen::VectorXd& _ddqMax) {
         mDofs[i]->ddqMax = _ddqMax[i];
 }
 
-void System::set_tauMax(const Eigen::VectorXd& _tauMax) {
+void System::set_tauMax(const Eigen::VectorXd& _tauMax)
+{
     assert(_tauMax.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -177,7 +196,8 @@ void System::set_tauMax(const Eigen::VectorXd& _tauMax) {
         mDofs[i]->tauMax = _tauMax[i];
 }
 
-void System::set_DqDp(const Eigen::VectorXd& _DqDp) {
+void System::set_DqDp(const Eigen::VectorXd& _DqDp)
+{
     assert(_DqDp.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -185,7 +205,8 @@ void System::set_DqDp(const Eigen::VectorXd& _DqDp) {
         mDofs[i]->DqDp = _DqDp[i];
 }
 
-void System::set_DdqDp(const Eigen::VectorXd& _DdqDp) {
+void System::set_DdqDp(const Eigen::VectorXd& _DdqDp)
+{
     assert(_DdqDp.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -193,7 +214,8 @@ void System::set_DdqDp(const Eigen::VectorXd& _DdqDp) {
         mDofs[i]->DdqDp = _DdqDp[i];
 }
 
-void System::set_DddqDp(const Eigen::VectorXd& _DddqDp) {
+void System::set_DddqDp(const Eigen::VectorXd& _DddqDp)
+{
     assert(_DddqDp.size() == getNumDofs());
 
     int size = getNumDofs();
@@ -201,7 +223,8 @@ void System::set_DddqDp(const Eigen::VectorXd& _DddqDp) {
         mDofs[i]->DddqDp = _DddqDp[i];
 }
 
-void System::set_DtauDp(const Eigen::VectorXd& _DtauDp) {
+void System::set_DtauDp(const Eigen::VectorXd& _DtauDp)
+{
     assert(_DtauDp.size() == getNumDofs());
 
     int size = getNumDofs();

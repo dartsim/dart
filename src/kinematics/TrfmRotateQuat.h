@@ -54,14 +54,14 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *);
+        Eigen::Matrix4d getDeriv(const Dof *) const;
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *, const Dof *);
+        Eigen::Matrix4d getSecondDeriv(const Dof *, const Dof *) const;
 
         // Documentation inherited.
         // TODO: NOT IMPLEMENTED !
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 
 } // namespace kinematics

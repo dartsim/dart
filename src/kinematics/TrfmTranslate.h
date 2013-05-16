@@ -69,7 +69,7 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
 
         // Documentation inherited.
         void applyDeriv(const Dof* q, Eigen::Vector3d& v);
@@ -78,7 +78,7 @@ namespace kinematics {
         void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
 
         // Documentation inherited.
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
@@ -87,7 +87,7 @@ namespace kinematics {
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 
     class TrfmTranslateX : public Transformation {
@@ -117,7 +117,7 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
 
         // Documentation inherited.
         void applyDeriv(const Dof* q, Eigen::Vector3d& v);
@@ -126,7 +126,7 @@ namespace kinematics {
         void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
 
         // Documentation inherited.
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
@@ -135,7 +135,7 @@ namespace kinematics {
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 
     class TrfmTranslateY : public Transformation {
@@ -165,7 +165,7 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
 
         // Documentation inherited.
         void applyDeriv(const Dof* q, Eigen::Vector3d& v);
@@ -174,7 +174,7 @@ namespace kinematics {
         void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
 
         // Documentation inherited.
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
@@ -183,7 +183,7 @@ namespace kinematics {
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 
     class TrfmTranslateZ : public Transformation {
@@ -213,7 +213,7 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
 
         // Documentation inherited.
         void applyDeriv(const Dof* q, Eigen::Vector3d& v);
@@ -222,7 +222,7 @@ namespace kinematics {
         void applyDeriv(const Dof* q, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
 
         // Documentation inherited.
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Vector3d& v);
@@ -231,7 +231,7 @@ namespace kinematics {
         void applySecondDeriv(const Dof* q1, const Dof* q2, Eigen::Matrix4d& m);
 
         // Documentation inherited.
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 } // namespace kinematics
 

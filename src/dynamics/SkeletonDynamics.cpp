@@ -35,27 +35,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "SkeletonDynamics.h"
-#include "BodyNodeDynamics.h"
+#include "math/UtilsMath.h"
 #include "kinematics/Joint.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/Dof.h"
-#include "math/UtilsMath.h"
+#include "dynamics/SkeletonDynamics.h"
+#include "dynamics/BodyNodeDynamics.h"
 
 using namespace Eigen;
 using namespace kinematics;
 
-namespace dynamics{
+namespace dynamics
+{
+
 SkeletonDynamics::SkeletonDynamics()
     : kinematics::Skeleton(),
       mImmobile(false),
-      mJointLimit(true) {
+      mJointLimit(true)
+{
 }
 
-SkeletonDynamics::~SkeletonDynamics(){
+SkeletonDynamics::~SkeletonDynamics()
+{
 }
 
-void SkeletonDynamics::initDynamics() {
+void SkeletonDynamics::initDynamics()
+{
     mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
     mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
     //mQdot = VectorXd::Zero(getNumDofs());
@@ -77,7 +82,8 @@ void SkeletonDynamics::initDynamics() {
     //dtdbg << "SkeletonDynamics is initialized.\n";
 }
 
-kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name){
+kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name)
+{
     return new BodyNodeDynamics(_name);
 }
 
@@ -208,38 +214,52 @@ void SkeletonDynamics::evalExternalForces(bool _useRecursive){
 // 2. first derivatives are up-to-date (i.e. consistent with _q )
 // XXX
 ///@Warning: dof values and transformations are inconsistent after this computation!
-void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
-    for (unsigned int i = 0; i < mJoints.size(); i++) {
+void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot)
+{
+    for (unsigned int i = 0; i < mJoints.size(); i++)
+    {
         Joint* jnt = mJoints.at(i);
-        switch(jnt->getJointType()){ // only cares about euler and expmap of 3 rotations
+
+        // only cares about euler and expmap of 3 rotations
+        switch(jnt->getJointType())
+        {
             case Joint::J_FREEEULER:
             {
                 // clamp dof values to the range
-                for(int j=0; j<3; j++){
+                for(int j=0; j<3; j++)
+                {
                     int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
-                    if( _q[dofIndex]>M_PI ) _q[dofIndex] -= 2*M_PI;
-                    else if( _q[dofIndex]<-M_PI ) _q[dofIndex] += 2*M_PI;
+
+                    if( _q[dofIndex]>M_PI )
+                        _q[dofIndex] -= 2*M_PI;
+                    else if( _q[dofIndex]<-M_PI )
+                        _q[dofIndex] += 2*M_PI;
                 }
             }   break;
             case Joint::J_BALLEULER:
             {
                 // clamp dof values to the range
-                for(int j=0; j<3; j++){
+                for(int j=0; j<3; j++)
+                {
                     int dofIndex = jnt->getDof(j)->getSkelIndex();
-                    if( _q[dofIndex]>M_PI ) _q[dofIndex] -= 2*M_PI;
-                    else if( _q[dofIndex]<-M_PI ) _q[dofIndex] += 2*M_PI;
+                    if( _q[dofIndex]>M_PI )
+                        _q[dofIndex] -= 2*M_PI;
+                    else if( _q[dofIndex]<-M_PI )
+                        _q[dofIndex] += 2*M_PI;
                 }
             }   break;
             case Joint::J_FREEEXPMAP:
             {
                 Vector3d exmap;
-                for (int j = 0; j < 3; j++) {
+                for (int j = 0; j < 3; j++)
+                {
                     int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
                     exmap[j] = _q[dofIndex];
                 }
                 
                 double theta = exmap.norm();
-                if (theta > M_PI) {
+                if (theta > M_PI)
+                {
                     exmap.normalize();
                     exmap *= theta-2*M_PI;
 
@@ -250,10 +270,15 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
 
                     // extract the local Jw
                     Matrix3d oldJwBody;
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++)
+                    {
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
-                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3) * node->getLocalTransform().topLeftCorner(3,3).transpose();
-                        oldJwBody.col(j) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
+                        Matrix3d omegaSkewSymmetric
+                                = jnt->getDeriv(
+                                      jnt->getDof(j + 3)).topLeftCorner<3,3>()
+                                  * node->getLocalTransform().topLeftCorner<3,3>().transpose();
+                        oldJwBody.col(j)
+                                = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
                     // the new Jw
@@ -264,8 +289,10 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
 
                     // compute the new Jw from Rq*trans(R)
                     Matrix4d Tbody = jnt->getLocalTransform();
-                    for (int j = 0; j < 3; j++) {
-                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
+                    for (int j = 0; j < 3; j++)
+                    {
+                        Matrix3d omegaSkewSymmetric
+                                = jnt->getDeriv(jnt->getDof(j + 3)).topLeftCorner<3,3>()*Tbody.topLeftCorner<3,3>().transpose();
                         newJwBody.col(j) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
@@ -275,7 +302,8 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
                     for (int j = 0; j < 3; j++)
                         old_qdot[j] = _qdot[jnt->getDof(j + 3)->getSkelIndex()];
                     Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++)
+                    {
                         int dofIndex = jnt->getDof(j + 3)->getSkelIndex();
                         _q[dofIndex] = exmap[j];
                         _qdot[dofIndex] = new_qdot[j];
@@ -287,13 +315,15 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
             case Joint::J_BALLEXPMAP:
             {
                 Vector3d exmap;
-                for (int j = 0; j < 3; j++) {
+                for (int j = 0; j < 3; j++)
+                {
                     int dofIndex = jnt->getDof(j)->getSkelIndex();
                     exmap[j] = _q[dofIndex];
                 }
                 
                 double theta = exmap.norm();
-                if (theta > M_PI) {
+                if (theta > M_PI)
+                {
                     exmap.normalize();
                     exmap *= theta-2*M_PI;
 
@@ -304,10 +334,11 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
 
                     // extract the local Jw
                     Matrix3d oldJwBody;
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++)
+                    {
                         // XXX do not use node->mTq here because it's not computed if the recursive algorithm is used; instead the derivative matrix is (re)computed explicitly.
-                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)
-                                                      * node->getLocalTransform().topLeftCorner(3,3).transpose();
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner<3,3>()
+                                                      * node->getLocalTransform().topLeftCorner<3,3>().transpose();
                         oldJwBody.col(j) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
@@ -319,8 +350,9 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
 
                     // compute the new Jw from Rq*trans(R)
                     Matrix4d Tbody = jnt->getLocalTransform();
-                    for (int j = 0; j < 3; j++) {
-                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner(3,3)*Tbody.topLeftCorner(3,3).transpose();
+                    for (int j = 0; j < 3; j++)
+                    {
+                        Matrix3d omegaSkewSymmetric = jnt->getDeriv(jnt->getDof(j)).topLeftCorner<3,3>()*Tbody.topLeftCorner<3,3>().transpose();
                         newJwBody.col(j) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
                     }
 
@@ -330,7 +362,8 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
                     for (int j = 0; j < 3; j++)
                         old_qdot[j] = _qdot[jnt->getDof(j)->getSkelIndex()];
                     Vector3d new_qdot = newJwBody.inverse()*oldJwBody*old_qdot;
-                    for (int j = 0; j < 3; j++) {
+                    for (int j = 0; j < 3; j++)
+                    {
                         int dofIndex = jnt->getDof(j)->getSkelIndex();
                         _q[dofIndex] = exmap[j];
                         _qdot[dofIndex] = new_qdot[j];
@@ -345,8 +378,10 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot){
     set_dq(_qdot);
 }
 
-void SkeletonDynamics::clearExternalForces(){
+void SkeletonDynamics::clearExternalForces()
+{
     int nNodes = getNumNodes();
+
     for (int i = 0; i < nNodes; i++)
         ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
 }

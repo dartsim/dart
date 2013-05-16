@@ -46,7 +46,8 @@
 
 namespace renderer { class RenderInterface; }
 
-namespace kinematics {
+namespace kinematics
+{
 
 class Transformation;
 class Marker;
@@ -54,61 +55,148 @@ class Joint;
 class BodyNode;
 class Dof;
 
-class Skeleton : public System {
+class Skeleton : public System
+{
 public:
-    DEPRECATED Eigen::VectorXd getPose();
+    //--------------------------------------------------------------------------
+    // DEPRECATED
+    //--------------------------------------------------------------------------
+    Eigen::VectorXd getPose();
+    Eigen::VectorXd getPoseVelocity();
 
+public:
+    /// @brief
     Skeleton();
+
+    /// @brief
     virtual ~Skeleton();
 
+    /// @brief
     virtual BodyNode* createBodyNode(const char* const name = NULL);
+
+    /// @brief
     void addMarker(Marker *_h);
+
+    /// @brief
     void addNode(BodyNode *_b, bool _addParentJoint = true);
+
+    /// @brief
     void addJoint(Joint *_j);
+
+    /// @brief
     void addDof(Dof *_d);
+
+    /// @brief
     void addTransform(Transformation *_t);
 
-    // init the model after parsing
+    /// @brief Init the model after parsing.
     void initSkel();
 
-    // inline access functions
-    inline int getNumNodes() const { return mNodes.size(); }
-    inline int getNumMarkers() const { return mMarkers.size(); }
-    inline int getNumJoints() const { return mJoints.size();}
-    inline BodyNode* getNode(int _i) const { return mNodes[_i]; }
-    inline BodyNode* getRoot() { return mRoot; }
+    /// @brief
+    int getNumNodes() const { return mNodes.size(); }
+
+    /// @brief
+    int getNumMarkers() const { return mMarkers.size(); }
+
+    /// @brief
+    int getNumJoints() const { return mJoints.size();}
+
+    /// @brief
+    BodyNode* getNode(int _i) const { return mNodes[_i]; }
+
+    /// @brief
+    BodyNode* getRoot() { return mRoot; }
+
+    /// @brief
     BodyNode* getNode(const char* const _name) const;
+
+    /// @brief
     int getNodeIndex(const char* const _name) const;
-    inline Joint* getJoint(int _i) const { return mJoints[_i]; }
+
+    /// @brief
+    Joint* getJoint(int _i) const { return mJoints[_i]; }
+
+    /// @brief
     Joint* getJoint(const char* const _name) const;
+
+    /// @brief
     int getJointIndex(const char* const _name) const;
 
-    inline Marker* getMarker(int _i) { return mMarkers[_i]; }
-    inline double getMass() { return mMass; }
+    /// @brief
+    Marker* getMarker(int _i) { return mMarkers[_i]; }
+
+    /// @brief
+    double getMass() { return mMass; }
+
+    /// @brief
     Eigen::Vector3d getWorldCOM();
-    inline std::string getName() { return mName; }
-    inline void setName( std::string _name ) { mName = _name; }
-    virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
+
+    /// @brief
+    std::string getName() { return mName; }
+
+    /// @brief
+    void setName( std::string _name ) { mName = _name; }
+
+    /// @brief
+    virtual void setPose(const Eigen::VectorXd&,
+                         bool bCalcTrans = true,
+                         bool bCalcDeriv = true);
+
+    /// @brief
     Eigen::VectorXd getConfig(std::vector<int> _id);
-    void setConfig(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans = true, bool _calcDeriv = true);
+
+    /// @brief
+    void setConfig(std::vector<int> _id,
+                   Eigen::VectorXd _vals,
+                   bool _calcTrans = true,
+                   bool _calcDeriv = true);
+
+    /// @brief
     Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
 
-    void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-    void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
+    /// @brief
+    void draw(renderer::RenderInterface* _ri = NULL,
+              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+              bool _useDefaultColor = true) const;
 
-    void setSelfCollidable(bool _selfCollidable) { mSelfCollidable = _selfCollidable; }
+    /// @brief
+    void drawMarkers(renderer::RenderInterface* _ri = NULL,
+                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                     bool _useDefaultColor = true ) const;
+
+    /// @brief
+    void setSelfCollidable(bool _selfCollidable)
+    { mSelfCollidable = _selfCollidable; }
+
+    /// @brief
     bool getSelfCollidable() const { return mSelfCollidable; }
 
+    /// @brief
+    //void updateJointKinematics();
+
 protected:
+    /// @brief
     std::string mName;
+
+    /// @brief
     std::vector<Marker*> mMarkers;
+
+    /// @brief
     std::vector<Transformation*> mTransforms;
+
+    /// @brief
     std::vector<BodyNode*> mNodes;
+
+    /// @brief
     std::vector<Joint*> mJoints;
-    Eigen::VectorXd mPoseInit; ///< Initial pose (Q)
+
+    /// @brief
     double mMass;
+
+    /// @brief
     bool mSelfCollidable;
-    Eigen::VectorXd mCurrPose;
+
+    /// @brief
     BodyNode* mRoot;
 };
 

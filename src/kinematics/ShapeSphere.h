@@ -49,7 +49,7 @@ namespace kinematics {
         ShapeSphere(double _radius);
 
         inline void setRadius(double _radius) { mRadius = _radius; }
-        inline double getRadius(void) const { return mRadius; }
+        inline double getRadius() const { return mRadius; }
 
         void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
 

@@ -40,6 +40,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
+
+#include "math/UtilsMath.h"
 #include "math/UtilsRotation.h"
 #include "kinematics/System.h"
 
@@ -49,9 +51,21 @@ class Dof;
 class BodyNode;
 class Transformation;
 
+/// @brief
+///
+/// [Members]
+/// T: local transformation (4x4 matrix)
+/// S: local Jacobian (6xm matrix)
+/// dS: localJacobianDerivative (6xm matrix)
+/// q: generalized coordinates (configuration) (scalar)
+/// dq: generalized velocity (scalar)
+/// ddq: generalized acceleration (scalar)
+/// tau: generalized force (torque) (scalar)
 class Joint : public System {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW // we need this aligned allocator because we have Matrix4d as members in this class
+    // We need this aligned allocator because we have Matrix4d as members in
+    // this class.
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     enum JointType {
         J_UNKNOWN,
@@ -90,45 +104,92 @@ public:
     void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m); ///< apply the second derivative to _m
 
     void addTransform(Transformation *_t, bool _isVariable = true); ///< add _t to mTransforms; _isVariable indicates whether this transformation is a degree of freedom; also sets the joint type automatically
-    inline int getNumTransforms() const {return mTransforms.size();}
-    inline Transformation* getTransform(int i) const {return mTransforms[i];}
+    int getNumTransforms() const {return mTransforms.size();}
+    Transformation* getTransform(int i) const {return mTransforms[i];}
 
-    inline int getNumDofsTrans(){return mNumDofsTrans;}
-    inline int getNumDofsRot(){return mNumDofsRot;}
-    inline const std::vector<int>& getRotTransformIndices(){return mRotTransformIndex;}
+    int getNumDofsTrans(){return mNumDofsTrans;}
+    int getNumDofsRot(){return mNumDofsRot;}
+    const std::vector<int>& getRotTransformIndices(){return mRotTransformIndex;}
 
-    inline BodyNode* getParentNode() const {return mNodeParent;}
-    inline BodyNode* getChildNode() const {return mNodeChild;}
+    BodyNode* getParentNode() const {return mNodeParent;}
+    BodyNode* getChildNode() const {return mNodeChild;}
 
-    inline void setSkelIndex(int _idx){mSkelIndex= _idx;}
-    inline int getSkelIndex() const {return mSkelIndex;}
+    void setSkelIndex(int _idx){mSkelIndex= _idx;}
+    int getSkelIndex() const {return mSkelIndex;}
 
-    inline JointType getJointType(){return mType;}
+    JointType getJointType(){return mType;}
 
-    inline const char *getName() { return mName; }
-    inline void setName(const char *_name){ strcpy(mName, _name); }
+    const char *getName() { return mName; }
+    void setName(const char *_name){ strcpy(mName, _name); }
 
     void updateStaticTransform();
 
+    /// @brief Transformation from the local coordinates of this body node to
+    /// the local coordinates of its parent
+    //Eigen::Matrix4d getLocalTransform() const { return mT; }
+
+    /// @briefTransformation from the local coordinates of the parent node to
+    /// the local coordinates of this body node
+    //Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); }
+
+    //--------------------------------------------------------------------------
+    /// @brief
+    /// input: q, dq
+    /// output: T, S, S*dq,
+    //virtual void updateForwardKinematics();
+
     /// @brief Local Jacobian from parent link to child link.
-    Eigen::MatrixXd getLocalJacobian(void) const;
+    Eigen::MatrixXd getLocalJacobian();
+
+    /// @brief
+    //dart_math::Vector6d evalLocalVelocity() const;
 
 protected:
-    BodyNode *mNodeParent; ///< parent node
-    BodyNode *mNodeChild; ///< child node
-    int mSkelIndex;	///< unique dof id in model
-    JointType mType;	///< type of joint e.g. ball, hinge etc., initialized as J_UNKNOWN
-    char mName[512];    ///< name the joint so that joint can be retrieved by name
+    /// @brief Parent body.
+    BodyNode *mNodeParent;
 
-    std::vector<Transformation*> mTransforms;	///< transformations for mNodeChild
+    /// @brief Child body.
+    BodyNode *mNodeChild;
+
+    /// @brief Unique dof id in skeleton
+    int mSkelIndex;
+
+    /// @brief  Type of joint e.g. ball, hinge etc., initialized as J_UNKNOWN.
+    JointType mType;
+
+    /// @brief Name the joint so that joint can be retrieved by name.
+    char mName[512];
+
+    /// @brief Transformations for mNodeChild.
+    // TODO: This will be removed when we use concrete joint classes such as
+    // HingeJoint, SliderJoint.
+    std::vector<Transformation*> mTransforms;
 
     Eigen::Matrix4d mStaticTransform; ///< The product of all static transforms before the first variable one. Precalculated for efficiency.
+
     int mFirstVariableTransformIndex; ///< index of the first variable transform (rotation or translation)
+
     int mNumDofsRot;    ///< number of DOFs for corresponding to rotation
+
     int mNumDofsTrans;   ///< number of DOFs for corresponding to translation
+
     std::vector<int> mRotTransformIndex; ///< indices of the rotation transforms
 
     void addDof(Dof *_d); ///< add _d to mDofs
+
+    /// @brief Local transformation from paren body to child body.
+    //Eigen::Matrix4d mT;
+
+    /// @brief Jacobian of T w.r.t. child body frame.
+    /// (6xm matrix)
+    /// Jacobian = | T^{-1} * dT/dq(1)   T^{-1} * dT/dq(1) ... T^{-1} * dT/dq(m) |
+    //Eigen::MatrixXd mLocalJacobian;
+
+    /// @brief
+    //dart_math::Vector6d mLocalVelocity;
+
+private:
+    Eigen::MatrixXd __recursive_evalLocalJacobian();
 };
 
 } // namespace kinematics

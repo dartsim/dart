@@ -58,10 +58,10 @@ namespace kinematics {
         void computeTransform();
 
         // Documentation inherited.
-        Eigen::Matrix4d getDeriv(const Dof *q);
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
 
         // Documentation inherited.
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
 
         /// @brief Set the rotating axis.
         void setAxis(const Eigen::Vector3d& _axis);
@@ -70,7 +70,7 @@ namespace kinematics {
         inline Eigen::Vector3d getAxis() { return mAxis; }
 
         // Documentation inherited.
-        virtual Eigen::MatrixXd getJacobian(void);
+        virtual Eigen::MatrixXd getJacobian() const;
 
     protected:
         /// @brief

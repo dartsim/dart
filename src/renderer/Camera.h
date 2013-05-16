@@ -67,21 +67,21 @@ namespace renderer {
         virtual void localRotate(float _angle, AXIS _axis);
         virtual void globalRotate(float _angle, AXIS _axis);
 
-        virtual Eigen::Vector3d getEye(void) const {
+        virtual Eigen::Vector3d getEye() const {
         	return Eigen::Vector3d(0.0f, 0.0f, 1.0f);
         }
-        virtual Eigen::Vector3d getLookAtDir(void) const {
+        virtual Eigen::Vector3d getLookAtDir() const {
         	return Eigen::Vector3d(0.0f, 0.0f, 0.0f);
         }
-        virtual Eigen::Vector3d getUpDir(void) const {
+        virtual Eigen::Vector3d getUpDir() const {
         	return Eigen::Vector3d(0.0f, 1.0f, 0.0f);
 
         }
-        virtual bool isOrthogonal(void) const {
+        virtual bool isOrthogonal() const {
             return mIsOrthognal;
         }
 
-        virtual float getVerticalViewAngle(void) const {
+        virtual float getVerticalViewAngle() const {
             return mViewAngle;
         }
         virtual float getNearDistance() const {

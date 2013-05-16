@@ -80,26 +80,29 @@ public:
     /// @brief Calculate the dynamics and integrate the world for one step.
     void step();
 
-    /// @brief .
-    /// @param[in] _gravity
-    inline void setGravity(const Eigen::Vector3d& _gravity)
-    { mGravity = _gravity; }
+    // TODO: NOT IMPLEMENTED
+    void step2();
 
     /// @brief .
-    inline const Eigen::Vector3d& getGravity(void) const { return mGravity; }
+    /// @param[in] _gravity
+    void setGravity(const Eigen::Vector3d& _gravity) { mGravity = _gravity; }
+
+    /// @brief .
+    const Eigen::Vector3d& getGravity() const { return mGravity; }
 
     /// @brief .
     /// @param[in] _timeStep
     void setTimeStep(double _timeStep);
 
     /// @brief Get the time step.
-    inline double getTimeStep(void) const { return mTimeStep; }
+    double getTimeStep() const { return mTimeStep; }
 
-    inline void setTime(double _time) { mTime = _time; }
+    /// @brief
+    void setTime(double _time) { mTime = _time; }
 
     /// @brief Get the time step.
     /// @return Time step.
-    inline double getTime(void) const { return mTime; }
+    double getTime() const { return mTime; }
 
     /// @brief Get the indexed skeleton.
     /// @param[in] _index
@@ -112,18 +115,18 @@ public:
     dynamics::SkeletonDynamics* getSkeleton(const char* const _name) const;
 
     /// @brief Get the number of skeletons.
-    inline unsigned int getNumSkeletons() const { return mSkeletons.size(); }
+    unsigned int getNumSkeletons() const { return mSkeletons.size(); }
 
     /// @brief Get the number of simulated frames.
-    inline int getSimFrames() const { return mFrame; }
+    int getSimFrames() const { return mFrame; }
 
     /// @brief Get the collision handler.
-    inline dynamics::ContactDynamics* getCollisionHandle() const
+    dynamics::ContactDynamics* getCollisionHandle() const
     { return mCollisionHandle; }
 
     /// @brief Get the dof index for the indexed skeleton.
     /// @param[in] _index
-    inline int getIndex(int _index) const { return mIndices[_index]; }
+    int getIndex(int _index) const { return mIndices[_index]; }
 
     // Documentation inherited.
     virtual Eigen::VectorXd getState();

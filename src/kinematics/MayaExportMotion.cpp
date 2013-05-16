@@ -89,7 +89,7 @@ namespace utils {
             for(int i=0; i<_b->getNumChildJoints(); i++){
                 bool var = false;
                 for(int j=0; j<_b->getChildJoint(i)->getNumTransforms(); j++){
-                    if(_b->getChildJoint(i)->getTransform(j)->getVariable()) {
+                    if(_b->getChildJoint(i)->getTransform(j)->isVariable()) {
                         var = true;
                         break;
                     }
@@ -104,7 +104,7 @@ namespace utils {
             vector<int> varIndex;	// indices of variable rot dofs
             for(int i=_b->getParentJoint()->getNumTransforms()-1; i>=0; i--){
                 Transformation *tf = _b->getParentJoint()->getTransform(i);
-                if(!tf->getVariable()) continue;	// joint order should be determined only by variable dofs
+                if(!tf->isVariable()) continue;	// joint order should be determined only by variable dofs
                 if(tf->getType()==Transformation::T_ROTATEX) {
                     varIndex.push_back(i);
                 }
@@ -146,7 +146,7 @@ namespace utils {
                         if(i<separateRots) break;
                         vector<double> vals(tf->getNumDofs(), 0.0);
                         for(unsigned int di=0; di<vals.size(); di++){
-                            if(tf->getVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
+                            if(tf->isVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
                             else vals[di] = tf->getDof(0)->getValue();
                         }
                         if(tf->getType()==Transformation::T_ROTATEX) rotdofs = dart_math::eulerToMatrixX(vals[0])*(rotdofs);
@@ -207,7 +207,7 @@ namespace utils {
             else {
                 for(int i=_b->getParentJoint()->getNumTransforms()-1; i>=0; i--){
                     Transformation *t = _b->getParentJoint()->getTransform(i);
-                    if(t->getVariable()==false) continue;
+                    if(t->isVariable()==false) continue;
                     wroteNode = true;
                     if(t->getType()==Transformation::T_ROTATEEXPMAP){
                         // ASSUME "xyz" ordering for dof values
@@ -420,7 +420,7 @@ namespace utils {
             for(int i=0; i<_b->getNumChildJoints(); i++){
                 bool var = false;
                 for(int j=0; j<_b->getChildJoint(i)->getNumTransforms(); j++){
-                    if(_b->getChildJoint(i)->getTransform(j)->getVariable()) {
+                    if(_b->getChildJoint(i)->getTransform(j)->isVariable()) {
                         var = true;
                         break;
                     }

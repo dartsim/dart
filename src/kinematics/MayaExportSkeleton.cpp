@@ -214,7 +214,7 @@ namespace utils {
             vector<int> varIndex;	// indices of variable rot dofs
             for(int i=_b->getParentJoint()->getNumTransforms()-1; i>=0; i--){
                 Transformation *tf = _b->getParentJoint()->getTransform(i);
-                if(!tf->getVariable()) continue;	// joint order should be determined only by variable dofs
+                if(!tf->isVariable()) continue;	// joint order should be determined only by variable dofs
                 if(tf->getType()==Transformation::T_ROTATEX) {
                     rot += "x";
                     varIndex.push_back(i);
@@ -286,7 +286,7 @@ namespace utils {
                     Transformation *tf = _b->getParentJoint()->getTransform(i);
                     //if(tf->getVariable()) continue;	// only constant dofs should contribute to the ".jo" attribute; rest to ".r"
                     Matrix3d *rotPtr = NULL;
-                    if(tf->getVariable()) rotPtr = &rotdofs; else rotPtr = &rotcons;
+                    if(tf->isVariable()) rotPtr = &rotdofs; else rotPtr = &rotcons;
                     if(tf->getType()==Transformation::T_ROTATEX) *rotPtr = dart_math::eulerToMatrixX(tf->getDof(0)->getValue())*(*rotPtr);
                     if(tf->getType()==Transformation::T_ROTATEY) *rotPtr = dart_math::eulerToMatrixY(tf->getDof(0)->getValue())*(*rotPtr);
                     if(tf->getType()==Transformation::T_ROTATEZ) *rotPtr = dart_math::eulerToMatrixZ(tf->getDof(0)->getValue())*(*rotPtr);

@@ -45,14 +45,16 @@
 
 #include "utils/Deprecated.h"
 
-namespace kinematics {
+namespace kinematics
+{
 
 #define MAX_DOF_NAME 128
 
 class Joint;
 class Transformation;
 
-class Dof {
+class Dof
+{
 public:
     // TODO: All publics? class vs struct?
 
@@ -129,46 +131,45 @@ public:
     void setValue(double _v);
 
     /// @brief
-    inline double getValue() const { return q; }
+    double getValue() const { return q; }
 
     /// @brief
-    inline double getMin() const { return qMin; }
+    double getMin() const { return qMin; }
 
     /// @brief
-    inline double getMax() const { return qMax; }
+    double getMax() const { return qMax; }
 
     /// @brief
-    inline void setMin(double _min) { qMin = _min; }
+    void setMin(double _min) { qMin = _min; }
 
     /// @brief
-    inline void setMax(double _max) { qMax = _max; }
+    void setMax(double _max) { qMax = _max; }
 
     /// @brief
-    inline int getSkelIndex() const { return mSkelIndex; }
+    int getSkelIndex() const { return mSkelIndex; }
 
     /// @brief
-    inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+    void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
     /// @brief
-    inline bool isVariable() const { return mVariable; }
+    bool isVariable() const { return mVariable; }
 
     /// @brief
-    inline void setVariable() { mVariable = true; }
+    void setVariable() { mVariable = true; }
 
     /// @brief
-    inline void setTrans(Transformation *_t){ mTrans = _t; }
+    void setTrans(Transformation *_t){ mTrans = _t; }
 
     /// @brief
-    inline Transformation* getTrans() const{ return mTrans; }
+    Transformation* getTrans() const{ return mTrans; }
 
     /// @brief
-    inline void setJoint(Joint *_j) { mJoint = _j; }
+    void setJoint(Joint *_j) { mJoint = _j; }
 
     /// @brief
-    inline Joint *getJoint() const { return mJoint; }
+    Joint *getJoint() const { return mJoint; }
 
 protected:
-
     /// @brief
     char mName[MAX_DOF_NAME];
 

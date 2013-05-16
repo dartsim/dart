@@ -41,10 +41,12 @@
 #include <vector>
 #include "kinematics/Dof.h"
 
-namespace kinematics {
+namespace kinematics
+{
 
 /// @brief System is a base class for every classes that has Dofs.
-class System {
+class System
+{
 public:
     /// @brief
     System();
@@ -53,10 +55,10 @@ public:
     virtual ~System();
 
     /// @brief
-    int getNumDofs(void) const { return mDofs.size(); }
+    int getNumDofs() const { return mDofs.size(); }
 
     /// @brief
-    const std::vector<Dof *>& getDofs(void) const { return mDofs; }
+    const std::vector<Dof *>& getDofs() const { return mDofs; }
 
     /// @brief
     Dof* getDof(int _idx) const;
@@ -97,25 +99,25 @@ public:
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
-    Eigen::VectorXd get_q(void) const;
-    Eigen::VectorXd get_dq(void) const;
-    Eigen::VectorXd get_ddq(void) const;
-    Eigen::VectorXd get_tau(void) const;
+    Eigen::VectorXd get_q() const;
+    Eigen::VectorXd get_dq() const;
+    Eigen::VectorXd get_ddq() const;
+    Eigen::VectorXd get_tau() const;
 
-    Eigen::VectorXd get_qMin(void) const;
-    Eigen::VectorXd get_dqMin(void) const;
-    Eigen::VectorXd get_ddqMin(void) const;
-    Eigen::VectorXd get_tauMin(void) const;
+    Eigen::VectorXd get_qMin() const;
+    Eigen::VectorXd get_dqMin() const;
+    Eigen::VectorXd get_ddqMin() const;
+    Eigen::VectorXd get_tauMin() const;
 
-    Eigen::VectorXd get_qMax(void) const;
-    Eigen::VectorXd get_dqMax(void) const;
-    Eigen::VectorXd get_ddqMax(void) const;
-    Eigen::VectorXd get_tauMax(void) const;
+    Eigen::VectorXd get_qMax() const;
+    Eigen::VectorXd get_dqMax() const;
+    Eigen::VectorXd get_ddqMax() const;
+    Eigen::VectorXd get_tauMax() const;
 
-    Eigen::VectorXd get_DqDp(void) const;
-    Eigen::VectorXd get_DdqDp(void) const;
-    Eigen::VectorXd get_DddqDp(void) const;
-    Eigen::VectorXd get_DtauDp(void) const;
+    Eigen::VectorXd get_DqDp() const;
+    Eigen::VectorXd get_DdqDp() const;
+    Eigen::VectorXd get_DddqDp() const;
+    Eigen::VectorXd get_DtauDp() const;
 
 protected:
     /// @brief Pointers to Dofs.

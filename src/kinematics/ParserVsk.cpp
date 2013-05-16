@@ -517,7 +517,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
     // if(!foundJoint) cout<<"fixed joint!\n";
 
     for(int i=0; i<jt->getNumTransforms(); i++){
-        if(!jt->getTransform(i)->getVariable()) continue;
+        if(!jt->getTransform(i)->isVariable()) continue;
         for(int j=0; j<jt->getTransform(i)->getNumDofs(); j++){
             // cout<<jt->getTransform(i)->getDof(j)->getName()<<" ";
         }

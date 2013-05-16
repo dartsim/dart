@@ -104,7 +104,7 @@ public: // Others
     void setMass(double _mass) { mMass = _mass; }
     
     /// @brief
-    double getMass(void) const { return mMass; }
+    double getMass() const { return mMass; }
     
     /// @brief
     void setPrincipals(double _Ixx, double _Iyy, double _Izz)
@@ -126,14 +126,14 @@ public: // Others
     { mPrincipals = _principals; }
     
     /// @brief
-    const Eigen::Vector3d& getPrincicpals(void) const { return mPrincipals; }
+    const Eigen::Vector3d& getPrincicpals() const { return mPrincipals; }
     
     /// @brief
     void setProducts(const Eigen::Vector3d& _products)
     { mProducts = _products; }
     
     /// @brief
-    const Eigen::Vector3d& getProducts(void) const { return mProducts; }
+    const Eigen::Vector3d& getProducts() const { return mProducts; }
     
     /// @brief
     void setMomentsOfInertia(const Eigen::Matrix3d& _moi);
@@ -145,11 +145,11 @@ public: // Others
     void setCenterOfMass(const Eigen::Vector3d& _com);
     
     /// @brief
-    const Eigen::Vector3d& getCenterOfMass(void) const { return mCOM; }
+    const Eigen::Vector3d& getCenterOfMass() const { return mCOM; }
     
     /// @brief
     // TODO: NOT IMPLEMENTED.
-    Eigen::Matrix<double,6,6> getInertiaTensor(void) const;
+    Eigen::Matrix<double,6,6> getInertiaTensor() const;
 
     // TODO: Not implemented.
     /// @brief Get trnasformed generalized inertia.

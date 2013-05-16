@@ -51,7 +51,8 @@
 using namespace std;
 using namespace Eigen;
 
-namespace kinematics {
+namespace kinematics
+{
 
 int BodyNode::msBodyNodeCount = 0;
 
@@ -75,29 +76,34 @@ BodyNode::BodyNode(const char *_name)
 
     mID = BodyNode::msBodyNodeCount++;
 
-    if (_name == NULL) {
+    if (_name == NULL)
         strcpy(mName, "BodyNode");
-    } else {
+    else
         strcpy(mName, _name);
-    }
 }
 
-BodyNode::~BodyNode() {
-    for (unsigned int i = 0; i < mMarkers.size(); ++i){
+BodyNode::~BodyNode()
+{
+    for (unsigned int i = 0; i < mMarkers.size(); ++i)
         delete mMarkers[i];
-    }
+
     mMarkers.clear();
 
-    if(mVizShape && mVizShape == mColShape) {
+    if(mVizShape && mVizShape == mColShape)
+    {
         delete mVizShape;
         mVizShape = NULL;
         mColShape = NULL;
     }
-    if(mVizShape) {
+
+    if(mVizShape)
+    {
         delete mVizShape;
         mVizShape = NULL;
     }
-    if(mColShape) {
+
+    if(mColShape)
+    {
         delete mColShape;
         mColShape = NULL;
     }
@@ -105,12 +111,12 @@ BodyNode::~BodyNode() {
     mJointsChild.clear();
 }
 
-void BodyNode::init() {
+void BodyNode::init()
+{
     assert(mSkel);
 
-    if(mVizShape && mI.isZero()) {
+    if(mVizShape && mI.isZero())
         mI = mVizShape->computeInertia(mMass);
-    }
 
     mT = Matrix4d::Identity();
     mW = Matrix4d::Identity();
@@ -123,21 +129,25 @@ void BodyNode::init() {
 
     mJv = MatrixXd::Zero(3, numDepDofs);
     mJw = MatrixXd::Zero(3, numDepDofs);
-    mJ = MatrixXd::Zero(6, numDepDofs);
+    mBodyJacobian = MatrixXd::Zero(6, numDepDofs);
 
     mNumRootTrans = 0;
-    for(int i=0; i<mSkel->getNumDofs(); i++) {
+
+    for(int i=0; i<mSkel->getNumDofs(); i++)
+    {
         if(!(mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATE
              || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEX
              || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEY
-             || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEZ)) {
+             || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEZ))
+        {
             mNumRootTrans = i;
             break;
         }
     }
 }
 
-void BodyNode::updateTransform() {
+void BodyNode::updateTransform()
+{
     mT = mParentJoint->getLocalTransform();
 
     if (mParentNode)
@@ -153,33 +163,43 @@ void BodyNode::updateTransform() {
 
 void BodyNode::updateVelocity()
 {
-    // TODO: NOT IMPLEMENTED
-//    if (mParentNode)
-//        mBodyVelocity = dart_math::InvAd(mT, mParentNode->mBodyVelocity);
-//    else
-//        mBodyVelocity.setZero();
+    // Generalized body velocity from parent link.
+    if (mParentNode)
+        mBodyVelocity = dart_math::InvAd(mT, mParentNode->mBodyVelocity);
+    else
+        mBodyVelocity.setZero();
 
-//    mBodyVelocity += mParentJoint->getLocalJacobian() *
+    // Generalized body velocity from parent joint.
+    mBodyVelocity += mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
 }
 
 void BodyNode::updateAcceleration()
 {
-    // TODO: NOT IMPLEMENTED
     mBodyAcceleration.setZero();
+
+    // Generalized body velocity from parent link.
+    if (mParentNode)
+        mBodyVelocity = dart_math::InvAd(mT, mParentNode->mBodyAcceleration);
+    else
+        mBodyVelocity.setZero();
+
+    // Generalized body velocity from parent joint.
+    mBodyVelocity += mParentJoint->getLocalJacobian() * mParentJoint->get_ddq();
 }
 
-void BodyNode::updateFirstDerivatives() {
+void BodyNode::updateFirstDerivatives()
+{
     const int numLocalDofs = getNumLocalDofs();
     const int numParentDofs = getNumDependentDofs()-numLocalDofs;
 
     // Update Local Derivatives
-    for(int i = 0; i < numLocalDofs; i++) {
+    for(int i = 0; i < numLocalDofs; i++)
         mTq[i] = getLocalDeriv(getDof(i));
-    }
 
     // Update World Derivatives
     // parent dofs
-    for (int i = 0; i < numParentDofs; i++) {
+    for (int i = 0; i < numParentDofs; i++)
+    {
         assert(mParentNode);    // should always have a parent if enters this for loop
         if(i<mNumRootTrans)
             mWq[i] = mParentNode->mWq[i]; // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
@@ -187,7 +207,8 @@ void BodyNode::updateFirstDerivatives() {
             mWq[i].noalias() = mParentNode->mWq[i] * mT;
     }
     // local dofs
-    for(int i = 0; i < numLocalDofs; i++) {
+    for(int i = 0; i < numLocalDofs; i++)
+    {
         if(mParentNode)
             mWq[numParentDofs+i].noalias() = mParentNode->mW * mTq[i];
         else
@@ -197,7 +218,24 @@ void BodyNode::updateFirstDerivatives() {
     evalJacobian();
 }
 
-void BodyNode::evalJacobian() {
+void BodyNode::evalJacLin() {
+    assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
+
+    for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
+        mJv.col(i) = dart_math::xformHom(mWq[i], mCOMLocal);
+    }
+}
+
+void BodyNode::evalJacAng() {
+    mJw.setZero();
+    for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
+        Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
+        mJw.col(i) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
+    }
+}
+
+void BodyNode::evalJacobian()
+{
     /*--------------------------------------------------------------------------
     J             : (6xn matrix) Body Jacobian of this link
     T_{i,j}       : (4x4 matrix) Transformation matrix from i-th frame to
@@ -212,8 +250,8 @@ void BodyNode::evalJacobian() {
     const int numDepDofs = getNumDependentDofs();
 
     //MatrixXd J = MatrixXd::Zero(6,numDepDofs);
-    assert(mJ.rows() == 6);
-    assert(mJ.cols() == getNumDependentDofs());
+    assert(mBodyJacobian.rows() == 6);
+    assert(mBodyJacobian.cols() == getNumDependentDofs());
 
     // The parent link has:
     //   parentJacobian = | Ad(T_{n-1,1}, S_1) Ad(T_{n-1,2}, S_2) ... S_{n-1} |.
@@ -225,36 +263,54 @@ void BodyNode::evalJacobian() {
 
     // Bind InvAd(mT,parentJacobian) first.
     // J = | InvAd(mT,parentJacobian) 0 |
-    const Eigen::MatrixXd& parentJacobian = mParentNode->getBodyJacobian();
-    for (int i = 0; i < numDepDofs - numLocalDofs; ++i)
-        mJ.col(i) = dart_math::InvAd(mT, parentJacobian.col(i));
+    if (mParentNode != NULL)
+    {
+        Eigen::MatrixXd parentJacobian = mParentNode->getBodyJacobian();
+        for (int i = 0; i < parentJacobian.cols(); ++i)
+            mBodyJacobian.col(i) = dart_math::InvAd(mT, parentJacobian.col(i));
+    }
 
     // Bind localJacobian.
     // J = | InvAd(mT,parentJacobian) localJacobian |
-    mJ.block(0, numDepDofs - numLocalDofs, 6, numLocalDofs)
-            = mParentJoint->getLocalJacobian();
+    if (numLocalDofs > 0)
+        mBodyJacobian.block(0, numDepDofs - numLocalDofs, 6, numLocalDofs)
+                = mParentJoint->getLocalJacobian();
 
     // TODO: below code will be deleted once mJw, mJv are deprecated.
     const Eigen::MatrixXd& Jworld = getWorldJacobian();
     mJw = Jworld.topLeftCorner(3,numDepDofs);
     mJv = Jworld.bottomLeftCorner(3,numDepDofs);
+    //evalJacAng();
+    //evalJacLin();
+
+    mJw;
+    mJv;
+
+    int a = 10;
 }
 
-Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
+Vector3d BodyNode::evalWorldPos(const Vector3d& _lp)
+{
     return dart_math::xformHom(mW, _lp);
 }
 
-Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
+Matrix4d BodyNode::getLocalDeriv(Dof* _q) const
+{
     return mParentJoint->getDeriv(_q);
 }
 
-void BodyNode::setDependDofList() {
+void BodyNode::setDependDofList()
+{
     mDependentDofs.clear();
-    if (mParentNode != NULL) {
-        mDependentDofs.insert(mDependentDofs.end(), mParentNode->mDependentDofs.begin(), mParentNode->mDependentDofs.end());
+    if (mParentNode != NULL)
+    {
+        mDependentDofs.insert(mDependentDofs.end(),
+                              mParentNode->mDependentDofs.begin(),
+                              mParentNode->mDependentDofs.end());
     }
 
-    for (int i = 0; i < getNumLocalDofs(); i++) {
+    for (int i = 0; i < getNumLocalDofs(); i++)
+    {
         int dofID = getDof(i)->getSkelIndex();
         mDependentDofs.push_back(dofID);
     }
@@ -271,18 +327,31 @@ void BodyNode::setDependDofList() {
 #endif
 }
 
-bool BodyNode::dependsOn(int _dofIndex) const {
-    return binary_search(mDependentDofs.begin(), mDependentDofs.end(), _dofIndex);
+bool BodyNode::dependsOn(int _dofIndex) const
+{
+    return binary_search(mDependentDofs.begin(),
+                         mDependentDofs.end(),
+                         _dofIndex);
 }
 
-void BodyNode::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
-    if (!_ri) return;
+void BodyNode::draw(renderer::RenderInterface* _ri,
+                    const Vector4d& _color,
+                    bool _useDefaultColor,
+                    int _depth) const
+{
+    if (!_ri)
+        return;
+
     _ri->pushMatrix();
+
     // render the self geometry
-    for (int i = 0; i < mParentJoint->getNumTransforms(); i++) {
+    for (int i = 0; i < mParentJoint->getNumTransforms(); i++)
+    {
         mParentJoint->getTransform(i)->applyGLTransform(_ri);
     }
-    if (mVizShape != NULL) {
+
+    if (mVizShape != NULL)
+    {
         _ri->pushName((unsigned)mID);
         _ri->pushMatrix();
         mVizShape->draw(_ri, _color, _useDefaultColor);
@@ -291,112 +360,129 @@ void BodyNode::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool
     }
 
     // render the subtree
-    for (unsigned int i = 0; i < mJointsChild.size(); i++){
+    for (unsigned int i = 0; i < mJointsChild.size(); i++)
+    {
         mJointsChild[i]->getChildNode()->draw(_ri, _color, _useDefaultColor);
     }
+
     _ri->popMatrix();
 
 }
 
-void BodyNode::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-    if (!_ri) return;
+void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
+                           const Vector4d& _color,
+                           bool _useDefaultColor) const
+{
+    if (!_ri)
+        return;
+
     _ri->pushMatrix();
-    for (int i = 0; i < mParentJoint->getNumTransforms(); i++) {
+
+    for (int i = 0; i < mParentJoint->getNumTransforms(); i++)
         mParentJoint->getTransform(i)->applyGLTransform(_ri);
-    }
 
     // render the corresponding mMarkerss
-    for (unsigned int i = 0; i < mMarkers.size(); i++) {
+    for (unsigned int i = 0; i < mMarkers.size(); i++)
         mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
-    }
-    for (unsigned int i = 0; i < mJointsChild.size(); i++) {
-        mJointsChild[i]->getChildNode()->drawMarkers(_ri,_color, _useDefaultColor);
-    }
-    _ri->popMatrix();
 
+    for (unsigned int i = 0; i < mJointsChild.size(); i++)
+        mJointsChild[i]->getChildNode()->drawMarkers(_ri,_color, _useDefaultColor);
+
+    _ri->popMatrix();
 }
 
-//    void BodyNode::setLocalInertia(double _Ixx, double _Iyy, double _Izz, double _Ixy, double _Ixz, double _Iyz)
-//    {
-//        mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
-//        mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
-//        mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
-//    }
-
-Eigen::Matrix4d BodyNode::getMassTensor() {
-    const double halftrace = 0.5 * mI.trace(); // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
+Eigen::Matrix4d BodyNode::getMassTensor() const
+{
+    // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum
+    // of moment of inertia along all 3 axes
+    const double halftrace = 0.5 * mI.trace();
     Eigen::Matrix4d massTensor;
+
     massTensor << halftrace * Matrix3d::Identity() - mI, Vector3d::Zero(),
             RowVector3d::Zero()                  , mMass;
+
     return massTensor;
 }
 
-void BodyNode::setParentJoint(Joint *_p) {
+void BodyNode::setParentJoint(Joint *_p)
+{
     mParentJoint = _p;
     mParentNode = _p->getParentNode();
 }
 
-BodyNode* BodyNode::getChildNode(int _idx) const {
+BodyNode* BodyNode::getChildNode(int _idx) const
+{
     return mJointsChild[_idx]->getChildNode();
 }
 
-int BodyNode::getNumLocalDofs() const {
+int BodyNode::getNumLocalDofs() const
+{
     return mParentJoint->getNumDofs();
 }
 
-Dof* BodyNode::getDof(int _idx) const {
+Dof* BodyNode::getDof(int _idx) const
+{
     return mParentJoint->getDof(_idx);
 }
 
-bool BodyNode::isPresent(Dof* _q) {
+bool BodyNode::isPresent(Dof* _q)
+{
     return mParentJoint->isPresent(_q);
 }
 
-Matrix4d BodyNode::getDerivLocalTransform(int index) const {
+const Matrix4d& BodyNode::getDerivLocalTransform(int index) const
+{
     return mTq[index];
 }
 
-Matrix4d BodyNode::getDerivWorldTransform(int index) const {
+const Matrix4d& BodyNode::getDerivWorldTransform(int index) const
+{
     return mWq[index];
 }
 
-MatrixXd BodyNode::getJacobianLinear() const {
+const MatrixXd& BodyNode::getJacobianLinear() const
+{
     return mJv;
 }
 
-MatrixXd BodyNode::getJacobianAngular() const {
+const MatrixXd& BodyNode::getJacobianAngular() const
+{
     return mJw;
 }
 
-const Eigen::MatrixXd& BodyNode::getBodyJacobian() const {
-    return mJ;
+const Eigen::MatrixXd& BodyNode::getBodyJacobian() const
+{
+    return mBodyJacobian;
 }
 
-Eigen::MatrixXd BodyNode::getWorldJacobian() const {
+Eigen::MatrixXd BodyNode::getWorldJacobian() const
+{
     const Eigen::MatrixXd& bodyJacobian = getBodyJacobian();
-    Eigen::MatrixXd worldJacobian = Eigen::MatrixXd::Zero(mJ.rows(), mJ.cols());
+    Eigen::MatrixXd worldJacobian = Eigen::MatrixXd::Zero(mBodyJacobian.rows(), mBodyJacobian.cols());
 
     Matrix4d X = Matrix4d::Identity();
     X.topLeftCorner<3,3>() = mW.topLeftCorner<3,3>();
 
     for (int i = 0; i < worldJacobian.cols(); ++i)
-        worldJacobian.col(i) = dart_math::InvAd(X, bodyJacobian.col(i));
+        worldJacobian.col(i) = dart_math::Ad(X, bodyJacobian.col(i));
 
     return worldJacobian;
 }
 
-void BodyNode::evalVelocity(const VectorXd &_qDotSkel) {
+void BodyNode::evalVelocity(const VectorXd &_qDotSkel)
+{
     mVel.setZero();
-    for(int i = 0; i < getNumDependentDofs(); i++) {
+
+    for(int i = 0; i < getNumDependentDofs(); i++)
         mVel += mJv.col(i)*_qDotSkel[mDependentDofs[i]];
-    }
 }
 
-void BodyNode::evalOmega(const VectorXd &_qDotSkel) {
+void BodyNode::evalOmega(const VectorXd &_qDotSkel)
+{
     mOmega.setZero();
-    for(int i = mNumRootTrans; i < getNumDependentDofs(); i++) {
+
+    for(int i = mNumRootTrans; i < getNumDependentDofs(); i++)
         mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
-    }
 }
 
 dart_math::Vector6d BodyNode::getWorldVelocity() const

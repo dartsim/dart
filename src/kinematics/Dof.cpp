@@ -41,70 +41,144 @@
 
 double inf = 1e9;
 
-namespace kinematics {
+namespace kinematics
+{
 
 Dof::Dof()
     : q(0.0),
-      qMin(-inf),
-      qMax(inf),
+      dq(0.0),
+      ddq(0.0),
+      tau(0.0),
+      qMin(-std::numeric_limits<double>::infinity()),
+      dqMin(-std::numeric_limits<double>::infinity()),
+      ddqMin(-std::numeric_limits<double>::infinity()),
+      tauMin(-std::numeric_limits<double>::infinity()),
+      qMax(std::numeric_limits<double>::infinity()),
+      dqMax(std::numeric_limits<double>::infinity()),
+      ddqMax(std::numeric_limits<double>::infinity()),
+      tauMax(std::numeric_limits<double>::infinity()),
+      DqDp(0.0),
+      DdqDp(0.0),
+      DddqDp(0.0),
+      DtauDp(0.0),
       mSkelIndex(-1),
       mVariable(false),
       mTrans(NULL),
-      mJoint(NULL) {
+      mJoint(NULL)
+{
     strcpy(mName, "dof");
 }
 
 Dof::Dof(double _v)
     : q(_v),
-      qMin(-inf),
-      qMax(inf),
+      dq(0.0),
+      ddq(0.0),
+      tau(0.0),
+      qMin(-std::numeric_limits<double>::infinity()),
+      dqMin(-std::numeric_limits<double>::infinity()),
+      ddqMin(-std::numeric_limits<double>::infinity()),
+      tauMin(-std::numeric_limits<double>::infinity()),
+      qMax(std::numeric_limits<double>::infinity()),
+      dqMax(std::numeric_limits<double>::infinity()),
+      ddqMax(std::numeric_limits<double>::infinity()),
+      tauMax(std::numeric_limits<double>::infinity()),
+      DqDp(0.0),
+      DdqDp(0.0),
+      DddqDp(0.0),
+      DtauDp(0.0),
       mSkelIndex(-1),
       mVariable(false),
       mTrans(NULL),
-      mJoint(NULL) {
+      mJoint(NULL)
+{
     strcpy(mName, "dof");
 }
 
 Dof::Dof(double _v, const char *_name)
     : q(_v),
-      qMin(-inf),
-      qMax(inf),
+      dq(0.0),
+      ddq(0.0),
+      tau(0.0),
+      qMin(-std::numeric_limits<double>::infinity()),
+      dqMin(-std::numeric_limits<double>::infinity()),
+      ddqMin(-std::numeric_limits<double>::infinity()),
+      tauMin(-std::numeric_limits<double>::infinity()),
+      qMax(std::numeric_limits<double>::infinity()),
+      dqMax(std::numeric_limits<double>::infinity()),
+      ddqMax(std::numeric_limits<double>::infinity()),
+      tauMax(std::numeric_limits<double>::infinity()),
+      DqDp(0.0),
+      DdqDp(0.0),
+      DddqDp(0.0),
+      DtauDp(0.0),
       mSkelIndex(-1),
       mVariable(false),
       mTrans(NULL),
-      mJoint(NULL) {
+      mJoint(NULL)
+{
     strcpy(mName, _name);
 }
 
 Dof::Dof(double _v, double _min, double _max)
     : q(_v),
+      dq(0.0),
+      ddq(0.0),
+      tau(0.0),
       qMin(_min),
+      dqMin(-std::numeric_limits<double>::infinity()),
+      ddqMin(-std::numeric_limits<double>::infinity()),
+      tauMin(-std::numeric_limits<double>::infinity()),
       qMax(_max),
+      dqMax(std::numeric_limits<double>::infinity()),
+      ddqMax(std::numeric_limits<double>::infinity()),
+      tauMax(std::numeric_limits<double>::infinity()),
+      DqDp(0.0),
+      DdqDp(0.0),
+      DddqDp(0.0),
+      DtauDp(0.0),
       mSkelIndex(-1),
       mVariable(false),
       mTrans(NULL),
-      mJoint(NULL) {
+      mJoint(NULL)
+{
     strcpy(mName, "dof");
 }
 
 Dof::Dof(double _v, const char *_name, double _min, double _max)
     : q(_v),
+      dq(0.0),
+      ddq(0.0),
+      tau(0.0),
       qMin(_min),
+      dqMin(-std::numeric_limits<double>::infinity()),
+      ddqMin(-std::numeric_limits<double>::infinity()),
+      tauMin(-std::numeric_limits<double>::infinity()),
       qMax(_max),
+      dqMax(std::numeric_limits<double>::infinity()),
+      ddqMax(std::numeric_limits<double>::infinity()),
+      tauMax(std::numeric_limits<double>::infinity()),
+      DqDp(0.0),
+      DdqDp(0.0),
+      DddqDp(0.0),
+      DtauDp(0.0),
       mSkelIndex(-1),
       mVariable(false),
       mTrans(NULL),
-      mJoint(NULL) {
+      mJoint(NULL)
+{
     strcpy(mName, _name);
 }
 
-void Dof::setValue(double _v) {
+void Dof::setValue(double _v)
+{
     q = _v;
+
     if (mTrans != NULL)
         mTrans->setDirty();
 }
 
-void Dof::init() {
+void Dof::init()
+{
     strcpy(mName, "dof");
 
     q = dq = ddq = tau = 0.0;
