@@ -113,6 +113,7 @@ namespace kinematics {
 
         // calculate mass
         // init the dependsOnDof stucture for each bodylink
+        mMass = 0.0;
         for(int i=0; i<getNumNodes(); i++) {
             mNodes[i]->setSkel(this);
             // mNodes[i]->setDependDofMap(getNumDofs());
