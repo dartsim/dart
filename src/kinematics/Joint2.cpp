@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/14/2013
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Date: 06/12/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,19 +35,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kinematics/HingeJoint.h"
+#include <iostream>
+#include <map>
 
-namespace kinematics {
+#include "math/UtilsMath.h"
+#include "kinematics/Dof.h"
+#include "kinematics/Transformation.h"
+#include "kinematics/TrfmRotateAxis.h"
+#include "kinematics/BodyNode.h"
+#include "kinematics/Joint2.h"
 
-//HingeJoint::HingeJoint(BodyNode* _bParent, BodyNode* _bChild, const char* _name)
-//    : Joint(_bParent, _bChild, _name)
-//{
-//    mDofs.push_back(&mDof);
-//}
+using namespace Eigen;
+using namespace std;
 
-//HingeJoint::~HingeJoint()
-//{
-//}
+namespace kinematics
+{
 
 } // namespace kinematics
 
