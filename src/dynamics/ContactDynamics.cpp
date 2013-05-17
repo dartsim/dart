@@ -61,8 +61,8 @@ void ContactDynamics::reset() {
 
 void ContactDynamics::initialize() {
     // Allocate the Collision Detection class
-    //mCollisionChecker = new FCLCollisionDetector();
-    mCollisionChecker = new FCLMESHCollisionDetector();
+    mCollisionChecker = new FCLCollisionDetector();
+    //mCollisionChecker = new FCLMESHCollisionDetector();
 
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionChecker
@@ -250,7 +250,7 @@ void ContactDynamics::fillMatrices() {
 
 bool ContactDynamics::solve() {
     lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-    bool b = solver.Solve(mA, mQBar, mX, mMu, mNumDir, true);
+    bool b = solver.Solve(mA, mQBar, mX, mMu, getNumContacts(), mNumDir, true);
     return b;
 }
 
