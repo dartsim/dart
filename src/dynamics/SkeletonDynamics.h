@@ -126,19 +126,17 @@ public:
     Eigen::VectorXd getGravityVector() const { return mG; }
     Eigen::VectorXd getCombinedVector() const { return mCg; }
     Eigen::VectorXd getExternalForces() const { return mFext; }
-    Eigen::VectorXd getInternalForces() const { return mFint; }
+    DEPRECATED Eigen::VectorXd getInternalForces() const { return get_tau(); }
 
     bool getImmobileState() const { return mImmobile; }
     void setImmobileState(bool _s) { mImmobile = _s; }
     bool getJointLimitState() const { return mJointLimit; }
     void setJointLimitState(bool _s) { mJointLimit = _s; }
-    void setInternalForces(const Eigen::VectorXd& _forces);
-    void setMinInternalForces(Eigen::VectorXd _minForces)
-    { mFintMin = _minForces; }
-    Eigen::VectorXd getMinInternalForces() const { return mFintMin; }
-    void setMaxInternalForces(Eigen::VectorXd _maxForces)
-    { mFintMax = _maxForces; }
-    Eigen::VectorXd getMaxInternalForces() const { return mFintMax; }
+    DEPRECATED void setInternalForces(const Eigen::VectorXd& _forces) { set_tau(_forces); }
+    DEPRECATED void setMinInternalForces(Eigen::VectorXd _minForces) { set_tauMin(_minForces); }
+    DEPRECATED Eigen::VectorXd getMinInternalForces() const { return get_tauMin(); }
+    DEPRECATED void setMaxInternalForces(Eigen::VectorXd _maxForces) { set_tauMax(_maxForces); }
+    DEPRECATED Eigen::VectorXd getMaxInternalForces() const { return get_tauMax(); }
 
 protected:
     Eigen::MatrixXd mM;    ///< Mass matrix for the skeleton
@@ -148,9 +146,9 @@ protected:
     Eigen::VectorXd mG;    ///< Gravity vector for the skeleton; computed in nonrecursive dynamics only
     Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
     Eigen::VectorXd mFext; ///< external forces vector for the skeleton
-    Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
-    Eigen::VectorXd mFintMin; ///< minimum internal forces
-    Eigen::VectorXd mFintMax; ///< maximum internal forces
+    //Eigen::VectorXd mFint; ///< internal forces vector for the skeleton; computed by an external controller
+    //Eigen::VectorXd mFintMin; ///< minimum internal forces
+    //Eigen::VectorXd mFintMax; ///< maximum internal forces
 
     bool mImmobile;   ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct
     bool mJointLimit; ///<True if the joint limits are enforced in dynamic simulation

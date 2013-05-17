@@ -68,16 +68,16 @@ void SkeletonDynamics::initDynamics()
     mCvec = VectorXd::Zero(getNumDofs());
     mG = VectorXd::Zero(getNumDofs());
     mCg = VectorXd::Zero(getNumDofs());
-    mFint = VectorXd::Zero(getNumDofs());
-    mFintMin = VectorXd::Zero(getNumDofs());
-    mFintMax = VectorXd::Zero(getNumDofs());
+//    mFint = VectorXd::Zero(getNumDofs());
+//    mFintMin = VectorXd::Zero(getNumDofs());
+//    mFintMax = VectorXd::Zero(getNumDofs());
     mFext = VectorXd::Zero(getNumDofs());
 
-    for (unsigned int i = 0; i < mFint.size(); ++i)
-    {
-        mFintMin[i] = -std::numeric_limits<double>::infinity();
-        mFintMax[i] = std::numeric_limits<double>::infinity();
-    }
+//    for (unsigned int i = 0; i < mFint.size(); ++i)
+//    {
+//        mFintMin[i] = -std::numeric_limits<double>::infinity();
+//        mFintMax[i] = std::numeric_limits<double>::infinity();
+//    }
 
     //dtdbg << "SkeletonDynamics is initialized.\n";
 }
@@ -384,19 +384,6 @@ void SkeletonDynamics::clearExternalForces()
 
     for (int i = 0; i < nNodes; i++)
         ((BodyNodeDynamics*)mNodes.at(i))->clearExternalForces();
-}
-
-void SkeletonDynamics::setInternalForces(const Eigen::VectorXd& _forces)
-{
-    for (int i = 0; i < mFint.size(); ++i)
-    {
-        if (mFintMin(i) > _forces(i))
-            mFint(i) = mFintMin(i);
-        if (mFintMax(i) < _forces(i))
-            mFint(i) = mFintMax(i);
-        else
-            mFint(i) = _forces(i);
-    }
 }
 
 }   // namespace dynamics

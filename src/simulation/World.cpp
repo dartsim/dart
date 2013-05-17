@@ -216,6 +216,7 @@ Eigen::VectorXd World::evalDeriv()
                                 * (-mSkeletons[i]->getCombinedVector()
                                    + mSkeletons[i]->getExternalForces()
                                    + mSkeletons[i]->getInternalForces()
+                                   + mSkeletons[i]->get_tau()
                                    //+ mCollisionHandle->getConstraintForce(i)
                                    + mCollisionHandle->getTotalConstraintForce(i)
                                    );
