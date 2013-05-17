@@ -14,9 +14,9 @@ int main(int argc, char* argv[])
     FileInfoSkel<SkeletonDynamics> model, model2, model3, model4, model5;
     model.loadFile(DART_DATA_PATH"/skel/ground1.skel", SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/sphere.skel", SKEL);
-    model3.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
-    model4.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
-    model5.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
+    model3.loadFile(DART_DATA_PATH"/skel/sphere.skel", SKEL);
+//    model4.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
+//    model5.loadFile(DART_DATA_PATH"/skel/sphere1.skel", SKEL);
     
     // create and initialize the world
     World *myWorld = new World();
@@ -27,8 +27,8 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model3.getSkel());
-    myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
-    myWorld->addSkeleton((SkeletonDynamics*)model5.getSkel());
+//    myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
+//    myWorld->addSkeleton((SkeletonDynamics*)model5.getSkel());
 
     VectorXd initPose = myWorld->getSkeleton(0)->getPose();
     initPose[1] = -0.35;
@@ -44,15 +44,15 @@ int main(int argc, char* argv[])
     initPose[1] = -0.35 + 0.1;    // y-axis
     myWorld->getSkeleton(2)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(3)->getPose();
-    initPose[0] = 0.60;                 // x-axis
-    initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
-    myWorld->getSkeleton(3)->setPose(initPose);
+//    initPose = myWorld->getSkeleton(3)->getPose();
+//    initPose[0] = 0.60;                 // x-axis
+//    initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
+//    myWorld->getSkeleton(3)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(4)->getPose();
-    initPose[0] = -0.30;                 // x-axis
-    initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
-    myWorld->getSkeleton(4)->setPose(initPose);
+//    initPose = myWorld->getSkeleton(4)->getPose();
+//    initPose[0] = -0.30;                 // x-axis
+//    initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
+//    myWorld->getSkeleton(4)->setPose(initPose);
 
     // create a window and link it to the world
     MyWindow window;
