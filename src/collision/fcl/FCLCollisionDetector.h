@@ -44,12 +44,14 @@
 
 #include "collision/CollisionDetector.h"
 
-namespace collision {
+namespace collision
+{
 
 class FCLCollisionNode;
 
 /// @brief
-class FCLCollisionDetector : public CollisionDetector {
+class FCLCollisionDetector : public CollisionDetector
+{
 public:
     /// @brief
     FCLCollisionDetector();
@@ -69,6 +71,9 @@ public:
 
     /// @brief
     void setNumMaxContacts(int _num) { mNumMaxContacts = _num; }
+
+    CollisionNode* findCollisionNode(
+            const fcl::CollisionGeometry* _fclCollGeom) const;
 
 protected:
 

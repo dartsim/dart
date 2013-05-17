@@ -163,6 +163,24 @@ TEST_F(COLLISION, BOX_SPHERE_Z) {
 	unrotatedTest(&box1, &sphere, 1.0, 2); // z-axis
 }
 
+TEST_F(COLLISION, SPHERE_BOX_X) {
+	fcl::Sphere obj1(0.5);
+	fcl::Box obj2(2, 2, 2);
+	unrotatedTest(&obj1, &obj2, 0.5, 0); // x-axis
+}
+
+TEST_F(COLLISION, SPHERE_BOX_Y) {
+	fcl::Sphere obj1(0.5);
+	fcl::Box obj2(2, 2, 2);
+	unrotatedTest(&obj1, &obj2, 0.5, 1); // y-axis
+}
+
+TEST_F(COLLISION, SPHERE_BOX_Z) {
+	fcl::Sphere obj1(0.5);
+	fcl::Box obj2(2, 2, 2);
+	unrotatedTest(&obj1, &obj2, 0.5, 2); // z-axis
+}
+
 TEST_F(COLLISION, SPHERE_SPHERE_X) {
 	fcl::Sphere sphere1(1);
 	fcl::Sphere sphere2(0.5);
