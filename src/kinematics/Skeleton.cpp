@@ -116,10 +116,8 @@ void Skeleton::addTransform(Transformation *_t)
     _t->setVariable(true);
     _t->setSkelIndex(mTransforms.size()-1);
 
-    for(int i=0; i<_t->getNumDofs(); i++)
-    {
+    for(int i = 0; i < _t->getNumDofs(); i++)
         addDof(_t->getDof(i));
-    }
 }
 
 void Skeleton::initSkel()
@@ -138,7 +136,7 @@ void Skeleton::initSkel()
         mMass += mNodes[i]->getMass();
     }
 
-    for(int i=0; i<getNumNodes(); i++)
+    for(int i = 0; i < getNumNodes(); i++)
         mNodes.at(i)->updateTransform();
 }
 
@@ -149,11 +147,11 @@ BodyNode* Skeleton::getNode(const char* const _name) const
     for(int i = 0; i < nNodes; i++)
     {
         BodyNode* node = getNode(i);
+
         if (strcmp(_name, node->getName()) == 0)
-        {
             return node;
-        }
     }
+
     return NULL;
 }
 
@@ -161,13 +159,14 @@ int Skeleton::getNodeIndex(const char* const _name) const
 {
     const int nNodes = getNumNodes();
 
-    for(int i = 0; i < nNodes; i++){
+    for(int i = 0; i < nNodes; i++)
+    {
         BodyNode* node = getNode(i);
+
         if (strcmp(_name, node->getName()) == 0)
-        {
             return i;
-        }
     }
+
     return -1;
 }
 
@@ -175,13 +174,14 @@ Joint* Skeleton::getJoint(const char* const _name) const
 {
     const int nJoints = getNumJoints();
 
-    for (int i = 0; i < nJoints; ++i) {
+    for (int i = 0; i < nJoints; ++i)
+    {
         Joint* joint = getJoint(i);
+
         if (strcmp(_name, joint->getName()) == 0)
-        {
             return joint;
-        }
     }
+
     return NULL;
 }
 
@@ -192,11 +192,11 @@ int Skeleton::getJointIndex(const char* const _name) const
     for (int i = 0; i < nJoints; ++i)
     {
         Joint* joint = getJoint(i);
+
         if (strcmp(_name, joint->getName()) == 0)
-        {
             return i;
-        }
     }
+
     return -1;
 }
 
@@ -211,6 +211,7 @@ Vector3d Skeleton::getWorldCOM()
         BodyNode* node = getNode(i);
         com += (node->getMass() * node->getWorldCOM());
     }
+
     return com / mMass;
 }
 
@@ -230,12 +231,15 @@ void Skeleton::setPose(const VectorXd& state, bool bCalcTrans, bool bCalcDeriv)
 
 Eigen::VectorXd Skeleton::getPose()
 {
-    Eigen::VectorXd pose(getNumDofs());
-    for (int i = 0; i < getNumDofs(); i++) {
-        pose(i) = mDofs[i]->getValue();
-    }
-    return pose;
-    //return get_q();
+//    Eigen::VectorXd pose(getNumDofs());
+
+//    for (int i = 0; i < getNumDofs(); i++)
+//    {
+//        pose(i) = mDofs[i]->getValue();
+//    }
+
+//    return pose;
+    return get_q();
 }
 
 Eigen::VectorXd Skeleton::getPoseVelocity()
@@ -273,6 +277,7 @@ MatrixXd Skeleton::getJacobian(BodyNode* _bd, Vector3d& _localOffset)
 {
     MatrixXd J(3, mDofs.size());
     J.setZero();
+
     for(int i = 0; i < _bd->getNumDependentDofs(); i++)
     {
         int dofindex = _bd->getDependentDof(i);
@@ -281,6 +286,7 @@ MatrixXd Skeleton::getJacobian(BodyNode* _bd, Vector3d& _localOffset)
                                       _localOffset);
         J.col(dofindex) = deriv;
     }
+
     return J;
 }
 
