@@ -128,7 +128,8 @@ void Skeleton::initSkel()
 
     // calculate mass
     // init the dependsOnDof stucture for each bodylink
-    for(int i=0; i<getNumNodes(); i++)
+    mMass = 0.0;
+    for(int i = 0; i < getNumNodes(); i++)
     {
         mNodes[i]->setSkel(this);
         // mNodes[i]->setDependDofMap(getNumDofs());
@@ -138,9 +139,7 @@ void Skeleton::initSkel()
     }
 
     for(int i=0; i<getNumNodes(); i++)
-    {
         mNodes.at(i)->updateTransform();
-    }
 }
 
 BodyNode* Skeleton::getNode(const char* const _name) const
