@@ -378,6 +378,26 @@ void SkeletonDynamics::clampRotation(VectorXd& _q, VectorXd& _qdot)
     set_dq(_qdot);
 }
 
+Eigen::VectorXd SkeletonDynamics::getDampingForces() const
+{
+    Eigen::VectorXd dampingForce = Eigen::VectorXd(getNumDofs());
+
+    int idx = 0;
+    int numJoints = mJoints.size();
+
+    for (int i = 0; i < numJoints; ++i)
+    {
+        int numDofsJoint = mJoints[i]->getNumDofs();
+        Eigen::VectorXd dampingForceJoint = mJoints[i]->getDampingForce();
+
+        dampingForce.segment(idx, numDofsJoint) = dampingForceJoint;
+
+        idx += numDofsJoint;
+    }
+
+    return dampingForce;
+}
+
 void SkeletonDynamics::clearExternalForces()
 {
     int nNodes = getNumNodes();

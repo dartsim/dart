@@ -39,11 +39,13 @@
 #include <iostream>
 
 #include <fcl/shape/geometric_shapes.h>
+#include <fcl/shape/geometric_shape_to_BVH_model.h>
 #include <fcl/BVH/BVH_model.h>
 
 #include "kinematics/BodyNode.h"
 #include "kinematics/Shape.h"
 #include "kinematics/ShapeMesh.h"
+#include "kinematics/ShapeEllipsoid.h"
 #include "kinematics/ShapeCylinder.h"
 #include "kinematics/BodyNode.h"
 
@@ -53,7 +55,8 @@
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 #include "collision/fcl_mesh/FCLMESHCollisionNode.h"
 
-namespace collision {
+namespace collision
+{
 
 FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
     : CollisionNode(_bodyNode),
@@ -63,8 +66,20 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
 
     switch (shape->getShapeType()) {
         case kinematics::Shape::P_ELLIPSOID:
-            mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+        {
+            kinematics::ShapeEllipsoid* ellipsoid
+                    = dynamic_cast<kinematics::ShapeEllipsoid*>(shape);
+
+            if (ellipsoid->isSphere())
+            {
+                mMesh = new fcl::BVHModel<fcl::OBBRSS>;
+                fcl::generateBVHModel<fcl::OBBRSS>(*mMesh, fcl::Sphere(shape->getDim()[0]*0.5), fcl::Transform3f(), 10, 10);
+            }
+            else
+                mMesh = createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
+
             break;
+        }
         case kinematics::Shape::P_BOX:
             mMesh = createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2]);
             break;

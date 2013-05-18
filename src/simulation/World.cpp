@@ -218,6 +218,7 @@ Eigen::VectorXd World::evalDeriv()
                                    + mSkeletons[i]->getInternalForces()
                                    + mSkeletons[i]->get_tau()
                                    //+ mCollisionHandle->getConstraintForce(i)
+                                   + mSkeletons[i]->getDampingForces()
                                    + mCollisionHandle->getTotalConstraintForce(i)
                                    );
 

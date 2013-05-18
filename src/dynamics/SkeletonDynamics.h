@@ -127,6 +127,7 @@ public:
     Eigen::VectorXd getCombinedVector() const { return mCg; }
     Eigen::VectorXd getExternalForces() const { return mFext; }
     DEPRECATED Eigen::VectorXd getInternalForces() const { return get_tau(); }
+    Eigen::VectorXd getDampingForces() const;
 
     bool getImmobileState() const { return mImmobile; }
     void setImmobileState(bool _s) { mImmobile = _s; }

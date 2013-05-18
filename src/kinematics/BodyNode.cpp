@@ -278,10 +278,10 @@ void BodyNode::evalJacobian()
 
     // TODO: below code will be deleted once mJw, mJv are deprecated.
     const Eigen::MatrixXd& Jworld = getWorldJacobian();
-    mJw = Jworld.topLeftCorner(3,numDepDofs);
-    mJv = Jworld.bottomLeftCorner(3,numDepDofs);
-    //evalJacAng();
-    //evalJacLin();
+    //mJw = Jworld.topLeftCorner(3,numDepDofs);
+    //mJv = Jworld.bottomLeftCorner(3,numDepDofs);
+    evalJacAng();
+    evalJacLin();
 
     mJw;
     mJv;

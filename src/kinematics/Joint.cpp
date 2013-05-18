@@ -71,6 +71,8 @@ Joint::~Joint(){
     }
     mTransforms.clear();
     mDofs.clear();
+    mDampingCoefficient.clear();
+    mFrictionCoefficient.clear();
 }
 
 bool Joint::isPresent (const Dof* _q) const{
@@ -359,6 +361,10 @@ void Joint::addDof(Dof *_d) {
     mDofs.push_back(_d);
     _d->setJoint(this);
 
+    // TODO: We assume that the default values are zero.
+    mFrictionCoefficient.push_back(0);
+    mDampingCoefficient.push_back(0);
+
     // TODO:
     //mLocalJacobian = Eigen::MatrixXd(6,getNumDofs());
 }
@@ -380,6 +386,59 @@ Eigen::MatrixXd Joint::getLocalJacobian()
 {
     //return mLocalJacobian;
     return __recursive_evalLocalJacobian();
+}
+
+void Joint::setDampingCoefficient(int _idx, double _d)
+{
+    assert(0 <= _idx && _idx < getNumDofs());
+    assert(_d >= 0.0);
+
+    mDampingCoefficient[_idx] = _d;
+}
+
+void Joint::setFrictionCoefficient(int _idx, double _f)
+{
+    assert(0 <= _idx && _idx < getNumDofs());
+    assert(_f >= 0.0);
+
+    mFrictionCoefficient[_idx] = _f;
+}
+
+double Joint::getDampingCoefficient(int _idx) const
+{
+    assert(0 <= _idx && _idx < getNumDofs());
+
+    return mDampingCoefficient[_idx];
+}
+
+double Joint::getFrictionCoefficient(int _idx) const
+{
+    assert(0 <= _idx && _idx < getNumDofs());
+
+    return mFrictionCoefficient[_idx];
+}
+
+Eigen::VectorXd Joint::getDampingForce() const
+{
+    int numDofs = getNumDofs();
+    Eigen::VectorXd dampingForce(numDofs);
+
+    for (int i = 0; i < numDofs; ++i)
+        dampingForce(i) = -mDampingCoefficient[i] * getDof(i)->dq;
+
+    return dampingForce;
+}
+
+Eigen::VectorXd Joint::getFrictionForce() const
+{
+    int numDofs = getNumDofs();
+    Eigen::VectorXd frictionForce(numDofs);
+
+    // TODO: NOT IMPLEMENTED
+
+
+
+    return frictionForce;
 }
 
 //dart_math::Vector6d Joint::evalLocalVelocity() const

@@ -144,6 +144,25 @@ public:
     /// @brief
     //dart_math::Vector6d evalLocalVelocity() const;
 
+    /// @brief
+    void setDampingCoefficient(int _idx, double _d);
+
+    /// @brief
+    void setFrictionCoefficient(int _idx, double _f);
+
+    /// @brief
+    double getDampingCoefficient(int _idx) const;
+
+    /// @brief
+    double getFrictionCoefficient(int _idx) const;
+
+    /// @brief
+    Eigen::VectorXd getDampingForce() const;
+
+    // TODO: NOT IMPLEMENTED
+    /// @brief
+    Eigen::VectorXd getFrictionForce() const;
+
 protected:
     /// @brief Parent body.
     BodyNode *mNodeParent;
@@ -187,6 +206,12 @@ protected:
 
     /// @brief
     //dart_math::Vector6d mLocalVelocity;
+
+    /// @brief
+    std::vector<double> mDampingCoefficient;
+
+    /// @brief
+    std::vector<double> mFrictionCoefficient;
 
 private:
     Eigen::MatrixXd __recursive_evalLocalJacobian();

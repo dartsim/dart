@@ -174,8 +174,8 @@ using namespace dart_math;
 
         void ConstraintDynamics::initialize() {
             // Allocate the Collision Detection class
-            //mCollisionChecker = new FCLCollisionDetector();
-            mCollisionChecker = new FCLMESHCollisionDetector();
+            mCollisionChecker = new FCLCollisionDetector();
+            //mCollisionChecker = new FCLMESHCollisionDetector();
 
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
