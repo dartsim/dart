@@ -1,7 +1,7 @@
 #include "MyWindow.h"
 #include "simulation/World.h"
 #include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/ContactDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
 #include "yui/GLFuncs.h"
 #include "math/UtilsMath.h"
 
@@ -15,7 +15,7 @@ void MyWindow::timeStepping()
 {
     static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(1)->getNode("fullbody1_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
 
-    mController->setConstrForces(mWorld->getCollisionHandle()->getConstraintForce(1));
+    mController->setConstrForces(mWorld->getCollisionHandle()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->getPose(), mWorld->getSkeleton(1)->getPoseVelocity());
     mWorld->getSkeleton(1)->setInternalForces(mController->getTorques());
 

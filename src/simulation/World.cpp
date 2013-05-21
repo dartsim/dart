@@ -41,7 +41,7 @@
  */
 
 #include "simulation/World.h"
-#include "dynamics/ContactDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
 #include "collision/CollisionDetector.h"
@@ -60,7 +60,7 @@ World::World()
 {
     mIndices.push_back(0);
 
-    mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
+    mCollisionHandle = new dynamics::ConstraintDynamics(mSkeletons, mTimeStep);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -213,7 +213,7 @@ void World::setState(const Eigen::VectorXd& _newState)
 Eigen::VectorXd World::evalDeriv()
 {
     // compute contact forces
-    mCollisionHandle->applyContactForces();
+    mCollisionHandle->computeConstraintForces();
 
     // compute derivatives for integration
     Eigen::VectorXd deriv = Eigen::VectorXd::Zero(mIndices.back() * 2);
@@ -230,15 +230,8 @@ Eigen::VectorXd World::evalDeriv()
                                 * (-mSkeletons[i]->getCombinedVector()
                                    + mSkeletons[i]->getExternalForces()
                                    + mSkeletons[i]->getInternalForces()
-                                   + mCollisionHandle->getConstraintForce(i)
+                                   + mCollisionHandle->getTotalConstraintForce(i)
                                    );
-
-        //        Eigen::VectorXd qddot = mSkeletons[i]->getMassMatrix().ldlt().solve(
-        //                                    -mSkeletons[i]->getCombinedVector()
-        //                                    + mSkeletons[i]->getExternalForces()
-        //                                    + mSkeletons[i]->getInternalForces()
-        //                                    + mCollisionHandle->getConstraintForce(i)
-        //                                    );
         
         // set velocities
         deriv.segment(start, size) = getSkeleton(i)->getPoseVelocity() + (qddot * mTimeStep);
