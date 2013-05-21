@@ -97,7 +97,17 @@ public:
     double init_dq;
     double init_ddq;
 
-    std::vector<double> q_history;
+    //std::vector<double> q_history;
+
+    double get_q() const { return q; }
+    double get_dq() const { return dq; }
+    double get_ddq() const { return ddq; }
+    double get_tau() const { return tau; }
+
+    void set_q(double _q) { q = _q; }
+    void set_dq(double _dq) { dq = _dq; }
+    void set_ddq(double _ddq) { ddq = _ddq; }
+    void set_tau(double _tau) { tau = _tau; }
 
 public:
     /// @brief
