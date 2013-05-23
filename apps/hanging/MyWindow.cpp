@@ -146,7 +146,6 @@ void MyWindow::draw()
     glDisable(GL_LIGHTING);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     if (!mSim) {
         if (mPlayFrame < mBakedStates.size()) {
@@ -200,7 +199,7 @@ void MyWindow::draw()
         }
     }
 
-    // draw hand hold
+    // draw handholds
     mRI->setPenColor(Vector3d(0.2, 0.2, 0.2));
     mRI->pushMatrix();
     glTranslated(0.0, -0.06, -0.52);
