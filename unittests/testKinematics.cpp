@@ -161,32 +161,6 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
     }
 }
 
-//TEST(KINEMATICS, TRANSFORM_LOCAL_JACOBIAN) {
-//    double dt = 0.000001;
-//    double pos_min = -3.14;
-//    double pos_max = 3.14;
-
-//    double vel_min = -3.14;
-//    double vel_max = 3.14;
-
-//    kinematics::Dof *x = new kinematics::Dof(dart_math::random(pos_min, pos_max));
-//    kinematics::Dof *y = new kinematics::Dof(dart_math::random(pos_min, pos_max));
-//    kinematics::Dof *z = new kinematics::Dof(dart_math::random(pos_min, pos_max));
-
-//    double dxdt = dart_math::random(vel_min, vel_max);
-//    double dydt = dart_math::random(vel_min, vel_max);
-//    double dzdt = dart_math::random(vel_min, vel_max);
-//    Eigen::Vector3d dwdt;
-//    dwdt << dxdt, dydt, dzdt;
-
-//    kinematics::TrfmRotateExpMap trfmRotExp(x, y, z);
-
-//    Eigen::MatrixXd J = trfmRotExp.getJacobian();
-
-//    Eigen::Matrix<double,6,1> V = J * dwdt;
-
-//}
-
 /* ********************************************************************************************* */
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);

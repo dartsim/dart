@@ -12,10 +12,10 @@ int main(int argc, char* argv[])
 {
     // load a skeleton file
     FileInfoSkel<SkeletonDynamics> model, model2, model3, model4;
-    model.loadFile(DART_DATA_PATH"/skel/cube2.skel", SKEL);
-    model2.loadFile(DART_DATA_PATH"/skel/cube1.skel", SKEL);
-//    model3.loadFile(DART_DATA_PATH"/skel/cube1.skel", SKEL);
-//    model4.loadFile(DART_DATA_PATH"/skel/cube1.skel", SKEL);
+    model.loadFile(DART_DATA_PATH"/skel/ground1.skel", SKEL);
+    model2.loadFile(DART_DATA_PATH"/skel/cube2.skel", SKEL);
+    model3.loadFile(DART_DATA_PATH"/skel/cube1.skel", SKEL);
+    model4.loadFile(DART_DATA_PATH"/skel/cube1.skel", SKEL);
     
     // create and initialize the world
     World *myWorld = new World();
@@ -25,27 +25,25 @@ int main(int argc, char* argv[])
     ((SkeletonDynamics*)model.getSkel())->setImmobileState(true);
     myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
-//    myWorld->addSkeleton((SkeletonDynamics*)model3.getSkel());
-//    myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
+    myWorld->addSkeleton((SkeletonDynamics*)model3.getSkel());
+    myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
 
-    VectorXd initPose = myWorld->getSkeleton(0)->get_q();
-    initPose[1] = -0.2;
+    VectorXd initPose = myWorld->getSkeleton(0)->getPose();
+    initPose[1] = -0.35;
     myWorld->getSkeleton(0)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(1)->get_q();
-    initPose[1] = 0.2;
-    initPose[3] = 0.5;
-    initPose[4] = 0.5;
+    initPose = myWorld->getSkeleton(1)->getPose();
+    initPose[1] = -0.35 + 0.025;
     myWorld->getSkeleton(1)->setPose(initPose);
 
-//    initPose = myWorld->getSkeleton(2)->getPose();
-//    initPose[1] = -0.35 + 0.025 + 0.05 + 0.2;
-//    myWorld->getSkeleton(2)->setPose(initPose);
+    initPose = myWorld->getSkeleton(2)->getPose();
+    initPose[1] = -0.35 + 0.025 + 0.05;
+    myWorld->getSkeleton(2)->setPose(initPose);
 
-//    initPose = myWorld->getSkeleton(3)->getPose();
-//    initPose[0] = 0.05;
-//    initPose[1] = -0.35 + 0.025 + 0.05 + 0.08 + 0.3;
-//    myWorld->getSkeleton(3)->setPose(initPose);
+    initPose = myWorld->getSkeleton(3)->getPose();
+    initPose[0] = 0.05;
+    initPose[1] = -0.35 + 0.025 + 0.05 + 0.08;
+    myWorld->getSkeleton(3)->setPose(initPose);
 
     // create a window and link it to the world
     MyWindow window;
