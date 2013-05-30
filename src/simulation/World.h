@@ -51,7 +51,6 @@
 #include "integration/RK4Integrator.h"
 #include "dynamics/SkeletonDynamics.h"
 #include "utils/Deprecated.h"
-//#include "utils/Console.h"
 
 namespace dynamics {
 class ContactDynamics;
@@ -80,9 +79,6 @@ public:
 
     /// @brief Calculate the dynamics and integrate the world for one step.
     void step();
-
-    // TODO: NOT IMPLEMENTED
-    void step2();
 
     /// @brief .
     /// @param[in] _gravity
