@@ -35,8 +35,7 @@ namespace dynamics {
     void PointConstraint::getJacobian() {
         for(int i = 0; i < mBody->getNumDependentDofs(); i++) {
             int dofIndex = mBody->getDependentDof(i);
-            VectorXd Jcol = xformHom(mBody->getDerivWorldTransform(i), mOffset);
-            mJ.col(dofIndex) = Jcol;
+            mJ.col(dofIndex) = xformHom(mBody->getDerivWorldTransform(i), mOffset);
         }
     }
 } // namespace dynamics

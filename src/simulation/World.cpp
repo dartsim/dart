@@ -44,9 +44,8 @@
 
 #include "kinematics/Dof.h"
 #include "collision/CollisionDetector.h"
-#include "dynamics/ContactDynamics.h"
-#include "dynamics/ConstraintDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
 #include "simulation/World.h"
 
 namespace simulation {
@@ -61,7 +60,6 @@ World::World()
 {
     mIndices.push_back(0);
 
-    //mCollisionHandle = new dynamics::ContactDynamics(mSkeletons, mTimeStep);
     mCollisionHandle = new dynamics::ConstraintDynamics(mSkeletons, mTimeStep);
 }
 
@@ -180,8 +178,7 @@ void World::setState(const Eigen::VectorXd& _newState)
 ////////////////////////////////////////////////////////////////////////////////
 Eigen::VectorXd World::evalDeriv()
 {
-    // compute contact forces
-    //mCollisionHandle->applyContactForces();
+    // compute constraint forces
     mCollisionHandle->computeConstraintForces();
 
     // compute derivatives for integration
@@ -200,25 +197,10 @@ Eigen::VectorXd World::evalDeriv()
                                    + mSkeletons[i]->getExternalForces()
                                    + mSkeletons[i]->getInternalForces()
                                    + mSkeletons[i]->get_tau()
-                                   //+ mCollisionHandle->getConstraintForce(i)
                                    + mSkeletons[i]->getDampingForces()
                                    + mCollisionHandle->getTotalConstraintForce(i)
                                    );
 
-        Eigen::MatrixXd InvM = mSkeletons[i]->getInvMassMatrix();
-        Eigen::MatrixXd Cdq_G = -mSkeletons[i]->getCombinedVector();
-        Eigen::MatrixXd ExtForce = mSkeletons[i]->getExternalForces();
-        Eigen::MatrixXd IntForce = mSkeletons[i]->getInternalForces();
-        //Eigen::MatrixXd constForce = mCollisionHandle->getConstraintForce(i);
-        Eigen::MatrixXd constForce = mCollisionHandle->getTotalConstraintForce(i);
-
-        //        Eigen::VectorXd qddot = mSkeletons[i]->getMassMatrix().ldlt().solve(
-        //                                    -mSkeletons[i]->getCombinedVector()
-        //                                    + mSkeletons[i]->getExternalForces()
-        //                                    + mSkeletons[i]->getInternalForces()
-        //                                    + mCollisionHandle->getConstraintForce(i)
-        //                                    );
-        
         // set velocities
         deriv.segment(start, size) = getSkeleton(i)->get_dq() + (qddot * mTimeStep);
 

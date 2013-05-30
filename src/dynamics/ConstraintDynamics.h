@@ -130,9 +130,9 @@ namespace dynamics {
         std::vector<Constraint*> mConstraints;
         int mTotalRows;
 
-        Eigen::MatrixXd mZ; // N x N
+        Eigen::MatrixXd mZ; // N x N, symmetric (only lower triangle filled)
         Eigen::VectorXd mTauHat; // M x 1
-        Eigen::MatrixXd mGInv; // M x M
+        Eigen::MatrixXd mGInv; // M x M, symmetric (only lower triangle filled)
         std::vector<Eigen::MatrixXd> mJMInv; // M x N
         std::vector<Eigen::MatrixXd> mJ; // M x N
         std::vector<Eigen::MatrixXd> mPreJ; // M x N
