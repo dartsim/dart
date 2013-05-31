@@ -303,25 +303,4 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
     mRoot->drawMarkers(_ri, _color, _useDefaultColor);
 }
 
-//void Skeleton::updateJointKinematics()
-//{
-//    int numJoints = mJoints.size();
-//    for (int i = 0; i < numJoints; ++i)
-//        mJoints[i]->updateForwardKinematics();
-//}
-
-//bool Skeleton::_scanDofs() {
-//    int numJoints = mJoints.size();
-
-//    for (int i = 0; i < numJoints; ++i) {
-//        int numJointDofs = mJoints[i]->getNumDofs();
-
-//        for (int j = 0; j < numJointDofs; ++j) {
-//            mDofs.push_back(mJoints[i]->getDof(j));
-//        }
-//    }
-
-//    return true;
-//}
-
 } // namespace kinematics

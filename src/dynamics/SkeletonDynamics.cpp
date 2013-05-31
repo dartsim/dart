@@ -63,23 +63,11 @@ void SkeletonDynamics::initDynamics()
 {
     mM = MatrixXd::Zero(getNumDofs(), getNumDofs());
     mC = MatrixXd::Zero(getNumDofs(), getNumDofs());
-    //mQdot = VectorXd::Zero(getNumDofs());
     set_dq(VectorXd::Zero(getNumDofs()));
     mCvec = VectorXd::Zero(getNumDofs());
     mG = VectorXd::Zero(getNumDofs());
     mCg = VectorXd::Zero(getNumDofs());
-//    mFint = VectorXd::Zero(getNumDofs());
-//    mFintMin = VectorXd::Zero(getNumDofs());
-//    mFintMax = VectorXd::Zero(getNumDofs());
     mFext = VectorXd::Zero(getNumDofs());
-
-//    for (unsigned int i = 0; i < mFint.size(); ++i)
-//    {
-//        mFintMin[i] = -std::numeric_limits<double>::infinity();
-//        mFintMax[i] = std::numeric_limits<double>::infinity();
-//    }
-
-    //dtdbg << "SkeletonDynamics is initialized.\n";
 }
 
 kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name)

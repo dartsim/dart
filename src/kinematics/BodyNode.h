@@ -79,7 +79,6 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include "utils/Deprecated.h"
 #include "math/EigenHelper.h"
 #include "math/UtilsMath.h"
-#include "math/Inertia.h"
 
 namespace renderer { class RenderInterface; }
 
@@ -413,9 +412,6 @@ protected:
 
     /// @brief Pointer to the model this body node belongs to.
     Skeleton* mSkel;
-
-    /// @brief Generalized inertia w.r.t. body frame.
-    dart_math::Inertia mInertia;
 
     //--------------------------------------------------------------------------
     // TRANSFORMATIONS

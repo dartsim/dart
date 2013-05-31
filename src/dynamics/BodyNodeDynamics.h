@@ -52,15 +52,6 @@ namespace dynamics
 class BodyNodeDynamics : public kinematics::BodyNode
 {
 public:
-    //--------------------------------------------------------------------------
-    // DEPRECATED
-    //--------------------------------------------------------------------------
-    Eigen::Vector3d mVelBody;      ///< linear velocity expressed in the *local frame* of the body
-    Eigen::Vector3d mVelDotBody;   ///< linear acceleration expressed in the *local frame* of the body
-    Eigen::Vector3d mOmegaBody;    ///< angular velocity expressed in the *local frame* of the body
-    Eigen::Vector3d mOmegaDotBody; ///< angular acceleration expressed in the *local frame* of the body
-
-public:
     // We need this aligned allocator because we have Matrix4d as members in
     // this class.
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -92,6 +83,11 @@ public:
     //--------------------------------------------------------------------------
     // Inverse Dynamics
     //--------------------------------------------------------------------------
+    Eigen::Vector3d mVelBody;      ///< linear velocity expressed in the *local frame* of the body
+    Eigen::Vector3d mVelDotBody;   ///< linear acceleration expressed in the *local frame* of the body
+    Eigen::Vector3d mOmegaBody;    ///< angular velocity expressed in the *local frame* of the body
+    Eigen::Vector3d mOmegaDotBody; ///< angular acceleration expressed in the *local frame* of the body
+
     Eigen::MatrixXd mJwJoint;         ///< Jacobian matrix for the parent joint
     Eigen::MatrixXd mJwDotJoint;      ///< Time derivative of the Jacobian matrix for the parent joint
     Eigen::Vector3d mForceJointBody;  ///< the constraint joint force in Cartesian coordinates, expressed in the local frame of the body instead of the joint
