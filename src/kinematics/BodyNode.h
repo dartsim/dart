@@ -347,14 +347,6 @@ public:
     /// T(i-1,i), W(i)
     void updateTransform();
 
-    /// @brief Update generalized body velocity w.r.t. body frame.
-    /// V(i)
-    void updateVelocity();
-
-    /// @brief Update generalized body acceleration w.r.t. body frame.
-    /// dV(i)
-    void updateAcceleration();
-
 protected:
     /// @brief Name
     char mName[MAX_NODE3D_NAME];
