@@ -2,8 +2,9 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,84 +36,170 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SKELETON_H
-#define KINEMATICS_SKELETON_H
+#ifndef DART_KINEMATICS_SKELETON_H
+#define DART_KINEMATICS_SKELETON_H
 
 #include <vector>
 #include <Eigen/Dense>
 
-namespace renderer { class RenderInterface; };
+#include "kinematics/System.h"
 
-namespace kinematics {
+namespace renderer { class RenderInterface; }
 
-    class Transformation;
-    class Marker;
-    class Joint;
-    class BodyNode;
-    class Dof;
+namespace kinematics
+{
 
-    class Skeleton {
-    public:
-        Eigen::VectorXd mCurrPose; 
-        BodyNode* mRoot;
+class Transformation;
+class Marker;
+class Joint;
+class BodyNode;
+class Dof;
+
+class Skeleton : public System
+{
+public:
 
 
-        Skeleton();
-        virtual ~Skeleton();
+public:
+    /// @brief
+    Skeleton();
 
-        virtual BodyNode* createBodyNode(const char* const name = NULL);
-        void addMarker(Marker *_h);
-        void addNode(BodyNode *_b, bool _addParentJoint = true);
-        void addJoint(Joint *_j);
-        void addDof(Dof *_d);
-        void addTransform(Transformation *_t);
-	
-        // init the model after parsing
-        void initSkel();
-	
-        // inline access functions
-        inline int getNumDofs() const { return mDofs.size(); }
-        inline int getNumNodes() const { return mNodes.size(); }
-        inline int getNumMarkers() const { return mMarkers.size(); }
-        inline int getNumJoints() const { return mJoints.size();}
-        inline Dof* getDof(int _i) { return mDofs[_i]; }
-        inline BodyNode* getNode(int _i) const { return mNodes[_i]; }
-        inline BodyNode* getRoot() { return mRoot; }
-        BodyNode* getNode(const char* const _name) const;
-        int getNodeIndex(const char* const _name) const;
-        inline Joint* getJoint(int _i) const { return mJoints[_i]; }
-        Joint* getJoint(const char* const _name) const;
-        int getJointIndex(const char* const _name) const;
+    /// @brief
+    virtual ~Skeleton();
 
-        inline Marker* getMarker(int _i) { return mMarkers[_i]; }
-        inline double getMass() { return mMass; }
-        Eigen::Vector3d getWorldCOM();
-        inline std::string getName() { return mName; }
-        inline void setName( std::string _name ) { mName = _name; }
-        Eigen::VectorXd getPose();
-        virtual void setPose(const Eigen::VectorXd&, bool bCalcTrans = true, bool bCalcDeriv = true);
-        Eigen::VectorXd getConfig(std::vector<int> _id);
-        void setConfig(std::vector<int> _id, Eigen::VectorXd _vals, bool _calcTrans = true, bool _calcDeriv = true);
-        Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
+    /// @brief
+    virtual BodyNode* createBodyNode(const char* const name = NULL);
 
-        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
-        void drawMarkers(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _color=Eigen::Vector4d::Ones(), bool _useDefaultColor = true ) const;
+    /// @brief
+    void addMarker(Marker *_h);
 
-        void setSelfCollidable(bool _selfCollidable) { mSelfCollidable = _selfCollidable; }
-        bool getSelfCollidable() const { return mSelfCollidable; }
+    /// @brief
+    void addNode(BodyNode *_b, bool _addParentJoint = true);
 
-    protected:
-        std::string mName;
-        std::vector<Marker*> mMarkers;
-        std::vector<Dof*> mDofs;
-        std::vector<Transformation*> mTransforms;
-        std::vector<BodyNode*> mNodes;
-        std::vector<Joint*> mJoints;
-        double mMass;
-        bool mSelfCollidable;
-    };
+    /// @brief
+    void addJoint(Joint *_j);
+
+    /// @brief
+    void addDof(Dof *_d);
+
+    /// @brief
+    void addTransform(Transformation *_t);
+
+    /// @brief Init the model after parsing.
+    void initSkel();
+
+    /// @brief
+    int getNumNodes() const { return mNodes.size(); }
+
+    /// @brief
+    int getNumMarkers() const { return mMarkers.size(); }
+
+    /// @brief
+    int getNumJoints() const { return mJoints.size();}
+
+    /// @brief
+    BodyNode* getNode(int _i) const { return mNodes[_i]; }
+
+    /// @brief
+    BodyNode* getRoot() { return mRoot; }
+
+    /// @brief
+    BodyNode* getNode(const char* const _name) const;
+
+    /// @brief
+    int getNodeIndex(const char* const _name) const;
+
+    /// @brief
+    Joint* getJoint(int _i) const { return mJoints[_i]; }
+
+    /// @brief
+    Joint* getJoint(const char* const _name) const;
+
+    /// @brief
+    int getJointIndex(const char* const _name) const;
+
+    /// @brief
+    Marker* getMarker(int _i) { return mMarkers[_i]; }
+
+    /// @brief
+    double getMass() { return mMass; }
+
+    /// @brief
+    Eigen::Vector3d getWorldCOM();
+
+    /// @brief
+    std::string getName() { return mName; }
+
+    /// @brief
+    void setName( std::string _name ) { mName = _name; }
+
+    /// @brief
+    virtual void setPose(const Eigen::VectorXd&,
+                         bool bCalcTrans = true,
+                         bool bCalcDeriv = true);
+
+    /// @brief
+    Eigen::VectorXd getConfig(std::vector<int> _id);
+
+    /// @brief
+    void setConfig(std::vector<int> _id,
+                   Eigen::VectorXd _vals,
+                   bool _calcTrans = true,
+                   bool _calcDeriv = true);
+
+    /// @brief
+    Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
+
+    /// @brief
+    void draw(renderer::RenderInterface* _ri = NULL,
+              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+              bool _useDefaultColor = true) const;
+
+    /// @brief
+    void drawMarkers(renderer::RenderInterface* _ri = NULL,
+                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                     bool _useDefaultColor = true ) const;
+
+    /// @brief
+    void setSelfCollidable(bool _selfCollidable)
+    { mSelfCollidable = _selfCollidable; }
+
+    /// @brief
+    bool getSelfCollidable() const { return mSelfCollidable; }
+
+    /// @brief
+    Eigen::VectorXd getPose();
+
+    /// @brief
+    Eigen::VectorXd getPoseVelocity();
+
+protected:
+    /// @brief
+    std::string mName;
+
+    /// @brief
+    std::vector<Marker*> mMarkers;
+
+    /// @brief
+    std::vector<Transformation*> mTransforms;
+
+    /// @brief
+    std::vector<BodyNode*> mNodes;
+
+    /// @brief
+    std::vector<Joint*> mJoints;
+
+    /// @brief
+    double mMass;
+
+    /// @brief
+    bool mSelfCollidable;
+
+    /// @brief
+    BodyNode* mRoot;
+};
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_SKELETON_H
+#endif // #ifndef DART_KINEMATICS_SKELETON_H
 

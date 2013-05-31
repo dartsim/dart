@@ -37,6 +37,7 @@
 
 #include <assimp/scene.h>
 #include <fcl/shape/geometric_shapes.h>
+#include <fcl/shape/geometric_shape_to_BVH_model.h>
 
 #include "kinematics/BodyNode.h"
 #include "kinematics/ShapeEllipsoid.h"

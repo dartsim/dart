@@ -32,14 +32,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <gtest/gtest.h>
 #include "kinematics/FileInfoSkel.hpp"
 #include "kinematics/Skeleton.h"
 #include "kinematics/BodyNode.h"
 #include "kinematics/FileInfoDof.h"
 #include "kinematics/FileInfoC3D.h"
+#include "kinematics/TrfmRotateExpmap.h"
 #include "utils/Paths.h"
-#include <iostream>
-#include <gtest/gtest.h>
+#include "math/UtilsMath.h"
 
 using namespace std;
 
@@ -145,7 +147,7 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
     }
 
     // Angular Jacobian
-    const MatrixXd Jwbody = nodecheck->getWorldTransform().topLeftCorner(3,3).transpose()
+    const MatrixXd Jwbody = nodecheck->getWorldTransform().topLeftCorner<3,3>().transpose()
         * nodecheck->getJacobianAngular();
     MatrixXd Jwbody_truth = MatrixXd::Zero(Jwbody.rows(), Jwbody.cols());
     Jwbody_truth << 0, 0, 0, 0.0818662, 0.996527, 0.000504051, 0.110263, 0.993552, 0.0249018, 0.0772274, 0.995683, 0.0423836, 0.648386, 0.628838, 0.0338389,

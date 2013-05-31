@@ -7,7 +7,7 @@
 #include "math/UtilsMath.h"
 
 using namespace Eigen;
-using namespace math;
+using namespace dart_math;
 
 namespace dynamics {
     PointConstraint::PointConstraint(BodyNodeDynamics *_body, Vector3d _offset, Vector3d _target, int _skelIndex) {
@@ -27,7 +27,7 @@ namespace dynamics {
         SkeletonDynamics *skel = (SkeletonDynamics*)mBody->getSkel();
         _J[mSkelIndex].block(_rowIndex, 0, 3, skel->getNumDofs()) = mJ;
         Vector3d worldP = xformHom(mBody->getWorldTransform(), mOffset);
-        VectorXd qDot = skel->getPoseVelocity();
+        VectorXd qDot = skel->get_dq();
         _C.segment(_rowIndex, 3) = worldP - mTarget;
         _CDot.segment(_rowIndex, 3) = mJ * qDot;
     }

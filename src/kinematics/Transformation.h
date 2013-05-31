@@ -35,99 +35,162 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_TRANSFORMATION_H
-#define KINEMATICS_TRANSFORMATION_H
+#ifndef DART_KINEMATICS_TRANSFORMATION_H
+#define DART_KINEMATICS_TRANSFORMATION_H
 
 #include <vector>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-namespace renderer { class RenderInterface; };
+#include "kinematics/System.h"
+
+namespace renderer { class RenderInterface; }
 
 namespace kinematics {
+
 #define MAX_TRANSFORMATION_NAME 182
 
-    class Joint;
-    class Dof;
+class Joint;
+class Dof;
 
-    enum AxisType{
-        A_X=0,
-        A_Y=1,
-        A_Z=2
+enum AxisType {
+    A_X = 0,
+    A_Y = 1,
+    A_Z = 2
+};
+
+class Transformation : public System {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    /// @brief
+    enum TransFormType {
+        T_ROTATEX,
+        T_ROTATEY,
+        T_ROTATEZ,
+        T_ROTATEEXPMAP,
+        T_ROTATEQUAT,
+        T_TRANSLATE,
+        T_TRANSLATEX,
+        T_TRANSLATEY,
+        T_TRANSLATEZ,
+        T_ROTATEAXIS
     };
 
-    class Transformation {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+public:
+    /// @brief Constructor.
+    Transformation();
 
-        enum TransFormType {
-            T_ROTATEX,
-            T_ROTATEY,
-            T_ROTATEZ,
-            T_ROTATEEXPMAP,
-            T_ROTATEQUAT,
-            T_TRANSLATE,
-            T_TRANSLATEX,
-            T_TRANSLATEY,
-            T_TRANSLATEZ,
-            T_ROTATEAXIS
-        };
+    /// @brief Destructor.
+    virtual ~Transformation();
 
-    public:
-        Transformation();
-        virtual ~Transformation();
+    /// @brief
+    TransFormType getType() const { return mType; }
 
-        inline TransFormType getType() const { return mType; }
+    /// @brief
+    char* getName() { return mName; }
 
-        inline char* getName() { return mName; }
+    /// @brief
+    int getSkelIndex() const { return mSkelIndex; }
 
-        inline int getSkelIndex() const { return mSkelIndex; }
-        inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+    /// @brief
+    void setSkelIndex(int _idx) { mSkelIndex = _idx; }
 
-        inline Joint* getJoint() const { return mJoint; }
-        inline void setJoint(Joint *_joint) { mJoint = _joint; }
+    /// @brief
+    Joint* getJoint() const { return mJoint; }
 
-        inline int getNumDofs() const { return mDofs.size(); }
-        inline Dof* getDof(int i) const { return mDofs[i]; }
+    /// @brief
+    void setJoint(Joint *_joint) { mJoint = _joint; }
 
-        inline bool getVariable() const { return mVariable; }
-        inline void setVariable(bool _var) { mVariable = _var; }
+    /// @brief
+    // TODO: What about changing the function name getVariable() to
+    // isVariable() instead.
+    bool isVariable() const { return mVariable; }
 
-        inline void setDirty() { mDirty = true; }
-        Eigen::Matrix4d getTransform();
+    /// @brief
+    void setVariable(bool _var) { mVariable = _var; }
 
-        bool isPresent(const Dof *d) const;	// true if d is present in the dof list
-        virtual Eigen::Matrix4d getInvTransform();
+    /// @brief
+    void setDirty() { mDirty = true; }
 
-        virtual void applyTransform(Eigen::Vector3d& _v);
-        virtual void applyTransform(Eigen::Matrix4d& _m);
-        virtual void applyInvTransform(Eigen::Vector3d& _v);
-        virtual void applyInvTransform(Eigen::Matrix4d& _m);
+    /// @brief
+    Eigen::Matrix4d getTransform();
 
-        virtual void applyDeriv(const Dof* _q, Eigen::Vector3d& _v);
-        virtual void applyDeriv(const Dof* _q, Eigen::Matrix4d& _m);
-        virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Vector3d& _v);
-        virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2, Eigen::Matrix4d& _m);
+    /// @brief true if d is present in the dof list.
+    bool isPresent(const Dof *d) const;
 
-        virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;	// apply transform in GL
-        virtual void computeTransform() = 0;	// computes and stores in above
-        virtual Eigen::Matrix4d getDeriv(const Dof *_q) = 0;	// get derivative wrt to a dof
-        virtual Eigen::Matrix4d getSecondDeriv(const Dof *_q1, const Dof *_q2) = 0;	// get derivative wrt to 2 dofs present in a transformation
+    /// @brief
+    virtual Eigen::Matrix4d getInvTransform();
 
-    protected:
-        std::vector<Dof *> mDofs;	// collection of Dofs
-        TransFormType mType;
-        int mSkelIndex;	// position in the model transform vector
-        char mName[MAX_TRANSFORMATION_NAME];
+    /// @brief
+    virtual void applyTransform(Eigen::Vector3d& _v);
 
-        Joint *mJoint;	// Transformation associated with
-        bool mVariable;	// true when it is a variable and included int he model
-        Eigen::Matrix4d mTransform;	// transformation matrix will be stored here
+    /// @brief
+    virtual void applyTransform(Eigen::Matrix4d& _m);
 
-        bool mDirty;
-    };
+    /// @brief
+    virtual void applyInvTransform(Eigen::Vector3d& _v);
+
+    /// @brief
+    virtual void applyInvTransform(Eigen::Matrix4d& _m);
+
+    /// @brief
+    virtual void applyDeriv(const Dof* _q, Eigen::Vector3d& _v);
+
+    /// @brief
+    virtual void applyDeriv(const Dof* _q, Eigen::Matrix4d& _m);
+
+    /// @brief
+    virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2,
+                                  Eigen::Vector3d& _v);
+
+    /// @brief
+    virtual void applySecondDeriv(const Dof* _q1, const Dof* _q2,
+                                  Eigen::Matrix4d& _m);
+
+    /// @brief Apply transform in GL.
+    virtual void applyGLTransform(renderer::RenderInterface* _ri) const = 0;
+
+    /// @brief Computes and stores in above.
+    virtual void computeTransform() = 0;
+
+    /// @brief Get derivative wrt to a dof.
+    virtual Eigen::Matrix4d getDeriv(const Dof *_q) const = 0;
+
+    /// @brief Get derivative wrt to 2 dofs present in a transformation.
+    virtual Eigen::Matrix4d getSecondDeriv(const Dof *_q1,
+                                           const Dof *_q2) const = 0;
+
+    /// @brief Local Jacobian
+    /// @return \f$ J \in R^{6 \times n} \f$ where \f$ n \f$ is a number of
+    /// Dofs.
+    // TODO: Use this instead of getDeriv
+    virtual Eigen::MatrixXd getJacobian() const = 0;
+
+protected:
+    /// @brief
+    TransFormType mType;
+
+    /// @brief Position in the model transform vector.
+    int mSkelIndex;
+
+    /// @brief
+    char mName[MAX_TRANSFORMATION_NAME];
+
+    /// @brief Transformation associated with.
+    Joint *mJoint;
+
+    /// @brief true when it is a variable and included int he model.
+    bool mVariable;
+
+    /// @brief transformation matrix will be stored here.
+    Eigen::Matrix4d mTransform;
+
+    /// @brief
+    bool mDirty;
+};
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_TRANSFORMATION_H
+#endif // #ifndef DART_KINEMATICS_TRANSFORMATION_H
 

@@ -2,8 +2,9 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,75 +36,167 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_DOF_H
-#define KINEMATICS_DOF_H
+#ifndef DART_KINEMATICS_DOF_H
+#define DART_KINEMATICS_DOF_H
 
 #include <cstring>
 #include <Eigen/Dense>
+#include <vector>
 
-namespace kinematics {
+#include "utils/Deprecated.h"
+
+namespace kinematics
+{
+
 #define MAX_DOF_NAME 128
-    class Joint;
-    class Transformation;
 
-    class Dof{
-    public:
-        Dof();
-        Dof(double _val);
-        Dof(double _val, double _min, double _max);
-        Dof(double _val, const char *_name);
-        Dof(double _val, const char *_name, double _min, double _max);
-	
-        virtual ~Dof(){}
+class Joint;
+class Transformation;
 
-        // some helper functions
-        void setName(char* _n) { strcpy(mName, _n); }
-        inline char* getName() { return mName; }
-	
-        void setValue(double _v);
-        inline double getValue() const { return mVal; }
+class Dof
+{
+public:
+    // TODO: All publics? class vs struct?
 
-//        inline void setDefaultValue(double _newDefaultValue) { mDefaultValue = _newDefaultValue; }
-//        inline double getDefaultValue() { return mDefaultValue; }
-	
-        inline double getMin() const { return mMinVal; }
-        inline double getMax() const { return mMaxVal; }
-        inline void setMin(double _min) { mMinVal = _min; }
-        inline void setMax(double _max) { mMaxVal = _max; }
-	
-        inline int getSkelIndex() const { return mSkelIndex; }
-        inline void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+    //--------------------------------------------------------------------------
+    // Position
+    //--------------------------------------------------------------------------
+    double q;       ///< Position
+    double qMin;    ///< Min value allowed.
+    double qMax;    ///< Max value allowed.
+    double DqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
 
-        inline bool isVariable() const { return mVariable; }
-        inline void setVariable() { mVariable = true; }
-	
-        inline void setTrans(Transformation *_t){ mTrans = _t; }
-        inline Transformation* getTrans() const{ return mTrans; }
-	
-        inline void setJoint(Joint *_j) { mJoint = _j; }
-        inline Joint *getJoint() const { return mJoint; }
+    //--------------------------------------------------------------------------
+    // Velocity
+    //--------------------------------------------------------------------------
+    double dq;       ///< Velocity
+    double dqMin;    ///< Min value allowed.
+    double dqMax;    ///< Max value allowed.
+    double DdqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
 
-    protected:
-        void init(double _v, const char * _name, double _min, double _max);
-        char mName[MAX_DOF_NAME];
-        int mSkelIndex; // Unique to dof in model
+    //--------------------------------------------------------------------------
+    // Force (torque)
+    //--------------------------------------------------------------------------
+    double ddq;       ///< Acceleration
+    double ddqMin;    ///< Min value allowed.
+    double ddqMax;    ///< Max value allowed.
+    double DddqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
 
-//        /// @brief Default value.
-//        double mDefaultValue;
-        double mVal;	// Value of the joint angle
-        double mMinVal;	// Min value allowed
-        double mMaxVal;	// Max value allowed
+    //--------------------------------------------------------------------------
+    // Force (torque)
+    //--------------------------------------------------------------------------
+    double tau;       ///< Force (torque)
+    double tauMin;    ///< Min value allowed.
+    double tauMax;    ///< Max value allowed.
+    double DtauDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
 
-        double mTorque;
-        double mMinTorque;
-        double mMaxTorque;
+    //--------------------------------------------------------------------------
+    // Initial values
+    //--------------------------------------------------------------------------
+    double init_q;
+    double init_dq;
+    double init_ddq;
 
-        Transformation *mTrans;	// Transformation associated with
-        Joint *mJoint;	// Joint to which it belongs
+    //std::vector<double> q_history;
 
-        bool mVariable;	// True when it is a variable and included int he model
-    };
+    double get_q() const { return q; }
+    double get_dq() const { return dq; }
+    double get_ddq() const { return ddq; }
+    double get_tau() const { return tau; }
+
+    void set_q(double _q) { q = _q; }
+    void set_dq(double _dq) { dq = _dq; }
+    void set_ddq(double _ddq) { ddq = _ddq; }
+    void set_tau(double _tau) { tau = _tau; }
+
+public:
+    /// @brief
+    Dof();
+
+    /// @brief
+    Dof(double _val);
+
+    /// @brief
+    Dof(double _val, double _min, double _max);
+
+    /// @brief
+    Dof(double _val, const char *_name);
+
+    /// @brief
+    Dof(double _val, const char *_name, double _min, double _max);
+
+    virtual ~Dof() {}
+
+public:
+    /// @brief
+    void init();
+
+    /// @brief
+    void setName(char *_n) { strcpy(mName, _n); }
+
+    /// @brief
+    char* getName() { return mName; }
+
+    /// @brief
+    void setValue(double _v);
+
+    /// @brief
+    double getValue() const { return q; }
+
+    /// @brief
+    double getMin() const { return qMin; }
+
+    /// @brief
+    double getMax() const { return qMax; }
+
+    /// @brief
+    void setMin(double _min) { qMin = _min; }
+
+    /// @brief
+    void setMax(double _max) { qMax = _max; }
+
+    /// @brief
+    int getSkelIndex() const { return mSkelIndex; }
+
+    /// @brief
+    void setSkelIndex(int _idx) { mSkelIndex = _idx; }
+
+    /// @brief
+    bool isVariable() const { return mVariable; }
+
+    /// @brief
+    void setVariable() { mVariable = true; }
+
+    /// @brief
+    void setTrans(Transformation *_t){ mTrans = _t; }
+
+    /// @brief
+    Transformation* getTrans() const{ return mTrans; }
+
+    /// @brief
+    void setJoint(Joint *_j) { mJoint = _j; }
+
+    /// @brief
+    Joint *getJoint() const { return mJoint; }
+
+protected:
+    /// @brief
+    char mName[MAX_DOF_NAME];
+
+    /// @brief Unique to dof in model.
+    int mSkelIndex;
+
+    /// @brief Transformation associated with
+    Transformation *mTrans;
+
+    /// @brief Joint to which it belongs.
+    Joint *mJoint;
+
+    /// @brief True when it is a variable and included int he model.
+    bool mVariable;
+};
+
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_DOF_H
+#endif // #ifndef DART_KINEMATICS_DOF_H
 

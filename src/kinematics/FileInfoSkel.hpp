@@ -7,8 +7,8 @@
 */
 
 
-#ifndef KINEMATICS_FILEINFO_SKEL_H
-#define KINEMATICS_FILEINFO_SKEL_H
+#ifndef DART_KINEMATICS_FILEINFO_SKEL_H
+#define DART_KINEMATICS_FILEINFO_SKEL_H
 
 #include <fstream>
 #include <iomanip>
@@ -184,7 +184,7 @@ namespace kinematics {
         _outfile<<"chain { "<<_b->getParentJoint()->getNumTransforms()<<"\n";
         for(int i=0; i<_b->getParentJoint()->getNumTransforms(); i++){
             Transformation *tr = _b->getParentJoint()->getTransform(i);
-            if(!tr->getVariable()){	// constant
+            if(!tr->isVariable()){	// constant
                 if(tr->getType()==Transformation::T_TRANSLATE){
                     _outfile<<"telescope { <"<<tr->getDof(0)->getValue()<<", "<<tr->getDof(1)->getValue()<<", "<<tr->getDof(2)->getValue()<<">, "<<unitlength<<" }\n";
                 }
@@ -253,5 +253,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_FILEINFO_SKEL_H
+#endif // #ifndef DART_KINEMATICS_FILEINFO_SKEL_H
 

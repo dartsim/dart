@@ -67,7 +67,7 @@ public:
     { return mCollisionGeometry; }
 
     /// @brief
-    fcl::Transform3f getFCLTransform(void) const;
+    fcl::Transform3f getFCLTransform() const;
 
 protected:
 

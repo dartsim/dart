@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_FILEINFO_C3D_H
-#define KINEMATICS_FILEINFO_C3D_H
+#ifndef DART_KINEMATICS_FILEINFO_C3D_H
+#define DART_KINEMATICS_FILEINFO_C3D_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -69,5 +69,5 @@ namespace kinematics {
     };
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_FILEINFO_C3D_H
+#endif // #ifndef DART_KINEMATICS_FILEINFO_C3D_H
 

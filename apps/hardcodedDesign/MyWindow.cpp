@@ -29,7 +29,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
 		case '2': 
 		case '3': {
 			size_t dofIdx = key - 49;
-			Eigen::VectorXd pose = skel->getPose();
+			Eigen::VectorXd pose = skel->get_q();
 			pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
 			skel->setPose(pose);
 			std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose() << std::endl;

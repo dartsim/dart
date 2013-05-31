@@ -30,26 +30,26 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model5.getSkel());
 
-    VectorXd initPose = myWorld->getSkeleton(0)->getPose();
+    VectorXd initPose = myWorld->getSkeleton(0)->get_q();
     initPose[1] = -0.35;
     myWorld->getSkeleton(0)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(1)->getPose();
+    initPose = myWorld->getSkeleton(1)->get_q();
     initPose[0] = 0.00;            // x-axis
     initPose[1] = -0.35 + 0.1;    // y-axis
     myWorld->getSkeleton(1)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(2)->getPose();
+    initPose = myWorld->getSkeleton(2)->get_q();
     initPose[0] = 0.30;            // x-axis
     initPose[1] = -0.35 + 0.1;    // y-axis
     myWorld->getSkeleton(2)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(3)->getPose();
+    initPose = myWorld->getSkeleton(3)->get_q();
     initPose[0] = 0.60;                 // x-axis
     initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
     myWorld->getSkeleton(3)->setPose(initPose);
 
-    initPose = myWorld->getSkeleton(4)->getPose();
+    initPose = myWorld->getSkeleton(4)->get_q();
     initPose[0] = -0.30;                 // x-axis
     initPose[1] = -0.35 + 0.1 + 0.08;  // y-axis
     myWorld->getSkeleton(4)->setPose(initPose);

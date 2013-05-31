@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_ELLIPSOID_H
-#define KINEMATICS_SHAPE_ELLIPSOID_H
+#ifndef DART_KINEMATICS_SHAPE_ELLIPSOID_H
+#define DART_KINEMATICS_SHAPE_ELLIPSOID_H
 
 #include "Shape.h"
 
@@ -56,7 +56,7 @@ public:
     virtual Eigen::Matrix3d computeInertia(double _mass);
 
     /// @brief True if (mDim[0] == mDim[1] == mDim[2]).
-    bool isSphere(void) const;
+    bool isSphere() const;
 
 private:
     // Documentation inherited.
@@ -71,6 +71,6 @@ public:
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_ELLIPSOID_H
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_ELLIPSOID_H
 
 

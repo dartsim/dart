@@ -67,8 +67,8 @@ dynamics::SkeletonDynamics* prepareSkeleton( Eigen::VectorXd& _q, Eigen::VectorX
     _q = VectorXd::Zero(skelDyn->getNumDofs());
     _qdot = VectorXd::Zero(skelDyn->getNumDofs());
     for(int i=0; i<skelDyn->getNumDofs(); i++){
-        _q[i] = math::random(-1.0, 1.0);
-        _qdot[i] = math::random(-5.0, 5.0);
+        _q[i] = dart_math::random(-1.0, 1.0);
+        _qdot[i] = dart_math::random(-5.0, 5.0);
     }
     skelDyn->initDynamics();
     return skelDyn; }
@@ -155,8 +155,8 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
         }
 
         // compute velocities using inverse dynamics routine
-        Vector3d v2 = nodei->getWorldTransform().topLeftCorner(3,3)*nodei->mVelBody;
-        Vector3d w2 = nodei->getWorldTransform().topLeftCorner(3,3)*nodei->mOmegaBody;
+        Vector3d v2 = nodei->getWorldTransform().topLeftCorner<3,3>()*nodei->mVelBody;
+        Vector3d w2 = nodei->getWorldTransform().topLeftCorner<3,3>()*nodei->mOmegaBody;
 
         for(int k=0; k<3; k++) {
             EXPECT_NEAR(v1[k], v2[k], TOLERANCE_EXACT);
@@ -167,7 +167,7 @@ TEST(DYNAMICS, COMPARE_VELOCITIES) {
         MatrixXd Jw_regular = (nodei->getJacobianAngular()).rightCols(nodei->getParentJoint()->getNumDofsRot());
         // Angular jacobian inverse dynamics
         MatrixXd Jw_invdyn = nodei->mJwJoint;
-        if(nodei->getParentNode()) Jw_invdyn = nodei->getParentNode()->getWorldTransform().topLeftCorner(3,3)*Jw_invdyn;
+        if(nodei->getParentNode()) Jw_invdyn = nodei->getParentNode()->getWorldTransform().topLeftCorner<3,3>()*Jw_invdyn;
         ASSERT_TRUE(Jw_regular.rows()==Jw_invdyn.rows());
         ASSERT_TRUE(Jw_regular.cols()==Jw_invdyn.cols());
         for(int ki=0; ki<Jw_regular.rows(); ki++){
@@ -201,7 +201,7 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
 
         skelDyn->setPose(origq);
         skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
-        Matrix3d Ri = nodei->getWorldTransform().topLeftCorner(3,3);
+        Matrix3d Ri = nodei->getWorldTransform().topLeftCorner<3,3>();
 
         MatrixXd JwOrig = nodei->mJwJoint;
         MatrixXd JwDotOrig = nodei->mJwDotJoint;
@@ -212,7 +212,7 @@ TEST(DYNAMICS, FINITEDIFF_ACCELERATIONS_INVERSEDYNAMICS) {
 
         skelDyn->setPose(newq);
         skelDyn->computeInverseDynamicsLinear(gravity, &qdot);
-        Matrix3d Rinew = nodei->getWorldTransform().topLeftCorner(3,3);
+        Matrix3d Rinew = nodei->getWorldTransform().topLeftCorner<3,3>();
 
         MatrixXd JwNew = nodei->mJwJoint;
         MatrixXd JwDotApprox = (JwNew-JwOrig)/dt;
@@ -350,7 +350,7 @@ TEST(DYNAMICS, COMPARE_JOINT_TOQUE_W_EXTERNAL_FORCES) {
 	using namespace std;
 	using namespace Eigen;
 	using namespace kinematics;
-    using namespace math;
+    using namespace dart_math;
 	using namespace dynamics;
 
 	const double TOLERANCE_EXACT = 1.0e-10;

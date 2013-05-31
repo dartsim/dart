@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_MARKER_H
-#define KINEMATICS_MARKER_H
+#ifndef DART_KINEMATICS_MARKER_H
+#define DART_KINEMATICS_MARKER_H
 
 #include <Eigen/Dense>
 
@@ -96,5 +96,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_MARKER_H
+#endif // #ifndef DART_KINEMATICS_MARKER_H
 

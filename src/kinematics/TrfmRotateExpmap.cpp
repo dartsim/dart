@@ -47,94 +47,122 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    TrfmRotateExpMap::TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, const char* _name){
-        mDofs.resize(3);
-        mDofs[0]=x;
-        mDofs[1]=y;
-        mDofs[2]=z;
-        x->setTrans(this);
-        y->setTrans(this);
-        z->setTrans(this);
-        mType = Transformation::T_ROTATEEXPMAP;
-        if(_name!=NULL)
-            strcpy(mName, _name);
-        else
-            strcpy(mName, "EXPMAP");
+TrfmRotateExpMap::TrfmRotateExpMap(Dof *x, Dof *y, Dof *z, const char* _name){
+    mDofs.resize(3);
+    mDofs[0]=x;
+    mDofs[1]=y;
+    mDofs[2]=z;
+    x->setTrans(this);
+    y->setTrans(this);
+    z->setTrans(this);
+    mType = Transformation::T_ROTATEEXPMAP;
+    if(_name!=NULL)
+        strcpy(mName, _name);
+    else
+        strcpy(mName, "EXPMAP");
+}
+
+void TrfmRotateExpMap::computeTransform() {
+    Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+
+    Matrix3d rot = dart_math::expMapRot(q);
+    mTransform.setZero();
+    mTransform.topLeftCorner<3,3>() = rot;
+    mTransform(3, 3) = 1.0;
+}
+
+Matrix4d TrfmRotateExpMap::getInvTransform(){
+    if(mDirty){
+        computeTransform();
+        mDirty=false;
+    }
+    return mTransform.transpose();
+}
+
+
+Matrix4d TrfmRotateExpMap::getDeriv(const Dof *d) const
+{
+    Vector3d q(mDofs[0]->getValue(),
+            mDofs[1]->getValue(),
+            mDofs[2]->getValue());
+
+    // derivative wrt which dof
+    int j = -1;
+    for (unsigned int i=0; i<mDofs.size(); i++)
+        if (d==mDofs[i]) j=i;
+    assert(j!=-1);
+    assert(j>=0 && j<=2);
+
+    Matrix3d R = dart_math::expMapRot(q);
+    Matrix3d J = dart_math::expMapJac(q);
+    Matrix3d dRdj = dart_math::makeSkewSymmetric(J.col(j))*R;
+
+    Matrix4d dRdj4d = Matrix4d::Zero();
+    dRdj4d.topLeftCorner<3,3>() = dRdj;
+
+    return dRdj4d;
+}
+
+Matrix4d TrfmRotateExpMap::getSecondDeriv(const Dof *q1, const Dof *q2) const
+{
+    Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+
+    // derivative wrt which mDofs
+    int j=-1, k=-1;
+    for(unsigned int i=0; i<mDofs.size(); i++) {
+        if(q1==mDofs[i]) j=i;
+        if(q2==mDofs[i]) k=i;
+    }
+    assert(j!=-1);
+    assert(k!=-1);
+    assert(j>=0 && j<=2);
+    assert(k>=0 && k<=2);
+
+    Matrix3d R = dart_math::expMapRot(q);
+    Matrix3d J = dart_math::expMapJac(q);
+    Matrix3d Jjss = dart_math::makeSkewSymmetric(J.col(j));
+    Matrix3d Jkss = dart_math::makeSkewSymmetric(J.col(k));
+    Matrix3d dJjdkss = dart_math::makeSkewSymmetric(dart_math::expMapJacDeriv(q, k).col(j));
+
+    Matrix3d d2Rdidj = (Jjss*Jkss + dJjdkss)*R;
+
+    Matrix4d d2Rdidj4 = Matrix4d::Zero();
+    d2Rdidj4.topLeftCorner<3,3>() = d2Rdidj;
+
+    return d2Rdidj4;
+}
+
+Eigen::MatrixXd TrfmRotateExpMap::getJacobian() const {
+    // Assume the number of dofs is 3.
+    assert(getNumDofs() == 3);
+
+    Eigen::MatrixXd J = Eigen::Matrix<double,6,3>::Zero();
+
+    J.topLeftCorner<3,3>() = Eigen::Matrix3d::Identity();
+
+    Matrix4d X = getDeriv(mDofs[0]);
+    Matrix4d Y = getDeriv(mDofs[1]);
+    Matrix4d Z = getDeriv(mDofs[2]);
+
+    Matrix4d X2 = mTransform.inverse() * X;
+    Matrix4d Y2 = mTransform.inverse() * Y;
+    Matrix4d Z2 = mTransform.inverse() * Z;
+
+    Vector3d x = dart_math::fromSkewSymmetric(X2.topLeftCorner<3,3>());
+    Vector3d y = dart_math::fromSkewSymmetric(Y2.topLeftCorner<3,3>());
+    Vector3d z = dart_math::fromSkewSymmetric(Z2.topLeftCorner<3,3>());
+
+    return J;
+}
+
+void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{
+    Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
+    double theta = v.norm();
+    Vector3d vhat = Vector3d::Zero();
+    if(!dart_math::isZero(theta)) {
+        vhat= v/theta;
+        _ri->rotate(vhat, theta * 180 / M_PI);
     }
 
-    void TrfmRotateExpMap::computeTransform(){
-        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-
-        Matrix3d rot = math::expMapRot(q);
-        mTransform.setZero();
-        mTransform.topLeftCorner(3,3) = rot;
-        mTransform(3, 3) = 1.0;
-    }
-
-    Matrix4d TrfmRotateExpMap::getInvTransform(){
-        if(mDirty){
-            computeTransform();
-            mDirty=false;
-        }
-        return mTransform.transpose();
-    }
-
- 
-    Matrix4d TrfmRotateExpMap::getDeriv(const Dof *d){
-        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-
-        // derivative wrt which dof 
-        int j=-1;
-        for(unsigned int i=0; i<mDofs.size(); i++) if(d==mDofs[i]) j=i;
-        assert(j!=-1);
-        assert(j>=0 && j<=2);
-
-        Matrix3d R = math::expMapRot(q);
-        Matrix3d J = math::expMapJac(q);
-        Matrix3d dRdj = math::makeSkewSymmetric(J.col(j))*R;
-
-        Matrix4d dRdj4d = Matrix4d::Zero();
-        dRdj4d.topLeftCorner(3,3) = dRdj;
-
-        return dRdj4d;
-    }
-
-    Matrix4d TrfmRotateExpMap::getSecondDeriv(const Dof *q1, const Dof *q2){
-        Vector3d q(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-
-        // derivative wrt which mDofs
-        int j=-1, k=-1;
-        for(unsigned int i=0; i<mDofs.size(); i++) {
-            if(q1==mDofs[i]) j=i;
-            if(q2==mDofs[i]) k=i;
-        }
-        assert(j!=-1);
-        assert(k!=-1);
-        assert(j>=0 && j<=2);
-        assert(k>=0 && k<=2);
-
-        Matrix3d R = math::expMapRot(q);
-        Matrix3d J = math::expMapJac(q);
-        Matrix3d Jjss = math::makeSkewSymmetric(J.col(j));
-        Matrix3d Jkss = math::makeSkewSymmetric(J.col(k));
-        Matrix3d dJjdkss = math::makeSkewSymmetric(math::expMapJacDeriv(q, k).col(j));
-
-        Matrix3d d2Rdidj = (Jjss*Jkss + dJjdkss)*R;
-
-        Matrix4d d2Rdidj4 = Matrix4d::Zero();
-        d2Rdidj4.topLeftCorner(3,3) = d2Rdidj;
-
-        return d2Rdidj4;
-    }
-
-    void TrfmRotateExpMap::applyGLTransform(renderer::RenderInterface* _ri) const{
-        Vector3d v(mDofs[0]->getValue(), mDofs[1]->getValue(), mDofs[2]->getValue());
-        double theta = v.norm();
-        Vector3d vhat = Vector3d::Zero();
-        if(!math::isZero(theta)) {
-            vhat= v/theta;
-            _ri->rotate(vhat, theta * 180 / M_PI);
-        }
-
-    }
+}
 } // namespace kinematics

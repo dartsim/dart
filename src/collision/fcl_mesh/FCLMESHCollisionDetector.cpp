@@ -14,7 +14,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace math;
+using namespace dart_math;
 
 namespace collision
 {

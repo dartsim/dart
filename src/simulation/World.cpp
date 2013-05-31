@@ -40,13 +40,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "simulation/World.h"
-#include "dynamics/ConstraintDynamics.h"
-#include "dynamics/BodyNodeDynamics.h"
+#include <iostream>
+
 #include "kinematics/Dof.h"
 #include "collision/CollisionDetector.h"
-
-#include <iostream>
+#include "dynamics/BodyNodeDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
+#include "simulation/World.h"
 
 namespace simulation {
 
@@ -70,38 +70,17 @@ World::~World()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void World::setTimeStep(double _timeStep)
+{
+    mTimeStep = _timeStep;
+    mCollisionHandle->setTimeStep(_timeStep);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void World::reset()
 {
-    // Assume that the world is initialized.
-    //assert(mIsInitialized == true);
-
-    // Reset all states: mDofs and mDofVels.
-    for (unsigned int i = 0; i < getNumSkeletons(); i++)
-    {
-        //        mDofs[i].setZero(mSkels[i]->getNumDofs());
-        //        mDofVels[i].setZero(mSkels[i]->getNumDofs());
-    }
-
-    // Claculate transformations (forward kinematics).
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
-    {
-        //        mSkels[i]->setPose(mDofs[i], true, false);
-    }
-
-    // Calculate velocities represented in world frame (forward kinematics).
-    dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
-    for (unsigned int i = 0; i < getNumSkeletons(); ++i)
-    {
-        for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
-        {
-            itrBodyNodeDyn
-                    = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
-            //            itrBodyNodeDyn->evalVelocity(mDofVels[i]);
-        }
-    }
-
-    // Contact reset.
-    mCollisionHandle->reset();
+        mSkeletons[i]->restoreInitState();
 
     // Reset time and number of frames.
     mTime = 0;
@@ -111,37 +90,24 @@ void World::reset()
 ////////////////////////////////////////////////////////////////////////////////
 void World::step()
 {
-    step(mTimeStep);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void World::step(double _timeStep)
-{
     // Calculate (q, qdot) by integrating with (qdot, qdotdot).
-    mIntegrator.integrate(this, _timeStep);
+    mIntegrator.integrate(this, mTimeStep);
 
     // TODO: We need to consider better way.
     // Calculate body node's velocities represented in world frame.
-    dynamics::BodyNodeDynamics* itrBodyNodeDyn = NULL;
+    kinematics::BodyNode* itrBodyNode = NULL;
     for (unsigned int i = 0; i < getNumSkeletons(); ++i)
     {
         for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
         {
-            itrBodyNodeDyn
-                    = static_cast<dynamics::BodyNodeDynamics*>(mSkeletons[i]->getNode(j));
-            itrBodyNodeDyn->evalVelocity(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode = mSkeletons[i]->getNode(j);
+            itrBodyNode->evalVelocity(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode->evalOmega(mSkeletons[i]->getPoseVelocity());
         }
     }
 
-    mTime += _timeStep;
+    mTime += mTimeStep;
     mFrame++;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void World::steps(int _steps)
-{
-    for (int i = 0; i < _steps; ++i)
-        step();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +123,7 @@ dynamics::SkeletonDynamics* World::getSkeleton(const char* const _name) const
 
     for (unsigned int i = 0; i < mSkeletons.size(); ++i)
     {
-        if (mSkeletons[i]->getName() == _name)
+        if (strcmp(mSkeletons[i]->getName().c_str(), _name))
         {
             result = mSkeletons[i];
             break;
@@ -176,8 +142,8 @@ Eigen::VectorXd World::getState()
     {
         int start = mIndices[i] * 2;
         int size = getSkeleton(i)->getNumDofs();
-        state.segment(start, size) = getSkeleton(i)->getPose();
-        state.segment(start + size, size) = getSkeleton(i)->getPoseVelocity();
+        state.segment(start, size) = getSkeleton(i)->get_q();
+        state.segment(start + size, size) = getSkeleton(i)->get_dq();
     }
 
     return state;
@@ -212,7 +178,7 @@ void World::setState(const Eigen::VectorXd& _newState)
 ////////////////////////////////////////////////////////////////////////////////
 Eigen::VectorXd World::evalDeriv()
 {
-    // compute contact forces
+    // compute constraint forces
     mCollisionHandle->computeConstraintForces();
 
     // compute derivatives for integration
@@ -230,11 +196,13 @@ Eigen::VectorXd World::evalDeriv()
                                 * (-mSkeletons[i]->getCombinedVector()
                                    + mSkeletons[i]->getExternalForces()
                                    + mSkeletons[i]->getInternalForces()
+                                   + mSkeletons[i]->get_tau()
+                                   + mSkeletons[i]->getDampingForces()
                                    + mCollisionHandle->getTotalConstraintForce(i)
                                    );
-        
+
         // set velocities
-        deriv.segment(start, size) = getSkeleton(i)->getPoseVelocity() + (qddot * mTimeStep);
+        deriv.segment(start, size) = getSkeleton(i)->get_dq() + (qddot * mTimeStep);
 
         // set qddot (accelerations)
         deriv.segment(start + size, size) = qddot;
@@ -246,17 +214,14 @@ Eigen::VectorXd World::evalDeriv()
 ////////////////////////////////////////////////////////////////////////////////
 bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
 {
-    //--------------------------------------------------------------------------
-    // Step 1. Check if the world already has _skel.
-    //--------------------------------------------------------------------------
+    // Check if the world already has _skel.
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
         if (mSkeletons[i] == _skeleton)
             return false;
 
-    //--------------------------------------------------------------------------
-    // Step 2. Add _skel to the world.
-    //--------------------------------------------------------------------------
+    // Add _skeleton to the world.
     mSkeletons.push_back(_skeleton);
+
     _skeleton->initDynamics();
 
     // Indices update
@@ -265,9 +230,17 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
     if(!_skeleton->getImmobileState())
     {
         _skeleton->computeDynamics(mGravity,
-                                   _skeleton->getPoseVelocity(),
-                                   false);
+                                   _skeleton->get_dq(),
+                                   true);
+
+        for (unsigned int j = 0; j < _skeleton->getNumNodes(); j++)
+        {
+            _skeleton->getNode(j)->evalVelocity(_skeleton->get_dq());
+            _skeleton->getNode(j)->evalOmega(_skeleton->get_dq());
+        }
     }
+
+    _skeleton->backupInitState();
 
     // create a collision handler
     mCollisionHandle->addSkeleton(_skeleton);

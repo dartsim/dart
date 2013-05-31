@@ -35,13 +35,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "FileInfoDof.h"
-
 #include <string>
 #include <fstream>
-#include "Skeleton.h"
-#include "Dof.h"
 #include <iostream>
+
+#include "kinematics/Skeleton.h"
+#include "kinematics/Dof.h"
+#include "kinematics/FileInfoDof.h"
 
 using namespace std;
 
