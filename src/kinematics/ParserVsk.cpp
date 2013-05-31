@@ -517,7 +517,7 @@ bool readSegment(tinyxml2::XMLElement*_segment,
     // if(!foundJoint) cout<<"fixed joint!\n";
 
     for(int i=0; i<jt->getNumTransforms(); i++){
-        if(!jt->getTransform(i)->getVariable()) continue;
+        if(!jt->getTransform(i)->isVariable()) continue;
         for(int j=0; j<jt->getTransform(i)->getNumDofs(); j++){
             // cout<<jt->getTransform(i)->getDof(j)->getName()<<" ";
         }
@@ -739,8 +739,8 @@ bool readMarker(tinyxml2::XMLElement*_marker, map<string, double>& _paramsList, 
 
         // create new  position
         Vector3d negExpShoulder = -expShoulder;
-        Quaterniond qr = math::expToQuat(negExpShoulder);	// negative for the markers
-        math::rotatePoint(qr, lpos2);
+        Quaterniond qr = dart_math::expToQuat(negExpShoulder);	// negative for the markers
+        dart_math::rotatePoint(qr, lpos2);
     }
 
     Marker* m = new Marker(mname.c_str(), lpos2, _skel->getNode(_segmentindex[sname]));

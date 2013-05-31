@@ -89,7 +89,7 @@ namespace utils {
             for(int i=0; i<_b->getNumChildJoints(); i++){
                 bool var = false;
                 for(int j=0; j<_b->getChildJoint(i)->getNumTransforms(); j++){
-                    if(_b->getChildJoint(i)->getTransform(j)->getVariable()) {
+                    if(_b->getChildJoint(i)->getTransform(j)->isVariable()) {
                         var = true;
                         break;
                     }
@@ -104,7 +104,7 @@ namespace utils {
             vector<int> varIndex;	// indices of variable rot dofs
             for(int i=_b->getParentJoint()->getNumTransforms()-1; i>=0; i--){
                 Transformation *tf = _b->getParentJoint()->getTransform(i);
-                if(!tf->getVariable()) continue;	// joint order should be determined only by variable dofs
+                if(!tf->isVariable()) continue;	// joint order should be determined only by variable dofs
                 if(tf->getType()==Transformation::T_ROTATEX) {
                     varIndex.push_back(i);
                 }
@@ -146,20 +146,20 @@ namespace utils {
                         if(i<separateRots) break;
                         vector<double> vals(tf->getNumDofs(), 0.0);
                         for(unsigned int di=0; di<vals.size(); di++){
-                            if(tf->getVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
+                            if(tf->isVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
                             else vals[di] = tf->getDof(0)->getValue();
                         }
-                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = math::eulerToMatrixX(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = math::eulerToMatrixY(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = math::eulerToMatrixZ(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = dart_math::eulerToMatrixX(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = dart_math::eulerToMatrixY(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = dart_math::eulerToMatrixZ(vals[0])*(rotdofs);
                         if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                             Vector3d exmap(vals[0],vals[1],vals[2]);
-                            Quaterniond quat = math::expToQuat(exmap);
-                            rotdofs = math::quatToMatrix(quat)*(rotdofs);
+                            Quaterniond quat = dart_math::expToQuat(exmap);
+                            rotdofs = dart_math::quatToMatrix(quat)*(rotdofs);
                         }
                     }
                     // convert to euler angles
-                    Vector3d erot = math::matrixToEuler(rotdofs, math::XYZ);	// leave to radians
+                    Vector3d erot = dart_math::matrixToEuler(rotdofs, dart_math::XYZ);	// leave to radians
                     eulerValues.push_back(erot);
                 }
                 // write out the euler values
@@ -207,16 +207,16 @@ namespace utils {
             else {
                 for(int i=_b->getParentJoint()->getNumTransforms()-1; i>=0; i--){
                     Transformation *t = _b->getParentJoint()->getTransform(i);
-                    if(t->getVariable()==false) continue;
+                    if(t->isVariable()==false) continue;
                     wroteNode = true;
                     if(t->getType()==Transformation::T_ROTATEEXPMAP){
                         // ASSUME "xyz" ordering for dof values
                         vector<Vector3d> eulerValues;
                         for(int i=_first; i<=_last; i++){
                             Vector3d exmap(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex()));
-                            Quaterniond q = math::expToQuat(exmap);
+                            Quaterniond q = dart_math::expToQuat(exmap);
                             Matrix3d rot = q.matrix();
-                            Vector3d angles = math::matrixToEuler(rot, math::XYZ);
+                            Vector3d angles = dart_math::matrixToEuler(rot, dart_math::XYZ);
                             eulerValues.push_back(angles);
                         }
 
@@ -420,7 +420,7 @@ namespace utils {
             for(int i=0; i<_b->getNumChildJoints(); i++){
                 bool var = false;
                 for(int j=0; j<_b->getChildJoint(i)->getNumTransforms(); j++){
-                    if(_b->getChildJoint(i)->getTransform(j)->getVariable()) {
+                    if(_b->getChildJoint(i)->getTransform(j)->isVariable()) {
                         var = true;
                         break;
                     }
@@ -455,13 +455,13 @@ namespace utils {
                     for(int jj=0; jj<3; jj++) Rl(ii, jj) = Wl(ii, jj);
                     tl[ii]=Wl(ii, 3);
                 }
-                Vector3d ei = math::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
+                Vector3d ei = dart_math::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
                 eulerAngles.push_back(ei);
                 transVals.push_back(tl);
             }
 
 
-            assert(MayaExportSkeleton::mRotOrder==math::XYZ);	// else change the euler angle order
+            assert(MayaExportSkeleton::mRotOrder==dart_math::XYZ);	// else change the euler angle order
             // X rotation
             outFile0<<"anim rotate.rotateX rotateX "<<bodyname.c_str()<<" "<<level<<" "<<numChildJoints<<" "<<dofNum++<<endl;
             outFile0<<"animData {\n";

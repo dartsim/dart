@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_PARSER_VSK_H
-#define KINEMATICS_PARSER_VSK_H
+#ifndef DART_KINEMATICS_PARSER_VSK_H
+#define DART_KINEMATICS_PARSER_VSK_H
 
 namespace kinematics {
     class Skeleton;
@@ -47,5 +47,5 @@ namespace kinematics {
 #define VSK_ERROR 1
 int readVSKFile(const char* const filename, kinematics::Skeleton* skel);
 
-#endif // #ifndef KINEMATICS_PARSER_VSK_H
+#endif // #ifndef DART_KINEMATICS_PARSER_VSK_H
 

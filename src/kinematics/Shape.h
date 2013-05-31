@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_H
-#define KINEMATICS_SHAPE_H
+#ifndef DART_KINEMATICS_SHAPE_H
+#define DART_KINEMATICS_SHAPE_H
 
 #include <Eigen/Dense>
 
@@ -66,30 +66,30 @@ public:
     virtual ~Shape() {}
 
     /// @brief
-    inline void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
+    void setColor(const Eigen::Vector3d& _color) { mColor = _color; }
 
     /// @brief
-    inline Eigen::Vector3d getColor() const { return mColor; }
+    Eigen::Vector3d getColor() const { return mColor; }
 
     /// @brief
     void setDim(const Eigen::Vector3d& _dim);
 
     /// @brief
-    inline Eigen::Vector3d getDim() const { return mDim; }
+    Eigen::Vector3d getDim() const { return mDim; }
 
     /// @brief
-    inline void setTransform(const Eigen::Affine3d& _Transform )
+    void setTransform(const Eigen::Affine3d& _Transform )
     { mTransform = _Transform; }
 
     /// @brief
-    inline Eigen::Affine3d getTransform() const { return mTransform; }
+    Eigen::Affine3d getTransform() const { return mTransform; }
 
     /// @brief
-    inline void setOffset(Eigen::Vector3d _offset)
+    void setOffset(Eigen::Vector3d _offset)
     { mTransform.translation() = _offset; }
 
     /// @brief
-    inline Eigen::Vector3d getOffset() const
+    Eigen::Vector3d getOffset() const
     { return mTransform.translation(); }
 
     /// @brief
@@ -97,16 +97,16 @@ public:
     { return Eigen::Matrix3d::Zero(); }
 
     /// @brief
-    inline void setVolume(double _v) { mVolume = _v; }
+    void setVolume(double _v) { mVolume = _v; }
 
     /// @brief
-    inline double getVolume() const { return mVolume; }
+    double getVolume() const { return mVolume; }
 
     /// @brief
-    inline int getID() const { return mID; }
+    int getID() const { return mID; }
 
     /// @brief
-    inline ShapeType getShapeType() const { return mType; }
+    ShapeType getShapeType() const { return mType; }
 
     /// @brief
     virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -151,5 +151,5 @@ public:
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_H
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_H
 

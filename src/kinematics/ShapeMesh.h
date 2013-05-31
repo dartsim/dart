@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_SHAPE_MESH_H
-#define KINEMATICS_SHAPE_MESH_H
+#ifndef DART_KINEMATICS_SHAPE_MESH_H
+#define DART_KINEMATICS_SHAPE_MESH_H
 
 #include "Shape.h"
 
@@ -86,5 +86,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_PRIMITIVE_MESH_H
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_MESH_H
 

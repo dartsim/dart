@@ -35,15 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
-#define DYNAMICS_CONSTRAINT_DYNAMICS_H
+#ifndef DART_DYNAMICS_CONSTRAINT_DYNAMICS_H
+#define DART_DYNAMICS_CONSTRAINT_DYNAMICS_H
 
 #include <vector>
 #include <Eigen/Dense>
-#include "Constraint.h"
 
-#include <vector>
-#include <Eigen/Dense>
 #include "dynamics/Constraint.h"
 #include "collision/CollisionDetector.h"
 
@@ -145,5 +142,5 @@ namespace dynamics {
     };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_CONSTRAINT_DYNAMICS_H
+#endif // #ifndef DART_DYNAMICS_CONSTRAINT_DYNAMICS_H
 

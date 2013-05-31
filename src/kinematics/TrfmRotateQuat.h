@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_TRFM_ROTATE_QUAT_H
-#define KINEMATICS_TRFM_ROTATE_QUAT_H
+#ifndef DART_KINEMATICS_TRFM_ROTATE_QUAT_H
+#define DART_KINEMATICS_TRFM_ROTATE_QUAT_H
 
 #include "Transformation.h"
 
@@ -44,15 +44,27 @@ namespace kinematics {
 
     class TrfmRotateQuat: public Transformation {
     public:
+        /// @brief Constructor.
         TrfmRotateQuat(Dof *w, Dof *x, Dof *y, Dof *z, const char *_name = NULL);
 	
+		// Documentation inherited.
 		void applyGLTransform(renderer::RenderInterface* _ri) const;
+
+        // Documentation inherited.
         void computeTransform();
-        Eigen::Matrix4d getDeriv(const Dof *);
-        Eigen::Matrix4d getSecondDeriv(const Dof *, const Dof *);
+
+        // Documentation inherited.
+        Eigen::Matrix4d getDeriv(const Dof *) const;
+
+        // Documentation inherited.
+        Eigen::Matrix4d getSecondDeriv(const Dof *, const Dof *) const;
+
+        // Documentation inherited.
+        // TODO: NOT IMPLEMENTED !
+        virtual Eigen::MatrixXd getJacobian() const;
     };
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_TRFM_ROTATE_QUAT_H
+#endif // #ifndef DART_KINEMATICS_TRFM_ROTATE_QUAT_H
 

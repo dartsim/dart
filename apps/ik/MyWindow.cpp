@@ -27,12 +27,12 @@ void MyWindow::initIK()
     // create constraints
     BodyNode *node = mSkel->getNode("fullbody1_h_heel_left");
     Vector3d offset(0, 0, 0);
-    Vector3d target = math::xformHom(node->getWorldTransform(), offset);
+    Vector3d target = dart_math::xformHom(node->getWorldTransform(), offset);
     PositionConstraint* pos = new PositionConstraint(mVariables, mSkel, node, offset, target);
     mObjBox->add(pos);
 
     node = mSkel->getNode("fullbody1_h_heel_right");
-    target = math::xformHom(node->getWorldTransform(), offset);
+    target = dart_math::xformHom(node->getWorldTransform(), offset);
     pos = new PositionConstraint(mVariables, mSkel, node, offset, target);
     mObjBox->add(pos);
 }

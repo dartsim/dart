@@ -41,20 +41,25 @@
 #include <vector>
 #include <Eigen/Dense>
 
-namespace integration {
-    // Any class that uses an integrator should implement this interface
-    class IntegrableSystem {
-    public:
-        virtual Eigen::VectorXd getState() = 0;
-        virtual void setState(const Eigen::VectorXd& _state) = 0;
-        virtual Eigen::VectorXd evalDeriv() = 0;
-    };
+namespace integration
+{
 
-    // TODO (kasiu) Consider templating the class (which currently only works on arbitrarily-sized vectors of doubles)
-    class Integrator {
-    public:
-        virtual void integrate(IntegrableSystem* system, double dt) const = 0;
-    };
+// Any class that uses an integrator should implement this interface
+class IntegrableSystem
+{
+public:
+    virtual Eigen::VectorXd getState() = 0;
+    virtual void setState(const Eigen::VectorXd& _state) = 0;
+    virtual Eigen::VectorXd evalDeriv() = 0;
+};
+
+// TODO (kasiu) Consider templating the class (which currently only works on arbitrarily-sized vectors of doubles)
+class Integrator
+{
+public:
+    virtual void integrate(IntegrableSystem* system, double dt) const = 0;
+};
+
 } // namespace integration
 
 #endif // INTEGRATOR_H

@@ -43,38 +43,38 @@ using namespace Eigen;
 
 namespace kinematics {
 
-    ShapeBox::ShapeBox(Vector3d _dim)
-    	: Shape(P_BOX)
-    {
-    	mDim = _dim;
-        initMeshes();
-        if (_dim != Vector3d::Zero())
-            computeVolume();
-    }
+ShapeBox::ShapeBox(Vector3d _dim)
+    : Shape(P_BOX)
+{
+    mDim = _dim;
+    initMeshes();
+    if (_dim != Vector3d::Zero())
+        computeVolume();
+}
 
-    void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri) return;
-        if (!_useDefaultColor)
-            _ri->setPenColor(_color);
-        else
-            _ri->setPenColor(mColor);
-        _ri->pushMatrix();
-        _ri->transform(mTransform);
-        _ri->drawCube(mDim);
-        _ri->popMatrix();
-    }
+void ShapeBox::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
+    if (!_ri) return;
+    if (!_useDefaultColor)
+        _ri->setPenColor(_color);
+    else
+        _ri->setPenColor(mColor);
+    _ri->pushMatrix();
+    _ri->transform(mTransform);
+    _ri->drawCube(mDim);
+    _ri->popMatrix();
+}
 
-    Matrix3d ShapeBox::computeInertia(double _mass) {
-        Matrix3d inertia = Matrix3d::Zero();
-        inertia(0, 0) = _mass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
-        inertia(1, 1) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
-        inertia(2, 2) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
+Matrix3d ShapeBox::computeInertia(double _mass) {
+    Matrix3d inertia = Matrix3d::Zero();
+    inertia(0, 0) = _mass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
+    inertia(1, 1) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
+    inertia(2, 2) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
 
-        return inertia;
-    }
+    return inertia;
+}
 
-    void ShapeBox::computeVolume() {
-        mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
-    }
+void ShapeBox::computeVolume() {
+    mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
+}
 
 } // namespace kinematics

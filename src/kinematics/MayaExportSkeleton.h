@@ -62,7 +62,7 @@ namespace utils {
             static const string mSuffixPrim;
             static const string mSuffixShape;
             static const string mSuffixGeom;
-            static const math::RotationOrder mRotOrder;
+            static const dart_math::RotationOrder mRotOrder;
 
             static bool exportMayaAsciiHeader(ofstream &_outFile );
             static bool exportMayaAsciiShape(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);

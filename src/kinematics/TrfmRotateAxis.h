@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_TRFM_ROTATE_AXIS_H
-#define KINEMATICS_TRFM_ROTATE_AXIS_H
+#ifndef DART_KINEMATICS_TRFM_ROTATE_AXIS_H
+#define DART_KINEMATICS_TRFM_ROTATE_AXIS_H
 
 #include "Transformation.h"
 #include <cassert>
@@ -44,22 +44,42 @@
 namespace kinematics {
     class TrfmRotateAxis: public Transformation {
     public:
-        TrfmRotateAxis(const Eigen::Vector3d& _axis, Dof* _angle, const char* _name = NULL);
+        /// @brief Constructor.
+        TrfmRotateAxis(const Eigen::Vector3d& _axis, Dof* _angle,
+                       const char* _name = NULL);
 
+        // Documentation inherited.
         Eigen::Matrix4d getInvTransform();
+
+        // Documentation inherited.
         void applyGLTransform(renderer::RenderInterface* _ri) const;
+
+        // Documentation inherited.
         void computeTransform();
-        Eigen::Matrix4d getDeriv(const Dof *q);
-        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2);
+
+        // Documentation inherited.
+        Eigen::Matrix4d getDeriv(const Dof *q) const;
+
+        // Documentation inherited.
+        Eigen::Matrix4d getSecondDeriv(const Dof *q1, const Dof *q2) const;
+
         /// @brief Set the rotating axis.
         void setAxis(const Eigen::Vector3d& _axis);
+
+        /// @brief
         inline Eigen::Vector3d getAxis() { return mAxis; }
 
+        // Documentation inherited.
+        virtual Eigen::MatrixXd getJacobian() const;
+
     protected:
+        /// @brief
         Eigen::Vector3d mAxis;
 
-        // precalculated variables to speed up transform computation
+        /// @brief Precalculated variables to speed up transform computation.
         Eigen::Matrix3d mSinCoefficients;
+
+        /// @brief Precalculated variables to speed up transform computation.
         Eigen::Matrix3d mCosCoefficients;
     };
 } // namespace kinematics

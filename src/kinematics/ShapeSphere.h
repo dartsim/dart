@@ -2,8 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Date: 06/12/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,32 +35,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_POINT_CONSTRAINT_H
-#define DART_DYNAMICS_POINT_CONSTRAINT_H
+#ifndef DART_KINEMATICS_SHAPE_SPHERE_H
+#define DART_KINEMATICS_SHAPE_SPHERE_H
 
-#include "Constraint.h"
+#include "kinematics/Shape.h"
 
-namespace dynamics {
-    class BodyNodeDynamics;
-    class SkeletonDynamics;
-    class PointConstraint : public Constraint {
+namespace kinematics {
+
+    class ShapeSphere : public Shape {
     public:
-        PointConstraint(BodyNodeDynamics *_body, Eigen::Vector3d _offset, Eigen::Vector3d _target, int _skelIndex);
-        virtual ~PointConstraint();
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+        ShapeSphere(double _radius);
+
+        inline void setRadius(double _radius) { mRadius = _radius; }
+        inline double getRadius() const { return mRadius; }
+
+        void draw(renderer::RenderInterface* _ri = NULL, const Eigen::Vector4d& _col=Eigen::Vector4d::Ones(), bool _useDefaultColor = true) const;
+
+        virtual Eigen::Matrix3d computeInertia(double _mass);
 
     private:
-        void getJacobian();
+        void computeVolume();
+        void initMeshes();
 
-        BodyNodeDynamics* mBody;
-        Eigen::Vector3d mOffset;
-        Eigen::Vector3d mTarget;
-        Eigen::MatrixXd mJ;
-
-        int mSkelIndex;
+        double mRadius;
+    public:
     };
-} // namespace dynamics
 
-#endif // #ifndef DART_DYNAMICS_POINT_CONSTRAINT_DYNAMICS_H
+} // namespace kinematics
+
+#endif // #ifndef DART_KINEMATICS_PRIMITIVE_ELLIPSOID_H
+
 

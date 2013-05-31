@@ -24,10 +24,10 @@ void MyWindow::drawSkels()
     mWorld->getSkeleton(1)->draw(mRI, color, false);
     color << 0.3, 0.8, 0.3, 1.0;
     mWorld->getSkeleton(2)->draw(mRI, color, false);
-    color << 0.8, 0.8, 0.4, 1.0;
-    mWorld->getSkeleton(3)->draw(mRI, color, false);
-    color << 0.8, 0.5, 0.3, 1.0;
-    mWorld->getSkeleton(4)->draw(mRI, color, false);
+//    color << 0.8, 0.8, 0.4, 1.0;
+//    mWorld->getSkeleton(3)->draw(mRI, color, false);
+//    color << 0.8, 0.5, 0.3, 1.0;
+//    mWorld->getSkeleton(4)->draw(mRI, color, false);
 }
 
 

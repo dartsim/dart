@@ -43,7 +43,7 @@
 // Local Headers
 #include "utils/Misc.h"
 
-namespace math {
+namespace dart_math {
 
     enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
 

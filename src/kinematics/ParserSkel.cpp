@@ -1029,7 +1029,7 @@ evaluated with infinite-precision integer arithmetic.  */
 # define YYMAXDEPTH 10000
 #endif
 
-
+
 
 #if YYERROR_VERBOSE
 
@@ -1272,7 +1272,7 @@ YYSTYPE *yyvaluep;
     //    break;
     //}
 }
-
+
 
 /* Prevent warnings from -Wmissing-prototypes.  */
 
@@ -1992,7 +1992,7 @@ void __createMarker( char* name, doubleVec3 offset, int id, char* node_name ) {
     strcat(fullName, name);
 
     Vector3d vecOffset(offset[0],offset[1],offset[2]);
-    Marker *tempMarker = new Marker(fullName, vecOffset, node);  
+    Marker *tempMarker = new Marker(fullName, vecOffset, node);
     gSkel->addMarker(tempMarker);
 }
 
@@ -2038,7 +2038,7 @@ void __endNode()
     for( int i = 0; i < num_nodes; i++ ) {
         if( !strcmp(node_lookup[i].name, cur_node->getName()) ) {
             fprintf(stderr, "Parse Error: "
-                "node multiply assigned to nodes %s,%s\n", 
+                "node multiply assigned to nodes %s,%s\n",
                 cur_node->getName(), node_lookup[i].name);
         }
     }
@@ -2070,7 +2070,7 @@ void __startNode( const char* s, int id ) {
 
     // create a new joint
     // constructor link the joint with node; the joint is then linked in model when the node is added to skel
-    Joint* tempJ = new Joint(cur_node, newNode); 
+    Joint* tempJ = new Joint(cur_node, newNode);
 
     // add the new node to model
     gSkel->addNode(newNode);
@@ -2101,16 +2101,16 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone ) {
 void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
     double bone_length = bone->getValue();
 
-    /* SHAPE MASS IS DEPRECIATED **************************************************/
+	/* SHAPE MASS IS DEPRECIATED **************************************************/
 	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
-    /* SHAPE SETDIM SILENTLY CALLS COMPUTEVOLUME WHICH OVERWRITES VOLUME **********/
-    /* DO NOT MOVE ****************************************************************/
+	/* SHAPE SETDIM SILENTLY CALLS COMPUTEVOLUME WHICH OVERWRITES VOLUME **********/
+	/* DO NOT MOVE ****************************************************************/
 		//FIXME: Refactor grammer: Move massName into __setShape()
 		double mass = geo->getVolume();
 		cur_node->setMass(mass);
 	/******************************************************************************/
 
-    geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
+	geo->setDim(bone_length*Vector3d(s[0], s[1], s[2]));
 
     Vector3d vecTrans(t[0],t[1],t[2]);
     vecTrans *= bone_length;
@@ -2123,9 +2123,9 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
 }
 
 /* create translation transformation */
-void __createTranslate( dofVec3 v ) 
+void __createTranslate( dofVec3 v )
 {
-    //----  get common name of all three dofs 
+    //----  get common name of all three dofs
     int pos;
 
     char *underscore = strrchr(v[0]->getName(), '_');
@@ -2142,21 +2142,21 @@ void __createTranslate( dofVec3 v )
     //----------
 
     // create new transformation
-    TrfmTranslate* trans = new TrfmTranslate(v[0], v[1], v[2], commonName); 
+    TrfmTranslate* trans = new TrfmTranslate(v[0], v[1], v[2], commonName);
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getParentJoint()->addTransform((Transformation*)trans);	
-    }	
+        cur_node->getParentJoint()->addTransform((Transformation*)trans);
+    }
     // add transformation to model because it's a variable dof
     gSkel->addTransform((Transformation*)trans);
 
 }
 
 /* create a constant translation transformation */
-void __createTelescope( doubleVec3 v, Dof* l ) 
+void __createTelescope( doubleVec3 v, Dof* l )
 {
-    // create new transformation	
+    // create new transformation
     Dof** dofs = new Dof*[3];
     for(int i=0; i<3; i++){
         dofs[i] = new Dof(v[i]*l->getValue());
@@ -2167,12 +2167,12 @@ void __createTelescope( doubleVec3 v, Dof* l )
     // add transformation to joint
     // don't add to model because it's not variable
     if(cur_node!=NULL){
-        cur_node->getParentJoint()->addTransform((Transformation*)tele, false);	
+        cur_node->getParentJoint()->addTransform((Transformation*)tele, false);
     }
 }
 
 /* create rotation transformation using exponential map*/
-void __createRotateExpMap( dofVec3 v ) 
+void __createRotateExpMap( dofVec3 v )
 {
     //----  get the common name of all three dofs
     int pos;
@@ -2195,7 +2195,7 @@ void __createRotateExpMap( dofVec3 v )
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getParentJoint()->addTransform((Transformation*)expmap);	
+        cur_node->getParentJoint()->addTransform((Transformation*)expmap);
     }
 
     //add to model because it's variable
@@ -2227,7 +2227,7 @@ void __createRotateQuat( dofVec4 v )
 
     // add transformation to joint
     if(cur_node!=NULL){
-        cur_node->getParentJoint()->addTransform((Transformation*)quat);	
+        cur_node->getParentJoint()->addTransform((Transformation*)quat);
     }
 
     // add to model because it's variable
@@ -2263,7 +2263,7 @@ case 2: // 'z'
 
 /* create rotation transformation using euler angels */
 /* rotate_cons */
-void __createRotateEuler( double val, int axis ) 
+void __createRotateEuler( double val, int axis )
 {
     // create new dof
     Dof *d = new Dof(val);
@@ -2297,13 +2297,13 @@ void __recordMass(char* massName, double massValue)
     num_masses++;
 }
 
-/* create new primitive */	
+/* create new primitive */
 Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 {
     Shape *prim = NULL;
 
     // lookup mass by name
-    double massValue = 0.0;	
+    double massValue = 0.0;
     for( int i = 0; i < num_masses; i++ ) {
         if( !strcmp(mass_lookup[i].name, massName) )
             massValue = mass_lookup[i].mass;
@@ -2330,7 +2330,7 @@ Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 		prim->setVolume(massValue);
 	/******************************************************************************/
 
-    return prim;
+	return prim;
 }
 
 /* create new primitive */
@@ -2339,11 +2339,11 @@ Shape* __setGeometry(const char *shape, const char *massName)
     Shape *prim = NULL;
 
     //lookup mass by name
-    double massValue = 0.0;	
+    double massValue = 0.0;
     for( int i = 0; i < num_masses; i++ ) {
         if( !strcmp(mass_lookup[i].name, massName) ){
             massValue = mass_lookup[i].mass;
-            break;	
+            break;
         }
     }
 
@@ -2365,7 +2365,7 @@ Shape* __setGeometry(const char *shape, const char *massName)
 		prim->setVolume(massValue);
 	/******************************************************************************/
 
-    return prim;
+	return prim;
 }
 
 /* create new primitive */

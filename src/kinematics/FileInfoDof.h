@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KINEMATICS_FILEINFO_DOF_H
-#define KINEMATICS_FILEINFO_DOF_H
+#ifndef DART_KINEMATICS_FILEINFO_DOF_H
+#define DART_KINEMATICS_FILEINFO_DOF_H
 
 #include <vector>
 #include <cassert>
@@ -74,5 +74,5 @@ namespace kinematics {
 
 } // namespace kinematics
 
-#endif // #ifndef KINEMATICS_FILEINFO_DOF_H
+#endif // #ifndef DART_KINEMATICS_FILEINFO_DOF_H
 

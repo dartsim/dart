@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
-#define DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
+#ifndef DART_DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
+#define DART_DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
 
 #include "Constraint.h"
 
@@ -64,5 +64,5 @@ namespace dynamics {
     };
 } // namespace dynamics
 
-#endif // #ifndef DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
+#endif // #ifndef DART_DYNAMICS_CLOSEDLOOP_CONSTRAINT_H
 

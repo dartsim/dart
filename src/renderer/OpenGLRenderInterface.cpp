@@ -54,7 +54,7 @@ static GLUquadricObj *quadObj;
 
 #define QUAD_OBJ_INIT { if(!quadObj) initQuadObj(); }
 
-static void initQuadObj(void)
+static void initQuadObj()
 {
 	quadObj = gluNewQuadric();
 	if(!quadObj)

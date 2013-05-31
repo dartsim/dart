@@ -3,7 +3,8 @@
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ *            Jeongseok Lee <jslee02@gmail.com>
+ * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -50,274 +51,339 @@
 using namespace std;
 using namespace Eigen;
 
-namespace kinematics {
+namespace kinematics
+{
 
-    int BodyNode::msBodyNodeCount = 0;
-  
-    BodyNode::BodyNode(const char *_name) 
-        : mSkelIndex(-1),
-          mVizShape(NULL),
-          mColShape(NULL),
-          mJointParent(NULL),
-          mNodeParent(NULL),
-          mColliding(false),
-          mCollidable(true),
-          mNumRootTrans(0),
-          mMass(0),
-          mCOMLocal(0,0,0),
-          mSkel(NULL),
-          mI(Matrix3d::Zero())
+int BodyNode::msBodyNodeCount = 0;
+
+BodyNode::BodyNode(const char *_name)
+    : mSkelIndex(-1),
+      mVizShape(NULL),
+      mColShape(NULL),
+      mParentJoint(NULL),
+      mParentNode(NULL),
+      mColliding(false),
+      mCollidable(true),
+      mNumRootTrans(0),
+      mMass(0),
+      mCOMLocal(0,0,0),
+      mSkel(NULL),
+      mI(Matrix3d::Zero())
+{
+    mJointsChild.clear();
+    mMarkers.clear();
+    mDependentDofs.clear();
+
+    mID = BodyNode::msBodyNodeCount++;
+
+    if (_name == NULL)
+        strcpy(mName, "BodyNode");
+    else
+        strcpy(mName, _name);
+}
+
+BodyNode::~BodyNode()
+{
+    for (unsigned int i = 0; i < mMarkers.size(); ++i)
+        delete mMarkers[i];
+
+    mMarkers.clear();
+
+    if(mVizShape && mVizShape == mColShape)
     {
-        mJointsChild.clear();
-        mMarkers.clear();
-        mDependentDofs.clear();
-
-        mID = BodyNode::msBodyNodeCount++;
-
-        if (_name == NULL) {
-            strcpy(mName, "BodyNode");
-        } else {
-            strcpy(mName, _name);
-        }
+        delete mVizShape;
+        mVizShape = NULL;
+        mColShape = NULL;
     }
 
-    BodyNode::~BodyNode() {
-        for (unsigned int i = 0; i < mMarkers.size(); ++i){
-            delete mMarkers[i];
-        }
-        mMarkers.clear();
-
-        if(mVizShape && mVizShape == mColShape) {
-        	delete mVizShape;
-        	mVizShape = NULL;
-        	mColShape = NULL;
-        }
-        if(mVizShape) {
-            delete mVizShape;
-            mVizShape = NULL;
-        }
-        if(mColShape) {
-        	delete mColShape;
-        	mColShape = NULL;
-        }
-
-        mJointsChild.clear();
+    if(mVizShape)
+    {
+        delete mVizShape;
+        mVizShape = NULL;
     }
 
-    void BodyNode::init() {
-        assert(mSkel);
-
-        if(mVizShape && mI.isZero()) {
-        	mI = mVizShape->computeInertia(mMass);
-        }
-
-        mT = Matrix4d::Identity();
-        mW = Matrix4d::Identity();
-        mIc = Matrix3d::Zero();
-
-        const int numLocalDofs = getNumLocalDofs();
-        mTq.resize(numLocalDofs, Matrix4d::Zero());
-        const int numDepDofs = getNumDependentDofs();
-        mWq.resize(numDepDofs, Matrix4d::Zero());
-        
-        mJv = MatrixXd::Zero(3, numDepDofs);
-        mJw = MatrixXd::Zero(3, numDepDofs);
-
-        mNumRootTrans = 0;
-        for(int i=0; i<mSkel->getNumDofs(); i++){
-            if(!(mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATE 
-                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEX  
-                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEY 
-                || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEZ)) {
-                    mNumRootTrans = i;
-                    break;
-            }
-        }
+    if(mColShape)
+    {
+        delete mColShape;
+        mColShape = NULL;
     }
 
-    void BodyNode::updateTransform() {
-        mT = mJointParent->getLocalTransform();
-        if (mNodeParent) mW.noalias() = mNodeParent->mW * mT;
-        else mW = mT;
+    mJointsChild.clear();
+}
 
-        // update the inertia matrix 
-        Matrix3d R = mW.topLeftCorner<3,3>();
-        mIc.noalias() = R*mI*R.transpose();
-    }
+void BodyNode::init()
+{
+    assert(mSkel);
 
-    void BodyNode::updateFirstDerivatives() {
-        const int numLocalDofs = getNumLocalDofs();
-        const int numParentDofs = getNumDependentDofs()-numLocalDofs;
+    if(mVizShape && mI.isZero())
+        mI = mVizShape->computeInertia(mMass);
 
-        // Update Local Derivatives
-        for(int i = 0; i < numLocalDofs; i++) {
-            mTq[i] = getLocalDeriv(getDof(i));
-        }
+    mT = Matrix4d::Identity();
+    mW = Matrix4d::Identity();
+    mIc = Matrix3d::Zero();
 
-        // Update World Derivatives
-        // parent dofs
-        for (int i = 0; i < numParentDofs; i++) {
-            assert(mNodeParent);    // should always have a parent if enters this for loop
-            if(i<mNumRootTrans) 
-                mWq[i] = mNodeParent->mWq[i]; // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
-            else 
-                mWq[i].noalias() = mNodeParent->mWq[i] * mT;
-        }
-        // local dofs
-        for(int i = 0; i < numLocalDofs; i++){
-            if(mNodeParent) 
-                mWq[numParentDofs+i].noalias() = mNodeParent->mW * mTq[i];
-            else 
-                mWq[i] = mTq[i];
-        }
+    const int numLocalDofs = getNumLocalDofs();
+    mTq.resize(numLocalDofs, Matrix4d::Zero());
+    const int numDepDofs = getNumDependentDofs();
+    mWq.resize(numDepDofs, Matrix4d::Zero());
 
-        evalJacLin();
-        evalJacAng();
-    }
+    mJv = MatrixXd::Zero(3, numDepDofs);
+    mJw = MatrixXd::Zero(3, numDepDofs);
 
-    void BodyNode::evalJacLin() {
-        assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
+    mNumRootTrans = 0;
 
-        for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
-            mJv.col(i) = math::xformHom(mWq[i], mCOMLocal);
+    for(int i=0; i<mSkel->getNumDofs(); i++)
+    {
+        if(!(mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATE
+             || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEX
+             || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEY
+             || mSkel->getDof(i)->getTrans()->getType()==Transformation::T_TRANSLATEZ))
+        {
+            mNumRootTrans = i;
+            break;
         }
     }
+}
 
-    void BodyNode::evalJacAng() {
-        mJw.setZero();
-        for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
-            Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
-            mJw.col(i) = math::fromSkewSymmetric(omegaSkewSymmetric);
-        }
+void BodyNode::updateTransform()
+{
+    mT = mParentJoint->getLocalTransform();
+
+    if (mParentNode)
+        mW.noalias() = mParentNode->mW * mT;
+    else
+        mW = mT;
+
+    // TODO: This will be removed once we use mInertia instead of mI and mIc.
+    // update the inertia matrix
+    Matrix3d R = mW.topLeftCorner<3,3>();
+    mIc.noalias() = R*mI*R.transpose();
+}
+
+void BodyNode::updateFirstDerivatives()
+{
+    const int numLocalDofs = getNumLocalDofs();
+    const int numParentDofs = getNumDependentDofs()-numLocalDofs;
+
+    // Update Local Derivatives
+    for(int i = 0; i < numLocalDofs; i++)
+        mTq[i] = getLocalDeriv(getDof(i));
+
+    // Update World Derivatives
+    // parent dofs
+    for (int i = 0; i < numParentDofs; i++)
+    {
+        assert(mParentNode);    // should always have a parent if enters this for loop
+        if(i<mNumRootTrans)
+            mWq[i] = mParentNode->mWq[i]; // in turn its equal to dT/dqi where T is the translation 4x4 matrix for the first 3 dofs
+        else
+            mWq[i].noalias() = mParentNode->mWq[i] * mT;
+    }
+    // local dofs
+    for(int i = 0; i < numLocalDofs; i++)
+    {
+        if(mParentNode)
+            mWq[numParentDofs+i].noalias() = mParentNode->mW * mTq[i];
+        else
+            mWq[i] = mTq[i];
     }
 
-    Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) {
-        return math::xformHom(mW, _lp);
+    evalJacLin();
+    evalJacAng();
+}
+
+void BodyNode::evalJacLin() {
+    assert(mJv.rows() == 3 && mJv.cols() == mDependentDofs.size());
+
+    for (unsigned int i = 0; i < mDependentDofs.size(); i++) {
+        mJv.col(i) = dart_math::xformHom(mWq[i], mCOMLocal);
+    }
+}
+
+void BodyNode::evalJacAng() {
+    mJw.setZero();
+    for (unsigned int i=mNumRootTrans; i<mDependentDofs.size(); i++) {
+        Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
+        mJw.col(i) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
+    }
+}
+
+Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) const
+{
+    return dart_math::xformHom(mW, _lp);
+}
+
+Matrix4d BodyNode::getLocalDeriv(Dof* _q) const
+{
+    return mParentJoint->getDeriv(_q);
+}
+
+void BodyNode::setDependDofList()
+{
+    mDependentDofs.clear();
+    if (mParentNode != NULL)
+    {
+        mDependentDofs.insert(mDependentDofs.end(),
+                              mParentNode->mDependentDofs.begin(),
+                              mParentNode->mDependentDofs.end());
     }
 
-    Matrix4d BodyNode::getLocalDeriv(Dof* _q) const {
-        return mJointParent->getDeriv(_q);
+    for (int i = 0; i < getNumLocalDofs(); i++)
+    {
+        int dofID = getDof(i)->getSkelIndex();
+        mDependentDofs.push_back(dofID);
     }
-    
-    void BodyNode::setDependDofList() {
-        mDependentDofs.clear();
-        if (mNodeParent != NULL) {
-            mDependentDofs.insert(mDependentDofs.end(), mNodeParent->mDependentDofs.begin(), mNodeParent->mDependentDofs.end());
-        }
-
-        for (int i = 0; i < getNumLocalDofs(); i++) {
-            int dofID = getDof(i)->getSkelIndex();
-            mDependentDofs.push_back(dofID);
-        }
 
 #if _DEBUG
-        for (int i = 0; i < (int)mDependentDofs.size() - 1; i++) {
-            int now = mDependentDofs[i];
-            int next = mDependentDofs[i + 1];
-            if (now > next) {
-                cerr << "Array not sorted!!!" << endl;
-                exit(0);
-            }
+    for (int i = 0; i < (int)mDependentDofs.size() - 1; i++) {
+        int now = mDependentDofs[i];
+        int next = mDependentDofs[i + 1];
+        if (now > next) {
+            cerr << "Array not sorted!!!" << endl;
+            exit(0);
         }
+    }
 #endif
+}
+
+bool BodyNode::dependsOn(int _dofIndex) const
+{
+    return binary_search(mDependentDofs.begin(),
+                         mDependentDofs.end(),
+                         _dofIndex);
+}
+
+void BodyNode::draw(renderer::RenderInterface* _ri,
+                    const Vector4d& _color,
+                    bool _useDefaultColor,
+                    int _depth) const
+{
+    if (!_ri)
+        return;
+
+    _ri->pushMatrix();
+
+    // render the self geometry
+    for (int i = 0; i < mParentJoint->getNumTransforms(); i++)
+    {
+        mParentJoint->getTransform(i)->applyGLTransform(_ri);
     }
 
-    bool BodyNode::dependsOn(int _dofIndex) const {
-        return binary_search(mDependentDofs.begin(), mDependentDofs.end(), _dofIndex);
-    }
-        
-    void BodyNode::draw(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor, int _depth) const {
-        if (!_ri) return;
+    if (mVizShape != NULL)
+    {
+        _ri->pushName((unsigned)mID);
         _ri->pushMatrix();
-        // render the self geometry
-        for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
-            mJointParent->getTransform(i)->applyGLTransform(_ri);
-        }
-        if (mVizShape != NULL) {
-            _ri->pushName((unsigned)mID);
-            _ri->pushMatrix();
-            mVizShape->draw(_ri, _color, _useDefaultColor);
-            _ri->popMatrix();
-            _ri->popName();
-        }
-
-        // render the subtree
-        for (unsigned int i = 0; i < mJointsChild.size(); i++){
-            mJointsChild[i]->getChildNode()->draw(_ri, _color, _useDefaultColor);
-        }
+        mVizShape->draw(_ri, _color, _useDefaultColor);
         _ri->popMatrix();
-
+        _ri->popName();
     }
 
-    void BodyNode::drawMarkers(renderer::RenderInterface* _ri, const Vector4d& _color, bool _useDefaultColor) const {
-        if (!_ri) return;
-        _ri->pushMatrix();
-        for (int i = 0; i < mJointParent->getNumTransforms(); i++) {
-            mJointParent->getTransform(i)->applyGLTransform(_ri);
-        }
-
-        // render the corresponding mMarkerss
-        for (unsigned int i = 0; i < mMarkers.size(); i++) {
-            mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
-        }
-        for (unsigned int i = 0; i < mJointsChild.size(); i++) {
-            mJointsChild[i]->getChildNode()->drawMarkers(_ri,_color, _useDefaultColor);
-        }
-        _ri->popMatrix();
-
+    // render the subtree
+    for (unsigned int i = 0; i < mJointsChild.size(); i++)
+    {
+        mJointsChild[i]->getChildNode()->draw(_ri, _color, _useDefaultColor);
     }
 
-//    void BodyNode::setLocalInertia2(double _Ixx, double _Iyy, double _Izz,
-//                                    double _Ixy, double _Ixz, double _Iyz) {
-//        mI(0,0) = _Ixx; mI(0,1) = _Ixy; mI(0,2) = _Ixz;
-//        mI(1,0) = _Ixy; mI(1,1) = _Iyy; mI(1,2) = _Iyz;
-//        mI(2,0) = _Ixz; mI(2,1) = _Iyz; mI(2,2) = _Izz;
-//    }
+    _ri->popMatrix();
 
-    Eigen::Matrix4d BodyNode::getMassTensor() {
-        const double halftrace = 0.5 * mI.trace(); // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum of moment of inertia along all 3 axes
-        Eigen::Matrix4d massTensor;
-        massTensor << halftrace * Matrix3d::Identity() - mI, Vector3d::Zero(),
-                      RowVector3d::Zero()                  , mMass;
-        return massTensor;
-    }
+}
 
-    void BodyNode::setParentJoint(Joint *_p) {
-        mJointParent = _p; 
-        mNodeParent = _p->getParentNode();
-    }
+void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
+                           const Vector4d& _color,
+                           bool _useDefaultColor) const
+{
+    if (!_ri)
+        return;
 
-    BodyNode* BodyNode::getChildNode(int _idx) const {
-        return mJointsChild[_idx]->getChildNode();
-    }
+    _ri->pushMatrix();
 
-    int BodyNode::getNumLocalDofs() const {
-        return mJointParent->getNumDofs();
-    }
+    for (int i = 0; i < mParentJoint->getNumTransforms(); i++)
+        mParentJoint->getTransform(i)->applyGLTransform(_ri);
 
-    Dof* BodyNode::getDof(int _idx) const {
-        return mJointParent->getDof(_idx);
-    }
+    // render the corresponding mMarkerss
+    for (unsigned int i = 0; i < mMarkers.size(); i++)
+        mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
 
-    bool BodyNode::isPresent(Dof* _q) {
-        return mJointParent->isPresent(_q);
-    }
+    for (unsigned int i = 0; i < mJointsChild.size(); i++)
+        mJointsChild[i]->getChildNode()->drawMarkers(_ri,_color, _useDefaultColor);
 
-    Matrix4d BodyNode::getDerivLocalTransform(int index) const {
-        return mTq[index];
-    }
-    
-    Matrix4d BodyNode::getDerivWorldTransform(int index) const {
-        return mWq[index];
-    }
-    
-    MatrixXd BodyNode::getJacobianLinear() const {
-        return mJv;
-    }
-    
-    MatrixXd BodyNode::getJacobianAngular() const {
-        return mJw;
-    }
-    
+    _ri->popMatrix();
+}
+
+Eigen::Matrix4d BodyNode::getMassTensor() const
+{
+    // compute the half trace of mat = row*integral((x*x+y*y+z*z)dxdydz) = sum
+    // of moment of inertia along all 3 axes
+    const double halftrace = 0.5 * mI.trace();
+    Eigen::Matrix4d massTensor;
+
+    massTensor << halftrace * Matrix3d::Identity() - mI, Vector3d::Zero(),
+                  RowVector3d::Zero()                  , mMass;
+
+    return massTensor;
+}
+
+void BodyNode::setParentJoint(Joint *_p)
+{
+    mParentJoint = _p;
+    mParentNode = _p->getParentNode();
+}
+
+BodyNode* BodyNode::getChildNode(int _idx) const
+{
+    return mJointsChild[_idx]->getChildNode();
+}
+
+int BodyNode::getNumLocalDofs() const
+{
+    return mParentJoint->getNumDofs();
+}
+
+Dof* BodyNode::getDof(int _idx) const
+{
+    return mParentJoint->getDof(_idx);
+}
+
+bool BodyNode::isPresent(const Dof* _q)
+{
+    return mParentJoint->isPresent(_q);
+}
+
+const Matrix4d& BodyNode::getDerivLocalTransform(int index) const
+{
+    return mTq[index];
+}
+
+const Matrix4d& BodyNode::getDerivWorldTransform(int index) const
+{
+    return mWq[index];
+}
+
+const MatrixXd& BodyNode::getJacobianLinear() const
+{
+    return mJv;
+}
+
+const MatrixXd& BodyNode::getJacobianAngular() const
+{
+    return mJw;
+}
+
+void BodyNode::evalVelocity(const VectorXd &_qDotSkel)
+{
+    mVel.setZero();
+
+    for(int i = 0; i < getNumDependentDofs(); i++)
+        mVel += mJv.col(i)*_qDotSkel[mDependentDofs[i]];
+}
+
+void BodyNode::evalOmega(const VectorXd &_qDotSkel)
+{
+    mOmega.setZero();
+
+    for(int i = mNumRootTrans; i < getNumDependentDofs(); i++)
+        mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
+}
+
 } // namespace kinematics
 
