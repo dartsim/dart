@@ -100,49 +100,11 @@ class Joint;
 /// connected and have a set of core functions for calculating derivatives.
 /// Mostly automatically constructed by FileInfoSkel.
 /// @see FileInfoSkel.
-///
-/// [Members]
-/// W: world transformation (4x4 matrix)
-/// J: world Jacobian (6xn matrix)
-/// dJ: world Jacobian derivative (6xn matrix)
-/// V: generalized body velocity (6x1 vector)
-/// dV: generalized body acceleration (6x1 vector)
-/// F: generalized body force (6x1 vector)
-/// I: generalized body inertia (6x6 matrix)
 class BodyNode {
 public:
     // We need this aligned allocator because we have Matrix4d as members in
     // this class.
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-public:
-    //--------------------------------------------------------------------------
-    // DEPRECATED
-    //--------------------------------------------------------------------------
-    Eigen::Matrix4d getLocalDeriv(Dof *_q) const; ///< First derivative of the local transformation w.r.t. the input dof.
-    Eigen::Matrix3d getInertia() const { return mIc; } ///< Superseded by getWorldInertia()
-    Eigen::Matrix4d getMassTensor() const; ///< Computes the "mass tensor" in lagrangian dynamics from the inertia matrix.
-    const MatrixXd& getJacobianLinear() const;
-    const MatrixXd& getJacobianAngular() const;
-    void evalVelocity(const Eigen::VectorXd &_qDotSkel); ///< Evaluates the velocity of the COM in the world frame.
-    void evalOmega(const Eigen::VectorXd &_qDotSkel);    ///< Evaluates the Omega in the world frame.
-    Eigen::Vector3d mVel;    ///< Linear velocity in the world frame
-    Eigen::Vector3d mOmega;  ///< Angular velocity in the world frame
-    void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
-    void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
-
-protected:
-    //--------------------------------------------------------------------------
-    // DEPRECATED
-    //--------------------------------------------------------------------------
-    double mMass; ///< Mass of this node; zero if no primitive
-    Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame.
-    Eigen::Matrix3d mI;  ///< Inertia matrix in the body frame; defaults to Shape's inertia matrix
-    Eigen::Matrix3d mIc; ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
-    EIGEN_V_MAT4D mTq;   ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
-    EIGEN_V_MAT4D mWq;   ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
-    Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity of the COM = mJv * generalized_velocity
-    Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
 
 public:
 
@@ -331,12 +293,6 @@ public:
     /// @brief
     const Matrix4d& getDerivWorldTransform(int _index) const;
 
-    /// @brief Return calculated body Jacobian by evalJacobian().
-    const Eigen::MatrixXd& getBodyJacobian() const;
-
-    /// @brief Calculate world Jacobian from body Jacobian.
-    Eigen::MatrixXd getWorldJacobian() const;
-
     /// @brief Update the first derivatives of the transformations
     void updateFirstDerivatives();
 
@@ -346,6 +302,18 @@ public:
     /// @brief Update local transformations and world transformations.
     /// T(i-1,i), W(i)
     void updateTransform();
+
+    Eigen::Matrix4d getLocalDeriv(Dof *_q) const; ///< First derivative of the local transformation w.r.t. the input dof.
+    Eigen::Matrix3d getInertia() const { return mIc; } ///< Superseded by getWorldInertia()
+    Eigen::Matrix4d getMassTensor() const; ///< Computes the "mass tensor" in lagrangian dynamics from the inertia matrix.
+    const MatrixXd& getJacobianLinear() const;
+    const MatrixXd& getJacobianAngular() const;
+    void evalVelocity(const Eigen::VectorXd &_qDotSkel); ///< Evaluates the velocity of the COM in the world frame.
+    void evalOmega(const Eigen::VectorXd &_qDotSkel);    ///< Evaluates the Omega in the world frame.
+    Eigen::Vector3d mVel;    ///< Linear velocity in the world frame
+    Eigen::Vector3d mOmega;  ///< Angular velocity in the world frame
+    void evalJacLin(); ///< Evaluate linear Jacobian of this body node (num cols == num dependent dofs)
+    void evalJacAng(); ///< Evaluate angular Jacobian of this body node (num cols == num dependent dofs)
 
 protected:
     /// @brief Name
@@ -393,6 +361,15 @@ protected:
 
     /// @brief Global transformation.
     Eigen::Matrix4d mW;
+
+    double mMass; ///< Mass of this node; zero if no primitive
+    Eigen::Vector3d mCOMLocal; ///< COM of this body node in its local coordinate frame.
+    Eigen::Matrix3d mI;  ///< Inertia matrix in the body frame; defaults to Shape's inertia matrix
+    Eigen::Matrix3d mIc; ///< Inertia matrix in the world frame = R*Ibody*RT; updated by evalTransform
+    EIGEN_V_MAT4D mTq;   ///< Partial derivative of local transformation wrt local dofs; each element is a 4x4 matrix
+    EIGEN_V_MAT4D mWq;   ///< Partial derivative of world transformation wrt all dependent dofs; each element is a 4x4 matrix
+    Eigen::MatrixXd mJv; ///< Linear Jacobian; Cartesian_linear_velocity of the COM = mJv * generalized_velocity
+    Eigen::MatrixXd mJw; ///< Angular Jacobian; Cartesian_angular_velocity = mJw * generalized_velocity
 
 private:
     /// @brief A unique ID of this node globally.
