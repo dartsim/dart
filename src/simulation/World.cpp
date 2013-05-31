@@ -101,8 +101,8 @@ void World::step()
         for (unsigned int j = 0; j < mSkeletons[i]->getNumNodes(); j++)
         {
             itrBodyNode = mSkeletons[i]->getNode(j);
-            itrBodyNode->evalVelocity(mSkeletons[i]->get_dq());
-            itrBodyNode->evalOmega(mSkeletons[i]->get_dq());
+            itrBodyNode->evalVelocity(mSkeletons[i]->getPoseVelocity());
+            itrBodyNode->evalOmega(mSkeletons[i]->getPoseVelocity());
         }
     }
 

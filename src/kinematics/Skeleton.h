@@ -58,11 +58,7 @@ class Dof;
 class Skeleton : public System
 {
 public:
-    //--------------------------------------------------------------------------
-    // DEPRECATED
-    //--------------------------------------------------------------------------
-    Eigen::VectorXd getPose();
-    Eigen::VectorXd getPoseVelocity();
+
 
 public:
     /// @brief
@@ -172,7 +168,10 @@ public:
     bool getSelfCollidable() const { return mSelfCollidable; }
 
     /// @brief
-    //void updateJointKinematics();
+    Eigen::VectorXd getPose();
+
+    /// @brief
+    Eigen::VectorXd getPoseVelocity();
 
 protected:
     /// @brief
