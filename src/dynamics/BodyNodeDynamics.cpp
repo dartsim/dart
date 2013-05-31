@@ -258,21 +258,6 @@ void BodyNodeDynamics::computeInvDynVelocities(const Vector3d &_gravity,
     }
 }
 
-void BodyNodeDynamics::computeInvDynVelocities_2(
-        const Eigen::Vector3d& _gravity,
-        const Eigen::VectorXd* _qdot,
-        const Eigen::VectorXd* _qdotdot,
-        bool _computeJacobians)
-{
-    // TODO: NOT IMPLEMENTED.
-
-    mOmegaBody = mBodyVelocity.head<3>();
-    mVelBody   = mBodyVelocity.tail<3>();
-
-    mOmegaDotBody = mBodyAcceleration.head<3>();
-    mVelDotBody   = mBodyAcceleration.tail<3>();
-}
-
 void BodyNodeDynamics::computeInvDynForces(const Vector3d& /*_gravity*/,
                                            const VectorXd* /*_qdot*/,
                                            const VectorXd* /*_qdotdot*/,
@@ -330,13 +315,6 @@ void BodyNodeDynamics::computeInvDynForces_JS(
     mTorqueJointBody = cl.cross(mMass*mVelDotBody)
                        + mOmegaBody.cross(mI*mOmegaBody)
                        + mI*mOmegaDotBody;
-
-
-    //        mForceJointBody = -mMass*cl.cross(mOmegaDotBody) + mMass*mVelDotBody
-    //                          + mOmegaBody.cross(-mMass*cl.cross(mOmegaBody) + mMass*mVelBody);
-    //        mTorqueJointBody = mI*mOmegaDotBody - mMass*cl.cross(cl.cross(mOmegaDotBody)) + mMass*cl.cross(mVelDotBody)
-    //                           + mOmegaBody.cross(mI*mOmegaBody - mMass*cl.cross(cl.cross(mOmegaBody)) + mMass*cl.cross(mVelBody))
-    //                           + mVelBody.cross(-mMass*cl.cross(mOmegaBody) + mMass*mVelBody);
 
     // general case
     for(unsigned int j = 0; j < mJointsChild.size(); j++)
@@ -548,43 +526,9 @@ void BodyNodeDynamics::evalJacDotAng(const VectorXd &_qDotSkel)
 
 void BodyNodeDynamics::evalMassMatrix()
 {
-    //
-    // TODO: NEED VERIFICATION
-    //
-
-    // ORIGINAL CODE -------------------------------------------------------
-    // M = m * (Jv^T * Jv) + Jw^T * Ic * Jw
     mM.triangularView<Upper>() = getMass() * mJv.transpose() * mJv;
     mM.triangularView<Upper>() += mJw.transpose() * mIc * mJw;
     mM.triangularView<StrictlyLower>() = mM.transpose();
-    //        MatrixXd M_TEST(getNumDependentDofs(), getNumDependentDofs());
-    //        M_TEST.triangularView<Upper>() = getMass() * mJv.transpose() * mJv;
-    //        M_TEST.triangularView<Upper>() += mJw.transpose() * mIc * mJw;
-    //        M_TEST.triangularView<StrictlyLower>() = M_TEST.transpose();
-
-    // MODIFIED CODE BY JS -------------------------------------------------
-    // r: com w.r.t body frame
-    // [r]: skew-symmetric matrix of r
-    // I: inertia of momentum w.r.t. body frame
-    // Ic = R * I * R^T: inertia of momentum w.r.t. world frame
-    //
-    // M = m * (Jv^T * Jv) + Jw^T * (Ic - m * R * [r] * [r] * R^T) * Jw
-    //     - m * Jv^T * R * [r] * R^T * Jw
-    //     + m * Jw^T * R * [r] * R^T * Jv
-
-    //        const Matrix3d& R = mW.topLeftCorner<3,3>();
-    //        const Matrix3d& RT = R.transpose();
-    //        const Vector3d& r = mCOMLocal;
-    //        const Matrix3d& r_skew = dart_math::makeSkewSymmetric(r);
-    //        const double& m = getMass();
-    //        const MatrixXd& mJvT = mJv.transpose();
-    //        const MatrixXd& mJwT = mJw.transpose();
-
-    //        mM.triangularView<Upper>() = m * mJvT * mJv;
-    //        mM.triangularView<Upper>() += mJwT * (mIc - m * R * r_skew * r_skew * RT) * mJw;
-    //        mM.triangularView<Upper>() -= m * mJvT * R * r_skew * RT * mJw;
-    //        mM.triangularView<Upper>() += m * mJwT * R * r_skew * RT * mJv;
-    //        mM.triangularView<StrictlyLower>() = mM.transpose();
 }
 
 void BodyNodeDynamics::evalCoriolisMatrix(const VectorXd &_qDotSkel)

@@ -129,7 +129,6 @@ void BodyNode::init()
 
     mJv = MatrixXd::Zero(3, numDepDofs);
     mJw = MatrixXd::Zero(3, numDepDofs);
-    mBodyJacobian = MatrixXd::Zero(6, numDepDofs);
 
     mNumRootTrans = 0;
 
@@ -161,32 +160,6 @@ void BodyNode::updateTransform()
     mIc.noalias() = R*mI*R.transpose();
 }
 
-void BodyNode::updateVelocity()
-{
-    // Generalized body velocity from parent link.
-    if (mParentNode)
-        mBodyVelocity = dart_math::InvAd(mT, mParentNode->mBodyVelocity);
-    else
-        mBodyVelocity.setZero();
-
-    // Generalized body velocity from parent joint.
-    mBodyVelocity += mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
-}
-
-void BodyNode::updateAcceleration()
-{
-    mBodyAcceleration.setZero();
-
-    // Generalized body velocity from parent link.
-    if (mParentNode)
-        mBodyVelocity = dart_math::InvAd(mT, mParentNode->mBodyAcceleration);
-    else
-        mBodyVelocity.setZero();
-
-    // Generalized body velocity from parent joint.
-    mBodyVelocity += mParentJoint->getLocalJacobian() * mParentJoint->get_ddq();
-}
-
 void BodyNode::updateFirstDerivatives()
 {
     const int numLocalDofs = getNumLocalDofs();
@@ -215,7 +188,8 @@ void BodyNode::updateFirstDerivatives()
             mWq[i] = mTq[i];
     }
 
-    evalJacobian();
+    evalJacLin();
+    evalJacAng();
 }
 
 void BodyNode::evalJacLin() {
@@ -232,57 +206,6 @@ void BodyNode::evalJacAng() {
         Matrix3d omegaSkewSymmetric = mWq[i].topLeftCorner<3,3>() * mW.topLeftCorner<3,3>().transpose();  // wikipedia calls this the angular velocity tensor
         mJw.col(i) = dart_math::fromSkewSymmetric(omegaSkewSymmetric);
     }
-}
-
-void BodyNode::evalJacobian()
-{
-    /*--------------------------------------------------------------------------
-    J             : (6xn matrix) Body Jacobian of this link
-    T_{i,j}       : (4x4 matrix) Transformation matrix from i-th frame to
-                    j-th frame
-    S_i           : (6x1 vector) Local Jacobian of i-th joint
-    Ad(T_{i,j},S) : (6x6 matrix) Adjoint mapping
-
-    J = | Ad(T_{n,1}, S_1) Ad(T_{n,2}, S_2) ... Ad(T_{n,n-1}, S_{n-1}) S_n |
-    --------------------------------------------------------------------------*/
-
-    const int numLocalDofs = getNumLocalDofs();
-    const int numDepDofs = getNumDependentDofs();
-
-    //MatrixXd J = MatrixXd::Zero(6,numDepDofs);
-    assert(mBodyJacobian.rows() == 6);
-    assert(mBodyJacobian.cols() == getNumDependentDofs());
-
-    // The parent link has:
-    //   parentJacobian = | Ad(T_{n-1,1}, S_1) Ad(T_{n-1,2}, S_2) ... S_{n-1} |.
-    // The parent joint has:
-    //   localJacobian = S_n.
-    // We bind these two Jacobian as:
-    // J = | Ad(mT^{-1},parentJacobian) localJacobian |
-    //   = | InvAd(mT,parentJacobian) localJacobian |
-
-    // Bind InvAd(mT,parentJacobian) first.
-    // J = | InvAd(mT,parentJacobian) 0 |
-    if (mParentNode != NULL)
-    {
-        Eigen::MatrixXd parentJacobian = mParentNode->getBodyJacobian();
-        for (int i = 0; i < parentJacobian.cols(); ++i)
-            mBodyJacobian.col(i) = dart_math::InvAd(mT, parentJacobian.col(i));
-    }
-
-    // Bind localJacobian.
-    // J = | InvAd(mT,parentJacobian) localJacobian |
-    if (numLocalDofs > 0)
-        mBodyJacobian.block(0, numDepDofs - numLocalDofs, 6, numLocalDofs)
-                = mParentJoint->getLocalJacobian();
-
-    // TODO: below code will be deleted once mJw, mJv are deprecated.
-    const Eigen::MatrixXd& Jworld = getWorldJacobian();
-    //mJw = Jworld.topLeftCorner(3,numDepDofs);
-    //mJv = Jworld.bottomLeftCorner(3,numDepDofs);
-
-    evalJacAng();
-    evalJacLin();
 }
 
 Vector3d BodyNode::evalWorldPos(const Vector3d& _lp) const
@@ -446,25 +369,6 @@ const MatrixXd& BodyNode::getJacobianAngular() const
     return mJw;
 }
 
-const Eigen::MatrixXd& BodyNode::getBodyJacobian() const
-{
-    return mBodyJacobian;
-}
-
-Eigen::MatrixXd BodyNode::getWorldJacobian() const
-{
-    const Eigen::MatrixXd& bodyJacobian = getBodyJacobian();
-    Eigen::MatrixXd worldJacobian = Eigen::MatrixXd::Zero(mBodyJacobian.rows(), mBodyJacobian.cols());
-
-    Matrix4d X = Matrix4d::Identity();
-    X.topLeftCorner<3,3>() = mW.topLeftCorner<3,3>();
-
-    for (int i = 0; i < worldJacobian.cols(); ++i)
-        worldJacobian.col(i) = dart_math::Ad(X, bodyJacobian.col(i));
-
-    return worldJacobian;
-}
-
 void BodyNode::evalVelocity(const VectorXd &_qDotSkel)
 {
     mVel.setZero();
@@ -479,28 +383,6 @@ void BodyNode::evalOmega(const VectorXd &_qDotSkel)
 
     for(int i = mNumRootTrans; i < getNumDependentDofs(); i++)
         mOmega += mJw.col(i)*_qDotSkel[mDependentDofs[i]];
-}
-
-dart_math::Vector6d BodyNode::getWorldVelocity() const
-{
-    dart_math::Vector6d worldVelcocity;
-
-    Eigen::Matrix4d X = Eigen::Matrix4d::Identity();
-    X.topLeftCorner<3,3>() = mW.topLeftCorner<3,3>();
-    worldVelcocity = dart_math::Ad(X, mBodyVelocity);
-
-    return worldVelcocity;
-}
-
-dart_math::Vector6d BodyNode::getWorldAcceleration() const
-{
-    dart_math::Vector6d worldAcceleration;
-
-    Eigen::Matrix4d X = Eigen::Matrix4d::Identity();
-    X.topLeftCorner<3,3>() = mW.topLeftCorner<3,3>();
-    worldAcceleration = dart_math::Ad(X, mBodyAcceleration);
-
-    return worldAcceleration;
 }
 
 } // namespace kinematics

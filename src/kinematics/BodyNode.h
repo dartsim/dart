@@ -337,28 +337,8 @@ public:
     /// @brief Calculate world Jacobian from body Jacobian.
     Eigen::MatrixXd getWorldJacobian() const;
 
-    /// @brief Evaluate generalized body velocity.
-    void evalBodyVelocity();
-
-    /// @brief Get generalized body velocity w.r.t. body frame.
-    const dart_math::Vector6d& getBodyVelocity() const { return mBodyVelocity; }
-
-    /// @brief Get generalized body velocity w.r.t. world frame.
-    dart_math::Vector6d getWorldVelocity() const;
-
-    /// @brief Get generalized body acceleration w.r.t. body frame.
-    const dart_math::Vector6d& getBodyAcceleration() const
-    { return mBodyAcceleration; }
-
-    /// @brief Get generalized body acceleration w.r.t. world frame.
-    dart_math::Vector6d getWorldAcceleration() const;
-
     /// @brief Update the first derivatives of the transformations
     void updateFirstDerivatives();
-
-    /// @brief Evaluate Jacobian of this body node w.r.t. body frame
-    /// (num cols == num dependent dofs)
-    void evalJacobian();
 
     //--------------------------------------------------------------------------
     // Sub-functions for kinematics
@@ -421,19 +401,6 @@ protected:
 
     /// @brief Global transformation.
     Eigen::Matrix4d mW;
-
-    //--------------------------------------------------------------------------
-    // FIRST DERIVATIVES
-    //--------------------------------------------------------------------------
-    /// @brief Jacobian w.r.t body frame.
-    /// generalized_velocity_of_body = mJ * generalized_velocity.
-    Eigen::MatrixXd mBodyJacobian;
-
-    /// @brief Generalized body velocity.
-    dart_math::Vector6d mBodyVelocity;
-
-    /// @brief Generalized body acceleration.
-    dart_math::Vector6d mBodyAcceleration;
 
 private:
     /// @brief A unique ID of this node globally.
