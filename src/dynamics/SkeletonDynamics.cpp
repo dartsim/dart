@@ -111,10 +111,8 @@ VectorXd SkeletonDynamics::computeInverseDynamicsLinear(
                 = static_cast<BodyNodeDynamics*>(getNode(i));
 
         // compute joint forces in cartesian space
-        nodei->computeInvDynForces_JS(_gravity,
-                                      _qdot,
-                                      _qdotdot,
-                                      _withExternalForces);
+        nodei->computeInvDynForces(_gravity, _qdot, _qdotdot,
+                                   _withExternalForces);
         nodei->getGeneralized(torqueGen); // convert joint forces to generalized coordinates
     }
 

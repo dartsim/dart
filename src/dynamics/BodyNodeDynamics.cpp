@@ -300,49 +300,6 @@ void BodyNodeDynamics::computeInvDynForces(const Vector3d& /*_gravity*/,
     }// endif compute external forces
 }
 
-void BodyNodeDynamics::computeInvDynForces_JS(
-        const Eigen::Vector3d& _gravity,
-        const Eigen::VectorXd* _qdot,
-        const Eigen::VectorXd* _qdotdot,
-        bool _withExternalForces)
-{
-    mForceJointBody.setZero();
-    mTorqueJointBody.setZero();
-    Vector3d cl = mCOMLocal;
-
-    // base case: end effectors
-    mForceJointBody = mMass*mVelDotBody;
-    mTorqueJointBody = cl.cross(mMass*mVelDotBody)
-                       + mOmegaBody.cross(mI*mOmegaBody)
-                       + mI*mOmegaDotBody;
-
-    // general case
-    for(unsigned int j = 0; j < mJointsChild.size(); j++)
-    {
-        BodyNodeDynamics* bchild = static_cast<BodyNodeDynamics*>(
-                                       mJointsChild[j]->getChildNode());
-        Matrix3d Rchild = bchild->mT.topLeftCorner<3,3>();
-        Vector3d forceChildNode = Rchild*bchild->mForceJointBody;
-        mForceJointBody += forceChildNode;
-        //Vector3d rlchild = bchild->mT.col(3).head(3);
-        Vector3d rlchild = bchild->mT.topRightCorner<3,1>();
-        mTorqueJointBody += (rlchild).cross(forceChildNode)
-                            + Rchild*bchild->mTorqueJointBody;
-    }
-
-    if( _withExternalForces )
-    {
-        int nContacts = mContacts.size();
-        for(int i=0; i<nContacts; i++)
-        {
-            mExtForceBody += mContacts.at(i).second;
-            mExtTorqueBody += mContacts.at(i).first.cross(mContacts.at(i).second);
-        }
-        mForceJointBody -= mExtForceBody;
-        mTorqueJointBody -= mExtTorqueBody;
-    }// endif compute external forces
-}
-
 Matrix4d BodyNodeDynamics::getLocalSecondDeriv(const Dof *_q1,
                                                const Dof *_q2) const
 {

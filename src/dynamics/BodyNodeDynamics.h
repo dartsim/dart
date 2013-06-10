@@ -116,12 +116,6 @@ public:
                              const Eigen::VectorXd *_qdotdot,
                              bool _withExternalForces );
 
-    /// @brief Computes the forces in the second pass of the algorithm.
-    void computeInvDynForces_JS(const Eigen::Vector3d& _gravity,
-                                const Eigen::VectorXd* _qdot,
-                                const Eigen::VectorXd* _qdotdot,
-                                bool _withExternalForces);
-
     // non-recursive Dynamics formulation - M*qdd + C*qdot + g = 0
     void updateSecondDerivatives();  ///< Update the second derivatives of the transformations
     void updateSecondDerivatives(Eigen::Vector3d _offset);  ///< Update the second derivatives of the transformations
