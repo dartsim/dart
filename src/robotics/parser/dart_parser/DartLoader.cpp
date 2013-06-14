@@ -44,30 +44,6 @@ dynamics::SkeletonDynamics* DartLoader::parseSkeleton( std::string _urdfFile,
 
 }
 
-/**
- * @function parseRobot
- */
-dynamics::SkeletonDynamics* DartLoader::parseRobot( std::string _urdfFile,
-					 std::string _rootToRobotPath ) {
-
-  std::string xml_string;
-  xml_string = readXmlToString( _urdfFile );
-  boost::shared_ptr<urdf::ModelInterface> robotModel = urdf::parseURDF( xml_string );
-  return modelInterfaceToRobot( robotModel, _rootToRobotPath );
-}
-
-/**
- * @function parseObject
- */
-dynamics::SkeletonDynamics* DartLoader::parseObject( std::string _urdfFile,
-					   std::string _rootToObjectPath) {
-  
-  std::string xml_string;
-  xml_string = readXmlToString( _urdfFile );
-  boost::shared_ptr<urdf::ModelInterface> objectModel = urdf::parseURDF( xml_string );
-  return modelInterfaceToObject( objectModel, _rootToObjectPath );
-
-}
 
 /**
  * @function parseWorld
@@ -86,8 +62,7 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
   }
   
   simulation::World* world;
-  dynamics::SkeletonDynamics* robot;
-  dynamics::SkeletonDynamics* object;
+  dynamics::SkeletonDynamics* skeleton;
   
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
@@ -109,45 +84,6 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
 
     Eigen::VectorXd pose(6); 
 
-    for( unsigned int i = 0; i < worldInterface->objectModels.size(); ++i ) {
-
-      // Set the corresponding path
-      std::string object_path = mRoot_To_World_Path;
-      std::string object_localPath = mWorld_To_Entity_Paths.find( worldInterface->objectModels[i].model->getName() )->second;
-      object_path.append(object_localPath);
-
-      if( debug ) {
-	std::cout<<"Global filepath for: "<<worldInterface->objectModels[i].model->getName() << " is: "<<object_path<<std::endl;
-      }     
-
-      object = modelInterfaceToObject(  worldInterface->objectModels[i].model, object_path );
-
-      if( object == NULL ) {
-	std::cout<< "[ERROR] Object "<< worldInterface->objectModels[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
-	world = NULL; 
-	return world;
-      }
-
-      // Initialize position and RPY 
-      pose << 0, 0, 0, 0, 0, 0;
-      pose(0) = worldInterface->objectModels[i].origin.position.x;
-      pose(1) = worldInterface->objectModels[i].origin.position.y;
-      pose(2) = worldInterface->objectModels[i].origin.position.z;
-      worldInterface->objectModels[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
-
-      kinematics::Joint* joint = object->getRoot()->getParentJoint();
-      joint->getTransform(0)->getDof(0)->setValue(pose(0));
-      joint->getTransform(0)->getDof(1)->setValue(pose(1));
-      joint->getTransform(0)->getDof(2)->setValue(pose(2));
-      joint->getTransform(1)->getDof(0)->setValue(pose(5));
-      joint->getTransform(2)->getDof(0)->setValue(pose(4));
-      joint->getTransform(3)->getDof(0)->setValue(pose(3));
-      joint->updateStaticTransform();
-      object->initSkel();
-
-      world->addSkeleton( object );
-    }
-    
     for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
       
       // Set the corresponding path
@@ -157,9 +93,9 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
       if( debug ) {
 	std::cout<<"Global filepath for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<robot_path<<std::endl;
       }
-      robot = modelInterfaceToRobot(  worldInterface->robotModels[i].model, robot_path );
+      skeleton = modelInterfaceToSkeleton(  worldInterface->robotModels[i].model, robot_path );
 
-      if( robot == NULL ) {
+      if( skeleton == NULL ) {
 	std::cout<< "[ERROR] Robot "<< worldInterface->robotModels[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
 	world = NULL; 
 	return world;
@@ -172,7 +108,7 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
       pose(2) = worldInterface->robotModels[i].origin.position.z;
       worldInterface->robotModels[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
 
-      kinematics::Joint* joint = robot->getRoot()->getParentJoint();
+      kinematics::Joint* joint = skeleton->getRoot()->getParentJoint();
       joint->getTransform(0)->getDof(0)->setValue(pose(0));
       joint->getTransform(0)->getDof(1)->setValue(pose(1));
       joint->getTransform(0)->getDof(2)->setValue(pose(2));
@@ -180,9 +116,9 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
       joint->getTransform(2)->getDof(0)->setValue(pose(4));
       joint->getTransform(3)->getDof(0)->setValue(pose(3));
       joint->updateStaticTransform();
-      robot->initSkel();
+      skeleton->initSkel();
 
-      world->addSkeleton( robot );
+      world->addSkeleton( skeleton );
     }
   } // end else(worldInterface)
   
@@ -377,205 +313,6 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   return mSkeleton;
 }
 
-/**
- * @function modelInterfaceToRobot
- */
-dynamics::SkeletonDynamics* DartLoader::modelInterfaceToRobot( boost::shared_ptr<urdf::ModelInterface> _model,
-						    std::string _rootToRobotPath ) {
-  
-
-  if( _rootToRobotPath.empty() ) {
-    std::cout<< "[DartLoader] Absolute path to robot "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
-  }
-
-  dynamics::SkeletonDynamics* mRobot;
-  dynamics::BodyNodeDynamics *node, *rootNode;
-  kinematics::Joint *joint, *rootJoint;
-  
-  /** Create new robot object */
-  mRobot = new dynamics::SkeletonDynamics();
-  
-  /** Set robot name */
-  mRobot->setName( _model->getName() );
-  
-  /** Load links and convert them to DART BodyNodes */
-  mNodes.resize(0);  
-
-  for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
-       lk != _model->links_.end(); 
-       lk++ ) {
-
-    // If it is world, don't parse (gazebo hack to define rootJoint)
-    if( strcmp( (*lk).second->name.c_str(), "world" ) == 0 ) { continue; }
-
-    node = createDartNode( (*lk).second, mRobot, _rootToRobotPath );
-    if( node == NULL ) { return NULL; }
-
-    mNodes.push_back( node ); 
-  }
-
-  if(debug) printf ("** Created %u body nodes \n", mNodes.size() );
-  
-  /** Initialize Joint store vector */
-  mJoints.resize(0);
-  
-  /** root joint */
-  std::string rootName = _model->getRoot()->name;
-  rootNode = getNode( rootName );
-  
-  if(debug) printf ("[DartLoader] Root Node: %s \n", rootNode->getName() );
-
-  /** If root node is NULL, nothing to create */
-  if( rootNode == NULL ) {
-    // Good, we have to set the node attached to world as root
-    if( rootName == "world" ) {
-      int numRoots = _model->getRoot()->child_links.size();
-      if( numRoots != 1 ) { 
-	std::cout<< "[ERROR] Not unique link attached to world" <<std::endl; 
-      } else {
-	rootName = (_model->getRoot()->child_links)[0]->name;
-	rootNode = getNode( rootName );
-	if( rootNode == NULL ) { return NULL; }
-	std::cout<<"[info] World specified in URDF. Root node considered:"<< rootName <<std::endl;
-
-	// Since the original rootName was world, add the joint that had it as its parent (only one)
-	for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-	     jt != _model->joints_.end(); jt++ ) {  
-	  if( ( (*jt).second )->parent_link_name == "world" ) {
-	    rootJoint = createDartRootJoint( (*jt).second, mRobot );
-	    if( rootJoint == NULL ) { return NULL; }
-	    mJoints.push_back( rootJoint );
-	  }
-	} // end of for (joint iterator)
-      } // end of else ( if there is a unique node attached to world)
-
-    } // end of rootName == "world" (when rootNode == NULL )
-    // Bad. Either the URDF is bad or the structure is not tree-like
-    else {
-      std::cout << "[ERROR] No root node found!" << std::endl;
-      return NULL;
-    }
-  } // end of rootNode == NULL 
-
-  // If rootNode is not NULL and world link is not defined, then we assume the user wants a free floating robot
-  else {
-    /** Create a joint for floating */
-    rootJoint =  createNewDartRootJoint( rootNode, mRobot );
-    if( rootJoint == NULL ) { return NULL; } 
-    mJoints.push_back( rootJoint );
-  }   
-  
-  //-- Save DART structure
-
-  // Push parents first
-  std::list<dynamics::BodyNodeDynamics*> nodeStack;
-  dynamics::BodyNodeDynamics* u;
-  nodeStack.push_back( rootNode );
-  
-  int numIter = 0;
-  while( !nodeStack.empty() && numIter < mNodes.size() ) {
-    // Get front element on stack and update it
-    u = nodeStack.front();
-    // Add it to the Robot
-    mRobot->addNode(u);
-
-    for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-	 jt != _model->joints_.end(); 
-	 jt++ ) {  
-      if( ( (*jt).second )->parent_link_name == u->getName() ) {
-	joint = createDartJoint( (*jt).second, mRobot );
-	mJoints.push_back( joint );
-      }
-    }
-    
-    // Pop it out
-    nodeStack.pop_front();
-    
-    // Add its kids
-    for( int idx = 0; idx < u->getNumChildJoints(); ++idx ) {
-      nodeStack.push_back( (dynamics::BodyNodeDynamics*)( u->getChildNode(idx) ) );
-    }
-    numIter++;
-  } // end while
-  
-  if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );
-  if(debug) printf ("[debug] Pushed %d nodes in order \n", numIter );
-  
-  // Init robot (skeleton)
-  mRobot->initSkel();
-  return mRobot;
-}
-
-/**
- * @function modelInterfaceToObject
- */
-dynamics::SkeletonDynamics* DartLoader::modelInterfaceToObject( boost::shared_ptr<urdf::ModelInterface> _model,
-						      std::string _rootToObjectPath ) {
-  
-  if( _rootToObjectPath.empty() ) {
-    std::cout<< "[DartLoader] Absolute path to object "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
-    }
-
-  dynamics::SkeletonDynamics* mObject;
-  dynamics::BodyNodeDynamics *node, *rootNode;
-  kinematics::Joint *joint, *rootJoint;
-
-  mObject = new dynamics::SkeletonDynamics();
-  
-  // name
-  mObject->setName( _model->getName() );
-  
-  // BodyNode
-  mNodes.resize(0);  
-  for( std::map<std::string, boost::shared_ptr<urdf::Link> >::const_iterator lk = _model->links_.begin(); 
-       lk != _model->links_.end(); 
-       lk++ ) {
-
-    // If it is world, don't parse (gazebo hack to define rootJoint)
-    if( strcmp( (*lk).second->name.c_str(), "world" ) == 0 ) { continue; }
-
-    node = createDartNode( (*lk).second, mObject, _rootToObjectPath );
-    if( node == NULL ) { return NULL; }
-
-    mNodes.push_back( node );
-  }
-    if(debug) printf ("[debug] Created %u body nodes \n", mNodes.size() );
-  
-  // Joint
-  mJoints.resize(0);
-  
-  for( std::map<std::string, boost::shared_ptr<urdf::Joint> >::const_iterator jt = _model->joints_.begin(); 
-       jt != _model->joints_.end(); 
-       jt++ ) {  
-    rootJoint = createDartRootJoint( (*jt).second, mObject );
-    if( rootJoint == NULL ) { return NULL; }
-    mJoints.push_back( joint );
-
-  }
-  
-  //-- root joint
-  rootNode = getNode( _model->getRoot()->name ); // no rootnode
-  rootJoint = createNewDartRootJoint( rootNode, mObject );
-  if( rootJoint == NULL ) { return NULL; }
-  mJoints.push_back( rootJoint );
-  
-  if(debug) printf ("[debug] Created %u joints \n", mJoints.size() );
-  
-  //-- Save DART structure
-
-  // 1. Root node was added already so add...
-  
-  // 2. The rest of nodes
-  for( unsigned int i = 0; i < mNodes.size(); ++i ) {
-    // Add nodes to the object
-      mObject->addNode( mNodes[i] );
-  }
-  
-  // Init object (skeleton)
-  mObject->initSkel();
-  
-  return mObject;
-}
 
 /**
  * @function getNode

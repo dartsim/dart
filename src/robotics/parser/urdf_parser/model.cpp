@@ -46,34 +46,6 @@ bool parseMaterial(Material &material, TiXmlElement *config);
 bool parseLink(Link &link, TiXmlElement *config);
 bool parseJoint(Joint &joint, TiXmlElement *config);
 
-// Added by achq on 2012/10/13 *******************//
-
-  /**
-    * @function isObjectURDF
-    */
-  bool isObjectURDF( const std::string &_xml_string ) {  
-  	TiXmlDocument xml_doc;
- 	 	xml_doc.Parse( _xml_string.c_str() );
-
-  	TiXmlElement *test_xml = xml_doc.FirstChildElement("object");
-  	if ( !test_xml ) { return false; }
-  	else { return true; }
-	}
-
-  /**
-    * @function isRobotURDF
-    */
-  bool isRobotURDF( const std::string &_xml_string ) {
-  	TiXmlDocument xml_doc;
- 	 	xml_doc.Parse( _xml_string.c_str() );
-
-  	TiXmlElement *test_xml = xml_doc.FirstChildElement("robot");
-  	if ( !test_xml ) { return false; }
-  	else { return true; }
-  }
-
-// *************************************************//
-
 boost::shared_ptr<ModelInterface>  parseURDF(const std::string &xml_string)
 {
   boost::shared_ptr<ModelInterface> model(new ModelInterface);

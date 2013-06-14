@@ -99,7 +99,6 @@ public:
   /// world name must be unique
   std::string name;
 
-  std::vector<Entity> objectModels;
   std::vector<Entity> robotModels;
 
   void initXml(TiXmlElement* config);

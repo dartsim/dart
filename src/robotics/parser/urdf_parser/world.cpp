@@ -49,7 +49,6 @@ namespace urdf{
 
   // Added by achq on 2012/10/13 *******//
   
-  bool parseEntity( Entity &_entity, TiXmlElement *_config, bool &_isRobot );
   bool parsePose(Pose &pose, TiXmlElement* xml);
   
   /**
@@ -159,12 +158,7 @@ namespace urdf{
 	    }
 	    
 	    // Store in world
-	    if( urdf::isRobotURDF( xml_model_string ) ) {
-	      world->robotModels.push_back( entity  );
-	    }
-	    else if( urdf::isObjectURDF( xml_model_string ) ) {
-	      world->objectModels.push_back( entity );
-	    } 
+	    world->robotModels.push_back( entity );
 	  }
 	  
 	} // end of include read
