@@ -32,16 +32,20 @@ DartLoader::~DartLoader() {
 /**
  * @function parseSkeleton
  */
-dynamics::SkeletonDynamics* DartLoader::parseSkeleton( std::string _urdfFile,
-						       std::string _rootToSkelPath ) {
+dynamics::SkeletonDynamics* DartLoader::parseSkeleton( std::string _urdfFile ) {
 
   std::string xml_string;
   xml_string = readXmlToString( _urdfFile );
 
   boost::shared_ptr<urdf::ModelInterface> skeletonModel = urdf::parseURDF( xml_string );
   
-  return modelInterfaceToSkeleton( skeletonModel, _rootToSkelPath );
+  // Change path to a Unix-style path if given a Windows one
+  // Windows can handle Unix-style paths (apparently)
+  std::string raw_World_Path = _urdfFile;
+  std::replace( raw_World_Path.begin(), raw_World_Path.end(), '\\' , '/' );
+  std::string rootToSkelPath = raw_World_Path.substr( 0, raw_World_Path.rfind("/") + 1 );
 
+  return modelInterfaceToSkeleton( skeletonModel, rootToSkelPath );
 }
 
 

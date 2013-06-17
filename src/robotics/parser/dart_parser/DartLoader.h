@@ -51,15 +51,14 @@ class DartLoader {
   DartLoader();
   ~DartLoader();
   
-  dynamics::SkeletonDynamics* parseSkeleton( std::string _urdfFile,
-					     std::string _rootToSkelPath = NULL );
+  dynamics::SkeletonDynamics* parseSkeleton( std::string _urdfFile );
   
   simulation::World* parseWorld( std::string _urdfFile );
   
   void parseWorldToEntityPaths( const std::string &_xml_string );
 
   dynamics::SkeletonDynamics* modelInterfaceToSkeleton( boost::shared_ptr<urdf::ModelInterface> _model,
-							std::string _rootToSkelPath = NULL );
+							std::string _rootToSkelPath = "" );
   
   // Utilities
   dynamics::BodyNodeDynamics* getNode( std::string _nodeName );
