@@ -10,12 +10,12 @@
 # DART_LIBRARIES - Libraries needed to use DART.
 # DART_DEFINITIONS - Compiler flags for DART.
 
-set(DART_FOUND FALSE)
+set(DART_FOUND_2 FALSE)
 set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
 
 set(DART_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include/dart)
 if(EXISTS ${DART_INCLUDEDIR}/kinematics/Skeleton.h)
-    set(DART_FOUND TRUE)
+    set(DART_FOUND_2 TRUE)
 else()
     find_package(PkgConfig QUIET)
     if(PKG_CONFIG_FOUND)
@@ -30,7 +30,7 @@ else()
 endif()
 
 if(EXISTS DART_INCLUDEDIR/kinematics/Skeleton.h)
-    set(DART_FOUND TRUE)
+    set(DART_FOUND_2 TRUE)
 endif()
    
 set(DART_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib")
@@ -40,7 +40,7 @@ set(DART_LIBS dart)
 set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND)
+find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND_2)
 
 mark_as_advanced(DART_FOUND DART_LIBRARY_DIRS DART_INCLUDEDIR DART_LIBRARIES)
 
