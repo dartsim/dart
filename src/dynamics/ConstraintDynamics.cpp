@@ -126,11 +126,7 @@ using namespace dart_math;
 
             for (int j = 0; j < nNodes; j++)
                 {
-                    kinematics::BodyNode* node = _newSkel->getNode(j);
-                    // TODO: (test)
-                    if (node->getCollisionShape() == NULL)
-                        continue;
-                    mCollisionChecker->addCollisionSkeletonNode(node);
+                    mCollisionChecker->addCollisionSkeletonNode(_newSkel->getNode(j));
                     mBodyIndexToSkelIndex.push_back(nSkels-1);
                 }
 

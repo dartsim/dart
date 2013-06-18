@@ -20,7 +20,8 @@ namespace collision {
 
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
-                              const aiScene *_mesh)
+                              const aiScene *_mesh,
+                              const fcl::Transform3f& _transform)
 {
     assert(_mesh);
     fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
@@ -36,6 +37,7 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
                 const aiVector3D& vertex
                         = _mesh->mMeshes[i]->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
                 vertices[k] = fcl::Vec3f(vertex.x * _sizeX, vertex.y * _sizeY, vertex.z * _sizeZ);
+                vertices[k] = _transform.transform(vertices[k]);
             }
             model->addTriangle(vertices[0], vertices[1], vertices[2]);
         }
@@ -46,7 +48,8 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
 }
 
 template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
+fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ,
+                                   const fcl::Transform3f& _transform) {
     float v[59][3] = {
         {0, 0, 0},
         {0.135299, -0.461940, -0.135299},
@@ -231,6 +234,9 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
         p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX, v[f[i][0]][1] * _sizeY, v[f[i][0]][2] * _sizeZ);
         p2 = fcl::Vec3f(v[f[i][1]][0] * _sizeX, v[f[i][1]][1] * _sizeY, v[f[i][1]][2] * _sizeZ);
         p3 = fcl::Vec3f(v[f[i][2]][0] * _sizeX, v[f[i][2]][1] * _sizeY, v[f[i][2]][2] * _sizeZ);
+        p1 = _transform.transform(p1);
+        p2 = _transform.transform(p2);
+        p3 = _transform.transform(p3);
         model->addTriangle(p1, p2, p3);
     }
     model->endModel();
@@ -238,7 +244,8 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
 }
 
 template<class BV>
-fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) //create a cube mesh for collision detection
+fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ,
+                              const fcl::Transform3f& _transform) //create a cube mesh for collision detection
 {
     float n[6][3] =
     {
@@ -275,10 +282,16 @@ fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) //create
         p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
         p2 = fcl::Vec3f(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
         p3 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+        p1 = _transform.transform(p1);
+        p2 = _transform.transform(p2);
+        p3 = _transform.transform(p3);
         model->addTriangle(p1, p2, p3);
         p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
         p2 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
         p3 = fcl::Vec3f(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
+        p1 = _transform.transform(p1);
+        p2 = _transform.transform(p2);
+        p3 = _transform.transform(p3);
         model->addTriangle(p1, p2, p3);
     }
     model->endModel();
@@ -287,7 +300,8 @@ fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ) //create
 
 template<class BV>
 fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
-								  double _height, int _slices, int _stacks)
+								  double _height, int _slices, int _stacks,
+								  const fcl::Transform3f& _transform)
 {
 	const int CACHE_SIZE = 240;
 
@@ -335,9 +349,12 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 	radiusLow = _baseRadius;
 	zLow = zBase;
 	p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+	p1 = _transform.transform(p1);
 	for(i = 1; i < _slices; i++) {
 		p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
 		p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+		p2 = _transform.transform(p2);
+		p3 = _transform.transform(p3);
 		model->addTriangle(p1, p2, p3);
 
 		Eigen::Vector3d v(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
@@ -353,9 +370,12 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 
 			p1 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
 			p2 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
-
 			p3 = fcl::Vec3f(radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
 			p4 = fcl::Vec3f(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
+			p1 = _transform.transform(p1);
+			p2 = _transform.transform(p2);
+			p3 = _transform.transform(p3);
+			p4 = _transform.transform(p4);
 
 			model->addTriangle(p1, p2, p3);
 			model->addTriangle(p2, p3, p4);
@@ -368,9 +388,12 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 	radiusLow = _topRadius;
 	zLow = zBase + _height;
 	p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+	p1 = _transform.transform(p1);
 	for(i = 1; i < _slices; i++) {
 		p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
 		p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+		p2 = _transform.transform(p2);
+		p3 = _transform.transform(p3);
 		model->addTriangle(p1, p2, p3);
 	}
 

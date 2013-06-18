@@ -71,19 +71,8 @@ void ContactDynamics::initialize() {
         int nNodes = skel->getNumNodes();
 
         for (int j = 0; j < nNodes; j++) {
-            kinematics::BodyNode* node = skel->getNode(j);
-
-            // If the collision shape of the node is NULL, then the node is
-            // uncollidable object. We don't care uncollidable object in
-            // ContactDynamics.
-            if (node->getCollisionShape() == NULL)
-                continue;
-
-            if (node->getCollisionShape()->getShapeType() != kinematics::Shape::P_UNDEFINED)
-            {
-                mCollisionChecker->addCollisionSkeletonNode(node);
-                mBodyIndexToSkelIndex.push_back(i);
-            }
+            mCollisionChecker->addCollisionSkeletonNode(skel->getNode(j));
+            mBodyIndexToSkelIndex.push_back(i);
         }
     }
 
@@ -113,19 +102,8 @@ void ContactDynamics::addSkeleton(SkeletonDynamics* _newSkel) {
     int nNodes = _newSkel->getNumNodes();
 
     for (int j = 0; j < nNodes; j++) {
-        kinematics::BodyNode* node = _newSkel->getNode(j);
-
-        // If the collision shape of the node is NULL, then the node is
-        // uncollidable object. We don't care uncollidable object in
-        // ContactDynamics.
-        if (node->getCollisionShape() == NULL)
-            continue;
-
-        if (node->getCollisionShape()->getShapeType()
-                != kinematics::Shape::P_UNDEFINED) {
-            mCollisionChecker->addCollisionSkeletonNode(node);
-            mBodyIndexToSkelIndex.push_back(nSkels-1);
-        }
+        mCollisionChecker->addCollisionSkeletonNode(_newSkel->getNode(j));
+        mBodyIndexToSkelIndex.push_back(nSkels-1);
     }
 
     Eigen::VectorXd newConstrForce;

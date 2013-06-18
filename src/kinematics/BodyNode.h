@@ -230,22 +230,31 @@ public:
     Marker* getMarker(int _idx) const { return mMarkers[_idx]; }
 
     /// @brief
-    void setShape(Shape *_p) { mVizShape = _p; mColShape = _p; }
+    void addShape(Shape *_p) { mVizShapes.push_back(_p); mColShapes.push_back(_p); }
 
     /// @brief
-    Shape* getShape() const { return mVizShape; }
+    int getNumShapes() const { return mVizShapes.size(); }
 
     /// @brief
-    void setVisualizationShape(Shape *_p) { mVizShape = _p; }
+    Shape* getShape(int _idx) const { return mVizShapes[_idx]; }
 
     /// @brief
-    Shape* getVisualizationShape() const { return mVizShape; }
+    void addVisualizationShape(Shape *_p) { mVizShapes.push_back(_p); }
 
     /// @brief
-    void setCollisionShape(Shape *_p) { mColShape = _p; }
+    int getNumVisualizationShapes() const { return mVizShapes.size(); }
 
     /// @brief
-    Shape* getCollisionShape() const { return mColShape; }
+    Shape* getVisualizationShape(int _idx) const { return mVizShapes[_idx]; }
+
+    /// @brief
+    void addCollisionShape(Shape *_p) { mColShapes.push_back(_p); }
+
+    /// @brief
+    int getNumCollisionShapes() const { return mColShapes.size(); }
+
+    /// @brief
+    Shape* getCollisionShape(int _idx) const { return mColShapes[_idx]; }
 
     /// @brief
     void addChildJoint(Joint *_c) { mJointsChild.push_back(_c); }
@@ -323,10 +332,10 @@ protected:
     int mSkelIndex;
 
     /// @brief Visual geometry of this body node
-    Shape* mVizShape;
+    std::vector<Shape*> mVizShapes;
 
     /// @brief Collision geometry of this body node
-    Shape* mColShape;
+    std::vector<Shape*> mColShapes;
 
     /// @brief List of joints that link to child nodes
     std::vector<Joint*> mJointsChild;

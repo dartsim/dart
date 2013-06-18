@@ -110,8 +110,8 @@ namespace utils {
         }
 
         bool MayaExportSkeleton::exportMayaAsciiShape(BodyNode* _b, ofstream &_outFile, const string &_prefix, const string &_suffix  ){
-            Shape *prim = _b->getShape();
-            if(prim==NULL) return false; // an dummy node
+            if(_b->getNumShapes() == 0) return false; // an dummy node
+            Shape *prim = _b->getShape(0);
         
             Vector3d dim = prim->getDim();
             string ngeom = _prefix+_b->getName()+_suffix; ngeom+=mSuffixGeom; 

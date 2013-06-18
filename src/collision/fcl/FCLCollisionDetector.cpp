@@ -95,33 +95,37 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
         collNode1 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode1);
         collNode2 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode2);
 
-        fcl::collide(collNode1->getCollisionGeometry(),
-                     collNode1->getFCLTransform(),
-                     collNode2->getCollisionGeometry(),
-                     collNode2->getFCLTransform(),
-                     request, result);
-
-        unsigned int numContacts = result.numContacts();
-        for (unsigned int j = 0; j < numContacts; ++j)
+        for(int j = 0; j < collNode1->getNumCollisionGeometries(); j++)
+        for(int k = 0; k < collNode2->getNumCollisionGeometries(); k++)
         {
-            const fcl::Contact& contact = result.getContact(j);
+            fcl::collide(collNode1->getCollisionGeometry(j),
+                         collNode1->getFCLTransform(j),
+                         collNode2->getCollisionGeometry(k),
+                         collNode2->getFCLTransform(k),
+                         request, result);
 
-            Contact contactPair;
-            contactPair.point(0) = contact.pos[0];
-            contactPair.point(1) = contact.pos[1];
-            contactPair.point(2) = contact.pos[2];
-            contactPair.normal(0) = contact.normal[0];
-            contactPair.normal(1) = contact.normal[1];
-            contactPair.normal(2) = contact.normal[2];
-            contactPair.collisionNode1 = findCollisionNode(contact.o1);
-            contactPair.collisionNode2 = findCollisionNode(contact.o2);
-            assert(contactPair.collisionNode1 != NULL);
-            assert(contactPair.collisionNode2 != NULL);
-            //contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
-            //contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
-            contactPair.penetrationDepth = contact.penetration_depth;
+            unsigned int numContacts = result.numContacts();
+            for (unsigned int l = 0; l < numContacts; ++l)
+            {
+                const fcl::Contact& contact = result.getContact(l);
 
-            mContacts.push_back(contactPair);
+                Contact contactPair;
+                contactPair.point(0) = contact.pos[0];
+                contactPair.point(1) = contact.pos[1];
+                contactPair.point(2) = contact.pos[2];
+                contactPair.normal(0) = contact.normal[0];
+                contactPair.normal(1) = contact.normal[1];
+                contactPair.normal(2) = contact.normal[2];
+                contactPair.collisionNode1 = findCollisionNode(contact.o1);
+                contactPair.collisionNode2 = findCollisionNode(contact.o2);
+                assert(contactPair.collisionNode1 != NULL);
+                assert(contactPair.collisionNode2 != NULL);
+                //contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
+                //contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
+                contactPair.penetrationDepth = contact.penetration_depth;
+
+                mContacts.push_back(contactPair);
+            }
         }
     }
 
@@ -134,9 +138,11 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
     int numCollNodes = mCollisionNodes.size();
     for (int i = 0; i < numCollNodes; ++i)
     {
-        if (dynamic_cast<FCLCollisionNode*>(
-                    mCollisionNodes[i])->getCollisionGeometry() == _fclCollGeom)
-            return mCollisionNodes[i];
+        FCLCollisionNode* collisionNode = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
+        for(int j = 0; j < collisionNode->getNumCollisionGeometries(); j++) {
+            if (collisionNode->getCollisionGeometry(j) == _fclCollGeom)
+                return mCollisionNodes[i];
+        }
     }
     return NULL;
 }

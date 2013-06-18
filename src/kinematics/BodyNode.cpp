@@ -58,8 +58,6 @@ int BodyNode::msBodyNodeCount = 0;
 
 BodyNode::BodyNode(const char *_name)
     : mSkelIndex(-1),
-      mVizShape(NULL),
-      mColShape(NULL),
       mParentJoint(NULL),
       mParentNode(NULL),
       mColliding(false),
@@ -87,36 +85,19 @@ BodyNode::~BodyNode()
     for (unsigned int i = 0; i < mMarkers.size(); ++i)
         delete mMarkers[i];
 
-    mMarkers.clear();
-
-    if(mVizShape && mVizShape == mColShape)
-    {
-        delete mVizShape;
-        mVizShape = NULL;
-        mColShape = NULL;
-    }
-
-    if(mVizShape)
-    {
-        delete mVizShape;
-        mVizShape = NULL;
-    }
-
-    if(mColShape)
-    {
-        delete mColShape;
-        mColShape = NULL;
-    }
-
-    mJointsChild.clear();
+    for(int i = 0; i < mVizShapes.size(); i++)
+        delete mVizShapes[i];
+    for(int i = 0; i < mColShapes.size(); i++)
+        if(mColShapes[i] != mVizShapes[i])
+            delete mColShapes[i];
 }
 
 void BodyNode::init()
 {
     assert(mSkel);
 
-    if(mVizShape && mI.isZero())
-        mI = mVizShape->computeInertia(mMass);
+    if(!mVizShapes.empty() && mI.isZero())
+        mI = mVizShapes[0]->computeInertia(mMass);
 
     mT = Matrix4d::Identity();
     mW = Matrix4d::Identity();
@@ -269,14 +250,14 @@ void BodyNode::draw(renderer::RenderInterface* _ri,
         mParentJoint->getTransform(i)->applyGLTransform(_ri);
     }
 
-    if (mVizShape != NULL)
+    _ri->pushName((unsigned)mID);
+    for(int i = 0; i < mVizShapes.size(); i++)
     {
-        _ri->pushName((unsigned)mID);
         _ri->pushMatrix();
-        mVizShape->draw(_ri, _color, _useDefaultColor);
+        mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
         _ri->popMatrix();
-        _ri->popName();
     }
+    _ri->popName();
 
     // render the subtree
     for (unsigned int i = 0; i < mJointsChild.size(); i++)

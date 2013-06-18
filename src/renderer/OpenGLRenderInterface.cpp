@@ -408,8 +408,10 @@ namespace renderer {
     	if(_node == 0)
     		return;
 
-    	compileList(_node->getVisualizationShape());
-    	compileList(_node->getCollisionShape());
+    	for(int i = 0; i < _node->getNumVisualizationShapes(); i++)
+    		compileList(_node->getVisualizationShape(i));
+    	for(int i = 0; i < _node->getNumCollisionShapes(); i++)
+    		compileList(_node->getCollisionShape(i));
     }
 
     //FIXME: Use polymorphism instead of switch statements
@@ -481,8 +483,14 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	kinematics::Shape *shape = _colMesh ? _node->getCollisionShape() : _node->getVisualizationShape();
-    	draw(shape, _colMesh);
+    	if(_colMesh) {
+    		for(int i = 0; i < _node->getNumCollisionShapes(); i++)
+    			draw(_node->getCollisionShape(i));
+    	}
+    	else {
+    		for(int i = 0; i < _node->getNumVisualizationShapes(); i++)
+    			draw(_node->getVisualizationShape(i));
+    	}
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );
@@ -491,7 +499,7 @@ namespace renderer {
     }
 
     //FIXME: Refactor this to use polymorphism.
-    void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
+    void OpenGLRenderInterface::draw(kinematics::Shape *_shape) {
     	if(_shape == 0)
     		return;
 

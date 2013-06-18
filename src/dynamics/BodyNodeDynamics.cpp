@@ -268,13 +268,10 @@ void BodyNodeDynamics::computeInvDynForces(const Vector3d& /*_gravity*/,
     Vector3d cl = mCOMLocal;
 
     // base case: end effectors
-    if(mVizShape != NULL)
-    {
-        mForceJointBody = mMass*mVelDotBody;
-        mTorqueJointBody = cl.cross(mMass*mVelDotBody)
-                           + mOmegaBody.cross(mI*mOmegaBody)
-                           + mI*mOmegaDotBody;
-    }
+    mForceJointBody = mMass*mVelDotBody;
+    mTorqueJointBody = cl.cross(mMass*mVelDotBody)
+                       + mOmegaBody.cross(mI*mOmegaBody)
+                       + mI*mOmegaDotBody;
 
     // general case
     for(unsigned int j = 0; j < mJointsChild.size(); j++)

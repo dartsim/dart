@@ -289,21 +289,15 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   if( _lk->visual ) {
     if( add_VizShape( node, _lk->visual, _rootToSkelPath ) == false ) { std::cout<< "Error loading VizShape" <<std::endl; return NULL; }
   }
-  else {
-    // Set NULL
-    kinematics::Shape* shape = NULL;
-    node->setVisualizationShape( shape );
-    if(debug) {  std::cout<< "No Visualization tag defined for node "<<node->getName() <<". Using NULL VizShape"<<std::endl; }
+  else if(debug) {
+    std::cout << "No Visualization tag defined for node " << node->getName() << "." << std::endl;
   }
   // Set collision information
   if( _lk->collision ) {
     if( add_ColShape( node, _lk->collision, _rootToSkelPath ) == false ) {  std::cout<< "Error loading ColShape" <<std::endl; return NULL; }
   }
-  else {
-    // Set NULL
-    kinematics::Shape* shape = NULL;
-    node->setCollisionShape( shape );
-    if(debug) { std::cout<< "No Collision tag defined for node "<<node->getName() <<". Using NULL ColShape"<<std::endl; }
+  else if(debug) {
+    std::cout << "No Collision tag defined for node " << node->getName() << "." << std::endl;
   }
 
   return node;

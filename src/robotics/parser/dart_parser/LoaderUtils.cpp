@@ -173,7 +173,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     }
     
     // Set in node
-    _node->setVisualizationShape(shape);
+    _node->addVisualizationShape(shape);
     if(debug) { std::cout<< "Loading a sphere vizMesh of radius:" << sphere->radius << std::endl; }
   }
 
@@ -204,7 +204,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     
 
     // Set in node
-    _node->setVisualizationShape(shape);
+    _node->addVisualizationShape(shape);
 
     if(debug) { std::cout<< "Loading a box vizMesh of dim:" << dim.transpose() << std::endl; }
   }
@@ -234,7 +234,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     }
     
     // Set in node
-    _node->setVisualizationShape(shape);
+    _node->addVisualizationShape(shape);
 
     if(debug) { std::cout<< "Loading a cylinder vizMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
   }
@@ -267,7 +267,7 @@ bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
     if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
     
     // Set in node
-    _node->setVisualizationShape(shape);
+    _node->addVisualizationShape(shape);
     
   } // end if (mesh)
 
@@ -312,7 +312,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     shape->setTransform( transform );
     
     // Set in node
-    _node->setCollisionShape(shape);
+    _node->addCollisionShape(shape);
     if(debug) { std::cout<< "Loading a sphere colMesh of radius:" << sphere->radius << std::endl; }
 
   }
@@ -332,7 +332,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     shape->setTransform( transform );
     
     // Set in node
-    _node->setCollisionShape(shape);
+    _node->addCollisionShape(shape);
     if(debug) { std::cout<< "Loading a box colMesh of dim:" << dim.transpose() << std::endl; }
 
   }
@@ -351,7 +351,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     shape->setTransform( transform );
     
     // Set in node
-    _node->setCollisionShape(shape);
+    _node->addCollisionShape(shape);
     if(debug) { std::cout<< "Loading a cylinder colMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
   }
   
@@ -394,7 +394,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
     
     // Set in node
-    _node->setCollisionShape(shape);
+    _node->addCollisionShape(shape);
     
   } // end if (mesh)
 

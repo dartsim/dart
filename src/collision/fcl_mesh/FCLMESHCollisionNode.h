@@ -61,25 +61,29 @@ public:
     FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode);
     virtual ~FCLMESHCollisionNode();
 
-    fcl::BVHModel<fcl::OBBRSS>* mMesh;
-    fcl::AABB mAABB;
+    std::vector<fcl::BVHModel<fcl::OBBRSS>*> mMeshes;
 
     fcl::Transform3f mFclWorldTrans;
     Eigen::Matrix4d mWorldTrans;
 
     int checkCollision(FCLMESHCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
     void evalRT();
+    static fcl::Transform3f getFclTransform(const Eigen::Matrix4d& _m);
 
-    int evalContactPosition(fcl::CollisionResult& _result, FCLMESHCollisionNode* _other, int _idx, Eigen::Vector3d& _contactPosition1, Eigen::Vector3d& _contactPosition2);
+    static int evalContactPosition(const fcl::Contact& _fclContact,
+                                   fcl::BVHModel<fcl::OBBRSS>* _mesh1,
+                                   fcl::BVHModel<fcl::OBBRSS>* _mesh2,
+                                   const fcl::Transform3f& _transform1,
+                                   const fcl::Transform3f& _transform2,
+                                   Eigen::Vector3d& _contactPosition1,
+                                   Eigen::Vector3d& _contactPosition2);
 
     void drawCollisionSkeletonNode(bool _bTrans = true);
-    void drawCollisionTriangle(int _tri);
 
 private:
-    inline int FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2);
+    inline static int FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2);
     inline bool EFtest(fcl::Vec3f& p0, fcl::Vec3f&p1, fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& p);
-    inline fcl::Vec3f TransformVertex(fcl::Vec3f& _v);
-    inline double triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3);
+    inline static double triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3);
 };
 
 inline bool FCLMESHCollisionNode::EFtest(fcl::Vec3f& p0,
@@ -173,13 +177,6 @@ inline int FCLMESHCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec
             return true;
         }
         */
-}
-
-inline fcl::Vec3f FCLMESHCollisionNode::TransformVertex( fcl::Vec3f& _v )
-{
-    Eigen::Vector3d vv(_v[0], _v[1], _v[2]);
-    Eigen::Vector3d res = mWorldTrans.topLeftCorner<3,3>() * vv + mWorldTrans.col(3).head(3);
-    return fcl::Vec3f(res[0], res[1], res[2]);
 }
 
 inline double FCLMESHCollisionNode::triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3) {

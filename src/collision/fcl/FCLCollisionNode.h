@@ -59,21 +59,24 @@ public:
     virtual ~FCLCollisionNode();
 
     /// @brief
-    void setCollisionGeometry(fcl::CollisionGeometry* _geom)
-    { mCollisionGeometry = _geom; }
+    int getNumCollisionGeometries() const {
+        return mCollisionGeometries.size();
+    }
 
     /// @brief
-    fcl::CollisionGeometry* getCollisionGeometry() const
-    { return mCollisionGeometry; }
+    fcl::CollisionGeometry* getCollisionGeometry(int _idx) const {
+        return mCollisionGeometries[_idx];
+    }
 
     /// @brief
-    fcl::Transform3f getFCLTransform() const;
+    fcl::Transform3f getFCLTransform(int _idx) const;
 
 protected:
 
 private:
     /// @brief
-    fcl::CollisionGeometry* mCollisionGeometry;
+    std::vector<fcl::CollisionGeometry*> mCollisionGeometries;
+    std::vector<kinematics::Shape*> mShapes;
 };
 
 /// @brief
