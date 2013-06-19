@@ -7,6 +7,9 @@ before_install() {
     (cd $REPO; cmake .; make && sudo make install)
   done
   
+  # Set github and bitbucket free of host checking questions
+  echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
   # Install console_bridge
   git clone git@github.com:ros/console_bridge.git
   (cd console_bridge; cmake .; make && sudo make install)
