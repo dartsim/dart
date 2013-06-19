@@ -6,6 +6,16 @@ before_install() {
     git clone git://github.com/dartsim/$REPO.git
     (cd $REPO; cmake .; make && sudo make install)
   done
+  
+  # Install console_bridge
+  git clone git@github.com:ros/console_bridge.git
+  (cd console_bridge; cmake .; make && sudo make install)
+  # Install urdfdom_headers
+  hg clone https://bitbucket.org/osrf/urdfdom_headers
+  (cd urdfdom_headers; cmake .; make && sudo make install)
+  # Install console_bridge
+  hg clone https://bitbucket.org/osrf/urdfdom
+  (cd urdfdom; cmake .; make && sudo make install)
 }
 
 APT='freeglut3 freeglut3-dev libglu1-mesa-dev libboost-all-dev cmake
