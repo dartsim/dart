@@ -156,9 +156,38 @@ if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
 endif()
 set(TINYXML2_LIBRARIES tinyxml2)
 
-set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS})
+# urdf_headers
+find_package( urdfdom_headers REQUIRED )
+if( urdfdom_headers_FOUND)
+   message( STATUS "Found urdfdom headers" )
+else()
+   message(STATUS "Could not find urdfdom_headers")
+   set(DARTExt_FOUND FALSE)
+endif()
 
-set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES})
+# urdfdom
+find_package( urdfdom )
+if( urdfdom_FOUND )
+   find_library( URDFDOM_LIBRARY_DIR urdfdom_model
+              PATHS /usr/local/lib )
+   if( URDFDOM_LIBRARY_DIR_NOTFOUND ) 
+     message( "urdfdom library directory not found!" )
+     set(DARTExt_FOUND FALSE )
+   else() 
+     message( STATUS "Found urdfdom!")
+   endif()
+else()
+   message(STATUS "Could not find urdfdom")
+   set(DARTExt_FOUND FALSE)
+endif()
+
+# console_bridge is required by urdfdom, so it will be asked when you install it.
+# It can be downloaded from here https://github.com/ros/console_bridge
+
+
+set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS} )
+
+set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${urdfdom_LIBRARIES} )
 set(DARTExt_LIBS_NO_DEBUG ${CCD_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLUT_LIBRARY} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${OPENGL_LIBRARIES})
 
 if(MSVC OR MSVC90 OR MSVC10)
@@ -177,7 +206,9 @@ endif()
 list(APPEND DARTExt_LIBRARIES ${Boost_LIBRARIES})
 
 set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} 
-        ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR})
+        ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR}
+	${urdfdom_headers_INCLUDE_DIRS} 
+	${urdfdom_INCLUDE_DIRS} )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_FOUND)

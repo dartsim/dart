@@ -11,9 +11,9 @@
 #include <string>
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <robotics/parser/urdfdom_headers/urdf_model/pose.h>
-#include <robotics/parser/urdfdom_headers/urdf_model/link.h>
-#include <robotics/parser/urdfdom_headers/urdf_model/color.h>
+#include <urdf_model/pose.h>
+#include <urdf_model/link.h>
+#include <urdf_model/color.h>
 
 const bool debug = false;
 

@@ -4,7 +4,11 @@
 
 #include "DartLoader.h"
 #include <map>
-#include "../urdf_parser/urdf_parser.h"
+
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_world/world.h>
+#include "urdf_world_parser/urdf_world_parser.h"
+
 #include <iostream>
 #include <fstream>
 #include "dynamics/BodyNodeDynamics.h"
@@ -88,29 +92,29 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
 
     Eigen::VectorXd pose(6); 
 
-    for( unsigned int i = 0; i < worldInterface->robotModels.size(); ++i )  {
+    for( unsigned int i = 0; i < worldInterface->models.size(); ++i )  {
       
       // Set the corresponding path
-      std::string robot_path = mRoot_To_World_Path;
-      std::string robot_localPath = mWorld_To_Entity_Paths.find( worldInterface->robotModels[i].model->getName() )->second;
-      robot_path.append(robot_localPath);
+      std::string models_path = mRoot_To_World_Path;
+      std::string models_localPath = mWorld_To_Entity_Paths.find( worldInterface->models[i].model->getName() )->second;
+      models_path.append(models_localPath);
       if( debug ) {
-	std::cout<<"Global filepath for: "<<worldInterface->robotModels[i].model->getName() << " is: "<<robot_path<<std::endl;
+	std::cout<<"Global filepath for: "<<worldInterface->models[i].model->getName() << " is: "<<models_path<<std::endl;
       }
-      skeleton = modelInterfaceToSkeleton(  worldInterface->robotModels[i].model, robot_path );
+      skeleton = modelInterfaceToSkeleton(  worldInterface->models[i].model, models_path );
 
       if( skeleton == NULL ) {
-	std::cout<< "[ERROR] Robot "<< worldInterface->robotModels[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
+	std::cout<< "[ERROR] Robot "<< worldInterface->models[i].model->getName() <<" was not correctly parsed. World is not loaded. Exiting!"<<std::endl;
 	world = NULL; 
 	return world;
       }
 
       // Initialize position and RPY 
       pose << 0, 0, 0, 0, 0, 0;
-      pose(0) = worldInterface->robotModels[i].origin.position.x;
-      pose(1) = worldInterface->robotModels[i].origin.position.y;
-      pose(2) = worldInterface->robotModels[i].origin.position.z;
-      worldInterface->robotModels[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
+      pose(0) = worldInterface->models[i].origin.position.x;
+      pose(1) = worldInterface->models[i].origin.position.y;
+      pose(2) = worldInterface->models[i].origin.position.z;
+      worldInterface->models[i].origin.rotation.getRPY( pose(3), pose(4), pose(5) );
 
       kinematics::Joint* joint = skeleton->getRoot()->getParentJoint();
       joint->getTransform(0)->getDof(0)->setValue(pose(0));

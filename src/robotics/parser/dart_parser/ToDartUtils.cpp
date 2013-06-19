@@ -14,8 +14,8 @@
 #include <kinematics/BodyNode.h>
 #include <kinematics/Shape.h>
 #include <dynamics/BodyNodeDynamics.h>
-#include "../urdf_parser/urdf_parser.h"
-#include "../urdfdom_headers/urdf_model/link.h"
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_model/link.h>
 
 // For continuous joint limit
 #include <limits>

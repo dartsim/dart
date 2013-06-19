@@ -1,7 +1,7 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
 * 
-*  Copyright (c) 2008, Willow Garage, Inc.
+*  Copyright (c) 2013, Willow Garage, Inc.
 *  All rights reserved.
 * 
 *  Redistribution and use in source and binary forms, with or without
@@ -32,29 +32,32 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-/* Author: Wim Meeussen */
+/* Author: A. Huaman */
 
-#include "../urdf_parser/urdf_parser.h"
-#include "../urdfdom_headers/urdf_model/model.h"
-#include "../urdfdom_headers/urdf_world/world.h"
+#include <urdf_parser/urdf_parser.h>
+#include <urdf_model/model.h>
+#include <urdf_world/world.h>
+#include <urdf_model/pose.h>
 #include <fstream>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <tinyxml.h>
 
+#include "urdf_world_parser.h"
+
 const bool debug = false;
 
 namespace urdf{
 
-  // Added by achq on 2012/10/13 *******//
-  
+  // Implemented in urdf_parser/src/pose.cpp, for some reason nobody thought of putting it in the header
   bool parsePose(Pose &pose, TiXmlElement* xml);
   
   /**
    * @function parseWorldURDF
    */
-  boost::shared_ptr<World> parseWorldURDF(const std::string &_xml_string, std::string _root_to_world_path ) {
+  boost::shared_ptr<World> parseWorldURDF( const std::string &_xml_string, 
+					   std::string _root_to_world_path ) {
     
     boost::shared_ptr<World> world( new World );
     world->clear();
@@ -158,7 +161,7 @@ namespace urdf{
 	    }
 	    
 	    // Store in world
-	    world->robotModels.push_back( entity );
+	    world->models.push_back( entity );
 	  }
 	  
 	} // end of include read
@@ -181,27 +184,4 @@ namespace urdf{
   
 
 
-// ***********************************//
-
-bool parseWorld(World &world, TiXmlElement* config)
-{
-
-  // to be implemented
-
-  return true;
-}
-
-bool exportWorld(World &world, TiXmlElement* xml)
-{
-  TiXmlElement * world_xml = new TiXmlElement("world");
-  world_xml->SetAttribute("name", world.name);
-
-  // to be implemented
-  // exportModels(*world.models, world_xml);
-
-  xml->LinkEndChild(world_xml);
-
-  return true;
-}
-
-}
+} // end namespace
