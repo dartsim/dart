@@ -11,7 +11,7 @@ before_install() {
   echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
   echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
   # Install console_bridge
-  git clone https://github.com/ros/console_bridge.git
+  git clone git://github.com/ros/console_bridge.git
   (cd console_bridge; cmake .; make && sudo make install)
   # Install urdfdom_headers
   hg clone https://bitbucket.org/osrf/urdfdom_headers
