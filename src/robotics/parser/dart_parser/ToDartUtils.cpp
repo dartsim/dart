@@ -285,16 +285,38 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
   node->setMass(mass);
   node->setLocalInertia(inertia);
 
-  // Set visual information
+  // Set visual information (at least there is one visual element)
   if( _lk->visual ) {
-    if( add_VizShape( node, _lk->visual, _rootToSkelPath ) == false ) { std::cout<< "Error loading VizShape" <<std::endl; return NULL; }
+ 
+    // Read all visual groups
+    std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<urdf::Visual> > > >::iterator iter;    
+    for( iter = _lk->visual_groups.begin(); iter != _lk->visual_groups.end(); iter++ ) {
+      std::vector<boost::shared_ptr<urdf::Visual> > visualGroup;
+      visualGroup = *(iter->second);
+      for( int j = 0; j < visualGroup.size(); ++j ) {
+	if( add_VizShape( node, visualGroup[j], _rootToSkelPath ) == false ) { std::cout<< "Error loading VizShape" <<std::endl; return NULL; }
+      }
+    }
+ 
   }
   else if(debug) {
     std::cout << "No Visualization tag defined for node " << node->getName() << "." << std::endl;
   }
-  // Set collision information
+
+      
+  // Set collision information (at least there is one collision element)
   if( _lk->collision ) {
-    if( add_ColShape( node, _lk->collision, _rootToSkelPath ) == false ) {  std::cout<< "Error loading ColShape" <<std::endl; return NULL; }
+
+    // Read all collision groups
+    std::map<std::string, boost::shared_ptr<std::vector<boost::shared_ptr<urdf::Collision> > > >::iterator iter;    
+    for( iter = _lk->collision_groups.begin(); iter != _lk->collision_groups.end(); iter++ ) {
+      std::vector<boost::shared_ptr<urdf::Collision> > collisionGroup;
+      collisionGroup = *(iter->second);
+      for( int j = 0; j < collisionGroup.size(); ++j ) {
+	if( add_ColShape( node, collisionGroup[j], _rootToSkelPath ) == false ) { std::cout<< "Error loading ColShape" <<std::endl; return NULL; }
+      }
+    }
+    
   }
   else if(debug) {
     std::cout << "No Collision tag defined for node " << node->getName() << "." << std::endl;
