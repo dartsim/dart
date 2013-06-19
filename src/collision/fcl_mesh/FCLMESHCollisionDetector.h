@@ -73,7 +73,7 @@ class FCLMESHCollisionDetector : public CollisionDetector
 {
 public:
     /// @brief
-    FCLMESHCollisionDetector() { mNumTriIntersection = 0; }
+    FCLMESHCollisionDetector() {}
 
     /// @brief
     virtual ~FCLMESHCollisionDetector();
@@ -85,9 +85,6 @@ public:
 
     /// @brief
     inline void clearAllCollisionSkeletonNode() {mCollisionNodes.clear();}
-
-    /// @brief
-    inline int getNumTriangleIntersection(){return mNumTriIntersection;}
 
     // Documentation inherited
     virtual bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
@@ -111,9 +108,6 @@ public:
     void deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
 
 public:
-    /// @brief
-    int mNumTriIntersection;
-
     /// @brief
     std::map<const kinematics::BodyNode*, FCLMESHCollisionNode*> mBodyCollisionMap;
 

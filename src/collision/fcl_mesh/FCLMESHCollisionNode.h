@@ -66,7 +66,7 @@ public:
     fcl::Transform3f mFclWorldTrans;
     Eigen::Matrix4d mWorldTrans;
 
-    int checkCollision(FCLMESHCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
+    bool checkCollision(FCLMESHCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
     void evalRT();
     static fcl::Transform3f getFclTransform(const Eigen::Matrix4d& _m);
 

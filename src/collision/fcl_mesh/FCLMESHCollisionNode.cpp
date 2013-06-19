@@ -117,13 +117,14 @@ FCLMESHCollisionNode::~FCLMESHCollisionNode()
         delete mMeshes[i];
 }
 
-int FCLMESHCollisionNode::checkCollision(
+bool FCLMESHCollisionNode::checkCollision(
         FCLMESHCollisionNode* _otherNode,
         std::vector<Contact>* _contactPoints,
         int _num_max_contact)
 {
     evalRT();
     _otherNode->evalRT();
+    bool collision = false;
 
     for(int i = 0; i < mMeshes.size(); i++)
     for(int j = 0; j < _otherNode->mMeshes.size(); j++) {
@@ -139,8 +140,11 @@ int FCLMESHCollisionNode::checkCollision(
                      _otherNode->mFclWorldTrans,
                      req, res);
 
+        if(res.isCollision()) {
+            collision = true;
+        }
         if(!_contactPoints) {
-            return res.isCollision() ? 1 : 0;
+            return collision;
         }
 
         int numCoplanarContacts = 0;
@@ -191,11 +195,11 @@ int FCLMESHCollisionNode::checkCollision(
         std::vector<bool> markForDeletion(unfilteredContactPoints.size(), false);
 
         // mark all the repeated points
-        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
-            for (unsigned int j = i + 1; j < unfilteredContactPoints.size(); j++) {
-                Eigen::Vector3d diff = unfilteredContactPoints[i].point - unfilteredContactPoints[j].point;
+        for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
+            for (unsigned int l = k + 1; l < unfilteredContactPoints.size(); l++) {
+                Eigen::Vector3d diff = unfilteredContactPoints[k].point - unfilteredContactPoints[l].point;
                 if (diff.dot(diff) < 3 * ZERO2) {
-                    markForDeletion[i] = true;
+                    markForDeletion[k] = true;
                     break;
                 }
             }
@@ -203,29 +207,29 @@ int FCLMESHCollisionNode::checkCollision(
 
         // remove all the co-linear contact points
         bool bremove;
-        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
-            if(markForDeletion[i])
+        for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
+            if(markForDeletion[k])
                 continue;
-            for (unsigned int j = 0; j < unfilteredContactPoints.size(); j++) {
-                if (j == i || markForDeletion[j])
+            for (unsigned int l = 0; l < unfilteredContactPoints.size(); l++) {
+                if (l == k || markForDeletion[l])
                     continue;
-                if (markForDeletion[i])
+                if (markForDeletion[k])
                     break;
-                for (int k = j + 1; k < unfilteredContactPoints.size(); k++) {
-                    if (i == k)
+                for (int m = l + 1; m < unfilteredContactPoints.size(); m++) {
+                    if (k == m)
                         continue;
-                    Eigen::Vector3d  v = (unfilteredContactPoints[i].point - unfilteredContactPoints[j].point).cross(unfilteredContactPoints[i].point - unfilteredContactPoints[k].point);
-                    if (v.dot(v) < ZERO2 && ((unfilteredContactPoints[i].point - unfilteredContactPoints[j].point).dot(unfilteredContactPoints[i].point - unfilteredContactPoints[k].point) < 0)) {
-                        markForDeletion[i] = true;
+                    Eigen::Vector3d  v = (unfilteredContactPoints[k].point - unfilteredContactPoints[l].point).cross(unfilteredContactPoints[k].point - unfilteredContactPoints[m].point);
+                    if (v.dot(v) < ZERO2 && ((unfilteredContactPoints[k].point - unfilteredContactPoints[l].point).dot(unfilteredContactPoints[k].point - unfilteredContactPoints[m].point) < 0)) {
+                        markForDeletion[k] = true;
                         break;
                     }
                 }
             }
         }
 
-        for (unsigned int i = 0; i < unfilteredContactPoints.size(); i++) {
-            if(!markForDeletion[i]) {
-                _contactPoints->push_back(unfilteredContactPoints[i]);
+        for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
+            if(!markForDeletion[k]) {
+                _contactPoints->push_back(unfilteredContactPoints[k]);
             }
         }
 
@@ -251,9 +255,9 @@ int FCLMESHCollisionNode::checkCollision(
             //_contactPoints->resize();
         }
         ////////////////////////////////////////////////////////////////////////
-
-        return res.numContacts();
     }
+
+    return collision;
 }
 
 void FCLMESHCollisionNode::evalRT() {

@@ -68,7 +68,7 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
 {
     int num_max_contact = 100;
     clearAllContacts();
-    mNumTriIntersection = 0;
+    bool collision = false;
 
     FCLMESHCollisionNode* FCLMESHCollisionNode1 = NULL;
     FCLMESHCollisionNode* FCLMESHCollisionNode2 = NULL;
@@ -90,28 +90,24 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
             {
                 continue;
             }
-            const int numTriIntersection
-                    = FCLMESHCollisionNode1->checkCollision(
-                          FCLMESHCollisionNode2,
-                          _calculateContactPoints ? &mContacts : NULL,
-                          num_max_contact);
-
-            mNumTriIntersection += numTriIntersection;
-
-            if(numTriIntersection > 0)
+            
+            if(FCLMESHCollisionNode1->checkCollision(FCLMESHCollisionNode2,
+                    _calculateContactPoints ? &mContacts : NULL,
+                    num_max_contact))
             {
+                collision = true;
                 mCollisionNodes[i]->getBodyNode()->setColliding(true);
                 mCollisionNodes[j]->getBodyNode()->setColliding(true);
-            }
 
-            if(!_checkAllCollisions && mNumTriIntersection > 0)
-            {
-                return true;
+                if(!_checkAllCollisions)
+                {
+                    return true;
+                }
             }
         }
     }
 
-    return (mNumTriIntersection > 0);
+    return collision;
 }
 
 void FCLMESHCollisionDetector::draw() {
