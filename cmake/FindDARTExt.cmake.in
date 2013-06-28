@@ -180,6 +180,7 @@ else()
    message(STATUS "Could not find urdfdom")
    set(DARTExt_FOUND FALSE)
 endif()
+set(urdfdom_LIBRARIES urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_world console_bridge)
 
 # console_bridge is required by urdfdom, so it will be asked when you install it.
 # It can be downloaded from here https://github.com/ros/console_bridge
