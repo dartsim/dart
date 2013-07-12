@@ -46,6 +46,8 @@
 #include <kinematics/ShapeCylinder.h>
 #include <kinematics/ShapeMesh.h>
 
+#include <stdio.h>
+
 using namespace std;
 using namespace Eigen;
 
@@ -319,6 +321,7 @@ namespace renderer {
         else
             fill_mode = GL_FILL;
         glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
+				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
         max = 1;
         if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
@@ -371,6 +374,7 @@ namespace renderer {
                     if(mesh->mNormals != NULL)
                         glNormal3fv(&mesh->mNormals[index].x);
                     glVertex3fv(&mesh->mVertices[index].x);
+//									printf("%lf, %lf, %lf\n", mesh->mVertices[index].x,mesh->mVertices[index].y,mesh->mVertices[index].z);
                 }
 
                 glEnd();
@@ -481,8 +485,10 @@ namespace renderer {
     	glPushMatrix();
     	glMultMatrixd(pose.data());
 
-    	kinematics::Shape *shape = _colMesh ? _node->getCollisionShape() : _node->getVisualizationShape();
-    	draw(shape, _colMesh);
+    	draw(_node->getVisualizationShape(), _colMesh);
+			if(_colMesh) {
+				draw(_node->getCollisionShape(), _colMesh);
+			}
 
     	glColor3f(1.0f,1.0f,1.0f);
 		glEnable( GL_TEXTURE_2D );
@@ -491,9 +497,9 @@ namespace renderer {
     }
 
     //FIXME: Refactor this to use polymorphism.
-    void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
-    	if(_shape == 0)
-    		return;
+	void OpenGLRenderInterface::draw(kinematics::Shape *_shape, bool _colMesh) {
+		if(_shape == 0)
+			return;
 
 		Affine3d pose = _shape->getTransform();
 		Vector3d color = _shape->getColor();
@@ -506,6 +512,7 @@ namespace renderer {
 		glColor3d(color[0], color[1], color[2]);
 
 		glMultMatrixd(pose.data());
+
 
     	switch(_shape->getShapeType()) {
     	case kinematics::Shape::P_UNDEFINED:

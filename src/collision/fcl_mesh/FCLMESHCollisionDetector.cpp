@@ -35,7 +35,20 @@ void FCLMESHCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_b
 
         for(unsigned int i = 0; i < mCollisionNodes.size() - 1; i++)
         {
+
+					
             //if(mCollisionSkeletonNodeList[i]->mBodyNode->getParentNode() == _bd || _bd->getParentNode() == mCollisionSkeletonNodeList[i]->mBodyNode) {
+	
+				
+						// Always check for collisions but...
+            mActiveMatrix.back()[i] = true;
+
+						// But, if the two body nodes are connected, do not check for collision
+            if(mCollisionNodes[i]->mBodyNode->getParentNode() == _bd || _bd->getParentNode() == mCollisionNodes[i]->mBodyNode) {
+                mActiveMatrix.back()[i] = false;
+						}
+	
+/*
             if(mCollisionNodes[i]->getBodyNode()->getSkel() == _bd->getSkel()) {
                 mActiveMatrix.back()[i] = false;
             }
@@ -43,6 +56,7 @@ void FCLMESHCollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode *_b
             {
                 mActiveMatrix.back()[i] = true;
             }
+*/
         }
     }
     else

@@ -35,6 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
 #include "Skeleton.h"
 
 #include <cassert>
@@ -109,6 +110,7 @@ namespace kinematics {
     }
   
     void Skeleton::initSkel() {
+				printf("initSkel called for '%s'...: numNodes: %d\n", mName.c_str(), getNumNodes());
         mRoot = mNodes[0];
 
         // calculate mass
@@ -119,6 +121,7 @@ namespace kinematics {
             mNodes[i]->setDependDofList();
             mNodes.at(i)->init();
             mMass += mNodes[i]->getMass();
+						printf("node %d => mass: %lf, new mMass: %lf\n", i, mNodes[i]->getMass(), mMass);
         }
 
         mCurrPose = VectorXd::Zero(getNumDofs());

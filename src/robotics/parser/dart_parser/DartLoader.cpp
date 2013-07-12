@@ -180,7 +180,17 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
       joint->getTransform(2)->getDof(0)->setValue(pose(4));
       joint->getTransform(3)->getDof(0)->setValue(pose(3));
       joint->updateStaticTransform();
-      robot->initSkel();
+//      robot->initSkel();
+	
+			// Update the transform
+			VectorXd mCurrPose = VectorXd::Zero(robot->getNumDofs());
+			vector <int> bla;
+			for(int i = 0; i < robot->getNumDofs(); i++) {
+				bla.push_back(i);
+				mCurrPose(i) = robot->getDof(i)->getValue();
+			} 
+			robot->setConfig(bla, mCurrPose, true, true);
+			printf("\trobot->initSkel called\n"); fflush(stdout);
 
       world->addSkeleton( robot );
     }
@@ -373,7 +383,6 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToSkeleton( boost::shared_
   
   // Init robot (skeleton)
   mSkeleton->initSkel();
-  
   return mSkeleton;
 }
 
@@ -503,6 +512,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToRobot( boost::shared_ptr
   
   // Init robot (skeleton)
   mRobot->initSkel();
+	printf("\tmRobot->initSkel called\n"); fflush(stdout);
   return mRobot;
 }
 

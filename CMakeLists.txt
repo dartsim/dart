@@ -95,9 +95,9 @@ link_directories(${DARTExt_LIBRARY_DIRS})
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 add_subdirectory(src)
 
-enable_testing()
-add_subdirectory(unittests)
-add_subdirectory(apps)
+#enable_testing()
+#add_subdirectory(unittests)
+#add_subdirectory(apps)
 
 ###############
 # Add an "uninstall" target

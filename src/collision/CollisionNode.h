@@ -86,7 +86,6 @@ public: // setters and getters
     /// @brief
     int getBodyNodeID() const { return mBodyNodeID; }
 
-protected:
     /// @brief
     kinematics::BodyNode* mBodyNode;
 
