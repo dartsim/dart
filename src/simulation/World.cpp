@@ -123,7 +123,7 @@ dynamics::SkeletonDynamics* World::getSkeleton(const char* const _name) const
 
     for (unsigned int i = 0; i < mSkeletons.size(); ++i)
     {
-        if (strcmp(mSkeletons[i]->getName().c_str(), _name))
+        if (strcmp(mSkeletons[i]->getName().c_str(), _name) == 0)
         {
             result = mSkeletons[i];
             break;
