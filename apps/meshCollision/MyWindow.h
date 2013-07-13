@@ -2,6 +2,7 @@
 #define _MYWINDOW_
 
 #include <stdarg.h>
+#include <iostream>
 #include "yui/Win3D.h"
 #include "integration/EulerIntegrator.h"
 #include "integration/RK4Integrator.h"

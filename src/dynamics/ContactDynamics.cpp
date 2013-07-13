@@ -278,8 +278,8 @@ void ContactDynamics::updateNBMatrices() {
     for (int i = 0; i < getNumContacts(); i++) {
         Contact& c = mCollisionChecker->getContact(i);
         Vector3d p = c.point;
-        int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getBodyNodeID()];
-        int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getBodyNodeID()];
+        int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getIndex()];
+        int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getIndex()];
 
         Vector3d N21 = c.normal;
         Vector3d N12 = -c.normal;

@@ -78,41 +78,13 @@ public:
     /// @brief
     virtual ~FCLMESHCollisionDetector();
 
-    // Documentation inherited
-    virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd, bool _bRecursive = false);
-
     virtual CollisionNode* createCollisionNode(kinematics::BodyNode* _bodyNode);
-
-    /// @brief
-    inline void clearAllCollisionSkeletonNode() {mCollisionNodes.clear();}
 
     // Documentation inherited
     virtual bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
 
     /// @brief
     void draw();
-
-    /// @brief
-    FCLMESHCollisionNode* getCollisionSkeletonNode(const kinematics::BodyNode *_bodyNode)
-    {
-        if(mBodyCollisionMap.find(_bodyNode)!=mBodyCollisionMap.end())
-            return mBodyCollisionMap[_bodyNode];
-        else
-            return NULL;
-    }
-
-    /// @brief
-    void activatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
-
-    /// @brief
-    void deactivatePair(const kinematics::BodyNode* node1, const kinematics::BodyNode* node2);
-
-public:
-    /// @brief
-    std::map<const kinematics::BodyNode*, FCLMESHCollisionNode*> mBodyCollisionMap;
-
-    /// @brief
-    std::vector<std::vector<bool> > mActiveMatrix;
 };
 
 

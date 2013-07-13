@@ -2,7 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>,
+ *            Tobias Kunz <tobias@gatech.edu>
  * Date: 05/01/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -42,6 +43,8 @@
 #include "collision/fcl/FCLCollisionNode.h"
 #include "collision/fcl/FCLCollisionDetector.h"
 
+using namespace kinematics;
+
 namespace collision
 {
 
@@ -57,11 +60,7 @@ FCLCollisionDetector::~FCLCollisionDetector()
 CollisionNode* FCLCollisionDetector::createCollisionNode(
         kinematics::BodyNode* _bodyNode)
 {
-    CollisionNode* collisionNode = NULL;
-
-    collisionNode = new FCLCollisionNode(_bodyNode);
-
-    return collisionNode;
+    return new FCLCollisionNode(_bodyNode);
 }
 
 bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
@@ -81,33 +80,28 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 //    request.num_max_cost_sources;
 //    request.use_approximate_cost;
 
-    unsigned int numCollisionNodePairs = mCollisionNodePairs.size();
-    FCLCollisionNode* collNode1 = NULL;
-    FCLCollisionNode* collNode2 = NULL;
-
-    for (unsigned int i = 0; i < numCollisionNodePairs; ++i)
+    for(int i = 0; i < mCollisionNodes.size(); i++)
+    for(int j = i + 1; j < mCollisionNodes.size(); j++)
     {
-        const CollisionNodePair& collisionNodePair = mCollisionNodePairs[i];
+        FCLCollisionNode* collNode1 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
+        FCLCollisionNode* collNode2 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[j]);
 
-        if (collisionNodePair.collidable == false)
+        if (!isCollidable(collNode1, collNode2))
             continue;
 
-        collNode1 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode1);
-        collNode2 = dynamic_cast<FCLCollisionNode*>(collisionNodePair.collisionNode2);
-
-        for(int j = 0; j < collNode1->getNumCollisionGeometries(); j++)
-        for(int k = 0; k < collNode2->getNumCollisionGeometries(); k++)
+        for(int k = 0; k < collNode1->getNumCollisionGeometries(); k++)
+        for(int l = 0; l < collNode2->getNumCollisionGeometries(); l++)
         {
-            fcl::collide(collNode1->getCollisionGeometry(j),
-                         collNode1->getFCLTransform(j),
-                         collNode2->getCollisionGeometry(k),
-                         collNode2->getFCLTransform(k),
+            fcl::collide(collNode1->getCollisionGeometry(k),
+                         collNode1->getFCLTransform(k),
+                         collNode2->getCollisionGeometry(l),
+                         collNode2->getFCLTransform(l),
                          request, result);
 
             unsigned int numContacts = result.numContacts();
-            for (unsigned int l = 0; l < numContacts; ++l)
+            for (unsigned int m = 0; m < numContacts; ++m)
             {
-                const fcl::Contact& contact = result.getContact(l);
+                const fcl::Contact& contact = result.getContact(m);
 
                 Contact contactPair;
                 contactPair.point(0) = contact.pos[0];

@@ -41,7 +41,7 @@
 #include <vector>
 #include <map>
 #include <Eigen/Dense>
-
+#include <fcl/collision.h>
 #include "collision/CollisionDetector.h"
 
 namespace collision

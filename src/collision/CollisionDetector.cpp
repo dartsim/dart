@@ -2,7 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>,
+ *            Tobias Kunz <tobias@gatech.edu>
  * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -41,6 +42,8 @@
 #include "collision/CollisionNode.h"
 #include "collision/CollisionDetector.h"
 
+using namespace kinematics;
+
 namespace collision
 {
 
@@ -49,82 +52,59 @@ CollisionDetector::CollisionDetector() {
 
 CollisionDetector::~CollisionDetector() {
     for(int i = 0; i < mCollisionNodes.size(); i++)
-        if (mCollisionNodes[i])
-            delete mCollisionNodes[i];
+        delete mCollisionNodes[i];
 }
 
 void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode,
-                                                 bool _bRecursive) {
-    if (_bRecursive == false || _bodyNode->getNumChildJoints() == 0) {
-        CollisionNode* collNode = createCollisionNode(_bodyNode);
-        collNode->setBodyNodeID(mCollisionNodes.size());
-        mCollisionNodes.push_back(collNode);
-    }
-    else {
-        addCollisionSkeletonNode(_bodyNode, false);
+                                                 bool _recursive) {
+    CollisionNode* collNode = createCollisionNode(_bodyNode);
+    collNode->setIndex(mCollisionNodes.size());
+    mCollisionNodes.push_back(collNode);
+    mBodyCollisionMap[_bodyNode] = collNode;
+    mCollidablePairs.push_back(vector<bool>(mCollisionNodes.size() - 1, true));
 
+    if(_recursive) {
         for (int i = 0; i < _bodyNode->getNumChildJoints(); i++)
             addCollisionSkeletonNode(_bodyNode->getChildNode(i), true);
     }
-
-    _rebuildBodyNodePairs();
-    updateSkeletonSelfCollidableState();
-    updateBodyNodeCollidableState();
 }
 
-void CollisionDetector::_rebuildBodyNodePairs() {
-    // TODO: Need better way
-    mCollisionNodePairs.clear();
-
-    CollisionNodePair collisionNodePair;
-    unsigned int numCollisionNodes = mCollisionNodes.size();
-
-    for (unsigned int i = 0; i < numCollisionNodes; i++) {
-        collisionNodePair.collisionNode1 = mCollisionNodes[i];
-
-        for (unsigned int j = i + 1; j < numCollisionNodes; j++) {
-            collisionNodePair.collisionNode2 = mCollisionNodes[j];
-            collisionNodePair.collidable = true;
-            mCollisionNodePairs.push_back(collisionNodePair);
-        }
-    }
+void CollisionDetector::enablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2) {
+    CollisionNode* collisionNode1 = getCollisionSkeletonNode(_node1);
+    CollisionNode* collisionNode2 = getCollisionSkeletonNode(_node2);
+    if(collisionNode1 && collisionNode2)
+        getPairCollidable(collisionNode1, collisionNode2) = true;
 }
 
-void CollisionDetector::_setAllBodyNodePairsCollidable(bool _collidable) {
-    unsigned int numCollisionNodes = mCollisionNodes.size();
-
-    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
-        mCollisionNodePairs[i].collidable = _collidable;
-    }
+void CollisionDetector::disablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2) {
+    CollisionNode* collisionNode1 = getCollisionSkeletonNode(_node1);
+    CollisionNode* collisionNode2 = getCollisionSkeletonNode(_node2);
+    if(collisionNode1 && collisionNode2)
+        getPairCollidable(collisionNode1, collisionNode2) = false;
 }
 
-void CollisionDetector::updateSkeletonSelfCollidableState() {
-    unsigned int numCollisionNodes = mCollisionNodePairs.size();
-    CollisionNodePair itrCollisionNodePair;
-
-    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
-        itrCollisionNodePair = mCollisionNodePairs[i];
-
-        if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()
-                == itrCollisionNodePair.collisionNode2->getBodyNode()->getSkel()) {
-            if (itrCollisionNodePair.collisionNode1->getBodyNode()->getSkel()->getSelfCollidable() == false) {
-                itrCollisionNodePair.collidable = false;
-            }
-        }
-    }
+bool CollisionDetector::isCollidable(const CollisionNode* _node1, const CollisionNode* _node2) {
+    return getPairCollidable(_node1, _node2)
+        && _node1->getBodyNode()->getCollideState()
+        && _node2->getBodyNode()->getCollideState()
+        && (_node1->getBodyNode()->getSkel() != _node2->getBodyNode()->getSkel()
+            || _node1->getBodyNode()->getSkel()->getSelfCollidable());
 }
 
-void CollisionDetector::updateBodyNodeCollidableState() {
-    unsigned int numCollisionNodes = mCollisionNodePairs.size();
-    CollisionNodePair itrCollisionNodePair;
+vector<bool>::reference CollisionDetector::getPairCollidable(const CollisionNode* _node1, const CollisionNode* _node2) {
+    assert(_node1 != _node2);
+    int index1 = _node1->getIndex();
+    int index2 = _node2->getIndex();
+    if(index1 < index2)
+        swap(index1, index2);
+    return mCollidablePairs[index1][index2];
+}
 
-    for (unsigned int i = 0; i < numCollisionNodes; ++i) {
-        itrCollisionNodePair = mCollisionNodePairs[i];
-
-        if (itrCollisionNodePair.collisionNode1->getBodyNode()->getCollideState() == false
-                || itrCollisionNodePair.collisionNode2->getBodyNode()->getCollideState() == false)
-            itrCollisionNodePair.collidable = false;
-    }
+CollisionNode* CollisionDetector::getCollisionSkeletonNode(const BodyNode *_bodyNode) {
+    if(mBodyCollisionMap.find(_bodyNode) != mBodyCollisionMap.end())
+        return mBodyCollisionMap[_bodyNode];
+    else
+        return NULL;
 }
 
 } // namespace collision

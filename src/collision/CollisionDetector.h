@@ -2,7 +2,8 @@
  * Copyright (c) 2011, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>,
+ *            Tobias Kunz <tobias@gatech.edu>
  * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -39,14 +40,13 @@
 #define COLLISION_CONLLISION_DETECTOR_H
 
 #include <vector>
+#include <map>
 #include <Eigen/Dense>
-#include "collision/CollisionNode.h"
+#include "CollisionNode.h"
 
 namespace kinematics { class BodyNode; }
 
 namespace collision {
-
-class CollisionNode;
 
 /// @brief
 struct Contact {
@@ -98,6 +98,9 @@ public:
     virtual CollisionNode* createCollisionNode(
             kinematics::BodyNode* _bodyNode) = 0;
 
+    void enablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2);
+    void disablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2);
+
     /// @brief
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
@@ -111,18 +114,8 @@ public:
     /// @brief
     void clearAllContacts() { mContacts.clear(); }
 
-    /// @brief
-    void updateSkeletonSelfCollidableState();
-
-    /// @brief
-    void updateBodyNodeCollidableState();
-
 protected:
-    /// @brief
-    void _rebuildBodyNodePairs();
-
-    /// @brief
-    void _setAllBodyNodePairsCollidable(bool _collidable);
+    bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
     /// @brief
     std::vector<Contact> mContacts;
@@ -130,11 +123,16 @@ protected:
     /// @brief
     std::vector<CollisionNode*> mCollisionNodes;
 
-    /// @brief
-    std::vector<CollisionNodePair> mCollisionNodePairs;
-
 private:
+    std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
+    CollisionNode* getCollisionSkeletonNode(const kinematics::BodyNode* _bodyNode);
+
+    /// @brief
+    std::map<const kinematics::BodyNode*, CollisionNode*> mBodyCollisionMap;
+
+    /// @brief
+    std::vector<std::vector<bool> > mCollidablePairs;
 };
 
 } // namespace collision
