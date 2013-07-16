@@ -126,6 +126,14 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
     return !mContacts.empty();
 }
 
+bool FCLCollisionDetector::checkCollision(CollisionNode* _node1,
+                                          CollisionNode* _node2,
+                                          bool _calculateContactPoints)
+{
+    assert(false); // function not implemented
+    return false;
+}
+
 CollisionNode* FCLCollisionDetector::findCollisionNode(
         const fcl::CollisionGeometry* _fclCollGeom) const
 {

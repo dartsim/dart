@@ -69,16 +69,25 @@ void CollisionDetector::addCollisionSkeletonNode(kinematics::BodyNode* _bodyNode
     }
 }
 
+bool CollisionDetector::checkCollision(kinematics::BodyNode* _node1,
+                                       kinematics::BodyNode* _node2,
+                                       bool _calculateContactPoints)
+{
+    return checkCollision(getCollisionNode(_node1),
+                          getCollisionNode(_node2),
+                          _calculateContactPoints);
+}
+
 void CollisionDetector::enablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2) {
-    CollisionNode* collisionNode1 = getCollisionSkeletonNode(_node1);
-    CollisionNode* collisionNode2 = getCollisionSkeletonNode(_node2);
+    CollisionNode* collisionNode1 = getCollisionNode(_node1);
+    CollisionNode* collisionNode2 = getCollisionNode(_node2);
     if(collisionNode1 && collisionNode2)
         getPairCollidable(collisionNode1, collisionNode2) = true;
 }
 
 void CollisionDetector::disablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2) {
-    CollisionNode* collisionNode1 = getCollisionSkeletonNode(_node1);
-    CollisionNode* collisionNode2 = getCollisionSkeletonNode(_node2);
+    CollisionNode* collisionNode1 = getCollisionNode(_node1);
+    CollisionNode* collisionNode2 = getCollisionNode(_node2);
     if(collisionNode1 && collisionNode2)
         getPairCollidable(collisionNode1, collisionNode2) = false;
 }
@@ -100,7 +109,7 @@ vector<bool>::reference CollisionDetector::getPairCollidable(const CollisionNode
     return mCollidablePairs[index1][index2];
 }
 
-CollisionNode* CollisionDetector::getCollisionSkeletonNode(const BodyNode *_bodyNode) {
+CollisionNode* CollisionDetector::getCollisionNode(const BodyNode *_bodyNode) {
     if(mBodyCollisionMap.find(_bodyNode) != mBodyCollisionMap.end())
         return mBodyCollisionMap[_bodyNode];
     else

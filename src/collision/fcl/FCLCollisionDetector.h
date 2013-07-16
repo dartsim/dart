@@ -76,6 +76,9 @@ public:
             const fcl::CollisionGeometry* _fclCollGeom) const;
 
 protected:
+    virtual bool checkCollision(CollisionNode* _node1,
+                                CollisionNode* _node2,
+                                bool _calculateContactPoints);
 
 private:
     /// @brief

@@ -83,6 +83,10 @@ public:
     // Documentation inherited
     virtual bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
 
+    virtual bool checkCollision(CollisionNode* _node1,
+                                CollisionNode* _node2,
+                                bool _calculateContactPoints);
+
     /// @brief
     void draw();
 };

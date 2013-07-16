@@ -105,6 +105,10 @@ public:
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
+    bool checkCollision(kinematics::BodyNode* _node1,
+                        kinematics::BodyNode* _node2,
+                        bool _calculateContactPoints);
+
     /// @brief
     unsigned int getNumContacts() { return mContacts.size(); }
 
@@ -115,6 +119,10 @@ public:
     void clearAllContacts() { mContacts.clear(); }
 
 protected:
+    virtual bool checkCollision(CollisionNode* _node1,
+                                CollisionNode* _node2,
+                                bool _calculateContactPoints) = 0;
+
     bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
     /// @brief
@@ -126,7 +134,7 @@ protected:
 private:
     std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
-    CollisionNode* getCollisionSkeletonNode(const kinematics::BodyNode* _bodyNode);
+    CollisionNode* getCollisionNode(const kinematics::BodyNode* _bodyNode);
 
     /// @brief
     std::map<const kinematics::BodyNode*, CollisionNode*> mBodyCollisionMap;
