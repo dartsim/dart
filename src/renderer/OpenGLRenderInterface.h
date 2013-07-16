@@ -92,7 +92,7 @@ namespace renderer {
         void compileList(kinematics::Skeleton *_skel);
         void compileList(kinematics::BodyNode *_node);
         void compileList(kinematics::Shape *_shape);
-        GLuint compileList(const aiScene *_mesh);
+        GLuint compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh);
 
         virtual void draw(kinematics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
         virtual void draw(kinematics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
