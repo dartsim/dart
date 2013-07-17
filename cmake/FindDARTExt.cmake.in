@@ -93,7 +93,7 @@ if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     endif()
 endif()
 message(STATUS "CCD_INCLUDEDIR = ${CCD_INCLUDEDIR}")
-set(CCD_LIBRARIES ccd)
+set(CCD_LIBRARIES ${PC_CCD_LIBRARY})
 
 # FCL
 set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
@@ -109,7 +109,7 @@ if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
     endif()
 endif()
 message(STATUS "FCL_INCLUDEDIR = ${FCL_INCLUDEDIR}")
-set(FCL_LIBRARIES fcl)
+set(FCL_LIBRARIES ${PC_FCL_LIBRARY} ${PC_FCL_LIBRARIES})
 
 
 #Assimp    
@@ -142,7 +142,7 @@ endif()
 set(TINYXML_LIBRARIES tinyxml)
 
 
-# Tinyxml2    
+# Tinyxml2
 set(TINYXML2_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
     unset(TINYXML2_INCLUDEDIR)
@@ -152,9 +152,13 @@ if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
     if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
         message(STATUS "Could not find tinyxml2")
         set(DARTExt_FOUND FALSE)
-    endif()
+    endif()	
 endif()
-set(TINYXML2_LIBRARIES tinyxml2)
+
+pkg_check_modules( PC_TINYXML2 tinyxml2 )
+include_directories( ${PC_TINYXML2_INCLUDEDIR} )
+link_directories( ${PC_TINYXML2_LIBDIR} )
+set(TINYXML2_LIBRARIES ${PC_TINYXML2_LIBRARY} ${PC_TINYXML2_LIBRARIES} )
 
 # urdf_headers
 find_package( urdfdom_headers REQUIRED )
@@ -174,13 +178,13 @@ if( urdfdom_FOUND )
      message( "urdfdom library directory not found!" )
      set(DARTExt_FOUND FALSE )
    else() 
-     message( STATUS "Found urdfdom!")
+     link_libraries( ${URDFDOM_LIBRARY_DIR} )
    endif()
 else()
    message(STATUS "Could not find urdfdom")
    set(DARTExt_FOUND FALSE)
 endif()
-set(urdfdom_LIBRARIES urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_world console_bridge)
+set(URDFDOM_LIBRARIES ${urdfdom_LIBRARIES}) # urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_world console_bridge
 
 # console_bridge is required by urdfdom, so it will be asked when you install it.
 # It can be downloaded from here https://github.com/ros/console_bridge
@@ -188,7 +192,7 @@ set(urdfdom_LIBRARIES urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_w
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS} )
 
-set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${urdfdom_LIBRARIES} )
+set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${URDFDOM_LIBRARIES} )
 set(DARTExt_LIBS_NO_DEBUG ${CCD_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLUT_LIBRARY} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${OPENGL_LIBRARIES})
 
 if(MSVC OR MSVC90 OR MSVC10)
