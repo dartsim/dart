@@ -369,7 +369,7 @@ bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
     }
     
     // Set shape as mesh
-    shape = new kinematics::ShapeMesh( Eigen::Vector3d( 1, 1, 1), model );
+    shape = new kinematics::ShapeMesh(Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model);
     
     // Set its pose
     Eigen::Affine3d transform = Eigen::Affine3d::Identity();
