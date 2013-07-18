@@ -18,9 +18,9 @@ set(DARTExt_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include)
 set(EIGEN3_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${EIGEN3_INCLUDEDIR}/Eigen/Core)
     unset(EIGEN3_INCLUDEDIR)
-    find_path(EIGEN3_INCLUDEDIR 
+    find_path(EIGEN3_INCLUDEDIR
         NAMES Eigen/Core
-        PATHS ${SYS_INSTALL_PREFIX}/include 
+        PATHS ${SYS_INSTALL_PREFIX}/include
         PATH_SUFFIXES eigen3 eigen)
 endif()
 
@@ -43,7 +43,7 @@ if(WIN32 AND NOT CYGWIN)
 else()
     find_package(GLUT REQUIRED)
     set(GLUT_INCLUDEDIR ${GLUT_INCLUDE_DIR})
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY}) 
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
 endif()
 
 # Boost and Assimp Boost Workaround
@@ -63,7 +63,7 @@ set(FLANN_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FLANN_INCLUDEDIR}/flann/flann.h)
     pkg_check_modules(PC_FLANN flann)
     unset(FLANN_INCLUDEDIR)
-    find_path(FLANN_INCLUDEDIR 
+    find_path(FLANN_INCLUDEDIR
         NAMES flann/flann.h
         HINTS ${PC_FLANN_INCLUDEDIR}
         PATHS ${DARTExt_INCLUDEDIR})
@@ -84,7 +84,7 @@ set(CCD_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     pkg_check_modules(PC_CCD ccd)
     unset(CCD_INCLUDEDIR)
-		find_path(CCD_INCLUDEDIR ccd/ccd.h 
+find_path(CCD_INCLUDEDIR ccd/ccd.h
         PATHS ${SYS_INSTALL_PREFIX}/include ${SYS_INSTALL_PREFIX}/local/include ${PC_CCD_INCLUDEDIR} PATH_SUFFIXES ccd)
     
     if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
@@ -93,14 +93,14 @@ if(NOT EXISTS ${CCD_INCLUDEDIR}/ccd/ccd.h)
     endif()
 endif()
 message(STATUS "CCD_INCLUDEDIR = ${CCD_INCLUDEDIR}")
-set(CCD_LIBRARIES ${PC_CCD_LIBRARY})
+set(CCD_LIBRARIES ccd)
 
 # FCL
 set(FCL_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
     pkg_check_modules(PC_FCL fcl)
     unset(FCL_INCLUDEDIR)
-    find_path(FCL_INCLUDEDIR fcl/collision.h 
+    find_path(FCL_INCLUDEDIR fcl/collision.h
         PATHS ${SYS_INSTALL_PREFIX}/include ${PC_FCL_INCLUDEDIR} PATH_SUFFIXES fcl)
     
     if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
@@ -109,10 +109,10 @@ if(NOT EXISTS ${FCL_INCLUDEDIR}/fcl/collision.h)
     endif()
 endif()
 message(STATUS "FCL_INCLUDEDIR = ${FCL_INCLUDEDIR}")
-set(FCL_LIBRARIES ${PC_FCL_LIBRARY} ${PC_FCL_LIBRARIES})
+set(FCL_LIBRARIES fcl)
 
 
-#Assimp    
+#Assimp
 set(ASSIMP_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${ASSIMP_INCLUDEDIR}/assimp/scene.h)
     unset(ASSIMP_INCLUDEDIR)
@@ -127,7 +127,7 @@ endif()
 message(STATUS "ASSIMP_INCLUDEDIR = ${ASSIMP_INCLUDEDIR}")
 set(ASSIMP_LIBRARIES assimp)
 
-#TinyXML    
+#TinyXML
 set(TINYXML_INCLUDEDIR ${DARTExt_INCLUDEDIR})
 if(NOT EXISTS ${TINYXML_INCLUDEDIR}/tinyxml.h)
     unset(TINYXML_INCLUDEDIR)
@@ -152,13 +152,9 @@ if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
     if(NOT EXISTS ${TINYXML2_INCLUDEDIR}/tinyxml2.h)
         message(STATUS "Could not find tinyxml2")
         set(DARTExt_FOUND FALSE)
-    endif()	
+    endif()
 endif()
-
-pkg_check_modules( PC_TINYXML2 tinyxml2 )
-include_directories( ${PC_TINYXML2_INCLUDEDIR} )
-link_directories( ${PC_TINYXML2_LIBDIR} )
-set(TINYXML2_LIBRARIES ${PC_TINYXML2_LIBRARY} ${PC_TINYXML2_LIBRARIES} )
+set(TINYXML2_LIBRARIES tinyxml2)
 
 # urdf_headers
 find_package( urdfdom_headers REQUIRED )
@@ -174,17 +170,17 @@ find_package( urdfdom )
 if( urdfdom_FOUND )
    find_library( URDFDOM_LIBRARY_DIR urdfdom_model
               PATHS /usr/local/lib )
-   if( URDFDOM_LIBRARY_DIR_NOTFOUND ) 
+   if( URDFDOM_LIBRARY_DIR_NOTFOUND )
      message( "urdfdom library directory not found!" )
      set(DARTExt_FOUND FALSE )
-   else() 
-     link_libraries( ${URDFDOM_LIBRARY_DIR} )
+   else()
+     message( STATUS "Found urdfdom!")
    endif()
 else()
    message(STATUS "Could not find urdfdom")
    set(DARTExt_FOUND FALSE)
 endif()
-set(URDFDOM_LIBRARIES ${urdfdom_LIBRARIES}) # urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_world console_bridge
+set(urdfdom_LIBRARIES urdfdom_sensor urdfdom_model_state urdfdom_model urdfdom_world console_bridge)
 
 # console_bridge is required by urdfdom, so it will be asked when you install it.
 # It can be downloaded from here https://github.com/ros/console_bridge
@@ -192,7 +188,7 @@ set(URDFDOM_LIBRARIES ${urdfdom_LIBRARIES}) # urdfdom_sensor urdfdom_model_state
 
 set(DARTExt_LIBRARY_DIRS "${SYS_INSTALL_PREFIX}/lib" ${Boost_LIBRARY_DIRS} )
 
-set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${URDFDOM_LIBRARIES} )
+set(DARTExt_LIBS ${FCL_LIBRARIES} ${TINYXML_LIBRARIES} ${TINYXML2_LIBRARIES} ${urdfdom_LIBRARIES} )
 set(DARTExt_LIBS_NO_DEBUG ${CCD_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLUT_LIBRARY} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${OPENGL_LIBRARIES})
 
 if(MSVC OR MSVC90 OR MSVC10)
@@ -210,12 +206,14 @@ endif()
 
 list(APPEND DARTExt_LIBRARIES ${Boost_LIBRARIES})
 
-set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS} 
+set(DARTExt_INCLUDEDIR ${EIGEN3_INCLUDEDIR} ${FLANN_INCLUDEDIR} ${CCD_INCLUDEDIR} ${FCL_INCLUDEDIR} ${Boost_INCLUDE_DIRS}
         ${GLUT_INCLUDEDIR} ${OPENGL_INCLUDEDIR} ${ASSIMP_INCLUDEDIR} ${TINYXML_INCLUDEDIR} ${TINYXML2_INCLUDEDIR}
-	${urdfdom_headers_INCLUDE_DIRS} 
-	${urdfdom_INCLUDE_DIRS} )
+${urdfdom_headers_INCLUDE_DIRS}
+${urdfdom_INCLUDE_DIRS} )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_FOUND)
 
 mark_as_advanced(DARTExt_LIBRARY_DIRS DARTExt_INCLUDEDIR DARTExt_LIBRARIES FLANN_LIBRARIES CCD_LIBRARIES FCL_LIBRARIES Boost_LIBRARIES)
+
+
