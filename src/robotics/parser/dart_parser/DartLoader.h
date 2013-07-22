@@ -26,6 +26,7 @@ namespace simulation {
 }
 namespace kinematics {
 	class Joint;
+	class Shape;
 }
 namespace urdf {
 	class ModelInterface;
@@ -75,12 +76,10 @@ class DartLoader {
 	       int _DOF_TYPE,
 	       double _x = 0, double _y = 0, double _z = 0 );
 
-  bool add_VizShape( dynamics::BodyNodeDynamics* _node,
-		     boost::shared_ptr<urdf::Visual> _viz,
-		     std::string  _rootToSkelPath );
-  bool add_ColShape( dynamics::BodyNodeDynamics* _node,
-		     boost::shared_ptr<urdf::Collision> _col,
-		     std::string _rootToSkelPath );
+  template <class VisualOrCollision>
+  kinematics::Shape* createShape(boost::shared_ptr<VisualOrCollision> _vizOrCol,
+                                 std::string  _rootToSkelPath);
+
 
   // ToDart utils
   kinematics::Joint* createDartRootJoint( boost::shared_ptr<urdf::Joint> _jt,

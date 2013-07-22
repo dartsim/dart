@@ -130,280 +130,71 @@ void DartLoader::add_DOF( dynamics::SkeletonDynamics* _skel,
   
 }
 
-/**
- * @function add_VizShape
- */
-bool  DartLoader::add_VizShape( dynamics::BodyNodeDynamics* _node,
-				boost::shared_ptr<urdf::Visual> _viz,
-				std::string _rootToSkelPath ) {
-  // Variables to use
-  kinematics::Shape* shape;
-  const aiScene* model;
-  urdf::Pose pose;
-
-  // Origin
-  pose = _viz->origin;  
-
-  if(debug) { std::cout<< "Loading vizShape for node "<< _node->getName() << std::endl; }  
-
-  // Type of Geometry
-
-  //-- SPHERE
-  if( _viz->geometry->type == urdf::Geometry::SPHERE ) {
-    
-    boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _viz->geometry );
-    shape = new kinematics::ShapeEllipsoid(2.0 * sphere->radius * Eigen::Vector3d::Ones());
-    
-    // Set its pose
-    Eigen::Affine3d transform;
-    transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set color
-    if( _viz->material ) {
-      if( (_viz->material)->color.r != 0  &&  
-	  (_viz->material)->color.g != 0 &&  
-	  (_viz->material)->color.b != 0 ) {
-	Eigen::Vector3d color;
-	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
-	shape->setColor(color);
-      }
-    }
-    
-    // Set in node
-    _node->addVisualizationShape(shape);
-    if(debug) { std::cout<< "Loading a sphere vizMesh of radius:" << sphere->radius << std::endl; }
+void setMaterial(kinematics::Shape* _shape, const urdf::Visual* _viz) {
+  if(_viz->material) {
+    _shape->setColor(Eigen::Vector3d(_viz->material->color.r, _viz->material->color.g, _viz->material->color.b));
   }
+}
 
-  //-- BOX
-  else if( _viz->geometry->type == urdf::Geometry::BOX ) {
-
-    boost::shared_ptr<urdf::Box> box = boost::static_pointer_cast<urdf::Box>( _viz->geometry );
-    Eigen::Vector3d dim(box->dim.x, box->dim.y, box->dim.z);
-    shape = new kinematics::ShapeBox( dim );
-    
-    // Set its pose
-    Eigen::Affine3d transform;
-    transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set color
-    if( _viz->material ) {
-      if( (_viz->material)->color.r != 0  &&  
-	  (_viz->material)->color.g != 0 &&  
-	  (_viz->material)->color.b != 0 ) {
-	Eigen::Vector3d color;
-	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
-	shape->setColor(color);
-      }
-    }
-    
-
-    // Set in node
-    _node->addVisualizationShape(shape);
-
-    if(debug) { std::cout<< "Loading a box vizMesh of dim:" << dim.transpose() << std::endl; }
-  }
-
-  //-- CYLINDER
-  else if( _viz->geometry->type == urdf::Geometry::CYLINDER ) {
-
-    boost::shared_ptr<urdf::Cylinder> cylinder = boost::static_pointer_cast<urdf::Cylinder>( _viz->geometry );
-    shape = new kinematics::ShapeCylinder( cylinder->radius, cylinder->length );
-    
-    // Set its pose
-    Eigen::Affine3d transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set color
-    if( _viz->material ) {
-      if( (_viz->material)->color.r != 0  &&  
-	  (_viz->material)->color.g != 0 &&  
-	  (_viz->material)->color.b != 0 ) {
-	Eigen::Vector3d color;
-	color << _viz->material->color.r, _viz->material->color.g, _viz->material->color.b;
-	shape->setColor(color);
-      }
-    }
-    
-    // Set in node
-    _node->addVisualizationShape(shape);
-
-    if(debug) { std::cout<< "Loading a cylinder vizMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
-  }
-
-  //-- Mesh : Save the path
-  else if( _viz->geometry->type == urdf::Geometry::MESH ) {
-
-    boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _viz->geometry );
-    std::string fullPath = _rootToSkelPath;
-    fullPath.append( mesh->filename );
-
-    // Load aiScene visualization
-    model = kinematics::ShapeMesh::loadMesh( fullPath );    
-    
-    if( model == NULL ) {
-      std::cout<< "[add_VizShape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
-      return false;  
-    }
-    
-    // Set shape as mesh
-    shape = new kinematics::ShapeMesh(Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model);
-    
-    // Set its pose
-    Eigen::Affine3d transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
-    
-    // Set in node
-    _node->addVisualizationShape(shape);
-    
-  } // end if (mesh)
-
-  else {
-    std::cout<< "[set_VizShape] No MESH, BOX, CYLINDER OR SPHERE! Exiting"<<std::endl;
-    return false;
-  }
-
-  return true;
+void setMaterial(kinematics::Shape* _shape, const urdf::Collision* _col) {
 }
 
 /**
- * @function add_ColShape
+ * @function createShape
  */
-bool  DartLoader::add_ColShape( dynamics::BodyNodeDynamics* _node,
-				boost::shared_ptr<urdf::Collision> _col,
-				std::string _rootToSkelPath ) {
+template <class VisualOrCollision>
+kinematics::Shape* DartLoader::createShape(boost::shared_ptr<VisualOrCollision> _vizOrCol,
+                                           std::string _rootToSkelPath)
+{
+  kinematics::Shape* shape = NULL;
 
-  // Variables to use
-  kinematics::Shape* shape;
-  const aiScene* model;
-  urdf::Pose pose;
-
-  // Origin
-  pose = _col->origin;  
-
-  if(debug) { std::cout<< "Loading colShape for node "<< _node->getName() << std::endl; }
-  
-  // Type of Geometry
-  
-  //-- SPHERE
-  if( _col->geometry->type == urdf::Geometry::SPHERE ) {
-    
-    boost::shared_ptr<urdf::Sphere> sphere = boost::static_pointer_cast<urdf::Sphere>( _col->geometry );
+  // Sphere
+  if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get())) {
     shape = new kinematics::ShapeEllipsoid(2.0 * sphere->radius * Eigen::Vector3d::Ones());
-    
-    // Set its pose
-    Eigen::Affine3d transform;
-    transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set in node
-    _node->addCollisionShape(shape);
-    if(debug) { std::cout<< "Loading a sphere colMesh of radius:" << sphere->radius << std::endl; }
-
+    if(debug) std::cout << "Loading a sphere of radius:" << sphere->radius << std::endl;
   }
 
-  //-- BOX
-  else if( _col->geometry->type == urdf::Geometry::BOX ) {
-
-    boost::shared_ptr<urdf::Box> box = boost::static_pointer_cast<urdf::Box>( _col->geometry );
-    Eigen::Vector3d dim; dim<< box->dim.x, box->dim.y, box->dim.z;
-    shape = new kinematics::ShapeBox( dim );
-    
-    // Set its pose
-    Eigen::Affine3d transform;
-    transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set in node
-    _node->addCollisionShape(shape);
-    if(debug) { std::cout<< "Loading a box colMesh of dim:" << dim.transpose() << std::endl; }
-
+  // Box
+  else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get())) {
+    shape = new kinematics::ShapeBox(Eigen::Vector3d(box->dim.x, box->dim.y, box->dim.z));
+    if(debug) std::cout << "Loading a box of dim:" << box->dim.x << ", " << box->dim.y << ", " << box->dim.z << std::endl;
   }
 
-  //-- CYLINDER
-  else if( _col->geometry->type == urdf::Geometry::CYLINDER ) {
-
-    boost::shared_ptr<urdf::Cylinder> cylinder = boost::static_pointer_cast<urdf::Cylinder>( _col->geometry );
-    shape = new kinematics::ShapeCylinder( cylinder->radius, cylinder->length );
-    
-    // Set its pose
-    Eigen::Affine3d transform;
-    transform = pose2Affine3d( pose );
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    // Set in node
-    _node->addCollisionShape(shape);
-    if(debug) { std::cout<< "Loading a cylinder colMesh of radius:" << cylinder->radius<<" and length: "<<cylinder->length<< std::endl; }
+  // Cylinder
+  else if(urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get())) {
+    shape = new kinematics::ShapeCylinder(cylinder->radius, cylinder->length);
+    if(debug) std::cout << "Loading a cylinder of radius:" << cylinder->radius << " and length: " << cylinder->length << std::endl;
   }
-  
-  //-- Mesh
-  else if( _col->geometry->type == urdf::Geometry::MESH ) {
 
-    boost::shared_ptr<urdf::Mesh> mesh = boost::static_pointer_cast<urdf::Mesh>( _col->geometry );
-    std::string fullPath = _rootToSkelPath;
-    fullPath.append( mesh->filename );
-
-    // Load aiScene visualization
-    model = kinematics::ShapeMesh::loadMesh( fullPath );    
+  // Mesh
+  else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
+    std::string fullPath = _rootToSkelPath + mesh->filename;
+    const aiScene* model = kinematics::ShapeMesh::loadMesh( fullPath );
     
-    if( model == NULL ) {
-      std::cout<< "[add_ColShape] [ERROR] Not loading model "<< fullPath<<" (NULL) \n";
-      return false;  
+    if(!model) {
+      std::cout<< "[add_Shape] [ERROR] Not loading model " << fullPath << " (NULL) \n";
+    } 
+    else {
+      shape = new kinematics::ShapeMesh(Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model);
+      if(debug) std::cout << "[debug] Loading visual model: " << fullPath << std::endl;
     }
-    
-    // Set shape as mesh
-    shape = new kinematics::ShapeMesh(Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model);
-    
-    // Set its pose
-    Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-    // Set xyz
-    Eigen::Vector3d t;
-    t[0] = pose.position.x;
-    t[1] = pose.position.y;
-    t[2] = pose.position.z;
-    transform.translation() = t;
-    // Set rpy
-    double roll, pitch, yaw;
-    pose.rotation.getRPY( roll, pitch, yaw );
-    Eigen::Matrix3d rot;
-    rot  = Eigen::AngleAxisd( yaw, Eigen::Vector3d::UnitZ())* Eigen::AngleAxisd( pitch, Eigen::Vector3d::UnitY())* Eigen::AngleAxisd( roll, Eigen::Vector3d::UnitX() );
-    transform.matrix().block(0,0,3,3) = rot;
-    
-    // Set it into shape
-    shape->setTransform( transform );
-    
-    if(debug) std::cerr << "[debug] Loading visual model: " << fullPath << std::endl;
-    
-    // Set in node
-    _node->addCollisionShape(shape);
-    
-  } // end if (mesh)
-
-  else {
-    std::cout<< "[set_ColShape] No MESH, BOX, CYLINDER OR SPHERE! Exiting"<<std::endl;
-    return false;
   }
 
-  return true;
+  // Unknown geometry type
+  else {
+    std::cout << "[add_Shape] No MESH, BOX, CYLINDER OR SPHERE! Exiting" << std::endl;
+    return NULL;
+  }
 
+  shape->setTransform(pose2Affine3d(_vizOrCol->origin));
+  setMaterial(shape, _vizOrCol.get());
+  return shape;
 }
+
+template kinematics::Shape* DartLoader::createShape<urdf::Visual>(boost::shared_ptr<urdf::Visual> _vizOrCol,
+                                                                  std::string _rootToSkelPath);
+template kinematics::Shape* DartLoader::createShape<urdf::Collision>(boost::shared_ptr<urdf::Collision> _vizOrCol,
+                                                                     std::string _rootToSkelPath);
 
 /**
  * @function pose2Affine3d

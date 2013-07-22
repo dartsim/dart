@@ -294,7 +294,13 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       std::vector<boost::shared_ptr<urdf::Visual> > visualGroup;
       visualGroup = *(iter->second);
       for( int j = 0; j < visualGroup.size(); ++j ) {
-	if( add_VizShape( node, visualGroup[j], _rootToSkelPath ) == false ) { std::cout<< "Error loading VizShape" <<std::endl; return NULL; }
+        if(kinematics::Shape* shape = createShape(visualGroup[j], _rootToSkelPath)) {
+          node->addVisualizationShape(shape);
+        }
+        else {
+          std::cout << "Error loading VizShape" << std::endl;
+          return NULL;
+        }
       }
     }
  
@@ -313,7 +319,13 @@ dynamics::BodyNodeDynamics* DartLoader::createDartNode( boost::shared_ptr<urdf::
       std::vector<boost::shared_ptr<urdf::Collision> > collisionGroup;
       collisionGroup = *(iter->second);
       for( int j = 0; j < collisionGroup.size(); ++j ) {
-	if( add_ColShape( node, collisionGroup[j], _rootToSkelPath ) == false ) { std::cout<< "Error loading ColShape" <<std::endl; return NULL; }
+        if(kinematics::Shape* shape = createShape(collisionGroup[j], _rootToSkelPath)) {
+          node->addCollisionShape(shape);
+        }
+        else {
+          std::cout << "Error loading ColShape" << std::endl;
+          return NULL;
+        }
       }
     }
     
