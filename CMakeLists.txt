@@ -25,6 +25,23 @@ IF(NOT CMAKE_BUILD_TYPE)
       FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
+# 64-bit unix system compatibility (build with -fPIC option)
+# See: http://www.technovelty.org/c/position-independent-code-and-x86-64-libraries.html
+#      http://www.gentoo.org/proj/en/base/amd64/howtos/?part=1&chap=3
+if(UNIX AND NOT WIN32)
+  set (CMAKE_INSTALL_PREFIX "/usr" CACHE STRING "Install Prefix")
+ find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
+ if(CMAKE_UNAME)
+   exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
+   set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL
+     "processor type (i386 and x86_64)")
+   if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+     ADD_DEFINITIONS(-fPIC)
+   endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+ endif(CMAKE_UNAME)
+endif()
+set (CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
+
 # GCCFilter, if appliciable
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCPP)
    option(COLOR_GCC "Use GCCFilter to color compiler output messages" OFF)
