@@ -38,7 +38,6 @@
 #include "Eigen/Dense"
 using namespace Eigen;
 #include <vector>
-using namespace std;
 
 
 namespace lcpsolver {

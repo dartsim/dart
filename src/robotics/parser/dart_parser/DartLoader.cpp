@@ -14,6 +14,8 @@
 #include "kinematics/Transformation.h"
 #include "kinematics/Dof.h"
 
+using namespace std;
+
 /**
  * @function DartLoader
  * @brief Constructor

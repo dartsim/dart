@@ -45,7 +45,6 @@
 #include <climits>
 #include <cassert>
 #include <iostream>
-using namespace std;
 // External Libraries
 #include <Eigen/Dense>
 using namespace Eigen;

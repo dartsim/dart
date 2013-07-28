@@ -43,7 +43,6 @@
 using namespace Eigen;
 
 #include <vector>
-using namespace std;
 
 namespace lcpsolver {
     class LCPSolver
