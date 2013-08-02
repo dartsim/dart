@@ -135,20 +135,6 @@ public:
 	/// Returns a random configuration with the specified node IDs 
 	virtual Eigen::VectorXd getRandomConfig();
 
-public:
-	// Visualization functions
-
-	/// Visualize RRT(s) using gnuplot
-	static void draw (const RRT* rrt1, const RRT* rrt2);
-
-	/// Write a line segment to the two lines that represent each end (with some offset to the lines)
-	static void saveLine (char* l1, char* l2, size_t off, const Eigen::VectorXd& n1, const Eigen::VectorXd& n2); 
-
-	/// Write a gnuplot command to a file descriptor to draw a line segment
-	// NOTE Index is the index to the line gnuplot loads 
-	// NOTE Last line does not have a comma at the end.
-	static void drawLine (FILE* f, size_t numDofs, const char* color, size_t index, bool last = false);
-
 protected:
 
 	simulation::World* world;                 ///< The world that the robot is in
