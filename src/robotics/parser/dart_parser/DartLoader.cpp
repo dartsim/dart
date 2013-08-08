@@ -192,7 +192,7 @@ simulation::World* DartLoader::parseWorld( std::string _urdfFile ) {
 				mCurrPose(i) = robot->getDof(i)->getValue();
 			} 
 			robot->setConfig(bla, mCurrPose, true, true);
-			printf("\trobot->initSkel called\n"); fflush(stdout);
+			// printf("\trobot->initSkel called\n"); fflush(stdout);
 
       world->addSkeleton( robot );
     }
@@ -514,7 +514,7 @@ dynamics::SkeletonDynamics* DartLoader::modelInterfaceToRobot( boost::shared_ptr
   
   // Init robot (skeleton)
   mRobot->initSkel();
-	printf("\tmRobot->initSkel called\n"); fflush(stdout);
+	// printf("\tmRobot->initSkel called\n"); fflush(stdout);
   return mRobot;
 }
 
