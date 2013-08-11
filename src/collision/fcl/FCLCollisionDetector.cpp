@@ -49,8 +49,8 @@ namespace collision
 {
 
 FCLCollisionDetector::FCLCollisionDetector()
-    : CollisionDetector(),
-      mNumMaxContacts(100) {
+    : CollisionDetector()
+{
 }
 
 FCLCollisionDetector::~FCLCollisionDetector()
@@ -82,7 +82,8 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 
     for(int i = 0; i < mCollisionNodes.size(); i++)
     for(int j = i + 1; j < mCollisionNodes.size(); j++)
-    {
+    {        
+        result.clear();
         FCLCollisionNode* collNode1 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
         FCLCollisionNode* collNode2 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[j]);
 
@@ -92,6 +93,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
         for(int k = 0; k < collNode1->getNumCollisionGeometries(); k++)
         for(int l = 0; l < collNode2->getNumCollisionGeometries(); l++)
         {
+            int currContactNum = mContacts.size();
             fcl::collide(collNode1->getCollisionGeometry(k),
                          collNode1->getFCLTransform(k),
                          collNode2->getCollisionGeometry(l),
@@ -99,6 +101,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
                          request, result);
 
             unsigned int numContacts = result.numContacts();
+
             for (unsigned int m = 0; m < numContacts; ++m)
             {
                 const fcl::Contact& contact = result.getContact(m);
@@ -119,6 +122,21 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
                 contactPair.penetrationDepth = contact.penetration_depth;
 
                 mContacts.push_back(contactPair);
+            }
+            
+            std::vector<bool> markForDeletion(numContacts, false);
+            for (int m = 0; m < numContacts; m++) {
+                for (int n = m + 1; n < numContacts; n++) {
+                    Vector3d diff = mContacts[currContactNum + m].point - mContacts[currContactNum + n].point;
+                    if (diff.dot(diff) < 1e-6) {
+                        markForDeletion[m] = true;
+                        break;
+                    }
+                }
+            }
+            for (int m = numContacts - 1; m >= 0; m--) {
+                if (markForDeletion[m])
+                    mContacts.erase(mContacts.begin() + currContactNum + m);
             }
         }
     }

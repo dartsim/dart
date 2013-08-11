@@ -16,7 +16,6 @@ foreach(APPDIR
 	hardcodedDesign
 	closedLoop
 	drawRRT
-	spheres
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

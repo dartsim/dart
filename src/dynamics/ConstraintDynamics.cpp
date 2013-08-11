@@ -172,7 +172,6 @@ using namespace dart_math;
             // Allocate the Collision Detection class
             //mCollisionChecker = new FCLCollisionDetector();
             mCollisionChecker = new FCLMESHCollisionDetector();
-
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
             int rows = 0;

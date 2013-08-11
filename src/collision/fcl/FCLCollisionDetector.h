@@ -66,11 +66,6 @@ public:
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints);
 
-    /// @brief
-    int getNumMaxContacts() const { return mNumMaxContacts; }
-
-    /// @brief
-    void setNumMaxContacts(int _num) { mNumMaxContacts = _num; }
 
     CollisionNode* findCollisionNode(
             const fcl::CollisionGeometry* _fclCollGeom) const;
@@ -80,9 +75,6 @@ protected:
                                 CollisionNode* _node2,
                                 bool _calculateContactPoints);
 
-private:
-    /// @brief
-    int mNumMaxContacts;
 };
 
 } // namespace collision

@@ -31,7 +31,6 @@ CollisionNode*FCLMESHCollisionDetector::createCollisionNode(kinematics::BodyNode
 bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
                                               bool _calculateContactPoints)
 {
-    int num_max_contact = 100;
     clearAllContacts();
     bool collision = false;
 
@@ -58,7 +57,7 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
             
             if(FCLMESHCollisionNode1->checkCollision(FCLMESHCollisionNode2,
                     _calculateContactPoints ? &mContacts : NULL,
-                    num_max_contact))
+                    mNumMaxContacts))
             {
                 collision = true;
                 mCollisionNodes[i]->getBodyNode()->setColliding(true);
@@ -84,7 +83,7 @@ bool FCLMESHCollisionDetector::checkCollision(CollisionNode* _node1,
     FCLMESHCollisionNode* collisionNode2 = static_cast<FCLMESHCollisionNode*>(_node2);
     return collisionNode1->checkCollision(collisionNode2,
                                           _calculateContactPoints ? &mContacts : NULL,
-                                          100);
+                                          mNumMaxContacts);
 }
 
 void FCLMESHCollisionDetector::draw() {

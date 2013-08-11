@@ -78,9 +78,9 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
                     fcl::generateBVHModel<fcl::OBBRSS>(*mesh, fcl::Sphere(shape->getDim()[0]*0.5), shapeTransform, 10, 10);
                     mMeshes.push_back(mesh);
                 }
-                else
+                else {
                     mMeshes.push_back(createEllipsoid<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shapeTransform));
-
+                }
                 break;
             }
             case kinematics::Shape::P_BOX:
