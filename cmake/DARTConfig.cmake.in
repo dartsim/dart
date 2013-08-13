@@ -6,7 +6,6 @@
 #
 # This sets the following variables:
 # DART_FOUND - True if DART was found.
-# DART_INCLUDEDIR - Directories containing the DART include files.
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES - Libraries needed to use DART.
 # DART_DEFINITIONS - Compiler flags for DART.
@@ -14,8 +13,8 @@
 set(DART_FOUND_2 FALSE)
 set(SYS_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
 
-set(DART_INCLUDEDIR ${SYS_INSTALL_PREFIX}/include/dart)
-if(EXISTS ${DART_INCLUDEDIR}/kinematics/Skeleton.h)
+set(DART_INCLUDE_DIRS ${SYS_INSTALL_PREFIX}/include/dart)
+if(EXISTS ${DART_INCLUDE_DIRS}/kinematics/Skeleton.h)
     set(DART_FOUND_2 TRUE)
 else()
     find_package(PkgConfig QUIET)
@@ -24,13 +23,13 @@ else()
        set(DART_DEFINITIONS ${PC_DART_CFLAGS_OTHER})
     endif()
     
-    unset(DART_INCLUDEDIR)
-    find_path(DART_INCLUDEDIR kinematics/Skeleton.h
+    unset(DART_INCLUDE_DIRS)
+    find_path(DART_INCLUDE_DIRS kinematics/Skeleton.h
         PATHS ${PC_DART_INCLUDEDIR} ${SYS_INSTALL_PREFIX}/include
         PATH_SUFFIXES dart)    
 endif()
 
-if(EXISTS DART_INCLUDEDIR/kinematics/Skeleton.h)
+if(EXISTS DART_INCLUDE_DIRS/kinematics/Skeleton.h)
     set(DART_FOUND_2 TRUE)
 endif()
    
@@ -43,8 +42,4 @@ set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND_2)
 
-set(DART_INCLUDE_DIRS ${DART_INCLUDEDIR})
-
-mark_as_advanced(DART_FOUND DART_LIBRARY_DIRS DART_INCLUDEDIR DART_LIBRARIES
-                 DART_INCLUDE_DIRS)
-
+mark_as_advanced(DART_FOUND DART_LIBRARY_DIRS DART_INCLUDE_DIRS DART_LIBRARIES)
