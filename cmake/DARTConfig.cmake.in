@@ -7,6 +7,7 @@
 # This sets the following variables:
 # DART_FOUND - True if DART was found.
 # DART_INCLUDEDIR - Directories containing the DART include files.
+# DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES - Libraries needed to use DART.
 # DART_DEFINITIONS - Compiler flags for DART.
 
@@ -42,5 +43,8 @@ set(DART_LIBRARIES optimized ${DART_LIBS} debug ${DART_LIBS}d)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND_2)
 
-mark_as_advanced(DART_FOUND DART_LIBRARY_DIRS DART_INCLUDEDIR DART_LIBRARIES)
+set(DART_INCLUDE_DIRS ${DART_INCLUDEDIR})
+
+mark_as_advanced(DART_FOUND DART_LIBRARY_DIRS DART_INCLUDEDIR DART_LIBRARIES
+                 DART_INCLUDE_DIRS)
 

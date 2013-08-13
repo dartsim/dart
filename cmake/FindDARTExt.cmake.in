@@ -3,6 +3,7 @@
 # This sets the following variables:
 # DARTExt_FOUND - If all the Dart externals were found or not
 # DARTExt_INCLUDEDIR - Directories containing the DART external include files.
+# DARTExt_INCLUDE_DIRS - Directories containing the DART external include files.
 # DARTExt_LIBRARIES - Libraries needed to use DART External.
 # DARTExt_DEFINITIONS - Compiler flags for DART External.
 # Boost_LIBRARIES - Boost Libraries required for DART
@@ -214,6 +215,9 @@ ${urdfdom_INCLUDE_DIRS} )
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DARTExt DEFAULT_MSG DARTExt_FOUND)
 
-mark_as_advanced(DARTExt_LIBRARY_DIRS DARTExt_INCLUDEDIR DARTExt_LIBRARIES FLANN_LIBRARIES CCD_LIBRARIES FCL_LIBRARIES Boost_LIBRARIES)
+set(DARTExt_INCLUDE_DIRS ${DARTExt_INCLUDEDIR})
+
+mark_as_advanced(DARTExt_LIBRARY_DIRS DARTExt_INCLUDEDIR DARTExt_LIBRARIES FLANN_LIBRARIES CCD_LIBRARIES FCL_LIBRARIES Boost_LIBRARIES
+                 DARTExt_INCLUDE_DIRS)
 
 
