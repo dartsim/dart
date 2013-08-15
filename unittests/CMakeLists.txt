@@ -32,7 +32,7 @@ if(NOT WIN32)
   endif()    
 
   target_link_libraries(gtest)
-  set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+  set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
 # Compile each test file
@@ -49,12 +49,12 @@ foreach(test ${tests})
 	if(APPLE OR UNIX)
 		target_link_libraries(${base} pthread)
 	endif()
-	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/tests")
+	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 
 	# Add the executable if not to be ignored
 	list_contains(contains ${base} ${dontTest})
 	if(NOT contains)
-		add_test(${base} ${CMAKE_SOURCE_DIR}/bin/tests/${base})
+		add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
 		message("-- Adding test: " ${base})
 	endif(NOT contains) 
 endforeach(test)
