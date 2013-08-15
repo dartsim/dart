@@ -180,8 +180,8 @@ else()
    message(STATUS "Could not find urdfdom")
    set(DARTExt_FOUND FALSE)
 endif()
-set(DARTExt_LIBRARIES DARTExt_LIBRARIES urdfdom_LIBRARIES)
-set(DARTExt_LIBRARY_DIRS DARTExt_LIBRARY_DIRS urdfdom_LIBRARY_DIRS)
+set(DARTExt_LIBRARIES ${DARTExt_LIBRARIES} ${urdfdom_LIBRARIES})
+set(DARTExt_LIBRARY_DIRS ${DARTExt_LIBRARY_DIRS} ${urdfdom_LIBRARY_DIRS})
 
 # console_bridge is required by urdfdom, so it will be asked when you install it.
 # It can be downloaded from here https://github.com/ros/console_bridge
