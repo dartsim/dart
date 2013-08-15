@@ -54,10 +54,6 @@ set(CMAKE_DEBUG_POSTFIX "d")
 # System Install paths
 if(WIN32)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
-elseif(APPLE)
-  set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix" FORCE)
-else()
-  set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
 endif()
 
 ###############
@@ -148,5 +144,6 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karen Liu (www.cc.gatech.edu/~karenliu/)")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PKG_DESC}")
 set(CPACK_PACKAGE_VENDOR "Computer Graphics Lab at GT")
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
 include(CPack)
