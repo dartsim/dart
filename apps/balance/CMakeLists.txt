@@ -7,4 +7,4 @@ file(GLOB balance_hdrs "*.h")
 add_executable(balance ${balance_srcs} ${balance_hdrs})
 target_link_libraries(balance dart ${DARTExt_LIBRARIES})
 
-set_target_properties(balance PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+set_target_properties(balance PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
