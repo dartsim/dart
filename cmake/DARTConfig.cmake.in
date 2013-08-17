@@ -40,7 +40,7 @@ set(DART_INCLUDE_DIRS ${DARTExt_INCLUDE_DIRS} ${DART_INCLUDE_DIRS})
 
 set(DART_LIBRARY_DIRS ${DARTExt_LIBRARY_DIRS} "${SYS_INSTALL_PREFIX}/lib")
 
-set(DART_LIBRARIES ${DARTExt_LIBRARIES} optimized dart debug dartd)
+set(DART_LIBRARIES optimized dart debug dartd ${DARTExt_LIBRARIES})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DART DEFAULT_MSG DART_FOUND_2)
