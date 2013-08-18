@@ -52,7 +52,7 @@ endif()
 set(CMAKE_DEBUG_POSTFIX "d")
 
 # System Install paths
-if(WIN32)
+if(WIN32 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 endif()
 
