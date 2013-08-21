@@ -82,18 +82,11 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 set(CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/cmake")
 find_package(DARTExt REQUIRED)
 
-find_path( MATHPLOT_INCLUDE_DIR NAMES mathplot2.h )
-message(STATUS "MATHPLOT = ${MATHPLOT_INCLUDE_DIR}")
-
-message(STATUS "Building DART source")
-# Since you are developing DART
 include_directories(BEFORE src)
-include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${DARTExt_INCLUDE_DIRS})
 link_directories(${DARTExt_LIBRARY_DIRS})
-link_directories(${CMAKE_BINARY_DIR}/lib)
-add_subdirectory(src)
 
+add_subdirectory(src)
 enable_testing()
 add_subdirectory(unittests)
 add_subdirectory(apps)
