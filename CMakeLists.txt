@@ -62,6 +62,7 @@ set(PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/src/utils/Paths.h.in)
 set(PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/src/utils/Paths.h)
 message(STATUS "Generate the path header file to ${PATH_HEADER_OUT}")
 configure_file(${PATH_HEADER_IN} ${PATH_HEADER_OUT} @ONLY)
+install(FILES ${PATH_HEADER_OUT} DESTINATION include/dart/utils)
 
 ###############
 # Install Targets
@@ -84,6 +85,7 @@ find_package(DARTExt REQUIRED)
 
 include_directories(BEFORE src)
 include_directories(${DARTExt_INCLUDE_DIRS})
+include_directories("${CMAKE_BINARY_DIR}/src")
 link_directories(${DARTExt_LIBRARY_DIRS})
 
 add_subdirectory(src)
