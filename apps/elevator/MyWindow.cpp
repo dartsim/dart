@@ -1,35 +1,32 @@
 #include "MyWindow.h"
 #include "simulation/World.h"
-#include "dynamics/BodyNodeDynamics.h"
+#include "dynamics/ConstraintDynamics.h"
+#include <iostream>
 
 using namespace Eigen;
-using namespace dynamics;
-
 
 void MyWindow::timeStepping()
 {
-    static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(1)->getNode(0))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+    //    mController->computeTorques(mWorld->getSkeleton(0)->get_q(), mWorld->getSkeleton(0)->get_dq(), mWorld->getCollisionHandle()->getTotalConstraintForce(0));
+    //    mWorld->getSkeleton(0)->setInternalForces(mController->getTorques());
     mWorld->step();
-    mForce /= 2.0;
 }
 
 void MyWindow::drawSkels()
 {
+    // moving camera
+    mTrans[1] =  1000 + mWorld->getSkeleton(1)->getWorldCOM()[1] * -1000;
+    if (mTrans[1] > 9000)
+        mTrans[1] = 9000;
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    mWorld->getSkeleton(0)->draw(mRI);
     Vector4d color;
-    color << 0.95, 0.95, 0.95, 1.0;
-    mWorld->getSkeleton(0)->draw(mRI, color, false);
-    color << 0.8, 0.3, 0.3, 1.0;
-    mWorld->getSkeleton(1)->draw(mRI, color, false);
-    color << 0.3, 0.8, 0.3, 1.0;
+    color << 0.9, 0.9, 0.9, 1.0;
     mWorld->getSkeleton(2)->draw(mRI, color, false);
-//    color << 0.8, 0.8, 0.4, 1.0;
-//    mWorld->getSkeleton(3)->draw(mRI, color, false);
-//    color << 0.8, 0.5, 0.3, 1.0;
-//    mWorld->getSkeleton(4)->draw(mRI, color, false);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    mWorld->getSkeleton(1)->draw(mRI);
 }
-
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
@@ -67,22 +64,9 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
         break;
-    case '1': // upper right force
-        mForce[0] = -500;
-        break;
-    case '2': // upper right force
-        mForce[0] = 500;
-        break;
-    case '3': // upper right force
-        mForce[2] = -500;
-        break;
-    case '4': // upper right force
-        mForce[2] = 500;
-        break;
     default:
         Win3D::keyboard(key,x,y);
 
     }
     glutPostRedisplay();
 }
-

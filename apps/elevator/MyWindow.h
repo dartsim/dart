@@ -3,14 +3,15 @@
 
 #include "yui/Win3D.h"
 #include "simulation/SimWindow.h"
+#include "Controller.h"
 
 class MyWindow : public simulation::SimWindow
 {
  public:
- MyWindow(): SimWindow() 
-        {
-            mForce = Eigen::Vector3d::Zero();
-        }
+ MyWindow(): SimWindow() {
+        mTrans[1] = -1000.f;
+        mController = NULL;
+    }
     virtual ~MyWindow() {}
     
     virtual void timeStepping();
@@ -18,8 +19,15 @@ class MyWindow : public simulation::SimWindow
     //  virtual void displayTimer(int _val);
     //  virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
+
+    void setController(Controller *_controller)
+    {
+        mController = _controller;
+    }
+
  private:
-    Eigen::Vector3d mForce;
+    Controller *mController;
+
 };
 
 #endif
