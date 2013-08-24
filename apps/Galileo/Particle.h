@@ -10,6 +10,7 @@ namespace renderer {
 class Particle {
  public:
     Particle() {
+        // Create a default particle
         mMass = 1.0;
         mPosition.setZero();
         mVelocity.setZero();

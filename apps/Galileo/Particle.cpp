@@ -1,5 +1,4 @@
 #include "Particle.h"
-#include "yui/GLFuncs.h"
 #include "renderer/RenderInterface.h"
 
 using namespace Eigen;

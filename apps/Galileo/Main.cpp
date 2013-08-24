@@ -1,14 +1,15 @@
 #include "MyWindow.h"
-#include <iostream>
-
-using namespace std;
 
 int main(int argc, char* argv[])
-{	
+{
+    // Create a window for rendering and UI
     MyWindow window;
-    MyWorld *world = new MyWorld(3);
-    window.setWorld(world);
 
+    // Create a world for particle simulation
+    MyWorld *world = new MyWorld(3);
+
+    // Link the world to the window and start running
+    window.setWorld(world);
     glutInit(&argc, argv);
     window.initWindow(640, 480, "Particles");
     glutMainLoop();

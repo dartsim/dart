@@ -1,8 +1,7 @@
 #include "MyWindow.h"
 #include "yui/GLFuncs.h"
-#include <cstdio>
+#include "Particle.h"
 
-using namespace std;
 using namespace Eigen;
 
 void MyWindow::displayTimer(int _val)
@@ -55,7 +54,7 @@ void MyWindow::draw()
     // display the frame count in 2D text
     char buff[64];
     sprintf(buff,"%d",mFrame);
-    string frame(buff);
+    std::string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
     yui::drawStringOnScreen(0.02f,0.02f,frame);

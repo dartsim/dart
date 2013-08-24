@@ -1,8 +1,9 @@
 #ifndef _MYWORLD_
 #define _MYWORLD_
 
-#include "yui/Win3D.h"
-#include "Particle.h"
+#include <vector>
+
+class Particle;
 
 class MyWorld {
  public:
@@ -18,6 +19,7 @@ class MyWorld {
         return mParticles[_index];
     }
 
+    // TODO: your simulation code goes here
     void simulate();
     
  protected:

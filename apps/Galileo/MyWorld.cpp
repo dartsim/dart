@@ -1,6 +1,6 @@
 #include "MyWorld.h"
+#include "Particle.h"
 
-using namespace std;
 using namespace Eigen;
 
 MyWorld::MyWorld(int _numParticles) {
