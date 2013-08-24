@@ -3,17 +3,22 @@
 
 #include <Eigen/Dense>
 
-class particle {
+namespace renderer {
+    class RenderInterface;
+}
+
+class Particle {
  public:
     Particle() {
         mMass = 1.0;
         mPosition.setZero();
         mVelocity.setZero();
         mAccumulatedForce.setZero();
+        mColor << 0.9, 0.2, 0.2, 1.0;
     }
     virtual ~Particle() {}
 
-    void draw();
+    void draw(renderer::RenderInterface* _ri);
     
     double mMass;
     Eigen::Vector3d mPosition;
@@ -21,6 +26,6 @@ class particle {
     Eigen::Vector3d mAccumulatedForce;
 
     Eigen::Vector4d mColor;
-}
+};
 
-#endif _PARTICLE_
+#endif

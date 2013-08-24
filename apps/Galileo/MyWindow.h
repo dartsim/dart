@@ -16,7 +16,7 @@ public:
         mPlaying = false;
 
         mPersp = 30.f;
-        mTrans[2] = -1.f;
+        mTrans[1] = -20000.f;
         mFrame = 0;
         mDisplayTimeout = 5;
     }
@@ -25,14 +25,20 @@ public:
     virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
     virtual void displayTimer(int _val);
-	
+
+    MyWorld* getWorld() {
+        return mWorld;
+    }
+
+    void setWorld(MyWorld *_world) {
+        mWorld = _world;
+    }
+
 protected:
     bool mPlaying;
     int mFrame;
     
-    MyWorld mWorld1;
-    MyWorld mWorld2;
-    MyWorld mWorld3;
+    MyWorld *mWorld;
 };
 
 #endif

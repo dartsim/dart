@@ -2,16 +2,26 @@
 #define _MYWORLD_
 
 #include "yui/Win3D.h"
+#include "Particle.h"
 
 class MyWorld {
  public:
-    MyWorld() {
+    MyWorld(int _numParticles);
+
+    virtual ~MyWorld();
+
+    int getNumParticles() {
+        return mParticles.size();
     }
 
-    virtual ~MyWorld() {};
+    Particle* getParticle(int _index) {
+        return mParticles[_index];
+    }
+
+    void simulate();
     
  protected:
-    std::vector<Particle> mParticles;    
+    std::vector<Particle*> mParticles;    
 };
 
 #endif
