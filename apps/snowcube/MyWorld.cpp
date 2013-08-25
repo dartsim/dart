@@ -5,6 +5,7 @@
 using namespace Eigen;
 
 MyWorld::MyWorld(int _numParticles) {
+    // Create particles
     for (int i = 0; i < _numParticles; i++) {
         Particle *p = new Particle();
         mParticles.push_back(p);

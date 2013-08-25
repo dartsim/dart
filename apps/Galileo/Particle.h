@@ -15,7 +15,7 @@ class Particle {
         mPosition.setZero();
         mVelocity.setZero();
         mAccumulatedForce.setZero();
-        mColor << 0.9, 0.2, 0.2, 1.0;
+        mColor << 0.9, 0.2, 0.2, 1.0; // Red
     }
     virtual ~Particle() {}
 

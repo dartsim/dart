@@ -18,7 +18,7 @@ void MyWindow::draw() {
     for (int i = 0; i < mWorld->getNumParticles(); i++)
         mWorld->getParticle(i)->draw(mRI);
 
-    //Draw a cube
+    //Draw a cube centered at mWorld->getCubePosition()
     glDisable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     mRI->setPenColor(Vector4d(0.3, 0.3, 0.3, 1.0));
@@ -52,6 +52,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
 }
 
 void MyWindow::click(int button, int state, int x, int y) {
+    // TODO: replace this code to "shake the cube"
     mMouseDown = !mMouseDown;
     if(mMouseDown){
         if (button == GLUT_LEFT_BUTTON)
@@ -66,6 +67,7 @@ void MyWindow::click(int button, int state, int x, int y) {
 }
 
 void MyWindow::drag(int x, int y) {
+    // TODO: replace this code to "shake the cube"
     double deltaX = x - mMouseX;
     double deltaY = y - mMouseY;
 

@@ -17,7 +17,7 @@ void MyWindow::draw() {
     for (int i = 0; i < mWorld->getNumParticles(); i++)
         mWorld->getParticle(i)->draw(mRI);
 
-    //Draw background
+    //Draw a checker board background
     glDisable(GL_LIGHTING);
     bool flip = true;
     double wall = -5.0;
@@ -41,7 +41,7 @@ void MyWindow::draw() {
     }
     glEnable(GL_LIGHTING);
 
-    // Auto-pan camera
+    // Pan the camera based on the average height of all particles
     double average_height = 0.0;
     for (int i = 0; i < mWorld->getNumParticles(); i++)
         average_height += mWorld->getParticle(i)->mPosition[1];
