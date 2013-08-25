@@ -16,7 +16,8 @@ class MyWindow : public yui::Win3D {
             mPlaying = false;
             
             mPersp = 30.f;
-            mTrans[1] = -20000.f;
+            mTrans[1] = 0.f;
+            mTrans[2] = -1500.0;
             mFrame = 0;
             mDisplayTimeout = 5;
         }
@@ -27,6 +28,8 @@ class MyWindow : public yui::Win3D {
     virtual void displayTimer(int _val);
     virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
+    virtual void click(int button, int state, int x, int y);
+    virtual void drag(int x, int y);
     
     MyWorld* getWorld() {
         return mWorld;

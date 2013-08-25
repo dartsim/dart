@@ -1,6 +1,7 @@
 #include "MyWindow.h"
 #include "yui/GLFuncs.h"
 #include "Particle.h"
+#include <iostream>
 
 using namespace Eigen;
 
@@ -17,36 +18,15 @@ void MyWindow::draw() {
     for (int i = 0; i < mWorld->getNumParticles(); i++)
         mWorld->getParticle(i)->draw(mRI);
 
-    //Draw background
+    //Draw a cube
     glDisable(GL_LIGHTING);
-    bool flip = true;
-    double wall = -5.0;
-    for(int i = -20; i < 20; i++){
-        for(int j = -20; j < 25; j++){
-            if(flip == true){
-                glColor4d(0.42, 0.42, 0.42, 1.0);
-                flip = false; 
-            }else{
-                glColor4d(0.5, 0.5, 0.5, 1.0);
-                flip = true;
-            }
-            glBegin(GL_QUADS);
-            glNormal3d(0, 0, 1);
-            glVertex3d(i, j, wall);
-            glVertex3d(i, j + 1, wall);
-            glVertex3d(i + 1, j + 1, wall);
-            glVertex3d(i + 1, j, wall);
-            glEnd();
-        }
-    }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    mRI->setPenColor(Vector4d(0.3, 0.3, 0.3, 1.0));
+    mRI->pushMatrix();
+    mRI->translate(mWorld->getCubePosition());
+    mRI->drawCube(Vector3d(1.0, 1.0, 1.0));
+    mRI->popMatrix();
     glEnable(GL_LIGHTING);
-
-    // Auto-pan camera
-    double average_height = 0.0;
-    for (int i = 0; i < mWorld->getNumParticles(); i++)
-        average_height += mWorld->getParticle(i)->mPosition[1];
-    average_height /= mWorld->getNumParticles();
-    mTrans[1] = average_height * -1000.0;
 
     // Display the frame count in 2D text
     char buff[64];
@@ -68,5 +48,30 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
     default:
         Win3D::keyboard(key,x,y);
     }
+    glutPostRedisplay();
+}
+
+void MyWindow::click(int button, int state, int x, int y) {
+    mMouseDown = !mMouseDown;
+    if(mMouseDown){
+        if (button == GLUT_LEFT_BUTTON)
+            std::cout << "Left Click" << std::endl;
+        else if (button == GLUT_RIGHT_BUTTON || button == GLUT_MIDDLE_BUTTON)
+            std::cout << "RIGHT Click" << std::endl;
+        
+        mMouseX = x;
+        mMouseY = y;
+    }
+    glutPostRedisplay();
+}
+
+void MyWindow::drag(int x, int y) {
+    double deltaX = x - mMouseX;
+    double deltaY = y - mMouseY;
+
+    mMouseX = x;
+    mMouseY = y;
+    std::cout << "Drag by (" << deltaX << ", " << deltaY << ")" << std::endl;
+
     glutPostRedisplay();
 }

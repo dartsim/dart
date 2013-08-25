@@ -7,6 +7,7 @@ foreach(APPDIR
 	cubes
 	balance
         Galileo
+        snowcube
         freethrow
         elevator
 	)

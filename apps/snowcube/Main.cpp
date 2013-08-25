@@ -6,12 +6,12 @@ int main(int argc, char* argv[])
     MyWindow window;
 
     // Create a world for particle simulation
-    MyWorld *world = new MyWorld(3);
+    MyWorld *world = new MyWorld(50);
 
     // Link the world to the window and start running
     window.setWorld(world);
     glutInit(&argc, argv);
-    window.initWindow(640, 480, "Galileo's experiment");
+    window.initWindow(640, 480, "Snow Cube");
     glutMainLoop();
 
     return 0;
