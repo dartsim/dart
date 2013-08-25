@@ -8,6 +8,7 @@ foreach(APPDIR
 	balance
         Galileo
         snowcube
+        tinkertoy
         freethrow
         elevator
 	)
