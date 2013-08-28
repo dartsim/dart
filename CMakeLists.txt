@@ -89,8 +89,8 @@ include_directories("${CMAKE_BINARY_DIR}/src")
 link_directories(${DARTExt_LIBRARY_DIRS})
 
 add_subdirectory(src)
-enable_testing()
-add_subdirectory(unittests)
+#enable_testing()
+#add_subdirectory(unittests)
 add_subdirectory(apps)
 
 ###############
