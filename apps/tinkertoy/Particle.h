@@ -9,6 +9,7 @@ namespace renderer {
 
 class Particle {
  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Particle() {
         // Create a default particle
         mMass = 1.0;
