@@ -86,6 +86,7 @@ find_package(DARTExt REQUIRED)
 include_directories(BEFORE src)
 include_directories(${DARTExt_INCLUDE_DIRS})
 include_directories("${CMAKE_BINARY_DIR}/src")
+link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories(${DARTExt_LIBRARY_DIRS})
 
 add_subdirectory(src)
