@@ -45,6 +45,7 @@
 #include "simulation/World.h"
 #include "kinematics/Dof.h"
 #include "dynamics/SkeletonDynamics.h"
+#include "flann/flann.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -60,7 +61,7 @@ RRT::RRT(World* world, SkeletonDynamics* robot, const std::vector<int> &dofs, co
 	dofs(dofs),
 	ndim(dofs.size()),
 	stepSize(stepSize),
-	index(flann::KDTreeSingleIndexParams())
+	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configuration to the flann structure
 	srand(time(NULL));
@@ -74,7 +75,7 @@ RRT::RRT(World* world, dynamics::SkeletonDynamics* robot, const std::vector<int>
 	dofs(dofs),
 	ndim(dofs.size()),
 	stepSize(stepSize),
-	index(flann::KDTreeSingleIndexParams())
+	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configurations to the flann structure
 	srand(time(NULL));
@@ -158,9 +159,9 @@ int RRT::addNode(const VectorXd &qnew, int parentId) {
 	// Update the underlying flann structure (the kdtree)
 	unsigned int id = configVector.size() - 1;
 	if(id == 0) 
-		index.buildIndex(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
+		index->buildIndex(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
 	else 
-		index.addPoints(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
+		index->addPoints(flann::Matrix<double>((double*)temp->data(), 1, temp->size()));
 	
 	activeNode = id;
 	return id;
@@ -173,7 +174,7 @@ inline int RRT::getNearestNeighbor(const VectorXd &qsamp) {
 	const flann::Matrix<double> queryMatrix((double*)qsamp.data(), 1, qsamp.size());
 	flann::Matrix<int> nearestMatrix(&nearest, 1, 1);
 	flann::Matrix<double> distanceMatrix(flann::Matrix<double>(&distance, 1, 1));
-	index.knnSearch(queryMatrix, nearestMatrix, distanceMatrix, 1, 
+	index->knnSearch(queryMatrix, nearestMatrix, distanceMatrix, 1, 
 		flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 	activeNode = nearest;
 	return nearest;

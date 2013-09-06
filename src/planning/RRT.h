@@ -46,7 +46,11 @@
 #include <vector>
 #include <list>
 #include <Eigen/Core>
-#include <flann/flann.hpp>
+
+namespace flann {
+	template <class A> class L2;
+	template <class A> class Index;
+}
 
 namespace simulation { class World; }
 namespace dynamics { class SkeletonDynamics; }
@@ -142,7 +146,7 @@ protected:
 	std::vector<int> dofs;                    ///< The dofs of the robot the planner can manipulate
 
 	/// The underlying flann data structure for fast nearest neighbor searches 
-	flann::Index<flann::L2<double> > index;		
+	flann::Index<flann::L2<double> >* index;
 
 	/// Returns a random value between the given minimum and maximum value
 	double randomInRange(double min, double max);
