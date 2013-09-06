@@ -6,6 +6,7 @@ foreach(APPDIR
         Galileo
         snowcube
         tinkertoy
+        rigidBodies
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
