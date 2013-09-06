@@ -45,7 +45,7 @@
 #include "simulation/World.h"
 #include "kinematics/Dof.h"
 #include "dynamics/SkeletonDynamics.h"
-#include "flann/flann.hpp"
+#include <flann/flann.hpp>
 
 using namespace std;
 using namespace Eigen;
