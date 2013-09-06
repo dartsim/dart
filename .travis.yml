@@ -14,4 +14,5 @@ after_failure:
 branches:
   only:
     - master
-    - dart_3.0
+    - dart_2.6
+    - refactoring2
