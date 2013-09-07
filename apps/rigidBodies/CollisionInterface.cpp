@@ -23,9 +23,9 @@ CollisionInterface::~CollisionInterface() {
 void CollisionInterface::addSkeleton(kinematics::Skeleton* _skel) {
     int nNodes = _skel->getNumNodes();
     for (int i = 0; i < nNodes; i++) {
-        mCollisionChecker->addCollisionSkeletonNode(_skel->getNode(i));
-        RigidBody *rb = new RigidBody(_skel->getNode(i)->getCollisionShape(0)->getShapeType(), _skel->getNode(i)->getCollisionShape(0)->getDim());
-        mNodeMap[_skel->getNode(i)] = rb;
+        BodyNode *bn = _skel->getNode(i);
+        mCollisionChecker->addCollisionSkeletonNode(bn);
+        mNodeMap[_skel->getNode(i)] = NULL;
     }
 }
 
@@ -50,6 +50,8 @@ void CollisionInterface::updateBodyNodes() {
     for (std::map<BodyNode*, RigidBody*>::iterator it = mNodeMap.begin(); it != mNodeMap.end(); ++it) {
         BodyNode *bn = it->first;
         RigidBody *rb = it->second;
+        if (rb == NULL)
+            continue;
         Matrix4d W;
         W.setIdentity();
         W.topLeftCorner(3, 3) = rb->mOrientation;
@@ -58,12 +60,10 @@ void CollisionInterface::updateBodyNodes() {
     }
 }
 
-
 void CollisionInterface::postProcess() {
     mContacts.clear();
     int numContacts = mCollisionChecker->getNumContacts();
     mContacts.resize(numContacts);
-    std::cout << numContacts << std::endl;
     for (int i = 0; i < numContacts; i++) {
         mContacts[i].point = mCollisionChecker->getContact(i).point;
         mContacts[i].normal = mCollisionChecker->getContact(i).normal;

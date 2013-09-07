@@ -327,7 +327,6 @@ namespace renderer {
             glEnable(GL_CULL_FACE);
     }
 
-
     // This function is taken from the examples coming with assimp
     void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
         unsigned int i;
@@ -362,6 +361,7 @@ namespace renderer {
                     default: face_mode = GL_POLYGON; break;
                 }
 
+                
                 glBegin(face_mode);
 
                 for(i = 0; i < face->mNumIndices; i++) {

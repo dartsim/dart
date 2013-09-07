@@ -1,7 +1,6 @@
 #include "MyWorld.h"
 #include "RigidBody.h"
 #include "CollisionInterface.h"
-#include <iostream>
 #include "kinematics/FileInfoSkel.hpp"
 #include "robotics/parser/dart_parser/DartLoader.h"
 #include "utils/Paths.h"
@@ -10,10 +9,10 @@
 using namespace Eigen;
 
 MyWorld::MyWorld() {
+    mFrame = 0;
     // Create a collision detector
     mCollisionDetector = new CollisionInterface();
 
-    mBladeAngle = 0.0;
     // Load a blender and a blade
     DartLoader dl;
     string blenderFileName(DART_DATA_PATH"urdf/cylinder.urdf");
@@ -22,6 +21,9 @@ MyWorld::MyWorld() {
 
     string bladeFileName(DART_DATA_PATH"urdf/blade.urdf");
     mBlade = dl.parseSkeleton(bladeFileName);
+    VectorXd pose = mBlade->getPose();
+    pose[1] = -0.3;
+    mBlade->setPose(pose, true, false);
     mCollisionDetector->addSkeleton(mBlade);
 
     // Add rigid bodies
@@ -56,13 +58,10 @@ void MyWorld::simulate() {
 
     // Compute colliding points
     mCollisionDetector->checkCollision();
-    int nContacts = mCollisionDetector->getNumContacts();
-    //    std::cout << nContacts << " contact points are found" << std::endl;
-    for (int i = 0; i < nContacts; i++) 
-        std::cout << mCollisionDetector->getContact(i).point << std::endl;
 
-    // advance the blade angle
-    mBladeAngle += 1.0;
-    if (mBladeAngle > 360.0)
-        mBladeAngle = 0.0;
+    VectorXd pose = mBlade->getPose();
+    pose[4] += 0.01;
+    if (pose[4] > 2 * 3.14)
+        pose[4] = 0.0;
+    mBlade->setPose(pose, true, false);
 }

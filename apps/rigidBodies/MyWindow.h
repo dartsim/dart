@@ -14,10 +14,12 @@ class MyWindow : public yui::Win3D {
             mBackground[3] = 1.0;
 		
             mPlaying = false;
+            mSimulating = false;
+            mPlayFrame = 0;
+            mShowMarkers = true;
             
             mPersp = 30.f;
             mTrans[1] = 0.f;
-            mFrame = 0;
             mDisplayTimeout = 5;
         }
 
@@ -38,9 +40,13 @@ class MyWindow : public yui::Win3D {
 
 protected:
     bool mPlaying;
-    int mFrame;
-    
+    bool mSimulating;
+    bool mShowMarkers;
+    int mPlayFrame;
+    std::vector<Eigen::VectorXd> mBakedStates;
     MyWorld *mWorld;
+
+    void bake();
 };
 
 #endif

@@ -35,15 +35,20 @@ class MyWorld {
         return mBlade;
     }
     
-    double getBladeAngle() {
-        return mBladeAngle;
+    
+    CollisionInterface* getCollisionDetector() {
+        return mCollisionDetector;
+    }
+
+    int getSimFrames() const { 
+        return mFrame; 
     }
 
  protected:
+    int mFrame;
     std::vector<RigidBody*> mRigidBodies;
     CollisionInterface* mCollisionDetector;
     
-    double mBladeAngle;
     kinematics::Skeleton* mBlender;
     kinematics::Skeleton* mBlade;
 };
