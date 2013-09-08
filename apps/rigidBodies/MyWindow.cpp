@@ -37,7 +37,7 @@ void MyWindow::draw() {
                 int nContact = (mBakedStates[mPlayFrame].size() - 1 - sumDofs) / 6;
                 for (int i = 0; i < nContact; i++) {
                     Vector3d v = mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
-                    Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+                    Vector3d n = mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 1.0;
                     glBegin(GL_LINES);
                     glVertex3f(v[0], v[1], v[2]);
                     glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);
@@ -57,7 +57,7 @@ void MyWindow::draw() {
         if (mShowMarkers) {
             for (int k = 0; k < mWorld->getCollisionDetector()->getNumContacts(); k++) {
                 Vector3d  v = mWorld->getCollisionDetector()->getContact(k).point;
-                Vector3d n = mWorld->getCollisionDetector()->getContact(k).normal / 10.0;
+                Vector3d n = mWorld->getCollisionDetector()->getContact(k).normal / 1.0;
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);
                 glVertex3f(v[0] + n[0], v[1] + n[1], v[2] + n[2]);

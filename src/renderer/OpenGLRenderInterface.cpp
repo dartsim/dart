@@ -342,13 +342,18 @@ namespace renderer {
         for (; n < nd->mNumMeshes; ++n) {
             const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
-            applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
+            //            applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
             if(mesh->mNormals == NULL) {
                 glDisable(GL_LIGHTING);
             } else {
                 glEnable(GL_LIGHTING);
             }
+
+        glDisable(GL_LIGHTING);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glEnable(GL_BLEND); //Enable blending.
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //Set blending function.
 
             for (t = 0; t < mesh->mNumFaces; ++t) {
                 const struct aiFace* face = &mesh->mFaces[t];
@@ -363,12 +368,12 @@ namespace renderer {
 
                 
                 glBegin(face_mode);
-
                 for(i = 0; i < face->mNumIndices; i++) {
                     int index = face->mIndices[i];
                     if(mesh->mColors[0] != NULL)
                         glColor4fv((GLfloat*)&mesh->mColors[0][index]);
-                    if(mesh->mNormals != NULL)
+                        
+                    if(mesh->mNormals != NULL) 
                         glNormal3fv(&mesh->mNormals[index].x);
                     glVertex3fv(&mesh->mVertices[index].x);
                 }

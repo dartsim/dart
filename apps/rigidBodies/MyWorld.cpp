@@ -13,6 +13,18 @@ MyWorld::MyWorld() {
     // Create a collision detector
     mCollisionDetector = new CollisionInterface();
 
+
+    // Add rigid bodies
+    RigidBody *rb1 = new RigidBody(kinematics::Shape::P_BOX, Vector3d(0.1, 0.1, 0.1));
+    mCollisionDetector->addRigidBody(rb1);
+    mRigidBodies.push_back(rb1);
+    
+    RigidBody *rb2 = new RigidBody(kinematics::Shape::P_BOX, Vector3d(0.1, 0.2, 0.1));
+    mCollisionDetector->addRigidBody(rb2);
+    rb2->mPosition[0] = 0.1;
+    rb2->mColor = Vector4d(0.2, 0.2, 0.8, 1.0); // Blue
+    mRigidBodies.push_back(rb2);
+
     // Load a blender and a blade
     DartLoader dl;
     string blenderFileName(DART_DATA_PATH"urdf/cylinder.urdf");
@@ -25,17 +37,6 @@ MyWorld::MyWorld() {
     pose[1] = -0.3;
     mBlade->setPose(pose, true, false);
     mCollisionDetector->addSkeleton(mBlade);
-
-    // Add rigid bodies
-    RigidBody *rb1 = new RigidBody(kinematics::Shape::P_BOX, Vector3d(0.1, 0.1, 0.1));
-    mCollisionDetector->addRigidBody(rb1);
-    mRigidBodies.push_back(rb1);
-    
-    RigidBody *rb2 = new RigidBody(kinematics::Shape::P_BOX, Vector3d(0.1, 0.2, 0.1));
-    mCollisionDetector->addRigidBody(rb2);
-    rb2->mPosition[0] = 0.1;
-    rb2->mColor = Vector4d(0.2, 0.2, 0.8, 1.0); // Blue
-    mRigidBodies.push_back(rb2);
     
 }
 

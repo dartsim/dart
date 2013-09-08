@@ -7,6 +7,7 @@ foreach(APPDIR
         snowcube
         tinkertoy
         rigidBodies
+        freethrow
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
