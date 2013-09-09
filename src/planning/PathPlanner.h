@@ -12,10 +12,12 @@
 #include <limits>
 #include <list>
 #include <vector>
+#include "dynamics/Skeleton.h"
 #include "simulation/World.h"
 #include "RRT.h"
 #include <cstdio>
 
+namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
@@ -50,7 +52,7 @@ public:
   ~PathPlanner() {}
 
   /// Plan a path from a single start configuration to a single goal
-  bool planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const Eigen::VectorXd &start,
+  bool planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs, const Eigen::VectorXd &start,
       const Eigen::VectorXd &goal, std::list<Eigen::VectorXd> &path) {
     std::vector<Eigen::VectorXd> startVector, goalVector;
     startVector.push_back(start);
@@ -59,13 +61,13 @@ public:
   }
 
   /// Plan a path from a _set_ of start configurations to a _set_ of goals
-  bool planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start,
+  bool planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start,
     const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
 
 private:
 
   /// Performs a unidirectional RRT with the given options.
-  bool planSingleTreeRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
+  bool planSingleTreeRrt(dynamics::Skeleton* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal,
     std::list<Eigen::VectorXd> &path);
 
@@ -75,14 +77,14 @@ private:
   /// configurations whereas here, first, start rrt extends towards a random node and creates
   /// some node N. Afterwards, the second rrt extends towards _the node N_ and they continue
   /// swapping roles.
-  bool planBidirectionalRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
+  bool planBidirectionalRrt(dynamics::Skeleton* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path);
 };
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planPath(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -137,7 +139,7 @@ bool PathPlanner<R>::planPath(dynamics::SkeletonDynamics* robot, const std::vect
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planSingleTreeRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planSingleTreeRrt(dynamics::Skeleton* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const Eigen::VectorXd &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -182,7 +184,7 @@ bool PathPlanner<R>::planSingleTreeRrt(dynamics::SkeletonDynamics* robot, const 
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planBidirectionalRrt(dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::vector<int> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -251,4 +253,6 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::SkeletonDynamics* robot, con
   return false;
 }
 
-}  //< End of namespace
+} // namespace planning
+} // namespace dart
+

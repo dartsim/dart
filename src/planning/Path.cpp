@@ -46,7 +46,9 @@
 using namespace std;
 using namespace Eigen;
 
+namespace dart {
 namespace planning {
+
 class LinearPathSegment : public PathSegment
 {
 public:
@@ -294,4 +296,6 @@ double Path::getNextSwitchingPoint(double s, bool &discontinuity) const {
 list<pair<double, bool> > Path::getSwitchingPoints() const {
 	return switchingPoints;
 }
-}
+
+} // namespace planning
+} // namespace dart

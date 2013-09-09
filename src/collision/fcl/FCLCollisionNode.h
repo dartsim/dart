@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_CONLLISION_NODE_H
-#define COLLISION_FCL_CONLLISION_NODE_H
+#ifndef DART_COLLISION_FCL_CONLLISION_NODE_H
+#define DART_COLLISION_FCL_CONLLISION_NODE_H
 
 #include <Eigen/Dense>
 #include <fcl/collision.h>
@@ -44,7 +44,11 @@
 
 #include "collision/CollisionNode.h"
 
-namespace kinematics { class BodyNode; }
+namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}
 
 namespace collision {
 
@@ -53,20 +57,16 @@ class FCLCollisionNode : public CollisionNode
 {
 public:
     /// @brief
-    FCLCollisionNode(kinematics::BodyNode* _bodyNode);
+    FCLCollisionNode(dynamics::BodyNode* _bodyNode);
 
     /// @brief
     virtual ~FCLCollisionNode();
 
     /// @brief
-    int getNumCollisionGeometries() const {
-        return mCollisionGeometries.size();
-    }
+    int getNumCollisionGeometries() const;
 
     /// @brief
-    fcl::CollisionGeometry* getCollisionGeometry(int _idx) const {
-        return mCollisionGeometries[_idx];
-    }
+    fcl::CollisionGeometry* getCollisionGeometry(int _idx) const;
 
     /// @brief
     fcl::Transform3f getFCLTransform(int _idx) const;
@@ -76,7 +76,7 @@ protected:
 private:
     /// @brief
     std::vector<fcl::CollisionGeometry*> mCollisionGeometries;
-    std::vector<kinematics::Shape*> mShapes;
+    std::vector<dynamics::Shape*> mShapes;
 };
 
 /// @brief
@@ -89,5 +89,6 @@ template<class BV>
 fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
 
 } // namespace collision
+} // namespace dart
 
-#endif // COLLISION_FCL2_CONLLISION_NODE_H
+#endif // #ifndef DART_COLLISION_FCL_CONLLISION_NODE_H

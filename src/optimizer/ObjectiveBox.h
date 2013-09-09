@@ -34,45 +34,47 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef OPTIMIZER_OBJECTIVE_BOX_H
-#define OPTIMIZER_OBJECTIVE_BOX_H
+#ifndef DART_OPTIMIZER_OBJECTIVE_BOX_H
+#define DART_OPTIMIZER_OBJECTIVE_BOX_H
 
 #include <vector>
 #include <Eigen/Dense>
 
+namespace dart {
 namespace optimizer {
 
-    class Constraint;
+class Constraint;
 
-    class ObjectiveBox {
-    public:
-        ObjectiveBox(int numDofs);
-        virtual ~ObjectiveBox();
-	
-        void add(Constraint *_newobj);
-        void clear();
-        int remove(Constraint *_obj);
-        int isInBox(Constraint *_obj);
+class ObjectiveBox {
+public:
+    ObjectiveBox(int numDofs);
+    virtual ~ObjectiveBox();
 
-        int getNumConstraints() const { return mObjectives.size(); }
-        Constraint * getConstraint(int index) const { return mObjectives[index]; }
-	
-        void evalObj();
-        void evalObjGrad();
-        void evalObjHess();
-	
-        //Must be called befob re using Constraints
-        void setNumDofs(int _numdofs);
-        void reallocateMem();
+    void add(Constraint *_newobj);
+    void clear();
+    int remove(Constraint *_obj);
+    int isInBox(Constraint *_obj);
 
-        int mNumDofs; //number of Model DOFs
-        std::vector<Constraint *> mObjectives;
-        double mObj;
-        std::vector<double> mObjGrad;
-        Eigen::MatrixXd mObjHess;
-    };
+    int getNumConstraints() const { return mObjectives.size(); }
+    Constraint * getConstraint(int index) const { return mObjectives[index]; }
+
+    void evalObj();
+    void evalObjGrad();
+    void evalObjHess();
+
+    //Must be called befob re using Constraints
+    void setNumDofs(int _numdofs);
+    void reallocateMem();
+
+    int mNumDofs; //number of Model DOFs
+    std::vector<Constraint *> mObjectives;
+    double mObj;
+    std::vector<double> mObjGrad;
+    Eigen::MatrixXd mObjHess;
+};
 
 } // namespace optimizer
+} // namespace dart
 
-#endif // #ifndef OPTIMIZER_OBJECTIVE_BOX_H
+#endif // #ifndef DART_OPTIMIZER_OBJECTIVE_BOX_H
 

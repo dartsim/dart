@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_MESH_COLLISION_DETECTOR_H
-#define COLLISION_FCL_MESH_COLLISION_DETECTOR_H
+#ifndef DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
+#define DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
 
 #include <vector>
 #include <map>
@@ -45,19 +45,19 @@
 #include "collision/CollisionDetector.h"
 #include "collision/fcl_mesh/tri_tri_intersection_test.h"
 
-namespace kinematics { class BodyNode; }
 namespace fcl { class CollisionResult; }
 
-namespace collision 
-{
+namespace dart {
+namespace dynamics { class BodyNode; }
+namespace collision {
 
 class FCLMESHCollisionNode;
 
 //class FCLContact : public Contact
 //{
 //public:
-//    kinematics::BodyNode *bd1;
-//    kinematics::BodyNode *bd2;
+//    dynamics::BodyNode *bd1;
+//    dynamics::BodyNode *bd2;
 //    CollisionSkeletonNode *collisionSkeletonNode1;
 //    CollisionSkeletonNode *collisionSkeletonNode2;
 //    int triID1;
@@ -78,7 +78,7 @@ public:
     /// @brief
     virtual ~FCLMESHCollisionDetector();
 
-    virtual CollisionNode* createCollisionNode(kinematics::BodyNode* _bodyNode);
+    virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
     // Documentation inherited
     virtual bool checkCollision(bool _checkAllCollisions, bool _calculateContactPoints);
@@ -103,7 +103,7 @@ inline bool Vec3fCmp(fcl::Vec3f& v1, fcl::Vec3f& v2)
         return v1[2]<v2[2];
 }
 
-
 } // namespace collision
+} // namespace dart
 
-#endif // COLLISION_FCL_COLLISION_DETECTOR_H
+#endif // #ifndef DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H

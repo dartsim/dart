@@ -1,23 +1,26 @@
 #include "Controller.h"
 
-#include "dynamics/SkeletonDynamics.h"
-#include "dynamics/ConstraintDynamics.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "kinematics/Dof.h"
-#include "kinematics/Shape.h"
-#include "math/UtilsMath.h"
+#include "math/Helpers.h"
+#include "dynamics/Skeleton.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/GenCoord.h"
+#include "dynamics/Shape.h"
+#include "constraint/ConstraintDynamics.h"
 #include "collision/CollisionDetector.h"
 
-using namespace kinematics;
-using namespace dynamics;
-using namespace dart_math;
+using namespace std;
+using namespace Eigen;
 
-Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_constraintHandle, double _t) {
+using namespace dart;
+using namespace dynamics;
+using namespace math;
+
+Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics* _constraintHandle, double _t) {
     mSkel = _skel;
     mConstraintHandle = _constraintHandle;
     mTimestep = _t;
     mFrame = 0;
-    int nDof = mSkel->getNumDofs();
+    int nDof = mSkel->getDOF();
     mKp = MatrixXd::Identity(nDof, nDof);
     mKd = MatrixXd::Identity(nDof, nDof);
     mConstrForces = VectorXd::Zero(nDof);
@@ -26,7 +29,7 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDy
     mDesiredDofs.resize(nDof);
     for (int i = 0; i < nDof; i++){
         mTorques[i] = 0.0;
-        mDesiredDofs[i] = mSkel->getDof(i)->getValue();
+        mDesiredDofs[i] = mSkel->getDof(i)->get_q();
     }
 
     // using SPD results in simple Kp coefficients
@@ -48,7 +51,7 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDy
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     // SPD tracking
-    int nDof = mSkel->getNumDofs();
+    int nDof = mSkel->getDOF();
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
     VectorXd d = -mKd * _dofVel;

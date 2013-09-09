@@ -1,31 +1,32 @@
 #include "Controller.h"
 
-#include "dynamics/SkeletonDynamics.h"
-#include "dynamics/ConstraintDynamics.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "kinematics/Dof.h"
-#include "kinematics/Shape.h"
-#include "math/UtilsMath.h"
+#include "math/Helpers.h"
+#include "dynamics/Skeleton.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/GenCoord.h"
+#include "dynamics/Shape.h"
+#include "constraint/ConstraintDynamics.h"
 #include "collision/CollisionDetector.h"
 
-using namespace kinematics;
+using namespace dart;
 using namespace dynamics;
-using namespace dart_math;
-Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_collisionHandle, double _t) {
+using namespace math;
+
+Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics* _collisionHandle, double _t) {
     mSkel = _skel;
     mCollisionHandle = _collisionHandle;
     mTimestep = _t;
     mFrame = 0;
-    int nDof = mSkel->getNumDofs();
-    mKp = MatrixXd::Identity(nDof, nDof);
-    mKd = MatrixXd::Identity(nDof, nDof);
-    mConstrForces = VectorXd::Zero(nDof);
+    int nDof = mSkel->getDOF();
+    mKp = Eigen::MatrixXd::Identity(nDof, nDof);
+    mKd = Eigen::MatrixXd::Identity(nDof, nDof);
+    mConstrForces = Eigen::VectorXd::Zero(nDof);
         
     mTorques.resize(nDof);
     mDesiredDofs.resize(nDof);
     for (int i = 0; i < nDof; i++){
         mTorques[i] = 0.0;
-        mDesiredDofs[i] = mSkel->getDof(i)->getValue();
+        mDesiredDofs[i] = mSkel->getGenCoord(i)->get_q();
     }
 
     // using SPD results in simple Kp coefficients
@@ -45,19 +46,20 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDy
     mPreOffset = 0.0;
 }
 
-void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
+void Controller::computeTorques(const Eigen::VectorXd& _dof,
+                                const Eigen::VectorXd& _dofVel) {
     // SPD tracking
-    int nDof = mSkel->getNumDofs();
-    MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
-    VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
-    VectorXd d = -mKd * _dofVel;
-    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
+    int nDof = mSkel->getDOF();
+    Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
+    Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
+    Eigen::VectorXd d = -mKd * _dofVel;
+    Eigen::VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
     mTorques = p + d - mKd * qddot * mTimestep;
     
     // ankle strategy for sagital plane
-    Vector3d com = mSkel->getWorldCOM();    
-    Vector3d cop = xformHom(mSkel->getNode("fullbody1_h_heel_left")->getWorldTransform(), Vector3d(0.05, 0, 0));
-    Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
+    Eigen::Vector3d com = mSkel->getWorldCOM();
+    Eigen::Vector3d cop = xformHom(mSkel->findBodyNode("h_heel_left")->getWorldTransform(), Eigen::Vector3d(0.05, 0, 0));
+    Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
     if (diff[0] < 0.1) {
         double offset = com[0] - cop[0];
         double k1 = 20.0;

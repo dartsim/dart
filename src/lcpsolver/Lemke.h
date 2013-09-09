@@ -35,13 +35,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_LCP_LEMKE_H
+#define DART_LCP_LEMKE_H
+
 #include "Eigen/Dense"
-using namespace Eigen;
-#include <vector>
-using namespace std;
 
-
+namespace dart {
 namespace lcpsolver {
-    int Lemke(const MatrixXd& _M, const VectorXd& _q, VectorXd& _z);
-    bool validate(const MatrixXd& _M, const VectorXd& _z, const VectorXd& _q);
-} //namespace lcpsolver
+
+int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd& _z);
+bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z, const Eigen::VectorXd& _q);
+
+} // namespace lcpsolver
+} // namespace dart
+
+#endif // #ifndef DART_LCP_LEMKE_H

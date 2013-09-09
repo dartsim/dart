@@ -35,21 +35,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RK4_INTEGRATOR_H
-#define RK4_INTEGRATOR_H
+#ifndef DART_INTEGRATION_RK4_INTEGRATOR_H
+#define DART_INTEGRATION_RK4_INTEGRATOR_H
 
 #include <Eigen/Dense>
-#include "Integrator.h"
+#include "integration/Integrator.h"
 
+namespace dart {
 namespace integration {
-    class RK4Integrator : public Integrator {
-    public:
-        RK4Integrator(){}
-        ~RK4Integrator(){}
-        void integrate(IntegrableSystem* system, double dt) const;
-    private:
-        mutable Eigen::VectorXd k1, k2, k3, k4;
-    };
-} // namespace integration
 
-#endif // RK4_INTEGRATOR_H
+/// @brief
+class RK4Integrator : public Integrator
+{
+public:
+    /// @brief
+    RK4Integrator() {}
+
+    /// @brief
+    virtual ~RK4Integrator() {}
+
+    // Documentation inherited.
+    virtual void integrate(IntegrableSystem* system, double dt) const;
+
+private:
+    /// @brief
+    mutable Eigen::VectorXd k1, k2, k3, k4;
+};
+
+} // namespace integration
+} // namespace dart
+
+#endif // #ifndef DART_INTEGRATION_RK4_INTEGRATOR_H

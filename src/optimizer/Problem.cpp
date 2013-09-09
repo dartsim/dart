@@ -38,59 +38,59 @@
 #include "Problem.h"
 
 #include <iostream>
-using namespace std;
 
 #include "Var.h"
 #include "Constraint.h"
 #include "ConstraintBox.h"
 #include "ObjectiveBox.h"
 
-
+namespace dart {
 namespace optimizer {
 
-    Problem::Problem()
-        : mConBox(NULL), mObjBox(NULL) {
-        mVariables.clear();
-    }
-    
-    Problem::~Problem() {
-        if (mConBox) {
-            delete mConBox;
-        }
+Problem::Problem()
+    : mConBox(NULL), mObjBox(NULL) {
+    mVariables.clear();
+}
 
-        if (mObjBox) {
-            delete mObjBox;
-        }
-
-        for (unsigned int i = 0; i < mVariables.size(); ++i) {
-            delete mVariables[i];
-        }
-        mVariables.clear();
+Problem::~Problem() {
+    if (mConBox) {
+        delete mConBox;
     }
 
-    void Problem::update(double* coefs) {
+    if (mObjBox) {
+        delete mObjBox;
     }
 
-    void Problem::addVariable(double value, double lower, double upper) {
-        Var* var = new Var(value, lower, upper);
-        mVariables.push_back(var);
+    for (unsigned int i = 0; i < mVariables.size(); ++i) {
+        delete mVariables[i];
     }
-    
-    void Problem::createBoxes() {
-        mConBox = new ConstraintBox(this->mVariables.size());
-        mObjBox = new ObjectiveBox(this->mVariables.size());
-    }
-    
-    ConstraintBox* Problem::conBox() const {
-        return mConBox;
-    }
+    mVariables.clear();
+}
 
-    ObjectiveBox* Problem::objBox() const {
-        return mObjBox;
-    }
+void Problem::update(double* coefs) {
+}
 
-    std::vector<Var *>& Problem::vars() {
-        return mVariables;
-    }
+void Problem::addVariable(double value, double lower, double upper) {
+    Var* var = new Var(value, lower, upper);
+    mVariables.push_back(var);
+}
+
+void Problem::createBoxes() {
+    mConBox = new ConstraintBox(this->mVariables.size());
+    mObjBox = new ObjectiveBox(this->mVariables.size());
+}
+
+ConstraintBox* Problem::conBox() const {
+    return mConBox;
+}
+
+ObjectiveBox* Problem::objBox() const {
+    return mObjBox;
+}
+
+std::vector<Var *>& Problem::vars() {
+    return mVariables;
+}
 
 } // namespace optimizer
+} // namespace dart

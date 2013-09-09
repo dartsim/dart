@@ -6,7 +6,7 @@
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- * 
+ *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -17,9 +17,9 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine 
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights 
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow 
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
  *     Garage, Inc. All rights reserved.), which were released under
  *     the same BSD license as below
  *
@@ -38,62 +38,73 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _SIMWINDOW_
-#define _SIMWINDOW_
+#ifndef DART_SIMULATION_SIMWINDOW_H
+#define DART_SIMULATION_SIMWINDOW_H
 
 #include "yui/Win3D.h"
-#include "World.h"
+#include "simulation/World.h"
 
-namespace simulation
+namespace dart {
+namespace simulation {
+
+class World;
+
+/// @brief
+class SimWindow : public yui::Win3D
 {
-    class World;
+public:
+    /// @brief
+    SimWindow();
+
+    /// @brief
+    virtual ~SimWindow();
+
+    /// @brief
+    virtual void timeStepping() { mWorld->step(); }
+
+    /// @brief
+    virtual void drawSkels();
+
+    /// @brief
+    virtual void displayTimer(int _val);
+
+    /// @brief
+    virtual void draw();
+
+    /// @brief
+    virtual void keyboard(unsigned char key, int x, int y);
+
+    /// @brief
+    void setWorld(simulation::World *_world) { mWorld = _world; }
+
+    //            inline bool isSimulating() const { return mSimulating; }
+
+    //            inline void setSimulatingFlag(int _flag) { mSimulating = _flag; }
+
+protected:
+    /// @brief
+    World* mWorld;
+
+    /// @brief
+    int mPlayFrame;
+
+    /// @brief
+    bool mPlay;
+
+    /// @brief
+    bool mSimulating;
+
+    /// @brief
+    bool mShowMarkers;
+
+    /// @brief
+    std::vector<Eigen::VectorXd> mBakedStates;
+
+    /// @brief
+    void bake();
+};
+
 } // namespace simulation
+} // namespace dart
 
-namespace simulation
-{
-    class SimWindow : public yui::Win3D
-        {
-        public:
-        SimWindow(): Win3D()
-                {
-                    mBackground[0] = 1.0;
-                    mBackground[1] = 1.0;
-                    mBackground[2] = 1.0;
-                    mBackground[3] = 1.0;
-		
-                    mPlay = false;
-                    mSimulating = false;
-                    mPlayFrame = 0;
-                    mShowMarkers = true;
-                    mPersp = 45.f;
-                    mTrans[1] = 300.f;
-                }
-            virtual void timeStepping() 
-            {
-                mWorld->step();
-            }
-            virtual void drawSkels();
-            virtual void displayTimer(int _val);
-            virtual void draw();
-            virtual void keyboard(unsigned char key, int x, int y);
-            void setWorld(simulation::World *_world)
-            {
-                mWorld = _world;
-            }
-
-            //            inline bool isSimulating() const { return mSimulating; }
-
-            //            inline void setSimulatingFlag(int _flag) { mSimulating = _flag; }
-
-        protected:    
-            simulation::World* mWorld;
-            int mPlayFrame;
-            bool mPlay;
-            bool mSimulating;
-            bool mShowMarkers;
-            std::vector<Eigen::VectorXd> mBakedStates;
-
-            void bake();
-        };
-} // namespace simulation
-#endif // #ifndef SIMULATION_SIMWINDOW
+#endif // #ifndef DART_SIMULATION_SIMWINDOW_H

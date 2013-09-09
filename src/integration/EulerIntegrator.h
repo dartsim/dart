@@ -35,19 +35,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EULER_INTEGRATOR_H
-#define EULER_INTEGRATOR_H
+#ifndef DART_INTEGRATION_EULER_INTEGRATOR_H
+#define DART_INTEGRATION_EULER_INTEGRATOR_H
 
 #include <Eigen/Dense>
-#include "Integrator.h"
+#include "integration/Integrator.h"
 
+namespace dart {
 namespace integration {
-    class EulerIntegrator : public Integrator {
-    public:
-        EulerIntegrator(){}
-        ~EulerIntegrator(){}
-        void integrate(IntegrableSystem* system, double dt) const;
-    };
-} // namespace integration
 
-#endif // EULER_INTEGRATOR_H
+/// @brief
+class EulerIntegrator : public Integrator
+{
+public:
+    /// @brief Constructor.
+    EulerIntegrator();
+
+    /// @brief Destructor.
+    virtual ~EulerIntegrator();
+
+    // Documentation inherited.
+    virtual void integrate(IntegrableSystem* system, double dt) const;
+};
+
+} // namespace integration
+} // namespace dart
+
+#endif // #ifndef DART_INTEGRATION_EULER_INTEGRATOR_H

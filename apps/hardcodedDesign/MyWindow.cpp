@@ -8,7 +8,7 @@
 #include "MyWindow.h"
 
 using namespace Eigen;
-using namespace kinematics;
+using namespace dart;
 using namespace dynamics;
 
 void MyWindow::draw() {

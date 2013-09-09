@@ -1,18 +1,26 @@
 #include "MyWindow.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/ContactDynamics.h"
-#include "kinematics/Dof.h"
-#include "collision/CollisionDetector.h"
-#include "math/UtilsMath.h"
-#include "utils/Timer.h"
-#include "yui/GLFuncs.h"
-#include <stdio.h>
-#include "dynamics/PointConstraint.h"
 
+#include <stdio.h>
+
+#include "common/Timer.h"
+#include "math/Helpers.h"
+#include "collision/CollisionDetector.h"
+#include "constraint/ConstraintDynamics.h"
+#include "constraint/PointConstraint.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/GenCoord.h"
+#include "yui/GLFuncs.h"
+
+using namespace std;
+using namespace Eigen;
+
+using namespace dart;
+using namespace math;
 using namespace dynamics;
+using namespace constraint;
 using namespace yui;
-using namespace utils;
-using namespace dart_math;
+
+
 
 void MyWindow::initDyn()
 {
@@ -20,8 +28,8 @@ void MyWindow::initDyn()
     mDofVels.resize(mSkels.size());
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
-        mDofs[i].resize(mSkels[i]->getNumDofs());
-        mDofVels[i].resize(mSkels[i]->getNumDofs());
+        mDofs[i].resize(mSkels[i]->getDOF());
+        mDofVels[i].resize(mSkels[i]->getDOF());
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
@@ -42,70 +50,24 @@ void MyWindow::initDyn()
         mSkels[i]->initDynamics();
         mSkels[i]->setPose(mDofs[i], false, false);
         // compute dynamics here because computation of control force at first iteration needs to access mass matrix
-        mSkels[i]->computeDynamics(mGravity, mDofVels[i], false);
+        mSkels[i]->set_dq(mDofVels[i]);
+        mSkels[i]->computeEquationsOfMotionID(mGravity);
     }
     mSkels[0]->setImmobileState(true);
 
     mController = new Controller(mSkels[1], mConstraintHandle, mTimeStep);
      
-    for (int i = 0; i < mSkels[1]->getNumDofs(); i++)
-        mController->setDesiredDof(i, mController->getSkel()->getDof(i)->getValue());
+    for (int i = 0; i < mSkels[1]->getDOF(); i++)
+        mController->setDesiredDof(i, mController->getSkel()->getDof(i)->get_q());
 
     // initialize constraint on the hand
     mConstraintHandle = new ConstraintDynamics(mSkels, mTimeStep);
-    BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_left");
+    BodyNode *bd = mSkels[1]->findBodyNode("fullbody1_h_hand_left");
     PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 1);
     mConstraintHandle->addConstraint(point1);
-    bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_right");
+    bd = mSkels[1]->findBodyNode("fullbody1_h_hand_right");
     PointConstraint *point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 1);
     mConstraintHandle->addConstraint(point2);
-}
-
-VectorXd MyWindow::getState() {
-    VectorXd state(mIndices.back() * 2);    
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        state.segment(start, size) = mDofs[i];
-        state.segment(start + size, size) = mDofVels[i];
-    }
-    return state;
-}
-
-VectorXd MyWindow::evalDeriv() {
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState()) {
-            mSkels[i]->setPose(mDofs[i], true, false);
-        } else {
-            mSkels[i]->setPose(mDofs[i], false, true);
-            mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
-        }
-    }
-    mConstraintHandle->computeConstraintForces();
-    mController->setConstrForces(mConstraintHandle->getTotalConstraintForce(1));
-
-    VectorXd deriv = VectorXd::Zero(mIndices.back() * 2);    
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
-            continue;
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-
-        VectorXd qddot = mSkels[i]->getInvMassMatrix() * (-mSkels[i]->getCombinedVector() + mSkels[i]->getExternalForces() + mConstraintHandle->getTotalConstraintForce(i) + mSkels[i]->getInternalForces());
-        mSkels[i]->clampRotation(mDofs[i], mDofVels[i]);
-        deriv.segment(start, size) = mDofVels[i] + (qddot * mTimeStep); // semi-implicit
-        deriv.segment(start + size, size) = qddot;
-    }
-    return deriv;
-}
-
-void MyWindow::setState(const VectorXd & newState) {
-    for (unsigned int i = 0; i < mSkels.size(); i++) {
-        int start = mIndices[i] * 2;
-        int size = mDofs[i].size();
-        mDofs[i] = newState.segment(start, size);
-        mDofVels[i] = newState.segment(start + size, size);
-    }
 }
 
 void MyWindow::displayTimer(int _val)
@@ -117,10 +79,10 @@ void MyWindow::displayTimer(int _val)
             mPlayFrame = 0;
         glutPostRedisplay();
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);        
-    }else if (mSim) {
+    }else if (mSimulating) {
         //        static Timer tSim("Simulation");
         for (int i = 0; i < numIter; i++) {
-            static_cast<BodyNodeDynamics*>(mSkels[1]->getNode("fullbody1_root"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+            mSkels[1]->findBodyNode("fullbody1_root")->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
             //  tSim.startTimer();
             mController->computeTorques(mDofs[1], mDofVels[1]);
             mSkels[1]->setInternalForces(mController->getTorques());
@@ -213,7 +175,7 @@ void MyWindow::draw()
 
     // draw arrow
     if (mImpulseDuration > 0) {
-        Vector3d poa = xformHom(mSkels[1]->getNode("fullbody1_root")->getWorldTransform(), Vector3d(0.0, 0.0, 0.0));
+        Vector3d poa = xformHom(mSkels[1]->findBodyNode("fullbody1_root")->getWorldTransform(), Vector3d(0.0, 0.0, 0.0));
         Vector3d start = poa - mForce / 10.0;
         double len = mForce.norm() / 10.0;
         drawArrow3D(start, mForce, len, 0.05, 0.1);
@@ -254,7 +216,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
                     mSkels[i]->setPose(mDofs[i], true, false);
                 } else {
                     mSkels[i]->setPose(mDofs[i], false, true);
-                    mSkels[i]->computeDynamics(mGravity, mDofVels[i], true);
+                    mSkels[i]->set_dq(mDofVels[i]);
+                    mSkels[i]->computeEquationsOfMotionID(mGravity);
                 }
             }
             mConstraintHandle->computeConstraintForces();
@@ -317,19 +280,3 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     }
     glutPostRedisplay();
 }
-
-void MyWindow::bake()
-{
-    int nContact = mConstraintHandle->getCollisionChecker()->getNumContacts();
-    VectorXd state(mIndices.back() + 6 * nContact);
-    for (unsigned int i = 0; i < mSkels.size(); i++)
-        state.segment(mIndices[i], mDofs[i].size()) = mDofs[i];
-    for (int i = 0; i < nContact; i++) {
-        int begin = mIndices.back() + i * 6;
-        state.segment(begin, 3) = mConstraintHandle->getCollisionChecker()->getContact(i).point;
-        state.segment(begin + 3, 3) = mConstraintHandle->getCollisionChecker()->getContact(i).force;
-    }
-
-    mBakedStates.push_back(state);
-}
-

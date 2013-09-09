@@ -42,12 +42,12 @@
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
-#include "kinematics/ShapeMesh.h"
-#include "kinematics/ShapeEllipsoid.h"
-#include "kinematics/ShapeCylinder.h"
-#include "kinematics/BodyNode.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/Shape.h"
+#include "dynamics/MeshShape.h"
+#include "dynamics/EllipsoidShape.h"
+#include "dynamics/CylinderShape.h"
+#include "dynamics/BodyNode.h"
 
 #include "renderer/LoadOpengl.h"
 
@@ -55,22 +55,21 @@
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 #include "collision/fcl_mesh/FCLMESHCollisionNode.h"
 
-namespace collision
-{
+namespace dart {
+namespace collision {
 
-FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
+FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
     : CollisionNode(_bodyNode)
 {
     for(int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
 
-        kinematics::Shape *shape = _bodyNode->getCollisionShape(i);
-        fcl::Transform3f shapeTransform = getFclTransform(shape->getTransform().matrix());
+        dynamics::Shape *shape = _bodyNode->getCollisionShape(i);
+        fcl::Transform3f shapeTransform = getFclTransform(shape->getTransform());
 
         switch (shape->getShapeType()) {
-            case kinematics::Shape::P_ELLIPSOID:
+            case dynamics::Shape::P_ELLIPSOID:
             {
-                kinematics::ShapeEllipsoid* ellipsoid
-                        = dynamic_cast<kinematics::ShapeEllipsoid*>(shape);
+                dynamics::EllipsoidShape* ellipsoid = dynamic_cast<dynamics::EllipsoidShape*>(shape);
 
                 if (ellipsoid->isSphere())
                 {
@@ -83,12 +82,12 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
                 }
                 break;
             }
-            case kinematics::Shape::P_BOX:
+            case dynamics::Shape::P_BOX:
                 mMeshes.push_back(createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shapeTransform));
                 break;
-            case kinematics::Shape::P_CYLINDER:
+            case dynamics::Shape::P_CYLINDER:
             {
-                kinematics::ShapeCylinder *cylinder = dynamic_cast<kinematics::ShapeCylinder *>(shape);
+                dynamics::CylinderShape *cylinder = dynamic_cast<dynamics::CylinderShape *>(shape);
                 if(cylinder) {
                     double radius = cylinder->getRadius();
                     double height = cylinder->getHeight();
@@ -96,9 +95,9 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode)
                 }
                 break;
             }
-            case kinematics::Shape::P_MESH:
+            case dynamics::Shape::P_MESH:
             {
-                kinematics::ShapeMesh *shapeMesh = dynamic_cast<kinematics::ShapeMesh *>(shape);
+                dynamics::MeshShape *shapeMesh = dynamic_cast<dynamics::MeshShape *>(shape);
                 if(shapeMesh) {
                     mMeshes.push_back(createMesh<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shapeMesh->getMesh(), shapeTransform));
                 }
@@ -232,29 +231,6 @@ bool FCLMESHCollisionNode::checkCollision(
                 _contactPoints->push_back(unfilteredContactPoints[k]);
             }
         }
-
-        ////////////////////////////////////////////////////////////////////////
-        // TODO: SPECIAL TEST CODE FOR GAZEBO SUPPORT BRANCH !!!
-        ////////////////////////////////////////////////////////////////////////
-        kinematics::Shape* collShape = mBodyNode->getCollisionShape(i);
-        if (!_contactPoints->empty()
-                && collShape->getShapeType() == kinematics::Shape::P_ELLIPSOID)
-        {
-            //            ContactPoint everageContactPoint;
-            //            unsigned int numContactPoint = _contactPoints->size();
-            //            for (unsigned int i = 0; i < numContactPoint; ++i)
-            //            {
-            //                everageContactPoint.point += _contactPoints->at(i).point;
-            //                everageContactPoint.normal += _contactPoints->at(i).normal;
-            //            }
-            //            everageContactPoint.point /= numContactPoint;
-            //            everageContactPoint.normal.normalize();
-
-            //            _contactPoints->clear();
-            //            _contactPoints->push_back(everageContactPoint);
-            //_contactPoints->resize();
-        }
-        ////////////////////////////////////////////////////////////////////////
     }
 
     return collision;
@@ -265,7 +241,7 @@ void FCLMESHCollisionNode::evalRT() {
     mFclWorldTrans = getFclTransform(mWorldTrans);
 }
 
-fcl::Transform3f FCLMESHCollisionNode::getFclTransform(const Eigen::Matrix4d& _m) {
+fcl::Transform3f FCLMESHCollisionNode::getFclTransform(const Eigen::Isometry3d& _m) {
     return fcl::Transform3f(fcl::Matrix3f(_m(0,0), _m(0,1), _m(0,2),
                                           _m(1,0), _m(1,1), _m(1,2),
                                           _m(2,0), _m(2,1), _m(2,2)),
@@ -347,6 +323,5 @@ void FCLMESHCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
     glPopMatrix();
 }
 
-
-
 } // namespace collision
+} // namespace dart

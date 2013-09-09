@@ -1,20 +1,24 @@
 #include "MyWindow.h"
-#include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
+
 #include "utils/Paths.h"
+#include "dynamics/Skeleton.h"
+#include "simulation/World.h"
+#include "utils/SkelParser.h"
 
 using namespace Eigen;
 using namespace std;
-using namespace kinematics;
+
+using namespace dart;
 using namespace dynamics;
 
 int main(int argc, char* argv[])
 {
-    FileInfoSkel<SkeletonDynamics> model, model2;
-    model.loadFile(DART_DATA_PATH"/skel/ground1.skel", SKEL);
-    model2.loadFile(DART_DATA_PATH"/skel/fullbody1.skel", SKEL);
+    dart::simulation::World* myWorld
+            = dart::utils::readSkelFile(DART_DATA_PATH"skel/fullbody1.skel");
+    assert(myWorld != NULL);
 
-    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), NULL);
+    MyWindow window(myWorld->getSkeleton(0), myWorld->getSkeleton(1));
+    //window.setWorld(myWorld);
 
     cout << "space bar: simulation on/off" << endl;
     cout << "'p': playback/stop" << endl;

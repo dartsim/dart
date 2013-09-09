@@ -35,17 +35,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef YUI_GLFUNCS_H
-#define YUI_GLFUNCS_H
+#ifndef DART_YUI_GLFUNCS_H
+#define DART_YUI_GLFUNCS_H
 
 #include <Eigen/Eigen>
 //#include "FreeImage.h"
 
+namespace dart {
 namespace yui {
-    void drawStringOnScreen(float x, float y, const std::string& s);
-    void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
-    void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec, double thickness);
-    void drawProgressBar(int currFrame, int totalFrame);
+
+void drawStringOnScreen(float x, float y, const std::string& s);
+void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
+void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec, double thickness);
+void drawProgressBar(int currFrame, int totalFrame);
 
 /*
     BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname, bool _antialias);
@@ -53,6 +55,8 @@ namespace yui {
     bool screenShot(int w, int h, char *fname, bool _antialias=false);
 */
 // todo freeimage
-} // namespace yui
 
-#endif  //YUI_GLFUNCS_H
+} // namespace yui
+} // namespace dart
+
+#endif  // #ifndef DART_YUI_GLFUNCS_H

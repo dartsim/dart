@@ -36,17 +36,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kinematics/Shape.h"
-#include "kinematics/BodyNode.h"
-#include "kinematics/Skeleton.h"
+#include "dynamics/Shape.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/Skeleton.h"
 
 #include "collision/fcl/FCLCollisionNode.h"
 #include "collision/fcl/FCLCollisionDetector.h"
 
-using namespace kinematics;
-
-namespace collision
-{
+namespace dart {
+namespace collision {
 
 FCLCollisionDetector::FCLCollisionDetector()
     : CollisionDetector()
@@ -58,7 +56,7 @@ FCLCollisionDetector::~FCLCollisionDetector()
 }
 
 CollisionNode* FCLCollisionDetector::createCollisionNode(
-        kinematics::BodyNode* _bodyNode)
+        dynamics::BodyNode* _bodyNode)
 {
     return new FCLCollisionNode(_bodyNode);
 }
@@ -82,7 +80,7 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 
     for(int i = 0; i < mCollisionNodes.size(); i++)
     for(int j = i + 1; j < mCollisionNodes.size(); j++)
-    {        
+    {
         result.clear();
         FCLCollisionNode* collNode1 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
         FCLCollisionNode* collNode2 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[j]);
@@ -123,18 +121,24 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
 
                 mContacts.push_back(contactPair);
             }
-            
+
             std::vector<bool> markForDeletion(numContacts, false);
-            for (int m = 0; m < numContacts; m++) {
-                for (int n = m + 1; n < numContacts; n++) {
-                    Vector3d diff = mContacts[currContactNum + m].point - mContacts[currContactNum + n].point;
-                    if (diff.dot(diff) < 1e-6) {
+            for (int m = 0; m < numContacts; m++)
+            {
+                for (int n = m + 1; n < numContacts; n++)
+                {
+                    Eigen::Vector3d diff =
+                            mContacts[currContactNum + m].point -
+                            mContacts[currContactNum + n].point;
+                    if (diff.dot(diff) < 1e-6)
+                    {
                         markForDeletion[m] = true;
                         break;
                     }
                 }
             }
-            for (int m = numContacts - 1; m >= 0; m--) {
+            for (int m = numContacts - 1; m >= 0; m--)
+            {
                 if (markForDeletion[m])
                     mContacts.erase(mContacts.begin() + currContactNum + m);
             }
@@ -159,7 +163,8 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
     for (int i = 0; i < numCollNodes; ++i)
     {
         FCLCollisionNode* collisionNode = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
-        for(int j = 0; j < collisionNode->getNumCollisionGeometries(); j++) {
+        for(int j = 0; j < collisionNode->getNumCollisionGeometries(); j++)
+        {
             if (collisionNode->getCollisionGeometry(j) == _fclCollGeom)
                 return mCollisionNodes[i];
         }
@@ -168,3 +173,4 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
 }
 
 } // namespace collision
+} // namespace dart

@@ -37,92 +37,91 @@
 
 #include "ObjectiveBox.h"
 #include "Constraint.h"
-using namespace Eigen;
 #include <iostream>
-using namespace std;
 
+namespace dart {
 namespace optimizer {
 
-    ObjectiveBox::ObjectiveBox(int numDofs) {
-        setNumDofs(numDofs);
-        mObj = 0.0;
-    }
-    
-    ObjectiveBox::~ObjectiveBox() {
-        clear();
-    }
+ObjectiveBox::ObjectiveBox(int numDofs) {
+    setNumDofs(numDofs);
+    mObj = 0.0;
+}
 
-    void ObjectiveBox::add(Constraint *newObjective) {
-        mObjectives.push_back(newObjective);
-    }
+ObjectiveBox::~ObjectiveBox() {
+    clear();
+}
 
-    void ObjectiveBox::clear() {
-        mObjectives.clear();
-    }
+void ObjectiveBox::add(Constraint *newObjective) {
+    mObjectives.push_back(newObjective);
+}
 
-    int ObjectiveBox::remove(Constraint *obj) {
-        int index = -1;
-        for(unsigned int i = 0; i < mObjectives.size(); i++){
-            if(mObjectives[i] == obj){
-                index = i;
-                break;
-            }
+void ObjectiveBox::clear() {
+    mObjectives.clear();
+}
+
+int ObjectiveBox::remove(Constraint *obj) {
+    int index = -1;
+    for(unsigned int i = 0; i < mObjectives.size(); i++){
+        if(mObjectives[i] == obj){
+            index = i;
+            break;
         }
+    }
 
-        if(index == -1) {
-            return index;
-        }
-
-        //deallocate memory for Constraint
-        mObjectives.erase(mObjectives.begin() + index);
-
+    if(index == -1) {
         return index;
     }
 
-    int ObjectiveBox::isInBox(Constraint *testObj)  {
-        for(unsigned int i = 0; i < mObjectives.size(); i++) {
-            if(mObjectives[i] == testObj)
-                return i;
+    //deallocate memory for Constraint
+    mObjectives.erase(mObjectives.begin() + index);
+
+    return index;
+}
+
+int ObjectiveBox::isInBox(Constraint *testObj)  {
+    for(unsigned int i = 0; i < mObjectives.size(); i++) {
+        if(mObjectives[i] == testObj)
+            return i;
+    }
+    return -1;
+}
+
+void ObjectiveBox::setNumDofs(int numDofs) {
+
+    mNumDofs = numDofs;
+    mObj = 0;
+    mObjGrad.resize(numDofs);
+
+    for(int i = 0; i < numDofs; i++) {
+        mObjGrad[i] = 0.0;
+    }
+}
+
+void ObjectiveBox::evalObjGrad() {
+    for (unsigned int i = 0; i < mObjGrad.size(); i++)
+        mObjGrad[i] = 0.0;
+
+    for (unsigned int i = 0; i < mObjectives.size(); i++) {
+        if (mObjectives[i]->mActive){
+            mObjectives[i]->fillObjGrad(mObjGrad);
         }
-        return -1;
     }
+}
 
-    void ObjectiveBox::setNumDofs(int numDofs) {
+void ObjectiveBox::evalObjHess() {
+}
 
-        mNumDofs = numDofs;
-        mObj = 0;
-        mObjGrad.resize(numDofs);
+void ObjectiveBox::evalObj() {
+    mObj = 0;
+    for(unsigned int i = 0; i < mObjectives.size(); i++)
+        if(mObjectives[i]->mActive)
+            mObj += mObjectives[i]->evalObj();
+}
 
-        for(int i = 0; i < numDofs; i++) {
-            mObjGrad[i] = 0.0;
-        }
-    }
+void ObjectiveBox::reallocateMem() {
+    for(unsigned int i = 0; i < mObjectives.size(); i++)
+        mObjectives[i]->allocateMem();
+}
 
-    void ObjectiveBox::evalObjGrad() {
-        for (unsigned int i = 0; i < mObjGrad.size(); i++)
-            mObjGrad[i] = 0.0;
-
-        for (unsigned int i = 0; i < mObjectives.size(); i++) {
-            if (mObjectives[i]->mActive){
-                mObjectives[i]->fillObjGrad(mObjGrad);
-            }
-        }
-    }
-
-    void ObjectiveBox::evalObjHess() {
-    }
-
-    void ObjectiveBox::evalObj() {
-        mObj = 0;
-        for(unsigned int i = 0; i < mObjectives.size(); i++)
-            if(mObjectives[i]->mActive)
-                mObj += mObjectives[i]->evalObj();
-    }
-
-    void ObjectiveBox::reallocateMem() {
-        for(unsigned int i = 0; i < mObjectives.size(); i++)
-            mObjectives[i]->allocateMem();
-    }
-
-    
 } // namespace optimizer
+} // namespace dart

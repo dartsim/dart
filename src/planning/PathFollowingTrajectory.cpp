@@ -44,6 +44,7 @@
 using namespace Eigen;
 using namespace std;
 
+namespace dart {
 namespace planning {
 
 const double PathFollowingTrajectory::timeStep = 0.001;
@@ -59,7 +60,7 @@ PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorX
 	maxAcceleration(maxAcceleration),
 	n(maxVelocity.size()),
 	valid(true),
-	cachedTime(numeric_limits<double>::max())
+    cachedTime(numeric_limits<double>::max())
 {
 	// debug
 	//{
@@ -73,7 +74,7 @@ PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorX
 	//file.close();
 	//}
 
-	list<TrajectoryStep> startTrajectory;
+    list<TrajectoryStep> startTrajectory;
 	startTrajectory.push_back(TrajectoryStep(0.0, 0.0));
 	double afterAcceleration = getMinMaxPathAcceleration(0.0, 0.0, true);
 	while(!integrateForward(startTrajectory, afterAcceleration) && valid) {
@@ -83,12 +84,12 @@ PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorX
 			break;
 		}
 		//cout << "set arrow from " << switchingPoint.pathPos << ", " << switchingPoint.pathVel - 0.8 << " to " << switchingPoint.pathPos << ", " << switchingPoint.pathVel - 0.3 << endl;
-		list<TrajectoryStep> trajectory;
+        list<TrajectoryStep> trajectory;
 		trajectory.push_back(switchingPoint);
 		integrateBackward(trajectory, startTrajectory, beforeAcceleration);
 	}
 
-	list<TrajectoryStep> endTrajectory;
+    list<TrajectoryStep> endTrajectory;
 	endTrajectory.push_front(TrajectoryStep(path.getLength(), 0.0));
 	double beforeAcceleration = getMinMaxPathAcceleration(path.getLength(), 0.0, false);
 	integrateBackward(endTrajectory, startTrajectory, beforeAcceleration);
@@ -96,8 +97,8 @@ PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorX
 	this->trajectory = startTrajectory;
 
 	// calculate timing
-	list<TrajectoryStep>::iterator previous = trajectory.begin();
-	list<TrajectoryStep>::iterator it = previous;
+    list<TrajectoryStep>::iterator previous = trajectory.begin();
+    list<TrajectoryStep>::iterator it = previous;
 	it->time = 0.0;
 	it++;
 	while(it != trajectory.end()) {
@@ -168,7 +169,7 @@ bool PathFollowingTrajectory::getNextAccelerationSwitchingPoint(double pathPos, 
 		if(discontinuity) {
 			const double beforePathVel = getAccelerationMaxPathVelocity(switchingPathPos - eps);
 			const double afterPathVel = getAccelerationMaxPathVelocity(switchingPathPos + eps);
-			switchingPathVel = min(beforePathVel, afterPathVel);
+            switchingPathVel = min(beforePathVel, afterPathVel);
 			beforeAcceleration = getMinMaxPathAcceleration(switchingPathPos - eps, switchingPathVel, false);
 			afterAcceleration = getMinMaxPathAcceleration(switchingPathPos + eps, switchingPathVel, true);
 			
@@ -238,8 +239,8 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 	double pathPos = trajectory.back().pathPos;
 	double pathVel = trajectory.back().pathVel;
 	
-	list<pair<double, bool> > switchingPoints = path.getSwitchingPoints();
-	list<pair<double, bool> >::iterator nextDiscontinuity = switchingPoints.begin();
+    list<pair<double, bool> > switchingPoints = path.getSwitchingPoints();
+    list<pair<double, bool> >::iterator nextDiscontinuity = switchingPoints.begin();
 
 	while(true)
 	{
@@ -247,7 +248,7 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 			int test = 48;
 		}
 
-		while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
+        while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
 			nextDiscontinuity++;
 		}
 
@@ -271,7 +272,7 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 		}
 		else if(pathVel < 0.0) {
 			valid = false;
-			cout << "error" << endl;
+            cout << "error" << endl;
 			return true;
 		}
 
@@ -331,7 +332,7 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 
 
 void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory, list<TrajectoryStep> &startTrajectory, double acceleration) {
-	list<TrajectoryStep>::reverse_iterator before = startTrajectory.rbegin();
+    list<TrajectoryStep>::reverse_iterator before = startTrajectory.rbegin();
 	double pathPos = trajectory.front().pathPos;
 	double pathVel = trajectory.front().pathVel;
 
@@ -349,7 +350,7 @@ void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory
 
 		if(pathVel < 0.0 || pathPos < 0.0) {
 			valid = false;
-			cout << "error " << pathPos << " " << pathVel << endl;
+            cout << "error " << pathPos << " " << pathVel << endl;
 			return;
 		}
 
@@ -362,7 +363,7 @@ void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory
 		if(before != startTrajectory.rbegin() && pathVel >= before->pathVel + getSlope(before.base()) * (pathPos - before->pathPos)) {
 			TrajectoryStep overshoot = trajectory.front();
 			trajectory.pop_front();
-			list<TrajectoryStep>::iterator after = before.base();
+            list<TrajectoryStep>::iterator after = before.base();
 			TrajectoryStep intersection = getIntersection(startTrajectory, after, overshoot, trajectory.front());
 			//cout << "set arrow from " << intersection.pathPos << ", " << intersection.pathVel - 0.8 << " to " << intersection.pathPos << ", " << intersection.pathVel - 0.3 << endl;
 		
@@ -618,4 +619,6 @@ double PathFollowingTrajectory::getMaxAccelerationError() {
 
 	return maxAccelerationError;
 }
-}
+
+} // namespace planning
+} // namespace dart

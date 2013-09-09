@@ -35,31 +35,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INTEGRATOR_H
-#define INTEGRATOR_H
+#ifndef DART_INTEGRATION_INTEGRATOR_H
+#define DART_INTEGRATION_INTEGRATOR_H
 
 #include <vector>
 #include <Eigen/Dense>
 
-namespace integration
-{
+namespace dart {
+namespace dynamics { class GenCoordSystem; }
+namespace integration {
 
-// Any class that uses an integrator should implement this interface
+/// @brief Any class that uses an integrator should implement this interface.
 class IntegrableSystem
 {
 public:
-    virtual Eigen::VectorXd getState() = 0;
+    /// @brief
+    IntegrableSystem();
+
+    /// @brief
+    virtual ~IntegrableSystem();
+
+public:
+    /// @brief
+    virtual Eigen::VectorXd getState() const = 0;
+
+    /// @brief
     virtual void setState(const Eigen::VectorXd& _state) = 0;
+
+    /// @brief
+    virtual void setControlInput() {}
+
+    /// @brief
     virtual Eigen::VectorXd evalDeriv() = 0;
 };
 
-// TODO (kasiu) Consider templating the class (which currently only works on arbitrarily-sized vectors of doubles)
+// TODO (kasiu) Consider templating the class (which currently only works on
+// arbitrarily-sized vectors of doubles)
+/// @brief
 class Integrator
 {
 public:
+    /// @brief Constructor.
+    Integrator();
+
+    /// @brief Destructor.
+    virtual ~Integrator();
+
+public:
+    /// @brief
     virtual void integrate(IntegrableSystem* system, double dt) const = 0;
 };
 
 } // namespace integration
+} // namespace dart
 
-#endif // INTEGRATOR_H
+#endif // #ifndef DART_INTEGRATION_INTEGRATOR_H

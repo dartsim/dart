@@ -35,37 +35,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPTIMIZER_PROBLEM_H
-#define OPTIMIZER_PROBLEM_H
+#ifndef DART_OPTIMIZER_PROBLEM_H
+#define DART_OPTIMIZER_PROBLEM_H
 
 #include <vector>
 
+namespace dart {
 namespace optimizer {
-    class Var;
-    class ConstraintBox;
-    class ObjectiveBox;
-    
-    class Problem {
-    public:
-        Problem();
-        virtual ~Problem();
-        virtual void update(double* coefs);
 
-        int getNumVariables() const { return mVariables.size(); }
-        void addVariable(double value, double lower, double upper);
-        void createBoxes();
+class Var;
+class ConstraintBox;
+class ObjectiveBox;
 
-        ConstraintBox* conBox() const;
-        ObjectiveBox* objBox() const;
-        std::vector<Var *>& vars();
+class Problem {
+public:
+    Problem();
+    virtual ~Problem();
+    virtual void update(double* coefs);
 
-    protected:
-        ConstraintBox* mConBox;
-        ObjectiveBox* mObjBox;
-        std::vector<Var *> mVariables;
-        
-    };
+    int getNumVariables() const { return mVariables.size(); }
+    void addVariable(double value, double lower, double upper);
+    void createBoxes();
+
+    ConstraintBox* conBox() const;
+    ObjectiveBox* objBox() const;
+    std::vector<Var *>& vars();
+
+protected:
+    ConstraintBox* mConBox;
+    ObjectiveBox* mObjBox;
+    std::vector<Var *> mVariables;
+
+};
+
 } // namespace optimizer
+} // namespace dart
 
-#endif // #ifndef OPTIMIZER_PROBLEM_H
+#endif // #ifndef DART_OPTIMIZER_PROBLEM_H
 

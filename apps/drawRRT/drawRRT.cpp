@@ -10,6 +10,7 @@
 #include "simulation/World.h"
 
 using namespace std;
+using namespace dart;
 using namespace planning;
 using namespace simulation;
 
@@ -128,7 +129,7 @@ void drawThreeLink () {
 
     // Create a robot and a world
     const double l1 = 1.5, l2 = 1.0, l3 = 0.5;
-    SkeletonDynamics* r = createThreeLinkRobot(Vector3d(0.3, 0.3, l1), DOF_ROLL, Vector3d(0.3, 0.3, l2), DOF_ROLL, 
+    Skeleton* r = createThreeLinkRobot(Vector3d(0.3, 0.3, l1), DOF_ROLL, Vector3d(0.3, 0.3, l2), DOF_ROLL,
 			Vector3d(0.3, 0.3, l3), DOF_ROLL);
     World w;
     w.addSkeleton(r);
@@ -153,7 +154,7 @@ void drawTwoLink () {
 
     // Create a robot and a world
     const double l1 = 1.5, l2 = 1.0;
-    SkeletonDynamics* r = createTwoLinkRobot(Vector3d(0.3, 0.3, l1), DOF_ROLL, Vector3d(0.3, 0.3, l2), DOF_ROLL);
+    Skeleton* r = createTwoLinkRobot(Vector3d(0.3, 0.3, l1), DOF_ROLL, Vector3d(0.3, 0.3, l2), DOF_ROLL);
     World w;
     w.addSkeleton(r);
 

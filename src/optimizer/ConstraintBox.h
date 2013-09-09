@@ -35,44 +35,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPTIMIZER_CONSTRAINT_BOX_H
-#define OPTIMIZER_CONSTRAINT_BOX_H
+#ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
+#define DART_OPTIMIZER_CONSTRAINT_BOX_H
 
 #include <vector>
 
+namespace dart {
 namespace optimizer {
-    class Constraint;
 
-    class ConstraintBox {
-    public:
-        ConstraintBox(int numDofs);
-        virtual ~ConstraintBox();
-	
-        void add(Constraint *newConstraint);
-        void clear();
-        int remove(Constraint *target);
-        int isInBox(Constraint *testConstraint);	//return index of component if true
+class Constraint;
 
-        int getNumConstraints() const { return mConstraints.size(); }
-        Constraint * getConstraint(int index) const { return mConstraints[index]; }
+class ConstraintBox {
+public:
+    ConstraintBox(int numDofs);
+    virtual ~ConstraintBox();
 
-        void evalJac();
-        void evalCon();
-        void reallocateMem();
+    void add(Constraint *newConstraint);
+    void clear();
+    int remove(Constraint *target);
+    int isInBox(Constraint *testConstraint);	//return index of component if true
 
-        //Must be called before using ConstraintBox
-        int getNumDofs() const { return mNumDofs; }
-        void setNumDofs(int numDofs);
-        int getNumTotalRows() const { return mNumTotalRows; }
+    int getNumConstraints() const { return mConstraints.size(); }
+    Constraint * getConstraint(int index) const { return mConstraints[index]; }
 
-        int mNumDofs; //number of Model DOFs
-        int mNumTotalRows;
-        std::vector<Constraint *> mConstraints;
-        std::vector<double> mCon;
-        std::vector< std::vector<double> *> mJac; //Jacobian
-        std::vector< std::vector<bool> *> mJacMap; //Show nonzero elements of Jacobian
-    };
+    void evalJac();
+    void evalCon();
+    void reallocateMem();
+
+    //Must be called before using ConstraintBox
+    int getNumDofs() const { return mNumDofs; }
+    void setNumDofs(int numDofs);
+    int getNumTotalRows() const { return mNumTotalRows; }
+
+    int mNumDofs; //number of Model DOFs
+    int mNumTotalRows;
+    std::vector<Constraint *> mConstraints;
+    std::vector<double> mCon;
+    std::vector< std::vector<double> *> mJac; //Jacobian
+    std::vector< std::vector<bool> *> mJacMap; //Show nonzero elements of Jacobian
+};
+
 } // namespace optimizer
+} // namespace dart
 
-#endif // #ifndef OPTIMIZER_CONSTRAINT_BOX_H
+#endif // #ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
 

@@ -39,24 +39,24 @@
 #include <stdlib.h>
 #include "Var.h"
 
-using namespace std;
-
+namespace dart {
 namespace optimizer {
 
-    Var::Var(double val, double lower, double upper)
-        :mVal(val), mLower(lower), mUpper(upper), mWeight(1.0) {
-    	if(mLower >= mUpper) {
-    		cout << mLower << " is greater than " << mUpper << endl;
-    		cout << "Exiting." << endl;
-    		exit(1);
-    	}
+Var::Var(double val, double lower, double upper)
+    :mVal(val), mLower(lower), mUpper(upper), mWeight(1.0) {
+    if(mLower >= mUpper) {
+        std::cout << mLower << " is greater than " << mUpper << std::endl;
+        std::cout << "Exiting." << std::endl;
+        exit(1);
     }
+}
 
-    void Var::setWeight(double weight) {
-        mWeight = weight;
-        mVal *= weight;
-        mLower *= weight;
-        mUpper *= weight;
-    }
+void Var::setWeight(double weight) {
+    mWeight = weight;
+    mVal *= weight;
+    mLower *= weight;
+    mUpper *= weight;
+}
 
 } // namespace optimizer
+} // namespace dart

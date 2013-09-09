@@ -1,32 +1,32 @@
-#include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
-#include "math/UtilsMath.h"
+#include "math/Helpers.h"
+#include "dynamics/Skeleton.h"
 #include "simulation/World.h"
+#include "utils/SkelParser.h"
 
 #include "MyWindow.h"
 
-using namespace kinematics;
+using namespace dart;
+using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace dart_math;
 
 int main(int argc, char* argv[])
 {
     // load a skeleton file
-    FileInfoSkel<SkeletonDynamics> model;
-    model.loadFile(DART_DATA_PATH"/skel/Chain.skel", SKEL);
+    // create and initialize the world
+    dart::simulation::World* myWorld
+            = dart::utils::readSkelFile(DART_DATA_PATH"/skel/chain.skel");
+    assert(myWorld != NULL);
     
     // create and initialize the world
-    World *myWorld = new World();
-    Vector3d gravity(0.0, -9.81, 0.0);
+    Eigen::Vector3d gravity(0.0, -9.81, 0.0);
     myWorld->setGravity(gravity);
     myWorld->setTimeStep(1.0/2000);
 
-    myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());
-    int nDof =  myWorld->getSkeleton(0)->getNumDofs();
-    VectorXd initPose(nDof);
-    for (int i = 0; i < nDof; i++)
+    int dof =  myWorld->getSkeleton(0)->getDOF();
+    Eigen::VectorXd initPose(dof);
+    for (int i = 0; i < dof; i++)
         initPose[i] = random(-0.5, 0.5);
     myWorld->getSkeleton(0)->setPose(initPose);
 

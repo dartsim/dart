@@ -41,21 +41,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SIMULATION_WORLD_H
-#define SIMULATION_WORLD_H
+#ifndef DART_SIMULATION_WORLD_H
+#define DART_SIMULATION_WORLD_H
 
 #include <vector>
 #include <Eigen/Dense>
 
-#include "integration/EulerIntegrator.h"
-#include "integration/RK4Integrator.h"
-#include "dynamics/SkeletonDynamics.h"
-#include "utils/Deprecated.h"
+#include "common/Deprecated.h"
+#include "common/Timer.h"
+#include "integration/Integrator.h"
+
+namespace dart {
+
+namespace integration {
+class Integrator;
+}
 
 namespace dynamics {
+class Skeleton;
+}
+
+namespace constraint {
 class ConstraintDynamics;
-class BodyNodeDynamics;
-} // namespace dynamics
+}
 
 namespace simulation {
 
@@ -64,12 +72,29 @@ namespace simulation {
 class World : public integration::IntegrableSystem
 {
 public:
+    //--------------------------------------------------------------------------
+    // Constructor and Destructor
+    //--------------------------------------------------------------------------
     /// @brief Constructor.
     World();
 
     /// @brief Destructor.
     virtual ~World();
 
+    //--------------------------------------------------------------------------
+    // Virtual functions
+    //--------------------------------------------------------------------------
+    virtual Eigen::VectorXd getState() const;
+
+    virtual void setState(const Eigen::VectorXd &_newState);
+
+    virtual void setControlInput();
+
+    virtual Eigen::VectorXd evalDeriv();
+
+    //--------------------------------------------------------------------------
+    // Simulation
+    //--------------------------------------------------------------------------
     /// @breif Reset the world.
     ///
     /// Set Dofs and DofVels as zero (or initial value) and update all
@@ -79,82 +104,86 @@ public:
     /// @brief Calculate the dynamics and integrate the world for one step.
     void step();
 
-    /// @brief .
-    /// @param[in] _gravity
-    void setGravity(const Eigen::Vector3d& _gravity) { mGravity = _gravity; }
+    /// @brief
+    void setTime(double _time);
+
+    /// @brief Get the time step.
+    /// @return Time step.
+    double getTime() const;
+
+    /// @brief Get the number of simulated frames.
+    int getSimFrames() const;
+
+    //--------------------------------------------------------------------------
+    // Properties
+    //--------------------------------------------------------------------------
 
     /// @brief .
-    const Eigen::Vector3d& getGravity() const { return mGravity; }
+    /// @param[in] _gravity
+    void setGravity(const Eigen::Vector3d& _gravity);
+
+    /// @brief .
+    const Eigen::Vector3d& getGravity() const;
 
     /// @brief .
     /// @param[in] _timeStep
     void setTimeStep(double _timeStep);
 
     /// @brief Get the time step.
-    double getTimeStep() const { return mTimeStep; }
+    double getTimeStep() const;
 
-    /// @brief
-    void setTime(double _time) { mTime = _time; }
-
-    /// @brief Get the time step.
-    /// @return Time step.
-    double getTime() const { return mTime; }
-
+    //--------------------------------------------------------------------------
+    // Structueral Properties
+    //--------------------------------------------------------------------------
     /// @brief Get the indexed skeleton.
     /// @param[in] _index
-    dynamics::SkeletonDynamics* getSkeleton(int _index) const;
+    dynamics::Skeleton* getSkeleton(int _index) const;
 
     /// @brief Find body node by name.
     /// @param[in] The name of body node looking for.
     /// @return Searched body node. If the skeleton does not have a body
     /// node with _name, then return NULL.
-    dynamics::SkeletonDynamics* getSkeleton(const char* const _name) const;
+    dynamics::Skeleton* getSkeleton(const std::string& _name) const;
 
     /// @brief Get the number of skeletons.
-    unsigned int getNumSkeletons() const { return mSkeletons.size(); }
-
-    /// @brief Get the number of simulated frames.
-    int getSimFrames() const { return mFrame; }
-
-    /// @brief Get the collision handler.
-    inline dynamics::ConstraintDynamics* getCollisionHandle() const
-    { return mCollisionHandle; }
-
-    /// @brief Get the dof index for the indexed skeleton.
-    /// @param[in] _index
-    int getIndex(int _index) const { return mIndices[_index]; }
-
-    // Documentation inherited.
-    virtual Eigen::VectorXd getState();
-
-    // Documentation inherited.
-    virtual void setState(const Eigen::VectorXd& _newState);
-
-    // Documentation inherited.
-    virtual Eigen::VectorXd evalDeriv();
+    int getNumSkeletons() const;
 
     /// @brief .
     /// @param[in] _skel
-    bool addSkeleton(dynamics::SkeletonDynamics* _skeleton);
+    void addSkeleton(dynamics::Skeleton* _skeleton);
 
+    /// @brief Get the dof index for the indexed skeleton.
+    /// @param[in] _index
+    int getIndex(int _index) const;
+
+    //--------------------------------------------------------------------------
+    // Kinematics
+    //--------------------------------------------------------------------------
     /// @brief
     bool checkCollision(bool checkAllCollisions = false);
 
+    //--------------------------------------------------------------------------
+    // Dynamics
+    //--------------------------------------------------------------------------
+
+    //--------------------------------------------------------------------------
+    // Collision
+    //--------------------------------------------------------------------------
+    /// @brief Get the collision handler.
+    constraint::ConstraintDynamics* getCollisionHandle() const;
+
 protected:
+    //--------------------------------------------------------------------------
+    // Dynamics Algorithms
+    //--------------------------------------------------------------------------
     /// @brief Skeletones in this world.
-    std::vector<dynamics::SkeletonDynamics*> mSkeletons;
+    std::vector<dynamics::Skeleton*> mSkeletons;
 
     /// @brief The first indeices of each skeleton's dof in mDofs.
     ///
     /// For example, if this world has three skeletons and their dof are
     /// 6, 1 and 2 then the mIndices goes like this: [0 6 7].
     std::vector<int> mIndices;
-
-    /// @brief The integrator.
-    integration::EulerIntegrator mIntegrator;
-
-    /// @brief The collision handler.
-    dynamics::ConstraintDynamics* mCollisionHandle;
 
     /// @brief The gravity.
     Eigen::Vector3d mGravity;
@@ -168,9 +197,16 @@ protected:
     /// @brief The simulated frame number.
     int mFrame;
 
+    /// @brief The integrator.
+    integration::Integrator* mIntegrator;
+
+    /// @brief The collision handler.
+    constraint::ConstraintDynamics* mCollisionHandle;
+
 private:
 };
 
 } // namespace simulation
+} // namespace dart
 
-#endif // #ifndef SIMULATION_WORLD_H
+#endif // #ifndef DART_SIMULATION_WORLD_H

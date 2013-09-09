@@ -36,20 +36,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_CONLLISION_DETECTOR_H
-#define COLLISION_CONLLISION_DETECTOR_H
+#ifndef DART_COLLISION_CONLLISION_DETECTOR_H
+#define DART_COLLISION_CONLLISION_DETECTOR_H
 
 #include <vector>
 #include <map>
 #include <Eigen/Dense>
 #include "CollisionNode.h"
 
-namespace kinematics { class BodyNode; }
+namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}
 
 namespace collision {
 
 /// @brief
-struct Contact {
+struct Contact
+{
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     /// @brief
@@ -80,8 +85,8 @@ struct Contact {
 };
 
 /// @brief
-class CollisionDetector {
-    // CONSTRUCTORS AND DESTRUCTOR ---------------------------------------------
+class CollisionDetector
+{
 public:
     /// @brief
     CollisionDetector();
@@ -89,47 +94,49 @@ public:
     /// @brief
     virtual ~CollisionDetector();
 
-public:
     /// @brief
-    virtual void addCollisionSkeletonNode(kinematics::BodyNode *_bd,
+    virtual void addCollisionSkeletonNode(dynamics::BodyNode *_bd,
                                           bool _bRecursive = false);
 
     /// @brief
     virtual CollisionNode* createCollisionNode(
-            kinematics::BodyNode* _bodyNode) = 0;
+            dynamics::BodyNode* _bodyNode) = 0;
 
-    void enablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2);
-    void disablePair(kinematics::BodyNode* _node1, kinematics::BodyNode* _node2);
+    void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+    void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
     /// @brief
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
-    bool checkCollision(kinematics::BodyNode* _node1,
-                        kinematics::BodyNode* _node2,
+    bool checkCollision(dynamics::BodyNode* _node1,
+                        dynamics::BodyNode* _node2,
                         bool _calculateContactPoints);
 
     /// @brief
-    unsigned int getNumContacts() { return mContacts.size(); }
+    unsigned int getNumContacts();
 
     /// @brief
-    Contact& getContact(int _idx) { return mContacts[_idx]; }
+    Contact& getContact(int _idx);
 
     /// @brief
-    void clearAllContacts() { mContacts.clear(); }
+    void clearAllContacts();
 
     /// @brief
-    int getNumMaxContacts() const { return mNumMaxContacts; }
+    int getNumMaxContacts() const;
 
     /// @brief
-    void setNumMaxContacts(int _num) { mNumMaxContacts = _num; }
+    void setNumMaxContacs(int _num);
 
 protected:
+    /// @brief
     virtual bool checkCollision(CollisionNode* _node1,
                                 CollisionNode* _node2,
                                 bool _calculateContactPoints) = 0;
 
-    bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
+    /// @brief
+    bool isCollidable(const CollisionNode* _node1,
+                      const CollisionNode* _node2);
 
     /// @brief
     std::vector<Contact> mContacts;
@@ -141,19 +148,21 @@ protected:
     int mNumMaxContacts;
 
 private:
-    std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
-
-    CollisionNode* getCollisionNode(const kinematics::BodyNode* _bodyNode);
+    /// @brief
+    std::vector<bool>::reference getPairCollidable(
+            const CollisionNode* _node1, const CollisionNode* _node2);
 
     /// @brief
-    std::map<const kinematics::BodyNode*, CollisionNode*> mBodyCollisionMap;
+    CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
+
+    /// @brief
+    std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
 
     /// @brief
     std::vector<std::vector<bool> > mCollidablePairs;
-
-
 };
 
 } // namespace collision
+} // namespace dart
 
-#endif // COLLISION_CONLLISION_DETECTOR_H
+#endif // #ifndef DART_COLLISION_CONLLISION_DETECTOR_H

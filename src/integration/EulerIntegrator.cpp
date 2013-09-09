@@ -35,14 +35,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "EulerIntegrator.h"
+#include "dynamics/GenCoordSystem.h"
+#include "integration/EulerIntegrator.h"
 
-using namespace Eigen;
-
+namespace dart {
 namespace integration {
-    void EulerIntegrator::integrate(IntegrableSystem* system, double dt) const {
-        VectorXd deriv = system->evalDeriv();
-        system->setState(system->getState() + (dt * deriv));
-//        system->setState(x + (dt * system->evalDeriv()));
-    }
+
+EulerIntegrator::EulerIntegrator()
+    : Integrator()
+{
+}
+
+EulerIntegrator::~EulerIntegrator()
+{
+}
+
+void EulerIntegrator::integrate(IntegrableSystem* system, double dt) const
+{
+    // Explicit Euler Method
+    Eigen::VectorXd deriv = system->evalDeriv();
+    system->setState(system->getState() + (dt * deriv));
+}
+
 } // namespace integration
+} // namespace dart

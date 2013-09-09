@@ -3,27 +3,25 @@
 #include <fcl/collision.h>
 
 #include "renderer/LoadOpengl.h"
-#include "math/UtilsMath.h"
+#include "math/Helpers.h"
 
-#include "kinematics/BodyNode.h"
+#include "dynamics/BodyNode.h"
 
 #include "collision/CollisionNode.h"
 #include "collision/fcl_mesh/CollisionShapes.h"
 #include "collision/fcl_mesh/FCLMESHCollisionNode.h"
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace dart_math;
+namespace dart {
+namespace collision {
 
-namespace collision
+FCLMESHCollisionDetector::~FCLMESHCollisionDetector()
 {
-
-FCLMESHCollisionDetector::~FCLMESHCollisionDetector() {
 }
 
 
-CollisionNode*FCLMESHCollisionDetector::createCollisionNode(kinematics::BodyNode* _bodyNode)
+CollisionNode*FCLMESHCollisionDetector::createCollisionNode(
+        dynamics::BodyNode* _bodyNode)
 {
     return new FCLMESHCollisionNode(_bodyNode);
 }
@@ -38,9 +36,7 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
     FCLMESHCollisionNode* FCLMESHCollisionNode2 = NULL;
 
     for (int i = 0; i < mCollisionNodes.size(); i++)
-    {
         mCollisionNodes[i]->getBodyNode()->setColliding(false);
-    }
 
     for (int i = 0; i < mCollisionNodes.size(); i++)
     {
@@ -51,9 +47,7 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
             FCLMESHCollisionNode2 = static_cast<FCLMESHCollisionNode*>(mCollisionNodes[j]);
 
             if (!isCollidable(FCLMESHCollisionNode1, FCLMESHCollisionNode2))
-            {
                 continue;
-            }
             
             if(FCLMESHCollisionNode1->checkCollision(FCLMESHCollisionNode2,
                     _calculateContactPoints ? &mContacts : NULL,
@@ -64,9 +58,7 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
                 mCollisionNodes[j]->getBodyNode()->setColliding(true);
 
                 if(!_checkAllCollisions)
-                {
                     return true;
-                }
             }
         }
     }
@@ -74,21 +66,26 @@ bool FCLMESHCollisionDetector::checkCollision(bool _checkAllCollisions,
     return collision;
 }
 
-
 bool FCLMESHCollisionDetector::checkCollision(CollisionNode* _node1,
                                               CollisionNode* _node2,
                                               bool _calculateContactPoints)
 {
-    FCLMESHCollisionNode* collisionNode1 = static_cast<FCLMESHCollisionNode*>(_node1);
-    FCLMESHCollisionNode* collisionNode2 = static_cast<FCLMESHCollisionNode*>(_node2);
-    return collisionNode1->checkCollision(collisionNode2,
-                                          _calculateContactPoints ? &mContacts : NULL,
-                                          mNumMaxContacts);
+    FCLMESHCollisionNode* collisionNode1 =
+            static_cast<FCLMESHCollisionNode*>(_node1);
+    FCLMESHCollisionNode* collisionNode2 =
+            static_cast<FCLMESHCollisionNode*>(_node2);
+    return collisionNode1->checkCollision(
+                collisionNode2,
+                _calculateContactPoints ? &mContacts : NULL,
+                mNumMaxContacts);
 }
 
-void FCLMESHCollisionDetector::draw() {
-    for(int i=0;i<mCollisionNodes.size();i++)
-        static_cast<FCLMESHCollisionNode*>(mCollisionNodes[i])->drawCollisionSkeletonNode();
+void FCLMESHCollisionDetector::draw()
+{
+    for(int i = 0; i < mCollisionNodes.size(); i++)
+        static_cast<FCLMESHCollisionNode*>(
+                mCollisionNodes[i])->drawCollisionSkeletonNode();
 }
 
-}
+} // namespace collision
+} // namespace dart

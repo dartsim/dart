@@ -11,37 +11,33 @@
 #include <stdarg.h>
 
 #include "collision/CollisionDetector.h"
-#include "dynamics/SkeletonDynamics.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/ContactDynamics.h"
-#include "kinematics/BodyNode.h"
-#include "kinematics/Dof.h"
-#include "kinematics/Joint.h"
-#include "kinematics/ShapeMesh.h"
-#include "kinematics/ShapeBox.h"
-#include "kinematics/ShapeCylinder.h"
-#include "kinematics/ShapeEllipsoid.h"
-#include "kinematics/Transformation.h"
-#include "kinematics/TrfmTranslate.h"
-#include "kinematics/TrfmRotateEuler.h"
+#include "dynamics/Skeleton.h"
+#include "dynamics/BodyNode.h"
+#include "constraint/ConstraintDynamics.h"
+#include "dynamics/GenCoord.h"
+#include "dynamics/Joint.h"
+#include "dynamics/MeshShape.h"
+#include "dynamics/BoxShape.h"
+#include "dynamics/CylinderShape.h"
+#include "dynamics/EllipsoidShape.h"
 #include "utils/Paths.h"
-#include "utils/Timer.h"
-#include "math/UtilsMath.h"
+#include "common/Timer.h"
+#include "math/Helpers.h"
 #include "yui/GLFuncs.h"
 #include "yui/Win3D.h"
 
-using namespace std;
-
-namespace dynamics{
-	class SkeletonDynamics;
-	class ContactDynamics;
+namespace dart {
+namespace dynamics {
+    class Skeleton;
+    class ConstraintDynamics;
+}
 }
 
-class MyWindow : public yui::Win3D {
+class MyWindow : public dart::yui::Win3D {
 public:
 
 	/// The constructor - set the position of the skeleton
-	MyWindow(dynamics::SkeletonDynamics* _skel): Win3D(), skel(_skel) {
+    MyWindow(dart::dynamics::Skeleton* _skel): Win3D(), skel(_skel) {
 		mTrans[1] = 200.f;
 		mZoom = 0.3;
 	}
@@ -53,5 +49,5 @@ public:
 	virtual void keyboard(unsigned char key, int x, int y);
 
 	/// Hardcoded skeleton
-	dynamics::SkeletonDynamics* skel;
+    dart::dynamics::Skeleton* skel;
 };

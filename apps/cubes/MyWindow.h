@@ -4,7 +4,7 @@
 #include "yui/Win3D.h"
 #include "simulation/SimWindow.h"
 
-class MyWindow : public simulation::SimWindow
+class MyWindow : public dart::simulation::SimWindow
 {
  public:
  MyWindow(): SimWindow() 

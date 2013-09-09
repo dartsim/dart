@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_FCL_MESH_CONLLISION_NODE_H
-#define COLLISION_FCL_MESH_CONLLISION_NODE_H
+#ifndef DART_COLLISION_FCL_MESH_CONLLISION_NODE_H
+#define DART_COLLISION_FCL_MESH_CONLLISION_NODE_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -47,10 +47,9 @@
 #include "collision/CollisionDetector.h"
 #include "collision/fcl_mesh/tri_tri_intersection_test.h"
 
-namespace kinematics { class BodyNode; }
-
-namespace collision
-{
+namespace dart {
+namespace dynamics { class BodyNode; }
+namespace collision {
 
 /// @brief
 class FCLMESHCollisionNode : public CollisionNode
@@ -58,17 +57,17 @@ class FCLMESHCollisionNode : public CollisionNode
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    FCLMESHCollisionNode(kinematics::BodyNode* _bodyNode);
+    FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode);
     virtual ~FCLMESHCollisionNode();
 
     std::vector<fcl::BVHModel<fcl::OBBRSS>*> mMeshes;
 
     fcl::Transform3f mFclWorldTrans;
-    Eigen::Matrix4d mWorldTrans;
+    Eigen::Isometry3d mWorldTrans;
 
     bool checkCollision(FCLMESHCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
     void evalRT();
-    static fcl::Transform3f getFclTransform(const Eigen::Matrix4d& _m);
+    static fcl::Transform3f getFclTransform(const Eigen::Isometry3d& _m);
 
     static int evalContactPosition(const fcl::Contact& _fclContact,
                                    fcl::BVHModel<fcl::OBBRSS>* _mesh1,
@@ -189,7 +188,7 @@ inline double FCLMESHCollisionNode::triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::V
     return area;
 }
 
-
 } // namespace collision
+} // namespace dart
 
-#endif // COLLISION_FCL2_CONLLISION_NODE_H
+#endif // #ifndef DART_COLLISION_FCL_MESH_CONLLISION_NODE_H

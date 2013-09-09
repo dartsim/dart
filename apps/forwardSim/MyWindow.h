@@ -4,10 +4,10 @@
 #include "yui/Win3D.h"
 #include "simulation/SimWindow.h"
 
-class MyWindow : public simulation::SimWindow
+class MyWindow : public dart::simulation::SimWindow
 {
- public:
- MyWindow(): SimWindow() {}
+public:
+    MyWindow() : SimWindow() {}
     virtual ~MyWindow() {}
     
     virtual void timeStepping();
@@ -16,8 +16,8 @@ class MyWindow : public simulation::SimWindow
     //  virtual void draw();
     //  virtual void keyboard(unsigned char key, int x, int y);
 
- private:
-    Eigen::VectorXd computeDamping(); 
+private:
+    Eigen::VectorXd computeDamping();
 };
 
 #endif

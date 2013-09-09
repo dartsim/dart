@@ -1,19 +1,23 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
+
+#include <Eigen/Dense>
 #include <stdarg.h>
-#include "yui/Win3D.h"
-#include "simulation/SimWindow.h"
+
 #include "Controller.h"
 
-class MyWindow : public simulation::SimWindow
+#include "yui/Win3D.h"
+#include "simulation/SimWindow.h"
+
+class MyWindow : public dart::simulation::SimWindow
 {
- public:
- MyWindow(): SimWindow()
-        {
-            mForce = Eigen::Vector3d::Zero();
-            mController = NULL;
-            mImpulseDuration = 0;
-        }
+public:
+    MyWindow(): SimWindow()
+    {
+        mForce = Eigen::Vector3d::Zero();
+        mController = NULL;
+        mImpulseDuration = 0;
+    }
     virtual ~MyWindow() {}
     
     virtual void timeStepping();
@@ -27,7 +31,7 @@ class MyWindow : public simulation::SimWindow
         mController = _controller;
     }
 
- private:
+private:
     Eigen::Vector3d mForce;
     Controller *mController;
     int mImpulseDuration;

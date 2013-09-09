@@ -35,16 +35,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
-#define OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+#ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+#define DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
 
 #include <vector>
 
+namespace dart {
 namespace optimizer {
-    typedef std::vector<std::vector<double> * > * VVD;
-    typedef std::vector<std::vector<int> * > * VVI;
-    typedef std::vector<std::vector<bool> * > * VVB;
-} // namespace optimizer
 
-#endif // #ifndef OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+typedef std::vector<std::vector<double> * > * VVD;
+typedef std::vector<std::vector<int> * > * VVI;
+typedef std::vector<std::vector<bool> * > * VVB;
+
+} // namespace optimizer
+} // namespace dart
+
+#endif // #ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
 

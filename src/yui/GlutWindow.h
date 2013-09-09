@@ -36,65 +36,68 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef YUI_GLUTWINDOW_H
-#define YUI_GLUTWINDOW_H
+#ifndef DART_YUI_GLUTWINDOW_H
+#define DART_YUI_GLUTWINDOW_H
 
 #include "renderer/LoadOpengl.h"
 #include "renderer/RenderInterface.h"
 #include <vector>
 #include "lodepng.h"
 
+namespace dart {
 namespace yui {
-    class GlutWindow
-    {
-    public:
-        GlutWindow();
-        virtual ~GlutWindow();
-        virtual void initWindow(int w, int h, const char* name);
 
-        // callback functions	
-        static void reshape(int w, int h);
-        static void keyEvent(unsigned char key, int x, int y);
-        static void specKeyEvent( int key, int x, int y );
-        static void mouseClick(int button, int state, int x, int y);
-        static void mouseDrag(int x, int y);
-        static void mouseMove(int x, int y);
-        static void refresh();
-        static void refreshTimer(int);
-        static void runTimer(int);
+class GlutWindow
+{
+public:
+    GlutWindow();
+    virtual ~GlutWindow();
+    virtual void initWindow(int w, int h, const char* name);
 
-        static GlutWindow* current();
-        static std::vector<GlutWindow*> mWindows;
-        static std::vector<int> mWinIDs;
+    // callback functions
+    static void reshape(int w, int h);
+    static void keyEvent(unsigned char key, int x, int y);
+    static void specKeyEvent( int key, int x, int y );
+    static void mouseClick(int button, int state, int x, int y);
+    static void mouseDrag(int x, int y);
+    static void mouseMove(int x, int y);
+    static void refresh();
+    static void refreshTimer(int);
+    static void runTimer(int);
 
-    protected:
-        // callback implementation	
-        virtual void resize(int w, int h)=0;
-        virtual void render()=0;
-        virtual void keyboard(unsigned char key, int x, int y){}
-        virtual void specKey( int key, int x, int y){}
-        virtual void click(int button, int state, int x, int y){}
-        virtual void drag(int x, int y){}
-        virtual void move(int x, int y){}
-        virtual void displayTimer(int);
-        virtual void simTimer(int){}
+    static GlutWindow* current();
+    static std::vector<GlutWindow*> mWindows;
+    static std::vector<int> mWinIDs;
 
-        virtual bool screenshot();
+protected:
+    // callback implementation
+    virtual void resize(int w, int h)=0;
+    virtual void render()=0;
+    virtual void keyboard(unsigned char key, int x, int y){}
+    virtual void specKey( int key, int x, int y){}
+    virtual void click(int button, int state, int x, int y){}
+    virtual void drag(int x, int y){}
+    virtual void move(int x, int y){}
+    virtual void displayTimer(int);
+    virtual void simTimer(int){}
 
-        int mWinWidth;
-        int mWinHeight;
-        int mMouseX;
-        int mMouseY;
-        double mDisplayTimeout;
-        bool mMouseDown;
-        bool mMouseDrag;
-        bool mCapture;
-        double mBackground[4];
-        renderer::RenderInterface* mRI;
-        std::vector<unsigned char> mScreenshotTemp;
-        std::vector<unsigned char> mScreenshotTemp2;
-    };
+    virtual bool screenshot();
+
+    int mWinWidth;
+    int mWinHeight;
+    int mMouseX;
+    int mMouseY;
+    double mDisplayTimeout;
+    bool mMouseDown;
+    bool mMouseDrag;
+    bool mCapture;
+    double mBackground[4];
+    renderer::RenderInterface* mRI;
+    std::vector<unsigned char> mScreenshotTemp;
+    std::vector<unsigned char> mScreenshotTemp2;
+};
 
 } // namespace yui
+} // namespace dart
 
-#endif // YUI_GLUTWINDOW_H
+#endif // #ifndef DART_YUI_GLUTWINDOW_H

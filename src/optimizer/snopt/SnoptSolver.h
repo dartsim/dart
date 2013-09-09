@@ -6,54 +6,56 @@
   Date		06/19/2011
 */
 
-#ifndef OPTIMIZER_SNOPT_SNOPT_H
-#define OPTIMIZER_SNOPT_SNOPT_H
+#ifndef DART_OPTIMIZER_SNOPT_SNOPT_H
+#define DART_OPTIMIZER_SNOPT_SNOPT_H
 
 #include <vector>
 #include <Eigen/Dense>
 #include "SnoptInterface.h"
 #include "optimizer/Solver.h"
 
+namespace dart {
 namespace optimizer {
-    class Problem;
-    class ConstraintBox;
-    class ObjectiveBox;
-    class Var;
-    
-    namespace snopt {
 
-        class SnoptSolver : public Solver {
-        public:
-            SnoptSolver(Problem *problem);
-            virtual ~SnoptSolver();
+class Problem;
+class ConstraintBox;
+class ObjectiveBox;
+class Var;
 
-            virtual bool solve();
+namespace snopt {
 
-            virtual void resetSolver();
-            static int iterUpdate(long mask, int compute_gradients, double *coefs, void *update_data);
-        private:
-            SnoptInterface *mSnopt;
-            /* std::vector<Dofs> mVariables; */
-            /* ConstrBox* mConstrBox; */
-            /* ObjBox* mObjBox; */
+class SnoptSolver : public Solver {
+public:
+    SnoptSolver(Problem *problem);
+    virtual ~SnoptSolver();
 
-            ConstraintBox* conBox();
-            ObjectiveBox* objBox();
+    virtual bool solve();
 
-            bool mNoDisplay;
-            int mSolverIter;
+    virtual void resetSolver();
+    static int iterUpdate(long mask, int compute_gradients, double *coefs, void *update_data);
+private:
+    SnoptInterface *mSnopt;
+    /* std::vector<Dofs> mVariables; */
+    /* ConstrBox* mConstrBox; */
+    /* ObjBox* mObjBox; */
 
-            int mTotalDofs;
-            int mOptCount;
-            bool mPrint;
-            int mUnit;
+    ConstraintBox* conBox();
+    ObjectiveBox* objBox();
+
+    bool mNoDisplay;
+    int mSolverIter;
+
+    int mTotalDofs;
+    int mOptCount;
+    bool mPrint;
+    int mUnit;
 
 
-        };
+};
 
-        
-    } // namespace snopt
+} // namespace snopt
 } // namespace optimizer
+} // namespace dart
 
-#endif // #ifndef OPTIMIZER_SNOPT_SNOPT_H
+#endif // #ifndef DART_OPTIMIZER_SNOPT_SNOPT_H
 

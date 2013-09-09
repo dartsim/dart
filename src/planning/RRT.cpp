@@ -43,19 +43,21 @@
 
 #include "RRT.h"
 #include "simulation/World.h"
-#include "kinematics/Dof.h"
-#include "dynamics/SkeletonDynamics.h"
+#include "dynamics/GenCoord.h"
+#include "dynamics/Skeleton.h"
 #include <flann/flann.hpp>
 
 using namespace std;
 using namespace Eigen;
+using namespace dart;
 using namespace simulation;
 using namespace dynamics;
 
+namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, SkeletonDynamics* robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
+RRT::RRT(World* world, Skeleton* robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -69,7 +71,7 @@ RRT::RRT(World* world, SkeletonDynamics* robot, const std::vector<int> &dofs, co
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, dynamics::SkeletonDynamics* robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(World* world, dynamics::Skeleton* robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -193,7 +195,7 @@ VectorXd RRT::getRandomConfig() {
 	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-		config[i] = randomInRange(robot->getDof(dofs[i])->getMin(), robot->getDof(dofs[i])->getMax());
+        config[i] = randomInRange(robot->getGenCoord(dofs[i])->get_qMin(), robot->getGenCoord(dofs[i])->get_qMax());
 	}
 	return config;
 }
@@ -226,4 +228,5 @@ size_t RRT::getSize() {
 	return configVector.size();
 }
 
-}	//< End of namespace
+} // namespace planning
+} // namespace dart

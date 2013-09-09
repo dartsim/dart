@@ -1,6 +1,5 @@
 ###############################################
 # apps/forwardSim
-
 project(forwardSim)
 file(GLOB forwardSim_srcs "*.cpp")
 file(GLOB forwardSim_hdrs "*.h")

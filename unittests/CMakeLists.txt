@@ -1,7 +1,7 @@
 # @file CMakeLists.txt
 # @author Can Erdogan
 # @date Feb 02, 2013
-# @brief The CMakefile for the tests for the RRT implementations. NOTE Assumes every .cpp file is 
+# @brief The CMakefile for the tests for the RRT implementations. NOTE Assumes every .cpp file is
 # a test file with a "main" function.
 
 project(UnitTests)
@@ -24,12 +24,12 @@ if(NOT WIN32)
     include_directories(/usr/src/gtest)
     add_library(gtest /usr/src/gtest/src/gtest-all.cc ${gtest_hdrs})
   elseif(APPLE)
-    add_definitions (-DGTEST_USE_OWN_TR1_TUPLE)    
+    add_definitions (-DGTEST_USE_OWN_TR1_TUPLE)
     file(GLOB gtest_hdrs "/usr/local/share/gtest/include/*.h" "/usr/local/share/gtest/include/internal/*.h")
     include_directories(/usr/local/share/gtest/include)
     include_directories(/usr/local/share/gtest)
     add_library(gtest /usr/local/share/gtest/src/gtest-all.cc ${gtest_hdrs})
-  endif()    
+  endif()
 
   target_link_libraries(gtest)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

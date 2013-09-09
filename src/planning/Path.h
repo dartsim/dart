@@ -41,7 +41,9 @@
 #include <list>
 #include <Eigen/Core>
 
+namespace dart {
 namespace planning {
+
 class PathSegment
 {
 public:
@@ -86,4 +88,6 @@ private:
 	std::list<std::pair<double, bool> > switchingPoints;
 	std::list<PathSegment*> pathSegments;
 };
-}
+
+} // namespace planning
+} // namespace dart

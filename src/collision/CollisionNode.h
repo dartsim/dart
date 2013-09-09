@@ -36,35 +36,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLLISION_CONLLISION_NODE_H
-#define COLLISION_CONLLISION_NODE_H
+#ifndef DART_COLLISION_CONLLISION_NODE_H
+#define DART_COLLISION_CONLLISION_NODE_H
 
-namespace kinematics { class BodyNode; }
+namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}
 
 namespace collision {
 
 /// @brief
-class CollisionNode {
-public: // constructors and destructor
+class CollisionNode
+{
+public:
     /// @brief Default constructor
-    CollisionNode(kinematics::BodyNode* _bodyNode);
+    CollisionNode(dynamics::BodyNode* _bodyNode);
 
     /// @brief Default destructor
     virtual ~CollisionNode();
 
-public: // setters and getters
+public:
     /// @brief
-    kinematics::BodyNode* getBodyNode() const { return mBodyNode; }
+    dynamics::BodyNode* getBodyNode() const;
 
     /// @brief
-    void setIndex(int _idx) { mIndex = _idx; }
+    void setIndex(int _idx);
 
     /// @brief
-    int getIndex() const { return mIndex; }
+    int getIndex() const;
 
 protected:
     /// @brief
-    kinematics::BodyNode* mBodyNode;
+    dynamics::BodyNode* mBodyNode;
 
     /// @brief
     int mIndex;
@@ -73,5 +78,6 @@ private:
 };
 
 } // namespace collision
+} // namespace dart
 
-#endif // COLLISION_CONLLISION_DETECTOR_H
+#endif // #ifndef DART_COLLISION_CONLLISION_NODE_H

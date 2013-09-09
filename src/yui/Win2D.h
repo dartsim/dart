@@ -35,33 +35,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef YUI_WIN2D_H
-#define YUI_WIN2D_H
+#ifndef DART_YUI_WIN2D_H
+#define DART_YUI_WIN2D_H
 
 #include "GlutWindow.h"
 
+namespace dart {
 namespace yui {
 
-    class Win2D : public GlutWindow
-    {
-    protected:
-        bool mTranslate;
-        double mTransX;
-        double mTransY;
-    public:
-        Win2D();
+class Win2D : public GlutWindow
+{
+protected:
+    bool mTranslate;
+    double mTransX;
+    double mTransY;
+public:
+    Win2D();
 
-        virtual void resize(int w, int h);
-        virtual void render();
+    virtual void resize(int w, int h);
+    virtual void render();
 
-        virtual void keyboard(unsigned char key, int x, int y);
-        virtual void click(int button, int state, int x, int y);
-        virtual void drag(int x, int y);
+    virtual void keyboard(unsigned char key, int x, int y);
+    virtual void click(int button, int state, int x, int y);
+    virtual void drag(int x, int y);
 
-        virtual void initGL();
-        virtual void draw()=0;
-    };
+    virtual void initGL();
+    virtual void draw()=0;
+};
 
-}   // namespace yui
+} // namespace yui
+} // namespace dart
 
-#endif
+#endif // #ifndef DART_YUI_WIN2D_H

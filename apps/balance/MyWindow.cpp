@@ -1,19 +1,20 @@
 #include "MyWindow.h"
-#include "simulation/World.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/ConstraintDynamics.h"
-#include "yui/GLFuncs.h"
-#include "math/UtilsMath.h"
 
-using namespace Eigen;
-using namespace std;
+#include "math/Helpers.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/Skeleton.h"
+#include "constraint/ConstraintDynamics.h"
+#include "simulation/World.h"
+#include "yui/GLFuncs.h"
+
+using namespace dart;
+using namespace math;
 using namespace dynamics;
 using namespace yui;
-using namespace dart_math;
 
 void MyWindow::timeStepping()
 {
-    static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(1)->getNode("fullbody1_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+    mWorld->getSkeleton(1)->findBodyNode("h_spine")->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
 
     mController->setConstrForces(mWorld->getCollisionHandle()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq());
@@ -36,8 +37,8 @@ void MyWindow::drawSkels()
 
     // draw arrow
     if (mImpulseDuration > 0) {
-        Vector3d poa = xformHom(mWorld->getSkeleton(1)->getNode("fullbody1_h_spine")->getWorldTransform(), Vector3d(0.0, 0.0, 0.0));
-        Vector3d start = poa - mForce / 10.0;
+        Eigen::Vector3d poa = xformHom(mWorld->getSkeleton(1)->findBodyNode("h_spine")->getWorldTransform(), Eigen::Vector3d(0.0, 0.0, 0.0));
+        Eigen::Vector3d start = poa - mForce / 10.0;
         double len = mForce.norm() / 10.0;
         drawArrow3D(start, mForce, len, 0.05, 0.1);
     }
@@ -82,22 +83,22 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case '1':
         mForce[0] = 20;
         mImpulseDuration = 100.0;
-        cout << "push forward" << endl;
+        std::cout << "push forward" << std::endl;
         break;
     case '2':
         mForce[0] = -10;
         mImpulseDuration = 100.0;
-        cout << "push backward" << endl;
+        std::cout << "push backward" << std::endl;
         break;
     case '3':
         mForce[2] = 50;
         mImpulseDuration = 100.0;
-        cout << "push right" << endl;
+        std::cout << "push right" << std::endl;
         break;
     case '4':
         mForce[2] = -50;
         mImpulseDuration = 100.0;
-        cout << "push left" << endl;
+        std::cout << "push left" << std::endl;
         break;
     default:
         Win3D::keyboard(key,x,y);

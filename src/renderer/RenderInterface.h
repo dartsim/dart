@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RENDERER_RENDERINTERFACE_H
-#define RENDERER_RENDERINTERFACE_H
+#ifndef DART_RENDERER_RENDERINTERFACE_H
+#define DART_RENDERER_RENDERINTERFACE_H
 
 #include <vector>
 #include "Light.h"
@@ -44,82 +44,86 @@
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
+namespace dart {
 namespace renderer {
-    enum DecoBufferType {
-        BT_Front,
-        BT_Back
-    };
 
-    enum DecoColorChannel {
-        CC_R,
-        CC_G,
-        CC_B,
-        CC_A,
-        CC_RGB,
-        CC_RGBA
-    };
+enum DecoBufferType {
+    BT_Front,
+    BT_Back
+};
 
-    enum DecoDrawType {
-        DT_WireFrame,
-        DT_SolidPolygon,
-        DT_FrontPolygon,
-        DT_BackPolygon,
-        DT_Max
-    };
+enum DecoColorChannel {
+    CC_R,
+    CC_G,
+    CC_B,
+    CC_A,
+    CC_RGB,
+    CC_RGBA
+};
 
-    class RenderInterface {
-    public:
-        RenderInterface(){}
-        virtual ~RenderInterface(){}
+enum DecoDrawType {
+    DT_WireFrame,
+    DT_SolidPolygon,
+    DT_FrontPolygon,
+    DT_BackPolygon,
+    DT_Max
+};
 
-        virtual void initialize();
-        virtual void destroy();
+class RenderInterface {
+public:
+    RenderInterface(){}
+    virtual ~RenderInterface(){}
 
-        virtual void setViewport(int _x,int _y,int _width,int _height);
-        virtual void getViewport(int& _x, int& _y,int& _width,int& _height) const;
+    virtual void initialize();
+    virtual void destroy();
 
-        virtual void clear(const Eigen::Vector3d& _color);
+    virtual void setViewport(int _x,int _y,int _width,int _height);
+    virtual void getViewport(int& _x, int& _y,int& _width,int& _height) const;
 
-        virtual void setDefaultLight();
-        virtual void addLight(Light *_light);
-        virtual void eraseAllLights();
-        virtual void turnLightsOff();
-        virtual void turnLightsOn();
+    virtual void clear(const Eigen::Vector3d& _color);
 
-        virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow);
-        virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const;
-        virtual void setDefaultMaterial();
+    virtual void setDefaultLight();
+    virtual void addLight(Light *_light);
+    virtual void eraseAllLights();
+    virtual void turnLightsOff();
+    virtual void turnLightsOn();
 
-        virtual void pushMatrix();
-        virtual void popMatrix();
-        virtual void pushName(int _id);
-        virtual void popName();
+    virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow);
+    virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const;
+    virtual void setDefaultMaterial();
 
-        virtual void translate(const Eigen::Vector3d& _offset); //glTranslate 
-        virtual void rotate(const Eigen::Vector3d& _axis, double _rad); //glRotate
-        virtual void transform(const Eigen::Affine3d& _transform); //glMultMatrix
-        virtual void scale(const Eigen::Vector3d& _scale); //glScale
+    virtual void pushMatrix();
+    virtual void popMatrix();
+    virtual void pushName(int _id);
+    virtual void popName();
 
-        virtual void drawEllipsoid(const Eigen::Vector3d& _size);
-        virtual void drawCube(const Eigen::Vector3d& _size);
-        virtual void drawCylinder(double _radius, double _height);
-        virtual void drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh);
-        virtual void drawList(unsigned int index);
+    virtual void translate(const Eigen::Vector3d& _offset); //glTranslate
+    virtual void rotate(const Eigen::Vector3d& _axis, double _rad); //glRotate
+    virtual void transform(const Eigen::Isometry3d& _transform); //glMultMatrix
+    virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
-        virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh);
+    virtual void drawEllipsoid(const Eigen::Vector3d& _size);
+    virtual void drawCube(const Eigen::Vector3d& _size);
+    virtual void drawCylinder(double _radius, double _height);
+    virtual void drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh);
+    virtual void drawList(unsigned int index);
 
-        virtual void setPenColor(const Eigen::Vector4d& _col);
-        virtual void setPenColor(const Eigen::Vector3d& _col);
+    virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh);
 
-        virtual void saveToImage(const char *_filename, DecoBufferType _buffType = BT_Back);
-        virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels);
+    virtual void setPenColor(const Eigen::Vector4d& _col);
+    virtual void setPenColor(const Eigen::Vector3d& _col);
 
-        virtual Camera* getCamera();
+    virtual void saveToImage(const char *_filename, DecoBufferType _buffType = BT_Back);
+    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels);
 
-    protected:
-        Camera* mCamera;
-        std::vector<Light*> mLightList;
-    };
+    virtual Camera* getCamera();
+
+protected:
+    Camera* mCamera;
+    std::vector<Light*> mLightList;
+};
+
 } // namespace renderer
+} // namespace dart
 
-#endif // #ifndef RENDERER_RENDERINTERFACE_H
+#endif // #ifndef DART_RENDERER_RENDERINTERFACE_H

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTILS_LOAD_OPENGL_H
-#define UTILS_LOAD_OPENGL_H
+#ifndef DART_RENDERER_LOAD_OPENGL_H
+#define DART_RENDERER_LOAD_OPENGL_H
 
 #if WIN32
 #include <cstdlib> // To disable glut::exit() function
@@ -49,5 +49,5 @@
 #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif // #ifndef UTILS_LOAD_OPENGL_H
+#endif // #ifndef DART_RENDERER_LOAD_OPENGL_H
 
