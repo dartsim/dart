@@ -3,6 +3,7 @@
 #include "RRT.h"
 #include "collision/CollisionDetector.h"
 #include "dynamics/Skeleton.h"
+#include <ctime>
 
 using namespace std;
 using namespace Eigen;
