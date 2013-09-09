@@ -115,7 +115,6 @@ public:
     const Eigen::Isometry3d& getWorldTransformation() const;
 
     /// @brief
-    DEPRECATED void addNode(BodyNode* _body, bool _addParentJoint = true);
     void addBodyNode(BodyNode* _body, bool _addParentJoint = true);
 
     /// @brief
@@ -125,7 +124,6 @@ public:
     void setRootBodyNode(BodyNode* _body);
 
     /// @brief
-    DEPRECATED int getNumNodes() const;
     int getNumBodyNodes() const;
 
     /// @brief
@@ -135,11 +133,9 @@ public:
     BodyNode* getRoot();
 
     /// @brief
-    DEPRECATED BodyNode* getNode(int _idx) const;
     BodyNode* getBodyNode(int _idx) const;
 
     /// @brief
-    DEPRECATED BodyNode* getNode(const char* const _name) const;
     BodyNode* findBodyNode(const std::string& _name) const;
 
     /// @brief
@@ -149,7 +145,6 @@ public:
     Joint* getJoint(int _idx) const;
 
     /// @brief
-    DEPRECATED Joint* getJoint(const char* const _name) const;
     Joint* findJoint(const std::string& _name) const;
 
     /// @brief
@@ -317,7 +312,6 @@ public:
     /// the respective (recursive or nonrecursive) dynamics computation because
     /// the necessary Jacobians will be ready. Extra care is needed to make sure
     /// the required quantities are up-to-date when using this function alone.
-    DEPRECATED void evalExternalForces();
     void updateExternalForces();
 
     /// #brief

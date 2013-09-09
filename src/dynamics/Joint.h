@@ -149,11 +149,9 @@ public:
     void setTransformFromChildBody(const Eigen::Isometry3d& _T);
 
     /// @brief
-    DEPRECATED BodyNode* getParentNode() const { return mParentBody; }
     BodyNode* getParentBodyNode() const;
 
     /// @brief
-    DEPRECATED BodyNode* getChildNode() const { return mChildBody; }
     BodyNode* getChildBodyNode() const;
 
     /// @brief

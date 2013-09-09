@@ -145,11 +145,6 @@ void Skeleton::initDynamics()
         mTotalMass += getBodyNode(i)->getMass();
 }
 
-void Skeleton::addNode(BodyNode* _body, bool _addParentJoint)
-{
-    addBodyNode(_body, _addParentJoint);
-}
-
 void Skeleton::addBodyNode(BodyNode* _body, bool _addParentJoint)
 {
     assert(_body != NULL);
@@ -184,11 +179,6 @@ void Skeleton::setRootBodyNode(BodyNode* _body)
     mRootBodyNode = _body;
 }
 
-int Skeleton::getNumNodes() const
-{
-    return mBodyNodes.size();
-}
-
 int Skeleton::getNumBodyNodes() const
 {
     return mBodyNodes.size();
@@ -204,19 +194,9 @@ BodyNode* Skeleton::getRoot()
     return mRootBodyNode;
 }
 
-BodyNode* Skeleton::getNode(int _idx) const
-{
-    return getBodyNode(_idx);
-}
-
 BodyNode* Skeleton::getBodyNode(int _idx) const
 {
     return mBodyNodes[_idx];
-}
-
-BodyNode* Skeleton::getNode(const char* const _name) const
-{
-    findBodyNode(_name);
 }
 
 BodyNode* Skeleton::findBodyNode(const std::string& _name) const
@@ -248,14 +228,9 @@ int Skeleton::getBodyNodeIndex(const std::string& _name) const
     return -1;
 }
 
-Joint*Skeleton::getJoint(int _idx) const
+Joint* Skeleton::getJoint(int _idx) const
 {
     return mJoints[_idx];
-}
-
-Joint*Skeleton::getJoint(const char* const _name) const
-{
-    return findJoint(_name);
 }
 
 Joint* Skeleton::findJoint(const std::string& _name) const
@@ -536,11 +511,6 @@ Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
     }
 
     return get_tau();
-}
-
-void Skeleton::evalExternalForces()
-{
-    updateExternalForces();
 }
 
 void Skeleton::updateExternalForces()

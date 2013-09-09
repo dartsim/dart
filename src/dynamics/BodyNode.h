@@ -77,7 +77,6 @@ Runge-Kutta and fourth-order Runge Kutta.
 
 #include <Eigen/Dense>
 
-#include "common/Deprecated.h"
 #include "math/Geometry.h"
 
 namespace dart {
@@ -153,9 +152,6 @@ public:
     double getMass() const;
 
     /// @brief
-    DEPRECATED void setLocalInertia(double _Ixx, double _Iyy, double _Izz,
-                                    double _Ixy, double _Ixz, double _Iyz)
-    { setMomentOfInertia(_Ixx, _Iyy, _Izz, _Ixy, _Ixz, _Iyz); }
     void setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
                             double _Ixy, double _Ixz, double _Iyz);
 
@@ -180,15 +176,6 @@ public:
     /// @brief
     int getSkelIndex() const;
 
-    /// @brief Use addVisualizationShape() and addCollisionShape()
-    DEPRECATED void addShape(Shape* _p);
-
-    /// @brief Use getVisualizationShape()
-    DEPRECATED Shape* getShape(int _idx) const;
-
-    /// @brief Use getNumVisualizationShapes()
-    DEPRECATED int getNumShapes() const;
-
     /// @brief
     void addVisualizationShape(Shape *_p);
 
@@ -208,11 +195,9 @@ public:
     Shape* getCollisionShape(int _idx) const;
 
     /// @brief
-    DEPRECATED void setSkel(Skeleton* _skel);
     void setSkeleton(Skeleton* _skel);
 
     /// @brief
-    DEPRECATED Skeleton* getSkel() const;
     Skeleton* getSkeleton() const;
 
     /// @brief
@@ -234,18 +219,15 @@ public:
     int getNumChildJoints() const;
 
     /// @brief
-    DEPRECATED void getParentNode(BodyNode* _body) { setParentBodyNode(_body); }
     void setParentBodyNode(BodyNode* _body);
 
     /// @brief
-    DEPRECATED BodyNode* getParentNode() const { return getParentBodyNode(); }
     BodyNode* getParentBodyNode() const;
 
     /// @brief
     void addChildBody(BodyNode* _body);
 
     /// @brief
-    DEPRECATED BodyNode* getChildNode(int _idx) const { return getChildBodyNode(_idx); }
     BodyNode* getChildBodyNode(int _idx) const;
 
     /// @brief
@@ -272,7 +254,6 @@ public:
     int getNumLocalDofs() const;
 
     /// @brief
-    DEPRECATED GenCoord* getDof(int _idx) const;
     GenCoord* getLocalGenCoord(int _idx) const;
 
     /// @brief true if d is present in the dof list for the joint.
@@ -472,7 +453,6 @@ public:
     void updateDampingForce();
 
     /// @brief Updates the mass matrix mM
-    DEPRECATED void evalMassMatrix();
     void updateMassMatrix();
 
     /// @brief Aggregate the external forces mFext in the generalized

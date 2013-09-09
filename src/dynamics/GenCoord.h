@@ -42,7 +42,6 @@
 #include <cassert>
 #include <string>
 
-#include "common/Deprecated.h"
 #include "math/Geometry.h"
 
 namespace dart {
@@ -176,8 +175,6 @@ protected:
     double init_dq;
     //double init_ddq;
 };
-
-DEPRECATED typedef GenCoord Dof;
 
 } // namespace dynamics
 } // namespace dart

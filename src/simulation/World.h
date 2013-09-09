@@ -47,7 +47,6 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "common/Deprecated.h"
 #include "common/Timer.h"
 #include "integration/Integrator.h"
 

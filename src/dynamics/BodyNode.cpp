@@ -244,11 +244,6 @@ int BodyNode::getNumLocalDofs() const
     return mParentJoint->getDOF();
 }
 
-GenCoord* BodyNode::getDof(int _idx) const
-{
-    return getLocalGenCoord(_idx);
-}
-
 GenCoord* BodyNode::getLocalGenCoord(int _idx) const
 {
     return mParentJoint->getGenCoord(_idx);
@@ -683,25 +678,9 @@ int BodyNode::getSkelIndex() const
     return mSkelIndex;
 }
 
-void BodyNode::addShape(Shape* _p)
-{
-    addVisualizationShape(_p);
-    addCollisionShape(_p);
-}
-
-Shape*BodyNode::getShape(int _idx) const
-{
-    return mVizShapes[_idx];
-}
-
 void BodyNode::addVisualizationShape(Shape* _p)
 {
     mVizShapes.push_back(_p);
-}
-
-int BodyNode::getNumShapes() const
-{
-    return mVizShapes.size();
 }
 
 int BodyNode::getNumVisualizationShapes() const
@@ -729,19 +708,9 @@ Shape*BodyNode::getCollisionShape(int _idx) const
     return mColShapes[_idx];
 }
 
-void BodyNode::setSkel(Skeleton* _skel)
-{
-    setSkeleton(_skel);
-}
-
 void BodyNode::setSkeleton(Skeleton* _skel)
 {
     mSkeleton = _skel;
-}
-
-Skeleton*BodyNode::getSkel() const
-{
-    return getSkeleton();
 }
 
 Skeleton*BodyNode::getSkeleton() const
@@ -966,11 +935,6 @@ void BodyNode::update_F_fs()
 void BodyNode::updateDampingForce()
 {
     dterr << "Not implemented.\n";
-}
-
-void BodyNode::evalMassMatrix()
-{
-    updateMassMatrix();
 }
 
 void BodyNode::updateMassMatrix()

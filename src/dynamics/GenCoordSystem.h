@@ -57,7 +57,6 @@ public:
     virtual ~GenCoordSystem();
 
     /// @brief
-    DEPRECATED int getNumDofs() const { return getDOF(); }
     int getDOF() const;
 
     /// @brief
@@ -118,8 +117,6 @@ protected:
 private:
 
 };
-
-DEPRECATED typedef GenCoordSystem System;
 
 } // namespace dynamics
 } // namespace dart
