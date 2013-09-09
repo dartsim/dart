@@ -106,7 +106,7 @@ inline Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v){
 }
 
 inline Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m) {
-#if _DEBUG
+#ifndef NDEBUG
     if (fabs(m(0, 0)) > M_EPSILON || fabs(m(1, 1)) > M_EPSILON || fabs(m(2, 2)) > M_EPSILON) {
         std::cout << "Not skew symmetric matrix" << std::endl;
         std::cerr << m << std::endl;

@@ -218,14 +218,14 @@ void BodyNode::setDependDofList()
         mDependentDofIndexes.push_back(dofID);
     }
 
-#if _DEBUG
-    for (int i = 0; i < (int)mDependentDofs.size() - 1; i++)
+#ifndef NDEBUG
+    for (int i = 0; i < (int)mDependentDofIndexes.size() - 1; i++)
     {
-        int now = mDependentDofs[i];
-        int next = mDependentDofs[i + 1];
+        int now = mDependentDofIndexes[i];
+        int next = mDependentDofIndexes[i + 1];
         if (now > next)
         {
-            cerr << "Array not sorted!!!" << endl;
+            std::cerr << "Array not sorted!!!" << std::endl;
             exit(0);
         }
     }
