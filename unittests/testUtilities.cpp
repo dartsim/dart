@@ -79,11 +79,8 @@ TEST(UTILS, UTILS) {
   EXPECT_LT(x, 2.0);
 
   // Test transform
-  Eigen::Matrix4d M;
-  M << 1.0, 0.0, 0.0, 3.0,
-    0.0, 1.0, 0.0, 2.0,
-    0.0, 0.0, 1.0, 1.0,
-    0.0, 0.0, 0.0, 1.0;
+  Eigen::Isometry3d M = Eigen::Isometry3d::Identity();
+  M.translation() = Eigen::Vector3d(3.0, 2.0, 1.0);
   Eigen::Vector3d pt(1.0, 0.5, 1.0);
   Eigen::Vector3d result = dart::math::xformHom(M, pt);
   Eigen::Vector3d expected(4.0, 2.5, 2.0);
