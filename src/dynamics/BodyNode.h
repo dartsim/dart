@@ -363,12 +363,12 @@ public:
     /// @brief Add applying Cartesian torque to the node.
     ///
     /// The torque in local coordinates is accumulated in mExtTorqueBody.
-    void addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal);
+    void addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
 
     /// @brief Set applying Cartesian torque to the node.
     ///
     /// The torque in local coordinates is accumulated in mExtTorqueBody.
-    void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal);
+    void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
 
     /// @brief Clean up structures that store external forces: mContacts, mFext,
     /// mExtForceBody and mExtTorqueBody.
