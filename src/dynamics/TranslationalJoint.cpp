@@ -71,7 +71,7 @@ void TranslationalJoint::_updateTransformation()
 
     mT = mT_ParentBodyToJoint
          * math::ExpLinear(v)
-         * math::Inv(mT_ChildBodyToJoint);
+         * mT_ChildBodyToJoint.inverse();
 }
 
 void TranslationalJoint::_updateVelocity()

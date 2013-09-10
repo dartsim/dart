@@ -284,7 +284,7 @@ public:
 
     /// @brief Transformation from the world coordinates to the local
     /// coordinates of this body node.
-    Eigen::Isometry3d getWorldInvTransform() const { return math::Inv(mW); }
+    Eigen::Isometry3d getWorldInvTransform() const { return mW.inverse(); }
 
     /// @brief Given a 3D vector lp in the local coordinates of this body node.
     /// @return The world coordinates of this vector

@@ -61,7 +61,7 @@ WeldJoint::~WeldJoint()
 void WeldJoint::_updateTransformation()
 {
     // T
-    mT = mT_ParentBodyToJoint*math::Inv(mT_ChildBodyToJoint);
+    mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
 }
 
 void WeldJoint::_updateVelocity()

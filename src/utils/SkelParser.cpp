@@ -491,7 +491,7 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
          parentWorld = parentBody->getWorldTransform();
     if (hasElement(_jointElement, "transformation"))
         childToJoint = getValueIsometry3d(_jointElement, "transformation");
-    Eigen::Isometry3d parentToJoint = math::Inv(parentWorld)*childWorld*childToJoint;
+    Eigen::Isometry3d parentToJoint = parentWorld.inverse()*childWorld*childToJoint;
     newJoint->setTransformFromChildBody(childToJoint);
     newJoint->setTransformFromParentBody(parentToJoint);
 

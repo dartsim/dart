@@ -72,7 +72,7 @@ inline void BallJoint::_updateTransformation()
 
     mT = mT_ParentBodyToJoint *
             math::ExpAngular(q) *
-            math::Inv(mT_ChildBodyToJoint);
+            mT_ChildBodyToJoint.inverse();
 }
 
 inline void BallJoint::_updateVelocity()

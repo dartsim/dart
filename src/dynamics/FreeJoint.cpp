@@ -79,7 +79,7 @@ void FreeJoint::_updateTransformation()
     mT = mT_ParentBodyToJoint *
             math::ExpLinear(q2) *
             math::ExpAngular(q1) *
-            math::Inv(mT_ChildBodyToJoint);
+            mT_ChildBodyToJoint.inverse();
 
     assert(math::VerifySE3(mT));
 }

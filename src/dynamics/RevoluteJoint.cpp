@@ -88,7 +88,7 @@ void RevoluteJoint::_updateTransformation()
     // T
     mT = mT_ParentBodyToJoint
          * math::ExpAngular(mAxis * mCoordinate.get_q())
-         * math::Inv(mT_ChildBodyToJoint);
+         * mT_ChildBodyToJoint.inverse();
 
     assert(math::VerifySE3(mT));
 }

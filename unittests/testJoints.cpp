@@ -141,7 +141,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
             Eigen::Isometry3d T_b = _joint->getLocalTransformation();
 
             //
-            Eigen::Isometry3d Tinv_a = Inv(T_a);
+            Eigen::Isometry3d Tinv_a = T_a.inverse();
             Eigen::Matrix4d Tinv_a_eigen = Tinv_a.matrix();
 
             // dTdq

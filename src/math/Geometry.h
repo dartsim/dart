@@ -221,12 +221,6 @@ Eigen::Vector6d Log(const Eigen::Isometry3d& T);
 
 //------------------------------------------------------------------------------
 
-/// @brief get inversion of T
-/// @note @f$T^{-1} = (R^T, -R^T p), where T=(R,p)@in SE(3)@f$.
-Eigen::Isometry3d Inv(const Eigen::Isometry3d& T);
-
-//------------------------------------------------------------------------------
-
 /// @brief get rotation matrix rotated along x-Eigen_Axis by theta angle.
 /// @note theta is represented in radian.
 Eigen::Isometry3d RotX(double angle);

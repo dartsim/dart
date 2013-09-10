@@ -95,7 +95,7 @@ inline void UniversalJoint::_updateTransformation()
     mT = mT_ParentBodyToJoint *
          math::ExpAngular(mAxis[0] * mCoordinate[0].get_q()) *
          math::ExpAngular(mAxis[1] * mCoordinate[1].get_q()) *
-         math::Inv(mT_ChildBodyToJoint);
+         mT_ChildBodyToJoint.inverse();
 }
 
 inline void UniversalJoint::_updateVelocity()

@@ -375,7 +375,7 @@ Eigen::VectorXd Skeleton::getInternalForces() const
 void Skeleton::initKinematics()
 {
     mRootBodyNode = mBodyNodes[0];
-    mToRootBody = math::Inv(mFrame) * mRootBodyNode->getWorldInvTransform();
+    mToRootBody = mFrame.inverse() * mRootBodyNode->getWorldInvTransform();
 
     // init the dependsOnDof stucture for each bodylink
     for(int i = 0; i < getNumBodyNodes(); i++)
@@ -438,7 +438,7 @@ void Skeleton::_updateBodyForwardKinematics(bool _firstDerivative,
         }
     }
 
-    mFrame = mRootBodyNode->getWorldTransform() * math::Inv(mToRootBody);
+    mFrame = mRootBodyNode->getWorldTransform() * mToRootBody.inverse();
 }
 
 void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,

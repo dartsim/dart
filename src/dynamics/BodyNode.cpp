@@ -302,7 +302,7 @@ Eigen::Vector6d BodyNode::getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) c
 {
     assert(math::VerifySE3(_T));
 
-    return math::AdT(math::Inv(_T) * mW, mV);
+    return math::AdT(_T.inverse() * mW, mV);
 }
 
 Eigen::Vector6d BodyNode::getAccelerationWorld() const
@@ -329,7 +329,7 @@ Eigen::Vector6d BodyNode::getAccelerationWorldAtFrame(const Eigen::Isometry3d& _
 {
     assert(math::VerifySE3(_T));
 
-    return math::AdT(math::Inv(_T) * mW, mdV);
+    return math::AdT(_T.inverse() * mW, mdV);
 }
 
 const math::Jacobian&BodyNode::getJacobianBody() const
@@ -864,7 +864,7 @@ void BodyNode::updateArticulatedInertia()
     for (iJoint = mChildJoints.begin(); iJoint != mChildJoints.end(); ++iJoint)
     {
         mAI += math::Transform(
-                    math::Inv((*iJoint)->getLocalTransformation()),
+                    (*iJoint)->getLocalTransformation().inverse(),
                     (*iJoint)->getChildBodyNode()->mPi);
     }
 }

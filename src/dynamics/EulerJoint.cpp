@@ -85,7 +85,7 @@ inline void EulerJoint::_updateTransformation()
                 math::EulerXYZ(Eigen::Vector3d(mCoordinate[0].get_q(),
                                           mCoordinate[1].get_q(),
                                           mCoordinate[2].get_q())) *
-                math::Inv(mT_ChildBodyToJoint);
+                mT_ChildBodyToJoint.inverse();
         break;
     }
     case AO_ZYX:
@@ -94,7 +94,7 @@ inline void EulerJoint::_updateTransformation()
                 math::EulerZYX(Eigen::Vector3d(mCoordinate[0].get_q(),
                                           mCoordinate[1].get_q(),
                                           mCoordinate[2].get_q())) *
-                math::Inv(mT_ChildBodyToJoint);
+                mT_ChildBodyToJoint.inverse();
         break;
     }
     default:
