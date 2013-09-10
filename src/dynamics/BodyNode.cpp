@@ -76,8 +76,6 @@ BodyNode::BodyNode(const std::string& _name)
       mFgravity(Eigen::Vector6d::Zero()),
       mB(Eigen::Vector6d::Zero()),
       mBeta(Eigen::Vector6d::Zero()),
-      mRestitutionCoeff(0.5),
-      mFrictionCoeff(0.4),
       mID(BodyNode::msBodyNodeCount++)
 {
 }
