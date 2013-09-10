@@ -280,20 +280,21 @@ Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
 
 Eigen::Vector6d BodyNode::getVelocityWorld() const
 {
+    //return math::Rotate(mW, mV);
     return math::AdR(mW, mV);
 }
 
 Eigen::Vector6d BodyNode::getVelocityWorldAtCOG() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
-    worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
+    worldFrameAtCOG.translation() = math::Rotate(mW, -mCenterOfMass);
     return math::AdT(worldFrameAtCOG, mV);
 }
 
 Eigen::Vector6d BodyNode::getVelocityWorldAtPoint(const Eigen::Vector3d& _pointBody) const
 {
     Eigen::Isometry3d worldFrameAtPoint = mW;
-    worldFrameAtPoint.translation() = mW * -_pointBody;
+    worldFrameAtPoint.translation() = math::Rotate(mW, -_pointBody);
     return math::AdT(worldFrameAtPoint, mV);
 }
 
@@ -306,20 +307,21 @@ Eigen::Vector6d BodyNode::getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) c
 
 Eigen::Vector6d BodyNode::getAccelerationWorld() const
 {
+    //return math::Rotate(mW, mdV);
     return math::AdR(mW, mdV);
 }
 
 Eigen::Vector6d BodyNode::getAccelerationWorldAtCOG() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
-    worldFrameAtCOG.translation() = mW * -mCenterOfMass;
+    worldFrameAtCOG.translation() = math::Rotate(mW, -mCenterOfMass);
     return math::AdT(worldFrameAtCOG, mdV);
 }
 
 Eigen::Vector6d BodyNode::getAccelerationWorldAtPoint(const Eigen::Vector3d& _pointBody) const
 {
     Eigen::Isometry3d worldFrameAtPoint = mW;
-    worldFrameAtPoint.translation() = mW.linear() * -_pointBody;
+    worldFrameAtPoint.translation() = math::Rotate(mW, -_pointBody);
     return math::AdT(worldFrameAtPoint, mdV);
 }
 

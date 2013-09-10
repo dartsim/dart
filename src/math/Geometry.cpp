@@ -76,197 +76,197 @@ Eigen::Vector3d quatToExp(Eigen::Quaterniond& q)
     return v*aa.angle();
 }
 
-//// Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
-//// coordinate system transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-//Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
-//{
-//    double x, y, z;
+// Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
+// coordinate system transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
+Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
+{
+    double x, y, z;
 
-//    if(order == XYZ)
-//    {
-//        if (m(2, 0) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            x = atan2(m(0, 1), m(0, 2));
-//            y = -DART_PI / 2.0;
-//            z = 0.0;
-//        }
+    if(order == XYZ)
+    {
+        if (m(2, 0) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            x = atan2(m(0, 1), m(0, 2));
+            y = -DART_PI / 2.0;
+            z = 0.0;
+        }
 
-//        if (m(2, 0) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            x = atan2(m(0, 1), m(0, 2));
-//            y = DART_PI / 2.0;
-//            z = 0.0;
-//        }
+        if (m(2, 0) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            x = atan2(m(0, 1), m(0, 2));
+            y = DART_PI / 2.0;
+            z = 0.0;
+        }
 
-//        x = atan2(m(2, 1), m(2, 2));
-//        y = -asin(m(2, 0));
-//        z = atan2(m(1, 0), m(0, 0));
+        x = atan2(m(2, 1), m(2, 2));
+        y = -asin(m(2, 0));
+        z = atan2(m(1, 0), m(0, 0));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(x,y,z);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(x,y,z);
+    }
 
-//    if (order == ZYX)
-//    {
-//        if (m(0, 2) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            z = atan2(m(1, 0), m(1, 1));
-//            y = DART_PI / 2.0;
-//            x = 0.0;
-//        }
+    if (order == ZYX)
+    {
+        if (m(0, 2) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            z = atan2(m(1, 0), m(1, 1));
+            y = DART_PI / 2.0;
+            x = 0.0;
+        }
 
-//        if (m(0, 2) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            z = atan2(m(1, 0), m(1, 1));
-//            y = -DART_PI / 2.0;
-//            x = 0.0;
-//        }
+        if (m(0, 2) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            z = atan2(m(1, 0), m(1, 1));
+            y = -DART_PI / 2.0;
+            x = 0.0;
+        }
 
-//        z = -atan2(m(0, 1), m(0, 0));
-//        y = asin(m(0, 2));
-//        x = -atan2(m(1, 2), m(2, 2));
+        z = -atan2(m(0, 1), m(0, 0));
+        y = asin(m(0, 2));
+        x = -atan2(m(1, 2), m(2, 2));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(z,y,x);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(z,y,x);
+    }
 
-//    if (order == YZX)
-//    {
-//        if (m(0, 1) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            y = atan2(m(1, 2), m(1, 0));
-//            z = -DART_PI / 2.0;
-//            x = 0.0;
-//        }
+    if (order == YZX)
+    {
+        if (m(0, 1) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            y = atan2(m(1, 2), m(1, 0));
+            z = -DART_PI / 2.0;
+            x = 0.0;
+        }
 
-//        if (m(0, 1) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            y = atan2(m(1, 2), m(1, 0));
-//            z = DART_PI / 2.0;
-//            x = 0.0;
-//        }
+        if (m(0, 1) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            y = atan2(m(1, 2), m(1, 0));
+            z = DART_PI / 2.0;
+            x = 0.0;
+        }
 
-//        y = atan2(m(0, 2), m(0, 0));
-//        z = -asin(m(0, 1));
-//        x = atan2(m(2, 1), m(1, 1));
+        y = atan2(m(0, 2), m(0, 0));
+        z = -asin(m(0, 1));
+        x = atan2(m(2, 1), m(1, 1));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(y,z,x);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(y,z,x);
+    }
 
-//    if (order == XZY)
-//    {
-//        if(m(1, 0) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            x = -atan2(m(0, 2), m(0, 1));
-//            z = DART_PI / 2.0;
-//            y = 0.0;
-//        }
+    if (order == XZY)
+    {
+        if(m(1, 0) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            x = -atan2(m(0, 2), m(0, 1));
+            z = DART_PI / 2.0;
+            y = 0.0;
+        }
 
-//        if(m(1, 0) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            x = -atan2(m(0, 2), m(0, 1));
-//            z = -DART_PI / 2.0;
-//            y = 0.0;
-//        }
+        if(m(1, 0) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            x = -atan2(m(0, 2), m(0, 1));
+            z = -DART_PI / 2.0;
+            y = 0.0;
+        }
 
-//        x = -atan2(m(1, 2), m(1, 1));
-//        z = asin(m(1, 0));
-//        y = -atan2(m(2, 0), m(0, 0));
+        x = -atan2(m(1, 2), m(1, 1));
+        z = asin(m(1, 0));
+        y = -atan2(m(2, 0), m(0, 0));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(x,z,y);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(x,z,y);
+    }
 
-//    if (order == YXZ)
-//    {
-//        if (m(2, 1) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            y = atan2(m(0, 2), m(0, 0));
-//            x = DART_PI / 2.0;
-//            z = 0.0;
-//        }
+    if (order == YXZ)
+    {
+        if (m(2, 1) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            y = atan2(m(0, 2), m(0, 0));
+            x = DART_PI / 2.0;
+            z = 0.0;
+        }
 
-//        if (m(2, 1) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            y = atan2(m(0, 2), m(0, 0));
-//            x = -DART_PI / 2.0;
-//            z = 0.0;
-//        }
+        if (m(2, 1) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            y = atan2(m(0, 2), m(0, 0));
+            x = -DART_PI / 2.0;
+            z = 0.0;
+        }
 
-//        y = -atan2(m(2, 0), m(2, 2));
-//        x = asin(m(2, 1));
-//        z = -atan2(m(0, 1), m(1, 1));
+        y = -atan2(m(2, 0), m(2, 2));
+        x = asin(m(2, 1));
+        z = -atan2(m(0, 1), m(1, 1));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(y, x, z);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(y, x, z);
+    }
 
-//    if (order==ZXY)
-//    {
-//        if (m(1, 2) > (1.0-DART_EPSILON))
-//        {
-//            std::cout << "North Pole" << std::endl;
-//            z = -atan2(m(0, 1), m(0, 0));
-//            x = -DART_PI / 2.0;
-//            y = 0.0;
-//        }
+    if (order==ZXY)
+    {
+        if (m(1, 2) > (1.0-DART_EPSILON))
+        {
+            std::cout << "North Pole" << std::endl;
+            z = -atan2(m(0, 1), m(0, 0));
+            x = -DART_PI / 2.0;
+            y = 0.0;
+        }
 
-//        if(m(1, 2) < -(1.0-DART_EPSILON))
-//        {
-//            std::cout << "South Pole" << std::endl;
-//            z = -atan2(m(0, 1), m(0, 0));
-//            x = DART_PI / 2.0;
-//            y = 0.0;
-//        }
+        if(m(1, 2) < -(1.0-DART_EPSILON))
+        {
+            std::cout << "South Pole" << std::endl;
+            z = -atan2(m(0, 1), m(0, 0));
+            x = DART_PI / 2.0;
+            y = 0.0;
+        }
 
-//        z = atan2(m(1, 0), m(1, 1));
-//        x = -asin(m(1, 2));
-//        y = atan2(m(0, 2), m(2, 2));
+        z = atan2(m(1, 0), m(1, 1));
+        x = -asin(m(1, 2));
+        y = atan2(m(0, 2), m(2, 2));
 
-//        // order of return is the order of input
-//        return Eigen::Vector3d(z,x,y);
-//    }
+        // order of return is the order of input
+        return Eigen::Vector3d(z,x,y);
+    }
 
-//    printf("Matrix_to_Euler - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
+    printf("Matrix_to_Euler - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
 
-//    return Eigen::Vector3d(0.0, 0.0, 0.0);
-//}
+    return Eigen::Vector3d(0.0, 0.0, 0.0);
+}
 
-//Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder order)
-//{
-//    if(order==XYZ)
-//        return eulerToMatrixZ(v[2])*eulerToMatrixY(v[1])*eulerToMatrixX(v[0]);
+Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder order)
+{
+    if(order==XYZ)
+        return eulerToMatrixZ(v[2])*eulerToMatrixY(v[1])*eulerToMatrixX(v[0]);
 
-//    if(order==ZYX)
-//        return eulerToMatrixX(v[0])*eulerToMatrixY(v[1])*eulerToMatrixZ(v[2]);
+    if(order==ZYX)
+        return eulerToMatrixX(v[0])*eulerToMatrixY(v[1])*eulerToMatrixZ(v[2]);
 
-//    if(order==YZX)
-//        return eulerToMatrixX(v[0])*eulerToMatrixZ(v[2])*eulerToMatrixY(v[1]);
+    if(order==YZX)
+        return eulerToMatrixX(v[0])*eulerToMatrixZ(v[2])*eulerToMatrixY(v[1]);
 
-//    if(order==XZY)
-//        return eulerToMatrixY(v[1])*eulerToMatrixZ(v[2])*eulerToMatrixX(v[0]);
+    if(order==XZY)
+        return eulerToMatrixY(v[1])*eulerToMatrixZ(v[2])*eulerToMatrixX(v[0]);
 
-//    if(order==YXZ)
-//        return eulerToMatrixZ(v[2])*eulerToMatrixX(v[0])*eulerToMatrixY(v[1]);
+    if(order==YXZ)
+        return eulerToMatrixZ(v[2])*eulerToMatrixX(v[0])*eulerToMatrixY(v[1]);
 
-//    if(order==ZXY)
-//        return eulerToMatrixY(v[1])*eulerToMatrixX(v[0])*eulerToMatrixZ(v[2]);
+    if(order==ZXY)
+        return eulerToMatrixY(v[1])*eulerToMatrixX(v[0])*eulerToMatrixZ(v[2]);
 
-//    printf("euler_to_matrix - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
+    printf("euler_to_matrix - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
 
-//    return Eigen::Matrix3d::Zero();
-//}
+    return Eigen::Matrix3d::Zero();
+}
 
 Eigen::Matrix3d eulerToMatrixX(double x)
 {
@@ -558,11 +558,74 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _q, int _qi )
     return expMapJacDot(_q, qdot);
 }
 
+//SE3 operator/(const SE3& T1, const SE3& T2)
+//{
+//    SE3 ret = SE3::Identity();
+
+//    double tmp[] = {T1(0,0)*T2(0,0) + T1(0,1)*T2(0,1) + T1(0,2)*T2(0,2),
+//                    T1(1,0)*T2(0,0) + T1(1,1)*T2(0,1) + T1(1,2)*T2(0,2),
+//                    T1(2,0)*T2(0,0) + T1(2,1)*T2(0,1) + T1(2,2)*T2(0,2),
+//                    T1(0,0)*T2(1,0) + T1(0,1)*T2(1,1) + T1(0,2)*T2(1,2),
+//                    T1(1,0)*T2(1,0) + T1(1,1)*T2(1,1) + T1(1,2)*T2(1,2),
+//                    T1(2,0)*T2(1,0) + T1(2,1)*T2(1,1) + T1(2,2)*T2(1,2),
+//                    T1(0,0)*T2(2,0) + T1(0,1)*T2(2,1) + T1(0,2)*T2(2,2),
+//                    T1(1,0)*T2(2,0) + T1(1,1)*T2(2,1) + T1(1,2)*T2(2,2),
+//                    T1(2,0)*T2(2,0) + T1(2,1)*T2(2,1) + T1(2,2)*T2(2,2) };
+
+//    ret(0,0) = tmp[0];  ret(0,1) = tmp[3];  ret(0,2) = tmp[6];  ret(0,3) = T1(0,3) - tmp[0]*T2(0,3) - tmp[3]*T2(1,3) - tmp[6]*T2(2,3);
+//    ret(1,0) = tmp[1];  ret(1,1) = tmp[4];  ret(1,2) = tmp[7];  ret(1,3) = T1(1,3) - tmp[1]*T2(0,3) - tmp[4]*T2(1,3) - tmp[7]*T2(2,3);
+//    ret(2,0) = tmp[2];  ret(2,1) = tmp[5];  ret(2,2) = tmp[8];  ret(2,3) = T1(2,3) - tmp[2]*T2(0,3) - tmp[5]*T2(1,3) - tmp[8]*T2(2,3);
+
+//    return ret;
+//}
+
+Eigen::Vector3d Rotate(const Eigen::Isometry3d& T, const Eigen::Vector3d& v)
+{
+    return Eigen::Vector3d(T(0,0)*v[0] + T(0,1)*v[1] + T(0,2)*v[2],
+                           T(1,0)*v[0] + T(1,1)*v[1] + T(1,2)*v[2],
+                           T(2,0)*v[0] + T(2,1)*v[1] + T(2,2)*v[2]);
+}
+
+//Vec3 RotateInv(const SE3& T, const Vec3& v)
+//{
+//    return Vec3(T(0,0)*v[0] + T(1,0)*v[1] + T(2,0)*v[2],
+//                T(0,1)*v[0] + T(1,1)*v[1] + T(2,1)*v[2],
+//                T(0,2)*v[0] + T(1,2)*v[1] + T(2,2)*v[2]);
+//}
+
 //Vec3 AdInvTLinear(const SE3& T, const Vec3& v)
 //{
 //    return Vec3(T(0,0)*v[0] + T(1,0)*v[1] + T(2,0)*v[2],
 //                T(0,1)*v[0] + T(1,1)*v[1] + T(2,1)*v[2],
 //                T(0,2)*v[0] + T(1,2)*v[1] + T(2,2)*v[2]);
+//}
+
+Eigen::Vector3d iEulerXYZ(const Eigen::Isometry3d& T)
+{
+    return Eigen::Vector3d(atan2(-T(1,2), T(2,2)),
+                           atan2( T(0,2), sqrt(T(1,2)*T(1,2) + T(2,2)*T(2,2))),
+                           atan2(-T(0,1), T(0,0)));
+}
+
+//Vec3 iEulerZYX(const SE3& T)
+//{
+//    return Vec3(atan2( T(1,0), T(0,0)),
+//                atan2(-T(2,0), sqrt(T(0,0)*T(0,0) + T(1,0)*T(1,0))),
+//                atan2( T(2,1), T(2,2)));
+//}
+
+//Vec3 iEulerZYZ(const SE3& T)
+//{
+//    return Vec3(atan2(T(1,2), T(0,2)),
+//                atan2(sqrt(T(2,0)*T(2,0) + T(2,1)*T(2,1)), T(2,2)),
+//                atan2(T(2,1), -T(2,0)));
+//}
+
+//Vec3 iEulerZXY(const SE3& T)
+//{
+//    return Vec3(atan2(-T(0,1), T(1,1)),
+//                atan2( T(2,1), sqrt(T(0,1)*T(0,1)+T(1,1)*T(1,1))),
+//                atan2(-T(2,0), T(2,2)));
 //}
 
 //Vec3 ad_Vec3_se3(const Vec3& s1, const se3& s2)
@@ -937,61 +1000,7 @@ Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& t)
 //    return ret;
 //}
 
-Eigen::Matrix3d eulerToMatrix3dXYZ(const Eigen::Vector3d& angle)
-{
-    Eigen::Matrix3d ret;
-
-    double c0 = cos(angle[0]);
-    double s0 = sin(angle[0]);
-    double c1 = cos(angle[1]);
-    double s1 = sin(angle[1]);
-    double c2 = cos(angle[2]);
-    double s2 = sin(angle[2]);
-
-    ret(0,0) = c1*c2;             ret(0,1) = -c1*s2;            ret(0,2) = s1;
-    ret(1,0) = c0*s2 + c2*s0*s1;  ret(1,1) = c0*c2 - s0*s1*s2;  ret(1,2) = -c1*s0;
-    ret(2,0) = s0*s2 - c0*c2*s1;  ret(2,1) = c2*s0 + c0*s1*s2;  ret(2,2) = c0*c1;
-
-    return ret;
-}
-
-Eigen::Matrix3d eulerToMatrix3dZYX(const Eigen::Vector3d& angle)
-{
-    Eigen::Matrix3d ret;
-
-    double ca = cos(angle[0]);
-    double sa = sin(angle[0]);
-    double cb = cos(angle[1]);
-    double sb = sin(angle[1]);
-    double cg = cos(angle[2]);
-    double sg = sin(angle[2]);
-
-    ret(0,0) = ca*cb;  ret(0,1) = ca*sb*sg - sa*cg;  ret(0,2) = ca*sb*cg + sa*sg;
-    ret(1,0) = sa*cb;  ret(1,1) = sa*sb*sg + ca*cg;  ret(1,2) = sa*sb*cg - ca*sg;
-    ret(2,0) = -sb;    ret(2,1) = cb*sg;             ret(2,2) = cb*cg;
-
-    return ret;
-}
-
-Eigen::Matrix3d eulerToMatrix3dZYZ(const Eigen::Vector3d& angle)
-{
-    Eigen::Matrix3d ret;
-
-    double ca = cos(angle[0]);
-    double sa = sin(angle[0]);
-    double cb = cos(angle[1]);
-    double sb = sin(angle[1]);
-    double cg = cos(angle[2]);
-    double sg = sin(angle[2]);
-
-    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;
-    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;
-    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;
-
-    return ret;
-}
-
-Eigen::Isometry3d eulerToIsometry3dXYZ(const Eigen::Vector3d& angle)
+Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle)
 {
     Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
 
@@ -1009,7 +1018,7 @@ Eigen::Isometry3d eulerToIsometry3dXYZ(const Eigen::Vector3d& angle)
     return ret;
 }
 
-Eigen::Isometry3d eulerToIsometry3dZYX(const Eigen::Vector3d& angle)
+Eigen::Isometry3d EulerZYX(const Eigen::Vector3d& angle)
 {
     Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
 
@@ -1027,193 +1036,67 @@ Eigen::Isometry3d eulerToIsometry3dZYX(const Eigen::Vector3d& angle)
     return ret;
 }
 
-Eigen::Isometry3d eulerToIsometry3dZYZ(const Eigen::Vector3d& angle)
-{
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-
-    double ca = cos(angle[0]);
-    double sa = sin(angle[0]);
-    double cb = cos(angle[1]);
-    double sb = sin(angle[1]);
-    double cg = cos(angle[2]);
-    double sg = sin(angle[2]);
-
-    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;
-    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;
-    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;
-
-    return ret;
-}
-
-//Eigen::Vector3d iEulerXYZ(const Eigen::Matrix3d& R)
+//SE3 EulerZYZ(const Vec3& angle)
 //{
-//    return Eigen::Vector3d(atan2(-R(1,2), R(2,2)),
-//                           atan2( R(0,2), sqrt(R(1,2)*R(1,2) + R(2,2)*R(2,2))),
-//                           atan2(-R(0,1), R(0,0)));
+//    SE3 ret = SE3::Identity();
+
+//    double ca = cos(angle[0]);
+//    double sa = sin(angle[0]);
+//    double cb = cos(angle[1]);
+//    double sb = sin(angle[1]);
+//    double cg = cos(angle[2]);
+//    double sg = sin(angle[2]);
+
+//    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;
+//    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;
+//    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;
+
+//    return ret;
 //}
 
-//Vec3 iEulerZYX(const SE3& T)
+Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle, const Eigen::Vector3d& pos)
+{
+    Eigen::Isometry3d T = RotX(angle[0])*RotY(angle[1])*RotZ(angle[2]);
+
+    T(0,3) = pos[0];
+    T(1,3) = pos[1];
+    T(2,3) = pos[2];
+
+    return T;
+}
+
+//SE3 EulerZYX(const Vec3& angle, const Vec3& pos)
 //{
-//    return Vec3(atan2( T(1,0), T(0,0)),
-//                atan2(-T(2,0), sqrt(T(0,0)*T(0,0) + T(1,0)*T(1,0))),
-//                atan2( T(2,1), T(2,2)));
+//    SE3 ret;
+//    double ca = cos(angle[0]);
+//    double sa = sin(angle[0]);
+//    double cb = cos(angle[1]);
+//    double sb = sin(angle[1]);
+//    double cg = cos(angle[2]);
+//    double sg = sin(angle[2]);
+
+//    ret(0,0) = ca*cb;  ret(0,1) = ca*sb*sg - sa*cg;  ret(0,2) = ca*sb*cg + sa*sg;  ret(0,3) = pos[0];
+//    ret(1,0) = sa*cb;  ret(1,1) = sa*sb*sg + ca*cg;  ret(1,2) = sa*sb*cg - ca*sg;  ret(1,3) = pos[1];
+//    ret(2,0) = -sb;    ret(2,1) = cb*sg;             ret(2,2) = cb*cg;             ret(2,3) = pos[2];
+
+//    return ret;
 //}
 
-//Vec3 iEulerZYZ(const SE3& T)
+//SE3 EulerZYZ(const Vec3& angle, const Vec3& pos)
 //{
-//    return Vec3(atan2(T(1,2), T(0,2)),
-//                atan2(sqrt(T(2,0)*T(2,0) + T(2,1)*T(2,1)), T(2,2)),
-//                atan2(T(2,1), -T(2,0)));
-//}
+//    SE3 ret;
+//    double ca = cos(angle[0]);
+//    double sa = sin(angle[0]);
+//    double cb = cos(angle[1]);
+//    double sb = sin(angle[1]);
+//    double cg = cos(angle[2]);
+//    double sg = sin(angle[2]);
 
-//Vec3 iEulerZXY(const SE3& T)
-//{
-//    return Vec3(atan2(-T(0,1), T(1,1)),
-//                atan2( T(2,1), sqrt(T(0,1)*T(0,1)+T(1,1)*T(1,1))),
-//                atan2(-T(2,0), T(2,2)));
-//}
+//    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;  ret(0,3) = pos[0];
+//    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;  ret(1,3) = pos[1];
+//    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;     ret(2,3) = pos[2];
 
-Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(0, 1), R(0, 2)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(0, 1), R(0, 2)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(atan2(R(2, 1), R(2, 2)),
-                           -asin(R(2, 0)),
-                           atan2(R(1, 0), R(0, 0)));
-}
-
-Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(1, 0), R(1, 1)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(1, 0), R(1, 1)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(-atan2(R(0, 1), R(0, 0)),
-                           asin(R(0, 2)),
-                           -atan2(R(1, 2), R(2, 2)));
-}
-
-Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(1, 2), R(1, 0)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(1, 2), R(1, 0)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(atan2(R(0, 2), R(0, 0)),
-                           -asin(R(0, 1)),
-                           atan2(R(2, 1), R(1, 1)));
-}
-
-Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(-atan2(R(0, 2), R(0, 1)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(-atan2(R(0, 2), R(0, 1)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(-atan2(R(1, 2), R(1, 1)),
-                           asin(R(1, 0)),
-                           -atan2(R(2, 0), R(0, 0)));
-}
-
-Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(0, 2), R(0, 0)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(atan2(R(0, 2), R(0, 0)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(-atan2(R(2, 0), R(2, 2)),
-                           asin(R(2, 1)),
-                           -atan2(R(0, 1), R(1, 1)));
-}
-
-Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
-{
-    if (R(2, 0) > (1.0-DART_EPSILON))
-    {
-        //std::cout << "North Pole" << std::endl;
-        return Eigen::Vector3d(-atan2(R(0, 1), R(0, 0)),
-                               -DART_PI_HALF,
-                               0.0);
-    }
-
-    if (R(2, 0) < -(1.0-DART_EPSILON))
-    {
-        //std::cout << "South Pole" << std::endl;
-        return Eigen::Vector3d(-atan2(R(0, 1), R(0, 0)),
-                               DART_PI_HALF,
-                               0.0);
-    }
-
-    return Eigen::Vector3d(atan2(R(1, 0), R(1, 1)),
-                           -asin(R(1, 2)),
-                           atan2(R(0, 2), R(2, 2)));
-}
-
-//Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R)
-//{
-
+//    return ret;
 //}
 
 // R = Exp(w)

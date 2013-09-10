@@ -80,7 +80,7 @@ Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
     if (this->mParentBody != NULL)
         parentTransf = mParentBody->getWorldTransform();
 
-    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
+    return math::Rotate(parentTransf * mT_ParentBodyToJoint, mAxis);
 }
 
 void RevoluteJoint::_updateTransformation()

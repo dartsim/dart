@@ -119,7 +119,7 @@ std::string toString(const Eigen::Isometry3d& _v)
     std::ostringstream ostr;
     ostr.precision(6);
 
-    Eigen::Vector3d XYZ = math::matrixToEulerXYZ(_v.linear());
+    Eigen::Vector3d XYZ = math::iEulerXYZ(_v);
 
     ostr << _v(0,3) << " " << _v(1,3) << " " << _v(2,3);
     ostr << " ";
@@ -269,7 +269,6 @@ Eigen::Vector6d toVector6d(const std::string& _str)
 
 Eigen::Isometry3d toIsometry3d(const std::string& _str)
 {
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
     std::vector<double> elements;
     std::vector<std::string> pieces;
     boost::split(pieces, _str, boost::is_any_of(" "));
@@ -295,11 +294,8 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
         }
     }
 
-    ret.linear() = math::eulerToMatrix3dXYZ(
-                Eigen::Vector3d(elements[3], elements[4], elements[5]));
-    ret.translation() = Eigen::Vector3d(elements[0], elements[1], elements[2]);
-
-    return ret;
+    return math::EulerXYZ(Eigen::Vector3d(elements[3], elements[4], elements[5]),
+                          Eigen::Vector3d(elements[0], elements[1], elements[2]));
 }
 
 std::string getValueString(tinyxml2::XMLElement* _parentElement, const std::string& _name)
