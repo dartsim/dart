@@ -45,8 +45,7 @@
 // Defines
 //------------------------------------------------------------------------------
 // Epsilon definition
-#define M_EPSILON    1.0E-6
-#define LIE_EPS		 1.0E-6
+#define DART_EPSILON 1.0E-6
 #define M_PI		 3.14159265358979323846
 #define M_2PI		 6.28318530717958647693		// = 2 * pi
 #define M_PI_SQR	 9.86960440108935861883		// = pi^2

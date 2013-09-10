@@ -84,7 +84,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if(order == XYZ)
     {
-        if (m(2, 0) > (1.0-M_EPSILON))
+        if (m(2, 0) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             x = atan2(m(0, 1), m(0, 2));
@@ -92,7 +92,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             z = 0.0;
         }
 
-        if (m(2, 0) < -(1.0-M_EPSILON))
+        if (m(2, 0) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             x = atan2(m(0, 1), m(0, 2));
@@ -110,7 +110,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if (order == ZYX)
     {
-        if (m(0, 2) > (1.0-M_EPSILON))
+        if (m(0, 2) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             z = atan2(m(1, 0), m(1, 1));
@@ -118,7 +118,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             x = 0.0;
         }
 
-        if (m(0, 2) < -(1.0-M_EPSILON))
+        if (m(0, 2) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             z = atan2(m(1, 0), m(1, 1));
@@ -136,7 +136,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if (order == YZX)
     {
-        if (m(0, 1) > (1.0-M_EPSILON))
+        if (m(0, 1) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             y = atan2(m(1, 2), m(1, 0));
@@ -144,7 +144,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             x = 0.0;
         }
 
-        if (m(0, 1) < -(1.0-M_EPSILON))
+        if (m(0, 1) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             y = atan2(m(1, 2), m(1, 0));
@@ -162,7 +162,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if (order == XZY)
     {
-        if(m(1, 0) > (1.0-M_EPSILON))
+        if(m(1, 0) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             x = -atan2(m(0, 2), m(0, 1));
@@ -170,7 +170,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             y = 0.0;
         }
 
-        if(m(1, 0) < -(1.0-M_EPSILON))
+        if(m(1, 0) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             x = -atan2(m(0, 2), m(0, 1));
@@ -188,7 +188,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if (order == YXZ)
     {
-        if (m(2, 1) > (1.0-M_EPSILON))
+        if (m(2, 1) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             y = atan2(m(0, 2), m(0, 0));
@@ -196,7 +196,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             z = 0.0;
         }
 
-        if (m(2, 1) < -(1.0-M_EPSILON))
+        if (m(2, 1) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             y = atan2(m(0, 2), m(0, 0));
@@ -214,7 +214,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
 
     if (order==ZXY)
     {
-        if (m(1, 2) > (1.0-M_EPSILON))
+        if (m(1, 2) > (1.0-DART_EPSILON))
         {
             std::cout << "North Pole" << std::endl;
             z = -atan2(m(0, 1), m(0, 0));
@@ -222,7 +222,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
             y = 0.0;
         }
 
-        if(m(1, 2) < -(1.0-M_EPSILON))
+        if(m(1, 2) < -(1.0-DART_EPSILON))
         {
             std::cout << "South Pole" << std::endl;
             z = -atan2(m(0, 1), m(0, 0));

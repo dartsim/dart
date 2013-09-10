@@ -88,7 +88,7 @@ inline double Tsinc(double theta)
 
 inline bool isZero(double theta)
 {
-    return (fabs(theta) < M_EPSILON);
+    return (fabs(theta) < DART_EPSILON);
 }
 
 inline double asinh(double X)
@@ -137,7 +137,7 @@ inline double round2(double x)
 
 inline bool isEqual(double x, double y)
 {
-    return (fabs(x - y) < M_EPSILON);
+    return (fabs(x - y) < DART_EPSILON);
 }
 
 // check if it is an integer
