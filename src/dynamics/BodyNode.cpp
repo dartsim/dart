@@ -217,15 +217,14 @@ void BodyNode::setDependDofList()
     }
 
 #ifndef NDEBUG
-    for (int i = 0; i < (int)mDependentDofIndexes.size() - 1; i++)
+    for (int i = 0; i < mDependentDofIndexes.size() - 1; i++)
     {
-        int now = mDependentDofIndexes[i];
-        int next = mDependentDofIndexes[i + 1];
-        if (now > next)
-        {
-            std::cerr << "Array not sorted!!!" << std::endl;
-            exit(0);
-        }
+        for (int j = i + 1; j < mDependentDofIndexes.size(); j++)
+            if (mDependentDofIndexes[i] == mDependentDofIndexes[j])
+            {
+                dterr << "Skeleton ID of Generalized coordinates is duplicated."
+                      << std::endl;
+            }
     }
 #endif
 }
