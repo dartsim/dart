@@ -342,7 +342,7 @@ public:
     /// @brief
     bool getColliding();
 
-    /// @brief Apply linear Cartesian forces to this node.
+    /// @brief Add applying linear Cartesian forces to this node.
     ///
     /// A force is defined by a point of application and a force vector. The
     /// last two parameters specify frames of the first two parameters.
@@ -354,10 +354,21 @@ public:
                      bool _isOffsetLocal = true,
                      bool _isForceLocal = false);
 
-    /// @brief apply Cartesian torque to the node.
+    /// @brief Set Applying linear Cartesian forces to this node.
+    void setExtForce(const Eigen::Vector3d& _offset,
+                     const Eigen::Vector3d& _force,
+                     bool _isOffsetLocal = true,
+                     bool _isForceLocal = false);
+
+    /// @brief Add applying Cartesian torque to the node.
     ///
     /// The torque in local coordinates is accumulated in mExtTorqueBody.
     void addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal);
+
+    /// @brief Set applying Cartesian torque to the node.
+    ///
+    /// The torque in local coordinates is accumulated in mExtTorqueBody.
+    void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal);
 
     /// @brief Clean up structures that store external forces: mContacts, mFext,
     /// mExtForceBody and mExtTorqueBody.
