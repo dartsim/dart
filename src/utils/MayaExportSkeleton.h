@@ -42,8 +42,6 @@
 #include <string>
 #include "math/UtilsRotation.h"
 
-using namespace std;
-
 namespace kinematics{
     class Skeleton;
     class BodyNode;

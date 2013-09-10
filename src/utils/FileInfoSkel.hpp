@@ -122,7 +122,6 @@ namespace kinematics {
 
     template <class SkeletonType>
     bool FileInfoSkel<SkeletonType>::saveFile( const char* _fName) const {
-        using namespace std;
         ofstream output(_fName);
         if(output.fail()){
             cout<<"Unable to save file "<<_fName<<endl;
