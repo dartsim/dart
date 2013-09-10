@@ -11,6 +11,3 @@ script:
 after_failure:
   - cat Testing/Temporary/LastTest.log
   - cat Testing/Temporary/LastTestsFailed.log
-branches:
-  only:
-    - master
