@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 
     // ***** BodyNode 1: Left Hip Yaw (LHY) ***** *
     BodyNode* node = new BodyNode("LHY");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, 0.0, M_PI, DOF_YAW);
+    Joint* joint = create1DOFJoint(NULL, node, 0.0, 0.0, DART_PI, DOF_YAW);
     joint->setName("LHY");
     Shape* shape = new BoxShape(Vector3d(0.3, 0.3, 1.0));
     node->addVisualizationShape(shape);
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
     BodyNode* parent_node = LeftLegSkel.findBodyNode("LHY");
     node = new BodyNode("LHR");
-    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, M_PI, DOF_ROLL);
+    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHR");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, 0.5));
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
     // ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
     parent_node = LeftLegSkel.findBodyNode("LHR");
     node = new BodyNode("LHP");
-    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, M_PI, DOF_ROLL);
+    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHP");
     T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, 1.0));

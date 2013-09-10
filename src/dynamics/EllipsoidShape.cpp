@@ -80,7 +80,7 @@ bool EllipsoidShape::isSphere() const {
 }
 
 void EllipsoidShape::computeVolume() {
-    mVolume = M_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
+    mVolume = DART_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
 }
 void EllipsoidShape::initMeshes() {
 }

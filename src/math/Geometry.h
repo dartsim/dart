@@ -53,6 +53,11 @@
 namespace dart {
 namespace math {
 
+enum RotationOrder
+{
+    UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX
+};
+
 /// @brief Compute geometric distance on SE(3) manifold.
 /// Norm(Log(Inv(T1) * T2)).
 //double Distance(const SE3& T1, const SE3& T2);
@@ -119,7 +124,7 @@ inline Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m) {
 }
 
 //------------------------------------------------------------------------------
-enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
+
 
 Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
 Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
@@ -223,13 +228,13 @@ Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& s);
 /// @brief fast version of Exp(se3(s, 0))
 Eigen::Isometry3d ExpLinear(const Eigen::Vector3d& s);
 
-///// @brief Log mapping
-//se3 Log(const SE3& );
+/// @brief Log mapping
+/// @note When @f$|Log(R)| = @pi@f$, Exp(LogR(R) = Exp(-Log(R)).
+/// The implementation returns only the positive one.
+Eigen::Vector3d Log(const Eigen::Matrix3d& R);
 
-///// @brief Log mapping of rotation part only
-///// @note When @f$|LogR(T)| = @pi@f$, Exp(LogR(T) = Exp(-LogR(T)).
-///// The implementation returns only the positive one.
-//Axis LogR(const SE3& T);
+/// @brief Log mapping
+Eigen::Vector6d Log(const Eigen::Isometry3d& T);
 
 //------------------------------------------------------------------------------
 

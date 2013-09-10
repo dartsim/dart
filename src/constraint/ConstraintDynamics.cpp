@@ -490,7 +490,7 @@ Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrix(const Eigen::Vector3d&
     // Rotate the tangent around the normal to compute bases.
     // Note: a possible speedup is in place for mNumDir % 2 = 0
     // Each basis and its opposite belong in the matrix, so we iterate half as many times.
-    double angle = (2 * M_PI) / mNumDir;
+    double angle = (2 * DART_PI) / mNumDir;
     int iter = (mNumDir % 2 == 0) ? mNumDir / 2 : mNumDir;
     for (int i = 0; i < iter; i++) {
         Eigen::Vector3d basis = Eigen::Quaterniond(Eigen::AngleAxisd(i * angle, n)) * tangent;

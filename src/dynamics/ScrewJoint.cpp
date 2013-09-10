@@ -100,7 +100,7 @@ void ScrewJoint::_updateTransformation()
     // T
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/M_2PI;
+    S.tail<3>() = mAxis*mPitch/DART_2PI;
     mT = mT_ParentBodyToJoint
          * math::Exp(S*mCoordinate.get_q())
          * math::Inv(mT_ChildBodyToJoint);
@@ -113,7 +113,7 @@ void ScrewJoint::_updateVelocity()
     // S
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/M_2PI;
+    S.tail<3>() = mAxis*mPitch/DART_2PI;
     mS = math::AdT(mT_ChildBodyToJoint, S);
 
     // V = S * dq

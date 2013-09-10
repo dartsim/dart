@@ -141,7 +141,7 @@ void drawThreeLink () {
     links.push_back(1);
     links.push_back(2);
     list <VectorXd> path;
-    planner.planPath(r, links, Vector3d(-M_PI+0.1, -M_PI+0.1, -M_PI+0.1), Vector3d(M_PI-0.1, M_PI-0.1, M_PI+0.1),
+    planner.planPath(r, links, Vector3d(-DART_PI+0.1, -DART_PI+0.1, -DART_PI+0.1), Vector3d(DART_PI-0.1, DART_PI-0.1, DART_PI+0.1),
  			path);
 
     // Print the nodes
@@ -164,7 +164,7 @@ void drawTwoLink () {
     links.push_back(0);
     links.push_back(1);
     list <VectorXd> path;
-    planner.planPath(r, links, Vector2d(-M_PI+0.1, -M_PI+0.1), Vector2d(M_PI-0.1, M_PI-0.1), path);
+    planner.planPath(r, links, Vector2d(-DART_PI+0.1, -DART_PI+0.1), Vector2d(DART_PI-0.1, DART_PI-0.1), path);
 
     // Print the nodes
     RRT* rrt = planner.start_rrt;

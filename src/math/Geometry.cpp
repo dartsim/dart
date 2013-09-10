@@ -88,7 +88,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             x = atan2(m(0, 1), m(0, 2));
-            y = -M_PI / 2.0;
+            y = -DART_PI / 2.0;
             z = 0.0;
         }
 
@@ -96,7 +96,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             x = atan2(m(0, 1), m(0, 2));
-            y = M_PI / 2.0;
+            y = DART_PI / 2.0;
             z = 0.0;
         }
 
@@ -114,7 +114,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             z = atan2(m(1, 0), m(1, 1));
-            y = M_PI / 2.0;
+            y = DART_PI / 2.0;
             x = 0.0;
         }
 
@@ -122,7 +122,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             z = atan2(m(1, 0), m(1, 1));
-            y = -M_PI / 2.0;
+            y = -DART_PI / 2.0;
             x = 0.0;
         }
 
@@ -140,7 +140,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             y = atan2(m(1, 2), m(1, 0));
-            z = -M_PI / 2.0;
+            z = -DART_PI / 2.0;
             x = 0.0;
         }
 
@@ -148,7 +148,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             y = atan2(m(1, 2), m(1, 0));
-            z = M_PI / 2.0;
+            z = DART_PI / 2.0;
             x = 0.0;
         }
 
@@ -166,7 +166,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             x = -atan2(m(0, 2), m(0, 1));
-            z = M_PI / 2.0;
+            z = DART_PI / 2.0;
             y = 0.0;
         }
 
@@ -174,7 +174,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             x = -atan2(m(0, 2), m(0, 1));
-            z = -M_PI / 2.0;
+            z = -DART_PI / 2.0;
             y = 0.0;
         }
 
@@ -192,7 +192,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             y = atan2(m(0, 2), m(0, 0));
-            x = M_PI / 2.0;
+            x = DART_PI / 2.0;
             z = 0.0;
         }
 
@@ -200,7 +200,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             y = atan2(m(0, 2), m(0, 0));
-            x = -M_PI / 2.0;
+            x = -DART_PI / 2.0;
             z = 0.0;
         }
 
@@ -218,7 +218,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "North Pole" << std::endl;
             z = -atan2(m(0, 1), m(0, 0));
-            x = -M_PI / 2.0;
+            x = -DART_PI / 2.0;
             y = 0.0;
         }
 
@@ -226,7 +226,7 @@ Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder order)
         {
             std::cout << "South Pole" << std::endl;
             z = -atan2(m(0, 1), m(0, 0));
-            x = M_PI / 2.0;
+            x = DART_PI / 2.0;
             y = 0.0;
         }
 
@@ -639,92 +639,106 @@ Eigen::Vector3d iEulerXYZ(const Eigen::Isometry3d& T)
 //    return ret;
 //}
 
-//se3 Log(const SE3& T)
-//{
-//    //--------------------------------------------------------------------------
-//    // T = (R, p) = exp([w, v]), t = ||w||
-//    // v = beta*p + gamma*w + 1 / 2*cross(p, w)
-//    //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
-//    //--------------------------------------------------------------------------
-//    double theta = std::acos(std::max(std::min(1.0_2*(T(0,0) + T(1,1) + T(2,2) - 1.0), 1.0), -1.0));
-//    double alpha;
-//    double beta;
-//    double gamma;
-//    se3 ret;
+Eigen::Vector3d Log(const Eigen::Matrix3d& R)
+{
+    //--------------------------------------------------------------------------
+    // T = (R, p) = exp([w, v]), t = ||w||
+    // v = beta*p + gamma*w + 1 / 2*cross(p, w)
+    //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
+    //--------------------------------------------------------------------------
+    double theta = std::acos(std::max(std::min(0.5 * (R(0,0) + R(1,1) + R(2,2) - 1.0), 1.0), -1.0));
 
-//    if (theta > M_PI - LIE_EPS)
-//    {
-//        const double c1 = 0.10132118364234;		// 1 / pi^2
-//        const double c2 = 0.01507440267955;		// 1 / 4 / pi - 2 / pi^3
-//        const double c3 = 0.00546765085347;		// 3 / pi^4 - 1 / 4 / pi^2
+    if (theta > DART_PI - DART_EPSILON)
+    {
+        double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
 
-//        double phi = M_PI - theta;
-//        double delta = 1.0_2 + 1.0_8*phi*phi;
+        return Eigen::Vector3d(
+                    R(2,1) > R(1,2) ? theta*sqrt(1.0 + (R(0,0) - 1.0)*delta) :
+                                      -theta*sqrt(1.0 + (R(0,0) - 1.0)*delta),
+                    R(0,2) > R(2,0) ? theta*sqrt(1.0 + (R(1,1) - 1.0)*delta) :
+                                      -theta*sqrt(1.0 + (R(1,1) - 1.0)*delta),
+                    R(1,0) > R(0,1) ? theta*sqrt(1.0 + (R(2,2) - 1.0)*delta) :
+                                      -theta*sqrt(1.0 + (R(2,2) - 1.0)*delta));
+    }
+    else
+    {
+        double alpha = 0.0;
 
-//        double w[] = {	T(2,1) > T(1,2) ? theta*sqrt(1.0 + (T(0,0) - 1.0)*delta) : -theta*sqrt(1.0 + (T(0,0) - 1.0)*delta),
-//                        T(0,2) > T(2,0) ? theta*sqrt(1.0 + (T(1,1) - 1.0)*delta) : -theta*sqrt(1.0 + (T(1,1) - 1.0)*delta),
-//                        T(1,0) > T(0,1) ? theta*sqrt(1.0 + (T(2,2) - 1.0)*delta) : -theta*sqrt(1.0 + (T(2,2) - 1.0)*delta) };
+        if (theta > DART_EPSILON)
+            alpha = 0.5*theta / sin(theta);
+        else
+            alpha = 0.5 + DART_1_12*theta*theta;
 
-//        beta = 1.0_4*theta*(M_PI - theta);
-//        gamma = (w[0]*T(0,3) + w[1]*T(1,3) + w[2]*T(2,3))*(c1 -  c2*phi + c3*phi*phi);
+        return Eigen::Vector3d(alpha*(R(2,1) - R(1,2)),
+                               alpha*(R(0,2) - R(2,0)),
+                               alpha*(R(1,0) - R(0,1)));
+    }
+}
 
-//        ret << w[0],
-//               w[1],
-//               w[2],
-//               beta*T(0,3) - 1.0_2*(w[1]*T(2,3) - w[2]*T(1,3)) + gamma*w[0],
-//               beta*T(1,3) - 1.0_2*(w[2]*T(0,3) - w[0]*T(2,3)) + gamma*w[1],
-//               beta*T(2,3) - 1.0_2*(w[0]*T(1,3) - w[1]*T(0,3)) + gamma*w[2];
-//    }
-//    else
-//    {
-//        if (theta > LIE_EPS)
-//        {
-//            alpha = 1.0_2*theta / sin(theta);
-//            beta = (1.0 + cos(theta))*alpha;
-//            gamma = (1.0 - beta) / theta / theta;
-//        }
-//        else
-//        {
-//            alpha = 1.0_2 + 1.0_12*theta*theta;
-//            beta = 1.0 - 1.0_12*theta*theta;
-//            gamma = 1.0_12 + 1.0_720*theta*theta;
-//        }
+Eigen::Vector6d Log(const Eigen::Isometry3d& T)
+{
+    //--------------------------------------------------------------------------
+    // T = (R, p) = exp([w, v]), t = ||w||
+    // v = beta*p + gamma*w + 1 / 2*cross(p, w)
+    //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
+    //--------------------------------------------------------------------------
+    double theta = std::acos(std::max(std::min(0.5 * (T(0,0) + T(1,1) + T(2,2) - 1.0), 1.0), -1.0));
+    double alpha;
+    double beta;
+    double gamma;
+    Eigen::Vector6d ret;
 
-//        double w[] = { alpha*(T(2,1) - T(1,2)), alpha*(T(0,2) - T(2,0)), alpha*(T(1,0) - T(0,1)) };
-//        gamma *= w[0]*T(0,3) + w[1]*T(1,3) + w[2]*T(2,3);
+    if (theta > DART_PI - DART_EPSILON)
+    {
+        const double c1 = 0.10132118364234;		// 1 / pi^2
+        const double c2 = 0.01507440267955;		// 1 / 4 / pi - 2 / pi^3
+        const double c3 = 0.00546765085347;		// 3 / pi^4 - 1 / 4 / pi^2
 
-//        ret << w[0],
-//               w[1],
-//               w[2],
-//               beta*T(0,3) + 1.0_2*(w[2]*T(1,3) - w[1]*T(2,3)) + gamma*w[0],
-//               beta*T(1,3) + 1.0_2*(w[0]*T(2,3) - w[2]*T(0,3)) + gamma*w[1],
-//               beta*T(2,3) + 1.0_2*(w[1]*T(0,3) - w[0]*T(1,3)) + gamma*w[2];
-//    }
+        double phi = DART_PI - theta;
+        double delta = 0.5 + 0.125*phi*phi;
 
-//    return ret;
-//}
+        double w[] = {	T(2,1) > T(1,2) ? theta*sqrt(1.0 + (T(0,0) - 1.0)*delta) : -theta*sqrt(1.0 + (T(0,0) - 1.0)*delta),
+                        T(0,2) > T(2,0) ? theta*sqrt(1.0 + (T(1,1) - 1.0)*delta) : -theta*sqrt(1.0 + (T(1,1) - 1.0)*delta),
+                        T(1,0) > T(0,1) ? theta*sqrt(1.0 + (T(2,2) - 1.0)*delta) : -theta*sqrt(1.0 + (T(2,2) - 1.0)*delta) };
 
-//Axis LogR(const SE3& T)
-//{
-//    double theta = std::acos(std::max(std::min(1.0_2*(T(0,0) + T(1,1) + T(2,2) - 1.0), 1.0), -1.0)), alpha;
+        beta = 0.25*theta*(DART_PI - theta);
+        gamma = (w[0]*T(0,3) + w[1]*T(1,3) + w[2]*T(2,3))*(c1 -  c2*phi + c3*phi*phi);
 
-//    if ( theta > M_PI - LIE_EPS )
-//    {
-//        double delta = 1.0_2 + 1.0_8*(M_PI - theta)*(M_PI - theta);
+        ret << w[0],
+               w[1],
+               w[2],
+               beta*T(0,3) - 0.5*(w[1]*T(2,3) - w[2]*T(1,3)) + gamma*w[0],
+               beta*T(1,3) - 0.5*(w[2]*T(0,3) - w[0]*T(2,3)) + gamma*w[1],
+               beta*T(2,3) - 0.5*(w[0]*T(1,3) - w[1]*T(0,3)) + gamma*w[2];
+    }
+    else
+    {
+        if (theta > DART_EPSILON)
+        {
+            alpha = 0.5*theta / sin(theta);
+            beta = (1.0 + cos(theta))*alpha;
+            gamma = (1.0 - beta) / theta / theta;
+        }
+        else
+        {
+            alpha = 0.5 + DART_1_12*theta*theta;
+            beta = 1.0 - DART_1_12*theta*theta;
+            gamma = DART_1_12 + DART_1_720*theta*theta;
+        }
 
-//        return Axis(T(2,1) > T(1,2) ? theta*sqrt(1.0 + (T(0,0) - 1.0)*delta) : -theta*sqrt(1.0 + (T(0,0) - 1.0)*delta),
-//                    T(0,2) > T(2,0) ? theta*sqrt(1.0 + (T(1,1) - 1.0)*delta) : -theta*sqrt(1.0 + (T(1,1) - 1.0)*delta),
-//                    T(1,0) > T(0,1) ? theta*sqrt(1.0 + (T(2,2) - 1.0)*delta) : -theta*sqrt(1.0 + (T(2,2) - 1.0)*delta));
-//    } else
-//    {
-//        if ( theta > LIE_EPS )
-//            alpha = 1.0_2*theta / sin(theta);
-//        else
-//            alpha = 1.0_2 + 1.0_12*theta*theta;
+        double w[] = { alpha*(T(2,1) - T(1,2)), alpha*(T(0,2) - T(2,0)), alpha*(T(1,0) - T(0,1)) };
+        gamma *= w[0]*T(0,3) + w[1]*T(1,3) + w[2]*T(2,3);
 
-//        return Axis(alpha*(T(2,1) - T(1,2)), alpha*(T(0,2) - T(2,0)), alpha*(T(1,0) - T(0,1)));
-//    }
-//}
+        ret << w[0],
+               w[1],
+               w[2],
+               beta*T(0,3) + 0.5*(w[2]*T(1,3) - w[1]*T(2,3)) + gamma*w[0],
+               beta*T(1,3) + 0.5*(w[0]*T(2,3) - w[2]*T(0,3)) + gamma*w[1],
+               beta*T(2,3) + 0.5*(w[1]*T(0,3) - w[0]*T(1,3)) + gamma*w[2];
+    }
+
+    return ret;
+}
 
 // re = T*s*Inv(T)
 Eigen::Vector6d AdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& s)

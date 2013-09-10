@@ -84,9 +84,9 @@ void JOINTS::kinematicsTest(Joint* _joint)
 
         for (int i = 0; i < dof; ++i)
         {
-            q(i) = random(-M_PI, M_PI);
-            dq(i) = random(-M_PI, M_PI);
-            ddq(i) = random(-M_PI, M_PI);
+            q(i) = random(-DART_PI, DART_PI);
+            dq(i) = random(-DART_PI, DART_PI);
+            ddq(i) = random(-DART_PI, DART_PI);
         }
 
         _joint->set_q(q);

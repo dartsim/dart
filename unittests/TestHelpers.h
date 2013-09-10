@@ -115,7 +115,7 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
     BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, -M_PI, M_PI, type1);
+    Joint* joint = create1DOFJoint(NULL, node, 0.0, -DART_PI, DART_PI, type1);
     joint->setName("joint1");
     Shape* shape = new BoxShape(dim1);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
@@ -127,7 +127,7 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     // Create the second link, the joint with link1 and its shape
     BodyNode* parent_node = robot->findBodyNode("link1");
     node = new BodyNode("link2");
-    joint = create1DOFJoint(parent_node, node, 0.0, -M_PI, M_PI, type2);
+    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -158,7 +158,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
     BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, -M_PI, M_PI, type1);
+    Joint* joint = create1DOFJoint(NULL, node, 0.0, -DART_PI, DART_PI, type1);
     joint->setName("joint1");
     Shape* shape = new BoxShape(dim1);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
@@ -170,7 +170,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     // Create the second link, the joint with link1 and its shape
     BodyNode* parent_node = robot->findBodyNode("link1");
     node = new BodyNode("link2");
-    joint = create1DOFJoint(parent_node, node, 0.0, -M_PI, M_PI, type2);
+    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -185,7 +185,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     // Create the third link, the joint with link2 and its shape
     parent_node = robot->findBodyNode("link2");
     node = new BodyNode("link3");
-    joint = create1DOFJoint(parent_node, node, 0.0, -M_PI, M_PI, type3);
+    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type3);
     joint->setName("joint3");
     T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
