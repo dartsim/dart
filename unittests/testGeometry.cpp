@@ -423,6 +423,31 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 }
 
 /******************************************************************************/
+TEST(LIE_GROUP_OPERATORS, EXP)
+{
+    double angle = math::random(-2*M_PI, 2*M_PI);
+    Eigen::Vector3d axis = Eigen::Vector3d::Random();
+
+    int numTest = 1;
+
+    for (int i = 0; i < numTest; ++i)
+    {
+        Eigen::Isometry3d _exp = math::ExpAngular(axis * angle);
+        Eigen::Isometry3d _angleAxis(Eigen::AngleAxisd(angle, axis));
+
+        for (int i = 0; i < 3; ++i)
+        {
+            EXPECT_EQ(_exp.translation()(i), 0.0);
+            EXPECT_EQ(_angleAxis.translation()(i), 0.0);
+        }
+
+//        for (int i = 0; i < 4; ++i)
+//            for (int j = 0; j < 4; ++j)
+//                EXPECT_NEAR(_exp(i,j), _angleAxis(i,j), LIE_GROUP_OPT_TOL);
+    }
+}
+
+/******************************************************************************/
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);

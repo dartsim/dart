@@ -61,8 +61,8 @@ TEST(UTILS, ROTATION) {
 
   // Test conversion between matrix and euler
   Eigen::Matrix3d m = quatToMatrix(q);
-  Eigen::Vector3d e = matrixToEuler(m, XYZ);
-  Eigen::Matrix3d m2 = eulerToMatrix(e, XYZ);
+  Eigen::Vector3d e = matrixToEulerXYZ(m);
+  Eigen::Matrix3d m2 = eulerToMatrix3dXYZ(e);
 
   EXPECT_NEAR((m - m2).norm(), 0.0, DART_EPSILON)
     << "Orig: " << m << " Reconstructed: " << m2;
