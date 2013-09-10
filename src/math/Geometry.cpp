@@ -1095,7 +1095,7 @@ Eigen::Isometry3d Exp(const Eigen::Vector6d& s)
     double s3[] = { s[0]*s[1], s[1]*s[2], s[2]*s[0] };
     double theta = sqrt(s2[0] + s2[1] + s2[2]), cos_t = cos(theta), alpha, beta, gamma;
 
-    if ( theta > LIE_EPS )
+    if ( theta > DART_EPSILON )
     {
         double sin_t = sin(theta);
         alpha = sin_t / theta;
@@ -1127,7 +1127,7 @@ Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& S)
     double alpha = 0.0;
     double beta = 0.0;
 
-    if (theta > LIE_EPS)
+    if (theta > DART_EPSILON)
     {
         alpha = sin(theta) / theta;
         beta = (1.0 - cos_t) / theta / theta;
