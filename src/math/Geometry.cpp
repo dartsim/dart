@@ -579,20 +579,6 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _q, int _qi )
 //    return ret;
 //}
 
-Eigen::Vector3d Rotate(const Eigen::Isometry3d& T, const Eigen::Vector3d& v)
-{
-    return Eigen::Vector3d(T(0,0)*v[0] + T(0,1)*v[1] + T(0,2)*v[2],
-                           T(1,0)*v[0] + T(1,1)*v[1] + T(1,2)*v[2],
-                           T(2,0)*v[0] + T(2,1)*v[1] + T(2,2)*v[2]);
-}
-
-//Vec3 RotateInv(const SE3& T, const Vec3& v)
-//{
-//    return Vec3(T(0,0)*v[0] + T(1,0)*v[1] + T(2,0)*v[2],
-//                T(0,1)*v[0] + T(1,1)*v[1] + T(2,1)*v[2],
-//                T(0,2)*v[0] + T(1,2)*v[1] + T(2,2)*v[2]);
-//}
-
 //Vec3 AdInvTLinear(const SE3& T, const Vec3& v)
 //{
 //    return Vec3(T(0,0)*v[0] + T(1,0)*v[1] + T(2,0)*v[2],

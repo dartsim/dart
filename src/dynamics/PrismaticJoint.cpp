@@ -83,7 +83,7 @@ Eigen::Vector3d PrismaticJoint::getAxisGlobal() const
     if (this->mParentBody != NULL)
         parentTransf = mParentBody->getWorldTransform();
 
-    return math::Rotate(parentTransf * mT_ParentBodyToJoint, mAxis);
+    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
 void PrismaticJoint::_updateTransformation()

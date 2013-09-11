@@ -187,14 +187,6 @@ Eigen::Vector3d iEulerXYZ(const Eigen::Isometry3d& T);
 //Vec3 iEulerZXY(const SE3 &T);
 
 //------------------------------------------------------------------------------
-/// @brief rotate q by T.
-/// @return @f$R q@f$, where @f$T=(R,p)@f$.
-Eigen::Vector3d Rotate(const Eigen::Isometry3d& T, const Eigen::Vector3d& q);
-
-///// @brief rotate q by Inv(T).
-//Vec3 RotateInv(const SE3& T, const Vec3& q);
-
-//------------------------------------------------------------------------------
 
 ///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
 //Axis Reparameterize(const Axis& s);
