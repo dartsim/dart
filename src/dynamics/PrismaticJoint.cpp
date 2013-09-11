@@ -90,7 +90,7 @@ void PrismaticJoint::_updateTransformation()
 {
     // T
     mT = mT_ParentBodyToJoint
-         * math::ExpLinear(mAxis * mCoordinate.get_q())
+         * math::expLinear(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
 }
 

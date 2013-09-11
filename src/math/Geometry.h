@@ -75,12 +75,6 @@ Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, dou
 Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& q, int el);
 Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& q, int el1, int el2);
 
-// compute expmap stuff
-Eigen::Matrix3d expMapRot(const Eigen::Vector3d &_expmap); ///< computes the Rotation matrix from a given expmap vector
-Eigen::Matrix3d expMapJac(const Eigen::Vector3d &_expmap);  ///< computes the Jacobian of the expmap
-Eigen::Matrix3d expMapJacDot(const Eigen::Vector3d &_expmap, const Eigen::Vector3d &_qdot); ///< computes the time derivative of the expmap Jacobian
-Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d &_expmap, int _qi);    ///< computes the derivative of the Jacobian of the expmap wrt to _qi indexed dof; _qi \in {0,1,2}
-
 //------------------------------------------------------------------------------
 /// @brief Get a transformation matrix given by the Euler XYX angle.
 Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& angle);
@@ -162,24 +156,38 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
 //Axis Reparameterize(const Axis& s);
 
 /// @brief Exponential mapping
-Eigen::Isometry3d Exp(const Eigen::Vector6d& s);
+Eigen::Isometry3d expMap(const Eigen::Vector6d& s);
 
 /// @brief fast version of Exp(se3(s, 0))
-Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& s);
+Eigen::Isometry3d expAngular(const Eigen::Vector3d& s);
 
 ///// @brief fast version of Exp(t * s), when |s| = 1
 //SE3 ExpAngular(const Axis& s, double t);
 
 /// @brief fast version of Exp(se3(s, 0))
-Eigen::Isometry3d ExpLinear(const Eigen::Vector3d& s);
+Eigen::Isometry3d expLinear(const Eigen::Vector3d& s);
+
+/// @brief Computes the Rotation matrix from a given expmap vector.
+Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _expmap);
+
+/// @brief Computes the Jacobian of the expmap
+Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _expmap);
+
+/// @brief Computes the time derivative of the expmap Jacobian.
+Eigen::Matrix3d expMapJacDot(const Eigen::Vector3d& _expmap,
+                             const Eigen::Vector3d& _qdot);
+
+/// @brief computes the derivative of the Jacobian of the expmap wrt to _qi
+/// indexed dof; _qi \in {0,1,2}
+Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _expmap, int _qi);
 
 /// @brief Log mapping
 /// @note When @f$|Log(R)| = @pi@f$, Exp(LogR(R) = Exp(-Log(R)).
 /// The implementation returns only the positive one.
-Eigen::Vector3d Log(const Eigen::Matrix3d& R);
+Eigen::Vector3d logMap(const Eigen::Matrix3d& R);
 
 /// @brief Log mapping
-Eigen::Vector6d Log(const Eigen::Isometry3d& T);
+Eigen::Vector6d logMap(const Eigen::Isometry3d& T);
 
 //------------------------------------------------------------------------------
 ///// @brief Rectify the rotation part so as that it satifies the orthogonality

@@ -357,7 +357,7 @@ math::Jacobian BodyNode::getJacobianWorldAtPoint(
     //
     // body_jacobian_at_contact_point = Ad(X^{-1} * W, Jb)
     //--------------------------------------------------------------------------
-    return math::AdTJac(math::ExpLinear(-r_world) * mW, mBodyJacobian);
+    return math::AdTJac(math::expLinear(-r_world) * mW, mBodyJacobian);
 }
 
 Eigen::MatrixXd BodyNode::getJacobianWorldAtPoint_LinearPartOnly(

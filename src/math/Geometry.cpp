@@ -574,7 +574,7 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _q, int _qi )
 //    return ret;
 //}
 
-Eigen::Vector3d Log(const Eigen::Matrix3d& R)
+Eigen::Vector3d logMap(const Eigen::Matrix3d& R)
 {
     //--------------------------------------------------------------------------
     // T = (R, p) = exp([w, v]), t = ||w||
@@ -610,7 +610,7 @@ Eigen::Vector3d Log(const Eigen::Matrix3d& R)
     }
 }
 
-Eigen::Vector6d Log(const Eigen::Isometry3d& T)
+Eigen::Vector6d logMap(const Eigen::Isometry3d& T)
 {
     //--------------------------------------------------------------------------
     // T = (R, p) = exp([w, v]), t = ||w||
@@ -1227,7 +1227,7 @@ Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& angle)
 // R = Exp(w)
 // p = sin(t) / t*v + (t - sin(t)) / t^3*<w, v>*w + (1 - cos(t)) / t^2*(w X v)
 // , when S = (w, v), t = |w|
-Eigen::Isometry3d Exp(const Eigen::Vector6d& s)
+Eigen::Isometry3d expMap(const Eigen::Vector6d& s)
 {
     Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
     double s2[] = { s[0]*s[0], s[1]*s[1], s[2]*s[2] };
@@ -1256,7 +1256,7 @@ Eigen::Isometry3d Exp(const Eigen::Vector6d& s)
 }
 
 // I + sin(t) / t*[S] + (1 - cos(t)) / t^2*[S]^2, where t = |S|
-Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& S)
+Eigen::Isometry3d expAngular(const Eigen::Vector3d& S)
 {
     Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
     double s2[] = { S[0]*S[0], S[1]*S[1], S[2]*S[2] };
@@ -1302,7 +1302,7 @@ Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& S)
 //    return ret;
 //}
 
-Eigen::Isometry3d ExpLinear(const Eigen::Vector3d& s)
+Eigen::Isometry3d expLinear(const Eigen::Vector3d& s)
 {
     Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
 

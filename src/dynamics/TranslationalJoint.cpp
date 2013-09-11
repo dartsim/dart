@@ -70,7 +70,7 @@ void TranslationalJoint::_updateTransformation()
                  mCoordinate[2].get_q());
 
     mT = mT_ParentBodyToJoint
-         * math::ExpLinear(v)
+         * math::expLinear(v)
          * mT_ChildBodyToJoint.inverse();
 }
 

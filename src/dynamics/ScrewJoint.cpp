@@ -102,7 +102,7 @@ void ScrewJoint::_updateTransformation()
     S.head<3>() = mAxis;
     S.tail<3>() = mAxis*mPitch/DART_2PI;
     mT = mT_ParentBodyToJoint
-         * math::Exp(S*mCoordinate.get_q())
+         * math::expMap(S*mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
 
     assert(math::VerifySE3(mT));

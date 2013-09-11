@@ -71,7 +71,7 @@ inline void BallJoint::_updateTransformation()
                       mCoordinate[2].get_q());
 
     mT = mT_ParentBodyToJoint *
-            math::ExpAngular(q) *
+            math::expAngular(q) *
             mT_ChildBodyToJoint.inverse();
 }
 

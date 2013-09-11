@@ -222,7 +222,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d s = Eigen::Vector6d::Random();
-        Eigen::Isometry3d Exp_s = math::Exp(s);
+        Eigen::Isometry3d Exp_s = math::expMap(s);
         Eigen::Matrix4d Exp_s_2 = Eigen::Matrix4d::Identity();
 
         double theta = s.head<3>().norm();
@@ -256,7 +256,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     {
         Eigen::Vector6d s = Eigen::Vector6d::Random();
         s.tail<3>() = Eigen::Vector3d::Zero();
-        Eigen::Isometry3d Exp_s = math::ExpAngular(s.head<3>());
+        Eigen::Isometry3d Exp_s = math::expAngular(s.head<3>());
         Eigen::Matrix4d Exp_s_2 = Eigen::Matrix4d::Identity();
 
         double theta = s.head<3>().norm();
@@ -290,7 +290,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     {
         Eigen::Vector6d s = Eigen::Vector6d::Random();
         s.head<3>() = Eigen::Vector3d::Zero();
-        Eigen::Isometry3d Exp_s = math::ExpLinear(s.tail<3>());
+        Eigen::Isometry3d Exp_s = math::expLinear(s.tail<3>());
         Eigen::Matrix4d Exp_s_2 = Eigen::Matrix4d::Identity();
 
         double theta = s.head<3>().norm();
@@ -329,7 +329,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector6d V = Eigen::Vector6d::Random();
 
         Eigen::Vector6d AdTV = AdT(T, V);
@@ -355,7 +355,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Isometry3d R = Eigen::Isometry3d::Identity();
         R = T.linear();
         Eigen::Vector6d V = Eigen::Vector6d::Random();
@@ -371,7 +371,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector3d w = Eigen::Vector3d::Random();
         Eigen::Vector6d V = Eigen::Vector6d::Zero();
         V.head<3>() = w;
@@ -387,7 +387,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector3d v = Eigen::Vector3d::Random();
         Eigen::Vector6d V = Eigen::Vector6d::Zero();
         V.tail<3>() = v;
@@ -403,7 +403,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector3d v = Eigen::Vector3d::Random();
         Eigen::Vector6d V = Eigen::Vector6d::Zero();
         V.tail<3>() = v;
@@ -419,7 +419,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Isometry3d InvT = T.inverse();
         Eigen::Vector6d V = Eigen::Vector6d::Random();
 
@@ -434,7 +434,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector3d v = Eigen::Vector3d::Random();
         Eigen::Vector6d V = Eigen::Vector6d::Zero();
         V.tail<3>() = v;
@@ -452,7 +452,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Vector6d F = Eigen::Vector6d::Random();
 
         Eigen::Vector6d dAdTF = dAdT(T, F);
@@ -471,7 +471,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Isometry3d InvT = T.inverse();
         Eigen::Vector6d F = Eigen::Vector6d::Random();
 
@@ -497,7 +497,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
     for (int i = 0; i < numTest; ++i)
     {
         Eigen::Vector6d t = Eigen::Vector6d::Random();
-        Eigen::Isometry3d T = math::Exp(t);
+        Eigen::Isometry3d T = math::expMap(t);
         Eigen::Isometry3d InvT = T.inverse();
         Eigen::Isometry3d InvR = Eigen::Isometry3d::Identity();
         InvR = InvT.linear();
