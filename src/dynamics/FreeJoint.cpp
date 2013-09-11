@@ -81,7 +81,7 @@ void FreeJoint::_updateTransformation()
             math::expAngular(q1) *
             mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void FreeJoint::_updateVelocity()

@@ -1422,26 +1422,14 @@ Inertia Transform(const Eigen::Isometry3d& T, const Inertia& AI)
     return ret;
 }
 
-bool VerifySE3(const Eigen::Isometry3d& _T)
+bool verifyTransform(const Eigen::Isometry3d& _T)
 {
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 4; j++)
             if (_T(i,j) != _T(i,j))
                 return false;
 
-    if (_T(3,0) != 0.0)
-        return false;
-
-    if (_T(3,1) != 0.0)
-        return false;
-
-    if (_T(3,2) != 0.0)
-        return false;
-
-    if (_T(3,3) != 1.0)
-        return false;
-
-    if (fabs(fabs(_T.linear().determinant()) - 1.0) > 0.001)
+    if (fabs(fabs(_T.linear().determinant()) - 1.0) > DART_EPSILON)
         return false;
 
     return true;
@@ -1452,10 +1440,6 @@ bool Verifyse3(const Eigen::Vector6d& _V)
     for (int i = 0; i < 6; ++i)
         if (_V(i) != _V(i))
             return false;
-
-//    for (int i = 0; i < 6; ++i)
-//        if (_V(i) > 1000.0)
-//            return false;
 
     return true;
 }

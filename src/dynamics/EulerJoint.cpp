@@ -104,7 +104,7 @@ inline void EulerJoint::_updateTransformation()
     }
     }
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 inline void EulerJoint::_updateVelocity()

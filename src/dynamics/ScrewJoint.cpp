@@ -105,7 +105,7 @@ void ScrewJoint::_updateTransformation()
          * math::expMap(S*mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void ScrewJoint::_updateVelocity()

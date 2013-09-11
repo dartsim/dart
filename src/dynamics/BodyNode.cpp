@@ -268,7 +268,7 @@ int BodyNode::getDependentDof(int _arrayIndex) const
 
 void BodyNode::setWorldTransform(const Eigen::Isometry3d &_W)
 {
-    assert(math::VerifySE3(_W));
+    assert(math::verifyTransform(_W));
 
     mW = _W;
 }
@@ -299,7 +299,7 @@ Eigen::Vector6d BodyNode::getVelocityWorldAtPoint(const Eigen::Vector3d& _pointB
 
 Eigen::Vector6d BodyNode::getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) const
 {
-    assert(math::VerifySE3(_T));
+    assert(math::verifyTransform(_T));
 
     return math::AdT(_T.inverse() * mW, mV);
 }
@@ -325,7 +325,7 @@ Eigen::Vector6d BodyNode::getAccelerationWorldAtPoint(const Eigen::Vector3d& _po
 
 Eigen::Vector6d BodyNode::getAccelerationWorldAtFrame(const Eigen::Isometry3d& _T) const
 {
-    assert(math::VerifySE3(_T));
+    assert(math::verifyTransform(_T));
 
     return math::AdT(_T.inverse() * mW, mdV);
 }
@@ -477,7 +477,7 @@ void BodyNode::updateTransformation()
         mW = mParentJoint->getLocalTransformation();
     }
 
-    assert(math::VerifySE3(mW));
+    assert(math::verifyTransform(mW));
 }
 
 void BodyNode::updateVelocity(bool _updateJacobian)

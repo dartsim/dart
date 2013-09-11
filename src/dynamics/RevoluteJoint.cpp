@@ -90,7 +90,7 @@ void RevoluteJoint::_updateTransformation()
          * math::expAngular(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void RevoluteJoint::_updateVelocity()
