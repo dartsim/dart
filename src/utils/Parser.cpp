@@ -296,7 +296,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
         }
     }
 
-    T.linear() = math::EulerXYZ(elements.tail<3>());
+    T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
     T.translation() = elements.head<3>();
     return T;
 }

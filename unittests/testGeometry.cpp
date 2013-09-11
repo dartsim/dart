@@ -84,6 +84,123 @@ Eigen::Vector6d fromMatrixForm(const Eigen::Matrix4d& m) {
 }
 
 /******************************************************************************/
+void testEulerAngles(const Eigen::Vector3d& angle)
+{
+    Eigen::Matrix3d mat1;
+    Eigen::Matrix3d mat2;
+
+    // XYX
+    mat1 = math::eulerXYXToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitX());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // XYZ
+    mat1 = math::eulerXYZToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitZ());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // XZX
+    mat1 = math::eulerXZXToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitX());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // XZY
+    mat1 = math::eulerXZYToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitY());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // YXY
+    mat1 = math::eulerYXYToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitY());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // YXZ
+    mat1 = math::eulerYXZToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitZ());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // YZX
+    mat1 = math::eulerYZXToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitX());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // YZY
+    mat1 = math::eulerYZYToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitY());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // ZXY
+    mat1 = math::eulerZXYToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitY());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // ZYX
+    mat1 = math::eulerZYXToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitX());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // ZXZ
+    mat1 = math::eulerZXZToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitX()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitZ());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+
+    // ZYZ
+    mat1 = math::eulerZYZToMatrix(angle);
+    mat2 = Eigen::AngleAxisd(angle(0), Eigen::Vector3d::UnitZ()) *
+           Eigen::AngleAxisd(angle(1), Eigen::Vector3d::UnitY()) *
+           Eigen::AngleAxisd(angle(2), Eigen::Vector3d::UnitZ());
+
+    EXPECT_TRUE(equals(mat1, mat2));
+}
+
+/******************************************************************************/
+TEST(LIE_GROUP_OPERATORS, EULER_ANGLES)
+{
+    // TODO: Special angles such as (PI, 0, 0)
+
+    //
+    int numTest = 100;
+    for (int i = 0; i < numTest; ++i)
+    {
+        Eigen::Vector3d angle = Eigen::Vector3d::Random();
+        testEulerAngles(angle);
+    }
+}
+
+/******************************************************************************/
 #define EPSILON_EXPMAP_THETA 1.0e-3
 TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
 {

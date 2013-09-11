@@ -58,55 +58,16 @@ enum RotationOrder
     UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX
 };
 
-/// @brief Compute geometric distance on SE(3) manifold.
-/// Norm(Log(Inv(T1) * T2)).
-//double Distance(const SE3& T1, const SE3& T2);
-
-inline Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v){
-    Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
-
-    result(0, 1) = -v(2);
-    result(1, 0) =  v(2);
-    result(0, 2) =  v(1);
-    result(2, 0) = -v(1);
-    result(1, 2) = -v(0);
-    result(2, 1) =  v(0);
-
-    return result;
-}
-
-inline Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m) {
-#ifndef NDEBUG
-    if (fabs(m(0, 0)) > DART_EPSILON || fabs(m(1, 1)) > DART_EPSILON || fabs(m(2, 2)) > DART_EPSILON) {
-        std::cout << "Not skew symmetric matrix" << std::endl;
-        std::cerr << m << std::endl;
-        return Eigen::Vector3d::Zero();
-    }
-#endif
-    Eigen::Vector3d ret;
-    ret << m(2,1), m(0,2), m(1,0);
-    return ret;
-}
+Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v);
+Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m);
 
 //------------------------------------------------------------------------------
-
 
 Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
 Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
 
 Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
 Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
-
-
-// Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
-// coord sys transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder _order);
-
-Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
-
-Eigen::Matrix3d eulerToMatrixX(double x);
-Eigen::Matrix3d eulerToMatrixY(double y);
-Eigen::Matrix3d eulerToMatrixZ(double z);
 
 Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
 Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
@@ -123,46 +84,61 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d &_expmap, int _qi);    ///<
 
 //------------------------------------------------------------------------------
 
-/// @brief Get a transformation matrix given by the Euler XYZ angle,
-/// where the positional part is set to be zero.
-Eigen::Matrix3d EulerXYZ(const Eigen::Vector3d& angle);
+/// @brief Get a transformation matrix given by the Euler XYX angle.
+/// @note xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as
+/// Rz*Ry*Rx(p). Coord sys transformation as in GL will be written as
+/// glRotate(z); glRotate(y); glRotate(x)
+Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler XYZ angle.
+Eigen::Matrix3d eulerXYZToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler XZX angle.
+Eigen::Matrix3d eulerXZXToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler XZY angle.
+Eigen::Matrix3d eulerXZYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YXY angle.
+Eigen::Matrix3d eulerYXYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YXZ angle.
+Eigen::Matrix3d eulerYXZToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YZX angle.
+Eigen::Matrix3d eulerYZXToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YZY angle.
+Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler ZXY angle.
+Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief get a transformation matrix given by the Euler ZYX angle,
-/// where the positional part is set to be zero.
 /// singularity : x[1] = -+ 0.5*PI
-/// @sa SE3::iEulerZYX
-Eigen::Matrix3d EulerZYX(const Eigen::Vector3d& angle);
+Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& angle);
 
-///// @brief get a transformation matrix given by the Euler ZYX angle and
-///// position.
-///// singularity : x[1] = -+ 0.5*PI
-//SE3 EulerZYX(const Vec3& angle, const Vec3& position);
+/// @brief Get a transformation matrix given by the Euler ZXZ angle.
+Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& angle);
 
-///// @brief Get a transformation matrix given by the Euler ZYZ angle,
-///// where the positional part is set to be zero.
-///// singularity : x[1] = 0, PI
-///// @sa SE3::iEulerZYZ
-//SE3 EulerZYZ(const Vec3& angle);
-
-///// @brief get a transformation matrix given by the Euler ZYZ angle and
-///// position.
-///// singularity : x[1] = 0, PI
-//SE3 EulerZYZ(const Vec3& angle, const Vec3& position);
+/// @brief Get a transformation matrix given by the Euler ZYZ angle,
+/// singularity : x[1] = 0, PI
+Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief get the Euler XYZ angle from R
 Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
-
-/// @brief get the Euler ZYX angle from R
-Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
-
-/// @brief get the Euler YZX angle from R
-Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler XZY angle from R
 Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler YXZ angle from R
 Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler YZX angle from R
+Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler ZYX angle from R
+Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler ZXY angle from R
 Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R);
@@ -191,18 +167,6 @@ Eigen::Vector3d Log(const Eigen::Matrix3d& R);
 
 /// @brief Log mapping
 Eigen::Vector6d Log(const Eigen::Isometry3d& T);
-
-//------------------------------------------------------------------------------
-
-/// @brief get rotation matrix rotated along x-Eigen_Axis by theta angle.
-/// @note theta is represented in radian.
-Eigen::Isometry3d RotX(double angle);
-
-/// @brief get rotation matrix rotated along y-Eigen_Axis by theta angle.
-Eigen::Isometry3d RotY(double angle);
-
-/// @brief get rotation matrix rotated along z-Eigen_Axis by theta angle.
-Eigen::Isometry3d RotZ(double angle);
 
 //------------------------------------------------------------------------------
 ///// @brief Rectify the rotation part so as that it satifies the orthogonality

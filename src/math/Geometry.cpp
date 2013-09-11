@@ -258,70 +258,6 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
     return Eigen::Vector3d(z,x,y);
 }
 
-Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder order)
-{
-    if(order==XYZ)
-        return eulerToMatrixZ(v[2])*eulerToMatrixY(v[1])*eulerToMatrixX(v[0]);
-
-    if(order==ZYX)
-        return eulerToMatrixX(v[0])*eulerToMatrixY(v[1])*eulerToMatrixZ(v[2]);
-
-    if(order==YZX)
-        return eulerToMatrixX(v[0])*eulerToMatrixZ(v[2])*eulerToMatrixY(v[1]);
-
-    if(order==XZY)
-        return eulerToMatrixY(v[1])*eulerToMatrixZ(v[2])*eulerToMatrixX(v[0]);
-
-    if(order==YXZ)
-        return eulerToMatrixZ(v[2])*eulerToMatrixX(v[0])*eulerToMatrixY(v[1]);
-
-    if(order==ZXY)
-        return eulerToMatrixY(v[1])*eulerToMatrixX(v[0])*eulerToMatrixZ(v[2]);
-
-    printf("euler_to_matrix - Do not support rotation order %d. Make sure letters are in lowercase\n", order);
-
-    return Eigen::Matrix3d::Zero();
-}
-
-Eigen::Matrix3d eulerToMatrixX(double x)
-{
-    Eigen::Matrix3d mat = Eigen::Matrix3d::Zero();
-    double cosangle = cos(x);
-    double sinangle = sin(x);
-    mat(0, 0) = 1.0;
-    mat(1, 1) = cosangle;
-    mat(1, 2) = -sinangle;
-    mat(2, 1) = sinangle;
-    mat(2, 2) = cosangle;
-    return mat;
-}
-
-Eigen::Matrix3d eulerToMatrixY(double y)
-{
-    Eigen::Matrix3d mat = Eigen::Matrix3d::Zero();
-    double cosangle = cos(y);
-    double sinangle = sin(y);
-    mat(1, 1) = 1.0;
-    mat(2, 2) = cosangle;
-    mat(2, 0) = -sinangle;
-    mat(0, 2) = sinangle;
-    mat(0, 0) = cosangle;
-    return mat;
-}
-
-Eigen::Matrix3d eulerToMatrixZ(double z)
-{
-    Eigen::Matrix3d mat = Eigen::Matrix3d::Zero();
-    double cosangle = cos(z);
-    double sinangle = sin(z);
-    mat(2, 2) = 1.0;
-    mat(0, 0) = cosangle;
-    mat(0, 1) = -sinangle;
-    mat(1, 0) = sinangle;
-    mat(1, 1) = cosangle;
-    return mat;
-}
-
 // get the derivative of rotation matrix wrt el no.
 Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& q, int el)
 {
@@ -952,93 +888,294 @@ Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& t)
 //    return ret;
 //}
 
-Eigen::Matrix3d EulerXYZ(const Eigen::Vector3d& angle)
+Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& angle)
 {
-    Eigen::Matrix3d ret = Eigen::Matrix3d::Identity();
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   |  cy      sy*sx1               sy*cx1             |
+    // | r10 r11 r12 | = |  sy*sx0  cx0*cx1-cy*sx0*sx1  -cy*cx1*sx0-cx0*sx1 |
+    // | r20 r21 r22 |   | -sy*cx0  cx1*sx0+cy*cx0*sx1   cy*cx0*cx1-sx0*sx1 |
+    // +-           -+   +-                                                -+
 
-    double c0 = cos(angle[0]);
-    double s0 = sin(angle[0]);
-    double c1 = cos(angle[1]);
-    double s1 = sin(angle[1]);
-    double c2 = cos(angle[2]);
-    double s2 = sin(angle[2]);
+    Eigen::Matrix3d ret;
 
-    ret(0,0) = c1*c2;             ret(0,1) = -c1*s2;            ret(0,2) = s1;
-    ret(1,0) = c0*s2 + c2*s0*s1;  ret(1,1) = c0*c2 - s0*s1*s2;  ret(1,2) = -c1*s0;
-    ret(2,0) = s0*s2 - c0*c2*s1;  ret(2,1) = c2*s0 + c0*s1*s2;  ret(2,2) = c0*c1;
+    double cx0 = cos(angle(0));
+    double sx0 = sin(angle(0));
+    double cy = cos(angle(1));
+    double sy = sin(angle(1));
+    double cx1 = cos(angle(2));
+    double sx1 = sin(angle(2));
+
+    ret(0,0) =  cy;      ret(0,1) = sy*sx1;              ret(0,2) =  sy*cx1;
+    ret(1,0) =  sy*sx0;  ret(1,1) = cx0*cx1-cy*sx0*sx1;  ret(1,2) = -cy*cx1*sx0-cx0*sx1;
+    ret(2,0) = -sy*cx0;  ret(2,1) = cx1*sx0+cy*cx0*sx1;  ret(2,2) =  cy*cx0*cx1-sx0*sx1;
 
     return ret;
 }
 
-Eigen::Matrix3d EulerZYX(const Eigen::Vector3d& angle)
+Eigen::Matrix3d eulerXYZToMatrix(const Eigen::Vector3d& angle)
 {
-    Eigen::Matrix3d ret = Eigen::Matrix3d::Identity();
+    // +-           -+   +-                                        -+
+    // | r00 r01 r02 |   |  cy*cz           -cy*sz            sy    |
+    // | r10 r11 r12 | = |  cz*sx*sy+cx*sz   cx*cz-sx*sy*sz  -cy*sx |
+    // | r20 r21 r22 |   | -cx*cz*sy+sx*sz   cz*sx+cx*sy*sz   cx*cy |
+    // +-           -+   +-                                        -+
 
-    double ca = cos(angle[0]);
-    double sa = sin(angle[0]);
-    double cb = cos(angle[1]);
-    double sb = sin(angle[1]);
-    double cg = cos(angle[2]);
-    double sg = sin(angle[2]);
+    Eigen::Matrix3d ret;
 
-    ret(0,0) = ca*cb;  ret(0,1) = ca*sb*sg - sa*cg;  ret(0,2) = ca*sb*cg + sa*sg;
-    ret(1,0) = sa*cb;  ret(1,1) = sa*sb*sg + ca*cg;  ret(1,2) = sa*sb*cg - ca*sg;
-    ret(2,0) = -sb;    ret(2,1) = cb*sg;             ret(2,2) = cb*cg;
+    double cx = cos(angle[0]);
+    double sx = sin(angle[0]);
+    double cy = cos(angle[1]);
+    double sy = sin(angle[1]);
+    double cz = cos(angle[2]);
+    double sz = sin(angle[2]);
+
+    ret(0,0) = cy*cz;             ret(0,1) = -cy*sz;            ret(0,2) = sy;
+    ret(1,0) = cx*sz + cz*sx*sy;  ret(1,1) = cx*cz - sx*sy*sz;  ret(1,2) = -cy*sx;
+    ret(2,0) = sx*sz - cx*cz*sy;  ret(2,1) = cz*sx + cx*sy*sz;  ret(2,2) = cx*cy;
 
     return ret;
 }
 
-//SE3 EulerZYZ(const Vec3& angle)
-//{
-//    SE3 ret = SE3::Identity();
+Eigen::Matrix3d eulerXZXToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   | cz      -sz*cx1               sz*sx1             |
+    // | r10 r11 r12 | = | sz*cx0   cz*cx0*cx1-sx0*sx1  -cx1*sx0-cz*cx0*sx1 |
+    // | r20 r21 r22 |   | sz*sx0   cz*cx1*sx0+cx0*sx1   cx0*cx1-cz*sx0*sx1 |
+    // +-           -+   +-                                                -+
 
-//    double ca = cos(angle[0]);
-//    double sa = sin(angle[0]);
-//    double cb = cos(angle[1]);
-//    double sb = sin(angle[1]);
-//    double cg = cos(angle[2]);
-//    double sg = sin(angle[2]);
+    Eigen::Matrix3d ret;
 
-//    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;
-//    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;
-//    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;
+    double cx0 = cos(angle(0));
+    double sx0 = sin(angle(0));
+    double cz  = cos(angle(1));
+    double sz  = sin(angle(1));
+    double cx1 = cos(angle(2));
+    double sx1 = sin(angle(2));
 
-//    return ret;
-//}
+    ret(0,0) = cz;      ret(0,1) = -sz*cx1;              ret(0,2) =  sz*sx1;
+    ret(1,0) = sz*cx0;  ret(1,1) =  cz*cx0*cx1-sx0*sx1;  ret(1,2) = -cx1*sx0-cz*cx0*sx1;
+    ret(2,0) = sz*sx0;  ret(2,1) =  cz*cx1*sx0+cx0*sx1;  ret(2,2) =  cx0*cx1-cz*sx0*sx1;
 
-//SE3 EulerZYX(const Vec3& angle, const Vec3& pos)
-//{
-//    SE3 ret;
-//    double ca = cos(angle[0]);
-//    double sa = sin(angle[0]);
-//    double cb = cos(angle[1]);
-//    double sb = sin(angle[1]);
-//    double cg = cos(angle[2]);
-//    double sg = sin(angle[2]);
+    return ret;
+}
 
-//    ret(0,0) = ca*cb;  ret(0,1) = ca*sb*sg - sa*cg;  ret(0,2) = ca*sb*cg + sa*sg;  ret(0,3) = pos[0];
-//    ret(1,0) = sa*cb;  ret(1,1) = sa*sb*sg + ca*cg;  ret(1,2) = sa*sb*cg - ca*sg;  ret(1,3) = pos[1];
-//    ret(2,0) = -sb;    ret(2,1) = cb*sg;             ret(2,2) = cb*cg;             ret(2,3) = pos[2];
+Eigen::Matrix3d eulerXZYToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                        -+
+    // | r00 r01 r02 |   |  cy*cz           -sz      cz*sy          |
+    // | r10 r11 r12 | = |  sx*sy+cx*cy*sz   cx*cz  -cy*sx+cx*sy*sz |
+    // | r20 r21 r22 |   | -cx*sy+cy*sx*sz   cz*sx   cx*cy+sx*sy*sz |
+    // +-           -+   +-                                        -+
 
-//    return ret;
-//}
+    Eigen::Matrix3d ret;
 
-//SE3 EulerZYZ(const Vec3& angle, const Vec3& pos)
-//{
-//    SE3 ret;
-//    double ca = cos(angle[0]);
-//    double sa = sin(angle[0]);
-//    double cb = cos(angle[1]);
-//    double sb = sin(angle[1]);
-//    double cg = cos(angle[2]);
-//    double sg = sin(angle[2]);
+    double cx = cos(angle(0));
+    double sx = sin(angle(0));
+    double cz = cos(angle(1));
+    double sz = sin(angle(1));
+    double cy = cos(angle(2));
+    double sy = sin(angle(2));
 
-//    ret(0,0) = ca*cb*cg - sa*sg;  ret(0,1) = -ca*cb*sg - sa*cg;  ret(0,2) = ca*sb;  ret(0,3) = pos[0];
-//    ret(1,0) = sa*cb*cg + ca*sg;  ret(1,1) = ca*cg - sa*cb*sg;   ret(1,2) = sa*sb;  ret(1,3) = pos[1];
-//    ret(2,0) = -sb*cg;            ret(2,1) = sb*sg;              ret(2,2) = cb;     ret(2,3) = pos[2];
+    ret(0,0) =  cy*cz;           ret(0,1) = -sz;     ret(0,2) =  cz*sy;
+    ret(1,0) =  sx*sy+cx*cy*sz;  ret(1,1) =  cx*cz;  ret(1,2) = -cy*sx+cx*sy*sz;
+    ret(2,0) = -cx*sy+cy*sx*sz;  ret(2,1) =  cz*sx;  ret(2,2) =  cx*cy+sx*sy*sz;
 
-//    return ret;
-//}
+    return ret;
+}
+
+Eigen::Matrix3d eulerYXYToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   |  cy0*cy1-cx*sy0*sy1  sx*sy0   cx*cy1*sy0+cy0*sy1 |
+    // | r10 r11 r12 | = |  sx*sy1              cx      -sx*cy1             |
+    // | r20 r21 r22 |   | -cy1*sy0-cx*cy0*sy1  sx*cy0   cx*cy0*cy1-sy0*sy1 |
+    // +-           -+   +-                                                -+
+
+    Eigen::Matrix3d ret;
+
+    double cy0 = cos(angle(0));
+    double sy0 = sin(angle(0));
+    double cx  = cos(angle(1));
+    double sx  = sin(angle(1));
+    double cy1 = cos(angle(2));
+    double sy1 = sin(angle(2));
+
+    ret(0,0) =  cy0*cy1-cx*sy0*sy1;  ret(0,1) = sx*sy0;  ret(0,2) =  cx*cy1*sy0+cy0*sy1;
+    ret(1,0) =  sx*sy1;              ret(1,1) = cx;      ret(1,2) = -sx*cy1;
+    ret(2,0) = -cy1*sy0-cx*cy0*sy1;  ret(2,1) = sx*cy0;  ret(2,2) =  cx*cy0*cy1-sy0*sy1;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerYXZToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                       -+
+    // | r00 r01 r02 |   |  cy*cz+sx*sy*sz  cz*sx*sy-cy*sz   cx*sy |
+    // | r10 r11 r12 | = |  cx*sz           cx*cz           -sx    |
+    // | r20 r21 r22 |   | -cz*sy+cy*sx*sz  cy*cz*sx+sy*sz   cx*cy |
+    // +-           -+   +-                                       -+
+
+    Eigen::Matrix3d ret;
+
+    double cy = cos(angle(0));
+    double sy = sin(angle(0));
+    double cx = cos(angle(1));
+    double sx = sin(angle(1));
+    double cz = cos(angle(2));
+    double sz = sin(angle(2));
+
+    ret(0,0) =  cy*cz+sx*sy*sz;  ret(0,1) = cz*sx*sy-cy*sz;  ret(0,2) =  cx*sy;
+    ret(1,0) =  cx*sz;           ret(1,1) = cx*cz;           ret(1,2) = -sx;
+    ret(2,0) = -cz*sy+cy*sx*sz;  ret(2,1) = cy*cz*sx+sy*sz;  ret(2,2) =  cx*cy;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerYZXToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                       -+
+    // | r00 r01 r02 |   |  cy*cz  sx*sy-cx*cy*sz   cx*sy+cy*sx*sz |
+    // | r10 r11 r12 | = |  sz     cx*cz           -cz*sx          |
+    // | r20 r21 r22 |   | -cz*sy  cy*sx+cx*sy*sz   cx*cy-sx*sy*sz |
+    // +-           -+   +-                                       -+
+
+    Eigen::Matrix3d ret;
+
+    double cy = cos(angle(0));
+    double sy = sin(angle(0));
+    double cz = cos(angle(1));
+    double sz = sin(angle(1));
+    double cx = cos(angle(2));
+    double sx = sin(angle(2));
+
+    ret(0,0) =  cy*cz;  ret(0,1) = sx*sy-cx*cy*sz;  ret(0,2) =  cx*sy+cy*sx*sz;
+    ret(1,0) =  sz;     ret(1,1) = cx*cz;           ret(1,2) = -cz*sx;
+    ret(2,0) = -cz*sy;  ret(2,1) = cy*sx+cx*sy*sz;  ret(2,2) =  cx*cy-sx*sy*sz;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   |  cz*cy0*cy1-sy0*sy1  -sz*cy0  cy1*sy0+cz*cy0*sy1 |
+    // | r10 r11 r12 | = |  sz*cy1               cz      sz*sy1             |
+    // | r20 r21 r22 |   | -cz*cy1*sy0-cy0*sy1   sz*sy0  cy0*cy1-cz*sy0*sy1 |
+    // +-           -+   +-                                                -+
+
+    Eigen::Matrix3d ret;
+
+    double cy0 = cos(angle(0));
+    double sy0 = sin(angle(0));
+    double cz  = cos(angle(1));
+    double sz  = sin(angle(1));
+    double cy1 = cos(angle(2));
+    double sy1 = sin(angle(2));
+
+    ret(0,0) =  cz*cy0*cy1-sy0*sy1;  ret(0,1) = -sz*cy0;  ret(0,2) = cy1*sy0+cz*cy0*sy1;
+    ret(1,0) =  sz*cy1;              ret(1,1) =  cz;      ret(1,2) = sz*sy1;
+    ret(2,0) = -cz*cy1*sy0-cy0*sy1;  ret(2,1) =  sz*sy0;  ret(2,2) = cy0*cy1-cz*sy0*sy1;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                        -+
+    // | r00 r01 r02 |   |  cy*cz-sx*sy*sz  -cx*sz   cz*sy+cy*sx*sz |
+    // | r10 r11 r12 | = |  cz*sx*sy+cy*sz   cx*cz  -cy*cz*sx+sy*sz |
+    // | r20 r21 r22 |   | -cx*sy            sx      cx*cy          |
+    // +-           -+   +-                                        -+
+
+    Eigen::Matrix3d ret;
+
+    double cz = cos(angle(0));
+    double sz = sin(angle(0));
+    double cx = cos(angle(1));
+    double sx = sin(angle(1));
+    double cy = cos(angle(2));
+    double sy = sin(angle(2));
+
+    ret(0,0) =  cy*cz-sx*sy*sz;  ret(0,1) = -cx*sz;  ret(0,2) =  cz*sy+cy*sx*sz;
+    ret(1,0) =  cz*sx*sy+cy*sz;  ret(1,1) =  cx*cz;  ret(1,2) = -cy*cz*sx+sy*sz;
+    ret(2,0) = -cx*sy;           ret(2,1) =  sx;     ret(2,2) =  cx*cy;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                      -+
+    // | r00 r01 r02 |   |  cy*cz  cz*sx*sy-cx*sz  cx*cz*sy+sx*sz |
+    // | r10 r11 r12 | = |  cy*sz  cx*cz+sx*sy*sz -cz*sx+cx*sy*sz |
+    // | r20 r21 r22 |   | -sy     cy*sx           cx*cy          |
+    // +-           -+   +-                                      -+
+
+    Eigen::Matrix3d ret;
+
+    double cz = cos(angle[0]);
+    double sz = sin(angle[0]);
+    double cy = cos(angle[1]);
+    double sy = sin(angle[1]);
+    double cx = cos(angle[2]);
+    double sx = sin(angle[2]);
+
+    ret(0,0) =  cz*cy;  ret(0,1) = cz*sy*sx - sz*cx;  ret(0,2) = cz*sy*cx + sz*sx;
+    ret(1,0) =  sz*cy;  ret(1,1) = sz*sy*sx + cz*cx;  ret(1,2) = sz*sy*cx - cz*sx;
+    ret(2,0) = -sy;     ret(2,1) = cy*sx;             ret(2,2) = cy*cx;
+
+    return ret;
+}
+
+// TODO: Check!
+Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   | cz0*cz1-cx*sz0*sz1  -cx*cz1*sz0-cz0*sz1   sx*sz0 |
+    // | r10 r11 r12 | = | cz1*sz0+cx*cz0*sz1   cx*cz0*cz1-sz0*sz1  -sz*cz0 |
+    // | r20 r21 r22 |   | sx*sz1               sx*cz1               cx     |
+    // +-           -+   +-                                                -+
+
+    Eigen::Matrix3d ret;
+
+    double cz0 = cos(angle(0));
+    double sz0 = sin(angle(0));
+    double cx  = cos(angle(1));
+    double sx  = sin(angle(1));
+    double cz1 = cos(angle(2));
+    double sz1 = sin(angle(2));
+
+    ret(0,0) = cz0*cz1-cx*sz0*sz1;  ret(0,1) = -cx*cz1*sz0-cz0*sz1;  ret(0,2) =  sx*sz0;
+    ret(1,0) = cz1*sz0+cx*cz0*sz1;  ret(1,1) =  cx*cz0*cz1-sz0*sz1;  ret(1,2) = -sx*cz0;
+    ret(2,0) = sx*sz1;              ret(2,1) =  sx*cz1;              ret(2,2) =  cx;
+
+    return ret;
+}
+
+Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& angle)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   |  cy*cz0*cz1-sz0*sz1  -cz1*sz0-cy*cz0*sz1  sy*cz0 |
+    // | r10 r11 r12 | = |  cy*cz1*sz0+cz0*sz1   cz0*cz1-cy*sz0*sz1  sy*sz0 |
+    // | r20 r21 r22 |   | -sy*cz1               sy*sz1              cy     |
+    // +-           -+   +-                                                -+
+
+    Eigen::Matrix3d ret = Eigen::Matrix3d::Identity();
+
+    double cz0 = cos(angle[0]);
+    double sz0 = sin(angle[0]);
+    double cy = cos(angle[1]);
+    double sy = sin(angle[1]);
+    double cz1 = cos(angle[2]);
+    double sz1 = sin(angle[2]);
+
+    ret(0,0) =  cz0*cy*cz1 - sz0*sz1;  ret(0,1) = -cz0*cy*sz1 - sz0*cz1;  ret(0,2) = cz0*sy;
+    ret(1,0) =  sz0*cy*cz1 + cz0*sz1;  ret(1,1) = cz0*cz1 - sz0*cy*sz1;   ret(1,2) = sz0*sy;
+    ret(2,0) = -sy*cz1;                ret(2,1) = sy*sz1;                 ret(2,2) = cy;
+
+    return ret;
+}
 
 // R = Exp(w)
 // p = sin(t) / t*v + (t - sin(t)) / t^3*<w, v>*w + (1 - cos(t)) / t^2*(w X v)
@@ -1125,42 +1262,6 @@ Eigen::Isometry3d ExpLinear(const Eigen::Vector3d& s)
     ret(0,3) = s[0];
     ret(1,3) = s[1];
     ret(2,3) = s[2];
-
-    return ret;
-}
-
-Eigen::Isometry3d RotX(double t)
-{
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-    double c = cos(t);
-    double s = sin(t);
-
-    ret(1,1) = c;  ret(1,2) = -s;
-    ret(2,1) = s;  ret(2,2) = c;
-
-    return ret;
-}
-
-Eigen::Isometry3d RotY(double t)
-{
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-    double c = cos(t);
-    double s = sin(t);
-
-    ret(0,0) = c;   ret(0,2) = s;
-    ret(2,0) = -s;  ret(2,2) = c;
-
-    return ret;
-}
-
-Eigen::Isometry3d RotZ(double t)
-{
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-    double c = cos(t);
-    double s = sin(t);
-
-    ret(0,0) = c;  ret(0,1) = -s;
-    ret(1,0) = s;  ret(1,1) = c;
 
     return ret;
 }
@@ -1339,6 +1440,35 @@ bool Verifyse3(const Eigen::Vector6d& _V)
 //            return false;
 
     return true;
+}
+
+Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m)
+{
+#ifndef NDEBUG
+    if (fabs(m(0, 0)) > DART_EPSILON || fabs(m(1, 1)) > DART_EPSILON || fabs(m(2, 2)) > DART_EPSILON)
+    {
+        std::cout << "Not skew symmetric matrix" << std::endl;
+        std::cerr << m << std::endl;
+        return Eigen::Vector3d::Zero();
+    }
+#endif
+    Eigen::Vector3d ret;
+    ret << m(2,1), m(0,2), m(1,0);
+    return ret;
+}
+
+Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v)
+{
+    Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
+
+    result(0, 1) = -v(2);
+    result(1, 0) =  v(2);
+    result(0, 2) =  v(1);
+    result(2, 0) = -v(1);
+    result(1, 2) = -v(0);
+    result(2, 1) =  v(0);
+
+    return result;
 }
 
 } // namespace math
