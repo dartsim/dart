@@ -216,8 +216,8 @@ Matrix<double,6,1> Ad_Affine3d_3(const Affine3d& T, const Matrix<double,6,1>& s)
 
     Matrix<double,6,1> ret;
 
-    ret.topLeftCorner<3,1>() = T.rotation() * s.topLeftCorner<3,1>();
-    ret.bottomLeftCorner<3,1>() = T.translation().cross(T.rotation() * s.topLeftCorner<3,1>()) + T.rotation() * s.bottomLeftCorner<3,1>();
+    ret.topLeftCorner<3,1>() = T.linear() * s.topLeftCorner<3,1>();
+    ret.bottomLeftCorner<3,1>() = T.translation().cross(T.linear() * s.topLeftCorner<3,1>()) + T.linear() * s.bottomLeftCorner<3,1>();
 
     return ret;
 }

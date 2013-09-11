@@ -343,9 +343,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
         // Ad(T, V) = [R 0; [p]R R] * V
         Eigen::Matrix6d AdTMatrix = Eigen::Matrix6d::Zero();
-        AdTMatrix.topLeftCorner<3,3>() = T.rotation();
-        AdTMatrix.bottomRightCorner<3,3>() = T.rotation();
-        AdTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(T.translation()) * T.rotation();
+        AdTMatrix.topLeftCorner<3,3>() = T.linear();
+        AdTMatrix.bottomRightCorner<3,3>() = T.linear();
+        AdTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(T.translation()) * T.linear();
         Eigen::Vector6d AdTMatrix_V = AdTMatrix * V;
         for (int j = 0; j < 6; ++j)
             EXPECT_NEAR(AdTV(j), AdTMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -357,7 +357,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
         Eigen::Vector6d t = Eigen::Vector6d::Random();
         Eigen::Isometry3d T = math::Exp(t);
         Eigen::Isometry3d R = Eigen::Isometry3d::Identity();
-        R = T.rotation();
+        R = T.linear();
         Eigen::Vector6d V = Eigen::Vector6d::Random();
 
         Eigen::Vector6d AdTV = AdT(R, V);
@@ -439,7 +439,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
         Eigen::Vector6d V = Eigen::Vector6d::Zero();
         V.tail<3>() = v;
         Eigen::Isometry3d R = Eigen::Isometry3d::Identity();
-        R = T.rotation();
+        R = T.linear();
 
         Eigen::Vector6d AdT_ = AdT(R.inverse(), V);
         Eigen::Vector6d AdInvRLinear_ = AdInvRLinear(T, v);
@@ -459,9 +459,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
         // dAd(T, F) = [R 0; [p]R R]^T * F
         Eigen::Matrix6d AdTMatrix = Eigen::Matrix6d::Zero();
-        AdTMatrix.topLeftCorner<3,3>() = T.rotation();
-        AdTMatrix.bottomRightCorner<3,3>() = T.rotation();
-        AdTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(T.translation()) * T.rotation();
+        AdTMatrix.topLeftCorner<3,3>() = T.linear();
+        AdTMatrix.bottomRightCorner<3,3>() = T.linear();
+        AdTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(T.translation()) * T.linear();
         Eigen::Vector6d AdTTransMatrix_V = AdTMatrix.transpose() * F;
         for (int j = 0; j < 6; ++j)
             EXPECT_NEAR(dAdTF(j), AdTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -485,9 +485,9 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
 
         // dAd(T, F) = [R 0; [p]R R]^T * F
         Eigen::Matrix6d AdInvTMatrix = Eigen::Matrix6d::Zero();
-        AdInvTMatrix.topLeftCorner<3,3>() = InvT.rotation();
-        AdInvTMatrix.bottomRightCorner<3,3>() = InvT.rotation();
-        AdInvTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(InvT.translation()) * InvT.rotation();
+        AdInvTMatrix.topLeftCorner<3,3>() = InvT.linear();
+        AdInvTMatrix.bottomRightCorner<3,3>() = InvT.linear();
+        AdInvTMatrix.bottomLeftCorner<3,3>() = math::makeSkewSymmetric(InvT.translation()) * InvT.linear();
         Eigen::Vector6d AdInvTTransMatrix_V = AdInvTMatrix.transpose() * F;
         for (int j = 0; j < 6; ++j)
             EXPECT_NEAR(dAdInvT_F(j), AdInvTTransMatrix_V(j), LIE_GROUP_OPT_TOL);
@@ -500,7 +500,7 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
         Eigen::Isometry3d T = math::Exp(t);
         Eigen::Isometry3d InvT = T.inverse();
         Eigen::Isometry3d InvR = Eigen::Isometry3d::Identity();
-        InvR = InvT.rotation();
+        InvR = InvT.linear();
         Eigen::Vector6d F = Eigen::Vector6d::Random();
 
         Eigen::Vector6d dAdInvR_F = dAdInvR(T, F);

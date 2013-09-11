@@ -1470,7 +1470,7 @@ bool VerifySE3(const Eigen::Isometry3d& _T)
     if (_T(3,3) != 1.0)
         return false;
 
-    if (fabs(fabs(_T.rotation().determinant()) - 1.0) > 0.001)
+    if (fabs(fabs(_T.linear().determinant()) - 1.0) > 0.001)
         return false;
 
     return true;

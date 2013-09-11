@@ -740,7 +740,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _offset,
     if (_isForceLocal)
         F.tail<3>() = _force;
     else
-        F.tail<3>() = mW.rotation().transpose() * _force;
+        F.tail<3>() = mW.linear().transpose() * _force;
 
     mFext += math::dAdInvT(T, F);
 }
@@ -760,7 +760,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _offset,
     if (_isForceLocal)
         F.tail<3>() = _force;
     else
-        F.tail<3>() = mW.rotation().transpose() * _force;
+        F.tail<3>() = mW.linear().transpose() * _force;
 
     mFext = math::dAdInvT(T, F);
 }
@@ -770,7 +770,7 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     if (_isLocal)
         mFext.head<3>() += _torque;
     else
-        mFext.head<3>() += mW.rotation() * _torque;
+        mFext.head<3>() += mW.linear() * _torque;
 }
 
 void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
@@ -778,7 +778,7 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     if (_isLocal)
         mFext.head<3>() = _torque;
     else
-        mFext.head<3>() = mW.rotation() * _torque;
+        mFext.head<3>() = mW.linear() * _torque;
 }
 
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
