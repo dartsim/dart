@@ -104,7 +104,7 @@ void SimWindow::draw()
                 int start = mWorld->getIndex(i);
                 //int size = mWorld->getDofs(i).size();
                 int size = mWorld->getSkeleton(i)->getDOF();
-                mWorld->getSkeleton(i)->setPose(mBakedStates[mPlayFrame].segment(start, size), false, false);
+                mWorld->getSkeleton(i)->setPose(mBakedStates[mPlayFrame].segment(start, size), true, false);
             }
             if (mShowMarkers) {
                 int sumDofs = mWorld->getIndex(nSkels);
