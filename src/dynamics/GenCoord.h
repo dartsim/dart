@@ -75,10 +75,10 @@ public:
     const std::string& getName() const;
 
     /// @brief
-    int getSkelIndex() const;
+    int getSkeletonIndex() const;
 
     /// @brief
-    void setSkelIndex(int _idx);
+    void setSkeletonIndex(int _idx);
 
     /// @brief
     //void setJoint(Joint *_j) { mJoint = _j; }

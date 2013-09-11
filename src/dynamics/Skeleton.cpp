@@ -150,7 +150,7 @@ void Skeleton::addBodyNode(BodyNode* _body, bool _addParentJoint)
     assert(_body != NULL);
 
     mBodyNodes.push_back(_body);
-    _body->setSkelIndex(mBodyNodes.size() - 1);
+    _body->setSkeletonIndex(mBodyNodes.size() - 1);
 
     // The parent joint possibly be null
     if (_addParentJoint)
@@ -162,7 +162,7 @@ void Skeleton::addJoint(Joint* _joint)
     assert(_joint);
 
     mJoints.push_back(_joint);
-    _joint->setSkelIndex(mJoints.size() - 1);
+    _joint->setSkeletonIndex(mJoints.size() - 1);
 
     const std::vector<GenCoord*>& dofs = _joint->getGenCoords();
     for (std::vector<GenCoord*>::const_iterator itrDof = dofs.begin();
@@ -170,7 +170,7 @@ void Skeleton::addJoint(Joint* _joint)
          ++itrDof)
     {
         mGenCoords.push_back((*itrDof));
-        (*itrDof)->setSkelIndex(mGenCoords.size() - 1);
+        (*itrDof)->setSkeletonIndex(mGenCoords.size() - 1);
     }
 }
 
@@ -266,7 +266,7 @@ int Skeleton::getJointIndex(const std::string& _name) const
 void Skeleton::addMarker(Marker* _h)
 {
     mMarkers.push_back(_h);
-    _h->setSkelIndex(mMarkers.size()-1);
+    _h->setSkeletonIndex(mMarkers.size()-1);
     BodyNode *body = _h->getNode();
     body->addMarker(_h);
 }
@@ -535,7 +535,7 @@ void Skeleton::updateDampingForces()
         Eigen::VectorXd jointDampingForce = (*itr)->getDampingForces();
         for (int i = 0; i < jointDampingForce.size(); i++)
         {
-            mDampingForce((*itr)->getGenCoord(i)->getSkelIndex()) =
+            mDampingForce((*itr)->getGenCoord(i)->getSkeletonIndex()) =
                     jointDampingForce(i);
         }
     }

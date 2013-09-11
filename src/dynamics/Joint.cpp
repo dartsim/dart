@@ -117,18 +117,18 @@ bool Joint::isPresent(const GenCoord* _q) const
 int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
 {
     for (unsigned int i = 0; i < mGenCoords.size(); i++)
-        if (mGenCoords[i]->getSkelIndex() == _dofSkelIndex)
+        if (mGenCoords[i]->getSkeletonIndex() == _dofSkelIndex)
             return i;
 
     return -1;
 }
 
-void Joint::setSkelIndex(int _idx)
+void Joint::setSkeletonIndex(int _idx)
 {
     mSkelIndex= _idx;
 }
 
-int Joint::getSkelIndex() const
+int Joint::getSkeletonIndex() const
 {
     return mSkelIndex;
 }

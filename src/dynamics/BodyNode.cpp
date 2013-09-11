@@ -212,7 +212,7 @@ void BodyNode::setDependDofList()
 
     for (int i = 0; i < getNumLocalDofs(); i++)
     {
-        int dofID = getLocalGenCoord(i)->getSkelIndex();
+        int dofID = getLocalGenCoord(i)->getSkeletonIndex();
         mDependentDofIndexes.push_back(dofID);
     }
 
@@ -663,12 +663,12 @@ Eigen::Matrix6d BodyNode::getGeneralizedInertia() const
     return mI;
 }
 
-void BodyNode::setSkelIndex(int _idx)
+void BodyNode::setSkeletonIndex(int _idx)
 {
     mSkelIndex = _idx;
 }
 
-int BodyNode::getSkelIndex() const
+int BodyNode::getSkeletonIndex() const
 {
     return mSkelIndex;
 }
@@ -913,7 +913,7 @@ void BodyNode::updateBeta()
         mAlpha          += mParentJoint->getDampingForces();
         Eigen::VectorXd Fc = Eigen::VectorXd::Zero(mParentJoint->getDOF());
         for (int i = 0; i < mParentJoint->getDOF(); i++)
-            Fc(i) = mSkeleton->getConstraintForces()[(mParentJoint->getGenCoords()[i])->getSkelIndex()];
+            Fc(i) = mSkeleton->getConstraintForces()[(mParentJoint->getGenCoords()[i])->getSkeletonIndex()];
         mAlpha          += Fc;
     }
 

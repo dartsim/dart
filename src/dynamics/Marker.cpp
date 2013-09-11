@@ -109,12 +109,12 @@ void Marker::setLocalCoords(Eigen::Vector3d& _offset)
     mOffset = _offset;
 }
 
-int Marker::getSkelIndex() const
+int Marker::getSkeletonIndex() const
 {
     return mSkelIndex;
 }
 
-void Marker::setSkelIndex(int _idx)
+void Marker::setSkeletonIndex(int _idx)
 {
     mSkelIndex=_idx;
 }
