@@ -100,8 +100,9 @@ Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
 
 // Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
 // coord sys transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder _order);
 Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder _order);
+
+Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
 
 Eigen::Matrix3d eulerToMatrixX(double x);
 Eigen::Matrix3d eulerToMatrixY(double y);
@@ -124,17 +125,13 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d &_expmap, int _qi);    ///<
 
 /// @brief Get a transformation matrix given by the Euler XYZ angle,
 /// where the positional part is set to be zero.
-Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle);
-
-/// @brief get a transformation matrix given by the Euler XYZ angle and
-/// position.
-Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle, const Eigen::Vector3d& position);
+Eigen::Matrix3d EulerXYZ(const Eigen::Vector3d& angle);
 
 /// @brief get a transformation matrix given by the Euler ZYX angle,
 /// where the positional part is set to be zero.
 /// singularity : x[1] = -+ 0.5*PI
 /// @sa SE3::iEulerZYX
-Eigen::Isometry3d EulerZYX(const Eigen::Vector3d& angle);
+Eigen::Matrix3d EulerZYX(const Eigen::Vector3d& angle);
 
 ///// @brief get a transformation matrix given by the Euler ZYX angle and
 ///// position.
@@ -152,21 +149,23 @@ Eigen::Isometry3d EulerZYX(const Eigen::Vector3d& angle);
 ///// singularity : x[1] = 0, PI
 //SE3 EulerZYZ(const Vec3& angle, const Vec3& position);
 
-/// @brief get the Euler ZYX angle from T
-////// @sa Eigen_Vec3::EulerXYZ
-Eigen::Vector3d iEulerXYZ(const Eigen::Isometry3d& T);
+/// @brief get the Euler XYZ angle from R
+Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
 
-///// @brief get the Euler ZYX angle from T
-///// @sa Eigen_Vec3::EulerZYX
-//Vec3 iEulerZYX(const SE3& T);
+/// @brief get the Euler ZYX angle from R
+Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
 
-///// @brief get the Euler ZYZ angle from T
-///// @sa Eigen_Vec3::EulerZYZ
-//Vec3 iEulerZYZ(const SE3& T);
+/// @brief get the Euler YZX angle from R
+Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R);
 
-///// @brief get the Euler ZYZ angle from T
-///// @sa Eigen_Vec3::EulerZXY
-//Vec3 iEulerZXY(const SE3 &T);
+/// @brief get the Euler XZY angle from R
+Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler YXZ angle from R
+Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler ZXY angle from R
+Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R);
 
 //------------------------------------------------------------------------------
 

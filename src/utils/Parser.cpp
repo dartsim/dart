@@ -119,11 +119,12 @@ std::string toString(const Eigen::Isometry3d& _v)
     std::ostringstream ostr;
     ostr.precision(6);
 
-    Eigen::Vector3d XYZ = math::iEulerXYZ(_v);
+    Eigen::Vector3d xyz = math::matrixToEulerXYZ(_v.linear());
 
-    ostr << _v(0,3) << " " << _v(1,3) << " " << _v(2,3);
-    ostr << " ";
-    ostr << XYZ[0] << " " << XYZ[1] << " " << XYZ[2];
+    ostr << _v.translation()(0) << " "
+         << _v.translation()(1) << " "
+         << _v.translation()(2) << " ";
+    ostr << xyz[0] << " " << xyz[1] << " " << xyz[2];
 
     return ostr.str();
 }
@@ -269,7 +270,8 @@ Eigen::Vector6d toVector6d(const std::string& _str)
 
 Eigen::Isometry3d toIsometry3d(const std::string& _str)
 {
-    std::vector<double> elements;
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    Eigen::Vector6d elements = Eigen::Vector6d::Zero();
     std::vector<std::string> pieces;
     boost::split(pieces, _str, boost::is_any_of(" "));
     assert(pieces.size() == 6);
@@ -280,7 +282,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
         {
             try
             {
-                elements.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
+                elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
             }
             catch(boost::bad_lexical_cast& e)
             {
@@ -294,8 +296,9 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
         }
     }
 
-    return math::EulerXYZ(Eigen::Vector3d(elements[3], elements[4], elements[5]),
-                          Eigen::Vector3d(elements[0], elements[1], elements[2]));
+    T.linear() = math::EulerXYZ(elements.tail<3>());
+    T.translation() = elements.head<3>();
+    return T;
 }
 
 std::string getValueString(tinyxml2::XMLElement* _parentElement, const std::string& _name)
