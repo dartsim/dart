@@ -280,7 +280,6 @@ Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
 
 Eigen::Vector6d BodyNode::getVelocityWorld() const
 {
-    //return math::Rotate(mW, mV);
     return math::AdR(mW, mV);
 }
 
@@ -307,7 +306,6 @@ Eigen::Vector6d BodyNode::getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) c
 
 Eigen::Vector6d BodyNode::getAccelerationWorld() const
 {
-    //return math::Rotate(mW, mdV);
     return math::AdR(mW, mdV);
 }
 
