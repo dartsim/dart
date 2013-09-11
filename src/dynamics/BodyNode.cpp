@@ -861,7 +861,7 @@ void BodyNode::updateArticulatedInertia()
     std::vector<Joint*>::iterator iJoint;
     for (iJoint = mChildJoints.begin(); iJoint != mChildJoints.end(); ++iJoint)
     {
-        mAI += math::Transform(
+        mAI += math::transformInertia(
                     (*iJoint)->getLocalTransformation().inverse(),
                     (*iJoint)->getChildBodyNode()->mPi);
     }

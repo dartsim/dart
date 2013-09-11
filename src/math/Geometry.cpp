@@ -1352,7 +1352,7 @@ Eigen::Vector6d dad(const Eigen::Vector6d& s, const Eigen::Vector6d& t)
     return ret;
 }
 
-Inertia Transform(const Eigen::Isometry3d& T, const Inertia& AI)
+Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI)
 {
     // operation count: multiplication = 186, addition = 117, subtract = 21
 

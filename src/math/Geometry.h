@@ -285,7 +285,7 @@ Eigen::Vector6d ad(const Eigen::Vector6d& X, const Eigen::Vector6d& Y);
 Eigen::Vector6d dad(const Eigen::Vector6d& V, const Eigen::Vector6d& F);
 
 /// @brief
-Inertia Transform(const Eigen::Isometry3d& T, const Inertia& AI);
+Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI);
 
 /// @brief
 bool verifyTransform(const Eigen::Isometry3d& _T);
