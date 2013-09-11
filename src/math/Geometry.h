@@ -62,22 +62,6 @@ enum RotationOrder
 /// Norm(Log(Inv(T1) * T2)).
 //double Distance(const SE3& T1, const SE3& T2);
 
-/// @brief homogeneous transformation of the vector _v with the last value
-///treated a 1
-inline Eigen::Vector3d xformHom(const Eigen::Isometry3d& _W,
-                                const Eigen::Vector3d& _x)
-{
-    return _W.rotation() * _x + _W.translation();
-}
-
-/// @brief homogeneous transformation of the vector _v treated as a direction:
-/// last value 0
-inline Eigen::Vector3d xformHomDir(const Eigen::Isometry3d& _W,
-                                   const Eigen::Vector3d& _v)
-{
-    return _W.rotation() * _v;
-}
-
 inline Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v){
     Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
 

@@ -32,8 +32,8 @@ void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eig
     _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getDOF()) = mJ1;
     _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getDOF()) += mJ2;
 
-    Eigen::Vector3d worldP1 = math::xformHom(mBody1->getWorldTransform(), mOffset1);
-    Eigen::Vector3d worldP2 = math::xformHom(mBody2->getWorldTransform(), mOffset2);
+    Eigen::Vector3d worldP1 = mBody1->getWorldTransform() * mOffset1;
+    Eigen::Vector3d worldP2 = mBody2->getWorldTransform() * mOffset2;
     Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBody1->getSkeleton())->get_dq();
     Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBody2->getSkeleton())->get_dq();
     _C.segment(_rowIndex, 3) = worldP1 - worldP2;

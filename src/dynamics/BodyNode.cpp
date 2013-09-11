@@ -275,7 +275,7 @@ void BodyNode::setWorldTransform(const Eigen::Isometry3d &_W)
 
 Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
 {
-    return math::xformHom(mW, _lp);
+    return mW * _lp;
 }
 
 Eigen::Vector6d BodyNode::getVelocityWorld() const
@@ -735,7 +735,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _offset,
     if (_isOffsetLocal)
         T.translate(_offset);
     else
-        T.translate(math::xformHom(getWorldInvTransform(), _offset));
+        T.translate(getWorldInvTransform() * _offset);
 
     if (_isForceLocal)
         F.tail<3>() = _force;
@@ -755,7 +755,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _offset,
     if (_isOffsetLocal)
         T.translate(_offset);
     else
-        T.translate(math::xformHom(getWorldInvTransform(), _offset));
+        T.translate(getWorldInvTransform() * _offset);
 
     if (_isForceLocal)
         F.tail<3>() = _force;
