@@ -42,10 +42,10 @@
 #include <string>
 #include <iostream>
 
-/// @briefOutput a message
+/// @brief Output a message
 #define dtmsg (dart::common::colorMsg("Msg", 32))
 
-/// @briefOutput a debug message
+/// @brief Output a debug message
 #define dtdbg (dart::common::colorMsg("Dbg", 36))
 
 /// @brief Output a warning message

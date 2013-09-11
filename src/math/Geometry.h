@@ -58,21 +58,36 @@ enum RotationOrder
     UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX
 };
 
+/// @brief
 Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v);
+
+/// @brief
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m);
 
 //------------------------------------------------------------------------------
-Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
+/// @brief Forms the Quaterniond from a rotation matrix.
+Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);
+/// @brief
 Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
 
+/// @brief
 Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
+
+/// @brief
 Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
 
-Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
-Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
+/// @brief
+Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q,
+                            const Eigen::Vector3d& pt);
 
-// quaternion stuff
+/// @brief
+Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q,
+                            double x, double y, double z);
+
+/// @brief
 Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& q, int el);
+
+/// @brief
 Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& q, int el1, int el2);
 
 //------------------------------------------------------------------------------
@@ -152,9 +167,6 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
 //Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R);
 
 //------------------------------------------------------------------------------
-///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
-//Axis Reparameterize(const Axis& s);
-
 /// @brief Exponential mapping
 Eigen::Isometry3d expMap(const Eigen::Vector6d& s);
 
@@ -195,6 +207,9 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& T);
 ///// closer to SO(3).
 //SE3 Normalize(const SE3& T);
 
+///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
+//Axis Reparameterize(const Axis& s);
+
 //------------------------------------------------------------------------------
 /// @brief adjoint mapping
 /// @note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
@@ -232,10 +247,12 @@ Eigen::Vector6d AdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
 //se3 AdInvR(const SE3& T, const se3& V);
 
 /// @brief Fast version of Ad(Inv([R 0; 0 1]), se3(0, v))
-Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& V);
+Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T,
+                             const Eigen::Vector3d& V);
 
 /// @brief dual adjoint mapping
-/// @note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$, where @f$T=(R,p)@in SE(3), F=(m,f)@in se(3)^*@f$.
+/// @note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$,
+/// where @f$T=(R,p)@in SE(3), F=(m,f)@in se(3)^*@f$.
 Eigen::Vector6d dAdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 
 ///// @brief fast version of Ad(Inv(T), dse3(Eigen_Vec3(0), F))
