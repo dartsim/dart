@@ -1435,13 +1435,13 @@ bool verifyTransform(const Eigen::Isometry3d& _T)
     return true;
 }
 
-bool Verifyse3(const Eigen::Vector6d& _V)
+bool isNan(const Eigen::Vector6d& _V)
 {
     for (int i = 0; i < 6; ++i)
         if (_V(i) != _V(i))
-            return false;
+            return true;
 
-    return true;
+    return false;
 }
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m)

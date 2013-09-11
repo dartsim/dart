@@ -291,7 +291,7 @@ Inertia Transform(const Eigen::Isometry3d& T, const Inertia& AI);
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
 /// @brief
-bool Verifyse3(const Eigen::Vector6d& _V);
+bool isNan(const Eigen::Vector6d& _V);
 
 } // namespace math
 } // namespace dart

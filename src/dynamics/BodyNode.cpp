@@ -499,7 +499,7 @@ void BodyNode::updateVelocity(bool _updateJacobian)
         mV = mParentJoint->getLocalVelocity();
     }
 
-    assert(math::Verifyse3(mV));
+    assert(math::isNan(mV));
 
     if (_updateJacobian == false)
         return;
@@ -549,7 +549,7 @@ void BodyNode::updateEta()
         mEta = math::ad(mV, mParentJoint->mS*mParentJoint->get_dq()) +
            mParentJoint->mdS*mParentJoint->get_dq();
 
-        assert(math::Verifyse3(mEta));
+        assert(math::isNan(mEta));
     }
 }
 
@@ -576,7 +576,7 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
         }
     }
 
-    assert(math::Verifyse3(mdV));
+    assert(math::isNan(mdV));
 
     if (_updateJacobianDeriv == false)
         return;
@@ -839,7 +839,7 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
                             bodyDyn->getBodyForce());
     }
 
-    assert(math::Verifyse3(mF));
+    assert(math::isNan(mF));
 }
 
 void BodyNode::updateGeneralizedForce(bool _withDampingForces)
@@ -881,7 +881,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
         mB += math::dAdInvT((*iJoint)->getLocalTransformation(),
                             (*iJoint)->getChildBodyNode()->mBeta);
 
-    assert(math::Verifyse3(mB));
+    assert(math::isNan(mB));
 }
 
 void BodyNode::updatePsi()
@@ -924,7 +924,7 @@ void BodyNode::updateBeta()
     else
         mBeta += mAI*mEta;
 
-    assert(math::Verifyse3(mBeta));
+    assert(math::isNan(mBeta));
 }
 
 void BodyNode::update_ddq()
@@ -952,7 +952,7 @@ void BodyNode::update_F_fs()
     mF.noalias() = mAI*mdV;
     mF          += mB;
 
-    assert(math::Verifyse3(mF));
+    assert(math::isNan(mF));
 }
 
 void BodyNode::updateDampingForce()
