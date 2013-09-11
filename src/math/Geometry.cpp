@@ -1284,24 +1284,6 @@ Eigen::Isometry3d expAngular(const Eigen::Vector3d& S)
     return ret;
 }
 
-//// I + sin(t)*[S] + (1 - cos(t))*[S]^2,, where |S| = 1
-//SE3 ExpAngular(const Axis& S, double theta)
-//{
-//    SE3 ret = SE3::Identity();
-//    double s2[] = { S[0]*S[0], S[1]*S[1], S[2]*S[2] };
-
-//    if ( abs(s2[0] + s2[1] + s2[2] - 1.0) > LIE_EPS ) return ExpAngular(theta*S);
-
-//    double s3[] = { S[0]*S[1], S[1]*S[2], S[2]*S[0] };
-//    double alpha = sin(theta), cos_t = cos(theta), beta = 1.0 - cos_t;
-
-//    ret(0,0) = beta*s2[0] + cos_t;       ret(0,1) = beta*s3[0] - alpha*S[2];  ret(0,2) = beta*s3[2] + alpha*S[1];
-//    ret(1,0) = beta*s3[0] + alpha*S[2];  ret(1,1) = beta*s2[1] + cos_t;       ret(1,2) = beta*s3[1] - alpha*S[0];
-//    ret(2,0) = beta*s3[2] - alpha*S[1];  ret(2,1) = beta*s3[1] + alpha*S[0];  ret(2,2) = beta*s2[2] + cos_t;
-
-//    return ret;
-//}
-
 //SE3 Normalize(const SE3& T)
 //{
 //    SE3 ret = SE3::Identity();
