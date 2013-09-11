@@ -731,9 +731,9 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _offset,
     Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
     if (_isOffsetLocal)
-        T.translate(_offset);
+        T.translation() = _offset;
     else
-        T.translate(getWorldInvTransform() * _offset);
+        T.translation() = getWorldInvTransform() * _offset;
 
     if (_isForceLocal)
         F.tail<3>() = _force;
@@ -751,9 +751,9 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _offset,
     Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
     if (_isOffsetLocal)
-        T.translate(_offset);
+        T.translation() = _offset;
     else
-        T.translate(getWorldInvTransform() * _offset);
+        T.translation() = getWorldInvTransform() * _offset;
 
     if (_isForceLocal)
         F.tail<3>() = _force;

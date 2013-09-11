@@ -76,8 +76,7 @@ int main(int argc, char* argv[]) {
     node = new BodyNode("LHR");
     joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHR");
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, 0.5));
+    Eigen::Isometry3d T(Eigen::Translation3d(0.0, 0.0, 0.5));
     joint->setTransformFromParentBody(T);
     shape = new BoxShape(Vector3d(0.3, 0.3, 1.0));
     shape->setOffset(Vector3d(0.0, 0.0, 0.5));
@@ -92,8 +91,7 @@ int main(int argc, char* argv[]) {
     node = new BodyNode("LHP");
     joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHP");
-    T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, 1.0));
+    T = Eigen::Translation3d(0.0, 0.0, 1.0);
     joint->setTransformFromParentBody(T);
     shape = new BoxShape(Vector3d(0.3, 0.3, 1.0));
     shape->setOffset(Vector3d(0.0, 0.0, 0.5));
