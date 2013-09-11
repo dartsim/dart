@@ -137,16 +137,16 @@ public:
     int getSkeletonIndex() const;
 
     /// @brief
-    void setParentBody(BodyNode* _body);
+    void setParentBodyNode(BodyNode* _body);
 
     /// @brief
-    void setChildBody(BodyNode* _body);
+    void setChildBodyNode(BodyNode* _body);
 
     /// @brief
-    void setTransformFromParentBody(const Eigen::Isometry3d& _T);
+    void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
     /// @brief
-    void setTransformFromChildBody(const Eigen::Isometry3d& _T);
+    void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
     /// @brief
     BodyNode* getParentBodyNode() const;
@@ -155,10 +155,10 @@ public:
     BodyNode* getChildBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformationFromParentBody() const;
+    const Eigen::Isometry3d& getTransformationFromParentBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformationFromChildBody() const;
+    const Eigen::Isometry3d& getTransformationFromChildBodyNode() const;
 
     // TODO: Not implemented.
     /// @brief
@@ -170,8 +170,6 @@ public:
     /// @brief
     void updateKinematics(bool _firstDerivative = true,
                           bool _secondDerivative = true);
-
-    //void updateGlobalKinematics();
 
     /// @brief
     void setDampingCoefficient(int _idx, double _d);
@@ -224,10 +222,10 @@ protected:
     JointType mJointType;
 
     /// @brief
-    BodyNode* mParentBody;
+    BodyNode* mParentBodyNode;
 
     /// @brief
-    BodyNode* mChildBody;
+    BodyNode* mChildBodyNode;
 
     /// @brief
     Eigen::Isometry3d mT_ParentBodyToJoint;

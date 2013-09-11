@@ -440,7 +440,7 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
 
         if (strParent == std::string("world"))
         {
-            newJoint->setParentBody(NULL);
+            newJoint->setParentBodyNode(NULL);
         }
         else
         {
@@ -456,7 +456,7 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
                   << ". " << std::endl;
                 assert(parentBody != NULL);
             }
-            newJoint->setParentBody(parentBody);
+            newJoint->setParentBodyNode(parentBody);
         }
     }
     else
@@ -473,7 +473,7 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
         std::string strChild = getValueString(_jointElement, "child");
         childBody = _skeleton->findBodyNode(strChild);
         assert(childBody != NULL && "Dart cannot find child body.");
-        newJoint->setChildBody(childBody);
+        newJoint->setChildBodyNode(childBody);
     }
     else
     {
@@ -492,8 +492,8 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
     if (hasElement(_jointElement, "transformation"))
         childToJoint = getValueIsometry3d(_jointElement, "transformation");
     Eigen::Isometry3d parentToJoint = parentWorld.inverse()*childWorld*childToJoint;
-    newJoint->setTransformFromChildBody(childToJoint);
-    newJoint->setTransformFromParentBody(parentToJoint);
+    newJoint->setTransformFromChildBodyNode(childToJoint);
+    newJoint->setTransformFromParentBodyNode(parentToJoint);
 
     return newJoint;
 }

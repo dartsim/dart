@@ -47,8 +47,8 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
     : mName(_name),
       mSkelIndex(-1),
       mJointType(UNKNOWN),
-      mParentBody(_parent),
-      mChildBody(_child),
+      mParentBodyNode(_parent),
+      mChildBodyNode(_child),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
       mT(Eigen::Isometry3d::Identity()),
@@ -57,8 +57,8 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
       mdV(Eigen::Vector6d::Zero()),
       mdS(math::Jacobian::Zero(6,0))
 {
-    setParentBody(mParentBody);
-    setChildBody(mChildBody);
+    setParentBodyNode(mParentBodyNode);
+    setChildBodyNode(mChildBodyNode);
 }
 
 Joint::~Joint()
@@ -133,46 +133,46 @@ int Joint::getSkeletonIndex() const
     return mSkelIndex;
 }
 
-void Joint::setParentBody(BodyNode* _body)
+void Joint::setParentBodyNode(BodyNode* _body)
 {
-    mParentBody = _body;
+    mParentBodyNode = _body;
 
-    if (mParentBody != NULL)
+    if (mParentBodyNode != NULL)
     {
-        mParentBody->addChildJoint(this);
+        mParentBodyNode->addChildJoint(this);
 
-        if (mChildBody != NULL)
+        if (mChildBodyNode != NULL)
         {
-            mChildBody->setParentBodyNode(mParentBody);
-            mParentBody->addChildBody(mChildBody);
+            mChildBodyNode->setParentBodyNode(mParentBodyNode);
+            mParentBodyNode->addChildBodyNode(mChildBodyNode);
         }
     }
 }
 
-void Joint::setChildBody(BodyNode* _body)
+void Joint::setChildBodyNode(BodyNode* _body)
 {
-    mChildBody = _body;
+    mChildBodyNode = _body;
 
-    if (mChildBody != NULL)
+    if (mChildBodyNode != NULL)
     {
-        mChildBody->setParentJoint(this);
+        mChildBodyNode->setParentJoint(this);
 
-        if (mParentBody != NULL)
+        if (mParentBodyNode != NULL)
         {
-            mParentBody->addChildBody(mChildBody);
-            mChildBody->setParentBodyNode(mParentBody);
+            mParentBodyNode->addChildBodyNode(mChildBodyNode);
+            mChildBodyNode->setParentBodyNode(mParentBodyNode);
         }
     }
 }
 
-void Joint::setTransformFromParentBody(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
     assert(math::VerifySE3(_T));
 
     mT_ParentBodyToJoint = _T;
 }
 
-void Joint::setTransformFromChildBody(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
     assert(math::VerifySE3(_T));
 
@@ -181,20 +181,20 @@ void Joint::setTransformFromChildBody(const Eigen::Isometry3d& _T)
 
 BodyNode* Joint::getParentBodyNode() const
 {
-    return mParentBody;
+    return mParentBodyNode;
 }
 
 BodyNode* Joint::getChildBodyNode() const
 {
-    return mChildBody;
+    return mChildBodyNode;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformationFromParentBody() const
+const Eigen::Isometry3d&Joint::getTransformationFromParentBodyNode() const
 {
     return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformationFromChildBody() const
+const Eigen::Isometry3d&Joint::getTransformationFromChildBodyNode() const
 {
     return mT_ChildBodyToJoint;
 }

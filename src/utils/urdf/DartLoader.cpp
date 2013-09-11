@@ -90,7 +90,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
           rootJoint->getGenCoord(5)->set_q(r);
       }
       else {
-          rootJoint->setTransformFromParentBody(toEigen(pose));
+          rootJoint->setTransformFromParentBodyNode(toEigen(pose));
       }
 
       skeleton->initKinematics();
@@ -190,11 +190,11 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
     else {
         rootNode = createDartNode(root, _rootToSkelPath);
         rootJoint = new dynamics::FreeJoint();
-        rootJoint->setParentBody(NULL);
-        rootJoint->setChildBody(rootNode);
+        rootJoint->setParentBodyNode(NULL);
+        rootJoint->setChildBodyNode(rootNode);
         rootJoint->setName("rootJoint");
-        rootJoint->setTransformFromParentBody(Eigen::Isometry3d::Identity());
-        rootJoint->setTransformFromChildBody(Eigen::Isometry3d::Identity());
+        rootJoint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+        rootJoint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     }
     rootNode->setParentJoint(rootJoint);
 
@@ -271,8 +271,8 @@ dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint
       return NULL;
   }
   joint->setName(_jt->name);
-  joint->setTransformFromParentBody(toEigen(_jt->parent_to_joint_origin_transform));
-  joint->setTransformFromChildBody(Eigen::Isometry3d::Identity());
+  joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
+  joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
 
   return joint;
 }

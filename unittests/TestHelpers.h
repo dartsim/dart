@@ -69,7 +69,7 @@ void addEndEffector (Skeleton* robot, BodyNode* parent_node, Vector3d dim) {
     WeldJoint* joint = new WeldJoint(parent_node, node, "eeJoint");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
-    joint->setTransformFromParentBody(T);
+    joint->setTransformFromParentBodyNode(T);
     Shape* shape = new BoxShape(Vector3d(0.2, 0.2, 0.2));
     node->setLocalCOM(Vector3d(0.0, 0.0, 0.0));
     node->setMass(1.0);
@@ -131,7 +131,7 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBody(T);
+    joint->setTransformFromParentBodyNode(T);
     shape = new BoxShape(dim2);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     node->addVisualizationShape(shape);
@@ -174,7 +174,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBody(T);
+    joint->setTransformFromParentBodyNode(T);
     shape = new BoxShape(dim2);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     node->addVisualizationShape(shape);
@@ -189,7 +189,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     joint->setName("joint3");
     T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBody(T);
+    joint->setTransformFromParentBodyNode(T);
     shape = new BoxShape(dim3);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
     node->addVisualizationShape(shape);

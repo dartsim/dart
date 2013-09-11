@@ -80,8 +80,8 @@ Eigen::Vector3d PrismaticJoint::getAxisGlobal() const
 {
     Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
 
-    if (this->mParentBody != NULL)
-        parentTransf = mParentBody->getWorldTransform();
+    if (this->mParentBodyNode != NULL)
+        parentTransf = mParentBodyNode->getWorldTransform();
 
     return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }

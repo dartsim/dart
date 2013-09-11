@@ -165,7 +165,7 @@ BodyNode*BodyNode::getParentBodyNode() const
     return mParentBodyNode;
 }
 
-void BodyNode::addChildBody(BodyNode* _body)
+void BodyNode::addChildBodyNode(BodyNode* _body)
 {
     assert(_body != NULL);
 

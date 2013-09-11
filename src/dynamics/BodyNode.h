@@ -225,7 +225,7 @@ public:
     BodyNode* getParentBodyNode() const;
 
     /// @brief
-    void addChildBody(BodyNode* _body);
+    void addChildBodyNode(BodyNode* _body);
 
     /// @brief
     BodyNode* getChildBodyNode(int _idx) const;
