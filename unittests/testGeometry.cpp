@@ -290,7 +290,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
     {
         Eigen::Vector6d s = Eigen::Vector6d::Random();
         s.head<3>() = Eigen::Vector3d::Zero();
-        Eigen::Isometry3d Exp_s = math::expLinear(s.tail<3>());
+        Eigen::Isometry3d Exp_s(Eigen::Translation3d(s.tail<3>()));
         Eigen::Matrix4d Exp_s_2 = Eigen::Matrix4d::Identity();
 
         double theta = s.head<3>().norm();

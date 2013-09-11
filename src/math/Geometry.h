@@ -164,9 +164,6 @@ Eigen::Isometry3d expAngular(const Eigen::Vector3d& s);
 ///// @brief fast version of Exp(t * s), when |s| = 1
 //SE3 ExpAngular(const Axis& s, double t);
 
-/// @brief fast version of Exp(se3(s, 0))
-Eigen::Isometry3d expLinear(const Eigen::Vector3d& s);
-
 /// @brief Computes the Rotation matrix from a given expmap vector.
 Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _expmap);
 

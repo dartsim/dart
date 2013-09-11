@@ -65,13 +65,9 @@ TranslationalJoint::~TranslationalJoint()
 void TranslationalJoint::_updateTransformation()
 {
     // T
-    Eigen::Vector3d v(mCoordinate[0].get_q(),
-                 mCoordinate[1].get_q(),
-                 mCoordinate[2].get_q());
-
-    mT = mT_ParentBodyToJoint
-         * math::expLinear(v)
-         * mT_ChildBodyToJoint.inverse();
+    mT = mT_ParentBodyToJoint *
+         Eigen::Translation3d(get_q()) *
+         mT_ChildBodyToJoint.inverse();
 }
 
 void TranslationalJoint::_updateVelocity()

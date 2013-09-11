@@ -1302,17 +1302,6 @@ Eigen::Isometry3d expAngular(const Eigen::Vector3d& S)
 //    return ret;
 //}
 
-Eigen::Isometry3d expLinear(const Eigen::Vector3d& s)
-{
-    Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-
-    ret(0,3) = s[0];
-    ret(1,3) = s[1];
-    ret(2,3) = s[2];
-
-    return ret;
-}
-
 //SE3 Normalize(const SE3& T)
 //{
 //    SE3 ret = SE3::Identity();

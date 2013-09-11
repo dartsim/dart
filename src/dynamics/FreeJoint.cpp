@@ -77,7 +77,7 @@ void FreeJoint::_updateTransformation()
                   mCoordinate[5].get_q());
 
     mT = mT_ParentBodyToJoint *
-            math::expLinear(q2) *
+            Eigen::Translation3d(q2) *
             math::expAngular(q1) *
             mT_ChildBodyToJoint.inverse();
 
