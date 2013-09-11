@@ -558,27 +558,6 @@ Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _q, int _qi )
     return expMapJacDot(_q, qdot);
 }
 
-//SE3 operator/(const SE3& T1, const SE3& T2)
-//{
-//    SE3 ret = SE3::Identity();
-
-//    double tmp[] = {T1(0,0)*T2(0,0) + T1(0,1)*T2(0,1) + T1(0,2)*T2(0,2),
-//                    T1(1,0)*T2(0,0) + T1(1,1)*T2(0,1) + T1(1,2)*T2(0,2),
-//                    T1(2,0)*T2(0,0) + T1(2,1)*T2(0,1) + T1(2,2)*T2(0,2),
-//                    T1(0,0)*T2(1,0) + T1(0,1)*T2(1,1) + T1(0,2)*T2(1,2),
-//                    T1(1,0)*T2(1,0) + T1(1,1)*T2(1,1) + T1(1,2)*T2(1,2),
-//                    T1(2,0)*T2(1,0) + T1(2,1)*T2(1,1) + T1(2,2)*T2(1,2),
-//                    T1(0,0)*T2(2,0) + T1(0,1)*T2(2,1) + T1(0,2)*T2(2,2),
-//                    T1(1,0)*T2(2,0) + T1(1,1)*T2(2,1) + T1(1,2)*T2(2,2),
-//                    T1(2,0)*T2(2,0) + T1(2,1)*T2(2,1) + T1(2,2)*T2(2,2) };
-
-//    ret(0,0) = tmp[0];  ret(0,1) = tmp[3];  ret(0,2) = tmp[6];  ret(0,3) = T1(0,3) - tmp[0]*T2(0,3) - tmp[3]*T2(1,3) - tmp[6]*T2(2,3);
-//    ret(1,0) = tmp[1];  ret(1,1) = tmp[4];  ret(1,2) = tmp[7];  ret(1,3) = T1(1,3) - tmp[1]*T2(0,3) - tmp[4]*T2(1,3) - tmp[7]*T2(2,3);
-//    ret(2,0) = tmp[2];  ret(2,1) = tmp[5];  ret(2,2) = tmp[8];  ret(2,3) = T1(2,3) - tmp[2]*T2(0,3) - tmp[5]*T2(1,3) - tmp[8]*T2(2,3);
-
-//    return ret;
-//}
-
 //Vec3 AdInvTLinear(const SE3& T, const Vec3& v)
 //{
 //    return Vec3(T(0,0)*v[0] + T(1,0)*v[1] + T(2,0)*v[2],

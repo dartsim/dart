@@ -62,8 +62,6 @@ enum RotationOrder
 /// Norm(Log(Inv(T1) * T2)).
 //double Distance(const SE3& T1, const SE3& T2);
 
-//SE3 operator/(const SE3& T1, const SE3& T2);
-
 /// @brief homogeneous transformation of the vector _v with the last value
 ///treated a 1
 inline Eigen::Vector3d xformHom(const Eigen::Isometry3d& _W,
