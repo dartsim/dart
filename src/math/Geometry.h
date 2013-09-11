@@ -67,6 +67,7 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m);
 //------------------------------------------------------------------------------
 /// @brief Forms the Quaterniond from a rotation matrix.
 Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);
+
 /// @brief
 Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
 
