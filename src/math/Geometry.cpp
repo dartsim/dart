@@ -76,33 +76,80 @@ Eigen::Vector3d quatToExp(Eigen::Quaterniond& q)
     return v*aa.angle();
 }
 
-// Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
-// coordinate system transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
+// Reference: http://www.geometrictools.com/LibMathematics/Algebra/Wm5Matrix3.inl
+Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& R)
+{
+    // +-           -+   +-                                                -+
+    // | r00 r01 r02 |   |  cy      sy*sx1               sy*cx1             |
+    // | r10 r11 r12 | = |  sy*sx0  cx0*cx1-cy*sx0*sx1  -cy*cx1*sx0-cx0*sx1 |
+    // | r20 r21 r22 |   | -sy*cx0  cx1*sx0+cy*cx0*sx1   cy*cx0*cx1-sx0*sx1 |
+    // +-           -+   +-                                                -+
+
+    if (R(0, 0) < 1.0)
+    {
+        if (R(0, 0) > -1.0)
+        {
+            // y_angle  = acos(r00)
+            // x0_angle = atan2(r10,-r20)
+            // x1_angle = atan2(r01,r02)
+            double y  = acos(R(0, 0));
+            double x0 = atan2(R(1, 0), -R(2, 0));
+            double x1 = atan2(R(0, 1), R(0, 2));
+            //return EA_UNIQUE;
+            return Eigen::Vector3d(x0,y,x1);
+        }
+        else
+        {
+            // Not a unique solution:  x1_angle - x0_angle = atan2(-r12,r11)
+            double y  = DART_PI;
+            double x0 = -atan2(-R(1, 2), R(1, 1));
+            double x1 = 0.0;
+            //return EA_NOT_UNIQUE_DIF;
+            return Eigen::Vector3d(x0,y,x1);
+        }
+    }
+    else
+    {
+        // Not a unique solution:  x1_angle + x0_angle = atan2(-r12,r11)
+        double y  = 0.0;
+        double x0 = -atan2(-R(1, 2), R(1, 1));
+        double x1 = 0.0;
+        //return EA_NOT_UNIQUE_SUM;
+        return Eigen::Vector3d(x0,y,x1);
+    }
+}
+
 Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R)
 {
+    // +-           -+   +-                                        -+
+    // | r00 r01 r02 |   |  cy*cz           -cy*sz            sy    |
+    // | r10 r11 r12 | = |  cz*sx*sy+cx*sz   cx*cz-sx*sy*sz  -cy*sx |
+    // | r20 r21 r22 |   | -cx*cz*sy+sx*sz   cz*sx+cx*sy*sz   cx*cy |
+    // +-           -+   +-                                        -+
+
     double x, y, z;
 
-    if (R(2, 0) > (1.0-DART_EPSILON))
+    if (R(0, 2) > (1.0-DART_EPSILON))
     {
         std::cout << "North Pole" << std::endl;
-        x = atan2(R(0, 1), R(0, 2));
-        y = -DART_PI / 2.0;
-        z = 0.0;
+        z = atan2(R(1, 0), R(1, 1));
+        y = DART_PI_HALF;
+        x = 0.0;
         return Eigen::Vector3d(x,y,z);
     }
 
-    if (R(2, 0) < -(1.0-DART_EPSILON))
+    if (R(0, 2) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
-        x = atan2(R(0, 1), R(0, 2));
-        y = DART_PI / 2.0;
-        z = 0.0;
+        z = atan2(R(1, 0), R(1, 1));
+        y = -DART_PI_HALF;
+        x = 0.0;
         return Eigen::Vector3d(x,y,z);
     }
 
-    x = atan2(R(2, 1), R(2, 2));
-    y = -asin(R(2, 0));
-    z = atan2(R(1, 0), R(0, 0));
+    z = -atan2(R(0, 1), R(0, 0));
+    y = asin(R(0, 2));
+    x = -atan2(R(1, 2), R(2, 2));
 
     // order of return is the order of input
     return Eigen::Vector3d(x,y,z);
@@ -112,33 +159,33 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R)
 {
     double x, y, z;
 
-    if (R(0, 2) > (1.0-DART_EPSILON))
+    if (R(2, 0) > (1.0-DART_EPSILON))
     {
         std::cout << "North Pole" << std::endl;
-        z = atan2(R(1, 0), R(1, 1));
-        y = DART_PI / 2.0;
-        x = 0.0;
+        x = atan2(R(0, 1), R(0, 2));
+        y = -DART_PI_HALF;
+        z = 0.0;
         return Eigen::Vector3d(z,y,x);
     }
 
-    if (R(0, 2) < -(1.0-DART_EPSILON))
+    if (R(2, 0) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
-        z = atan2(R(1, 0), R(1, 1));
-        y = -DART_PI / 2.0;
-        x = 0.0;
+        x = atan2(R(0, 1), R(0, 2));
+        y = DART_PI_HALF;
+        z = 0.0;
         return Eigen::Vector3d(z,y,x);
     }
 
-    z = -atan2(R(0, 1), R(0, 0));
-    y = asin(R(0, 2));
-    x = -atan2(R(1, 2), R(2, 2));
+    x = atan2(R(2, 1), R(2, 2));
+    y = -asin(R(2, 0));
+    z = atan2(R(1, 0), R(0, 0));
 
     // order of return is the order of input
     return Eigen::Vector3d(z,y,x);
 }
 
-Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R)
+Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R)
 {
     double x, y, z;
 
@@ -146,18 +193,18 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R)
     {
         std::cout << "North Pole" << std::endl;
         y = atan2(R(1, 2), R(1, 0));
-        z = -DART_PI / 2.0;
+        z = -DART_PI_HALF;
         x = 0.0;
-        return Eigen::Vector3d(y,z,x);
+        return Eigen::Vector3d(x,z,y);
     }
 
     if (R(0, 1) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
         y = atan2(R(1, 2), R(1, 0));
-        z = DART_PI / 2.0;
+        z = DART_PI_HALF;
         x = 0.0;
-        return Eigen::Vector3d(y,z,x);
+        return Eigen::Vector3d(x,z,y);
     }
 
     y = atan2(R(0, 2), R(0, 0));
@@ -165,10 +212,10 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R)
     x = atan2(R(2, 1), R(1, 1));
 
     // order of return is the order of input
-    return Eigen::Vector3d(y,z,x);
+    return Eigen::Vector3d(x,z,y);
 }
 
-Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R)
+Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R)
 {
     double x, y, z;
 
@@ -176,18 +223,18 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R)
     {
         std::cout << "North Pole" << std::endl;
         x = -atan2(R(0, 2), R(0, 1));
-        z = DART_PI / 2.0;
+        z = DART_PI_HALF;
         y = 0.0;
-        return Eigen::Vector3d(x,z,y);
+        return Eigen::Vector3d(y,z,x);
     }
 
     if(R(1, 0) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
         x = -atan2(R(0, 2), R(0, 1));
-        z = -DART_PI / 2.0;
+        z = -DART_PI_HALF;
         y = 0.0;
-        return Eigen::Vector3d(x,z,y);
+        return Eigen::Vector3d(y,z,x);
     }
 
     x = -atan2(R(1, 2), R(1, 1));
@@ -195,10 +242,10 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R)
     y = -atan2(R(2, 0), R(0, 0));
 
     // order of return is the order of input
-    return Eigen::Vector3d(x,z,y);
+    return Eigen::Vector3d(y,z,x);
 }
 
-Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R)
+Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
 {
     double x, y, z;
 
@@ -206,18 +253,18 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R)
     {
         std::cout << "North Pole" << std::endl;
         y = atan2(R(0, 2), R(0, 0));
-        x = DART_PI / 2.0;
+        x = DART_PI_HALF;
         z = 0.0;
-        return Eigen::Vector3d(y, x, z);
+        return Eigen::Vector3d(z, x, y);
     }
 
     if (R(2, 1) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
         y = atan2(R(0, 2), R(0, 0));
-        x = -DART_PI / 2.0;
+        x = -DART_PI_HALF;
         z = 0.0;
-        return Eigen::Vector3d(y, x, z);
+        return Eigen::Vector3d(z, x, y);
     }
 
     y = -atan2(R(2, 0), R(2, 2));
@@ -225,10 +272,10 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R)
     z = -atan2(R(0, 1), R(1, 1));
 
     // order of return is the order of input
-    return Eigen::Vector3d(y, x, z);
+    return Eigen::Vector3d(z, x, y);
 }
 
-Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
+Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R)
 {
     double x, y, z;
 
@@ -236,18 +283,18 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
     {
         std::cout << "North Pole" << std::endl;
         z = -atan2(R(0, 1), R(0, 0));
-        x = -DART_PI / 2.0;
+        x = -DART_PI_HALF;
         y = 0.0;
-        return Eigen::Vector3d(z,x,y);
+        return Eigen::Vector3d(y,x,z);
     }
 
     if(R(1, 2) < -(1.0-DART_EPSILON))
     {
         std::cout << "South Pole" << std::endl;
         z = -atan2(R(0, 1), R(0, 0));
-        x = DART_PI / 2.0;
+        x = DART_PI_HALF;
         y = 0.0;
-        return Eigen::Vector3d(z,x,y);
+        return Eigen::Vector3d(y,x,z);
     }
 
     z = atan2(R(1, 0), R(1, 1));
@@ -255,7 +302,7 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R)
     y = atan2(R(0, 2), R(2, 2));
 
     // order of return is the order of input
-    return Eigen::Vector3d(z,x,y);
+    return Eigen::Vector3d(y,x,z);
 }
 
 // get the derivative of rotation matrix wrt el no.
@@ -888,6 +935,7 @@ Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& t)
 //    return ret;
 //}
 
+// Reference: http://www.geometrictools.com/LibMathematics/Algebra/Wm5Matrix3.inl
 Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& angle)
 {
     // +-           -+   +-                                                -+
@@ -1128,7 +1176,6 @@ Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& angle)
     return ret;
 }
 
-// TODO: Check!
 Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& angle)
 {
     // +-           -+   +-                                                -+
