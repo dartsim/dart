@@ -156,7 +156,7 @@ public:
     Eigen::Vector3d getWorldCOM() const;
 
     /// @brief
-    Eigen::Matrix6d getGeneralizedInertia() const;
+    Eigen::Matrix6d getInertia() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties

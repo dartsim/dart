@@ -677,7 +677,7 @@ Eigen::Vector3d BodyNode::getWorldCOM() const
     return evalWorldPos(mCenterOfMass);
 }
 
-Eigen::Matrix6d BodyNode::getGeneralizedInertia() const
+Eigen::Matrix6d BodyNode::getInertia() const
 {
     return mI;
 }
