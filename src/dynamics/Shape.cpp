@@ -53,12 +53,16 @@ Shape::Shape(ShapeType _type) :
 {
 }
 
+Shape::~Shape()
+{
+}
+
 void Shape::setColor(const Eigen::Vector3d& _color)
 {
     mColor = _color;
 }
 
-Eigen::Vector3d Shape::getColor() const
+const Eigen::Vector3d& Shape::getColor() const
 {
     return mColor;
 }
@@ -69,7 +73,7 @@ void Shape::setDim(const Eigen::Vector3d& _dim)
     computeVolume();
 }
 
-Eigen::Vector3d Shape::getDim() const
+const Eigen::Vector3d& Shape::getDim() const
 {
     return mDim;
 }
@@ -79,12 +83,12 @@ void Shape::setTransform(const Eigen::Isometry3d& _Transform)
     mTransform = _Transform;
 }
 
-Eigen::Isometry3d Shape::getTransform() const
+const Eigen::Isometry3d& Shape::getTransform() const
 {
     return mTransform;
 }
 
-void Shape::setOffset(Eigen::Vector3d _offset)
+void Shape::setOffset(const Eigen::Vector3d& _offset)
 {
     mTransform.translation() = _offset;
 }
@@ -107,6 +111,11 @@ void Shape::setVolume(double _v)
 double Shape::getVolume() const
 {
     return mVolume;
+}
+
+int Shape::getID() const
+{
+    return mID;
 }
 
 Shape::ShapeType Shape::getShapeType() const
