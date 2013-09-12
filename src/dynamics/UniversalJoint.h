@@ -49,9 +49,6 @@ namespace dynamics {
 class UniversalJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     UniversalJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                    const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
@@ -61,9 +58,6 @@ public:
     /// @brief
     virtual ~UniversalJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
     /// @brief
     void setAxis1(const Eigen::Vector3d& _axis);
 
@@ -80,9 +74,6 @@ public:
     virtual double getPotentialEnergy() const { return 0.0; }
 
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
     virtual void _updateTransform();
 
@@ -92,9 +83,6 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief Euler angles X, Y, Z
     GenCoord mCoordinate[2];
 

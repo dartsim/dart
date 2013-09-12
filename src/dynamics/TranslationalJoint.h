@@ -49,9 +49,6 @@ namespace dynamics {
 class TranslationalJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     TranslationalJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                        const std::string& _name = "Translational joint");
@@ -59,25 +56,10 @@ public:
     /// @brief
     virtual ~TranslationalJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
-
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
-
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
     virtual void _updateTransform();
 
@@ -87,9 +69,6 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     GenCoord mCoordinate[3];
 

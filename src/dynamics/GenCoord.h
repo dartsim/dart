@@ -49,11 +49,6 @@ namespace dynamics {
 
 class Joint;
 
-// http://en.wikipedia.org/wiki/Degree_of_freedom:
-//   In many scientific fields, the degrees of freedom of a system is the number
-//   of parameters of the system that may vary independently. For example, the
-//   position of a figure in the plane has three degrees of freedom: its
-//   orientation and the two coordinates of any fixed point of the figure.
 /// @brief Generalized coordinate.
 /// A set of generalized coordiante describes the configuration of a system.
 class GenCoord
@@ -79,12 +74,6 @@ public:
 
     /// @brief
     void setSkeletonIndex(int _idx);
-
-    /// @brief
-    //void setJoint(Joint *_j) { mJoint = _j; }
-
-    /// @brief
-    //Joint *getJoint() const { return mJoint; }
 
 public:
     double get_q() const { return q; }           ///< Coordinate
