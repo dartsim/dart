@@ -71,7 +71,7 @@ void MeshShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _col
     _ri->popMatrix();
 }
 
-Eigen::Matrix3d MeshShape::computeInertia(double _mass) {
+Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
     // use bounding box to represent the mesh
     double max_X = -1e7;
     double max_Y = -1e7;

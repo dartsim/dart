@@ -68,7 +68,7 @@ public:
               bool _useDefaultColor = true) const;
 
     // Documentation inherited.
-    virtual Eigen::Matrix3d computeInertia(double _mass);
+    virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
 private:
     // Documentation inherited.

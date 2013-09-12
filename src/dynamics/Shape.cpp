@@ -98,11 +98,6 @@ Eigen::Vector3d Shape::getOffset() const
     return mTransform.translation();
 }
 
-Eigen::Matrix3d Shape::computeInertia(double _mass) const
-{
-    return Eigen::Matrix3d::Zero();
-}
-
 void Shape::setVolume(double _v)
 {
     mVolume = _v;

@@ -92,7 +92,7 @@ public:
     Eigen::Vector3d getOffset() const;
 
     /// @brief
-    virtual Eigen::Matrix3d computeInertia(double _mass) const;
+    virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
 
     /// @brief
     void setVolume(double _v);

@@ -55,7 +55,7 @@ public:
               bool _useDefaultColor = true) const;
 
     // Documentation inherited.
-    virtual Eigen::Matrix3d computeInertia(double _mass);
+    virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
     /// @brief True if (mDim[0] == mDim[1] == mDim[2]).
     bool isSphere(void) const;

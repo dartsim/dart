@@ -63,7 +63,7 @@ void EllipsoidShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d&
     _ri->popMatrix();
 }
 
-Eigen::Matrix3d EllipsoidShape::computeInertia(double _mass) {
+Eigen::Matrix3d EllipsoidShape::computeInertia(double _mass) const {
     Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
     inertia(0, 0) = _mass / 20.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
     inertia(1, 1) = _mass / 20.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
