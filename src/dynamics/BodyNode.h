@@ -288,7 +288,7 @@ public:
     Eigen::Vector6d getWorldVelocity() const;
 
     /// @brief
-    Eigen::Vector6d getWorldVelocityAtCOG() const;
+    Eigen::Vector6d getWorldVelocityAtCOM() const;
 
     /// @breif
     Eigen::Vector6d getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const;
@@ -303,7 +303,7 @@ public:
     Eigen::Vector6d getWorldAcceleration() const;
 
     /// @brief
-    Eigen::Vector6d getWorldAccelerationAtCOG() const;
+    Eigen::Vector6d getWorldAccelerationAtCOM() const;
 
     /// @breif
     Eigen::Vector6d getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const;

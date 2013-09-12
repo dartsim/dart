@@ -298,7 +298,7 @@ Eigen::Vector6d BodyNode::getWorldVelocity() const
     return math::AdR(mW, mV);
 }
 
-Eigen::Vector6d BodyNode::getWorldVelocityAtCOG() const
+Eigen::Vector6d BodyNode::getWorldVelocityAtCOM() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
     worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
@@ -329,17 +329,17 @@ Eigen::Vector6d BodyNode::getWorldAcceleration() const
     return math::AdR(mW, mdV);
 }
 
-Eigen::Vector6d BodyNode::getWorldAccelerationAtCOG() const
+Eigen::Vector6d BodyNode::getWorldAccelerationAtCOM() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
     worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
     return math::AdT(worldFrameAtCOG, mdV);
 }
 
-Eigen::Vector6d BodyNode::getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const
+Eigen::Vector6d BodyNode::getWorldAccelerationAtPoint(const Eigen::Vector3d& _point) const
 {
     Eigen::Isometry3d worldFrameAtPoint = mW;
-    worldFrameAtPoint.translation() = mW.linear() * _pointBody;
+    worldFrameAtPoint.translation() = mW.linear() * _point;
     return math::AdT(worldFrameAtPoint, mdV);
 }
 
@@ -360,8 +360,7 @@ math::Jacobian BodyNode::getWorldJacobian() const
     return math::AdR(mW, mBodyJacobian);
 }
 
-math::Jacobian BodyNode::getWorldJacobianAtPoint(
-        const Eigen::Vector3d& r_world) const
+math::Jacobian BodyNode::getWorldJacobianAtPoint(const Eigen::Vector3d& _point) const
 {
     //--------------------------------------------------------------------------
     // Jb                : body jacobian
@@ -377,7 +376,7 @@ math::Jacobian BodyNode::getWorldJacobianAtPoint(
     //
     // body_jacobian_at_contact_point = Ad(X^{-1} * W, Jb)
     //--------------------------------------------------------------------------
-    return math::AdTJac(Eigen::Translation3d(-r_world) * mW, mBodyJacobian);
+    return math::AdTJac(Eigen::Translation3d(-_point) * mW, mBodyJacobian);
 }
 
 Eigen::MatrixXd BodyNode::getWorldJacobianAtPoint_LinearPartOnly(
