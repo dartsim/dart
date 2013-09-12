@@ -76,24 +76,8 @@ namespace Eigen {
 typedef Matrix<double,6,1> Vector6d;
 typedef Matrix<double,6,6> Matrix6d;
 
-typedef std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > EIGEN_V_VEC2D;
-typedef std::vector<Eigen::Vector3d>                                             EIGEN_V_VEC3D;
-typedef std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > EIGEN_V_VEC4D;
-
-typedef std::vector<Eigen::Matrix2d, Eigen::aligned_allocator<Eigen::Matrix2d> > EIGEN_V_MAT2D;
-typedef std::vector<Eigen::Matrix3d>                                             EIGEN_V_MAT3D;
-typedef std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > EIGEN_V_MAT4D;
-
-typedef std::vector<std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > > EIGEN_VV_VEC2D;
-typedef std::vector<std::vector<Eigen::Vector3d > >                                            EIGEN_VV_VEC3D;
-typedef std::vector<std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > > EIGEN_VV_VEC4D;
-
-typedef std::vector<std::vector<Eigen::Matrix2d, Eigen::aligned_allocator<Eigen::Matrix2d> > > EIGEN_VV_MAT2D;
-typedef std::vector<std::vector<Eigen::Matrix3d > >                                            EIGEN_VV_MAT3D;
-typedef std::vector<std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > > EIGEN_VV_MAT4D;
-
-typedef std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond > >              EIGEN_V_QUATD;
-typedef std::vector<std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> > > EIGEN_VV_QUATD;
+typedef std::vector<Eigen::Vector3d> EIGEN_V_VEC3D;
+typedef std::vector<std::vector<Eigen::Vector3d > > EIGEN_VV_VEC3D;
 
 }
 
