@@ -125,7 +125,7 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const
 {
     Eigen::Isometry3d worldTrans =
             mBodyNode->getWorldTransform() *
-            mShapes[_idx]->getTransform();
+            mShapes[_idx]->getLocalTransform();
 
     return fcl::Transform3f(fcl::Matrix3f(worldTrans(0,0), worldTrans(0,1), worldTrans(0,2),
                                           worldTrans(1,0), worldTrans(1,1), worldTrans(1,2),
