@@ -83,6 +83,30 @@ Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
     return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
+Eigen::Vector3d RevoluteJoint::getOrigin() const
+{
+    Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+
+    if (mParentBodyNode != NULL)
+        origin = (mParentBodyNode->getWorldTransform() *
+                  mT_ParentBodyToJoint).translation();
+    else
+        origin = mT_ParentBodyToJoint.translation();
+
+#ifndef NDEBUG
+    if (mChildBodyNode != NULL)
+    {
+        Eigen::Vector3d originFromChild =
+                (mChildBodyNode->getWorldTransform() *
+                 mT_ChildBodyToJoint).translation();
+
+        assert((origin - originFromChild).norm() < DART_EPSILON);
+    }
+#endif
+
+    return origin;
+}
+
 void RevoluteJoint::_updateTransform()
 {
     // T

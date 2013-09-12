@@ -72,22 +72,12 @@ public:
     /// @brief
     Eigen::Vector3d getAxisGlobal() const;
 
-//    /// @brief
-//    void setDampingCoefficient(double _c) { mDampingCoefficient = _c; }
-
-//    /// @brief
-//    double getDampingCoefficient() { return mDampingCoefficient; }
-
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
+    /// @brief Get a point on the rotation axis in global coordinate frame.
+    /// ODE calls this as anchor.
+    Eigen::Vector3d getOrigin() const;
 
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
-
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
 
 protected:
     //--------------------------------------------------------------------------
@@ -110,9 +100,6 @@ protected:
 
     /// @brief Rotational axis.
     Eigen::Vector3d mAxis;
-
-//    /// @brief Daping coefficient of revolute joint.
-//    double mDampingCoefficient;
 
 private:
 
