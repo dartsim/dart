@@ -153,7 +153,7 @@ Eigen::VectorXd World::evalDeriv()
         int size = getSkeleton(i)->getDOF();
 
         // set velocities
-        deriv.segment(start, size) = getSkeleton(i)->get_dq();
+        deriv.segment(start, size) = getSkeleton(i)->get_dq() + mTimeStep * getSkeleton(i)->get_ddq();
 
         // set qddot (accelerations)
         deriv.segment(start + size, size) = getSkeleton(i)->get_ddq();
