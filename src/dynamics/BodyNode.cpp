@@ -786,8 +786,7 @@ const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 
 Eigen::Vector6d BodyNode::getExternalForceGlobal() const
 {
-    //return math::dAdInvT(mW, mFext);
-    return Eigen::Vector6d();
+    return math::dAdInvT(mW, mFext);
 }
 
 const Eigen::Vector6d&BodyNode::getBodyForce() const
