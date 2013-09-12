@@ -95,7 +95,7 @@ double ScrewJoint::getPitch() const
     return mPitch;
 }
 
-void ScrewJoint::_updateTransformation()
+void ScrewJoint::_updateTransform()
 {
     // T
     Eigen::Vector6d S = Eigen::Vector6d::Zero();

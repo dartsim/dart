@@ -164,7 +164,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     if (hasElement(_skeletonElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_skeletonElement, "transformation");
-        newSkeleton->setWorldTransformation(W, false);
+        newSkeleton->setWorldTransform(W, false);
     }
 
     //--------------------------------------------------------------------------
@@ -235,7 +235,7 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
     if (hasElement(_bodyNodeElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "transformation");
-        newBodyNode->setWorldTransform(_skeleton->getWorldTransformation() * W);
+        newBodyNode->setWorldTransform(_skeleton->getWorldTransform() * W);
     }
 
     // visualization_shape

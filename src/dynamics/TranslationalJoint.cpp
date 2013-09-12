@@ -62,7 +62,7 @@ TranslationalJoint::~TranslationalJoint()
 {
 }
 
-void TranslationalJoint::_updateTransformation()
+void TranslationalJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint *

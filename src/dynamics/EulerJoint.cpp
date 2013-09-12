@@ -75,7 +75,7 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
     return mAxisOrder;
 }
 
-inline void EulerJoint::_updateTransformation()
+inline void EulerJoint::_updateTransform()
 {
     switch (mAxisOrder)
     {

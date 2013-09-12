@@ -106,7 +106,7 @@ public:
     JointType getJointType() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformation() const;
+    const Eigen::Isometry3d& getLocalTransform() const;
 
     /// @brief
     const math::Jacobian& getLocalJacobian() const;
@@ -155,10 +155,10 @@ public:
     BodyNode* getChildBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getTransformationFromParentBodyNode() const;
+    const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getTransformationFromChildBodyNode() const;
+    const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
     // TODO: Not implemented.
     /// @brief
@@ -191,7 +191,7 @@ protected:
     //--------------------------------------------------------------------------
     /// @brief
     /// q --> T(q)
-    virtual void _updateTransformation() = 0;
+    virtual void _updateTransform() = 0;
 
     /// @brief
     /// q, dq --> S(q), V(q, dq)

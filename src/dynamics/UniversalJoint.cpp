@@ -89,7 +89,7 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
     return mAxis[1];
 }
 
-inline void UniversalJoint::_updateTransformation()
+inline void UniversalJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint *

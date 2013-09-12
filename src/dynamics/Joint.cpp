@@ -80,7 +80,7 @@ Joint::JointType Joint::getJointType() const
     return mJointType;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformation() const
+const Eigen::Isometry3d&Joint::getLocalTransform() const
 {
     return mT;
 }
@@ -189,12 +189,12 @@ BodyNode* Joint::getChildBodyNode() const
     return mChildBodyNode;
 }
 
-const Eigen::Isometry3d&Joint::getTransformationFromParentBodyNode() const
+const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
 {
     return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getTransformationFromChildBodyNode() const
+const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 {
     return mT_ChildBodyToJoint;
 }
@@ -202,7 +202,7 @@ const Eigen::Isometry3d&Joint::getTransformationFromChildBodyNode() const
 void Joint::updateKinematics(bool _firstDerivative,
                              bool _secondDerivative)
 {
-    _updateTransformation();
+    _updateTransform();
     _updateVelocity();
     _updateAcceleration();
 }

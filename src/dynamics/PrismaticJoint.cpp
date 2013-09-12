@@ -86,7 +86,7 @@ Eigen::Vector3d PrismaticJoint::getAxisGlobal() const
     return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
-void PrismaticJoint::_updateTransformation()
+void PrismaticJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint

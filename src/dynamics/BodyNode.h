@@ -415,7 +415,7 @@ public:
 
     /// @brief Update local transformations and world transformations.
     /// T(i-1,i), W(i)
-    void updateTransformation();
+    void updateTransform();
 
     /// @brief
     /// parentJoint.V, parentBody.V --> V

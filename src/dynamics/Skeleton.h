@@ -107,11 +107,11 @@ public:
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setWorldTransformation(const Eigen::Isometry3d& _W,
+    void setWorldTransform(const Eigen::Isometry3d& _W,
                                 bool _updateChilds = true);
 
     /// @brief
-    const Eigen::Isometry3d& getWorldTransformation() const;
+    const Eigen::Isometry3d& getWorldTransform() const;
 
     /// @brief
     void addBodyNode(BodyNode* _body, bool _addParentJoint = true);

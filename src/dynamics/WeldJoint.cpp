@@ -58,7 +58,7 @@ WeldJoint::~WeldJoint()
 {
 }
 
-void WeldJoint::_updateTransformation()
+void WeldJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();

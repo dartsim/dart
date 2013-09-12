@@ -83,7 +83,7 @@ Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
     return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
-void RevoluteJoint::_updateTransformation()
+void RevoluteJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint

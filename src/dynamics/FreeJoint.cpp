@@ -66,7 +66,7 @@ FreeJoint::~FreeJoint()
 {
 }
 
-void FreeJoint::_updateTransformation()
+void FreeJoint::_updateTransform()
 {
     // T
     Eigen::Vector3d q1(mCoordinate[0].get_q(),

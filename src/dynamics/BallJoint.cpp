@@ -63,7 +63,7 @@ BallJoint::~BallJoint()
 {
 }
 
-inline void BallJoint::_updateTransformation()
+inline void BallJoint::_updateTransform()
 {
     // T
     Eigen::Vector3d q(mCoordinate[0].get_q(),
