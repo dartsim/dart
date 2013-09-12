@@ -79,11 +79,11 @@ public:
     /// @brief
     const Eigen::Vector3d& getDim() const;
 
-    /// @brief
-    void setTransform(const Eigen::Isometry3d& _Transform);
+    /// @brief Set local transformation of the Shape w.r.t. parent frame.
+    void setLocalTransform(const Eigen::Isometry3d& _Transform);
 
-    /// @brief
-    const Eigen::Isometry3d& getTransform() const;
+    /// @brief Get local transformation of the Shape w.r.t. parent frame.
+    const Eigen::Isometry3d& getLocalTransform() const;
 
     /// @brief
     void setOffset(const Eigen::Vector3d& _offset);
@@ -136,7 +136,7 @@ protected:
     /// @brief The origin of this primitive in the bodynode frame.
     Eigen::Vector3d mOffset;
 
-    /// @brief Local Geometric transformation of the Shape w.r.t. parent frame.
+    /// @brief Local geometric transformation of the Shape w.r.t. parent frame.
     Eigen::Isometry3d mTransform;
 
     /// @brief

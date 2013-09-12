@@ -287,7 +287,7 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
         if (hasElement(vizElement, "transformation"))
         {
             Eigen::Isometry3d W = getValueIsometry3d(vizElement, "transformation");
-            shape->setTransform(W);
+            shape->setLocalTransform(W);
         }
 
         // color
@@ -347,7 +347,7 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
         if (hasElement(colElement, "transformation"))
         {
             Eigen::Isometry3d W = getValueIsometry3d(colElement, "transformation");
-            shape->setTransform(W);
+            shape->setLocalTransform(W);
         }
     }
 

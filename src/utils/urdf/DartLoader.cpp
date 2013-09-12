@@ -367,7 +367,7 @@ dynamics::Shape* DartLoader::createShape(boost::shared_ptr<VisualOrCollision> _v
     return NULL;
   }
 
-  shape->setTransform(toEigen(_vizOrCol->origin));
+  shape->setLocalTransform(toEigen(_vizOrCol->origin));
   setMaterial(shape, _vizOrCol.get());
   return shape;
 }

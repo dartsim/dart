@@ -64,7 +64,7 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
     for(int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
 
         dynamics::Shape *shape = _bodyNode->getCollisionShape(i);
-        fcl::Transform3f shapeTransform = getFclTransform(shape->getTransform());
+        fcl::Transform3f shapeTransform = getFclTransform(shape->getLocalTransform());
 
         switch (shape->getShapeType()) {
             case dynamics::Shape::P_ELLIPSOID:

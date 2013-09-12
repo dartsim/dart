@@ -78,12 +78,12 @@ const Eigen::Vector3d& Shape::getDim() const
     return mDim;
 }
 
-void Shape::setTransform(const Eigen::Isometry3d& _Transform)
+void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
 {
     mTransform = _Transform;
 }
 
-const Eigen::Isometry3d& Shape::getTransform() const
+const Eigen::Isometry3d& Shape::getLocalTransform() const
 {
     return mTransform;
 }
