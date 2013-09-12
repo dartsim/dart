@@ -1435,11 +1435,12 @@ bool verifyTransform(const Eigen::Isometry3d& _T)
     return true;
 }
 
-bool isNan(const Eigen::Vector6d& _V)
+bool isNan(const Eigen::MatrixXd& _m)
 {
-    for (int i = 0; i < 6; ++i)
-        if (_V(i) != _V(i))
-            return true;
+    for (int i = 0; i < _m.rows(); ++i)
+        for (int j = 0; j < _m.cols(); ++j)
+            if (_m(i, j) != _m(i, j))
+                return true;
 
     return false;
 }

@@ -291,7 +291,7 @@ Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI);
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
 /// @brief
-bool isNan(const Eigen::Vector6d& _V);
+bool isNan(const Eigen::MatrixXd& _m);
 
 } // namespace math
 } // namespace dart
