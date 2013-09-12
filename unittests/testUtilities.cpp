@@ -60,7 +60,7 @@ TEST(UTILS, ROTATION) {
     << "Orig: " << expmap << " Reconstructed: " << expmap2;
 
   // Test conversion between matrix and euler
-  Eigen::Matrix3d m = quatToMatrix(q);
+  Eigen::Matrix3d m = q.toRotationMatrix();
   Eigen::Vector3d e = matrixToEulerXYZ(m);
   Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
 

@@ -43,16 +43,6 @@
 namespace dart {
 namespace math {
 
-Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& mat)
-{
-    return Eigen::Quaterniond(mat);
-}
-
-Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q)
-{
-    return Eigen::Matrix3d(q);
-}
-
 Eigen::Quaterniond expToQuat(Eigen::Vector3d& v)
 {
     double mag = v.norm();
