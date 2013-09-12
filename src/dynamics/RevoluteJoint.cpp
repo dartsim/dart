@@ -73,7 +73,7 @@ const Eigen::Vector3d&RevoluteJoint::getAxis() const
     return mAxis;
 }
 
-Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
+Eigen::Vector3d RevoluteJoint::getWorldAxis() const
 {
     Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
 
@@ -83,7 +83,7 @@ Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
     return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
-Eigen::Vector3d RevoluteJoint::getOrigin() const
+Eigen::Vector3d RevoluteJoint::getWorldOrigin() const
 {
     Eigen::Vector3d origin = Eigen::Vector3d::Zero();
 

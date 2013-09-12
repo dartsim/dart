@@ -465,7 +465,7 @@ Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node, const 
     Eigen::MatrixXd Jt = Eigen::MatrixXd::Zero(nDofs, 3);
 
     Eigen::MatrixXd JtBody
-            = node->getJacobianWorldAtPoint_LinearPartOnly(p).transpose();
+            = node->getWorldJacobianAtPoint_LinearPartOnly(p).transpose();
 
     for(int dofIndex = 0; dofIndex < node->getNumDependentDofs(); dofIndex++)
     {

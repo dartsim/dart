@@ -273,74 +273,94 @@ void BodyNode::setWorldTransform(const Eigen::Isometry3d &_W)
     mW = _W;
 }
 
+const Eigen::Isometry3d& BodyNode::getWorldTransform() const
+{
+    return mW;
+}
+
+Eigen::Isometry3d BodyNode::getWorldInvTransform() const
+{
+    return mW.inverse();
+}
+
 Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
 {
     return mW * _lp;
 }
 
-Eigen::Vector6d BodyNode::getVelocityWorld() const
+const Eigen::Vector6d& BodyNode::getBodyVelocity() const
+{
+    return mV;
+}
+
+Eigen::Vector6d BodyNode::getWorldVelocity() const
 {
     return math::AdR(mW, mV);
 }
 
-Eigen::Vector6d BodyNode::getVelocityWorldAtCOG() const
+Eigen::Vector6d BodyNode::getWorldVelocityAtCOG() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
     worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
     return math::AdT(worldFrameAtCOG, mV);
 }
 
-Eigen::Vector6d BodyNode::getVelocityWorldAtPoint(const Eigen::Vector3d& _pointBody) const
+Eigen::Vector6d BodyNode::getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const
 {
     Eigen::Isometry3d worldFrameAtPoint = mW;
     worldFrameAtPoint.translation() = mW.linear() *  -_pointBody;
     return math::AdT(worldFrameAtPoint, mV);
 }
 
-Eigen::Vector6d BodyNode::getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) const
+Eigen::Vector6d BodyNode::getWorldVelocityAtFrame(const Eigen::Isometry3d& _T) const
 {
     assert(math::verifyTransform(_T));
 
     return math::AdT(_T.inverse() * mW, mV);
 }
 
-Eigen::Vector6d BodyNode::getAccelerationWorld() const
+const Eigen::Vector6d&BodyNode::getBodyAcceleration() const
+{
+    return mdV;
+}
+
+Eigen::Vector6d BodyNode::getWorldAcceleration() const
 {
     return math::AdR(mW, mdV);
 }
 
-Eigen::Vector6d BodyNode::getAccelerationWorldAtCOG() const
+Eigen::Vector6d BodyNode::getWorldAccelerationAtCOG() const
 {
     Eigen::Isometry3d worldFrameAtCOG = mW;
     worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
     return math::AdT(worldFrameAtCOG, mdV);
 }
 
-Eigen::Vector6d BodyNode::getAccelerationWorldAtPoint(const Eigen::Vector3d& _pointBody) const
+Eigen::Vector6d BodyNode::getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const
 {
     Eigen::Isometry3d worldFrameAtPoint = mW;
     worldFrameAtPoint.translation() = mW.linear() * _pointBody;
     return math::AdT(worldFrameAtPoint, mdV);
 }
 
-Eigen::Vector6d BodyNode::getAccelerationWorldAtFrame(const Eigen::Isometry3d& _T) const
+Eigen::Vector6d BodyNode::getWorldAccelerationAtFrame(const Eigen::Isometry3d& _T) const
 {
     assert(math::verifyTransform(_T));
 
     return math::AdT(_T.inverse() * mW, mdV);
 }
 
-const math::Jacobian&BodyNode::getJacobianBody() const
+const math::Jacobian&BodyNode::getBodyJacobian() const
 {
     return mBodyJacobian;
 }
 
-math::Jacobian BodyNode::getJacobianWorld() const
+math::Jacobian BodyNode::getWorldJacobian() const
 {
     return math::AdR(mW, mBodyJacobian);
 }
 
-math::Jacobian BodyNode::getJacobianWorldAtPoint(
+math::Jacobian BodyNode::getWorldJacobianAtPoint(
         const Eigen::Vector3d& r_world) const
 {
     //--------------------------------------------------------------------------
@@ -360,7 +380,7 @@ math::Jacobian BodyNode::getJacobianWorldAtPoint(
     return math::AdTJac(Eigen::Translation3d(-r_world) * mW, mBodyJacobian);
 }
 
-Eigen::MatrixXd BodyNode::getJacobianWorldAtPoint_LinearPartOnly(
+Eigen::MatrixXd BodyNode::getWorldJacobianAtPoint_LinearPartOnly(
         const Eigen::Vector3d& r_world) const
 {
     //--------------------------------------------------------------------------
@@ -381,12 +401,12 @@ Eigen::MatrixXd BodyNode::getJacobianWorldAtPoint_LinearPartOnly(
     // TODO: Speed up here.
     Eigen::MatrixXd JcLinear = Eigen::MatrixXd::Zero(3, getNumDependentDofs());
 
-    JcLinear = getJacobianWorldAtPoint(r_world).bottomLeftCorner(3,getNumDependentDofs());
+    JcLinear = getWorldJacobianAtPoint(r_world).bottomLeftCorner(3,getNumDependentDofs());
 
     return JcLinear;
 }
 
-const math::Jacobian& BodyNode::getJacobianDeriv() const
+const math::Jacobian& BodyNode::getBodyJacobianDeriv() const
 {
     return mBodyJacobianDeriv;
 }
@@ -491,7 +511,7 @@ void BodyNode::updateVelocity(bool _updateJacobian)
     if (mParentBodyNode)
     {
         mV = math::AdInvT(mParentJoint->getLocalTransform(),
-                          mParentBodyNode->getVelocityBody()) +
+                          mParentBodyNode->getBodyVelocity()) +
                 mParentJoint->getLocalVelocity();
     }
     else
@@ -567,7 +587,7 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
         if (mParentBodyNode)
         {
             mdV = math::AdInvT(mParentJoint->getLocalTransform(),
-                               mParentBodyNode->getAcceleration()) +
+                               mParentBodyNode->getBodyAcceleration()) +
                   mEta + mParentJoint->mS*mParentJoint->get_ddq();
         }
         else
@@ -935,7 +955,7 @@ void BodyNode::update_ddq()
                         (mAlpha -
                          mParentJoint->mS.transpose()*mAI*
                          math::AdInvT(mParentJoint->getLocalTransform(),
-                                      mParentBodyNode->getAcceleration())
+                                      mParentBodyNode->getBodyAcceleration())
                          );
     }
     else

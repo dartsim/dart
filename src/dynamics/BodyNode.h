@@ -271,61 +271,61 @@ public:
 
     /// @brief Transformation from the local coordinates of this body node to
     /// the world coordinates.
-    const Eigen::Isometry3d& getWorldTransform() const { return mW; }
+    const Eigen::Isometry3d& getWorldTransform() const;
 
     /// @brief Transformation from the world coordinates to the local
     /// coordinates of this body node.
-    Eigen::Isometry3d getWorldInvTransform() const { return mW.inverse(); }
+    Eigen::Isometry3d getWorldInvTransform() const;
 
     /// @brief Given a 3D vector lp in the local coordinates of this body node.
     /// @return The world coordinates of this vector
     Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const;
 
     /// @brief
-    const Eigen::Vector6d& getVelocityBody() const { return mV; }
+    const Eigen::Vector6d& getBodyVelocity() const;
 
     /// @brief
-    Eigen::Vector6d getVelocityWorld() const;
+    Eigen::Vector6d getWorldVelocity() const;
 
     /// @brief
-    Eigen::Vector6d getVelocityWorldAtCOG() const;
+    Eigen::Vector6d getWorldVelocityAtCOG() const;
 
     /// @breif
-    Eigen::Vector6d getVelocityWorldAtPoint(const Eigen::Vector3d& _pointBody) const;
+    Eigen::Vector6d getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const;
 
     /// @breif
-    Eigen::Vector6d getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) const;
+    Eigen::Vector6d getWorldVelocityAtFrame(const Eigen::Isometry3d& _T) const;
 
     /// @brief
-    const Eigen::Vector6d& getAcceleration() const { return mdV; }
+    const Eigen::Vector6d& getBodyAcceleration() const;
 
     /// @brief
-    Eigen::Vector6d getAccelerationWorld() const;
+    Eigen::Vector6d getWorldAcceleration() const;
 
     /// @brief
-    Eigen::Vector6d getAccelerationWorldAtCOG() const;
+    Eigen::Vector6d getWorldAccelerationAtCOG() const;
 
     /// @breif
-    Eigen::Vector6d getAccelerationWorldAtPoint(const Eigen::Vector3d& _pointBody) const;
+    Eigen::Vector6d getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const;
 
     /// @breif
-    Eigen::Vector6d getAccelerationWorldAtFrame(const Eigen::Isometry3d& _T) const;
+    Eigen::Vector6d getWorldAccelerationAtFrame(const Eigen::Isometry3d& _T) const;
 
     /// @brief
-    const math::Jacobian& getJacobianBody() const;
+    const math::Jacobian& getBodyJacobian() const;
 
     /// @brief
-    math::Jacobian getJacobianWorld() const;
+    math::Jacobian getWorldJacobian() const;
 
     /// @brief Get body Jacobian at contact point.
-    math::Jacobian getJacobianWorldAtPoint(const Eigen::Vector3d& r_world) const;
+    math::Jacobian getWorldJacobianAtPoint(const Eigen::Vector3d& r_world) const;
 
     /// @brief
-    Eigen::MatrixXd getJacobianWorldAtPoint_LinearPartOnly(
+    Eigen::MatrixXd getWorldJacobianAtPoint_LinearPartOnly(
             const Eigen::Vector3d& r_world) const;
 
     /// @brief
-    const math::Jacobian& getJacobianDeriv() const;
+    const math::Jacobian& getBodyJacobianDeriv() const;
 
     /// @brief
     void setColliding(bool _colliding);
