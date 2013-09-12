@@ -49,15 +49,6 @@ namespace dynamics {
 class BodyNode;
 
 /// @brief
-///
-/// [Members]
-/// T: local transformation (4x4 matrix)
-/// S: local Jacobian (6xm matrix)
-/// dS: localJacobianDerivative (6xm matrix)
-/// q: generalized coordinates (configuration) (scalar)
-/// dq: generalized velocity (scalar)
-/// ddq: generalized acceleration (scalar)
-/// tau: generalized force (torque) (scalar)
 class Joint : public GenCoordSystem
 {
 public:

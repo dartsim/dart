@@ -98,17 +98,6 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
-/// Mostly automatically constructed by FileInfoSkel.
-/// @see FileInfoSkel.
-///
-/// [Members]
-/// W: world transformation (4x4 matrix)
-/// J: world Jacobian (6xn matrix)
-/// dJ: world Jacobian derivative (6xn matrix)
-/// V: generalized body velocity (6x1 vector)
-/// dV: generalized body acceleration (6x1 vector)
-/// F: generalized body force (6x1 vector)
-/// I: generalized body inertia (6x6 matrix)
 class BodyNode
 {
 public:
