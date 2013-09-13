@@ -281,7 +281,12 @@ Eigen::Vector6d dad(const Eigen::Vector6d& V, const Eigen::Vector6d& F);
 /// @brief
 Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI);
 
-/// @brief
+/// @brief Check if determinant of _R is equat to 1 and all the elements are not
+/// NaN values.
+bool verifyRotation(const Eigen::Matrix3d& _R);
+
+/// @brief Check if determinant of the rotational part of _T is equat to 1 and
+/// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
 /// @brief

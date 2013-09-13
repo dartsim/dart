@@ -1412,6 +1412,19 @@ Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI)
     return ret;
 }
 
+bool verifyRotation(const Eigen::Matrix3d& _T)
+{
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; j++)
+            if (_T(i,j) != _T(i,j))
+                return false;
+
+    if (fabs(_T.determinant() - 1.0) > DART_EPSILON)
+        return false;
+
+    return true;
+}
+
 bool verifyTransform(const Eigen::Isometry3d& _T)
 {
     for (int i = 0; i < 3; ++i)
@@ -1419,7 +1432,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T)
             if (_T(i,j) != _T(i,j))
                 return false;
 
-    if (fabs(fabs(_T.linear().determinant()) - 1.0) > DART_EPSILON)
+    if (fabs(_T.linear().determinant() - 1.0) > DART_EPSILON)
         return false;
 
     return true;
