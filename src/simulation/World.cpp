@@ -164,7 +164,6 @@ Eigen::VectorXd World::evalDeriv()
 
 void World::setTimeStep(double _timeStep)
 {
-    std::cout << "trying to change time step in DART: " << _timeStep << std::endl;
     mTimeStep = _timeStep;
     mCollisionHandle->setTimeStep(_timeStep);
 }
