@@ -638,16 +638,12 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
     }
 }
 
-void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
-                                  double _Ixy, double _Ixz, double _Iyz)
+void BodyNode::setInertia(double _Ixx, double _Iyy, double _Izz,
+                          double _Ixy, double _Ixz, double _Iyz)
 {
     assert(_Ixx >= 0.0);
     assert(_Iyy >= 0.0);
     assert(_Izz >= 0.0);
-
-    assert(_Ixy >= 0.0);
-    assert(_Ixz >= 0.0);
-    assert(_Iyz >= 0.0);
 
     mIxx = _Ixx;
     mIyy = _Iyy;

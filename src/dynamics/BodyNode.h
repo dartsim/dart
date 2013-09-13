@@ -140,11 +140,10 @@ public:
     /// @brief
     double getMass() const;
 
-    /// @brief Set angular moment of inertia in local frame.
-    /// All the parameters must be positive or zero values.
-    void setMomentOfInertia(
-            double _Ixx, double _Iyy, double _Izz,
-            double _Ixy = 0.0, double _Ixz = 0.0, double _Iyz = 0.0);
+    /// @brief Set moment of inertia defined around the center of mass.
+    /// Moments of inertia, _Ixx, _Iyy, _Izz, must be positive or zero values.
+    void setInertia(double _Ixx, double _Iyy, double _Izz,
+                    double _Ixy = 0.0, double _Ixz = 0.0, double _Iyz = 0.0);
 
     /// @brief
     void setLocalCOM(const Eigen::Vector3d& _com);

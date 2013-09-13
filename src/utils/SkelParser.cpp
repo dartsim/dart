@@ -375,13 +375,13 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
             double ixz = getValueDouble(moiElement, "ixz");
             double iyz = getValueDouble(moiElement, "iyz");
 
-            newBodyNode->setMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
+            newBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
         }
         else if (newBodyNode->getVisualizationShape(0) != 0)
         {
             Eigen::Matrix3d Ic = newBodyNode->getVisualizationShape(0)->computeInertia(mass);
 
-            newBodyNode->setMomentOfInertia(Ic(0,0), Ic(1,1), Ic(2,2),
+            newBodyNode->setInertia(Ic(0,0), Ic(1,1), Ic(2,2),
                                             Ic(0,1), Ic(0,2), Ic(1,2));
         }
 
