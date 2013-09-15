@@ -31,7 +31,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
 			size_t dofIdx = key - 49;
 			Eigen::VectorXd pose = skel->get_q();
 			pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
-			skel->setPose(pose);
+			skel->setConfig(pose);
 			std::cout << "Updated pose DOF " << dofIdx << ": " << pose.transpose() << std::endl;
 			glutPostRedisplay();
 		}	break;

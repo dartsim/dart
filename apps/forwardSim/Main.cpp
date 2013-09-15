@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     Eigen::VectorXd initPose(dof);
     for (int i = 0; i < dof; i++)
         initPose[i] = random(-0.5, 0.5);
-    myWorld->getSkeleton(0)->setPose(initPose);
+    myWorld->getSkeleton(0)->setConfig(initPose);
 
     // create a window and link it to the world
     MyWindow window;

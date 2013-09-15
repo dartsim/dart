@@ -172,8 +172,8 @@ public:
                    bool _calcTrans = true, bool _calcDeriv = true);
 
     /// @brief
-    void setPose(const Eigen::VectorXd& _pose,
-                 bool bCalcTrans = true, bool bCalcDeriv = true);
+    void setConfig(const Eigen::VectorXd& _pose,
+                   bool bCalcTrans = true, bool bCalcDeriv = true);
 
     /// @brief
     Eigen::VectorXd getPose() const;

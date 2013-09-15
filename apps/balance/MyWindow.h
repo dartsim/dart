@@ -126,7 +126,7 @@ public:
     int mImpulseDuration;
 
     void initDyn();
-    void setPose();
+    void setConfig();
     void bake();
 };
 

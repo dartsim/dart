@@ -322,7 +322,7 @@ void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
     }
 }
 
-void Skeleton::setPose(const Eigen::VectorXd& _pose,
+void Skeleton::setConfig(const Eigen::VectorXd& _pose,
                        bool bCalcTrans,
                        bool bCalcDeriv)
 {
