@@ -173,7 +173,9 @@ public:
                    bool bCalcTrans = true, bool bCalcDeriv = true);
 
     /// @brief Get the configuration of this skeleton described in generalized
-    /// coordinates.
+    /// coordinates. The returned order of configuration is determined by _id.
+    /// If you just want the configuration in original order then use
+    /// GenCoordSystem::get_q().
     Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
 
     /// @brief
