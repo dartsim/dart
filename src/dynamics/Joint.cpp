@@ -123,6 +123,20 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
     return -1;
 }
 
+void Joint::setPositionLimited(bool _limited, int _idx)
+{
+    assert(0 <= _idx && _idx < getDOF());
+
+    mIsPositionLimited[_idx] = _limited;
+}
+
+bool Joint::isPositionLimited(int _idx) const
+{
+    assert(0 <= _idx && _idx < getDOF());
+
+    return mIsPositionLimited[_idx];
+}
+
 void Joint::setSkeletonIndex(int _idx)
 {
     mSkelIndex= _idx;

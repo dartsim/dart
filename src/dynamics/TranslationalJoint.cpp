@@ -56,6 +56,8 @@ TranslationalJoint::TranslationalJoint(BodyNode* _parent, BodyNode* _child,
     mdS = Eigen::Matrix<double,6,3>::Zero();
 
     mDampingCoefficient.resize(3, 0);
+
+    mIsPositionLimited.resize(3, false);
 }
 
 TranslationalJoint::~TranslationalJoint()

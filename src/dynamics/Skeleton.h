@@ -93,14 +93,6 @@ public:
     bool getImmobileState() const;
 
     /// @brief
-    /// @todo Let's set this state for each joints
-    bool getJointLimitState() const;
-
-    /// @brief
-    /// @todo Let's set this state for each joints
-    void setJointLimitState(bool _s);
-
-    /// @brief
     double getMass() const;
 
     //--------------------------------------------------------------------------
@@ -394,9 +386,6 @@ protected:
     /// having infinite mass. If the DOFs of an immobile skeleton are manually
     /// changed, the collision results might not be correct.
     bool mImmobile;
-
-    /// @brief True if the joint limits are enforced in dynamic simulation.
-    bool mJointLimit;
 
     //--------------------------------------------------------------------------
     //

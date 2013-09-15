@@ -1,5 +1,3 @@
-#include "constraint/ConstraintDynamics.h"
-
 #include "common/Timer.h"
 #include "common/UtilsCode.h"
 #include "math/Helpers.h"
@@ -8,7 +6,9 @@
 #include "collision/fcl/FCLCollisionDetector.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/GenCoord.h"
+#include "dynamics/Joint.h"
 #include "dynamics/Skeleton.h"
+#include "constraint/ConstraintDynamics.h"
 
 using namespace dart;
 using namespace collision;
@@ -46,19 +46,28 @@ void ConstraintDynamics::computeConstraintForces() {
     mLimitingDofIndex.clear();
 
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState() || !mSkels[i]->getJointLimitState())
+        if (mSkels[i]->getImmobileState())
             continue;
-        for (int j = 0; j < mSkels[i]->getDOF(); j++) {
-            double val = mSkels[i]->getGenCoord(j)->get_q();
-            double ub = mSkels[i]->getGenCoord(j)->get_qMax();
-            double lb = mSkels[i]->getGenCoord(j)->get_qMin();
-            if (val >= ub){
-                mLimitingDofIndex.push_back(mIndices[i] + j + 1);
-                //        cout << "Skeleton " << i << " Dof " << j << " hits upper bound" << endl;
-            }
-            if (val <= lb){
-                mLimitingDofIndex.push_back(-(mIndices[i] + j + 1));
-                //      cout << "Skeleton " << i << " Dof " << j << " hits lower bound" << endl;
+
+        for (int j = 0; j < mSkels[i]->getNumJoints(); j++) {
+            dynamics::Joint* joint = mSkels[i]->getJoint(j);
+            for (int k = 0; k < mSkels[i]->getJoint(j)->getDOF(); k++) {
+                if (!joint->isPositionLimited(k))
+                    continue;
+
+                dynamics::GenCoord* genCoord = joint->getGenCoord(k);
+                double val = genCoord->get_q();
+                double ub  = genCoord->get_qMax();
+                double lb  = genCoord->get_qMin();
+
+                if (val >= ub){
+                    mLimitingDofIndex.push_back(mIndices[i] + genCoord->getSkeletonIndex() + 1);
+                    //        cout << "Skeleton " << i << " Dof " << j << " hits upper bound" << endl;
+                }
+                if (val <= lb){
+                    mLimitingDofIndex.push_back(-(mIndices[i] + genCoord->getSkeletonIndex() + 1));
+                    //      cout << "Skeleton " << i << " Dof " << j << " hits lower bound" << endl;
+                }
             }
         }
     }

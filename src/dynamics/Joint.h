@@ -119,6 +119,15 @@ public:
     int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
     //--------------------------------------------------------------------------
+    // Dynamics Properties
+    //--------------------------------------------------------------------------
+    /// @brief
+    void setPositionLimited(bool _limited, int _idx);
+
+    /// @brief
+    bool isPositionLimited(int _idx) const;
+
+    //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
@@ -242,6 +251,9 @@ protected:
     //--------------------------------------------------------------------------
     // Dynamics variables
     //--------------------------------------------------------------------------
+    /// @brief True if the joint limits are enforced in dynamic simulation.
+    std::vector<bool> mIsPositionLimited;
+
     /// @brief
     std::vector<double> mDampingCoefficient;
 
