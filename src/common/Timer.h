@@ -102,11 +102,10 @@ private:
 
 #if WIN32
     LARGE_INTEGER  mFrequency;
-    double LIToSecs( LARGE_INTEGER & L) ;
+    double _convLIToSecs(LARGE_INTEGER & L) ;
+#else
+    double _subtractTimes(double _endTime, double _startTime);
 #endif
-
-    /// @brief
-    double _subtractTimes(double endTime, double startTime);
 };
 
 } // namespace common

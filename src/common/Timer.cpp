@@ -63,7 +63,7 @@ Timer::~Timer() {
 }
 
 #if WIN32
-double Timer::LIToSecs( LARGE_INTEGER & L) {
+double Timer::_convLIToSecs(LARGE_INTEGER& L) {
     return ((double)L.QuadPart /(double)mFrequency.QuadPart) ;
 }
 #endif
@@ -72,7 +72,7 @@ void Timer::start() {
     mIsStarted = true;
     mCount++;
 #if WIN32
-    QueryPerformanceCounter(&mTimer.start) ;
+    QueryPerformanceCounter(&mTimer.start);
 #else
     mStartedTime = clock();
 #endif
@@ -81,10 +81,10 @@ void Timer::start() {
 void Timer::stop() {
     mIsStarted = false;
 #if WIN32
-    QueryPerformanceCounter(&mTimer.stop) ;
+    QueryPerformanceCounter(&mTimer.stop);
     LARGE_INTEGER time;
     time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = LIToSecs( time) ;
+    mLastElapsed = _convLIToSecs( time);
 #else
     mStoppedTime = clock();
     mLastElapsedTime = _subtractTimes(mStoppedTime, mStartedTime);
@@ -95,10 +95,10 @@ void Timer::stop() {
 double Timer::getElapsedTime() {
 #if WIN32
     LARGE_INTEGER timenow;
-    QueryPerformanceCounter(&timenow) ;
+    QueryPerformanceCounter(&timenow);
     LARGE_INTEGER time;
     time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = LIToSecs( time) ;
+    mLastElapsed = _convLIToSecs(time);
 #else
     double now = clock();
     mLastElapsedTime = _subtractTimes(now, mStartedTime);
@@ -133,8 +133,8 @@ void Timer::print() {
     }
 }
 
-double Timer::_subtractTimes( double endTime, double startTime) {
-    return (endTime - startTime) / CLOCKS_PER_SEC;
+double Timer::_subtractTimes(double endTime, double _startTime) {
+    return (endTime - _startTime) / CLOCKS_PER_SEC;
 }
 
 } // namespace common
