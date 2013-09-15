@@ -3,8 +3,6 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-        snowcube
-        tinkertoy
         rigidBodies
 	)
     add_subdirectory(${APPDIR})
