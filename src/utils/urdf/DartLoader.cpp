@@ -77,7 +77,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
       }
 
       // Initialize position and RPY
-      dynamics::Joint* rootJoint = skeleton->getRoot()->getParentJoint();
+      dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
       urdf::Pose pose = worldInterface->models[i].origin;
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
           rootJoint->getGenCoord(0)->set_q(pose.position.x);

@@ -129,7 +129,7 @@ public:
     int getNumJoints() const;
 
     /// @brief
-    BodyNode* getRoot();
+    BodyNode* getRootBodyNode();
 
     /// @brief
     BodyNode* getBodyNode(int _idx) const;

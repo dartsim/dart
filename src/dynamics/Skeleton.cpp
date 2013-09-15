@@ -189,7 +189,7 @@ int Skeleton::getNumJoints() const
     return mJoints.size();
 }
 
-BodyNode* Skeleton::getRoot()
+BodyNode* Skeleton::getRootBodyNode()
 {
     return mRootBodyNode;
 }
