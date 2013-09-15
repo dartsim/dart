@@ -54,7 +54,8 @@ Skeleton::Skeleton(const std::string& _name)
       mTotalMass(0.0),
       mImmobile(false),
       mJointLimit(true),
-      mFrame(Eigen::Isometry3d::Identity())
+      mFrame(Eigen::Isometry3d::Identity()),
+      mRootBodyNode(NULL)
 {
 }
 
@@ -389,7 +390,12 @@ Eigen::VectorXd Skeleton::getInternalForces() const
 
 void Skeleton::initKinematics()
 {
-    mRootBodyNode = mBodyNodes[0];
+    if (mRootBodyNode == NULL)
+    {
+        assert(mBodyNodes.size() > 0);
+        mRootBodyNode = mBodyNodes[0];
+    }
+
     mToRootBody = mFrame.inverse() * mRootBodyNode->getWorldInvTransform();
 
     // init the dependsOnDof stucture for each bodylink
