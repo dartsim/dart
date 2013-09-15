@@ -194,9 +194,6 @@ protected:
     /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
     virtual void _updateAcceleration() = 0;
 
-//    /// @brief
-//    virtual void updateDampingForce() = 0;
-
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------

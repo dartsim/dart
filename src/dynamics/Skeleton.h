@@ -426,17 +426,11 @@ protected:
     /// @brief External forces vector for the skeleton.
     Eigen::VectorXd mFext;
 
-    /// @brief Internal forces vector for the skeleton; computed by an external
-    /// controller.
-    //Eigen::VectorXd mFint;
-
     /// @brief
     Eigen::VectorXd mFc;
 
     /// @brief
     Eigen::VectorXd mDampingForce;
-
-private:
 
 public:
     //
