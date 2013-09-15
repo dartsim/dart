@@ -548,6 +548,7 @@ dynamics::RevoluteJoint*readRevoluteJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newRevoluteJoint->getGenCoord(0)->set_qMin(lower);
+                newRevoluteJoint->setPositionLimited(0, true);
             }
 
             // upper
@@ -555,6 +556,7 @@ dynamics::RevoluteJoint*readRevoluteJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newRevoluteJoint->getGenCoord(0)->set_qMax(upper);
+                newRevoluteJoint->setPositionLimited(0, true);
             }
         }
     }
@@ -624,6 +626,7 @@ dynamics::PrismaticJoint* readPrismaticJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newPrismaticJoint->getGenCoord(0)->set_qMin(lower);
+                newPrismaticJoint->setPositionLimited(0, true);
             }
 
             // upper
@@ -631,6 +634,7 @@ dynamics::PrismaticJoint* readPrismaticJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newPrismaticJoint->getGenCoord(0)->set_qMax(upper);
+                newPrismaticJoint->setPositionLimited(0, true);
             }
         }
     }
@@ -707,6 +711,7 @@ dynamics::ScrewJoint* readScrewJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newScrewJoint->getGenCoord(0)->set_qMin(lower);
+                newScrewJoint->setPositionLimited(0, true);
             }
 
             // upper
@@ -714,6 +719,7 @@ dynamics::ScrewJoint* readScrewJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newScrewJoint->getGenCoord(0)->set_qMax(upper);
+                newScrewJoint->setPositionLimited(0, true);
             }
         }
     }
@@ -783,6 +789,7 @@ dynamics::UniversalJoint* readUniversalJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newUniversalJoint->getGenCoord(0)->set_qMin(lower);
+                newUniversalJoint->setPositionLimited(0, true);
             }
 
             // upper
@@ -790,6 +797,7 @@ dynamics::UniversalJoint* readUniversalJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newUniversalJoint->getGenCoord(0)->set_qMax(upper);
+                newUniversalJoint->setPositionLimited(0, true);
             }
         }
     }
@@ -826,7 +834,8 @@ dynamics::UniversalJoint* readUniversalJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newUniversalJoint->getGenCoord(0)->set_qMin(lower);
+                newUniversalJoint->getGenCoord(1)->set_qMin(lower);
+                newUniversalJoint->setPositionLimited(1, true);
             }
 
             // upper
@@ -834,6 +843,7 @@ dynamics::UniversalJoint* readUniversalJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newUniversalJoint->getGenCoord(1)->set_qMax(upper);
+                newUniversalJoint->setPositionLimited(1, true);
             }
         }
     }
@@ -940,6 +950,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newEulerJoint->getGenCoord(0)->set_qMin(lower);
+                newEulerJoint->setPositionLimited(0, true);
             }
 
             // upper
@@ -947,6 +958,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newEulerJoint->getGenCoord(0)->set_qMax(upper);
+                newEulerJoint->setPositionLimited(0, true);
             }
         }
     }
@@ -976,6 +988,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newEulerJoint->getGenCoord(1)->set_qMin(lower);
+                newEulerJoint->setPositionLimited(1, true);
             }
 
             // upper
@@ -983,6 +996,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newEulerJoint->getGenCoord(1)->set_qMax(upper);
+                newEulerJoint->setPositionLimited(1, true);
             }
         }
     }
@@ -1012,6 +1026,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double lower = getValueDouble(limitElement, "lower");
                 newEulerJoint->getGenCoord(2)->set_qMin(lower);
+                newEulerJoint->setPositionLimited(2, true);
             }
 
             // upper
@@ -1019,6 +1034,7 @@ dynamics::EulerJoint* readEulerJoint(
             {
                 double upper = getValueDouble(limitElement, "upper");
                 newEulerJoint->getGenCoord(2)->set_qMax(upper);
+                newEulerJoint->setPositionLimited(2, true);
             }
         }
     }
