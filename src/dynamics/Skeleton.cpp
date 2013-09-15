@@ -281,6 +281,21 @@ Marker* Skeleton::getMarker(int _i)
     return mMarkers[_i];
 }
 
+Marker*Skeleton::getMarker(const std::string& _name) const
+{
+    assert(!_name.empty());
+
+    for (std::vector<Marker*>::const_iterator itrMarker = mMarkers.begin();
+         itrMarker != mMarkers.end();
+         ++itrMarker)
+    {
+        if ((*itrMarker)->getName() == _name)
+            return *itrMarker;
+    }
+
+    return NULL;
+}
+
 Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
 {
     Eigen::VectorXd dofs(_id.size());

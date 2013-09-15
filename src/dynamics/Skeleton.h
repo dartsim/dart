@@ -158,6 +158,9 @@ public:
     /// @brief
     Marker* getMarker(int _i);
 
+    /// @brief
+    Marker* getMarker(const std::string& _name) const;
+
     //--------------------------------------------------------------------------
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
