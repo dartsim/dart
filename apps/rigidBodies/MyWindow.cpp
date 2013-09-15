@@ -14,20 +14,18 @@ void MyWindow::displayTimer(int _val) {
             mPlayFrame = 0;
     }else if (mSimulating) {
         mWorld->simulate();
-        bake();
+        bake(); // Store the simulated state for playback
     }
     glutPostRedisplay();
     glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
 void MyWindow::draw() {
-    //    glDisable(GL_LIGHTING);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    if (!mSimulating) {
+    if (!mSimulating) { // Playback mode
         if (mPlayFrame < mBakedStates.size()) {
             int numRigids = mWorld->getNumRigidBodies();
-            for (int i = 0; i < numRigids; i++) {
+            for (int i = 0; i < numRigids; i++) { 
                 mWorld->getRigidBody(i)->mPosition = mBakedStates[mPlayFrame].segment(i * 12, 3);
                 for (int j = 0; j < 3; j++)
                     mWorld->getRigidBody(i)->mOrientation.row(j) = mBakedStates[mPlayFrame].segment(i * 12 + 3 + j * 3, 3);
@@ -53,7 +51,7 @@ void MyWindow::draw() {
             pose[4] = mBakedStates[mPlayFrame][mBakedStates[mPlayFrame].size() - 1];
             mWorld->getBlade()->setPose(pose, true, false);
         }
-    }else{
+    }else{ // Simulation mode
         if (mShowMarkers) {
             for (int k = 0; k < mWorld->getCollisionDetector()->getNumContacts(); k++) {
                 Vector3d  v = mWorld->getCollisionDetector()->getContact(k).point;
@@ -156,4 +154,3 @@ void MyWindow::bake()
     state[state.size() - 1] = mWorld->getBlade()->getPose()[4];
     mBakedStates.push_back(state);
 }
-

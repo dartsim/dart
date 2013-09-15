@@ -47,8 +47,7 @@ class MyWorld {
  protected:
     int mFrame;
     std::vector<RigidBody*> mRigidBodies;
-    CollisionInterface* mCollisionDetector;
-    
+    CollisionInterface* mCollisionDetector; // Access to collision detection information
     kinematics::Skeleton* mBlender;
     kinematics::Skeleton* mBlade;
 };

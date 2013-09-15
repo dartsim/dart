@@ -12,6 +12,7 @@ using namespace collision;
 
 CollisionInterface::CollisionInterface() {
     mCollisionChecker = new FCLMESHCollisionDetector();
+    mCollisionChecker->setNumMaxContacts(2);
 }
 
 CollisionInterface::~CollisionInterface() {

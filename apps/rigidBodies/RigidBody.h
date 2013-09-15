@@ -16,8 +16,8 @@ class RigidBody {
         RigidBody(kinematics::Shape::ShapeType _type, Eigen::Vector3d _dim) {
         // Create a default rigid body
         mMass = 1.0;
-        mPosition.setZero();
-        mOrientation.setIdentity();
+        mPosition.setZero(); // x = (0, 0, 0)
+        mOrientation.setIdentity(); // R = identity
         mColor << 0.9, 0.2, 0.2, 1.0; // Red
         if (_type == kinematics::Shape::P_BOX) {
             mShape = new kinematics::ShapeBox(_dim);

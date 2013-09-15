@@ -20,6 +20,7 @@ class MyWindow : public yui::Win3D {
             
             mPersp = 30.f;
             mTrans[1] = 0.f;
+            mZoom = 0.4f;
             mDisplayTimeout = 5;
         }
 
