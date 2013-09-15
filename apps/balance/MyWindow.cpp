@@ -14,7 +14,7 @@ using namespace yui;
 
 void MyWindow::timeStepping()
 {
-    mWorld->getSkeleton(1)->findBodyNode("h_spine")->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
+    mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
 
     mController->setConstrForces(mWorld->getCollisionHandle()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq());
@@ -37,7 +37,7 @@ void MyWindow::drawSkels()
 
     // draw arrow
     if (mImpulseDuration > 0) {
-        Eigen::Vector3d poa = mWorld->getSkeleton(1)->findBodyNode("h_spine")->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
+        Eigen::Vector3d poa = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
         Eigen::Vector3d start = poa - mForce / 10.0;
         double len = mForce.norm() / 10.0;
         drawArrow3D(start, mForce, len, 0.05, 0.1);

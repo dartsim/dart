@@ -135,7 +135,7 @@ public:
     BodyNode* getBodyNode(int _idx) const;
 
     /// @brief
-    BodyNode* findBodyNode(const std::string& _name) const;
+    BodyNode* getBodyNode(const std::string& _name) const;
 
     /// @brief
     int getBodyNodeIndex(const std::string& _name) const;
@@ -144,7 +144,7 @@ public:
     Joint* getJoint(int _idx) const;
 
     /// @brief
-    Joint* findJoint(const std::string& _name) const;
+    Joint* getJoint(const std::string& _name) const;
 
     /// @brief
     int getJointIndex(const std::string& _name) const;

@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
 
     // ***** BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY *****\
 
-    BodyNode* parent_node = LeftLegSkel.findBodyNode("LHY");
+    BodyNode* parent_node = LeftLegSkel.getBodyNode("LHY");
     node = new BodyNode("LHR");
     joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHR");
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
     LeftLegSkel.addBodyNode(node);
 
     // ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
-    parent_node = LeftLegSkel.findBodyNode("LHR");
+    parent_node = LeftLegSkel.getBodyNode("LHR");
     node = new BodyNode("LHP");
     joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHP");

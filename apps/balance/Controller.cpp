@@ -58,7 +58,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
     
     // ankle strategy for sagital plane
     Eigen::Vector3d com = mSkel->getWorldCOM();
-    Eigen::Vector3d cop = mSkel->findBodyNode("h_heel_left")->getWorldTransform() * Eigen::Vector3d(0.05, 0, 0);
+    Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getWorldTransform() * Eigen::Vector3d(0.05, 0, 0);
     Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
     if (diff[0] < 0.1) {
         double offset = com[0] - cop[0];

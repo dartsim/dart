@@ -199,7 +199,7 @@ BodyNode* Skeleton::getBodyNode(int _idx) const
     return mBodyNodes[_idx];
 }
 
-BodyNode* Skeleton::findBodyNode(const std::string& _name) const
+BodyNode* Skeleton::getBodyNode(const std::string& _name) const
 {
     assert(!_name.empty());
 
@@ -233,7 +233,7 @@ Joint* Skeleton::getJoint(int _idx) const
     return mJoints[_idx];
 }
 
-Joint* Skeleton::findJoint(const std::string& _name) const
+Joint* Skeleton::getJoint(const std::string& _name) const
 {
     assert(!_name.empty());
 

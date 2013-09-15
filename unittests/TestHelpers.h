@@ -125,7 +125,7 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     robot->addBodyNode(node);
 
     // Create the second link, the joint with link1 and its shape
-    BodyNode* parent_node = robot->findBodyNode("link1");
+    BodyNode* parent_node = robot->getBodyNode("link1");
     node = new BodyNode("link2");
     joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
@@ -168,7 +168,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     robot->addBodyNode(node);
 
     // Create the second link, the joint with link1 and its shape
-    BodyNode* parent_node = robot->findBodyNode("link1");
+    BodyNode* parent_node = robot->getBodyNode("link1");
     node = new BodyNode("link2");
     joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
@@ -183,7 +183,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     robot->addBodyNode(node);
 
     // Create the third link, the joint with link2 and its shape
-    parent_node = robot->findBodyNode("link2");
+    parent_node = robot->getBodyNode("link2");
     node = new BodyNode("link3");
     joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type3);
     joint->setName("joint3");
