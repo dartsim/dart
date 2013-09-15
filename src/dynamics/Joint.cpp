@@ -137,6 +137,26 @@ bool Joint::isPositionLimited(int _idx) const
     return mIsPositionLimited[_idx];
 }
 
+//void Joint::setPositionUpperLimit(double _ul, int _idx, bool _setLimit)
+//{
+//    assert(0 <= _idx && _idx < getDOF());
+
+//    mGenCoords[_idx]->set_qMax(_ul);
+
+//    if (_setLimit)
+//        setPositionLimited(true, _idx);
+//}
+
+//void Joint::setPositionLowerLimit(double _ll, int _idx, bool _setLimit)
+//{
+//    assert(0 <= _idx && _idx < getDOF());
+
+//    mGenCoords[_idx]->set_qMin(_ll);
+
+//    if (_setLimit)
+//        setPositionLimited(true, _idx);
+//}
+
 void Joint::setSkeletonIndex(int _idx)
 {
     mSkelIndex= _idx;

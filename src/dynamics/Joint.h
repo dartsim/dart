@@ -127,6 +127,12 @@ public:
     /// @brief
     bool isPositionLimited(int _idx) const;
 
+//    /// @brief
+//    void setPositionUpperLimit(double _ul, int _idx, bool _setLimit = true);
+
+//    /// @brief
+//    void setPositionLowerLimit(double _ll, int _idx, bool _setLimit = true);
+
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
