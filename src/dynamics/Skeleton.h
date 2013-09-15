@@ -165,15 +165,16 @@ public:
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
     /// @brief
-    void setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
+    void setConfig(const std::vector<int>& _id, Eigen::VectorXd _vals,
                    bool _calcTrans = true, bool _calcDeriv = true);
 
     /// @brief
     void setConfig(const Eigen::VectorXd& _pose,
                    bool bCalcTrans = true, bool bCalcDeriv = true);
 
-    /// @brief
-    Eigen::VectorXd getConfig(std::vector<int> _id);
+    /// @brief Get the configuration of this skeleton described in generalized
+    /// coordinates.
+    Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
 
     /// @brief
     Eigen::MatrixXd getMassMatrix() const;

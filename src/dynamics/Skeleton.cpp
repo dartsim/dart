@@ -297,7 +297,7 @@ Marker*Skeleton::getMarker(const std::string& _name) const
     return NULL;
 }
 
-Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
+Eigen::VectorXd Skeleton::getConfig(const std::vector<int>& _id) const
 {
     Eigen::VectorXd q(_id.size());
 
@@ -307,7 +307,7 @@ Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
     return q;
 }
 
-void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
+void Skeleton::setConfig(const std::vector<int>& _id, Eigen::VectorXd _vals,
                          bool _calcTrans, bool _calcDeriv)
 {
     for( unsigned int i = 0; i < _id.size(); i++ )
