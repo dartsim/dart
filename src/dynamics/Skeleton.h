@@ -165,9 +165,6 @@ public:
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
     /// @brief
-    Eigen::VectorXd getConfig(std::vector<int> _id);
-
-    /// @brief
     void setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
                    bool _calcTrans = true, bool _calcDeriv = true);
 
@@ -176,10 +173,7 @@ public:
                    bool bCalcTrans = true, bool bCalcDeriv = true);
 
     /// @brief
-    Eigen::VectorXd getPose() const;
-
-    /// @brief
-    Eigen::VectorXd getPoseVelocity() const;
+    Eigen::VectorXd getConfig(std::vector<int> _id);
 
     /// @brief
     Eigen::MatrixXd getMassMatrix() const;

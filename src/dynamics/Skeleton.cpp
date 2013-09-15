@@ -299,12 +299,12 @@ Marker*Skeleton::getMarker(const std::string& _name) const
 
 Eigen::VectorXd Skeleton::getConfig(std::vector<int> _id)
 {
-    Eigen::VectorXd dofs(_id.size());
+    Eigen::VectorXd q(_id.size());
 
     for(unsigned int i = 0; i < _id.size(); i++)
-        dofs[i] = mGenCoords[_id[i]]->get_q();
+        q[i] = mGenCoords[_id[i]]->get_q();
 
-    return dofs;
+    return q;
 }
 
 void Skeleton::setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
@@ -336,16 +336,6 @@ void Skeleton::setConfig(const Eigen::VectorXd& _pose,
         else
             updateForwardKinematics(false, false);
     }
-}
-
-Eigen::VectorXd Skeleton::getPose() const
-{
-    return get_q();
-}
-
-Eigen::VectorXd Skeleton::getPoseVelocity() const
-{
-    return get_dq();
 }
 
 Eigen::MatrixXd Skeleton::getMassMatrix() const
