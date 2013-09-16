@@ -35,7 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Shape.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/Shape.h"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
@@ -49,7 +50,8 @@ Shape::Shape(ShapeType _type) :
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0),
     mOffset(0, 0, 0),
-    mTransform(Eigen::Isometry3d::Identity())
+    mLocalTransform(Eigen::Isometry3d::Identity()),
+    mParentBodyNode(NULL)
 {
 }
 
@@ -78,24 +80,37 @@ const Eigen::Vector3d& Shape::getDim() const
     return mDim;
 }
 
+void Shape::setParentBodyNode(const BodyNode* _parentBodyNode)
+{
+    mParentBodyNode = _parentBodyNode;
+}
+
+Eigen::Isometry3d Shape::getWorldTransform() const
+{
+    if (mParentBodyNode != NULL)
+        return mParentBodyNode->getWorldTransform() * mLocalTransform;
+    else
+        return mLocalTransform;
+}
+
 void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
 {
-    mTransform = _Transform;
+    mLocalTransform = _Transform;
 }
 
 const Eigen::Isometry3d& Shape::getLocalTransform() const
 {
-    return mTransform;
+    return mLocalTransform;
 }
 
 void Shape::setOffset(const Eigen::Vector3d& _offset)
 {
-    mTransform.translation() = _offset;
+    mLocalTransform.translation() = _offset;
 }
 
 Eigen::Vector3d Shape::getOffset() const
 {
-    return mTransform.translation();
+    return mLocalTransform.translation();
 }
 
 void Shape::setVolume(double _v)

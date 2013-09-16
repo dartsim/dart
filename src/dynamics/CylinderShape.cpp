@@ -59,7 +59,7 @@ void CylinderShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& 
     else
         _ri->setPenColor(mColor);
     _ri->pushMatrix();
-    _ri->transform(mTransform);
+    _ri->transform(mLocalTransform);
     _ri->drawCylinder(mRadius, mHeight);
     _ri->popMatrix();
 }

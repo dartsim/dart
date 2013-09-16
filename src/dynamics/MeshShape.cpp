@@ -64,7 +64,7 @@ void MeshShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _col
     else
         _ri->setPenColor(mColor);
     _ri->pushMatrix();
-    _ri->transform(mTransform);
+    _ri->transform(mLocalTransform);
 
     _ri->drawMesh(mDim, mMesh);
 

@@ -48,6 +48,8 @@ namespace dart {
 namespace renderer { class RenderInterface; }
 namespace dynamics {
 
+class BodyNode;
+
 /// @brief
 class Shape
 {
@@ -78,6 +80,12 @@ public:
 
     /// @brief
     const Eigen::Vector3d& getDim() const;
+
+    /// @brief Set parent body node.
+    void setParentBodyNode(const BodyNode* _parentBodyNode);
+
+    /// @brief Get transformation w.r.t. world frame.
+    Eigen::Isometry3d getWorldTransform() const;
 
     /// @brief Set local transformation of the Shape w.r.t. parent frame.
     void setLocalTransform(const Eigen::Isometry3d& _Transform);
@@ -137,7 +145,10 @@ protected:
     Eigen::Vector3d mOffset;
 
     /// @brief Local geometric transformation of the Shape w.r.t. parent frame.
-    Eigen::Isometry3d mTransform;
+    Eigen::Isometry3d mLocalTransform;
+
+    /// @brief Parent body node associated with.
+    const BodyNode* mParentBodyNode;
 
     /// @brief
     static int mCounter;
