@@ -22,7 +22,7 @@ MyWorld::MyWorld() {
     RigidBody *rb2 = new RigidBody(kinematics::Shape::P_ELLIPSOID, Vector3d(0.1, 0.2, 0.1));
     mCollisionDetector->addRigidBody(rb2); // Put rb2 in collision detector
     rb2->mPosition[0] = 0.1;
-    rb2->mColor = Vector4d(0.2, 0.2, 0.8, 1.0); // Blue
+    rb2->mColor = Vector4d(0.2, 0.8, 0.2, 1.0); // Blue
     mRigidBodies.push_back(rb2);
 
     // Load a blender and a blade
