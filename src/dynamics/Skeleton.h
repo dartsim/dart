@@ -129,7 +129,7 @@ public:
     int getNumJoints() const;
 
     /// @brief
-    BodyNode* getRootBodyNode();
+    BodyNode* getRootBodyNode() const;
 
     /// @brief
     BodyNode* getBodyNode(int _idx) const;
@@ -340,9 +340,6 @@ protected:
     //--------------------------------------------------------------------------
     // Structual Properties
     //--------------------------------------------------------------------------
-    /// @brief
-    BodyNode* mRootBodyNode;
-
     /// @brief
     Eigen::Isometry3d mFrame;
 
