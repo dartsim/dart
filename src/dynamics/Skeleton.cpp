@@ -560,12 +560,6 @@ void Skeleton::clearExternalForces()
         mBodyNodes[i]->clearExternalForces();
 }
 
-void Skeleton::computeInverseDynamicsWithZeroAcceleration(
-        const Eigen::Vector3d& _gravity, bool _withExternalForces)
-{
-
-}
-
 void Skeleton::computeEquationsOfMotionID(
         const Eigen::Vector3d& _gravity)
 {
@@ -808,42 +802,6 @@ Eigen::Vector3d Skeleton::getWorldCOM()
     }
 
     return com / mTotalMass;
-}
-
-Eigen::Vector3d Skeleton::getVelocityCOMGlobal()
-{
-    Eigen::Vector3d p(0,0,0);
-
-    // TODO: Not implemented.
-
-    return p;
-}
-
-Eigen::Vector3d Skeleton::getAccelerationCOMGlobal()
-{
-    Eigen::Vector3d p(0,0,0);
-
-    // TODO: Not implemented.
-
-    return p;
-}
-
-Eigen::Vector6d Skeleton::getMomentumGlobal()
-{
-    Eigen::Vector6d M = Eigen::Vector6d::Zero();
-
-    // TODO: Not implemented.
-
-    return M;
-}
-
-Eigen::Vector6d Skeleton::getMomentumCOM()
-{
-    Eigen::Vector6d M = Eigen::Vector6d::Zero();
-
-    // TODO: Not implemented.
-
-    return M;
 }
 
 } // namespace dynamics

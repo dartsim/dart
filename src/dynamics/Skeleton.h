@@ -239,22 +239,6 @@ public:
     /// @brief
     Eigen::Vector3d getWorldCOM();
 
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector3d getVelocityCOMGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector3d getAccelerationCOMGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector6d getMomentumGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector6d getMomentumCOM();
-
     //--------------------------------------------------------------------------
     // Recursive kinematics Algorithms
     //--------------------------------------------------------------------------
@@ -272,8 +256,6 @@ public:
     /// @brief Update body dynamics (W, V, dV)
     void _updateBodyForwardKinematics(bool _firstDerivative = true,
                                       bool _secondDerivative = true);
-
-    // TODO: Inverse Kinematics
 
     //--------------------------------------------------------------------------
     // Recursive dynamics Algorithms
@@ -313,19 +295,13 @@ public:
     /// the required quantities are up-to-date when using this function alone.
     void updateExternalForces();
 
-    /// #brief
+    /// @brief
     void updateDampingForces();
 
     /// @brief Clear all the contacts of external forces.
     /// Automatically called after each (forward/inverse) dynamics computation,
     /// which marks the end of a cycle.
     void clearExternalForces();
-
-    // TODO: Not implemeted.
-    /// @brief
-    void computeInverseDynamicsWithZeroAcceleration(
-            const Eigen::Vector3d& _gravity,
-            bool _withExternalForces = false);
 
     /// @brief (q, dq) --> M, C, G
     void computeEquationsOfMotionID(const Eigen::Vector3d& _gravity);
@@ -353,11 +329,6 @@ public:
     void drawMarkers(renderer::RenderInterface* _ri = NULL,
                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                      bool _useDefaultColor = true ) const;
-
-protected:
-    //--------------------------------------------------------------------------
-    // Sub-functions for Recursive Algorithms
-    //--------------------------------------------------------------------------
 
 protected:
     /// @brief
@@ -426,17 +397,11 @@ protected:
     /// @brief External forces vector for the skeleton.
     Eigen::VectorXd mFext;
 
-    /// @brief Internal forces vector for the skeleton; computed by an external
-    /// controller.
-    //Eigen::VectorXd mFint;
-
     /// @brief
     Eigen::VectorXd mFc;
 
     /// @brief
     Eigen::VectorXd mDampingForce;
-
-private:
 
 public:
     //
