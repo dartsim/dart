@@ -84,6 +84,9 @@ public:
     /// @brief Set parent body node.
     void setParentBodyNode(const BodyNode* _parentBodyNode);
 
+    /// @brief Get parent body node.
+    const BodyNode* getParentBodyNode() const;
+
     /// @brief Get transformation w.r.t. world frame.
     Eigen::Isometry3d getWorldTransform() const;
 

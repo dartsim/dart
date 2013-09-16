@@ -85,6 +85,11 @@ void Shape::setParentBodyNode(const BodyNode* _parentBodyNode)
     mParentBodyNode = _parentBodyNode;
 }
 
+const BodyNode*Shape::getParentBodyNode() const
+{
+    return mParentBodyNode;
+}
+
 Eigen::Isometry3d Shape::getWorldTransform() const
 {
     if (mParentBodyNode != NULL)
