@@ -84,7 +84,7 @@ void Timer::stop() {
     QueryPerformanceCounter(&mTimer.stop);
     LARGE_INTEGER time;
     time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = _convLIToSecs( time);
+    mLastElapsedTime = _convLIToSecs( time);
 #else
     mStoppedTime = clock();
     mLastElapsedTime = _subtractTimes(mStoppedTime, mStartedTime);
@@ -98,7 +98,7 @@ double Timer::getElapsedTime() {
     QueryPerformanceCounter(&timenow);
     LARGE_INTEGER time;
     time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = _convLIToSecs(time);
+    mLastElapsedTime = _convLIToSecs(time);
 #else
     double now = clock();
     mLastElapsedTime = _subtractTimes(now, mStartedTime);

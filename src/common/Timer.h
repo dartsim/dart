@@ -103,9 +103,9 @@ private:
 #if WIN32
     LARGE_INTEGER  mFrequency;
     double _convLIToSecs(LARGE_INTEGER & L) ;
-#else
-    double _subtractTimes(double _endTime, double _startTime);
 #endif
+
+    double _subtractTimes(double _endTime, double _startTime);
 };
 
 } // namespace common
