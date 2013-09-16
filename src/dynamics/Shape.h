@@ -90,6 +90,12 @@ public:
     /// @brief Get transformation w.r.t. world frame.
     Eigen::Isometry3d getWorldTransform() const;
 
+    /// @brief Get generalized velocity w.r.t world frame.
+    Eigen::Vector6d getWorldVelocity() const;
+
+    /// @brief Get generalized acceleration w.r.t world frame.
+    Eigen::Vector6d getWorldAcceleration() const;
+
     /// @brief Set local transformation of the Shape w.r.t. parent frame.
     void setLocalTransform(const Eigen::Isometry3d& _Transform);
 

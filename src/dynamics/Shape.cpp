@@ -98,6 +98,36 @@ Eigen::Isometry3d Shape::getWorldTransform() const
         return mLocalTransform;
 }
 
+Eigen::Vector6d Shape::getWorldVelocity() const
+{
+    if (mParentBodyNode != NULL)
+    {
+        Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+        T.linear() = mParentBodyNode->getWorldTransform().linear().transpose();
+        T.translation() = mLocalTransform.translation();
+        return math::AdT(T, mParentBodyNode->getBodyVelocity());
+    }
+    else
+    {
+        return Eigen::Vector6d::Zero();
+    }
+}
+
+Eigen::Vector6d Shape::getWorldAcceleration() const
+{
+    if (mParentBodyNode != NULL)
+    {
+        Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+        T.linear() = mParentBodyNode->getWorldTransform().linear().transpose();
+        T.translation() = mLocalTransform.translation();
+        return math::AdT(T, mParentBodyNode->getBodyAcceleration());
+    }
+    else
+    {
+        return Eigen::Vector6d::Zero();
+    }
+}
+
 void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
 {
     mLocalTransform = _Transform;
