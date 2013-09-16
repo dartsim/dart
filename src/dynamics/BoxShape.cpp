@@ -57,7 +57,7 @@ void BoxShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _colo
     else
         _ri->setPenColor(mColor);
     _ri->pushMatrix();
-    _ri->transform(mTransform);
+    _ri->transform(mLocalTransform);
     _ri->drawCube(mDim);
     _ri->popMatrix();
 }
