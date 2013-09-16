@@ -214,21 +214,6 @@ BodyNode* Skeleton::getBodyNode(const std::string& _name) const
     return NULL;
 }
 
-int Skeleton::getBodyNodeIndex(const std::string& _name) const
-{
-    const int nNodes = getNumBodyNodes();
-
-    for(int i = 0; i < nNodes; i++)
-    {
-        BodyNode* node = getBodyNode(i);
-
-        if (_name == node->getName())
-            return i;
-    }
-
-    return -1;
-}
-
 Joint* Skeleton::getJoint(int _idx) const
 {
     return mJoints[_idx];
@@ -247,21 +232,6 @@ Joint* Skeleton::getJoint(const std::string& _name) const
     }
 
     return NULL;
-}
-
-int Skeleton::getJointIndex(const std::string& _name) const
-{
-    const int nJoints = getNumJoints();
-
-    for(int i = 0; i < nJoints; i++)
-    {
-        Joint* node = getJoint(i);
-
-        if (_name == node->getName())
-            return i;
-    }
-
-    return -1;
 }
 
 void Skeleton::addMarker(Marker* _h)
