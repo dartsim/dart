@@ -54,8 +54,7 @@ Skeleton::Skeleton(const std::string& _name)
       mTotalMass(0.0),
       mImmobile(false),
       mJointLimit(true),
-      mFrame(Eigen::Isometry3d::Identity()),
-      mRootBodyNode(NULL)
+      mFrame(Eigen::Isometry3d::Identity())
 {
 }
 
@@ -175,11 +174,6 @@ void Skeleton::addJoint(Joint* _joint)
     }
 }
 
-void Skeleton::setRootBodyNode(BodyNode* _body)
-{
-    mRootBodyNode = _body;
-}
-
 int Skeleton::getNumBodyNodes() const
 {
     return mBodyNodes.size();
@@ -190,9 +184,10 @@ int Skeleton::getNumJoints() const
     return mJoints.size();
 }
 
-BodyNode* Skeleton::getRootBodyNode()
+BodyNode* Skeleton::getRootBodyNode() const
 {
-    return mRootBodyNode;
+    // We assume that the first element of body nodes is root.
+    return mBodyNodes[0];
 }
 
 BodyNode* Skeleton::getBodyNode(int _idx) const
@@ -380,13 +375,7 @@ Eigen::VectorXd Skeleton::getInternalForces() const
 
 void Skeleton::initKinematics()
 {
-    if (mRootBodyNode == NULL)
-    {
-        assert(mBodyNodes.size() > 0);
-        mRootBodyNode = mBodyNodes[0];
-    }
-
-    mToRootBody = mFrame.inverse() * mRootBodyNode->getWorldInvTransform();
+    mToRootBody = mFrame.inverse() * getRootBodyNode()->getWorldInvTransform();
 
     // init the dependsOnDof stucture for each bodylink
     for(int i = 0; i < getNumBodyNodes(); i++)
@@ -410,14 +399,14 @@ void Skeleton::draw(renderer::RenderInterface* _ri,
                     const Eigen::Vector4d& _color,
                     bool _useDefaultColor) const
 {
-    mRootBodyNode->draw(_ri, _color, _useDefaultColor);
+    getRootBodyNode()->draw(_ri, _color, _useDefaultColor);
 }
 
 void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
                            bool _useDefaultColor) const
 {
-    mRootBodyNode->drawMarkers(_ri, _color, _useDefaultColor);
+    getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
 }
 
 void Skeleton::_updateJointKinematics(bool _firstDerivative,
@@ -449,7 +438,7 @@ void Skeleton::_updateBodyForwardKinematics(bool _firstDerivative,
         }
     }
 
-    mFrame = mRootBodyNode->getWorldTransform() * mToRootBody.inverse();
+    mFrame = getRootBodyNode()->getWorldTransform() * mToRootBody.inverse();
 }
 
 void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
