@@ -65,6 +65,7 @@ class FreeJoint;
 
 namespace dynamics {
 class BodyNode;
+class Shape;
 class Skeleton;
 }
 
@@ -93,6 +94,10 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
 /// @brief
 dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyElement,
                                      dynamics::Skeleton* _skeleton);
+
+/// @brief
+dynamics::Shape* readShape(tinyxml2::XMLElement* _shapeElement,
+                           dynamics::BodyNode* _bodyNode);
 
 /// @brief
 dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
