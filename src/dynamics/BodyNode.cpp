@@ -690,6 +690,8 @@ int BodyNode::getSkeletonIndex() const
 
 void BodyNode::addVisualizationShape(Shape* _p)
 {
+    assert(_p != NULL);
+    _p->setParentBodyNode(this);
     mVizShapes.push_back(_p);
 }
 
@@ -705,6 +707,8 @@ Shape*BodyNode::getVisualizationShape(int _idx) const
 
 void BodyNode::addCollisionShape(Shape* _p)
 {
+    assert(_p != NULL);
+    _p->setParentBodyNode(this);
     mColShapes.push_back(_p);
 }
 
