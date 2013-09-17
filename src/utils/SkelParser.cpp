@@ -153,6 +153,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     assert(_world != NULL);
 
     dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
+    Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
     //--------------------------------------------------------------------------
     // Name attribute
@@ -164,7 +165,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     if (hasElement(_skeletonElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_skeletonElement, "transformation");
-        newSkeleton->setWorldTransform(W, false);
+        skeletonFrame = W;
     }
 
     //--------------------------------------------------------------------------
@@ -184,7 +185,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     while (bodies.next())
     {
         dynamics::BodyNode* newBody
-                = readBodyNode(bodies.get(), newSkeleton);
+                = readBodyNode(bodies.get(), newSkeleton, skeletonFrame);
 
         newSkeleton->addBodyNode(newBody, false);
     }
@@ -204,7 +205,8 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
 }
 
 dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
-                                 dynamics::Skeleton* _skeleton)
+                                 dynamics::Skeleton* _skeleton,
+                                 const Eigen::Isometry3d& _skeletonFrame)
 {
     assert(_bodyNodeElement != NULL);
     assert(_skeleton != NULL);
@@ -235,7 +237,7 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
     if (hasElement(_bodyNodeElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "transformation");
-        newBodyNode->setWorldTransform(_skeleton->getWorldTransform() * W);
+        newBodyNode->setWorldTransform(_skeletonFrame * W);
     }
 
     //--------------------------------------------------------------------------

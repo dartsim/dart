@@ -53,8 +53,7 @@ Skeleton::Skeleton(const std::string& _name)
       mSelfCollidable(false),
       mTotalMass(0.0),
       mImmobile(false),
-      mJointLimit(true),
-      mFrame(Eigen::Isometry3d::Identity())
+      mJointLimit(true)
 {
 }
 
@@ -105,20 +104,6 @@ void Skeleton::setJointLimitState(bool _s)
 double Skeleton::getMass() const
 {
     return mTotalMass;
-}
-
-void Skeleton::setWorldTransform(const Eigen::Isometry3d& _W,
-                                      bool _updateChilds)
-{
-    mFrame = _W;
-
-    if (_updateChilds)
-        updateForwardKinematics(false, false);
-}
-
-const Eigen::Isometry3d& Skeleton::getWorldTransform() const
-{
-    return mFrame;
 }
 
 void Skeleton::initDynamics()
@@ -375,8 +360,6 @@ Eigen::VectorXd Skeleton::getInternalForces() const
 
 void Skeleton::initKinematics()
 {
-    mToRootBody = mFrame.inverse() * getRootBodyNode()->getWorldInvTransform();
-
     // init the dependsOnDof stucture for each bodylink
     for(int i = 0; i < getNumBodyNodes(); i++)
     {
@@ -437,8 +420,6 @@ void Skeleton::_updateBodyForwardKinematics(bool _firstDerivative,
             (*itrBody)->updateAcceleration();
         }
     }
-
-    mFrame = getRootBodyNode()->getWorldTransform() * mToRootBody.inverse();
 }
 
 void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
