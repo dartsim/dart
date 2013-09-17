@@ -92,14 +92,18 @@ private:
 
     void computeConstraintWithoutContact();
     void fillMatrices();
+    void fillMatricesODE();
     bool solve();
     void applySolution();
+    void applySolutionODE();
 
     void updateMassMat();
     void updateTauStar();
     void updateNBMatrices();
+    void updateNBMatricesODE();
     Eigen::MatrixXd getJacobian(dynamics::BodyNode* node, const Eigen::Vector3d& p);
     Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
+    Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
     Eigen::MatrixXd getContactMatrix() const; // E matrix
     Eigen::MatrixXd getMuMatrix() const; // mu matrix
     void updateConstraintTerms();
