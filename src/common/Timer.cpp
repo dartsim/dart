@@ -36,9 +36,8 @@
  */
 
 #include <iostream>
-#include <string.h>
-#include <time.h>
-#include "Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
+#include <ctime>
+#include "common/Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
 
 //#if defined _WIN64 || defined _WIN32
 //#define CLOCKS_PER_SEC 1000
@@ -47,16 +46,11 @@
 namespace dart {
 namespace common {
 
-double subtractTimes( double endTime, double startTime) {
-    return (endTime - startTime) / CLOCKS_PER_SEC;
-}
-
-Timer::Timer(const char* name) {
-    mCount = 0;
-    mTotal = 0;
-    mName = new char[64];
-    strcpy(mName, name);
-    mIsRunning = false;
+Timer::Timer(const std::string& _name)
+    : mName(_name),
+      mCount(0.0),
+      mTotalElapsedTime(0.0),
+      mIsStarted(false) {
 #if WIN32
     mTimer.start.QuadPart=0;
     mTimer.stop.QuadPart=0;
@@ -66,97 +60,81 @@ Timer::Timer(const char* name) {
 
 Timer::~Timer() {
     print();
-    delete[] mName;
 }
 
 #if WIN32
-double Timer::LIToSecs( LARGE_INTEGER & L) {
+double Timer::_convLIToSecs(LARGE_INTEGER& L) {
     return ((double)L.QuadPart /(double)mFrequency.QuadPart) ;
 }
 #endif
 
-void Timer::startTimer() {
-    mIsRunning = true;
+void Timer::start() {
+    mIsStarted = true;
     mCount++;
 #if WIN32
-    QueryPerformanceCounter(&mTimer.start) ;
+    QueryPerformanceCounter(&mTimer.start);
 #else
-    mStart = clock();
+    mStartedTime = clock();
 #endif
 }
 
-double Timer::elapsed() {
+void Timer::stop() {
+    mIsStarted = false;
 #if WIN32
-    LARGE_INTEGER timenow;
-    QueryPerformanceCounter(&timenow) ;
-    LARGE_INTEGER time;
-    time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = LIToSecs( time) ;
-#else
-    double now = clock();
-    mLastElapsed = subtractTimes(now, mStart);
-#endif
-    return mLastElapsed;
-}
-
-double Timer::lastElapsed() const {
-    return mLastElapsed;
-}
-
-double Timer::total() const {
-    return mTotal;
-}
-
-void Timer::stopTimer() {
-    mIsRunning = false;
-#if WIN32
-    QueryPerformanceCounter(&mTimer.stop) ;
+    QueryPerformanceCounter(&mTimer.stop);
     LARGE_INTEGER time;
     time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
-    mLastElapsed = LIToSecs( time) ;
-#else 
-    mStop = clock();
-    mLastElapsed = subtractTimes(mStop, mStart);
+    mLastElapsedTime = _convLIToSecs( time);
+#else
+    mStoppedTime = clock();
+    mLastElapsedTime = _subtractTimes(mStoppedTime, mStartedTime);
 #endif
-    mTotal += mLastElapsed;
+    mTotalElapsedTime += mLastElapsedTime;
 }
 
-bool Timer::isRunning() const {
-    return mIsRunning;
+double Timer::getElapsedTime() {
+#if WIN32
+    LARGE_INTEGER timenow;
+    QueryPerformanceCounter(&timenow);
+    LARGE_INTEGER time;
+    time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
+    mLastElapsedTime = _convLIToSecs(time);
+#else
+    double now = clock();
+    mLastElapsedTime = _subtractTimes(now, mStartedTime);
+#endif
+    return mLastElapsedTime;
 }
 
-void Timer::printLog() {
-    if(mCount>0) {
-        std::cout << "[VLOG(1)]" << "Timer [" << mName << "] : "
-             << "Last = " << mLastElapsed << " "
-             << "Total " << " "
-             << mTotal << " " << mCount << "; "
-             << "Average: " << mTotal / mCount << " "
-             << "FPS : " << mCount / mTotal << "hz ";
-
-    } else {
-        std::cout << "[VLOG(1)]" << "Timer " << mName << " doesn't have any record." << std::endl;
-    }
+double Timer::getLastElapsedTime() const {
+    return mLastElapsedTime;
 }
 
-void Timer::printScreen() {
+double Timer::getTotalElapsedTime() const {
+    return mTotalElapsedTime;
+}
+
+bool Timer::isStarted() const {
+    return mIsStarted;
+}
+
+void Timer::print() {
     if(mCount>0) {
         std::cout << "Timer [" << mName << "] : "<<std::endl
-             << "Last elapsed : " << mLastElapsed << "; "
+             << "Last elapsed : " << mLastElapsedTime << "; "
              << "Total time : " << " "
-             << mTotal << "; "
+             << mTotalElapsedTime << "; "
              << "Total count : " << mCount << "; "
-             << "Average time : " << mTotal / mCount << " "
-             << "FPS : " << mCount / mTotal << "hz "<<std::endl;
+             << "Average time : " << mTotalElapsedTime / mCount << " "
+             << "FPS : " << mCount / mTotalElapsedTime << "hz "<<std::endl;
 
     } else {
         std::cout << "Timer " << mName << " doesn't have any record." << std::endl;
     }
 }
 
-void Timer::print( bool _toScreen ){
-    if( _toScreen ) printScreen();
-    else printLog();
+double Timer::_subtractTimes(double endTime, double _startTime) {
+    return (endTime - _startTime) / CLOCKS_PER_SEC;
 }
 
 } // namespace common

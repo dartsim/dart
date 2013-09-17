@@ -38,6 +38,8 @@
 #ifndef DART_COMMON_TIMER_H
 #define DART_COMMON_TIMER_H
 
+#include <string>
+
 #if WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -56,39 +58,33 @@ namespace common {
 /// For measure the time, clock() api is used
 class Timer {
 public:
-    /// @brief Default constructor. The name can be up to 64.
-    Timer(const char* name = "noname");
+    /// @brief Default constructor.
+    Timer(const std::string& _name = "noname");
 
     /// @brief Default destructor.
     ~Timer();
 
-    /// @brief
-    void startTimer();
+    /// @brief Start timer.
+    void start();
+
+    /// @brief Returns whether the timer is started.
+    bool isStarted() const;
+
+    /// @brief Stop the timer.
+    void stop();
 
     /// @brief Return elapsed time in seconds since startTimer().
-    /// @see startTimer()
-    double elapsed();
+    /// @see start()
+    double getElapsedTime();
 
     /// @brief
-    double lastElapsed() const;
+    double getLastElapsedTime() const;
 
     /// @brief
-    double total() const;
+    double getTotalElapsedTime() const;
 
     /// @brief
-    void stopTimer();
-
-    /// @brief
-    bool isRunning() const;
-
-    /// @brief
-    void printLog();
-
-    /// @brief
-    void printScreen();
-
-    /// @brief
-    void print(bool _toScreen = true);
+    void print();
 
 private:
     int mCount;
@@ -96,19 +92,20 @@ private:
 #if WIN32
     stopWatch mTimer;
 #else
-    double mStart;
-    double mStop;
+    double mStartedTime;
+    double mStoppedTime;
 #endif
-    double mLastElapsed;
-    double mTotal;
-    char *mName;
-    bool mIsRunning;
+    double mLastElapsedTime;
+    double mTotalElapsedTime;
+    std::string mName;
+    bool mIsStarted;
 
 #if WIN32
     LARGE_INTEGER  mFrequency;
-    double LIToSecs( LARGE_INTEGER & L) ;
+    double _convLIToSecs(LARGE_INTEGER & L) ;
 #endif
 
+    double _subtractTimes(double _endTime, double _startTime);
 };
 
 } // namespace common

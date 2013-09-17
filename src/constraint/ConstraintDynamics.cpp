@@ -82,9 +82,9 @@ void ConstraintDynamics::computeConstraintForces() {
             computeConstraintWithoutContact();
         }
     } else {
-        fillMatrices();
+        fillMatricesODE();
         solve();
-        applySolution();
+        applySolutionODE();
     }
     //            t1.stopTimer();
     //            t1.printScreen();
@@ -354,9 +354,104 @@ void ConstraintDynamics::fillMatrices() {
         mA(i, i) += 0.001 * mA(i, i);
 }
 
+void ConstraintDynamics::fillMatricesODE() {
+    int nContacts = getNumContacts();
+    int nJointLimits = mLimitingDofIndex.size();
+    int nConstrs = mConstraints.size();
+    int cd = nContacts * 2;
+    int dimA = nContacts * 3 + nJointLimits;
+    mA = Eigen::MatrixXd::Zero(dimA, dimA);
+    mQBar = Eigen::VectorXd::Zero(dimA);
+    updateMassMat();
+    updateTauStar();
+
+    Eigen::MatrixXd augMInv = mMInv;
+    Eigen::VectorXd tauVec = Eigen::VectorXd::Zero(getTotalNumDofs());
+    if (nConstrs > 0) {
+        updateConstraintTerms();
+        augMInv -= mZ.triangularView<Eigen::Lower>();
+
+        Eigen::VectorXd tempVec = mDt * mGInv * mTauHat;
+        for (int i = 0; i < mSkels.size(); i++) {
+            if (mSkels[i]->getImmobileState())
+                continue;
+            tauVec.segment(mIndices[i], mSkels[i]->getDOF()) = mJ[i].transpose() * tempVec;
+        }
+    }
+    tauVec = mMInv * (tauVec + mTauStar);
+
+    Eigen::MatrixXd NTerm(getTotalNumDofs(), nContacts);
+    Eigen::MatrixXd BTerm(getTotalNumDofs(), cd);
+
+    if (nContacts > 0) {
+        updateNBMatricesODE();
+        // Compute NTerm and BTerm
+        NTerm.noalias() = augMInv * mN;
+        BTerm.noalias() = augMInv * mB;
+        mA.block(0, 0, nContacts, nContacts).triangularView<Eigen::Lower>() = mN.transpose() * NTerm;
+        mA.block(0, 0, nContacts, nContacts).triangularView<Eigen::StrictlyUpper>() = mA.block(0, 0, nContacts, nContacts).transpose();
+        mA.block(0, nContacts, nContacts, cd).noalias() = mN.transpose() * BTerm;
+        mA.block(nContacts, 0, cd, nContacts) = mA.block(0, nContacts, nContacts, cd).transpose();
+        mA.block(nContacts, nContacts, cd, cd).triangularView<Eigen::Lower>() = mB.transpose() * BTerm;
+        mA.block(nContacts, nContacts, cd, cd).triangularView<Eigen::StrictlyUpper>() = mA.block(nContacts, nContacts, cd, cd).transpose();
+
+        mQBar.segment(0, nContacts).noalias() = mN.transpose() * tauVec;
+        mQBar.segment(nContacts, cd).noalias() = mB.transpose() * tauVec;
+    }
+
+    if (nJointLimits > 0) {
+        int jointStart = nContacts + cd;
+        for (int i = 0; i < nJointLimits; i++)
+            for (int j = 0; j < nJointLimits; j++) {
+                if (mLimitingDofIndex[i] * mLimitingDofIndex[j] < 0)
+                    mA(jointStart + i, jointStart + j) = -augMInv(abs(mLimitingDofIndex[i]) - 1, abs(mLimitingDofIndex[j]) - 1);
+                else
+                    mA(jointStart + i, jointStart + j) = augMInv(abs(mLimitingDofIndex[i]) - 1, abs(mLimitingDofIndex[j]) - 1);
+            }
+
+        for (int i = 0; i < nJointLimits; i++) {
+            if (mLimitingDofIndex[i] > 0) // hitting upper bound
+                mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1];
+            else // hitting lower bound
+                mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1];
+        }
+
+        if (nContacts > 0) {
+
+            Eigen::MatrixXd STerm(mMInv.rows(), nJointLimits);
+            for (int i = 0; i < nJointLimits; i++) {
+                if (mLimitingDofIndex[i] > 0) // hitting upper bound
+                    STerm.col(i) = -augMInv.col(mLimitingDofIndex[i] - 1);
+                else
+                    STerm.col(i) = augMInv.col(abs(mLimitingDofIndex[i]) - 1);
+            }
+            mA.block(0, jointStart, nContacts, nJointLimits) = mN.transpose() * STerm;
+
+            mA.block(nContacts, jointStart, cd, nJointLimits) = mB.transpose() * STerm;
+
+            for (int i = 0; i < nJointLimits; i++) {
+                if (mLimitingDofIndex[i] > 0) { //hitting uppder bound
+                    mA.block(jointStart + i, 0, 1, nContacts) = -NTerm.row(mLimitingDofIndex[i] - 1);
+                    mA.block(jointStart + i, nContacts, 1, cd) = -BTerm.row(mLimitingDofIndex[i] - 1);
+                } else {
+                    mA.block(jointStart + i, 0, 1, nContacts) = NTerm.row(abs(mLimitingDofIndex[i]) - 1);
+                    mA.block(jointStart + i, nContacts, 1, cd) = BTerm.row(abs(mLimitingDofIndex[i]) - 1);
+                }
+            }
+
+        }
+    }
+    mQBar /= mDt;
+
+    int cfmSize = getNumContacts() * 3;
+    for (int i = 0; i < cfmSize; ++i) //add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
+        mA(i, i) += 0.001 * mA(i, i);
+}
+
+
 bool ConstraintDynamics::solve() {
     lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-    bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
+    bool b = solver.SolveTemp(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
     return b;
 }
 
@@ -405,6 +500,53 @@ void ConstraintDynamics::applySolution() {
     }
 
 }
+
+void ConstraintDynamics::applySolutionODE() {
+    Eigen::VectorXd contactForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
+    Eigen::VectorXd jointLimitForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
+
+    if (getNumContacts() > 0) {
+        Eigen::VectorXd f_n = mX.head(getNumContacts());
+        Eigen::VectorXd f_d = mX.segment(getNumContacts(), getNumContacts() * 2);
+        contactForces.noalias() = mN * f_n;
+        contactForces.noalias() += mB * f_d;
+        for (int i = 0; i < getNumContacts(); i++) {
+            Contact& contact = mCollisionChecker->getContact(i);
+            contact.force.noalias() = getTangentBasisMatrixODE(contact.point, contact.normal) * f_d.segment(i * 2, 2);
+            contact.force.noalias() += contact.normal * f_n[i];
+        }
+    }
+    for (int i = 0; i < mLimitingDofIndex.size(); i++) {
+        if (mLimitingDofIndex[i] > 0) { // hitting upper bound
+            jointLimitForces[mLimitingDofIndex[i] - 1] = -mX[getNumContacts() * 3 + i];
+        }else{
+            jointLimitForces[abs(mLimitingDofIndex[i]) - 1] = mX[getNumContacts() * 3 + i];
+        }
+    }
+
+    Eigen::VectorXd lambda = Eigen::VectorXd::Zero(mGInv.rows());
+    for (int i = 0; i < mSkels.size(); i++) {
+        if (mSkels[i]->getImmobileState())
+            continue;
+        mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getDOF());
+
+        mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF());
+
+        if (mConstraints.size() > 0) {
+            Eigen::VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getDOF()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF())));
+            mTotalConstrForces[i] += mJ[i].transpose() * tempVec;
+            lambda += tempVec;
+        }
+    }
+
+    int count = 0;
+    for (int i = 0; i < mConstraints.size(); i++) {
+        mConstraints[i]->setLagrangeMultipliers(lambda.segment(count, mConstraints[i]->getNumRows()));
+        count += mConstraints[i]->getNumRows();
+    }
+
+}
+
 
 void ConstraintDynamics::updateMassMat() {
     int start = 0;
@@ -469,6 +611,46 @@ void ConstraintDynamics::updateNBMatrices() {
     }
 }
 
+void ConstraintDynamics::updateNBMatricesODE() {
+    mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
+    mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
+    for (int i = 0; i < getNumContacts(); i++) {
+        Contact& c = mCollisionChecker->getContact(i);
+        Eigen::Vector3d p = c.point;
+        int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getIndex()];
+        int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getIndex()];
+
+        Eigen::Vector3d N21 = c.normal;
+        Eigen::Vector3d N12 = -c.normal;
+        Eigen::MatrixXd B21 = getTangentBasisMatrixODE(p, N21);
+        Eigen::MatrixXd B12 = -B21;
+
+        if (!mSkels[skelID1]->getImmobileState()) {
+            int index1 = mIndices[skelID1];
+            int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getDOF();
+            //    Vector3d N21 = c.normal;
+            Eigen::MatrixXd J21t = getJacobian(c.collisionNode1->getBodyNode(), p);
+            mN.block(index1, i, NDOF1, 1).noalias() = J21t * N21;
+            //B21 = getTangentBasisMatrix(p, N21);
+            mB.block(index1, i * 2, NDOF1, 2).noalias() = J21t * B21;
+        }
+
+        if (!mSkels[skelID2]->getImmobileState()) {
+            int index2 = mIndices[skelID2];
+            int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getDOF();
+            //Vector3d N12 = -c.normal;
+            //if (B21.rows() == 0)
+            //  B12 = getTangentBasisMatrix(p, N12);
+            //else
+            //   B12 = -B21;
+            Eigen::MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
+            mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
+            mB.block(index2, i * 2, NDOF2, 2).noalias() = J12t * B12;
+
+        }
+    }
+}
+
 Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node, const Eigen::Vector3d& p) {
     int nDofs = node->getSkeleton()->getDOF();
     Eigen::MatrixXd Jt = Eigen::MatrixXd::Zero(nDofs, 3);
@@ -511,6 +693,29 @@ Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrix(const Eigen::Vector3d&
     }
     return T;
 }
+
+Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrixODE(const Eigen::Vector3d& p, const Eigen::Vector3d& n)  {
+    Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, 2));
+
+    // Pick an arbitrary vector to take the cross product of (in this case, Z-axis)
+    Eigen::Vector3d tangent = Eigen::Vector3d::UnitZ().cross(n);
+    // If they're too close, pick another tangent (use X-axis as arbitrary vector)
+    if (tangent.norm() < EPSILON) {
+        tangent = Eigen::Vector3d::UnitX().cross(n);
+    }
+    tangent.normalize();
+
+    // Rotate the tangent around the normal to compute bases.
+    // Note: a possible speedup is in place for mNumDir % 2 = 0
+    // Each basis and its opposite belong in the matrix, so we iterate half as many times
+
+    double angle = DART_PI / 2.0;
+    T.col(0) = tangent;
+    T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(angle, n)) * tangent;
+    return T;
+}
+
+
 Eigen::MatrixXd ConstraintDynamics::getContactMatrix() const {
     Eigen::MatrixXd E = Eigen::MatrixXd::Zero(getNumContacts() * mNumDir, getNumContacts());
     Eigen::VectorXd column = Eigen::VectorXd::Ones(mNumDir);
