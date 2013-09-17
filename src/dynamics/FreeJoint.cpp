@@ -66,7 +66,7 @@ FreeJoint::~FreeJoint()
 {
 }
 
-void FreeJoint::_updateTransformation()
+void FreeJoint::_updateTransform()
 {
     // T
     Eigen::Vector3d q1(mCoordinate[0].get_q(),
@@ -77,11 +77,11 @@ void FreeJoint::_updateTransformation()
                   mCoordinate[5].get_q());
 
     mT = mT_ParentBodyToJoint *
-            math::ExpLinear(q2) *
-            math::ExpAngular(q1) *
-            math::Inv(mT_ChildBodyToJoint);
+            Eigen::Translation3d(q2) *
+            math::expAngular(q1) *
+            mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void FreeJoint::_updateVelocity()
@@ -110,9 +110,9 @@ void FreeJoint::_updateVelocity()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-    mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J3);
-    mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J4);
-    mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J5);
+    mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
+    mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
+    mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
 
     // V = S * dq
     mV = mS * get_dq();
@@ -147,9 +147,9 @@ void FreeJoint::_updateAcceleration()
     mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
     mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
     mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
-    mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J3));
-    mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J4));
-    mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::ExpAngular(-q), J5));
+    mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
+    mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
+    mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
     // dV = dS * dq + S * ddq
     mdV = mdS * get_dq() + mS * get_ddq();

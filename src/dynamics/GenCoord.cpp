@@ -97,12 +97,12 @@ const std::string& GenCoord::getName() const
     return mName;
 }
 
-int GenCoord::getSkelIndex() const
+int GenCoord::getSkeletonIndex() const
 {
     return mSkelIndex;
 }
 
-void GenCoord::setSkelIndex(int _idx)
+void GenCoord::setSkeletonIndex(int _idx)
 {
     mSkelIndex = _idx;
 }

@@ -47,8 +47,8 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
     : mName(_name),
       mSkelIndex(-1),
       mJointType(UNKNOWN),
-      mParentBody(_parent),
-      mChildBody(_child),
+      mParentBodyNode(_parent),
+      mChildBodyNode(_child),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
       mT(Eigen::Isometry3d::Identity()),
@@ -57,8 +57,8 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
       mdV(Eigen::Vector6d::Zero()),
       mdS(math::Jacobian::Zero(6,0))
 {
-    setParentBody(mParentBody);
-    setChildBody(mChildBody);
+    setParentBodyNode(mParentBodyNode);
+    setChildBodyNode(mChildBodyNode);
 }
 
 Joint::~Joint()
@@ -80,7 +80,7 @@ Joint::JointType Joint::getJointType() const
     return mJointType;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformation() const
+const Eigen::Isometry3d&Joint::getLocalTransform() const
 {
     return mT;
 }
@@ -117,84 +117,84 @@ bool Joint::isPresent(const GenCoord* _q) const
 int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
 {
     for (unsigned int i = 0; i < mGenCoords.size(); i++)
-        if (mGenCoords[i]->getSkelIndex() == _dofSkelIndex)
+        if (mGenCoords[i]->getSkeletonIndex() == _dofSkelIndex)
             return i;
 
     return -1;
 }
 
-void Joint::setSkelIndex(int _idx)
+void Joint::setSkeletonIndex(int _idx)
 {
     mSkelIndex= _idx;
 }
 
-int Joint::getSkelIndex() const
+int Joint::getSkeletonIndex() const
 {
     return mSkelIndex;
 }
 
-void Joint::setParentBody(BodyNode* _body)
+void Joint::setParentBodyNode(BodyNode* _body)
 {
-    mParentBody = _body;
+    mParentBodyNode = _body;
 
-    if (mParentBody != NULL)
+    if (mParentBodyNode != NULL)
     {
-        mParentBody->addChildJoint(this);
+        mParentBodyNode->addChildJoint(this);
 
-        if (mChildBody != NULL)
+        if (mChildBodyNode != NULL)
         {
-            mChildBody->setParentBodyNode(mParentBody);
-            mParentBody->addChildBody(mChildBody);
+            mChildBodyNode->setParentBodyNode(mParentBodyNode);
+            mParentBodyNode->addChildBodyNode(mChildBodyNode);
         }
     }
 }
 
-void Joint::setChildBody(BodyNode* _body)
+void Joint::setChildBodyNode(BodyNode* _body)
 {
-    mChildBody = _body;
+    mChildBodyNode = _body;
 
-    if (mChildBody != NULL)
+    if (mChildBodyNode != NULL)
     {
-        mChildBody->setParentJoint(this);
+        mChildBodyNode->setParentJoint(this);
 
-        if (mParentBody != NULL)
+        if (mParentBodyNode != NULL)
         {
-            mParentBody->addChildBody(mChildBody);
-            mChildBody->setParentBodyNode(mParentBody);
+            mParentBodyNode->addChildBodyNode(mChildBodyNode);
+            mChildBodyNode->setParentBodyNode(mParentBodyNode);
         }
     }
 }
 
-void Joint::setTransformFromParentBody(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
-    assert(math::VerifySE3(_T));
+    assert(math::verifyTransform(_T));
 
     mT_ParentBodyToJoint = _T;
 }
 
-void Joint::setTransformFromChildBody(const Eigen::Isometry3d& _T)
+void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
-    assert(math::VerifySE3(_T));
+    assert(math::verifyTransform(_T));
 
     mT_ChildBodyToJoint = _T;
 }
 
 BodyNode* Joint::getParentBodyNode() const
 {
-    return mParentBody;
+    return mParentBodyNode;
 }
 
 BodyNode* Joint::getChildBodyNode() const
 {
-    return mChildBody;
+    return mChildBodyNode;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformationFromParentBody() const
+const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
 {
     return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransformationFromChildBody() const
+const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 {
     return mT_ChildBodyToJoint;
 }
@@ -202,7 +202,7 @@ const Eigen::Isometry3d&Joint::getLocalTransformationFromChildBody() const
 void Joint::updateKinematics(bool _firstDerivative,
                              bool _secondDerivative)
 {
-    _updateTransformation();
+    _updateTransform();
     _updateVelocity();
     _updateAcceleration();
 }

@@ -25,13 +25,13 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL) {
     // Set the test cases with the joint values and the expected end-effector positions
     const size_t numTests = 2;
     double temp = sqrt(0.5*l2*l2);
-    Vector2d joints [numTests] = {Vector2d(M_PI/4.0, M_PI/2.0), Vector2d(-M_PI/4.0, -M_PI/4.0)};
+    Vector2d joints [numTests] = {Vector2d(DART_PI/4.0, DART_PI/2.0), Vector2d(-DART_PI/4.0, -DART_PI/4.0)};
     Vector3d expectedPos [numTests] = {Vector3d(temp, -temp, l1), Vector3d(temp / sqrt(2.0), temp / sqrt(2.0), l1+temp)};
 
     // Check each case by setting the joint values and obtaining the end-effector position
     for(size_t i = 0; i < numTests; i++) {
         robot->setConfig(twoLinkIndices, joints[i]);
-        Vector3d actual = robot->findBodyNode("ee")->getWorldTransform().translation();
+        Vector3d actual = robot->getBodyNode("ee")->getWorldTransform().translation();
         bool equality = equals(actual, expectedPos[i], 1e-3);
         EXPECT_TRUE(equality);
         if(!equality) {
@@ -54,13 +54,13 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS) {
 
     // Set the test cases with the joint values and the expected end-effector positions
     const size_t numTests = 2;
-    Vector2d joints [numTests] = {Vector2d(0.0, M_PI/2.0), Vector2d(3*M_PI/4.0, -M_PI/4.0)};
+    Vector2d joints [numTests] = {Vector2d(0.0, DART_PI/2.0), Vector2d(3*DART_PI/4.0, -DART_PI/4.0)};
     Vector3d expectedPos [numTests] = {Vector3d(0.0, -1.0, 1.5), Vector3d(0.0, -2.06, -1.06)};
 
     // Check each case by setting the joint values and obtaining the end-effector position
     for(size_t i = 0; i < numTests; i++) {
         robot->setConfig(twoLinkIndices, joints[i]);
-        Vector3d actual = robot->findBodyNode("ee")->getWorldTransform().translation();
+        Vector3d actual = robot->getBodyNode("ee")->getWorldTransform().translation();
         bool equality = equals(actual, expectedPos[i], 1e-3);
         EXPECT_TRUE(equality);
         if(!equality) {

@@ -98,17 +98,6 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
-/// Mostly automatically constructed by FileInfoSkel.
-/// @see FileInfoSkel.
-///
-/// [Members]
-/// W: world transformation (4x4 matrix)
-/// J: world Jacobian (6xn matrix)
-/// dJ: world Jacobian derivative (6xn matrix)
-/// V: generalized body velocity (6x1 vector)
-/// dV: generalized body acceleration (6x1 vector)
-/// F: generalized body force (6x1 vector)
-/// I: generalized body inertia (6x6 matrix)
 class BodyNode
 {
 public:
@@ -151,9 +140,10 @@ public:
     /// @brief
     double getMass() const;
 
-    /// @brief
-    void setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
-                            double _Ixy, double _Ixz, double _Iyz);
+    /// @brief Set moment of inertia defined around the center of mass.
+    /// Moments of inertia, _Ixx, _Iyy, _Izz, must be positive or zero values.
+    void setInertia(double _Ixx, double _Iyy, double _Izz,
+                    double _Ixy = 0.0, double _Ixz = 0.0, double _Iyz = 0.0);
 
     /// @brief
     void setLocalCOM(const Eigen::Vector3d& _com);
@@ -165,16 +155,16 @@ public:
     Eigen::Vector3d getWorldCOM() const;
 
     /// @brief
-    Eigen::Matrix6d getGeneralizedInertia() const;
+    Eigen::Matrix6d getInertia() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setSkelIndex(int _idx);
+    void setSkeletonIndex(int _idx);
 
     /// @brief
-    int getSkelIndex() const;
+    int getSkeletonIndex() const;
 
     /// @brief
     void addVisualizationShape(Shape *_p);
@@ -225,7 +215,7 @@ public:
     BodyNode* getParentBodyNode() const;
 
     /// @brief
-    void addChildBody(BodyNode* _body);
+    void addChildBodyNode(BodyNode* _body);
 
     /// @brief
     BodyNode* getChildBodyNode(int _idx) const;
@@ -280,61 +270,61 @@ public:
 
     /// @brief Transformation from the local coordinates of this body node to
     /// the world coordinates.
-    const Eigen::Isometry3d& getWorldTransform() const { return mW; }
+    const Eigen::Isometry3d& getWorldTransform() const;
 
     /// @brief Transformation from the world coordinates to the local
     /// coordinates of this body node.
-    Eigen::Isometry3d getWorldInvTransform() const { return math::Inv(mW); }
+    Eigen::Isometry3d getWorldInvTransform() const;
 
     /// @brief Given a 3D vector lp in the local coordinates of this body node.
     /// @return The world coordinates of this vector
     Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const;
 
     /// @brief
-    const Eigen::Vector6d& getVelocityBody() const { return mV; }
+    const Eigen::Vector6d& getBodyVelocity() const;
 
     /// @brief
-    Eigen::Vector6d getVelocityWorld() const;
+    Eigen::Vector6d getWorldVelocity() const;
 
     /// @brief
-    Eigen::Vector6d getVelocityWorldAtCOG() const;
+    Eigen::Vector6d getWorldVelocityAtCOM() const;
 
     /// @breif
-    Eigen::Vector6d getVelocityWorldAtPoint(const Eigen::Vector3d& _pointBody) const;
+    Eigen::Vector6d getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const;
 
     /// @breif
-    Eigen::Vector6d getVelocityWorldAtFrame(const Eigen::Isometry3d& _T) const;
+    Eigen::Vector6d getWorldVelocityAtFrame(const Eigen::Isometry3d& _T) const;
 
     /// @brief
-    const Eigen::Vector6d& getAcceleration() const { return mdV; }
+    const Eigen::Vector6d& getBodyAcceleration() const;
 
     /// @brief
-    Eigen::Vector6d getAccelerationWorld() const;
+    Eigen::Vector6d getWorldAcceleration() const;
 
     /// @brief
-    Eigen::Vector6d getAccelerationWorldAtCOG() const;
+    Eigen::Vector6d getWorldAccelerationAtCOM() const;
 
     /// @breif
-    Eigen::Vector6d getAccelerationWorldAtPoint(const Eigen::Vector3d& _pointBody) const;
+    Eigen::Vector6d getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const;
 
     /// @breif
-    Eigen::Vector6d getAccelerationWorldAtFrame(const Eigen::Isometry3d& _T) const;
+    Eigen::Vector6d getWorldAccelerationAtFrame(const Eigen::Isometry3d& _T) const;
 
     /// @brief
-    const math::Jacobian& getJacobianBody() const;
+    const math::Jacobian& getBodyJacobian() const;
 
     /// @brief
-    math::Jacobian getJacobianWorld() const;
+    math::Jacobian getWorldJacobian() const;
 
     /// @brief Get body Jacobian at contact point.
-    math::Jacobian getJacobianWorldAtPoint(const Eigen::Vector3d& r_world) const;
+    math::Jacobian getWorldJacobianAtPoint(const Eigen::Vector3d& r_world) const;
 
     /// @brief
-    Eigen::MatrixXd getJacobianWorldAtPoint_LinearPartOnly(
+    Eigen::MatrixXd getWorldJacobianAtPoint_LinearPartOnly(
             const Eigen::Vector3d& r_world) const;
 
     /// @brief
-    const math::Jacobian& getJacobianDeriv() const;
+    const math::Jacobian& getBodyJacobianDeriv() const;
 
     /// @brief
     void setColliding(bool _colliding);
@@ -415,7 +405,7 @@ public:
 
     /// @brief Update local transformations and world transformations.
     /// T(i-1,i), W(i)
-    void updateTransformation();
+    void updateTransform();
 
     /// @brief
     /// parentJoint.V, parentBody.V --> V

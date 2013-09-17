@@ -63,7 +63,7 @@ BallJoint::~BallJoint()
 {
 }
 
-inline void BallJoint::_updateTransformation()
+inline void BallJoint::_updateTransform()
 {
     // T
     Eigen::Vector3d q(mCoordinate[0].get_q(),
@@ -71,8 +71,8 @@ inline void BallJoint::_updateTransformation()
                       mCoordinate[2].get_q());
 
     mT = mT_ParentBodyToJoint *
-            math::ExpAngular(q) *
-            math::Inv(mT_ChildBodyToJoint);
+            math::expAngular(q) *
+            mT_ChildBodyToJoint.inverse();
 }
 
 inline void BallJoint::_updateVelocity()

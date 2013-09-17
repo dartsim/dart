@@ -44,13 +44,25 @@
 //------------------------------------------------------------------------------
 // Defines
 //------------------------------------------------------------------------------
-// Epsilon definition
-#define DART_EPSILON 1.0E-6
-#define M_PI		 3.14159265358979323846
-#define M_2PI		 6.28318530717958647693		// = 2 * pi
-#define M_PI_SQR	 9.86960440108935861883		// = pi^2
-#define M_RADIAN	 0.0174532925199432957692	// = pi / 180
-#define M_DEGREE	 57.2957795130823208768		// = 18 / pi
+#define DART_EPSILON (1.0E-6)
+#define DART_PI      (3.14159265358979323846)     // = pi
+#define DART_2PI	 (6.28318530717958647693)	  // = 2 * pi
+#define DART_PI_HALF (1.57079632679489661923)     // = pi / 2
+#define DART_PI_SQR	 (9.86960440108935861883)	  // = pi^2
+#define DART_RADIAN	 (0.0174532925199432957692)   // = pi / 180
+#define DART_DEGREE  (57.2957795130823208768)     // = 180 / pi
+
+#define DART_1_3     (0.333333333333333333333)    // = 1 / 3
+#define DART_1_6     (0.166666666666666666667)    // = 1 / 6
+#define DART_1_12    (0.0833333333333333333333)   // = 1 / 12
+#define DART_1_24    (0.0416666666666666666667)   // = 1 / 24
+#define DART_1_30    (0.0333333333333333333333)   // = 1 / 30
+#define DART_1_60    (0.0166666666666666666667)   // = 1 / 60
+#define DART_1_120   (0.00833333333333333333333)  // = 1 / 120
+#define DART_1_180   (0.00555555555555555555556)  // = 1 / 180
+#define DART_1_720   (0.00138888888888888888889)  // = 1 / 720
+#define DART_1_1260  (0.000793650793650793650794) // = 1 / 1260
+#define DART_4_3     (1.33333333333333333333)     // = 4 / 3
 
 //------------------------------------------------------------------------------
 // Macros
@@ -64,24 +76,8 @@ namespace Eigen {
 typedef Matrix<double,6,1> Vector6d;
 typedef Matrix<double,6,6> Matrix6d;
 
-typedef std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > EIGEN_V_VEC2D;
-typedef std::vector<Eigen::Vector3d>                                             EIGEN_V_VEC3D;
-typedef std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > EIGEN_V_VEC4D;
-
-typedef std::vector<Eigen::Matrix2d, Eigen::aligned_allocator<Eigen::Matrix2d> > EIGEN_V_MAT2D;
-typedef std::vector<Eigen::Matrix3d>                                             EIGEN_V_MAT3D;
-typedef std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > EIGEN_V_MAT4D;
-
-typedef std::vector<std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > > EIGEN_VV_VEC2D;
-typedef std::vector<std::vector<Eigen::Vector3d > >                                            EIGEN_VV_VEC3D;
-typedef std::vector<std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > > EIGEN_VV_VEC4D;
-
-typedef std::vector<std::vector<Eigen::Matrix2d, Eigen::aligned_allocator<Eigen::Matrix2d> > > EIGEN_VV_MAT2D;
-typedef std::vector<std::vector<Eigen::Matrix3d > >                                            EIGEN_VV_MAT3D;
-typedef std::vector<std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > > EIGEN_VV_MAT4D;
-
-typedef std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond > >              EIGEN_V_QUATD;
-typedef std::vector<std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> > > EIGEN_VV_QUATD;
+typedef std::vector<Eigen::Vector3d> EIGEN_V_VEC3D;
+typedef std::vector<std::vector<Eigen::Vector3d > > EIGEN_VV_VEC3D;
 
 }
 

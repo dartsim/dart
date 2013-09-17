@@ -49,15 +49,6 @@ namespace dynamics {
 class BodyNode;
 
 /// @brief
-///
-/// [Members]
-/// T: local transformation (4x4 matrix)
-/// S: local Jacobian (6xm matrix)
-/// dS: localJacobianDerivative (6xm matrix)
-/// q: generalized coordinates (configuration) (scalar)
-/// dq: generalized velocity (scalar)
-/// ddq: generalized acceleration (scalar)
-/// tau: generalized force (torque) (scalar)
 class Joint : public GenCoordSystem
 {
 public:
@@ -106,7 +97,7 @@ public:
     JointType getJointType() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformation() const;
+    const Eigen::Isometry3d& getLocalTransform() const;
 
     /// @brief
     const math::Jacobian& getLocalJacobian() const;
@@ -131,22 +122,22 @@ public:
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setSkelIndex(int _idx);
+    void setSkeletonIndex(int _idx);
 
     /// @brief
-    int getSkelIndex() const;
+    int getSkeletonIndex() const;
 
     /// @brief
-    void setParentBody(BodyNode* _body);
+    void setParentBodyNode(BodyNode* _body);
 
     /// @brief
-    void setChildBody(BodyNode* _body);
+    void setChildBodyNode(BodyNode* _body);
 
     /// @brief
-    void setTransformFromParentBody(const Eigen::Isometry3d& _T);
+    void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
     /// @brief
-    void setTransformFromChildBody(const Eigen::Isometry3d& _T);
+    void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
     /// @brief
     BodyNode* getParentBodyNode() const;
@@ -155,10 +146,10 @@ public:
     BodyNode* getChildBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformationFromParentBody() const;
+    const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
 
     /// @brief
-    const Eigen::Isometry3d& getLocalTransformationFromChildBody() const;
+    const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
     // TODO: Not implemented.
     /// @brief
@@ -170,8 +161,6 @@ public:
     /// @brief
     void updateKinematics(bool _firstDerivative = true,
                           bool _secondDerivative = true);
-
-    //void updateGlobalKinematics();
 
     /// @brief
     void setDampingCoefficient(int _idx, double _d);
@@ -193,7 +182,7 @@ protected:
     //--------------------------------------------------------------------------
     /// @brief
     /// q --> T(q)
-    virtual void _updateTransformation() = 0;
+    virtual void _updateTransform() = 0;
 
     /// @brief
     /// q, dq --> S(q), V(q, dq)
@@ -224,10 +213,10 @@ protected:
     JointType mJointType;
 
     /// @brief
-    BodyNode* mParentBody;
+    BodyNode* mParentBodyNode;
 
     /// @brief
-    BodyNode* mChildBody;
+    BodyNode* mChildBodyNode;
 
     /// @brief
     Eigen::Isometry3d mT_ParentBodyToJoint;

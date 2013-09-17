@@ -107,13 +107,6 @@ public:
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setWorldTransformation(const Eigen::Isometry3d& _W,
-                                bool _updateChilds = true);
-
-    /// @brief
-    const Eigen::Isometry3d& getWorldTransformation() const;
-
-    /// @brief
     void addBodyNode(BodyNode* _body, bool _addParentJoint = true);
 
     /// @brief
@@ -129,13 +122,13 @@ public:
     int getNumJoints() const;
 
     /// @brief
-    BodyNode* getRoot();
+    BodyNode* getRootBodyNode() const;
 
     /// @brief
     BodyNode* getBodyNode(int _idx) const;
 
     /// @brief
-    BodyNode* findBodyNode(const std::string& _name) const;
+    BodyNode* getBodyNode(const std::string& _name) const;
 
     /// @brief
     int getBodyNodeIndex(const std::string& _name) const;
@@ -144,7 +137,7 @@ public:
     Joint* getJoint(int _idx) const;
 
     /// @brief
-    Joint* findJoint(const std::string& _name) const;
+    Joint* getJoint(const std::string& _name) const;
 
     /// @brief
     int getJointIndex(const std::string& _name) const;
@@ -158,25 +151,25 @@ public:
     /// @brief
     Marker* getMarker(int _i);
 
+    /// @brief
+    Marker* getMarker(const std::string& _name) const;
+
     //--------------------------------------------------------------------------
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
     /// @brief
-    Eigen::VectorXd getConfig(std::vector<int> _id);
-
-    /// @brief
-    void setConfig(std::vector<int> _id, Eigen::VectorXd _vals,
+    void setConfig(const std::vector<int>& _id, Eigen::VectorXd _vals,
                    bool _calcTrans = true, bool _calcDeriv = true);
 
     /// @brief
-    void setPose(const Eigen::VectorXd& _pose,
-                 bool bCalcTrans = true, bool bCalcDeriv = true);
+    void setConfig(const Eigen::VectorXd& _pose,
+                   bool bCalcTrans = true, bool bCalcDeriv = true);
 
-    /// @brief
-    Eigen::VectorXd getPose() const;
-
-    /// @brief
-    Eigen::VectorXd getPoseVelocity() const;
+    /// @brief Get the configuration of this skeleton described in generalized
+    /// coordinates. The returned order of configuration is determined by _id.
+    /// If you just want the configuration in original order then use
+    /// GenCoordSystem::get_q().
+    Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
 
     /// @brief
     Eigen::MatrixXd getMassMatrix() const;
@@ -239,22 +232,6 @@ public:
     /// @brief
     Eigen::Vector3d getWorldCOM();
 
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector3d getVelocityCOMGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector3d getAccelerationCOMGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector6d getMomentumGlobal();
-
-    // TODO: Not implemented.
-    /// @brief
-    Eigen::Vector6d getMomentumCOM();
-
     //--------------------------------------------------------------------------
     // Recursive kinematics Algorithms
     //--------------------------------------------------------------------------
@@ -272,8 +249,6 @@ public:
     /// @brief Update body dynamics (W, V, dV)
     void _updateBodyForwardKinematics(bool _firstDerivative = true,
                                       bool _secondDerivative = true);
-
-    // TODO: Inverse Kinematics
 
     //--------------------------------------------------------------------------
     // Recursive dynamics Algorithms
@@ -313,19 +288,13 @@ public:
     /// the required quantities are up-to-date when using this function alone.
     void updateExternalForces();
 
-    /// #brief
+    /// @brief
     void updateDampingForces();
 
     /// @brief Clear all the contacts of external forces.
     /// Automatically called after each (forward/inverse) dynamics computation,
     /// which marks the end of a cycle.
     void clearExternalForces();
-
-    // TODO: Not implemeted.
-    /// @brief
-    void computeInverseDynamicsWithZeroAcceleration(
-            const Eigen::Vector3d& _gravity,
-            bool _withExternalForces = false);
 
     /// @brief (q, dq) --> M, C, G
     void computeEquationsOfMotionID(const Eigen::Vector3d& _gravity);
@@ -355,11 +324,6 @@ public:
                      bool _useDefaultColor = true ) const;
 
 protected:
-    //--------------------------------------------------------------------------
-    // Sub-functions for Recursive Algorithms
-    //--------------------------------------------------------------------------
-
-protected:
     /// @brief
     std::string mName;
 
@@ -369,15 +333,6 @@ protected:
     //--------------------------------------------------------------------------
     // Structual Properties
     //--------------------------------------------------------------------------
-    /// @brief
-    BodyNode* mRootBodyNode;
-
-    /// @brief
-    Eigen::Isometry3d mFrame;
-
-    /// @brief Constant
-    Eigen::Isometry3d mToRootBody;
-
     /// @brief
     std::vector<BodyNode*> mBodyNodes;
 
@@ -426,17 +381,11 @@ protected:
     /// @brief External forces vector for the skeleton.
     Eigen::VectorXd mFext;
 
-    /// @brief Internal forces vector for the skeleton; computed by an external
-    /// controller.
-    //Eigen::VectorXd mFint;
-
     /// @brief
     Eigen::VectorXd mFc;
 
     /// @brief
     Eigen::VectorXd mDampingForce;
-
-private:
 
 public:
     //

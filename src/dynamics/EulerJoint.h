@@ -57,9 +57,6 @@ public:
         AO_ZXY = 3
     };
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     EulerJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                const std::string& _name = "Euler joint");
@@ -67,9 +64,6 @@ public:
     /// @brief
     virtual ~EulerJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
     /// @brief
     void setAxisOrder(AxisOrder _order);
 
@@ -79,20 +73,9 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
-
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
-    virtual void _updateTransformation();
+    virtual void _updateTransform();
 
     // Document inherited.
     virtual void _updateVelocity();
@@ -100,9 +83,6 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief Euler angles X, Y, Z
     GenCoord mCoordinate[3];
 

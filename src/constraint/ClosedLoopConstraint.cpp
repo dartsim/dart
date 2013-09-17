@@ -32,8 +32,8 @@ void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eig
     _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getDOF()) = mJ1;
     _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getDOF()) += mJ2;
 
-    Eigen::Vector3d worldP1 = math::xformHom(mBody1->getWorldTransform(), mOffset1);
-    Eigen::Vector3d worldP2 = math::xformHom(mBody2->getWorldTransform(), mOffset2);
+    Eigen::Vector3d worldP1 = mBody1->getWorldTransform() * mOffset1;
+    Eigen::Vector3d worldP2 = mBody2->getWorldTransform() * mOffset2;
     Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBody1->getSkeleton())->get_dq();
     Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBody2->getSkeleton())->get_dq();
     _C.segment(_rowIndex, 3) = worldP1 - worldP2;
@@ -41,12 +41,12 @@ void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eig
 }
 
 void ClosedLoopConstraint::getJacobian() {
-    Eigen::MatrixXd JBody1 = mBody1->getJacobianWorldAtPoint_LinearPartOnly(mOffset1);
+    Eigen::MatrixXd JBody1 = mBody1->getWorldJacobianAtPoint_LinearPartOnly(mOffset1);
     for(int i = 0; i < mBody1->getNumDependentDofs(); i++) {
         int dofIndex = mBody1->getDependentDof(i);
         mJ1.col(dofIndex) = JBody1.col(dofIndex);
     }
-    Eigen::MatrixXd JBody2 = mBody2->getJacobianWorldAtPoint_LinearPartOnly(mOffset2);
+    Eigen::MatrixXd JBody2 = mBody2->getWorldJacobianAtPoint_LinearPartOnly(mOffset2);
     for(int i = 0; i < mBody2->getNumDependentDofs(); i++) {
         int dofIndex = mBody2->getDependentDof(i);
         mJ2.col(dofIndex) = JBody2.col(dofIndex);

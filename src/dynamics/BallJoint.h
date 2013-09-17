@@ -49,9 +49,6 @@ namespace dynamics {
 class BallJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     BallJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
               const std::string& _name = "Ball joint");
@@ -59,27 +56,12 @@ public:
     /// @brief
     virtual ~BallJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
-
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
-
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
-    virtual void _updateTransformation();
+    virtual void _updateTransform();
 
     // Document inherited.
     virtual void _updateVelocity();
@@ -87,9 +69,6 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     GenCoord mCoordinate[3];
 

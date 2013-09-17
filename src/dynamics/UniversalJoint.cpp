@@ -89,19 +89,19 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
     return mAxis[1];
 }
 
-inline void UniversalJoint::_updateTransformation()
+inline void UniversalJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint *
-         math::ExpAngular(mAxis[0] * mCoordinate[0].get_q()) *
-         math::ExpAngular(mAxis[1] * mCoordinate[1].get_q()) *
-         math::Inv(mT_ChildBodyToJoint);
+         math::expAngular(mAxis[0] * mCoordinate[0].get_q()) *
+         math::expAngular(mAxis[1] * mCoordinate[1].get_q()) *
+         mT_ChildBodyToJoint.inverse();
 }
 
 inline void UniversalJoint::_updateVelocity()
 {
     // S
-    mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::ExpAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
+    mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
     mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
 
     // V = S * dq
@@ -111,7 +111,7 @@ inline void UniversalJoint::_updateVelocity()
 inline void UniversalJoint::_updateAcceleration()
 {
     // dS
-    mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::ExpAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));
+    mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));
     //mdS.col(1) = setZero();
 
     // dV = dS * dq + S * ddq

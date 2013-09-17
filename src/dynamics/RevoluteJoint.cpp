@@ -73,24 +73,48 @@ const Eigen::Vector3d&RevoluteJoint::getAxis() const
     return mAxis;
 }
 
-Eigen::Vector3d RevoluteJoint::getAxisGlobal() const
+Eigen::Vector3d RevoluteJoint::getWorldAxis() const
 {
     Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
 
-    if (this->mParentBody != NULL)
-        parentTransf = mParentBody->getWorldTransform();
+    if (this->mParentBodyNode != NULL)
+        parentTransf = mParentBodyNode->getWorldTransform();
 
-    return math::Rotate(parentTransf * mT_ParentBodyToJoint, mAxis);
+    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
-void RevoluteJoint::_updateTransformation()
+Eigen::Vector3d RevoluteJoint::getWorldOrigin() const
+{
+    Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+
+    if (mParentBodyNode != NULL)
+        origin = (mParentBodyNode->getWorldTransform() *
+                  mT_ParentBodyToJoint).translation();
+    else
+        origin = mT_ParentBodyToJoint.translation();
+
+#ifndef NDEBUG
+    if (mChildBodyNode != NULL)
+    {
+        Eigen::Vector3d originFromChild =
+                (mChildBodyNode->getWorldTransform() *
+                 mT_ChildBodyToJoint).translation();
+
+        assert((origin - originFromChild).norm() < DART_EPSILON);
+    }
+#endif
+
+    return origin;
+}
+
+void RevoluteJoint::_updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint
-         * math::ExpAngular(mAxis * mCoordinate.get_q())
-         * math::Inv(mT_ChildBodyToJoint);
+         * math::expAngular(mAxis * mCoordinate.get_q())
+         * mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void RevoluteJoint::_updateVelocity()

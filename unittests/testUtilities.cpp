@@ -60,9 +60,9 @@ TEST(UTILS, ROTATION) {
     << "Orig: " << expmap << " Reconstructed: " << expmap2;
 
   // Test conversion between matrix and euler
-  Eigen::Matrix3d m = quatToMatrix(q);
-  Eigen::Vector3d e = matrixToEuler(m, XYZ);
-  Eigen::Matrix3d m2 = eulerToMatrix(e, XYZ);
+  Eigen::Matrix3d m = q.toRotationMatrix();
+  Eigen::Vector3d e = matrixToEulerXYZ(m);
+  Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
 
   EXPECT_NEAR((m - m2).norm(), 0.0, DART_EPSILON)
     << "Orig: " << m << " Reconstructed: " << m2;
@@ -79,13 +79,10 @@ TEST(UTILS, UTILS) {
   EXPECT_LT(x, 2.0);
 
   // Test transform
-  Eigen::Matrix4d M;
-  M << 1.0, 0.0, 0.0, 3.0,
-    0.0, 1.0, 0.0, 2.0,
-    0.0, 0.0, 1.0, 1.0,
-    0.0, 0.0, 0.0, 1.0;
+  Eigen::Isometry3d M = Eigen::Isometry3d::Identity();
+  M.translation() = Eigen::Vector3d(3.0, 2.0, 1.0);
   Eigen::Vector3d pt(1.0, 0.5, 1.0);
-  Eigen::Vector3d result = dart::math::xformHom(M, pt);
+  Eigen::Vector3d result = M * pt;
   Eigen::Vector3d expected(4.0, 2.5, 2.0);
   EXPECT_NEAR( (result - expected).norm(), 0.0, DART_EPSILON)
     << "result = " << result << " expected = " << expected;

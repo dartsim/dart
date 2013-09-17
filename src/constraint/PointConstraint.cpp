@@ -27,14 +27,14 @@ void PointConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::V
     getJacobian();
     dynamics::Skeleton *skel = mBody->getSkeleton();
     _J[mSkelIndex].block(_rowIndex, 0, 3, skel->getDOF()) = mJ;
-    Eigen::Vector3d worldP = math::xformHom(mBody->getWorldTransform(), mOffset);
+    Eigen::Vector3d worldP = mBody->getWorldTransform() * mOffset;
     Eigen::VectorXd qDot = skel->get_dq();
     _C.segment(_rowIndex, 3) = worldP - mTarget;
     _CDot.segment(_rowIndex, 3) = mJ * qDot;
 }
 
 void PointConstraint::getJacobian() {
-    Eigen::MatrixXd JBody = mBody->getJacobianWorldAtPoint_LinearPartOnly(mOffset);
+    Eigen::MatrixXd JBody = mBody->getWorldJacobianAtPoint_LinearPartOnly(mOffset);
     for(int i = 0; i < mBody->getNumDependentDofs(); i++) {
         int dofIndex = mBody->getDependentDof(i);
         mJ.col(dofIndex) = JBody.col(dofIndex);

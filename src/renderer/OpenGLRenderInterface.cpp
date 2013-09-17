@@ -501,7 +501,7 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
     if(_shape == 0)
         return;
 
-    Eigen::Isometry3d pose = _shape->getTransform();
+    Eigen::Isometry3d pose = _shape->getLocalTransform();
     Eigen::Vector3d color = _shape->getColor();
 
     glPushMatrix();

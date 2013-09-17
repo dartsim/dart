@@ -84,10 +84,10 @@ public:
     void setLocalCoords(Eigen::Vector3d& _offset);
 
     /// @brief
-    int getSkelIndex() const;
+    int getSkeletonIndex() const;
 
     /// @brief
-    void setSkelIndex(int _idx);
+    void setSkeletonIndex(int _idx);
 
     /// @brief
     int getID() const;

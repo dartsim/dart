@@ -65,34 +65,34 @@ public:
     Shape(ShapeType _type = P_UNDEFINED);
 
     /// @brief
-    virtual ~Shape() {}
+    virtual ~Shape();
 
     /// @brief
     void setColor(const Eigen::Vector3d& _color);
 
     /// @brief
-    Eigen::Vector3d getColor() const;
+    const Eigen::Vector3d& getColor() const;
 
     /// @brief
     void setDim(const Eigen::Vector3d& _dim);
 
     /// @brief
-    Eigen::Vector3d getDim() const;
+    const Eigen::Vector3d& getDim() const;
+
+    /// @brief Set local transformation of the Shape w.r.t. parent frame.
+    void setLocalTransform(const Eigen::Isometry3d& _Transform);
+
+    /// @brief Get local transformation of the Shape w.r.t. parent frame.
+    const Eigen::Isometry3d& getLocalTransform() const;
 
     /// @brief
-    void setTransform(const Eigen::Isometry3d& _Transform);
-
-    /// @brief
-    Eigen::Isometry3d getTransform() const;
-
-    /// @brief
-    void setOffset(Eigen::Vector3d _offset);
+    void setOffset(const Eigen::Vector3d& _offset);
 
     /// @brief
     Eigen::Vector3d getOffset() const;
 
     /// @brief
-    virtual Eigen::Matrix3d computeInertia(double _mass) const;
+    virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
 
     /// @brief
     void setVolume(double _v);
@@ -101,7 +101,7 @@ public:
     double getVolume() const;
 
     /// @brief
-    int getID() const { return mID; }
+    int getID() const;
 
     /// @brief
     ShapeType getShapeType() const;
@@ -109,11 +109,11 @@ public:
     /// @brief
     virtual void draw(renderer::RenderInterface* _ri = NULL,
                       const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                      bool _useDefaultColor = true) const {}
+                      bool _useDefaultColor = true) const = 0;
 
 protected:
     /// @brief
-    virtual void computeVolume() {}
+    virtual void computeVolume() = 0;
 
     /// @brief
     virtual void initMeshes() {}
@@ -136,7 +136,7 @@ protected:
     /// @brief The origin of this primitive in the bodynode frame.
     Eigen::Vector3d mOffset;
 
-    /// @brief Local Geometric transformation of the Shape w.r.t. parent frame.
+    /// @brief Local geometric transformation of the Shape w.r.t. parent frame.
     Eigen::Isometry3d mTransform;
 
     /// @brief

@@ -56,7 +56,7 @@ namespace constraint {
 
 class ConstraintDynamics {
 public:
-    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4);
+    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true);
     virtual ~ConstraintDynamics();
 
     void reset();
@@ -92,14 +92,18 @@ private:
 
     void computeConstraintWithoutContact();
     void fillMatrices();
+    void fillMatricesODE();
     bool solve();
     void applySolution();
+    void applySolutionODE();
 
     void updateMassMat();
     void updateTauStar();
     void updateNBMatrices();
+    void updateNBMatricesODE();
     Eigen::MatrixXd getJacobian(dynamics::BodyNode* node, const Eigen::Vector3d& p);
     Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
+    Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& p, const Eigen::Vector3d& n) ; // gets a matrix of tangent dirs.
     Eigen::MatrixXd getContactMatrix() const; // E matrix
     Eigen::MatrixXd getMuMatrix() const; // mu matrix
     void updateConstraintTerms();
@@ -141,6 +145,7 @@ private:
     Eigen::VectorXd mC; // M * 1
     Eigen::VectorXd mCDot; // M * 1
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
+    bool mUseODELCPSolver;
 };
 
 } // namespace constraint

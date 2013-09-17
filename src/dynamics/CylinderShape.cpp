@@ -65,10 +65,10 @@ void CylinderShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& 
 }
 
 void CylinderShape::computeVolume() {
-    mVolume = M_PI * mRadius * mRadius * mHeight;
+    mVolume = DART_PI * mRadius * mRadius * mHeight;
 }
 
-Eigen::Matrix3d CylinderShape::computeInertia(double _mass) {
+Eigen::Matrix3d CylinderShape::computeInertia(double _mass) const {
     Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
     inertia(0, 0) = _mass * (3.0 * mRadius * mRadius + mHeight * mHeight) / 12.0;
     inertia(1, 1) = inertia(0, 0);

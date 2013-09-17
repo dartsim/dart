@@ -49,9 +49,6 @@ namespace dynamics {
 class PrismaticJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     PrismaticJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                    const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
@@ -60,9 +57,6 @@ public:
     /// @brief
     virtual ~PrismaticJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
     /// @brief
     void setAxis(const Eigen::Vector3d& _axis);
 
@@ -72,29 +66,12 @@ public:
     /// @brief
     Eigen::Vector3d getAxisGlobal() const;
 
-//    /// @brief
-//    void setDampingCoefficient(double _c) { mDampingCoefficient = _c; }
-
-//    /// @brief
-//    double getDampingCoefficient() { return mDampingCoefficient; }
-
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
-
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
-    virtual void _updateTransformation();
+    virtual void _updateTransform();
 
     // Document inherited.
     virtual void _updateVelocity();
@@ -102,17 +79,11 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     GenCoord mCoordinate;
 
     /// @brief Rotational axis.
     Eigen::Vector3d mAxis;
-
-//    /// @brief Daping coefficient of revolute joint.
-//    double mDampingCoefficient;
 
 private:
 

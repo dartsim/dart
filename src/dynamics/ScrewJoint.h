@@ -49,9 +49,6 @@ namespace dynamics {
 class ScrewJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     ScrewJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
@@ -61,9 +58,6 @@ public:
     /// @brief
     virtual ~ScrewJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
     /// @brief
     void setAxis(const Eigen::Vector3d& _axis);
 
@@ -79,23 +73,12 @@ public:
     /// @brief
     double getPitch() const;
 
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
-
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
-    virtual void _updateTransformation();
+    virtual void _updateTransform();
 
     // Document inherited.
     virtual void _updateVelocity();
@@ -103,9 +86,6 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     GenCoord mCoordinate;
 

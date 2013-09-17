@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     initPose[16] = -0.5; // right knee
     initPose[17] = 0.3; // right ankle
     initPose[21] = -0.1; // lower back
-    myWorld->getSkeleton(1)->setPose(initPose, true);
+    myWorld->getSkeleton(1)->setConfig(initPose, true);
 
     // create controller
     Controller* myController = new Controller(myWorld->getSkeleton(1),

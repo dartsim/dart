@@ -49,9 +49,6 @@ namespace dynamics {
 class RevoluteJoint : public Joint
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     RevoluteJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
                   const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
@@ -60,9 +57,6 @@ public:
     /// @brief
     virtual ~RevoluteJoint();
 
-    //--------------------------------------------------------------------------
-    // Kinematical Properties
-    //--------------------------------------------------------------------------
     /// @brief
     void setAxis(const Eigen::Vector3d& _axis);
 
@@ -70,31 +64,18 @@ public:
     const Eigen::Vector3d& getAxis() const;
 
     /// @brief
-    Eigen::Vector3d getAxisGlobal() const;
+    Eigen::Vector3d getWorldAxis() const;
 
-//    /// @brief
-//    void setDampingCoefficient(double _c) { mDampingCoefficient = _c; }
-
-//    /// @brief
-//    double getDampingCoefficient() { return mDampingCoefficient; }
-
-    //--------------------------------------------------------------------------
-    // Structueral Properties
-    //--------------------------------------------------------------------------
+    /// @brief Get a point on the rotation axis in world coordinate frame.
+    /// ODE calls this as anchor.
+    Eigen::Vector3d getWorldOrigin() const;
 
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-    //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
-    //--------------------------------------------------------------------------
-
 protected:
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     // Document inherited.
-    virtual void _updateTransformation();
+    virtual void _updateTransform();
 
     // Document inherited.
     virtual void _updateVelocity();
@@ -102,17 +83,11 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     GenCoord mCoordinate;
 
     /// @brief Rotational axis.
     Eigen::Vector3d mAxis;
-
-//    /// @brief Daping coefficient of revolute joint.
-//    double mDampingCoefficient;
 
 private:
 

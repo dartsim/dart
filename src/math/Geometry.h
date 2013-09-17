@@ -53,201 +53,145 @@
 namespace dart {
 namespace math {
 
-/// @brief Compute geometric distance on SE(3) manifold.
-/// Norm(Log(Inv(T1) * T2)).
-//double Distance(const SE3& T1, const SE3& T2);
+enum RotationOrder
+{
+    UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX
+};
 
-//SE3 operator/(const SE3& T1, const SE3& T2);
+/// @brief
+Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v);
+
+/// @brief
+Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m);
 
 //------------------------------------------------------------------------------
-/// @brief homogeneous transformation of the vector _v with the last value
-/// treated a 1
-inline Eigen::Vector3d xformHom(const Eigen::Matrix4d& _W,
-                                const Eigen::Vector3d& _x)
-{
-    return _W.topLeftCorner<3,3>() * _x + _W.topRightCorner<3,1>();
-}
-
-/// @brief homogeneous transformation of the vector _v with the last value
-///treated a 1
-inline Eigen::Vector3d xformHom(const Eigen::Isometry3d& _W,
-                                const Eigen::Vector3d& _x)
-{
-    return _W.rotation() * _x + _W.translation();
-}
-
-/// @brief homogeneous transformation of the vector _v treated as a direction:
-/// last value 0
-inline Eigen::Vector3d xformHomDir(const Eigen::Matrix4d& _W,
-                                   const Eigen::Vector3d& _v)
-{
-    return _W.topLeftCorner<3,3>() * _v;
-}
-
-/// @brief homogeneous transformation of the vector _v treated as a direction:
-/// last value 0
-inline Eigen::Vector3d xformHomDir(const Eigen::Isometry3d& _W,
-                                   const Eigen::Vector3d& _v)
-{
-    return _W.rotation() * _v;
-}
-
-inline Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v){
-    Eigen::Matrix3d result = Eigen::Matrix3d::Zero();
-
-    result(0, 1) = -v(2);
-    result(1, 0) =  v(2);
-    result(0, 2) =  v(1);
-    result(2, 0) = -v(1);
-    result(1, 2) = -v(0);
-    result(2, 1) =  v(0);
-
-    return result;
-}
-
-inline Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m) {
-#ifndef NDEBUG
-    if (fabs(m(0, 0)) > DART_EPSILON || fabs(m(1, 1)) > DART_EPSILON || fabs(m(2, 2)) > DART_EPSILON) {
-        std::cout << "Not skew symmetric matrix" << std::endl;
-        std::cerr << m << std::endl;
-        return Eigen::Vector3d::Zero();
-    }
-#endif
-    Eigen::Vector3d ret;
-    ret << m(2,1), m(0,2), m(1,0);
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-enum RotationOrder {UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX};
-
-Eigen::Quaterniond matrixToQuat(Eigen::Matrix3d& m);	// forms the Quaterniond from a rotation matrix
-Eigen::Matrix3d quatToMatrix(Eigen::Quaterniond& q);
-
+/// @brief
 Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
+
+/// @brief
 Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
 
+/// @brief
+Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q,
+                            const Eigen::Vector3d& pt);
 
-// Note: xyz order means matrix is Rz*Ry*Rx i.e a point as transformed as Rz*Ry*Rx(p)
-// coord sys transformation as in GL will be written as glRotate(z); glRotate(y); glRotate(x)
-Eigen::Vector3d matrixToEuler(Eigen::Matrix3d& m, RotationOrder _order);
-Eigen::Matrix3d eulerToMatrix(Eigen::Vector3d& v, RotationOrder _order);
+/// @brief
+Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q,
+                            double x, double y, double z);
 
-Eigen::Matrix3d eulerToMatrixX(double x);
-Eigen::Matrix3d eulerToMatrixY(double y);
-Eigen::Matrix3d eulerToMatrixZ(double z);
-
-Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, const Eigen::Vector3d& pt);
-Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q, double x, double y, double z);
-
-// quaternion stuff
+/// @brief
 Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& q, int el);
+
+/// @brief
 Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& q, int el1, int el2);
 
-// compute expmap stuff
-Eigen::Matrix3d expMapRot(const Eigen::Vector3d &_expmap); ///< computes the Rotation matrix from a given expmap vector
-Eigen::Matrix3d expMapJac(const Eigen::Vector3d &_expmap);  ///< computes the Jacobian of the expmap
-Eigen::Matrix3d expMapJacDot(const Eigen::Vector3d &_expmap, const Eigen::Vector3d &_qdot); ///< computes the time derivative of the expmap Jacobian
-Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d &_expmap, int _qi);    ///< computes the derivative of the Jacobian of the expmap wrt to _qi indexed dof; _qi \in {0,1,2}
-
 //------------------------------------------------------------------------------
+/// @brief Get a transformation matrix given by the Euler XYX angle.
+Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& angle);
 
-/// @brief Get a transformation matrix given by the Euler XYZ angle,
-/// where the positional part is set to be zero.
-Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle);
+/// @brief Get a transformation matrix given by the Euler XYZ angle.
+Eigen::Matrix3d eulerXYZToMatrix(const Eigen::Vector3d& angle);
 
-/// @brief get a transformation matrix given by the Euler XYZ angle and
-/// position.
-Eigen::Isometry3d EulerXYZ(const Eigen::Vector3d& angle, const Eigen::Vector3d& position);
+/// @brief Get a transformation matrix given by the Euler XZX angle.
+Eigen::Matrix3d eulerXZXToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler XZY angle.
+Eigen::Matrix3d eulerXZYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YXY angle.
+Eigen::Matrix3d eulerYXYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YXZ angle.
+Eigen::Matrix3d eulerYXZToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YZX angle.
+Eigen::Matrix3d eulerYZXToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler YZY angle.
+Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& angle);
+
+/// @brief Get a transformation matrix given by the Euler ZXY angle.
+Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief get a transformation matrix given by the Euler ZYX angle,
-/// where the positional part is set to be zero.
 /// singularity : x[1] = -+ 0.5*PI
-/// @sa SE3::iEulerZYX
-Eigen::Isometry3d EulerZYX(const Eigen::Vector3d& angle);
+Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& angle);
 
-///// @brief get a transformation matrix given by the Euler ZYX angle and
-///// position.
-///// singularity : x[1] = -+ 0.5*PI
-//SE3 EulerZYX(const Vec3& angle, const Vec3& position);
+/// @brief Get a transformation matrix given by the Euler ZXZ angle.
+Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& angle);
 
-///// @brief Get a transformation matrix given by the Euler ZYZ angle,
-///// where the positional part is set to be zero.
-///// singularity : x[1] = 0, PI
-///// @sa SE3::iEulerZYZ
-//SE3 EulerZYZ(const Vec3& angle);
-
-///// @brief get a transformation matrix given by the Euler ZYZ angle and
-///// position.
-///// singularity : x[1] = 0, PI
-//SE3 EulerZYZ(const Vec3& angle, const Vec3& position);
-
-/// @brief get the Euler ZYX angle from T
-////// @sa Eigen_Vec3::EulerXYZ
-Eigen::Vector3d iEulerXYZ(const Eigen::Isometry3d& T);
-
-///// @brief get the Euler ZYX angle from T
-///// @sa Eigen_Vec3::EulerZYX
-//Vec3 iEulerZYX(const SE3& T);
-
-///// @brief get the Euler ZYZ angle from T
-///// @sa Eigen_Vec3::EulerZYZ
-//Vec3 iEulerZYZ(const SE3& T);
-
-///// @brief get the Euler ZYZ angle from T
-///// @sa Eigen_Vec3::EulerZXY
-//Vec3 iEulerZXY(const SE3 &T);
+/// @brief Get a transformation matrix given by the Euler ZYZ angle,
+/// singularity : x[1] = 0, PI
+Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& angle);
 
 //------------------------------------------------------------------------------
-/// @brief rotate q by T.
-/// @return @f$R q@f$, where @f$T=(R,p)@f$.
-Eigen::Vector3d Rotate(const Eigen::Isometry3d& T, const Eigen::Vector3d& q);
+/// @brief get the Euler XYX angle from R
+Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& R);
 
-///// @brief rotate q by Inv(T).
-//Vec3 RotateInv(const SE3& T, const Vec3& q);
+/// @brief get the Euler XYZ angle from R
+Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
+
+///// @brief get the Euler XZX angle from R
+//Eigen::Vector3d matrixToEulerXZX(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler XZY angle from R
+Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R);
+
+///// @brief get the Euler YXY angle from R
+//Eigen::Vector3d matrixToEulerYXY(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler YXZ angle from R
+Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler YZX angle from R
+Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R);
+
+///// @brief get the Euler YZY angle from R
+//Eigen::Vector3d matrixToEulerYZY(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler ZXY angle from R
+Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R);
+
+/// @brief get the Euler ZYX angle from R
+Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
+
+///// @brief get the Euler ZXZ angle from R
+//Eigen::Vector3d matrixToEulerZXZ(const Eigen::Matrix3d& R);
+
+///// @brief get the Euler ZYZ angle from R
+//Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R);
 
 //------------------------------------------------------------------------------
-
-///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
-//Axis Reparameterize(const Axis& s);
-
 /// @brief Exponential mapping
-Eigen::Isometry3d Exp(const Eigen::Vector6d& s);
+Eigen::Isometry3d expMap(const Eigen::Vector6d& s);
 
 /// @brief fast version of Exp(se3(s, 0))
-Eigen::Isometry3d ExpAngular(const Eigen::Vector3d& s);
+/// @todo This expAngular() can be replaced by Eigen::AngleAxis() but we need
+/// to verify that they have exactly same functionality.
+/// See: https://github.com/dartsim/dart/issues/88
+Eigen::Isometry3d expAngular(const Eigen::Vector3d& s);
 
-///// @brief fast version of Exp(t * s), when |s| = 1
-//SE3 ExpAngular(const Axis& s, double t);
+/// @brief Computes the Rotation matrix from a given expmap vector.
+Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _expmap);
 
-/// @brief fast version of Exp(se3(s, 0))
-Eigen::Isometry3d ExpLinear(const Eigen::Vector3d& s);
+/// @brief Computes the Jacobian of the expmap
+Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _expmap);
 
-///// @brief Log mapping
-//se3 Log(const SE3& );
+/// @brief Computes the time derivative of the expmap Jacobian.
+Eigen::Matrix3d expMapJacDot(const Eigen::Vector3d& _expmap,
+                             const Eigen::Vector3d& _qdot);
 
-///// @brief Log mapping of rotation part only
-///// @note When @f$|LogR(T)| = @pi@f$, Exp(LogR(T) = Exp(-LogR(T)).
-///// The implementation returns only the positive one.
-//Axis LogR(const SE3& T);
+/// @brief computes the derivative of the Jacobian of the expmap wrt to _qi
+/// indexed dof; _qi \in {0,1,2}
+Eigen::Matrix3d expMapJacDeriv(const Eigen::Vector3d& _expmap, int _qi);
 
-//------------------------------------------------------------------------------
+/// @brief Log mapping
+/// @note When @f$|Log(R)| = @pi@f$, Exp(LogR(R) = Exp(-Log(R)).
+/// The implementation returns only the positive one.
+Eigen::Vector3d logMap(const Eigen::Matrix3d& R);
 
-/// @brief get inversion of T
-/// @note @f$T^{-1} = (R^T, -R^T p), where T=(R,p)@in SE(3)@f$.
-Eigen::Isometry3d Inv(const Eigen::Isometry3d& T);
-
-//------------------------------------------------------------------------------
-
-/// @brief get rotation matrix rotated along x-Eigen_Axis by theta angle.
-/// @note theta is represented in radian.
-Eigen::Isometry3d RotX(double angle);
-
-/// @brief get rotation matrix rotated along y-Eigen_Axis by theta angle.
-Eigen::Isometry3d RotY(double angle);
-
-/// @brief get rotation matrix rotated along z-Eigen_Axis by theta angle.
-Eigen::Isometry3d RotZ(double angle);
+/// @brief Log mapping
+Eigen::Vector6d logMap(const Eigen::Isometry3d& T);
 
 //------------------------------------------------------------------------------
 ///// @brief Rectify the rotation part so as that it satifies the orthogonality
@@ -258,8 +202,10 @@ Eigen::Isometry3d RotZ(double angle);
 ///// closer to SO(3).
 //SE3 Normalize(const SE3& T);
 
-//------------------------------------------------------------------------------
+///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
+//Axis Reparameterize(const Axis& s);
 
+//------------------------------------------------------------------------------
 /// @brief adjoint mapping
 /// @note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
 /// where @f$T=(R,p)@in SE(3), @quad V=(w,v)@in se(3) @f$.
@@ -296,10 +242,12 @@ Eigen::Vector6d AdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
 //se3 AdInvR(const SE3& T, const se3& V);
 
 /// @brief Fast version of Ad(Inv([R 0; 0 1]), se3(0, v))
-Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& V);
+Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T,
+                             const Eigen::Vector3d& V);
 
 /// @brief dual adjoint mapping
-/// @note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$, where @f$T=(R,p)@in SE(3), F=(m,f)@in se(3)^*@f$.
+/// @note @f$Ad^{@,*}_TF = ( R^T (m - p@times f)@,,~ R^T f)@f$,
+/// where @f$T=(R,p)@in SE(3), F=(m,f)@in se(3)^*@f$.
 Eigen::Vector6d dAdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 
 ///// @brief fast version of Ad(Inv(T), dse3(Eigen_Vec3(0), F))
@@ -331,13 +279,18 @@ Eigen::Vector6d ad(const Eigen::Vector6d& X, const Eigen::Vector6d& Y);
 Eigen::Vector6d dad(const Eigen::Vector6d& V, const Eigen::Vector6d& F);
 
 /// @brief
-Inertia Transform(const Eigen::Isometry3d& T, const Inertia& AI);
+Inertia transformInertia(const Eigen::Isometry3d& T, const Inertia& AI);
+
+/// @brief Check if determinant of _R is equat to 1 and all the elements are not
+/// NaN values.
+bool verifyRotation(const Eigen::Matrix3d& _R);
+
+/// @brief Check if determinant of the rotational part of _T is equat to 1 and
+/// all the elements are not NaN values.
+bool verifyTransform(const Eigen::Isometry3d& _T);
 
 /// @brief
-bool VerifySE3(const Eigen::Isometry3d& _T);
-
-/// @brief
-bool Verifyse3(const Eigen::Vector6d& _V);
+bool isNan(const Eigen::MatrixXd& _m);
 
 } // namespace math
 } // namespace dart

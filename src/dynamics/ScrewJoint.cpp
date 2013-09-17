@@ -79,10 +79,10 @@ Eigen::Vector3d ScrewJoint::getAxisGlobal() const
 {
     Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
 
-    if (this->mParentBody != NULL)
-        parentTransf = mParentBody->getWorldTransform();
+    if (this->mParentBodyNode != NULL)
+        parentTransf = mParentBodyNode->getWorldTransform();
 
-    return math::Rotate(parentTransf * mT_ParentBodyToJoint, mAxis);
+    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
 }
 
 void ScrewJoint::setPitch(double _pitch)
@@ -95,17 +95,17 @@ double ScrewJoint::getPitch() const
     return mPitch;
 }
 
-void ScrewJoint::_updateTransformation()
+void ScrewJoint::_updateTransform()
 {
     // T
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/M_2PI;
+    S.tail<3>() = mAxis*mPitch/DART_2PI;
     mT = mT_ParentBodyToJoint
-         * math::Exp(S*mCoordinate.get_q())
-         * math::Inv(mT_ChildBodyToJoint);
+         * math::expMap(S*mCoordinate.get_q())
+         * mT_ChildBodyToJoint.inverse();
 
-    assert(math::VerifySE3(mT));
+    assert(math::verifyTransform(mT));
 }
 
 void ScrewJoint::_updateVelocity()
@@ -113,7 +113,7 @@ void ScrewJoint::_updateVelocity()
     // S
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/M_2PI;
+    S.tail<3>() = mAxis*mPitch/DART_2PI;
     mS = math::AdT(mT_ChildBodyToJoint, S);
 
     // V = S * dq
