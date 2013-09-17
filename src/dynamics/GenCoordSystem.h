@@ -57,10 +57,7 @@ public:
     virtual ~GenCoordSystem();
 
     /// @brief
-    int getDOF() const;
-
-    /// @brief
-    const std::vector<GenCoord*>& getGenCoords() const;
+    int getNumGenCoords() const;
 
     /// @brief
     GenCoord* getGenCoord(int _idx) const;
