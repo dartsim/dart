@@ -205,7 +205,6 @@ bool FCLMESHCollisionNode::checkCollision(
         }
 
         // remove all the co-linear contact points
-        bool bremove;
         for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
             if(markForDeletion[k])
                 continue;
