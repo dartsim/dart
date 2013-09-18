@@ -72,7 +72,7 @@ public:
 /******************************************************************************/
 void JOINTS::kinematicsTest(Joint* _joint)
 {
-    int dof = _joint->getDOF();
+    int dof = _joint->getNumGenCoords();
 
     //--------------------------------------------------------------------------
     //
@@ -98,7 +98,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
 
         _joint->updateKinematics();
 
-        if (_joint->getDOF() == 0)
+        if (_joint->getNumGenCoords() == 0)
             return;
 
         Eigen::Isometry3d T = _joint->getLocalTransform();

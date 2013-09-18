@@ -108,7 +108,7 @@ const Eigen::Vector6d&Joint::getLocalAcceleration() const
 
 bool Joint::isPresent(const GenCoord* _q) const
 {
-    for (unsigned int i = 0; i < getDOF(); i++)
+    for (unsigned int i = 0; i < getNumGenCoords(); i++)
         if (_q == mGenCoords[i])
             return true;
 
@@ -225,7 +225,7 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 
 void Joint::setDampingCoefficient(int _idx, double _d)
 {
-    assert(0 <= _idx && _idx < getDOF());
+    assert(0 <= _idx && _idx < getNumGenCoords());
     assert(_d >= 0.0);
 
     mDampingCoefficient[_idx] = _d;
@@ -233,14 +233,14 @@ void Joint::setDampingCoefficient(int _idx, double _d)
 
 double Joint::getDampingCoefficient(int _idx) const
 {
-    assert(0 <= _idx && _idx < getDOF());
+    assert(0 <= _idx && _idx < getNumGenCoords());
 
     return mDampingCoefficient[_idx];
 }
 
 Eigen::VectorXd Joint::getDampingForces() const
 {
-    int numDofs = getDOF();
+    int numDofs = getNumGenCoords();
     Eigen::VectorXd dampingForce(numDofs);
 
     for (int i = 0; i < numDofs; ++i)
