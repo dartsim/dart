@@ -361,14 +361,14 @@ dynamics::Shape*readShape(tinyxml2::XMLElement* vizElement, dynamics::BodyNode* 
     }
     else if (hasElement(geometryElement, "plane"))
     {
+        // TODO: Don't support plane shape yet.
         tinyxml2::XMLElement* planeElement = getElement(geometryElement, "plane");
 
         Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
-        Eigen::Vector3d normal = getValueVector3d(planeElement, "normal");
+        // TODO: Need to use normal for correct orientation of the plane
+        //Eigen::Vector3d normal = getValueVector3d(planeElement, "normal");
 
-        Eigen::Vector3d size(100.0, 100.0, 0.001);
-        Eigen::Matrix3d R = Eigen::Matrix3d::Identity();
-        size = R * size;
+        Eigen::Vector3d size(visSize(0), visSize(1), 0.001);
 
         newShape = new dynamics::BoxShape(size);
     }
