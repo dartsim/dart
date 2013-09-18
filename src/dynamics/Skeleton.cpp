@@ -191,21 +191,6 @@ BodyNode* Skeleton::getBodyNode(const std::string& _name) const
     return NULL;
 }
 
-int Skeleton::getBodyNodeIndex(const std::string& _name) const
-{
-    const int nNodes = getNumBodyNodes();
-
-    for(int i = 0; i < nNodes; i++)
-    {
-        BodyNode* node = getBodyNode(i);
-
-        if (_name == node->getName())
-            return i;
-    }
-
-    return -1;
-}
-
 Joint* Skeleton::getJoint(int _idx) const
 {
     return mJoints[_idx];
@@ -224,21 +209,6 @@ Joint* Skeleton::getJoint(const std::string& _name) const
     }
 
     return NULL;
-}
-
-int Skeleton::getJointIndex(const std::string& _name) const
-{
-    const int nJoints = getNumJoints();
-
-    for(int i = 0; i < nJoints; i++)
-    {
-        Joint* node = getJoint(i);
-
-        if (_name == node->getName())
-            return i;
-    }
-
-    return -1;
 }
 
 void Skeleton::addMarker(Marker* _h)
@@ -583,62 +553,6 @@ void Skeleton::computeForwardDynamicsID(
     this->set_ddq(qddot);
 }
 
-void Skeleton::computeForwardDynamicsID2(
-        const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
-{
-    int n = getNumGenCoords();
-
-    // skip immobile objects in forward simulation
-    if (getImmobileState() == true || n == 0)
-    {
-        return;
-    }
-
-    // Save current tau
-    Eigen::VectorXd tau_old = get_tau();
-
-    // Set ddq as zero
-    set_ddq(Eigen::VectorXd::Zero(n));
-
-    //
-    mM = Eigen::MatrixXd::Zero(n,n);
-
-    // M(q) * ddq + b(q,dq) = tau
-    computeInverseDynamicsLinear(_gravity);
-    Eigen::VectorXd b = get_tau();
-    mCg = b;
-
-    // Calcualtion M column by column
-    for (int i = 0; i < n; ++i)
-    {
-        Eigen::VectorXd basis = Eigen::VectorXd::Zero(n);
-        basis(i) = 1;
-        set_ddq(basis);
-        computeInverseDynamicsLinear(_gravity);
-        mM.col(i) = get_tau() - b;
-    }
-
-    // Restore the torque
-    set_tau(tau_old);
-
-    // Evaluate external forces in generalized coordinate.
-    updateExternalForces();
-
-    Eigen::VectorXd qddot = this->getInvMassMatrix()
-                            * (-this->getCombinedVector()
-                               + this->getExternalForces()
-                               + this->getInternalForces()
-                               + this->getDampingForces()
-                               + this->getConstraintForces() );
-
-    //mMInv = mM.inverse();
-    mMInv = mM.ldlt().solve(Eigen::MatrixXd::Identity(n,n));
-
-    this->set_ddq(qddot);
-
-    clearExternalForces();
-}
-
 void Skeleton::computeForwardDynamicsFS(
         const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
 {
@@ -681,8 +595,6 @@ void Skeleton::computeForwardDynamicsFS(
         (*itrBody)->updateAcceleration();
         (*itrBody)->update_F_fs();
     }
-
-    clearExternalForces();
 }
 
 Eigen::VectorXd Skeleton::getDampingForces() const

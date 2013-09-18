@@ -131,16 +131,10 @@ public:
     BodyNode* getBodyNode(const std::string& _name) const;
 
     /// @brief
-    int getBodyNodeIndex(const std::string& _name) const;
-
-    /// @brief
     Joint* getJoint(int _idx) const;
 
     /// @brief
     Joint* getJoint(const std::string& _name) const;
-
-    /// @brief
-    int getJointIndex(const std::string& _name) const;
 
     /// @brief
     void addMarker(Marker *_h);
@@ -301,10 +295,6 @@ public:
 
     /// @brief (q, dq, tau) --> (ddq)
     void computeForwardDynamicsID(const Eigen::Vector3d& _gravity,
-                                  bool _equationsOfMotion = true);
-
-    /// @brief (q, dq, tau) --> (ddq)
-    void computeForwardDynamicsID2(const Eigen::Vector3d& _gravity,
                                   bool _equationsOfMotion = true);
 
     /// @brief (q, dq, tau) --> (ddq)
