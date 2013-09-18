@@ -75,10 +75,16 @@ public:
     // Constructor and Destructor
     //--------------------------------------------------------------------------
     /// @brief Constructor.
-    World();
+    World(const std::string& _name = "World");
 
     /// @brief Destructor.
     virtual ~World();
+
+    /// @brief Set name
+    void setName(const std::string& _name);
+
+    /// @brief Get name
+    const std::string& getName() const;
 
     //--------------------------------------------------------------------------
     // Virtual functions
@@ -172,6 +178,9 @@ public:
     constraint::ConstraintDynamics* getCollisionHandle() const;
 
 protected:
+    /// @brief
+    std::string mName;
+
     //--------------------------------------------------------------------------
     // Dynamics Algorithms
     //--------------------------------------------------------------------------

@@ -51,8 +51,9 @@
 namespace dart {
 namespace simulation {
 
-World::World()
+World::World(const std::string& _name)
     : integration::IntegrableSystem(),
+      mName(_name),
       mTime(0.0),
       mTimeStep(0.001),
       mFrame(0),
@@ -66,6 +67,16 @@ World::~World()
 {
     delete mIntegrator;
     delete mCollisionHandle;
+}
+
+void World::setName(const std::string& _name)
+{
+    mName = _name;
+}
+
+const std::string&World::getName() const
+{
+    return mName;
 }
 
 Eigen::VectorXd World::getState() const
