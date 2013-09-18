@@ -113,6 +113,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     assert(_world != NULL);
 
     dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
+    Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
     //--------------------------------------------------------------------------
     // Name attribute
@@ -124,7 +125,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     if (hasElement(_skeletonElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_skeletonElement, "transformation");
-        newSkeleton->setWorldTransformation(W, false);
+        skeletonFrame = W;
     }
 
     //--------------------------------------------------------------------------
@@ -144,7 +145,7 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     while (bodies.next())
     {
         dynamics::BodyNode* newBody
-                = readBodyNode(bodies.get(), newSkeleton);
+                = readBodyNode(bodies.get(), newSkeleton, skeletonFrame);
 
         newSkeleton->addBodyNode(newBody, false);
     }
@@ -164,7 +165,8 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
 }
 
 dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
-                                 dynamics::Skeleton* _skeleton)
+                                 dynamics::Skeleton* _skeleton,
+                                 const Eigen::Isometry3d& _skeletonFrame)
 {
     assert(_bodyNodeElement != NULL);
     assert(_skeleton != NULL);
@@ -195,120 +197,29 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
     if (hasElement(_bodyNodeElement, "transformation"))
     {
         Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "transformation");
-        newBodyNode->setWorldTransform(_skeleton->getWorldTransformation() * W);
+        newBodyNode->setWorldTransform(_skeletonFrame * W);
     }
 
+    //--------------------------------------------------------------------------
     // visualization_shape
-    if (hasElement(_bodyNodeElement, "visualization_shape"))
+    ElementEnumerator vizShapes(_bodyNodeElement, "visualization_shape");
+    while (vizShapes.next())
     {
-        tinyxml2::XMLElement* vizElement
-                = getElement(_bodyNodeElement, "visualization_shape");
+        dynamics::Shape* newShape
+                = readShape(vizShapes.get(), newBodyNode);
 
-        dynamics::Shape* shape = NULL;
-
-        // type
-        assert(hasElement(vizElement, "geometry"));
-        tinyxml2::XMLElement* geometryElement = getElement(vizElement, "geometry");
-
-        // FIXME: Assume that type has only one shape type.
-        if (hasElement(geometryElement, "box"))
-        {
-            tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
-
-            Eigen::Vector3d size = getValueVector3d(boxElement, "size");
-
-            shape = new dynamics::BoxShape(size);
-        }
-        else if (hasElement(geometryElement, "ellipsoid"))
-        {
-            tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "ellipsoid");
-
-            Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
-
-            shape = new dynamics::EllipsoidShape(size);
-        }
-        else if (hasElement(geometryElement, "cylinder"))
-        {
-            tinyxml2::XMLElement* cylinderElement = getElement(geometryElement, "cylinder");
-
-            double radius = getValueDouble(cylinderElement, "radius");
-            double height = getValueDouble(cylinderElement, "height");
-
-            shape = new dynamics::CylinderShape(radius, height);
-        }
-        else
-        {
-            dterr << "Unknown visualization shape.\n";
-            assert(0);
-        }
-        newBodyNode->addVisualizationShape(shape);
-
-        // transformation
-        if (hasElement(vizElement, "transformation"))
-        {
-            Eigen::Isometry3d W = getValueIsometry3d(vizElement, "transformation");
-            shape->setTransform(W);
-        }
-
-        // color
-        if (hasElement(vizElement, "color"))
-        {
-            Eigen::Vector3d color = getValueVector3d(vizElement, "color");
-            shape->setColor(color);
-        }
+        newBodyNode->addVisualizationShape(newShape);
     }
 
-    // collision_shape
-    if (hasElement(_bodyNodeElement, "collision_shape"))
+    //--------------------------------------------------------------------------
+    // visualization_shape
+    ElementEnumerator collShapes(_bodyNodeElement, "collision_shape");
+    while (collShapes.next())
     {
-        tinyxml2::XMLElement* colElement
-                = getElement(_bodyNodeElement, "collision_shape");
+        dynamics::Shape* newShape
+                = readShape(collShapes.get(), newBodyNode);
 
-        dynamics::Shape* shape = NULL;
-
-        // type
-        assert(hasElement(colElement, "geometry"));
-        tinyxml2::XMLElement* geometryElement = getElement(colElement, "geometry");
-
-        // FIXME: Assume that type has only one shape type.
-        if (hasElement(geometryElement, "box"))
-        {
-            tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
-
-            Eigen::Vector3d size = getValueVector3d(boxElement, "size");
-
-            shape = new dynamics::BoxShape(size);
-        }
-        else if (hasElement(geometryElement, "ellipsoid"))
-        {
-            tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "ellipsoid");
-
-            Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
-
-            shape = new dynamics::EllipsoidShape(size);
-        }
-        else if (hasElement(geometryElement, "cylinder"))
-        {
-            tinyxml2::XMLElement* cylinderElement = getElement(geometryElement, "cylinder");
-
-            double radius = getValueDouble(cylinderElement, "radius");
-            double height = getValueDouble(cylinderElement, "height");
-
-            shape = new dynamics::CylinderShape(radius, height);
-        }
-        else
-        {
-            dterr << "Unknown visualization shape.\n";
-            assert(0);
-        }
-        newBodyNode->addCollisionShape(shape);
-
-        // transformation
-        if (hasElement(colElement, "transformation"))
-        {
-            Eigen::Isometry3d W = getValueIsometry3d(colElement, "transformation");
-            shape->setTransform(W);
-        }
+        newBodyNode->addCollisionShape(newShape);
     }
 
     //--------------------------------------------------------------------------
@@ -335,13 +246,13 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
             double ixz = getValueDouble(moiElement, "ixz");
             double iyz = getValueDouble(moiElement, "iyz");
 
-            newBodyNode->setMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
+            newBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
         }
         else if (newBodyNode->getVisualizationShape(0) != 0)
         {
             Eigen::Matrix3d Ic = newBodyNode->getVisualizationShape(0)->computeInertia(mass);
 
-            newBodyNode->setMomentOfInertia(Ic(0,0), Ic(1,1), Ic(2,2),
+            newBodyNode->setInertia(Ic(0,0), Ic(1,1), Ic(2,2),
                                             Ic(0,1), Ic(0,2), Ic(1,2));
         }
 
@@ -354,6 +265,62 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
     }
 
     return newBodyNode;
+}
+
+dynamics::Shape*readShape(tinyxml2::XMLElement* vizElement, dynamics::BodyNode* _bodyNode)
+{
+    dynamics::Shape* newShape = NULL;
+
+    // type
+    assert(hasElement(vizElement, "geometry"));
+    tinyxml2::XMLElement* geometryElement = getElement(vizElement, "geometry");
+
+    if (hasElement(geometryElement, "box"))
+    {
+        tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
+
+        Eigen::Vector3d size = getValueVector3d(boxElement, "size");
+
+        newShape = new dynamics::BoxShape(size);
+    }
+    else if (hasElement(geometryElement, "ellipsoid"))
+    {
+        tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "ellipsoid");
+
+        Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
+
+        newShape = new dynamics::EllipsoidShape(size);
+    }
+    else if (hasElement(geometryElement, "cylinder"))
+    {
+        tinyxml2::XMLElement* cylinderElement = getElement(geometryElement, "cylinder");
+
+        double radius = getValueDouble(cylinderElement, "radius");
+        double height = getValueDouble(cylinderElement, "height");
+
+        newShape = new dynamics::CylinderShape(radius, height);
+    }
+    else
+    {
+        dterr << "Unknown visualization shape.\n";
+        assert(0);
+    }
+
+    // transformation
+    if (hasElement(vizElement, "transformation"))
+    {
+        Eigen::Isometry3d W = getValueIsometry3d(vizElement, "transformation");
+        newShape->setLocalTransform(W);
+    }
+
+    // color
+    if (hasElement(vizElement, "color"))
+    {
+        Eigen::Vector3d color = getValueVector3d(vizElement, "color");
+        newShape->setColor(color);
+    }
+
+    return newShape;
 }
 
 dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
@@ -400,11 +367,11 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
 
         if (strParent == std::string("world"))
         {
-            newJoint->setParentBody(NULL);
+            newJoint->setParentBodyNode(NULL);
         }
         else
         {
-            parentBody = _skeleton->findBodyNode(strParent);
+            parentBody = _skeleton->getBodyNode(strParent);
             if (parentBody == NULL)
             {
                 dterr << "Can't find the parent body, "
@@ -416,7 +383,7 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
                   << ". " << std::endl;
                 assert(parentBody != NULL);
             }
-            newJoint->setParentBody(parentBody);
+            newJoint->setParentBodyNode(parentBody);
         }
     }
     else
@@ -431,9 +398,9 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
     if (hasElement(_jointElement, "child"))
     {
         std::string strChild = getValueString(_jointElement, "child");
-        childBody = _skeleton->findBodyNode(strChild);
+        childBody = _skeleton->getBodyNode(strChild);
         assert(childBody != NULL && "Dart cannot find child body.");
-        newJoint->setChildBody(childBody);
+        newJoint->setChildBodyNode(childBody);
     }
     else
     {
@@ -451,9 +418,9 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
          parentWorld = parentBody->getWorldTransform();
     if (hasElement(_jointElement, "transformation"))
         childToJoint = getValueIsometry3d(_jointElement, "transformation");
-    Eigen::Isometry3d parentToJoint = math::Inv(parentWorld)*childWorld*childToJoint;
-    newJoint->setTransformFromChildBody(childToJoint);
-    newJoint->setTransformFromParentBody(parentToJoint);
+    Eigen::Isometry3d parentToJoint = parentWorld.inverse()*childWorld*childToJoint;
+    newJoint->setTransformFromChildBodyNode(childToJoint);
+    newJoint->setTransformFromParentBodyNode(parentToJoint);
 
     return newJoint;
 }
@@ -1002,7 +969,7 @@ dynamics::EulerJoint* readEulerJoint(
     return newEulerJoint;
 }
 
-dynamics::TranslationalJoint* readTranslationalJoint(
+dynamics::TranslationalJoint*readTranslationalJoint(
         tinyxml2::XMLElement* _translationalJointElement,
         dynamics::Skeleton* _skeleton)
 {
@@ -1031,7 +998,7 @@ dynamics::TranslationalJoint* readTranslationalJoint(
     return newTranslationalJoint;
 }
 
-dynamics::FreeJoint* readFreeJoint(
+dynamics::FreeJoint*readFreeJoint(
         tinyxml2::XMLElement* _freeJointElement,
         dynamics::Skeleton* _skeleton)
 {
@@ -1058,7 +1025,6 @@ dynamics::FreeJoint* readFreeJoint(
 
     return newFreeJoint;
 }
-
 
 } // namespace utils
 } // namespace dart
