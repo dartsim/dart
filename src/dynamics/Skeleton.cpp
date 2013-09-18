@@ -584,6 +584,8 @@ void Skeleton::computeForwardDynamicsID(
                                + mFc );
 
     this->set_ddq(qddot);
+
+    clearExternalForces();
 }
 
 void Skeleton::computeForwardDynamicsID2(
