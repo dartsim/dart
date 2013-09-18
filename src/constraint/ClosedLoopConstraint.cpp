@@ -16,8 +16,8 @@ ClosedLoopConstraint::ClosedLoopConstraint(dynamics::BodyNode *_body1, dynamics:
     mBody2 = _body2;
     mOffset1 = _offset1;
     mOffset2 = _offset2;
-    mJ1 = Eigen::MatrixXd::Zero(3, mBody1->getSkeleton()->getDOF());
-    mJ2 = Eigen::MatrixXd::Zero(3, mBody2->getSkeleton()->getDOF());
+    mJ1 = Eigen::MatrixXd::Zero(3, mBody1->getSkeleton()->getNumGenCoords());
+    mJ2 = Eigen::MatrixXd::Zero(3, mBody2->getSkeleton()->getNumGenCoords());
     mNumRows = 3;
     mSkelIndex1 = _skelIndex1;
     mSkelIndex2 = _skelIndex2;
@@ -28,9 +28,9 @@ ClosedLoopConstraint::~ClosedLoopConstraint() {
 
 void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
-    _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getDOF()).setZero();
-    _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getDOF()) = mJ1;
-    _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getDOF()) += mJ2;
+    _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()).setZero();
+    _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getNumGenCoords()) = mJ1;
+    _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()) += mJ2;
 
     Eigen::Vector3d worldP1 = mBody1->getWorldTransform() * mOffset1;
     Eigen::Vector3d worldP2 = mBody2->getWorldTransform() * mOffset2;

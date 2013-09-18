@@ -103,7 +103,7 @@ void SimWindow::draw()
             for (unsigned int i = 0; i < nSkels; i++) {
                 int start = mWorld->getIndex(i);
                 //int size = mWorld->getDofs(i).size();
-                int size = mWorld->getSkeleton(i)->getDOF();
+                int size = mWorld->getSkeleton(i)->getNumGenCoords();
                 mWorld->getSkeleton(i)->setConfig(mBakedStates[mPlayFrame].segment(start, size), true, false);
             }
             if (mShowMarkers) {
@@ -202,7 +202,7 @@ void SimWindow::bake()
     int nContact = mWorld->getCollisionHandle()->getCollisionChecker()->getNumContacts();
     Eigen::VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
     for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
-        state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getDOF()) = mWorld->getSkeleton(i)->get_q();
+        state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumGenCoords()) = mWorld->getSkeleton(i)->get_q();
     for (int i = 0; i < nContact; i++) {
         int begin = mWorld->getIndex(mWorld->getNumSkeletons()) + i * 6;
         state.segment(begin, 3) = mWorld->getCollisionHandle()->getCollisionChecker()->getContact(i).point;
