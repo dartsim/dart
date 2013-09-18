@@ -584,8 +584,6 @@ void Skeleton::computeForwardDynamicsID(
                                + mFc );
 
     this->set_ddq(qddot);
-
-    clearExternalForces();
 }
 
 void Skeleton::computeForwardDynamicsFS(
@@ -630,8 +628,6 @@ void Skeleton::computeForwardDynamicsFS(
         (*itrBody)->updateAcceleration();
         (*itrBody)->update_F_fs();
     }
-
-    clearExternalForces();
 }
 
 Eigen::VectorXd Skeleton::getDampingForces() const
