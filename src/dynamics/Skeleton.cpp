@@ -110,7 +110,7 @@ void Skeleton::initDynamics()
 {
     initKinematics();
 
-    int DOF = getDOF();
+    int DOF = getNumGenCoords();
 
     mM    = Eigen::MatrixXd::Zero(DOF, DOF);
     mMInv = Eigen::MatrixXd::Zero(DOF, DOF);
@@ -149,13 +149,10 @@ void Skeleton::addJoint(Joint* _joint)
     mJoints.push_back(_joint);
     _joint->setSkeletonIndex(mJoints.size() - 1);
 
-    const std::vector<GenCoord*>& dofs = _joint->getGenCoords();
-    for (std::vector<GenCoord*>::const_iterator itrDof = dofs.begin();
-         itrDof != dofs.end();
-         ++itrDof)
+    for (int i = 0; i < _joint->getNumGenCoords(); ++i)
     {
-        mGenCoords.push_back((*itrDof));
-        (*itrDof)->setSkeletonIndex(mGenCoords.size() - 1);
+        _joint->getGenCoord(i)->setSkeletonIndex(mGenCoords.size());
+        mGenCoords.push_back(_joint->getGenCoord(i));
     }
 }
 
@@ -276,7 +273,7 @@ void Skeleton::setConfig(const Eigen::VectorXd& _pose,
                        bool bCalcTrans,
                        bool bCalcDeriv)
 {
-    for (int i = 0; i < getDOF(); i++)
+    for (int i = 0; i < getNumGenCoords(); i++)
         mGenCoords.at(i)->set_q(_pose[i]);
 
     if (bCalcTrans)
@@ -430,7 +427,7 @@ Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
         bool _withExternalForces,
         bool _withDampingForces)
 {
-    int n = getDOF();
+    int n = getNumGenCoords();
 
     if (_qdot == NULL)
         set_dq(Eigen::VectorXd::Zero(n));
@@ -503,7 +500,7 @@ void Skeleton::clearExternalForces()
 void Skeleton::computeEquationsOfMotionID(
         const Eigen::Vector3d& _gravity)
 {
-    int n = getDOF();
+    int n = getNumGenCoords();
 
     // skip immobile objects in forward simulation
     if (getImmobileState() == true || n == 0)
@@ -559,7 +556,7 @@ void Skeleton::computeForwardDynamicsID(
 void Skeleton::computeForwardDynamicsFS(
         const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
 {
-    int n = getDOF();
+    int n = getNumGenCoords();
 
     // skip immobile objects in forward simulation
     if (getImmobileState() == true || n == 0)
@@ -637,7 +634,7 @@ Eigen::VectorXd Skeleton::getMaxInternalForces() const
 
 void Skeleton::clearInternalForces()
 {
-    set_tau(Eigen::VectorXd::Zero(getDOF()));
+    set_tau(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
 void Skeleton::setConstraintForces(const Eigen::VectorXd& _Fc)

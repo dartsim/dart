@@ -74,7 +74,7 @@ bool FileInfoDof::loadFile(const char* _fName)
     inFile >> buffer;
     inFile >> nDof;
 
-    if (mSkel == NULL || mSkel->getDOF()!=nDof)
+    if (mSkel == NULL || mSkel->getNumGenCoords()!=nDof)
         return false;
 
     mDofs.resize(mNumFrames);
@@ -115,14 +115,14 @@ bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double _sa
     int last = _end<mNumFrames?_end:mNumFrames-1;
 
     outFile.precision(20);
-    outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getDOF() << std::endl;
+    outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumGenCoords() << std::endl;
 
-    for (int i = 0; i < mSkel->getDOF(); i++)
+    for (int i = 0; i < mSkel->getNumGenCoords(); i++)
         outFile << mSkel->getGenCoord(i)->getName() << ' ';
     outFile << std::endl;
 
     for (int i = first; i <= last; i++){
-        for (int j = 0; j < mSkel->getDOF(); j++){
+        for (int j = 0; j < mSkel->getNumGenCoords(); j++){
             outFile << mDofs[i][j] << ' ';
         }
         outFile << std::endl;
