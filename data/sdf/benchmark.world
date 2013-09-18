@@ -1,0 +1,2530 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+    <!-- A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- A ground plane -->
+    <!--include>
+      <uri>model://ground_plane</uri>
+    </include-->
+
+
+
+    <physics type="ode">
+      <gravity>0.0 0.0 -9.81</gravity>
+      <real_time_update_rate>0.000000</real_time_update_rate>
+      <max_step_size>0.001000</max_step_size>
+    </physics>
+
+  <model name="ground_plane">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>100 100</size>
+          </plane>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>100</mu>
+              <mu2>50</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>100 100</size>
+          </plane>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="double_pendulum_with_base">
+  <pose>0 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base1">
+  <pose>1 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base2">
+  <pose>2 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base3">
+  <pose>3 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base4">
+  <pose>4 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base5">
+  <pose>5 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base6">
+  <pose>6 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base7">
+  <pose>7 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base8">
+  <pose>8 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base9">
+  <pose>9 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base10">
+  <pose>10 0 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <model name="double_pendulum_with_baseb">
+  <pose>0 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base1b">
+  <pose>1 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base2b">
+  <pose>2 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base3b">
+  <pose>3 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base4b">
+  <pose>4 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base5b">
+  <pose>5 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base6b">
+  <pose>6 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base7b">
+  <pose>7 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base8b">
+  <pose>8 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base9b">
+  <pose>9 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+  <model name="double_pendulum_with_base10b">
+  <pose>10 1 0 0 0 0</pose>
+    <!-- upper link, length 1, IC -90 degrees -->
+    <link name="upper_link">
+      <pose>0 0 2.1  -1.5708 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_upper_joint">
+        <pose>-0.05 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_lower_joint">
+        <pose>0 0 1.0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- lower link, length 1, IC ~-120 degrees more -->
+    <link name="lower_link">
+      <pose>0.25 1.0 2.1  -2 0 0</pose>
+      <self_collide>0</self_collide>
+      <inertial>
+        <pose>0 0 0.5  0 0 0</pose>
+      </inertial>
+      <visual name="vis_lower_joint">
+        <pose>0 0 0  0 1.5708 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.3</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+      <visual name="vis_cylinder">
+        <pose>0 0 0.5  0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.1</radius>
+            <length>0.9</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <!-- pin joint for upper link, at origin of upper link -->
+    <joint name="upper_joint" type="revolute">
+      <parent>world</parent>
+      <child>upper_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+    <!-- pin joint for lower link, at origin of child link -->
+    <joint name="lower_joint" type="revolute">
+      <parent>upper_link</parent>
+      <child>lower_link</child>
+      <axis>
+        <xyz>1.0 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </world>
+</sdf>
