@@ -119,6 +119,15 @@ public:
     int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
     //--------------------------------------------------------------------------
+    // Dynamics Properties
+    //--------------------------------------------------------------------------
+    /// @brief
+    void setPositionLimited(bool _positionLimit);
+
+    /// @brief
+    bool isPositionLimited() const;
+
+    //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
@@ -194,9 +203,6 @@ protected:
     /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
     virtual void _updateAcceleration() = 0;
 
-//    /// @brief
-//    virtual void updateDampingForce() = 0;
-
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
@@ -245,6 +251,9 @@ protected:
     //--------------------------------------------------------------------------
     // Dynamics variables
     //--------------------------------------------------------------------------
+    /// @brief True if the joint limits are enforced in dynamic simulation.
+    bool mIsPositionLimited;
+
     /// @brief
     std::vector<double> mDampingCoefficient;
 

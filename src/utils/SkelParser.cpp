@@ -793,7 +793,7 @@ dynamics::UniversalJoint* readUniversalJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newUniversalJoint->getGenCoord(0)->set_qMin(lower);
+                newUniversalJoint->getGenCoord(1)->set_qMin(lower);
             }
 
             // upper

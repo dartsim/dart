@@ -49,6 +49,7 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
       mJointType(UNKNOWN),
       mParentBodyNode(_parent),
       mChildBodyNode(_child),
+      mIsPositionLimited(true),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
       mT(Eigen::Isometry3d::Identity()),
@@ -121,6 +122,16 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
             return i;
 
     return -1;
+}
+
+void Joint::setPositionLimited(bool _positionLimit)
+{
+    mIsPositionLimited = _positionLimit;
+}
+
+bool Joint::isPositionLimited() const
+{
+    return mIsPositionLimited;
 }
 
 void Joint::setSkeletonIndex(int _idx)

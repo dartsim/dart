@@ -52,8 +52,7 @@ Skeleton::Skeleton(const std::string& _name)
       mName(_name),
       mSelfCollidable(false),
       mTotalMass(0.0),
-      mImmobile(false),
-      mJointLimit(true)
+      mImmobile(false)
 {
 }
 
@@ -89,16 +88,6 @@ void Skeleton::setImmobileState(bool _immobile)
 bool Skeleton::getImmobileState() const
 {
     return mImmobile;
-}
-
-bool Skeleton::getJointLimitState() const
-{
-    return mJointLimit;
-}
-
-void Skeleton::setJointLimitState(bool _s)
-{
-    mJointLimit = _s;
 }
 
 double Skeleton::getMass() const
