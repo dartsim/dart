@@ -48,7 +48,7 @@ void ConstraintDynamics::computeConstraintForces() {
     for (int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState() || !mSkels[i]->getJointLimitState())
             continue;
-        for (int j = 0; j < mSkels[i]->getDOF(); j++) {
+        for (int j = 0; j < mSkels[i]->getNumGenCoords(); j++) {
             double val = mSkels[i]->getGenCoord(j)->get_q();
             double ub = mSkels[i]->getGenCoord(j)->get_qMax();
             double lb = mSkels[i]->getGenCoord(j)->get_qMin();
@@ -91,7 +91,7 @@ void ConstraintDynamics::addConstraint(Constraint *_constr) {
     mConstraints.push_back(_constr);
     mTotalRows += _constr->getNumRows();
     for (int i = 0; i < mSkels.size(); i++) {
-        mJ[i].conservativeResize(mTotalRows, mSkels[i]->getDOF());
+        mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumGenCoords());
         mJ[i].bottomRows(_constr->getNumRows()).setZero();
     }
     mC = Eigen::VectorXd(mTotalRows);
@@ -108,8 +108,8 @@ void ConstraintDynamics::deleteConstraint(int _index) {
     mTotalRows -= mConstraints[_index]->getNumRows();
 
     for (int i = 0; i < mSkels.size(); i++) {
-        mJ[i].block(count, 0, shiftRows, mSkels[i]->getDOF()) = mJ[i].bottomRows(shiftRows);
-        mJ[i].conservativeResize(mTotalRows, mSkels[i]->getDOF());
+        mJ[i].block(count, 0, shiftRows, mSkels[i]->getNumGenCoords()) = mJ[i].bottomRows(shiftRows);
+        mJ[i].conservativeResize(mTotalRows, mSkels[i]->getNumGenCoords());
     }
     mC.resize(mTotalRows);
     mCDot.resize(mTotalRows);
@@ -144,7 +144,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
 
     Eigen::VectorXd newConstrForce;
     if (!_newSkel->getImmobileState())
-        newConstrForce = Eigen::VectorXd::Zero(_newSkel->getDOF());
+        newConstrForce = Eigen::VectorXd::Zero(_newSkel->getNumGenCoords());
     mContactForces.push_back(newConstrForce);
     mTotalConstrForces.push_back(newConstrForce);
 
@@ -157,7 +157,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
 
     for (int i = 0; i < mSkels.size(); i++) {
         dynamics::Skeleton* skel = mSkels[i];
-        int nDofs = skel->getDOF();
+        int nDofs = skel->getNumGenCoords();
         if (mSkels[i]->getImmobileState())
             nDofs = 0;
         sumNDofs += nDofs;
@@ -201,8 +201,8 @@ void ConstraintDynamics::initialize() {
     for (int i = 0; i < mSkels.size(); i++){
         if (mSkels[i]->getImmobileState())
             continue;
-        mContactForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getDOF());
-        mTotalConstrForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getDOF());
+        mContactForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getNumGenCoords());
+        mTotalConstrForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getNumGenCoords());
     }
 
     mMInv = Eigen::MatrixXd::Zero(rows, cols);
@@ -221,7 +221,7 @@ void ConstraintDynamics::initialize() {
 
     for (int i = 0; i < mSkels.size(); i++) {
         dynamics::Skeleton* skel = mSkels[i];
-        int nDofs = skel->getDOF();
+        int nDofs = skel->getNumGenCoords();
         if (mSkels[i]->getImmobileState())
             nDofs = 0;
         sumNDofs += nDofs;
@@ -274,7 +274,7 @@ void ConstraintDynamics::fillMatrices() {
         for (int i = 0; i < mSkels.size(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            tauVec.segment(mIndices[i], mSkels[i]->getDOF()) = mJ[i].transpose() * tempVec;
+            tauVec.segment(mIndices[i], mSkels[i]->getNumGenCoords()) = mJ[i].transpose() * tempVec;
         }
     }
     tauVec = mMInv * (tauVec + mTauStar);
@@ -372,7 +372,7 @@ void ConstraintDynamics::fillMatricesODE() {
         for (int i = 0; i < mSkels.size(); i++) {
             if (mSkels[i]->getImmobileState())
                 continue;
-            tauVec.segment(mIndices[i], mSkels[i]->getDOF()) = mJ[i].transpose() * tempVec;
+            tauVec.segment(mIndices[i], mSkels[i]->getNumGenCoords()) = mJ[i].transpose() * tempVec;
         }
     }
     tauVec = mMInv * (tauVec + mTauStar);
@@ -479,12 +479,12 @@ void ConstraintDynamics::applySolution() {
     for (int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState())
             continue;
-        mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getDOF());
+        mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
-        mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF());
+        mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
         if (mConstraints.size() > 0) {
-            Eigen::VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getDOF()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF())));
+            Eigen::VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumGenCoords())));
             mTotalConstrForces[i] += mJ[i].transpose() * tempVec;
             lambda += tempVec;
         }
@@ -525,12 +525,12 @@ void ConstraintDynamics::applySolutionODE() {
     for (int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState())
             continue;
-        mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getDOF());
+        mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
-        mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF());
+        mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
         if (mConstraints.size() > 0) {
-            Eigen::VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getDOF()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getDOF())));
+            Eigen::VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumGenCoords())));
             mTotalConstrForces[i] += mJ[i].transpose() * tempVec;
             lambda += tempVec;
         }
@@ -550,8 +550,8 @@ void ConstraintDynamics::updateMassMat() {
     for (int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState())
             continue;
-        mMInv.block(start, start, mSkels[i]->getDOF(), mSkels[i]->getDOF()) = mSkels[i]->getInvMassMatrix();
-        start += mSkels[i]->getDOF();
+        mMInv.block(start, start, mSkels[i]->getNumGenCoords(), mSkels[i]->getNumGenCoords()) = mSkels[i]->getInvMassMatrix();
+        start += mSkels[i]->getNumGenCoords();
     }
 }
 
@@ -584,7 +584,7 @@ void ConstraintDynamics::updateNBMatrices() {
 
         if (!mSkels[skelID1]->getImmobileState()) {
             int index1 = mIndices[skelID1];
-            int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getDOF();
+            int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getNumGenCoords();
             //    Vector3d N21 = c.normal;
             Eigen::MatrixXd J21t = getJacobian(c.collisionNode1->getBodyNode(), p);
             mN.block(index1, i, NDOF1, 1).noalias() = J21t * N21;
@@ -594,7 +594,7 @@ void ConstraintDynamics::updateNBMatrices() {
 
         if (!mSkels[skelID2]->getImmobileState()) {
             int index2 = mIndices[skelID2];
-            int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getDOF();
+            int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getNumGenCoords();
             //Vector3d N12 = -c.normal;
             //if (B21.rows() == 0)
             //  B12 = getTangentBasisMatrix(p, N12);
@@ -624,7 +624,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
 
         if (!mSkels[skelID1]->getImmobileState()) {
             int index1 = mIndices[skelID1];
-            int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getDOF();
+            int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getNumGenCoords();
             //    Vector3d N21 = c.normal;
             Eigen::MatrixXd J21t = getJacobian(c.collisionNode1->getBodyNode(), p);
             mN.block(index1, i, NDOF1, 1).noalias() = J21t * N21;
@@ -634,7 +634,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
 
         if (!mSkels[skelID2]->getImmobileState()) {
             int index2 = mIndices[skelID2];
-            int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getDOF();
+            int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getNumGenCoords();
             //Vector3d N12 = -c.normal;
             //if (B21.rows() == 0)
             //  B12 = getTangentBasisMatrix(p, N12);
@@ -649,7 +649,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
 }
 
 Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node, const Eigen::Vector3d& p) {
-    int nDofs = node->getSkeleton()->getDOF();
+    int nDofs = node->getSkeleton()->getNumGenCoords();
     Eigen::MatrixXd Jt = Eigen::MatrixXd::Zero(nDofs, 3);
 
     Eigen::MatrixXd JtBody
@@ -749,11 +749,11 @@ void ConstraintDynamics::updateConstraintTerms(){
     for (int i = 0; i < mSkels.size(); i++) {
         if (mSkels[i]->getImmobileState())
             continue;
-        mZ.block(mIndices[i], mIndices[i], mSkels[i]->getDOF(), mSkels[i]->getDOF()).triangularView<Eigen::Lower>() = mJMInv[i].transpose() * mGInv * mJMInv[i];
+        mZ.block(mIndices[i], mIndices[i], mSkels[i]->getNumGenCoords(), mSkels[i]->getNumGenCoords()).triangularView<Eigen::Lower>() = mJMInv[i].transpose() * mGInv * mJMInv[i];
         for (int j = 0; j < i; j++) {
             if (mSkels[j]->getImmobileState())
                 continue;
-            mZ.block(mIndices[i], mIndices[j], mSkels[i]->getDOF(), mSkels[j]->getDOF()).noalias() = mJMInv[i].transpose() * mGInv * mJMInv[j];
+            mZ.block(mIndices[i], mIndices[j], mSkels[i]->getNumGenCoords(), mSkels[j]->getNumGenCoords()).noalias() = mJMInv[i].transpose() * mGInv * mJMInv[j];
         }
     }
 

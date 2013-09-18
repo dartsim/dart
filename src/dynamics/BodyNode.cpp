@@ -238,7 +238,7 @@ bool BodyNode::dependsOn(int _dofIndex) const
 
 int BodyNode::getNumLocalDofs() const
 {
-    return mParentJoint->getDOF();
+    return mParentJoint->getNumGenCoords();
 }
 
 GenCoord* BodyNode::getLocalGenCoord(int _idx) const
@@ -563,7 +563,7 @@ void BodyNode::updateVelocity(bool _updateJacobian)
 
 void BodyNode::updateEta()
 {
-    if (mParentJoint->getDOF() > 0)
+    if (mParentJoint->getNumGenCoords() > 0)
     {
         mEta = math::ad(mV, mParentJoint->mS*mParentJoint->get_dq()) +
            mParentJoint->mdS*mParentJoint->get_dq();
@@ -581,7 +581,7 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
     //         + eta
     //         + S * ddq
 
-    if (mParentJoint->getDOF() > 0)
+    if (mParentJoint->getNumGenCoords() > 0)
     {
         if (mParentBodyNode)
         {
@@ -902,7 +902,7 @@ void BodyNode::updatePsi()
 {
     assert(mParentJoint != NULL);
 
-    //int n = mParentJoint->getDOF();
+    //int n = mParentJoint->getNumGenCoords();
     //mAI_S = Eigen::MatrixXd::Zero(6, n);
     //mPsi = Eigen::MatrixXd::Zero(n, n);
 
@@ -922,18 +922,18 @@ void BodyNode::updateBeta()
 
     // TODO: Need to find more efficient way in architecture
     // Add constraint force
-    if (mParentJoint->getDOF() > 0)
+    if (mParentJoint->getNumGenCoords() > 0)
     {
         mAlpha          += mParentJoint->getDampingForces();
-        Eigen::VectorXd Fc = Eigen::VectorXd::Zero(mParentJoint->getDOF());
-        for (int i = 0; i < mParentJoint->getDOF(); i++)
-            Fc(i) = mSkeleton->getConstraintForces()[(mParentJoint->getGenCoords()[i])->getSkeletonIndex()];
+        Eigen::VectorXd Fc = Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords());
+        for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
+            Fc(i) = mSkeleton->getConstraintForces()[mParentJoint->getGenCoord(i)->getSkeletonIndex()];
         mAlpha          += Fc;
     }
 
     mAlpha          -= mParentJoint->mS.transpose()*(mAI*mEta + mB);
     mBeta            = mB;
-    if (mParentJoint->getDOF() > 0)
+    if (mParentJoint->getNumGenCoords() > 0)
         mBeta += mAI*(mEta + mParentJoint->mS*mPsi*(mAlpha));
     else
         mBeta += mAI*mEta;
