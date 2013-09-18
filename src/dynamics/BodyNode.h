@@ -203,9 +203,6 @@ public:
     Joint* getChildJoint(int _idx) const;
 
     /// @brief
-    const std::vector<Joint*>& getChildJoints() const;
-
-    /// @brief
     int getNumChildJoints() const;
 
     /// @brief
@@ -221,7 +218,7 @@ public:
     BodyNode* getChildBodyNode(int _idx) const;
 
     /// @brief
-    const std::vector<BodyNode*>& getChildBodies() const;
+    int getNumChildBodyNodes() const;
 
     /// @brief
     void addMarker(Marker* _h);
@@ -251,9 +248,6 @@ public:
 
     /// @brief The number of the dofs by which this node is affected.
     int getNumDependentDofs() const;
-
-    /// @brief
-    const std::vector<int>& getDependentDofIndexes() const;
 
     /// @brief Return an dof index from the array index (< getNumDependentDofs).
     int getDependentDof(int _arrayIndex) const;

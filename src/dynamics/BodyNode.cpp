@@ -145,11 +145,6 @@ Joint*BodyNode::getChildJoint(int _idx) const
     return mChildJoints[_idx];
 }
 
-const std::vector<Joint*>&BodyNode::getChildJoints() const
-{
-    return mChildJoints;
-}
-
 int BodyNode::getNumChildJoints() const
 {
     return mChildJoints.size();
@@ -179,9 +174,9 @@ BodyNode* BodyNode::getChildBodyNode(int _idx) const
     return mChildBodyNodes[_idx];
 }
 
-const std::vector<BodyNode*>&BodyNode::getChildBodies() const
+int BodyNode::getNumChildBodyNodes() const
 {
-    return mChildBodyNodes;
+    return mChildBodyNodes.size();
 }
 
 void BodyNode::addMarker(Marker* _h)
@@ -254,11 +249,6 @@ bool BodyNode::isPresent(const GenCoord* _q) const
 int BodyNode::getNumDependentDofs() const
 {
     return mDependentDofIndexes.size();
-}
-
-const std::vector<int>&BodyNode::getDependentDofIndexes() const
-{
-    return mDependentDofIndexes;
 }
 
 int BodyNode::getDependentDof(int _arrayIndex) const

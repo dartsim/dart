@@ -114,14 +114,14 @@ TEST(BUILDING, BASIC)
 	//
 	//--------------------------------------------------------------------------
 	EXPECT_TRUE(body1.getParentBodyNode() == NULL);
-	EXPECT_TRUE(body1.getChildBodies().size() == 2);
+    EXPECT_TRUE(body1.getNumChildBodyNodes() == 2);
 	EXPECT_TRUE(body1.getChildBodyNode(0) == &body2);
 
 	EXPECT_TRUE(body2.getParentBodyNode() == &body1);
-	EXPECT_TRUE(body2.getChildBodies().size() == 0);
+    EXPECT_TRUE(body2.getNumChildBodyNodes() == 0);
 
 	EXPECT_TRUE(body3.getParentBodyNode() == &body1);
-	EXPECT_TRUE(body3.getChildBodies().size() == 0);
+    EXPECT_TRUE(body3.getNumChildBodyNodes() == 0);
 
 	EXPECT_TRUE(joint1.getParentBodyNode() == NULL);
 	EXPECT_TRUE(joint1.getChildBodyNode() == &body1);
