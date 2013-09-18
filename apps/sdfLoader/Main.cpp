@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
     // load a world
     dart::simulation::World* myWorld = dart::utils::readSdfFile(
-                DART_DATA_PATH"/sdf/benchmark.world");
+                DART_DATA_PATH"/sdf/double_pendulum.world");
     assert(myWorld != NULL);
 
     // create a window and link it to the world
