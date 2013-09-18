@@ -19,12 +19,12 @@
 #include "dynamics/Skeleton.h"
 #include "simulation/World.h"
 #include "utils/SkelParser.h"
-#include "utils/sdf/SDFParser.h"
+#include "utils/sdf/SdfParser.h"
 
 namespace dart {
 namespace utils {
 
-simulation::World* readSkelFile(const std::string& _filename)
+simulation::World* readSdfFile(const std::string& _filename)
 {
     //--------------------------------------------------------------------------
     // Load xml and create Document

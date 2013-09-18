@@ -15,8 +15,18 @@ namespace dart {
 namespace dynamics {
 class Skeleton;
 class BodyNode;
-class Joint;
 class Shape;
+class Joint;
+class WeldJoint;
+class PrismaticJoint;
+class RevoluteJoint;
+class ScrewJoint;
+class UniversalJoint;
+class BallJoint;
+class EulerXYZJoint;
+class EulerJoint;
+class TranslationalJoint;
+class FreeJoint;
 }
 namespace simulation {
 class World;
@@ -24,13 +34,11 @@ class World;
 
 namespace utils {
 
-}
-
 //------------------------------------------------------------------------------
 // Parsing Helper Functions
 //------------------------------------------------------------------------------
 /// @brief
-simulation::World* readSkelFile(const std::string& _filename);
+simulation::World* readSdfFile(const std::string& _filename);
 
 /// @brief
 simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
@@ -83,6 +91,8 @@ dynamics::FreeJoint* readFreeJoint(
 dart::dynamics::WeldJoint* readWeldJoint(
         tinyxml2::XMLElement* _weldJointElement,
         dynamics::Skeleton* _skeleton);
-}
+
+} // namespace utils
+} // namespace dart
 
 #endif // #ifndef DART_UTILS_SDFPARSER_H
