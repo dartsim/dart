@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
     // load a world
     dart::simulation::World* myWorld = dart::utils::readSdfFile(
-                DART_DATA_PATH"/sdf/double_pendulum.world");
+                DART_DATA_PATH"/sdf/double_pendulum_with_base.world");
     assert(myWorld != NULL);
 
     // create a window and link it to the world
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     std::cout << "'1'--'4': programmed interaction" << std::endl;
 
     glutInit(&argc, argv);
-    window.initWindow(640, 480, "Test Bed");
+    window.initWindow(640, 480, "SDFormat Loader");
     glutMainLoop();
 
     return 0;
