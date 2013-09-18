@@ -19,8 +19,8 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d)
-    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL) {
+    ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE)
+        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL), mUseODELCPSolver(_useODE) {
     initialize();
 }
 
@@ -82,9 +82,15 @@ void ConstraintDynamics::computeConstraintForces() {
             computeConstraintWithoutContact();
         }
     } else {
-        fillMatricesODE();
-        solve();
-        applySolutionODE();
+        if (mUseODELCPSolver) {
+            fillMatricesODE();
+            solve();
+            applySolutionODE();
+        } else {
+            fillMatrices();
+            solve();
+            applySolution();            
+        }
     }
     //            t1.stopTimer();
     //            t1.printScreen();
@@ -360,8 +366,8 @@ void ConstraintDynamics::fillMatricesODE() {
     int nConstrs = mConstraints.size();
     int cd = nContacts * 2;
     int dimA = nContacts * 3 + nJointLimits;
-    mA = Eigen::MatrixXd::Zero(dimA, dimA);
-    mQBar = Eigen::VectorXd::Zero(dimA);
+    mA = Eigen::MatrixXd(dimA, dimA);
+    mQBar = Eigen::VectorXd(dimA);
     updateMassMat();
     updateTauStar();
 
@@ -451,7 +457,7 @@ void ConstraintDynamics::fillMatricesODE() {
 
 bool ConstraintDynamics::solve() {
     lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-    bool b = solver.SolveTemp(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, true);
+    bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir, mUseODELCPSolver);
     return b;
 }
 
