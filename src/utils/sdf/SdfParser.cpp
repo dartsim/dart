@@ -41,15 +41,22 @@ simulation::World* readSdfFile(const std::string& _filename)
 
     //--------------------------------------------------------------------------
     // Load DART
-    tinyxml2::XMLElement* dartElement = NULL;
-    dartElement = _dartFile.FirstChildElement("sdf");
-    if (dartElement == NULL)
+    tinyxml2::XMLElement* sdfElement = NULL;
+    sdfElement = _dartFile.FirstChildElement("sdf");
+    if (sdfElement == NULL)
+        return NULL;
+
+    //--------------------------------------------------------------------------
+    // version attribute
+    std::string version = getAttribute(sdfElement, "version");
+    // We support 1.4 only for now.
+    if (version != "1.4")
         return NULL;
 
     //--------------------------------------------------------------------------
     // Load World
     tinyxml2::XMLElement* worldElement = NULL;
-    worldElement = dartElement->FirstChildElement("world");
+    worldElement = sdfElement->FirstChildElement("world");
     if (worldElement == NULL)
         return NULL;
 
@@ -66,35 +73,22 @@ simulation::World* readWorld(tinyxml2::XMLElement* _worldElement)
     simulation::World* newWorld = new simulation::World;
 
     //--------------------------------------------------------------------------
-    // Load physics
-    tinyxml2::XMLElement* physicsElement = NULL;
-    physicsElement = _worldElement->FirstChildElement("physics");
-    if (physicsElement != NULL)
-    {
-        // Time step
-        tinyxml2::XMLElement* timeStepElement = NULL;
-        timeStepElement = physicsElement->FirstChildElement("time_step");
-        if (timeStepElement != NULL)
-        {
-            std::string strTimeStep = timeStepElement->GetText();
-            double timeStep = toDouble(strTimeStep);
-            newWorld->setTimeStep(timeStep);
-        }
+    // Name attribute
+    std::string name = getAttribute(_worldElement, "name");
+    // World don't have name.
+    //newWorld->setName(name);
 
-        // Gravity
-        tinyxml2::XMLElement* gravityElement = NULL;
-        gravityElement = physicsElement->FirstChildElement("gravity");
-        if (gravityElement != NULL)
-        {
-            std::string strGravity = gravityElement->GetText();
-            Eigen::Vector3d gravity = toVector3d(strGravity);
-            newWorld->setGravity(gravity);
-        }
+    //--------------------------------------------------------------------------
+    // Load physics
+    if (hasElement(_worldElement, "physics"))
+    {
+        tinyxml2::XMLElement* physicsElement = _worldElement->FirstChildElement("physics");
+        readPhysics(physicsElement, newWorld);
     }
 
     //--------------------------------------------------------------------------
     // Load skeletons
-    ElementEnumerator skeletonElements(_worldElement, "skeleton");
+    ElementEnumerator skeletonElements(_worldElement, "model");
     while (skeletonElements.next())
     {
         dynamics::Skeleton* newSkeleton
@@ -104,6 +98,34 @@ simulation::World* readWorld(tinyxml2::XMLElement* _worldElement)
     }
 
     return newWorld;
+}
+
+void readPhysics(tinyxml2::XMLElement* _physicsElement,
+                 simulation::World* _world)
+{
+    // Type attribute
+//    std::string physicsEngineName = getAttribute(_physicsElement, "type");
+
+    // Time step
+    if (hasElement(_physicsElement, "max_step_size"))
+    {
+        double timeStep = getValueDouble(_physicsElement, "max_step_size");
+        _world->setTimeStep(timeStep);
+    }
+
+    // Number of max contacts
+//    if (hasElement(_physicsElement, "max_contacts"))
+//    {
+//        int timeStep = getValueInt(_physicsElement, "max_contacts");
+//        _world->setMaxNumContacts(timeStep);
+//    }
+
+    // Gravity
+    if (hasElement(_physicsElement, "gravity"))
+    {
+        Eigen::Vector3d gravity = getValueVector3d(_physicsElement, "gravity");
+        _world->setGravity(gravity);
+    }
 }
 
 dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
@@ -121,27 +143,38 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
     newSkeleton->setName(name);
 
     //--------------------------------------------------------------------------
-    // transformation
-    if (hasElement(_skeletonElement, "transformation"))
+    // immobile attribute
+    if (hasElement(_skeletonElement, "static"))
     {
-        Eigen::Isometry3d W = getValueIsometry3d(_skeletonElement, "transformation");
+        //bool immobile = getValueBool(_skeletonElement, "static");
+        std::string immobile = getValueString(_skeletonElement, "static");
+
+        if (immobile == "true")
+        {
+            newSkeleton->setImmobileState(true);
+        }
+        else if (immobile == "false")
+        {
+            newSkeleton->setImmobileState(false);
+        }
+        else
+        {
+            dterr << "Unkn shape.\n";
+            assert(0);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // transformation
+    if (hasElement(_skeletonElement, "pose"))
+    {
+        Eigen::Isometry3d W = getValueIsometry3d(_skeletonElement, "pose");
         skeletonFrame = W;
     }
 
     //--------------------------------------------------------------------------
-    // immobile attribute
-    tinyxml2::XMLElement* immobileElement = NULL;
-    immobileElement = _skeletonElement->FirstChildElement("immobile");
-    if (immobileElement != NULL)
-    {
-        std::string stdImmobile = immobileElement->GetText();
-        bool immobile = toBool(stdImmobile);
-        newSkeleton->setImmobileState(immobile);
-    }
-
-    //--------------------------------------------------------------------------
     // Bodies
-    ElementEnumerator bodies(_skeletonElement, "body");
+    ElementEnumerator bodies(_skeletonElement, "link");
     while (bodies.next())
     {
         dynamics::BodyNode* newBody
@@ -159,6 +192,27 @@ dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
                 = readJoint(joints.get(), newSkeleton);
 
         newSkeleton->addJoint(newJoint);
+    }
+
+    //--------------------------------------------------------------------------
+    // Add FreeJoint to the body node that doesn't have parent joint
+    for (unsigned int i = 0; i < newSkeleton->getNumBodyNodes(); ++i)
+    {
+      dynamics::BodyNode* bodyNode = newSkeleton->getBodyNode(i);
+
+      if (bodyNode->getParentJoint() == NULL)
+      {
+        // If this link has no parent joint, then we add 6-dof free joint.
+        dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
+
+        newFreeJoint->setParentBodyNode(NULL);
+        newFreeJoint->setTransformFromParentBodyNode(bodyNode->getWorldTransform());
+
+        newFreeJoint->setChildBodyNode(bodyNode);
+        newFreeJoint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+
+        newSkeleton->addJoint(newFreeJoint);
+      }
     }
 
     return newSkeleton;
@@ -194,15 +248,15 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
 
     //--------------------------------------------------------------------------
     // transformation
-    if (hasElement(_bodyNodeElement, "transformation"))
+    if (hasElement(_bodyNodeElement, "pose"))
     {
-        Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "transformation");
+        Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "pose");
         newBodyNode->setWorldTransform(_skeletonFrame * W);
     }
 
     //--------------------------------------------------------------------------
-    // visualization_shape
-    ElementEnumerator vizShapes(_bodyNodeElement, "visualization_shape");
+    // visual
+    ElementEnumerator vizShapes(_bodyNodeElement, "visual");
     while (vizShapes.next())
     {
         dynamics::Shape* newShape
@@ -212,8 +266,8 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
     }
 
     //--------------------------------------------------------------------------
-    // visualization_shape
-    ElementEnumerator collShapes(_bodyNodeElement, "collision_shape");
+    // collision
+    ElementEnumerator collShapes(_bodyNodeElement, "collision");
     while (collShapes.next())
     {
         dynamics::Shape* newShape
@@ -224,19 +278,29 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
 
     //--------------------------------------------------------------------------
     // inertia
-    if (hasElement(_bodyNodeElement, "inertia"))
+    if (hasElement(_bodyNodeElement, "inertial"))
     {
-        tinyxml2::XMLElement* inertiaElement = getElement(_bodyNodeElement, "inertia");
+        tinyxml2::XMLElement* inertiaElement = getElement(_bodyNodeElement, "inertial");
 
         // mass
-        double mass = getValueDouble(inertiaElement, "mass");
-        newBodyNode->setMass(mass);
+        if (hasElement(inertiaElement, "mass"))
+        {
+            double mass = getValueDouble(inertiaElement, "mass");
+            newBodyNode->setMass(mass);
+        }
 
-        // moment of inertia
-        if (hasElement(inertiaElement, "moment_of_inertia"))
+        // offset
+        if (hasElement(inertiaElement, "pose"))
+        {
+            Eigen::Isometry3d T = getValueIsometry3d(_bodyNodeElement, "pose");
+            newBodyNode->setLocalCOM(T.translation());
+        }
+
+        // inertia
+        if (hasElement(inertiaElement, "inertia"))
         {
             tinyxml2::XMLElement* moiElement
-                    = getElement(inertiaElement, "moment_of_inertia");
+                    = getElement(inertiaElement, "inertia");
 
             double ixx = getValueDouble(moiElement, "ixx");
             double iyy = getValueDouble(moiElement, "iyy");
@@ -248,19 +312,14 @@ dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
 
             newBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
         }
-        else if (newBodyNode->getVisualizationShape(0) != 0)
+        else if (newBodyNode->getVisualizationShape(0) != NULL)
         {
-            Eigen::Matrix3d Ic = newBodyNode->getVisualizationShape(0)->computeInertia(mass);
+            Eigen::Matrix3d Ic =
+                    newBodyNode->getVisualizationShape(0)->computeInertia(
+                        newBodyNode->getMass());
 
             newBodyNode->setInertia(Ic(0,0), Ic(1,1), Ic(2,2),
-                                            Ic(0,1), Ic(0,2), Ic(1,2));
-        }
-
-        // offset
-        if (hasElement(inertiaElement, "offset"))
-        {
-            Eigen::Vector3d offset = getValueVector3d(inertiaElement, "offset");
-            newBodyNode->setLocalCOM(offset);
+                                    Ic(0,1), Ic(0,2), Ic(1,2));
         }
     }
 
@@ -283,9 +342,9 @@ dynamics::Shape*readShape(tinyxml2::XMLElement* vizElement, dynamics::BodyNode* 
 
         newShape = new dynamics::BoxShape(size);
     }
-    else if (hasElement(geometryElement, "ellipsoid"))
+    else if (hasElement(geometryElement, "sphere"))
     {
-        tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "ellipsoid");
+        tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "sphere");
 
         Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
 
@@ -296,28 +355,33 @@ dynamics::Shape*readShape(tinyxml2::XMLElement* vizElement, dynamics::BodyNode* 
         tinyxml2::XMLElement* cylinderElement = getElement(geometryElement, "cylinder");
 
         double radius = getValueDouble(cylinderElement, "radius");
-        double height = getValueDouble(cylinderElement, "height");
+        double height = getValueDouble(cylinderElement, "length");
 
         newShape = new dynamics::CylinderShape(radius, height);
     }
+    else if (hasElement(geometryElement, "plane"))
+    {
+        tinyxml2::XMLElement* planeElement = getElement(geometryElement, "plane");
+
+        Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
+        Eigen::Vector3d normal = getValueVector3d(planeElement, "normal");
+
+        Eigen::Vector3d size(100.0, 100.0, 0.001);
+        Eigen::Matrix3d R = Eigen::Matrix3d::Identity();
+        size = R * size;
+
+        newShape = new dynamics::BoxShape(size);
+    }
     else
     {
-        dterr << "Unknown visualization shape.\n";
         assert(0);
     }
 
-    // transformation
-    if (hasElement(vizElement, "transformation"))
+    // pose
+    if (hasElement(vizElement, "pose"))
     {
-        Eigen::Isometry3d W = getValueIsometry3d(vizElement, "transformation");
+        Eigen::Isometry3d W = getValueIsometry3d(vizElement, "pose");
         newShape->setLocalTransform(W);
-    }
-
-    // color
-    if (hasElement(vizElement, "color"))
-    {
-        Eigen::Vector3d color = getValueVector3d(vizElement, "color");
-        newShape->setColor(color);
     }
 
     return newShape;
@@ -335,22 +399,16 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
     // Type attribute
     std::string type = getAttribute(_jointElement, "type");
     assert(!type.empty());
-    if (type == std::string("weld"))
-        newJoint = readWeldJoint(_jointElement, _skeleton);
     if (type == std::string("prismatic"))
         newJoint = readPrismaticJoint(_jointElement, _skeleton);
     if (type == std::string("revolute"))
         newJoint = readRevoluteJoint(_jointElement, _skeleton);
-    if (type == std::string("universal"))
+//    if (type == std::string("piston"))
+//        newJoint = readScrewJoint(_jointElement, _skeleton);
+    if (type == std::string("revolute2"))
         newJoint = readUniversalJoint(_jointElement, _skeleton);
     if (type == std::string("ball"))
         newJoint = readBallJoint(_jointElement, _skeleton);
-    if (type == std::string("euler"))
-        newJoint = readEulerJoint(_jointElement, _skeleton);
-    if (type == std::string("translational"))
-        newJoint = readTranslationalJoint(_jointElement, _skeleton);
-    if (type == std::string("free"))
-        newJoint = readFreeJoint(_jointElement, _skeleton);
     assert(newJoint != NULL);
 
     //--------------------------------------------------------------------------
@@ -416,8 +474,8 @@ dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
     Eigen::Isometry3d childWorld = childBody->getWorldTransform();
     if (parentBody)
          parentWorld = parentBody->getWorldTransform();
-    if (hasElement(_jointElement, "transformation"))
-        childToJoint = getValueIsometry3d(_jointElement, "transformation");
+    if (hasElement(_jointElement, "pose"))
+        childToJoint = getValueIsometry3d(_jointElement, "pose");
     Eigen::Isometry3d parentToJoint = parentWorld.inverse()*childWorld*childToJoint;
     newJoint->setTransformFromChildBodyNode(childToJoint);
     newJoint->setTransformFromParentBodyNode(parentToJoint);
@@ -457,11 +515,18 @@ dynamics::RevoluteJoint*readRevoluteJoint(
         Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
         newRevoluteJoint->setAxis(xyz);
 
-        // damping
-        if (hasElement(axisElement, "damping"))
+        // dynamics
+        if (hasElement(_revoluteJointElement, "dynamics"))
         {
-            double damping = getValueDouble(axisElement, "damping");
-            newRevoluteJoint->setDampingCoefficient(0, damping);
+            tinyxml2::XMLElement* dynamicsElement
+                    = getElement(_revoluteJointElement, "dynamics");
+
+            // damping
+            if (hasElement(dynamicsElement, "damping"))
+            {
+                double damping = getValueDouble(dynamicsElement, "damping");
+                newRevoluteJoint->setDampingCoefficient(0, damping);
+            }
         }
 
         // limit
@@ -490,26 +555,6 @@ dynamics::RevoluteJoint*readRevoluteJoint(
         assert(0);
     }
 
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_revoluteJointElement, "init_pos"))
-    {
-        double init_pos = getValueDouble(_revoluteJointElement, "init_pos");
-        Eigen::VectorXd ipos = Eigen::VectorXd(1);
-        ipos << init_pos;
-        newRevoluteJoint->set_q(ipos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_revoluteJointElement, "init_vel"))
-    {
-        double init_vel = getValueDouble(_revoluteJointElement, "init_vel");
-        Eigen::VectorXd ivel = Eigen::VectorXd(1);
-        ivel << init_vel;
-        newRevoluteJoint->set_q(ivel);
-    }
-
     return newRevoluteJoint;
 }
 
@@ -533,11 +578,18 @@ dynamics::PrismaticJoint* readPrismaticJoint(
         Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
         newPrismaticJoint->setAxis(xyz);
 
-        // damping
-        if (hasElement(axisElement, "damping"))
+        // dynamics
+        if (hasElement(_prismaticJointElement, "dynamics"))
         {
-            double damping = getValueDouble(axisElement, "damping");
-            newPrismaticJoint->setDampingCoefficient(0, damping);
+            tinyxml2::XMLElement* dynamicsElement
+                    = getElement(_prismaticJointElement, "dynamics");
+
+            // damping
+            if (hasElement(dynamicsElement, "damping"))
+            {
+                double damping = getValueDouble(dynamicsElement, "damping");
+                newPrismaticJoint->setDampingCoefficient(0, damping);
+            }
         }
 
         // limit
@@ -564,26 +616,6 @@ dynamics::PrismaticJoint* readPrismaticJoint(
     else
     {
         assert(0);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_prismaticJointElement, "init_pos"))
-    {
-        double init_pos = getValueDouble(_prismaticJointElement, "init_pos");
-        Eigen::VectorXd ipos = Eigen::VectorXd(1);
-        ipos << init_pos;
-        newPrismaticJoint->set_q(ipos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_prismaticJointElement, "init_vel"))
-    {
-        double init_vel = getValueDouble(_prismaticJointElement, "init_vel");
-        Eigen::VectorXd ivel = Eigen::VectorXd(1);
-        ivel << init_vel;
-        newPrismaticJoint->set_q(ivel);
     }
 
     return newPrismaticJoint;
@@ -616,11 +648,18 @@ dynamics::ScrewJoint* readScrewJoint(
             newScrewJoint->setPitch(pitch);
         }
 
-        // damping
-        if (hasElement(axisElement, "damping"))
+        // dynamics
+        if (hasElement(_screwJointElement, "dynamics"))
         {
-            double damping = getValueDouble(axisElement, "damping");
-            newScrewJoint->setDampingCoefficient(0, damping);
+            tinyxml2::XMLElement* dynamicsElement
+                    = getElement(_screwJointElement, "dynamics");
+
+            // damping
+            if (hasElement(dynamicsElement, "damping"))
+            {
+                double damping = getValueDouble(dynamicsElement, "damping");
+                newScrewJoint->setDampingCoefficient(0, damping);
+            }
         }
 
         // limit
@@ -649,26 +688,6 @@ dynamics::ScrewJoint* readScrewJoint(
         assert(0);
     }
 
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_screwJointElement, "init_pos"))
-    {
-        double init_pos = getValueDouble(_screwJointElement, "init_pos");
-        Eigen::VectorXd ipos = Eigen::VectorXd(1);
-        ipos << init_pos;
-        newScrewJoint->set_q(ipos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_screwJointElement, "init_vel"))
-    {
-        double init_vel = getValueDouble(_screwJointElement, "init_vel");
-        Eigen::VectorXd ivel = Eigen::VectorXd(1);
-        ivel << init_vel;
-        newScrewJoint->set_q(ivel);
-    }
-
     return newScrewJoint;
 }
 
@@ -692,11 +711,18 @@ dynamics::UniversalJoint* readUniversalJoint(
         Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
         newUniversalJoint->setAxis1(xyz);
 
-        // damping
-        if (hasElement(axisElement, "damping"))
+        // dynamics
+        if (hasElement(_universalJointElement, "dynamics"))
         {
-            double damping = getValueDouble(axisElement, "damping");
-            newUniversalJoint->setDampingCoefficient(0, damping);
+            tinyxml2::XMLElement* dynamicsElement
+                    = getElement(_universalJointElement, "dynamics");
+
+            // damping
+            if (hasElement(dynamicsElement, "damping"))
+            {
+                double damping = getValueDouble(dynamicsElement, "damping");
+                newUniversalJoint->setDampingCoefficient(0, damping);
+            }
         }
 
         // limit
@@ -736,11 +762,18 @@ dynamics::UniversalJoint* readUniversalJoint(
         Eigen::Vector3d xyz = getValueVector3d(axis2Element, "xyz");
         newUniversalJoint->setAxis2(xyz);
 
-        // damping
-        if (hasElement(axis2Element, "damping"))
+        // dynamics
+        if (hasElement(_universalJointElement, "dynamics"))
         {
-            double damping = getValueDouble(axis2Element, "damping");
-            newUniversalJoint->setDampingCoefficient(1, damping);
+            tinyxml2::XMLElement* dynamicsElement
+                    = getElement(_universalJointElement, "dynamics");
+
+            // damping
+            if (hasElement(dynamicsElement, "damping"))
+            {
+                double damping = getValueDouble(dynamicsElement, "damping");
+                newUniversalJoint->setDampingCoefficient(1, damping);
+            }
         }
 
         // limit
@@ -769,22 +802,6 @@ dynamics::UniversalJoint* readUniversalJoint(
         assert(0);
     }
 
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_universalJointElement, "init_pos"))
-    {
-        Eigen::Vector2d init_pos = getValueVector2d(_universalJointElement, "init_pos");
-        newUniversalJoint->set_q(init_pos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_universalJointElement, "init_vel"))
-    {
-        Eigen::Vector2d init_vel = getValueVector2d(_universalJointElement, "init_vel");
-        newUniversalJoint->set_q(init_vel);
-    }
-
     return newUniversalJoint;
 }
 
@@ -797,176 +814,7 @@ dynamics::BallJoint* readBallJoint(
 
     dynamics::BallJoint* newBallJoint = new dynamics::BallJoint;
 
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_ballJointElement, "init_pos"))
-    {
-        Eigen::Vector3d init_pos = getValueVector3d(_ballJointElement, "init_pos");
-        newBallJoint->set_q(init_pos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_ballJointElement, "init_vel"))
-    {
-        Eigen::Vector3d init_vel = getValueVector3d(_ballJointElement, "init_vel");
-        newBallJoint->set_q(init_vel);
-    }
-
     return newBallJoint;
-}
-
-dynamics::EulerJoint* readEulerJoint(
-        tinyxml2::XMLElement* _eulerJointElement,
-        dynamics::Skeleton* _skeleton)
-{
-    assert(_eulerJointElement != NULL);
-    assert(_skeleton != NULL);
-
-    dynamics::EulerJoint* newEulerJoint = new dynamics::EulerJoint;
-
-    //--------------------------------------------------------------------------
-    // axis order
-    std::string order = getValueString(_eulerJointElement, "axis_order");
-    if (order == "xyz")
-    {
-        newEulerJoint->setAxisOrder(dynamics::EulerJoint::AO_XYZ);
-    }
-    else if (order == "zyx")
-    {
-        newEulerJoint->setAxisOrder(dynamics::EulerJoint::AO_ZYX);
-    }
-    else
-    {
-        dterr << "Undefined Euler axis order\n";
-        assert(0);
-    }
-
-    //--------------------------------------------------------------------------
-    // axis
-    if (hasElement(_eulerJointElement, "axis"))
-    {
-        tinyxml2::XMLElement* axisElement
-                = getElement(_eulerJointElement, "axis");
-
-        // damping
-        if (hasElement(axisElement, "damping"))
-        {
-            double damping = getValueDouble(axisElement, "damping");
-            newEulerJoint->setDampingCoefficient(0, damping);
-        }
-
-        // limit
-        if (hasElement(axisElement, "limit"))
-        {
-            tinyxml2::XMLElement* limitElement
-                    = getElement(axisElement, "limit");
-
-            // lower
-            if (hasElement(limitElement, "lower"))
-            {
-                double lower = getValueDouble(limitElement, "lower");
-                newEulerJoint->getGenCoord(0)->set_qMin(lower);
-            }
-
-            // upper
-            if (hasElement(limitElement, "upper"))
-            {
-                double upper = getValueDouble(limitElement, "upper");
-                newEulerJoint->getGenCoord(0)->set_qMax(upper);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    // axis2
-    if (hasElement(_eulerJointElement, "axis2"))
-    {
-        tinyxml2::XMLElement* axis2Element
-                = getElement(_eulerJointElement, "axis2");
-
-        // damping
-        if (hasElement(axis2Element, "damping"))
-        {
-            double damping = getValueDouble(axis2Element, "damping");
-            newEulerJoint->setDampingCoefficient(1, damping);
-        }
-
-        // limit
-        if (hasElement(axis2Element, "limit"))
-        {
-            tinyxml2::XMLElement* limitElement
-                    = getElement(axis2Element, "limit");
-
-            // lower
-            if (hasElement(limitElement, "lower"))
-            {
-                double lower = getValueDouble(limitElement, "lower");
-                newEulerJoint->getGenCoord(1)->set_qMin(lower);
-            }
-
-            // upper
-            if (hasElement(limitElement, "upper"))
-            {
-                double upper = getValueDouble(limitElement, "upper");
-                newEulerJoint->getGenCoord(1)->set_qMax(upper);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    // axis3
-    if (hasElement(_eulerJointElement, "axis3"))
-    {
-        tinyxml2::XMLElement* axis3Element
-                = getElement(_eulerJointElement, "axis3");
-
-        // damping
-        if (hasElement(axis3Element, "damping"))
-        {
-            double damping = getValueDouble(axis3Element, "damping");
-            newEulerJoint->setDampingCoefficient(2, damping);
-        }
-
-        // limit
-        if (hasElement(axis3Element, "limit"))
-        {
-            tinyxml2::XMLElement* limitElement
-                    = getElement(axis3Element, "limit");
-
-            // lower
-            if (hasElement(limitElement, "lower"))
-            {
-                double lower = getValueDouble(limitElement, "lower");
-                newEulerJoint->getGenCoord(2)->set_qMin(lower);
-            }
-
-            // upper
-            if (hasElement(limitElement, "upper"))
-            {
-                double upper = getValueDouble(limitElement, "upper");
-                newEulerJoint->getGenCoord(2)->set_qMax(upper);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_eulerJointElement, "init_pos"))
-    {
-        Eigen::Vector3d init_pos = getValueVector3d(_eulerJointElement, "init_pos");
-        newEulerJoint->set_q(init_pos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_eulerJointElement, "init_vel"))
-    {
-        Eigen::Vector3d init_vel = getValueVector3d(_eulerJointElement, "init_vel");
-        newEulerJoint->set_q(init_vel);
-    }
-
-    return newEulerJoint;
 }
 
 dynamics::TranslationalJoint*readTranslationalJoint(
@@ -979,22 +827,6 @@ dynamics::TranslationalJoint*readTranslationalJoint(
     dynamics::TranslationalJoint* newTranslationalJoint
             = new dynamics::TranslationalJoint;
 
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_translationalJointElement, "init_pos"))
-    {
-        Eigen::Vector3d init_pos = getValueVector3d(_translationalJointElement, "init_pos");
-        newTranslationalJoint->set_q(init_pos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_translationalJointElement, "init_vel"))
-    {
-        Eigen::Vector3d init_vel = getValueVector3d(_translationalJointElement, "init_vel");
-        newTranslationalJoint->set_q(init_vel);
-    }
-
     return newTranslationalJoint;
 }
 
@@ -1006,22 +838,6 @@ dynamics::FreeJoint*readFreeJoint(
     assert(_skeleton != NULL);
 
     dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
-
-    //--------------------------------------------------------------------------
-    // init_pos
-    if (hasElement(_freeJointElement, "init_pos"))
-    {
-        Eigen::Vector6d init_pos = getValueVector6d(_freeJointElement, "init_pos");
-        newFreeJoint->set_q(init_pos);
-    }
-
-    //--------------------------------------------------------------------------
-    // init_vel
-    if (hasElement(_freeJointElement, "init_vel"))
-    {
-        Eigen::Vector6d init_vel = getValueVector6d(_freeJointElement, "init_vel");
-        newFreeJoint->set_q(init_vel);
-    }
 
     return newFreeJoint;
 }

@@ -44,6 +44,10 @@ simulation::World* readSdfFile(const std::string& _filename);
 simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
 /// @brief
+void readPhysics(tinyxml2::XMLElement* _physicsElement,
+                 simulation::World* _world);
+
+/// @brief
 dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
                                  simulation::World* _world);
 
