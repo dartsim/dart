@@ -49,6 +49,7 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
       mJointType(UNKNOWN),
       mParentBodyNode(_parent),
       mChildBodyNode(_child),
+      mIsPositionLimited(false),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
       mT(Eigen::Isometry3d::Identity()),
@@ -123,39 +124,15 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
     return -1;
 }
 
-void Joint::setPositionLimited(bool _limited, int _idx)
+void Joint::setPositionLimited(bool _positionLimit)
 {
-    assert(0 <= _idx && _idx < getDOF());
-
-    mIsPositionLimited[_idx] = _limited;
+    mIsPositionLimited = _positionLimit;
 }
 
-bool Joint::isPositionLimited(int _idx) const
+bool Joint::isPositionLimited() const
 {
-    assert(0 <= _idx && _idx < getDOF());
-
-    return mIsPositionLimited[_idx];
+    return mIsPositionLimited;
 }
-
-//void Joint::setPositionUpperLimit(double _ul, int _idx, bool _setLimit)
-//{
-//    assert(0 <= _idx && _idx < getDOF());
-
-//    mGenCoords[_idx]->set_qMax(_ul);
-
-//    if (_setLimit)
-//        setPositionLimited(true, _idx);
-//}
-
-//void Joint::setPositionLowerLimit(double _ll, int _idx, bool _setLimit)
-//{
-//    assert(0 <= _idx && _idx < getDOF());
-
-//    mGenCoords[_idx]->set_qMin(_ll);
-
-//    if (_setLimit)
-//        setPositionLimited(true, _idx);
-//}
 
 void Joint::setSkeletonIndex(int _idx)
 {

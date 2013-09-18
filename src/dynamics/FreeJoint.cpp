@@ -60,8 +60,6 @@ FreeJoint::FreeJoint(BodyNode* _parent, BodyNode* _child,
     mdS = Eigen::Matrix<double,6,6>::Zero();
 
     mDampingCoefficient.resize(6, 0);
-
-    mIsPositionLimited.resize(6, false);
 }
 
 FreeJoint::~FreeJoint()

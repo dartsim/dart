@@ -122,16 +122,10 @@ public:
     // Dynamics Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setPositionLimited(bool _limited, int _idx);
+    void setPositionLimited(bool _positionLimit);
 
     /// @brief
-    bool isPositionLimited(int _idx) const;
-
-//    /// @brief
-//    void setPositionUpperLimit(double _ul, int _idx, bool _setLimit = true);
-
-//    /// @brief
-//    void setPositionLowerLimit(double _ll, int _idx, bool _setLimit = true);
+    bool isPositionLimited() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
@@ -258,7 +252,7 @@ protected:
     // Dynamics variables
     //--------------------------------------------------------------------------
     /// @brief True if the joint limits are enforced in dynamic simulation.
-    std::vector<bool> mIsPositionLimited;
+    bool mIsPositionLimited;
 
     /// @brief
     std::vector<double> mDampingCoefficient;

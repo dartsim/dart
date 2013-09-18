@@ -61,8 +61,6 @@ UniversalJoint::UniversalJoint(BodyNode* _parent, BodyNode* _child,
 
     mAxis[0] = _axis0.normalized();
     mAxis[1] = _axis1.normalized();
-
-    mIsPositionLimited.resize(2, false);
 }
 
 UniversalJoint::~UniversalJoint()

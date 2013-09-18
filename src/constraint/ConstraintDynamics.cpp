@@ -51,9 +51,9 @@ void ConstraintDynamics::computeConstraintForces() {
 
         for (int j = 0; j < mSkels[i]->getNumJoints(); j++) {
             dynamics::Joint* joint = mSkels[i]->getJoint(j);
+            if (!joint->isPositionLimited())
+                continue;
             for (int k = 0; k < mSkels[i]->getJoint(j)->getDOF(); k++) {
-                if (!joint->isPositionLimited(k))
-                    continue;
 
                 dynamics::GenCoord* genCoord = joint->getGenCoord(k);
                 double val = genCoord->get_q();

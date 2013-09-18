@@ -305,11 +305,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
     double limit0 = DART_PI / 6.0;
     double limit1 = DART_PI / 6.0;
 
-    joint0->setPositionLimited(true, 0);
+    joint0->setPositionLimited(true);
     joint0->getGenCoord(0)->set_qMin(-limit0);
     joint0->getGenCoord(0)->set_qMax(limit0);
 
-    joint1->setPositionLimited(true, 0);
+    joint1->setPositionLimited(true);
     joint1->getGenCoord(0)->set_qMin(-limit1);
     joint1->getGenCoord(0)->set_qMax(limit1);
 

@@ -58,8 +58,6 @@ ScrewJoint::ScrewJoint(BodyNode* _parent, BodyNode* _child,
     mdS = Eigen::Matrix<double,6,1>::Zero();
 
     mDampingCoefficient.resize(1, 0);
-
-    mIsPositionLimited.resize(1, false);
 }
 
 ScrewJoint::~ScrewJoint()
