@@ -45,12 +45,11 @@ namespace dynamics {
 
 int Marker::msMarkerCount = 0;
 
-Marker::Marker(const char* _name, Eigen::Vector3d& _offset, BodyNode *_node,
+Marker::Marker(const std::string& _name, Eigen::Vector3d& _offset, BodyNode *_node,
                ConstraintType _type)
-    : mNode(_node), mOffset(_offset), mType(_type)
+    : mName(_name), mNode(_node), mOffset(_offset), mType(_type)
 {
     mID = Marker::msMarkerCount++;
-    strcpy(mName, _name);
 }
 
 Marker::~Marker()
@@ -129,7 +128,7 @@ BodyNode* Marker::getNode() const
     return mNode;
 }
 
-const char* Marker::getName() const
+const std::string& Marker::getName() const
 {
     return mName;
 }

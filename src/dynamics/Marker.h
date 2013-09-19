@@ -63,7 +63,7 @@ public:
     };
     
     /// @brief
-    Marker(const char* _name, Eigen::Vector3d& _offset, BodyNode* _node,
+    Marker(const std::string& _name, Eigen::Vector3d& _offset, BodyNode* _node,
            ConstraintType _type = NO);
 
     /// @brief
@@ -96,7 +96,7 @@ public:
     BodyNode* getNode() const;
 
     /// @brief
-    const char* getName() const;
+    const std::string& getName() const;
 
     // useful for IK
     /// @brief
@@ -113,8 +113,8 @@ protected:
     /// @brief local coordinates in the links.
     Eigen::Vector3d mOffset;
 
-    /// @brief name of this marker, max length 256 characters.
-    char mName[MAX_MARKER_NAME];
+    /// @brief name of this marker.
+    std::string mName;
 
     /// @brief position in the model class marker vector.
     int mSkelIndex;
