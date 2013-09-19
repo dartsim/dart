@@ -212,9 +212,9 @@ void BodyNode::setDependDofList()
                               mParentBodyNode->mDependentDofIndexes.end());
     }
 
-    for (int i = 0; i < getNumLocalDofs(); i++)
+    for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
     {
-        int dofID = getLocalGenCoord(i)->getSkeletonIndex();
+        int dofID = mParentJoint->getGenCoord(i)->getSkeletonIndex();
         mDependentDofIndexes.push_back(dofID);
     }
 
@@ -236,21 +236,6 @@ bool BodyNode::dependsOn(int _dofIndex) const
     return binary_search(mDependentDofIndexes.begin(),
                          mDependentDofIndexes.end(),
                          _dofIndex);
-}
-
-int BodyNode::getNumLocalDofs() const
-{
-    return mParentJoint->getNumGenCoords();
-}
-
-GenCoord* BodyNode::getLocalGenCoord(int _idx) const
-{
-    return mParentJoint->getGenCoord(_idx);
-}
-
-bool BodyNode::isPresent(const GenCoord* _q) const
-{
-    return mParentJoint->isPresent(_q);
 }
 
 int BodyNode::getNumDependentDofs() const
@@ -532,13 +517,13 @@ void BodyNode::updateVelocity(bool _updateJacobian)
     //          n: number of dependent coordinates
     //--------------------------------------------------------------------------
 
-    const int numLocalDOFs = getNumLocalDofs();
+    const int numLocalDOFs = mParentJoint->getNumGenCoords();
     const int numParentDOFs = getNumDependentDofs()-numLocalDOFs;
 
     // Parent Jacobian
     if (mParentBodyNode != NULL)
     {
-        assert(mParentBodyNode->mBodyJacobian.cols() + getNumLocalDofs()
+        assert(mParentBodyNode->mBodyJacobian.cols() + mParentJoint->getNumGenCoords()
                == mBodyJacobian.cols());
 
         for (int i = 0; i < numParentDOFs; ++i)
@@ -609,13 +594,13 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
     //          n: number of dependent coordinates
     //--------------------------------------------------------------------------
 
-    const int numLocalDOFs = getNumLocalDofs();
+    const int numLocalDOFs = mParentJoint->getNumGenCoords();
     const int numParentDOFs = getNumDependentDofs() - numLocalDOFs;
 
     // Parent Jacobian
     if (mParentBodyNode != NULL)
     {
-        assert(mParentBodyNode->mBodyJacobianDeriv.cols() + getNumLocalDofs()
+        assert(mParentBodyNode->mBodyJacobianDeriv.cols() + mParentJoint->getNumGenCoords()
                == mBodyJacobianDeriv.cols());
 
         for (int i = 0; i < numParentDOFs; ++i)

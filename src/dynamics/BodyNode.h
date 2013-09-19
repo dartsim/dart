@@ -237,15 +237,6 @@ public:
     /// efficiency.
     bool dependsOn(int _dofIndex) const;
 
-    /// @brief
-    int getNumLocalDofs() const;
-
-    /// @brief
-    GenCoord* getLocalGenCoord(int _idx) const;
-
-    /// @brief true if d is present in the dof list for the joint.
-    bool isPresent(const GenCoord* _q) const;
-
     /// @brief The number of the dofs by which this node is affected.
     int getNumDependentDofs() const;
 
