@@ -32,7 +32,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "common/UtilsCode.h"
 #include "math/Geometry.h"
 #include "math/Helpers.h"
 #include <iostream>

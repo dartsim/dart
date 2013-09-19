@@ -4,6 +4,7 @@
 #include "collision/CollisionDetector.h"
 #include "dynamics/Skeleton.h"
 #include <ctime>
+#include <cstdio>
 
 using namespace std;
 using namespace Eigen;

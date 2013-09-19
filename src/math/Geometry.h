@@ -47,7 +47,6 @@
 
 #include <Eigen/Dense>
 
-#include "common/UtilsCode.h"
 #include "math/MathTypes.h"
 
 namespace dart {

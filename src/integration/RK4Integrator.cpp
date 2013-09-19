@@ -35,7 +35,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "common/UtilsCode.h"
 #include "integration/RK4Integrator.h"
 
 namespace dart {
