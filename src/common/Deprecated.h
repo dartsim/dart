@@ -3,7 +3,7 @@
     #define FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER) 
     #define DEPRECATED __declspec(deprecated) 
-    #define GAZEBO_FORCEINLINE __forceinline
+    #define FORCEINLINE __forceinline
 #else
     #define DEPRECATED(version) ()
     #define FORCEINLINE
