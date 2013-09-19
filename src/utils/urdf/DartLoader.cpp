@@ -78,19 +78,15 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
 
       // Initialize position and RPY
       dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
-      urdf::Pose pose = worldInterface->models[i].origin;
+      Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
+
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
-          rootJoint->getGenCoord(0)->set_q(pose.position.x);
-          rootJoint->getGenCoord(1)->set_q(pose.position.y);
-          rootJoint->getGenCoord(2)->set_q(pose.position.z);
-          double r, p, y;
-          worldInterface->models[i].origin.rotation.getRPY(r, p, y);
-          rootJoint->getGenCoord(3)->set_q(y);
-          rootJoint->getGenCoord(4)->set_q(p);
-          rootJoint->getGenCoord(5)->set_q(r);
+          Eigen::Vector6d coordinates;
+          coordinates << math::logMap(transform.linear()), transform.translation();
+          rootJoint->set_q(coordinates);
       }
       else {
-          rootJoint->setTransformFromParentBodyNode(toEigen(pose));
+          rootJoint->setTransformFromParentBodyNode(transform);
       }
 
       skeleton->initKinematics();
@@ -196,11 +192,15 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
         rootJoint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
         rootJoint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     }
+
     rootNode->setParentJoint(rootJoint);
+    skeleton->addBodyNode(rootNode);
 
     for(unsigned int i = 0; i < root->child_links.size(); i++) {
         createSkeletonRecursive(skeleton, root->child_links[i], rootNode, _rootToSkelPath);
     }
+
+    return skeleton;
 }
 
 void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, boost::shared_ptr<const urdf::Link> _lk, dynamics::BodyNode* _parentNode, std::string _rootToSkelPath) {
@@ -246,14 +246,14 @@ dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint
   case urdf::Joint::REVOLUTE:
       joint = new dynamics::RevoluteJoint(_parent, _child, toEigen(_jt->axis));
       joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
-      joint->getGenCoord(1)->set_qMin(_jt->limits->upper);
+      joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
   case urdf::Joint::CONTINUOUS:
       joint = new dynamics::RevoluteJoint(_parent, _child, toEigen(_jt->axis));
       break;
   case urdf::Joint::PRISMATIC:
       joint = new dynamics::PrismaticJoint(_parent, _child, toEigen(_jt->axis));
       joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
-      joint->getGenCoord(1)->set_qMin(_jt->limits->upper);
+      joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
       break;
   case urdf::Joint::FIXED:
       joint = new dynamics::WeldJoint(_parent, _child);
