@@ -219,7 +219,7 @@ void BodyNode::setDependDofList()
     }
 
 #ifndef NDEBUG
-    for (int i = 0; i < mDependentDofIndexes.size() - 1; i++)
+    for (int i = 0; i < (int)mDependentDofIndexes.size() - 1; i++)
     {
         for (int j = i + 1; j < mDependentDofIndexes.size(); j++)
             if (mDependentDofIndexes[i] == mDependentDofIndexes[j])
