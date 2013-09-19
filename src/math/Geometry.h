@@ -52,11 +52,6 @@
 namespace dart {
 namespace math {
 
-enum RotationOrder
-{
-    UNKNOWN, XYZ, XZY, YZX, YXZ, ZXY, ZYX
-};
-
 /// @brief
 Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& v);
 
