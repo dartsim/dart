@@ -165,7 +165,8 @@ Eigen::Vector2d toVector2d(const std::string& _str)
 
     std::vector<double> elements;
     std::vector<std::string> pieces;
-    boost::split(pieces, _str, boost::is_any_of(" "));
+    std::string trimedStr = boost::trim_copy(_str);
+    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 2);
 
     for (int i = 0; i < pieces.size(); ++i)
@@ -199,7 +200,8 @@ Eigen::Vector3d toVector3d(const std::string& _str)
 
     std::vector<double> elements;
     std::vector<std::string> pieces;
-    boost::split(pieces, _str, boost::is_any_of(" "));
+    std::string trimedStr = boost::trim_copy(_str);
+    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 3);
 
     for (int i = 0; i < pieces.size(); ++i)
@@ -235,7 +237,8 @@ Eigen::Vector6d toVector6d(const std::string& _str)
 
     std::vector<double> elements;
     std::vector<std::string> pieces;
-    boost::split(pieces, _str, boost::is_any_of(" "));
+    std::string trimedStr = boost::trim_copy(_str);
+    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 6);
 
     for (int i = 0; i < pieces.size(); ++i)
@@ -273,7 +276,8 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     Eigen::Vector6d elements = Eigen::Vector6d::Zero();
     std::vector<std::string> pieces;
-    boost::split(pieces, _str, boost::is_any_of(" "));
+    std::string trimedStr = boost::trim_copy(_str);
+    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 6);
 
     for (int i = 0; i < pieces.size(); ++i)

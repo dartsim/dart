@@ -17,6 +17,7 @@ foreach(APPDIR
     #closedLoop
     drawRRT
     testBed
+    sdfLoader
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
