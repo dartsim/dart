@@ -64,7 +64,11 @@ public:
     const Eigen::Vector3d& getAxis() const;
 
     /// @brief
-    Eigen::Vector3d getAxisGlobal() const;
+    Eigen::Vector3d getWorldAxis() const;
+
+    /// @brief Get a point on the rotation axis in world coordinate frame.
+    /// ODE calls this as anchor.
+    Eigen::Vector3d getWorldOrigin() const;
 
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
