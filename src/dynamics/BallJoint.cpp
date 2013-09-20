@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "BallJoint.h"
-
 #include "math/Helpers.h"
 #include "math/Geometry.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/BallJoint.h"
 
 namespace dart {
 namespace dynamics {
@@ -56,19 +56,43 @@ BallJoint::BallJoint(BodyNode* _parent, BodyNode* _child,
     mS = Eigen::Matrix<double,6,3>::Zero();
     mdS = Eigen::Matrix<double,6,3>::Zero();
 
-    mDampingCoefficient.resize(3, 0);
+    mDampingCoefficient.resize(3, 0.0);
 }
 
 BallJoint::~BallJoint()
 {
 }
 
+Eigen::Vector3d BallJoint::getWorldOrigin() const
+{
+    Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+
+    if (mParentBodyNode != NULL)
+        origin = (mParentBodyNode->getWorldTransform() *
+                  mT_ParentBodyToJoint).translation();
+    else
+        origin = mT_ParentBodyToJoint.translation();
+
+#ifndef NDEBUG
+    if (mChildBodyNode != NULL)
+    {
+        Eigen::Vector3d originFromChild =
+                (mChildBodyNode->getWorldTransform() *
+                 mT_ChildBodyToJoint).translation();
+
+        assert((origin - originFromChild).norm() < DART_EPSILON);
+    }
+#endif
+
+    return origin;
+}
+
 inline void BallJoint::_updateTransform()
 {
     // T
     Eigen::Vector3d q(mCoordinate[0].get_q(),
-                      mCoordinate[1].get_q(),
-                      mCoordinate[2].get_q());
+            mCoordinate[1].get_q(),
+            mCoordinate[2].get_q());
 
     mT = mT_ParentBodyToJoint *
             math::expAngular(q) *
@@ -79,8 +103,8 @@ inline void BallJoint::_updateVelocity()
 {
     // S
     Eigen::Vector3d q(mCoordinate[0].get_q(),
-                      mCoordinate[1].get_q(),
-                      mCoordinate[2].get_q());
+            mCoordinate[1].get_q(),
+            mCoordinate[2].get_q());
 
     Eigen::Matrix3d J = math::expMapJac(q);
 
