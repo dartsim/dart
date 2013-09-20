@@ -137,11 +137,6 @@ double BodyNode::getMass() const
     return mMass;
 }
 
-void BodyNode::setParentBodyNode(BodyNode* _body)
-{
-    mParentBodyNode = _body;
-}
-
 BodyNode*BodyNode::getParentBodyNode() const
 {
     return mParentBodyNode;
@@ -152,7 +147,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
     assert(_body != NULL);
 
     mChildBodyNodes.push_back(_body);
-    _body->setParentBodyNode(this);
+    _body->mParentBodyNode = this;
 }
 
 BodyNode* BodyNode::getChildBodyNode(int _idx) const

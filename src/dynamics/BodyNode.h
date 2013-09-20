@@ -196,9 +196,6 @@ public:
     /// @brief
     Joint* getParentJoint() const;
 
-    /// @brief Does not need to be called by the user, since addChildBodyNode() calls it automatically
-    void setParentBodyNode(BodyNode* _body);
-
     /// @brief
     BodyNode* getParentBodyNode() const;
 
