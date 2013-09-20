@@ -546,11 +546,13 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
         {
             mdV = math::AdInvT(mParentJoint->getLocalTransform(),
                                mParentBodyNode->getBodyAcceleration()) +
-                  mEta + mParentJoint->mS*mParentJoint->get_ddq();
+                               mEta + mParentJoint->getLocalJacobian() *
+                               mParentJoint->get_ddq();
         }
         else
         {
-            mdV = mEta + mParentJoint->mS*mParentJoint->get_ddq();
+            mdV = mEta +
+                  mParentJoint->getLocalJacobian() * mParentJoint->get_ddq();
         }
     }
 
@@ -865,8 +867,8 @@ void BodyNode::updatePsi()
     //mAI_S = Eigen::MatrixXd::Zero(6, n);
     //mPsi = Eigen::MatrixXd::Zero(n, n);
 
-    mAI_S.noalias() = mAI*mParentJoint->mS;
-    mPsi = (mParentJoint->mS.transpose()*mAI_S).inverse();
+    mAI_S.noalias() = mAI * mParentJoint->getLocalJacobian();
+    mPsi = (mParentJoint->getLocalJacobian().transpose() * mAI_S).inverse();
 }
 
 void BodyNode::updatePi()
@@ -890,10 +892,11 @@ void BodyNode::updateBeta()
         mAlpha          += Fc;
     }
 
-    mAlpha          -= mParentJoint->mS.transpose()*(mAI*mEta + mB);
+    mAlpha          -= mParentJoint->getLocalJacobian().transpose() *
+                       (mAI*mEta + mB);
     mBeta            = mB;
     if (mParentJoint->getNumGenCoords() > 0)
-        mBeta += mAI*(mEta + mParentJoint->mS*mPsi*(mAlpha));
+        mBeta += mAI*(mEta + mParentJoint->getLocalJacobian() * mPsi * mAlpha);
     else
         mBeta += mAI*mEta;
 
@@ -907,7 +910,7 @@ void BodyNode::update_ddq()
     {
         ddq.noalias() = mPsi*
                         (mAlpha -
-                         mParentJoint->mS.transpose()*mAI*
+                         mParentJoint->getLocalJacobian().transpose() * mAI *
                          math::AdInvT(mParentJoint->getLocalTransform(),
                                       mParentBodyNode->getBodyAcceleration())
                          );

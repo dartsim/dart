@@ -543,11 +543,6 @@ protected:
     /// @brief
     Eigen::MatrixXd mM;
 
-    /// @brief List of contact points where external forces are applied.
-    /// contact points are a pair of (local point offset, Cartesian force in
-    /// local coordinates).
-    std::vector< std::pair<Eigen::Vector3d, Eigen::Vector3d> > mContacts;
-
 private:
     void _updateGeralizedInertia();
 
