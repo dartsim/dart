@@ -49,12 +49,16 @@ namespace dynamics {
 class BallJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Default constructor.
     BallJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
               const std::string& _name = "Ball joint");
 
-    /// @brief
+    /// @brief Default destructor.
     virtual ~BallJoint();
+
+    /// @brief Get a point on the rotation axis in world coordinate frame.
+    /// ODE calls this as anchor.
+    Eigen::Vector3d getWorldOrigin() const;
 
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
@@ -69,14 +73,8 @@ protected:
     // Document inherited.
     virtual void _updateAcceleration();
 
-    /// @brief
+    /// @brief Generalized coordinates.
     GenCoord mCoordinate[3];
-
-private:
-
-public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics
