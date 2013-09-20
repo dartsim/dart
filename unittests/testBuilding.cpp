@@ -76,36 +76,30 @@ TEST(BUILDING, BASIC)
 	//
 	//--------------------------------------------------------------------------
 	// Bodies
-	body1;
-	body2;
-	body3;
+    body1.addChildBodyNode(&body2);
+    body2.addChildBodyNode(&body3);
+
+    body1.setParentJoint(&joint1);
+    body2.setParentJoint(&joint2);
+    body3.setParentJoint(&joint3);
 
 	// Joints
-	joint1.setParentBodyNode(NULL);	// world
-	joint1.setChildBodyNode(&body1);
     joint1.setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
     joint1.setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     joint1.setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-	joint2.setParentBodyNode(&body1);
-	joint2.setChildBodyNode(&body2);
     joint2.setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
     joint2.setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     joint2.setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-	joint3.setParentBodyNode(&body1);
-	joint3.setChildBodyNode(&body3);
     joint3.setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
     joint3.setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
     joint3.setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
 	// Skeleton
-	skel1.addBodyNode(&body1, false);
-	skel1.addBodyNode(&body2, false);
-	skel1.addBodyNode(&body3, false);
-	skel1.addJoint(&joint1);
-	skel1.addJoint(&joint2);
-	skel1.addJoint(&joint3);
+    skel1.addBodyNode(&body1);
+    skel1.addBodyNode(&body2);
+    skel1.addBodyNode(&body3);
 
 	// World
 	world.addSkeleton(&skel1);
@@ -114,40 +108,21 @@ TEST(BUILDING, BASIC)
 	//
 	//--------------------------------------------------------------------------
 	EXPECT_TRUE(body1.getParentBodyNode() == NULL);
-    EXPECT_TRUE(body1.getNumChildBodyNodes() == 2);
+    EXPECT_TRUE(body1.getNumChildBodyNodes() == 1);
 	EXPECT_TRUE(body1.getChildBodyNode(0) == &body2);
 
-	EXPECT_TRUE(body2.getParentBodyNode() == &body1);
-    EXPECT_TRUE(body2.getNumChildBodyNodes() == 0);
+    EXPECT_TRUE(body2.getParentBodyNode() == &body1);
+    EXPECT_TRUE(body2.getNumChildBodyNodes() == 1);
+    EXPECT_TRUE(body2.getChildBodyNode(0) == &body3);
 
-	EXPECT_TRUE(body3.getParentBodyNode() == &body1);
+    EXPECT_TRUE(body3.getParentBodyNode() == &body2);
     EXPECT_TRUE(body3.getNumChildBodyNodes() == 0);
-
-	EXPECT_TRUE(joint1.getParentBodyNode() == NULL);
-	EXPECT_TRUE(joint1.getChildBodyNode() == &body1);
-
-	EXPECT_TRUE(joint2.getParentBodyNode() == &body1);
-	EXPECT_TRUE(joint2.getChildBodyNode() == &body2);
-
-	EXPECT_TRUE(joint3.getParentBodyNode() == &body1);
-	EXPECT_TRUE(joint3.getChildBodyNode() == &body3);
+    //EXPECT_TRUE(body3.getChildBodyNode(0) == NULL);
 
     EXPECT_TRUE(skel1.getNumBodyNodes() == 3);
-	EXPECT_TRUE(skel1.getNumJoints() == 3);
 	EXPECT_TRUE(skel1.getNumGenCoords() == 3);
 
 	EXPECT_TRUE(world.getNumSkeletons() == 1);
-
-	//--------------------------------------------------------------------------
-	//
-	//--------------------------------------------------------------------------
-	skel1.updateForwardKinematics();
-}
-
-/******************************************************************************/
-TEST(BUILDING, REVOLUTE_JOINT)
-{
-
 }
 
 /******************************************************************************/
