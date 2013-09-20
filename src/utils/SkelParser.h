@@ -74,71 +74,72 @@ class World;
 
 namespace utils {
 
-#define DART_OK 0
-#define DART_ERROR 1
+class SkelParser
+{
+public:
+    /// @brief
+    static simulation::World* readSkelFile(const std::string& _filename);
 
-//------------------------------------------------------------------------------
-// Parsing Helper Functions
-//------------------------------------------------------------------------------
-/// @brief
-simulation::World* readSkelFile(const std::string& _filename);
+private:
+    /// @brief
+    static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
-/// @brief
-simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
+    /// @brief
+    static dynamics::Skeleton* readSkeleton(
+            tinyxml2::XMLElement* _skeletonElement,
+            simulation::World* _world);
 
-/// @brief
-dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement,
-                                 simulation::World* _world);
+    /// @brief
+    static dynamics::BodyNode* readBodyNode(
+            tinyxml2::XMLElement* _bodyElement,
+            dynamics::Skeleton* _skeleton,
+            const Eigen::Isometry3d& _skeletonFrame);
 
-/// @brief
-dynamics::BodyNode* readBodyNode(tinyxml2::XMLElement* _bodyElement,
-                                 dynamics::Skeleton* _skeleton,
-                                 const Eigen::Isometry3d& _skeletonFrame);
+    /// @brief
+    static dynamics::Shape* readShape(
+            tinyxml2::XMLElement* _shapeElement);
 
-/// @brief
-dynamics::Shape* readShape(tinyxml2::XMLElement* _shapeElement,
-                           dynamics::BodyNode* _bodyNode);
+    /// @brief
+    static dynamics::Joint* readJoint(
+            tinyxml2::XMLElement* _jointElement,
+            const std::vector<dynamics::BodyNode*>& _bodies);
 
-/// @brief
-dynamics::Joint* readJoint(tinyxml2::XMLElement* _jointElement,
-                             dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::PrismaticJoint* readPrismaticJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-/// @brief
-dynamics::PrismaticJoint* readPrismaticJoint(
-        tinyxml2::XMLElement* _prismaticJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::RevoluteJoint* readRevoluteJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dynamics::RevoluteJoint* readRevoluteJoint(
-        tinyxml2::XMLElement* _revoluteJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::ScrewJoint* readScrewJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dynamics::ScrewJoint* readScrewJoint(
-        tinyxml2::XMLElement* _screwJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::UniversalJoint* readUniversalJoint(
+            tinyxml2::XMLElement* _universalJointElement);
 
-dynamics::UniversalJoint* readUniversalJoint(
-        tinyxml2::XMLElement* _universalJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::BallJoint* readBallJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dynamics::BallJoint* readBallJoint(
-        tinyxml2::XMLElement* _ballJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dart::dynamics::EulerJoint *readEulerJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dart::dynamics::EulerJoint *readEulerJoint(
-        tinyxml2::XMLElement* _eulerJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::TranslationalJoint* readTranslationalJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dynamics::TranslationalJoint* readTranslationalJoint(
-        tinyxml2::XMLElement* _translationalJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dynamics::FreeJoint* readFreeJoint(
+            tinyxml2::XMLElement* _jointElement);
 
-dynamics::FreeJoint* readFreeJoint(
-        tinyxml2::XMLElement* _freeJointElement,
-        dynamics::Skeleton* _skeleton);
-
-dart::dynamics::WeldJoint* readWeldJoint(
-        tinyxml2::XMLElement* _weldJointElement,
-        dynamics::Skeleton* _skeleton);
+    /// @brief
+    static dart::dynamics::WeldJoint* readWeldJoint(
+            tinyxml2::XMLElement* _jointElement);
+};
 
 } // namespace utils
 } // namespace dart

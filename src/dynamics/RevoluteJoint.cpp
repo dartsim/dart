@@ -42,10 +42,9 @@
 namespace dart {
 namespace dynamics {
 
-RevoluteJoint::RevoluteJoint(BodyNode* _parent, BodyNode* _child,
-                             const Eigen::Vector3d& axis,
+RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
                              const std::string& _name)
-    : Joint(_parent, _child, _name),
+    : Joint(_name),
       mAxis(axis.normalized())
 {
     mJointType = REVOLUTE;
@@ -73,41 +72,7 @@ const Eigen::Vector3d&RevoluteJoint::getAxis() const
     return mAxis;
 }
 
-Eigen::Vector3d RevoluteJoint::getWorldAxis() const
-{
-    Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
-
-    if (this->mParentBodyNode != NULL)
-        parentTransf = mParentBodyNode->getWorldTransform();
-
-    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
-}
-
-Eigen::Vector3d RevoluteJoint::getWorldOrigin() const
-{
-    Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-
-    if (mParentBodyNode != NULL)
-        origin = (mParentBodyNode->getWorldTransform() *
-                  mT_ParentBodyToJoint).translation();
-    else
-        origin = mT_ParentBodyToJoint.translation();
-
-#ifndef NDEBUG
-    if (mChildBodyNode != NULL)
-    {
-        Eigen::Vector3d originFromChild =
-                (mChildBodyNode->getWorldTransform() *
-                 mT_ChildBodyToJoint).translation();
-
-        assert((origin - originFromChild).norm() < DART_EPSILON);
-    }
-#endif
-
-    return origin;
-}
-
-void RevoluteJoint::_updateTransform()
+void RevoluteJoint::updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint
@@ -117,7 +82,7 @@ void RevoluteJoint::_updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-void RevoluteJoint::_updateVelocity()
+void RevoluteJoint::updateVelocity()
 {
     // S
     mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
@@ -127,7 +92,7 @@ void RevoluteJoint::_updateVelocity()
     //mV.setAngular(mAxis * mCoordinate.get_q());
 }
 
-void RevoluteJoint::_updateAcceleration()
+void RevoluteJoint::updateAcceleration()
 {
     // dS = 0
     mdS.setZero();

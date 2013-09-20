@@ -42,11 +42,10 @@
 namespace dart {
 namespace dynamics {
 
-ScrewJoint::ScrewJoint(BodyNode* _parent, BodyNode* _child,
-                       const Eigen::Vector3d& axis,
+ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
-    : Joint(_parent, _child, _name),
+    : Joint(_name),
       mAxis(axis.normalized()),
       mPitch(_pitch)
 {
@@ -75,16 +74,6 @@ const Eigen::Vector3d&ScrewJoint::getAxis() const
     return mAxis;
 }
 
-Eigen::Vector3d ScrewJoint::getAxisGlobal() const
-{
-    Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
-
-    if (this->mParentBodyNode != NULL)
-        parentTransf = mParentBodyNode->getWorldTransform();
-
-    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
-}
-
 void ScrewJoint::setPitch(double _pitch)
 {
     mPitch = _pitch;
@@ -95,7 +84,7 @@ double ScrewJoint::getPitch() const
     return mPitch;
 }
 
-void ScrewJoint::_updateTransform()
+void ScrewJoint::updateTransform()
 {
     // T
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
@@ -108,7 +97,7 @@ void ScrewJoint::_updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-void ScrewJoint::_updateVelocity()
+void ScrewJoint::updateVelocity()
 {
     // S
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
@@ -120,7 +109,7 @@ void ScrewJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-void ScrewJoint::_updateAcceleration()
+void ScrewJoint::updateAcceleration()
 {
     // dS = 0
     mdS.setZero();

@@ -61,7 +61,6 @@ BodyNode::BodyNode(const std::string& _name)
       mColliding(false),
       mSkeleton(NULL),
       mParentJoint(NULL),
-      mChildJoints(std::vector<Joint*>(0)),
       mParentBodyNode(NULL),
       mChildBodyNodes(std::vector<BodyNode*>(0)),
       mGravityMode(true),
@@ -138,30 +137,6 @@ double BodyNode::getMass() const
     return mMass;
 }
 
-void BodyNode::addChildJoint(Joint* _joint)
-{
-    assert(_joint != NULL);
-
-    mChildJoints.push_back(_joint);
-}
-
-Joint*BodyNode::getChildJoint(int _idx) const
-{
-    assert(0 <= _idx && _idx < mChildJoints.size());
-
-    return mChildJoints[_idx];
-}
-
-int BodyNode::getNumChildJoints() const
-{
-    return mChildJoints.size();
-}
-
-void BodyNode::setParentBodyNode(BodyNode* _body)
-{
-    mParentBodyNode = _body;
-}
-
 BodyNode*BodyNode::getParentBodyNode() const
 {
     return mParentBodyNode;
@@ -172,6 +147,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
     assert(_body != NULL);
 
     mChildBodyNodes.push_back(_body);
+    _body->mParentBodyNode = this;
 }
 
 BodyNode* BodyNode::getChildBodyNode(int _idx) const
@@ -436,9 +412,9 @@ void BodyNode::draw(renderer::RenderInterface* _ri,
     _ri->popName();
 
     // render the subtree
-    for (unsigned int i = 0; i < mChildJoints.size(); i++)
+    for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
     {
-        mChildJoints[i]->getChildBodyNode()->draw(_ri, _color, _useDefaultColor);
+        mChildBodyNodes[i]->draw(_ri, _color, _useDefaultColor);
     }
 
     _ri->popMatrix();
@@ -459,9 +435,8 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
     for (unsigned int i = 0; i < mMarkers.size(); i++)
         mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
 
-    for (unsigned int i = 0; i < mChildJoints.size(); i++)
-        mChildJoints[i]->getChildBodyNode()->drawMarkers(_ri,_color,
-                                                         _useDefaultColor);
+    for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
+        mChildBodyNodes[i]->drawMarkers(_ri,_color, _useDefaultColor);
 
     _ri->popMatrix();
 }
@@ -854,12 +829,12 @@ void BodyNode::updateArticulatedInertia()
 {
     mAI = mI;
 
-    std::vector<Joint*>::iterator iJoint;
-    for (iJoint = mChildJoints.begin(); iJoint != mChildJoints.end(); ++iJoint)
+    std::vector<BodyNode*>::iterator it;
+    for (it = mChildBodyNodes.begin(); it != mChildBodyNodes.end(); ++it)
     {
         mAI += math::transformInertia(
-                    (*iJoint)->getLocalTransform().inverse(),
-                    (*iJoint)->getChildBodyNode()->mPi);
+                    (*it)->getParentJoint()->getLocalTransform().inverse(),
+                    (*it)->mPi);
     }
 }
 
@@ -872,10 +847,10 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
 
     mB = -math::dad(mV, mI*mV) - mFext - mFgravity;
 
-    std::vector<Joint*>::iterator iJoint;
-    for (iJoint = mChildJoints.begin(); iJoint != mChildJoints.end(); ++iJoint)
-        mB += math::dAdInvT((*iJoint)->getLocalTransform(),
-                            (*iJoint)->getChildBodyNode()->mBeta);
+    std::vector<BodyNode*>::iterator it;
+    for (it = mChildBodyNodes.begin(); it != mChildBodyNodes.end(); ++it)
+        mB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                            (*it)->mBeta);
 
     assert(!math::isNan(mB));
 }

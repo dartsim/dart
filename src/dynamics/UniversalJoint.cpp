@@ -43,11 +43,10 @@
 namespace dart {
 namespace dynamics {
 
-UniversalJoint::UniversalJoint(BodyNode* _parent, BodyNode* _child,
-                               const Eigen::Vector3d& _axis0,
+UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const Eigen::Vector3d& _axis1,
                                const std::string& _name)
-    : Joint(_parent, _child, _name)
+    : Joint(_name)
 {
     mJointType = UNIVERSAL;
 
@@ -89,7 +88,7 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
     return mAxis[1];
 }
 
-inline void UniversalJoint::_updateTransform()
+inline void UniversalJoint::updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint *
@@ -98,7 +97,7 @@ inline void UniversalJoint::_updateTransform()
          mT_ChildBodyToJoint.inverse();
 }
 
-inline void UniversalJoint::_updateVelocity()
+inline void UniversalJoint::updateVelocity()
 {
     // S
     mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
@@ -108,7 +107,7 @@ inline void UniversalJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-inline void UniversalJoint::_updateAcceleration()
+inline void UniversalJoint::updateAcceleration()
 {
     // dS
     mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));

@@ -25,22 +25,22 @@ enum TypeOfDOF {
 
 /* ********************************************************************************************* */
 /// Add a DOF to a given joint
-Joint* create1DOFJoint(BodyNode* parent, BodyNode* child, double val, double min, double max, int type) {
+Joint* create1DOFJoint(double val, double min, double max, int type) {
 
     // Create the transformation based on the type
     Joint* newJoint = NULL;
     if(type == DOF_X)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(1.0, 0.0, 0.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     else if(type == DOF_Y)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(0.0, 1.0, 0.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
     else if(type == DOF_Z)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(0.0, 0.0, 1.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
     else if(type == DOF_YAW)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(0.0, 0.0, 1.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
     else if(type == DOF_PITCH)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(0.0, 1.0, 0.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
     else if(type == DOF_ROLL)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(1.0, 0.0, 0.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     // Add the transformation to the joint, set the min/max values and set it to the skeleton
     newJoint->getGenCoord(0)->set_q(val);
     newJoint->getGenCoord(0)->set_qMin(min);
@@ -62,19 +62,20 @@ int main(int argc, char* argv[]) {
 
     // ***** BodyNode 1: Left Hip Yaw (LHY) ***** *
     BodyNode* node = new BodyNode("LHY");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, 0.0, DART_PI, DOF_YAW);
+    Joint* joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_YAW);
     joint->setName("LHY");
     Shape* shape = new BoxShape(Vector3d(0.3, 0.3, 1.0));
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
     LeftLegSkel.addBodyNode(node);
 
     // ***** BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY *****\
 
     BodyNode* parent_node = LeftLegSkel.getBodyNode("LHY");
     node = new BodyNode("LHR");
-    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
+    joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHR");
     Eigen::Isometry3d T(Eigen::Translation3d(0.0, 0.0, 0.5));
     joint->setTransformFromParentBodyNode(T);
@@ -84,12 +85,14 @@ int main(int argc, char* argv[]) {
     node->setMass(mass);
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     LeftLegSkel.addBodyNode(node);
 
     // ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
     parent_node = LeftLegSkel.getBodyNode("LHR");
     node = new BodyNode("LHP");
-    joint = create1DOFJoint(parent_node, node, 0.0, 0.0, DART_PI, DOF_ROLL);
+    joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_ROLL);
     joint->setName("LHP");
     T = Eigen::Translation3d(0.0, 0.0, 1.0);
     joint->setTransformFromParentBodyNode(T);
@@ -101,6 +104,8 @@ int main(int argc, char* argv[]) {
     shape1->setOffset(Vector3d(0.0, 0.0, 0.5));
     node->addVisualizationShape(shape1);
     node->addCollisionShape(shape);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     LeftLegSkel.addBodyNode(node);
 
     // Initialize the skeleton

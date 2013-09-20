@@ -58,8 +58,7 @@ public:
     };
 
     /// @brief
-    EulerJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-               const std::string& _name = "Euler joint");
+    EulerJoint(const std::string& _name = "Euler joint");
 
     /// @brief
     virtual ~EulerJoint();
@@ -73,16 +72,16 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
+    // Document inherited.
+    virtual void updateTransform();
+
+    // Document inherited.
+    virtual void updateVelocity();
+
+    // Document inherited.
+    virtual void updateAcceleration();
+
 protected:
-    // Document inherited.
-    virtual void _updateTransform();
-
-    // Document inherited.
-    virtual void _updateVelocity();
-
-    // Document inherited.
-    virtual void _updateAcceleration();
-
     /// @brief Euler angles X, Y, Z
     GenCoord mCoordinate[3];
 

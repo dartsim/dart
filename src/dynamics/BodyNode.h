@@ -197,18 +197,6 @@ public:
     Joint* getParentJoint() const;
 
     /// @brief
-    void addChildJoint(Joint* _joint);
-
-    /// @brief
-    Joint* getChildJoint(int _idx) const;
-
-    /// @brief
-    int getNumChildJoints() const;
-
-    /// @brief
-    void setParentBodyNode(BodyNode* _body);
-
-    /// @brief
     BodyNode* getParentBodyNode() const;
 
     /// @brief
@@ -501,9 +489,6 @@ protected:
 
     /// @brief
     Joint* mParentJoint;
-
-    /// @brief
-    std::vector<Joint*> mChildJoints;
 
     /// @brief
     BodyNode* mParentBodyNode;

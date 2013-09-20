@@ -50,8 +50,7 @@ class FreeJoint : public Joint
 {
 public:
     /// @brief
-    FreeJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-              const std::string& _name = "Free joint");
+    FreeJoint(const std::string& _name = "Free joint");
 
     /// @brief
     virtual ~FreeJoint();
@@ -59,16 +58,16 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
+    // Document inherited.
+    virtual void updateTransform();
+
+    // Document inherited.
+    virtual void updateVelocity();
+
+    // Document inherited.
+    virtual void updateAcceleration();
+
 protected:
-    // Document inherited.
-    virtual void _updateTransform();
-
-    // Document inherited.
-    virtual void _updateVelocity();
-
-    // Document inherited.
-    virtual void _updateAcceleration();
-
     /// @brief
     GenCoord mCoordinate[6];
 

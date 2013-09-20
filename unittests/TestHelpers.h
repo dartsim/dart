@@ -66,7 +66,7 @@ void addEndEffector (Skeleton* robot, BodyNode* parent_node, Vector3d dim) {
 
     // Create the end-effector node with a random dimension
     BodyNode* node = new BodyNode("ee");
-    WeldJoint* joint = new WeldJoint(parent_node, node, "eeJoint");
+    WeldJoint* joint = new WeldJoint("eeJoint");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
     joint->setTransformFromParentBodyNode(T);
@@ -75,27 +75,29 @@ void addEndEffector (Skeleton* robot, BodyNode* parent_node, Vector3d dim) {
     node->setMass(1.0);
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     robot->addBodyNode(node);
 }
 
 /* ********************************************************************************************* */
 /// Add a DOF to a given joint
-Joint* create1DOFJoint(BodyNode* parent, BodyNode* child, double val, double min, double max, int type) {
+Joint* create1DOFJoint(double val, double min, double max, int type) {
 
     // Create the transformation based on the type
     Joint* newJoint = NULL;
     if(type == DOF_X)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(1.0, 0.0, 0.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     else if(type == DOF_Y)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(0.0, 1.0, 0.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
     else if(type == DOF_Z)
-        newJoint = new PrismaticJoint(parent, child, Eigen::Vector3d(0.0, 0.0, 1.0));
+        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
     else if(type == DOF_YAW)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(0.0, 0.0, 1.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
     else if(type == DOF_PITCH)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(0.0, 1.0, 0.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
     else if(type == DOF_ROLL)
-        newJoint = new RevoluteJoint(parent, child, Eigen::Vector3d(1.0, 0.0, 0.0));
+        newJoint = new RevoluteJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     // Add the transformation to the joint, set the min/max values and set it to the skeleton
     newJoint->getGenCoord(0)->set_q(val);
     newJoint->getGenCoord(0)->set_qMin(min);
@@ -115,19 +117,20 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
     BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, -DART_PI, DART_PI, type1);
+    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type1);
     joint->setName("joint1");
     Shape* shape = new BoxShape(dim1);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
     robot->addBodyNode(node);
 
     // Create the second link, the joint with link1 and its shape
     BodyNode* parent_node = robot->getBodyNode("link1");
     node = new BodyNode("link2");
-    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
+    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -137,6 +140,8 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     robot->addBodyNode(node);
 
     // If finished, initialize the skeleton
@@ -158,19 +163,20 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
     BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(NULL, node, 0.0, -DART_PI, DART_PI, type1);
+    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type1);
     joint->setName("joint1");
     Shape* shape = new BoxShape(dim1);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
     robot->addBodyNode(node);
 
     // Create the second link, the joint with link1 and its shape
     BodyNode* parent_node = robot->getBodyNode("link1");
     node = new BodyNode("link2");
-    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type2);
+    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type2);
     joint->setName("joint2");
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -180,12 +186,14 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     robot->addBodyNode(node);
 
     // Create the third link, the joint with link2 and its shape
     parent_node = robot->getBodyNode("link2");
     node = new BodyNode("link3");
-    joint = create1DOFJoint(parent_node, node, 0.0, -DART_PI, DART_PI, type3);
+    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type3);
     joint->setName("joint3");
     T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -195,6 +203,8 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     node->addVisualizationShape(shape);
     node->addCollisionShape(shape);
     node->setMass(mass);
+    node->setParentJoint(joint);
+    parent_node->addChildBodyNode(node);
     robot->addBodyNode(node);
 
     // If finished, initialize the skeleton

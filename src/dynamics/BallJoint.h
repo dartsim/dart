@@ -50,8 +50,7 @@ class BallJoint : public Joint
 {
 public:
     /// @brief
-    BallJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-              const std::string& _name = "Ball joint");
+    BallJoint(const std::string& _name = "Ball joint");
 
     /// @brief
     virtual ~BallJoint();
@@ -59,16 +58,16 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
+    // Document inherited.
+    virtual void updateTransform();
+
+    // Document inherited.
+    virtual void updateVelocity();
+
+    // Document inherited.
+    virtual void updateAcceleration();
+
 protected:
-    // Document inherited.
-    virtual void _updateTransform();
-
-    // Document inherited.
-    virtual void _updateVelocity();
-
-    // Document inherited.
-    virtual void _updateAcceleration();
-
     /// @brief
     GenCoord mCoordinate[3];
 

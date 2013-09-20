@@ -44,9 +44,8 @@
 namespace dart {
 namespace dynamics {
 
-EulerJoint::EulerJoint(BodyNode* _parent, BodyNode* _child,
-                       const std::string& _name)
-    : Joint(_parent, _child, "EulerXYZ joint"),
+EulerJoint::EulerJoint(const std::string& _name)
+    : Joint("EulerXYZ joint"),
       mAxisOrder(AO_XYZ)
 {
     mJointType = EULER;
@@ -75,7 +74,7 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
     return mAxisOrder;
 }
 
-inline void EulerJoint::_updateTransform()
+inline void EulerJoint::updateTransform()
 {
     switch (mAxisOrder)
     {
@@ -103,7 +102,7 @@ inline void EulerJoint::_updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-inline void EulerJoint::_updateVelocity()
+inline void EulerJoint::updateVelocity()
 {
     // S
     double q0 = mCoordinate[0].get_q();
@@ -170,7 +169,7 @@ inline void EulerJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-inline void EulerJoint::_updateAcceleration()
+inline void EulerJoint::updateAcceleration()
 {
     // dS
     double q0 = mCoordinate[0].get_q();

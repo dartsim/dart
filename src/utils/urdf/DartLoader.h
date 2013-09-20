@@ -51,7 +51,7 @@ private:
     template <class VisualOrCollision>
     dynamics::Shape* createShape(boost::shared_ptr<VisualOrCollision> _vizOrCol, std::string  _rootToSkelPath);
 
-    dynamics::Joint* createDartJoint(boost::shared_ptr<const urdf::Joint> _jt, dynamics::BodyNode* _parent, dynamics::BodyNode* _child);
+    dynamics::Joint* createDartJoint(boost::shared_ptr<const urdf::Joint> _jt);
     dynamics::BodyNode* createDartNode(boost::shared_ptr<const urdf::Link> _lk, std::string _rootToSkelPath = NULL);
 
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);

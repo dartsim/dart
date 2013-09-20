@@ -99,19 +99,10 @@ public:
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void addBodyNode(BodyNode* _body, bool _addParentJoint = true);
-
-    /// @brief
-    void addJoint(Joint* _joint);
-
-    /// @brief
-    void setRootBodyNode(BodyNode* _body);
+    void addBodyNode(BodyNode* _body);
 
     /// @brief
     int getNumBodyNodes() const;
-
-    /// @brief
-    int getNumJoints() const;
 
     /// @brief
     BodyNode* getRootBodyNode() const;
@@ -228,14 +219,6 @@ public:
     void updateForwardKinematics(bool _firstDerivative = true,
                                  bool _secondDerivative = true);
 
-    /// @brief Update joint dynamics (T, S, V, dS, dV)
-    void _updateJointKinematics(bool _firstDerivative = true,
-                                bool _secondDerivative = true);
-
-    /// @brief Update body dynamics (W, V, dV)
-    void _updateBodyForwardKinematics(bool _firstDerivative = true,
-                                      bool _secondDerivative = true);
-
     //--------------------------------------------------------------------------
     // Recursive dynamics Algorithms
 
@@ -317,9 +300,6 @@ protected:
     //--------------------------------------------------------------------------
     /// @brief
     std::vector<BodyNode*> mBodyNodes;
-
-    /// @brief
-    std::vector<Joint*> mJoints;
 
     /// @brief List of markers associated
     std::vector<Marker*> mMarkers;

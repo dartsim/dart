@@ -42,9 +42,8 @@
 namespace dart {
 namespace dynamics {
 
-TranslationalJoint::TranslationalJoint(BodyNode* _parent, BodyNode* _child,
-                                       const std::string& _name)
-    : Joint(_parent, _child, _name)
+TranslationalJoint::TranslationalJoint(const std::string& _name)
+    : Joint(_name)
 {
     mJointType = TRANSLATIONAL;
 
@@ -62,7 +61,7 @@ TranslationalJoint::~TranslationalJoint()
 {
 }
 
-void TranslationalJoint::_updateTransform()
+void TranslationalJoint::updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint *
@@ -70,7 +69,7 @@ void TranslationalJoint::_updateTransform()
          mT_ChildBodyToJoint.inverse();
 }
 
-void TranslationalJoint::_updateVelocity()
+void TranslationalJoint::updateVelocity()
 {
     // S
     Eigen::Vector6d J0;
@@ -89,7 +88,7 @@ void TranslationalJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-void TranslationalJoint::_updateAcceleration()
+void TranslationalJoint::updateAcceleration()
 {
     // dS = 0
     mdS.setZero();

@@ -95,7 +95,9 @@ void JOINTS::kinematicsTest(Joint* _joint)
         _joint->set_dq(dq);
         _joint->set_ddq(ddq);
 
-        _joint->updateKinematics();
+        _joint->updateTransform();
+        _joint->updateVelocity();
+        _joint->updateAcceleration();
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -137,14 +139,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            _joint->updateKinematics();
+            _joint->updateTransform();
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += dt;
             _joint->set_q(q_b);
-            _joint->updateKinematics();
+            _joint->updateTransform();
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -184,14 +186,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            _joint->updateKinematics();
+            _joint->updateVelocity();
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += dt;
             _joint->set_q(q_b);
-            _joint->updateKinematics();
+            _joint->updateVelocity();
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
@@ -286,7 +288,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 {
     double tol = 1e-4;
 
-    simulation::World* myWorld = utils::readSkelFile(
+    simulation::World* myWorld = utils::SkelParser::readSkelFile(
             DART_DATA_PATH"/skel/test/joint_limit_test.skel");
     EXPECT_TRUE(myWorld != NULL);
 

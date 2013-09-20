@@ -43,12 +43,10 @@
 namespace dart {
 namespace dynamics {
 
-Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
+Joint::Joint(const std::string& _name)
     : mName(_name),
       mSkelIndex(-1),
       mJointType(UNKNOWN),
-      mParentBodyNode(_parent),
-      mChildBodyNode(_child),
       mIsPositionLimited(true),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
@@ -58,8 +56,6 @@ Joint::Joint(BodyNode* _parent, BodyNode* _child, const std::string& _name)
       mdV(Eigen::Vector6d::Zero()),
       mdS(math::Jacobian::Zero(6,0))
 {
-    setParentBodyNode(mParentBodyNode);
-    setChildBodyNode(mChildBodyNode);
 }
 
 Joint::~Joint()
@@ -144,38 +140,6 @@ int Joint::getSkeletonIndex() const
     return mSkelIndex;
 }
 
-void Joint::setParentBodyNode(BodyNode* _body)
-{
-    mParentBodyNode = _body;
-
-    if (mParentBodyNode != NULL)
-    {
-        mParentBodyNode->addChildJoint(this);
-
-        if (mChildBodyNode != NULL)
-        {
-            mChildBodyNode->setParentBodyNode(mParentBodyNode);
-            mParentBodyNode->addChildBodyNode(mChildBodyNode);
-        }
-    }
-}
-
-void Joint::setChildBodyNode(BodyNode* _body)
-{
-    mChildBodyNode = _body;
-
-    if (mChildBodyNode != NULL)
-    {
-        mChildBodyNode->setParentJoint(this);
-
-        if (mParentBodyNode != NULL)
-        {
-            mParentBodyNode->addChildBodyNode(mChildBodyNode);
-            mChildBodyNode->setParentBodyNode(mParentBodyNode);
-        }
-    }
-}
-
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
     assert(math::verifyTransform(_T));
@@ -190,16 +154,6 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
     mT_ChildBodyToJoint = _T;
 }
 
-BodyNode* Joint::getParentBodyNode() const
-{
-    return mParentBodyNode;
-}
-
-BodyNode* Joint::getChildBodyNode() const
-{
-    return mChildBodyNode;
-}
-
 const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
 {
     return mT_ParentBodyToJoint;
@@ -208,14 +162,6 @@ const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
 const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 {
     return mT_ChildBodyToJoint;
-}
-
-void Joint::updateKinematics(bool _firstDerivative,
-                             bool _secondDerivative)
-{
-    _updateTransform();
-    _updateVelocity();
-    _updateAcceleration();
 }
 
 void Joint::applyGLTransform(renderer::RenderInterface* _ri)

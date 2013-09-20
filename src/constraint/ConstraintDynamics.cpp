@@ -48,7 +48,7 @@ void ConstraintDynamics::computeConstraintForces() {
         if (mSkels[i]->getImmobileState())
             continue;
 
-        for (int j = 0; j < mSkels[i]->getNumJoints(); j++) {
+        for (int j = 0; j < mSkels[i]->getNumBodyNodes(); j++) {
             dynamics::Joint* joint = mSkels[i]->getJoint(j);
             if (!joint->isPositionLimited())
                 continue;

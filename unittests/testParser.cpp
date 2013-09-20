@@ -52,7 +52,7 @@ using namespace simulation;
 using namespace utils;
 
 /******************************************************************************/
-TEST(PARSER, PARSER_DATA_STRUCTUER)
+TEST(SKEL_PARSER, DATA_STRUCTUER)
 {
     bool v1 = true;
     int v2 = -3;
@@ -107,9 +107,9 @@ TEST(PARSER, PARSER_DATA_STRUCTUER)
             EXPECT_EQ(valSE3(i,j), v11(i,j));
 }
 
-TEST(PARSER, PARSER_DART_EMPTY)
+TEST(SKEL_PARSER, EMPTY)
 {
-    World* world = readSkelFile(DART_DATA_PATH"skel/test/empty.skel");
+    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/empty.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -125,9 +125,9 @@ TEST(PARSER, PARSER_DART_EMPTY)
     delete world;
 }
 
-TEST(PARSER, PARSER_DART_SINGLE_PENDULUM)
+TEST(SKEL_PARSER, PENDULUM)
 {
-    World* world = readSkelFile(DART_DATA_PATH"skel/test/single_pendulum.skel");
+    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/single_pendulum.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -139,16 +139,15 @@ TEST(PARSER, PARSER_DART_SINGLE_PENDULUM)
     Skeleton* skel1 = world->getSkeleton("skeleton 1");
 
     EXPECT_EQ(skel1->getNumBodyNodes(), 1);
-    EXPECT_EQ(skel1->getNumJoints(), 1);
 
     world->step();
 
     delete world;
 }
 
-TEST(PARSER, PARSER_DART_SERIAL_CAHIN)
+TEST(SKEL_PARSER, SERIAL_CAHIN)
 {
-    World* world = readSkelFile(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -160,7 +159,6 @@ TEST(PARSER, PARSER_DART_SERIAL_CAHIN)
     Skeleton* skel1 = world->getSkeleton("skeleton 1");
 
     EXPECT_EQ(skel1->getNumBodyNodes(), 10);
-    EXPECT_EQ(skel1->getNumJoints(), 10);
 
     world->step();
 

@@ -89,8 +89,6 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
           rootJoint->setTransformFromParentBodyNode(transform);
       }
 
-      skeleton->initKinematics();
-      skeleton->initDynamics();
       world->addSkeleton(skeleton);
     }
     return world;
@@ -178,7 +176,7 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
         else {
             root = root->child_links[0];
             rootNode = createDartNode(root, _rootToSkelPath);
-            rootJoint = createDartJoint(root->parent_joint, NULL, rootNode);
+            rootJoint = createDartJoint(root->parent_joint);
             if(!rootJoint)
                 return NULL;
         }
@@ -186,8 +184,6 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
     else {
         rootNode = createDartNode(root, _rootToSkelPath);
         rootJoint = new dynamics::FreeJoint();
-        rootJoint->setParentBodyNode(NULL);
-        rootJoint->setChildBodyNode(rootNode);
         rootJoint->setName("rootJoint");
         rootJoint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
         rootJoint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
@@ -205,11 +201,10 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
 
 void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, boost::shared_ptr<const urdf::Link> _lk, dynamics::BodyNode* _parentNode, std::string _rootToSkelPath) {
   dynamics::BodyNode* node = createDartNode(_lk, _rootToSkelPath);
-  dynamics::Joint* joint = createDartJoint(_lk->parent_joint, _parentNode, node);
+  dynamics::Joint* joint = createDartJoint(_lk->parent_joint);
   node->setParentJoint(joint);
-  _parentNode->addChildJoint(joint);
+  _parentNode->addChildBodyNode(node);
   _skel->addBodyNode(node);
-  _skel->addJoint(joint);
   
   for(unsigned int i = 0; i < _lk->child_links.size(); i++) {
       createSkeletonRecursive(_skel, _lk->child_links[i], node, _rootToSkelPath);
@@ -239,27 +234,27 @@ std::string  DartLoader::readFileToString(std::string _xmlFile) {
 /**
  * @function createDartJoint
  */
-dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint> _jt, dynamics::BodyNode* _parent, dynamics::BodyNode* _child)
+dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint> _jt)
 { 
   dynamics::Joint* joint;
   switch(_jt->type) {
   case urdf::Joint::REVOLUTE:
-      joint = new dynamics::RevoluteJoint(_parent, _child, toEigen(_jt->axis));
+      joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
       joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
       joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
   case urdf::Joint::CONTINUOUS:
-      joint = new dynamics::RevoluteJoint(_parent, _child, toEigen(_jt->axis));
+      joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
       break;
   case urdf::Joint::PRISMATIC:
-      joint = new dynamics::PrismaticJoint(_parent, _child, toEigen(_jt->axis));
+      joint = new dynamics::PrismaticJoint(toEigen(_jt->axis));
       joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
       joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
       break;
   case urdf::Joint::FIXED:
-      joint = new dynamics::WeldJoint(_parent, _child);
+      joint = new dynamics::WeldJoint();
       break;
   case urdf::Joint::FLOATING:
-      joint = new dynamics::FreeJoint(_parent, _child);
+      joint = new dynamics::FreeJoint();
       break;
   case urdf::Joint::PLANAR:
       std::cout << "Planar joint not supported." << std::endl;
