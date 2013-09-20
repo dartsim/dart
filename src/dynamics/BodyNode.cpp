@@ -522,8 +522,10 @@ void BodyNode::updateEta()
 {
     if (mParentJoint->getNumGenCoords() > 0)
     {
-        mEta = math::ad(mV, mParentJoint->mS*mParentJoint->get_dq()) +
-           mParentJoint->mdS*mParentJoint->get_dq();
+        mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
+                            mParentJoint->get_dq()) +
+                            mParentJoint->getLocalJacobianFirstDerivative() *
+                            mParentJoint->get_dq();
 
         assert(!math::isNan(mEta));
     }

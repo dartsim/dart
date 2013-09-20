@@ -233,9 +233,6 @@ protected:
 
     /// @brief
     std::vector<double> mSpringStiffness;
-
-private:
-    friend class BodyNode;
 };
 
 } // namespace dynamics
