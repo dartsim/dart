@@ -50,8 +50,7 @@ class RevoluteJoint : public Joint
 {
 public:
     /// @brief
-    RevoluteJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-                  const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
+    RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                   const std::string& _name = "Revolute joint");
 
     /// @brief
@@ -63,26 +62,19 @@ public:
     /// @brief
     const Eigen::Vector3d& getAxis() const;
 
-    /// @brief
-    Eigen::Vector3d getWorldAxis() const;
-
-    /// @brief Get a point on the rotation axis in world coordinate frame.
-    /// ODE calls this as anchor.
-    Eigen::Vector3d getWorldOrigin() const;
-
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
+    // Document inherited.
+    virtual void updateTransform();
+
+    // Document inherited.
+    virtual void updateVelocity();
+
+    // Document inherited.
+    virtual void updateAcceleration();
+
 protected:
-    // Document inherited.
-    virtual void _updateTransform();
-
-    // Document inherited.
-    virtual void _updateVelocity();
-
-    // Document inherited.
-    virtual void _updateAcceleration();
-
     /// @brief
     GenCoord mCoordinate;
 

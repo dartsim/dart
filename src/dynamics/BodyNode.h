@@ -196,16 +196,7 @@ public:
     /// @brief
     Joint* getParentJoint() const;
 
-    /// @brief
-    void addChildJoint(Joint* _joint);
-
-    /// @brief
-    Joint* getChildJoint(int _idx) const;
-
-    /// @brief
-    int getNumChildJoints() const;
-
-    /// @brief
+    /// @brief Does not need to be called by the user, since addChildBodyNode() calls it automatically
     void setParentBodyNode(BodyNode* _body);
 
     /// @brief
@@ -501,9 +492,6 @@ protected:
 
     /// @brief
     Joint* mParentJoint;
-
-    /// @brief
-    std::vector<Joint*> mChildJoints;
 
     /// @brief
     BodyNode* mParentBodyNode;

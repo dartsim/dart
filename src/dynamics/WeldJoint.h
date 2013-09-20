@@ -50,8 +50,7 @@ class WeldJoint : public Joint
 {
 public:
     /// @brief
-    WeldJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-              const std::string& _name = "Weld joint");
+    WeldJoint(const std::string& _name = "Weld joint");
 
     /// @brief
     virtual ~WeldJoint();
@@ -59,17 +58,15 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
-protected:
     // Document inherited.
-    virtual void _updateTransform();
+    virtual void updateTransform();
 
     // Document inherited.
-    virtual void _updateVelocity();
+    virtual void updateVelocity();
 
     // Document inherited.
-    virtual void _updateAcceleration();
+    virtual void updateAcceleration();
 
-public:
     //
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

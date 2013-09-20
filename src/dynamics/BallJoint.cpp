@@ -43,9 +43,8 @@
 namespace dart {
 namespace dynamics {
 
-BallJoint::BallJoint(BodyNode* _parent, BodyNode* _child,
-                     const std::string& _name)
-    : Joint(_parent, _child, _name)
+BallJoint::BallJoint(const std::string& _name)
+    : Joint(_name)
 {
     mJointType = BALL;
 
@@ -63,7 +62,7 @@ BallJoint::~BallJoint()
 {
 }
 
-inline void BallJoint::_updateTransform()
+inline void BallJoint::updateTransform()
 {
     // T
     Eigen::Vector3d q(mCoordinate[0].get_q(),
@@ -75,7 +74,7 @@ inline void BallJoint::_updateTransform()
             mT_ChildBodyToJoint.inverse();
 }
 
-inline void BallJoint::_updateVelocity()
+inline void BallJoint::updateVelocity()
 {
     // S
     Eigen::Vector3d q(mCoordinate[0].get_q(),
@@ -100,7 +99,7 @@ inline void BallJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-inline void BallJoint::_updateAcceleration()
+inline void BallJoint::updateAcceleration()
 {
     // dS
     Eigen::Vector3d q(mCoordinate[0].get_q(),

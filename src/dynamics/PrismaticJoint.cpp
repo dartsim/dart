@@ -45,10 +45,9 @@ using namespace math;
 
 namespace dynamics {
 
-PrismaticJoint::PrismaticJoint(BodyNode* _parent, BodyNode* _child,
-                               const Eigen::Vector3d& axis,
+PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
                                const std::string& _name)
-    : Joint(_parent, _child, _name),
+    : Joint(_name),
       mAxis(axis.normalized())
 {
     mJointType = PRISMATIC;
@@ -76,41 +75,7 @@ const Eigen::Vector3d&PrismaticJoint::getAxis() const
     return mAxis;
 }
 
-Eigen::Vector3d PrismaticJoint::getWorldAxis() const
-{
-    Eigen::Isometry3d parentTransf = Eigen::Isometry3d::Identity();
-
-    if (this->mParentBodyNode != NULL)
-        parentTransf = mParentBodyNode->getWorldTransform();
-
-    return parentTransf.linear() * mT_ParentBodyToJoint.linear() * mAxis;
-}
-
-Eigen::Vector3d PrismaticJoint::getWorldOrigin() const
-{
-    Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-
-    if (mParentBodyNode != NULL)
-        origin = (mParentBodyNode->getWorldTransform() *
-                  mT_ParentBodyToJoint).translation();
-    else
-        origin = mT_ParentBodyToJoint.translation();
-
-#ifndef NDEBUG
-    if (mChildBodyNode != NULL)
-    {
-        Eigen::Vector3d originFromChild =
-                (mChildBodyNode->getWorldTransform() *
-                 mT_ChildBodyToJoint).translation();
-
-        assert((origin - originFromChild).norm() < DART_EPSILON);
-    }
-#endif
-
-    return origin;
-}
-
-void PrismaticJoint::_updateTransform()
+void PrismaticJoint::updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint
@@ -118,7 +83,7 @@ void PrismaticJoint::_updateTransform()
          * mT_ChildBodyToJoint.inverse();
 }
 
-void PrismaticJoint::_updateVelocity()
+void PrismaticJoint::updateVelocity()
 {
     // S
     mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
@@ -128,7 +93,7 @@ void PrismaticJoint::_updateVelocity()
     //mV.setAngular(mAxis * mCoordinate.get_q());
 }
 
-void PrismaticJoint::_updateAcceleration()
+void PrismaticJoint::updateAcceleration()
 {
     // dS = 0
     mdS.setZero();

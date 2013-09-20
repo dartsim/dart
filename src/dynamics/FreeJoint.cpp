@@ -43,9 +43,8 @@
 namespace dart {
 namespace dynamics {
 
-FreeJoint::FreeJoint(BodyNode* _parent, BodyNode* _child,
-                     const std::string& _name)
-    : Joint(_parent, _child, _name)
+FreeJoint::FreeJoint(const std::string& _name)
+    : Joint(_name)
 {
     mJointType = FREE;
 
@@ -66,7 +65,7 @@ FreeJoint::~FreeJoint()
 {
 }
 
-void FreeJoint::_updateTransform()
+void FreeJoint::updateTransform()
 {
     // T
     Eigen::Vector3d q1(mCoordinate[0].get_q(),
@@ -84,7 +83,7 @@ void FreeJoint::_updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-void FreeJoint::_updateVelocity()
+void FreeJoint::updateVelocity()
 {
     // S
     Eigen::Vector3d q(mCoordinate[0].get_q(),
@@ -118,7 +117,7 @@ void FreeJoint::_updateVelocity()
     mV = mS * get_dq();
 }
 
-void FreeJoint::_updateAcceleration()
+void FreeJoint::updateAcceleration()
 {
     // dS
     Eigen::Vector3d q(mCoordinate[0].get_q(),

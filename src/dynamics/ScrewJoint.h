@@ -50,8 +50,7 @@ class ScrewJoint : public Joint
 {
 public:
     /// @brief
-    ScrewJoint(BodyNode* _parent = NULL, BodyNode* _child = NULL,
-               const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
+    ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                double _pitch = 0.1,
                const std::string& _name = "Screw joint");
 
@@ -65,9 +64,6 @@ public:
     const Eigen::Vector3d& getAxis() const;
 
     /// @brief
-    Eigen::Vector3d getAxisGlobal() const;
-
-    /// @brief
     void setPitch(double _pitch);
 
     /// @brief
@@ -76,16 +72,16 @@ public:
     // Documentation is inherited.
     virtual double getPotentialEnergy() const { return 0.0; }
 
+    // Document inherited.
+    virtual void updateTransform();
+
+    // Document inherited.
+    virtual void updateVelocity();
+
+    // Document inherited.
+    virtual void updateAcceleration();
+
 protected:
-    // Document inherited.
-    virtual void _updateTransform();
-
-    // Document inherited.
-    virtual void _updateVelocity();
-
-    // Document inherited.
-    virtual void _updateAcceleration();
-
     /// @brief
     GenCoord mCoordinate;
 

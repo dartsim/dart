@@ -44,9 +44,8 @@ namespace dynamics {
 
 #define FJOINT_EPS 1e-6
 
-WeldJoint::WeldJoint(BodyNode* _parent, BodyNode* _child,
-                     const std::string& _name)
-    : Joint(_parent, _child, _name)
+WeldJoint::WeldJoint(const std::string& _name)
+    : Joint(_name)
 {
     mJointType = WELD;
 
@@ -58,18 +57,18 @@ WeldJoint::~WeldJoint()
 {
 }
 
-void WeldJoint::_updateTransform()
+void WeldJoint::updateTransform()
 {
     // T
     mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
 }
 
-void WeldJoint::_updateVelocity()
+void WeldJoint::updateVelocity()
 {
     // Do nothing
 }
 
-void WeldJoint::_updateAcceleration()
+void WeldJoint::updateAcceleration()
 {
     // Do nothing
 }
