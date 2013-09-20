@@ -12,6 +12,10 @@ void RigidBody::draw(renderer::RenderInterface* _ri) {
 
     _ri->pushMatrix();
     _ri->translate(mPosition);
+    Eigen::Affine3d m;
+    
+    m.linear() = mOrientation;
+    _ri->transform(m);
     if (mShape->getShapeType() == kinematics::Shape::P_BOX)
         _ri->drawCube(mShape->getDim());
     else if (mShape->getShapeType() == kinematics::Shape::P_ELLIPSOID)
