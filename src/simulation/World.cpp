@@ -53,6 +53,7 @@ namespace simulation {
 
 World::World()
     : integration::IntegrableSystem(),
+      mGravity(0.0, 0.0, -9.81),
       mTime(0.0),
       mTimeStep(0.001),
       mFrame(0),
