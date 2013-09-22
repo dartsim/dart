@@ -35,31 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "utils/Parser.h"
 
-// Standard Library
 #include <iostream>
-#include <boost/lexical_cast.hpp>
+#include <vector>
 #include <boost/algorithm/string.hpp>
-#include <Eigen/Dense>
+#include <boost/lexical_cast.hpp>
 
-// Local Files
-#include "common/Console.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/BoxShape.h"
-#include "dynamics/CylinderShape.h"
-#include "dynamics/EllipsoidShape.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/ScrewJoint.h"
-#include "dynamics/TranslationalJoint.h"
-#include "dynamics/BallJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/EulerJoint.h"
-#include "dynamics/UniversalJoint.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
-#include "utils/SkelParser.h"
+#include "math/Geometry.h"
 
 namespace dart {
 namespace utils {
@@ -163,7 +146,6 @@ Eigen::Vector2d toVector2d(const std::string& _str)
 {
     Eigen::Vector2d ret;
 
-    std::vector<double> elements;
     std::vector<std::string> pieces;
     std::string trimedStr = boost::trim_copy(_str);
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
@@ -175,7 +157,7 @@ Eigen::Vector2d toVector2d(const std::string& _str)
         {
             try
             {
-                elements.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
+                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
             }
             catch(boost::bad_lexical_cast& e)
             {
@@ -188,9 +170,6 @@ Eigen::Vector2d toVector2d(const std::string& _str)
         }
     }
 
-    ret(0) = elements[0];
-    ret(1) = elements[1];
-
     return ret;
 }
 
@@ -198,7 +177,6 @@ Eigen::Vector3d toVector3d(const std::string& _str)
 {
     Eigen::Vector3d ret;
 
-    std::vector<double> elements;
     std::vector<std::string> pieces;
     std::string trimedStr = boost::trim_copy(_str);
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
@@ -210,7 +188,7 @@ Eigen::Vector3d toVector3d(const std::string& _str)
         {
             try
             {
-                elements.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
+                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
             }
             catch(boost::bad_lexical_cast& e)
             {
@@ -224,10 +202,6 @@ Eigen::Vector3d toVector3d(const std::string& _str)
         }
     }
 
-    ret(0) = elements[0];
-    ret(1) = elements[1];
-    ret(2) = elements[2];
-
     return ret;
 }
 
@@ -235,7 +209,6 @@ Eigen::Vector6d toVector6d(const std::string& _str)
 {
     Eigen::Vector6d ret;
 
-    std::vector<double> elements;
     std::vector<std::string> pieces;
     std::string trimedStr = boost::trim_copy(_str);
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
@@ -247,7 +220,7 @@ Eigen::Vector6d toVector6d(const std::string& _str)
         {
             try
             {
-                elements.push_back(boost::lexical_cast<double>(pieces[i].c_str()));
+                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
             }
             catch(boost::bad_lexical_cast& e)
             {
@@ -260,13 +233,6 @@ Eigen::Vector6d toVector6d(const std::string& _str)
             }
         }
     }
-
-    ret(0) = elements[0];
-    ret(1) = elements[1];
-    ret(2) = elements[2];
-    ret(3) = elements[3];
-    ret(4) = elements[4];
-    ret(5) = elements[5];
 
     return ret;
 }
@@ -489,7 +455,7 @@ void getAttribute(tinyxml2::XMLElement* element,
 }
 
 ElementEnumerator::ElementEnumerator(tinyxml2::XMLElement* _parent,
-                                     const char* const _name)
+                                     const std::string _name)
     : m_name(_name),
       m_parent(_parent),
       m_current(NULL)

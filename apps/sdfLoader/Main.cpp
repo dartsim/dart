@@ -1,3 +1,4 @@
+#include <iostream>
 #include "utils/Paths.h"
 #include "utils/sdf/SdfParser.h"
 #include "MyWindow.h"

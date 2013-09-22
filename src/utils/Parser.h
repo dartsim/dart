@@ -38,13 +38,13 @@
 #ifndef DART_UTILS_PARSER_H
 #define DART_UTILS_PARSER_H
 
-#include <vector>
+#include <string>
 #include <Eigen/Dense>
 // TinyXML-2 Library
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "math/Geometry.h"
+#include "math/MathTypes.h"
 
 namespace dart {
 namespace utils {
@@ -96,7 +96,7 @@ class ElementEnumerator
 {
 public:
     /// @brief
-    ElementEnumerator(tinyxml2::XMLElement* _parent, const char* const _name);
+    ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string _name);
 
     /// @brief
     ~ElementEnumerator();
