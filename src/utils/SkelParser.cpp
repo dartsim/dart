@@ -266,6 +266,10 @@ dynamics::BodyNode* SkelParser::readBodyNode(
                 getValueIsometry3d(_bodyNodeElement, "transformation");
         newBodyNode->setWorldTransform(_skeletonFrame * W);
     }
+    else
+    {
+        newBodyNode->setWorldTransform(_skeletonFrame);
+    }
 
     //--------------------------------------------------------------------------
     // visualization_shape

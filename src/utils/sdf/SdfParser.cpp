@@ -51,7 +51,12 @@ simulation::World* SdfParser::readSdfFile(const std::string& _filename)
     std::string version = getAttribute(sdfElement, "version");
     // We support 1.4 only for now.
     if (version != "1.4")
+    {
+        dterr << "The file format of ["
+          << _filename
+          << "] is not sdf 1.4. Please try with sdf 1.4." << std::endl;
         return NULL;
+    }
 
     //--------------------------------------------------------------------------
     // Load World
@@ -146,22 +151,8 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
     // immobile attribute
     if (hasElement(_skeletonElement, "static"))
     {
-        //bool immobile = getValueBool(_skeletonElement, "static");
-        std::string immobile = getValueString(_skeletonElement, "static");
-
-        if (immobile == "true")
-        {
-            newSkeleton->setImmobileState(true);
-        }
-        else if (immobile == "false")
-        {
-            newSkeleton->setImmobileState(false);
-        }
-        else
-        {
-            dterr << "Unknown shape.\n";
-            assert(0);
-        }
+        bool immobile = getValueBool(_skeletonElement, "static");
+        newSkeleton->setImmobileState(immobile);
     }
 
     //--------------------------------------------------------------------------
@@ -254,6 +245,10 @@ dynamics::BodyNode* SdfParser::readBodyNode(tinyxml2::XMLElement* _bodyNodeEleme
         Eigen::Isometry3d W = getValueIsometry3d(_bodyNodeElement, "pose");
         newBodyNode->setWorldTransform(_skeletonFrame * W);
     }
+    else
+    {
+        newBodyNode->setWorldTransform(_skeletonFrame);
+    }
 
     //--------------------------------------------------------------------------
     // visual
@@ -293,7 +288,7 @@ dynamics::BodyNode* SdfParser::readBodyNode(tinyxml2::XMLElement* _bodyNodeEleme
         // offset
         if (hasElement(inertiaElement, "pose"))
         {
-            Eigen::Isometry3d T = getValueIsometry3d(_bodyNodeElement, "pose");
+            Eigen::Isometry3d T = getValueIsometry3d(inertiaElement, "pose");
             newBodyNode->setLocalCOM(T.translation());
         }
 
@@ -347,7 +342,8 @@ dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement)
     {
         tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "sphere");
 
-        Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
+        double radius = getValueDouble(ellipsoidElement, "radius");
+        Eigen::Vector3d size(radius * 2, radius * 2, radius * 2);
 
         newShape = new dynamics::EllipsoidShape(size);
     }
@@ -533,10 +529,10 @@ dynamics::RevoluteJoint* SdfParser::readRevoluteJoint(
         newRevoluteJoint->setAxis(xyz);
 
         // dynamics
-        if (hasElement(_revoluteJointElement, "dynamics"))
+        if (hasElement(axisElement, "dynamics"))
         {
             tinyxml2::XMLElement* dynamicsElement
-                    = getElement(_revoluteJointElement, "dynamics");
+                    = getElement(axisElement, "dynamics");
 
             // damping
             if (hasElement(dynamicsElement, "damping"))

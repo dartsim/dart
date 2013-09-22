@@ -288,7 +288,18 @@ bool getValueBool(tinyxml2::XMLElement* _parentElement, const std::string& _name
 
     std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
 
-    return toBool(str);
+    if (boost::to_upper_copy(str) == "TRUE" || str == "1")
+        return true;
+    else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
+        return false;
+    else
+    {
+        std::cerr << "value ["
+                  << str
+                  << "] is not a valid boolean type."
+                  << std::endl;
+        assert(0);
+    }
 }
 
 int getValueInt(tinyxml2::XMLElement* _parentElement, const std::string& _name)
