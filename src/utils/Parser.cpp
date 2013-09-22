@@ -455,7 +455,7 @@ void getAttribute(tinyxml2::XMLElement* element,
 }
 
 ElementEnumerator::ElementEnumerator(tinyxml2::XMLElement* _parent,
-                                     const std::string _name)
+                                     const std::string& _name)
     : m_name(_name),
       m_parent(_parent),
       m_current(NULL)

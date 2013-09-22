@@ -96,7 +96,7 @@ class ElementEnumerator
 {
 public:
     /// @brief
-    ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string _name);
+    ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string& _name);
 
     /// @brief
     ~ElementEnumerator();
