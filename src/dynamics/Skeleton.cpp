@@ -187,34 +187,18 @@ Joint* Skeleton::getJoint(const std::string& _name) const
     return NULL;
 }
 
-void Skeleton::addMarker(Marker* _h)
-{
-    mMarkers.push_back(_h);
-    _h->setSkeletonIndex(mMarkers.size()-1);
-    BodyNode *body = _h->getNode();
-    body->addMarker(_h);
-}
-
-int Skeleton::getNumMarkers() const
-{
-    return mMarkers.size();
-}
-
-Marker* Skeleton::getMarker(int _i)
-{
-    return mMarkers[_i];
-}
-
-Marker*Skeleton::getMarker(const std::string& _name) const
+Marker* Skeleton::getMarker(const std::string& _name) const
 {
     assert(!_name.empty());
 
-    for (std::vector<Marker*>::const_iterator itrMarker = mMarkers.begin();
-         itrMarker != mMarkers.end();
-         ++itrMarker)
+    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
     {
-        if ((*itrMarker)->getName() == _name)
-            return *itrMarker;
+        for (int i = 0; i < (*it)->getNumMarkers(); ++i)
+        {
+            if ((*it)->getMarker(i)->getName() == _name)
+                return (*it)->getMarker(i);
+        }
     }
 
     return NULL;

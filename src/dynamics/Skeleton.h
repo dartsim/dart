@@ -40,18 +40,12 @@
 #define DART_DYNAMICS_SKELETON_H
 
 #include <vector>
-
 #include <Eigen/Dense>
-
 #include "math/Geometry.h"
 #include "dynamics/GenCoordSystem.h"
 
 namespace dart {
-
-namespace renderer {
-class RenderInterface;
-}
-
+namespace renderer { class RenderInterface; }
 namespace dynamics {
 
 class BodyNode;
@@ -66,7 +60,7 @@ public:
     // Constructor and Destructor
     //--------------------------------------------------------------------------
     /// @brief Constructor
-    Skeleton(const std::string& _name = "");
+    Skeleton(const std::string& _name = "Skeleton");
 
     /// @brief Destructor
     virtual ~Skeleton();
@@ -118,12 +112,6 @@ public:
 
     /// @brief
     Joint* getJoint(const std::string& _name) const;
-
-    /// @brief
-    void addMarker(Marker *_h);
-
-    /// @brief
-    int getNumMarkers() const;
 
     /// @brief
     Marker* getMarker(int _i);
@@ -221,7 +209,7 @@ public:
 
     //--------------------------------------------------------------------------
     // Recursive dynamics Algorithms
-
+    //--------------------------------------------------------------------------
     /// @brief
     void initDynamics();
 
@@ -300,9 +288,6 @@ protected:
     //--------------------------------------------------------------------------
     /// @brief
     std::vector<BodyNode*> mBodyNodes;
-
-    /// @brief List of markers associated
-    std::vector<Marker*> mMarkers;
 
     //--------------------------------------------------------------------------
     //

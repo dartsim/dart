@@ -41,16 +41,8 @@
 #include <Eigen/Dense>
 
 namespace dart {
-
-namespace renderer {
-class RenderInterface;
-}
-
+namespace renderer { class RenderInterface; }
 namespace dynamics {
-
-#define MAX_MARKER_NAME 256
-
-class BodyNode;
 
 class Marker
 {
@@ -63,7 +55,7 @@ public:
     };
     
     /// @brief
-    Marker(const std::string& _name, Eigen::Vector3d& _offset, BodyNode* _node,
+    Marker(const std::string& _name, Eigen::Vector3d& _offset,
            ConstraintType _type = NO);
 
     /// @brief
@@ -73,9 +65,6 @@ public:
     void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true,
               const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
               bool _useDefaultColor = true) const;
-
-    /// @brief
-    Eigen::Vector3d getWorldCoords(); ///< get the world coordinates of mOffset
 
     /// @brief
     Eigen::Vector3d getLocalCoords() const;
@@ -93,7 +82,7 @@ public:
     int getID() const;
 
     /// @brief
-    BodyNode* getNode() const;
+    void setName(const std::string&);
 
     /// @brief
     const std::string& getName() const;
@@ -105,11 +94,7 @@ public:
     /// @brief
     void setConstraintType(ConstraintType _type);
     
-    
 protected:
-    /// @brief body link associated with.
-    BodyNode* mNode;
-
     /// @brief local coordinates in the links.
     Eigen::Vector3d mOffset;
 
