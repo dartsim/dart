@@ -78,7 +78,7 @@ public:
     virtual ~Integrator();
 
 public:
-    /// @brief Integrate the system with times step dt.
+    /// @brief Integrate the system with time step dt.
     virtual void integrate(IntegrableSystem* system, double dt) const = 0;
 };
 
