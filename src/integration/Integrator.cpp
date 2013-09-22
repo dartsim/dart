@@ -41,7 +41,6 @@ namespace dart {
 namespace integration {
 
 IntegrableSystem::IntegrableSystem()
-//    : dynamics::System()
 {
 }
 

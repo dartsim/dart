@@ -38,7 +38,6 @@
 #ifndef DART_INTEGRATION_EULER_INTEGRATOR_H
 #define DART_INTEGRATION_EULER_INTEGRATOR_H
 
-#include <Eigen/Dense>
 #include "integration/Integrator.h"
 
 namespace dart {
@@ -48,10 +47,10 @@ namespace integration {
 class EulerIntegrator : public Integrator
 {
 public:
-    /// @brief Constructor.
+    /// @brief Default constructor.
     EulerIntegrator();
 
-    /// @brief Destructor.
+    /// @brief Default destructor.
     virtual ~EulerIntegrator();
 
     // Documentation inherited.

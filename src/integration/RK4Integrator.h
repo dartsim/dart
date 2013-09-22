@@ -38,7 +38,6 @@
 #ifndef DART_INTEGRATION_RK4_INTEGRATOR_H
 #define DART_INTEGRATION_RK4_INTEGRATOR_H
 
-#include <Eigen/Dense>
 #include "integration/Integrator.h"
 
 namespace dart {
@@ -48,17 +47,17 @@ namespace integration {
 class RK4Integrator : public Integrator
 {
 public:
-    /// @brief
+    /// @brief Default constructor.
     RK4Integrator() {}
 
-    /// @brief
+    /// @brief Default destructor.
     virtual ~RK4Integrator() {}
 
     // Documentation inherited.
     virtual void integrate(IntegrableSystem* system, double dt) const;
 
 private:
-    /// @brief
+    /// @brief Weights.
     mutable Eigen::VectorXd k1, k2, k3, k4;
 };
 

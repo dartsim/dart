@@ -42,30 +42,26 @@
 #include <Eigen/Dense>
 
 namespace dart {
-namespace dynamics { class GenCoordSystem; }
 namespace integration {
 
 /// @brief Any class that uses an integrator should implement this interface.
 class IntegrableSystem
 {
 public:
-    /// @brief
+    /// @brief Default constructor.
     IntegrableSystem();
 
-    /// @brief
+    /// @brief Default destructor.
     virtual ~IntegrableSystem();
 
 public:
-    /// @brief
+    /// @brief Get state of the system.
     virtual Eigen::VectorXd getState() const = 0;
 
-    /// @brief
+    /// @brief Set state of the system.
     virtual void setState(const Eigen::VectorXd& _state) = 0;
 
-    /// @brief
-    virtual void setControlInput() {}
-
-    /// @brief
+    /// @brief Evaluate the derivatives of the system.
     virtual Eigen::VectorXd evalDeriv() = 0;
 };
 
@@ -75,14 +71,14 @@ public:
 class Integrator
 {
 public:
-    /// @brief Constructor.
+    /// @brief Default constructor.
     Integrator();
 
-    /// @brief Destructor.
+    /// @brief Default destructor.
     virtual ~Integrator();
 
 public:
-    /// @brief
+    /// @brief Integrate the system with times step dt.
     virtual void integrate(IntegrableSystem* system, double dt) const = 0;
 };
 
