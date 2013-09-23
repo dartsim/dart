@@ -95,7 +95,7 @@ double Skeleton::getMass() const
     return mTotalMass;
 }
 
-void Skeleton::initialize()
+void Skeleton::init()
 {
     // init the dependsOnDof stucture for each bodylink
     for(int i = 0; i < getNumBodyNodes(); i++)

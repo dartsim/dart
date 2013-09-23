@@ -201,7 +201,7 @@ public:
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
     /// @brief
-    void initialize();
+    void init();
 
     /// @brief Update joint and body kinematics.
     void updateForwardKinematics(bool _firstDerivative = true,
