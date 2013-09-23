@@ -255,7 +255,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
     mSkeletons.push_back(_skeleton);
 
     //_skeleton->initKinematics();
-    _skeleton->initDynamics();
+    _skeleton->initialize();
     _skeleton->updateForwardKinematics();
     _skeleton->computeEquationsOfMotionID(mGravity);
     _skeleton->backupInitState();

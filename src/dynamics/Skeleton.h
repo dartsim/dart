@@ -120,7 +120,7 @@ public:
     Marker* getMarker(const std::string& _name) const;
 
     //--------------------------------------------------------------------------
-    // Properties updated by dynamics (kinematics)
+    // Properties updated by dynamics
     //--------------------------------------------------------------------------
     /// @brief
     void setConfig(const std::vector<int>& _id, Eigen::VectorXd _vals,
@@ -198,20 +198,14 @@ public:
     Eigen::Vector3d getWorldCOM();
 
     //--------------------------------------------------------------------------
-    // Recursive kinematics Algorithms
+    // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
     /// @brief
-    void initKinematics();
+    void initialize();
 
     /// @brief Update joint and body kinematics.
     void updateForwardKinematics(bool _firstDerivative = true,
                                  bool _secondDerivative = true);
-
-    //--------------------------------------------------------------------------
-    // Recursive dynamics Algorithms
-    //--------------------------------------------------------------------------
-    /// @brief
-    void initDynamics();
 
     /// @brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
