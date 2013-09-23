@@ -147,7 +147,7 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     // If finished, initialize the skeleton
     if(!unfinished) {
         addEndEffector(robot, node, dim2);
-        robot->initDynamics();
+        robot->init();
     }
     return robot;
 }
@@ -210,7 +210,7 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     // If finished, initialize the skeleton
     if(!unfinished) {
         addEndEffector(robot, node, dim3);
-        robot->initDynamics();
+        robot->init();
     }
     return robot;
 }

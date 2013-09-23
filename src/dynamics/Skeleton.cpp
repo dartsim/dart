@@ -95,9 +95,17 @@ double Skeleton::getMass() const
     return mTotalMass;
 }
 
-void Skeleton::initDynamics()
+void Skeleton::init()
 {
-    initKinematics();
+    // init the dependsOnDof stucture for each bodylink
+    for(int i = 0; i < getNumBodyNodes(); i++)
+    {
+        mBodyNodes.at(i)->setSkeleton(this);
+        mBodyNodes.at(i)->setDependDofList();
+        mBodyNodes.at(i)->init();
+    }
+
+    updateForwardKinematics();
 
     int DOF = getNumGenCoords();
 
@@ -283,19 +291,6 @@ Eigen::VectorXd Skeleton::getExternalForces() const
 Eigen::VectorXd Skeleton::getInternalForces() const
 {
     return get_tau();
-}
-
-void Skeleton::initKinematics()
-{
-    // init the dependsOnDof stucture for each bodylink
-    for(int i = 0; i < getNumBodyNodes(); i++)
-    {
-        mBodyNodes.at(i)->setSkeleton(this);
-        mBodyNodes.at(i)->setDependDofList();
-        mBodyNodes.at(i)->init();
-    }
-
-    updateForwardKinematics();
 }
 
 void Skeleton::updateForwardKinematics(bool _firstDerivative,

@@ -111,7 +111,7 @@ public:
     virtual ~BodyNode();
 
     //--------------------------------------------------------------------------
-    // Static properties
+    // Static properties().
     //--------------------------------------------------------------------------
     /// @brief
     void setName(const std::string& _name);
