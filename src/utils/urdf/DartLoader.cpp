@@ -242,6 +242,7 @@ dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
       joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
       joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
+      break;
   case urdf::Joint::CONTINUOUS:
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
       break;

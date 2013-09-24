@@ -185,6 +185,9 @@ inline int RRT::getNearestNeighbor(const VectorXd &qsamp) {
 /* ********************************************************************************************* */
 // random # between min & max
 inline double RRT::randomInRange(double min, double max) {
+	assert(max - min >= 0.0);
+	assert(max - min < numeric_limits<double>::infinity());
+
 	if(min == max) return min;
 	return min + ((max-min) * ((double)rand() / ((double)RAND_MAX + 1)));
 }
