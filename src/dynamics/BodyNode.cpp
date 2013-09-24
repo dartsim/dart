@@ -795,11 +795,9 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
     {
         dynamics::Joint* childJoint = (*iChildBody)->getParentJoint();
         assert(childJoint != NULL);
-        BodyNode* bodyDyn = dynamic_cast<BodyNode*>(*iChildBody);
-        assert(bodyDyn != NULL);
 
         mF += math::dAdInvT(childJoint->getLocalTransform(),
-                            bodyDyn->getBodyForce());
+                            (*iChildBody)->getBodyForce());
     }
 
     assert(!math::isNan(mF));
