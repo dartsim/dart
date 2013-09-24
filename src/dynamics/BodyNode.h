@@ -245,10 +245,6 @@ public:
     /// the world coordinates.
     const Eigen::Isometry3d& getWorldTransform() const;
 
-    /// @brief Transformation from the world coordinates to the local
-    /// coordinates of this body node.
-    Eigen::Isometry3d getWorldInvTransform() const;
-
     /// @brief Given a 3D vector lp in the local coordinates of this body node.
     /// @return The world coordinates of this vector
     Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const;
