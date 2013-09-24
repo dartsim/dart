@@ -229,11 +229,6 @@ const Eigen::Isometry3d& BodyNode::getWorldTransform() const
     return mW;
 }
 
-Eigen::Isometry3d BodyNode::getWorldInvTransform() const
-{
-    return mW.inverse();
-}
-
 Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
 {
     return mW * _lp;
@@ -702,7 +697,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _offset,
     if (_isOffsetLocal)
         T.translation() = _offset;
     else
-        T.translation() = getWorldInvTransform() * _offset;
+        T.translation() = getWorldTransform().inverse() * _offset;
 
     if (_isForceLocal)
         F.tail<3>() = _force;
@@ -722,7 +717,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _offset,
     if (_isOffsetLocal)
         T.translation() = _offset;
     else
-        T.translation() = getWorldInvTransform() * _offset;
+        T.translation() = getWorldTransform().inverse() * _offset;
 
     if (_isForceLocal)
         F.tail<3>() = _force;
