@@ -224,13 +224,6 @@ int BodyNode::getDependentDof(int _arrayIndex) const
     return mDependentDofIndexes[_arrayIndex];
 }
 
-void BodyNode::setWorldTransform(const Eigen::Isometry3d &_W)
-{
-    assert(math::verifyTransform(_W));
-
-    mW = _W;
-}
-
 const Eigen::Isometry3d& BodyNode::getWorldTransform() const
 {
     return mW;

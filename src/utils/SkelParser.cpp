@@ -185,13 +185,13 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     //--------------------------------------------------------------------------
     // Bodies
     ElementEnumerator bodies(_skeletonElement, "body");
-    std::vector<dynamics::BodyNode*> bodyList;
+    std::vector<SkelBodyNode> skelBodyNodes;
     while (bodies.next())
     {
-        dynamics::BodyNode* newBody
+        SkelBodyNode newSkelBodyNode
                 = readBodyNode(bodies.get(), newSkeleton, skeletonFrame);
-        assert(newBody);
-        bodyList.push_back(newBody);
+        assert(newSkelBodyNode.bodyNode);
+        skelBodyNodes.push_back(newSkelBodyNode);
     }
 
     //--------------------------------------------------------------------------
@@ -199,14 +199,14 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     ElementEnumerator joints(_skeletonElement, "joint");
     while (joints.next())
     {
-        readJoint(joints.get(), bodyList);
+        readJoint(joints.get(), skelBodyNodes);
     }
 
     //--------------------------------------------------------------------------
     // Add FreeJoint to the body node that doesn't have parent joint
-    for (unsigned int i = 0; i < bodyList.size(); ++i)
+    for (unsigned int i = 0; i < skelBodyNodes.size(); ++i)
     {
-        dynamics::BodyNode* bodyNode = bodyList[i];
+        dynamics::BodyNode* bodyNode = skelBodyNodes[i].bodyNode;
 
         if (bodyNode->getParentJoint() == NULL)
         {
@@ -222,14 +222,14 @@ dynamics::Skeleton* SkelParser::readSkeleton(
         }
     }
 
-    for (std::vector<dynamics::BodyNode*>::iterator it = bodyList.begin();
-         it != bodyList.end(); ++it)
-        newSkeleton->addBodyNode(*it);
+    for (std::vector<SkelBodyNode>::iterator it = skelBodyNodes.begin();
+         it != skelBodyNodes.end(); ++it)
+        newSkeleton->addBodyNode((*it).bodyNode);
 
     return newSkeleton;
 }
 
-dynamics::BodyNode* SkelParser::readBodyNode(
+SkelParser::SkelBodyNode SkelParser::readBodyNode(
         tinyxml2::XMLElement* _bodyNodeElement,
         dynamics::Skeleton* _skeleton,
         const Eigen::Isometry3d& _skeletonFrame)
@@ -238,6 +238,7 @@ dynamics::BodyNode* SkelParser::readBodyNode(
     assert(_skeleton != NULL);
 
     dynamics::BodyNode* newBodyNode = new dynamics::BodyNode;
+    Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
 
     // Name attribute
     std::string name = getAttribute(_bodyNodeElement, "name");
@@ -264,11 +265,11 @@ dynamics::BodyNode* SkelParser::readBodyNode(
     {
         Eigen::Isometry3d W =
                 getValueIsometry3d(_bodyNodeElement, "transformation");
-        newBodyNode->setWorldTransform(_skeletonFrame * W);
+        initTransform = _skeletonFrame * W;
     }
     else
     {
-        newBodyNode->setWorldTransform(_skeletonFrame);
+        initTransform = _skeletonFrame;
     }
 
     //--------------------------------------------------------------------------
@@ -337,7 +338,11 @@ dynamics::BodyNode* SkelParser::readBodyNode(
         }
     }
 
-    return newBodyNode;
+    SkelBodyNode skelBodyNode;
+    skelBodyNode.bodyNode = newBodyNode;
+    skelBodyNode.initTransform = initTransform;
+
+    return skelBodyNode;
 }
 
 dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizElement)
@@ -399,7 +404,7 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizElement)
 }
 
 dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
-                           const std::vector<dynamics::BodyNode*>& _bodies)
+                           const std::vector<SkelBodyNode>& _skelBodyNodes)
 {
     assert(_jointElement != NULL);
 
@@ -434,29 +439,32 @@ dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
     //--------------------------------------------------------------------------
     // parent
-    dynamics::BodyNode* parentBody = NULL;
+    SkelBodyNode skelParentBodyNode;
+    skelParentBodyNode.bodyNode = NULL;
+    skelParentBodyNode.initTransform = Eigen::Isometry3d::Identity();
+
     if (hasElement(_jointElement, "parent"))
     {
         std::string strParent = getValueString(_jointElement, "parent");
 
         if (strParent != std::string("world"))
         {
-            for (std::vector<dynamics::BodyNode*>::const_iterator it =
-                 _bodies.begin(); it != _bodies.end(); ++it)
-                if ((*it)->getName() == strParent)
+            for (std::vector<SkelBodyNode>::const_iterator it =
+                 _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it)
+                if ((*it).bodyNode->getName() == strParent)
                 {
-                    parentBody = (*it);
+                    skelParentBodyNode = (*it);
                     break;
                 }
 
-            if (parentBody == NULL)
+            if (skelParentBodyNode.bodyNode == NULL)
             {
                 dterr << "Can't find the parent body ["
                   << strParent
                   << "] of the joint ["
                   << newJoint->getName()
                   << "]. " << std::endl;
-                assert(parentBody != NULL);
+                assert(0);
             }
         }
     }
@@ -468,27 +476,32 @@ dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
     //--------------------------------------------------------------------------
     // child
-    dynamics::BodyNode* childBody = NULL;
+    SkelBodyNode skelChildBodyNode;
+    skelChildBodyNode.bodyNode = NULL;
+    skelChildBodyNode.initTransform = Eigen::Isometry3d::Identity();
+
     if (hasElement(_jointElement, "child"))
     {
         std::string strChild = getValueString(_jointElement, "child");
 
-        for (std::vector<dynamics::BodyNode*>::const_iterator it =
-             _bodies.begin(); it != _bodies.end(); ++it)
-            if ((*it)->getName() == strChild)
+        for (std::vector<SkelBodyNode>::const_iterator it =
+             _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it)
+        {
+            if ((*it).bodyNode->getName() == strChild)
             {
-                childBody = (*it);
+                skelChildBodyNode = (*it);
                 break;
             }
+        }
 
-        if (childBody == NULL)
+        if (skelChildBodyNode.bodyNode == NULL)
         {
             dterr << "Can't find the child body ["
               << strChild
               << "] of the joint ["
               << newJoint->getName()
               << "]. " << std::endl;
-            assert(parentBody != NULL);
+            assert(0);
         }
     }
     else
@@ -498,19 +511,18 @@ dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
         assert(0);
     }
 
-    childBody->setParentJoint(newJoint);
+    skelChildBodyNode.bodyNode->setParentJoint(newJoint);
 
-    if (parentBody)
-        parentBody->addChildBodyNode(childBody);
+    if (skelParentBodyNode.bodyNode)
+        skelParentBodyNode.bodyNode->addChildBodyNode(skelChildBodyNode.bodyNode);
 
     //--------------------------------------------------------------------------
     // transformation
     Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
     Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
-    assert(childBody != NULL);
-    Eigen::Isometry3d childWorld = childBody->getWorldTransform();
-    if (parentBody)
-         parentWorld = parentBody->getWorldTransform();
+    Eigen::Isometry3d childWorld = skelChildBodyNode.initTransform;
+    if (skelParentBodyNode.bodyNode)
+         parentWorld = skelParentBodyNode.initTransform;
     if (hasElement(_jointElement, "transformation"))
         childToJoint = getValueIsometry3d(_jointElement, "transformation");
     Eigen::Isometry3d parentToJoint =
