@@ -234,13 +234,6 @@ public:
     //--------------------------------------------------------------------------
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
-
-    /// @brief
-    /// This function should be called only in modeling process. The
-    /// transformation of this link will be updating by dynamics algorithms
-    /// automatically.
-    void setWorldTransform(const Eigen::Isometry3d& _W);
-
     /// @brief Transformation from the local coordinates of this body node to
     /// the world coordinates.
     const Eigen::Isometry3d& getWorldTransform() const;

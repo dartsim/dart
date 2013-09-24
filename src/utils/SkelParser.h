@@ -81,6 +81,12 @@ public:
     static simulation::World* readSkelFile(const std::string& _filename);
 
 private:
+    struct SkelBodyNode
+    {
+        dynamics::BodyNode* bodyNode;
+        Eigen::Isometry3d initTransform;
+    };
+
     /// @brief
     static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
@@ -90,7 +96,7 @@ private:
             simulation::World* _world);
 
     /// @brief
-    static dynamics::BodyNode* readBodyNode(
+    static SkelBodyNode readBodyNode(
             tinyxml2::XMLElement* _bodyElement,
             dynamics::Skeleton* _skeleton,
             const Eigen::Isometry3d& _skeletonFrame);
@@ -102,7 +108,7 @@ private:
     /// @brief
     static dynamics::Joint* readJoint(
             tinyxml2::XMLElement* _jointElement,
-            const std::vector<dynamics::BodyNode*>& _bodies);
+            const std::vector<SkelBodyNode>& _bodies);
 
     /// @brief
     static dynamics::PrismaticJoint* readPrismaticJoint(
