@@ -688,19 +688,9 @@ Eigen::Vector6d AdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& s)
 
 Eigen::Vector6d AdR(const Eigen::Isometry3d& T, const Eigen::Vector6d& s)
 {
-    //--------------------------------------------------------------------------
-    // w' = R*w
-    // v' = R*v
-    //--------------------------------------------------------------------------
-    Eigen::Vector6d ret = Eigen::Vector6d::Zero();
-
-    ret << T(0,0)*s[0] + T(0,1)*s[1] + T(0,2)*s[2],
-           T(1,0)*s[0] + T(1,1)*s[1] + T(1,2)*s[2],
-           T(2,0)*s[0] + T(2,1)*s[1] + T(2,2)*s[2],
-           T(0,0)*s[3] + T(0,1)*s[4] + T(0,2)*s[5],
-           T(1,0)*s[3] + T(1,1)*s[4] + T(1,2)*s[5],
-           T(2,0)*s[3] + T(2,1)*s[4] + T(2,2)*s[5];
-
+    Eigen::Vector6d ret;
+    ret.head<3>() = T.linear() * s.head<3>();
+    ret.tail<3>() = T.linear() * s.tail<3>();
     return ret;
 }
 
