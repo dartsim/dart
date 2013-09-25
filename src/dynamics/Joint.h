@@ -52,7 +52,7 @@ class BodyNode;
 class Joint : public GenCoordSystem
 {
 public:
-    friend BodyNode;
+    friend class BodyNode;
 
     //--------------------------------------------------------------------------
     // Types
