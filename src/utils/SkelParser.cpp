@@ -185,7 +185,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     //--------------------------------------------------------------------------
     // Bodies
     ElementEnumerator bodies(_skeletonElement, "body");
-    std::vector<SkelBodyNode> skelBodyNodes;
+    std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> > skelBodyNodes;
     while (bodies.next())
     {
         SkelBodyNode newSkelBodyNode
@@ -222,7 +222,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
         }
     }
 
-    for (std::vector<SkelBodyNode>::iterator it = skelBodyNodes.begin();
+    for (std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >::iterator it = skelBodyNodes.begin();
          it != skelBodyNodes.end(); ++it)
         newSkeleton->addBodyNode((*it).bodyNode);
 
@@ -404,7 +404,7 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizElement)
 }
 
 dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
-                           const std::vector<SkelBodyNode>& _skelBodyNodes)
+                           const std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >& _skelBodyNodes)
 {
     assert(_jointElement != NULL);
 
@@ -449,7 +449,7 @@ dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
         if (strParent != std::string("world"))
         {
-            for (std::vector<SkelBodyNode>::const_iterator it =
+            for (std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >::const_iterator it =
                  _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it)
                 if ((*it).bodyNode->getName() == strParent)
                 {
@@ -484,7 +484,7 @@ dynamics::Joint* SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
     {
         std::string strChild = getValueString(_jointElement, "child");
 
-        for (std::vector<SkelBodyNode>::const_iterator it =
+        for (std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >::const_iterator it =
              _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it)
         {
             if ((*it).bodyNode->getName() == strChild)

@@ -166,7 +166,7 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
     //--------------------------------------------------------------------------
     // Bodies
     ElementEnumerator bodies(_skeletonElement, "link");
-    std::vector<SDFBodyNode> sdfBodyNodes;
+    std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> > sdfBodyNodes;
     while (bodies.next())
     {
         SDFBodyNode newSDFBodyNode
@@ -203,7 +203,7 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
         }
     }
 
-    for (std::vector<SDFBodyNode>::iterator it = sdfBodyNodes.begin();
+    for (std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >::iterator it = sdfBodyNodes.begin();
          it != sdfBodyNodes.end(); ++it)
         newSkeleton->addBodyNode((*it).bodyNode);
 
@@ -391,7 +391,7 @@ dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement)
 }
 
 dynamics::Joint* SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
-                            const std::vector<SDFBodyNode>& _sdfBodyNodes)
+                            const std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >& _sdfBodyNodes)
 {
     assert(_jointElement != NULL);
 
@@ -430,7 +430,7 @@ dynamics::Joint* SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
         if (strParent != std::string("world"))
         {
-            for (std::vector<SDFBodyNode>::const_iterator it =
+            for (std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >::const_iterator it =
                  _sdfBodyNodes.begin(); it != _sdfBodyNodes.end(); ++it)
                 if ((*it).bodyNode->getName() == strParent)
                 {
@@ -466,7 +466,7 @@ dynamics::Joint* SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
     {
         std::string strChild = getValueString(_jointElement, "child");
 
-        for (std::vector<SDFBodyNode>::const_iterator it =
+        for (std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >::const_iterator it =
              _sdfBodyNodes.begin(); it != _sdfBodyNodes.end(); ++it)
         {
             if ((*it).bodyNode->getName() == strChild)

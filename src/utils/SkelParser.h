@@ -38,7 +38,7 @@
 #ifndef DART_UTILS_SKEL_PARSER_H
 #define DART_UTILS_SKEL_PARSER_H
 
-#include <vector>
+#include <Eigen/StdVector>
 #include <Eigen/Dense>
 // TinyXML-2 Library
 // http://www.grinninglizard.com/tinyxml2/index.html
@@ -85,6 +85,7 @@ private:
     {
         dynamics::BodyNode* bodyNode;
         Eigen::Isometry3d initTransform;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     /// @brief
@@ -108,7 +109,7 @@ private:
     /// @brief
     static dynamics::Joint* readJoint(
             tinyxml2::XMLElement* _jointElement,
-            const std::vector<SkelBodyNode>& _bodies);
+            const std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >& _bodies);
 
     /// @brief
     static dynamics::PrismaticJoint* readPrismaticJoint(
