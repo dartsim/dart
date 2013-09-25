@@ -299,12 +299,11 @@ void Skeleton::updateForwardKinematics(bool _firstDerivative,
     for (std::vector<BodyNode*>::iterator itrBody = mBodyNodes.begin();
          itrBody != mBodyNodes.end(); ++itrBody)
     {
-        (*itrBody)->getParentJoint()->updateTransform();
         (*itrBody)->updateTransform();
 
-        if (_firstDerivative)
-            (*itrBody)->getParentJoint()->updateVelocity();
+        if (_firstDerivative) {
             (*itrBody)->updateVelocity();
+        }
 
         if (_secondDerivative)
         {

@@ -431,6 +431,8 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
 
 void BodyNode::updateTransform()
 {
+    mParentJoint->updateTransform();
+
     if (mParentBodyNode)
     {
         mW = mParentBodyNode->getWorldTransform()
@@ -451,6 +453,8 @@ void BodyNode::updateVelocity(bool _updateJacobian)
     //
     // V(i) = Ad(T(i, i-1), V(i-1)) + S * dq
     //--------------------------------------------------------------------------
+
+    mParentJoint->updateVelocity();
 
     if (mParentBodyNode)
     {

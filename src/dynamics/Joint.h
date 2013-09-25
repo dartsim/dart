@@ -52,6 +52,8 @@ class BodyNode;
 class Joint : public GenCoordSystem
 {
 public:
+    friend BodyNode;
+
     //--------------------------------------------------------------------------
     // Types
     //--------------------------------------------------------------------------
@@ -154,14 +156,6 @@ public:
     //--------------------------------------------------------------------------
     // Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
-    /// @brief
-    /// q --> T(q)
-    virtual void updateTransform() = 0;
-
-    /// @brief
-    /// q, dq --> S(q), V(q, dq)
-    /// V(q, dq) = S(q) * dq
-    virtual void updateVelocity() = 0;
 
     /// @brief
     /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
@@ -183,6 +177,15 @@ public:
     void applyGLTransform(renderer::RenderInterface* _ri);
 
 protected:
+    /// @brief
+    /// q --> T(q)
+    virtual void updateTransform() = 0;
+
+    /// @brief
+    /// q, dq --> S(q), V(q, dq)
+    /// V(q, dq) = S(q) * dq
+    virtual void updateVelocity() = 0;
+
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
