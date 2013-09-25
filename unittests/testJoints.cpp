@@ -51,6 +51,7 @@
 #include "dynamics/WeldJoint.h"
 #include "dynamics/EulerJoint.h"
 #include "dynamics/ScrewJoint.h"
+#include "dynamics/BodyNode.h"
 #include "simulation/World.h"
 #include "utils/Paths.h"
 #include "utils/SkelParser.h"
@@ -65,12 +66,13 @@ using namespace dynamics;
 class JOINTS : public testing::Test
 {
 public:
-    void kinematicsTest(Joint* _joint);
+    void kinematicsTest(BodyNode* _bodyNode);
 };
 
 /******************************************************************************/
-void JOINTS::kinematicsTest(Joint* _joint)
+void JOINTS::kinematicsTest(BodyNode* _bodyNode)
 {
+    Joint* _joint = _bodyNode->getParentJoint();
     int dof = _joint->getNumGenCoords();
 
     //--------------------------------------------------------------------------
@@ -95,8 +97,8 @@ void JOINTS::kinematicsTest(Joint* _joint)
         _joint->set_dq(dq);
         _joint->set_ddq(ddq);
 
-        _joint->updateTransform();
-        _joint->updateVelocity();
+        _bodyNode->updateTransform();
+        _bodyNode->updateVelocity();
         _joint->updateAcceleration();
 
         if (_joint->getNumGenCoords() == 0)
@@ -139,14 +141,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            _joint->updateTransform();
+            _bodyNode->updateTransform();
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += dt;
             _joint->set_q(q_b);
-            _joint->updateTransform();
+            _bodyNode->updateTransform();
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -186,14 +188,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            _joint->updateVelocity();
+            _bodyNode->updateVelocity();
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += dt;
             _joint->set_q(q_b);
-            _joint->updateVelocity();
+            _bodyNode->updateVelocity();
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
@@ -213,75 +215,94 @@ void JOINTS::kinematicsTest(Joint* _joint)
 TEST_F(JOINTS, WELD_JOINT)
 {
     WeldJoint weldJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&weldJoint);
 
-    kinematicsTest(&weldJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, REVOLUTE_JOINT)
 {
     RevoluteJoint revJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&revJoint);
 
-    kinematicsTest(&revJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, PRISMATIC_JOINT)
 {
     PrismaticJoint priJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&priJoint);
 
-    kinematicsTest(&priJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, SCREW_JOINT)
 {
     ScrewJoint screwJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&screwJoint);
 
-    kinematicsTest(&screwJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 2-dof joint
 TEST_F(JOINTS, UNIVERSAL_JOINT)
 {
     UniversalJoint univJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&univJoint);
 
-    kinematicsTest(&univJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, BALL_JOINT)
 {
     BallJoint ballJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&ballJoint);
 
-    kinematicsTest(&ballJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
 {
     EulerJoint eulerJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&eulerJoint);
+
     eulerJoint.setAxisOrder(EulerJoint::AO_XYZ);
-    kinematicsTest(&eulerJoint);
+    kinematicsTest(&bodyNode);
 
     eulerJoint.setAxisOrder(EulerJoint::AO_ZYX);
-    kinematicsTest(&eulerJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, TRANSLATIONAL_JOINT)
 {
     TranslationalJoint translationalJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&translationalJoint);
 
-    kinematicsTest(&translationalJoint);
+    kinematicsTest(&bodyNode);
 }
 
 // 6-dof joint
 TEST_F(JOINTS, FREE_JOINT)
 {
     FreeJoint freeJoint;
+    BodyNode bodyNode;
+    bodyNode.setParentJoint(&freeJoint);
 
-    kinematicsTest(&freeJoint);
+    kinematicsTest(&bodyNode);
 }
 
 TEST_F(JOINTS, POSITION_LIMIT)
