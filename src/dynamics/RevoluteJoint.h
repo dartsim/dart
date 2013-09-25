@@ -69,10 +69,10 @@ public:
     virtual void updateTransform();
 
     // Document inherited.
-    virtual void updateVelocity();
+    virtual void updateJacobian();
 
     // Document inherited.
-    virtual void updateAcceleration();
+    virtual void updateJacobianTimeDeriv();
 
 protected:
     /// @brief

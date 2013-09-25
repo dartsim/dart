@@ -454,17 +454,17 @@ void BodyNode::updateVelocity(bool _updateJacobian)
     // V(i) = Ad(T(i, i-1), V(i-1)) + S * dq
     //--------------------------------------------------------------------------
 
-    mParentJoint->updateVelocity();
+    mParentJoint->updateJacobian();
 
     if (mParentBodyNode)
     {
         mV = math::AdInvT(mParentJoint->getLocalTransform(),
                           mParentBodyNode->getBodyVelocity()) +
-                mParentJoint->getLocalVelocity();
+             mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
     }
     else
     {
-        mV = mParentJoint->getLocalVelocity();
+        mV = mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
     }
 
     assert(!math::isNan(mV));
@@ -512,11 +512,13 @@ void BodyNode::updateVelocity(bool _updateJacobian)
 
 void BodyNode::updateEta()
 {
+    mParentJoint->updateJacobianTimeDeriv();
+
     if (mParentJoint->getNumGenCoords() > 0)
     {
         mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
                             mParentJoint->get_dq()) +
-                            mParentJoint->getLocalJacobianFirstDerivative() *
+                            mParentJoint->getLocalJacobianTimeDeriv() *
                             mParentJoint->get_dq();
 
         assert(!math::isNan(mEta));
@@ -587,7 +589,7 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
     for(int i = 0; i < numLocalDOFs; i++)
     {
         mBodyJacobianDeriv.col(numParentDOFs + i) =
-                mParentJoint->getLocalJacobianFirstDerivative().col(i);
+                mParentJoint->getLocalJacobianTimeDeriv().col(i);
     }
 }
 

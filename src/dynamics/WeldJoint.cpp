@@ -61,12 +61,12 @@ void WeldJoint::updateTransform()
     mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
 }
 
-void WeldJoint::updateVelocity()
+void WeldJoint::updateJacobian()
 {
     // Do nothing
 }
 
-void WeldJoint::updateAcceleration()
+void WeldJoint::updateJacobianTimeDeriv()
 {
     // Do nothing
 }

@@ -84,7 +84,6 @@ double ScrewJoint::getPitch() const
 
 void ScrewJoint::updateTransform()
 {
-    // T
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
     S.tail<3>() = mAxis*mPitch/DART_2PI;
@@ -95,25 +94,17 @@ void ScrewJoint::updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-void ScrewJoint::updateVelocity()
+void ScrewJoint::updateJacobian()
 {
-    // S
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mAxis;
     S.tail<3>() = mAxis*mPitch/DART_2PI;
     mS = math::AdT(mT_ChildBodyToJoint, S);
-
-    // V = S * dq
-    mV = mS * get_dq();
 }
 
-void ScrewJoint::updateAcceleration()
+void ScrewJoint::updateJacobianTimeDeriv()
 {
-    // dS = 0
-    mdS.setZero();
-
-    // dV = dS * dq + S * ddq
-    mdV = mS * get_ddq();
+    //mdS.setZero();
 }
 
 } // namespace dynamics

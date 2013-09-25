@@ -88,31 +88,22 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 
 inline void UniversalJoint::updateTransform()
 {
-    // T
     mT = mT_ParentBodyToJoint *
          math::expAngular(mAxis[0] * mCoordinate[0].get_q()) *
          math::expAngular(mAxis[1] * mCoordinate[1].get_q()) *
          mT_ChildBodyToJoint.inverse();
 }
 
-inline void UniversalJoint::updateVelocity()
+inline void UniversalJoint::updateJacobian()
 {
-    // S
     mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
     mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
-
-    // V = S * dq
-    mV = mS * get_dq();
 }
 
-inline void UniversalJoint::updateAcceleration()
+inline void UniversalJoint::updateJacobianTimeDeriv()
 {
-    // dS
     mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));
     //mdS.col(1) = setZero();
-
-    // dV = dS * dq + S * ddq
-    mdV = mdS * get_dq() + mS * get_ddq();
 }
 
 } // namespace dynamics

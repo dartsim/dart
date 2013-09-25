@@ -75,29 +75,19 @@ const Eigen::Vector3d&PrismaticJoint::getAxis() const
 
 void PrismaticJoint::updateTransform()
 {
-    // T
     mT = mT_ParentBodyToJoint
          * Eigen::Translation3d(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
 }
 
-void PrismaticJoint::updateVelocity()
+void PrismaticJoint::updateJacobian()
 {
-    // S
     mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
-
-    // V = S * dq
-    mV.noalias() = mS * get_dq();
-    //mV.setAngular(mAxis * mCoordinate.get_q());
 }
 
-void PrismaticJoint::updateAcceleration()
+void PrismaticJoint::updateJacobianTimeDeriv()
 {
-    // dS = 0
-    mdS.setZero();
-
-    // dV = dS * dq + S * ddq
-    mdV = mS * get_ddq();
+    //mdS.setZero();
 }
 
 } // namespace dynamics
