@@ -418,15 +418,13 @@ void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
         return;
 
     switch(_shape->getShapeType()) {
-        case dynamics::Shape::P_UNDEFINED:
+        case dynamics::Shape::BOX:
             break;
-        case dynamics::Shape::P_BOX:
+        case dynamics::Shape::CYLINDER:
             break;
-        case dynamics::Shape::P_CYLINDER:
+        case dynamics::Shape::ELLIPSOID:
             break;
-        case dynamics::Shape::P_ELLIPSOID:
-            break;
-        case dynamics::Shape::P_MESH:
+        case dynamics::Shape::MESH:
             //FIXME: Separate these calls once BodyNode is refactored to contain
             // both a col Shape and vis Shape.
             dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
@@ -514,21 +512,19 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
     glMultMatrixd(pose.data());
 
     switch(_shape->getShapeType()) {
-        case dynamics::Shape::P_UNDEFINED:
-            break;
-        case dynamics::Shape::P_BOX:
+        case dynamics::Shape::BOX:
             //FIXME: We are not in a glut instance
             drawCube(_shape->getDim());
             break;
-        case dynamics::Shape::P_CYLINDER:
+        case dynamics::Shape::CYLINDER:
             //FIXME: We are not in a glut instance
             drawCylinder( ((dynamics::CylinderShape*)_shape)->getRadius(), ((dynamics::CylinderShape*)_shape)->getHeight() );
             break;
-        case dynamics::Shape::P_ELLIPSOID:
+        case dynamics::Shape::ELLIPSOID:
             //FIXME: We are not in a glut instance
             drawEllipsoid(_shape->getDim());
             break;
-        case dynamics::Shape::P_MESH:
+        case dynamics::Shape::MESH:
             glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
             dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);

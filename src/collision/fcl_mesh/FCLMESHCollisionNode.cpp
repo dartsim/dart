@@ -67,7 +67,7 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
         fcl::Transform3f shapeTransform = getFclTransform(shape->getLocalTransform());
 
         switch (shape->getShapeType()) {
-            case dynamics::Shape::P_ELLIPSOID:
+            case dynamics::Shape::ELLIPSOID:
             {
                 dynamics::EllipsoidShape* ellipsoid = dynamic_cast<dynamics::EllipsoidShape*>(shape);
 
@@ -82,10 +82,10 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
                 }
                 break;
             }
-            case dynamics::Shape::P_BOX:
+            case dynamics::Shape::BOX:
                 mMeshes.push_back(createCube<fcl::OBBRSS>(shape->getDim()[0], shape->getDim()[1], shape->getDim()[2], shapeTransform));
                 break;
-            case dynamics::Shape::P_CYLINDER:
+            case dynamics::Shape::CYLINDER:
             {
                 dynamics::CylinderShape *cylinder = dynamic_cast<dynamics::CylinderShape *>(shape);
                 if(cylinder) {
@@ -95,7 +95,7 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
                 }
                 break;
             }
-            case dynamics::Shape::P_MESH:
+            case dynamics::Shape::MESH:
             {
                 dynamics::MeshShape *shapeMesh = dynamic_cast<dynamics::MeshShape *>(shape);
                 if(shapeMesh) {

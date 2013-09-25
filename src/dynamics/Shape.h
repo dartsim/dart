@@ -54,15 +54,14 @@ class Shape
 public:
     /// @brief
     enum ShapeType {
-        P_UNDEFINED,
-        P_BOX,
-        P_ELLIPSOID,
-        P_CYLINDER,
-        P_MESH
+        BOX,
+        ELLIPSOID,
+        CYLINDER,
+        MESH
     };
 
     /// @brief
-    Shape(ShapeType _type = P_UNDEFINED);
+    Shape(ShapeType _type);
 
     /// @brief
     virtual ~Shape();
@@ -118,9 +117,6 @@ protected:
     /// @brief
     virtual void initMeshes() {}
 
-    /// @brief Type of primitive; unknown in the general case.
-    ShapeType mType;
-
     /// @brief Dimensions for bounding box.
     Eigen::Vector3d mDim;
 
@@ -141,6 +137,10 @@ protected:
 
     /// @brief
     static int mCounter;
+
+private:
+    /// @brief Type of primitive
+    ShapeType mType;
 
 public:
 

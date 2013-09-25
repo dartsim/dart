@@ -42,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 CylinderShape::CylinderShape(double _radius, double _height)
-    : Shape(P_CYLINDER),
+    : Shape(CYLINDER),
       mRadius(_radius),
       mHeight(_height)
 {

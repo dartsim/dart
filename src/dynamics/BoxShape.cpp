@@ -42,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 BoxShape::BoxShape(Eigen::Vector3d _dim)
-    : Shape(P_BOX)
+    : Shape(BOX)
 {
     mDim = _dim;
     initMeshes();

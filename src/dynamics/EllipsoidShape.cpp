@@ -42,7 +42,7 @@ namespace dart {
 namespace dynamics {
 
 EllipsoidShape::EllipsoidShape(Eigen::Vector3d _dim)
-    : Shape(P_ELLIPSOID)
+    : Shape(ELLIPSOID)
 {
     mDim = _dim;
     initMeshes();

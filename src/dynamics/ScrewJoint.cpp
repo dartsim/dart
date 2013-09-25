@@ -45,12 +45,10 @@ namespace dynamics {
 ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
-    : Joint(_name),
+    : Joint(SCREW, _name),
       mAxis(axis.normalized()),
       mPitch(_pitch)
 {
-    mJointType = SCREW;
-
     mGenCoords.push_back(&mCoordinate);
 
     mS = Eigen::Matrix<double,6,1>::Zero();

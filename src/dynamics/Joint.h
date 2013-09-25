@@ -60,7 +60,6 @@ public:
     /// @brief
     enum JointType
     {
-        UNKNOWN,
         WELD,          // 0-dof
         REVOLUTE,      // 1-dof
         PRISMATIC,     // 1-dof
@@ -77,7 +76,7 @@ public:
     // Constructor and Destructor
     //--------------------------------------------------------------------------
     /// @brief
-    Joint(const std::string& _name = "");
+    Joint(JointType type, const std::string& _name = "");
 
     /// @brief
     virtual ~Joint();
@@ -198,9 +197,6 @@ protected:
     /// @brief Unique dof id in skeleton
     int mSkelIndex;
 
-    /// @brief Type of joint e.g. ball, hinge etc.
-    JointType mJointType;
-
     /// @brief
     Eigen::Isometry3d mT_ParentBodyToJoint;
 
@@ -236,6 +232,10 @@ protected:
 
     /// @brief
     std::vector<double> mSpringStiffness;
+
+private:
+    /// @brief Type of joint e.g. ball, hinge etc.
+    JointType mJointType;
 };
 
 } // namespace dynamics

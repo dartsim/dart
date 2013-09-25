@@ -46,7 +46,7 @@ namespace dart {
 namespace dynamics {
 
 MeshShape::MeshShape(Eigen::Vector3d _dim, const aiScene *_mesh)
-    : Shape(P_MESH),
+    : Shape(MESH),
       mMesh(_mesh),
       mDisplayList(0)
 {
