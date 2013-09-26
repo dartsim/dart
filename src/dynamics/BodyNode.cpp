@@ -177,36 +177,6 @@ Marker* BodyNode::getMarker(int _idx) const
     return mMarkers[_idx];
 }
 
-void BodyNode::setDependDofList()
-{
-    mDependentDofIndexes.clear();
-
-    if (mParentBodyNode != NULL)
-    {
-        mDependentDofIndexes.insert(mDependentDofIndexes.end(),
-                              mParentBodyNode->mDependentDofIndexes.begin(),
-                              mParentBodyNode->mDependentDofIndexes.end());
-    }
-
-    for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
-    {
-        int dofID = mParentJoint->getGenCoord(i)->getSkeletonIndex();
-        mDependentDofIndexes.push_back(dofID);
-    }
-
-#ifndef NDEBUG
-    for (int i = 0; i < (int)mDependentDofIndexes.size() - 1; i++)
-    {
-        for (int j = i + 1; j < mDependentDofIndexes.size(); j++)
-            if (mDependentDofIndexes[i] == mDependentDofIndexes[j])
-            {
-                dterr << "Skeleton ID of Generalized coordinates is duplicated."
-                      << std::endl;
-            }
-    }
-#endif
-}
-
 bool BodyNode::dependsOn(int _dofIndex) const
 {
     return binary_search(mDependentDofIndexes.begin(),
@@ -366,16 +336,35 @@ bool BodyNode::getColliding()
     return mColliding;
 }
 
-void BodyNode::init(Skeleton* _skeleton)
+void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 {
-    assert(_skeleton != NULL);
+    assert(_skeleton);
 
     mSkeleton = _skeleton;
+    mSkelIndex = _skeletonIndex;
+    mParentJoint->mSkelIndex = _skeletonIndex;
 
-    setDependDofList();
+    // fill list of generalized coordinates this node depends on
+    if (mParentBodyNode)
+        mDependentDofIndexes = mParentBodyNode->mDependentDofIndexes;
+    else
+        mDependentDofIndexes.clear();
+    for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
+        mDependentDofIndexes.push_back(mParentJoint->getGenCoord(i)->getSkeletonIndex());
+
+#ifndef NDEBUG
+    for (int i = 0; i < (int)mDependentDofIndexes.size() - 1; i++)
+    {
+        for (int j = i + 1; j < mDependentDofIndexes.size(); j++)
+            if (mDependentDofIndexes[i] == mDependentDofIndexes[j])
+            {
+                dterr << "Skeleton ID of Generalized coordinates is duplicated."
+                      << std::endl;
+            }
+    }
+#endif
 
     const int numDepDofs = getNumDependentDofs();
-
     mBodyJacobian      = math::Jacobian::Zero(6,numDepDofs);
     mBodyJacobianDeriv = math::Jacobian::Zero(6,numDepDofs);
     mM                 = Eigen::MatrixXd::Zero(numDepDofs, numDepDofs);
@@ -638,11 +627,6 @@ Eigen::Vector3d BodyNode::getWorldCOM() const
 Eigen::Matrix6d BodyNode::getInertia() const
 {
     return mI;
-}
-
-void BodyNode::setSkeletonIndex(int _idx)
-{
-    mSkelIndex = _idx;
 }
 
 int BodyNode::getSkeletonIndex() const

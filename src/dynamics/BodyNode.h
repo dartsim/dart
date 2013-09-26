@@ -101,6 +101,8 @@ class Marker;
 class BodyNode
 {
 public:
+    friend class Skeleton;
+
     //--------------------------------------------------------------------------
     // Constructor and Desctructor
     //--------------------------------------------------------------------------
@@ -160,9 +162,6 @@ public:
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
-    /// @brief
-    void setSkeletonIndex(int _idx);
-
     /// @brief
     int getSkeletonIndex() const;
 
@@ -356,8 +355,6 @@ public:
     //--------------------------------------------------------------------------
     // Sub-functions for Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
-    /// @brief Initialize the vector memebers with proper sizes.
-    void init(Skeleton* _skeleton);
 
     /// @brief Update local transformations and world transformations.
     /// T(i-1,i), W(i)
@@ -420,8 +417,8 @@ public:
     void aggregateMass(Eigen::MatrixXd& M);
 
 protected:
-    /// @brief Set up the list of dependent dofs.
-    void setDependDofList();
+    /// @brief Initialize the vector memebers with proper sizes.
+    void init(Skeleton* _skeleton, int _skeletonIndex);
 
     //--------------------------------------------------------------------------
     // General properties

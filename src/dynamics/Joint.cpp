@@ -116,11 +116,6 @@ bool Joint::isPositionLimited() const
     return mIsPositionLimited;
 }
 
-void Joint::setSkeletonIndex(int _idx)
-{
-    mSkelIndex= _idx;
-}
-
 int Joint::getSkeletonIndex() const
 {
     return mSkelIndex;

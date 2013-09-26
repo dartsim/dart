@@ -125,9 +125,6 @@ public:
     // Structueral Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setSkeletonIndex(int _idx);
-
-    /// @brief
     int getSkeletonIndex() const;
 
     /// @brief

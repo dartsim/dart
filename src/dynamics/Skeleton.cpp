@@ -97,9 +97,17 @@ double Skeleton::getMass() const
 
 void Skeleton::init()
 {
-    // Initialize each body nodes
+    // Initialize body nodes
     for(int i = 0; i < getNumBodyNodes(); i++)
-        mBodyNodes.at(i)->init(this);
+    {
+        Joint* joint = mBodyNodes[i]->getParentJoint();
+        for (int j = 0; j < joint->getNumGenCoords(); ++j)
+        {
+            joint->getGenCoord(j)->setSkeletonIndex(mGenCoords.size());
+            mGenCoords.push_back(joint->getGenCoord(j));
+        }
+        mBodyNodes[i]->init(this, i);
+    }
 
     updateForwardKinematics();
 
@@ -128,17 +136,6 @@ void Skeleton::addBodyNode(BodyNode* _body)
     assert(_body && _body->getParentJoint());
 
     mBodyNodes.push_back(_body);
-    _body->setSkeletonIndex(mBodyNodes.size() - 1);
-
-    // Add parent joint
-    Joint* joint = _body->getParentJoint();
-    joint->setSkeletonIndex(mBodyNodes.size() - 1);
-
-    for (int i = 0; i < joint->getNumGenCoords(); ++i)
-    {
-        joint->getGenCoord(i)->setSkeletonIndex(mGenCoords.size());
-        mGenCoords.push_back(joint->getGenCoord(i));
-    }
 }
 
 int Skeleton::getNumBodyNodes() const
