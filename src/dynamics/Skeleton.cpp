@@ -296,10 +296,6 @@ Eigen::VectorXd Skeleton::getInternalForces() const
 void Skeleton::updateForwardKinematics(bool _firstDerivative,
                                        bool _secondDerivative)
 {
-    // Skip immobile or 0-dof skeleton
-    if (getImmobileState() == true || getNumGenCoords() == 0)
-        return;
-
     for (std::vector<BodyNode*>::iterator itrBody = mBodyNodes.begin();
          itrBody != mBodyNodes.end(); ++itrBody)
     {

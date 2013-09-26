@@ -96,7 +96,7 @@ void World::setState(const Eigen::VectorXd& _newState)
 
         getSkeleton(i)->set_q(q);
         getSkeleton(i)->set_dq(dq);
-        getSkeleton(i)->updateForwardKinematics(true, true);
+        getSkeleton(i)->updateForwardKinematics();
     }
 }
 

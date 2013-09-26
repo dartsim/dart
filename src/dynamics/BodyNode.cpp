@@ -456,15 +456,18 @@ void BodyNode::updateVelocity(bool _updateJacobian)
 
     mParentJoint->updateJacobian();
 
-    if (mParentBodyNode)
+    if (mParentJoint->getNumGenCoords() > 0)
     {
-        mV = math::AdInvT(mParentJoint->getLocalTransform(),
-                          mParentBodyNode->getBodyVelocity()) +
-             mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
-    }
-    else
-    {
-        mV = mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+        if (mParentBodyNode)
+        {
+            mV = math::AdInvT(mParentJoint->getLocalTransform(),
+                              mParentBodyNode->getBodyVelocity()) +
+                    mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+        }
+        else
+        {
+            mV = mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+        }
     }
 
     assert(!math::isNan(mV));
