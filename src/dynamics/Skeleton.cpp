@@ -97,7 +97,7 @@ double Skeleton::getMass() const
 
 void Skeleton::init()
 {
-    // Init each body nodes
+    // Initialize each body nodes
     for(int i = 0; i < getNumBodyNodes(); i++)
         mBodyNodes.at(i)->init(this);
 
