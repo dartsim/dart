@@ -366,9 +366,11 @@ bool BodyNode::getColliding()
     return mColliding;
 }
 
-void BodyNode::init()
+void BodyNode::init(Skeleton* _skeleton)
 {
-    assert(mSkeleton != NULL);
+    assert(_skeleton != NULL);
+
+    mSkeleton = _skeleton;
 
     setDependDofList();
 
@@ -676,11 +678,6 @@ int BodyNode::getNumCollisionShapes() const
 Shape*BodyNode::getCollisionShape(int _idx) const
 {
     return mColShapes[_idx];
-}
-
-void BodyNode::setSkeleton(Skeleton* _skel)
-{
-    mSkeleton = _skel;
 }
 
 Skeleton*BodyNode::getSkeleton() const

@@ -185,9 +185,6 @@ public:
     Shape* getCollisionShape(int _idx) const;
 
     /// @brief
-    void setSkeleton(Skeleton* _skel);
-
-    /// @brief
     Skeleton* getSkeleton() const;
 
     /// @brief
@@ -360,7 +357,7 @@ public:
     // Sub-functions for Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
     /// @brief Initialize the vector memebers with proper sizes.
-    void init();
+    void init(Skeleton* _skeleton);
 
     /// @brief Update local transformations and world transformations.
     /// T(i-1,i), W(i)
