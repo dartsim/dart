@@ -97,12 +97,9 @@ double Skeleton::getMass() const
 
 void Skeleton::init()
 {
-    // init the dependsOnDof stucture for each bodylink
+    // Initialize each body nodes
     for(int i = 0; i < getNumBodyNodes(); i++)
-    {
-        mBodyNodes.at(i)->setSkeleton(this);
-        mBodyNodes.at(i)->init();
-    }
+        mBodyNodes.at(i)->init(this);
 
     updateForwardKinematics();
 
