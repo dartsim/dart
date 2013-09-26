@@ -307,7 +307,6 @@ void Skeleton::updateForwardKinematics(bool _firstDerivative,
 
         if (_secondDerivative)
         {
-            (*itrBody)->getParentJoint()->updateAcceleration();
             (*itrBody)->updateEta();
             (*itrBody)->updateAcceleration();
         }

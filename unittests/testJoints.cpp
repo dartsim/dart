@@ -99,37 +99,20 @@ void JOINTS::kinematicsTest(BodyNode* _bodyNode)
 
         _bodyNode->updateTransform();
         _bodyNode->updateVelocity();
-        _joint->updateAcceleration();
+        _bodyNode->updateEta();
+        _bodyNode->updateAcceleration();
 
         if (_joint->getNumGenCoords() == 0)
             return;
 
         Eigen::Isometry3d T = _joint->getLocalTransform();
-        Eigen::Vector6d V = _joint->getLocalVelocity();
         Jacobian J = _joint->getLocalJacobian();
-        Eigen::Vector6d dV = _joint->getLocalAcceleration();
-        Jacobian dJ = _joint->getLocalJacobianFirstDerivative();
+        Jacobian dJ = _joint->getLocalJacobianTimeDeriv();
 
         //--------------------------------------------------------------------------
         // Test T
         //--------------------------------------------------------------------------
         EXPECT_TRUE(math::verifyTransform(T));
-
-        //--------------------------------------------------------------------------
-        // Test V == J * dq
-        //--------------------------------------------------------------------------
-        Eigen::Vector6d Jdq = J * _joint->get_dq();
-        for (int i = 0; i < 6; ++i)
-            EXPECT_NEAR(V(i), Jdq(i), JOINT_TOL);
-
-        //--------------------------------------------------------------------------
-        // Test dV == dJ * dq + J * ddq
-        //--------------------------------------------------------------------------
-        Eigen::Vector6d dJdq = dJ * _joint->get_dq();
-        Eigen::Vector6d Jddq = J * _joint->get_ddq();
-        Eigen::Vector6d dJdq_Jddq = dJdq + Jddq;
-        for (int i = 0; i < 6; ++i)
-            EXPECT_NEAR(dV(i), dJdq_Jddq(i), JOINT_TOL);
 
         //--------------------------------------------------------------------------
         // Test analytic Jacobian and numerical Jacobian
