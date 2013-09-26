@@ -35,6 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "common/Console.h"
 #include "math/Geometry.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/RevoluteJoint.h"
@@ -61,8 +62,7 @@ RevoluteJoint::~RevoluteJoint()
 
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-    assert(_axis.norm() == 1);
-    mAxis = _axis;
+    mAxis = _axis.normalized();
 }
 
 const Eigen::Vector3d&RevoluteJoint::getAxis() const

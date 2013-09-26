@@ -63,8 +63,7 @@ ScrewJoint::~ScrewJoint()
 
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-    assert(_axis.norm() == 1);
-    mAxis = _axis;
+    mAxis = _axis.normalized();
 }
 
 const Eigen::Vector3d&ScrewJoint::getAxis() const

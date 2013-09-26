@@ -66,14 +66,12 @@ UniversalJoint::~UniversalJoint()
 
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
-    assert(_axis.norm() == 1);
-    mAxis[0] = _axis;
+    mAxis[0] = _axis.normalized();
 }
 
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
-    assert(_axis.norm() == 1);
-    mAxis[1] = _axis;
+    mAxis[1] = _axis.normalized();
 }
 
 const Eigen::Vector3d& UniversalJoint::getAxis1() const
