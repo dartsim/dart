@@ -370,6 +370,8 @@ void BodyNode::init()
 {
     assert(mSkeleton != NULL);
 
+    setDependDofList();
+
     const int numDepDofs = getNumDependentDofs();
 
     mBodyJacobian      = math::Jacobian::Zero(6,numDepDofs);

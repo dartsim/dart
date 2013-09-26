@@ -217,9 +217,6 @@ public:
     /// @brief
     Marker* getMarker(int _idx) const;
 
-    /// @brief Set up the list of dependent dofs.
-    void setDependDofList();
-
     /// @brief Test whether this dof is dependent or not.
     /// @warning You may want to use getNumDependentDofs / getDependentDof for
     /// efficiency.
@@ -426,6 +423,9 @@ public:
     void aggregateMass(Eigen::MatrixXd& M);
 
 protected:
+    /// @brief Set up the list of dependent dofs.
+    void setDependDofList();
+
     //--------------------------------------------------------------------------
     // General properties
     //--------------------------------------------------------------------------

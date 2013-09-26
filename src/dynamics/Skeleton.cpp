@@ -101,7 +101,6 @@ void Skeleton::init()
     for(int i = 0; i < getNumBodyNodes(); i++)
     {
         mBodyNodes.at(i)->setSkeleton(this);
-        mBodyNodes.at(i)->setDependDofList();
         mBodyNodes.at(i)->init();
     }
 
