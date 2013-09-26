@@ -103,13 +103,7 @@ public:
     const math::Jacobian& getLocalJacobian() const;
 
     /// @brief
-    const Eigen::Vector6d& getLocalVelocity() const;
-
-    /// @brief
-    const math::Jacobian& getLocalJacobianFirstDerivative() const;
-
-    /// @brief
-    const Eigen::Vector6d& getLocalAcceleration() const;
+    const math::Jacobian& getLocalJacobianTimeDeriv() const;
 
     /// @brief true if d is present in the dof list for the joint.
     bool isPresent(const GenCoord* _q) const;
@@ -155,12 +149,6 @@ public:
     //--------------------------------------------------------------------------
     // Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
-
-    /// @brief
-    /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
-    /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
-    virtual void updateAcceleration() = 0;
-
     /// @brief
     void setDampingCoefficient(int _idx, double _d);
 
@@ -183,7 +171,12 @@ protected:
     /// @brief
     /// q, dq --> S(q), V(q, dq)
     /// V(q, dq) = S(q) * dq
-    virtual void updateVelocity() = 0;
+    virtual void updateJacobian() = 0;
+
+    /// @brief
+    /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
+    /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
+    virtual void updateJacobianTimeDeriv() = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -209,14 +202,8 @@ protected:
     /// @brief Local transformation.
     Eigen::Isometry3d mT;
 
-    /// @brief Local generalized body velocity.
-    Eigen::Vector6d mV;
-
     /// @brief Local Jacobian.
     math::Jacobian mS;
-
-    /// @brief Local generalized body acceleration.
-    Eigen::Vector6d mdV;
 
     /// @brief Time derivative of local Jacobian.
     math::Jacobian mdS;

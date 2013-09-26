@@ -61,15 +61,13 @@ TranslationalJoint::~TranslationalJoint()
 
 void TranslationalJoint::updateTransform()
 {
-    // T
     mT = mT_ParentBodyToJoint *
          Eigen::Translation3d(get_q()) *
          mT_ChildBodyToJoint.inverse();
 }
 
-void TranslationalJoint::updateVelocity()
+void TranslationalJoint::updateJacobian()
 {
-    // S
     Eigen::Vector6d J0;
     Eigen::Vector6d J1;
     Eigen::Vector6d J2;
@@ -81,18 +79,11 @@ void TranslationalJoint::updateVelocity()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-
-    // V = S * dq
-    mV = mS * get_dq();
 }
 
-void TranslationalJoint::updateAcceleration()
+void TranslationalJoint::updateJacobianTimeDeriv()
 {
-    // dS = 0
     mdS.setZero();
-
-    // dV = dS * dq + S * ddq
-    mdV = mS * get_ddq();
 }
 
 } // namespace dynamics

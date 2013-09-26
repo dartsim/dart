@@ -307,7 +307,6 @@ void Skeleton::updateForwardKinematics(bool _firstDerivative,
 
         if (_secondDerivative)
         {
-            (*itrBody)->getParentJoint()->updateAcceleration();
             (*itrBody)->updateEta();
             (*itrBody)->updateAcceleration();
         }
@@ -334,6 +333,11 @@ void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
                                       bool _withExternalForces,
                                       bool _withDampingForces)
 {
+    // Skip immobile or 0-dof skeleton
+    if (getImmobileState() == true || getNumGenCoords() == 0)
+        return;
+
+    // Forward recursion
     updateForwardKinematics();
 
     // Backward recursion
@@ -356,7 +360,12 @@ Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
         bool _withExternalForces,
         bool _withDampingForces)
 {
+
     int n = getNumGenCoords();
+
+    // Skip immobile or 0-dof skeleton
+    if (getImmobileState() == true || n == 0)
+        return get_tau();
 
     if (_qdot == NULL)
         set_dq(Eigen::VectorXd::Zero(n));
@@ -364,6 +373,7 @@ Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
     if (_qdotdot == NULL)
         set_ddq(Eigen::VectorXd::Zero(n));
 
+    // Forward recursion
     updateForwardKinematics();
 
     // Backward recursion
@@ -421,11 +431,9 @@ void Skeleton::computeEquationsOfMotionID(
 {
     int n = getNumGenCoords();
 
-    // skip immobile objects in forward simulation
+    // Skip immobile or 0-dof skeleton
     if (getImmobileState() == true || n == 0)
-    {
         return;
-    }
 
     // Save current tau
     Eigen::VectorXd tau_old = get_tau();
@@ -475,23 +483,11 @@ void Skeleton::computeForwardDynamicsID(
 void Skeleton::computeForwardDynamicsFS(
         const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
 {
-    int n = getNumGenCoords();
-
-    // skip immobile objects in forward simulation
-    if (getImmobileState() == true || n == 0)
-    {
+    // Skip immobile or 0-dof skeleton
+    if (getImmobileState() == true || getNumGenCoords() == 0)
         return;
-    }
 
-    // Forward recursion
-    for (std::vector<dynamics::BodyNode*>::iterator itrBody = mBodyNodes.begin();
-         itrBody != mBodyNodes.end();
-         ++itrBody)
-    {
-        (*itrBody)->updateTransform();
-        (*itrBody)->updateVelocity();
-        (*itrBody)->updateEta();
-    }
+    // We assume that updateForwardKinematics() is called before
 
     // Backward recursion
     for (std::vector<dynamics::BodyNode*>::reverse_iterator ritrBody
@@ -506,6 +502,7 @@ void Skeleton::computeForwardDynamicsFS(
         (*ritrBody)->updateBeta();
     }
 
+    // Forward recursion
     for (std::vector<dynamics::BodyNode*>::iterator itrBody = mBodyNodes.begin();
          itrBody != mBodyNodes.end();
          ++itrBody)

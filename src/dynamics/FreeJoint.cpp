@@ -65,7 +65,6 @@ FreeJoint::~FreeJoint()
 
 void FreeJoint::updateTransform()
 {
-    // T
     Eigen::Vector3d q1(mCoordinate[0].get_q(),
                        mCoordinate[1].get_q(),
                        mCoordinate[2].get_q());
@@ -81,9 +80,8 @@ void FreeJoint::updateTransform()
     assert(math::verifyTransform(mT));
 }
 
-void FreeJoint::updateVelocity()
+void FreeJoint::updateJacobian()
 {
-    // S
     Eigen::Vector3d q(mCoordinate[0].get_q(),
                       mCoordinate[1].get_q(),
                       mCoordinate[2].get_q());
@@ -110,14 +108,10 @@ void FreeJoint::updateVelocity()
     mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
     mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
     mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
-
-    // V = S * dq
-    mV = mS * get_dq();
 }
 
-void FreeJoint::updateAcceleration()
+void FreeJoint::updateJacobianTimeDeriv()
 {
-    // dS
     Eigen::Vector3d q(mCoordinate[0].get_q(),
                       mCoordinate[1].get_q(),
                       mCoordinate[2].get_q());
@@ -147,9 +141,6 @@ void FreeJoint::updateAcceleration()
     mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
     mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
     mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
-
-    // dV = dS * dq + S * ddq
-    mdV = mdS * get_dq() + mS * get_ddq();
 }
 
 } // namespace dynamics

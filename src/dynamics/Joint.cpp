@@ -50,11 +50,7 @@ Joint::Joint(JointType type, const std::string& _name)
       mIsPositionLimited(true),
       mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
       mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-      mT(Eigen::Isometry3d::Identity()),
-      mV(Eigen::Vector6d::Zero()),
-      mS(math::Jacobian::Zero(6,0)),
-      mdV(Eigen::Vector6d::Zero()),
-      mdS(math::Jacobian::Zero(6,0))
+      mT(Eigen::Isometry3d::Identity())
 {
 }
 
@@ -87,19 +83,9 @@ const math::Jacobian&Joint::getLocalJacobian() const
     return mS;
 }
 
-const Eigen::Vector6d&Joint::getLocalVelocity() const
-{
-    return mV;
-}
-
-const math::Jacobian&Joint::getLocalJacobianFirstDerivative() const
+const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const
 {
     return mdS;
-}
-
-const Eigen::Vector6d&Joint::getLocalAcceleration() const
-{
-    return mdV;
 }
 
 bool Joint::isPresent(const GenCoord* _q) const
