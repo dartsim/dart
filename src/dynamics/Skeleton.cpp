@@ -97,6 +97,8 @@ double Skeleton::getMass() const
 
 void Skeleton::init()
 {
+    mGenCoords.clear();
+
     // Initialize body nodes
     for(int i = 0; i < getNumBodyNodes(); i++)
     {
