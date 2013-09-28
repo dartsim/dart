@@ -204,77 +204,79 @@ void JOINTS::kinematicsTest(Joint* _joint)
 // 0-dof joint
 TEST_F(JOINTS, WELD_JOINT)
 {
-    WeldJoint weldJoint;
+    WeldJoint* weldJoint = new WeldJoint;
 
-    kinematicsTest(&weldJoint);
+    kinematicsTest(weldJoint);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, REVOLUTE_JOINT)
 {
-    RevoluteJoint revJoint;
+    RevoluteJoint* revJoint = new RevoluteJoint;
 
-    kinematicsTest(&revJoint);
+    kinematicsTest(revJoint);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, PRISMATIC_JOINT)
 {
-    PrismaticJoint priJoint;
+    PrismaticJoint* priJoint = new PrismaticJoint;
 
-    kinematicsTest(&priJoint);
+    kinematicsTest(priJoint);
 }
 
 // 1-dof joint
 TEST_F(JOINTS, SCREW_JOINT)
 {
-    ScrewJoint screwJoint;
+    ScrewJoint* screwJoint = new ScrewJoint;
 
-    kinematicsTest(&screwJoint);
+    kinematicsTest(screwJoint);
 }
 
 // 2-dof joint
 TEST_F(JOINTS, UNIVERSAL_JOINT)
 {
-    UniversalJoint univJoint;
+    UniversalJoint* univJoint = new UniversalJoint;
 
-    kinematicsTest(&univJoint);
+    kinematicsTest(univJoint);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, BALL_JOINT)
 {
-    BallJoint ballJoint;
+    BallJoint* ballJoint = new BallJoint;
 
-    kinematicsTest(&ballJoint);
+    kinematicsTest(ballJoint);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
 {
-    EulerJoint eulerJoint;
+    EulerJoint* eulerJoint1 = new EulerJoint;
 
-    eulerJoint.setAxisOrder(EulerJoint::AO_XYZ);
-    kinematicsTest(&eulerJoint);
+    eulerJoint1->setAxisOrder(EulerJoint::AO_XYZ);
+    kinematicsTest(eulerJoint1);
 
-    eulerJoint.setAxisOrder(EulerJoint::AO_ZYX);
-    kinematicsTest(&eulerJoint);
+    EulerJoint* eulerJoint2 = new EulerJoint;
+
+    eulerJoint2->setAxisOrder(EulerJoint::AO_ZYX);
+    kinematicsTest(eulerJoint2);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, TRANSLATIONAL_JOINT)
 {
-    TranslationalJoint translationalJoint;
+    TranslationalJoint* translationalJoint = new TranslationalJoint;
 
-    kinematicsTest(&translationalJoint);
+    kinematicsTest(translationalJoint);
 }
 
 // 6-dof joint
 TEST_F(JOINTS, FREE_JOINT)
 {
-    FreeJoint freeJoint;
+    FreeJoint* freeJoint = new FreeJoint;
 
-    kinematicsTest(&freeJoint);
+    kinematicsTest(freeJoint);
 }
 
 TEST_F(JOINTS, POSITION_LIMIT)
