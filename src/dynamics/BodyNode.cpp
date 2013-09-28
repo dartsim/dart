@@ -88,11 +88,21 @@ BodyNode::BodyNode(const std::string& _name)
 
 BodyNode::~BodyNode()
 {
-    for(int i = 0; i < mVizShapes.size(); i++)
-        delete mVizShapes[i];
-    for(int i = 0; i < mColShapes.size(); i++)
-        if(mColShapes[i] != mVizShapes[i])
-            delete mColShapes[i];
+    for (std::vector<Shape*>::const_iterator it = mVizShapes.begin();
+         it != mVizShapes.end(); ++it)
+        delete (*it);
+
+    for (std::vector<Shape*>::const_iterator itColShape = mColShapes.begin();
+         itColShape != mColShapes.end(); ++itColShape)
+        if (mVizShapes.end() == find(mVizShapes.begin(), mVizShapes.end(), *itColShape))
+            delete (*itColShape);
+
+    for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
+         it != mMarkers.end(); ++it)
+        delete (*it);
+
+    if (mParentJoint)
+        delete mParentJoint;
 }
 
 void BodyNode::setName(const std::string& _name)

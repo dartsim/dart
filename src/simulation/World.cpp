@@ -67,6 +67,10 @@ World::~World()
 {
     delete mIntegrator;
     delete mCollisionHandle;
+
+    for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
+         it != mSkeletons.end(); ++it)
+        delete (*it);
 }
 
 Eigen::VectorXd World::getState() const

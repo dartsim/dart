@@ -54,6 +54,9 @@ Skeleton::Skeleton(const std::string& _name)
       mTotalMass(0.0),
       mImmobile(false)
 {
+    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+        delete (*it);
 }
 
 Skeleton::~Skeleton()
