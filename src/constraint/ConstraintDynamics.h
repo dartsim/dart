@@ -56,7 +56,13 @@ namespace constraint {
 
 class ConstraintDynamics {
 public:
-    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true);
+    enum CollisionCheckerType {
+        FCL,
+        FCL_MESH,
+        DART
+    };
+
+    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, CollisionCheckerType _type = FCL_MESH);
     virtual ~ConstraintDynamics();
 
     void reset();
@@ -66,6 +72,7 @@ public:
     void addSkeleton(dynamics::Skeleton* _newSkel);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
+    void setCollisionCheckerType(CollisionCheckerType _type);
 
     inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
         return mTotalConstrForces[_skelIndex];
@@ -146,6 +153,8 @@ private:
     Eigen::VectorXd mCDot; // M * 1
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
+
+    CollisionCheckerType mCollisionCheckerType;
 };
 
 } // namespace constraint

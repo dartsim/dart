@@ -3,6 +3,7 @@
 #include "lcpsolver/LCPSolver.h"
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
+#include "collision/dart/DARTCollisionDetector.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/GenCoord.h"
 #include "dynamics/Joint.h"
@@ -18,8 +19,8 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-    ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE)
-        : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL), mUseODELCPSolver(_useODE) {
+ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, CollisionCheckerType _type)
+    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL), mUseODELCPSolver(_useODE), mCollisionCheckerType(_type) {
     initialize();
 }
 
@@ -177,10 +178,36 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     mZ = Eigen::MatrixXd(rows, cols);
 }
 
+void ConstraintDynamics::setCollisionCheckerType(ConstraintDynamics::CollisionCheckerType _type)
+{
+    if (_type == mCollisionCheckerType)
+        return;
+
+    if (mCollisionChecker)
+    {
+        delete mCollisionChecker;
+        mCollisionChecker = NULL;
+    }
+
+    mCollisionCheckerType = _type;
+
+    initialize();
+}
+
 void ConstraintDynamics::initialize() {
     // Allocate the Collision Detection class
-    //mCollisionChecker = new FCLCollisionDetector();
-    mCollisionChecker = new FCLMESHCollisionDetector();
+    switch (mCollisionCheckerType) {
+        case FCL_MESH:
+            mCollisionChecker = new FCLMESHCollisionDetector();
+            break;
+        case FCL:
+            mCollisionChecker = new FCLCollisionDetector();
+            break;
+        case DART:
+            mCollisionChecker = new DARTCollisionDetector();
+        default:
+            break;
+    }
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionChecker
     int rows = 0;
