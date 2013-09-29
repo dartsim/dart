@@ -180,6 +180,12 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
 
 void ConstraintDynamics::setCollisionCheckerType(ConstraintDynamics::CollisionCheckerType _type)
 {
+    if ((_type != FCL) && (_type != FCL_MESH) && (_type != DART))
+    {
+        std::cout << "Invalid collision checker type [" << _type << "]." << std::endl;
+        return;
+    }
+
     if (_type == mCollisionCheckerType)
         return;
 
@@ -205,7 +211,9 @@ void ConstraintDynamics::initialize() {
             break;
         case DART:
             mCollisionChecker = new DARTCollisionDetector();
+            break;
         default:
+            assert(0 && "Invalid collision checker type.");
             break;
     }
     mBodyIndexToSkelIndex.clear();
