@@ -52,20 +52,20 @@ namespace dynamics { class BodyNode; }
 namespace collision {
 
 /// @brief
-class FCLMESHCollisionNode : public CollisionNode
+class FCLMeshCollisionNode : public CollisionNode
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode);
-    virtual ~FCLMESHCollisionNode();
+    FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode);
+    virtual ~FCLMeshCollisionNode();
 
     std::vector<fcl::BVHModel<fcl::OBBRSS>*> mMeshes;
 
     fcl::Transform3f mFclWorldTrans;
     Eigen::Isometry3d mWorldTrans;
 
-    bool checkCollision(FCLMESHCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
+    bool checkCollision(FCLMeshCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
     void evalRT();
     static fcl::Transform3f getFclTransform(const Eigen::Isometry3d& _m);
 
@@ -85,7 +85,7 @@ private:
     inline static double triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3);
 };
 
-inline bool FCLMESHCollisionNode::EFtest(fcl::Vec3f& p0,
+inline bool FCLMeshCollisionNode::EFtest(fcl::Vec3f& p0,
                                      fcl::Vec3f& p1,
                                      fcl::Vec3f& r1,
                                      fcl::Vec3f& r2,
@@ -110,7 +110,7 @@ inline bool FCLMESHCollisionNode::EFtest(fcl::Vec3f& p0,
     return false;
 }
 
-inline int FCLMESHCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2)
+inline int FCLMeshCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2)
 {
     float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
     SET(U0, r1);
@@ -178,7 +178,7 @@ inline int FCLMESHCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec
         */
 }
 
-inline double FCLMESHCollisionNode::triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3) {
+inline double FCLMeshCollisionNode::triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3) {
     fcl::Vec3f a = p2 - p1;
     fcl::Vec3f b = p3 - p1;
     double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
