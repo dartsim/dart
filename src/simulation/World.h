@@ -166,10 +166,10 @@ public:
     //--------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------
-    // Collision
+    // Constraint
     //--------------------------------------------------------------------------
-    /// @brief Get the collision handler.
-    constraint::ConstraintDynamics* getCollisionHandle() const;
+    /// @brief Get the constraint handler.
+    constraint::ConstraintDynamics* getConstraintHandler() const;
 
 protected:
     //--------------------------------------------------------------------------
@@ -199,8 +199,8 @@ protected:
     /// @brief The integrator.
     integration::Integrator* mIntegrator;
 
-    /// @brief The collision handler.
-    constraint::ConstraintDynamics* mCollisionHandle;
+    /// @brief The constraint handler.
+    constraint::ConstraintDynamics* mConstraintHandler;
 
 private:
 };
