@@ -52,13 +52,13 @@
 #include "renderer/LoadOpengl.h"
 
 #include "collision/fcl_mesh/CollisionShapes.h"
-#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
-#include "collision/fcl_mesh/FCLMESHCollisionNode.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionNode.h"
 
 namespace dart {
 namespace collision {
 
-FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
+FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
     : CollisionNode(_bodyNode)
 {
     for(int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
@@ -110,14 +110,14 @@ FCLMESHCollisionNode::FCLMESHCollisionNode(dynamics::BodyNode* _bodyNode)
     }
 }
 
-FCLMESHCollisionNode::~FCLMESHCollisionNode()
+FCLMeshCollisionNode::~FCLMeshCollisionNode()
 {
     for(int i = 0; i < mMeshes.size(); i++)
         delete mMeshes[i];
 }
 
-bool FCLMESHCollisionNode::checkCollision(
-        FCLMESHCollisionNode* _otherNode,
+bool FCLMeshCollisionNode::checkCollision(
+        FCLMeshCollisionNode* _otherNode,
         std::vector<Contact>* _contactPoints,
         int _num_max_contact)
 {
@@ -235,19 +235,19 @@ bool FCLMESHCollisionNode::checkCollision(
     return collision;
 }
 
-void FCLMESHCollisionNode::evalRT() {
+void FCLMeshCollisionNode::evalRT() {
     mWorldTrans = mBodyNode->getWorldTransform();
     mFclWorldTrans = getFclTransform(mWorldTrans);
 }
 
-fcl::Transform3f FCLMESHCollisionNode::getFclTransform(const Eigen::Isometry3d& _m) {
+fcl::Transform3f FCLMeshCollisionNode::getFclTransform(const Eigen::Isometry3d& _m) {
     return fcl::Transform3f(fcl::Matrix3f(_m(0,0), _m(0,1), _m(0,2),
                                           _m(1,0), _m(1,1), _m(1,2),
                                           _m(2,0), _m(2,1), _m(2,2)),
                             fcl::Vec3f(_m(0,3), _m(1,3), _m(2,3)));
 }
 
-int FCLMESHCollisionNode::evalContactPosition(
+int FCLMeshCollisionNode::evalContactPosition(
         const fcl::Contact& _fclContact,
         fcl::BVHModel<fcl::OBBRSS>* _mesh1,
         fcl::BVHModel<fcl::OBBRSS>* _mesh2,
@@ -297,7 +297,7 @@ int FCLMESHCollisionNode::evalContactPosition(
     return testRes;
 }
 
-void FCLMESHCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
+void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
     evalRT();
     double M[16];
     for(int i=0;i<4;i++)

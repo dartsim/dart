@@ -1,7 +1,7 @@
 #include "common/Timer.h"
 #include "math/Helpers.h"
 #include "lcpsolver/LCPSolver.h"
-#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/GenCoord.h"
@@ -180,7 +180,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
 void ConstraintDynamics::initialize() {
     // Allocate the Collision Detection class
     //mCollisionChecker = new FCLCollisionDetector();
-    mCollisionChecker = new FCLMESHCollisionDetector();
+    mCollisionChecker = new FCLMeshCollisionDetector();
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionChecker
     int rows = 0;

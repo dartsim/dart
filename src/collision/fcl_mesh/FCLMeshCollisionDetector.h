@@ -51,7 +51,7 @@ namespace dart {
 namespace dynamics { class BodyNode; }
 namespace collision {
 
-class FCLMESHCollisionNode;
+class FCLMeshCollisionNode;
 
 //class FCLContact : public Contact
 //{
@@ -69,14 +69,14 @@ class FCLMESHCollisionNode;
 //};
 
 
-class FCLMESHCollisionDetector : public CollisionDetector
+class FCLMeshCollisionDetector : public CollisionDetector
 {
 public:
     /// @brief
-    FCLMESHCollisionDetector() {}
+    FCLMeshCollisionDetector() {}
 
     /// @brief
-    virtual ~FCLMESHCollisionDetector();
+    virtual ~FCLMeshCollisionDetector();
 
     virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
