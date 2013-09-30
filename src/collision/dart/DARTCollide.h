@@ -68,6 +68,15 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
                         const double& _r1, const Eigen::Isometry3d& c1,
                         std::vector<Contact>& result);
 
+int collideCylinderSphere(
+        const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const double& sphere_rad, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result);
+
+int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result);
+
 } // namespace collision
 } // namespace dart
 

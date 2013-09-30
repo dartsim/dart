@@ -39,6 +39,7 @@
 
 #include <memory>
 
+#include "math/Helpers.h"
 #include "dynamics/BoxShape.h"
 #include "dynamics/EllipsoidShape.h"
 #include "dynamics/CylinderShape.h"
@@ -50,11 +51,20 @@ namespace collision {
 // normal : normal vector from right to left 0 <- 1
 // penetration : real positive means penetration
 
-#define COMPUTECOLLISION_EPS  1E-6
+#define DART_COLLISION_EPS  1E-6
+static const int MAX_CYLBOX_CLIP_POINTS  = 16;
+static const int nCYLINDER_AXIS			 = 2;
+// Number of segment of cylinder base circle.
+// Must be divisible by 4.
+static const int nCYLINDER_SEGMENT		 = 8;
 
 typedef double dVector3[4];
+typedef double dVector3[4];
+typedef double dVector4[4];
 typedef double dMatrix3[12];
-
+typedef double dMatrix4[16];
+typedef double dMatrix6[48];
+typedef double dQuaternion[4];
 
 inline void convVector(const Eigen::Vector3d& p0, dVector3& p1)
 {
@@ -883,7 +893,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
         return 0;
     }
 
-    if (mag > COMPUTECOLLISION_EPS)
+    if (mag > DART_COLLISION_EPS)
     {
         normal *= (1.0/mag);
 
@@ -990,7 +1000,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
         return 0;
     }
 
-    if (mag > COMPUTECOLLISION_EPS)
+    if (mag > DART_COLLISION_EPS)
     {
         normal *= (1.0/mag);
 
@@ -1050,7 +1060,7 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
     Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
     double penetration;
 
-    if (normal_sqr < COMPUTECOLLISION_EPS)
+    if (normal_sqr < DART_COLLISION_EPS)
     {
         normal.setZero();
         penetration = rsum;
@@ -1074,6 +1084,138 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
     result.push_back(contact);
     return 1;
 
+}
+
+int collideCylinderSphere(
+        const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const double& sphere_rad, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result)
+{
+    Eigen::Vector3d center = T0.inverse() * T1.translation();
+
+    double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
+
+    if ( dist < cyl_rad && fabs(center[2]) < half_height + sphere_rad )
+    {
+        Contact contact;
+        contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sgn(center[2]) * center[2]);
+        contact.point = T0 * Eigen::Vector3d(center[0], center[1], half_height - contact.penetrationDepth);
+        contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sgn(center[2]));
+        result.push_back(contact);
+        return 1;
+    }
+    else
+    {
+        double penetration = 0.5 * (cyl_rad + sphere_rad - dist);
+        if ( penetration > 0.0 )
+        {
+            if ( fabs(center[2]) > half_height )
+            {
+                Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
+                point *= cyl_rad;
+                point[2] = math::sgn(center[2]) * half_height;
+                Eigen::Vector3d normal = point - center;
+                penetration = sphere_rad - normal.norm();
+                normal = (T0.linear() * normal).normalized();
+                point = T0 * point;
+
+                if (penetration > 0.0)
+                {
+                    Contact contact;
+                    contact.point = point;
+                    contact.normal = normal;
+                    contact.penetrationDepth = penetration;
+                    result.push_back(contact);
+                    return 1;
+                }
+            }
+            else // if( center[2] >= -half_height && center[2] <= half_height )
+            {
+                Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
+                Eigen::Vector3d normal = -(T0.linear() * point);
+                point *= (cyl_rad - penetration);
+                point[2] = center[2];
+                point = T0 * point;
+
+                Contact contact;
+                contact.point = point;
+                contact.normal = normal;
+                contact.penetrationDepth = penetration;
+                result.push_back(contact);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result)
+{
+    Eigen::Vector3d normal = T1.linear() * plane_normal;
+    Eigen::Vector3d Rx = T0.linear().rightCols(1);
+    Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
+    double mag = Ry.norm();
+    Ry.normalize();
+    if (mag < DART_COLLISION_EPS)
+    {
+        if (fabs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
+            Ry = Eigen::Vector3d::UnitX();
+        else
+            Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
+    }
+
+    Eigen::Vector3d Rz = Rx.cross(Ry);
+    Eigen::Isometry3d T;
+    T.linear().col(0) = Rx;
+    T.linear().col(1) = Ry;
+    T.linear().col(2) = Rz;
+    T.translation() = T0.translation();
+
+    Eigen::Vector3d nn = T.linear().transpose() * normal;
+    Eigen::Vector3d pn = T.inverse() * T1.translation();
+
+    // four corners c0 = ( -h/2, -r ), c1 = ( +h/2, -r ), c2 = ( +h/2, +r ), c3 = ( -h/2, +r )
+    Eigen::Vector3d c[4] = {
+        Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
+        Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
+        Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
+        Eigen::Vector3d(-half_height, +cyl_rad, 0.0) };
+
+    double depth[4] = { (pn - c[0]).dot(nn), (pn - c[1]).dot(nn), (pn - c[2]).dot(nn), (pn - c[3]).dot(nn) };
+
+    double penetration = -1.0;
+    int found = -1;
+    for (int i = 0; i < 4; i++)
+    {
+        if (depth[i] > penetration)
+        {
+            penetration = depth[i];
+            found = i;
+        }
+    }
+
+    Eigen::Vector3d point;
+
+    if (fabs(depth[found] - depth[(found+1)%4]) < DART_COLLISION_EPS)
+        point = T * (0.5 * (c[found] + c[(found+1)%4]));
+    else if (fabs(depth[found] - depth[(found+3)%4]) < DART_COLLISION_EPS)
+        point = T * (0.5 * (c[found] + c[(found+3)%4]));
+    else
+        point = T * c[found];
+
+    if (penetration > 0.0)
+    {
+        Contact contact;
+        contact.point = point;
+        contact.normal = normal;
+        contact.penetrationDepth = penetration;
+        result.push_back(contact);
+        return 1;
+    }
+
+    return 0;
 }
 
 int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
@@ -1217,6 +1359,8 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
             break;
     }
 }
+
+
 
 } // namespace collision
 } // namespace dart
