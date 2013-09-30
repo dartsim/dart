@@ -1,7 +1,7 @@
 #include "common/Timer.h"
 #include "math/Helpers.h"
 #include "lcpsolver/LCPSolver.h"
-#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
 #include "collision/dart/DARTCollisionDetector.h"
 #include "dynamics/BodyNode.h"
@@ -204,7 +204,7 @@ void ConstraintDynamics::initialize() {
     // Allocate the Collision Detection class
     switch (mCollisionCheckerType) {
         case FCL_MESH:
-            mCollisionChecker = new FCLMESHCollisionDetector();
+            mCollisionChecker = new FCLMeshCollisionDetector();
             break;
         case FCL:
             mCollisionChecker = new FCLCollisionDetector();
