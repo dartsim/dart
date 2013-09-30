@@ -57,12 +57,12 @@ public:
     virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
     // Documentation inherited
-    virtual bool checkCollision(bool _checkAllCollisions,
+    virtual bool detectCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints);
 
 protected:
     // Documentation inherited
-    virtual bool checkCollision(CollisionNode* _collNode1,
+    virtual bool detectCollision(CollisionNode* _collNode1,
                                 CollisionNode* _collNode2,
                                 bool _calculateContactPoints);
 };

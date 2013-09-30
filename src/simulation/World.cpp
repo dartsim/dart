@@ -275,7 +275,7 @@ int World::getIndex(int _index) const
 
 bool World::checkCollision(bool checkAllCollisions)
 {
-    return mCollisionHandle->getCollisionChecker()->checkCollision(
+    return mCollisionHandle->getCollisionDetector()->detectCollision(
                 checkAllCollisions, false);
 }
 

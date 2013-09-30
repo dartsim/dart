@@ -59,8 +59,8 @@ CollisionNode* DARTCollisionDetector::createCollisionNode(
     return new CollisionNode(_bodyNode);
 }
 
-bool DARTCollisionDetector::checkCollision(bool /*_checkAllCollisions*/,
-                                           bool /*_calculateContactPoints*/)
+bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
+                                            bool /*_calculateContactPoints*/)
 {
     clearAllContacts();
 
@@ -127,9 +127,9 @@ bool DARTCollisionDetector::checkCollision(bool /*_checkAllCollisions*/,
     return !mContacts.empty();
 }
 
-bool DARTCollisionDetector::checkCollision(CollisionNode* _collNode1,
-                                           CollisionNode* _collNode2,
-                                           bool /*_calculateContactPoints*/)
+bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
+                                            CollisionNode* _collNode2,
+                                            bool /*_calculateContactPoints*/)
 {
     std::vector<Contact> contacts;
 

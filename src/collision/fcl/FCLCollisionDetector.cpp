@@ -61,8 +61,8 @@ CollisionNode* FCLCollisionDetector::createCollisionNode(
     return new FCLCollisionNode(_bodyNode);
 }
 
-bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
-                                          bool _calculateContactPoints)
+bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
+                                           bool _calculateContactPoints)
 {
     // TODO: _checkAllCollisions
     clearAllContacts();
@@ -148,9 +148,9 @@ bool FCLCollisionDetector::checkCollision(bool _checkAllCollisions,
     return !mContacts.empty();
 }
 
-bool FCLCollisionDetector::checkCollision(CollisionNode* _node1,
-                                          CollisionNode* _node2,
-                                          bool _calculateContactPoints)
+bool FCLCollisionDetector::detectCollision(CollisionNode* _node1,
+                                           CollisionNode* _node2,
+                                           bool _calculateContactPoints)
 {
     assert(false); // function not implemented
     return false;

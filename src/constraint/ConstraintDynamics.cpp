@@ -19,14 +19,14 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, CollisionCheckerType _type)
-    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL), mUseODELCPSolver(_useODE), mCollisionCheckerType(_type) {
+ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, CollisionDetectorType _type)
+    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(NULL), mUseODELCPSolver(_useODE), mCollisionDetectorType(_type) {
     initialize();
 }
 
 ConstraintDynamics::~ConstraintDynamics() {
-    if (mCollisionChecker)
-        delete mCollisionChecker;
+    if (mCollisionDetector)
+        delete mCollisionDetector;
 }
 
 void ConstraintDynamics::reset() {
@@ -39,8 +39,8 @@ void ConstraintDynamics::computeConstraintForces() {
 
     if (getTotalNumDofs() == 0)
         return;
-    mCollisionChecker->clearAllContacts();
-    mCollisionChecker->checkCollision(true, true);
+    mCollisionDetector->clearAllContacts();
+    mCollisionDetector->detectCollision(true, true);
 
     //            t1.startTimer();
     mLimitingDofIndex.clear();
@@ -72,7 +72,7 @@ void ConstraintDynamics::computeConstraintForces() {
         }
     }
 
-    if (mCollisionChecker->getNumContacts() == 0 && mLimitingDofIndex.size() == 0) {
+    if (mCollisionDetector->getNumContacts() == 0 && mLimitingDofIndex.size() == 0) {
         for (int i = 0; i < mSkels.size(); i++)
             mContactForces[i].setZero();
         if (mConstraints.size() == 0) {
@@ -137,11 +137,11 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     int nNodes = _newSkel->getNumBodyNodes();
 
     for (int j = 0; j < nNodes; j++) {
-        mCollisionChecker->addCollisionSkeletonNode(_newSkel->getBodyNode(j));
+        mCollisionDetector->addCollisionSkeletonNode(_newSkel->getBodyNode(j));
         mBodyIndexToSkelIndex.push_back(nSkels-1);
     }
 
-    // Add all body nodes into mCollisionChecker
+    // Add all body nodes into mCollisionDetector
     int rows = mMInv.rows();
     int cols = mMInv.cols();
 
@@ -178,7 +178,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     mZ = Eigen::MatrixXd(rows, cols);
 }
 
-void ConstraintDynamics::setCollisionCheckerType(ConstraintDynamics::CollisionCheckerType _type)
+void ConstraintDynamics::setCollisionDetectorType(ConstraintDynamics::CollisionDetectorType _type)
 {
     if ((_type != FCL) && (_type != FCL_MESH) && (_type != DART))
     {
@@ -186,38 +186,38 @@ void ConstraintDynamics::setCollisionCheckerType(ConstraintDynamics::CollisionCh
         return;
     }
 
-    if (_type == mCollisionCheckerType)
+    if (_type == mCollisionDetectorType)
         return;
 
-    if (mCollisionChecker)
+    if (mCollisionDetector)
     {
-        delete mCollisionChecker;
-        mCollisionChecker = NULL;
+        delete mCollisionDetector;
+        mCollisionDetector = NULL;
     }
 
-    mCollisionCheckerType = _type;
+    mCollisionDetectorType = _type;
 
     initialize();
 }
 
 void ConstraintDynamics::initialize() {
     // Allocate the Collision Detection class
-    switch (mCollisionCheckerType) {
+    switch (mCollisionDetectorType) {
         case FCL_MESH:
-            mCollisionChecker = new FCLMeshCollisionDetector();
+            mCollisionDetector = new FCLMeshCollisionDetector();
             break;
         case FCL:
-            mCollisionChecker = new FCLCollisionDetector();
+            mCollisionDetector = new FCLCollisionDetector();
             break;
         case DART:
-            mCollisionChecker = new DARTCollisionDetector();
+            mCollisionDetector = new DARTCollisionDetector();
             break;
         default:
             assert(0 && "Invalid collision checker type.");
             break;
     }
     mBodyIndexToSkelIndex.clear();
-    // Add all body nodes into mCollisionChecker
+    // Add all body nodes into mCollisionDetector
     int rows = 0;
     int cols = 0;
     for (int i = 0; i < mSkels.size(); i++) {
@@ -227,7 +227,7 @@ void ConstraintDynamics::initialize() {
         for (int j = 0; j < nNodes; j++) {
             dynamics::BodyNode* node = skel->getBodyNode(j);
             if(node->isCollidable()) {
-                mCollisionChecker->addCollisionSkeletonNode(node);
+                mCollisionDetector->addCollisionSkeletonNode(node);
                 mBodyIndexToSkelIndex.push_back(i);
             }
         }
@@ -280,8 +280,8 @@ void ConstraintDynamics::initialize() {
 
 void ConstraintDynamics::destroy()
 {
-    if (mCollisionChecker)
-        delete mCollisionChecker;
+    if (mCollisionDetector)
+        delete mCollisionDetector;
 }
 
 void ConstraintDynamics::computeConstraintWithoutContact() {
@@ -505,7 +505,7 @@ void ConstraintDynamics::applySolution() {
         contactForces.noalias() = mN * f_n;
         contactForces.noalias() += mB * f_d;
         for (int i = 0; i < getNumContacts(); i++) {
-            Contact& contact = mCollisionChecker->getContact(i);
+            Contact& contact = mCollisionDetector->getContact(i);
             contact.force.noalias() = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir);
             contact.force.noalias() += contact.normal * f_n[i];
         }
@@ -551,7 +551,7 @@ void ConstraintDynamics::applySolutionODE() {
         contactForces.noalias() = mN * f_n;
         contactForces.noalias() += mB * f_d;
         for (int i = 0; i < getNumContacts(); i++) {
-            Contact& contact = mCollisionChecker->getContact(i);
+            Contact& contact = mCollisionDetector->getContact(i);
             contact.force.noalias() = getTangentBasisMatrixODE(contact.point, contact.normal) * f_d.segment(i * 2, 2);
             contact.force.noalias() += contact.normal * f_n[i];
         }
@@ -615,7 +615,7 @@ void ConstraintDynamics::updateNBMatrices() {
     mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
     mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * mNumDir);
     for (int i = 0; i < getNumContacts(); i++) {
-        Contact& c = mCollisionChecker->getContact(i);
+        Contact& c = mCollisionDetector->getContact(i);
         Eigen::Vector3d p = c.point;
         int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getIndex()];
         int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getIndex()];
@@ -655,7 +655,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
     mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
     mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
     for (int i = 0; i < getNumContacts(); i++) {
-        Contact& c = mCollisionChecker->getContact(i);
+        Contact& c = mCollisionDetector->getContact(i);
         Eigen::Vector3d p = c.point;
         int skelID1 = mBodyIndexToSkelIndex[c.collisionNode1->getIndex()];
         int skelID2 = mBodyIndexToSkelIndex[c.collisionNode2->getIndex()];

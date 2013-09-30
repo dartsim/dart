@@ -56,13 +56,13 @@ namespace constraint {
 
 class ConstraintDynamics {
 public:
-    enum CollisionCheckerType {
+    enum CollisionDetectorType {
         FCL,
         FCL_MESH,
         DART
     };
 
-    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, CollisionCheckerType _type = FCL_MESH);
+    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, CollisionDetectorType _type = FCL_MESH);
     virtual ~ConstraintDynamics();
 
     void reset();
@@ -72,7 +72,7 @@ public:
     void addSkeleton(dynamics::Skeleton* _newSkel);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
-    void setCollisionCheckerType(CollisionCheckerType _type);
+    void setCollisionDetectorType(CollisionDetectorType _type);
 
     inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
         return mTotalConstrForces[_skelIndex];
@@ -82,12 +82,12 @@ public:
         return mContactForces[_skelIndex];
     }
 
-    inline collision::CollisionDetector* getCollisionChecker() const {
-        return mCollisionChecker;
+    inline collision::CollisionDetector* getCollisionDetector() const {
+        return mCollisionDetector;
     }
 
     inline int getNumContacts() const {
-        return mCollisionChecker->getNumContacts();
+        return mCollisionDetector->getNumContacts();
     }
 
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
@@ -121,7 +121,7 @@ private:
     std::vector<dynamics::Skeleton*> mSkels;
     std::vector<int> mBodyIndexToSkelIndex;
     std::vector<int> mIndices;
-    collision::CollisionDetector* mCollisionChecker;
+    collision::CollisionDetector* mCollisionDetector;
     double mDt; // timestep
     double mMu; // friction coeff.
     int mNumDir; // number of basis directions
@@ -154,7 +154,7 @@ private:
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
 
-    CollisionCheckerType mCollisionCheckerType;
+    CollisionDetectorType mCollisionDetectorType;
 };
 
 } // namespace constraint
