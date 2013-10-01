@@ -192,10 +192,10 @@ TEST(BUILDING, ADDING_AND_REMOVING_SKELETONS)
         world->step();
 
     // Remove skeleton1
-//    world->removeSkeleton(skeleton1);
-//    EXPECT_TRUE(world->getNumSkeletons() == 2);
-//    for (int i = 0; i < nSteps; ++i)
-//        world->step();
+    world->removeSkeleton(skeleton1);
+    EXPECT_TRUE(world->getNumSkeletons() == 2);
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
 
     delete world;
 }

@@ -195,18 +195,24 @@ void ConstraintDynamics::removeSkeleton(dynamics::Skeleton* _skeleton)
     for (int i = 0; i < nBodyNodes; i++)
         mCollisionChecker->removeCollisionSkeletonNode(_skeleton->getBodyNode(i));
 
-    //
+    // Update mBodyIndexToSkelIndex
     mBodyIndexToSkelIndex.erase(remove(mBodyIndexToSkelIndex.begin(), mBodyIndexToSkelIndex.end(), iSkeleton), mBodyIndexToSkelIndex.end());
+    int it = 0;
+    for (; it < mBodyIndexToSkelIndex.size(); ++it)
+        if (mBodyIndexToSkelIndex[it] == iSkeleton + 1)
+            break;
+    for (int i = it; i < mBodyIndexToSkelIndex.size(); ++i)
+        mBodyIndexToSkelIndex[i]--;
 
     mContactForces.pop_back();
     mTotalConstrForces.pop_back();
 
     // Update mIndices.
     if (_skeleton->isMobile())
-        for (int i = iSkeleton + 1; i < mSkeletons.size() - 1; ++i)
+        for (int i = iSkeleton + 1; i < mIndices.size() - 1; ++i)
             mIndices[i] = mIndices[i+1] - nGenCoords;
     else
-        for (int i = iSkeleton + 1; i < mSkeletons.size() - 1; ++i)
+        for (int i = iSkeleton + 1; i < mIndices.size() - 1; ++i)
             mIndices[i] = mIndices[i+1];
     mIndices.pop_back();
 
