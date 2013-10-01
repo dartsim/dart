@@ -116,7 +116,7 @@ FCLMeshCollisionNode::~FCLMeshCollisionNode()
         delete mMeshes[i];
 }
 
-bool FCLMeshCollisionNode::checkCollision(
+bool FCLMeshCollisionNode::detectCollision(
         FCLMeshCollisionNode* _otherNode,
         std::vector<Contact>* _contactPoints,
         int _num_max_contact)
