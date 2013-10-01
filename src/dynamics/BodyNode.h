@@ -227,59 +227,53 @@ public:
     //--------------------------------------------------------------------------
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
-    /// @brief Transformation from the local coordinates of this body node to
-    /// the world coordinates.
+    /// @brief Get the transformation from the world frame to this body node
+    /// frame.
     const Eigen::Isometry3d& getWorldTransform() const;
 
-    /// @brief Given a 3D vector lp in the local coordinates of this body node.
-    /// @return The world coordinates of this vector
-    Eigen::Vector3d evalWorldPos(const Eigen::Vector3d& _lp) const;
-
-    /// @brief
+    /// @brief Get the generalized velocity at the origin of this body node
+    /// where the velocity is expressed in this body node frame.
     const Eigen::Vector6d& getBodyVelocity() const;
 
-    /// @brief
-    Eigen::Vector6d getWorldVelocity() const;
+    /// @brief Get the generalized velocity at a point on this body node where
+    /// the velocity is expressed in the world frame.
+    /// @param[in] _offset Point vector from the origin of this body frame where
+    ///                    the point vector is expressed in the world frame.
+    Eigen::Vector6d getWorldVelocity(
+            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
-    /// @brief
-    Eigen::Vector6d getWorldVelocityAtCOM() const;
-
-    /// @breif
-    Eigen::Vector6d getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const;
-
-    /// @breif
-    Eigen::Vector6d getWorldVelocityAtFrame(const Eigen::Isometry3d& _T) const;
-
-    /// @brief
+    /// @brief Get generalized acceleration at the origin of this body node
+    /// where the acceleration is expressed in this body node frame.
     const Eigen::Vector6d& getBodyAcceleration() const;
 
-    /// @brief
-    Eigen::Vector6d getWorldAcceleration() const;
+    /// @brief Get generalized acceleration at a point on this body node where
+    /// the acceleration is expressed in the world frame.
+    /// @param[in] _offset Point vector from the origin of this body frame where
+    ///                    the point vector is expressed in the world frame.
+    Eigen::Vector6d getWorldAcceleration(
+            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
-    /// @brief
-    Eigen::Vector6d getWorldAccelerationAtCOM() const;
-
-    /// @breif
-    Eigen::Vector6d getWorldAccelerationAtPoint(const Eigen::Vector3d& _pointBody) const;
-
-    /// @breif
-    Eigen::Vector6d getWorldAccelerationAtFrame(const Eigen::Isometry3d& _T) const;
-
-    /// @brief
+    /// @brief Get generalized Jacobian at the origin of this body node where
+    /// the Jacobian is expressed in this body node frame.
     const math::Jacobian& getBodyJacobian() const;
 
-    /// @brief
-    math::Jacobian getWorldJacobian() const;
+    /// @brief Get generalized Jacobian at a point on this body node where the
+    /// Jacobian is expressed in the world frame.
+    /// @param[in] _offset Point vector from the origin of this body frame where
+    ///                    the point vector is expressed in the world frame.
+    math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
 
-    /// @brief Get body Jacobian at contact point.
-    math::Jacobian getWorldJacobianAtPoint(const Eigen::Vector3d& r_world) const;
+    /// @brief Get time derivative of generalized Jacobian at the origin of this
+    /// body node where the Jacobian is expressed in this body node frame.
+    const math::Jacobian& getBodyJacobianTimeDeriv() const;
 
-    /// @brief
-    Eigen::MatrixXd getWorldJacobianAtPoint_LinearPartOnly(
-            const Eigen::Vector3d& r_world) const;
-
-    /// @brief
-    const math::Jacobian& getBodyJacobianDeriv() const;
+    /// @brief Get time derivative of generalized Jacobian at a point on this
+    /// body node where the time derivative of Jacobian is expressed in the
+    /// world frame.
+    /// @param[in] _offset Point vector from the origin of this body frame where
+    ///                    the point vector is expressed in the world frame.
+    math::Jacobian getWorldJacobianTimeDeriv(
+            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
     /// @brief
     void setColliding(bool _colliding);
@@ -495,7 +489,7 @@ protected:
     math::Jacobian mBodyJacobian;
 
     /// @brief
-    math::Jacobian mBodyJacobianDeriv;
+    math::Jacobian mBodyJacobianTimeDeriv;
 
     /// @brief Generalized body velocity w.r.t. body frame.
     Eigen::Vector6d mV;

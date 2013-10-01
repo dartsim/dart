@@ -34,7 +34,7 @@ void PointConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::V
 }
 
 void PointConstraint::getJacobian() {
-    Eigen::MatrixXd JBody = mBody->getWorldJacobianAtPoint_LinearPartOnly(mOffset);
+    Eigen::MatrixXd JBody = mBody->getWorldJacobian(mOffset - mBody->getWorldTransform().translation()).bottomRows<3>();
     for(int i = 0; i < mBody->getNumDependentDofs(); i++) {
         int dofIndex = mBody->getDependentDof(i);
         mJ.col(dofIndex) = JBody.col(dofIndex);

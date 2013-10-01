@@ -58,7 +58,7 @@ World::World()
       mTimeStep(0.001),
       mFrame(0),
       mIntegrator(new integration::EulerIntegrator()),
-      mCollisionHandle(new constraint::ConstraintDynamics(mSkeletons, mTimeStep))
+      mConstraintHandler(new constraint::ConstraintDynamics(mSkeletons, mTimeStep))
 {
     mIndices.push_back(0);
 }
@@ -66,7 +66,7 @@ World::World()
 World::~World()
 {
     delete mIntegrator;
-    delete mCollisionHandle;
+    delete mConstraintHandler;
 
     for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
          it != mSkeletons.end(); ++it)
@@ -124,7 +124,7 @@ Eigen::VectorXd World::evalDeriv()
     }
 
     // compute constraint (contact/contact, joint limit) forces
-    mCollisionHandle->computeConstraintForces();
+    mConstraintHandler->computeConstraintForces();
 
     // set constraint force
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
@@ -134,7 +134,7 @@ Eigen::VectorXd World::evalDeriv()
             continue;
 
         mSkeletons[i]->setConstraintForces(
-                    mCollisionHandle->getTotalConstraintForce(i));
+                    mConstraintHandler->getTotalConstraintForce(i));
     }
 
     // compute forward dynamics
@@ -170,7 +170,7 @@ Eigen::VectorXd World::evalDeriv()
 void World::setTimeStep(double _timeStep)
 {
     mTimeStep = _timeStep;
-    mCollisionHandle->setTimeStep(_timeStep);
+    mConstraintHandler->setTimeStep(_timeStep);
 }
 
 double World::getTimeStep() const
@@ -265,7 +265,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
 
-    mCollisionHandle->addSkeleton(_skeleton);
+    mConstraintHandler->addSkeleton(_skeleton);
 }
 
 int World::getIndex(int _index) const
@@ -275,13 +275,13 @@ int World::getIndex(int _index) const
 
 bool World::checkCollision(bool checkAllCollisions)
 {
-    return mCollisionHandle->getCollisionDetector()->detectCollision(
+    return mConstraintHandler->getCollisionDetector()->detectCollision(
                 checkAllCollisions, false);
 }
 
-constraint::ConstraintDynamics*World::getCollisionHandle() const
+constraint::ConstraintDynamics*World::getConstraintHandler() const
 {
-    return mCollisionHandle;
+    return mConstraintHandler;
 }
 
 } // namespace simulation
