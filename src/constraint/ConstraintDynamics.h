@@ -43,6 +43,7 @@
 
 #include "constraint/Constraint.h"
 #include "collision/CollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 namespace dart {
 
@@ -56,16 +57,16 @@ namespace constraint {
 
 class ConstraintDynamics {
 public:
-    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true);
+    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, collision::CollisionDetector* _collisionDetector = new collision::FCLMeshCollisionDetector());
     virtual ~ConstraintDynamics();
 
-    void reset();
     void computeConstraintForces();
     void addConstraint(Constraint *_constr);
     void deleteConstraint(int _index);
     void addSkeleton(dynamics::Skeleton* _newSkel);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
+    void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
     inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
         return mTotalConstrForces[_skelIndex];
@@ -75,12 +76,12 @@ public:
         return mContactForces[_skelIndex];
     }
 
-    inline collision::CollisionDetector* getCollisionChecker() const {
-        return mCollisionChecker;
+    inline collision::CollisionDetector* getCollisionDetector() const {
+        return mCollisionDetector;
     }
 
     inline int getNumContacts() const {
-        return mCollisionChecker->getNumContacts();
+        return mCollisionDetector->getNumContacts();
     }
 
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
@@ -88,7 +89,6 @@ public:
 
 private:
     void initialize();
-    void destroy();
 
     void computeConstraintWithoutContact();
     void fillMatrices();
@@ -114,7 +114,7 @@ private:
     std::vector<dynamics::Skeleton*> mSkels;
     std::vector<int> mBodyIndexToSkelIndex;
     std::vector<int> mIndices;
-    collision::CollisionDetector* mCollisionChecker;
+    collision::CollisionDetector* mCollisionDetector;
     double mDt; // timestep
     double mMu; // friction coeff.
     int mNumDir; // number of basis directions

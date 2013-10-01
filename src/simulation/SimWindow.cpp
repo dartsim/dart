@@ -126,9 +126,9 @@ void SimWindow::draw()
         }
     }else{
         if (mShowMarkers) {
-            for (int k = 0; k < mWorld->getConstraintHandler()->getCollisionChecker()->getNumContacts(); k++) {
-                Eigen::Vector3d v = mWorld->getConstraintHandler()->getCollisionChecker()->getContact(k).point;
-                Eigen::Vector3d f = mWorld->getConstraintHandler()->getCollisionChecker()->getContact(k).force / 10.0;
+            for (int k = 0; k < mWorld->getConstraintHandler()->getCollisionDetector()->getNumContacts(); k++) {
+                Eigen::Vector3d v = mWorld->getConstraintHandler()->getCollisionDetector()->getContact(k).point;
+                Eigen::Vector3d f = mWorld->getConstraintHandler()->getCollisionDetector()->getContact(k).force / 10.0;
                 glBegin(GL_LINES);
                 glVertex3f(v[0], v[1], v[2]);
                 glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
@@ -199,14 +199,14 @@ void SimWindow::keyboard(unsigned char key, int x, int y)
 
 void SimWindow::bake()
 {
-    int nContact = mWorld->getConstraintHandler()->getCollisionChecker()->getNumContacts();
+    int nContact = mWorld->getConstraintHandler()->getCollisionDetector()->getNumContacts();
     Eigen::VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
     for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
         state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumGenCoords()) = mWorld->getSkeleton(i)->get_q();
     for (int i = 0; i < nContact; i++) {
         int begin = mWorld->getIndex(mWorld->getNumSkeletons()) + i * 6;
-        state.segment(begin, 3) = mWorld->getConstraintHandler()->getCollisionChecker()->getContact(i).point;
-        state.segment(begin + 3, 3) = mWorld->getConstraintHandler()->getCollisionChecker()->getContact(i).force;
+        state.segment(begin, 3) = mWorld->getConstraintHandler()->getCollisionDetector()->getContact(i).point;
+        state.segment(begin + 3, 3) = mWorld->getConstraintHandler()->getCollisionDetector()->getContact(i).force;
     }
     mBakedStates.push_back(state);
 }
