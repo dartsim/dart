@@ -209,40 +209,16 @@ const Eigen::Isometry3d& BodyNode::getWorldTransform() const
     return mW;
 }
 
-Eigen::Vector3d BodyNode::evalWorldPos(const Eigen::Vector3d& _lp) const
-{
-    return mW * _lp;
-}
-
 const Eigen::Vector6d& BodyNode::getBodyVelocity() const
 {
     return mV;
 }
 
-Eigen::Vector6d BodyNode::getWorldVelocity() const
+Eigen::Vector6d BodyNode::getWorldVelocity(const Eigen::Vector3d& _offset) const
 {
-    return math::AdR(mW, mV);
-}
-
-Eigen::Vector6d BodyNode::getWorldVelocityAtCOM() const
-{
-    Eigen::Isometry3d worldFrameAtCOG = mW;
-    worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
-    return math::AdT(worldFrameAtCOG, mV);
-}
-
-Eigen::Vector6d BodyNode::getWorldVelocityAtPoint(const Eigen::Vector3d& _pointBody) const
-{
-    Eigen::Isometry3d worldFrameAtPoint = mW;
-    worldFrameAtPoint.translation() = mW.linear() *  -_pointBody;
-    return math::AdT(worldFrameAtPoint, mV);
-}
-
-Eigen::Vector6d BodyNode::getWorldVelocityAtFrame(const Eigen::Isometry3d& _T) const
-{
-    assert(math::verifyTransform(_T));
-
-    return math::AdT(_T.inverse() * mW, mV);
+    Eigen::Isometry3d T = mW;
+    T.translation() = -_offset;
+    return math::AdT(T, mV);
 }
 
 const Eigen::Vector6d&BodyNode::getBodyAcceleration() const
@@ -250,30 +226,12 @@ const Eigen::Vector6d&BodyNode::getBodyAcceleration() const
     return mdV;
 }
 
-Eigen::Vector6d BodyNode::getWorldAcceleration() const
+Eigen::Vector6d BodyNode::getWorldAcceleration(
+        const Eigen::Vector3d& _offset) const
 {
-    return math::AdR(mW, mdV);
-}
-
-Eigen::Vector6d BodyNode::getWorldAccelerationAtCOM() const
-{
-    Eigen::Isometry3d worldFrameAtCOG = mW;
-    worldFrameAtCOG.translation() = mW.linear() * -mCenterOfMass;
-    return math::AdT(worldFrameAtCOG, mdV);
-}
-
-Eigen::Vector6d BodyNode::getWorldAccelerationAtPoint(const Eigen::Vector3d& _point) const
-{
-    Eigen::Isometry3d worldFrameAtPoint = mW;
-    worldFrameAtPoint.translation() = mW.linear() * _point;
-    return math::AdT(worldFrameAtPoint, mdV);
-}
-
-Eigen::Vector6d BodyNode::getWorldAccelerationAtFrame(const Eigen::Isometry3d& _T) const
-{
-    assert(math::verifyTransform(_T));
-
-    return math::AdT(_T.inverse() * mW, mdV);
+    Eigen::Isometry3d T = mW;
+    T.translation() = -_offset;
+    return math::AdT(T, mdV);
 }
 
 const math::Jacobian&BodyNode::getBodyJacobian() const
@@ -281,59 +239,24 @@ const math::Jacobian&BodyNode::getBodyJacobian() const
     return mBodyJacobian;
 }
 
-math::Jacobian BodyNode::getWorldJacobian() const
+math::Jacobian BodyNode::getWorldJacobian(const Eigen::Vector3d& _offset) const
 {
-    return math::AdR(mW, mBodyJacobian);
+    Eigen::Isometry3d T = mW;
+    T.translation() = -_offset;
+    return math::AdTJac(T, mBodyJacobian);
 }
 
-math::Jacobian BodyNode::getWorldJacobianAtPoint(const Eigen::Vector3d& _point) const
+const math::Jacobian& BodyNode::getBodyJacobianTimeDeriv() const
 {
-    //--------------------------------------------------------------------------
-    // Jb                : body jacobian
-    //
-    // X = | I r_world | : frame whose origin is at contact point
-    //     | 0       1 |
-    //
-    // X^{-1} = | I -r_world |
-    //          | 0        1 |
-    //
-    // W = | R p |       : body frame
-    //     | 0 1 |
-    //
-    // body_jacobian_at_contact_point = Ad(X^{-1} * W, Jb)
-    //--------------------------------------------------------------------------
-    return math::AdTJac(Eigen::Translation3d(-_point) * mW, mBodyJacobian);
+    return mBodyJacobianTimeDeriv;
 }
 
-Eigen::MatrixXd BodyNode::getWorldJacobianAtPoint_LinearPartOnly(
-        const Eigen::Vector3d& r_world) const
+math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
+        const Eigen::Vector3d& _offset) const
 {
-    //--------------------------------------------------------------------------
-    // Jb                : body jacobian
-    //
-    // X = | I r_world | : frame whose origin is at contact point
-    //     | 0       1 |
-    //
-    // X^{-1} = | I -r_world |
-    //          | 0        1 |
-    //
-    // W = | R p |       : body frame
-    //     | 0 1 |
-    //
-    // body_jacobian_at_contact_point = Ad(X^{-1} * W, Jb)
-    //--------------------------------------------------------------------------
-
-    // TODO: Speed up here.
-    Eigen::MatrixXd JcLinear = Eigen::MatrixXd::Zero(3, getNumDependentDofs());
-
-    JcLinear = getWorldJacobianAtPoint(r_world).bottomLeftCorner(3,getNumDependentDofs());
-
-    return JcLinear;
-}
-
-const math::Jacobian& BodyNode::getBodyJacobianDeriv() const
-{
-    return mBodyJacobianDeriv;
+    Eigen::Isometry3d T = mW;
+    T.translation() = -_offset;
+    return math::AdTJac(T, mBodyJacobianTimeDeriv);
 }
 
 void BodyNode::setColliding(bool _colliding)
@@ -376,7 +299,7 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 
     const int numDepDofs = getNumDependentDofs();
     mBodyJacobian      = math::Jacobian::Zero(6,numDepDofs);
-    mBodyJacobianDeriv = math::Jacobian::Zero(6,numDepDofs);
+    mBodyJacobianTimeDeriv = math::Jacobian::Zero(6,numDepDofs);
     mM                 = Eigen::MatrixXd::Zero(numDepDofs, numDepDofs);
 }
 
@@ -579,22 +502,22 @@ void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
     // Parent Jacobian
     if (mParentBodyNode != NULL)
     {
-        assert(mParentBodyNode->mBodyJacobianDeriv.cols() + mParentJoint->getNumGenCoords()
-               == mBodyJacobianDeriv.cols());
+        assert(mParentBodyNode->mBodyJacobianTimeDeriv.cols() + mParentJoint->getNumGenCoords()
+               == mBodyJacobianTimeDeriv.cols());
 
         for (int i = 0; i < numParentDOFs; ++i)
         {
             assert(mParentJoint);
             Eigen::Vector6d dJi = math::AdInvT(mParentJoint->getLocalTransform(),
-                                         mParentBodyNode->mBodyJacobianDeriv.col(i));
-            mBodyJacobianDeriv.col(i) = dJi;
+                                         mParentBodyNode->mBodyJacobianTimeDeriv.col(i));
+            mBodyJacobianTimeDeriv.col(i) = dJi;
         }
     }
 
     // Local Jacobian
     for(int i = 0; i < numLocalDOFs; i++)
     {
-        mBodyJacobianDeriv.col(numParentDOFs + i) =
+        mBodyJacobianTimeDeriv.col(numParentDOFs + i) =
                 mParentJoint->getLocalJacobianTimeDeriv().col(i);
     }
 }
@@ -631,7 +554,7 @@ const Eigen::Vector3d& BodyNode::getLocalCOM() const
 
 Eigen::Vector3d BodyNode::getWorldCOM() const
 {
-    return evalWorldPos(mCenterOfMass);
+    return mW * mCenterOfMass;
 }
 
 Eigen::Matrix6d BodyNode::getInertia() const

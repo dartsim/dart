@@ -41,12 +41,12 @@ void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eig
 }
 
 void ClosedLoopConstraint::getJacobian() {
-    Eigen::MatrixXd JBody1 = mBody1->getWorldJacobianAtPoint_LinearPartOnly(mOffset1);
+    Eigen::MatrixXd JBody1 = mBody1->getWorldJacobian(mOffset1 - mBody1->getWorldTransform().translation()).bottomRows<3>();
     for(int i = 0; i < mBody1->getNumDependentDofs(); i++) {
         int dofIndex = mBody1->getDependentDof(i);
         mJ1.col(dofIndex) = JBody1.col(dofIndex);
     }
-    Eigen::MatrixXd JBody2 = mBody2->getWorldJacobianAtPoint_LinearPartOnly(mOffset2);
+    Eigen::MatrixXd JBody2 = mBody2->getWorldJacobian(mOffset2 - mBody2->getWorldTransform().translation()).bottomRows<3>();
     for(int i = 0; i < mBody2->getNumDependentDofs(); i++) {
         int dofIndex = mBody2->getDependentDof(i);
         mJ2.col(dofIndex) = JBody2.col(dofIndex);
