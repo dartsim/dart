@@ -1,7 +1,6 @@
 #include "common/Timer.h"
 #include "math/Helpers.h"
 #include "lcpsolver/LCPSolver.h"
-#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "collision/fcl/FCLCollisionDetector.h"
 #include "collision/dart/DARTCollisionDetector.h"
 #include "dynamics/BodyNode.h"
@@ -19,8 +18,9 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, CollisionDetectorType _type)
-    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(NULL), mUseODELCPSolver(_useODE), mCollisionDetectorType(_type) {
+ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
+    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE) {
+    assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
 }
 
@@ -178,44 +178,25 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     mZ = Eigen::MatrixXd(rows, cols);
 }
 
-void ConstraintDynamics::setCollisionDetectorType(ConstraintDynamics::CollisionDetectorType _type)
+void ConstraintDynamics::setCollisionDetector(CollisionDetector* _collisionDetector)
 {
-    if ((_type != FCL) && (_type != FCL_MESH) && (_type != DART))
-    {
-        std::cout << "Invalid collision checker type [" << _type << "]." << std::endl;
-        return;
-    }
+    assert(_collisionDetector != NULL && "Invalid collision detector.");
 
-    if (_type == mCollisionDetectorType)
+    if (_collisionDetector == mCollisionDetector)
         return;
 
-    if (mCollisionDetector)
+    if (mCollisionDetector != NULL)
     {
         delete mCollisionDetector;
         mCollisionDetector = NULL;
     }
 
-    mCollisionDetectorType = _type;
+    mCollisionDetector = _collisionDetector;
 
     initialize();
 }
 
 void ConstraintDynamics::initialize() {
-    // Allocate the Collision Detection class
-    switch (mCollisionDetectorType) {
-        case FCL_MESH:
-            mCollisionDetector = new FCLMeshCollisionDetector();
-            break;
-        case FCL:
-            mCollisionDetector = new FCLCollisionDetector();
-            break;
-        case DART:
-            mCollisionDetector = new DARTCollisionDetector();
-            break;
-        default:
-            assert(0 && "Invalid collision checker type.");
-            break;
-    }
     mBodyIndexToSkelIndex.clear();
     // Add all body nodes into mCollisionDetector
     int rows = 0;

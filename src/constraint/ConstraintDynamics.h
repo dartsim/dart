@@ -43,6 +43,7 @@
 
 #include "constraint/Constraint.h"
 #include "collision/CollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 namespace dart {
 
@@ -56,13 +57,7 @@ namespace constraint {
 
 class ConstraintDynamics {
 public:
-    enum CollisionDetectorType {
-        FCL,
-        FCL_MESH,
-        DART
-    };
-
-    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, CollisionDetectorType _type = FCL_MESH);
+    ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, collision::CollisionDetector* _collisionDetector = new collision::FCLMeshCollisionDetector());
     virtual ~ConstraintDynamics();
 
     void reset();
@@ -72,7 +67,7 @@ public:
     void addSkeleton(dynamics::Skeleton* _newSkel);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
-    void setCollisionDetectorType(CollisionDetectorType _type);
+    void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
     inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
         return mTotalConstrForces[_skelIndex];
@@ -153,8 +148,6 @@ private:
     Eigen::VectorXd mCDot; // M * 1
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
-
-    CollisionDetectorType mCollisionDetectorType;
 };
 
 } // namespace constraint
