@@ -29,11 +29,6 @@ ConstraintDynamics::~ConstraintDynamics() {
         delete mCollisionDetector;
 }
 
-void ConstraintDynamics::reset() {
-    destroy();
-    initialize();
-}
-
 void ConstraintDynamics::computeConstraintForces() {
     //            static Timer t1("t1");
 
@@ -257,12 +252,6 @@ void ConstraintDynamics::initialize() {
     mPreJ.resize(mSkels.size());
     mJMInv.resize(mSkels.size());
     mZ = Eigen::MatrixXd(rows, cols);
-}
-
-void ConstraintDynamics::destroy()
-{
-    if (mCollisionDetector)
-        delete mCollisionDetector;
 }
 
 void ConstraintDynamics::computeConstraintWithoutContact() {

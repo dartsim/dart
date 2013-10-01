@@ -60,7 +60,6 @@ public:
     ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true, collision::CollisionDetector* _collisionDetector = new collision::FCLMeshCollisionDetector());
     virtual ~ConstraintDynamics();
 
-    void reset();
     void computeConstraintForces();
     void addConstraint(Constraint *_constr);
     void deleteConstraint(int _index);
@@ -90,7 +89,6 @@ public:
 
 private:
     void initialize();
-    void destroy();
 
     void computeConstraintWithoutContact();
     void fillMatrices();
