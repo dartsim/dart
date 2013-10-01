@@ -74,17 +74,23 @@ public:
     /// @brief
     const std::string& getName() const;
 
-    /// @brief
-    void setSelfCollidable(bool _selfCollidable);
+    /// @brief Set whether this skeleton allows self collisions between body
+    ///        nodes in this skeleton.
+    /// @param[in] _isSelfCollidable True if self collision is allowed.
+    void setSelfCollidable(bool _isSelfCollidable);
 
-    /// @brief
-    bool getSelfCollidable() const;
+    /// @brief Get whether this skeleton allows self collisions between body
+    ///        nodes in this skeleton.
+    /// @return True if self collision is allowed.
+    bool isSelfCollidable() const;
 
-    /// @brief
-    void setImmobileState(bool _immobile);
+    /// @brief Set whether this skeleton will be updated by forward dynamics.
+    /// @param[in] _isMobile True if this skeleton is mobile.
+    void setMobile(bool _isMobile);
 
-    /// @brief
-    bool getImmobileState() const;
+    /// @brief Get whether this skeleton will be updated by forward dynamics.
+    /// @return True if this skeleton is mobile.
+    bool isMobile() const;
 
     /// @brief
     double getMass() const;
@@ -275,7 +281,7 @@ protected:
     std::string mName;
 
     /// @brief
-    bool mSelfCollidable;
+    bool mIsSelfCollidable;
 
     //--------------------------------------------------------------------------
     // Structual Properties
@@ -289,7 +295,7 @@ protected:
     /// @brief If the skeleton is immobile, its dynamic effect is equivalent to
     /// having infinite mass. If the DOFs of an immobile skeleton are manually
     /// changed, the collision results might not be correct.
-    bool mImmobile;
+    bool mIsMobile;
 
     //--------------------------------------------------------------------------
     //

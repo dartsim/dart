@@ -57,8 +57,8 @@ int BodyNode::msBodyNodeCount = 0;
 BodyNode::BodyNode(const std::string& _name)
     : mSkelIndex(-1),
       mName(_name),
-      mCollidable(true),
-      mColliding(false),
+      mIsCollidable(true),
+      mIsColliding(false),
       mSkeleton(NULL),
       mParentJoint(NULL),
       mParentBodyNode(NULL),
@@ -115,9 +115,9 @@ const std::string& BodyNode::getName() const
     return mName;
 }
 
-void BodyNode::setGravityMode(bool _onoff)
+void BodyNode::setGravityMode(bool _gravityMode)
 {
-    mGravityMode = _onoff;
+    mGravityMode = _gravityMode;
 }
 
 bool BodyNode::getGravityMode() const
@@ -127,12 +127,12 @@ bool BodyNode::getGravityMode() const
 
 bool BodyNode::isCollidable() const
 {
-    return mCollidable;
+    return mIsCollidable;
 }
 
-void BodyNode::setCollidability(bool _c)
+void BodyNode::setCollidable(bool _isCollidable)
 {
-    mCollidable = _c;
+    mIsCollidable = _isCollidable;
 }
 
 void BodyNode::setMass(double _mass)
@@ -187,11 +187,11 @@ Marker* BodyNode::getMarker(int _idx) const
     return mMarkers[_idx];
 }
 
-bool BodyNode::dependsOn(int _dofIndex) const
+bool BodyNode::dependsOn(int _genCoordIndex) const
 {
     return binary_search(mDependentDofIndexes.begin(),
                          mDependentDofIndexes.end(),
-                         _dofIndex);
+                         _genCoordIndex);
 }
 
 int BodyNode::getNumDependentDofs() const
@@ -259,14 +259,14 @@ math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
     return math::AdTJac(T, mBodyJacobianTimeDeriv);
 }
 
-void BodyNode::setColliding(bool _colliding)
+void BodyNode::setColliding(bool _isColliding)
 {
-    mColliding = _colliding;
+    mIsColliding = _isColliding;
 }
 
-bool BodyNode::getColliding()
+bool BodyNode::isColliding()
 {
-    return mColliding;
+    return mIsColliding;
 }
 
 void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)

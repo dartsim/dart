@@ -131,7 +131,7 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
         && _node1->getBodyNode()->isCollidable()
         && _node2->getBodyNode()->isCollidable()
         && (_node1->getBodyNode()->getSkeleton() != _node2->getBodyNode()->getSkeleton()
-            || _node1->getBodyNode()->getSkeleton()->getSelfCollidable());
+            || _node1->getBodyNode()->getSkeleton()->isSelfCollidable());
 }
 
 std::vector<bool>::reference CollisionDetector::getPairCollidable(
