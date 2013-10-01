@@ -233,15 +233,15 @@ public:
     // Properties updated by dynamics (kinematics)
     //--------------------------------------------------------------------------
     /// @brief Get the transformation from the world frame to this body node
-    /// frame.
+    ///        frame.
     const Eigen::Isometry3d& getWorldTransform() const;
 
     /// @brief Get the generalized velocity at the origin of this body node
-    /// where the velocity is expressed in this body node frame.
+    ///        where the velocity is expressed in this body node frame.
     const Eigen::Vector6d& getBodyVelocity() const;
 
     /// @brief Get the generalized velocity at a point on this body node where
-    /// the velocity is expressed in the world frame.
+    ///        the velocity is expressed in the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
     Eigen::Vector6d getWorldVelocity(
@@ -252,29 +252,30 @@ public:
     const Eigen::Vector6d& getBodyAcceleration() const;
 
     /// @brief Get generalized acceleration at a point on this body node where
-    /// the acceleration is expressed in the world frame.
+    ///        the acceleration is expressed in the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
     Eigen::Vector6d getWorldAcceleration(
             const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
     /// @brief Get generalized Jacobian at the origin of this body node where
-    /// the Jacobian is expressed in this body node frame.
+    ///        the Jacobian is expressed in this body node frame.
     const math::Jacobian& getBodyJacobian() const;
 
     /// @brief Get generalized Jacobian at a point on this body node where the
-    /// Jacobian is expressed in the world frame.
+    ///        Jacobian is expressed in the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
     math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
 
     /// @brief Get time derivative of generalized Jacobian at the origin of this
-    /// body node where the Jacobian is expressed in this body node frame.
+    ///        body node where the Jacobian is expressed in this body node
+    ///        frame.
     const math::Jacobian& getBodyJacobianTimeDeriv() const;
 
     /// @brief Get time derivative of generalized Jacobian at a point on this
-    /// body node where the time derivative of Jacobian is expressed in the
-    /// world frame.
+    ///        body node where the time derivative of Jacobian is expressed in
+    ///        the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
     math::Jacobian getWorldJacobianTimeDeriv(
@@ -317,7 +318,7 @@ public:
     void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
 
     /// @brief Clean up structures that store external forces: mContacts, mFext,
-    /// mExtForceBody and mExtTorqueBody.
+    ///        mExtForceBody and mExtTorqueBody.
     ///
     /// Called from @Skeleton::clearExternalForces.
     void clearExternalForces();
@@ -411,7 +412,7 @@ public:
     void updateMassMatrix();
 
     /// @brief Aggregate the external forces mFext in the generalized
-    /// coordinates recursively.
+    ///        coordinates recursively.
     void aggregateExternalForces(Eigen::VectorXd& _extForce);
 
     /// @brief
