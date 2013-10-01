@@ -121,20 +121,21 @@ public:
     /// @brief
     const std::string& getName() const;
 
-    /// @brief Set gravity mode.
-    /// @param[in] _gravityMode
-    void setGravityMode(bool _onoff);
+    /// @brief Set whether gravity affects this body.
+    /// @param[in] _mode True to enable gravity.
+    void setGravityMode(bool _gravityMode);
 
-    /// @brief If the gravity mode is false, this body node does not being
-    /// affected by gravity.
-    /// @return
+    /// @brief Get the gravity mode.
+    /// @return True if gravity is enabled.
     bool getGravityMode() const;
 
-    /// @brief
+    /// @brief Get whether this body node will collide with others in the world.
+    /// @return True if collisions is enabled.
     bool isCollidable() const;
 
-    /// @brief
-    void setCollidability(bool _c);
+    /// @brief Set whether this body node will collide with others in the world.
+    /// @param[in] _isCollidable True to enable collisions.
+    void setCollidable(bool _isCollidable);
 
     /// @brief
     void setMass(double _mass);
@@ -214,9 +215,13 @@ public:
     Marker* getMarker(int _idx) const;
 
     /// @brief Test whether this dof is dependent or not.
+    /// @return True if this body node is dependent on the generalized
+    ///         coordinate.
+    /// @param[in] _genCoordIndex Index of generalized coordinate in the
+    ///                           skeleton.
     /// @warning You may want to use getNumDependentDofs / getDependentDof for
-    /// efficiency.
-    bool dependsOn(int _dofIndex) const;
+    ///          efficiency.
+    bool dependsOn(int _genCoordIndex) const;
 
     /// @brief The number of the dofs by which this node is affected.
     int getNumDependentDofs() const;
@@ -275,11 +280,13 @@ public:
     math::Jacobian getWorldJacobianTimeDeriv(
             const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
-    /// @brief
-    void setColliding(bool _colliding);
+    /// @brief Set whether this body node is colliding with others.
+    /// @param[in] True if this body node is colliding.
+    void setColliding(bool _isColliding);
 
-    /// @brief
-    bool getColliding();
+    /// @brief Get whether this body node is colliding with others.
+    /// @return True if this body node is colliding.
+    bool isColliding();
 
     /// @brief Add applying linear Cartesian forces to this node.
     ///
@@ -453,10 +460,10 @@ protected:
     std::vector<Shape*> mColShapes;
 
     /// @brief Indicating whether this node is collidable.
-    bool mCollidable;
+    bool mIsCollidable;
 
     /// @brief Whether the node is currently in collision with another node.
-    bool mColliding;
+    bool mIsColliding;
 
     //--------------------------------------------------------------------------
     // Structual Properties

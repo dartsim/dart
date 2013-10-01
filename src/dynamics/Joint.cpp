@@ -88,13 +88,10 @@ const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const
     return mdS;
 }
 
-bool Joint::isPresent(const GenCoord* _q) const
+bool Joint::contains(const GenCoord* _genCoord) const
 {
-    for (unsigned int i = 0; i < getNumGenCoords(); i++)
-        if (_q == mGenCoords[i])
-            return true;
-
-    return false;
+    return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
+            mGenCoords.end() ? true : false;
 }
 
 int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
@@ -106,9 +103,9 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
     return -1;
 }
 
-void Joint::setPositionLimited(bool _isPositionLimit)
+void Joint::setPositionLimited(bool _isPositionLimited)
 {
-    mIsPositionLimited = _isPositionLimit;
+    mIsPositionLimited = _isPositionLimited;
 }
 
 bool Joint::isPositionLimited() const

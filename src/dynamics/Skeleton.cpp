@@ -50,9 +50,9 @@ namespace dynamics {
 Skeleton::Skeleton(const std::string& _name)
     : GenCoordSystem(),
       mName(_name),
-      mSelfCollidable(false),
+      mIsSelfCollidable(false),
       mTotalMass(0.0),
-      mImmobile(false)
+      mIsMobile(true)
 {
     for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
@@ -73,24 +73,24 @@ const std::string& Skeleton::getName() const
     return mName;
 }
 
-void Skeleton::setSelfCollidable(bool _selfCollidable)
+void Skeleton::setSelfCollidable(bool _isSelfCollidable)
 {
-    mSelfCollidable = _selfCollidable;
+    mIsSelfCollidable = _isSelfCollidable;
 }
 
-bool Skeleton::getSelfCollidable() const
+bool Skeleton::isSelfCollidable() const
 {
-    return mSelfCollidable;
+    return mIsSelfCollidable;
 }
 
-void Skeleton::setImmobileState(bool _immobile)
+void Skeleton::setMobile(bool _isMobile)
 {
-    mImmobile = _immobile;
+    mIsMobile = _isMobile;
 }
 
-bool Skeleton::getImmobileState() const
+bool Skeleton::isMobile() const
 {
-    return mImmobile;
+    return mIsMobile;
 }
 
 double Skeleton::getMass() const
@@ -332,7 +332,7 @@ void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
                                       bool _withDampingForces)
 {
     // Skip immobile or 0-dof skeleton
-    if (getImmobileState() == true || getNumGenCoords() == 0)
+    if (!isMobile() || getNumGenCoords() == 0)
         return;
 
     // Forward recursion
@@ -362,7 +362,7 @@ Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
     int n = getNumGenCoords();
 
     // Skip immobile or 0-dof skeleton
-    if (getImmobileState() == true || n == 0)
+    if (!isMobile() == true || n == 0)
         return get_tau();
 
     if (_qdot == NULL)
@@ -430,7 +430,7 @@ void Skeleton::computeEquationsOfMotionID(
     int n = getNumGenCoords();
 
     // Skip immobile or 0-dof skeleton
-    if (getImmobileState() == true || n == 0)
+    if (!isMobile() == true || n == 0)
         return;
 
     // Save current tau
@@ -482,7 +482,7 @@ void Skeleton::computeForwardDynamicsFS(
         const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
 {
     // Skip immobile or 0-dof skeleton
-    if (getImmobileState() == true || getNumGenCoords() == 0)
+    if (!isMobile() == true || getNumGenCoords() == 0)
         return;
 
     // We assume that updateForwardKinematics() is called before
