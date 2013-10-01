@@ -179,7 +179,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     {
         std::string stdImmobile = immobileElement->GetText();
         bool immobile = toBool(stdImmobile);
-        newSkeleton->setImmobileState(immobile);
+        newSkeleton->setMobile(!immobile);
     }
 
     //--------------------------------------------------------------------------

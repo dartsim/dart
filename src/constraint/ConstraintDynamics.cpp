@@ -45,7 +45,7 @@ void ConstraintDynamics::computeConstraintForces() {
     mLimitingDofIndex.clear();
 
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
 
         for (int j = 0; j < mSkels[i]->getNumBodyNodes(); j++) {
@@ -144,14 +144,14 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     int rows = mMInv.rows();
     int cols = mMInv.cols();
 
-    if (!_newSkel->getImmobileState()) {
+    if (_newSkel->isMobile()) {
         // Immobile objets have mass of infinity
         rows += _newSkel->getMassMatrix().rows();
         cols += _newSkel->getMassMatrix().cols();
     }
 
     Eigen::VectorXd newConstrForce;
-    if (!_newSkel->getImmobileState())
+    if (_newSkel->isMobile())
         newConstrForce = Eigen::VectorXd::Zero(_newSkel->getNumGenCoords());
     mContactForces.push_back(newConstrForce);
     mTotalConstrForces.push_back(newConstrForce);
@@ -166,7 +166,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     for (int i = 0; i < mSkels.size(); i++) {
         dynamics::Skeleton* skel = mSkels[i];
         int nDofs = skel->getNumGenCoords();
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             nDofs = 0;
         sumNDofs += nDofs;
         mIndices.push_back(sumNDofs);
@@ -197,7 +197,7 @@ void ConstraintDynamics::initialize() {
             }
         }
 
-        if (!mSkels[i]->getImmobileState()) {
+        if (mSkels[i]->isMobile()) {
             // Immobile objets have mass of infinity
             rows += skel->getMassMatrix().rows();
             cols += skel->getMassMatrix().cols();
@@ -207,7 +207,7 @@ void ConstraintDynamics::initialize() {
     mContactForces.resize(mSkels.size());
     mTotalConstrForces.resize(mSkels.size());
     for (int i = 0; i < mSkels.size(); i++){
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mContactForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getNumGenCoords());
         mTotalConstrForces[i] = Eigen::VectorXd::Zero(mSkels[i]->getNumGenCoords());
@@ -230,7 +230,7 @@ void ConstraintDynamics::initialize() {
     for (int i = 0; i < mSkels.size(); i++) {
         dynamics::Skeleton* skel = mSkels[i];
         int nDofs = skel->getNumGenCoords();
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             nDofs = 0;
         sumNDofs += nDofs;
         mIndices.push_back(sumNDofs);
@@ -255,7 +255,7 @@ void ConstraintDynamics::computeConstraintWithoutContact() {
     Eigen::VectorXd lambda = mGInv * mTauHat;
 
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mTotalConstrForces[i] = mJ[i].transpose() * lambda;
     }
@@ -280,7 +280,7 @@ void ConstraintDynamics::fillMatrices() {
 
         Eigen::VectorXd tempVec = mDt * mGInv * mTauHat;
         for (int i = 0; i < mSkels.size(); i++) {
-            if (mSkels[i]->getImmobileState())
+            if (!mSkels[i]->isMobile())
                 continue;
             tauVec.segment(mIndices[i], mSkels[i]->getNumGenCoords()) = mJ[i].transpose() * tempVec;
         }
@@ -378,7 +378,7 @@ void ConstraintDynamics::fillMatricesODE() {
 
         Eigen::VectorXd tempVec = mDt * mGInv * mTauHat;
         for (int i = 0; i < mSkels.size(); i++) {
-            if (mSkels[i]->getImmobileState())
+            if (!mSkels[i]->isMobile())
                 continue;
             tauVec.segment(mIndices[i], mSkels[i]->getNumGenCoords()) = mJ[i].transpose() * tempVec;
         }
@@ -485,7 +485,7 @@ void ConstraintDynamics::applySolution() {
 
     Eigen::VectorXd lambda = Eigen::VectorXd::Zero(mGInv.rows());
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
@@ -531,7 +531,7 @@ void ConstraintDynamics::applySolutionODE() {
 
     Eigen::VectorXd lambda = Eigen::VectorXd::Zero(mGInv.rows());
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumGenCoords());
 
@@ -556,7 +556,7 @@ void ConstraintDynamics::applySolutionODE() {
 void ConstraintDynamics::updateMassMat() {
     int start = 0;
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mMInv.block(start, start, mSkels[i]->getNumGenCoords(), mSkels[i]->getNumGenCoords()) = mSkels[i]->getInvMassMatrix();
         start += mSkels[i]->getNumGenCoords();
@@ -566,7 +566,7 @@ void ConstraintDynamics::updateMassMat() {
 void ConstraintDynamics::updateTauStar() {
     int startRow = 0;
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
 
         Eigen::VectorXd tau = mSkels[i]->getExternalForces() + mSkels[i]->getInternalForces() + mSkels[i]->getDampingForces();
@@ -590,7 +590,7 @@ void ConstraintDynamics::updateNBMatrices() {
         Eigen::MatrixXd B21 = getTangentBasisMatrix(p, N21);
         Eigen::MatrixXd B12 = -B21;
 
-        if (!mSkels[skelID1]->getImmobileState()) {
+        if (mSkels[skelID1]->isMobile()) {
             int index1 = mIndices[skelID1];
             int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getNumGenCoords();
             //    Vector3d N21 = c.normal;
@@ -600,7 +600,7 @@ void ConstraintDynamics::updateNBMatrices() {
             mB.block(index1, i * mNumDir, NDOF1, mNumDir).noalias() = J21t * B21;
         }
 
-        if (!mSkels[skelID2]->getImmobileState()) {
+        if (mSkels[skelID2]->isMobile()) {
             int index2 = mIndices[skelID2];
             int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getNumGenCoords();
             //Vector3d N12 = -c.normal;
@@ -630,7 +630,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
         Eigen::MatrixXd B21 = getTangentBasisMatrixODE(p, N21);
         Eigen::MatrixXd B12 = -B21;
 
-        if (!mSkels[skelID1]->getImmobileState()) {
+        if (mSkels[skelID1]->isMobile()) {
             int index1 = mIndices[skelID1];
             int NDOF1 = c.collisionNode1->getBodyNode()->getSkeleton()->getNumGenCoords();
             //    Vector3d N21 = c.normal;
@@ -640,7 +640,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
             mB.block(index1, i * 2, NDOF1, 2).noalias() = J21t * B21;
         }
 
-        if (!mSkels[skelID2]->getImmobileState()) {
+        if (mSkels[skelID2]->isMobile()) {
             int index2 = mIndices[skelID2];
             int NDOF2 = c.collisionNode2->getBodyNode()->getSkeleton()->getNumGenCoords();
             //Vector3d N12 = -c.normal;
@@ -748,18 +748,18 @@ void ConstraintDynamics::updateConstraintTerms(){
     // compute JMInv, GInv, Z
     mGInv.triangularView<Eigen::Lower>().setZero();
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mJMInv[i] = mJ[i] * mSkels[i]->getInvMassMatrix();
         mGInv.triangularView<Eigen::Lower>() += (mJMInv[i] * mJ[i].transpose());
     }
     mGInv = mGInv.ldlt().solve(Eigen::MatrixXd::Identity(mTotalRows, mTotalRows));
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         mZ.block(mIndices[i], mIndices[i], mSkels[i]->getNumGenCoords(), mSkels[i]->getNumGenCoords()).triangularView<Eigen::Lower>() = mJMInv[i].transpose() * mGInv * mJMInv[i];
         for (int j = 0; j < i; j++) {
-            if (mSkels[j]->getImmobileState())
+            if (!mSkels[j]->isMobile())
                 continue;
             mZ.block(mIndices[i], mIndices[j], mSkels[i]->getNumGenCoords(), mSkels[j]->getNumGenCoords()).noalias() = mJMInv[i].transpose() * mGInv * mJMInv[j];
         }
@@ -770,7 +770,7 @@ void ConstraintDynamics::updateConstraintTerms(){
     double kd = 50;
     mTauHat.setZero();
     for (int i = 0; i < mSkels.size(); i++) {
-        if (mSkels[i]->getImmobileState())
+        if (!mSkels[i]->isMobile())
             continue;
         Eigen::VectorXd qDot = mSkels[i]->get_dq();
         mTauHat.noalias() += -(mJ[i] - mPreJ[i]) / mDt * qDot;

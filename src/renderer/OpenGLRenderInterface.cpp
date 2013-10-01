@@ -470,7 +470,7 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _
     pose = _node->getWorldTransform();
 
     // GL calls
-    if(_vizCol && _node->getColliding()) {
+    if(_vizCol && _node->isColliding()) {
         glDisable(GL_TEXTURE_2D);
         glEnable(GL_COLOR_MATERIAL);
         glColor3f(1.0f, .1f, .1f);

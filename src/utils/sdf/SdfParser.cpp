@@ -151,8 +151,8 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
     // immobile attribute
     if (hasElement(_skeletonElement, "static"))
     {
-        bool immobile = getValueBool(_skeletonElement, "static");
-        newSkeleton->setImmobileState(immobile);
+        bool isStatic= getValueBool(_skeletonElement, "static");
+        newSkeleton->setMobile(!isStatic);
     }
 
     //--------------------------------------------------------------------------

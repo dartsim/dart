@@ -105,8 +105,10 @@ public:
     /// @brief
     const math::Jacobian& getLocalJacobianTimeDeriv() const;
 
-    /// @brief true if d is present in the dof list for the joint.
-    bool isPresent(const GenCoord* _q) const;
+    /// @brief Get whether this joint contains _genCoord.
+    /// @param[in] Generalized coordinate to see.
+    /// @return True if this joint contains _genCoord.
+    bool contains(const GenCoord* _genCoord) const;
 
     /// @brief Get local index of the dof at this joint; if the dof is not
     /// presented at this joint, return -1.
@@ -116,7 +118,7 @@ public:
     // Dynamics Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setPositionLimited(bool _positionLimit);
+    void setPositionLimited(bool _isPositionLimited);
 
     /// @brief
     bool isPositionLimited() const;

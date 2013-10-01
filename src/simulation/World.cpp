@@ -130,7 +130,7 @@ Eigen::VectorXd World::evalDeriv()
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
     {
         // skip immobile objects in forward simulation
-        if (mSkeletons[i]->getImmobileState())
+        if (!mSkeletons[i]->isMobile())
             continue;
 
         mSkeletons[i]->setConstraintForces(
@@ -151,7 +151,7 @@ Eigen::VectorXd World::evalDeriv()
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
     {
         // skip immobile objects in forward simulation
-        if (mSkeletons[i]->getImmobileState())
+        if (!mSkeletons[i]->isMobile())
             continue;
 
         int start = mIndices[i] * 2;
