@@ -95,20 +95,28 @@ public:
     virtual ~CollisionDetector();
 
     /// @brief
-    virtual void addCollisionSkeletonNode(dynamics::BodyNode *_bd,
-                                          bool _bRecursive = false);
+    virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
+                                          bool _isRecursive = false);
+
+    /// @brief
+    virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
+                                             bool _isRecursive = false);
 
     /// @brief
     virtual CollisionNode* createCollisionNode(
             dynamics::BodyNode* _bodyNode) = 0;
 
+    /// @brief
     void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+
+    /// @brief
     void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
     /// @brief
     virtual bool checkCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
+    /// @brief
     bool checkCollision(dynamics::BodyNode* _node1,
                         dynamics::BodyNode* _node2,
                         bool _calculateContactPoints);

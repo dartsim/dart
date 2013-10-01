@@ -116,7 +116,7 @@ public:
     // Dynamics Properties
     //--------------------------------------------------------------------------
     /// @brief
-    void setPositionLimited(bool _positionLimit);
+    void setPositionLimited(bool _isPositionLimit);
 
     /// @brief
     bool isPositionLimited() const;

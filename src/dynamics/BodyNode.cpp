@@ -172,9 +172,9 @@ int BodyNode::getNumChildBodyNodes() const
     return mChildBodyNodes.size();
 }
 
-void BodyNode::addMarker(Marker* _h)
+void BodyNode::addMarker(Marker* _marker)
 {
-    mMarkers.push_back(_h);
+    mMarkers.push_back(_marker);
 }
 
 int BodyNode::getNumMarkers() const

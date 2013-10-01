@@ -81,9 +81,14 @@ public:
     bool getSelfCollidable() const;
 
     /// @brief
+    /// @warning This function should be called before this skeleton is added to
+    /// the world. If not, the constraint dynamics algorithm will not work. If
+    /// the user want to change the immobile state after this skeleton is added
+    /// to the world, the user should remove this skeleton from the world and
+    /// add it to the world again.
     void setImmobileState(bool _immobile);
 
-    /// @brief
+    /// @brief Return true if this skeleton is not updated by forward dynamics.
     bool getImmobileState() const;
 
     /// @brief

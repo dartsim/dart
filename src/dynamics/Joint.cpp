@@ -106,9 +106,9 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
     return -1;
 }
 
-void Joint::setPositionLimited(bool _positionLimit)
+void Joint::setPositionLimited(bool _isPositionLimit)
 {
-    mIsPositionLimited = _positionLimit;
+    mIsPositionLimited = _isPositionLimit;
 }
 
 bool Joint::isPositionLimited() const

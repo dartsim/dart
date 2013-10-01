@@ -59,36 +59,22 @@ public:
     ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu = 1.0, int _d = 4, bool _useODE = true);
     virtual ~ConstraintDynamics();
 
-    void reset();
     void computeConstraintForces();
     void addConstraint(Constraint *_constr);
     void deleteConstraint(int _index);
-    void addSkeleton(dynamics::Skeleton* _newSkel);
+    void addSkeleton(dynamics::Skeleton* _skeleton);
+    void removeSkeleton(dynamics::Skeleton* _skeleton);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
 
-    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
-        return mTotalConstrForces[_skelIndex];
-    }
-
-    inline Eigen::VectorXd getContactForce(int _skelIndex) const {
-        return mContactForces[_skelIndex];
-    }
-
-    inline collision::CollisionDetector* getCollisionChecker() const {
-        return mCollisionChecker;
-    }
-
-    inline int getNumContacts() const {
-        return mCollisionChecker->getNumContacts();
-    }
-
+    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { return mTotalConstrForces[_skelIndex]; }
+    inline Eigen::VectorXd getContactForce(int _skelIndex) const { return mContactForces[_skelIndex]; }
+    inline collision::CollisionDetector* getCollisionChecker() const { return mCollisionChecker; }
+    inline int getNumContacts() const { return mCollisionChecker->getNumContacts(); }
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
-
 
 private:
     void initialize();
-    void destroy();
 
     void computeConstraintWithoutContact();
     void fillMatrices();
@@ -110,8 +96,7 @@ private:
 
     inline int getTotalNumDofs() const { return mIndices[mIndices.size() - 1]; }
 
-
-    std::vector<dynamics::Skeleton*> mSkels;
+    std::vector<dynamics::Skeleton*> mSkeletons;
     std::vector<int> mBodyIndexToSkelIndex;
     std::vector<int> mIndices;
     collision::CollisionDetector* mCollisionChecker;
