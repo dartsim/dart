@@ -113,13 +113,11 @@ public:
     void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
     /// @brief
-    virtual bool checkCollision(bool _checkAllCollisions,
+    virtual bool detectCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
-    /// @brief
-    bool checkCollision(dynamics::BodyNode* _node1,
-                        dynamics::BodyNode* _node2,
-                        bool _calculateContactPoints);
+    bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
+                         bool _calculateContactPoints);
 
     /// @brief
     unsigned int getNumContacts();
@@ -138,9 +136,8 @@ public:
 
 protected:
     /// @brief
-    virtual bool checkCollision(CollisionNode* _node1,
-                                CollisionNode* _node2,
-                                bool _calculateContactPoints) = 0;
+    virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
+                                 bool _calculateContactPoints) = 0;
 
     /// @brief
     bool isCollidable(const CollisionNode* _node1,

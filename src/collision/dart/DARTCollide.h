@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 09/13/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,46 +35,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
-#define DART_COLLISION_FCL_CONLLISION_DETECTOR_H
+#ifndef DART_COLLISION_DART_COLLIDE_H
+#define DART_COLLISION_DART_COLLIDE_H
 
 #include <vector>
-#include <map>
+
 #include <Eigen/Dense>
-#include <fcl/collision.h>
+
 #include "collision/CollisionDetector.h"
 
 namespace dart {
+namespace dynamics { class Shape; }
 namespace collision {
 
-class FCLCollisionNode;
+int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
+            const dynamics::Shape* _shape1, const Eigen::Isometry3d& _T1,
+            std::vector<Contact>& _result);
 
-/// @brief
-class FCLCollisionDetector : public CollisionDetector {
-public:
-    /// @brief
-    FCLCollisionDetector();
+int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
+                  const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
+                  std::vector<Contact>& result);
 
-    /// @brief
-    virtual ~FCLCollisionDetector();
+int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
+                     const double& r1, const Eigen::Isometry3d& T1,
+                     std::vector<Contact>& result);
 
-    // Documentation inherited
-    virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
+                     const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
+                     std::vector<Contact>& result);
 
-    // Documentation inherited
-    virtual bool detectCollision(bool _checkAllCollisions,
-                                bool _calculateContactPoints);
+int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
+                        const double& _r1, const Eigen::Isometry3d& c1,
+                        std::vector<Contact>& result);
 
-    CollisionNode* findCollisionNode(
-            const fcl::CollisionGeometry* _fclCollGeom) const;
+int collideCylinderSphere(
+        const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const double& sphere_rad, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result);
 
-protected:
-    virtual bool detectCollision(CollisionNode* _node1,
-                                CollisionNode* _node2,
-                                bool _calculateContactPoints);
-};
+int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+        const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
+        std::vector<Contact>& result);
 
 } // namespace collision
 } // namespace dart
 
-#endif // #ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
+#endif // #ifndef DART_COLLISION_DART_COLLIDE_H

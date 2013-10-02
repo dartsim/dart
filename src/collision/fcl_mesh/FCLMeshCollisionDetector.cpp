@@ -26,8 +26,8 @@ CollisionNode*FCLMeshCollisionDetector::createCollisionNode(
     return new FCLMeshCollisionNode(_bodyNode);
 }
 
-bool FCLMeshCollisionDetector::checkCollision(bool _checkAllCollisions,
-                                              bool _calculateContactPoints)
+bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
+                                               bool _calculateContactPoints)
 {
     clearAllContacts();
     bool collision = false;
@@ -49,7 +49,7 @@ bool FCLMeshCollisionDetector::checkCollision(bool _checkAllCollisions,
             if (!isCollidable(FCLMeshCollisionNode1, FCLMeshCollisionNode2))
                 continue;
             
-            if(FCLMeshCollisionNode1->checkCollision(FCLMeshCollisionNode2,
+            if(FCLMeshCollisionNode1->detectCollision(FCLMeshCollisionNode2,
                     _calculateContactPoints ? &mContacts : NULL,
                     mNumMaxContacts))
             {
@@ -66,15 +66,15 @@ bool FCLMeshCollisionDetector::checkCollision(bool _checkAllCollisions,
     return collision;
 }
 
-bool FCLMeshCollisionDetector::checkCollision(CollisionNode* _node1,
-                                              CollisionNode* _node2,
-                                              bool _calculateContactPoints)
+bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
+                                               CollisionNode* _node2,
+                                               bool _calculateContactPoints)
 {
     FCLMeshCollisionNode* collisionNode1 =
             static_cast<FCLMeshCollisionNode*>(_node1);
     FCLMeshCollisionNode* collisionNode2 =
             static_cast<FCLMeshCollisionNode*>(_node2);
-    return collisionNode1->checkCollision(
+    return collisionNode1->detectCollision(
                 collisionNode2,
                 _calculateContactPoints ? &mContacts : NULL,
                 mNumMaxContacts);

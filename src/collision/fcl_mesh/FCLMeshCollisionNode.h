@@ -65,7 +65,7 @@ public:
     fcl::Transform3f mFclWorldTrans;
     Eigen::Isometry3d mWorldTrans;
 
-    bool checkCollision(FCLMeshCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
+    bool detectCollision(FCLMeshCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
     void evalRT();
     static fcl::Transform3f getFclTransform(const Eigen::Isometry3d& _m);
 

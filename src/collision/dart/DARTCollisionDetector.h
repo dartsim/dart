@@ -3,7 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/01/2013
+ * Date: 09/13/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,28 +35,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
-#define DART_COLLISION_FCL_CONLLISION_DETECTOR_H
+#ifndef DART_COLLISION_DART_CONLLISION_DETECTOR_H
+#define DART_COLLISION_DART_CONLLISION_DETECTOR_H
 
-#include <vector>
-#include <map>
-#include <Eigen/Dense>
-#include <fcl/collision.h>
 #include "collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
-
 /// @brief
-class FCLCollisionDetector : public CollisionDetector {
+class DARTCollisionDetector : public CollisionDetector
+{
 public:
-    /// @brief
-    FCLCollisionDetector();
+    /// @brief Default constructor
+    DARTCollisionDetector();
 
-    /// @brief
-    virtual ~FCLCollisionDetector();
+    /// @brief Default destructor
+    virtual ~DARTCollisionDetector();
 
     // Documentation inherited
     virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
@@ -65,12 +60,10 @@ public:
     virtual bool detectCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints);
 
-    CollisionNode* findCollisionNode(
-            const fcl::CollisionGeometry* _fclCollGeom) const;
-
 protected:
-    virtual bool detectCollision(CollisionNode* _node1,
-                                CollisionNode* _node2,
+    // Documentation inherited
+    virtual bool detectCollision(CollisionNode* _collNode1,
+                                CollisionNode* _collNode2,
                                 bool _calculateContactPoints);
 };
 

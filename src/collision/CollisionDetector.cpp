@@ -131,13 +131,13 @@ void CollisionDetector::removeCollisionSkeletonNode(
     }
 }
 
-bool CollisionDetector::checkCollision(dynamics::BodyNode* _node1,
-                                       dynamics::BodyNode* _node2,
-                                       bool _calculateContactPoints)
+bool CollisionDetector::detectCollision(dynamics::BodyNode* _node1,
+                                        dynamics::BodyNode* _node2,
+                                        bool _calculateContactPoints)
 {
-    return checkCollision(getCollisionNode(_node1),
-                          getCollisionNode(_node2),
-                          _calculateContactPoints);
+    return detectCollision(getCollisionNode(_node1),
+                           getCollisionNode(_node2),
+                           _calculateContactPoints);
 }
 
 unsigned int CollisionDetector::getNumContacts()
