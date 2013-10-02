@@ -66,22 +66,6 @@ GenCoord* GenCoordSystem::getGenCoord(const std::string& _name) const
     return NULL;
 }
 
-void GenCoordSystem::backupInitState()
-{
-    int size = getNumGenCoords();
-
-    for (int i = 0; i < size; ++i)
-        mGenCoords[i]->backupInitState();
-}
-
-void GenCoordSystem::restoreInitState()
-{
-    int size = getNumGenCoords();
-
-    for (int i = 0; i < size; ++i)
-        mGenCoords[i]->restoreInitState();
-}
-
 void GenCoordSystem::set_q(const Eigen::VectorXd& _q)
 {
     assert(_q.size() == getNumGenCoords());

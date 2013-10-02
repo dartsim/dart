@@ -61,9 +61,6 @@ public:
     virtual ~GenCoord();
 
     /// @brief
-    void init();
-
-    /// @brief
     void setName(const std::string& _name);
 
     /// @brief
@@ -76,7 +73,7 @@ public:
     void setSkeletonIndex(int _idx);
 
 public:
-    double get_q() const { return q; }           ///< Coordinate
+    double get_q() const { return q; }           ///< Configuration
     double get_dq() const { return dq; }         ///< Velocity
     double get_ddq() const { return ddq; }       ///< Acceleration
     double get_tau() const { return tau; }       ///< torque or force
@@ -90,9 +87,6 @@ public:
     double get_dqMax() const { return dqMax; }   ///< Maximum value of dq
     double get_ddqMax() const { return ddqMax; } ///< Maximum value of ddq
     double get_tauMax() const { return tauMax; } ///< Maximum value of tau
-
-    double get_init_q() const { return init_q; }   ///< Initial value of q
-    double get_init_dq() const { return init_dq; } ///< Initial value of dq
 
     void set_q(double _q) { assert(_q == _q); q = _q; }
     void set_dq(double _dq) { assert(_dq == _dq); dq = _dq; }
@@ -108,12 +102,6 @@ public:
     void set_dqMax(double _dqMax) { dqMax = _dqMax; }
     void set_ddqMax(double _ddqMax) { ddqMax = _ddqMax; }
     void set_tauMax(double _tauMax) { tauMax = _tauMax; }
-
-    void set_init_q(double _init_q) { init_q = _init_q; }
-    void set_init_dq(double _init_dq) { init_dq = _init_dq; }
-
-    void backupInitState();
-    void restoreInitState();
 
 protected:
     /// @brief
@@ -156,13 +144,6 @@ protected:
     double tauMin;    ///< Min value allowed.
     double tauMax;    ///< Max value allowed.
     double DtauDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
-
-    //--------------------------------------------------------------------------
-    // Initial values
-    //--------------------------------------------------------------------------
-    double init_q;
-    double init_dq;
-    //double init_ddq;
 };
 
 } // namespace dynamics

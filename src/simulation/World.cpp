@@ -178,16 +178,6 @@ double World::getTimeStep() const
     return mTimeStep;
 }
 
-void World::reset()
-{
-    for (unsigned int i = 0; i < getNumSkeletons(); ++i)
-        mSkeletons[i]->restoreInitState();
-
-    // Reset time and number of frames.
-    mTime = 0;
-    mFrame = 0;
-}
-
 void World::step()
 {
     mIntegrator->integrate(this, mTimeStep);
@@ -261,7 +251,6 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
     _skeleton->init();
     _skeleton->updateForwardKinematics();
     _skeleton->computeEquationsOfMotionID(mGravity);
-    _skeleton->backupInitState();
 
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
 

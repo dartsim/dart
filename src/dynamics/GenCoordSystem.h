@@ -65,12 +65,6 @@ public:
     /// @brief
     GenCoord* getGenCoord(const std::string& _name) const;
 
-    /// @brief Backup current state as initial state.
-    void backupInitState();
-
-    /// @brief Restore the stored initial state.
-    void restoreInitState();
-
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------

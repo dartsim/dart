@@ -94,12 +94,6 @@ public:
     //--------------------------------------------------------------------------
     // Simulation
     //--------------------------------------------------------------------------
-    /// @breif Reset the world.
-    ///
-    /// Set Dofs and DofVels as zero (or initial value) and update all
-    /// transformations and velocities of each links.
-    void reset();
-
     /// @brief Calculate the dynamics and integrate the world for one step.
     void step();
 

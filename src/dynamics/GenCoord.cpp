@@ -61,8 +61,6 @@ GenCoord::GenCoord()
       DddqDp(0.0),
       DtauDp(0.0),
 //      mSkelIndex(-1),
-//      mVariable(false),
-//      mTrans(NULL),
 //      mJoint(NULL),
       mName("dof")
 {
@@ -70,21 +68,6 @@ GenCoord::GenCoord()
 
 GenCoord::~GenCoord()
 {
-}
-
-void GenCoord::init()
-{
-    mName.assign("dof");
-
-    q = dq = ddq = tau = 0.0;
-    qMin = dqMin = ddqMin = tauMin = -std::numeric_limits<double>::infinity();
-    qMax = dqMax = ddqMax = tauMax = std::numeric_limits<double>::infinity();
-    DqDp = DdqDp = DddqDp = DtauDp = 0.0;
-
-//    mSkelIndex = -1;
-//    mVariable = false;
-//    mTrans = NULL;
-    //    mJoint = NULL;	// remains null if const dof
 }
 
 void GenCoord::setName(const std::string& _name)
@@ -105,18 +88,6 @@ int GenCoord::getSkeletonIndex() const
 void GenCoord::setSkeletonIndex(int _idx)
 {
     mSkelIndex = _idx;
-}
-
-void GenCoord::backupInitState()
-{
-    init_q = q;
-    init_dq = dq;
-}
-
-void GenCoord::restoreInitState()
-{
-    q = init_q;
-    dq = init_dq;
 }
 
 } // namespace dynamics
