@@ -16,6 +16,7 @@
                             <size>2.5 0.05 2.5</size>
                         </box>
                     </geometry>
+                    <color>0.95 0.95 0.95</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
@@ -47,6 +48,7 @@
                             <size>0.1 0.05 0.1</size>
                         </box>
                     </geometry>
+                    <color>0.8 0.3 0.3</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
@@ -79,6 +81,7 @@
                             <size>0.05 0.05 0.05</size>
                         </box>
                     </geometry>
+                    <color>0.3 0.8 0.3</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
@@ -111,6 +114,7 @@
                             <size>0.05 0.05 0.05</size>
                         </box>
                     </geometry>
+                    <color>0.8 0.8 0.4</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>

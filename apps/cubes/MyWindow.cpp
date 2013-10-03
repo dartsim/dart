@@ -1,10 +1,22 @@
 #include "MyWindow.h"
+#include "math/Helpers.h"
 #include "simulation/World.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/Skeleton.h"
+#include "dynamics/FreeJoint.h"
+#include "dynamics/BoxShape.h"
 
 using namespace dart;
 using namespace dynamics;
+
+MyWindow::MyWindow(): SimWindow()
+{
+    mForce = Eigen::Vector3d::Zero();
+}
+
+MyWindow::~MyWindow()
+{
+}
 
 void MyWindow::timeStepping()
 {
@@ -17,15 +29,8 @@ void MyWindow::drawSkels()
 {
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    Eigen::Vector4d color;
-    color << 0.95, 0.95, 0.95, 1.0;
-    mWorld->getSkeleton(0)->draw(mRI, color, false);
-    color << 0.8, 0.3, 0.3, 1.0;
-    mWorld->getSkeleton(1)->draw(mRI, color, false);
-    color << 0.3, 0.8, 0.3, 1.0;
-    mWorld->getSkeleton(2)->draw(mRI, color, false);
-    color << 0.8, 0.8, 0.4, 1.0;
-    mWorld->getSkeleton(3)->draw(mRI, color, false);
+
+    SimWindow::drawSkels();
 }
 
 
@@ -77,10 +82,44 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case '4': // upper right force
         mForce[2] = 500;
         break;
+    case 'q': // Spawn a cube
+    case 'Q': // Spawn a cube
+    {
+        Eigen::Vector3d position = Eigen::Vector3d(math::random(-1.0, 1.0), math::random(-1.0, 1.0), math::random(0.5, 1.0));
+        Eigen::Vector3d size = Eigen::Vector3d(math::random(0.01, 0.2), math::random(0.01, 0.2), math::random(0.01, 0.2));
+        spawnCube(position, size);
+        break;
+    }
+    case 'w': // Spawn a cube
+    case 'W': // Spawn a cube
+    {
+        if (mWorld->getNumSkeletons() > 4)
+            mWorld->removeSkeleton(mWorld->getSkeleton(4));
+        break;
+    }
     default:
         Win3D::keyboard(key,x,y);
 
     }
     glutPostRedisplay();
+}
+
+void MyWindow::spawnCube(const Eigen::Vector3d& _position,
+                         const Eigen::Vector3d& _size,
+                         double _mass)
+{
+    Skeleton*  newCubeSkeleton = new Skeleton();
+    BodyNode*  newBodyNode     = new BodyNode("cube_link");
+    FreeJoint* newFreeJoint    = new FreeJoint("cube_joint");
+    BoxShape*  newBoxShape     = new BoxShape(_size);
+
+    newBodyNode->addVisualizationShape(newBoxShape);
+    newBodyNode->addCollisionShape(newBoxShape);
+    newBodyNode->setMass(_mass);
+    newBodyNode->setParentJoint(newFreeJoint);
+    newFreeJoint->setTransformFromParentBodyNode(Eigen::Isometry3d(Eigen::Translation3d(_position)));
+    newBoxShape->setColor(Eigen::Vector3d(math::random(0.0, 1.0), math::random(0.0, 1.0), math::random(0.0, 1.0)));
+    newCubeSkeleton->addBodyNode(newBodyNode);
+    mWorld->addSkeleton(newCubeSkeleton);
 }
 
