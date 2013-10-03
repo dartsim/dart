@@ -40,7 +40,6 @@
 #include <urdf_model/pose.h>
 #include <fstream>
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <tinyxml.h>
 
@@ -56,28 +55,22 @@ namespace urdf{
   /**
    * @function parseWorldURDF
    */
-  boost::shared_ptr<World> parseWorldURDF( const std::string &_xml_string, 
-					   std::string _root_to_world_path ) {
+  World* parseWorldURDF(const std::string &_xml_string, std::string _root_to_world_path) {
     
-    boost::shared_ptr<World> world( new World );
-    world->clear();
+    World* world = new World();
     TiXmlDocument xml_doc;
     xml_doc.Parse( _xml_string.c_str() );
     TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
     if( !world_xml ) {
       printf ( "[parseWorldURDF] ERROR: Could not find a <world> element in XML, exiting and not loading! \n" );
-      world.reset();
-      //world->clear();
-      return world;
+      return NULL;
     }
     
     // Get world name
     const char *name = world_xml->Attribute("name");
     if(!name) {
       printf ("[parseWorldURDF] ERROR: World does not have a name specified. Exiting and not loading! \n");
-      world.reset();
-      //world->clear();
-      return world;
+      return NULL;
     }
     world->name = std::string(name);
     if(debug) std::cout<< "World name: "<< world->name << std::endl;
@@ -113,9 +106,7 @@ namespace urdf{
 	// Find the model
 	if( includedFiles.find( string_entity_model ) == includedFiles.end() ) {
 	  std::cout<<"[parseWorldURDF] ERROR: I cannot find the model you want to use, did you write the name right? Exiting and not loading! \n"<<std::endl;
-	  world.reset();
-	  //world->clear();
-	  return world;
+	  return NULL;
 	} 
 	else {
 	  std::string fileName = includedFiles.find( string_entity_model )->second;
@@ -132,17 +123,14 @@ namespace urdf{
 	    xml_model_string += (line + "\n");
 	  }
 	  xml_file.close();
-	  boost::shared_ptr<ModelInterface> model;
-	  model = parseURDF( xml_model_string );
+	  ModelInterface* model = parseURDF( xml_model_string ).get();
 
 	  if( !model ) {
 	    std::cout<< "[parseWorldURDF] Model in "<<fileFullName<<" not found. Exiting and not loading!" <<std::endl;
-	    world.reset();
-	    //world->clear();
-	    return world;
+	    return NULL;
 	  }
 	  else {
-	    entity.model = model;  
+	    entity.model.reset(model);
 	    
 	    // Parse location
 	    TiXmlElement *o = entity_xml->FirstChildElement("origin");

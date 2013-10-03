@@ -45,7 +45,6 @@
 #include <climits>
 #include <cassert>
 #include <iostream>
-#include <boost/math/special_functions/round.hpp>
 
 // External Libraries
 #include <Eigen/Dense>
@@ -173,16 +172,6 @@ inline Eigen::Vector3d crossOperator(const Eigen::MatrixXd & m)
     ret[1] = m(2, 0) - m(0, 2);
     ret[2] = m(0, 1) - m(1, 0);
     return ret;
-}
-
-/// @brief get value at a specified precision
-/// @param[in] _a the number
-/// @param[in] _precision the precision
-/// @return the value for the specified precision
-template<typename T>
-inline T precision(const T& _a, const unsigned int& _precision)
-{
-  return boost::math::round(_a * pow(10, _precision)) / pow(10, _precision);
 }
 
 } // namespace utils
