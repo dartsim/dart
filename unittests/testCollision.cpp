@@ -503,7 +503,7 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 TEST_F(COLLISION, PENETRATION_REDUCTION)
 {
     double tol = 1e-5;
-    double allowablePenetration = 1e-6;
+    double allowablePenetration = 1e-5;
     int steps = 4000;
 
     simulation::World* world =
