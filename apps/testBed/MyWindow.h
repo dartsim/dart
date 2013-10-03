@@ -1,11 +1,10 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include "yui/Win3D.h"
-#include "simulation/SimWindow.h"
+#include "yui/SimWindow.h"
 
 /// @brief
-class MyWindow : public dart::simulation::SimWindow
+class MyWindow : public dart::yui::SimWindow
 {
 public:
     /// @brief

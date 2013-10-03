@@ -45,7 +45,7 @@
 #include "simulation/World.h"
 
 namespace dart {
-namespace simulation {
+namespace yui {
 
 class World;
 
@@ -83,7 +83,7 @@ public:
 
 protected:
     /// @brief
-    World* mWorld;
+    simulation::World* mWorld;
 
     /// @brief
     int mPlayFrame;
