@@ -129,18 +129,23 @@ public:
     // Properties updated by dynamics
     //--------------------------------------------------------------------------
     /// @brief
-    void setConfig(const std::vector<int>& _id, Eigen::VectorXd _vals,
-                   bool _calcTrans = true, bool _calcDeriv = true);
+    void setConfig(const std::vector<int>& _genCoords, const Eigen::VectorXd& _config);
 
     /// @brief
-    void setConfig(const Eigen::VectorXd& _pose,
-                   bool bCalcTrans = true, bool bCalcDeriv = true);
+    void setConfig(const Eigen::VectorXd& _config);
 
     /// @brief Get the configuration of this skeleton described in generalized
-    /// coordinates. The returned order of configuration is determined by _id.
-    /// If you just want the configuration in original order then use
-    /// GenCoordSystem::get_q().
+    /// coordinates. The returned order of configuration is determined by _genCoords.
     Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
+
+    /// @brief
+    Eigen::VectorXd getConfig() const;
+
+    /// @brief
+    void setState(const Eigen::VectorXd& _state);
+
+    /// @brief
+    Eigen::VectorXd getState();
 
     /// @brief
     Eigen::MatrixXd getMassMatrix() const;
@@ -208,10 +213,6 @@ public:
     //--------------------------------------------------------------------------
     /// @brief
     void init();
-
-    /// @brief Update joint and body kinematics.
-    void updateForwardKinematics(bool _firstDerivative = true,
-                                 bool _secondDerivative = true);
 
     /// @brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
