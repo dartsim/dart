@@ -63,29 +63,17 @@ public:
     void computeConstraintForces();
     void addConstraint(Constraint *_constr);
     void deleteConstraint(int _index);
-    void addSkeleton(dynamics::Skeleton* _newSkel);
+    void addSkeleton(dynamics::Skeleton* _skeleton);
+    void removeSkeleton(dynamics::Skeleton* _skeleton);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
     double getTimeStep() const { return mDt; }
     void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
-    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
-        return mTotalConstrForces[_skelIndex];
-    }
-
-    inline Eigen::VectorXd getContactForce(int _skelIndex) const {
-        return mContactForces[_skelIndex];
-    }
-
-    inline collision::CollisionDetector* getCollisionDetector() const {
-        return mCollisionDetector;
-    }
-
-    inline int getNumContacts() const {
-        return mCollisionDetector->getNumContacts();
-    }
-
+    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { return mTotalConstrForces[_skelIndex]; }
+    inline Eigen::VectorXd getContactForce(int _skelIndex) const { return mContactForces[_skelIndex]; }
+    inline collision::CollisionDetector* getCollisionDetector() const { return mCollisionDetector; }
+    inline int getNumContacts() const { return mCollisionDetector->getNumContacts(); }
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
-
 
 private:
     void initialize();
@@ -110,8 +98,7 @@ private:
 
     inline int getTotalNumDofs() const { return mIndices[mIndices.size() - 1]; }
 
-
-    std::vector<dynamics::Skeleton*> mSkels;
+    std::vector<dynamics::Skeleton*> mSkeletons;
     std::vector<int> mBodyIndexToSkelIndex;
     std::vector<int> mIndices;
     collision::CollisionDetector* mCollisionDetector;

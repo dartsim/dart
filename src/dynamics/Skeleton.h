@@ -86,6 +86,11 @@ public:
 
     /// @brief Set whether this skeleton will be updated by forward dynamics.
     /// @param[in] _isMobile True if this skeleton is mobile.
+    /// @warning This function should be called before this skeleton is added to
+    ///          the world. If not, the constraint dynamics algorithm will not
+    ///          work. If the user want to change the immobile state after this
+    ///          skeleton is added to the world, the user should remove this
+    ///          skeleton from the world and add it to the world again.
     void setMobile(bool _isMobile);
 
     /// @brief Get whether this skeleton will be updated by forward dynamics.

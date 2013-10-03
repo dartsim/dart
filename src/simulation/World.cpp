@@ -238,12 +238,54 @@ int World::getNumSkeletons() const
 
 void World::addSkeleton(dynamics::Skeleton* _skeleton)
 {
-    assert(_skeleton != NULL);
+    assert(_skeleton != NULL && "Invalid skeleton.");
+
+    // If mSkeletons already has _skeleton, then we do nothing.
+    if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) !=
+        mSkeletons.end())
+    {
+        std::cout << "Skeleton [" << _skeleton->getName()
+                  << "] is already in the world." << std::endl;
+        return;
+    }
 
     mSkeletons.push_back(_skeleton);
     _skeleton->init();
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
     mConstraintHandler->addSkeleton(_skeleton);
+}
+
+void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+{
+    assert(_skeleton != NULL && "Invalid skeleton.");
+
+    // Find index of _skeleton in mSkeleton.
+    int i = 0;
+    for (; i < mSkeletons.size(); ++i)
+        if (mSkeletons[i] == _skeleton)
+            break;
+
+    // If i is equal to the number of skeletons, then _skeleton is not in
+    // mSkeleton. We do nothing.
+    if (i == mSkeletons.size())
+    {
+        std::cout << "Skeleton [" << _skeleton->getName()
+                  << "] is not in the world." << std::endl;
+        return;
+    }
+
+    // Update mIndices.
+    for (++i; i < mSkeletons.size() - 1; ++i)
+        mIndices[i] = mIndices[i+1] - _skeleton->getNumGenCoords();
+    mIndices.pop_back();
+
+    // Remove _skeleton from constraint handler.
+    mConstraintHandler->removeSkeleton(_skeleton);
+
+    // Remove _skeleton in mSkeletons and delete it.
+    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+                     mSkeletons.end());
+    delete _skeleton;
 }
 
 int World::getIndex(int _index) const

@@ -151,10 +151,12 @@ public:
     /// @brief
     void setLocalCOM(const Eigen::Vector3d& _com);
 
-    /// @brief
+    /// @brief Get a point vector from the origin of body frame to the center of
+    ///        mass in the body frame.
     const Eigen::Vector3d& getLocalCOM() const;
 
-    /// @brief
+    /// @brief Get a point vector from the origin of body frame to the center of
+    ///        mass in the world frame.
     Eigen::Vector3d getWorldCOM() const;
 
     /// @brief
@@ -206,7 +208,7 @@ public:
     int getNumChildBodyNodes() const;
 
     /// @brief
-    void addMarker(Marker* _h);
+    void addMarker(Marker* _marker);
 
     /// @brief
     int getNumMarkers() const;
