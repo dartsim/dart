@@ -19,7 +19,7 @@ namespace dart {
 namespace constraint {
 
 ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skeletons, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
-    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowablePenetration(0.000001), mMaxReducingPenetrationVelocity(0.1), mAllowableJointViolation(DART_TO_RADIAN*0.001), mMaxReducingJointViolationVelocity(DART_TO_RADIAN*1.0) {
+    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowablePenetration(1e-3), mMaxReducingPenetrationVelocity(1e-2), mAllowableJointViolation(DART_TO_RADIAN*1e-1), mMaxReducingJointViolationVelocity(DART_TO_RADIAN*1.0) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
 }
