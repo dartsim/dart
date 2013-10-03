@@ -251,6 +251,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
     mSkeletons.push_back(_skeleton);
     _skeleton->init();
+    _skeleton->computeEquationsOfMotionID(mGravity);
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
     mConstraintHandler->addSkeleton(_skeleton);
 }
