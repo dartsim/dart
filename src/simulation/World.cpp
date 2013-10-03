@@ -92,15 +92,9 @@ void World::setState(const Eigen::VectorXd& _newState)
 {
     for (int i = 0; i < getNumSkeletons(); i++)
     {
-        int start = mIndices[i] * 2;
-        int size = getSkeleton(i)->getNumGenCoords();
-
-        Eigen::VectorXd q = _newState.segment(start, size);
-        Eigen::VectorXd dq = _newState.segment(start + size, size);
-
-        getSkeleton(i)->set_q(q);
-        getSkeleton(i)->set_dq(dq);
-        getSkeleton(i)->updateForwardKinematics();
+        int start = 2 * mIndices[i];
+        int size = 2 * getSkeleton(i)->getNumGenCoords();
+        getSkeleton(i)->setState(_newState.segment(start, size));
     }
 }
 
@@ -147,7 +141,7 @@ Eigen::VectorXd World::evalDeriv()
     }
 
     // compute derivatives for integration
-    Eigen::VectorXd deriv = Eigen::VectorXd::Zero(mIndices.back() * 2);
+    Eigen::VectorXd deriv(mIndices.back() * 2);
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
     {
         // skip immobile objects in forward simulation
@@ -256,13 +250,8 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
     }
 
     mSkeletons.push_back(_skeleton);
-
     _skeleton->init();
-    _skeleton->updateForwardKinematics();
-    _skeleton->computeEquationsOfMotionID(mGravity);
-
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
-
     mConstraintHandler->addSkeleton(_skeleton);
 }
 
