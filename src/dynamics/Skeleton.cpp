@@ -354,51 +354,6 @@ void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
     }
 }
 
-Eigen::VectorXd Skeleton::computeInverseDynamicsLinear(
-        const Eigen::Vector3d& _gravity,
-        const Eigen::VectorXd* _qdot,
-        const Eigen::VectorXd* _qdotdot,
-        bool _computeJacobians,
-        bool _withExternalForces,
-        bool _withDampingForces)
-{
-
-    int n = getNumGenCoords();
-
-    // Skip immobile or 0-dof skeleton
-    if (!isMobile() == true || n == 0)
-        return get_tau();
-
-    if (_qdot == NULL)
-        set_dq(Eigen::VectorXd::Zero(n));
-
-    if (_qdotdot == NULL)
-        set_ddq(Eigen::VectorXd::Zero(n));
-
-    // Forward recursion
-    for (std::vector<dynamics::BodyNode*>::iterator itrBody
-         = mBodyNodes.begin();
-         itrBody != mBodyNodes.end();
-         ++itrBody)
-    {
-        (*itrBody)->updateEta();
-        (*itrBody)->updateAcceleration();
-    }
-
-    // Backward recursion
-    for (std::vector<dynamics::BodyNode*>::reverse_iterator ritrBody
-         = mBodyNodes.rbegin();
-         ritrBody != mBodyNodes.rend();
-         ++ritrBody)
-    {
-        (*ritrBody)->updateBodyForce(_gravity,
-                                     _withExternalForces);
-        (*ritrBody)->updateGeneralizedForce(_withDampingForces);
-    }
-
-    return get_tau();
-}
-
 void Skeleton::updateExternalForces()
 {
     // Clear external force.
