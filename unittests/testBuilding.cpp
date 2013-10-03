@@ -124,6 +124,79 @@ TEST(BUILDING, BASIC)
 
     EXPECT_TRUE(world->getNumSkeletons() == 1);
 
+    int nSteps = 20;
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
+    delete world;
+}
+
+/******************************************************************************/
+TEST(BUILDING, ADDING_AND_REMOVING_SKELETONS)
+{
+    // World
+    World* world = new World;
+
+    Skeleton* skeleton1 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_X,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Y,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Z);
+
+    Skeleton* skeleton2 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_X,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Y,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Z);
+
+    Skeleton* skeleton3 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_X,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Y,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Z);
+
+    Skeleton* skeleton4 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_X,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Y,
+                                               Eigen::Vector3d(1.0, 1.0, 1.0),
+                                               DOF_Z);
+
+    int nSteps = 20;
+
+    // Empty world
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
+    // Add skeleton1, skeleton2
+    world->addSkeleton(skeleton1);
+    world->addSkeleton(skeleton2);
+    EXPECT_TRUE(world->getNumSkeletons() == 2);
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
+    // Remove skeleton2
+    world->removeSkeleton(skeleton2);
+    EXPECT_TRUE(world->getNumSkeletons() == 1);
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
+    // Add skeleton3, skeleton4
+    world->addSkeleton(skeleton3);
+    world->addSkeleton(skeleton4);
+    EXPECT_TRUE(world->getNumSkeletons() == 3);
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
+    // Remove skeleton1
+    world->removeSkeleton(skeleton1);
+    EXPECT_TRUE(world->getNumSkeletons() == 2);
+    for (int i = 0; i < nSteps; ++i)
+        world->step();
+
     delete world;
 }
 

@@ -208,7 +208,7 @@ public:
     int getNumChildBodyNodes() const;
 
     /// @brief
-    void addMarker(Marker* _h);
+    void addMarker(Marker* _marker);
 
     /// @brief
     int getNumMarkers() const;
