@@ -45,9 +45,9 @@
 namespace dart {
 namespace collision {
 
-CollisionDetector::CollisionDetector()
+CollisionDetector::CollisionDetector() :
+    mNumMaxContacts(100)
 {
-    mNumMaxContacts = 100;
 }
 
 CollisionDetector::~CollisionDetector()
@@ -57,18 +57,77 @@ CollisionDetector::~CollisionDetector()
 }
 
 void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                                 bool _recursive)
+                                                 bool _isRecursive)
 {
+    assert(_bodyNode != NULL && "Invalid body node.");
+
+    // If this collision detector already has collision node for _bodyNode, then
+    // we do nothing.
+    if (getCollisionNode(_bodyNode) != NULL)
+    {
+        std::cout << "The collision detector already has a collision node for "
+                  << "body node [" << _bodyNode->getName() << "]." << std::endl;
+        return;
+    }
+
     CollisionNode* collNode = createCollisionNode(_bodyNode);
     collNode->setIndex(mCollisionNodes.size());
     mCollisionNodes.push_back(collNode);
     mBodyCollisionMap[_bodyNode] = collNode;
     mCollidablePairs.push_back(std::vector<bool>(mCollisionNodes.size() - 1, true));
 
-    if(_recursive)
+    if(_isRecursive)
     {
         for (int i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
             addCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
+    }
+}
+
+void CollisionDetector::removeCollisionSkeletonNode(
+        dynamics::BodyNode* _bodyNode, bool _isRecursive)
+{
+    assert(_bodyNode != NULL && "Invalid body node.");
+
+    // If a collision node is already created for _bodyNode, then we just return
+    CollisionNode* collNode = getCollisionNode(_bodyNode);
+    if (collNode == NULL)
+    {
+        std::cout << "The collision detector does not have any collision node "
+                  << "for body node [" << _bodyNode->getName() << "]."
+                  << std::endl;
+        return;
+    }
+
+    // Update index of collision nodes.
+    int iCollNode = collNode->getIndex();
+    for (int i = iCollNode + 1; i < mCollisionNodes.size(); ++i)
+        mCollisionNodes[i]->setIndex(mCollisionNodes[i]->getIndex() - 1);
+
+    // Remove collNode from mCollisionNodes
+    mCollisionNodes.erase(remove(mCollisionNodes.begin(), mCollisionNodes.end(),
+                                 collNode),
+                          mCollisionNodes.end());
+
+    // Remove collNode-_bodyNode pair from mBodyCollisionMap
+    mBodyCollisionMap.erase(_bodyNode);
+
+    // Delete collNode
+    delete collNode;
+
+    // Update mCollidablePairs
+    for (int i = iCollNode + 1; i < mCollidablePairs.size(); ++i)
+    {
+        for (int j = 0; j < iCollNode; ++j)
+            mCollidablePairs[i-1][j] = mCollidablePairs[i][j];
+        for (int j = iCollNode + 1; j < mCollidablePairs[i].size(); ++j)
+            mCollidablePairs[i-1][j-1] = mCollidablePairs[i][j];
+    }
+    mCollidablePairs.pop_back();
+
+    if(_isRecursive)
+    {
+        for (int i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
+            removeCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
     }
 }
 

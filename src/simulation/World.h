@@ -145,6 +145,8 @@ public:
     /// @param[in] _skel
     void addSkeleton(dynamics::Skeleton* _skeleton);
 
+    void removeSkeleton(dynamics::Skeleton* _skeleton);
+
     /// @brief Get the dof index for the indexed skeleton.
     /// @param[in] _index
     int getIndex(int _index) const;
