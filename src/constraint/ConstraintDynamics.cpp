@@ -261,7 +261,7 @@ void ConstraintDynamics::setCollisionDetector(CollisionDetector* _collisionDetec
 }
 
 void ConstraintDynamics::setAllowablePenetration(double _depth) {
-    if (_depth <= 0.0) {
+    if (_depth < 0.0) {
         std::cout << "Invalid allowable penetration depth [" << _depth << "]." << std::endl;
         return;
     }
@@ -286,7 +286,7 @@ double ConstraintDynamics::getMaxReducingPenetrationVelocity() const {
 
 void ConstraintDynamics::setAllowableJointViolation(double _violation)
 {
-    if (_violation <= 0.0) {
+    if (_violation < 0.0) {
         std::cout << "Invalid allowable joint position limit violation [" << _violation << "]." << std::endl;
         return;
     }
@@ -300,7 +300,7 @@ double ConstraintDynamics::getAllowableJointViolation() const
 
 void ConstraintDynamics::setMaxReducingJointViolationVelocity(double _vel)
 {
-    if (_vel <= 0.0) {
+    if (_vel < 0.0) {
         std::cout << "Invalid maximum value of reducing joint voilation velocity [" << _vel << "]." << std::endl;
         return;
     }
