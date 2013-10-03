@@ -34,7 +34,7 @@ namespace utils {
  */
 dynamics::Skeleton* DartLoader::parseSkeleton(std::string _urdfFileName) {
 
-    boost::shared_ptr<urdf::ModelInterface> skeletonModel = urdf::parseURDF(readFileToString(_urdfFileName));
+    urdf::ModelInterface* skeletonModel = urdf::parseURDF(readFileToString(_urdfFileName)).get();
     if(!skeletonModel)
         return NULL;
 
@@ -58,7 +58,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
     std::replace(_urdfFileName.begin(), _urdfFileName.end(), '\\' , '/');
     std::string worldDirectory = _urdfFileName.substr(0, _urdfFileName.rfind("/") + 1);
     
-    boost::shared_ptr<urdf::World> worldInterface = urdf::parseWorldURDF(xmlString, worldDirectory);
+    urdf::World* worldInterface = urdf::parseWorldURDF(xmlString, worldDirectory);
     if(!worldInterface)
         return NULL;
 
@@ -69,7 +69,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
 
     for(unsigned int i = 0; i < worldInterface->models.size(); ++i) {
       std::string skeletonDirectory = worldDirectory + mWorld_To_Entity_Paths.find(worldInterface->models[i].model->getName())->second;
-      dynamics::Skeleton* skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model, skeletonDirectory);
+      dynamics::Skeleton* skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model.get(), skeletonDirectory);
 
       if(!skeleton) {
         std::cout << "[ERROR] Robot " << worldInterface->models[i].model->getName() << " was not correctly parsed. World is not loaded. Exiting!" << std::endl;
@@ -158,7 +158,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string &_xml_string) {
  * @function modelInterfaceToSkeleton
  * @brief Read the ModelInterface and spits out a Skeleton object
  */
-dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf::ModelInterface> _model, std::string _rootToSkelPath) {
+dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model, std::string _rootToSkelPath) {
   
     if( _rootToSkelPath.empty() ) {
         std::cout<< "[DartLoader] Absolute path to skeleton "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
@@ -168,15 +168,15 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
     dynamics::BodyNode* rootNode;
     dynamics::Joint* rootJoint;
 
-    boost::shared_ptr<const urdf::Link> root = _model->getRoot();
+    const urdf::Link* root = _model->getRoot().get();
     if(root->name == "world") {
         if(_model->getRoot()->child_links.size() != 1) { 
             std::cout<< "[ERROR] Not unique link attached to world." << std::endl; 
         }
         else {
-            root = root->child_links[0];
+            root = root->child_links[0].get();
             rootNode = createDartNode(root, _rootToSkelPath);
-            rootJoint = createDartJoint(root->parent_joint);
+            rootJoint = createDartJoint(root->parent_joint.get());
             if(!rootJoint)
                 return NULL;
         }
@@ -193,21 +193,21 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(boost::shared_ptr<urdf:
     skeleton->addBodyNode(rootNode);
 
     for(unsigned int i = 0; i < root->child_links.size(); i++) {
-        createSkeletonRecursive(skeleton, root->child_links[i], rootNode, _rootToSkelPath);
+        createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode, _rootToSkelPath);
     }
 
     return skeleton;
 }
 
-void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, boost::shared_ptr<const urdf::Link> _lk, dynamics::BodyNode* _parentNode, std::string _rootToSkelPath) {
+void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parentNode, std::string _rootToSkelPath) {
   dynamics::BodyNode* node = createDartNode(_lk, _rootToSkelPath);
-  dynamics::Joint* joint = createDartJoint(_lk->parent_joint);
+  dynamics::Joint* joint = createDartJoint(_lk->parent_joint.get());
   node->setParentJoint(joint);
   _parentNode->addChildBodyNode(node);
   _skel->addBodyNode(node);
   
   for(unsigned int i = 0; i < _lk->child_links.size(); i++) {
-      createSkeletonRecursive(_skel, _lk->child_links[i], node, _rootToSkelPath);
+      createSkeletonRecursive(_skel, _lk->child_links[i].get(), node, _rootToSkelPath);
   }
 }
 
@@ -234,7 +234,7 @@ std::string  DartLoader::readFileToString(std::string _xmlFile) {
 /**
  * @function createDartJoint
  */
-dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint> _jt)
+dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
 { 
   dynamics::Joint* joint;
   switch(_jt->type) {
@@ -276,7 +276,7 @@ dynamics::Joint* DartLoader::createDartJoint(boost::shared_ptr<const urdf::Joint
 /**
  * @function createDartNode
  */
-dynamics::BodyNode* DartLoader::createDartNode(boost::shared_ptr<const urdf::Link> _lk, std::string _rootToSkelPath ) {
+dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::string _rootToSkelPath) {
 
   dynamics::BodyNode* node = new dynamics::BodyNode(_lk->name);
   
@@ -296,14 +296,14 @@ dynamics::BodyNode* DartLoader::createDartNode(boost::shared_ptr<const urdf::Lin
 
   // Set visual information
   for(unsigned int i = 0; i < _lk->visual_array.size(); i++) {
-    if(dynamics::Shape* shape = createShape(_lk->visual_array[i], _rootToSkelPath)) {
+    if(dynamics::Shape* shape = createShape(_lk->visual_array[i].get(), _rootToSkelPath)) {
       node->addVisualizationShape(shape);
     }
   }
 
   // Set collision information
   for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
-    if(dynamics::Shape* shape = createShape(_lk->collision_array[i], _rootToSkelPath)) {
+    if(dynamics::Shape* shape = createShape(_lk->collision_array[i].get(), _rootToSkelPath)) {
       node->addCollisionShape(shape);
     }
   }
@@ -325,7 +325,7 @@ void setMaterial(dynamics::Shape* _shape, const urdf::Collision* _col) {
  * @function createShape
  */
 template <class VisualOrCollision>
-dynamics::Shape* DartLoader::createShape(boost::shared_ptr<VisualOrCollision> _vizOrCol, std::string _rootToSkelPath) {
+dynamics::Shape* DartLoader::createShape(const VisualOrCollision* _vizOrCol, std::string _rootToSkelPath) {
   dynamics::Shape* shape;
 
   // Sphere
@@ -364,12 +364,12 @@ dynamics::Shape* DartLoader::createShape(boost::shared_ptr<VisualOrCollision> _v
   }
 
   shape->setLocalTransform(toEigen(_vizOrCol->origin));
-  setMaterial(shape, _vizOrCol.get());
+  setMaterial(shape, _vizOrCol);
   return shape;
 }
 
-template dynamics::Shape* DartLoader::createShape<urdf::Visual>(boost::shared_ptr<urdf::Visual> _vizOrCol, std::string _rootToSkelPath);
-template dynamics::Shape* DartLoader::createShape<urdf::Collision>(boost::shared_ptr<urdf::Collision> _vizOrCol, std::string _rootToSkelPath);
+template dynamics::Shape* DartLoader::createShape<urdf::Visual>(const urdf::Visual* _vizOrCol, std::string _rootToSkelPath);
+template dynamics::Shape* DartLoader::createShape<urdf::Collision>(const urdf::Collision* _vizOrCol, std::string _rootToSkelPath);
 
 /**
  * @function pose2Affine3d

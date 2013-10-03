@@ -38,10 +38,9 @@
 #pragma once
 
 #include <string>
-#include <boost/function.hpp>
 
 #include <urdf_world/world.h>
 
 namespace urdf{
-  boost::shared_ptr<World> parseWorldURDF(const std::string &xml_string, std::string _path );
+  World* parseWorldURDF(const std::string &xml_string, std::string _path );
 }
