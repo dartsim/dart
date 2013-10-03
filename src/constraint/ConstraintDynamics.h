@@ -68,24 +68,21 @@ public:
     double getTimeStep() const { return mDt; }
     void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
-    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const {
-        return mTotalConstrForces[_skelIndex];
-    }
-
-    inline Eigen::VectorXd getContactForce(int _skelIndex) const {
-        return mContactForces[_skelIndex];
-    }
-
-    inline collision::CollisionDetector* getCollisionDetector() const {
-        return mCollisionDetector;
-    }
-
-    inline int getNumContacts() const {
-        return mCollisionDetector->getNumContacts();
-    }
-
+    inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { return mTotalConstrForces[_skelIndex]; }
+    inline Eigen::VectorXd getContactForce(int _skelIndex) const { return mContactForces[_skelIndex]; }
+    inline collision::CollisionDetector* getCollisionDetector() const { return mCollisionDetector; }
+    inline int getNumContacts() const { return mCollisionDetector->getNumContacts(); }
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
 
+    void setAllowablePenetration(double _depth);
+    double getAllowablePenetration() const;
+    void setMaxReducingPenetrationVelocity(double _vel);
+    double getMaxReducingPenetrationVelocity() const;
+
+    void setAllowableJointViolation(double _violation);
+    double getAllowableJointViolation() const;
+    void setMaxReducingJointViolationVelocity(double _vel);
+    double getMaxReducingJointViolationVelocity() const;
 
 private:
     void initialize();
@@ -146,6 +143,14 @@ private:
     Eigen::VectorXd mCDot; // M * 1
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
+
+    Eigen::VectorXd mReducingPenetrationVelocity;
+    double mAllowablePenetration;
+    double mMaxReducingPenetrationVelocity;
+
+    std::vector<double> mReducingJointViolationVelocity;
+    double mAllowableJointViolation;
+    double mMaxReducingJointViolationVelocity;
 };
 
 } // namespace constraint

@@ -19,7 +19,7 @@ namespace dart {
 namespace constraint {
 
 ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
-    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE) {
+    : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowablePenetration(0.000001), mMaxReducingPenetrationVelocity(0.1), mAllowableJointViolation(DART_TO_RADIAN*0.001), mMaxReducingJointViolationVelocity(DART_TO_RADIAN*1.0) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
 }
@@ -39,6 +39,7 @@ void ConstraintDynamics::computeConstraintForces() {
 
     //            t1.startTimer();
     mLimitingDofIndex.clear();
+    mReducingJointViolationVelocity.clear();
 
     for (int i = 0; i < mSkels.size(); i++) {
         if (!mSkels[i]->isMobile())
@@ -54,15 +55,26 @@ void ConstraintDynamics::computeConstraintForces() {
                 double val = genCoord->get_q();
                 double ub  = genCoord->get_qMax();
                 double lb  = genCoord->get_qMin();
-
+                double violation = 0.0;
                 if (val >= ub){
+                    violation = val - ub;
                     mLimitingDofIndex.push_back(mIndices[i] + genCoord->getSkeletonIndex() + 1);
                     //        cout << "Skeleton " << i << " Dof " << j << " hits upper bound" << endl;
                 }
                 if (val <= lb){
+                    violation = lb - val;
                     mLimitingDofIndex.push_back(-(mIndices[i] + genCoord->getSkeletonIndex() + 1));
                     //      cout << "Skeleton " << i << " Dof " << j << " hits lower bound" << endl;
                 }
+
+                double rjvv = 0.0;
+                if (violation > mAllowableJointViolation)
+                {
+                    rjvv = violation / mDt;
+                    if (rjvv > mMaxReducingJointViolationVelocity)
+                        rjvv = mMaxReducingJointViolationVelocity;
+                }
+                mReducingJointViolationVelocity.push_back(rjvv);
             }
         }
     }
@@ -173,15 +185,13 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _newSkel)
     mZ = Eigen::MatrixXd(rows, cols);
 }
 
-void ConstraintDynamics::setCollisionDetector(CollisionDetector* _collisionDetector)
-{
+void ConstraintDynamics::setCollisionDetector(CollisionDetector* _collisionDetector) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
 
     if (_collisionDetector == mCollisionDetector)
         return;
 
-    if (mCollisionDetector != NULL)
-    {
+    if (mCollisionDetector != NULL) {
         delete mCollisionDetector;
         mCollisionDetector = NULL;
     }
@@ -189,6 +199,58 @@ void ConstraintDynamics::setCollisionDetector(CollisionDetector* _collisionDetec
     mCollisionDetector = _collisionDetector;
 
     initialize();
+}
+
+void ConstraintDynamics::setAllowablePenetration(double _depth) {
+    if (_depth <= 0.0) {
+        std::cout << "Invalid allowable penetration depth [" << _depth << "]." << std::endl;
+        return;
+    }
+    mAllowablePenetration = _depth;
+}
+
+double ConstraintDynamics::getAllowablePenetration() const {
+    return mAllowablePenetration;
+}
+
+void ConstraintDynamics::setMaxReducingPenetrationVelocity(double _vel) {
+    if (_vel < 0.0) {
+        std::cout << "Invalid maximum value of penetration reduction velocity [" << _vel << "]." << std::endl;
+        return;
+    }
+    mMaxReducingPenetrationVelocity = _vel;
+}
+
+double ConstraintDynamics::getMaxReducingPenetrationVelocity() const {
+    return mMaxReducingPenetrationVelocity;
+}
+
+void ConstraintDynamics::setAllowableJointViolation(double _violation)
+{
+    if (_violation <= 0.0) {
+        std::cout << "Invalid allowable joint position limit violation [" << _violation << "]." << std::endl;
+        return;
+    }
+    mAllowableJointViolation = _violation;
+}
+
+double ConstraintDynamics::getAllowableJointViolation() const
+{
+    return mAllowableJointViolation;
+}
+
+void ConstraintDynamics::setMaxReducingJointViolationVelocity(double _vel)
+{
+    if (_vel <= 0.0) {
+        std::cout << "Invalid maximum value of reducing joint voilation velocity [" << _vel << "]." << std::endl;
+        return;
+    }
+    mMaxReducingJointViolationVelocity = _vel;
+}
+
+double ConstraintDynamics::getMaxReducingJointViolationVelocity() const
+{
+    return mMaxReducingJointViolationVelocity;
 }
 
 void ConstraintDynamics::initialize() {
@@ -311,7 +373,7 @@ void ConstraintDynamics::fillMatrices() {
         mA.block(nContacts + cd, 0, nContacts, nContacts) = getMuMatrix();
         mA.block(nContacts + cd, nContacts, nContacts, cd) = -E.transpose();
 
-        mQBar.segment(0, nContacts).noalias() = mN.transpose() * tauVec;
+        mQBar.segment(0, nContacts).noalias() = mN.transpose() * tauVec - mReducingPenetrationVelocity;;
         mQBar.segment(nContacts, cd).noalias() = mB.transpose() * tauVec;
     }
 
@@ -327,9 +389,9 @@ void ConstraintDynamics::fillMatrices() {
 
         for (int i = 0; i < nJointLimits; i++) {
             if (mLimitingDofIndex[i] > 0) // hitting upper bound
-                mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1];
+                mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1] + mReducingJointViolationVelocity[i];
             else // hitting lower bound
-                mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1];
+                mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1] - mReducingJointViolationVelocity[i];
         }
 
         if (nContacts > 0) {
@@ -405,7 +467,7 @@ void ConstraintDynamics::fillMatricesODE() {
         mA.block(nContacts, nContacts, cd, cd).triangularView<Eigen::Lower>() = mB.transpose() * BTerm;
         mA.block(nContacts, nContacts, cd, cd).triangularView<Eigen::StrictlyUpper>() = mA.block(nContacts, nContacts, cd, cd).transpose();
 
-        mQBar.segment(0, nContacts).noalias() = mN.transpose() * tauVec;
+        mQBar.segment(0, nContacts).noalias() = mN.transpose() * tauVec - mReducingPenetrationVelocity;
         mQBar.segment(nContacts, cd).noalias() = mB.transpose() * tauVec;
     }
 
@@ -421,9 +483,9 @@ void ConstraintDynamics::fillMatricesODE() {
 
         for (int i = 0; i < nJointLimits; i++) {
             if (mLimitingDofIndex[i] > 0) // hitting upper bound
-                mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1];
+                mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1] + mReducingJointViolationVelocity[i];
             else // hitting lower bound
-                mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1];
+                mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1] - mReducingJointViolationVelocity[i];
         }
 
         if (nContacts > 0) {
@@ -584,6 +646,7 @@ void ConstraintDynamics::updateTauStar() {
 void ConstraintDynamics::updateNBMatrices() {
     mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
     mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * mNumDir);
+    mReducingPenetrationVelocity = Eigen::VectorXd::Zero(getNumContacts());
     for (int i = 0; i < getNumContacts(); i++) {
         Contact& c = mCollisionDetector->getContact(i);
         Eigen::Vector3d p = c.point;
@@ -616,7 +679,15 @@ void ConstraintDynamics::updateNBMatrices() {
             Eigen::MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
             mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
             mB.block(index2, i * mNumDir, NDOF2, mNumDir).noalias() = J12t * B12;
+        }
 
+        double penetration = c.penetrationDepth;
+        if (penetration > mAllowablePenetration)
+        {
+            double erv = penetration / mDt;
+            if (erv > mMaxReducingPenetrationVelocity)
+                erv = mMaxReducingPenetrationVelocity;
+            mReducingPenetrationVelocity(i) = erv;
         }
     }
 }
@@ -624,6 +695,7 @@ void ConstraintDynamics::updateNBMatrices() {
 void ConstraintDynamics::updateNBMatricesODE() {
     mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
     mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
+    mReducingPenetrationVelocity = Eigen::VectorXd::Zero(getNumContacts());
     for (int i = 0; i < getNumContacts(); i++) {
         Contact& c = mCollisionDetector->getContact(i);
         Eigen::Vector3d p = c.point;
@@ -656,7 +728,16 @@ void ConstraintDynamics::updateNBMatricesODE() {
             Eigen::MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
             mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
             mB.block(index2, i * 2, NDOF2, 2).noalias() = J12t * B12;
+        }
 
+        double penetration = c.penetrationDepth;
+        double erv = 0.0;
+        if (penetration > mAllowablePenetration)
+        {
+            erv = penetration / mDt;
+            if (erv > mMaxReducingPenetrationVelocity)
+                erv = mMaxReducingPenetrationVelocity;
+            mReducingPenetrationVelocity(i) = erv;
         }
     }
 }
