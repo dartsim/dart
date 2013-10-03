@@ -6,10 +6,9 @@
 
 #include "Controller.h"
 
-#include "yui/Win3D.h"
-#include "simulation/SimWindow.h"
+#include "yui/SimWindow.h"
 
-class MyWindow : public dart::simulation::SimWindow
+class MyWindow : public dart::yui::SimWindow
 {
 public:
     MyWindow(): SimWindow()

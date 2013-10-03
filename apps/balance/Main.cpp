@@ -20,16 +20,18 @@ int main(int argc, char* argv[])
     Eigen::Vector3d gravity(0.0, -9.81, 0.0);
     myWorld->setGravity(gravity);
 
-    Eigen::VectorXd initPose = myWorld->getSkeleton(1)->get_q();
-    initPose[1] = -0.1;
-    initPose[6] = 0.2; // left hip
-    initPose[9] = -0.5; // left knee
-    initPose[10] = 0.3; // left ankle
-    initPose[13] = 0.2; // right hip
-    initPose[16] = -0.5; // right knee
-    initPose[17] = 0.3; // right ankle
-    initPose[21] = -0.1; // lower back
-    myWorld->getSkeleton(1)->setConfig(initPose, true);
+    std::vector<int> genCoordIds;
+    genCoordIds.push_back(1);
+    genCoordIds.push_back(6); // left hip
+    genCoordIds.push_back(9); // left knee
+    genCoordIds.push_back(10); // left ankle
+    genCoordIds.push_back(13); // right hip
+    genCoordIds.push_back(16); // right knee
+    genCoordIds.push_back(17); // right ankle
+    genCoordIds.push_back(21); // lower back
+    Eigen::VectorXd initConfig(8);
+    initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
+    myWorld->getSkeleton(1)->setConfig(genCoordIds, initConfig);
 
     // create controller
     Controller* myController = new Controller(myWorld->getSkeleton(1),

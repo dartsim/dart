@@ -1,11 +1,9 @@
+#include <iostream>
 #include "MyWindow.h"
 #include "utils/Paths.h"
-#include "dynamics/Skeleton.h"
 #include "utils/SkelParser.h"
 
 using namespace dart;
-using namespace dynamics;
-using namespace simulation;
 
 int main(int argc, char* argv[])
 {

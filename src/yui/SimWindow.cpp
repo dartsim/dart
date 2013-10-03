@@ -48,7 +48,7 @@
 #include "yui/GLFuncs.h"
 
 namespace dart {
-namespace simulation {
+namespace yui {
 
 SimWindow::SimWindow()
     : Win3D()
