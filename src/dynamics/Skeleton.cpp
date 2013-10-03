@@ -592,7 +592,7 @@ Eigen::Vector3d Skeleton::getWorldCOM()
     {
         BodyNode* bodyNode = getBodyNode(i);
         com += bodyNode->getMass() *
-               bodyNode->getWorldTransform() * bodyNode->getLocalCOM();
+               (bodyNode->getWorldTransform() * bodyNode->getLocalCOM());
     }
 
     return com / mTotalMass;
