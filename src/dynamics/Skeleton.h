@@ -226,22 +226,6 @@ public:
                                 bool _withExternalForces = false,
                                 bool _withDampingForces = false);
 
-    /// @brief Inverse dynamics computation.
-    /// Runs recursive inverse dynamics algorithm and returns the generalized
-    /// forces; if qdd is NULL, it is treated as zero; also computes Jacobian Jv
-    /// and Jw in iterative manner if the flag is true i.e. replaces
-    /// updateFirstDerivatives of non-recursive dynamics; when
-    ///_withExternalForces is true, external forces will be accounted for in the
-    /// returned generalized forces; when _withExternalForces is false, only the
-    /// sum of Corolis force and gravity is returned.
-    Eigen::VectorXd computeInverseDynamicsLinear(
-            const Eigen::Vector3d& _gravity,
-            const Eigen::VectorXd* _qdot,
-            const Eigen::VectorXd* _qdotdot = NULL,
-            bool _computeJacobians = true,
-            bool _withExternalForces = false,
-            bool _withDampingForces = false);
-
     /// @brief Evaluate external forces to generalized torques.
     /// Similarly to the inverse dynamics computation, when _useRecursive is
     /// true, a recursive algorithm is used; else the jacobian is used to do the
