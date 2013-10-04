@@ -503,7 +503,7 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 TEST_F(COLLISION, PENETRATION_REDUCTION)
 {
     double tol = 1e-5;
-    double allowablePenetration = 1e-5;
+    double allowedPenetration = 1e-5;
     int steps = 4000;
 
     simulation::World* world =
@@ -517,7 +517,7 @@ TEST_F(COLLISION, PENETRATION_REDUCTION)
     EXPECT_TRUE(boxSkeleton != NULL);
     EXPECT_TRUE(ellipsoidSkeleton != NULL);
 
-    world->getConstraintHandler()->setAllowablePenetration(allowablePenetration);
+    world->getConstraintHandler()->setAllowedContactPenetration(allowedPenetration);
 
     // Step forward until the objects are settled down.
     for (int i = 0; i < steps; ++i)
@@ -537,8 +537,8 @@ TEST_F(COLLISION, PENETRATION_REDUCTION)
     EXPECT_LE(pos2.y() - 0.5, tol);
 
     // Penetration check
-    EXPECT_LE(0.5 - pos1.y(), allowablePenetration);
-    EXPECT_LE(0.5 - pos2.y(), allowablePenetration);
+    EXPECT_LE(0.5 - pos1.y(), allowedPenetration);
+    EXPECT_LE(0.5 - pos2.y(), allowedPenetration);
 
     delete world;
 }

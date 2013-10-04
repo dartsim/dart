@@ -77,15 +77,15 @@ public:
     inline int getNumContacts() const { return mCollisionDetector->getNumContacts(); }
     inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
 
-    void setAllowablePenetration(double _depth);
-    double getAllowablePenetration() const;
-    void setMaxReducingPenetrationVelocity(double _vel);
-    double getMaxReducingPenetrationVelocity() const;
+    void setAllowedContactPenetration(double _penetration);
+    double getAllowedContactPenetration() const;
+    void setContactERP(double _erp);
+    double getContactERP() const;
 
-    void setAllowedJointPositionViolation(double _violation);
-    double getAllowedJointPositionViolation() const;
-    void setErrorReductionParameter(double _erp);
-    double getErrorReductionParameter() const;
+    void setAllowedJointLimitViolation(double _violation);
+    double getAllowedJointLimitViolation() const;
+    void setJointERP(double _erp);
+    double getJointERP() const;
 
 private:
     void initialize();
@@ -146,13 +146,13 @@ private:
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
 
-    Eigen::VectorXd mReducingPenetrationVelocity;
-    double mAllowablePenetration;
-    double mMaxReducingPenetrationVelocity;
+    Eigen::VectorXd mContactERVelocity; // Contact error reduction velocity
+    double mAllowedContactPenetration;  // Allowed contact penetration
+    double mContactERP;                 // Contact error reduction parameter (0.0 to 1.0)
 
-    std::vector<double> mReducingJointViolationVelocity;
-    double mAllowableJointViolation;
-    double mErrorReductionParameter;
+    std::vector<double> mJointERVelocity;  // Joint position limit error reduction velocity
+    double mAllowedJointViolation;         // Allowed joint position limit violation
+    double mJointERP;                      // Joint error reduction parameter (0.0 to 1.0)
 };
 
 } // namespace constraint

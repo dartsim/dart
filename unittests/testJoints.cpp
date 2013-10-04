@@ -283,7 +283,7 @@ TEST_F(JOINTS, FREE_JOINT)
 TEST_F(JOINTS, POSITION_LIMIT)
 {
     double tol = 1e-6;
-    double allowableViolation = 1e-5;
+    double allowedViolation = 1e-5;
 
     simulation::World* myWorld = utils::SkelParser::readSkelFile(
             DART_DATA_PATH"/skel/test/joint_limit_test.skel");
@@ -311,7 +311,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->set_qMin(-limit1);
     joint1->getGenCoord(0)->set_qMax(limit1);
 
-    myWorld->getConstraintHandler()->setAllowedJointPositionViolation(allowableViolation);
+    myWorld->getConstraintHandler()->setAllowedJointLimitViolation(allowedViolation);
 
     double simTime = 2.0;
     double timeStep = myWorld->getTimeStep();
@@ -333,8 +333,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
     //       violation in which is not implemented yet. This feature should be
     //       added in DART.
 
-    EXPECT_LE(-limit0 - jointPos0, allowableViolation);
-    EXPECT_LE(-limit0 - jointPos1, allowableViolation);
+    EXPECT_LE(-limit0 - jointPos0, allowedViolation);
+    EXPECT_LE(-limit0 - jointPos1, allowedViolation);
 
     EXPECT_NEAR(jointVel0, 0.0, tol);
     EXPECT_NEAR(jointVel1, 0.0, tol);
