@@ -19,7 +19,7 @@ namespace dart {
 namespace constraint {
 
 ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skeletons, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
-    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowablePenetration(1e-3), mMaxReducingPenetrationVelocity(1e-2), mAllowableJointViolation(DART_TO_RADIAN*1e-1), mMaxReducingJointViolationVelocity(DART_TO_RADIAN*1.0) {
+    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowablePenetration(1e-3), mMaxReducingPenetrationVelocity(1e-2), mAllowableJointViolation(DART_TO_RADIAN*1e-1), mErrorReductionParameter(DART_DEFAULT_ERP) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
 }
@@ -71,8 +71,8 @@ void ConstraintDynamics::computeConstraintForces() {
                 if (violation > mAllowableJointViolation)
                 {
                     rjvv = violation / mDt;
-                    if (rjvv > mMaxReducingJointViolationVelocity)
-                        rjvv = mMaxReducingJointViolationVelocity;
+                    if (rjvv > mErrorReductionParameter)
+                        rjvv = mErrorReductionParameter;
                 }
                 mReducingJointViolationVelocity.push_back(rjvv);
             }
@@ -284,7 +284,7 @@ double ConstraintDynamics::getMaxReducingPenetrationVelocity() const {
     return mMaxReducingPenetrationVelocity;
 }
 
-void ConstraintDynamics::setAllowableJointViolation(double _violation)
+void ConstraintDynamics::setAllowedJointPositionViolation(double _violation)
 {
     if (_violation < 0.0) {
         std::cout << "Invalid allowable joint position limit violation [" << _violation << "]." << std::endl;
@@ -293,23 +293,24 @@ void ConstraintDynamics::setAllowableJointViolation(double _violation)
     mAllowableJointViolation = _violation;
 }
 
-double ConstraintDynamics::getAllowableJointViolation() const
+double ConstraintDynamics::getAllowedJointPositionViolation() const
 {
     return mAllowableJointViolation;
 }
 
-void ConstraintDynamics::setMaxReducingJointViolationVelocity(double _vel)
-{
-    if (_vel < 0.0) {
-        std::cout << "Invalid maximum value of reducing joint voilation velocity [" << _vel << "]." << std::endl;
+void ConstraintDynamics::setErrorReductionParameter(double _erp) {
+
+    if (_erp < 0.0 || 1.0 < _erp) {
+        std::cout << "Invalid error reduction parameter [" << _erp << "]. It should between 0.0 and 1.0." << std::endl;
         return;
     }
-    mMaxReducingJointViolationVelocity = _vel;
+
+    mErrorReductionParameter = _erp;
 }
 
-double ConstraintDynamics::getMaxReducingJointViolationVelocity() const
+double ConstraintDynamics::getErrorReductionParameter() const
 {
-    return mMaxReducingJointViolationVelocity;
+    return mErrorReductionParameter;
 }
 
 void ConstraintDynamics::initialize() {

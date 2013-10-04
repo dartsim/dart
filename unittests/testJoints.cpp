@@ -311,7 +311,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->set_qMin(-limit1);
     joint1->getGenCoord(0)->set_qMax(limit1);
 
-    myWorld->getConstraintHandler()->setAllowableJointViolation(allowableViolation);
+    myWorld->getConstraintHandler()->setAllowedJointPositionViolation(allowableViolation);
 
     double simTime = 2.0;
     double timeStep = myWorld->getTimeStep();

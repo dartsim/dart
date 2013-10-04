@@ -45,6 +45,8 @@
 #include "collision/CollisionDetector.h"
 #include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
+#define DART_DEFAULT_ERP 0.2    // should be between 0.0 and 1.0
+
 namespace dart {
 
 namespace dynamics {
@@ -80,10 +82,10 @@ public:
     void setMaxReducingPenetrationVelocity(double _vel);
     double getMaxReducingPenetrationVelocity() const;
 
-    void setAllowableJointViolation(double _violation);
-    double getAllowableJointViolation() const;
-    void setMaxReducingJointViolationVelocity(double _vel);
-    double getMaxReducingJointViolationVelocity() const;
+    void setAllowedJointPositionViolation(double _violation);
+    double getAllowedJointPositionViolation() const;
+    void setErrorReductionParameter(double _erp);
+    double getErrorReductionParameter() const;
 
 private:
     void initialize();
@@ -150,7 +152,7 @@ private:
 
     std::vector<double> mReducingJointViolationVelocity;
     double mAllowableJointViolation;
-    double mMaxReducingJointViolationVelocity;
+    double mErrorReductionParameter;
 };
 
 } // namespace constraint
