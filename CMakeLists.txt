@@ -92,8 +92,8 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 find_package(FLANN REQUIRED)
-find_package(TinyXml REQUIRED)
-find_package(TinyXml2 REQUIRED)
+find_package(TinyXML REQUIRED)
+find_package(TinyXML2 REQUIRED)
 
 # urdfdom
 find_package(urdfdom REQUIRED)
