@@ -49,29 +49,24 @@ namespace dynamics {
 class TranslationalJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Constructor.
     TranslationalJoint(const std::string& _name = "Translational joint");
 
-    /// @brief
+    /// @brief Destructor.
     virtual ~TranslationalJoint();
 
-    // Documentation is inherited.
-    virtual double getPotentialEnergy() const { return 0.0; }
-
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateTransform();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobian();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
 protected:
     /// @brief
     GenCoord mCoordinate[3];
-
-private:
 
 public:
     //

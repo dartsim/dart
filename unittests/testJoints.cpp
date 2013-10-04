@@ -313,7 +313,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
     myWorld->getConstraintHandler()->setAllowedJointLimitViolation(allowedViolation);
 
-    double simTime = 2.0;
+    double simTime = 10.0;
     double timeStep = myWorld->getTimeStep();
     int nSteps = simTime / timeStep;
 

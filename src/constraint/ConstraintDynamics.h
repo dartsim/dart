@@ -45,7 +45,8 @@
 #include "collision/CollisionDetector.h"
 #include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
-#define DART_DEFAULT_ERP 0.2    // should be between 0.0 and 1.0
+#define DART_DEFAULT_CONTACT_ERP 0.001    // should be between 0.0 and 1.0
+#define DART_DEFAULT_JOINT_ERP   0.001    // should be between 0.0 and 1.0
 
 namespace dart {
 

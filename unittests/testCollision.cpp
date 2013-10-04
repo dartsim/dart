@@ -504,6 +504,7 @@ TEST_F(COLLISION, PENETRATION_REDUCTION)
 {
     double tol = 1e-5;
     double allowedPenetration = 1e-5;
+    double contactERP = 0.001;
     int steps = 4000;
 
     simulation::World* world =
@@ -518,6 +519,7 @@ TEST_F(COLLISION, PENETRATION_REDUCTION)
     EXPECT_TRUE(ellipsoidSkeleton != NULL);
 
     world->getConstraintHandler()->setAllowedContactPenetration(allowedPenetration);
+    world->getConstraintHandler()->setContactERP(contactERP);
 
     // Step forward until the objects are settled down.
     for (int i = 0; i < steps; ++i)

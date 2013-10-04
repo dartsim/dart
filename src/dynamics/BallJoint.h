@@ -49,29 +49,24 @@ namespace dynamics {
 class BallJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Destructor.
     BallJoint(const std::string& _name = "Ball joint");
 
-    /// @brief
+    /// @brief Constructor.
     virtual ~BallJoint();
 
-    // Documentation is inherited.
-    virtual double getPotentialEnergy() const { return 0.0; }
-
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateTransform();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobian();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
 protected:
     /// @brief
     GenCoord mCoordinate[3];
-
-private:
 
 public:
     //

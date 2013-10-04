@@ -19,7 +19,7 @@ namespace dart {
 namespace constraint {
 
 ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skeletons, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
-    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowedContactPenetration(1e-3), mContactERP(1e-2), mAllowedJointViolation(DART_TO_RADIAN*1e-1), mJointERP(DART_DEFAULT_ERP) {
+    : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE), mAllowedContactPenetration(0.0), mContactERP(DART_DEFAULT_CONTACT_ERP), mAllowedJointViolation(0.0), mJointERP(DART_DEFAULT_CONTACT_ERP) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
 }
