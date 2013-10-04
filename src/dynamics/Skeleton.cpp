@@ -521,31 +521,6 @@ void Skeleton::setConstraintForces(const Eigen::VectorXd& _Fc)
     mFc = _Fc;
 }
 
-double Skeleton::getKineticEnergy() const
-{
-    double KineticEnergy = 0.0;
-
-    for (int i = 0; i < mBodyNodes.size(); i++)
-        KineticEnergy += mBodyNodes[i]->getKineticEnergy();
-
-    return 0.5 * KineticEnergy;
-}
-
-double Skeleton::getPotentialEnergy() const
-{
-    double potentialEnergy = 0.0;
-
-    //// Gravity and Springs on bodies
-    //for (int i = 0; i < mBodies.size(); i++)
-    //    potentialEnergy += mBodies[i]->getPotentialEnergy();
-
-    // Springs on joints
-    for (int i = 0; i < mBodyNodes.size(); i++)
-        potentialEnergy += mBodyNodes[i]->getParentJoint()->getPotentialEnergy();
-
-    return potentialEnergy;
-}
-
 Eigen::Vector3d Skeleton::getWorldCOM()
 {
     Eigen::Vector3d com(0, 0, 0);

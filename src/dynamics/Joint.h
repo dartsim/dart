@@ -141,10 +141,6 @@ public:
     /// @brief
     const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-    // TODO: Not implemented.
-    /// @brief
-    virtual double getPotentialEnergy() const = 0;
-
     //--------------------------------------------------------------------------
     // Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------

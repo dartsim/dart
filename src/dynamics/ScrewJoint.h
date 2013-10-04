@@ -49,12 +49,12 @@ namespace dynamics {
 class ScrewJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Constructor.
     ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                double _pitch = 0.1,
                const std::string& _name = "Screw joint");
 
-    /// @brief
+    /// @brief Destructor.
     virtual ~ScrewJoint();
 
     /// @brief
@@ -69,16 +69,13 @@ public:
     /// @brief
     double getPitch() const;
 
-    // Documentation is inherited.
-    virtual double getPotentialEnergy() const { return 0.0; }
-
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateTransform();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobian();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
 protected:
@@ -90,8 +87,6 @@ protected:
 
     /// @brief
     double mPitch;
-
-private:
 
 public:
     //

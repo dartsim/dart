@@ -49,11 +49,11 @@ namespace dynamics {
 class RevoluteJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Constructor.
     RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                   const std::string& _name = "Revolute joint");
 
-    /// @brief
+    /// @brief Destructor.
     virtual ~RevoluteJoint();
 
     /// @brief
@@ -62,16 +62,13 @@ public:
     /// @brief
     const Eigen::Vector3d& getAxis() const;
 
-    // Documentation is inherited.
-    virtual double getPotentialEnergy() const { return 0.0; }
-
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateTransform();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobian();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
 protected:
@@ -80,8 +77,6 @@ protected:
 
     /// @brief Rotational axis.
     Eigen::Vector3d mAxis;
-
-private:
 
 public:
     //
