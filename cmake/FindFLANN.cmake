@@ -1,8 +1,8 @@
 # Find FLANN
 #
 # This sets the following variables:
-# FLANN_FOUND - If all the Dart externals were found or not
-# FLANN_INCLUDE_DIRS - Directories containing the DART external include files.
+# FLANN_FOUND
+# FLANN_INCLUDE_DIRS
 
 find_package(PkgConfig QUIET)
 
@@ -10,7 +10,7 @@ pkg_check_modules(PC_FLANN flann)
 find_path(FLANN_INCLUDE_DIR
     NAMES flann/flann.h
     HINTS ${PC_FLANN_INCLUDEDIR}
-    PATHS "@CMAKE_INSTALL_PREFIX@/include")
+    PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 set(FLANN_INCLUDE_DIRS ${FLANN_INCLUDE_DIR})
 

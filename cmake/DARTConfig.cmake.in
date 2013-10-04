@@ -6,15 +6,15 @@
 # DART_LIBRARIES - Libraries needed to use DART.
 # DART_LIBRARY_DIRS - Directories that contain the DART libraries.
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "@CMAKE_INSTALL_PREFIX@/share/dart")
-find_package(DARTExt REQUIRED)
 
 set(DART_INCLUDE_DIRS
   "@CMAKE_INSTALL_PREFIX@/include"
   "@CMAKE_INSTALL_PREFIX@/include/dart"
-  ${DARTExt_INCLUDE_DIRS}
 )
 
-set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" ${DARTExt_LIBRARY_DIRS})
+set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" @Boost_LIBRARY_DIRS@)
 
-set(DART_LIBRARIES optimized dart debug dartd ${DARTExt_LIBRARIES})
+set(DART_LIBRARIES optimized dart-core debug dart-cored
+                   optimized dart      debug dartd
+                   @DART_CORE_DEPENDENCIES@
+                   @DART_NONCORE_DEPENDENCIES@)
