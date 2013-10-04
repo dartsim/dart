@@ -65,15 +65,71 @@ configure_file(${PATH_HEADER_IN} ${PATH_HEADER_OUT} @ONLY)
 install(FILES ${PATH_HEADER_OUT} DESTINATION include/dart/utils)
 
 ###############
-# Install Targets
+# Find dependencies
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+find_package(Eigen REQUIRED)
+find_package(FCL REQUIRED)
+find_package(Assimp REQUIRED)
+find_package(OpenGL REQUIRED)
+
+# GLUT
+if(WIN32 AND NOT CYGWIN)
+    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+    set(GLUT_LIBRARIES glut32)
+else()
+    find_package(GLUT REQUIRED)
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+endif()
+
+# Boost
+find_package(Boost REQUIRED system filesystem)
+if(MSVC OR MSVC90 OR MSVC10)
+    add_definitions(-DBOOST_ALL_NO_LIB)
+endif()
+add_definitions(-DBOOST_TEST_DYN_LINK)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+find_package(FLANN REQUIRED)
+find_package(TinyXml REQUIRED)
+find_package(TinyXml2 REQUIRED)
+
+# urdfdom
+find_package(urdfdom REQUIRED)
+if(MSVC)
+    set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
+                          optimized urdfdom_model_state debug urdfdom_model_stated
+                          optimized urdfdom_model       debug urdfdom_modeld
+                          optimized urdfdom_world       debug urdfdom_worldd
+                          optimized console_bridge      debug console_bridged)
+endif()
+
+include_directories(BEFORE src)
+include_directories(${Eigen_INCLUDE_DIRS})
+include_directories(${FCL_INCLUDE_DIRS})
+include_directories(${Assimp_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIR})
+include_directories(${GLUT_INCLUDE_DIR})
+
+include_directories(${FLANN_INCLUDE_DIRS})
+include_directories(${urdfdom_INCLUDE_DIRS})
+include_directories(${TinyXML_INCLUDE_DIRS})
+include_directories(${TinyXML2_INCLUDE_DIRS})
+include_directories("${CMAKE_BINARY_DIR}/src")
+
+link_directories("${CMAKE_BINARY_DIR}/lib")
+link_directories("${CMAKE_INSTALL_PREFIX}/lib")
+link_directories(${Boost_LIBRARY_DIRS})
+
+set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
+set(DART_DEPENDENCIES ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES} ${DART_CORE_DEPENDENCIES})
+
+###############
 # Generate the Dart CMake Config file
-file(GLOB cmake_mods "cmake/Modules/*.cmake")
 configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/FindDARTExt.cmake.in ${CMAKE_BINARY_DIR}/cmake/FindDARTExt.cmake @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/FindFLANN.cmake.in ${CMAKE_BINARY_DIR}/cmake/FindFLANN.cmake @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
-install(FILES ${CMAKE_BINARY_DIR}/cmake/FindDARTExt.cmake DESTINATION share/dart)
-install(FILES ${CMAKE_BINARY_DIR}/cmake/FindFLANN.cmake DESTINATION share/dart)
 
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
@@ -81,18 +137,6 @@ configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 ###############
-# Find important packages
-set(CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/cmake")
-find_package(DARTExt REQUIRED)
-find_package(FLANN REQUIRED)
-
-include_directories(BEFORE src)
-include_directories(${DARTExt_INCLUDE_DIRS})
-include_directories(${FLANN_INCLUDE_DIRS})
-include_directories("${CMAKE_BINARY_DIR}/src")
-link_directories("${CMAKE_BINARY_DIR}/lib")
-link_directories(${DARTExt_LIBRARY_DIRS})
-
 add_subdirectory(src)
 enable_testing()
 add_subdirectory(unittests)
