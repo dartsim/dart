@@ -204,13 +204,6 @@ public:
     void setConstraintForces(const Eigen::VectorXd& _Fc);
 
     /// @brief
-    double getKineticEnergy() const;
-
-    // TODO: Not implemented.
-    /// @brief
-    double getPotentialEnergy() const;
-
-    /// @brief
     Eigen::Vector3d getWorldCOM();
 
     //--------------------------------------------------------------------------

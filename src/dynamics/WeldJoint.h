@@ -49,24 +49,22 @@ namespace dynamics {
 class WeldJoint : public Joint
 {
 public:
-    /// @brief
+    /// @brief Constructor.
     WeldJoint(const std::string& _name = "Weld joint");
 
-    /// @brief
+    /// @brief Destructor.
     virtual ~WeldJoint();
 
-    // Documentation is inherited.
-    virtual double getPotentialEnergy() const { return 0.0; }
-
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateTransform();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobian();
 
-    // Document inherited.
+    // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
+public:
     //
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
