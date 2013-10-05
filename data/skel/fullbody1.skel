@@ -7,6 +7,7 @@
         </physics>
         
         <skeleton name="grount skeleton">
+            <mobile>false</mobile>
             <body name="ground">
                 <transformation>0 -0.92 0 0 0 0</transformation>
                 <visualization_shape>
@@ -26,7 +27,7 @@
                     </geometry>
                 </collision_shape>                                
             </body>
-            <joint type="weld" name="joint 1">
+            <joint type="free" name="joint 1">
                 <parent>world</parent>
                 <child>ground</child>
             </joint>

@@ -20,7 +20,7 @@ Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics
     mConstraintHandle = _constraintHandle;
     mTimestep = _t;
     mFrame = 0;
-    int nDof = mSkel->getDOF();
+    int nDof = mSkel->getNumGenCoords();
     mKp = MatrixXd::Identity(nDof, nDof);
     mKd = MatrixXd::Identity(nDof, nDof);
     mConstrForces = VectorXd::Zero(nDof);
@@ -29,7 +29,7 @@ Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics
     mDesiredDofs.resize(nDof);
     for (int i = 0; i < nDof; i++){
         mTorques[i] = 0.0;
-        mDesiredDofs[i] = mSkel->getDof(i)->get_q();
+        mDesiredDofs[i] = mSkel->getGenCoord(i)->get_q();
     }
 
     // using SPD results in simple Kp coefficients
@@ -51,7 +51,7 @@ Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     // SPD tracking
-    int nDof = mSkel->getDOF();
+    int nDof = mSkel->getNumGenCoords();
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
     VectorXd d = -mKd * _dofVel;
