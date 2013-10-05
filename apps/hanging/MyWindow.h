@@ -3,31 +3,27 @@
 
 #include <stdarg.h>
 
-#include "simulation/SimWindow.h"
+#include "yui/SimWindow.h"
 
 #include "Controller.h"
 
-class MyWindow : public dart::simulation::SimWindow
+namespace dart {
+namespace simulation {
+class World;
+}
+}
+
+class MyWindow : public dart::yui::SimWindow
 {
 public:
-    MyWindow(): SimWindow()
-    {
-        mForce = Eigen::Vector3d::Zero();
-        mController = NULL;
-        mImpulseDuration = 0;
-    }
-    virtual ~MyWindow() {}
+    MyWindow(dart::simulation::World* _world);
+    virtual ~MyWindow();
 
-    virtual void timeStepping();
+    virtual void timeStepping(int _val);
     virtual void drawSkels();
     //  virtual void displayTimer(int _val);
     //  virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
-
-    void setController(Controller *_controller)
-    {
-        mController = _controller;
-    }
 
 private:
     Eigen::Vector3d mForce;

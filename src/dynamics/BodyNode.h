@@ -268,7 +268,8 @@ public:
     ///        Jacobian is expressed in the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
-    math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
+    math::Jacobian getWorldJacobian(
+            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
 
     /// @brief Get time derivative of generalized Jacobian at the origin of this
     ///        body node where the Jacobian is expressed in this body node

@@ -114,7 +114,18 @@ std::string toString(const Eigen::Isometry3d& _v)
 
 bool toBool(const std::string& _str)
 {
-    return boost::lexical_cast<bool>(_str);
+    if (boost::to_upper_copy(_str) == "TRUE" || _str == "1")
+        return true;
+    else if (boost::to_upper_copy(_str) == "FALSE" || _str == "0")
+        return false;
+    else
+    {
+        std::cerr << "value ["
+                  << _str
+                  << "] is not a valid boolean type."
+                  << std::endl;
+        assert(0);
+    }
 }
 
 int toInt(const std::string& _str)

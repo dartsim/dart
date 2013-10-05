@@ -5,16 +5,13 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-    class BodyNode;
-    class Skeleton;
+namespace dynamics { 
+class BodyNode;
+class Skeleton;
 }
-
 namespace constraint {
 class ConstraintDynamics;
 }
-
 }
 
 class Controller {
@@ -26,7 +23,7 @@ class Controller {
     double getTorque(int _index) { return mTorques[_index]; }
     void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; }
     void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel);
-    dart::dynamics::Skeleton* getSkel() { return mSkel; }
+    dart::dynamics::Skeleton* getSkeleton() { return mSkel; }
     Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; }
     Eigen::MatrixXd getKp() {return mKp; }
     Eigen::MatrixXd getKd() {return mKd; }

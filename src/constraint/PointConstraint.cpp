@@ -37,7 +37,7 @@ void PointConstraint::getJacobian() {
     Eigen::MatrixXd JBody = mBody->getWorldJacobian(mOffset - mBody->getWorldTransform().translation()).bottomRows<3>();
     for(int i = 0; i < mBody->getNumDependentDofs(); i++) {
         int dofIndex = mBody->getDependentDof(i);
-        mJ.col(dofIndex) = JBody.col(dofIndex);
+        mJ.col(dofIndex) = JBody.col(i);
     }
 }
 
