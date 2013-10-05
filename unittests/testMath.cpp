@@ -1114,6 +1114,55 @@ TEST(MATH, INVERSION)
 //}
 
 /******************************************************************************/
+TEST(MATH, ROTATION) {
+  using namespace dart;
+  using namespace math;
+
+  // Create Initial ExpMap
+  Eigen::Vector3d axis(2.0, 1.0, 1.0);
+  axis.normalize();
+  double angle = 1.2;
+  EXPECT_DOUBLE_EQ(axis.norm(), 1.0);
+  Eigen::Vector3d expmap = axis * angle;
+
+
+  // Test conversion between expmap and quaternion
+  Eigen::Quaterniond q = expToQuat(expmap);
+  Eigen::Vector3d expmap2 = quatToExp(q);
+
+  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, DART_EPSILON)
+    << "Orig: " << expmap << " Reconstructed: " << expmap2;
+
+  // Test conversion between matrix and euler
+  Eigen::Matrix3d m = q.toRotationMatrix();
+  Eigen::Vector3d e = matrixToEulerXYZ(m);
+  Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
+
+  EXPECT_NEAR((m - m2).norm(), 0.0, DART_EPSILON)
+    << "Orig: " << m << " Reconstructed: " << m2;
+}
+
+/******************************************************************************/
+TEST(MATH, UTILS) {
+  // Test CR Matrix
+  EXPECT_DOUBLE_EQ(dart::math::CR(0, 1), -1.0);
+
+  // Test randomize function
+  double x = dart::math::random(0.0, 2.0);
+  EXPECT_LT(0.0, x);
+  EXPECT_LT(x, 2.0);
+
+  // Test transform
+  Eigen::Isometry3d M = Eigen::Isometry3d::Identity();
+  M.translation() = Eigen::Vector3d(3.0, 2.0, 1.0);
+  Eigen::Vector3d pt(1.0, 0.5, 1.0);
+  Eigen::Vector3d result = M * pt;
+  Eigen::Vector3d expected(4.0, 2.5, 2.0);
+  EXPECT_NEAR( (result - expected).norm(), 0.0, DART_EPSILON)
+    << "result = " << result << " expected = " << expected;
+}
+
+/******************************************************************************/
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
