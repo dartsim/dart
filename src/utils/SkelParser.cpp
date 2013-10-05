@@ -170,13 +170,13 @@ dynamics::Skeleton* SkelParser::readSkeleton(
 
     //--------------------------------------------------------------------------
     // immobile attribute
-    tinyxml2::XMLElement* immobileElement = NULL;
-    immobileElement = _skeletonElement->FirstChildElement("immobile");
-    if (immobileElement != NULL)
+    tinyxml2::XMLElement* mobileElement = NULL;
+    mobileElement = _skeletonElement->FirstChildElement("mobile");
+    if (mobileElement != NULL)
     {
-        std::string stdImmobile = immobileElement->GetText();
-        bool immobile = toBool(stdImmobile);
-        newSkeleton->setMobile(!immobile);
+        std::string stdMobile = mobileElement->GetText();
+        bool mobile = toBool(stdMobile);
+        newSkeleton->setMobile(mobile);
     }
 
     //--------------------------------------------------------------------------
