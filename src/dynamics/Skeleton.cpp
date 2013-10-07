@@ -396,7 +396,7 @@ void Skeleton::computeEquationsOfMotionID(
     int n = getNumGenCoords();
 
     // Skip immobile or 0-dof skeleton
-    if (!isMobile() == true || n == 0)
+    if (!isMobile() || n == 0)
         return;
 
     // Save current tau
@@ -448,7 +448,7 @@ void Skeleton::computeForwardDynamicsFS(
         const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
 {
     // Skip immobile or 0-dof skeleton
-    if (!isMobile() == true || getNumGenCoords() == 0)
+    if (!isMobile() || getNumGenCoords() == 0)
         return;
 
     // Backward recursion

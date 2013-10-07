@@ -141,7 +141,7 @@ Eigen::VectorXd World::evalDeriv()
     }
 
     // compute derivatives for integration
-    Eigen::VectorXd deriv(mIndices.back() * 2);
+    Eigen::VectorXd deriv = Eigen::VectorXd::Zero(mIndices.back() * 2);
     for (unsigned int i = 0; i < getNumSkeletons(); i++)
     {
         // skip immobile objects in forward simulation
