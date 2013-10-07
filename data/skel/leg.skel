@@ -1,0 +1,81 @@
+dofs {
+	pelvis_height { 0.75, 0, 1.5 }
+	base_euler_x { 0.00001, -6.2832, 6.2832 }
+	base_euler_y { 0.0, -6.2832, 6.2832}
+	base_euler_z { 0.00001, -6.2832, 6.2832 }
+	base_width { 0.1, 0.0000, 1.0000 }
+	joint1_euler_x { 0.00, -6.2832, 6.2832 }
+	joint1_euler_y { 0.0002, -6.2832, 6.2832 }
+	joint1_euler_z { 0.02, -6.2832, 6.2832 }
+	link1_len { 0.3, 0.0000, 1.0000 }
+	joint2_euler_z { -0.17, -3.1416, 0.0003 }
+	link2_len { 0.35, 0.0000, 1.0000 }
+	joint3_euler_z { 0.0000, -0.5236, 0.5236 }
+	joint3_euler_y { 0.0000, -0.7854, 0.7854 }
+	link3_len { 0.15, 0.0000, 1.0000 }
+}
+
+mass {
+	total_mass { 30 }
+      	base_mass { 12 }
+      	link1_mass { 8 }
+      	link2_mass { 6 }
+      	link3_mass { 4 }
+}
+
+node root { 0
+	chain { 4
+		telescope { <0.0,1.0,0.0>, pelvis_height }
+		rotate_euler { base_euler_x, x }
+		rotate_euler { base_euler_y, y }
+		rotate_euler { base_euler_z, z }
+
+	}
+
+	primitive {		<1.5000,1.0000,1.0000>, <0.0000,0.0000,0.0000>, base_width, base_mass	}
+
+	node link1 { 1
+		chain { 4
+			telescope { <0.1516,-0.5307,0.0>, base_width }
+			rotate_euler { joint1_euler_x, x }
+			rotate_euler { joint1_euler_y, y }
+			rotate_euler { joint1_euler_z, z }
+
+		}
+
+		primitive {			<0.3000,1.0000,0.3000>, <0.0000,-0.5000,0.0000>, link1_len, link1_mass
+		}
+
+		node link2 { 2
+			chain { 3
+				telescope { <0.0000,-1.0000,0.0000>, link1_len }
+				rotate_euler { joint2_euler_z, z }
+			}
+
+			primitive {				<0.2000,1.0000,0.2000>, <0.0000,-0.5000,0.0000>, link2_len, link2_mass
+			}
+
+			node link3 { 3
+				chain { 3
+					telescope { <0.0000,-1.0000,0.0000>, link2_len }
+					rotate_euler { joint3_euler_z, z }
+					rotate_euler { joint3_euler_y, y }
+				}
+
+				primitive {					
+					<1.0000,0.2500,0.4000>, <0.5000,0.0000,0.0000>, link3_len, CUBE, link3_mass, <1.0, 0.5, 0.0>				
+				}
+
+
+			}
+
+		}
+
+	}
+
+}
+
+handles {
+	END { <0.15,0.03,0.0>, 0, link3 }
+}
+

@@ -128,12 +128,12 @@ public:
     /// coordinates of this body node
     Eigen::Matrix4d getWorldInvTransform() const { return mW.inverse(); }
 
-    /// @brief Transformation from the local coordinates of this body node to
-    /// the local coordinates of its parent
-    Eigen::Matrix4d getLocalTransform() const { return mT; }
-
     /// @briefTransformation from the local coordinates of the parent node to
     /// the local coordinates of this body node
+    Eigen::Matrix4d getLocalTransform() const { return mT; }
+
+    /// @brief Transformation from the local coordinates of this body node to
+    /// the local coordinates of its parent
     Eigen::Matrix4d getLocalInvTransform() const { return mT.inverse(); }
 
     /// @brief Given a 3D vector lp in the local coordinates of this body node.

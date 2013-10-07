@@ -63,11 +63,11 @@ namespace kinematics {
 		if(_offset){
 			_ri->pushMatrix();
 			_ri->translate(mOffset);
-			_ri->drawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
 			_ri->popMatrix();
 		}
 		else{
-			_ri->drawEllipsoid(Vector3d(0.01, 0.01, 0.01));
+			_ri->drawEllipsoid(Vector3d(0.02, 0.02, 0.02));
 		}
 
 		_ri->popName();
