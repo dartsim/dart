@@ -818,7 +818,13 @@ void BodyNode::updateBeta()
     mAlpha           = mParentJoint->get_tau();
 
     if (mParentJoint->getNumGenCoords() > 0)
+    {
         mAlpha          += mParentJoint->getDampingForces();
+        Eigen::VectorXd Fc = Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords());
+                for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
+                    Fc(i) = mSkeleton->getConstraintForces()[mParentJoint->getGenCoord(i)->getSkeletonIndex()];
+                mAlpha += Fc;
+    }
 
     mAlpha          -= mParentJoint->getLocalJacobian().transpose() *
                        (mAI*mEta + mB);
