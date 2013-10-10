@@ -48,14 +48,21 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
                 mActiveMarker = coordsToMarker(_x, _y);                
                 if (mActiveMarker != -1) {
                     // TODO: Set a constration.
-                    std::cout << "Set a constraint on marker " << mActiveMarker << std::endl;
+                    std::cout << "Set a constraint on marker " << mActiveMarker << " if it has not been activated yet" << std::endl;
                 }
             } else {
                 mRotate = true;
                 mTrackBall.startBall(_x, mWinHeight - _y);
             }
         } else if (_button == GLUT_RIGHT_BUTTON || _button == GLUT_MIDDLE_BUTTON) {
-            mTranslate = true;
+            if(mask == GLUT_ACTIVE_ALT) {
+                mActiveMarker = coordsToMarker(_x, _y);                
+                // TODO: Delete the constraint.
+                if (mActiveMarker != -1)
+                    std::cout << "Remove the constraint on marker " << mActiveMarker << " if it is active" << std::endl;
+            } else {
+                mTranslate = true;
+            }
         } else if (_button == 3 && _state == GLUT_DOWN) { 
             mZoom += 0.1;
         } else if (_button == 4 && _state == GLUT_DOWN) { 
@@ -67,11 +74,8 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
         mTranslate = false;
         mRotate = false;
         mZooming = false;
-        if (_button == GLUT_LEFT_BUTTON && mask == GLUT_ACTIVE_ALT) {
-            // TODO: Delete the constraint.
-            std::cout << "Remove the constraint on marker " << mActiveMarker << std::endl;
+        if (mask == GLUT_ACTIVE_ALT)
             mActiveMarker = -1;
-        }
     }
     glutPostRedisplay();
 }
