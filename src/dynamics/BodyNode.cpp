@@ -678,7 +678,29 @@ Eigen::Vector6d BodyNode::getExternalForceGlobal() const
     return math::dAdInvT(mW, mFext);
 }
 
-const Eigen::Vector6d&BodyNode::getBodyForce() const
+void BodyNode::addContactForce(const Eigen::Vector6d& _contactForce)
+{
+    mContactForces.push_back(_contactForce);
+}
+
+int BodyNode::getNumContactForces() const
+{
+    return mContactForces.size();
+}
+
+const Eigen::Vector6d& BodyNode::getContactForce(int _idx)
+{
+    assert(0 <= _idx && _idx < mContactForces.size());
+
+    return mContactForces[_idx];
+}
+
+void BodyNode::clearContactForces()
+{
+    mContactForces.clear();
+}
+
+const Eigen::Vector6d& BodyNode::getBodyForce() const
 {
     return mF;
 }
@@ -762,6 +784,9 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
 
     mB = -math::dad(mV, mI*mV) - mFext - mFgravity;
 
+    for (int i = 0; i < mContactForces.size(); ++i)
+        mB -= mContactForces[i];
+
     std::vector<BodyNode*>::iterator it;
     for (it = mChildBodyNodes.begin(); it != mChildBodyNodes.end(); ++it)
         mB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
@@ -792,15 +817,13 @@ void BodyNode::updateBeta()
 {
     mAlpha           = mParentJoint->get_tau();
 
-    // TODO: Need to find more efficient way in architecture
-    // Add constraint force
     if (mParentJoint->getNumGenCoords() > 0)
     {
         mAlpha          += mParentJoint->getDampingForces();
         Eigen::VectorXd Fc = Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords());
-        for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
-            Fc(i) = mSkeleton->getConstraintForces()[mParentJoint->getGenCoord(i)->getSkeletonIndex()];
-        mAlpha          += Fc;
+                for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
+                    Fc(i) = mSkeleton->getConstraintForces()[mParentJoint->getGenCoord(i)->getSkeletonIndex()];
+                mAlpha += Fc;
     }
 
     mAlpha          -= mParentJoint->getLocalJacobian().transpose() *
@@ -903,6 +926,7 @@ void BodyNode::_updateGeralizedInertia()
 void BodyNode::clearExternalForces()
 {
     mFext.setZero();
+    mContactForces.clear();
 }
 
 } // namespace dynamics

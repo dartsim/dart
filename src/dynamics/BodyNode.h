@@ -327,6 +327,18 @@ public:
     void clearExternalForces();
 
     /// @brief
+    void addContactForce(const Eigen::Vector6d& _contactForce);
+
+    /// @brief
+    int getNumContactForces() const;
+
+    /// @brief
+    const Eigen::Vector6d& getContactForce(int _idx);
+
+    /// @brief
+    void clearContactForces();
+
+    /// @brief
     const Eigen::Vector6d& getExternalForceLocal() const;
 
     /// @brief
@@ -530,6 +542,9 @@ protected:
 
     /// @brief
     Eigen::MatrixXd mM;
+
+    /// @brief
+    std::vector<Eigen::Vector6d> mContactForces;
 
 private:
     void _updateGeralizedInertia();

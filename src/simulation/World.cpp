@@ -106,6 +106,7 @@ void World::setControlInput()
     }
 }
 
+#define USE_FEATHERSTONE 1
 Eigen::VectorXd World::evalDeriv()
 {
     // Calculate M(q), M^{-1}(q)
@@ -127,8 +128,14 @@ Eigen::VectorXd World::evalDeriv()
         if (!mSkeletons[i]->isMobile())
             continue;
 
+#ifdef USE_FEATHERSTONE
+        mSkeletons[i]->setConstraintForces(
+                    mConstraintHandler->getTotalConstraintForce(i) -
+                    mConstraintHandler->getContactForce(i));
+#else
         mSkeletons[i]->setConstraintForces(
                     mConstraintHandler->getTotalConstraintForce(i));
+#endif
     }
 
     // compute forward dynamics
@@ -136,8 +143,11 @@ Eigen::VectorXd World::evalDeriv()
          itrSkeleton != mSkeletons.end();
          ++itrSkeleton)
     {
-        //(*itrSkeleton)->computeForwardDynamicsID(mGravity);
+#ifdef USE_FEATHERSTONE
         (*itrSkeleton)->computeForwardDynamicsFS(mGravity);
+#else
+        (*itrSkeleton)->computeForwardDynamicsID(mGravity);
+#endif
     }
 
     // compute derivatives for integration
