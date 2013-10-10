@@ -583,6 +583,19 @@ void ConstraintDynamics::applySolutionODE() {
             Contact& contact = mCollisionDetector->getContact(i);
             contact.force.noalias() = getTangentBasisMatrixODE(contact.point, contact.normal) * f_d.segment(i * 2, 2);
             contact.force.noalias() += contact.normal * f_n[i];
+
+            // Add contact force to body nodes
+            Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+            Eigen::Vector6d F = Eigen::Vector6d::Zero();
+            T.translation() = contact.collisionNode1->getBodyNode()->getWorldTransform().inverse() * contact.point;
+            F.tail<3>() = contact.collisionNode1->getBodyNode()->getWorldTransform().linear().transpose() * contact.force;
+            Eigen::Vector6d contactForce = math::dAdInvT(T, F);
+            contact.collisionNode1->getBodyNode()->addContactForce(contactForce);
+
+            T.translation() = contact.collisionNode2->getBodyNode()->getWorldTransform().inverse() * contact.point;
+            F.tail<3>() = contact.collisionNode2->getBodyNode()->getWorldTransform().linear().transpose() * (-contact.force);
+            contactForce = math::dAdInvT(T, F);
+            contact.collisionNode2->getBodyNode()->addContactForce(contactForce);
         }
     }
     for (int i = 0; i < mLimitingDofIndex.size(); i++) {
