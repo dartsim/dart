@@ -38,11 +38,9 @@
 #ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
 #define DART_COLLISION_FCL_CONLLISION_DETECTOR_H
 
-#include <vector>
-#include <map>
-#include <Eigen/Dense>
-#include <fcl/collision.h>
 #include "collision/CollisionDetector.h"
+
+namespace fcl { class CollisionGeometry; }
 
 namespace dart {
 namespace collision {

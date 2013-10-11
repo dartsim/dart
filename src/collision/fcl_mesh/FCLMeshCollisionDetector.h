@@ -38,36 +38,10 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
 #define DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
 
-#include <vector>
-#include <map>
-#include <fcl/BVH/BVH_model.h>
-
 #include "collision/CollisionDetector.h"
-#include "collision/fcl_mesh/tri_tri_intersection_test.h"
-
-namespace fcl { class CollisionResult; }
 
 namespace dart {
-namespace dynamics { class BodyNode; }
 namespace collision {
-
-class FCLMeshCollisionNode;
-
-//class FCLContact : public Contact
-//{
-//public:
-//    dynamics::BodyNode *bd1;
-//    dynamics::BodyNode *bd2;
-//    CollisionSkeletonNode *collisionSkeletonNode1;
-//    CollisionSkeletonNode *collisionSkeletonNode2;
-//    int triID1;
-//    int triID2;
-//    /*        bool isAdjacent(ContactPoint &otherPt){
-//        //  return (((((((bd1==otherPt.bd1 && triID1==otherPt.triID1) || bd2==otherPt.bd2) && triID2==otherPt.triID2) || bd1==otherPt.bd2) && triID1==otherPt.triID2) || bd2==otherPt.bd1) && triID2==otherPt.triID1);
-//        }
-//        */
-//};
-
 
 class FCLMeshCollisionDetector : public CollisionDetector
 {
@@ -90,18 +64,6 @@ public:
     /// @brief
     void draw();
 };
-
-
-
-inline bool Vec3fCmp(fcl::Vec3f& v1, fcl::Vec3f& v2)
-{
-    if(v1[0]!=v2[0])
-        return v1[0]<v2[0];
-    else if(v1[1]!=v2[1])
-        return v1[1]<v2[1];
-    else
-        return v1[2]<v2[2];
-}
 
 } // namespace collision
 } // namespace dart
