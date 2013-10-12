@@ -124,11 +124,11 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
 
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
-set(DART_DEPENDENCIES ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES} optimized dart-core debug dart-cored ${DART_CORE_DEPENDENCIES})
+set(DART_DEPENDENCIES ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
 
 ###############
 # Generate the Dart CMake Config file
-configure_file(${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake @ONLY)
+configure_file(cmake/DARTConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake" @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
 
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
@@ -141,6 +141,8 @@ add_subdirectory(src)
 enable_testing()
 add_subdirectory(unittests)
 add_subdirectory(apps)
+
+install(EXPORT DARTTargets DESTINATION share/dart)
 
 ###############
 # Add an "uninstall" target

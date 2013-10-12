@@ -266,23 +266,14 @@ protected:
     /// @brief
     bool mIsSelfCollidable;
 
-    //--------------------------------------------------------------------------
-    // Structual Properties
-    //--------------------------------------------------------------------------
     /// @brief
     std::vector<BodyNode*> mBodyNodes;
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
-    /// @brief If the skeleton is immobile, its dynamic effect is equivalent to
-    /// having infinite mass. If the DOFs of an immobile skeleton are manually
-    /// changed, the collision results might not be correct.
+    /// @brief If the skeleton is not mobile, its dynamic effect is equivalent
+    /// to having infinite mass. If the configuration of an immobile skeleton
+    /// are manually changed, the collision results might not be correct.
     bool mIsMobile;
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
     /// @brief
     double mTotalMass;
 

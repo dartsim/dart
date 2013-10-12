@@ -259,8 +259,8 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     {
         dynamics::Shape* newShape
                 = readShape(vizShapes.get());
-
-        newBodyNode->addVisualizationShape(newShape);
+        if (newShape)
+            newBodyNode->addVisualizationShape(newShape);
     }
 
     //--------------------------------------------------------------------------
@@ -271,7 +271,8 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
         dynamics::Shape* newShape
                 = readShape(collShapes.get());
 
-        newBodyNode->addCollisionShape(newShape);
+        if (newShape)
+            newBodyNode->addCollisionShape(newShape);
     }
 
     //--------------------------------------------------------------------------
@@ -375,9 +376,16 @@ dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement)
 
         newShape = new dynamics::BoxShape(size);
     }
+    else if (hasElement(geometryElement, "mesh"))
+    {
+        std::cout << "DART sdf parser does not support mesh shape yet."
+                  << std::endl;
+        return NULL;
+    }
     else
     {
-        assert(0);
+        std::cout << "Invalid shape type." << std::endl;
+        return NULL;
     }
 
     // pose
@@ -405,8 +413,8 @@ dynamics::Joint* SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
         newJoint = readPrismaticJoint(_jointElement);
     if (type == std::string("revolute"))
         newJoint = readRevoluteJoint(_jointElement);
-//    if (type == std::string("piston"))
-//        newJoint = readScrewJoint(_jointElement, _skeleton);
+    if (type == std::string("screw"))
+        newJoint = readScrewJoint(_jointElement);
     if (type == std::string("revolute2"))
         newJoint = readUniversalJoint(_jointElement);
     if (type == std::string("ball"))
@@ -663,13 +671,6 @@ dynamics::ScrewJoint* SdfParser::readScrewJoint(
         Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
         newScrewJoint->setAxis(xyz);
 
-        // pitch
-        if (hasElement(axisElement, "pitch"))
-        {
-            double pitch = getValueDouble(axisElement, "pitch");
-            newScrewJoint->setPitch(pitch);
-        }
-
         // dynamics
         if (hasElement(_jointElement, "dynamics"))
         {
@@ -708,6 +709,13 @@ dynamics::ScrewJoint* SdfParser::readScrewJoint(
     else
     {
         assert(0);
+    }
+
+    // pitch
+    if (hasElement(_jointElement, "thread_pitch"))
+    {
+        double pitch = getValueDouble(_jointElement, "thread_pitch");
+        newScrewJoint->setPitch(pitch);
     }
 
     return newScrewJoint;

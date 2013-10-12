@@ -73,7 +73,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #ifndef DART_DYNAMICS_BODYNODE_H
 #define DART_DYNAMICS_BODYNODE_H
 
-#include <vector>
+#include <Eigen/StdVector>
 
 #include <Eigen/Dense>
 
@@ -327,6 +327,18 @@ public:
     void clearExternalForces();
 
     /// @brief
+    void addContactForce(const Eigen::Vector6d& _contactForce);
+
+    /// @brief
+    int getNumContactForces() const;
+
+    /// @brief
+    const Eigen::Vector6d& getContactForce(int _idx);
+
+    /// @brief
+    void clearContactForces();
+
+    /// @brief
     const Eigen::Vector6d& getExternalForceLocal() const;
 
     /// @brief
@@ -530,6 +542,9 @@ protected:
 
     /// @brief
     Eigen::MatrixXd mM;
+
+    /// @brief
+    std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mContactForces;
 
 private:
     void _updateGeralizedInertia();
