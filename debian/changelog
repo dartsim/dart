@@ -1,0 +1,16 @@
+dart (3.0.0) unstable; urgency=low
+
+  * Remove Transformation classes. Their functionality is now included in joint
+    classes.
+  * Add Featherstone algorithm. Can currently only be used without collision
+    handling. The old algortihm is still present and used for that case.
+  * Remove kinematics namespace. Functionality is moved to dynamics classes.
+  * Add dart root namespace
+  * A lot of function and variable renames
+  * Add constraint namespace
+  * Some parsers, unit tests and apps have not been adapted to the changes yet
+    and are therefore currently excluded from building.
+  * Add "common" namespace
+
+ -- Tobias Kunz <tobias@gatech.edu>  Fri, 11 Oct 2013 22:00:00 -0400
+ 
