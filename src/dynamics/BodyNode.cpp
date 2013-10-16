@@ -795,7 +795,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
     assert(!math::isNan(mB));
 }
 
-void BodyNode::updatePsi()
+void BodyNode::updatePsi(double _timeStep)
 {
     assert(mParentJoint != NULL);
 
@@ -804,7 +804,19 @@ void BodyNode::updatePsi()
     //mPsi = Eigen::MatrixXd::Zero(n, n);
 
     mAI_S.noalias() = mAI * mParentJoint->getLocalJacobian();
-    mPsi = (mParentJoint->getLocalJacobian().transpose() * mAI_S).inverse();
+
+    int n = mParentJoint->getNumGenCoords();
+    if (n > 0)
+    {
+        Eigen::MatrixXd K = Eigen::MatrixXd::Zero(n, n);
+        for (int i = 0; i < n; ++i)
+            K(i, i) = mParentJoint->getDampingCoefficient(i);
+        mPsi = (mParentJoint->getLocalJacobian().transpose() * mAI_S + _timeStep * K).inverse();
+    }
+    else
+    {
+        mPsi = (mParentJoint->getLocalJacobian().transpose() * mAI_S).inverse();
+    }
 }
 
 void BodyNode::updatePi()

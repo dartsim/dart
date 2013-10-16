@@ -445,7 +445,9 @@ void Skeleton::computeForwardDynamicsID(
 }
 
 void Skeleton::computeForwardDynamicsFS(
-        const Eigen::Vector3d& _gravity, bool _equationsOfMotion)
+        const Eigen::Vector3d& _gravity,
+        double _timeStep,
+        bool _equationsOfMotion)
 {
     // Skip immobile or 0-dof skeleton
     if (!isMobile() || getNumGenCoords() == 0)
@@ -459,7 +461,7 @@ void Skeleton::computeForwardDynamicsFS(
     {
         (*ritrBody)->updateArticulatedInertia();
         (*ritrBody)->updateBiasForce(_gravity);
-        (*ritrBody)->updatePsi();
+        (*ritrBody)->updatePsi(_timeStep);
         (*ritrBody)->updatePi();
         (*ritrBody)->updateEta();
         (*ritrBody)->updateBeta();

@@ -403,7 +403,7 @@ public:
     void updateArticulatedInertia();
 
     /// @brief
-    void updatePsi();
+    void updatePsi(double _timeStep);
 
     /// @brief
     void updatePi();
