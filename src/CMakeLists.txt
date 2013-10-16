@@ -37,17 +37,17 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Library
-add_library(dart-core SHARED ${core_srcs})
-target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+add_library(dart_core SHARED ${core_srcs})
+target_link_libraries(dart_core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 
 add_library(dart SHARED ${noncore_srcs})
-target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+target_link_libraries(dart dart_core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
 
 if(MSVC)
     set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
 install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
-install(TARGETS dart-core dart
+install(TARGETS dart_core dart
         EXPORT DARTTargets
         DESTINATION lib)
