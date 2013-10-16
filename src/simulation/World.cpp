@@ -144,7 +144,7 @@ Eigen::VectorXd World::evalDeriv()
          ++itrSkeleton)
     {
 #ifdef USE_FEATHERSTONE
-        (*itrSkeleton)->computeForwardDynamicsFS(mGravity);
+        (*itrSkeleton)->computeForwardDynamicsFS(mGravity, mTimeStep);
 #else
         (*itrSkeleton)->computeForwardDynamicsID(mGravity);
 #endif
