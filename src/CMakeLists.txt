@@ -37,10 +37,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Library
-add_library(dart-core ${core_srcs})
+add_library(dart-core SHARED ${core_srcs})
 target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 
-add_library(dart ${noncore_srcs})
+add_library(dart SHARED ${noncore_srcs})
 target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
 
 if(MSVC)
