@@ -18,6 +18,9 @@ message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
 option(BUILD_SNOPT "Build with SNOPT optimizer" OFF)
 option(BUILD_ROBOTICS "Compile with Robotics API" ON)
+if(NOT MSVC)
+    OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
+endif()
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING
