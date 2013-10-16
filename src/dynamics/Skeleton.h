@@ -245,6 +245,7 @@ public:
 
     /// @brief (q, dq, tau) --> (ddq)
     void computeForwardDynamicsFS(const Eigen::Vector3d& _gravity,
+                                  double _timeStep,
                                   bool _equationsOfMotion = true);
 
     //--------------------------------------------------------------------------
