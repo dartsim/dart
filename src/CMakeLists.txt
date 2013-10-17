@@ -43,7 +43,7 @@ set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VE
                                            SOVERSION ${DART_MINOR_VERSION}
                                            VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
 
-if(BUILD_ROBOTICS)
+if(NOT BUILD_CORE_ONLY)
   add_library(dart ${noncore_srcs})
   target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
   set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}"
@@ -58,6 +58,6 @@ endif()
 
 install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
-if(BUILD_ROBOTICS)
+if(NOT BUILD_CORE_ONLY)
     install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()
