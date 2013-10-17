@@ -7,8 +7,3 @@ usr/include/dart/lcpsolver/*
 usr/include/dart/math/*
 usr/include/dart/renderer/*
 usr/include/dart/simulation/*
-usr/include/dart/optimizer/*
-usr/include/dart/planning/*
-usr/include/dart/utils/*
-usr/include/dart/yui/*
-usr/share/*

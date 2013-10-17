@@ -43,6 +43,10 @@ target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIB
 add_library(dart ${noncore_srcs})
 target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
 
+set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}")
+set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}")
+set_target_properties(dart-core dart PROPERTIES SOVERSION ${DART_MINOR_VERSION} VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
+
 if(MSVC)
     set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
