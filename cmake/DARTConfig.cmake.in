@@ -16,7 +16,6 @@ set(DART_INCLUDE_DIRS
 
 set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 
-include("${CURRENT_DIR}/DARTCoreTargets.cmake")
 include("${CURRENT_DIR}/DARTTargets.cmake")
 
 set(DART_LIBRARIES dart)
