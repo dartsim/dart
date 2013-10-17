@@ -30,6 +30,10 @@ if(NOT WIN32)
   endif()
 
   target_link_libraries(gtest)
+	# Link to pthread if necessary
+	if(APPLE OR UNIX)
+		target_link_libraries(gtest pthread)
+	endif()
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
