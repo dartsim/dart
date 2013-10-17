@@ -58,7 +58,7 @@ install(TARGETS dart_core
         EXPORT DARTTargets
         DESTINATION lib)
 if(BUILD_ROBOTICS)
-  install(TARGETS dart_core dart
+  install(TARGETS dart
           EXPORT DARTTargets
           DESTINATION lib)
 endif()
