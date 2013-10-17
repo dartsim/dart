@@ -11,12 +11,12 @@ set(NONCORE_SUBDIRS yui planning utils)
 
 # Search all header and source files
 foreach(SUBDIR ${CORE_SUBDIRS})
-	file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-	set(core_srcs ${core_srcs} ${subdir_srcs})
+  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
+  set(core_srcs ${core_srcs} ${subdir_srcs})
 endforeach()
 foreach(SUBDIR ${NONCORE_SUBDIRS})
-	file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-	set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
 endforeach()
 if(BUILD_SNOPT)
   message(STATUS "Building SNOPT")
@@ -40,14 +40,25 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 add_library(dart_core SHARED ${core_srcs})
 target_link_libraries(dart_core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 
-add_library(dart SHARED ${noncore_srcs})
-target_link_libraries(dart dart_core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+if(BUILD_ROBOTICS)
+  add_library(dart SHARED ${noncore_srcs})
+  target_link_libraries(dart dart_core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+endif()
 
 if(MSVC)
     set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
-install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
-install(TARGETS dart_core dart
+install(DIRECTORY ./
+        DESTINATION include/dart
+        FILES_MATCHING PATTERN "*.h"
+)
+
+install(TARGETS dart_core
         EXPORT DARTTargets
         DESTINATION lib)
+if(BUILD_ROBOTICS)
+  install(TARGETS dart_core dart
+          EXPORT DARTTargets
+          DESTINATION lib)
+endif()

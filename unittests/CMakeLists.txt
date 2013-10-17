@@ -34,26 +34,34 @@ if(NOT WIN32)
 endif()
 
 # Compile each test file
+set(DART_ROBOTICS_TESTS
+    testJoints
+    testParser
+)
 file(GLOB tests "*.cpp")
 foreach(test ${tests})
 
 	# Get the name (i.e. bla.cpp => bla)
 	get_filename_component(base ${test} NAME_WE)
-	link_directories(${DARTExt_LIBRARY_DIRS})
-	add_executable(${base} ${test})
-	target_link_libraries(${base} dart optimized gtest debug gtestd)
+  set(contains FALSE)
+  list_contains(contains ${base} ${DART_ROBOTICS_TESTS})
+  if(NOT contains OR BUILD_ROBOTICS)
+	  link_directories(${DARTExt_LIBRARY_DIRS})
+	  add_executable(${base} ${test})
+	  target_link_libraries(${base} dart_core gtest debug gtestd)
 
-	# Link to pthread if necessary
-	if(APPLE OR UNIX)
-		target_link_libraries(${base} pthread)
-	endif()
-	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+	  # Link to pthread if necessary
+	  if(APPLE OR UNIX)
+	  	target_link_libraries(${base} pthread)
+	  endif()
+	  set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 
-	# Add the executable if not to be ignored
-	list_contains(contains ${base} ${dontTest})
-	if(NOT contains)
-		add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
-		message("-- Adding test: " ${base})
-	endif(NOT contains) 
+	  # Add the executable if not to be ignored
+	  list_contains(contains ${base} ${dontTest})
+	  if(NOT contains)
+	  	add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
+	  	message("-- Adding test: " ${base})
+	  endif(NOT contains) 
+  endif()
 endforeach(test)
 
