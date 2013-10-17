@@ -45,7 +45,7 @@ set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VE
 
 if(BUILD_ROBOTICS)
   add_library(dart ${noncore_srcs})
-  target_link_libraries(dart dart_core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+  target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
   set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}"
                                         SOVERSION ${DART_MINOR_VERSION}
                                         VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
