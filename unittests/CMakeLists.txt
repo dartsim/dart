@@ -37,6 +37,7 @@ endif()
 set(DART_ROBOTICS_TESTS
     testJoints
     testParser
+    testNearestNeighbor
 )
 file(GLOB tests "*.cpp")
 foreach(test ${tests})
