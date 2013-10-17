@@ -131,7 +131,9 @@ set(DART_DEPENDENCIES ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRA
 
 ###############
 # Generate the Dart CMake Config file
+configure_file(cmake/DARTCoreConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake" @ONLY)
 configure_file(cmake/DARTConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake" @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake DESTINATION share/dart)
 install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
 
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
@@ -145,6 +147,7 @@ enable_testing()
 add_subdirectory(unittests)
 add_subdirectory(apps)
 
+install(EXPORT DARTCoreTargets DESTINATION share/dart)
 install(EXPORT DARTTargets DESTINATION share/dart)
 
 ###############

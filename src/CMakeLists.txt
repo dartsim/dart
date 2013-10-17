@@ -52,6 +52,5 @@ if(MSVC)
 endif()
 
 install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
-install(TARGETS dart-core dart
-        EXPORT DARTTargets
-        DESTINATION lib)
+install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
+install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
