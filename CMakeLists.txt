@@ -139,7 +139,7 @@ endif()
 ###############
 # Generate the Dart CMake Config file
 configure_file(cmake/DARTCoreConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake" @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake DESTINATION share/dart)
+install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
   configure_file(cmake/DARTConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake" @ONLY)
   install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
@@ -158,7 +158,7 @@ if(NOT BUILD_CORE_ONLY)
   add_subdirectory(apps)
 endif()
 
-install(EXPORT DARTCoreTargets DESTINATION share/dart)
+install(EXPORT DARTCoreTargets DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
   install(EXPORT DARTTargets DESTINATION share/dart)
 endif()
