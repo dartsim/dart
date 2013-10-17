@@ -11,12 +11,12 @@ set(NONCORE_SUBDIRS yui planning utils)
 
 # Search all header and source files
 foreach(SUBDIR ${CORE_SUBDIRS})
-	file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-	set(core_srcs ${core_srcs} ${subdir_srcs})
+  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
+  set(core_srcs ${core_srcs} ${subdir_srcs})
 endforeach()
 foreach(SUBDIR ${NONCORE_SUBDIRS})
-	file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-	set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
 endforeach()
 if(BUILD_SNOPT)
   message(STATUS "Building SNOPT")
@@ -39,13 +39,18 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 # Library
 add_library(dart-core ${core_srcs})
 target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}"
+                                           SOVERSION ${DART_MINOR_VERSION}
+                                           VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
 
-add_library(dart ${noncore_srcs})
-target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+if(BUILD_ROBOTICS)
+  add_library(dart ${noncore_srcs})
+  target_link_libraries(dart dart_core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+  set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}"
+                                        SOVERSION ${DART_MINOR_VERSION}
+                                        VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
+endif()
 
-set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}")
-set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}")
-set_target_properties(dart-core dart PROPERTIES SOVERSION ${DART_MINOR_VERSION} VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
 
 if(MSVC)
     set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
@@ -53,4 +58,6 @@ endif()
 
 install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
+if(BUILD_ROBOTICS)
+    install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
+endif()
