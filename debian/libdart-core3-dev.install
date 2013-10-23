@@ -7,5 +7,5 @@ usr/include/dart/lcpsolver/*
 usr/include/dart/math/*
 usr/include/dart/renderer/*
 usr/include/dart/simulation/*
-usr/share/dart/DARTCoreConfig.cmake
-usr/share/dart/DARTCoreTargets*.cmake
+usr/share/dartcore/DARTCoreConfig.cmake
+usr/share/dartcore/DARTCoreTargets*.cmake
