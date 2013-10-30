@@ -14,10 +14,10 @@ before_install() {
   git clone git://github.com/ros/console_bridge.git
   (cd console_bridge; cmake .; make && sudo make install)
   # Install urdfdom_headers
-  hg clone https://bitbucket.org/osrf/urdfdom_headers
+  git clone https://github.com/ros/urdfdom_headers.git
   (cd urdfdom_headers; cmake .; make && sudo make install)
-  # Install console_bridge
-  hg clone https://bitbucket.org/osrf/urdfdom
+  # Install urdfdom
+  git clone https://github.com/ros/urdfdom.git
   (cd urdfdom; cmake .; make && sudo make install)
 }
 
