@@ -41,7 +41,7 @@ foreach(test ${tests})
 	get_filename_component(base ${test} NAME_WE)
 	link_directories(${DARTExt_LIBRARY_DIRS})
 	add_executable(${base} ${test})
-	target_link_libraries(${base} dart optimized gtest debug gtestd)
+    target_link_libraries(${base} dart gtest)
 
 	# Link to pthread if necessary
 	if(APPLE OR UNIX)
