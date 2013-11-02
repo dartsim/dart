@@ -1,7 +1,6 @@
 #include "Controller.h"
 
 #include "dynamics/SkeletonDynamics.h"
-#include "dynamics/ConstraintDynamics.h"
 #include "dynamics/BodyNodeDynamics.h"
 #include "kinematics/Dof.h"
 #include "kinematics/Shape.h"
@@ -11,15 +10,13 @@
 using namespace kinematics;
 using namespace dynamics;
 using namespace dart_math;
-Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDynamics *_collisionHandle, double _t) {
+Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
     mSkel = _skel;
-    mCollisionHandle = _collisionHandle;
     mTimestep = _t;
     mFrame = 0;
     int nDof = mSkel->getNumDofs();
     mKp = MatrixXd::Identity(nDof, nDof);
     mKd = MatrixXd::Identity(nDof, nDof);
-    mConstrForces = VectorXd::Zero(nDof);
         
     mTorques.resize(nDof);
     mDesiredDofs.resize(nDof);
@@ -45,13 +42,13 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, dynamics::ConstraintDy
     mPreOffset = 0.0;
 }
 
-void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
-    // SPD tracking
+void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, const VectorXd& _constrForce) {
+       // SPD tracking
     int nDof = mSkel->getNumDofs();
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
     VectorXd d = -mKd * _dofVel;
-    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
+    VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + _constrForce);
     mTorques = p + d - mKd * qddot * mTimestep;
     
     // ankle strategy for sagital plane
@@ -69,7 +66,7 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
         mTorques[19] += -k2 * offset + kd * (mPreOffset - offset);
         mPreOffset = offset;
     }
-
+    
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++){        
         mTorques[i] = 0.0;

@@ -9,7 +9,7 @@ class MyWindow : public simulation::SimWindow
 {
  public:
  MyWindow(): SimWindow() {
-        mTrans[1] = -1000.f;
+        mZoom = 0.2;
         mController = NULL;
     }
     virtual ~MyWindow() {}

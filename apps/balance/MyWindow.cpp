@@ -15,8 +15,7 @@ void MyWindow::timeStepping()
 {
     static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(1)->getNode("fullbody1_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
 
-    mController->setConstrForces(mWorld->getCollisionHandle()->getTotalConstraintForce(1));
-    mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq());
+    mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq(), mWorld->getCollisionHandle()->getTotalConstraintForce(1));
     mWorld->getSkeleton(1)->setInternalForces(mController->getTorques());
 
     mWorld->step();

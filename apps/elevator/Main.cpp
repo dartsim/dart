@@ -20,7 +20,8 @@ int main(int argc, char* argv[])
     model1.loadFile(DART_DATA_PATH"/skel/fullbody1.skel", SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/elevator.skel", SKEL);
     model3.loadFile(DART_DATA_PATH"/skel/plane.skel", SKEL);
-    
+
+
     // set ground position
     Eigen::VectorXd pose = model3.getSkel()->getPose();
     pose[1] = -10.0;
@@ -28,7 +29,8 @@ int main(int argc, char* argv[])
     model3.getSkel()->setImmobileState(true);
 
     // set human position
-    pose[1] = -0.4;
+    pose = model1.getSkel()->getPose();
+    pose[1] = -0.3;
     model1.getSkel()->setPose(pose);
     
     // create and initialize the world

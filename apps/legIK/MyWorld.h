@@ -5,6 +5,9 @@
 #include "kinematics/FileInfoSkel.hpp"
 #include "kinematics/Skeleton.h"
 #include "kinematics/BodyNode.h"
+#include "kinematics/Joint.h"
+#include "kinematics/Transformation.h"
+#include "kinematics/Marker.h"
 
 namespace kinematics {
     class Skeleton;
