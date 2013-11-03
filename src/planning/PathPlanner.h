@@ -14,6 +14,7 @@
 #include <vector>
 #include "simulation/World.h"
 #include "RRT.h"
+#include <cstdio>
 
 namespace planning {
 

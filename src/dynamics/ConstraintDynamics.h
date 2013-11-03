@@ -64,6 +64,7 @@ namespace dynamics {
         void addSkeleton(SkeletonDynamics* _newSkel);
         void setTimeStep(double _timeStep) { mDt = _timeStep; }
         double getTimeStep() const { return mDt; }
+        void setCollisionChecker(collision::CollisionDetector* _collisionDetector);
 
         inline Eigen::VectorXd getTotalConstraintForce(int _skelIndex) const { 
             return mTotalConstrForces[_skelIndex]; 
