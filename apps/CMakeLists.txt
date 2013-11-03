@@ -3,8 +3,9 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-        legIK
-        humanIK
+        balance
+        freethrow
+        elevator
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

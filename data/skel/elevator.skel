@@ -10,7 +10,7 @@ dofs{
 }
 
 mass {
-    node_mass { 100 }
+    node_mass { 1000 }
 }
 
 node root { 0
