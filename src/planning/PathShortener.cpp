@@ -4,8 +4,6 @@
 #include "dynamics/ContactDynamics.h"
 #include "collision/CollisionDetector.h"
 #include "dynamics/SkeletonDynamics.h"
-#include <ctime>
-#include <cstdio>
 
 using namespace std;
 using namespace Eigen;

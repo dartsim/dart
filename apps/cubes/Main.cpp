@@ -1,6 +1,4 @@
 #include "MyWindow.h"
-#include "collision/dart/DARTCollisionDetector.h"
-#include "dynamics/ConstraintDynamics.h"
 #include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
 
@@ -23,7 +21,6 @@ int main(int argc, char* argv[])
     World *myWorld = new World();
     Vector3d gravity(0.0, -9.81, 0.0);
     myWorld->setGravity(gravity);
-    myWorld->getCollisionHandle()->setCollisionChecker(new collision::DARTCollisionDetector());
 
     ((SkeletonDynamics*)model.getSkel())->setImmobileState(true);
     myWorld->addSkeleton((SkeletonDynamics*)model.getSkel());

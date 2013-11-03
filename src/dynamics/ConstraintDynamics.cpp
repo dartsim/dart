@@ -10,7 +10,6 @@
 
 #include "collision/fcl/FCLCollisionDetector.h"
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
-#include "collision/dart/DARTCollisionDetector.h"
 #include "math/UtilsMath.h"
 #include "utils/Timer.h"
 
@@ -23,8 +22,6 @@ using namespace dart_math;
     namespace dynamics {
         ConstraintDynamics::ConstraintDynamics(const std::vector<SkeletonDynamics*>& _skels, double _dt, double _mu, int _d)
             : mSkels(_skels), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionChecker(NULL) {
-            // Allocate the Collision Detection class
-            mCollisionChecker = new FCLMESHCollisionDetector();
             initialize();
         }
 
@@ -171,25 +168,10 @@ using namespace dart_math;
             mZ = MatrixXd(rows, cols);
         }
 
-        void ConstraintDynamics::setCollisionChecker(CollisionDetector *_collisionDetector)
-        {
-            assert(_collisionDetector != NULL && "Invalid collision detector.");
-
-            if (_collisionDetector == mCollisionChecker)
-                return;
-
-            if (mCollisionChecker != NULL)
-            {
-                delete mCollisionChecker;
-                mCollisionChecker = NULL;
-            }
-
-            mCollisionChecker = _collisionDetector;
-
-            initialize();
-        }
-
-        void ConstraintDynamics::initialize() {            
+        void ConstraintDynamics::initialize() {
+            // Allocate the Collision Detection class
+            //mCollisionChecker = new FCLCollisionDetector();
+            mCollisionChecker = new FCLMESHCollisionDetector();
             mBodyIndexToSkelIndex.clear();
             // Add all body nodes into mCollisionChecker
             int rows = 0;
