@@ -27,7 +27,7 @@ Controller::Controller(SkeletonDynamics* _skel, ConstraintDynamics* _constr, dou
     
     mDesiredDofs = mSkel->getPose();
     
-    // using SPD results in simple Kp coefficients
+    // Using SPD results in simple Kp coefficients
     for (int i = 0; i < 6; i++) {
         mKp(i, i) = 0.0;
         mKd(i, i) = 0.0;

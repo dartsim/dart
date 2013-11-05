@@ -29,6 +29,7 @@ class Controller {
 
 
  private:
+    // In case you want to use climbing strategy
     void leftHandGrab();
     void leftHandRelease();
 

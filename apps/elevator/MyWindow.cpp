@@ -14,14 +14,20 @@ using namespace yui;
 
 void MyWindow::timeStepping()
 {
+    // Add jet propulsion force
     static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(0)->getNode("fullbody2_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+    // Add control force from your controller
     ((MyWorld*)mWorld)->getController()->computeTorques(mWorld->getSkeleton(0)->get_q(), mWorld->getSkeleton(0)->get_dq());
     mWorld->getSkeleton(0)->setInternalForces(((MyWorld*)mWorld)->getController()->getTorques());
+    
+    // Compute joint forces for the wall
     ((MyWorld*)mWorld)->controlWalls();
+
+    // Integrate one step forward
     mWorld->step();
 
+    // Measure accumulated impact
     ((MyWorld*)mWorld)->computeImpact();
-    // for perturbation test
     mImpulseDuration--;
     if (mImpulseDuration <= 0) {
         mImpulseDuration = 0;
@@ -62,7 +68,6 @@ void MyWindow::drawSkels()
     VectorXd pose = mWorld->getSkeleton(2)->getPose();
     pose[1] = ((MyWorld*)mWorld)->getGroundHeight();
     mWorld->getSkeleton(2)->setPose(pose);
-
     Vector4d color;
     color << 0.5, 0.5, 0.5, 1.0;
     mWorld->getSkeleton(2)->draw(mRI, color, false);
@@ -73,13 +78,11 @@ void MyWindow::drawSkels()
     mWorld->getSkeleton(1)->draw(mRI, color, false);
     mWorld->getSkeleton(3)->draw(mRI, color, false);
 
-    // moving camera
+    // Moving camera
     if (mSimulating) {
         mTrans[1] =  mWorld->getSkeleton(1)->getWorldCOM()[1] * -1000;
-        if (mTrans[1] > 9000)
-            mTrans[1] = 9000;
     }
-    // display the frame count in 2D text
+    // Display the accumulated impact in 2D text
     glDisable(GL_LIGHTING);
     char buff[64];
     sprintf(buff, "Imapct %5.0f", ((MyWorld*)mWorld)->getImpact());
@@ -92,21 +95,21 @@ void MyWindow::drawSkels()
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
     switch(key){
-    case ' ': // use space key to play or stop the motion
+    case ' ': // Use space key to play or stop the motion
         mSimulating = !mSimulating;
         if(mSimulating) {
             mPlay = false;
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;
-    case 'p': // playBack
+    case 'p': // PlayBack
         mPlay = !mPlay;
         if (mPlay) {
             mSimulating = false;
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         }
         break;
-    case '[': // step backward
+    case '[': // Step backward
         if (!mSimulating) {
             mPlayFrame--;
             if(mPlayFrame < 0)
@@ -114,7 +117,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutPostRedisplay();
         }
         break;
-    case ']': // step forwardward
+    case ']': // Step forwardward
         if (!mSimulating) {
             mPlayFrame++;
             if(mPlayFrame >= mBakedStates.size())
@@ -122,17 +125,17 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
             glutPostRedisplay();
         }
         break;
-    case 'v': // show or hide markers
+    case 'v': // Show or hide contact info
         mShowMarkers = !mShowMarkers;
         break;
-    case 'l': // lift force
+    case 'l': // Add a propulsion force
         mForce[1] = 500;
         mImpulseDuration = 1000.0;
         break;
-    case '=': // show or hide markers
+    case '=': // Make the wall sturdier
         ((MyWorld*)mWorld)->setWallMaterial(((MyWorld*)mWorld)->getWallMaterial() + 10000);
         break;
-    case '-': // show or hide markers
+    case '-': // Make the wall flimsier (Don't over do it. Wall material coefficient can't be negative)
         ((MyWorld*)mWorld)->setWallMaterial(((MyWorld*)mWorld)->getWallMaterial() - 10000);
         break;
     default:

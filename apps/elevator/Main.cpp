@@ -23,13 +23,12 @@ int main(int argc, char* argv[])
     model4.loadFile(DART_DATA_PATH"/skel/roof.skel", SKEL);
 
     // Initialize human pose
-    Eigen::VectorXd pose = model1.getSkel()->getPose();
-    // standing initial pose
-    pose[1] = 0.92;
+    /*Eigen::VectorXd pose = model1.getSkel()->getPose();
     // lying down initial pose
-    //    pose[1] = 0.1;
-    //    pose[3] = 1.57;
+    pose[1] = 0.1;
+    pose[3] = 1.57;
     model1.getSkel()->setPose(pose);
+    */
 
     // Set ground to be immobile object
     model3.getSkel()->setImmobileState(true);

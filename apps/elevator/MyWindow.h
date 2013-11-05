@@ -12,6 +12,7 @@ class MyWindow : public simulation::SimWindow
         mTrans[1] = -1600;
         mForce = Eigen::Vector3d::Zero();
         mImpulseDuration = 0;
+        mShowMarkers = false;
     }
     virtual ~MyWindow() {}
     

@@ -1,6 +1,6 @@
 dofs {
 	pelvis_trans_x { 0.0000, -100.0000, 100.0000 }
-	pelvis_trans_y { 0.0000, -100.0000, 100.0000 }
+	pelvis_trans_y { 0.9200, -100.0000, 100.0000 }
 	pelvis_trans_z { 0.0000, -100.0000, 100.0000 }
 	pelvis_euler_z { 0.0, -3.1416, 3.1416 }
 	pelvis_euler_y { 0.0, -3.1416, 3.1416 }
