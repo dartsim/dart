@@ -1,15 +1,32 @@
 #include "MyWindow.h"
-#include "simulation/World.h"
+#include "MyWorld.h"
 #include "dynamics/ConstraintDynamics.h"
+#include "dynamics/BodyNodeDynamics.h"
+#include "yui/GLFuncs.h"
+#include "math/UtilsMath.h"
 #include <iostream>
 
 using namespace Eigen;
+using namespace std;
+using namespace dynamics;
+using namespace dart_math;
+using namespace yui;
 
 void MyWindow::timeStepping()
 {
-    mController->computeTorques(mWorld->getSkeleton(0)->get_q(), mWorld->getSkeleton(0)->get_dq(), mWorld->getCollisionHandle()->getTotalConstraintForce(0));
-    mWorld->getSkeleton(0)->setInternalForces(mController->getTorques());
+    static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(0)->getNode("fullbody2_h_spine"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
+    ((MyWorld*)mWorld)->getController()->computeTorques(mWorld->getSkeleton(0)->get_q(), mWorld->getSkeleton(0)->get_dq());
+    mWorld->getSkeleton(0)->setInternalForces(((MyWorld*)mWorld)->getController()->getTorques());
+    ((MyWorld*)mWorld)->controlWalls();
     mWorld->step();
+
+    ((MyWorld*)mWorld)->computeImpact();
+    // for perturbation test
+    mImpulseDuration--;
+    if (mImpulseDuration <= 0) {
+        mImpulseDuration = 0;
+        mForce.setZero();
+    }    
 }
 
 void MyWindow::drawSkels()
@@ -41,20 +58,35 @@ void MyWindow::drawSkels()
         }
     }
 
-    // Draw the ground
+    // Set and Draw the ground
+    VectorXd pose = mWorld->getSkeleton(2)->getPose();
+    pose[1] = ((MyWorld*)mWorld)->getGroundHeight();
+    mWorld->getSkeleton(2)->setPose(pose);
+
     Vector4d color;
     color << 0.5, 0.5, 0.5, 1.0;
     mWorld->getSkeleton(2)->draw(mRI, color, false);
 
     // Draw the elevator
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    mWorld->getSkeleton(1)->draw(mRI);
+    color << 0.8, 0.3, 0.3, 1.0;
+    mWorld->getSkeleton(1)->draw(mRI, color, false);
+    mWorld->getSkeleton(3)->draw(mRI, color, false);
 
     // moving camera
-    
-    mTrans[1] =  mWorld->getSkeleton(1)->getWorldCOM()[1] * -1000;
-    if (mTrans[1] > 9000)
-        mTrans[1] = 9000;
+    if (mSimulating) {
+        mTrans[1] =  mWorld->getSkeleton(1)->getWorldCOM()[1] * -1000;
+        if (mTrans[1] > 9000)
+            mTrans[1] = 9000;
+    }
+    // display the frame count in 2D text
+    glDisable(GL_LIGHTING);
+    char buff[64];
+    sprintf(buff, "Imapct %5.0f", ((MyWorld*)mWorld)->getImpact());
+    string frame(buff);
+    glColor3f(0.0, 0.0, 0.0);
+    drawStringOnScreen(0.75f, 0.02f, frame);
+    glEnable(GL_LIGHTING);
 }
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
@@ -92,6 +124,16 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         break;
     case 'v': // show or hide markers
         mShowMarkers = !mShowMarkers;
+        break;
+    case 'l': // lift force
+        mForce[1] = 500;
+        mImpulseDuration = 1000.0;
+        break;
+    case '=': // show or hide markers
+        ((MyWorld*)mWorld)->setWallMaterial(((MyWorld*)mWorld)->getWallMaterial() + 10000);
+        break;
+    case '-': // show or hide markers
+        ((MyWorld*)mWorld)->setWallMaterial(((MyWorld*)mWorld)->getWallMaterial() - 10000);
         break;
     default:
         Win3D::keyboard(key,x,y);

@@ -82,6 +82,10 @@ namespace dynamics {
             return mCollisionChecker->getNumContacts();
         }
 
+        inline int getNumConstraints() const {
+            return mConstraints.size();
+        }
+
         inline Constraint* getConstraint(int _index) const { return mConstraints[_index]; }
 
 

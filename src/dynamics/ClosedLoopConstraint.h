@@ -49,6 +49,14 @@ namespace dynamics {
         virtual ~ClosedLoopConstraint();
         virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
 
+        BodyNodeDynamics* getBody1() {
+            return mBody1;
+        }
+
+        BodyNodeDynamics* getBody2() {
+            return mBody2;
+        }
+
     private:
         void getJacobian();
 

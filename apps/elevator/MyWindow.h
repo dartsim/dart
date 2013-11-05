@@ -3,14 +3,15 @@
 
 #include "yui/Win3D.h"
 #include "simulation/SimWindow.h"
-#include "Controller.h"
 
 class MyWindow : public simulation::SimWindow
 {
  public:
  MyWindow(): SimWindow() {
         mZoom = 0.2;
-        mController = NULL;
+        mTrans[1] = -1600;
+        mForce = Eigen::Vector3d::Zero();
+        mImpulseDuration = 0;
     }
     virtual ~MyWindow() {}
     
@@ -20,14 +21,9 @@ class MyWindow : public simulation::SimWindow
     //  virtual void draw();
     virtual void keyboard(unsigned char key, int x, int y);
 
-    void setController(Controller *_controller)
-    {
-        mController = _controller;
-    }
-
- private:
-    Controller *mController;
-
+ private:    
+    Eigen::Vector3d mForce;
+    int mImpulseDuration;
 };
 
 #endif

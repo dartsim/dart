@@ -5,12 +5,18 @@ dofs{
     root<a-X> { 0.0000, -3.1416, 3.1416 }
     root<a-Y> { 0.0000, -6.1416, 6.1416 }
     root<a-Z> { 0.0000, -3.1416, 3.1416 }
+    wall_hinge1 { 1.57, -3.14, 3.14 }
+    wall_hinge2 { 1.57, -3.14, 3.14 }
+    wall_hinge3 { -1.57, -3.14, 3.14 }
+    wall_hinge4 { -1.57, -3.14, 3.14 }
+    wall_hinge5 { -1.57, -3.14, 3.14 }
     Length { 1.0, 0.0000, 10.0000 }
    
 }
 
 mass {
     node_mass { 1000 }
+    roof_mass {1 }
 }
 
 node root { 0
@@ -18,9 +24,38 @@ node root { 0
 	translate { <root<t-X>,root<t-Y>,root<t-Z>> }
         rotate_expmap { <root<a-X>,root<a-Y>,root<a-Z>> }
     }
-    primitive {<1.5,2.5,1.5>, <0.0,0.0,0.0>, Length, CUBE, node_mass}
+    primitive {<2.0,0.1,2.0>, <0.0,0.0,0.0>, Length, CUBE, node_mass}
 
+    node wallLeft { 1
+         chain { 1
+	 telescope {  <1.0,0.0,0.0>, Length }
+		      rotate_euler { wall_hinge1, z }
+                             }
+         primitive {<4.0,0.05,2.0>, <2.0,0.0,0.0>, Length, CUBE, node_mass}
+   } 
+    node wallRight { 2
+         chain { 1
+	 telescope {  <-1.0,0.0,0.0>, Length }
+		      rotate_euler { wall_hinge2, z }
+                             }
+         primitive {<4.0,0.05,2.0>, <2.0,0.0,0.0>, Length, CUBE, node_mass}
+   } 
+    node wallFront { 3
+         chain { 1
+	 telescope {  <0.0,0.0,1.0>, Length }
+		      rotate_euler { wall_hinge3, x }
+                             }
+         primitive {<2.0,0.05,4.0>, <0.0,0.0,2.0>, Length, CUBE, node_mass}
+   } 
+
+    node wallBack { 3
+         chain { 1
+	 telescope {  <0.0,0.0,-1.0>, Length }
+		      rotate_euler { wall_hinge4, x }
+                             }
+         primitive {<2.0,0.05,4.0>, <0.0,0.0,2.0>, Length, CUBE, node_mass}
     
+   }
 }
 
 handles {

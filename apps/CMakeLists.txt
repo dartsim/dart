@@ -6,6 +6,7 @@ foreach(APPDIR
         balance
         freethrow
         elevator
+        cubes
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)

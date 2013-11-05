@@ -3,8 +3,8 @@
 #include "kinematics/FileInfoSkel.hpp"
 #include "utils/Paths.h"
 #include "math/UtilsMath.h"
-#include "simulation/World.h"
-#include "robotics/parser/dart_parser/DartLoader.h"
+#include "MyWorld.h"
+#include "collision/dart/DARTCollisionDetector.h"
 
 #include "MyWindow.h"
 
@@ -15,43 +15,45 @@ using namespace dart_math;
 
 int main(int argc, char* argv[])
 {
-    // load skeleton files
-    FileInfoSkel<SkeletonDynamics> model1, model2, model3;
-    model1.loadFile(DART_DATA_PATH"/skel/fullbody1.skel", SKEL);
+    // Load skeleton files
+    FileInfoSkel<SkeletonDynamics> model1, model2, model3, model4;
+    model1.loadFile(DART_DATA_PATH"/skel/fullbody2.skel", SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/elevator.skel", SKEL);
     model3.loadFile(DART_DATA_PATH"/skel/plane.skel", SKEL);
+    model4.loadFile(DART_DATA_PATH"/skel/roof.skel", SKEL);
 
+    // Initialize human pose
+    Eigen::VectorXd pose = model1.getSkel()->getPose();
+    // standing initial pose
+    pose[1] = 0.92;
+    // lying down initial pose
+    //    pose[1] = 0.1;
+    //    pose[3] = 1.57;
+    model1.getSkel()->setPose(pose);
 
-    // set ground position
-    Eigen::VectorXd pose = model3.getSkel()->getPose();
-    pose[1] = -10.0;
-    model3.getSkel()->setPose(pose);
+    // Set ground to be immobile object
     model3.getSkel()->setImmobileState(true);
 
-    // set human position
-    pose = model1.getSkel()->getPose();
-    pose[1] = -0.3;
-    model1.getSkel()->setPose(pose);
-    
-    // create and initialize the world
-    World *myWorld = new World();
+    // Create and initialize the world
+    MyWorld *myWorld = new MyWorld();
     Vector3d gravity(0.0, -9.81, 0.0);
     myWorld->setGravity(gravity);
     myWorld->setTimeStep(1.0/2000);
-    myWorld->getCollisionHandle()->getCollisionChecker()->setNumMaxContacts(3);
+    myWorld->getCollisionHandle()->setCollisionChecker(new collision::DARTCollisionDetector());
 
     myWorld->addSkeleton((SkeletonDynamics*)model1.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
     myWorld->addSkeleton((SkeletonDynamics*)model3.getSkel());
+    myWorld->addSkeleton((SkeletonDynamics*)model4.getSkel());
 
-    // create controller
-    Controller *myController = new Controller(myWorld->getSkeleton(0),
-                                              myWorld->getTimeStep());
+    // Create controller
+    Controller *myController = new Controller(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
+    myWorld->setController(myController);
 
-    // create a window and link it to the world and the controller
+
+    // Create a window and link it to the world
     MyWindow window;
     window.setWorld(myWorld);
-    window.setController(myController);
   
     glutInit(&argc, argv);
     window.initWindow(640, 480, "This is going to hurt!");
