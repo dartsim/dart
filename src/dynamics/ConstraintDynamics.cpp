@@ -404,6 +404,7 @@ using namespace dart_math;
                 mContactForces[i] = contactForces.segment(mIndices[i], mSkels[i]->getNumDofs());
 
                 mTotalConstrForces[i] = mContactForces[i] + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumDofs());
+                mSkels[i]->setConstraintForces(mTotalConstrForces[i]);
                 
                 if (mConstraints.size() > 0) {
                     VectorXd tempVec = mGInv * (mTauHat - mJMInv[i] * (contactForces.segment(mIndices[i], mSkels[i]->getNumDofs()) + jointLimitForces.segment(mIndices[i], mSkels[i]->getNumDofs())));

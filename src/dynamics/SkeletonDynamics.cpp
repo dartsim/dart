@@ -68,6 +68,7 @@ void SkeletonDynamics::initDynamics()
     mG = VectorXd::Zero(getNumDofs());
     mCg = VectorXd::Zero(getNumDofs());
     mFext = VectorXd::Zero(getNumDofs());
+    mFconst = VectorXd::Zero(getNumDofs());
 }
 
 kinematics::BodyNode* SkeletonDynamics::createBodyNode(const char* const _name)

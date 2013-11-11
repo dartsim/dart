@@ -128,6 +128,9 @@ public:
     Eigen::VectorXd getExternalForces() const { return mFext; }
     Eigen::VectorXd getInternalForces() const { return get_tau(); }
     Eigen::VectorXd getDampingForces() const;
+    Eigen::VectorXd getConstraintForces() const { return mFconst; }
+    void setConstraintForces(Eigen::VectorXd _f) { mFconst = _f; }
+    
 
     bool getImmobileState() const { return mImmobile; }
     void setImmobileState(bool _s) { mImmobile = _s; }
@@ -147,6 +150,8 @@ protected:
     Eigen::VectorXd mG;    ///< Gravity vector for the skeleton; computed in nonrecursive dynamics only
     Eigen::VectorXd mCg;   ///< combined coriolis and gravity term == mC*qdot + g
     Eigen::VectorXd mFext; ///< external forces vector for the skeleton
+
+    Eigen::VectorXd mFconst; ///<total contstriant force on the skeleton
 
     bool mImmobile;   ///< If the skeleton is immobile, its dynamic effect is equivalent to having infinite mass; if the DOFs of an immobile skeleton are manually changed, the collision results might not be correct
     bool mJointLimit; ///<True if the joint limits are enforced in dynamic simulation
