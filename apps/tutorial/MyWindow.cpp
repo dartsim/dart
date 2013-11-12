@@ -10,16 +10,17 @@ using namespace yui;
 
 void MyWindow::timeStepping()
 {
-    // Add jet propulsion force
+    // Add push force
     static_cast<BodyNodeDynamics*>(mWorld->getSkeleton(0)->getNode("fullbody1_h_shin_left"))->addExtForce(Vector3d(0.0, 0.0, 0.0), mForce);
 
+    // Compute and apply control force
     mController->computeTorques(mWorld->getSkeleton(0)->getPose(), mWorld->getSkeleton(0)->getPoseVelocity());
     mWorld->getSkeleton(0)->setInternalForces(mController->getTorques());
 
     // Integrate one step forward
     mWorld->step();
 
-    // Measure accumulated impact
+    // Apply push force for a period of time
     mImpulseDuration--;
     if (mImpulseDuration <= 0) {
         mImpulseDuration = 0;
@@ -36,9 +37,8 @@ void MyWindow::drawSkels()
 
     //Draw the ground
     Vector4d color;
-    color << 0.5, 0.5, 0.5, 1.0;
+    color << 0.7, 0.7, 0.7, 1.0;
     mWorld->getSkeleton(1)->draw(mRI, color, false);
-
 }
 
 
@@ -81,6 +81,9 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case '1': // Push force
         mForce[0] = 50;
         mImpulseDuration = 100.0;
+        break;
+    case 'o': // Print out current pose
+        cout << mWorld->getSkeleton(0)->get_q() << endl;
         break;
     default:
         Win3D::keyboard(key,x,y);

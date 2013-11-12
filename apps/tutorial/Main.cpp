@@ -2,6 +2,7 @@
 #include "dynamics/ConstraintDynamics.h"
 #include "collision/dart/DARTCollisionDetector.h"
 #include "kinematics/FileInfoSkel.hpp"
+#include "kinematics/BodyNode.cpp"
 #include "simulation/World.h"
 #include "utils/Paths.h"
 #include "MyWindow.h"
@@ -24,7 +25,7 @@ int main(int argc, char* argv[])
 
     // Initialize ground pose
     Eigen::VectorXd pose = model2.getSkel()->getPose();
-    pose[1] = -0.92;
+    pose[1] = -0.9;
     model2.getSkel()->setPose(pose);
 
     // Create and initialize the world
@@ -38,14 +39,15 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
 
     // Create a controller
+    Controller* myController = new Controller(myWorld->getSkeleton(0));
     //PDController* myController = new PDController(myWorld->getSkeleton(0));
-    SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+
+    //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     // Create a window
     MyWindow window;
     window.setWorld(myWorld);
     window.setController(myController);
-
   
     glutInit(&argc, argv);
     window.initWindow(640, 480, "My First Controller");
