@@ -51,8 +51,9 @@ void MyWindow::initDyn()
     for (int i = 0; i < mSkels[1]->getNumDofs(); i++)
         mController->setDesiredDof(i, mController->getSkel()->getDof(i)->getValue());
 
-    // initialize constraint on the hand
     mConstraintHandle = new ConstraintDynamics(mSkels, mTimeStep);
+
+    // initialize constraint on the hand
     BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkels[1]->getNode("fullbody1_h_hand_left");
     PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 1);
     mConstraintHandle->addConstraint(point1);

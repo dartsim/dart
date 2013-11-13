@@ -8,6 +8,7 @@
 #include "MyWindow.h"
 #include "PDController.h"
 #include "SPDController.h"
+#include "JTController.h"
 
 using namespace kinematics;
 using namespace dynamics;
@@ -20,13 +21,23 @@ int main(int argc, char* argv[])
     model1.loadFile(DART_DATA_PATH"/skel/fullbody1.skel", SKEL);
     model2.loadFile(DART_DATA_PATH"/skel/ground1.skel", SKEL);
 
+    // Initialize skeletons
+    /*
+    Eigen::VectorXd pose1 = model1.getSkel()->getPose();
+    pose1[27] = -2.5;
+    pose1[28] = 0.75;
+    pose1[29] = 0.3;
+    pose1[33] = 2.5;
+    pose1[34] = -0.75;
+    pose1[35] = 0.3;
+    model1.getSkel()->setPose(pose1);
+    */
+    Eigen::VectorXd pose2 = model2.getSkel()->getPose();
+    pose2[1] = -0.95;
+    model2.getSkel()->setPose(pose2);
+
     // Set ground to be immobile object
     model2.getSkel()->setImmobileState(true);
-
-    // Initialize ground pose
-    Eigen::VectorXd pose = model2.getSkel()->getPose();
-    pose[1] = -0.9;
-    model2.getSkel()->setPose(pose);
 
     // Create and initialize the world
     World *myWorld = new World();
@@ -39,10 +50,13 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
 
     // Create a controller
-    Controller* myController = new Controller(myWorld->getSkeleton(0));
+    //Controller* myController = new Controller(myWorld->getSkeleton(0));
     //PDController* myController = new PDController(myWorld->getSkeleton(0));
 
-    //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+
+    //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
+
 
     // Create a window
     MyWindow window;

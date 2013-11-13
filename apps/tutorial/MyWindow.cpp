@@ -35,10 +35,17 @@ void MyWindow::drawSkels()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     mWorld->getSkeleton(0)->draw(mRI);
 
-    //Draw the ground
+    // Draw the ground
     Vector4d color;
     color << 0.7, 0.7, 0.7, 1.0;
     mWorld->getSkeleton(1)->draw(mRI, color, false);
+
+    // Draw a bar
+    mRI->setPenColor(Vector3d(0.8, 0.2, 0.2));
+    mRI->pushMatrix();
+    glTranslated(0.5, 0.95, 0.0);
+    mRI->drawCube(Vector3d(0.04, 0.04, 2.0));
+    mRI->popMatrix();
 }
 
 
@@ -83,7 +90,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mImpulseDuration = 100.0;
         break;
     case 'o': // Print out current pose
-        cout << mWorld->getSkeleton(0)->get_q() << endl;
+        cout << mWorld->getSkeleton(0)->getNode("fullbody1_h_hand_left")->getWorldCOM() << endl;
+        cout << mWorld->getSkeleton(0)->getNode("fullbody1_h_hand_right")->getWorldCOM() << endl;
         break;
     default:
         Win3D::keyboard(key,x,y);

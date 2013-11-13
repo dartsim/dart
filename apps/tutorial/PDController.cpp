@@ -11,8 +11,7 @@ PDController::PDController(SkeletonDynamics* _skel) : Controller(_skel) {
             
     mDesiredDofs = mSkel->getPose();
 
-    // Super Mario Pose
-    
+    // Super Mario Pose    
     mDesiredDofs[9] = -1.5;
     mDesiredDofs[13] = 1.5;
     mDesiredDofs[27] = -1.5;
@@ -35,7 +34,7 @@ PDController::PDController(SkeletonDynamics* _skel) : Controller(_skel) {
 
 void PDController::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {    
     mTorques = -mKp * (_dof - mDesiredDofs) -mKd * _dofVel;
-    //mTorques = mSkel->getMassMatrix() * mTorques; // scaled by accumulated mass
+    mTorques = mSkel->getMassMatrix() * mTorques; // scaled by accumulated mass
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++)
         mTorques[i] = 0.0;

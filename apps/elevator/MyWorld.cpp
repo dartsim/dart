@@ -1,6 +1,7 @@
 #include "MyWorld.h"
 #include "dynamics/ConstraintDynamics.h"
 #include "kinematics/BodyNode.h"
+#include <Eigen/SVD>
 
 using namespace kinematics;
 using namespace Eigen;
@@ -31,3 +32,33 @@ void MyWorld::computeImpact() {
         }
     }
 }
+
+void MyWorld::computeJointStress() {
+    /*    int nDof = getSkeleton(0)->getNumDofs();
+    int nNode = getSkeleton(0)->getNumNodes();
+    MatrixXd J(nDof, 6 * nNode);
+    J.setZero();
+   
+    for (int i = 0; i < nNode; i++) {
+        MatrixXd linearJ = getSkeleton(0)->getNode(i)->getJacobianLinear().transpose();
+        MatrixXd angularJ = getSkeleton(0)->getNode(i)->getJacobianAngular().transpose();
+
+        for (int j = 0; j < getSkeleton(0)->getNode(i)->getNumDependentDofs(); j++) {
+            int index = getSkeleton(0)->getNode(i)->getDependentDof(j);
+            J.block(index, i * 6, 1, 3) = linearJ.row(j); 
+            J.block(index, i * 6 + 3, 1, 3) = angularJ.row(j); 
+        }
+
+
+        //        J.block(0, i * 6, nDof, 3) = getSkeleton(0)->getNode(i)->getJacobianLinear().transpose();
+        //        J.block(0, i * 6 + 3, nDof, 3) = getSkeleton(0)->getNode(i)->getJacobianAngular().transpose();
+    }
+
+    // Run SVD    
+    JacobiSVD<MatrixXd> svd(J, ComputeThinU | ComputeThinV);
+    cout << "Its singular values are:" << endl << svd.singularValues() << endl;
+    cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+    cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+    */
+}
+

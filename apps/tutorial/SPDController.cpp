@@ -24,13 +24,13 @@ SPDController::SPDController(SkeletonDynamics* _skel, double _timestep) : Contro
         mKd(i, i) = 0.0;
     }
     for (int i = 6; i < 22; i++)
-        mKp(i, i) = 200.0; // lower body gain
+        mKp(i, i) = 400.0; // lower body gain
     for (int i = 22; i < nDof; i++)
-        mKp(i, i) = 20.0; // upper body gain
+        mKp(i, i) = 40.0; // upper body gain
     for (int i = 6; i < 22; i++) 
-        mKd(i, i) = 20.0; // lower body damping
+        mKd(i, i) = 40.0; // lower body damping
     for (int i = 22; i < nDof; i++) 
-        mKd(i, i) = 2.0; // upper body damping
+        mKd(i, i) = 4.0; // upper body damping
 }
 
 void SPDController::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {    

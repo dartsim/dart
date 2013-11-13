@@ -28,11 +28,13 @@ void MyWindow::timeStepping()
 
     // Measure accumulated impact
     ((MyWorld*)mWorld)->computeImpact();
+    ((MyWorld*)mWorld)->computeJointStress();
+
     mImpulseDuration--;
     if (mImpulseDuration <= 0) {
         mImpulseDuration = 0;
         mForce.setZero();
-    }    
+    }
 }
 
 void MyWindow::drawSkels()

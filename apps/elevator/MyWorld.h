@@ -24,6 +24,8 @@ class MyWorld : public simulation::World
     }
 
     void computeImpact();
+    void computeJointStress();
+
     double getImpact() {
         return mAccumulatedImpact;
     }
@@ -39,7 +41,7 @@ class MyWorld : public simulation::World
     double getGroundHeight() {
         return mGroundHeight;
     }
- private:
+ private:    
     Controller *mController;    
     double mAccumulatedImpact;
     int mWallMaterial;
