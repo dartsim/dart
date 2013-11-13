@@ -9,6 +9,8 @@
 #include "PDController.h"
 #include "SPDController.h"
 #include "JTController.h"
+#include "JumpController.h"
+#include "SwingController.h"
 
 using namespace kinematics;
 using namespace dynamics;
@@ -53,10 +55,13 @@ int main(int argc, char* argv[])
     //Controller* myController = new Controller(myWorld->getSkeleton(0));
     //PDController* myController = new PDController(myWorld->getSkeleton(0));
 
-    SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
-    //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
+    JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
+    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+
+    //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 
     // Create a window
     MyWindow window;
