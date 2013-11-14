@@ -219,6 +219,7 @@ bool World::addSkeleton(dynamics::SkeletonDynamics* _skeleton)
             return false;
 
     // Add _skeleton to the world.
+    _skeleton->setIndex(mSkeletons.size());
     mSkeletons.push_back(_skeleton);
 
     _skeleton->initDynamics();

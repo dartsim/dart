@@ -147,6 +147,9 @@ public:
                    bool _calcTrans = true,
                    bool _calcDeriv = true);
 
+    int getIndex() const { return mIndex; }
+    void setIndex(int _index) { mIndex = _index; }
+
     /// @brief
     Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
 
@@ -197,6 +200,8 @@ protected:
 
     /// @brief
     BodyNode* mRoot;
+
+    int mIndex;
 };
 
 } // namespace kinematics

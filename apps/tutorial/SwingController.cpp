@@ -84,10 +84,10 @@ void SwingController::computeTorques(const VectorXd& _dof, const VectorXd& _dofV
     
     if (mFrame == 1000) {
         BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkel->getNode("fullbody1_h_hand_left");
-        PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 0);
+        PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
         mConstraintHandle->addConstraint(point1);
         bd = (BodyNodeDynamics*)mSkel->getNode("fullbody1_h_hand_right");
-        PointConstraint *point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), 0);
+        PointConstraint *point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
         mConstraintHandle->addConstraint(point2);
     }
     
