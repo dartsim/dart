@@ -48,17 +48,18 @@ void MyWorld::computeJointStress() {
             J.block(index, i * 6, 1, 3) = linearJ.row(j); 
             J.block(index, i * 6 + 3, 1, 3) = angularJ.row(j); 
         }
-
-
         //        J.block(0, i * 6, nDof, 3) = getSkeleton(0)->getNode(i)->getJacobianLinear().transpose();
         //        J.block(0, i * 6 + 3, nDof, 3) = getSkeleton(0)->getNode(i)->getJacobianAngular().transpose();
     }
 
     // Run SVD    
-    JacobiSVD<MatrixXd> svd(J, ComputeThinU | ComputeThinV);
-    cout << "Its singular values are:" << endl << svd.singularValues() << endl;
-    cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
-    cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
-    */
+    JacobiSVD<MatrixXd> svd(J, ComputeThinU | ComputeFullV);
+    //cout << "Its singular values are:" << endl << svd.singularValues() << endl;
+    MatrixXd nullJ = svd.matrixV().rightCols(J.cols() - J.rows()).transpose();
+    cout << nullJ.col(10).norm() << endl;
+
+    //    cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+    // cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+    */    
 }
 

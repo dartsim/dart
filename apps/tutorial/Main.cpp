@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
     model2.loadFile(DART_DATA_PATH"/skel/ground1.skel", SKEL);
 
     // Initialize skeletons
+    // uncomment this for swing controller
     /*
     Eigen::VectorXd pose1 = model1.getSkel()->getPose();
     pose1[27] = -2.5;
@@ -34,6 +35,7 @@ int main(int argc, char* argv[])
     pose1[35] = 0.3;
     model1.getSkel()->setPose(pose1);
     */
+
     Eigen::VectorXd pose2 = model2.getSkel()->getPose();
     pose2[1] = -0.95;
     model2.getSkel()->setPose(pose2);
@@ -57,9 +59,9 @@ int main(int argc, char* argv[])
 
     //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
-    JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
+    //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
-    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 

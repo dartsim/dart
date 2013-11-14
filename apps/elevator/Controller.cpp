@@ -44,7 +44,7 @@ Controller::Controller(SkeletonDynamics* _skel, ConstraintDynamics* _constr, dou
 }
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
-    
+    /*
     // SPD tracking
     int nDof = mSkel->getNumDofs();
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
@@ -52,7 +52,7 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     VectorXd d = -mKd * _dofVel;
     VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstraintHandle->getTotalConstraintForce(0));
     mTorques = p + d - mKd * qddot * mTimestep;
-    
+    */
 
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++)
