@@ -81,13 +81,13 @@ void SwingController::computeTorques(const VectorXd& _dof, const VectorXd& _dofV
         VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mSkel->getConstraintForces());
         mTorques = p + d - mKd * qddot * mTimestep;
     }
-    
+
     if (mFrame == 1000) {
         BodyNodeDynamics *bd = (BodyNodeDynamics*)mSkel->getNode("fullbody1_h_hand_left");
-        PointConstraint *point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
+        PointConstraint* point1 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
         mConstraintHandle->addConstraint(point1);
         bd = (BodyNodeDynamics*)mSkel->getNode("fullbody1_h_hand_right");
-        PointConstraint *point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
+        PointConstraint* point2 = new PointConstraint(bd, bd->getLocalCOM(), bd->getWorldCOM(), mSkel->getIndex());
         mConstraintHandle->addConstraint(point2);
     }
     
@@ -100,9 +100,13 @@ void SwingController::computeTorques(const VectorXd& _dof, const VectorXd& _dofV
         VectorXd temp = p + d - mKd * qddot * mTimestep;
         for (int i = 6; i < nDof; i++)
             mTorques[i] += temp[i];
-
     }
 
+    if (mFrame == 1500) {
+        int nConstr = mConstraintHandle->getNumConstraints();
+        for (int i = nConstr - 1; i >= 0; i--)
+            mConstraintHandle->deleteConstraint(mConstraintHandle->getConstraint(i));
+    }
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++)
         mTorques[i] = 0.0;

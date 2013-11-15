@@ -100,12 +100,23 @@ using namespace dart_math;
             mTauHat = VectorXd(mTotalRows);
         }
 
-        void ConstraintDynamics::deleteConstraint(int _index) {
+        void ConstraintDynamics::deleteConstraint(Constraint* _constr) {
+            int index = -1;
+            for (int i = 0; i < mConstraints.size(); i++) {
+                if (_constr == mConstraints[i]) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index == -1)
+                return;
+            
+
             int count = 0;
-            for (int i = 0; i < _index; i++)
+            for (int i = 0; i < index; i++)
                 count += mConstraints[i]->getNumRows();
-            int shiftRows = mTotalRows - count - mConstraints[_index]->getNumRows();
-            mTotalRows -= mConstraints[_index]->getNumRows();
+            int shiftRows = mTotalRows - count - mConstraints[index]->getNumRows();
+            mTotalRows -= mConstraints[index]->getNumRows();
 
             for (int i = 0; i < mSkels.size(); i++) {
                 mJ[i].block(count, 0, shiftRows, mSkels[i]->getNumDofs()) = mJ[i].bottomRows(shiftRows);
@@ -116,8 +127,8 @@ using namespace dart_math;
             mGInv.resize(mTotalRows, mTotalRows);
             mTauHat.resize(mTotalRows);
 
-            mConstraints.erase(mConstraints.begin() + _index);
-            delete mConstraints[_index];
+            mConstraints.erase(mConstraints.begin() + index);
+            delete _constr;
         }
 
         void ConstraintDynamics::addSkeleton(SkeletonDynamics* _newSkel)

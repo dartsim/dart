@@ -59,8 +59,8 @@ namespace dynamics {
 
         void reset();
         void computeConstraintForces();            
-        void addConstraint(Constraint *_constr);
-        void deleteConstraint(int _index);
+        void addConstraint(Constraint* _constr);
+        void deleteConstraint(Constraint* _constr);
         void addSkeleton(SkeletonDynamics* _newSkel);
         void setTimeStep(double _timeStep) { mDt = _timeStep; }
         double getTimeStep() const { return mDt; }

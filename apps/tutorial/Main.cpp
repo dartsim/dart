@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 
     // Initialize skeletons
     // uncomment this for swing controller
-    /*
+    
     Eigen::VectorXd pose1 = model1.getSkel()->getPose();
     pose1[27] = -2.5;
     pose1[28] = 0.75;
@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     pose1[34] = -0.75;
     pose1[35] = 0.3;
     model1.getSkel()->setPose(pose1);
-    */
+    
 
     Eigen::VectorXd pose2 = model2.getSkel()->getPose();
     pose2[1] = -0.95;
@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
 
     //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
-    JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
-    //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
+    SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 
     // Create a window
     MyWindow window;
