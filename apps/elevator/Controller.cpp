@@ -89,7 +89,7 @@ void Controller::leftHandGrab() {
 void Controller::leftHandRelease() {
     int nConstr = mConstraintHandle->getNumConstraints();
     
-    for (int i = 0; i < nConstr; i++) {
+    for (int i = nConstr - 1; i >= 0; i--) {
         Constraint* c = mConstraintHandle->getConstraint(i);
         if (ClosedLoopConstraint* closedConstr = dynamic_cast<ClosedLoopConstraint*>(c))
             if (closedConstr->getBody1() == mSkel->getNode("fullbody2_h_hand_left") || closedConstr->getBody2() == mSkel->getNode("fullbody2_h_hand_left"))
