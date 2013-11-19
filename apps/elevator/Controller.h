@@ -32,6 +32,8 @@ class Controller {
     // In case you want to use climbing strategy
     void leftHandGrab();
     void leftHandRelease();
+    void rightHandGrab();
+    void rightHandRelease();
 
     dynamics::SkeletonDynamics* mSkel;
     dynamics::ConstraintDynamics* mConstraintHandle; 
@@ -42,6 +44,8 @@ class Controller {
     Eigen::MatrixXd mKd;
     int mFrame;
     double mTimestep;
+    bool mIsLHGrab;
+    bool mIsRHGrab;
 };
 
 #endif // #CONTROLLER_H

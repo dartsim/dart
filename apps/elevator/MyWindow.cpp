@@ -81,7 +81,7 @@ void MyWindow::drawSkels()
     mWorld->getSkeleton(3)->draw(mRI, color, false);
 
     // Moving camera
-    if (mSimulating) {
+    if (mSimulating && mSimulating) {
         mTrans[1] =  mWorld->getSkeleton(1)->getWorldCOM()[1] * -1000;
     }
     // Display the accumulated impact in 2D text
@@ -139,6 +139,9 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         break;
     case '-': // Make the wall flimsier (Don't over do it. Wall material coefficient can't be negative)
         ((MyWorld*)mWorld)->setWallMaterial(((MyWorld*)mWorld)->getWallMaterial() - 10000);
+        break;
+    case 'r': // reset the camera
+        mTrans[1] = mWorld->getSkeleton(2)->getWorldCOM()[1] * -1000;
         break;
     default:
         Win3D::keyboard(key,x,y);

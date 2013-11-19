@@ -18,6 +18,8 @@ Controller::Controller(SkeletonDynamics* _skel, ConstraintDynamics* _constr, dou
     mConstraintHandle = _constr;
     mTimestep = _t;
     mFrame = 0;
+    mIsLHGrab = false;
+    mIsRHGrab = false;
     int nDof = mSkel->getNumDofs();
     mKp = MatrixXd::Identity(nDof, nDof);
     mKd = MatrixXd::Identity(nDof, nDof);
@@ -54,6 +56,9 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     mTorques = p + d - mKd * qddot * mTimestep;
     */
 
+    leftHandGrab();
+    rightHandGrab();
+
     // Just to make sure no illegal torque is used    
     for (int i = 0; i < 6; i++)
         mTorques[i] = 0.0;
@@ -62,6 +67,8 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
 }
 
 void Controller::leftHandGrab() {
+    if (mIsLHGrab)
+        return;
     int nContact = mConstraintHandle->getCollisionChecker()->getNumContacts();
 
     for (int i = 0; i < nContact; i++) {
@@ -74,6 +81,7 @@ void Controller::leftHandGrab() {
             Vector3d offset2 = xformHom(bd2->getWorldInvTransform(), pt);
             ClosedLoopConstraint *constr = new ClosedLoopConstraint(bd1, bd2, offset1, offset2, 0, 1);
             mConstraintHandle->addConstraint(constr);
+            mIsLHGrab = true;
             break;
         } else if (bd2 == (BodyNodeDynamics*)mSkel->getNode("fullbody2_h_hand_left")) {
             bd2->setCollideState(false);
@@ -81,12 +89,15 @@ void Controller::leftHandGrab() {
             Vector3d offset2 = xformHom(bd2->getWorldInvTransform(), pt);
             ClosedLoopConstraint *constr = new ClosedLoopConstraint(bd1, bd2, offset1, offset2, 1, 0);
             mConstraintHandle->addConstraint(constr);
+            mIsLHGrab = true;
             break;
-        } 
+        }
     }
 }
 
 void Controller::leftHandRelease() {
+    if (!mIsLHGrab)
+        return;
     int nConstr = mConstraintHandle->getNumConstraints();
     
     for (int i = nConstr - 1; i >= 0; i--) {
@@ -94,5 +105,49 @@ void Controller::leftHandRelease() {
         if (ClosedLoopConstraint* closedConstr = dynamic_cast<ClosedLoopConstraint*>(c))
             if (closedConstr->getBody1() == mSkel->getNode("fullbody2_h_hand_left") || closedConstr->getBody2() == mSkel->getNode("fullbody2_h_hand_left"))
                 mConstraintHandle->deleteConstraint(closedConstr);
+        mIsLHGrab = false;
+    }
+}
+
+void Controller::rightHandGrab() {
+    if (mIsRHGrab)
+        return;
+    int nContact = mConstraintHandle->getCollisionChecker()->getNumContacts();
+
+    for (int i = 0; i < nContact; i++) {
+        Vector3d pt = mConstraintHandle->getCollisionChecker()->getContact(i).point;
+        BodyNodeDynamics *bd1 = (BodyNodeDynamics*)mConstraintHandle->getCollisionChecker()->getContact(i).collisionNode1->getBodyNode();
+        BodyNodeDynamics *bd2 = (BodyNodeDynamics*)mConstraintHandle->getCollisionChecker()->getContact(i).collisionNode2->getBodyNode();
+        if(bd1 == (BodyNodeDynamics*)mSkel->getNode("fullbody2_h_hand_right")) {
+            bd1->setCollideState(false);
+            Vector3d offset1 = xformHom(bd1->getWorldInvTransform(), pt);
+            Vector3d offset2 = xformHom(bd2->getWorldInvTransform(), pt);
+            ClosedLoopConstraint *constr = new ClosedLoopConstraint(bd1, bd2, offset1, offset2, 0, 1);
+            mConstraintHandle->addConstraint(constr);
+            mIsRHGrab = true;
+            break;
+        } else if (bd2 == (BodyNodeDynamics*)mSkel->getNode("fullbody2_h_hand_right")) {
+            bd2->setCollideState(false);
+            Vector3d offset1 = xformHom(bd1->getWorldInvTransform(), pt);
+            Vector3d offset2 = xformHom(bd2->getWorldInvTransform(), pt);
+            ClosedLoopConstraint *constr = new ClosedLoopConstraint(bd1, bd2, offset1, offset2, 1, 0);
+            mConstraintHandle->addConstraint(constr);
+            mIsRHGrab = true;
+            break;
+        }
+    }
+}
+
+void Controller::rightHandRelease() {
+    if (!mIsRHGrab)
+        return;
+    int nConstr = mConstraintHandle->getNumConstraints();
+    
+    for (int i = nConstr - 1; i >= 0; i--) {
+        Constraint* c = mConstraintHandle->getConstraint(i);
+        if (ClosedLoopConstraint* closedConstr = dynamic_cast<ClosedLoopConstraint*>(c))
+            if (closedConstr->getBody1() == mSkel->getNode("fullbody2_h_hand_right") || closedConstr->getBody2() == mSkel->getNode("fullbody2_h_hand_right"))
+                mConstraintHandle->deleteConstraint(closedConstr);
+        mIsRHGrab = false;
     }
 }

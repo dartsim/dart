@@ -30,6 +30,20 @@ int main(int argc, char* argv[])
     model1.getSkel()->setPose(pose);
     */
 
+    
+    // hangin from the ceiling
+    Eigen::VectorXd pose = model1.getSkel()->getPose();
+    pose[1] = 3.1;
+    pose[27] = -2.5;
+    pose[28] = 0.75;
+    pose[29] = 0.3;
+    pose[33] = 2.5;
+    pose[34] = -0.75;
+    pose[35] = 0.3;
+    model1.getSkel()->setPose(pose);
+    
+
+    //    model2.getSkel()->setImmobileState(true);
     // Set ground to be immobile object
     model3.getSkel()->setImmobileState(true);
 

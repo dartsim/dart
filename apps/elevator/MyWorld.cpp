@@ -31,6 +31,16 @@ void MyWorld::computeImpact() {
                 mAccumulatedImpact += forceMag;
         }
     }
+    // compute constraint force due to grasping
+    double constraintForce = 0.0;
+    int nConstr = getCollisionHandle()->getNumConstraints();
+    for (int i = nConstr - 1; i >= 0; i--) {
+        double f = getCollisionHandle()->getConstraint(i)->getLagrangeMultipliers().norm();
+        if (f > FORCE_THRESHOLD * 10) {
+            // if the constraint force exceeds 10 times of graviational force, break the constraints
+            getCollisionHandle()->deleteConstraint(getCollisionHandle()->getConstraint(i));
+        }
+    }
 }
 
 void MyWorld::computeJointStress() {
