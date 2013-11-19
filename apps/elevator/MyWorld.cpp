@@ -39,7 +39,7 @@ void MyWorld::computeImpact() {
         //        cout << f << endl;
         if (f > 100000) {
             // if the constraint force exceeds 10 times of graviational force, break the constraints
-            cout << "break " << endl;
+            cout << "Break!" << endl;
             getCollisionHandle()->deleteConstraint(getCollisionHandle()->getConstraint(i));
         }
     }

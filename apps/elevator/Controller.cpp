@@ -35,19 +35,20 @@ Controller::Controller(SkeletonDynamics* _skel, ConstraintDynamics* _constr, dou
         mKd(i, i) = 0.0;
     }
     for (int i = 6; i < 22; i++)
-        mKp(i, i) = 200.0; // lower body + lower back
+        mKp(i, i) = 20.0; // lower body + lower back
     for (int i = 22; i < nDof; i++)
-        mKp(i, i) = 20.0;
+        mKp(i, i) = 2.0;
     for (int i = 6; i < 22; i++) 
-        mKd(i, i) = 100.0;
-    for (int i = 22; i < nDof; i++) 
         mKd(i, i) = 10.0;
+    for (int i = 22; i < nDof; i++) 
+        mKd(i, i) = 1.0;
 
 }
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     
     // SPD tracking
+    
     int nDof = mSkel->getNumDofs();
     MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
     VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
@@ -55,8 +56,8 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
     VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + mConstraintHandle->getTotalConstraintForce(0));
     mTorques = p + d - mKd * qddot * mTimestep;
     
-
-    // leftHandGrab();
+    // Grab
+    //    leftHandGrab();
     //rightHandGrab();
 
     // Just to make sure no illegal torque is used    
