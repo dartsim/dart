@@ -36,8 +36,10 @@ void MyWorld::computeImpact() {
     int nConstr = getCollisionHandle()->getNumConstraints();
     for (int i = nConstr - 1; i >= 0; i--) {
         double f = getCollisionHandle()->getConstraint(i)->getLagrangeMultipliers().norm();
-        if (f > FORCE_THRESHOLD * 10) {
+        //        cout << f << endl;
+        if (f > 100000) {
             // if the constraint force exceeds 10 times of graviational force, break the constraints
+            cout << "break " << endl;
             getCollisionHandle()->deleteConstraint(getCollisionHandle()->getConstraint(i));
         }
     }
