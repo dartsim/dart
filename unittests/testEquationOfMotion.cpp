@@ -80,7 +80,11 @@ TEST_F(EOM, EquationOfMotionPerformance)
     std::vector<int> dofs;
 
     // Set 1
+#ifdef NDEBUG // Release mode
     int numItr = 1000;
+#else          // Debug mode
+    int numItr = 10;
+#endif
     dofs.push_back(5);
     dofs.push_back(10);
     dofs.push_back(15);
@@ -93,7 +97,11 @@ TEST_F(EOM, EquationOfMotionPerformance)
     dofs.push_back(50);
 
     // Set 2
+//#ifdef NDEBUG // Release mode
 //    int numItr = 500;
+//#else          // Debug mode
+//    int numItr = 5;
+//#endif
 //    dofs.push_back(10);
 //    dofs.push_back(20);
 //    dofs.push_back(30);
@@ -106,7 +114,11 @@ TEST_F(EOM, EquationOfMotionPerformance)
 //    dofs.push_back(100);
 
     // Set 3
+//#ifdef NDEBUG // Release mode
 //    int numItr = 5;
+//#else          // Debug mode
+//    int numItr = 1;
+//#endif
 //    dofs.push_back(100);
 //    dofs.push_back(200);
 //    dofs.push_back(300);
