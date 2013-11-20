@@ -834,8 +834,10 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
     else
         mFgravity.setZero();
     mB = -math::dad(mV, mI*mV) - mFext - mFgravity;
+    assert(!math::isNan(mB));
     for (int i = 0; i < mContactForces.size(); ++i)
         mB -= mContactForces[i];
+    assert(!math::isNan(mB));
     for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
          it != mChildBodyNodes.end(); ++it)
     {
