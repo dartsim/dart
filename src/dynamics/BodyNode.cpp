@@ -43,8 +43,6 @@
 #include <queue>
 #include <stack>
 
-//#include <boost/math/special_functions/fpclassify.hpp>
-
 #include "common/Console.h"
 #include "math/Helpers.h"
 #include "renderer/RenderInterface.h"
@@ -310,49 +308,6 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
         }
     }
 #endif
-
-    //--------------------------------------------------------------------------
-    // Fill the list of decendants of this body node.
-    //--------------------------------------------------------------------------
-    mDescendantBodyNodes.clear();
-
-    // A. DFS (Depth First Search).
-//    std::stack<BodyNode*> stack;
-//    for (std::vector<BodyNode*>::const_reverse_iterator it =
-//         mChildBodyNodes.rbegin(); it != mChildBodyNodes.rend(); ++it)
-//    {
-//        stack.push(*it);
-//    }
-//    while (!stack.empty())
-//    {
-//        BodyNode* itBodyNode = stack.top();
-//        stack.pop();
-//        mDescendantBodyNodes.push_back(itBodyNode);
-
-//        for (int i = itBodyNode->getNumChildBodyNodes() - 1; i > -1 ; -i)
-//        {
-//            stack.push(itBodyNode->getChildBodyNode(i));
-//        }
-//    }
-
-    // B. BFS (Breadth First Search)
-    std::queue<BodyNode*> queue;
-    for (std::vector<BodyNode*>::const_iterator it =
-         mChildBodyNodes.begin(); it != mChildBodyNodes.end(); ++it)
-    {
-        queue.push(*it);
-    }
-    while (!queue.empty())
-    {
-        BodyNode* itBodyNode = queue.front();
-        queue.pop();
-        mDescendantBodyNodes.push_back(itBodyNode);
-
-        for (int i = 0; i < itBodyNode->getNumChildBodyNodes(); ++i)
-        {
-            queue.push(itBodyNode->getChildBodyNode(i));
-        }
-    }
 
     //--------------------------------------------------------------------------
     // Set dimensions of dynamics matrices and vectors.

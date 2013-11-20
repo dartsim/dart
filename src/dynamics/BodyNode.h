@@ -498,10 +498,6 @@ protected:
     /// @brief
     std::vector<BodyNode*> mChildBodyNodes;
 
-    /// @brief The list of descendants of this body node including child body
-    ///        nodes.
-    std::vector<BodyNode*> mDescendantBodyNodes;
-
     /// @brief List of markers associated
     std::vector<Marker*> mMarkers;
 
