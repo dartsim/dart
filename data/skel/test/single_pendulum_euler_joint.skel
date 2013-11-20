@@ -38,9 +38,10 @@
                     </geometry>
                 </collision_shape>                                
             </body>
-            <joint type="revolute" name="joint 1">
+            <joint type="euler" name="joint 1">
                 <parent>world</parent>
                 <child>link 1</child>
+                <axis_order>zyx</axis_order>
                 <transformation>-0.1 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>0 0 1</xyz>
