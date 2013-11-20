@@ -490,8 +490,8 @@ void Skeleton::updateMassMatrix()
         set_ddq(e);
 
         // Prepare cache data
-        for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-             it != mBodyNodes.rend(); ++it)
+        for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+             it != mBodyNodes.end(); ++it)
         {
             (*it)->updateMassMatrix();
         }
@@ -499,18 +499,21 @@ void Skeleton::updateMassMatrix()
         // Mass matrix
         //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
         //         it != mBodyNodes.end(); ++it)
-        for (int i = 0; i < mBodyNodes.size(); ++i)
+        for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
         {
             mBodyNodes[i]->aggregateMassMatrix(mM, j);
-            int dof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
-            int iStart = mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
-            if (iStart + dof > j)
-                break;
+            int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
+            if (localDof > 0)
+            {
+                int iStart = mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+                if (iStart + localDof < j)
+                    break;
+            }
         }
 
         e[j] = 0.0;
     }
-    mM.triangularView<Eigen::StrictlyLower>() = mM.transpose();
+    mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
     // Restore the origianl internal force
     set_ddq(originalGenAcceleration);
@@ -550,10 +553,13 @@ void Skeleton::updateInvMassMatrix()
         for (int i = 0; i < mBodyNodes.size(); ++i)
         {
             mBodyNodes[i]->aggregateInvMassMatrix(mMInv, j);
-            int dof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
-            int iStart = mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
-            if (iStart + dof > j)
-                break;
+            int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
+            if (localDof > 0)
+            {
+                int iStart = mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+                if (iStart + localDof > j)
+                    break;
+            }
         }
 
         e[j] = 0.0;
