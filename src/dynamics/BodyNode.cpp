@@ -43,7 +43,7 @@
 #include <queue>
 #include <stack>
 
-#include <boost/math/special_functions/fpclassify.hpp>
+//#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "common/Console.h"
 #include "math/Helpers.h"
@@ -152,7 +152,7 @@ double BodyNode::getMass() const
     return mMass;
 }
 
-BodyNode*BodyNode::getParentBodyNode() const
+BodyNode* BodyNode::getParentBodyNode() const
 {
     return mParentBodyNode;
 }
@@ -227,7 +227,7 @@ Eigen::Vector6d BodyNode::getWorldVelocity(const Eigen::Vector3d& _offset) const
     return math::AdT(T, mV);
 }
 
-const Eigen::Vector6d&BodyNode::getBodyAcceleration() const
+const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
     return mdV;
 }
