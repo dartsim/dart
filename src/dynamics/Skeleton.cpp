@@ -37,7 +37,6 @@
  */
 
 #include <queue>
-#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "math/Geometry.h"
 #include "math/Helpers.h"
@@ -170,11 +169,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     {
         (*it)->updateArticulatedInertia(mTimeStep);
     }
-
-//    for (int i = 0; i < mBodyNodes.size(); ++i)
-//    {
-//        std::cout << "BodyNode " << i << ":" << mBodyNodes[i]->mSkelIndex << ", " << mBodyNodes[i]->mName << std::endl;
-//    }
 
     // Set dimension of dynamics quantities
     int dof = getNumGenCoords();
@@ -366,29 +360,6 @@ Eigen::VectorXd Skeleton::getState()
     Eigen::VectorXd state(2 * mGenCoords.size());
     state << get_q(), get_dq();
     return state;
-}
-
-/// Returns true if the two matrices are equal within the given bound
-template <class MATRIX>
-bool equals (const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& B, double tol = 1e-5) {
-
-    // Get the matrix sizes and sanity check the call
-    const size_t n1 = A.cols(), m1 = A.rows();
-    const size_t n2 = B.cols(), m2 = B.rows();
-    if(m1!=m2 || n1!=n2) return false;
-
-    // Check each index
-    for(size_t i=0; i<m1; i++) {
-        for(size_t j=0; j<n1; j++) {
-            if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
-                return false;
-            else if(fabs(A(i,j) - B(i,j)) > tol)
-                return false;
-        }
-    }
-
-    // If no problems, the two matrices are equal
-    return true;
 }
 
 const Eigen::MatrixXd& Skeleton::getMassMatrix()

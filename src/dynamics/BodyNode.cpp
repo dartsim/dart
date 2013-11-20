@@ -736,7 +736,6 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
 
     // Articulated inertia
     mAI = mI;
-    Eigen::Matrix6d tmpAdInv;
     for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
          it != mChildBodyNodes.end(); ++it)
     {
@@ -757,10 +756,10 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
         Eigen::MatrixXd omega =
                 mParentJoint->getLocalJacobian().transpose() * mAI_S;
 #ifndef NDEBUG
-        Eigen::FullPivLU<Eigen::MatrixXd> omegaKLU(omega + _timeStep * K);
-        Eigen::FullPivLU<Eigen::MatrixXd> omegaLU(omega);
-        assert(omegaKLU.isInvertible());
-        assert(omegaLU.isInvertible());
+//        Eigen::FullPivLU<Eigen::MatrixXd> omegaKLU(omega + _timeStep * K);
+//        Eigen::FullPivLU<Eigen::MatrixXd> omegaLU(omega);
+//        assert(omegaKLU.isInvertible());
+//        assert(omegaLU.isInvertible());
 #endif
 //        mPsiK = (omega + _timeStep * K).inverse();
         mPsiK = (omega + _timeStep * K).ldlt().solve(
