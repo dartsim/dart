@@ -136,7 +136,7 @@ TEST(SKEL_PARSER, PENDULUM)
     EXPECT_EQ(world->getGravity()(2), 0);
     EXPECT_EQ(world->getNumSkeletons(), 1);
 
-    Skeleton* skel1 = world->getSkeleton("skeleton 1");
+    Skeleton* skel1 = world->getSkeleton("single_pendulum");
 
     EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
