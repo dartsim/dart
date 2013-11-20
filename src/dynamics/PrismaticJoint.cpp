@@ -77,16 +77,19 @@ void PrismaticJoint::updateTransform()
     mT = mT_ParentBodyToJoint
          * Eigen::Translation3d(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
+    assert(math::verifyTransform(mT));
 }
 
 void PrismaticJoint::updateJacobian()
 {
     mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+    assert(!math::isNan(mS));
 }
 
 void PrismaticJoint::updateJacobianTimeDeriv()
 {
     //mdS.setZero();
+    assert(mdS == math::Jacobian::Zero(6,1));
 }
 
 } // namespace dynamics

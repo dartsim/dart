@@ -153,6 +153,15 @@ public:
     /// @brief
     Eigen::VectorXd getDampingForces() const;
 
+    /// @brief Clamp joint rotations to the range of [-pi, pi].
+    /// It's particularly useful for exponential map because the system will
+    /// become unstable if the exponential map rotaion is outside this range.
+    /// For euler angles, the dof values can directly add or subtract 2*pi.
+    /// For exponential map, once the rotation magnitude is changed, the
+    /// velocity needs to change accordingly to represent the same angular
+    /// velocity. This function requires the updated transformations.
+    virtual void clampRotation() {}
+
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------

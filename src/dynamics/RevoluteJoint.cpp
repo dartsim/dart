@@ -75,18 +75,19 @@ void RevoluteJoint::updateTransform()
     mT = mT_ParentBodyToJoint
          * math::expAngular(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
-
     assert(math::verifyTransform(mT));
 }
 
 void RevoluteJoint::updateJacobian()
 {
     mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+    assert(!math::isNan(mS));
 }
 
 void RevoluteJoint::updateJacobianTimeDeriv()
 {
     //mdS.setZero();
+    assert(mdS == math::Jacobian::Zero(6,1));
 }
 
 } // namespace dynamics

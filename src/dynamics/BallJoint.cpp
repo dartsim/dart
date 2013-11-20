@@ -69,6 +69,8 @@ inline void BallJoint::updateTransform()
     mT = mT_ParentBodyToJoint *
             math::expAngular(q) *
             mT_ChildBodyToJoint.inverse();
+
+    assert(math::verifyTransform(mT));
 }
 
 inline void BallJoint::updateJacobian()
@@ -90,6 +92,22 @@ inline void BallJoint::updateJacobian()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+
+    assert(!math::isNan(mS));
+
+//    Eigen::MatrixXd JTJ = mS.transpose() * mS;
+//    Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
+////    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
+//    double det = luJTJ.determinant();
+//    if (det < 1e-5)
+//    {
+//        std::cout << "ill-conditioned Jacobian in joint [" << mName << "]."
+//                  << " The determinant of the Jacobian is (" << det << ")."
+//                  << std::endl;
+//        std::cout << "rank is (" << luJTJ.rank() << ")." << std::endl;
+//        std::cout << "det is (" << luJTJ.determinant() << ")." << std::endl;
+////        std::cout << "mS: \n" << mS << std::endl;
+//    }
 }
 
 inline void BallJoint::updateJacobianTimeDeriv()
@@ -114,6 +132,19 @@ inline void BallJoint::updateJacobianTimeDeriv()
     mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
     mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
     mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+
+    assert(!math::isNan(mdS));
+}
+
+void BallJoint::clampRotation()
+{
+//    for (int i = 0; i < 3; i++)
+//    {
+//        if( mCoordinate[i].get_q() > M_PI )
+//            mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
+//        if( mCoordinate[i].get_q() < -M_PI )
+//            mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+//    }
 }
 
 } // namespace dynamics

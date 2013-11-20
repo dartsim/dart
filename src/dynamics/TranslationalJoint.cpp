@@ -64,6 +64,7 @@ void TranslationalJoint::updateTransform()
     mT = mT_ParentBodyToJoint *
          Eigen::Translation3d(get_q()) *
          mT_ChildBodyToJoint.inverse();
+    assert(math::verifyTransform(mT));
 }
 
 void TranslationalJoint::updateJacobian()
@@ -79,11 +80,14 @@ void TranslationalJoint::updateJacobian()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+
+    assert(!math::isNan(mS));
 }
 
 void TranslationalJoint::updateJacobianTimeDeriv()
 {
-    mdS.setZero();
+    //mdS.setZero();
+    assert(mdS == math::Jacobian::Zero(6,3));
 }
 
 } // namespace dynamics

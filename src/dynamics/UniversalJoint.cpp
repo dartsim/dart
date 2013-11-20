@@ -90,18 +90,33 @@ inline void UniversalJoint::updateTransform()
          math::expAngular(mAxis[0] * mCoordinate[0].get_q()) *
          math::expAngular(mAxis[1] * mCoordinate[1].get_q()) *
          mT_ChildBodyToJoint.inverse();
+    assert(math::verifyTransform(mT));
 }
 
 inline void UniversalJoint::updateJacobian()
 {
     mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
     mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
+    assert(!math::isNan(mS));
 }
 
 inline void UniversalJoint::updateJacobianTimeDeriv()
 {
     mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));
     //mdS.col(1) = setZero();
+    assert(!math::isNan(mdS.col(0)));
+    assert(mdS.col(1) == Eigen::Vector6d::Zero());
+}
+
+void UniversalJoint::clampRotation()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        if( mCoordinate[i].get_q() > M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
+        if( mCoordinate[i].get_q() < -M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+    }
 }
 
 } // namespace dynamics

@@ -64,6 +64,9 @@ public:
     // Documentation inherited.
     virtual void updateJacobianTimeDeriv();
 
+    // Documentation inherited.
+    virtual void clampRotation();
+
 protected:
     /// @brief
     GenCoord mCoordinate[3];

@@ -108,6 +108,8 @@ void FreeJoint::updateJacobian()
     mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
     mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
     mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
+
+    assert(!math::isNan(mS));
 }
 
 void FreeJoint::updateJacobianTimeDeriv()
@@ -141,6 +143,19 @@ void FreeJoint::updateJacobianTimeDeriv()
     mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
     mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
     mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
+
+    assert(!math::isNan(mdS));
+}
+
+void dart::dynamics::FreeJoint::clampRotation()
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if( mCoordinate[i].get_q() > M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
+        if( mCoordinate[i].get_q() < -M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+    }
 }
 
 } // namespace dynamics
