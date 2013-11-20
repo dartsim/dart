@@ -1002,12 +1002,12 @@ void BodyNode::updateMassMatrix()
     if (dof > 0)
     {
         mM_dV.noalias() += mParentJoint->getLocalJacobian() *
-                            mParentJoint->get_ddq();
+                           mParentJoint->get_ddq();
         assert(!math::isNan(mM_dV));
     }
     if (mParentBodyNode)
         mM_dV += math::AdInvT(mParentJoint->getLocalTransform(),
-                               mParentBodyNode->mM_dV);
+                              mParentBodyNode->mM_dV);
     assert(!math::isNan(mM_dV));
 }
 
