@@ -172,14 +172,14 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
     // Set dimension of dynamics quantities
     int dof = getNumGenCoords();
-    mM       = Eigen::MatrixXd::Zero(dof, dof);
-    mMInv    = Eigen::MatrixXd::Zero(dof, dof);
-    mCvec     = Eigen::VectorXd::Zero(dof);
-    mG        = Eigen::VectorXd::Zero(dof);
-    mCg       = Eigen::VectorXd::Zero(dof);
-    mFext     = Eigen::VectorXd::Zero(dof);
-    mFc       = Eigen::VectorXd::Zero(dof);
-    mFd       = Eigen::VectorXd::Zero(dof);
+    mM    = Eigen::MatrixXd::Zero(dof, dof);
+    mMInv = Eigen::MatrixXd::Zero(dof, dof);
+    mCvec = Eigen::VectorXd::Zero(dof);
+    mG    = Eigen::VectorXd::Zero(dof);
+    mCg   = Eigen::VectorXd::Zero(dof);
+    mFext = Eigen::VectorXd::Zero(dof);
+    mFc   = Eigen::VectorXd::Zero(dof);
+    mFd   = Eigen::VectorXd::Zero(dof);
 
     // Clear external/internal force
     clearExternalForceVector();
@@ -189,10 +189,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     mTotalMass = 0.0;
     for(int i = 0; i < getNumBodyNodes(); i++)
         mTotalMass += getBodyNode(i)->getMass();
-
-    // Set function pointers
-    if (dof >= 50)
-    {}
 }
 
 void Skeleton::addBodyNode(BodyNode* _body)
