@@ -80,7 +80,7 @@ public:
     /// @brief
     static simulation::World* readSkelFile(const std::string& _filename);
 
-private:
+//private:
     struct SkelBodyNode
     {
         dynamics::BodyNode* bodyNode;
