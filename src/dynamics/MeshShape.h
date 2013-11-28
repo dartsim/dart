@@ -43,10 +43,14 @@
 namespace dart {
 namespace dynamics {
 
-class MeshShape : public Shape {
+class MeshShape : public Shape
+{
 public:
     /// @brief Constructor.
     MeshShape(Eigen::Vector3d _dim, const aiScene *_mesh);
+
+    /// @brief Destructor.
+    virtual ~MeshShape();
 
     /// @brief
     inline const aiScene* getMesh() const { return mMesh; }
