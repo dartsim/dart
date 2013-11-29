@@ -364,9 +364,9 @@ public:
     // Rendering
     //--------------------------------------------------------------------------
     /// @brief Render the entire subtree rooted at this body node.
-    void draw(renderer::RenderInterface* _ri = NULL,
-              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-              bool _useDefaultColor = true, int _depth = 0) const;
+    virtual void draw(renderer::RenderInterface* _ri = NULL,
+                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                      bool _useDefaultColor = true, int _depth = 0) const;
 
     /// @brief Render the markers
     void drawMarkers(renderer::RenderInterface* _ri = NULL,
