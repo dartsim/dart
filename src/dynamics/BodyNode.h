@@ -387,39 +387,39 @@ protected:
     // Sub-functions for Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
     /// @brief Update local transformations and world transformations.
-    void updateTransform();
+    virtual void updateTransform();
 
     /// @brief
-    void updateVelocity();
+    virtual void updateVelocity();
 
     /// @brief
     /// parentJoint.dS --> dJ
-    void updateEta(bool _updateJacobianDeriv = false);
+    virtual void updateEta(bool _updateJacobianDeriv = false);
 
     /// @brief
     /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
-    void updateAcceleration();
+    virtual void updateAcceleration();
 
     /// @brief
     /// childBodies.F, V, dV --> F, Fgravity
-    void updateBodyForce(const Eigen::Vector3d& _gravity,
-                         bool _withExternalForces = false);
+    virtual void updateBodyForce(const Eigen::Vector3d& _gravity,
+                                 bool _withExternalForces = false);
 
     /// @brief
     /// parentJoint.S, F --> tau
-    void updateGeneralizedForce(bool _withDampingForces = false);
+    virtual void updateGeneralizedForce(bool _withDampingForces = false);
 
     /// @brief
-    void updateArticulatedInertia(double _timeStep);
+    virtual void updateArticulatedInertia(double _timeStep);
 
     /// @brief
-    void updateBiasForce(const Eigen::Vector3d& _gravity);
+    virtual void updateBiasForce(const Eigen::Vector3d& _gravity);
 
     /// @brief
-    void update_ddq();
+    virtual void update_ddq();
 
     /// @brief
-    void update_F_fs();
+    virtual void update_F_fs();
 
     /// @brief
     void updateMassMatrix();
