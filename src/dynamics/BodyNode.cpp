@@ -326,6 +326,16 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
     mAlpha.setZero(dof);
 }
 
+void BodyNode::aggregateGenCoords(std::vector<GenCoord*>& _genCoords)
+{
+    assert(mParentJoint);
+    for (int i = 0; i < mParentJoint->getNumGenCoords(); ++i)
+    {
+        mParentJoint->getGenCoord(i)->setSkeletonIndex(_genCoords.size());
+        _genCoords.push_back(mParentJoint->getGenCoord(i));
+    }
+}
+
 void BodyNode::draw(renderer::RenderInterface* _ri,
                     const Eigen::Vector4d& _color,
                     bool _useDefaultColor,

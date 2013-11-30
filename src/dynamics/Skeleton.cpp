@@ -153,12 +153,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     mGenCoords.clear();
     for(int i = 0; i < getNumBodyNodes(); ++i)
     {
-        Joint* joint = mBodyNodes[i]->getParentJoint();
-        for (int j = 0; j < joint->getNumGenCoords(); ++j)
-        {
-            joint->getGenCoord(j)->setSkeletonIndex(mGenCoords.size());
-            mGenCoords.push_back(joint->getGenCoord(j));
-        }
+        mBodyNodes[i]->aggregateGenCoords(mGenCoords);
         mBodyNodes[i]->init(this, i);
         mBodyNodes[i]->updateTransform();
         mBodyNodes[i]->updateVelocity();

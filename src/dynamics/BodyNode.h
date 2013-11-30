@@ -377,6 +377,12 @@ protected:
     /// @brief Initialize the vector members with proper sizes.
     void init(Skeleton* _skeleton, int _skeletonIndex);
 
+    // TODO: This function will be deprecated when we stop using GenCoord and
+    //       GenCoordSystem classes.
+    /// @brief Aggregate generalized coordinates of this body node to
+    ///        generalized of the system.
+    virtual void aggregateGenCoords(std::vector<GenCoord*>& _genCoords);
+
     //--------------------------------------------------------------------------
     // Sub-functions for Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
