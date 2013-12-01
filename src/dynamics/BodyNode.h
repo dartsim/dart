@@ -375,7 +375,7 @@ public:
 
 protected:
     /// @brief Initialize the vector members with proper sizes.
-    void init(Skeleton* _skeleton, int _skeletonIndex);
+    virtual void init(Skeleton* _skeleton, int _skeletonIndex);
 
     // TODO: This function will be deprecated when we stop using GenCoord and
     //       GenCoordSystem classes.
