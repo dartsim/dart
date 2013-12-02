@@ -69,13 +69,18 @@ void FreeJoint::updateTransform()
                        mCoordinate[1].get_q(),
                        mCoordinate[2].get_q());
     Eigen::Vector3d q2(mCoordinate[3].get_q(),
-                  mCoordinate[4].get_q(),
-                  mCoordinate[5].get_q());
+                       mCoordinate[4].get_q(),
+                       mCoordinate[5].get_q());
 
-    mT = mT_ParentBodyToJoint *
-            Eigen::Translation3d(q2) *
-            math::expAngular(q1) *
-            mT_ChildBodyToJoint.inverse();
+    // TODO: Debug code
+//    std::cout << "Rigid body (  y): " << mCoordinate[4].get_q() << std::endl;
+//    std::cout << "Rigid body ( dy): " << mCoordinate[4].get_dq() << std::endl;
+//    std::cout << "Rigid body (ddy): " << mCoordinate[4].get_ddq() << std::endl << std::endl;
+
+    mT = mT_ParentBodyToJoint*
+         Eigen::Translation3d(q2)*
+         math::expAngular(q1)*
+         mT_ChildBodyToJoint.inverse();
 
     assert(math::verifyTransform(mT));
 }
