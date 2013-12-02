@@ -853,6 +853,8 @@ void BodyNode::update_ddq()
 
     mParentJoint->set_ddq(ddq);
     assert(!math::isNan(ddq));
+
+    updateAcceleration();
 }
 
 void BodyNode::update_F_fs()

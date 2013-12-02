@@ -670,7 +670,6 @@ void Skeleton::computeForwardDynamics()
          it != mBodyNodes.end(); ++it)
     {
         (*it)->update_ddq();
-        (*it)->updateAcceleration();
         (*it)->update_F_fs();
     }
 }
