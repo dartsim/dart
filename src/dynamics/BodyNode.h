@@ -561,16 +561,16 @@ protected:
 
     /// @brief
     Eigen::MatrixXd mImplicitPsi;
-
+public: // TODO: This will be removed once Node class is implemented.
     /// @brief
     math::Inertia mPi;
-
+protected: // TODO:
     /// @brief
     Eigen::VectorXd mAlpha;
-
+public: // TODO: This will be removed once Node class is implemented.
     /// @brief
     Eigen::Vector6d mBeta;
-
+protected:
     /// @brief Cache data for combined vector of the system.
     Eigen::Vector6d mCg_dV;
     Eigen::Vector6d mCg_F;
