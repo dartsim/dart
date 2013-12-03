@@ -196,7 +196,7 @@ Eigen::VectorXd Joint::getSpringForces(double _timeStep) const
     for (int i = 0; i < numDofs; ++i)
     {
         springForce(i) =
-                -mSpringStiffness[i]*(getGenCoord(i)->get_q() -
+                -mSpringStiffness[i]*(getGenCoord(i)->get_q() +
                                       getGenCoord(i)->get_dq()*_timeStep);
     }
 
