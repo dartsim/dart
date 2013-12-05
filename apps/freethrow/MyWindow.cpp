@@ -40,10 +40,18 @@ void MyWindow::drawSkels()
         glEnable(GL_LIGHTING);
     } else {
         Vector3d diff = mWorld->getSkeleton(1)->getWorldCOM() - mWorld->getSkeleton(2)->getWorldCOM();
-        if (abs(diff[1]) < 0.01 && diff[0] * diff[0] + diff[2] * diff[2] < 0.04) 
+        if (abs(diff[1]) < 0.01 && diff[0] * diff[0] + diff[2] * diff[2] < 0.04) { 
             mSwish = true;
+            mScore += 2;
+        }
     }
-
+    glDisable(GL_LIGHTING);
+    char buff[64];
+    sprintf(buff, "%d", mScore);
+    string frame(buff);
+    glColor3f(0.0, 0.0, 0.0);
+    drawStringOnScreen(0.93f, 0.95f, frame);
+    glEnable(GL_LIGHTING);
 }
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
@@ -118,7 +126,8 @@ void MyWindow::resetScene() {
     //initBallPose << x, y + 0.2, z;
     //  mWorld->getSkeleton(1)->setPose(initBallPose);
 
-
     mController->initializeTargetPose();
+    if (!mSwish)
+        mScore -= 1;
     mSwish = false;
 }
