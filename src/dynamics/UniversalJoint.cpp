@@ -54,7 +54,8 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
     mS = Eigen::Matrix<double,6,2>::Zero();
     mdS = Eigen::Matrix<double,6,2>::Zero();
 
-    mDampingCoefficient.resize(2, 0);
+    mSpringStiffness.resize(2, 0.0);
+    mDampingCoefficient.resize(2, 0.0);
 
     mAxis[0] = _axis0.normalized();
     mAxis[1] = _axis1.normalized();

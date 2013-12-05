@@ -662,7 +662,7 @@ void Skeleton::computeForwardDynamics()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-        (*it)->updateBiasForce(mGravity);
+        (*it)->updateBiasForce(mTimeStep, mGravity);
     }
 
     // Forward recursion

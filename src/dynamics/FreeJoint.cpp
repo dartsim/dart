@@ -56,7 +56,8 @@ FreeJoint::FreeJoint(const std::string& _name)
     mS = Eigen::Matrix<double,6,6>::Zero();
     mdS = Eigen::Matrix<double,6,6>::Zero();
 
-    mDampingCoefficient.resize(6, 0);
+    mSpringStiffness.resize(6, 0.0);
+    mDampingCoefficient.resize(6, 0.0);
 }
 
 FreeJoint::~FreeJoint()

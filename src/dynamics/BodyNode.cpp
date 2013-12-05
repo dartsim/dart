@@ -322,7 +322,7 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
     int dof = mParentJoint->getNumGenCoords();
     mAI_S.setZero(6, dof);
     mPsi.setZero(dof, dof);
-    mPsiK.setZero(dof, dof);
+    mImplicitPsi.setZero(dof, dof);
     mAlpha.setZero(dof);
 }
 
@@ -760,9 +760,14 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
     int dof = mParentJoint->getNumGenCoords();
     if (dof > 0)
     {
+        Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
         Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
         for (int i = 0; i < dof; ++i)
-            K(i, i) = mParentJoint->getDampingCoefficient(i);
+        {
+            K(i, i) = mParentJoint->getSpringCoefficient(i);
+            D(i, i) = mParentJoint->getDampingCoefficient(i);
+        }
+
         Eigen::MatrixXd omega =
                 mParentJoint->getLocalJacobian().transpose() * mAI_S;
 #ifndef NDEBUG
@@ -771,13 +776,14 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
 //        assert(omegaKLU.isInvertible());
 //        assert(omegaLU.isInvertible());
 #endif
-//        mPsiK = (omega + _timeStep * K).inverse();
-        mPsiK = (omega + _timeStep * K).ldlt().solve(
+//        mPsiK = (omega + _timeStep*_timeStep*K + _timeStep * K).inverse();
+        mImplicitPsi =
+                (omega + _timeStep*_timeStep*K + _timeStep*D).ldlt().solve(
                     Eigen::MatrixXd::Identity(dof, dof));
 //        mPsi = (omega).inverse();
         mPsi = (omega).ldlt().solve(Eigen::MatrixXd::Identity(dof, dof));
     }
-    assert(!math::isNan(mPsiK));
+    assert(!math::isNan(mImplicitPsi));
     assert(!math::isNan(mPsi));
 
     // Cache data: AI_S_Psi
@@ -786,11 +792,12 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
     // Cache data: Pi
     mPi = mAI;
     if (dof > 0)
-        mPi.noalias() -= mAI_S*mPsiK*mAI_S.transpose();
+        mPi.noalias() -= mAI_S*mImplicitPsi*mAI_S.transpose();
     assert(!math::isNan(mPi));
 }
 
-void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
+void BodyNode::updateBiasForce(double _timeStep,
+                               const Eigen::Vector3d& _gravity)
 {
     // Bias force
     if (mGravityMode == true)
@@ -814,10 +821,16 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
     int dof = mParentJoint->getNumGenCoords();
     if (dof > 0)
     {
-        mAlpha = mParentJoint->get_tau() + mParentJoint->getDampingForces();
+        mAlpha = mParentJoint->get_tau() +
+                 mParentJoint->getSpringForces(_timeStep);
+                 mParentJoint->getDampingForces();
         for (int i = 0; i < dof; i++)
-            mAlpha(i) += mSkeleton->getConstraintForceVector()[mParentJoint->getGenCoord(i)->getSkeletonIndex()];
-        //mAlpha.noalias() -= mParentJoint->getLocalJacobian().transpose()*(mAI*mEta + mB);
+        {
+            mAlpha(i) += mSkeleton->getConstraintForceVector()[
+                         mParentJoint->getGenCoord(i)->getSkeletonIndex()];
+        }
+//        mAlpha.noalias() -= mParentJoint->getLocalJacobian().transpose()*(
+//                                mAI*mEta + mB);
         mAlpha.noalias() -= mAI_S.transpose() * mEta;
         mAlpha.noalias() -= mParentJoint->getLocalJacobian().transpose() * mB;
         assert(!math::isNan(mAlpha));
@@ -828,7 +841,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity)
     mBeta.noalias() += mAI*mEta;
     if (dof > 0)
     {
-        mBeta.noalias() += mAI_S * mPsiK * mAlpha;
+        mBeta.noalias() += mAI_S * mImplicitPsi * mAlpha;
     }
     assert(!math::isNan(mBeta));
 }
@@ -842,13 +855,13 @@ void BodyNode::update_ddq()
     if (mParentBodyNode)
     {
         ddq.noalias() =
-                mPsiK * (mAlpha - mAI_S.transpose() *
+                mImplicitPsi * (mAlpha - mAI_S.transpose() *
                          math::AdInvT(mParentJoint->getLocalTransform(),
                                       mParentBodyNode->getBodyAcceleration()));
     }
     else
     {
-        ddq.noalias() = mPsiK * mAlpha;
+        ddq.noalias() = mImplicitPsi * mAlpha;
     }
 
     mParentJoint->set_ddq(ddq);

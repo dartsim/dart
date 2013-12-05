@@ -54,7 +54,8 @@ ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
     mS = Eigen::Matrix<double,6,1>::Zero();
     mdS = Eigen::Matrix<double,6,1>::Zero();
 
-    mDampingCoefficient.resize(1, 0);
+    mSpringStiffness.resize(1, 0.0);
+    mDampingCoefficient.resize(1, 0.0);
 }
 
 ScrewJoint::~ScrewJoint()

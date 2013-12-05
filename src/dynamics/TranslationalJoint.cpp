@@ -52,7 +52,8 @@ TranslationalJoint::TranslationalJoint(const std::string& _name)
     mS = Eigen::Matrix<double,6,3>::Zero();
     mdS = Eigen::Matrix<double,6,3>::Zero();
 
-    mDampingCoefficient.resize(3, 0);
+    mSpringStiffness.resize(3, 0.0);
+    mDampingCoefficient.resize(3, 0.0);
 }
 
 TranslationalJoint::~TranslationalJoint()
