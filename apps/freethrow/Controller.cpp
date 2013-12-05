@@ -21,6 +21,17 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
         
     mTorques = VectorXd::Zero(nDof);
 
+    initializeTargetPose();
+    
+    // using SPD results in simple Kp coefficients
+    for (int i = 0; i < nDof; i++) {
+        mKp(i, i) = 500.0;
+        mKd(i, i) = 50.0;
+    }
+}
+
+void Controller::initializeTargetPose() {
+    int nDof = mSkel->getNumDofs();
     // set desired joint angles for grasping
     double graspPose[] = { 0, 0, 3.11, 0, 0.0, 0.15, 0.28, -0.87, -0.26, -0.8, -0.12, 0.15, -0.49, -0.51, -0.15, -1.24, -0.62, -0.31, -0.03, -1.44, -0.54, -0.33, -0.11, -1.56, -0.56, -0.37, -0.34, -1.74, -0.58};
 
@@ -28,12 +39,6 @@ Controller::Controller(dynamics::SkeletonDynamics *_skel, double _t) {
 
     for (int i = 0; i < nDof; i++){
         mDesiredDofs[i] = graspPose[i];
-    }
-    
-    // using SPD results in simple Kp coefficients
-    for (int i = 0; i < nDof; i++) {
-        mKp(i, i) = 500.0;
-        mKd(i, i) = 50.0;
     }
 }
 
@@ -47,12 +52,6 @@ void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel, c
     VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d + _constrForce);
     mTorques = p + d - mKd * qddot * mTimestep;
     
-    if (mFrame == 1000) {
-        getReady();
-    } else if (mFrame == 2000) {
-        throwBall();
-    }
-
     mFrame++;
 }
 

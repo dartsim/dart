@@ -11,6 +11,7 @@ class MyWindow : public simulation::SimWindow
  MyWindow(): SimWindow() {
         mTrans[1] = 0.f;
         mController = NULL;
+        mSwish = false;
     }
     virtual ~MyWindow() {}
     
@@ -27,7 +28,8 @@ class MyWindow : public simulation::SimWindow
 
  private:
     Controller *mController;
-
+    void resetScene();
+    bool mSwish;
 };
 
 #endif

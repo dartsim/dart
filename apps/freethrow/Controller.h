@@ -19,6 +19,7 @@ class Controller {
 
     Eigen::VectorXd getTorques() { return mTorques; };
     double getTorque(int _index) { return mTorques[_index]; };
+    void initializeTargetPose();
     void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; };
     void computeTorques(const Eigen::VectorXd& _dof, const Eigen::VectorXd& _dofVel, const Eigen::VectorXd& _constrForce);
     dynamics::SkeletonDynamics* getSkel() { return mSkel; };
