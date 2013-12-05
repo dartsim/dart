@@ -760,8 +760,8 @@ void BodyNode::updateArticulatedInertia(double _timeStep)
     int dof = mParentJoint->getNumGenCoords();
     if (dof > 0)
     {
-        Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
         Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
+        Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
         for (int i = 0; i < dof; ++i)
         {
             K(i, i) = mParentJoint->getSpringCoefficient(i);
