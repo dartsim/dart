@@ -413,7 +413,8 @@ protected:
     virtual void updateArticulatedInertia(double _timeStep);
 
     /// @brief
-    virtual void updateBiasForce(double _timeStep, const Eigen::Vector3d& _gravity);
+    virtual void updateBiasForce(double _timeStep,
+                                 const Eigen::Vector3d& _gravity);
 
     /// @brief
     virtual void update_ddq();
