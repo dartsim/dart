@@ -275,26 +275,45 @@ Eigen::VectorXd Skeleton::getConfig() const
     return get_q();
 }
 
-void Skeleton::setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config)
+void Skeleton::setConfig(const std::vector<int>& _id,
+                         const Eigen::VectorXd& _config)
 {
     for( unsigned int i = 0; i < _id.size(); i++ )
         mGenCoords[_id[i]]->set_q(_config(i));
 
-    for (std::vector<BodyNode*>::iterator itrBody = mBodyNodes.begin();
-         itrBody != mBodyNodes.end(); ++itrBody)
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
     {
-        (*itrBody)->updateTransform();
+        (*it)->updateTransform();
+        (*it)->updateVelocity();
+        (*it)->updateEta();
     }
+
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+        (*it)->updateArticulatedInertia(mTimeStep);
+    }
+
+    mIsMassMatrixDirty = true;
+    mIsMassInvMatrixDirty = true;
+    mIsCoriolisVectorDirty = true;
+    mIsGravityForceVectorDirty = true;
+    mIsCombinedVectorDirty = true;
+    mIsExternalForceVectorDirty = true;
+    //mIsDampingForceVectorDirty = true;
 }
 
 void Skeleton::setConfig(const Eigen::VectorXd& _config)
 {
     set_q(_config);
 
-    for (std::vector<BodyNode*>::iterator itrBody = mBodyNodes.begin();
-         itrBody != mBodyNodes.end(); ++itrBody)
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
     {
-        (*itrBody)->updateTransform();
+        (*it)->updateTransform();
+        (*it)->updateVelocity();
+        (*it)->updateEta();
     }
 
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
