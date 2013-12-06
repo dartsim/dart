@@ -490,8 +490,8 @@ void BodyNode::updateAcceleration()
         mdV.noalias() += mParentJoint->getLocalJacobian() * mParentJoint->get_ddq();
         if (mParentBodyNode)
         {
-            mdV = math::AdInvT(mParentJoint->getLocalTransform(),
-                               mParentBodyNode->getBodyAcceleration());
+            mdV += math::AdInvT(mParentJoint->getLocalTransform(),
+                                mParentBodyNode->getBodyAcceleration());
         }
     }
 
