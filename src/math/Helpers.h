@@ -90,6 +90,11 @@ inline bool isZero(double theta)
     return (fabs(theta) < DART_EPSILON);
 }
 
+inline bool isNan(double x)
+{
+    return x != x;
+}
+
 inline double asinh(double X)
 {
     return log(X + sqrt(X * X + 1));
