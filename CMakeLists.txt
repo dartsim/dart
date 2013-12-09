@@ -61,8 +61,8 @@ endif()
 
 ###############
 # Generate the path header file
-set(PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/src/utils/Paths.h.in)
-set(PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/src/utils/Paths.h)
+set(PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/dart/utils/Paths.h.in)
+set(PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/dart/utils/Paths.h)
 message(STATUS "Generate the path header file to ${PATH_HEADER_OUT}")
 configure_file(${PATH_HEADER_IN} ${PATH_HEADER_OUT} @ONLY)
 install(FILES ${PATH_HEADER_OUT} DESTINATION include/dart/utils)
@@ -110,7 +110,7 @@ if(NOT BUILD_CORE_ONLY)
   endif()
 endif()
 
-include_directories(BEFORE src)
+include_directories(BEFORE dart)
 include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
 include_directories(${Assimp_INCLUDE_DIRS})
@@ -125,7 +125,7 @@ if(NOT BUILD_CORE_ONLY)
   include_directories(${TinyXML2_INCLUDE_DIRS})
 endif()
 
-include_directories("${CMAKE_BINARY_DIR}/src")
+include_directories("${CMAKE_BINARY_DIR}/dart")
 
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
@@ -151,7 +151,7 @@ configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 ###############
-add_subdirectory(src)
+add_subdirectory(dart)
 if(NOT BUILD_CORE_ONLY)
   enable_testing()
   add_subdirectory(unittests)
