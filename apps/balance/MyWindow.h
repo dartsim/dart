@@ -13,6 +13,8 @@ class MyWindow : public simulation::SimWindow
             mForce = Eigen::Vector3d::Zero();
             mController = NULL;
             mImpulseDuration = 0;
+            mPushStrength = 20;
+            mPushTime = 100;
         }
     virtual ~MyWindow() {}
     
@@ -31,6 +33,8 @@ class MyWindow : public simulation::SimWindow
     Eigen::Vector3d mForce;
     Controller *mController;
     int mImpulseDuration;
+    double mPushStrength;
+    int mPushTime;
 };
 
 #endif

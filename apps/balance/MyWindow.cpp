@@ -79,24 +79,32 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mShowMarkers = !mShowMarkers;
         break;
     case '1':
-        mForce[0] = 20;
-        mImpulseDuration = 100.0;
-        cout << "push forward" << endl;
+        mForce[0] = mPushStrength;
+        mImpulseDuration = mPushTime;
+        cout << "push forward by " << mPushStrength << " newton" << endl;
         break;
     case '2':
-        mForce[0] = -10;
-        mImpulseDuration = 100.0;
-        cout << "push backward" << endl;
+        mForce[0] = -mPushStrength;
+        mImpulseDuration = mPushTime;
+        cout << "push backward by " << mPushStrength << " newton" << endl;
         break;
     case '3':
-        mForce[2] = 50;
-        mImpulseDuration = 100.0;
-        cout << "push right" << endl;
+        mForce[2] = mPushStrength;
+        mImpulseDuration = mPushTime;
+        cout << "push right by " << mPushStrength << " newton" << endl;
         break;
     case '4':
-        mForce[2] = -50;
-        mImpulseDuration = 100.0;
-        cout << "push left" << endl;
+        mForce[2] = -mPushStrength;
+        mImpulseDuration = mPushTime;
+        cout << "push left by " << mPushStrength << " newton" << endl;
+        break;
+    case '=':
+        mPushStrength += 20;
+        mPushTime += 50;
+        break;
+    case '-':
+        mPushStrength -= 20;
+        mPushTime -= 50;
         break;
     default:
         Win3D::keyboard(key,x,y);
