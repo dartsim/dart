@@ -11,20 +11,20 @@
 
 #include <iostream>
 #include <fstream>
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Joint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/GenCoord.h"
-#include "dynamics/Shape.h"
-#include "dynamics/BoxShape.h"
-#include "dynamics/EllipsoidShape.h"
-#include "dynamics/CylinderShape.h"
-#include "dynamics/MeshShape.h"
-#include "simulation/World.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace utils {

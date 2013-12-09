@@ -6,7 +6,7 @@
 
 #include "Controller.h"
 
-#include "yui/SimWindow.h"
+#include "dart/yui/SimWindow.h"
 
 class MyWindow : public dart::yui::SimWindow
 {
@@ -40,11 +40,11 @@ private:
 
 /*
 #include <stdarg.h>
-#include "yui/Win3D.h"
+#include "dart/yui/Win3D.h"
 #include "Controller.h"
-#include "integration/EulerIntegrator.h"
-#include "integration/RK4Integrator.h"
-#include "dynamics/SkeletonDynamics.h"
+#include "dart/integration/EulerIntegrator.h"
+#include "dart/integration/RK4Integrator.h"
+#include "dart/dynamics/SkeletonDynamics.h"
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:

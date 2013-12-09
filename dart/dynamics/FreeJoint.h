@@ -40,8 +40,8 @@
 
 #include <Eigen/Dense>
 
-#include "dynamics/GenCoord.h"
-#include "dynamics/Joint.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace dynamics {

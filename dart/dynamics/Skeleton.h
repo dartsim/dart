@@ -41,8 +41,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "math/Geometry.h"
-#include "dynamics/GenCoordSystem.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer { class RenderInterface; }

@@ -42,9 +42,9 @@
  */
 
 #include "RRT.h"
-#include "simulation/World.h"
-#include "dynamics/GenCoord.h"
-#include "dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Skeleton.h"
 #include <flann/flann.hpp>
 
 using namespace std;

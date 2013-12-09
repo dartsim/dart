@@ -110,7 +110,7 @@ if(NOT BUILD_CORE_ONLY)
   endif()
 endif()
 
-include_directories(BEFORE dart)
+include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
 include_directories(${Assimp_INCLUDE_DIRS})
@@ -125,7 +125,7 @@ if(NOT BUILD_CORE_ONLY)
   include_directories(${TinyXML2_INCLUDE_DIRS})
 endif()
 
-include_directories("${CMAKE_BINARY_DIR}/dart")
+include_directories("${CMAKE_BINARY_DIR}")
 
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")

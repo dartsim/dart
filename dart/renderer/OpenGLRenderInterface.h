@@ -41,7 +41,7 @@
 #include <list>
 #include <vector>
 #include "RenderInterface.h"
-#include "renderer/LoadOpengl.h"
+#include "dart/renderer/LoadOpengl.h"
 
 namespace dart {
 

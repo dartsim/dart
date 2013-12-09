@@ -1,7 +1,7 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include "yui/SimWindow.h"
+#include "dart/yui/SimWindow.h"
 
 class MyWindow : public dart::yui::SimWindow
 {

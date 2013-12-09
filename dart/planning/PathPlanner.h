@@ -12,8 +12,8 @@
 #include <limits>
 #include <list>
 #include <vector>
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 #include "RRT.h"
 #include <cstdio>
 

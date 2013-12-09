@@ -40,7 +40,7 @@
 
 #include <Eigen/Dense>
 
-#include "math/Geometry.h"
+#include "dart/math/Geometry.h"
 
 extern "C" { struct aiScene; }
 

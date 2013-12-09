@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "math/Helpers.h"
-#include "math/Geometry.h"
-#include "dynamics/WeldJoint.h"
+#include "dart/math/Helpers.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/WeldJoint.h"
 
 namespace dart {
 namespace dynamics {

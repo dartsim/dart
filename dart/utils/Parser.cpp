@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utils/Parser.h"
+#include "dart/utils/Parser.h"
 
 #include <iostream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "math/Geometry.h"
+#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace utils {

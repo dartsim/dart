@@ -36,7 +36,7 @@
  */
 
 #include "GLFuncs.h"
-#include "renderer/LoadOpengl.h"
+#include "dart/renderer/LoadOpengl.h"
 #include <string>
 #include <iostream>
 #include <Eigen/Eigen>

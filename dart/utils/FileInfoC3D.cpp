@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "utils/FileInfoC3D.h"
-#include "utils/C3D.h"
+#include "dart/utils/FileInfoC3D.h"
+#include "dart/utils/C3D.h"
 
 #include <cassert>
 

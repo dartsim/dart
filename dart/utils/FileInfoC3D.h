@@ -41,7 +41,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "math/MathTypes.h"
+#include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace utils {

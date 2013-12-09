@@ -1,6 +1,6 @@
 #include "MyWindow.h"
-#include "simulation/World.h"
-#include "dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/dynamics/Skeleton.h"
 
 using namespace dart;
 using namespace dynamics;

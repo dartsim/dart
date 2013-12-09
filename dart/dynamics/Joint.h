@@ -39,8 +39,8 @@
 #ifndef DART_DYNAMICS_JOINT_H
 #define DART_DYNAMICS_JOINT_H
 
-#include "math/Geometry.h"
-#include "dynamics/GenCoordSystem.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer { class RenderInterface; }

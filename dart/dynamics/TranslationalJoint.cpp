@@ -37,7 +37,7 @@
 
 #include "TranslationalJoint.h"
 
-#include "math/Geometry.h"
+#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace dynamics {

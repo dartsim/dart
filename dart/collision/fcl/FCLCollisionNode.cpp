@@ -39,12 +39,12 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 
-#include "dynamics/BodyNode.h"
-#include "dynamics/EllipsoidShape.h"
-#include "dynamics/CylinderShape.h"
-#include "dynamics/MeshShape.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/MeshShape.h"
 
-#include "collision/fcl/FCLCollisionNode.h"
+#include "dart/collision/fcl/FCLCollisionNode.h"
 
 namespace dart {
 namespace collision {

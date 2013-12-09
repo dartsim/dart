@@ -49,7 +49,7 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "math/MathTypes.h"
+#include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace math {

@@ -37,7 +37,7 @@
 
 #include <iostream>
 #include <ctime>
-#include "common/Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
+#include "dart/common/Timer.h"  // for WIN32 placing this before glog/logging.h causes compilation errors
 
 //#if defined _WIN64 || defined _WIN32
 //#define CLOCKS_PER_SEC 1000

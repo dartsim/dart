@@ -41,8 +41,8 @@
 #ifndef DART_SIMULATION_SIMWINDOW_H
 #define DART_SIMULATION_SIMWINDOW_H
 
-#include "yui/Win3D.h"
-#include "simulation/World.h"
+#include "dart/yui/Win3D.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace yui {

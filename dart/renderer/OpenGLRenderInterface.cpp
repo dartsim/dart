@@ -38,13 +38,13 @@
 #include <iostream>
 #include <assimp/cimport.h>
 
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Shape.h"
-#include "dynamics/CylinderShape.h"
-#include "dynamics/MeshShape.h"
-#include "renderer/LoadOpengl.h"
-#include "renderer/OpenGLRenderInterface.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/renderer/LoadOpengl.h"
+#include "dart/renderer/OpenGLRenderInterface.h"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj *quadObj;

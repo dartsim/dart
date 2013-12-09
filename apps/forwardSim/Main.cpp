@@ -1,8 +1,8 @@
-#include "utils/Paths.h"
-#include "math/Helpers.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
-#include "utils/SkelParser.h"
+#include "dart/utils/Paths.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/SkelParser.h"
 
 #include "MyWindow.h"
 

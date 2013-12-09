@@ -36,9 +36,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "renderer/RenderInterface.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Joint.h"
+#include "dart/renderer/RenderInterface.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace dynamics {

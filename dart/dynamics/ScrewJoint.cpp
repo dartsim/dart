@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "math/Geometry.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/ScrewJoint.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/ScrewJoint.h"
 
 namespace dart {
 namespace dynamics {

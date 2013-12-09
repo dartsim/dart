@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dynamics/GenCoordSystem.h"
+#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace dynamics {

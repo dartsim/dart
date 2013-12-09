@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "integration/EulerIntegrator.h"
+#include "dart/integration/EulerIntegrator.h"
 
 namespace dart {
 namespace integration {

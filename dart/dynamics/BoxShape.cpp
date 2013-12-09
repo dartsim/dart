@@ -36,7 +36,7 @@
  */
 
 #include "BoxShape.h"
-#include "renderer/RenderInterface.h"
+#include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {

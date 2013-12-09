@@ -50,7 +50,7 @@ jittering for depth of field effects. Use in conjunction with the
 accwindow() routine.
 */
 
-#include <renderer/LoadOpengl.h>
+#include "dart/renderer/LoadOpengl.h"
 
 typedef struct 
 {

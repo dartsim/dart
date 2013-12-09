@@ -39,12 +39,12 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "common/Timer.h"
-#include "math/Geometry.h"
-#include "math/Helpers.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
+#include "dart/common/Timer.h"
+#include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 using namespace dart;
 using namespace common;

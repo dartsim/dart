@@ -40,7 +40,7 @@
 
 #include <fstream>
 #include <string>
-#include "math/UtilsRotation.h"
+#include "dart/math/UtilsRotation.h"
 
 namespace kinematics{
     class Skeleton;

@@ -5,9 +5,9 @@
  * @brief Visualizes 2D and 3D rrts with gnuplot.
  */
 
-#include "planning/PathPlanner.h"
-#include "../unittests/TestHelpers.h" // TODO: Fix this hack
-#include "simulation/World.h"
+#include "dart/planning/PathPlanner.h"
+#include "../../unittests/TestHelpers.h" // TODO: Fix this hack
+#include "dart/simulation/World.h"
 
 using namespace std;
 using namespace dart;

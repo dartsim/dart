@@ -39,8 +39,8 @@
 #ifndef DART_YUI_GLUTWINDOW_H
 #define DART_YUI_GLUTWINDOW_H
 
-#include "renderer/LoadOpengl.h"
-#include "renderer/RenderInterface.h"
+#include "dart/renderer/LoadOpengl.h"
+#include "dart/renderer/RenderInterface.h"
 #include <vector>
 #include "lodepng.h"
 

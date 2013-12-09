@@ -1,10 +1,10 @@
 #include "MyWindow.h"
-#include "math/Helpers.h"
-#include "simulation/World.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/BoxShape.h"
+#include "dart/math/Helpers.h"
+#include "dart/simulation/World.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/BoxShape.h"
 
 using namespace dart;
 using namespace dynamics;

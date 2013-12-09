@@ -78,7 +78,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "math/Geometry.h"
+#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace renderer {

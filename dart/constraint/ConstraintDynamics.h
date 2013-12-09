@@ -41,9 +41,9 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "constraint/Constraint.h"
-#include "collision/CollisionDetector.h"
-#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/constraint/Constraint.h"
+#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 namespace dart {
 

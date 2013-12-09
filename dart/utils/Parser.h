@@ -44,7 +44,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "math/MathTypes.h"
+#include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace utils {

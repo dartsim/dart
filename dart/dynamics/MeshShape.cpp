@@ -36,7 +36,7 @@
  */
 
 #include "MeshShape.h"
-#include "renderer/RenderInterface.h"
+#include "dart/renderer/RenderInterface.h"
 #include <iostream>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

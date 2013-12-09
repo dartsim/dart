@@ -42,9 +42,9 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "common/Console.h"
-#include "math/Helpers.h"
-//#include "collision/unc/UNCCollisionDetector.h"
+#include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
+//#include "dart/collision/unc/UNCCollisionDetector.h"
 
 using namespace dart;
 using namespace math;

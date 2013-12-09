@@ -39,9 +39,9 @@
 #include <fstream>
 #include <iostream>
 
-#include "dynamics/Skeleton.h"
-#include "dynamics/GenCoord.h"
-#include "utils/FileInfoDof.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/utils/FileInfoDof.h"
 
 namespace dart {
 namespace utils {

@@ -11,8 +11,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "SnoptInterface.h"
-#include "optimizer/Solver.h"
+#include "dart/optimizer/snopt/SnoptInterface.h"
+#include "dart/optimizer/Solver.h"
 
 namespace dart {
 namespace optimizer {

@@ -36,20 +36,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dynamics/BodyNode.h"
+#include "dart/dynamics/BodyNode.h"
 
 #include <algorithm>
 #include <iostream>
 #include <queue>
 #include <stack>
 
-#include "common/Console.h"
-#include "math/Helpers.h"
-#include "renderer/RenderInterface.h"
-#include "dynamics/Joint.h"
-#include "dynamics/Shape.h"
-#include "dynamics/Skeleton.h"
-#include "dynamics/Marker.h"
+#include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
+#include "dart/renderer/RenderInterface.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Marker.h"
 
 namespace dart {
 namespace dynamics {

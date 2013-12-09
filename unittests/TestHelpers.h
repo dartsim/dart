@@ -10,22 +10,22 @@
 
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
-#include "constraint/ConstraintDynamics.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/GenCoord.h"
-#include "dynamics/Joint.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/ScrewJoint.h"
-#include "dynamics/TranslationalJoint.h"
-#include "dynamics/BallJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/EulerJoint.h"
-#include "dynamics/UniversalJoint.h"
-#include "dynamics/BoxShape.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/BoxShape.h"
 
 using namespace dart;
 using namespace dynamics;

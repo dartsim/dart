@@ -41,7 +41,7 @@
 #include <vector>
 #include <ctime>
 #include <Eigen/Dense>
-#include "math/MathTypes.h"
+#include "dart/math/MathTypes.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //  C3D file reader and writer

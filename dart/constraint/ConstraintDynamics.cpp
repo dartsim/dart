@@ -1,13 +1,13 @@
-#include "common/Timer.h"
-#include "math/Helpers.h"
-#include "lcpsolver/LCPSolver.h"
-#include "collision/fcl/FCLCollisionDetector.h"
-#include "collision/dart/DARTCollisionDetector.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/GenCoord.h"
-#include "dynamics/Joint.h"
-#include "dynamics/Skeleton.h"
-#include "constraint/ConstraintDynamics.h"
+#include "dart/common/Timer.h"
+#include "dart/math/Helpers.h"
+#include "dart/lcpsolver/LCPSolver.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/constraint/ConstraintDynamics.h"
 
 using namespace dart;
 using namespace collision;

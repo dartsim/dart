@@ -1,9 +1,9 @@
 #include "ClosedLoopConstraint.h"
 
-#include "math/Helpers.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
 
 using namespace dart;
 using namespace math;

@@ -11,7 +11,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "optimizer/OptimizerArrayTypes.h"
+#include "dart/optimizer/OptimizerArrayTypes.h"
 
 #ifndef	ZERO
 #define	ZERO 1.0e-30

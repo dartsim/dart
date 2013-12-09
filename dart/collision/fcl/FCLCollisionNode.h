@@ -42,7 +42,7 @@
 #include <fcl/collision.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "collision/CollisionNode.h"
+#include "dart/collision/CollisionNode.h"
 
 namespace dart {
 

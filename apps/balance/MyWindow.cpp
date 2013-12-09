@@ -1,11 +1,11 @@
 #include "MyWindow.h"
 
-#include "math/Helpers.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
-#include "constraint/ConstraintDynamics.h"
-#include "simulation/World.h"
-#include "yui/GLFuncs.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/simulation/World.h"
+#include "dart/yui/GLFuncs.h"
 
 using namespace dart;
 using namespace math;

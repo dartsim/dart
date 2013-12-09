@@ -37,8 +37,8 @@
 
 #include "Marker.h"
 
-#include "dynamics/BodyNode.h"
-#include "renderer/RenderInterface.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {

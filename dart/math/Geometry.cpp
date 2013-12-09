@@ -38,7 +38,7 @@
 
 #include <iomanip>
 
-#include "math/Geometry.h"
+#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace math {

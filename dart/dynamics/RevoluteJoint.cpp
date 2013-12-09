@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "common/Console.h"
-#include "math/Geometry.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/RevoluteJoint.h"
+#include "dart/common/Console.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/RevoluteJoint.h"
 
 namespace dart {
 namespace dynamics {

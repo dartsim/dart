@@ -46,8 +46,8 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "common/Timer.h"
-#include "integration/Integrator.h"
+#include "dart/common/Timer.h"
+#include "dart/integration/Integrator.h"
 
 namespace dart {
 

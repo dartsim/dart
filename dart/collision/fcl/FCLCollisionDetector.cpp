@@ -36,12 +36,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dynamics/Shape.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
 
-#include "collision/fcl/FCLCollisionNode.h"
-#include "collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl/FCLCollisionNode.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
 
 namespace dart {
 namespace collision {
