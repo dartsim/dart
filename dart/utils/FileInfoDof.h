@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFO_DOF_H
-#define DART_UTILS_FILEINFO_DOF_H
+#ifndef DART_UTILS_FILEINFODOF_H_
+#define DART_UTILS_FILEINFODOF_H_
 
 #include <vector>
 #include <cassert>
@@ -46,40 +46,51 @@
 namespace dart {
 namespace dynamics {
 class Skeleton;
-}
-}
+}  // namespace dart
+}  // namespace dynamics
 
 namespace dart {
 namespace utils {
 
 class FileInfoDof {
 public:
-    FileInfoDof(dynamics::Skeleton* _skel, double _fps = 120.0);
-    virtual ~FileInfoDof();
 
-    bool loadFile(const char* _fileName);
-    bool saveFile(const char* _fileName, int _start, int _end, double _sampleRate = 1.0); ///< Note: down sampling not implemented yet
+  FileInfoDof(dynamics::Skeleton* _skel, double _fps = 120.0);
 
-    inline void addDof(Eigen::VectorXd& _dofs){ mDofs.push_back(_dofs); mNumFrames++; }
-    inline double getDofAt(int _frame, int _id) const { assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id]; }
-    inline Eigen::VectorXd getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
+  virtual ~FileInfoDof();
 
-    inline void setFPS(double _fps){ mFPS = _fps; }
-    inline double getFPS() const { return mFPS; }
+  bool loadFile(const char* _fileName);
 
-    inline int getNumFrames() const { return mNumFrames; }
-    inline dynamics::Skeleton* getSkel() const { return mSkel; }
+  /// \note Down sampling not implemented yet
+  bool saveFile(const char* _fileName, int _start, int _end, double _sampleRate = 1.0);
+
+  inline void addDof(Eigen::VectorXd& _dofs) {
+    mDofs.push_back(_dofs); mNumFrames++;
+  }
+
+  inline double getDofAt(int _frame, int _id) const {
+    assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id];
+  }
+
+  inline Eigen::VectorXd getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
+
+  inline void setFPS(double _fps) { mFPS = _fps; }
+
+  inline double getFPS() const { return mFPS; }
+
+  inline int getNumFrames() const { return mNumFrames; }
+
+  inline dynamics::Skeleton* getSkel() const { return mSkel; }
 
 protected:
-    dynamics::Skeleton* mSkel; ///< model associated with
-    double mFPS; ///< frame rate
-    int mNumFrames; ///< number of frames
-    char mFileName[256]; ///< file name
-    std::vector< Eigen::VectorXd > mDofs; ///< dof data [frame][dofIndex]
+  dynamics::Skeleton* mSkel; ///< model associated with
+  double mFPS; ///< frame rate
+  int mNumFrames; ///< number of frames
+  char mFileName[256]; ///< file name
+  std::vector< Eigen::VectorXd > mDofs; ///< dof data [frame][dofIndex]
 };
 
-} // namespace utils
-} // namespace dart
+}  // namespace utils
+}  // namespace dart
 
-#endif // #ifndef DART_UTILS_FILEINFO_DOF_H
-
+#endif  // DART_UTILS_FILEINFODOF_H_

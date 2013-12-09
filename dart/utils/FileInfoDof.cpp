@@ -36,8 +36,6 @@
  */
 
 #include <string>
-#include <fstream>
-#include <iostream>
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/GenCoord.h"
@@ -47,97 +45,97 @@ namespace dart {
 namespace utils {
 
 FileInfoDof::FileInfoDof(dynamics::Skeleton* _skel, double _fps)
-    : mSkel(_skel), mFPS(_fps), mNumFrames(0){
+  : mSkel(_skel), mFPS(_fps), mNumFrames(0) {
 }
 
-FileInfoDof::~FileInfoDof(){
-    mDofs.clear();
-    mNumFrames = 0;
+FileInfoDof::~FileInfoDof() {
+  mDofs.clear();
+  mNumFrames = 0;
 }
 
-bool FileInfoDof::loadFile(const char* _fName)
-{
-    std::ifstream inFile(_fName);
-    if (inFile.fail() == 1) return false;
+bool FileInfoDof::loadFile(const char* _fName) {
+  std::ifstream inFile(_fName);
+  if (inFile.fail() == 1) return false;
 
-    inFile.precision(20);
-    char buffer[256];
-    int nDof;
+  inFile.precision(20);
+  char buffer[256];
+  int nDof;
 
-    //nFrames =
+  // nFrames =
+  inFile >> buffer;
+  inFile >> buffer;
+  inFile >> mNumFrames;
+
+  // nDof =
+  inFile >> buffer;
+  inFile >> buffer;
+  inFile >> nDof;
+
+  if (mSkel == NULL || mSkel->getNumGenCoords() != nDof)
+    return false;
+
+  mDofs.resize(mNumFrames);
+
+  // dof names
+  for (int i = 0; i < nDof; i++)
     inFile >> buffer;
-    inFile >> buffer;
-    inFile >> mNumFrames;
-
-    //nDof =
-    inFile >> buffer;
-    inFile >> buffer;
-    inFile >> nDof;
-
-    if (mSkel == NULL || mSkel->getNumGenCoords()!=nDof)
-        return false;
-
-    mDofs.resize(mNumFrames);
-
-    //dof names
-    for (int i = 0; i < nDof; i++)
-        inFile >> buffer;
-    for (int j = 0; j < mNumFrames; j++) {
-        mDofs[j].resize(nDof);
-        for (int i = 0; i < nDof; i++) {
-            double val;
-            inFile >> val;
-            mDofs[j][i] = val;
-        }
+  for (int j = 0; j < mNumFrames; j++) {
+    mDofs[j].resize(nDof);
+    for (int i = 0; i < nDof; i++) {
+      double val;
+      inFile >> val;
+      mDofs[j][i] = val;
     }
+  }
 
-    // fps
-    inFile >> buffer;
-    if (!inFile.eof())
-        inFile>>mFPS;
+  // fps
+  inFile >> buffer;
+  if (!inFile.eof())
+    inFile>>mFPS;
 
-    inFile.close();
+  inFile.close();
 
-    std::string text = _fName;
-    int lastSlash = text.find_last_of("/");
-    text = text.substr(lastSlash+1);
-    strcpy(mFileName, text.c_str());
-    return true;
+  std::string text = _fName;
+  int lastSlash = text.find_last_of("/");
+  text = text.substr(lastSlash+1);
+  strcpy(mFileName, text.c_str());
+  return true;
 }
 
-bool FileInfoDof::saveFile( const char* _fName, int _start, int _end, double _sampleRate ){
-    if (_end < _start) return false;
+bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
+                           double _sampleRate ) {
+  if (_end < _start) return false;
 
-    std::ofstream outFile(_fName, std::ios::out);
-    if (outFile.fail()) return false;
+  std::ofstream outFile(_fName, std::ios::out);
+  if (outFile.fail()) return false;
 
-    int first = _start<mNumFrames?_start:mNumFrames-1;
-    int last = _end<mNumFrames?_end:mNumFrames-1;
+  int first = _start < mNumFrames ? _start : mNumFrames - 1;
+  int last = _end < mNumFrames ? _end : mNumFrames - 1;
 
-    outFile.precision(20);
-    outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumGenCoords() << std::endl;
+  outFile.precision(20);
+  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumGenCoords() << std::endl;
 
-    for (int i = 0; i < mSkel->getNumGenCoords(); i++)
-        outFile << mSkel->getGenCoord(i)->getName() << ' ';
+  for (int i = 0; i < mSkel->getNumGenCoords(); i++)
+    outFile << mSkel->getGenCoord(i)->getName() << ' ';
+  outFile << std::endl;
+
+  for (int i = first; i <= last; i++) {
+    for (int j = 0; j < mSkel->getNumGenCoords(); j++) {
+      outFile << mDofs[i][j] << ' ';
+    }
     outFile << std::endl;
+  }
 
-    for (int i = first; i <= last; i++){
-        for (int j = 0; j < mSkel->getNumGenCoords(); j++){
-            outFile << mDofs[i][j] << ' ';
-        }
-        outFile << std::endl;
-    }
+  outFile << "FPS " << mFPS << std::endl;
 
-    outFile << "FPS " << mFPS << std::endl;
+  outFile.close();
 
-    outFile.close();
-
-    std::string text = _fName;
-    int lastSlash = text.find_last_of("/");
-    text = text.substr(lastSlash+1);
-    strcpy(mFileName, text.c_str());
-    return true;
+  std::string text = _fName;
+  int lastSlash = text.find_last_of("/");
+  text = text.substr(lastSlash+1);
+  std::strcpy(mFileName, text.c_str());
+  return true;
 }
 
-} // namespace utils
-} // namespace dart
+}  // namespace utils
+}  // namespace dart
