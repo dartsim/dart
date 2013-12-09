@@ -153,7 +153,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     mGenCoords.clear();
     for(int i = 0; i < getNumBodyNodes(); ++i)
     {
-        mBodyNodes[i]->aggregateGenCoords(mGenCoords);
+        mBodyNodes[i]->aggregateGenCoords(&mGenCoords);
         mBodyNodes[i]->init(this, i);
         mBodyNodes[i]->updateTransform();
         mBodyNodes[i]->updateVelocity();
@@ -481,7 +481,7 @@ void Skeleton::updateMassMatrix()
         //         it != mBodyNodes.end(); ++it)
         for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
         {
-            mBodyNodes[i]->aggregateMassMatrix(mM, j);
+            mBodyNodes[i]->aggregateMassMatrix(&mM, j);
             int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
             if (localDof > 0)
             {
@@ -532,7 +532,7 @@ void Skeleton::updateInvMassMatrix()
         //         it != mBodyNodes.end(); ++it)
         for (int i = 0; i < mBodyNodes.size(); ++i)
         {
-            mBodyNodes[i]->aggregateInvMassMatrix(mMInv, j);
+            mBodyNodes[i]->aggregateInvMassMatrix(&mMInv, j);
             int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
             if (localDof > 0)
             {
@@ -561,7 +561,7 @@ void Skeleton::updateCoriolisForceVector()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-        (*it)->aggregateCoriolisForceVector(mCvec);
+        (*it)->aggregateCoriolisForceVector(&mCvec);
     }
 
     mIsCoriolisVectorDirty = false;
@@ -577,7 +577,7 @@ void Skeleton::updateGravityForceVector()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-        (*it)->aggregateGravityForceVector(mG, mGravity);
+        (*it)->aggregateGravityForceVector(&mG, mGravity);
     }
 
     mIsGravityForceVectorDirty = false;
@@ -597,7 +597,7 @@ void Skeleton::updateCombinedVector()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-        (*it)->aggregateCombinedVector(mCg, mGravity);
+        (*it)->aggregateCombinedVector(&mCg, mGravity);
     }
 
     mIsCombinedVectorDirty = false;
@@ -612,7 +612,7 @@ void Skeleton::updateExternalForceVector()
     mFext.setZero();
     for (std::vector<BodyNode*>::reverse_iterator itr = mBodyNodes.rbegin();
          itr != mBodyNodes.rend(); ++itr)
-        (*itr)->aggregateExternalForces(mFext);
+        (*itr)->aggregateExternalForces(&mFext);
 
     mIsExternalForceVectorDirty = false;
 }

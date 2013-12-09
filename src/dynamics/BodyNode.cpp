@@ -326,13 +326,13 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
     mAlpha.setZero(dof);
 }
 
-void BodyNode::aggregateGenCoords(std::vector<GenCoord*>& _genCoords)
+void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
 {
     assert(mParentJoint);
     for (int i = 0; i < mParentJoint->getNumGenCoords(); ++i)
     {
-        mParentJoint->getGenCoord(i)->setSkeletonIndex(_genCoords.size());
-        _genCoords.push_back(mParentJoint->getGenCoord(i));
+        mParentJoint->getGenCoord(i)->setSkeletonIndex(_genCoords->size());
+        _genCoords->push_back(mParentJoint->getGenCoord(i));
     }
 }
 
@@ -877,12 +877,12 @@ void BodyNode::update_F_fs()
     assert(!math::isNan(mF));
 }
 
-void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
+void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
 {
     aggregateCombinedVector(_C, Eigen::Vector3d::Zero());
 }
 
-void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
+void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                                            const Eigen::Vector3d& _gravity)
 {
     if (mGravityMode == true)
@@ -902,7 +902,7 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
     {
         Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
         int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-        _g.segment(iStart, nGenCoords) = g;
+        _g->segment(iStart, nGenCoords) = g;
     }
 }
 
@@ -922,7 +922,7 @@ void BodyNode::updateCombinedVector()
     }
 }
 
-void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
+void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
                                        const Eigen::Vector3d& _gravity)
 {
     // H(i) = I(i) * W(i) -
@@ -950,11 +950,11 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
         Eigen::VectorXd Cg =
                 mParentJoint->getLocalJacobian().transpose() * mCg_F;
         int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-        _Cg.segment(iStart, nGenCoords) = Cg;
+        _Cg->segment(iStart, nGenCoords) = Cg;
     }
 }
 
-void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
+void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
 {
     mFext_F = mFext;
 
@@ -970,7 +970,7 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
     {
         Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose() * mFext_F;
         int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-        _Fext.segment(iStart, nGenCoords) = Fext;
+        _Fext->segment(iStart, nGenCoords) = Fext;
     }
 }
 
@@ -990,7 +990,7 @@ void BodyNode::updateMassMatrix()
     assert(!math::isNan(mM_dV));
 }
 
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col)
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 {
     mM_F.noalias() = mI * mM_dV;
     assert(!math::isNan(mM_F));
@@ -1006,9 +1006,9 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col)
     if (dof > 0)
     {
         int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-        _MCol.block(iStart, _col, dof, 1).noalias() =
-                mParentJoint->getLocalJacobian().transpose() *
-                mM_F;
+        _MCol->block(iStart, _col, dof, 1).noalias() =
+                mParentJoint->getLocalJacobian().transpose()
+                * mM_F;
     }
 }
 
@@ -1043,7 +1043,7 @@ void BodyNode::updateMassInverseMatrix()
     assert(!math::isNan(mMInv_b));
 }
 
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _MCol, int _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 {
     Eigen::VectorXd MInvCol;
     int dof = mParentJoint->getNumGenCoords();
@@ -1066,7 +1066,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _MCol, int _col)
 
         // Assign
         int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-        _MCol.block(iStart, _col, dof, 1) = MInvCol;
+        _MCol->block(iStart, _col, dof, 1) = MInvCol;
 
     }
 

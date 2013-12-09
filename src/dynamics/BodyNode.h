@@ -381,7 +381,7 @@ protected:
     //       GenCoordSystem classes.
     /// @brief Aggregate generalized coordinates of this body node to
     ///        generalized of the system.
-    virtual void aggregateGenCoords(std::vector<GenCoord*>& _genCoords);
+    virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
     //--------------------------------------------------------------------------
     // Sub-functions for Recursive Kinematics Algorithms
@@ -424,27 +424,27 @@ protected:
 
     /// @brief
     void updateMassMatrix();
-    void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
+    void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
 
     /// @brief
     void updateMassInverseMatrix();
-    void aggregateInvMassMatrix(Eigen::MatrixXd& _MInvCol, int _col);
+    void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
 
     /// @brief
-    void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
+    void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
 
     /// @brief
-    void aggregateGravityForceVector(Eigen::VectorXd& _g,
+    void aggregateGravityForceVector(Eigen::VectorXd* _g,
                                      const Eigen::Vector3d& _gravity);
 
     /// @brief
     void updateCombinedVector();
-    void aggregateCombinedVector(Eigen::VectorXd& _Cg,
+    void aggregateCombinedVector(Eigen::VectorXd* _Cg,
                                  const Eigen::Vector3d& _gravity);
 
     /// @brief Aggregate the external forces mFext in the generalized
     ///        coordinates recursively.
-    void aggregateExternalForces(Eigen::VectorXd& _Fext);
+    void aggregateExternalForces(Eigen::VectorXd* _Fext);
 
     //--------------------------------------------------------------------------
     // General properties
