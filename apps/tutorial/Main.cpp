@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
 
     //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
-    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
-    SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
+    //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 
     // Create a window
     MyWindow window;

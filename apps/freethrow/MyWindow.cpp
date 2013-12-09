@@ -16,6 +16,14 @@ void MyWindow::timeStepping()
     mController->computeTorques(mWorld->getSkeleton(0)->get_q(), mWorld->getSkeleton(0)->get_dq(), mWorld->getCollisionHandle()->getTotalConstraintForce(0));
     mWorld->getSkeleton(0)->setInternalForces(mController->getTorques());
     mWorld->step();
+
+    if(!mSwish) {
+        Vector3d diff = mWorld->getSkeleton(1)->getWorldCOM() - mWorld->getSkeleton(2)->getWorldCOM();
+        if (diff[1] < 0.0 && diff[1] > -0.01 && diff[0] * diff[0] + diff[2] * diff[2] < 0.01) { 
+            mSwish = true;
+            mScore += 2;
+        }
+    }
 }
 
 void MyWindow::drawSkels()
@@ -38,12 +46,6 @@ void MyWindow::drawSkels()
         glColor3f(0.0, 0.0, 0.0);
         drawStringOnScreen(0.85f, 0.02f, frame);
         glEnable(GL_LIGHTING);
-    } else {
-        Vector3d diff = mWorld->getSkeleton(1)->getWorldCOM() - mWorld->getSkeleton(2)->getWorldCOM();
-        if (abs(diff[1]) < 0.01 && diff[0] * diff[0] + diff[2] * diff[2] < 0.04) { 
-            mSwish = true;
-            mScore += 2;
-        }
     }
     glDisable(GL_LIGHTING);
     char buff[64];
@@ -123,8 +125,8 @@ void MyWindow::resetScene() {
     initHoopPose << x, y, z;
     mWorld->getSkeleton(2)->setPose(initHoopPose);
 
-    //initBallPose << x, y + 0.2, z;
-    //  mWorld->getSkeleton(1)->setPose(initBallPose);
+    //    initBallPose << x, y + 1.0, z + 0.09;
+    //mWorld->getSkeleton(1)->setPose(initBallPose);
 
     mController->initializeTargetPose();
     if (!mSwish)
