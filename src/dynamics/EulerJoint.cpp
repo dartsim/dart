@@ -55,7 +55,8 @@ EulerJoint::EulerJoint(const std::string& _name)
     mS = Eigen::Matrix<double,6,3>::Zero();
     mdS = Eigen::Matrix<double,6,3>::Zero();
 
-    mDampingCoefficient.resize(3, 0);
+    mSpringStiffness.resize(3, 0.0);
+    mDampingCoefficient.resize(3, 0.0);
 }
 
 EulerJoint::~EulerJoint()
@@ -134,6 +135,16 @@ inline void EulerJoint::updateJacobian()
         J1 <<    s2,       c2, 0.0, 0.0, 0.0, 0.0;
         J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
+#ifndef NDEBUG
+        if (fabs(mCoordinate[1].get_q()) == DART_PI * 0.5)
+            std::cout << "Singular configuration in ZYX-euler joint ["
+                      << mName << "]. ("
+                      << mCoordinate[0].get_q() << ", "
+                      << mCoordinate[1].get_q() << ", "
+                      << mCoordinate[2].get_q() << ")"
+                      << std::endl;
+#endif
+
         break;
     }
     case AO_ZYX:
@@ -149,6 +160,17 @@ inline void EulerJoint::updateJacobian()
         J0 << -s1, s2*c1, c1*c2, 0.0, 0.0, 0.0;
         J1 << 0.0,    c2,   -s2, 0.0, 0.0, 0.0;
         J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
+
+#ifndef NDEBUG
+        if (fabs(mCoordinate[1].get_q()) == DART_PI * 0.5)
+            std::cout << "Singular configuration in ZYX-euler joint ["
+                      << mName << "]. ("
+                      << mCoordinate[0].get_q() << ", "
+                      << mCoordinate[1].get_q() << ", "
+                      << mCoordinate[2].get_q() << ")"
+                      << std::endl;
+#endif
+
         break;
     }
     default:
@@ -161,6 +183,24 @@ inline void EulerJoint::updateJacobian()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+
+    assert(!math::isNan(mS));
+
+#ifndef NDEBUG
+    Eigen::MatrixXd JTJ = mS.transpose() * mS;
+    Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
+//    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
+    double det = luJTJ.determinant();
+    if (det < 1e-5)
+    {
+        std::cout << "ill-conditioned Jacobian in joint [" << mName << "]."
+                  << " The determinant of the Jacobian is (" << det << ")."
+                  << std::endl;
+        std::cout << "rank is (" << luJTJ.rank() << ")." << std::endl;
+        std::cout << "det is (" << luJTJ.determinant() << ")." << std::endl;
+//        std::cout << "mS: \n" << mS << std::endl;
+    }
+#endif
 }
 
 inline void EulerJoint::updateJacobianTimeDeriv()
@@ -228,6 +268,8 @@ inline void EulerJoint::updateJacobianTimeDeriv()
     mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
     mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
     mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+
+    assert(!math::isNan(mdS));
 }
 
 } // namespace dynamics

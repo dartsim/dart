@@ -55,7 +55,8 @@ PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
     mS = Eigen::Matrix<double,6,1>::Zero();
     mdS = Eigen::Matrix<double,6,1>::Zero();
 
-    mDampingCoefficient.resize(1, 0);
+    mSpringStiffness.resize(1, 0.0);
+    mDampingCoefficient.resize(1, 0.0);
 }
 
 PrismaticJoint::~PrismaticJoint()
@@ -77,16 +78,19 @@ void PrismaticJoint::updateTransform()
     mT = mT_ParentBodyToJoint
          * Eigen::Translation3d(mAxis * mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
+    assert(math::verifyTransform(mT));
 }
 
 void PrismaticJoint::updateJacobian()
 {
     mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+    assert(!math::isNan(mS));
 }
 
 void PrismaticJoint::updateJacobianTimeDeriv()
 {
     //mdS.setZero();
+    assert(mdS == math::Jacobian::Zero(6,1));
 }
 
 } // namespace dynamics

@@ -142,7 +142,7 @@ public:
     const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
     //--------------------------------------------------------------------------
-    // Recursive Kinematics Algorithms
+    // Spring stiffness and damping
     //--------------------------------------------------------------------------
     /// @brief
     void setDampingCoefficient(int _idx, double _d);
@@ -152,6 +152,15 @@ public:
 
     /// @brief
     Eigen::VectorXd getDampingForces() const;
+
+    /// @brief
+    void setSpringStiffness(int _idx, double _k);
+
+    /// @brief
+    double getSpringCoefficient(int _idx) const;
+
+    /// @brief
+    Eigen::VectorXd getSpringForces(double _timeStep) const;
 
     //--------------------------------------------------------------------------
     //

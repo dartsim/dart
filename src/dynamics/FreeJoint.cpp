@@ -56,7 +56,8 @@ FreeJoint::FreeJoint(const std::string& _name)
     mS = Eigen::Matrix<double,6,6>::Zero();
     mdS = Eigen::Matrix<double,6,6>::Zero();
 
-    mDampingCoefficient.resize(6, 0);
+    mSpringStiffness.resize(6, 0.0);
+    mDampingCoefficient.resize(6, 0.0);
 }
 
 FreeJoint::~FreeJoint()
@@ -69,13 +70,18 @@ void FreeJoint::updateTransform()
                        mCoordinate[1].get_q(),
                        mCoordinate[2].get_q());
     Eigen::Vector3d q2(mCoordinate[3].get_q(),
-                  mCoordinate[4].get_q(),
-                  mCoordinate[5].get_q());
+                       mCoordinate[4].get_q(),
+                       mCoordinate[5].get_q());
 
-    mT = mT_ParentBodyToJoint *
-            Eigen::Translation3d(q2) *
-            math::expAngular(q1) *
-            mT_ChildBodyToJoint.inverse();
+    // TODO: Debug code
+//    std::cout << "Rigid body (  y): " << mCoordinate[4].get_q() << std::endl;
+//    std::cout << "Rigid body ( dy): " << mCoordinate[4].get_dq() << std::endl;
+//    std::cout << "Rigid body (ddy): " << mCoordinate[4].get_ddq() << std::endl << std::endl;
+
+    mT = mT_ParentBodyToJoint*
+         Eigen::Translation3d(q2)*
+         math::expAngular(q1)*
+         mT_ChildBodyToJoint.inverse();
 
     assert(math::verifyTransform(mT));
 }
@@ -108,6 +114,8 @@ void FreeJoint::updateJacobian()
     mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
     mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
     mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
+
+    assert(!math::isNan(mS));
 }
 
 void FreeJoint::updateJacobianTimeDeriv()
@@ -141,6 +149,19 @@ void FreeJoint::updateJacobianTimeDeriv()
     mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
     mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
     mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
+
+    assert(!math::isNan(mdS));
+}
+
+void dart::dynamics::FreeJoint::clampRotation()
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if( mCoordinate[i].get_q() > M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
+        if( mCoordinate[i].get_q() < -M_PI )
+            mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+    }
 }
 
 } // namespace dynamics

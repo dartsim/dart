@@ -73,11 +73,11 @@ public:
 /******************************************************************************/
 void JOINTS::kinematicsTest(Joint* _joint)
 {
-    BodyNode bodyNode;
-    bodyNode.setParentJoint(_joint);
+    BodyNode* bodyNode = new BodyNode();
+    bodyNode->setParentJoint(_joint);
 
     Skeleton skeleton;
-    skeleton.addBodyNode(&bodyNode);
+    skeleton.addBodyNode(bodyNode);
     skeleton.init();
 
     int dof = _joint->getNumGenCoords();
@@ -87,27 +87,21 @@ void JOINTS::kinematicsTest(Joint* _joint)
     //--------------------------------------------------------------------------
     VectorXd q = VectorXd::Zero(dof);
     VectorXd dq = VectorXd::Zero(dof);
-    VectorXd ddq = VectorXd::Zero(dof);
 
     for (int idxTest = 0; idxTest < 100; ++idxTest)
     {
-        double dt = 0.000001;
+        double q_delta = 0.000001;
 
         for (int i = 0; i < dof; ++i)
         {
-            q(i) = random(-DART_PI, DART_PI);
-            dq(i) = random(-DART_PI, DART_PI);
-            ddq(i) = random(-DART_PI, DART_PI);
+            q(i) = random(-DART_PI*1.0, DART_PI*1.0);
+            dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
         }
 
-        _joint->set_q(q);
-        _joint->set_dq(dq);
-        _joint->set_ddq(ddq);
-
-        bodyNode.updateTransform();
-        bodyNode.updateVelocity();
-        bodyNode.updateEta();
-        bodyNode.updateAcceleration();
+        Eigen::VectorXd state = Eigen::VectorXd::Zero(2*dof);
+        state.head(dof) = q;
+        state.tail(dof) = dq;
+        skeleton.setState(state);
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -131,14 +125,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            bodyNode.updateTransform();
+            skeleton.setConfig(q_a);
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
-            q_b(i) += dt;
+            q_b(i) += q_delta;
             _joint->set_q(q_b);
-            bodyNode.updateTransform();
+            skeleton.setConfig(q_b);
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -148,7 +142,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // dTdq
             Eigen::Matrix4d T_a_eigen = T_a.matrix();
             Eigen::Matrix4d T_b_eigen = T_b.matrix();
-            Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / dt;
+            Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / q_delta;
             //Matrix4d dTdq_eigen = (T_b_eigen * T_a_eigen.inverse()) / dt;
 
             // J(i)
@@ -174,22 +168,21 @@ void JOINTS::kinematicsTest(Joint* _joint)
         Jacobian numeric_dJ = Jacobian::Zero(6,dof);
         for (int i = 0; i < dof; ++i)
         {
-
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            bodyNode.updateVelocity();
+            skeleton.setConfig(q_a);
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
-            q_b(i) += dt;
+            q_b(i) += q_delta;
             _joint->set_q(q_b);
-            bodyNode.updateVelocity();
+            skeleton.setConfig(q_b);
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
-            Jacobian dJ_dq = (J_b - J_a) / dt;
+            Jacobian dJ_dq = (J_b - J_a) / q_delta;
 
             // J(i)
             numeric_dJ += dJ_dq * dq(i);

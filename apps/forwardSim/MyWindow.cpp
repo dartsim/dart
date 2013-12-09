@@ -6,7 +6,7 @@
 void MyWindow::timeStepping()
 {
     Eigen::VectorXd damping = computeDamping();
-    mWorld->getSkeleton(0)->setInternalForces(damping);
+    mWorld->getSkeleton(0)->setInternalForceVector(damping);
     mWorld->step();
 }
 

@@ -53,7 +53,8 @@ BallJoint::BallJoint(const std::string& _name)
     mS = Eigen::Matrix<double,6,3>::Zero();
     mdS = Eigen::Matrix<double,6,3>::Zero();
 
-    mDampingCoefficient.resize(3, 0);
+    mSpringStiffness.resize(3, 0.0);
+    mDampingCoefficient.resize(3, 0.0);
 }
 
 BallJoint::~BallJoint()
@@ -69,6 +70,8 @@ inline void BallJoint::updateTransform()
     mT = mT_ParentBodyToJoint *
             math::expAngular(q) *
             mT_ChildBodyToJoint.inverse();
+
+    assert(math::verifyTransform(mT));
 }
 
 inline void BallJoint::updateJacobian()
@@ -90,6 +93,8 @@ inline void BallJoint::updateJacobian()
     mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
     mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
     mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+
+    assert(!math::isNan(mS));
 }
 
 inline void BallJoint::updateJacobianTimeDeriv()
@@ -114,6 +119,8 @@ inline void BallJoint::updateJacobianTimeDeriv()
     mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
     mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
     mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+
+    assert(!math::isNan(mdS));
 }
 
 } // namespace dynamics

@@ -108,14 +108,14 @@ Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& angle);
 Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief get a transformation matrix given by the Euler ZYX angle,
-/// singularity : x[1] = -+ 0.5*PI
+/// singularity : angle[1] = -+ 0.5*PI
 Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief Get a transformation matrix given by the Euler ZXZ angle.
 Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& angle);
 
 /// @brief Get a transformation matrix given by the Euler ZYZ angle,
-/// singularity : x[1] = 0, PI
+/// singularity : angle[1] = 0, PI
 Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& angle);
 
 //------------------------------------------------------------------------------
@@ -204,6 +204,7 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& T);
 /// @note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
 /// where @f$T=(R,p)@in SE(3), @quad V=(w,v)@in se(3) @f$.
 Eigen::Vector6d AdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
+Jacobian AdTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 
 /// @brief Fast version of Ad([R 0; 0 1], V)
 Eigen::Vector6d AdR(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
@@ -217,14 +218,13 @@ Eigen::Vector6d AdTLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& v);
 ///// @brief fast version of Ad([I p; 0 1], V)
 //se3 AdP(const Vec3& p, const se3& s);
 
-/// @brief
-Jacobian AdTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 
 ///// @brief fast version of Ad([R 0; 0 1], J)
 //Jacobian AdRJac(const SE3& T, const Jacobian& J);
 
 /// @brief fast version of Ad(Inv(T), V)
 Eigen::Vector6d AdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
+Jacobian AdInvTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 
 ///// @brief fast version of Ad(Inv(T), se3(Eigen_Vec3(0), v))
 //Eigen::Vector3d AdInvTLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& v);
@@ -249,6 +249,7 @@ Eigen::Vector6d dAdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 
 /// @brief fast version of dAd(Inv(T), F)
 Eigen::Vector6d dAdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
+Jacobian dAdInvTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 
 /// @brief fast version of dAd(Inv([R 0; 0 1]), F)
 Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);

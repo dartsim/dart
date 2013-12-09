@@ -54,7 +54,8 @@ ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
     mS = Eigen::Matrix<double,6,1>::Zero();
     mdS = Eigen::Matrix<double,6,1>::Zero();
 
-    mDampingCoefficient.resize(1, 0);
+    mSpringStiffness.resize(1, 0.0);
+    mDampingCoefficient.resize(1, 0.0);
 }
 
 ScrewJoint::~ScrewJoint()
@@ -89,7 +90,6 @@ void ScrewJoint::updateTransform()
     mT = mT_ParentBodyToJoint
          * math::expMap(S*mCoordinate.get_q())
          * mT_ChildBodyToJoint.inverse();
-
     assert(math::verifyTransform(mT));
 }
 
@@ -99,11 +99,21 @@ void ScrewJoint::updateJacobian()
     S.head<3>() = mAxis;
     S.tail<3>() = mAxis*mPitch/DART_2PI;
     mS = math::AdT(mT_ChildBodyToJoint, S);
+    assert(!math::isNan(mS));
 }
 
 void ScrewJoint::updateJacobianTimeDeriv()
 {
     //mdS.setZero();
+    assert(mdS == math::Jacobian::Zero(6,1));
+}
+
+void ScrewJoint::clampRotation()
+{
+    if( mCoordinate.get_q() > M_PI )
+        mCoordinate.set_q(mCoordinate.get_q() - 2*M_PI);
+    if( mCoordinate.get_q() < -M_PI )
+        mCoordinate.set_q(mCoordinate.get_q() + 2*M_PI);
 }
 
 } // namespace dynamics

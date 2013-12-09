@@ -157,55 +157,65 @@
                 </visualization_shape>
             </body>
 
-            <joint type="euler_xyz" name="joint 1">
+            <joint type="euler" name="joint 1">
                 <parent>world</parent>
                 <child>link 1</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 2">
+            <joint type="euler" name="joint 2">
                 <parent>link 1</parent>
                 <child>link 2</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 3">
+            <joint type="euler" name="joint 3">
                 <parent>link 2</parent>
                 <child>link 3</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 4">
+            <joint type="euler" name="joint 4">
                 <parent>link 3</parent>
                 <child>link 4</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 5">
+            <joint type="euler" name="joint 5">
                 <parent>link 4</parent>
                 <child>link 5</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 6">
+            <joint type="euler" name="joint 6">
                 <parent>link 5</parent>
                 <child>link 6</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 7">
+            <joint type="euler" name="joint 7">
                 <parent>link 6</parent>
                 <child>link 7</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 8">
+            <joint type="euler" name="joint 8">
                 <parent>link 7</parent>
                 <child>link 8</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 9">
+            <joint type="euler" name="joint 9">
                 <parent>link 8</parent>
                 <child>link 9</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
-            <joint type="euler_xyz" name="joint 10">
+            <joint type="euler" name="joint 10">
                 <parent>link 9</parent>
                 <child>link 10</child>
                 <transformation>0 0.025 0 0 0 0</transformation>
+                <axis_order>zyx</axis_order>
             </joint>
 
         </skeleton>	

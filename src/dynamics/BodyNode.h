@@ -73,9 +73,10 @@ Runge-Kutta and fourth-order Runge Kutta.
 #ifndef DART_DYNAMICS_BODYNODE_H
 #define DART_DYNAMICS_BODYNODE_H
 
-#include <Eigen/StdVector>
+#include <map>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include "math/Geometry.h"
 
@@ -216,20 +217,22 @@ public:
     /// @brief
     Marker* getMarker(int _idx) const;
 
-    /// @brief Test whether this dof is dependent or not.
+    /// @brief Test whether this generalized coordinate is dependent or not.
     /// @return True if this body node is dependent on the generalized
     ///         coordinate.
     /// @param[in] _genCoordIndex Index of generalized coordinate in the
     ///                           skeleton.
-    /// @warning You may want to use getNumDependentDofs / getDependentDof for
-    ///          efficiency.
+    /// @warning You may want to use getNumDependentGenCoords or
+    ///          getDependentGenCoord for efficiency.
     bool dependsOn(int _genCoordIndex) const;
 
-    /// @brief The number of the dofs by which this node is affected.
-    int getNumDependentDofs() const;
+    /// @brief The number of the generalized coordinates by which this node is
+    ///        affected.
+    int getNumDependentGenCoords() const;
 
-    /// @brief Return an dof index from the array index (< getNumDependentDofs).
-    int getDependentDof(int _arrayIndex) const;
+    /// @brief Return a generalized coordinate index from the array index
+    ///        (< getNumDependentDofs).
+    int getDependentGenCoord(int _arrayIndex) const;
 
     //--------------------------------------------------------------------------
     // Properties updated by dynamics (kinematics)
@@ -262,14 +265,14 @@ public:
 
     /// @brief Get generalized Jacobian at the origin of this body node where
     ///        the Jacobian is expressed in this body node frame.
-    const math::Jacobian& getBodyJacobian() const;
+    const math::Jacobian& getBodyJacobian();
 
     /// @brief Get generalized Jacobian at a point on this body node where the
     ///        Jacobian is expressed in the world frame.
     /// @param[in] _offset Point vector from the origin of this body frame where
     ///                    the point vector is expressed in the world frame.
     math::Jacobian getWorldJacobian(
-            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
+            const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero());
 
     /// @brief Get time derivative of generalized Jacobian at the origin of this
     ///        body node where the Jacobian is expressed in this body node
@@ -299,14 +302,14 @@ public:
     /// Coordinate transformations are applied when needed. The point of
     /// application and the force in local coordinates are stored in mContacts.
     /// When conversion is needed, make sure the transformations are avaialble.
-    void addExtForce(const Eigen::Vector3d& _offset,
-                     const Eigen::Vector3d& _force,
+    void addExtForce(const Eigen::Vector3d& _force,
+                     const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
                      bool _isOffsetLocal = true,
                      bool _isForceLocal = false);
 
     /// @brief Set Applying linear Cartesian forces to this node.
-    void setExtForce(const Eigen::Vector3d& _offset,
-                     const Eigen::Vector3d& _force,
+    void setExtForce(const Eigen::Vector3d& _force,
+                     const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
                      bool _isOffsetLocal = true,
                      bool _isForceLocal = false);
 
@@ -347,95 +350,101 @@ public:
     /// @brief
     const Eigen::Vector6d& getBodyForce() const;
 
-    /// @brief
+    /// @brief Get kinetic energy.
     double getKineticEnergy() const;
 
-    /// @brief
-    Eigen::Vector3d evalLinMomentum() const;
+    /// @brief Get linear momentum.
+    Eigen::Vector3d getLinearMomentum() const;
 
-    /// @brief
-    Eigen::Vector3d evalAngMomentum(Eigen::Vector3d _pivot);
+    /// @brief Get angular momentum.
+    Eigen::Vector3d getAngularMomentum(
+            const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
 
     //--------------------------------------------------------------------------
     // Rendering
     //--------------------------------------------------------------------------
     /// @brief Render the entire subtree rooted at this body node.
-    void draw(renderer::RenderInterface* _ri = NULL,
-              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-              bool _useDefaultColor = true, int _depth = 0) const;
+    virtual void draw(renderer::RenderInterface* _ri = NULL,
+                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                      bool _useDefaultColor = true, int _depth = 0) const;
 
     /// @brief Render the markers
     void drawMarkers(renderer::RenderInterface* _ri = NULL,
                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                      bool _useDefaultColor = true) const;
 
+protected:
+    /// @brief Initialize the vector members with proper sizes.
+    virtual void init(Skeleton* _skeleton, int _skeletonIndex);
+
+    // TODO: This function will be deprecated when we stop using GenCoord and
+    //       GenCoordSystem classes.
+    /// @brief Aggregate generalized coordinates of this body node to
+    ///        generalized of the system.
+    virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
+
     //--------------------------------------------------------------------------
     // Sub-functions for Recursive Kinematics Algorithms
     //--------------------------------------------------------------------------
-
     /// @brief Update local transformations and world transformations.
-    /// T(i-1,i), W(i)
-    void updateTransform();
+    virtual void updateTransform();
 
     /// @brief
-    /// parentJoint.V, parentBody.V --> V
-    /// parentJoint.S --> J
-    void updateVelocity(bool _updateJacobian = true);
+    virtual void updateVelocity();
 
     /// @brief
-    void updateEta();
+    /// parentJoint.dS --> dJ
+    virtual void updateEta(bool _updateJacobianDeriv = false);
 
     /// @brief
     /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
-    /// parentJoint.dS --> dJ
-    void updateAcceleration(bool _updateJacobianDeriv = false);
+    virtual void updateAcceleration();
 
     /// @brief
     /// childBodies.F, V, dV --> F, Fgravity
-    void updateBodyForce(const Eigen::Vector3d& _gravity,
-                         bool _withExternalForces = false);
+    virtual void updateBodyForce(const Eigen::Vector3d& _gravity,
+                                 bool _withExternalForces = false);
 
     /// @brief
     /// parentJoint.S, F --> tau
-    void updateGeneralizedForce(bool _withDampingForces = false);
+    virtual void updateGeneralizedForce(bool _withDampingForces = false);
 
     /// @brief
-    void updateArticulatedInertia();
+    virtual void updateArticulatedInertia(double _timeStep);
 
     /// @brief
-    void updatePsi(double _timeStep);
+    virtual void updateBiasForce(double _timeStep,
+                                 const Eigen::Vector3d& _gravity);
 
     /// @brief
-    void updatePi();
+    virtual void update_ddq();
 
     /// @brief
-    void updateBeta();
+    virtual void update_F_fs();
 
     /// @brief
-    void updateBiasForce(const Eigen::Vector3d& _gravity);
-
-    /// @brief
-    void update_ddq();
-
-    /// @brief
-    void update_F_fs();
-
-    /// @brief
-    void updateDampingForce();
-
-    /// @brief Updates the mass matrix mM
     void updateMassMatrix();
+    void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+
+    /// @brief
+    void updateMassInverseMatrix();
+    void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
+
+    /// @brief
+    void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+
+    /// @brief
+    void aggregateGravityForceVector(Eigen::VectorXd* _g,
+                                     const Eigen::Vector3d& _gravity);
+
+    /// @brief
+    void updateCombinedVector();
+    void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+                                 const Eigen::Vector3d& _gravity);
 
     /// @brief Aggregate the external forces mFext in the generalized
     ///        coordinates recursively.
-    void aggregateExternalForces(Eigen::VectorXd& _extForce);
-
-    /// @brief
-    void aggregateMass(Eigen::MatrixXd& M);
-
-protected:
-    /// @brief Initialize the vector memebers with proper sizes.
-    void init(Skeleton* _skeleton, int _skeletonIndex);
+    void aggregateExternalForces(Eigen::VectorXd* _Fext);
 
     //--------------------------------------------------------------------------
     // General properties
@@ -499,8 +508,8 @@ protected:
     /// @brief List of markers associated
     std::vector<Marker*> mMarkers;
 
-    /// @brief A list of dependent dof indices
-    std::vector<int> mDependentDofIndexes;
+    /// @brief A increasingly sorted list of dependent dof indices.
+    std::vector<int> mDependentGenCoordIndices;
 
     //--------------------------------------------------------------------------
     // Dynamical Properties
@@ -510,6 +519,9 @@ protected:
 
     /// @brief
     math::Jacobian mBodyJacobian;
+
+    /// @brief
+    bool mIsBodyJacobianDirty;
 
     /// @brief
     math::Jacobian mBodyJacobianTimeDeriv;
@@ -532,21 +544,62 @@ protected:
     /// @brief
     Eigen::Vector6d mFgravity;
 
-    math::Inertia mAI;      ///< Articulated inertia
-    Eigen::Vector6d mB;          ///< Bias force
-    Eigen::MatrixXd mAI_S;
-    Eigen::MatrixXd mPsi;
-    math::Inertia mPi;
-    Eigen::VectorXd mAlpha;
-    Eigen::Vector6d mBeta;
+    /// @brief Articulated inertia
+    math::Inertia mAI;
+
+    /// @brief Bias force
+    Eigen::Vector6d mB;
 
     /// @brief
-    Eigen::MatrixXd mM;
+    math::Jacobian mAI_S;
+
+    /// @brief
+    math::Jacobian mAI_S_Psi;
+
+    /// @brief
+    Eigen::MatrixXd mPsi;
+
+    /// @brief
+    Eigen::MatrixXd mImplicitPsi;
+public: // TODO: This will be removed once Node class is implemented.
+    /// @brief
+    math::Inertia mPi;
+protected: // TODO:
+    /// @brief
+    Eigen::VectorXd mAlpha;
+public: // TODO: This will be removed once Node class is implemented.
+    /// @brief
+    Eigen::Vector6d mBeta;
+protected:
+    /// @brief Cache data for combined vector of the system.
+    Eigen::Vector6d mCg_dV;
+    Eigen::Vector6d mCg_F;
+
+    /// @brief Cache data for gravity force vector of the system.
+    Eigen::Vector6d mG_F;
+
+    /// @brief Cache data for external force vector of the system.
+    Eigen::Vector6d mFext_F;
 
     /// @brief
     std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mContactForces;
 
+    /// @brief Cache data for mass matrix of the system.
+    Eigen::Vector6d mM_dV;
+    Eigen::Vector6d mM_F;
+
+    /// @brief Cache data for inverse mass matrix of the system.
+    Eigen::VectorXd mMInv_a;
+    Eigen::Vector6d mMInv_b;
+    Eigen::Vector6d mMInv_c;
+    Eigen::VectorXd mMInv_MInvVec;
+    Eigen::Vector6d mMInv_U;
+
+    /// @brief
+    void _updateBodyJacobian();
+
 private:
+    /// @brief
     void _updateGeralizedInertia();
 
 public:

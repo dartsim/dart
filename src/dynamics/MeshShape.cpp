@@ -56,6 +56,10 @@ MeshShape::MeshShape(Eigen::Vector3d _dim, const aiScene *_mesh)
         computeVolume();
 }
 
+MeshShape::~MeshShape()
+{
+}
+
 void MeshShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
     if (!_ri)
         return;
