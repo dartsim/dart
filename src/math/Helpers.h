@@ -90,11 +90,6 @@ inline bool isZero(double theta)
     return (fabs(theta) < DART_EPSILON);
 }
 
-inline bool isNan(double x)
-{
-    return x != x;
-}
-
 inline double asinh(double X)
 {
     return log(X + sqrt(X * X + 1));
@@ -168,15 +163,6 @@ inline unsigned seedRand()
 
     srand( seed );
     return seed;
-}
-
-inline Eigen::Vector3d crossOperator(const Eigen::MatrixXd & m)
-{
-    Eigen::Vector3d ret = Eigen::Vector3d::Zero();
-    ret[0] = m(1, 2) - m(2, 1);
-    ret[1] = m(2, 0) - m(0, 2);
-    ret[2] = m(0, 1) - m(1, 0);
-    return ret;
 }
 
 } // namespace utils
