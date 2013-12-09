@@ -3602,8 +3602,10 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
       # using a number of techniques. The include_state object keeps
       # track of the highest type seen, and complains if we see a
       # lower type after that.
-      error_message = include_state.CheckNextIncludeOrder(
-          _ClassifyInclude(fileinfo, include, is_system))
+      # TODO(JS): This def is disabled until we solve Issue #123.
+      #error_message = include_state.CheckNextIncludeOrder(
+      #    _ClassifyInclude(fileinfo, include, is_system))
+      error_message = ''
       if error_message:
         error(filename, linenum, 'build/include_order', 4,
               '%s. Should be: %s.h, c system, c++ system, other.' %
