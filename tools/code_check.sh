@@ -7,7 +7,8 @@ CHECK_DIRS="../dart/common\
             ../dart/constraint\
             ../dart/math\
             ../dart/dynamics\
-            ../dart/gui"
+            ../dart/gui\
+            ../dart/simulation"
 CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\
