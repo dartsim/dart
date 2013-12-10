@@ -38,7 +38,7 @@ namespace utils {
 class SdfParser
 {
 public:
-    /// @brief
+    /// \brief
     static simulation::World* readSdfFile(const std::string& _filename);
 
 private:
@@ -49,35 +49,35 @@ private:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
-    /// @brief
+    /// \brief
     static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
-    /// @brief
+    /// \brief
     static void readPhysics(
             tinyxml2::XMLElement* _physicsElement,
             simulation::World* _world);
 
-    /// @brief
+    /// \brief
     static dynamics::Skeleton* readSkeleton(
             tinyxml2::XMLElement* _skeletonElement,
             simulation::World* _world);
 
-    /// @brief
+    /// \brief
     static SDFBodyNode readBodyNode(
             tinyxml2::XMLElement* _bodyNodeElement,
             dynamics::Skeleton* _skeleton,
             const Eigen::Isometry3d& _skeletonFrame);
 
-    /// @brief
+    /// \brief
     static dynamics::Shape* readShape(
             tinyxml2::XMLElement* _shapelement);
 
-    /// @brief
+    /// \brief
     static dynamics::Joint* readJoint(
             tinyxml2::XMLElement* _jointElement,
             const std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >& _bodies);
 
-    /// @brief
+    /// \brief
     static dynamics::PrismaticJoint* readPrismaticJoint(
             tinyxml2::XMLElement* _jointElement);
 

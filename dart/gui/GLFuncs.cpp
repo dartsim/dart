@@ -43,7 +43,7 @@
 #include <cstdio>
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 void drawStringOnScreen(float x, float y, const std::string& s)
 { // draws text on the screen
@@ -166,5 +166,5 @@ void drawProgressBar(int currFrame, int totalFrame)
     glMatrixMode(oldMode);
 }
 
-} // namespace yui
+} // namespace gui
 } // namespace dart

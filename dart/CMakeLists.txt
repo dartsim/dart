@@ -6,7 +6,7 @@ if(MSVC)
 endif()
 
 set(CORE_SUBDIRS common math dynamics renderer collision lcpsolver constraint integration simulation)
-set(NONCORE_SUBDIRS yui planning utils)
+set(NONCORE_SUBDIRS gui planning utils)
 # optimizer is also a NONCORE_SUBDIR, but it will be handled separately
 
 # Search all header and source files

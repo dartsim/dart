@@ -52,199 +52,199 @@ class BodyNode;
 class Joint;
 class Marker;
 
-/// @brief
+/// \brief
 class Skeleton : public GenCoordSystem
 {
 public:
     //--------------------------------------------------------------------------
     // Constructor and Destructor
     //--------------------------------------------------------------------------
-    /// @brief Constructor
+    /// \brief Constructor
     Skeleton(const std::string& _name = "Skeleton");
 
-    /// @brief Destructor
+    /// \brief Destructor
     virtual ~Skeleton();
 
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
-    /// @brief Set name.
+    /// \brief Set name.
     void setName(const std::string& _name);
 
-    /// @brief Get name.
+    /// \brief Get name.
     const std::string& getName() const;
 
-    /// @brief Set whether this skeleton allows self collisions between body
+    /// \brief Set whether this skeleton allows self collisions between body
     ///        nodes in this skeleton.
-    /// @param[in] _isSelfCollidable True if self collision is allowed.
+    /// \param[in] _isSelfCollidable True if self collision is allowed.
     void setSelfCollidable(bool _isSelfCollidable);
 
-    /// @brief Get whether this skeleton allows self collisions between body
+    /// \brief Get whether this skeleton allows self collisions between body
     ///        nodes in this skeleton.
-    /// @return True if self collision is allowed.
+    /// \return True if self collision is allowed.
     bool isSelfCollidable() const;
 
-    /// @brief Set whether this skeleton will be updated by forward dynamics.
-    /// @param[in] _isMobile True if this skeleton is mobile.
-    /// @warning This function should be called before this skeleton is added to
+    /// \brief Set whether this skeleton will be updated by forward dynamics.
+    /// \param[in] _isMobile True if this skeleton is mobile.
+    /// \warning This function should be called before this skeleton is added to
     ///          the world. If not, the constraint dynamics algorithm will not
     ///          work. If the user want to change the immobile state after this
     ///          skeleton is added to the world, the user should remove this
     ///          skeleton from the world and add it to the world again.
     void setMobile(bool _isMobile);
 
-    /// @brief Get whether this skeleton will be updated by forward dynamics.
-    /// @return True if this skeleton is mobile.
+    /// \brief Get whether this skeleton will be updated by forward dynamics.
+    /// \return True if this skeleton is mobile.
     bool isMobile() const;
 
-    /// @brief Set time step. This timestep is used for implicit joint damping
+    /// \brief Set time step. This timestep is used for implicit joint damping
     ///        force.
     void setTimeStep(double _timeStep);
 
-    /// @brief Get time step.
+    /// \brief Get time step.
     double getTimeStep() const;
 
-    /// @brief Set 3-dim gravitational acceleration. The gravity is used for
+    /// \brief Set 3-dim gravitational acceleration. The gravity is used for
     ///        calculating gravity force vector of the skeleton.
     void setGravity(const Eigen::Vector3d& _gravity);
 
-    /// @brief Get 3-dim gravitational acceleration.
+    /// \brief Get 3-dim gravitational acceleration.
     const Eigen::Vector3d& getGravity() const;
 
-    /// @brief Get total mass of the skeleton. The total mass is calculated at
+    /// \brief Get total mass of the skeleton. The total mass is calculated at
     ///        init().
     double getMass() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     void addBodyNode(BodyNode* _body);
 
-    /// @brief
+    /// \brief
     int getNumBodyNodes() const;
 
-    /// @brief
+    /// \brief
     BodyNode* getRootBodyNode() const;
 
-    /// @brief
+    /// \brief
     BodyNode* getBodyNode(int _idx) const;
 
-    /// @brief
+    /// \brief
     BodyNode* getBodyNode(const std::string& _name) const;
 
-    /// @brief
+    /// \brief
     Joint* getJoint(int _idx) const;
 
-    /// @brief
+    /// \brief
     Joint* getJoint(const std::string& _name) const;
 
-    /// @brief
+    /// \brief
     Marker* getMarker(int _i);
 
-    /// @brief
+    /// \brief
     Marker* getMarker(const std::string& _name) const;
 
     //--------------------------------------------------------------------------
     // Properties updated by dynamics
     //--------------------------------------------------------------------------
-    /// @brief Set the configuration of this skeleton described in generalized
+    /// \brief Set the configuration of this skeleton described in generalized
     ///        coordinates. The order of input configuration is determined by
     ///        _id.
     void setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config);
 
-    /// @brief Set the configuration of this skeleton described in generalized
+    /// \brief Set the configuration of this skeleton described in generalized
     ///        coordinates.
     void setConfig(const Eigen::VectorXd& _config);
 
-    /// @brief Get the configuration of this skeleton described in generalized
+    /// \brief Get the configuration of this skeleton described in generalized
     ///        coordinates. The returned order of configuration is determined by
     ///        _id.
     Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
 
-    /// @brief Get the configuration of this skeleton described in generalized
+    /// \brief Get the configuration of this skeleton described in generalized
     ///        coordinates.
     Eigen::VectorXd getConfig() const;
 
-    /// @brief Set the state of this skeleton described in generalized
+    /// \brief Set the state of this skeleton described in generalized
     ///        coordinates.
     void setState(const Eigen::VectorXd& _state);
 
-    /// @brief Get the state of this skeleton described in generalized
+    /// \brief Get the state of this skeleton described in generalized
     ///        coordinates.
     Eigen::VectorXd getState();
 
-    /// @brief Get mass matrix of the skeleton.
+    /// \brief Get mass matrix of the skeleton.
     const Eigen::MatrixXd& getMassMatrix();
 
-    /// @brief Get inverse of mass matrix of the skeleton.
+    /// \brief Get inverse of mass matrix of the skeleton.
     const Eigen::MatrixXd& getInvMassMatrix();
 
-    /// @brief Get Coriolis force vector of the skeleton.
+    /// \brief Get Coriolis force vector of the skeleton.
     const Eigen::VectorXd& getCoriolisForceVector();
 
-    /// @brief Get gravity force vector of the skeleton.
+    /// \brief Get gravity force vector of the skeleton.
     const Eigen::VectorXd& getGravityForceVector();
 
-    /// @brief Get combined vector of Coriolis force and gravity force of the
+    /// \brief Get combined vector of Coriolis force and gravity force of the
     ///        skeleton.
     const Eigen::VectorXd& getCombinedVector();
 
-    /// @brief Get external force vector of the skeleton.
+    /// \brief Get external force vector of the skeleton.
     const Eigen::VectorXd& getExternalForceVector();
 
-    /// @brief Get internal force vector of the skeleton.
+    /// \brief Get internal force vector of the skeleton.
     Eigen::VectorXd getInternalForceVector() const;
 
-    /// @brief Get damping force of the skeleton.
+    /// \brief Get damping force of the skeleton.
     const Eigen::VectorXd& getDampingForceVector();
 
-    /// @brief Get constraint force vector.
+    /// \brief Get constraint force vector.
     const Eigen::VectorXd& getConstraintForceVector();
 
-    /// @brief Set internal force vector.
+    /// \brief Set internal force vector.
     void setInternalForceVector(const Eigen::VectorXd& _forces);
 
-    /// @brief Set upper limit of the internal force vector.
+    /// \brief Set upper limit of the internal force vector.
     void setMinInternalForceVector(const Eigen::VectorXd& _minForces);
 
-    /// @brief Get lower limit of the internal force vector.
+    /// \brief Get lower limit of the internal force vector.
     Eigen::VectorXd getMinInternalForces() const;
 
-    /// @brief Set upper limit of the internal force vector.
+    /// \brief Set upper limit of the internal force vector.
     void setMaxInternalForceVector(const Eigen::VectorXd& _maxForces);
 
-    /// @brief Get upper limit of the internal force vector.
+    /// \brief Get upper limit of the internal force vector.
     Eigen::VectorXd getMaxInternalForceVector() const;
 
-    /// @brief Clear internal force vector.
+    /// \brief Clear internal force vector.
     void clearInternalForceVector();
 
-    /// @brief Clear all the contacts of external force vector.
+    /// \brief Clear all the contacts of external force vector.
     ///        Automatically called after each (forward/inverse) dynamics
     ///        computation, which marks the end of a cycle.
     void clearExternalForceVector();
 
-    /// @brief Set constraint force vector.
+    /// \brief Set constraint force vector.
     void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d getWorldCOM();
 
     //--------------------------------------------------------------------------
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     void init(double _timeStep = 0.001, const Eigen::Vector3d& _gravity =
             Eigen::Vector3d(0.0, 0.0, -9.81));
 
-    /// @brief (q, dq, ddq) --> (tau)
+    /// \brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(bool _computeJacobian = true,
                                       bool _computeJacobianDeriv = true,
                                       bool _withExternalForces = false,
                                       bool _withDampingForces = false);
 
-    /// @brief (q, dq, tau) --> (ddq)
+    /// \brief (q, dq, tau) --> (ddq)
     void computeForwardDynamics();
 
     //--------------------------------------------------------------------------
@@ -254,101 +254,101 @@ public:
               const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
               bool _useDefaultColor = true) const;
 
-    /// @brief
+    /// \brief
     void drawMarkers(renderer::RenderInterface* _ri = NULL,
                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                      bool _useDefaultColor = true ) const;
 
 protected:
-    /// @brief Name
+    /// \brief Name
     std::string mName;
 
-    /// @brief
+    /// \brief
     bool mIsSelfCollidable;
 
-    /// @brief List of body nodes in the skeleton.
+    /// \brief List of body nodes in the skeleton.
     std::vector<BodyNode*> mBodyNodes;
 
-    /// @brief If the skeleton is not mobile, its dynamic effect is equivalent
+    /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
     ///        to having infinite mass. If the configuration of an immobile
     ///        skeleton are manually changed, the collision results might not be
     ///        correct.
     bool mIsMobile;
 
-    /// @brief Time step for implicit joint damping force.
+    /// \brief Time step for implicit joint damping force.
     double mTimeStep;
 
-    /// @brief Gravity vector.
+    /// \brief Gravity vector.
     Eigen::Vector3d mGravity;
 
-    /// @brief Total mass.
+    /// \brief Total mass.
     double mTotalMass;
 
-    /// @brief Mass matrix for the skeleton.
+    /// \brief Mass matrix for the skeleton.
     Eigen::MatrixXd mM;
 
-    /// @brief Dirty flag for the mass matrix.
+    /// \brief Dirty flag for the mass matrix.
     bool mIsMassMatrixDirty;
 
-    /// @brief Inverse of mass matrix for the skeleton.
+    /// \brief Inverse of mass matrix for the skeleton.
     Eigen::MatrixXd mMInv;
 
-    /// @brief Dirty flag for the inverse of mass matrix.
+    /// \brief Dirty flag for the inverse of mass matrix.
     bool mIsMassInvMatrixDirty;
 
-    /// @brief Coriolis vector for the skeleton which is C(q,dq)*dq.
+    /// \brief Coriolis vector for the skeleton which is C(q,dq)*dq.
     Eigen::VectorXd mCvec;
 
-    /// @brief Dirty flag for the Coriolis force vector.
+    /// \brief Dirty flag for the Coriolis force vector.
     bool mIsCoriolisVectorDirty;
 
-    /// @brief Gravity vector for the skeleton; computed in nonrecursive
+    /// \brief Gravity vector for the skeleton; computed in nonrecursive
     ///        dynamics only.
     Eigen::VectorXd mG;
 
-    /// @brief Dirty flag for the gravity force vector.
+    /// \brief Dirty flag for the gravity force vector.
     bool mIsGravityForceVectorDirty;
 
-    /// @brief Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
+    /// \brief Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
     Eigen::VectorXd mCg;
 
-    /// @brief Dirty flag for the combined vector of Coriolis and gravity.
+    /// \brief Dirty flag for the combined vector of Coriolis and gravity.
     bool mIsCombinedVectorDirty;
 
-    /// @brief External force vector for the skeleton.
+    /// \brief External force vector for the skeleton.
     Eigen::VectorXd mFext;
 
-    /// @brief Dirty flag for the external force vector.
+    /// \brief Dirty flag for the external force vector.
     bool mIsExternalForceVectorDirty;
 
-    /// @brief Constraint force vector.
+    /// \brief Constraint force vector.
     Eigen::VectorXd mFc;
 
-    /// @brief Damping force vector.
+    /// \brief Damping force vector.
     Eigen::VectorXd mFd;
 
-    /// @brief Dirty flag for the damping force vector.
+    /// \brief Dirty flag for the damping force vector.
     bool mIsDampingForceVectorDirty;
 
-    /// @brief Update mass matrix of the skeleton.
+    /// \brief Update mass matrix of the skeleton.
     void updateMassMatrix();
 
-    /// @brief Update inverse of mass matrix of the skeleton.
+    /// \brief Update inverse of mass matrix of the skeleton.
     void updateInvMassMatrix();
 
-    /// @brief Update Coriolis force vector of the skeleton.
+    /// \brief Update Coriolis force vector of the skeleton.
     void updateCoriolisForceVector();
 
-    /// @brief Update gravity force vector of the skeleton.
+    /// \brief Update gravity force vector of the skeleton.
     void updateGravityForceVector();
 
-    /// @brief Update combined vector of the skeletong.
+    /// \brief Update combined vector of the skeletong.
     void updateCombinedVector();
 
-    /// @brief update external force vector to generalized torques.
+    /// \brief update external force vector to generalized torques.
     void updateExternalForceVector();
 
-    /// @brief Update damping force vector.
+    /// \brief Update damping force vector.
     void updateDampingForceVector();
 
 public:

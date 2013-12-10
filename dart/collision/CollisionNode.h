@@ -47,31 +47,31 @@ class BodyNode;
 
 namespace collision {
 
-/// @brief
+/// \brief
 class CollisionNode
 {
 public:
-    /// @brief Default constructor
+    /// \brief Default constructor
     CollisionNode(dynamics::BodyNode* _bodyNode);
 
-    /// @brief Default destructor
+    /// \brief Default destructor
     virtual ~CollisionNode();
 
 public:
-    /// @brief
+    /// \brief
     dynamics::BodyNode* getBodyNode() const;
 
-    /// @brief
+    /// \brief
     void setIndex(int _idx);
 
-    /// @brief
+    /// \brief
     int getIndex() const;
 
 protected:
-    /// @brief
+    /// \brief
     dynamics::BodyNode* mBodyNode;
 
-    /// @brief
+    /// \brief
     int mIndex;
 
 private:

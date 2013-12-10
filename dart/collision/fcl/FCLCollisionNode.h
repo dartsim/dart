@@ -52,39 +52,39 @@ class BodyNode;
 
 namespace collision {
 
-/// @brief
+/// \brief
 class FCLCollisionNode : public CollisionNode
 {
 public:
-    /// @brief
+    /// \brief
     FCLCollisionNode(dynamics::BodyNode* _bodyNode);
 
-    /// @brief
+    /// \brief
     virtual ~FCLCollisionNode();
 
-    /// @brief
+    /// \brief
     int getNumCollisionGeometries() const;
 
-    /// @brief
+    /// \brief
     fcl::CollisionGeometry* getCollisionGeometry(int _idx) const;
 
-    /// @brief
+    /// \brief
     fcl::Transform3f getFCLTransform(int _idx) const;
 
 protected:
 
 private:
-    /// @brief
+    /// \brief
     std::vector<fcl::CollisionGeometry*> mCollisionGeometries;
     std::vector<dynamics::Shape*> mShapes;
 };
 
-/// @brief
+/// \brief
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
                               const aiScene *_mesh);
 
-/// @brief
+/// \brief
 template<class BV>
 fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
 

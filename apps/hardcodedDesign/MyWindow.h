@@ -23,8 +23,8 @@
 #include "dart/utils/Paths.h"
 #include "dart/common/Timer.h"
 #include "dart/math/Helpers.h"
-#include "dart/yui/GLFuncs.h"
-#include "dart/yui/Win3D.h"
+#include "dart/gui/GLFuncs.h"
+#include "dart/gui/Win3D.h"
 
 namespace dart {
 namespace dynamics {
@@ -33,7 +33,7 @@ namespace dynamics {
 }
 }
 
-class MyWindow : public dart::yui::Win3D {
+class MyWindow : public dart::gui::Win3D {
 public:
 
 	/// The constructor - set the position of the skeleton

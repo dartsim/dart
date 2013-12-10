@@ -49,10 +49,10 @@ namespace dynamics {
 class FreeJoint : public Joint
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     FreeJoint(const std::string& _name = "Free joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~FreeJoint();
 
     // Documentation inherited.
@@ -68,7 +68,7 @@ public:
     virtual void clampRotation();
 
 protected:
-    /// @brief
+    /// \brief
     GenCoord mCoordinate[6];
 
 private:

@@ -39,7 +39,7 @@
 #include "Win2D.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 Win2D::Win2D():GlutWindow()
 {
@@ -163,5 +163,5 @@ void Win2D::initGL()
     glEnable(GL_LINE_SMOOTH);
 }
 
-} // namespace yui
+} // namespace gui
 } // namespace dart

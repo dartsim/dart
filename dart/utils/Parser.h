@@ -91,45 +91,45 @@ void getAttribute(tinyxml2::XMLElement* element, const char* const name, double*
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-/// @brief
+/// \brief
 class ElementEnumerator
 {
 public:
-    /// @brief
+    /// \brief
     ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string& _name);
 
-    /// @brief
+    /// \brief
     ~ElementEnumerator();
 
-    /// @brief
+    /// \brief
     bool valid() const;
 
-    /// @brief
+    /// \brief
     bool next();
 
-    /// @brief
+    /// \brief
     tinyxml2::XMLElement* get() const { return m_current; }
 
-    /// @brief
+    /// \brief
     tinyxml2::XMLElement* operator->() const { return m_current; }
 
-    /// @brief
+    /// \brief
     tinyxml2::XMLElement& operator*() const { return *m_current; }
 
-    /// @brief
+    /// \brief
     bool operator==(const ElementEnumerator& _rhs) const;
 
-    /// @brief
+    /// \brief
     ElementEnumerator & operator=(const ElementEnumerator& _rhs);
 
 private:
-    /// @brief
+    /// \brief
     std::string m_name;
 
-    /// @brief
+    /// \brief
     tinyxml2::XMLElement* m_parent;
 
-    /// @brief
+    /// \brief
     tinyxml2::XMLElement* m_current;
 };
 

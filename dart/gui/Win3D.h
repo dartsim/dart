@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_YUI_WIN3D_H
-#define DART_YUI_WIN3D_H
+#ifndef DART_GUI_WIN3D_H
+#define DART_gui_WIN3D_H
 
 #include "GlutWindow.h"
 #include "Trackball.h"
 #include <Eigen/Eigen>
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 class Win3D : public GlutWindow {
 public:
@@ -76,7 +76,7 @@ protected:
     bool mZooming;
 };
 
-} // namespace yui
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_YUI_WIN3D_H
+#endif // #ifndef DART_GUI_WIN3D_H

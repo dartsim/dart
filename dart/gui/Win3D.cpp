@@ -40,7 +40,7 @@
 #include "Jitter.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 Win3D::Win3D()
     :GlutWindow(), mTrans(0.0,0.0,0.0), mEye(0.0,0.0,1.0), mUp(0.0,1.0,0.0), mZoom(1.0), mPersp(45.0), mRotate(false), mTranslate(false), mZooming(false)
@@ -320,5 +320,5 @@ void Win3D::capturing()
     glAccum( GL_RETURN, 1.0);
 }
 
-} // namespace yui
+} // namespace gui
 } // namespace dart

@@ -46,22 +46,22 @@ namespace dynamics {
 class MeshShape : public Shape
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     MeshShape(Eigen::Vector3d _dim, const aiScene *_mesh);
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~MeshShape();
 
-    /// @brief
+    /// \brief
     inline const aiScene* getMesh() const { return mMesh; }
 
-    /// @brief
+    /// \brief
     inline void setMesh(const aiScene* _mesh) { mMesh = _mesh; }
 
-    /// @brief
+    /// \brief
     inline int getDisplayList() const { return mDisplayList; }
 
-    /// @brief
+    /// \brief
     inline void setDisplayList(int _index) { mDisplayList = _index; }
 
     // Documentation inherited.
@@ -69,7 +69,7 @@ public:
               const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
               bool _default = true) const;
 
-    /// @brief
+    /// \brief
     static const aiScene* loadMesh(const std::string& fileName);
 
     // Documentation inherited.
@@ -79,10 +79,10 @@ private:
     // Documentation inherited.
     void computeVolume();
 
-    /// @brief
+    /// \brief
     const aiScene *mMesh;
 
-    /// @brief OpenGL DisplayList id for rendering
+    /// \brief OpenGL DisplayList id for rendering
     int mDisplayList;
 
 public:

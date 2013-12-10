@@ -46,23 +46,23 @@
 namespace dart {
 namespace dynamics {
 
-/// @brief System is a base class for every classes that has Dofs.
+/// \brief System is a base class for every classes that has Dofs.
 class GenCoordSystem
 {
 public:
-    /// @brief
+    /// \brief
     GenCoordSystem();
 
-    /// @brief
+    /// \brief
     virtual ~GenCoordSystem();
 
-    /// @brief
+    /// \brief
     int getNumGenCoords() const;
 
-    /// @brief
+    /// \brief
     GenCoord* getGenCoord(int _idx) const;
 
-    /// @brief
+    /// \brief
     GenCoord* getGenCoord(const std::string& _name) const;
 
     //--------------------------------------------------------------------------
@@ -102,7 +102,7 @@ public:
     Eigen::VectorXd get_tauMax() const;
 
 protected:
-    /// @brief Pointers to Dofs.
+    /// \brief Pointers to Dofs.
     std::vector<GenCoord*> mGenCoords;
 
 private:

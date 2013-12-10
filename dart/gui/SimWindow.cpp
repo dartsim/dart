@@ -1,4 +1,4 @@
-/* Copyright (c) 2011, Georgia Tech Research Corporation
+/* Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -45,10 +45,10 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
-#include "dart/yui/GLFuncs.h"
+#include "dart/gui/GLFuncs.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 SimWindow::SimWindow()
     : Win3D()
@@ -70,9 +70,14 @@ SimWindow::~SimWindow()
 {
 }
 
+void SimWindow::timeStepping()
+{
+  mWorld->step();
+}
+
 void SimWindow::drawSkels()
 {
-    for (int i = 0; i < mWorld->getNumSkeletons(); i++)
+  for (int i = 0; i < mWorld->getNumSkeletons(); i++)
         mWorld->getSkeleton(i)->draw(mRI);
 }
 
@@ -151,7 +156,7 @@ void SimWindow::draw()
         sprintf(buff, "%d", mWorld->getSimFrames());
     std::string frame(buff);
     glColor3f(0.0, 0.0, 0.0);
-    yui::drawStringOnScreen(0.02f, 0.02f, frame);
+    gui::drawStringOnScreen(0.02f, 0.02f, frame);
     glEnable(GL_LIGHTING);
 }
 
@@ -197,9 +202,14 @@ void SimWindow::keyboard(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
+void SimWindow::setWorld(simulation::World* _world)
+{
+  mWorld = _world;
+}
+
 void SimWindow::bake()
 {
-    int nContact = mWorld->getConstraintHandler()->getCollisionDetector()->getNumContacts();
+  int nContact = mWorld->getConstraintHandler()->getCollisionDetector()->getNumContacts();
     Eigen::VectorXd state(mWorld->getIndex(mWorld->getNumSkeletons()) + 6 * nContact);
     for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
         state.segment(mWorld->getIndex(i), mWorld->getSkeleton(i)->getNumGenCoords()) = mWorld->getSkeleton(i)->get_q();

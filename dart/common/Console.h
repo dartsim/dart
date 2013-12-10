@@ -42,25 +42,25 @@
 #include <string>
 #include <iostream>
 
-/// @brief Output a message
+/// \brief Output a message
 #define dtmsg (dart::common::colorMsg("Msg", 32))
 
-/// @brief Output a debug message
+/// \brief Output a debug message
 #define dtdbg (dart::common::colorMsg("Dbg", 36))
 
-/// @brief Output a warning message
+/// \brief Output a warning message
 #define dtwarn (dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
 
-/// @brief Output an error message
+/// \brief Output an error message
 #define dterr (dart::common::colorErr("Error", __FILE__, __LINE__, 31))
 
 namespace dart {
 namespace common {
 
-/// @brief
+/// \brief
 std::ostream& colorMsg(const std::string& _msg, int _color);
 
-/// @brief
+/// \brief
 std::ostream& colorErr(const std::string& _msg,
                        const std::string& _file,
                        unsigned int _line,

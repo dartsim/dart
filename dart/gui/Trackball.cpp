@@ -39,7 +39,7 @@
 #include "dart/renderer/LoadOpengl.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 void Trackball::startBall(double x, double y)
 {
@@ -121,5 +121,5 @@ Eigen::Quaterniond Trackball::quatFromVectors(const Eigen::Vector3d& from, const
     return quat;
 }
 
-} // namespace yui
+} // namespace gui
 } // namespace dart

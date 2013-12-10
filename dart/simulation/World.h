@@ -65,18 +65,18 @@ class ConstraintDynamics;
 
 namespace simulation {
 
-/// @class World
-/// @brief
+/// \class World
+/// \brief
 class World : public integration::IntegrableSystem
 {
 public:
     //--------------------------------------------------------------------------
     // Constructor and Destructor
     //--------------------------------------------------------------------------
-    /// @brief Constructor.
+    /// \brief Constructor.
     World();
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~World();
 
     //--------------------------------------------------------------------------
@@ -93,67 +93,67 @@ public:
     //--------------------------------------------------------------------------
     // Simulation
     //--------------------------------------------------------------------------
-    /// @brief Calculate the dynamics and integrate the world for one step.
+    /// \brief Calculate the dynamics and integrate the world for one step.
     void step();
 
-    /// @brief
+    /// \brief
     void setTime(double _time);
 
-    /// @brief Get the time step.
-    /// @return Time step.
+    /// \brief Get the time step.
+    /// \return Time step.
     double getTime() const;
 
-    /// @brief Get the number of simulated frames.
+    /// \brief Get the number of simulated frames.
     int getSimFrames() const;
 
     //--------------------------------------------------------------------------
     // Properties
     //--------------------------------------------------------------------------
 
-    /// @brief .
-    /// @param[in] _gravity
+    /// \brief .
+    /// \param[in] _gravity
     void setGravity(const Eigen::Vector3d& _gravity);
 
-    /// @brief .
+    /// \brief .
     const Eigen::Vector3d& getGravity() const;
 
-    /// @brief .
-    /// @param[in] _timeStep
+    /// \brief .
+    /// \param[in] _timeStep
     void setTimeStep(double _timeStep);
 
-    /// @brief Get the time step.
+    /// \brief Get the time step.
     double getTimeStep() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
-    /// @brief Get the indexed skeleton.
-    /// @param[in] _index
+    /// \brief Get the indexed skeleton.
+    /// \param[in] _index
     dynamics::Skeleton* getSkeleton(int _index) const;
 
-    /// @brief Find body node by name.
-    /// @param[in] The name of body node looking for.
-    /// @return Searched body node. If the skeleton does not have a body
+    /// \brief Find body node by name.
+    /// \param[in] The name of body node looking for.
+    /// \return Searched body node. If the skeleton does not have a body
     /// node with _name, then return NULL.
     dynamics::Skeleton* getSkeleton(const std::string& _name) const;
 
-    /// @brief Get the number of skeletons.
+    /// \brief Get the number of skeletons.
     int getNumSkeletons() const;
 
-    /// @brief .
-    /// @param[in] _skel
+    /// \brief .
+    /// \param[in] _skel
     void addSkeleton(dynamics::Skeleton* _skeleton);
 
     void removeSkeleton(dynamics::Skeleton* _skeleton);
 
-    /// @brief Get the dof index for the indexed skeleton.
-    /// @param[in] _index
+    /// \brief Get the dof index for the indexed skeleton.
+    /// \param[in] _index
     int getIndex(int _index) const;
 
     //--------------------------------------------------------------------------
     // Kinematics
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     bool checkCollision(bool checkAllCollisions = false);
 
     //--------------------------------------------------------------------------
@@ -163,38 +163,38 @@ public:
     //--------------------------------------------------------------------------
     // Constraint
     //--------------------------------------------------------------------------
-    /// @brief Get the constraint handler.
+    /// \brief Get the constraint handler.
     constraint::ConstraintDynamics* getConstraintHandler() const;
 
 protected:
     //--------------------------------------------------------------------------
     // Dynamics Algorithms
     //--------------------------------------------------------------------------
-    /// @brief Skeletones in this world.
+    /// \brief Skeletones in this world.
     std::vector<dynamics::Skeleton*> mSkeletons;
 
-    /// @brief The first indeices of each skeleton's dof in mDofs.
+    /// \brief The first indeices of each skeleton's dof in mDofs.
     ///
     /// For example, if this world has three skeletons and their dof are
     /// 6, 1 and 2 then the mIndices goes like this: [0 6 7].
     std::vector<int> mIndices;
 
-    /// @brief The gravity.
+    /// \brief The gravity.
     Eigen::Vector3d mGravity;
 
-    /// @brief The time step.
+    /// \brief The time step.
     double mTimeStep;
 
-    /// @brief
+    /// \brief
     double mTime;
 
-    /// @brief The simulated frame number.
+    /// \brief The simulated frame number.
     int mFrame;
 
-    /// @brief The integrator.
+    /// \brief The integrator.
     integration::Integrator* mIntegrator;
 
-    /// @brief The constraint handler.
+    /// \brief The constraint handler.
     constraint::ConstraintDynamics* mConstraintHandler;
 
 private:

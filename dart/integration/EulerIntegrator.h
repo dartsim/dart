@@ -43,14 +43,14 @@
 namespace dart {
 namespace integration {
 
-/// @brief
+/// \brief
 class EulerIntegrator : public Integrator
 {
 public:
-    /// @brief Default constructor.
+    /// \brief Default constructor.
     EulerIntegrator();
 
-    /// @brief Default destructor.
+    /// \brief Default destructor.
     virtual ~EulerIntegrator();
 
     // Documentation inherited.

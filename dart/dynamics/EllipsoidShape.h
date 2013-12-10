@@ -46,7 +46,7 @@ namespace dynamics {
 class EllipsoidShape : public Shape
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     EllipsoidShape(Eigen::Vector3d _dim);
 
     // Documentation inherited.
@@ -57,7 +57,7 @@ public:
     // Documentation inherited.
     virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-    /// @brief True if (mDim[0] == mDim[1] == mDim[2]).
+    /// \brief True if (mDim[0] == mDim[1] == mDim[2]).
     bool isSphere(void) const;
 
 private:

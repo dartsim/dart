@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_YUI_TRACKBALL_H
-#define DART_YUI_TRACKBALL_H
+#ifndef DART_GUI_TRACKBALL_H
+#define DART_gui_TRACKBALL_H
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 class Trackball
 {
@@ -84,7 +84,7 @@ private:
     Eigen::Quaterniond mCurrQuat;
 };
 
-} // namespace yui
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_YUI_TRACKBALL_H
+#endif // #ifndef DART_GUI_TRACKBALL_H

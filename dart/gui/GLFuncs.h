@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_YUI_GLFUNCS_H
-#define DART_YUI_GLFUNCS_H
+#ifndef DART_GUI_GLFUNCS_H
+#define DART_gui_GLFUNCS_H
 
 #include <Eigen/Eigen>
 //#include "FreeImage.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 void drawStringOnScreen(float x, float y, const std::string& s);
 void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
@@ -56,7 +56,7 @@ void drawProgressBar(int currFrame, int totalFrame);
 */
 // todo freeimage
 
-} // namespace yui
+} // namespace gui
 } // namespace dart
 
-#endif  // #ifndef DART_YUI_GLFUNCS_H
+#endif  // #ifndef DART_GUI_GLFUNCS_H

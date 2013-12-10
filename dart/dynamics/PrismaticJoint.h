@@ -49,17 +49,17 @@ namespace dynamics {
 class PrismaticJoint : public Joint
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                    const std::string& _name = "Prismatic joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~PrismaticJoint();
 
-    /// @brief
+    /// \brief
     void setAxis(const Eigen::Vector3d& _axis);
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getAxis() const;
 
     // Documentation inherited.
@@ -72,10 +72,10 @@ public:
     virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// @brief
+    /// \brief
     GenCoord mCoordinate;
 
-    /// @brief Rotational axis.
+    /// \brief Rotational axis.
     Eigen::Vector3d mAxis;
 
 public:

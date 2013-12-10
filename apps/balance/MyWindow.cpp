@@ -5,12 +5,12 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintDynamics.h"
 #include "dart/simulation/World.h"
-#include "dart/yui/GLFuncs.h"
+#include "dart/gui/GLFuncs.h"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
-using namespace yui;
+using namespace gui;
 
 void MyWindow::timeStepping()
 {

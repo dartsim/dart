@@ -49,10 +49,10 @@ namespace dynamics {
 class WeldJoint : public Joint
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     WeldJoint(const std::string& _name = "Weld joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~WeldJoint();
 
     // Documentation inherited.

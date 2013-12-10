@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -43,159 +43,159 @@
 #include <cstdio>
 #include <iostream>
 #include "GlutWindow.h"
-#include "dart/yui/GLFuncs.h"
+#include "dart/gui/GLFuncs.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
 std::vector<int> GlutWindow::mWinIDs;
 
 GlutWindow::GlutWindow()
 {
-    mWinWidth = 0;
-    mWinHeight = 0;
-    mMouseX = 0;
-    mMouseY = 0;
-    mDisplayTimeout = 1000.0/30.0;
-    mMouseDown = false;
-    mMouseDrag = false;
-    mCapture = false;
-    mBackground[0] = 0.3;
-    mBackground[1] = 0.3;
-    mBackground[2] = 0.3;
-    mBackground[3] = 1.0;
-    mRI = NULL;
+  mWinWidth = 0;
+  mWinHeight = 0;
+  mMouseX = 0;
+  mMouseY = 0;
+  mDisplayTimeout = 1000.0/30.0;
+  mMouseDown = false;
+  mMouseDrag = false;
+  mCapture = false;
+  mBackground[0] = 0.3;
+  mBackground[1] = 0.3;
+  mBackground[2] = 0.3;
+  mBackground[3] = 1.0;
+  mRI = NULL;
 }
 
 GlutWindow::~GlutWindow()
 {
-    if (mRI)
-        delete mRI;
+  if (mRI)
+    delete mRI;
 }
 
 void GlutWindow::initWindow(int w, int h, const char* name)
 {
-    mWindows.push_back(this);
+  mWindows.push_back(this);
 
-    mWinWidth = w;
-    mWinHeight = h;
+  mWinWidth = w;
+  mWinHeight = h;
 
-    glutInitDisplayMode( GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL | GLUT_ACCUM);
-    glutInitWindowPosition( 150, 100 );
-    glutInitWindowSize( w, h );
-    mWinIDs.push_back(glutCreateWindow( name ));
+  glutInitDisplayMode( GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL | GLUT_ACCUM);
+  glutInitWindowPosition( 150, 100 );
+  glutInitWindowSize( w, h );
+  mWinIDs.push_back(glutCreateWindow( name ));
 
-    glutDisplayFunc( refresh );
-    glutReshapeFunc( reshape );
-    glutKeyboardFunc( keyEvent );
-    glutSpecialFunc( specKeyEvent );
-    glutMouseFunc( mouseClick );
-    glutMotionFunc( mouseDrag );
-    glutPassiveMotionFunc( mouseMove );
+  glutDisplayFunc( refresh );
+  glutReshapeFunc( reshape );
+  glutKeyboardFunc( keyEvent );
+  glutSpecialFunc( specKeyEvent );
+  glutMouseFunc( mouseClick );
+  glutMotionFunc( mouseDrag );
+  glutPassiveMotionFunc( mouseMove );
 
-    if (mRI)
-        delete mRI;
-    mRI = new renderer::OpenGLRenderInterface();
-    mRI->initialize();
-    //glutTimerFunc ( mDisplayTimeout, refreshTimer, 0 );
-    //glutTimerFunc ( mDisplayTimeout, runTimer, 0 );
+  if (mRI)
+    delete mRI;
+  mRI = new renderer::OpenGLRenderInterface();
+  mRI->initialize();
+  //glutTimerFunc ( mDisplayTimeout, refreshTimer, 0 );
+  //glutTimerFunc ( mDisplayTimeout, runTimer, 0 );
 }
 
 void GlutWindow::reshape(int w, int h)
 {
-    current()->mScreenshotTemp = std::vector<unsigned char>(w*h*4);
-    current()->mScreenshotTemp2 = std::vector<unsigned char>(w*h*4);
-    current()->resize(w,h);
+  current()->mScreenshotTemp = std::vector<unsigned char>(w*h*4);
+  current()->mScreenshotTemp2 = std::vector<unsigned char>(w*h*4);
+  current()->resize(w,h);
 }
 
 void GlutWindow::keyEvent(unsigned char key, int x, int y)
 {
-    current()->keyboard(key, x, y);
+  current()->keyboard(key, x, y);
 }
 
 void GlutWindow::specKeyEvent(int key, int x, int y)
 {
-    current()->specKey(key, x, y);
+  current()->specKey(key, x, y);
 }
 
 void GlutWindow::mouseClick(int button, int state, int x, int y)
 {
-    current()->click(button, state, x, y);
+  current()->click(button, state, x, y);
 }
 
 void GlutWindow::mouseDrag(int x, int y)
 {
-    current()->drag(x, y);
+  current()->drag(x, y);
 }
 
 void GlutWindow::mouseMove(int x, int y)
 {
-    current()->move(x, y);
+  current()->move(x, y);
 }
 
 void GlutWindow::refresh()
 {
-    current()->render();
+  current()->render();
 }
 
 void GlutWindow::refreshTimer(int val)
 {
-    current()->displayTimer(val);
+  current()->displayTimer(val);
 }
 
 void GlutWindow::displayTimer(int val)
 {
-    glutPostRedisplay();
-    glutTimerFunc(mDisplayTimeout, refreshTimer, val);
+  glutPostRedisplay();
+  glutTimerFunc(mDisplayTimeout, refreshTimer, val);
 }
 
 void GlutWindow::runTimer(int val)
 {
-    current()->simTimer(val);
+  current()->simTimer(val);
 }
 
 bool GlutWindow::screenshot(){
-    static int count=0;
-    char fileBase[32]="frames/Capture";
-    char fileName[64];
-    // png
-    sprintf(fileName, "%s%.4d.png", fileBase, count++);
-    int tw = glutGet(GLUT_WINDOW_WIDTH);
-    int th = glutGet(GLUT_WINDOW_HEIGHT);
+  static int count=0;
+  char fileBase[32]="frames/Capture";
+  char fileName[64];
+  // png
+  sprintf(fileName, "%s%.4d.png", fileBase, count++);
+  int tw = glutGet(GLUT_WINDOW_WIDTH);
+  int th = glutGet(GLUT_WINDOW_HEIGHT);
 
-    glReadPixels( 0, 0,  tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
+  glReadPixels( 0, 0,  tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
 
-    // reverse temp2 temp1
-    for (int row = 0; row < th; row++) {
-        memcpy(&mScreenshotTemp2[row * tw * 4], &mScreenshotTemp[(th - row - 1) * tw * 4], tw * 4);
-    }
+  // reverse temp2 temp1
+  for (int row = 0; row < th; row++) {
+    memcpy(&mScreenshotTemp2[row * tw * 4], &mScreenshotTemp[(th - row - 1) * tw * 4], tw * 4);
+  }
 
-    unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
+  unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
 
-    //if there's an error, display it
-    if(result) {
-        std::cout << "lodepng error " << result << ": "<< lodepng_error_text(result) << std::endl;
-        return false;
-    }
-    else {
-        std::cout << "wrote screenshot " << fileName << "\n";
-        return true;
-    }
+  //if there's an error, display it
+  if(result) {
+    std::cout << "lodepng error " << result << ": "<< lodepng_error_text(result) << std::endl;
+    return false;
+  }
+  else {
+    std::cout << "wrote screenshot " << fileName << "\n";
+    return true;
+  }
 }
 
 inline GlutWindow* GlutWindow::current()
 {
-    int id = glutGetWindow();
-    for(unsigned int i=0; i<mWinIDs.size(); i++){
-        if(mWinIDs.at(i) == id){
-            return mWindows.at(i);
-        }
+  int id = glutGetWindow();
+  for(unsigned int i=0; i<mWinIDs.size(); i++){
+    if(mWinIDs.at(i) == id){
+      return mWindows.at(i);
     }
-    std::cout<<"An unknown error occured!"<<std::endl;
-    exit(0);
+  }
+  std::cout<<"An unknown error occured!"<<std::endl;
+  exit(0);
 }
 
-} // namespace yui
+} // namespace gui
 } // namespace dart

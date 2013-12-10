@@ -46,7 +46,7 @@ namespace dynamics {
 class BoxShape : public Shape
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     BoxShape(Eigen::Vector3d _dim);
 
     // Documentation inherited.

@@ -44,41 +44,41 @@
 namespace dart {
 namespace integration {
 
-/// @brief Any class that uses an integrator should implement this interface.
+/// \brief Any class that uses an integrator should implement this interface.
 class IntegrableSystem
 {
 public:
-    /// @brief Default constructor.
+    /// \brief Default constructor.
     IntegrableSystem();
 
-    /// @brief Default destructor.
+    /// \brief Default destructor.
     virtual ~IntegrableSystem();
 
 public:
-    /// @brief Get state of the system.
+    /// \brief Get state of the system.
     virtual Eigen::VectorXd getState() const = 0;
 
-    /// @brief Set state of the system.
+    /// \brief Set state of the system.
     virtual void setState(const Eigen::VectorXd& _state) = 0;
 
-    /// @brief Evaluate the derivatives of the system.
+    /// \brief Evaluate the derivatives of the system.
     virtual Eigen::VectorXd evalDeriv() = 0;
 };
 
 // TODO (kasiu) Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
-/// @brief
+/// \brief
 class Integrator
 {
 public:
-    /// @brief Default constructor.
+    /// \brief Default constructor.
     Integrator();
 
-    /// @brief Default destructor.
+    /// \brief Default destructor.
     virtual ~Integrator();
 
 public:
-    /// @brief Integrate the system with time step dt.
+    /// \brief Integrate the system with time step dt.
     virtual void integrate(IntegrableSystem* system, double dt) const = 0;
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_YUI_GLUTWINDOW_H
-#define DART_YUI_GLUTWINDOW_H
+#ifndef DART_GUI_GLUTWINDOW_H
+#define DART_gui_GLUTWINDOW_H
 
 #include "dart/renderer/LoadOpengl.h"
 #include "dart/renderer/RenderInterface.h"
@@ -45,7 +45,7 @@
 #include "lodepng.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 class GlutWindow
 {
@@ -97,7 +97,7 @@ protected:
     std::vector<unsigned char> mScreenshotTemp2;
 };
 
-} // namespace yui
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_YUI_GLUTWINDOW_H
+#endif // #ifndef DART_GUI_GLUTWINDOW_H

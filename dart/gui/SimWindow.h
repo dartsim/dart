@@ -1,4 +1,4 @@
-/* Copyright (c) 2011, Georgia Tech Research Corporation
+/* Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -38,73 +38,79 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_SIMWINDOW_H
-#define DART_SIMULATION_SIMWINDOW_H
+#ifndef DART_GUI_SIMWINDOW_H_
+#define DART_GUI_SIMWINDOW_H_
 
-#include "dart/yui/Win3D.h"
-#include "dart/simulation/World.h"
+#include <vector>
+
+#include <Eigen/Dense>
+
+#include "dart/gui/Win3D.h"
 
 namespace dart {
-namespace yui {
-
+namespace simulation {
 class World;
+}  // namespace simulation
+}  // namespace dart
 
-/// @brief
-class SimWindow : public yui::Win3D
-{
+namespace dart {
+namespace gui {
+
+/// \brief
+class SimWindow : public gui::Win3D {
 public:
-    /// @brief
-    SimWindow();
+  /// \brief
+  SimWindow();
 
-    /// @brief
-    virtual ~SimWindow();
+  /// \brief
+  virtual ~SimWindow();
 
-    /// @brief
-    virtual void timeStepping() { mWorld->step(); }
+  /// \brief
+  virtual void timeStepping();
 
-    /// @brief
-    virtual void drawSkels();
+  /// \brief
+  virtual void drawSkels();
 
-    /// @brief
-    virtual void displayTimer(int _val);
+  /// \brief
+  virtual void displayTimer(int _val);
 
-    /// @brief
-    virtual void draw();
+  /// \brief
+  virtual void draw();
 
-    /// @brief
-    virtual void keyboard(unsigned char key, int x, int y);
+  /// \brief
+  virtual void keyboard(unsigned char key, int x, int y);
 
-    /// @brief
-    void setWorld(simulation::World *_world) { mWorld = _world; }
+  /// \brief
+  void setWorld(simulation::World *_world);
 
-    //            inline bool isSimulating() const { return mSimulating; }
+//  bool isSimulating() const { return mSimulating; }
 
-    //            inline void setSimulatingFlag(int _flag) { mSimulating = _flag; }
+//  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
 
 protected:
-    /// @brief
-    simulation::World* mWorld;
+  /// \brief
+  simulation::World* mWorld;
 
-    /// @brief
-    int mPlayFrame;
+  /// \brief
+  int mPlayFrame;
 
-    /// @brief
-    bool mPlay;
+  /// \brief
+  bool mPlay;
 
-    /// @brief
-    bool mSimulating;
+  /// \brief
+  bool mSimulating;
 
-    /// @brief
-    bool mShowMarkers;
+  /// \brief
+  bool mShowMarkers;
 
-    /// @brief
-    std::vector<Eigen::VectorXd> mBakedStates;
+  /// \brief
+  std::vector<Eigen::VectorXd> mBakedStates;
 
-    /// @brief
-    void bake();
+  /// \brief
+  void bake();
 };
 
-} // namespace simulation
-} // namespace dart
+}  // namespace gui
+}  // namespace dart
 
-#endif // #ifndef DART_SIMULATION_SIMWINDOW_H
+#endif  // DART_GUI_SIMWINDOW_H_

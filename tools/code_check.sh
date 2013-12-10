@@ -4,7 +4,8 @@
 # https://code.google.com/p/google-styleguide/
 
 CHECK_DIRS="../dart/common \
-            ../dart/math"
+            ../dart/math \
+            ../dart/gui"
 CHECK_FILES=`\
   find $CHECK_DIRS -name "*.cpp" -o -name "*.hh" -o -name "*.c" -o -name "*.h"`
 

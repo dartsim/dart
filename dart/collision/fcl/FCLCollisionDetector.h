@@ -47,13 +47,13 @@ namespace collision {
 
 class FCLCollisionNode;
 
-/// @brief
+/// \brief
 class FCLCollisionDetector : public CollisionDetector {
 public:
-    /// @brief
+    /// \brief
     FCLCollisionDetector();
 
-    /// @brief
+    /// \brief
     virtual ~FCLCollisionDetector();
 
     // Documentation inherited

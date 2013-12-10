@@ -52,38 +52,38 @@ typedef struct {
 namespace dart {
 namespace common {
 
-/// @brief The implementation of Timer class
+/// \brief The implementation of Timer class
 ///
 /// This is a definition of mTimer class.
 /// For measure the time, clock() api is used
 class Timer {
 public:
-  /// @brief Default constructor.
+  /// \brief Default constructor.
   explicit Timer(const std::string& _name = "Noname Timer");
 
-  /// @brief Default destructor.
+  /// \brief Default destructor.
   ~Timer();
 
-  /// @brief Start timer.
+  /// \brief Start timer.
   void start();
 
-  /// @brief Returns whether the timer is started.
+  /// \brief Returns whether the timer is started.
   bool isStarted() const;
 
-  /// @brief Stop the timer.
+  /// \brief Stop the timer.
   void stop();
 
-  /// @brief Return elapsed time in seconds since startTimer().
-  /// @see start()
+  /// \brief Return elapsed time in seconds since startTimer().
+  /// \see start()
   double getElapsedTime();
 
-  /// @brief
+  /// \brief
   double getLastElapsedTime() const;
 
-  /// @brief
+  /// \brief
   double getTotalElapsedTime() const;
 
-  /// @brief
+  /// \brief
   void print();
 
 private:

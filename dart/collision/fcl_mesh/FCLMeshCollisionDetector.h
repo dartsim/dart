@@ -46,10 +46,10 @@ namespace collision {
 class FCLMeshCollisionDetector : public CollisionDetector
 {
 public:
-    /// @brief
+    /// \brief
     FCLMeshCollisionDetector() {}
 
-    /// @brief
+    /// \brief
     virtual ~FCLMeshCollisionDetector();
 
     virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
@@ -61,7 +61,7 @@ public:
                                 CollisionNode* _node2,
                                 bool _calculateContactPoints);
 
-    /// @brief
+    /// \brief
     void draw();
 };
 

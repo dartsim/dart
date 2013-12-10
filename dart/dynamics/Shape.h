@@ -48,11 +48,11 @@ namespace dart {
 namespace renderer { class RenderInterface; }
 namespace dynamics {
 
-/// @brief
+/// \brief
 class Shape
 {
 public:
-    /// @brief
+    /// \brief
     enum ShapeType {
         BOX,
         ELLIPSOID,
@@ -60,86 +60,86 @@ public:
         MESH
     };
 
-    /// @brief
+    /// \brief
     Shape(ShapeType _type);
 
-    /// @brief
+    /// \brief
     virtual ~Shape();
 
-    /// @brief
+    /// \brief
     void setColor(const Eigen::Vector3d& _color);
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getColor() const;
 
-    /// @brief
+    /// \brief
     void setDim(const Eigen::Vector3d& _dim);
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getDim() const;
 
-    /// @brief Set local transformation of the Shape w.r.t. parent frame.
+    /// \brief Set local transformation of the Shape w.r.t. parent frame.
     void setLocalTransform(const Eigen::Isometry3d& _Transform);
 
-    /// @brief Get local transformation of the Shape w.r.t. parent frame.
+    /// \brief Get local transformation of the Shape w.r.t. parent frame.
     const Eigen::Isometry3d& getLocalTransform() const;
 
-    /// @brief
+    /// \brief
     void setOffset(const Eigen::Vector3d& _offset);
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d getOffset() const;
 
-    /// @brief
+    /// \brief
     virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
 
-    /// @brief
+    /// \brief
     void setVolume(double _v);
 
-    /// @brief
+    /// \brief
     double getVolume() const;
 
-    /// @brief
+    /// \brief
     int getID() const;
 
-    /// @brief
+    /// \brief
     ShapeType getShapeType() const;
 
-    /// @brief
+    /// \brief
     virtual void draw(renderer::RenderInterface* _ri = NULL,
                       const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                       bool _useDefaultColor = true) const = 0;
 
 protected:
-    /// @brief
+    /// \brief
     virtual void computeVolume() = 0;
 
-    /// @brief
+    /// \brief
     virtual void initMeshes() {}
 
-    /// @brief Dimensions for bounding box.
+    /// \brief Dimensions for bounding box.
     Eigen::Vector3d mDim;
 
-    /// @brief Volume enclosed by the geometry.
+    /// \brief Volume enclosed by the geometry.
     double mVolume;
 
-    /// @brief Unique id.
+    /// \brief Unique id.
     int mID;
 
-    /// @brief Color for the primitive.
+    /// \brief Color for the primitive.
     Eigen::Vector3d mColor;
 
-    /// @brief The origin of this primitive in the bodynode frame.
+    /// \brief The origin of this primitive in the bodynode frame.
     Eigen::Vector3d mOffset;
 
-    /// @brief Local geometric transformation of the Shape w.r.t. parent frame.
+    /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
     Eigen::Isometry3d mTransform;
 
-    /// @brief
+    /// \brief
     static int mCounter;
 
 private:
-    /// @brief Type of primitive
+    /// \brief Type of primitive
     ShapeType mType;
 
 public:

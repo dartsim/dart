@@ -49,24 +49,24 @@ namespace dynamics {
 class ScrewJoint : public Joint
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                double _pitch = 0.1,
                const std::string& _name = "Screw joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~ScrewJoint();
 
-    /// @brief
+    /// \brief
     void setAxis(const Eigen::Vector3d& _axis);
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getAxis() const;
 
-    /// @brief
+    /// \brief
     void setPitch(double _pitch);
 
-    /// @brief
+    /// \brief
     double getPitch() const;
 
     // Documentation inherited.
@@ -82,13 +82,13 @@ public:
     virtual void clampRotation();
 
 protected:
-    /// @brief
+    /// \brief
     GenCoord mCoordinate;
 
-    /// @brief Rotational axis.
+    /// \brief Rotational axis.
     Eigen::Vector3d mAxis;
 
-    /// @brief
+    /// \brief
     double mPitch;
 
 public:

@@ -57,16 +57,16 @@ public:
         AO_ZXY = 3
     };
 
-    /// @brief Constructor.
+    /// \brief Constructor.
     EulerJoint(const std::string& _name = "Euler joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~EulerJoint();
 
-    /// @brief
+    /// \brief
     void setAxisOrder(AxisOrder _order);
 
-    /// @brief
+    /// \brief
     AxisOrder getAxisOrder() const;
 
     // Documentation inherited.
@@ -79,10 +79,10 @@ public:
     virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// @brief Euler angles X, Y, Z
+    /// \brief Euler angles X, Y, Z
     GenCoord mCoordinate[3];
 
-    /// @brief
+    /// \brief
     AxisOrder mAxisOrder;
 
 public:

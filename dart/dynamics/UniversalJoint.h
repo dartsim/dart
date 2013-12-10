@@ -49,24 +49,24 @@ namespace dynamics {
 class UniversalJoint : public Joint
 {
 public:
-    /// @brief Constructor.
+    /// \brief Constructor.
     UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
                    const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
                    const std::string& _name = "Universal joint");
 
-    /// @brief Destructor.
+    /// \brief Destructor.
     virtual ~UniversalJoint();
 
-    /// @brief
+    /// \brief
     void setAxis1(const Eigen::Vector3d& _axis);
 
-    /// @brief
+    /// \brief
     void setAxis2(const Eigen::Vector3d& _axis);
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getAxis1() const;
 
-    /// @brief
+    /// \brief
     const Eigen::Vector3d& getAxis2() const;
 
     // Documentation inherited.
@@ -82,10 +82,10 @@ public:
     virtual void clampRotation();
 
 protected:
-    /// @brief Euler angles X, Y, Z
+    /// \brief Euler angles X, Y, Z
     GenCoord mCoordinate[2];
 
-    /// @brief Rotational axis.
+    /// \brief Rotational axis.
     Eigen::Vector3d mAxis[2];
 
 public:

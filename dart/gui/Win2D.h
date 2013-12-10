@@ -35,13 +35,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_YUI_WIN2D_H
-#define DART_YUI_WIN2D_H
+#ifndef DART_GUI_WIN2D_H
+#define DART_gui_WIN2D_H
 
 #include "GlutWindow.h"
 
 namespace dart {
-namespace yui {
+namespace gui {
 
 class Win2D : public GlutWindow
 {
@@ -63,7 +63,7 @@ public:
     virtual void draw()=0;
 };
 
-} // namespace yui
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_YUI_WIN2D_H
+#endif // #ifndef DART_GUI_WIN2D_H

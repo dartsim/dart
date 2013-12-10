@@ -47,19 +47,19 @@ class CylinderShape : public Shape {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    /// @brief Constructor.
+    /// \brief Constructor.
     CylinderShape(double _radius, double _height);
 
-    /// @brief
+    /// \brief
     inline double getRadius() const { return mRadius; }
 
-    /// @brief
+    /// \brief
     inline void setRadius(double _radius) { mRadius = _radius; }
 
-    /// @brief
+    /// \brief
     inline double getHeight() const { return mHeight; }
 
-    /// @brief
+    /// \brief
     inline void setHeight(double _height) { mHeight = _height; }
 
     // Documentation inherited.
@@ -74,10 +74,10 @@ private:
     // Documentation inherited.
     void computeVolume();
 
-    /// @brief
+    /// \brief
     double mRadius;
 
-    /// @brief Height along z-axis.
+    /// \brief Height along z-axis.
     double mHeight;
 };
 

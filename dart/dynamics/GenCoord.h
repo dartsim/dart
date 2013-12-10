@@ -49,27 +49,27 @@ namespace dynamics {
 
 class Joint;
 
-/// @brief Generalized coordinate.
+/// \brief Generalized coordinate.
 /// A set of generalized coordiante describes the configuration of a system.
 class GenCoord
 {
 public:
-    /// @brief
+    /// \brief
     GenCoord();
 
-    /// @brief
+    /// \brief
     virtual ~GenCoord();
 
-    /// @brief
+    /// \brief
     void setName(const std::string& _name);
 
-    /// @brief
+    /// \brief
     const std::string& getName() const;
 
-    /// @brief
+    /// \brief
     int getSkeletonIndex() const;
 
-    /// @brief
+    /// \brief
     void setSkeletonIndex(int _idx);
 
 public:
@@ -104,13 +104,13 @@ public:
     void set_tauMax(double _tauMax) { tauMax = _tauMax; }
 
 protected:
-    /// @brief
+    /// \brief
     std::string mName;
 
-    /// @brief Unique to dof in model.
+    /// \brief Unique to dof in model.
     int mSkelIndex;
 
-    /// @brief Joint to which it belongs.
+    /// \brief Joint to which it belongs.
     //Joint *mJoint;
 
     //--------------------------------------------------------------------------

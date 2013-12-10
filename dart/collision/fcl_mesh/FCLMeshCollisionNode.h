@@ -51,7 +51,7 @@ namespace dart {
 namespace dynamics { class BodyNode; }
 namespace collision {
 
-/// @brief
+/// \brief
 class FCLMeshCollisionNode : public CollisionNode
 {
 public:

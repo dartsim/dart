@@ -48,7 +48,7 @@ namespace dynamics {
 
 class BodyNode;
 
-/// @brief
+/// \brief
 class Joint : public GenCoordSystem
 {
 public:
@@ -57,7 +57,7 @@ public:
     //--------------------------------------------------------------------------
     // Types
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     enum JointType
     {
         WELD,          // 0-dof
@@ -75,91 +75,91 @@ public:
     //--------------------------------------------------------------------------
     // Constructor and Destructor
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     Joint(JointType type, const std::string& _name = "");
 
-    /// @brief
+    /// \brief
     virtual ~Joint();
 
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     void setName(const std::string& _name);
 
-    /// @brief
+    /// \brief
     const std::string& getName() const;
 
     //--------------------------------------------------------------------------
     // Kinematical Properties
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     JointType getJointType() const;
 
-    /// @brief
+    /// \brief
     const Eigen::Isometry3d& getLocalTransform() const;
 
-    /// @brief
+    /// \brief
     const math::Jacobian& getLocalJacobian() const;
 
-    /// @brief
+    /// \brief
     const math::Jacobian& getLocalJacobianTimeDeriv() const;
 
-    /// @brief Get whether this joint contains _genCoord.
-    /// @param[in] Generalized coordinate to see.
-    /// @return True if this joint contains _genCoord.
+    /// \brief Get whether this joint contains _genCoord.
+    /// \param[in] Generalized coordinate to see.
+    /// \return True if this joint contains _genCoord.
     bool contains(const GenCoord* _genCoord) const;
 
-    /// @brief Get local index of the dof at this joint; if the dof is not
+    /// \brief Get local index of the dof at this joint; if the dof is not
     /// presented at this joint, return -1.
     int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
     //--------------------------------------------------------------------------
     // Dynamics Properties
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     void setPositionLimited(bool _isPositionLimited);
 
-    /// @brief
+    /// \brief
     bool isPositionLimited() const;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     int getSkeletonIndex() const;
 
-    /// @brief
+    /// \brief
     void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
-    /// @brief
+    /// \brief
     void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
-    /// @brief
+    /// \brief
     const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
 
-    /// @brief
+    /// \brief
     const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
     //--------------------------------------------------------------------------
     // Spring stiffness and damping
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     void setDampingCoefficient(int _idx, double _d);
 
-    /// @brief
+    /// \brief
     double getDampingCoefficient(int _idx) const;
 
-    /// @brief
+    /// \brief
     Eigen::VectorXd getDampingForces() const;
 
-    /// @brief
+    /// \brief
     void setSpringStiffness(int _idx, double _k);
 
-    /// @brief
+    /// \brief
     double getSpringCoefficient(int _idx) const;
 
-    /// @brief
+    /// \brief
     Eigen::VectorXd getSpringForces(double _timeStep) const;
 
     //--------------------------------------------------------------------------
@@ -168,16 +168,16 @@ public:
     void applyGLTransform(renderer::RenderInterface* _ri);
 
 protected:
-    /// @brief
+    /// \brief
     /// q --> T(q)
     virtual void updateTransform() = 0;
 
-    /// @brief
+    /// \brief
     /// q, dq --> S(q), V(q, dq)
     /// V(q, dq) = S(q) * dq
     virtual void updateJacobian() = 0;
 
-    /// @brief
+    /// \brief
     /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
     /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
     virtual void updateJacobianTimeDeriv() = 0;
@@ -185,47 +185,47 @@ protected:
     //--------------------------------------------------------------------------
     //
     //--------------------------------------------------------------------------
-    /// @brief
+    /// \brief
     std::string mName;
 
     //--------------------------------------------------------------------------
     // Structueral Properties
     //--------------------------------------------------------------------------
-    /// @brief Unique dof id in skeleton
+    /// \brief Unique dof id in skeleton
     int mSkelIndex;
 
-    /// @brief
+    /// \brief
     Eigen::Isometry3d mT_ParentBodyToJoint;
 
-    /// @brief
+    /// \brief
     Eigen::Isometry3d mT_ChildBodyToJoint;
 
     //--------------------------------------------------------------------------
     // Kinematics variables
     //--------------------------------------------------------------------------
-    /// @brief Local transformation.
+    /// \brief Local transformation.
     Eigen::Isometry3d mT;
 
-    /// @brief Local Jacobian.
+    /// \brief Local Jacobian.
     math::Jacobian mS;
 
-    /// @brief Time derivative of local Jacobian.
+    /// \brief Time derivative of local Jacobian.
     math::Jacobian mdS;
 
     //--------------------------------------------------------------------------
     // Dynamics variables
     //--------------------------------------------------------------------------
-    /// @brief True if the joint limits are enforced in dynamic simulation.
+    /// \brief True if the joint limits are enforced in dynamic simulation.
     bool mIsPositionLimited;
 
-    /// @brief
+    /// \brief
     std::vector<double> mDampingCoefficient;
 
-    /// @brief
+    /// \brief
     std::vector<double> mSpringStiffness;
 
 private:
-    /// @brief Type of joint e.g. ball, hinge etc.
+    /// \brief Type of joint e.g. ball, hinge etc.
     JointType mJointType;
 };
 

@@ -52,118 +52,118 @@ class BodyNode;
 
 namespace collision {
 
-/// @brief
+/// \brief
 struct Contact
 {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d point;
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d normal;
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d force;
 
-    /// @brief
+    /// \brief
     CollisionNode* collisionNode1;
 
-    /// @brief
+    /// \brief
     CollisionNode* collisionNode2;
 
-    /// @brief
+    /// \brief
     double penetrationDepth;
 
     // TODO: triID1 will be deprecated when we don't use fcl_mesh
-    /// @brief
+    /// \brief
     int triID1;
 
     // TODO: triID2 will be deprecated when we don't use fcl_mesh
-    /// @brief
+    /// \brief
     int triID2;
 };
 
-/// @brief
+/// \brief
 class CollisionDetector
 {
 public:
-    /// @brief
+    /// \brief
     CollisionDetector();
 
-    /// @brief
+    /// \brief
     virtual ~CollisionDetector();
 
-    /// @brief
+    /// \brief
     virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                           bool _isRecursive = false);
 
-    /// @brief
+    /// \brief
     virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                              bool _isRecursive = false);
 
-    /// @brief
+    /// \brief
     virtual CollisionNode* createCollisionNode(
             dynamics::BodyNode* _bodyNode) = 0;
 
-    /// @brief
+    /// \brief
     void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-    /// @brief
+    /// \brief
     void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-    /// @brief
+    /// \brief
     virtual bool detectCollision(bool _checkAllCollisions,
                                 bool _calculateContactPoints) = 0;
 
     bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
                          bool _calculateContactPoints);
 
-    /// @brief
+    /// \brief
     unsigned int getNumContacts();
 
-    /// @brief
+    /// \brief
     Contact& getContact(int _idx);
 
-    /// @brief
+    /// \brief
     void clearAllContacts();
 
-    /// @brief
+    /// \brief
     int getNumMaxContacts() const;
 
-    /// @brief
+    /// \brief
     void setNumMaxContacs(int _num);
 
 protected:
-    /// @brief
+    /// \brief
     virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
                                  bool _calculateContactPoints) = 0;
 
-    /// @brief
+    /// \brief
     bool isCollidable(const CollisionNode* _node1,
                       const CollisionNode* _node2);
 
-    /// @brief
+    /// \brief
     std::vector<Contact> mContacts;
 
-    /// @brief
+    /// \brief
     std::vector<CollisionNode*> mCollisionNodes;
 
-    /// @brief
+    /// \brief
     int mNumMaxContacts;
 
 private:
-    /// @brief
+    /// \brief
     std::vector<bool>::reference getPairCollidable(
             const CollisionNode* _node1, const CollisionNode* _node2);
 
-    /// @brief
+    /// \brief
     CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
 
-    /// @brief
+    /// \brief
     std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
 
-    /// @brief
+    /// \brief
     std::vector<std::vector<bool> > mCollidablePairs;
 };
 

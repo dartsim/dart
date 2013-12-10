@@ -54,64 +54,64 @@ public:
         SOFT
     };
     
-    /// @brief
+    /// \brief
     Marker(const std::string& _name, Eigen::Vector3d& _offset,
            ConstraintType _type = NO);
 
-    /// @brief
+    /// \brief
     virtual ~Marker();
 
-    /// @brief
+    /// \brief
     void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true,
               const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
               bool _useDefaultColor = true) const;
 
-    /// @brief
+    /// \brief
     Eigen::Vector3d getLocalCoords() const;
 
-    /// @brief
+    /// \brief
     void setLocalCoords(Eigen::Vector3d& _offset);
 
-    /// @brief
+    /// \brief
     int getSkeletonIndex() const;
 
-    /// @brief
+    /// \brief
     void setSkeletonIndex(int _idx);
 
-    /// @brief
+    /// \brief
     int getID() const;
 
-    /// @brief
+    /// \brief
     void setName(const std::string&);
 
-    /// @brief
+    /// \brief
     const std::string& getName() const;
 
     // useful for IK
-    /// @brief
+    /// \brief
     ConstraintType getConstraintType() const;
 
-    /// @brief
+    /// \brief
     void setConstraintType(ConstraintType _type);
     
 protected:
-    /// @brief local coordinates in the links.
+    /// \brief local coordinates in the links.
     Eigen::Vector3d mOffset;
 
-    /// @brief name of this marker.
+    /// \brief name of this marker.
     std::string mName;
 
-    /// @brief position in the model class marker vector.
+    /// \brief position in the model class marker vector.
     int mSkelIndex;
 
-    /// @brief type of constraint.
+    /// \brief type of constraint.
     ConstraintType mType;
     
 private:
-    /// @brief a unique ID of this marker globally.
+    /// \brief a unique ID of this marker globally.
     int mID;
 
-    /// @brief counts the number of markers globally.
+    /// \brief counts the number of markers globally.
     static int msMarkerCount;
 
 public:
