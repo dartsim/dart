@@ -35,6 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fstream>
 #include <string>
 
 #include "dart/dynamics/Skeleton.h"
