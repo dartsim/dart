@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_GEOMETRY_H
-#define DART_MATH_GEOMETRY_H
+#ifndef DART_MATH_GEOMETRY_H_
+#define DART_MATH_GEOMETRY_H_
 
 #include <vector>
 #include <cassert>
@@ -60,10 +60,10 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& m);
 
 //------------------------------------------------------------------------------
 /// @brief
-Eigen::Quaterniond expToQuat(Eigen::Vector3d& v);
+Eigen::Quaterniond expToQuat(const Eigen::Vector3d& v);
 
 /// @brief
-Eigen::Vector3d quatToExp(Eigen::Quaterniond& q);
+Eigen::Vector3d quatToExp(const Eigen::Quaterniond& q);
 
 /// @brief
 Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& q,
@@ -126,13 +126,13 @@ Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& R);
 Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& R);
 
 ///// @brief get the Euler XZX angle from R
-//Eigen::Vector3d matrixToEulerXZX(const Eigen::Matrix3d& R);
+// Eigen::Vector3d matrixToEulerXZX(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler XZY angle from R
 Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& R);
 
 ///// @brief get the Euler YXY angle from R
-//Eigen::Vector3d matrixToEulerYXY(const Eigen::Matrix3d& R);
+// Eigen::Vector3d matrixToEulerYXY(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler YXZ angle from R
 Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R);
@@ -141,7 +141,7 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& R);
 Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& R);
 
 ///// @brief get the Euler YZY angle from R
-//Eigen::Vector3d matrixToEulerYZY(const Eigen::Matrix3d& R);
+// Eigen::Vector3d matrixToEulerYZY(const Eigen::Matrix3d& R);
 
 /// @brief get the Euler ZXY angle from R
 Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R);
@@ -150,10 +150,10 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& R);
 Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& R);
 
 ///// @brief get the Euler ZXZ angle from R
-//Eigen::Vector3d matrixToEulerZXZ(const Eigen::Matrix3d& R);
+// Eigen::Vector3d matrixToEulerZXZ(const Eigen::Matrix3d& R);
 
 ///// @brief get the Euler ZYZ angle from R
-//Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R);
+// Eigen::Vector3d matrixToEulerZYZ(const Eigen::Matrix3d& R);
 
 //------------------------------------------------------------------------------
 /// @brief Exponential mapping
@@ -188,16 +188,16 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& R);
 Eigen::Vector6d logMap(const Eigen::Isometry3d& T);
 
 //------------------------------------------------------------------------------
-///// @brief Rectify the rotation part so as that it satifies the orthogonality
-///// condition.
-/////
-///// It is one step of @f$R_{i_1}=1/2(R_i + R_i^{-T})@f$.
-///// Hence by calling this function iterativley, you can make the rotation part
-///// closer to SO(3).
-//SE3 Normalize(const SE3& T);
+/// @brief Rectify the rotation part so as that it satifies the orthogonality
+/// condition.
+///
+/// It is one step of @f$R_{i_1}=1/2(R_i + R_i^{-T})@f$.
+/// Hence by calling this function iterativley, you can make the rotation part
+/// closer to SO(3).
+// SE3 Normalize(const SE3& T);
 
-///// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
-//Axis Reparameterize(const Axis& s);
+/// @brief reparameterize such as ||s'|| < M_PI and Exp(s) == Epx(s')
+// Axis Reparameterize(const Axis& s);
 
 //------------------------------------------------------------------------------
 /// @brief adjoint mapping
@@ -210,30 +210,32 @@ Jacobian AdTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 Eigen::Vector6d AdR(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
 
 /// @brief fast version of Ad(T, se3(w, 0))
-Eigen::Vector6d AdTAngular(const Eigen::Isometry3d& T, const Eigen::Vector3d& w);
+Eigen::Vector6d AdTAngular(const Eigen::Isometry3d& T,
+                           const Eigen::Vector3d& w);
 
 /// @brief fast version of Ad(T, se3(0, v))
 Eigen::Vector6d AdTLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& v);
 
 ///// @brief fast version of Ad([I p; 0 1], V)
-//se3 AdP(const Vec3& p, const se3& s);
+// se3 AdP(const Vec3& p, const se3& s);
 
 
 ///// @brief fast version of Ad([R 0; 0 1], J)
-//Jacobian AdRJac(const SE3& T, const Jacobian& J);
+// Jacobian AdRJac(const SE3& T, const Jacobian& J);
 
 /// @brief fast version of Ad(Inv(T), V)
 Eigen::Vector6d AdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& V);
 Jacobian AdInvTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 
 ///// @brief fast version of Ad(Inv(T), se3(Eigen_Vec3(0), v))
-//Eigen::Vector3d AdInvTLinear(const Eigen::Isometry3d& T, const Eigen::Vector3d& v);
+// Eigen::Vector3d AdInvTLinear(const Eigen::Isometry3d& T,
+//                             const Eigen::Vector3d& v);
 
 ///// @brief fast version of Ad(Inv(T), se3(w, Eigen_Vec3(0)))
-//Axis AdInvTAngular(const SE3& T, const Axis& w);
+// Axis AdInvTAngular(const SE3& T, const Axis& w);
 
 ///// @brief Fast version of Ad(Inv([R 0; 0 1]), V)
-//se3 AdInvR(const SE3& T, const se3& V);
+// se3 AdInvR(const SE3& T, const se3& V);
 
 /// @brief Fast version of Ad(Inv([R 0; 0 1]), se3(0, v))
 Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T,
@@ -245,7 +247,7 @@ Eigen::Vector6d AdInvRLinear(const Eigen::Isometry3d& T,
 Eigen::Vector6d dAdT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 
 ///// @brief fast version of Ad(Inv(T), dse3(Eigen_Vec3(0), F))
-//dse3 dAdTLinear(const SE3& T, const Vec3& F);
+// dse3 dAdTLinear(const SE3& T, const Vec3& F);
 
 /// @brief fast version of dAd(Inv(T), F)
 Eigen::Vector6d dAdInvT(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
@@ -255,7 +257,7 @@ Jacobian dAdInvTJac(const Eigen::Isometry3d& T, const Jacobian& J);
 Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 
 ///// @brief fast version of dAd(Inv(SE3(p)), dse3(Eigen_Vec3(0), F))
-//dse3 dAdInvPLinear(const Vec3& p, const Vec3& F);
+// dse3 dAdInvPLinear(const Vec3& p, const Vec3& F);
 
 /// @brief adjoint mapping
 /// @note @f$ad_X Y = ( w_X @times w_Y@,,~w_X @times v_Y - w_Y @times v_X),@f$,
@@ -263,10 +265,10 @@ Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& T, const Eigen::Vector6d& F);
 Eigen::Vector6d ad(const Eigen::Vector6d& X, const Eigen::Vector6d& Y);
 
 /// @brief fast version of ad(se3(Eigen_Vec3(0), v), S)
-//Vec3 ad_Vec3_se3(const Vec3& v, const se3& S);
+// Vec3 ad_Vec3_se3(const Vec3& v, const se3& S);
 
-/// @brief fast version of ad(se3(w, 0), se3(v, 0))	-> check
-//Axis ad_Axis_Axis(const Axis& w, const Axis& v);
+/// @brief fast version of ad(se3(w, 0), se3(v, 0)) -> check
+// Axis ad_Axis_Axis(const Axis& w, const Axis& v);
 
 /// @brief dual adjoint mapping
 /// @note @f$ad^{@,*}_V F = (m @times w + f @times v@,,~ f @times w),@f$
@@ -287,8 +289,7 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// @brief
 bool isNan(const Eigen::MatrixXd& _m);
 
-} // namespace math
-} // namespace dart
+}  // namespace math
+}  // namespace dart
 
-#endif // #ifndef DART_MATH_GEOMETRY_H
-
+#endif  // DART_MATH_GEOMETRY_H_
