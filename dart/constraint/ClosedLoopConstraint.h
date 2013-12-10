@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu
@@ -35,42 +35,71 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CLOSEDLOOP_CONSTRAINT_H
-#define DART_CONSTRAINT_CLOSEDLOOP_CONSTRAINT_H
+#ifndef DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
+#define DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
 
-#include "Constraint.h"
+#include <vector>
+
+#include "dart/constraint/Constraint.h"
 
 namespace dart {
-
 namespace dynamics {
 class BodyNode;
 class Skeleton;
-}
+}  // namespace dynamics
+}  // namespace dart
 
+namespace dart {
 namespace constraint {
 
+/// \brief
 class ClosedLoopConstraint : public Constraint {
 public:
-    ClosedLoopConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2, int _skelIndex1, int _skelIndex2);
-    virtual ~ClosedLoopConstraint();
-    virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+  /// \brief
+  ClosedLoopConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
+                       const Eigen::Vector3d& _offset1,
+                       const Eigen::Vector3d& _offset2,
+                       int _skelIndex1, int _skelIndex2);
+
+  /// \brief
+  virtual ~ClosedLoopConstraint();
+
+  /// \brief
+  virtual void updateDynamics(std::vector<Eigen::MatrixXd>* _J,
+                              Eigen::VectorXd* _C,
+                              Eigen::VectorXd* _CDot,
+                              int _rowIndex);
 
 private:
-    void getJacobian();
+  /// \brief
+  void getJacobian();
 
-    dynamics::BodyNode* mBody1;
-    dynamics::BodyNode* mBody2;
-    Eigen::Vector3d mOffset1;
-    Eigen::Vector3d mOffset2;
-    Eigen::MatrixXd mJ1;
-    Eigen::MatrixXd mJ2;
+  /// \brief
+  dynamics::BodyNode* mBody1;
 
-    int mSkelIndex1;
-    int mSkelIndex2;
+  /// \brief
+  dynamics::BodyNode* mBody2;
+
+  /// \brief
+  Eigen::Vector3d mOffset1;
+
+  /// \brief
+  Eigen::Vector3d mOffset2;
+
+  /// \brief
+  Eigen::MatrixXd mJ1;
+
+  /// \brief
+  Eigen::MatrixXd mJ2;
+
+  /// \brief
+  int mSkelIndex1;
+
+  /// \brief
+  int mSkelIndex2;
 };
 
-} // namespace constraint
-} // namespace dart
+}  // namespace constraint
+}  // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_CLOSEDLOOP_CONSTRAINT_H
-
+#endif  // DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_

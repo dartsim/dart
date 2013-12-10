@@ -4,6 +4,7 @@
 # https://code.google.com/p/google-styleguide/
 
 CHECK_DIRS="../dart/common\
+            ../dart/constraint\
             ../dart/math\
             ../dart/dynamics\
             ../dart/gui"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu
@@ -35,39 +35,62 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_POINT_CONSTRAINT_H
-#define DART_CONSTRAINT_POINT_CONSTRAINT_H
+#ifndef DART_CONSTRAINT_POINTCONSTRAINT_H_
+#define DART_CONSTRAINT_POINTCONSTRAINT_H_
+
+#include <vector>
 
 #include "dart/constraint/Constraint.h"
 
 namespace dart {
-
 namespace dynamics {
 class BodyNode;
 class Skeleton;
-}
+}  // namespace dynamics
+}  // namespace dart
 
+namespace dart {
 namespace constraint {
 
+/// \brief
 class PointConstraint : public Constraint {
 public:
-    PointConstraint(dynamics::BodyNode *_body, Eigen::Vector3d _offset, Eigen::Vector3d _target, int _skelIndex);
-    virtual ~PointConstraint();
+  /// \brief
+  PointConstraint(dynamics::BodyNode* _body,
+                  const Eigen::Vector3d& _offset,
+                  const Eigen::Vector3d& _target,
+                  int _skelIndex);
 
-    virtual void updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+  /// \brief
+  virtual ~PointConstraint();
+
+  /// \brief
+  virtual void updateDynamics(std::vector<Eigen::MatrixXd>* _J,
+                              Eigen::VectorXd* _C,
+                              Eigen::VectorXd* _CDot,
+                              int _rowIndex);
 
 private:
-    void getJacobian();
+  /// \brief
+  void getJacobian();
 
-    dynamics::BodyNode* mBody;
-    Eigen::Vector3d mOffset;
-    Eigen::Vector3d mTarget;
-    Eigen::MatrixXd mJ;
+  /// \brief
+  dynamics::BodyNode* mBody;
 
-    int mSkelIndex;
+  /// \brief
+  Eigen::Vector3d mOffset;
+
+  /// \brief
+  Eigen::Vector3d mTarget;
+
+  /// \brief
+  Eigen::MatrixXd mJ;
+
+  /// \brief
+  int mSkelIndex;
 };
 
-} // namespace constraint
-} // namespace dart
+}  // namespace constraint
+}  // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_POINT_CONSTRAINT_H
+#endif  // DART_CONSTRAINT_POINTCONSTRAINT_H_

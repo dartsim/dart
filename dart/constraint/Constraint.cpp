@@ -34,47 +34,37 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_CONSTRAINT_CONSTRAINT_H_
-#define DART_CONSTRAINT_CONSTRAINT_H_
+
+#include "dart/constraint/Constraint.h"
 
 #include <vector>
-#include <Eigen/Dense>
 
 namespace dart {
 namespace constraint {
 
-/// \brief
-class Constraint {
-public:
-  /// \brief
-  Constraint();
+Constraint::Constraint() {
+}
 
-  /// \brief
-  virtual ~Constraint();
+Constraint::~Constraint() {
+}
 
-  /// \brief
-  virtual void updateDynamics(std::vector<Eigen::MatrixXd>* _J,
-                              Eigen::VectorXd* _C,
-                              Eigen::VectorXd* _CDot, int _rowIndex);
+void Constraint::updateDynamics(std::vector<Eigen::MatrixXd>* _J,
+                                Eigen::VectorXd* _C,
+                                Eigen::VectorXd* _CDot,
+                                int _rowIndex) {
+}
 
-  /// \brief
-  int getNumRows() const;
+int Constraint::getNumRows() const {
+  return mNumRows;
+}
 
-  /// \brief
-  Eigen::VectorXd getLagrangeMultipliers() const;
+Eigen::VectorXd Constraint::getLagrangeMultipliers() const {
+  return mLagrangeMultipliers;
+}
 
-  /// \brief
-  void setLagrangeMultipliers(const Eigen::VectorXd& _lambda);
-
-protected:
-  /// \brief
-  int mNumRows;
-
-  /// \brief
-  Eigen::VectorXd mLagrangeMultipliers;
-};
+void Constraint::setLagrangeMultipliers(const Eigen::VectorXd& _lambda) {
+  mLagrangeMultipliers = _lambda;
+}
 
 }  // namespace constraint
 }  // namespace dart
-
-#endif  // DART_CONSTRAINT_CONSTRAINT_H_
