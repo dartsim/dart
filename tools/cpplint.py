@@ -3617,15 +3617,16 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
               'Include "%s" not in alphabetical order' % include)
       include_state.SetLastHeader(canonical_include)
 
+  # TODO(JS): This is disabled because this rule is still arguable.
   # Look for any of the stream classes that are part of standard C++.
-  match = _RE_PATTERN_INCLUDE.match(line)
-  if match:
-    include = match.group(2)
-    if Match(r'(f|ind|io|i|o|parse|pf|stdio|str|)?stream$', include):
-      # Many unit tests use cout, so we exempt them.
-      if not _IsTestFilename(filename):
-        error(filename, linenum, 'readability/streams', 3,
-              'Streams are highly discouraged.')
+#  match = _RE_PATTERN_INCLUDE.match(line)
+#  if match:
+#    include = match.group(2)
+#    if Match(r'(f|ind|io|i|o|parse|pf|stdio|str|)?stream$', include):
+#      # Many unit tests use cout, so we exempt them.
+#      if not _IsTestFilename(filename):
+#        error(filename, linenum, 'readability/streams', 3,
+#              'Streams are highly discouraged.')
 
 
 def _GetTextInside(text, start_pattern):
