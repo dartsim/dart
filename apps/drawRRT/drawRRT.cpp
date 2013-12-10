@@ -5,9 +5,9 @@
  * @brief Visualizes 2D and 3D rrts with gnuplot.
  */
 
-#include "planning/PathPlanner.h"
-#include "../unittests/TestHelpers.h" // TODO: Fix this hack
-#include "simulation/World.h"
+#include "dart/planning/PathPlanner.h"
+#include "../../unittests/TestHelpers.h" // TODO: Fix this hack
+#include "dart/simulation/World.h"
 
 using namespace std;
 using namespace dart;
@@ -59,14 +59,14 @@ void draw (const RRT* t1, const RRT* t2) {
 	// Write each node and its parent in the respective lines
 	size_t lineIndex = 0;
 	const RRT* trees [2] = {t1, t2};
-	for(size_t t = 0; t < 2; t++) {
+	for (size_t t = 0; t < 2; t++) {
 
 		// Skip the tree if not there
 		if(trees[t] == NULL) continue;
 
 		// Draw the edges
 		size_t numEdges = trees[t]->configVector.size() - 1;
-		for(size_t i = 0; i < numEdges; i++, lineIndex += step) {
+		for (size_t i = 0; i < numEdges; i++, lineIndex += step) {
 			const VectorXd& node = *trees[t]->configVector[i + 1];
 			const VectorXd& parent = *trees[t]->configVector[trees[t]->parentVector[i + 1]];
 			saveLine(line1, line2, lineIndex, node, parent);
@@ -106,9 +106,9 @@ void draw (const RRT* t1, const RRT* t2) {
 
 	// Draw the edges in the file but leave the last edge to draw a special color for the goal
 	fprintf(gnuplot, "%s ", ((numDofs == 2) ? "plot" : "splot"));
-	for(size_t i = 0; i < numEdges1; i++) 
+	for (size_t i = 0; i < numEdges1; i++) 
 		drawLine(gnuplot, numDofs, "0000ff", i);
-	for(size_t i = 0; i < numEdges2; i++) 
+	for (size_t i = 0; i < numEdges2; i++) 
 		drawLine(gnuplot, numDofs, "00ffff", i + numEdges1);
 	
 	// Draw the goal point (fake edge)

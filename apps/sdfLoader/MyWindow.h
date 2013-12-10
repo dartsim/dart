@@ -1,26 +1,26 @@
 #ifndef _MYWINDOW_
 #define _MYWINDOW_
 
-#include "yui/SimWindow.h"
+#include "dart/gui/SimWindow.h"
 
-/// @brief
-class MyWindow : public dart::yui::SimWindow
+/// \brief
+class MyWindow : public dart::gui::SimWindow
 {
 public:
-    /// @brief
+    /// \brief
     MyWindow();
 
-    /// @brief
+    /// \brief
     virtual ~MyWindow() {}
 
-    /// @brief
+    /// \brief
     virtual void timeStepping();
 
-    /// @brief
+    /// \brief
     virtual void keyboard(unsigned char key, int x, int y);
 
 private:
-    /// @brief
+    /// \brief
     Eigen::Vector3d mForce;
 };
 

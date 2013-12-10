@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -39,16 +39,16 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "math/Geometry.h"
-#include "math/Helpers.h"
-#include "dynamics/BallJoint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/TranslationalJoint.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
+#include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 using namespace dart;
 using namespace math;

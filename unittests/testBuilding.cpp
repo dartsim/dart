@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -39,11 +39,11 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "math/Geometry.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 using namespace dart;
 using namespace math;

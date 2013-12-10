@@ -1,16 +1,16 @@
 #include "MyWindow.h"
 
-#include "math/Helpers.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
-#include "constraint/ConstraintDynamics.h"
-#include "simulation/World.h"
-#include "yui/GLFuncs.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/simulation/World.h"
+#include "dart/gui/GLFuncs.h"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
-using namespace yui;
+using namespace gui;
 
 void MyWindow::timeStepping()
 {
@@ -18,7 +18,7 @@ void MyWindow::timeStepping()
 
     mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq());
-    mWorld->getSkeleton(1)->setInternalForces(mController->getTorques());
+    mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
 
     mWorld->step();
 

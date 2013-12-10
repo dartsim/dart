@@ -8,9 +8,9 @@
  * direction.
  */
 
-#include "dynamics/BodyNode.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/RevoluteJoint.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
 #include "MyWindow.h"
 
 using namespace std;

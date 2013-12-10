@@ -1,12 +1,12 @@
 #include "MyWindow.h"
 
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 void MyWindow::timeStepping()
 {
     Eigen::VectorXd damping = computeDamping();
-    mWorld->getSkeleton(0)->setInternalForces(damping);
+    mWorld->getSkeleton(0)->setInternalForceVector(damping);
     mWorld->step();
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab

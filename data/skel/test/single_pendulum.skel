@@ -5,7 +5,7 @@
             <time_step>0.001</time_step>
             <gravity>0 -9.81 0</gravity>
         </physics>
-        <skeleton name="skeleton 1">
+        <skeleton name="single_pendulum">
             <body name="link 1">
                 <gravity>1</gravity>
                 <transformation>0.1 0 0 0 0 0</transformation>
