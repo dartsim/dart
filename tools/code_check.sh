@@ -11,6 +11,7 @@ CHECK_DIRS="../dart/collision\
             ../dart/integration\
             ../dart/lcpsolver\
             ../dart/math\
+            #../dart/optimizer\
             ../dart/simulation"
 CHECK_FILES=`\
   find $CHECK_DIRS\
