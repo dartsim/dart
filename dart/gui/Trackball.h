@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_TRACKBALL_H
-#define DART_gui_TRACKBALL_H
+#ifndef DART_GUI_TRACKBALL_H_
+#define DART_GUI_TRACKBALL_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -44,47 +44,77 @@
 namespace dart {
 namespace gui {
 
-class Trackball
-{
+/// \brief
+class Trackball {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    Trackball(): mCenter(0.0,0.0), mRadius(1.0), mStartPos(0.0,0.0,0.0),mCurrQuat(1.0,0.0,0.0,0.0) {}
-    Trackball(const Eigen::Vector2d& center, double radius)
-        : mCenter(center), mRadius(radius), mStartPos(0.0,0.0,0.0), mCurrQuat(1.0,0.0,0.0,0.0) {}
+  /// \brief Default constructor
+  Trackball();
 
-    // set the starting position to the project of (x,y) on the trackball
-    void startBall(double x, double y);
-    // update the current rotation to rotate from mStartPos to the projection of (x,y) on trackball, then update mStartPos
-    void updateBall(double x, double y);
+  /// \brief Constructor
+  Trackball(const Eigen::Vector2d& center, double radius);
 
-    // apply the current rotation to openGL env
-    void applyGLRotation();
-    // draw the trackball on screen
-    void draw(int winWidth, int winHeight);
+  /// \brief Set the starting position to the project of (x,y) on the trackball
+  void startBall(double x, double y);
 
-    void setTrackball(const Eigen::Vector2d& center, const double radius){ mCenter = center, mRadius = radius; }
-    void setCenter(const Eigen::Vector2d& center){ mCenter = center; }
-    void setRadius( const double radius ){ mRadius = radius; }
-    void setQuaternion(const Eigen::Quaterniond& q){ mCurrQuat = q; }
-    Eigen::Quaterniond getCurrQuat() const { return mCurrQuat; }
-    Eigen::Matrix3d getRotationMatrix() const { return mCurrQuat.toRotationMatrix(); }
-    Eigen::Vector2d getCenter() const { return mCenter; }
-    double getRadius() const { return mRadius; }
+  /// \brief Update the current rotation to rotate from mStartPos to the
+  ///        projection of (x,y) on trackball, then update mStartPos
+  void updateBall(double x, double y);
+
+  /// \brief Apply the current rotation to openGL env
+  void applyGLRotation();
+
+  /// \brief Draw the trackball on screen
+  void draw(int winWidth, int winHeight);
+
+  /// \brief
+  void setTrackball(const Eigen::Vector2d& center, const double radius);
+
+  /// \brief
+  void setCenter(const Eigen::Vector2d& center);
+
+  /// \brief
+  void setRadius(const double radius);
+
+  /// \brief
+  void setQuaternion(const Eigen::Quaterniond& q);
+
+  /// \brief
+  Eigen::Quaterniond getCurrQuat() const;
+
+  /// \brief
+  Eigen::Matrix3d getRotationMatrix() const;
+
+  /// \brief
+  Eigen::Vector2d getCenter() const;
+
+  /// \brief
+  double getRadius() const;
 
 private:
-    // project screen coordinate (x,y) to the trackball
-    Eigen::Vector3d mouseOnSphere(double mouseX, double mouseY) const;
-    // compute the quaternion that rotates from vector "from" to vector "to"
-    Eigen::Quaterniond quatFromVectors(const Eigen::Vector3d& from, const Eigen::Vector3d& to) const;
+  /// \brief Project screen coordinate (x,y) to the trackball
+  Eigen::Vector3d mouseOnSphere(double mouseX, double mouseY) const;
 
-    Eigen::Vector2d mCenter;
-    double mRadius;
-    Eigen::Vector3d mStartPos;
-    Eigen::Quaterniond mCurrQuat;
+  /// \brief Compute the quaternion that rotates from vector "from" to vector
+  ///        "to"
+  Eigen::Quaterniond quatFromVectors(const Eigen::Vector3d& from,
+                                     const Eigen::Vector3d& to) const;
+
+  /// \brief
+  Eigen::Vector2d mCenter;
+
+  /// \brief
+  double mRadius;
+
+  /// \brief
+  Eigen::Vector3d mStartPos;
+
+  /// \brief
+  Eigen::Quaterniond mCurrQuat;
 };
 
-} // namespace gui
-} // namespace dart
+}  // namespace gui
+}  // namespace dart
 
-#endif // #ifndef DART_GUI_TRACKBALL_H
+#endif  // DART_GUI_TRACKBALL_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -35,35 +35,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_H
-#define DART_gui_WIN2D_H
+#ifndef DART_GUI_WIN2D_H_
+#define DART_GUI_WIN2D_H_
 
-#include "GlutWindow.h"
+#include "dart/gui/GlutWindow.h"
 
 namespace dart {
 namespace gui {
 
-class Win2D : public GlutWindow
-{
-protected:
-    bool mTranslate;
-    double mTransX;
-    double mTransY;
+/// \brief
+class Win2D : public GlutWindow {
 public:
-    Win2D();
+  /// \brief
+  Win2D();
 
-    virtual void resize(int w, int h);
-    virtual void render();
+  /// \brief
+  virtual void resize(int w, int h);
 
-    virtual void keyboard(unsigned char key, int x, int y);
-    virtual void click(int button, int state, int x, int y);
-    virtual void drag(int x, int y);
+  /// \brief
+  virtual void render();
 
-    virtual void initGL();
-    virtual void draw()=0;
+  /// \brief
+  virtual void keyboard(unsigned char key, int x, int y);
+
+  /// \brief
+  virtual void click(int button, int state, int x, int y);
+
+  /// \brief
+  virtual void drag(int x, int y);
+
+  /// \brief
+  virtual void initGL();
+
+  /// \brief
+  virtual void draw() = 0;
+
+protected:
+  /// \brief
+  bool mTranslate;
+
+  /// \brief
+  double mTransX;
+
+  /// \brief
+  double mTransY;
 };
 
-} // namespace gui
-} // namespace dart
+}  // namespace gui
+}  // namespace dart
 
-#endif // #ifndef DART_GUI_WIN2D_H
+#endif  // DART_GUI_WIN2D_H_

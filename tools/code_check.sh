@@ -7,7 +7,13 @@ CHECK_DIRS="../dart/common \
             ../dart/math \
             ../dart/gui"
 CHECK_FILES=`\
-  find $CHECK_DIRS -name "*.cpp" -o -name "*.hh" -o -name "*.c" -o -name "*.h"`
+  find $CHECK_DIRS\
+  -name "*.cpp"\
+  -not -name "lodepng.cpp"\
+  -or -name "*.hh" -or -name "*.c"\
+  -or -name "*.h"\
+  -not -name "Jitter.h"\
+  -not -name "lodepng.h"`
 
 # cpplint
 echo $CHECK_FILES | xargs python cpplint.py 2>&1

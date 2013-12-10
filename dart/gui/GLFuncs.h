@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -35,28 +35,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_H
-#define DART_gui_GLFUNCS_H
+#ifndef DART_GUI_GLFUNCS_H_
+#define DART_GUI_GLFUNCS_H_
+
+#include <string>
 
 #include <Eigen/Eigen>
-//#include "FreeImage.h"
+// #include "FreeImage.h"
 
 namespace dart {
 namespace gui {
 
+/// \brief
 void drawStringOnScreen(float x, float y, const std::string& s);
-void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir, const double length, const double thickness, const double arrowThickness=-1);
-void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec, double thickness);
+
+/// \brief
+void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir,
+                 const double length, const double thickness,
+                 const double arrowThickness = -1);
+
+/// \brief
+void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec,
+                 double thickness);
+
+/// \brief
 void drawProgressBar(int currFrame, int totalFrame);
 
-/*
-    BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname, bool _antialias);
-    BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h, char *fname, bool _antialias);
-    bool screenShot(int w, int h, char *fname, bool _antialias=false);
-*/
-// todo freeimage
+// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
+//                bool _antialias);
+// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
+//                 char *fname, bool _antialias);
+// bool screenShot(int w, int h, char *fname, bool _antialias = false);
 
-} // namespace gui
-} // namespace dart
+// TODO(Unknown): freeimage
 
-#endif  // #ifndef DART_GUI_GLFUNCS_H
+}  // namespace gui
+}  // namespace dart
+
+#endif  // DART_GUI_GLFUNCS_H_

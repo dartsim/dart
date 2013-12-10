@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -35,48 +35,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN3D_H
-#define DART_gui_WIN3D_H
+#ifndef DART_GUI_WIN3D_H_
+#define DART_GUI_WIN3D_H_
 
-#include "GlutWindow.h"
-#include "Trackball.h"
 #include <Eigen/Eigen>
+
+#include "dart/gui/GlutWindow.h"
+#include "dart/gui/Trackball.h"
 
 namespace dart {
 namespace gui {
 
 class Win3D : public GlutWindow {
 public:
-    Win3D();
+  Win3D();
 
-    virtual void initWindow(int w, int h, const char* name);
-    virtual void resize(int w, int h);
-    virtual void render();
+  virtual void initWindow(int w, int h, const char* name);
+  virtual void resize(int w, int h);
+  virtual void render();
 
-    virtual void keyboard(unsigned char key, int x, int y);
-    virtual void click(int button, int state, int x, int y);
-    virtual void drag(int x, int y);
+  virtual void keyboard(unsigned char key, int x, int y);
+  virtual void click(int button, int state, int x, int y);
+  virtual void drag(int x, int y);
 
-    virtual void capturing();
-    virtual void initGL();
-    virtual void initLights();
+  virtual void capturing();
+  virtual void initGL();
+  virtual void initLights();
 
-    virtual void draw()=0;
+  virtual void draw()=0;
 
 protected:
-    Trackball mTrackBall;
-    Eigen::Vector3d mTrans;
-    Eigen::Vector3d mEye;
-    Eigen::Vector3d mUp;
-    float mZoom;
-    float mPersp;
+  Trackball mTrackBall;
+  Eigen::Vector3d mTrans;
+  Eigen::Vector3d mEye;
+  Eigen::Vector3d mUp;
+  float mZoom;
+  float mPersp;
 
-    bool mRotate;
-    bool mTranslate;
-    bool mZooming;
+  bool mRotate;
+  bool mTranslate;
+  bool mZooming;
 };
 
-} // namespace gui
-} // namespace dart
+}  // namespace gui
+}  // namespace dart
 
-#endif // #ifndef DART_GUI_WIN3D_H
+#endif  // DART_GUI_WIN3D_H_
