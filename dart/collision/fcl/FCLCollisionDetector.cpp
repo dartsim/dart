@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>,
@@ -36,141 +36,135 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+
+#include <vector>
+
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
-
 #include "dart/collision/fcl/FCLCollisionNode.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
 FCLCollisionDetector::FCLCollisionDetector()
-    : CollisionDetector()
-{
+  : CollisionDetector() {
 }
 
-FCLCollisionDetector::~FCLCollisionDetector()
-{
+FCLCollisionDetector::~FCLCollisionDetector() {
 }
 
 CollisionNode* FCLCollisionDetector::createCollisionNode(
-        dynamics::BodyNode* _bodyNode)
-{
-    return new FCLCollisionNode(_bodyNode);
+    dynamics::BodyNode* _bodyNode) {
+  return new FCLCollisionNode(_bodyNode);
 }
 
 bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
-                                           bool _calculateContactPoints)
-{
-    // TODO: _checkAllCollisions
-    clearAllContacts();
+                                           bool _calculateContactPoints) {
+  // TODO(JS): _checkAllCollisions
+  clearAllContacts();
 
-    fcl::CollisionResult result;
+  fcl::CollisionResult result;
 
-    // only evaluate contact points if data structure for returning the contact
-    // points was provided
-    fcl::CollisionRequest request;
-    request.enable_contact = _calculateContactPoints;
-    request.num_max_contacts = mNumMaxContacts;
-//    request.enable_cost;
-//    request.num_max_cost_sources;
-//    request.use_approximate_cost;
+  // only evaluate contact points if data structure for returning the contact
+  // points was provided
+  fcl::CollisionRequest request;
+  request.enable_contact = _calculateContactPoints;
+  request.num_max_contacts = mNumMaxContacts;
+  //    request.enable_cost;
+  //    request.num_max_cost_sources;
+  //    request.use_approximate_cost;
 
-    for (int i = 0; i < mCollisionNodes.size(); i++)
-    for (int j = i + 1; j < mCollisionNodes.size(); j++)
-    {
-        result.clear();
-        FCLCollisionNode* collNode1 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
-        FCLCollisionNode* collNode2 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[j]);
+  for (int i = 0; i < mCollisionNodes.size(); i++) {
+    for (int j = i + 1; j < mCollisionNodes.size(); j++) {
+      result.clear();
+      FCLCollisionNode* collNode1 =
+          static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
+      FCLCollisionNode* collNode2 =
+          static_cast<FCLCollisionNode*>(mCollisionNodes[j]);
 
-        if (!isCollidable(collNode1, collNode2))
-            continue;
+      if (!isCollidable(collNode1, collNode2))
+        continue;
 
-        for (int k = 0; k < collNode1->getNumCollisionGeometries(); k++)
-        for (int l = 0; l < collNode2->getNumCollisionGeometries(); l++)
-        {
-            int currContactNum = mContacts.size();
-            fcl::collide(collNode1->getCollisionGeometry(k),
-                         collNode1->getFCLTransform(k),
-                         collNode2->getCollisionGeometry(l),
-                         collNode2->getFCLTransform(l),
-                         request, result);
+      for (int k = 0; k < collNode1->getNumCollisionGeometries(); k++) {
+        for (int l = 0; l < collNode2->getNumCollisionGeometries(); l++) {
+          int currContactNum = mContacts.size();
+          fcl::collide(collNode1->getCollisionGeometry(k),
+                       collNode1->getFCLTransform(k),
+                       collNode2->getCollisionGeometry(l),
+                       collNode2->getFCLTransform(l),
+                       request, result);
 
-            unsigned int numContacts = result.numContacts();
+          unsigned int numContacts = result.numContacts();
 
-            for (unsigned int m = 0; m < numContacts; ++m)
-            {
-                const fcl::Contact& contact = result.getContact(m);
+          for (unsigned int m = 0; m < numContacts; ++m) {
+            const fcl::Contact& contact = result.getContact(m);
 
-                Contact contactPair;
-                contactPair.point(0) = contact.pos[0];
-                contactPair.point(1) = contact.pos[1];
-                contactPair.point(2) = contact.pos[2];
-                contactPair.normal(0) = contact.normal[0];
-                contactPair.normal(1) = contact.normal[1];
-                contactPair.normal(2) = contact.normal[2];
-                contactPair.collisionNode1 = findCollisionNode(contact.o1);
-                contactPair.collisionNode2 = findCollisionNode(contact.o2);
-                assert(contactPair.collisionNode1 != NULL);
-                assert(contactPair.collisionNode2 != NULL);
-                //contactPair.bdID1 = collisionNodePair.collisionNode1->getBodyNodeID();
-                //contactPair.bdID2 = collisionNodePair.collisionNode2->getBodyNodeID();
-                contactPair.penetrationDepth = contact.penetration_depth;
+            Contact contactPair;
+            contactPair.point(0) = contact.pos[0];
+            contactPair.point(1) = contact.pos[1];
+            contactPair.point(2) = contact.pos[2];
+            contactPair.normal(0) = contact.normal[0];
+            contactPair.normal(1) = contact.normal[1];
+            contactPair.normal(2) = contact.normal[2];
+            contactPair.collisionNode1 = findCollisionNode(contact.o1);
+            contactPair.collisionNode2 = findCollisionNode(contact.o2);
+            assert(contactPair.collisionNode1 != NULL);
+            assert(contactPair.collisionNode2 != NULL);
+//            contactPair.bdID1 =
+//                collisionNodePair.collisionNode1->getBodyNodeID();
+//            contactPair.bdID2 =
+//                collisionNodePair.collisionNode2->getBodyNodeID();
+            contactPair.penetrationDepth = contact.penetration_depth;
 
-                mContacts.push_back(contactPair);
+            mContacts.push_back(contactPair);
+          }
+
+          std::vector<bool>markForDeletion(numContacts, false);
+          for (int m = 0; m < numContacts; m++) {
+            for (int n = m + 1; n < numContacts; n++) {
+              Eigen::Vector3d diff =
+                  mContacts[currContactNum + m].point -
+                  mContacts[currContactNum + n].point;
+              if (diff.dot(diff) < 1e-6) {
+                markForDeletion[m] = true;
+                break;
+              }
             }
-
-            std::vector<bool> markForDeletion(numContacts, false);
-            for (int m = 0; m < numContacts; m++)
-            {
-                for (int n = m + 1; n < numContacts; n++)
-                {
-                    Eigen::Vector3d diff =
-                            mContacts[currContactNum + m].point -
-                            mContacts[currContactNum + n].point;
-                    if (diff.dot(diff) < 1e-6)
-                    {
-                        markForDeletion[m] = true;
-                        break;
-                    }
-                }
-            }
-            for (int m = numContacts - 1; m >= 0; m--)
-            {
-                if (markForDeletion[m])
-                    mContacts.erase(mContacts.begin() + currContactNum + m);
-            }
+          }
+          for (int m = numContacts - 1; m >= 0; m--) {
+            if (markForDeletion[m])
+              mContacts.erase(mContacts.begin() + currContactNum + m);
+          }
         }
+      }
     }
-
-    return !mContacts.empty();
+  }
+  return !mContacts.empty();
 }
 
 bool FCLCollisionDetector::detectCollision(CollisionNode* _node1,
                                            CollisionNode* _node2,
-                                           bool _calculateContactPoints)
-{
-    assert(false); // function not implemented
-    return false;
+                                           bool _calculateContactPoints) {
+  // TODO(JS): function not implemented
+  assert(false);
+  return false;
 }
 
 CollisionNode* FCLCollisionDetector::findCollisionNode(
-        const fcl::CollisionGeometry* _fclCollGeom) const
-{
-    int numCollNodes = mCollisionNodes.size();
-    for (int i = 0; i < numCollNodes; ++i)
-    {
-        FCLCollisionNode* collisionNode = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
-        for (int j = 0; j < collisionNode->getNumCollisionGeometries(); j++)
-        {
-            if (collisionNode->getCollisionGeometry(j) == _fclCollGeom)
-                return mCollisionNodes[i];
-        }
+    const fcl::CollisionGeometry* _fclCollGeom) const {
+  int numCollNodes = mCollisionNodes.size();
+  for (int i = 0; i < numCollNodes; ++i) {
+    FCLCollisionNode* collisionNode =
+        static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
+    for (int j = 0; j < collisionNode->getNumCollisionGeometries(); j++) {
+      if (collisionNode->getCollisionGeometry(j) == _fclCollGeom)
+        return mCollisionNodes[i];
     }
-    return NULL;
+  }
+  return NULL;
 }
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart

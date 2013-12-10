@@ -15,6 +15,7 @@ CHECK_DIRS="../dart/collision\
 CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\
+  -not -name "DARTCollide.cpp"\
   -not -name "lodepng.cpp"\
   -not -name "error.cpp"\
   -not -name "fastdot.cpp"\
@@ -24,8 +25,10 @@ CHECK_FILES=`\
   -not -name "lcp.cpp"\
   -not -name "matrix.cpp"\
   -not -name "misc.cpp"\
-  -or -name "*.hh" -or -name "*.c"\
+  -or -name "*.hh"\
+  -or -name "*.c"\
   -or -name "*.h"\
+  -not -name "tri_tri_intersection_test.h"\
   -not -name "Jitter.h"\
   -not -name "lodepng.h"\
   -not -name "common.h"\

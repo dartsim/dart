@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>,
+ *            Tobias Kunz <tobias@gatech.edu>
  * Date: 05/01/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -35,12 +36,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
-#define DART_COLLISION_FCL_CONLLISION_DETECTOR_H
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+
+#include <fcl/collision_object.h>
 
 #include "dart/collision/CollisionDetector.h"
-
-namespace fcl { class CollisionGeometry; }
 
 namespace dart {
 namespace collision {
@@ -50,29 +51,28 @@ class FCLCollisionNode;
 /// \brief
 class FCLCollisionDetector : public CollisionDetector {
 public:
-    /// \brief
-    FCLCollisionDetector();
+  /// \brief
+  FCLCollisionDetector();
 
-    /// \brief
-    virtual ~FCLCollisionDetector();
+  /// \brief
+  virtual ~FCLCollisionDetector();
 
-    // Documentation inherited
-    virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  // Documentation inherited
+  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
-    // Documentation inherited
-    virtual bool detectCollision(bool _checkAllCollisions,
-                                bool _calculateContactPoints);
+  // Documentation inherited
+  virtual bool detectCollision(bool _checkAllCollisions,
+                               bool _calculateContactPoints);
 
-    CollisionNode* findCollisionNode(
-            const fcl::CollisionGeometry* _fclCollGeom) const;
+  CollisionNode* findCollisionNode(
+      const fcl::CollisionGeometry* _fclCollGeom) const;
 
 protected:
-    virtual bool detectCollision(CollisionNode* _node1,
-                                CollisionNode* _node2,
-                                bool _calculateContactPoints);
+  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
+                               bool _calculateContactPoints);
 };
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // #ifndef DART_COLLISION_FCL_CONLLISION_DETECTOR_H
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

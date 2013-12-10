@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Chen Tang <ctang40@gatech.edu>
@@ -35,19 +35,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
-#define DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
+#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
+#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
 
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
-class FCLMeshCollisionDetector : public CollisionDetector
-{
+class FCLMeshCollisionDetector : public CollisionDetector {
 public:
     /// \brief
-    FCLMeshCollisionDetector() {}
+    FCLMeshCollisionDetector();
 
     /// \brief
     virtual ~FCLMeshCollisionDetector();
@@ -55,17 +54,19 @@ public:
     virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
     // Documentation inherited
-    virtual bool detectCollision(bool _checkAllCollisions, bool _calculateContactPoints);
+    virtual bool detectCollision(bool _checkAllCollisions,
+                                 bool _calculateContactPoints);
 
-    virtual bool detectCollision(CollisionNode* _node1,
-                                CollisionNode* _node2,
-                                bool _calculateContactPoints);
+    // Documentation inherited
+    virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
+                                 bool _calculateContactPoints);
 
     /// \brief
     void draw();
 };
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // #ifndef DART_COLLISION_FCL_MESH_COLLISION_DETECTOR_H
+#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
+

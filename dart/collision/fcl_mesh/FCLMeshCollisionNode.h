@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Chen Tang <ctang40@gatech.edu>,
@@ -36,96 +36,130 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_CONLLISION_NODE_H
-#define DART_COLLISION_FCL_MESH_CONLLISION_NODE_H
+#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONNODE_H_
+#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONNODE_H_
 
 #include <vector>
+
 #include <Eigen/Dense>
 #include <fcl/collision.h>
+#include <fcl/BVH/BVH_model.h>
 
 #include "dart/collision/CollisionNode.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/fcl_mesh/tri_tri_intersection_test.h"
 
 namespace dart {
-namespace dynamics { class BodyNode; }
+namespace dynamics {
+class BodyNode;
+}  // namespace dynamics
+}  // namespace dart
+
+namespace dart {
 namespace collision {
 
 /// \brief
-class FCLMeshCollisionNode : public CollisionNode
-{
+class FCLMeshCollisionNode : public CollisionNode {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode);
-    virtual ~FCLMeshCollisionNode();
+  /// \brief
+  explicit FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode);
 
-    std::vector<fcl::BVHModel<fcl::OBBRSS>*> mMeshes;
+  /// \brief
+  virtual ~FCLMeshCollisionNode();
 
-    fcl::Transform3f mFclWorldTrans;
-    Eigen::Isometry3d mWorldTrans;
+  /// \brief
+  std::vector<fcl::BVHModel<fcl::OBBRSS>*> mMeshes;
 
-    bool detectCollision(FCLMeshCollisionNode* _otherNode, std::vector<Contact>* _contactPoints, int _max_num_contact);
-    void evalRT();
-    static fcl::Transform3f getFclTransform(const Eigen::Isometry3d& _m);
+  /// \brief
+  fcl::Transform3f mFclWorldTrans;
 
-    static int evalContactPosition(const fcl::Contact& _fclContact,
-                                   fcl::BVHModel<fcl::OBBRSS>* _mesh1,
-                                   fcl::BVHModel<fcl::OBBRSS>* _mesh2,
-                                   const fcl::Transform3f& _transform1,
-                                   const fcl::Transform3f& _transform2,
-                                   Eigen::Vector3d& _contactPosition1,
-                                   Eigen::Vector3d& _contactPosition2);
+  /// \brief
+  Eigen::Isometry3d mWorldTrans;
 
-    void drawCollisionSkeletonNode(bool _bTrans = true);
+  /// \brief
+  bool detectCollision(FCLMeshCollisionNode* _otherNode,
+                       std::vector<Contact>* _contactPoints,
+                       int _max_num_contact);
+
+  /// \brief
+  void evalRT();
+
+  /// \brief
+  static fcl::Transform3f getFclTransform(const Eigen::Isometry3d& _m);
+
+  /// \brief
+  static int evalContactPosition(const fcl::Contact& _fclContact,
+                                 fcl::BVHModel<fcl::OBBRSS>* _mesh1,
+                                 fcl::BVHModel<fcl::OBBRSS>* _mesh2,
+                                 const fcl::Transform3f& _transform1,
+                                 const fcl::Transform3f& _transform2,
+                                 Eigen::Vector3d* _contactPosition1,
+                                 Eigen::Vector3d* _contactPosition2);
+
+  /// \brief
+  void drawCollisionSkeletonNode(bool _bTrans = true);
 
 private:
-    inline static int FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2);
-    inline bool EFtest(fcl::Vec3f& p0, fcl::Vec3f&p1, fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& p);
-    inline static double triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3);
+  /// \brief
+  static int FFtest(
+      const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
+      const fcl::Vec3f& R1, const fcl::Vec3f& R2, const fcl::Vec3f& R3,
+      fcl::Vec3f* res1, fcl::Vec3f* res2);
+
+  /// \brief
+  bool EFtest(const fcl::Vec3f& p0, const fcl::Vec3f& p1,
+              const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
+              fcl::Vec3f* p);
+
+  /// \brief
+  static double triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3);
 };
 
-inline bool FCLMeshCollisionNode::EFtest(fcl::Vec3f& p0,
-                                     fcl::Vec3f& p1,
-                                     fcl::Vec3f& r1,
-                                     fcl::Vec3f& r2,
-                                     fcl::Vec3f& r3,
-                                     fcl::Vec3f& p)
-{
-    double ZERO1 = 0.00000001;
-    fcl::Vec3f n = (r3-r1).cross(r2-r1);
-    double s = (p1 - p0).dot(n);
-    if(std::abs(s)<ZERO1)return false;
-    double t = (r1-p0).dot(n)/s;
-    fcl::Vec3f tmp=p0+(p1-p0)*t;
-    if(t>=0&&t<=1&&
-            (((tmp-r1).cross(r2-r1)).dot(n)>=0)&&
-            (((tmp-r2).cross(r3-r2)).dot(n)>=0)&&
-            (((tmp-r3).cross(r1-r3)).dot(n)>=0)
-            )
-    {
-        p=tmp;
-        return true;
-    }
-    return false;
+inline bool FCLMeshCollisionNode::EFtest(const fcl::Vec3f& p0,
+                                         const fcl::Vec3f& p1,
+                                         const fcl::Vec3f& r1,
+                                         const fcl::Vec3f& r2,
+                                         const fcl::Vec3f& r3,
+                                         fcl::Vec3f* p) {
+  double ZERO1 = 0.00000001;
+  fcl::Vec3f n = (r3 - r1).cross(r2 - r1);
+  double s = (p1 - p0).dot(n);
+  if (std::abs(s) < ZERO1) return false;
+  double t = (r1 - p0).dot(n) / s;
+  fcl::Vec3f tmp = p0 + (p1 - p0) * t;
+  if (t >= 0
+      && t <= 1
+      && (((tmp - r1).cross(r2 - r1)).dot(n) >= 0)
+      && (((tmp - r2).cross(r3 - r2)).dot(n) >= 0)
+      && (((tmp - r3).cross(r1 - r3)).dot(n) >= 0)
+     ) {
+    *p = tmp;
+    return true;
+  }
+  return false;
 }
 
-inline int FCLMeshCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec3f& r3, fcl::Vec3f& R1, fcl::Vec3f& R2, fcl::Vec3f& R3, fcl::Vec3f& res1, fcl::Vec3f& res2)
-{
-    float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
-    SET(U0, r1);
-    SET(U1, r2);
-    SET(U2, r3);
-    SET(V0, R1);
-    SET(V1, R2);
-    SET(V2, R3);
+inline int FCLMeshCollisionNode::FFtest(
+    const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
+    const fcl::Vec3f& R1, const fcl::Vec3f& R2, const fcl::Vec3f& R3,
+    fcl::Vec3f* res1, fcl::Vec3f* res2) {
+  float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
+  SET(U0, r1);
+  SET(U1, r2);
+  SET(U2, r3);
+  SET(V0, R1);
+  SET(V1, R2);
+  SET(V2, R3);
 
-    int contactResult = tri_tri_intersect(V0, V1, V2, U0, U1, U2, RES1, RES2);
+  int contactResult = tri_tri_intersect(V0, V1, V2, U0, U1, U2, RES1, RES2);
 
-    SET(res1, RES1);
-    SET(res2, RES2);
-    return contactResult;
-    /*
+  SET((*res1), RES1);
+  SET((*res2), RES2);
+  return contactResult;
+  /*
         int count1 = 0, count2 = 0, count = 0;
         //fcl::Vec3f p1 = fcl::Vec3f(0, 0, 0), p2 = fcl::Vec3f(0, 0, 0);
         fcl::Vec3f tmp;
@@ -178,17 +212,18 @@ inline int FCLMeshCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec
         */
 }
 
-inline double FCLMeshCollisionNode::triArea(fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3) {
-    fcl::Vec3f a = p2 - p1;
-    fcl::Vec3f b = p3 - p1;
-    double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
-    double bMag = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
-    double dp = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    double area =  0.5 * sqrt(aMag * bMag - dp * dp);
-    return area;
+inline double FCLMeshCollisionNode::triArea(
+    fcl::Vec3f p1, fcl::Vec3f p2, fcl::Vec3f p3) {
+  fcl::Vec3f a = p2 - p1;
+  fcl::Vec3f b = p3 - p1;
+  double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+  double bMag = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
+  double dp = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  double area =  0.5 * sqrt(aMag * bMag - dp * dp);
+  return area;
 }
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // #ifndef DART_COLLISION_FCL_MESH_CONLLISION_NODE_H
+#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONNODE_H_

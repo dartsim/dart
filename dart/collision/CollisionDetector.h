@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>,
@@ -36,138 +36,138 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_CONLLISION_DETECTOR_H
-#define DART_COLLISION_CONLLISION_DETECTOR_H
+#ifndef DART_COLLISION_COLLISIONDETECTOR_H_
+#define DART_COLLISION_COLLISIONDETECTOR_H_
 
 #include <vector>
 #include <map>
+
 #include <Eigen/Dense>
-#include "CollisionNode.h"
+
+#include "dart/collision/CollisionNode.h"
 
 namespace dart {
-
 namespace dynamics {
 class BodyNode;
-}
+}  // namespace dynamics
+}  // namespace dart
 
+namespace dart {
 namespace collision {
 
 /// \brief
-struct Contact
-{
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+struct Contact {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    /// \brief
-    Eigen::Vector3d point;
+  /// \brief
+  Eigen::Vector3d point;
 
-    /// \brief
-    Eigen::Vector3d normal;
+  /// \brief
+  Eigen::Vector3d normal;
 
-    /// \brief
-    Eigen::Vector3d force;
+  /// \brief
+  Eigen::Vector3d force;
 
-    /// \brief
-    CollisionNode* collisionNode1;
+  /// \brief
+  CollisionNode* collisionNode1;
 
-    /// \brief
-    CollisionNode* collisionNode2;
+  /// \brief
+  CollisionNode* collisionNode2;
 
-    /// \brief
-    double penetrationDepth;
+  /// \brief
+  double penetrationDepth;
 
-    // TODO: triID1 will be deprecated when we don't use fcl_mesh
-    /// \brief
-    int triID1;
+  // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
+  /// \brief
+  int triID1;
 
-    // TODO: triID2 will be deprecated when we don't use fcl_mesh
-    /// \brief
-    int triID2;
+  // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
+  /// \brief
+  int triID2;
 };
 
 /// \brief
-class CollisionDetector
-{
+class CollisionDetector {
 public:
-    /// \brief
-    CollisionDetector();
+  /// \brief
+  CollisionDetector();
 
-    /// \brief
-    virtual ~CollisionDetector();
+  /// \brief
+  virtual ~CollisionDetector();
 
-    /// \brief
-    virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                          bool _isRecursive = false);
+  /// \brief
+  virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
+                                        bool _isRecursive = false);
 
-    /// \brief
-    virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                             bool _isRecursive = false);
+  /// \brief
+  virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
+                                           bool _isRecursive = false);
 
-    /// \brief
-    virtual CollisionNode* createCollisionNode(
-            dynamics::BodyNode* _bodyNode) = 0;
+  /// \brief
+  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode) = 0;
 
-    /// \brief
-    void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+  /// \brief
+  void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-    /// \brief
-    void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+  /// \brief
+  void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-    /// \brief
-    virtual bool detectCollision(bool _checkAllCollisions,
-                                bool _calculateContactPoints) = 0;
+  /// \brief
+  virtual bool detectCollision(bool _checkAllCollisions,
+                               bool _calculateContactPoints) = 0;
 
-    bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
-                         bool _calculateContactPoints);
+  /// \brief
+  bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
+                       bool _calculateContactPoints);
 
-    /// \brief
-    unsigned int getNumContacts();
+  /// \brief
+  unsigned int getNumContacts();
 
-    /// \brief
-    Contact& getContact(int _idx);
+  /// \brief
+  Contact& getContact(int _idx);
 
-    /// \brief
-    void clearAllContacts();
+  /// \brief
+  void clearAllContacts();
 
-    /// \brief
-    int getNumMaxContacts() const;
+  /// \brief
+  int getNumMaxContacts() const;
 
-    /// \brief
-    void setNumMaxContacs(int _num);
+  /// \brief
+  void setNumMaxContacs(int _num);
 
 protected:
-    /// \brief
-    virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                                 bool _calculateContactPoints) = 0;
+  /// \brief
+  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
+                               bool _calculateContactPoints) = 0;
 
-    /// \brief
-    bool isCollidable(const CollisionNode* _node1,
-                      const CollisionNode* _node2);
+  /// \brief
+  bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
-    /// \brief
-    std::vector<Contact> mContacts;
+  /// \brief
+  std::vector<Contact> mContacts;
 
-    /// \brief
-    std::vector<CollisionNode*> mCollisionNodes;
+  /// \brief
+  std::vector<CollisionNode*> mCollisionNodes;
 
-    /// \brief
-    int mNumMaxContacts;
+  /// \brief
+  int mNumMaxContacts;
 
 private:
-    /// \brief
-    std::vector<bool>::reference getPairCollidable(
-            const CollisionNode* _node1, const CollisionNode* _node2);
+  /// \brief
+  std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1,
+                                                 const CollisionNode* _node2);
 
-    /// \brief
-    CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
+  /// \brief
+  CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
 
-    /// \brief
-    std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
+  /// \brief
+  std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
 
-    /// \brief
-    std::vector<std::vector<bool> > mCollidablePairs;
+  /// \brief
+  std::vector<std::vector<bool> > mCollidablePairs;
 };
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // #ifndef DART_COLLISION_CONLLISION_DETECTOR_H
+#endif  // DART_COLLISION_COLLISIONDETECTOR_H_

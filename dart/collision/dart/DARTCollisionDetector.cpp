@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -37,6 +37,8 @@
 
 #include "dart/collision/dart/DARTCollisionDetector.h"
 
+#include <vector>
+
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/collision/dart/DARTCollide.h"
@@ -45,104 +47,104 @@ namespace dart {
 namespace collision {
 
 DARTCollisionDetector::DARTCollisionDetector()
-    : CollisionDetector()
-{
+  : CollisionDetector() {
 }
 
-DARTCollisionDetector::~DARTCollisionDetector()
-{
+DARTCollisionDetector::~DARTCollisionDetector() {
 }
 
 CollisionNode* DARTCollisionDetector::createCollisionNode(
-        dynamics::BodyNode* _bodyNode)
-{
-    return new CollisionNode(_bodyNode);
+    dynamics::BodyNode* _bodyNode) {
+  return new CollisionNode(_bodyNode);
 }
 
 bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
-                                            bool /*_calculateContactPoints*/)
-{
-    clearAllContacts();
+                                            bool /*_calculateContactPoints*/) {
+  clearAllContacts();
 
-    std::vector<Contact> contacts;
+  std::vector<Contact> contacts;
 
-    for (int i = 0; i < mCollisionNodes.size(); i++)
-    for (int j = i + 1; j < mCollisionNodes.size(); j++)
-    {
-        CollisionNode* collNode1 = mCollisionNodes[i];
-        CollisionNode* collNode2 = mCollisionNodes[j];
+  for (int i = 0; i < mCollisionNodes.size(); i++) {
+    for (int j = i + 1; j < mCollisionNodes.size(); j++) {
+      CollisionNode* collNode1 = mCollisionNodes[i];
+      CollisionNode* collNode2 = mCollisionNodes[j];
+      dynamics::BodyNode* BodyNode1 = collNode1->getBodyNode();
+      dynamics::BodyNode* BodyNode2 = collNode2->getBodyNode();
 
-        if (!isCollidable(collNode1, collNode2))
-            continue;
+      if (!isCollidable(collNode1, collNode2))
+        continue;
 
-        for (int k = 0; k < collNode1->getBodyNode()->getNumCollisionShapes(); k++)
-        for (int l = 0; l < collNode2->getBodyNode()->getNumCollisionShapes(); l++)
-        {
-            int currContactNum = mContacts.size();
+      for (int k = 0; k < BodyNode1->getNumCollisionShapes(); k++) {
+        for (int l = 0; l < BodyNode2->getNumCollisionShapes(); l++) {
+          int currContactNum = mContacts.size();
 
-            contacts.clear();
-            collide(collNode1->getBodyNode()->getCollisionShape(k),
-                    collNode1->getBodyNode()->getWorldTransform() * collNode1->getBodyNode()->getCollisionShape(k)->getLocalTransform(),
-                    collNode2->getBodyNode()->getCollisionShape(l),
-                    collNode2->getBodyNode()->getWorldTransform() * collNode2->getBodyNode()->getCollisionShape(l)->getLocalTransform(),
-                    contacts);
+          contacts.clear();
+          collide(BodyNode1->getCollisionShape(k),
+                  BodyNode1->getWorldTransform()
+                  * BodyNode1->getCollisionShape(k)->getLocalTransform(),
+                  BodyNode2->getCollisionShape(l),
+                  BodyNode2->getWorldTransform()
+                  * BodyNode2->getCollisionShape(l)->getLocalTransform(),
+                  &contacts);
 
-            unsigned int numContacts = contacts.size();
+          unsigned int numContacts = contacts.size();
 
-            for (unsigned int m = 0; m < numContacts; ++m)
-            {
-                Contact contactPair;
-                contactPair = contacts[m];
-                contactPair.collisionNode1 = collNode1;
-                contactPair.collisionNode2 = collNode2;
-                assert(contactPair.collisionNode1 != NULL);
-                assert(contactPair.collisionNode2 != NULL);
+          for (unsigned int m = 0; m < numContacts; ++m) {
+            Contact contactPair;
+            contactPair = contacts[m];
+            contactPair.collisionNode1 = collNode1;
+            contactPair.collisionNode2 = collNode2;
+            assert(contactPair.collisionNode1 != NULL);
+            assert(contactPair.collisionNode2 != NULL);
 
-                mContacts.push_back(contactPair);
+            mContacts.push_back(contactPair);
+          }
+
+          std::vector<bool> markForDeletion(numContacts, false);
+          for (int m = 0; m < numContacts; m++) {
+            for (int n = m + 1; n < numContacts; n++) {
+              Eigen::Vector3d diff =
+                  mContacts[currContactNum + m].point -
+                  mContacts[currContactNum + n].point;
+              if (diff.dot(diff) < 1e-6) {
+                markForDeletion[m] = true;
+                break;
+              }
             }
-
-            std::vector<bool> markForDeletion(numContacts, false);
-            for (int m = 0; m < numContacts; m++)
-            {
-                for (int n = m + 1; n < numContacts; n++)
-                {
-                    Eigen::Vector3d diff =
-                            mContacts[currContactNum + m].point -
-                            mContacts[currContactNum + n].point;
-                    if (diff.dot(diff) < 1e-6)
-                    {
-                        markForDeletion[m] = true;
-                        break;
-                    }
-                }
+          }
+          for (int m = numContacts - 1; m >= 0; m--) {
+            if (markForDeletion[m]) {
+              mContacts.erase(mContacts.begin() + currContactNum + m);
             }
-            for (int m = numContacts - 1; m >= 0; m--)
-            {
-                if (markForDeletion[m])
-                    mContacts.erase(mContacts.begin() + currContactNum + m);
-            }
+          }
         }
+      }
     }
-
-    return !mContacts.empty();
+  }
+  return !mContacts.empty();
 }
 
 bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
                                             CollisionNode* _collNode2,
-                                            bool /*_calculateContactPoints*/)
-{
-    std::vector<Contact> contacts;
+                                            bool /*_calculateContactPoints*/) {
+  std::vector<Contact> contacts;
+  dynamics::BodyNode* BodyNode1 = _collNode1->getBodyNode();
+  dynamics::BodyNode* BodyNode2 = _collNode2->getBodyNode();
 
-    for (int i = 0; i < _collNode1->getBodyNode()->getNumCollisionShapes(); i++)
-        for (int j = 0; j < _collNode2->getBodyNode()->getNumCollisionShapes(); j++)
-            collide(_collNode1->getBodyNode()->getCollisionShape(i),
-                    _collNode1->getBodyNode()->getWorldTransform() * _collNode1->getBodyNode()->getCollisionShape(i)->getLocalTransform(),
-                    _collNode2->getBodyNode()->getCollisionShape(j),
-                    _collNode2->getBodyNode()->getWorldTransform() * _collNode2->getBodyNode()->getCollisionShape(j)->getLocalTransform(),
-                    contacts);
+  for (int i = 0; i < BodyNode1->getNumCollisionShapes(); i++) {
+    for (int j = 0; j < BodyNode2->getNumCollisionShapes(); j++) {
+      collide(BodyNode1->getCollisionShape(i),
+              BodyNode1->getWorldTransform()
+              * BodyNode1->getCollisionShape(i)->getLocalTransform(),
+              BodyNode2->getCollisionShape(j),
+              BodyNode2->getWorldTransform()
+              * BodyNode2->getCollisionShape(j)->getLocalTransform(),
+              &contacts);
+    }
+  }
 
-    return contacts.size() > 0 ? true : false;
+  return contacts.size() > 0 ? true : false;
 }
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>,
+ *            Tobias Kunz <tobias@gatech.edu>
  * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -41,28 +42,23 @@ namespace dart {
 namespace collision {
 
 CollisionNode::CollisionNode(dynamics::BodyNode* _bodyNode)
-    : mBodyNode(_bodyNode)
-{
+  : mBodyNode(_bodyNode) {
 }
 
-CollisionNode::~CollisionNode()
-{
+CollisionNode::~CollisionNode() {
 }
 
-dynamics::BodyNode*CollisionNode::getBodyNode() const
-{
-    return mBodyNode;
+dynamics::BodyNode*CollisionNode::getBodyNode() const {
+  return mBodyNode;
 }
 
-void CollisionNode::setIndex(int _idx)
-{
-    mIndex = _idx;
+void CollisionNode::setIndex(int _idx) {
+  mIndex = _idx;
 }
 
-int CollisionNode::getIndex() const
-{
-    return mIndex;
+int CollisionNode::getIndex() const {
+  return mIndex;
 }
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
