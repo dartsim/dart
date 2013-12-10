@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
@@ -35,28 +35,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCP_SOLVER_LCP_SOLVER_H
-#define DART_LCP_SOLVER_LCP_SOLVER_H
+#ifndef DART_LCPSOLVER_LCPSOLVER_H_
+#define DART_LCPSOLVER_LCPSOLVER_H_
 
 #include "Eigen/Dense"
 
 namespace dart {
 namespace lcpsolver {
 
-class LCPSolver
-{
+/// \brief
+class LCPSolver {
 public:
-    LCPSolver();
-    ~LCPSolver();
+  /// \brief
+  LCPSolver();
 
-    bool Solve(const Eigen::MatrixXd& _A, const Eigen::VectorXd& _b, Eigen::VectorXd& _x, int numContacts, double mu = 0, int numDir = 0, bool bUseODESolver = false);
+  /// \brief
+  ~LCPSolver();
+
+  /// \brief
+  bool Solve(const Eigen::MatrixXd& _A,
+             const Eigen::VectorXd& _b,
+             Eigen::VectorXd* _x,
+             int numContacts,
+             double mu = 0,
+             int numDir = 0,
+             bool bUseODESolver = false);
+
 private:
-    void transferToODEFormulation(const Eigen::MatrixXd& _A, const Eigen::VectorXd& _b, Eigen::MatrixXd& _AOut, Eigen::VectorXd& _bOut, int _numDir, int _numContacts);
-    void transferSolFromODEFormulation(const Eigen::VectorXd& _x, Eigen::VectorXd& _xOut, int _numDir, int _numContacts);
-    bool checkIfSolution(const Eigen::MatrixXd& _A, const Eigen::VectorXd& _b, const Eigen::VectorXd& _x);
+  /// \brief
+  void transferToODEFormulation(const Eigen::MatrixXd& _A,
+                                const Eigen::VectorXd& _b,
+                                Eigen::MatrixXd* _AOut,
+                                Eigen::VectorXd* _bOut,
+                                int _numDir,
+                                int _numContacts);
+
+  /// \brief
+  void transferSolFromODEFormulation(const Eigen::VectorXd& _x,
+                                     Eigen::VectorXd* _xOut,
+                                     int _numDir,
+                                     int _numContacts);
+
+  /// \brief
+  bool checkIfSolution(const Eigen::MatrixXd& _A,
+                       const Eigen::VectorXd& _b,
+                       const Eigen::VectorXd& _x);
 };
 
-} // namespace lcpsolver
-} // namespace dart
+}  // namespace lcpsolver
+}  // namespace dart
 
-#endif // #ifndef DART_LCP_SOLVER_LCP_SOLVER_H
+#endif  // DART_LCPSOLVER_LCPSOLVER_H_

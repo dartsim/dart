@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>
@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_RK4_INTEGRATOR_H
-#define DART_INTEGRATION_RK4_INTEGRATOR_H
+#ifndef DART_INTEGRATION_RK4INTEGRATOR_H_
+#define DART_INTEGRATION_RK4INTEGRATOR_H_
 
 #include "dart/integration/Integrator.h"
 
@@ -44,24 +44,23 @@ namespace dart {
 namespace integration {
 
 /// \brief
-class RK4Integrator : public Integrator
-{
+class RK4Integrator : public Integrator {
 public:
-    /// \brief Default constructor.
-    RK4Integrator() {}
+  /// \brief Default constructor.
+  RK4Integrator() {}
 
-    /// \brief Default destructor.
-    virtual ~RK4Integrator() {}
+  /// \brief Default destructor.
+  virtual ~RK4Integrator() {}
 
-    // Documentation inherited.
-    virtual void integrate(IntegrableSystem* system, double dt) const;
+  // Documentation inherited.
+  virtual void integrate(IntegrableSystem* system, double dt) const;
 
 private:
-    /// \brief Weights.
-    mutable Eigen::VectorXd k1, k2, k3, k4;
+  /// \brief Weights.
+  mutable Eigen::VectorXd k1, k2, k3, k4;
 };
 
-} // namespace integration
-} // namespace dart
+}  // namespace integration
+}  // namespace dart
 
-#endif // #ifndef DART_INTEGRATION_RK4_INTEGRATOR_H
+#endif  // DART_INTEGRATION_RK4INTEGRATOR_H_

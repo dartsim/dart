@@ -3,20 +3,37 @@
 # This shell script is for checking code style using "cpplint"
 # https://code.google.com/p/google-styleguide/
 
-CHECK_DIRS="../dart/common\
+CHECK_DIRS="../dart/collision\
+            ../dart/common\
             ../dart/constraint\
-            ../dart/math\
             ../dart/dynamics\
             ../dart/gui\
+            ../dart/integration\
+            ../dart/lcpsolver\
+            ../dart/math\
             ../dart/simulation"
 CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\
   -not -name "lodepng.cpp"\
+  -not -name "error.cpp"\
+  -not -name "fastdot.cpp"\
+  -not -name "fastldlt.cpp"\
+  -not -name "fastlsolve.cpp"\
+  -not -name "fastltsolve.cpp"\
+  -not -name "lcp.cpp"\
+  -not -name "matrix.cpp"\
+  -not -name "misc.cpp"\
   -or -name "*.hh" -or -name "*.c"\
   -or -name "*.h"\
   -not -name "Jitter.h"\
-  -not -name "lodepng.h"`
+  -not -name "lodepng.h"\
+  -not -name "common.h"\
+  -not -name "error.h"\
+  -not -name "lcp.h"\
+  -not -name "matrix.h"\
+  -not -name "misc.h"\
+  -not -name "odeconfig.h"`
 
 # cpplint
 echo $CHECK_FILES | xargs python cpplint.py 2>&1

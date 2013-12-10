@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>
@@ -35,54 +35,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_INTEGRATOR_H
-#define DART_INTEGRATION_INTEGRATOR_H
+#ifndef DART_INTEGRATION_INTEGRATOR_H_
+#define DART_INTEGRATION_INTEGRATOR_H_
 
 #include <vector>
+
 #include <Eigen/Dense>
 
 namespace dart {
 namespace integration {
 
 /// \brief Any class that uses an integrator should implement this interface.
-class IntegrableSystem
-{
+class IntegrableSystem {
 public:
-    /// \brief Default constructor.
-    IntegrableSystem();
+  /// \brief Default constructor.
+  IntegrableSystem();
 
-    /// \brief Default destructor.
-    virtual ~IntegrableSystem();
+  /// \brief Default destructor.
+  virtual ~IntegrableSystem();
 
 public:
-    /// \brief Get state of the system.
-    virtual Eigen::VectorXd getState() const = 0;
+  /// \brief Get state of the system.
+  virtual Eigen::VectorXd getState() const = 0;
 
-    /// \brief Set state of the system.
-    virtual void setState(const Eigen::VectorXd& _state) = 0;
+  /// \brief Set state of the system.
+  virtual void setState(const Eigen::VectorXd& _state) = 0;
 
-    /// \brief Evaluate the derivatives of the system.
-    virtual Eigen::VectorXd evalDeriv() = 0;
+  /// \brief Evaluate the derivatives of the system.
+  virtual Eigen::VectorXd evalDeriv() = 0;
 };
 
-// TODO (kasiu) Consider templating the class (which currently only works on
+// TODO(kasiu): Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
 /// \brief
-class Integrator
-{
+class Integrator {
 public:
-    /// \brief Default constructor.
-    Integrator();
+  /// \brief Default constructor.
+  Integrator();
 
-    /// \brief Default destructor.
-    virtual ~Integrator();
+  /// \brief Default destructor.
+  virtual ~Integrator();
 
 public:
-    /// \brief Integrate the system with time step dt.
-    virtual void integrate(IntegrableSystem* system, double dt) const = 0;
+  /// \brief Integrate the system with time step dt.
+  virtual void integrate(IntegrableSystem* system, double dt) const = 0;
 };
 
-} // namespace integration
-} // namespace dart
+}  // namespace integration
+}  // namespace dart
 
-#endif // #ifndef DART_INTEGRATION_INTEGRATOR_H
+#endif  // DART_INTEGRATION_INTEGRATOR_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu> and Yunfei Bai <byf1658@gmail.com>
@@ -35,18 +35,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCP_LEMKE_H
-#define DART_LCP_LEMKE_H
+#ifndef DART_LCPSOLVER_LEMKE_H_
+#define DART_LCPSOLVER_LEMKE_H_
 
 #include "Eigen/Dense"
 
 namespace dart {
 namespace lcpsolver {
 
-int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd& _z);
-bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z, const Eigen::VectorXd& _q);
+/// \brief
+int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
+          Eigen::VectorXd* _z);
 
-} // namespace lcpsolver
-} // namespace dart
+/// \brief
+bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
+              const Eigen::VectorXd& _q);
 
-#endif // #ifndef DART_LCP_LEMKE_H
+}  // namespace lcpsolver
+}  // namespace dart
+
+#endif  // DART_LCPSOLVER_LEMKE_H_

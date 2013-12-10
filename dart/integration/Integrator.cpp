@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>
@@ -40,21 +40,17 @@
 namespace dart {
 namespace integration {
 
-IntegrableSystem::IntegrableSystem()
-{
+IntegrableSystem::IntegrableSystem() {
 }
 
-IntegrableSystem::~IntegrableSystem()
-{
+IntegrableSystem::~IntegrableSystem() {
 }
 
-Integrator::Integrator()
-{
+Integrator::Integrator() {
 }
 
-Integrator::~Integrator()
-{
+Integrator::~Integrator() {
 }
 
-} // namespace integration
-} // namespace dart
+}  // namespace integration
+}  // namespace dart

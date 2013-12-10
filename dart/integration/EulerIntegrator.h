@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>
@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_EULER_INTEGRATOR_H
-#define DART_INTEGRATION_EULER_INTEGRATOR_H
+#ifndef DART_INTEGRATION_EULERINTEGRATOR_H_
+#define DART_INTEGRATION_EULERINTEGRATOR_H_
 
 #include "dart/integration/Integrator.h"
 
@@ -44,20 +44,19 @@ namespace dart {
 namespace integration {
 
 /// \brief
-class EulerIntegrator : public Integrator
-{
+class EulerIntegrator : public Integrator {
 public:
-    /// \brief Default constructor.
-    EulerIntegrator();
+  /// \brief Default constructor.
+  EulerIntegrator();
 
-    /// \brief Default destructor.
-    virtual ~EulerIntegrator();
+  /// \brief Default destructor.
+  virtual ~EulerIntegrator();
 
-    // Documentation inherited.
-    virtual void integrate(IntegrableSystem* system, double dt) const;
+  // Documentation inherited.
+  virtual void integrate(IntegrableSystem* system, double dt) const;
 };
 
-} // namespace integration
-} // namespace dart
+}  // namespace integration
+}  // namespace dart
 
-#endif // #ifndef DART_INTEGRATION_EULER_INTEGRATOR_H
+#endif  // DART_INTEGRATION_EULERINTEGRATOR_H_

@@ -637,7 +637,7 @@ void ConstraintDynamics::fillMatricesODE() {
 
 bool ConstraintDynamics::solve() {
   lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
-  bool b = solver.Solve(mA, mQBar, mX, getNumContacts(), mMu, mNumDir,
+  bool b = solver.Solve(mA, mQBar, &mX, getNumContacts(), mMu, mNumDir,
                         mUseODELCPSolver);
   return b;
 }
