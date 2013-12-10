@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013 Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>,
@@ -36,48 +36,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_CONLLISION_NODE_H
-#define DART_COLLISION_CONLLISION_NODE_H
+#ifndef DART_COLLISION_COLLISIONNODE_H_
+#define DART_COLLISION_COLLISIONNODE_H_
 
 namespace dart {
-
 namespace dynamics {
 class BodyNode;
-}
+}  // namespace dynamics
+}  // namespace dart
 
+namespace dart {
 namespace collision {
 
 /// \brief
-class CollisionNode
-{
+class CollisionNode {
 public:
-    /// \brief Default constructor
-    CollisionNode(dynamics::BodyNode* _bodyNode);
+  /// \brief Default constructor
+  explicit CollisionNode(dynamics::BodyNode* _bodyNode);
 
-    /// \brief Default destructor
-    virtual ~CollisionNode();
+  /// \brief Default destructor
+  virtual ~CollisionNode();
 
-public:
-    /// \brief
-    dynamics::BodyNode* getBodyNode() const;
+  /// \brief
+  dynamics::BodyNode* getBodyNode() const;
 
-    /// \brief
-    void setIndex(int _idx);
+  /// \brief
+  void setIndex(int _idx);
 
-    /// \brief
-    int getIndex() const;
+  /// \brief
+  int getIndex() const;
 
 protected:
-    /// \brief
-    dynamics::BodyNode* mBodyNode;
+  /// \brief
+  dynamics::BodyNode* mBodyNode;
 
-    /// \brief
-    int mIndex;
-
-private:
+  /// \brief
+  int mIndex;
 };
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // #ifndef DART_COLLISION_CONLLISION_NODE_H
+#endif  // DART_COLLISION_COLLISIONNODE_H_
