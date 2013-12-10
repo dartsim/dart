@@ -86,7 +86,7 @@ else()
 endif()
 
 # Boost
-find_package(Boost REQUIRED system filesystem)
+find_package(Boost REQUIRED system)
 if(MSVC OR MSVC90 OR MSVC10)
     add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
