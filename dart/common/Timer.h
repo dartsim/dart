@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_TIMER_H
-#define DART_COMMON_TIMER_H
+#ifndef DART_COMMON_TIMER_H_
+#define DART_COMMON_TIMER_H_
 
 #include <string>
 
@@ -44,8 +44,8 @@
 #define NOMINMAX
 #include <windows.h>
 typedef struct {
-    LARGE_INTEGER  start;
-    LARGE_INTEGER  stop;
+  LARGE_INTEGER  start;
+  LARGE_INTEGER  stop;
 } stopWatch;
 #endif
 
@@ -58,57 +58,57 @@ namespace common {
 /// For measure the time, clock() api is used
 class Timer {
 public:
-    /// @brief Default constructor.
-    Timer(const std::string& _name = "noname");
+  /// @brief Default constructor.
+  explicit Timer(const std::string& _name = "Noname Timer");
 
-    /// @brief Default destructor.
-    ~Timer();
+  /// @brief Default destructor.
+  ~Timer();
 
-    /// @brief Start timer.
-    void start();
+  /// @brief Start timer.
+  void start();
 
-    /// @brief Returns whether the timer is started.
-    bool isStarted() const;
+  /// @brief Returns whether the timer is started.
+  bool isStarted() const;
 
-    /// @brief Stop the timer.
-    void stop();
+  /// @brief Stop the timer.
+  void stop();
 
-    /// @brief Return elapsed time in seconds since startTimer().
-    /// @see start()
-    double getElapsedTime();
+  /// @brief Return elapsed time in seconds since startTimer().
+  /// @see start()
+  double getElapsedTime();
 
-    /// @brief
-    double getLastElapsedTime() const;
+  /// @brief
+  double getLastElapsedTime() const;
 
-    /// @brief
-    double getTotalElapsedTime() const;
+  /// @brief
+  double getTotalElapsedTime() const;
 
-    /// @brief
-    void print();
+  /// @brief
+  void print();
 
 private:
-    int mCount;
+  int mCount;
 
 #if WIN32
-    stopWatch mTimer;
+  stopWatch mTimer;
 #else
-    double mStartedTime;
-    double mStoppedTime;
+  double mStartedTime;
+  double mStoppedTime;
 #endif
-    double mLastElapsedTime;
-    double mTotalElapsedTime;
-    std::string mName;
-    bool mIsStarted;
+  double mLastElapsedTime;
+  double mTotalElapsedTime;
+  std::string mName;
+  bool mIsStarted;
 
 #if WIN32
-    LARGE_INTEGER  mFrequency;
-    double _convLIToSecs(LARGE_INTEGER & L) ;
+  LARGE_INTEGER  mFrequency;
+  double _convLIToSecs(LARGE_INTEGER* L);
 #endif
 
-    double _subtractTimes(double _endTime, double _startTime);
+  double _subtractTimes(double _endTime, double _startTime);
 };
 
-} // namespace common
-} // namespace dart
+}  // namespace common
+}  // namespace dart
 
-#endif // #ifndef DART_COMMON_TIMER_H
+#endif  // DART_COMMON_TIMER_H_

@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_H
-#define DART_COMMON_CONSOLE_H
+#ifndef DART_COMMON_CONSOLE_H_
+#define DART_COMMON_CONSOLE_H_
 
 #include <string>
 #include <iostream>
@@ -66,7 +66,7 @@ std::ostream& colorErr(const std::string& _msg,
                        unsigned int _line,
                        int _color);
 
-} // namespace common
-} // namespace dart
+}  // namespace common
+}  // namespace dart
 
-#endif // #ifndef DART_COMMON_CONSOLE_H
+#endif  // DART_COMMON_CONSOLE_H_

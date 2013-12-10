@@ -36,29 +36,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Console.h"
+#include "dart/common/Console.h"
+
+#include <string>
 
 namespace dart {
 namespace common {
 
-std::ostream& colorMsg(const std::string& _msg, int _color)
-{
-    std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
-    return std::cout;
+std::ostream& colorMsg(const std::string& _msg, int _color) {
+  std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
+  return std::cout;
 }
 
 std::ostream& colorErr(const std::string& _msg,
                        const std::string& _file,
-                       unsigned int _line,
-                       int _color)
-{
-    int index = _file.find_last_of("/") + 1;
+                       unsigned int       _line,
+                       int                _color) {
+  int index = _file.find_last_of("/") + 1;
 
-    std::cerr << "\033[1;" << _color << "m" << _msg << " [" <<
-                 _file.substr(index , _file.size() - index)<< ":" << _line << "]\033[0m ";
+  std::cerr << "\033[1;" << _color << "m" << _msg << " [" <<
+               _file.substr(index , _file.size() - index) <<
+               ":" << _line << "]\033[0m ";
 
-    return std::cerr;
+  return std::cerr;
 }
 
-} // namespace common
-} // namespace dart
+}  // namespace common
+}  // namespace dart
