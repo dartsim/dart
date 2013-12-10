@@ -96,7 +96,7 @@ TEST(SKEL_PARSER, DATA_STRUCTUER)
     EXPECT_EQ(f, v4);
     EXPECT_EQ(d, v5);
     EXPECT_EQ(c, v6);
-    for(int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
         EXPECT_EQ(vec2[i], v7[i]);
     }
     EXPECT_EQ(vec3, v8);

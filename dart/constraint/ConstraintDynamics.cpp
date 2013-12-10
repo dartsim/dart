@@ -738,7 +738,7 @@ Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node, const 
     Eigen::MatrixXd JtBody
             = node->getWorldJacobian(p - node->getWorldTransform().translation()).bottomRows<3>().transpose();
 
-    for(int dofIndex = 0; dofIndex < node->getNumDependentGenCoords(); dofIndex++)
+    for (int dofIndex = 0; dofIndex < node->getNumDependentGenCoords(); dofIndex++)
     {
         int i = node->getDependentGenCoord(dofIndex);
         Jt.row(i) = JtBody.row(dofIndex);

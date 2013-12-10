@@ -52,7 +52,7 @@ CollisionDetector::CollisionDetector() :
 
 CollisionDetector::~CollisionDetector()
 {
-    for(int i = 0; i < mCollisionNodes.size(); i++)
+    for (int i = 0; i < mCollisionNodes.size(); i++)
         delete mCollisionNodes[i];
 }
 

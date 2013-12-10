@@ -66,8 +66,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
 
     std::vector<Contact> contacts;
 
-    for(int i = 0; i < mCollisionNodes.size(); i++)
-    for(int j = i + 1; j < mCollisionNodes.size(); j++)
+    for (int i = 0; i < mCollisionNodes.size(); i++)
+    for (int j = i + 1; j < mCollisionNodes.size(); j++)
     {
         CollisionNode* collNode1 = mCollisionNodes[i];
         CollisionNode* collNode2 = mCollisionNodes[j];
@@ -75,8 +75,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
         if (!isCollidable(collNode1, collNode2))
             continue;
 
-        for(int k = 0; k < collNode1->getBodyNode()->getNumCollisionShapes(); k++)
-        for(int l = 0; l < collNode2->getBodyNode()->getNumCollisionShapes(); l++)
+        for (int k = 0; k < collNode1->getBodyNode()->getNumCollisionShapes(); k++)
+        for (int l = 0; l < collNode2->getBodyNode()->getNumCollisionShapes(); l++)
         {
             int currContactNum = mContacts.size();
 
@@ -133,8 +133,8 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
 {
     std::vector<Contact> contacts;
 
-    for(int i = 0; i < _collNode1->getBodyNode()->getNumCollisionShapes(); i++)
-        for(int j = 0; j < _collNode2->getBodyNode()->getNumCollisionShapes(); j++)
+    for (int i = 0; i < _collNode1->getBodyNode()->getNumCollisionShapes(); i++)
+        for (int j = 0; j < _collNode2->getBodyNode()->getNumCollisionShapes(); j++)
             collide(_collNode1->getBodyNode()->getCollisionShape(i),
                     _collNode1->getBodyNode()->getWorldTransform() * _collNode1->getBodyNode()->getCollisionShape(i)->getLocalTransform(),
                     _collNode2->getBodyNode()->getCollisionShape(j),

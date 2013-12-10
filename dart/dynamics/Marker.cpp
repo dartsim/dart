@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,7 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Marker.h"
+#include "dart/dynamics/Marker.h"
+
+#include <string>
 
 #include "dart/dynamics/BodyNode.h"
 #include "dart/renderer/RenderInterface.h"
@@ -45,97 +47,81 @@ namespace dynamics {
 
 int Marker::msMarkerCount = 0;
 
-Marker::Marker(const std::string& _name, Eigen::Vector3d& _offset,
+Marker::Marker(const std::string& _name, const Eigen::Vector3d& _offset,
                ConstraintType _type)
-    : mName(_name), mOffset(_offset), mType(_type)
-{
-    mID = Marker::msMarkerCount++;
+  : mName(_name), mOffset(_offset), mType(_type) {
+  mID = Marker::msMarkerCount++;
 }
 
-Marker::~Marker()
-{
+Marker::~Marker() {
 }
 
 void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
-                  const Eigen::Vector4d& _color, bool _useDefaultColor) const
-{
-    if (!_ri)
-        return;
+                  const Eigen::Vector4d& _color, bool _useDefaultColor) const {
+  if (!_ri)
+    return;
 
-    _ri->pushName(getID());
+  _ri->pushName(getID());
 
-    if (mType == HARD)
-        _ri->setPenColor(Eigen::Vector3d(1, 0, 0));
-    else if (mType == SOFT)
-        _ri->setPenColor(Eigen::Vector3d(0, 1, 0));
+  if (mType == HARD) {
+    _ri->setPenColor(Eigen::Vector3d(1, 0, 0));
+  } else if (mType == SOFT) {
+    _ri->setPenColor(Eigen::Vector3d(0, 1, 0));
+  } else {
+    if (_useDefaultColor)
+      _ri->setPenColor(Eigen::Vector3d(0, 0, 1));
     else
-    {
-        if (_useDefaultColor)
-            _ri->setPenColor(Eigen::Vector3d(0,0,1));
-        else
-            _ri->setPenColor(Eigen::Vector4d(
-                                 _color[0], _color[1], _color[2],  _color[3]));
-    }
+      _ri->setPenColor(Eigen::Vector4d(
+                         _color[0], _color[1], _color[2],  _color[3]));
+  }
 
-    if(_offset)
-    {
-        _ri->pushMatrix();
-        _ri->translate(mOffset);
-        _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
-        _ri->popMatrix();
-    }
-    else
-    {
-        _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
-    }
+  if (_offset) {
+    _ri->pushMatrix();
+    _ri->translate(mOffset);
+    _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
+    _ri->popMatrix();
+  } else {
+    _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
+  }
 
-    _ri->popName();
+  _ri->popName();
 }
 
-Eigen::Vector3d Marker::getLocalCoords() const
-{
-    return mOffset;
+Eigen::Vector3d Marker::getLocalCoords() const {
+  return mOffset;
 }
 
-void Marker::setLocalCoords(Eigen::Vector3d& _offset)
-{
-    mOffset = _offset;
+void Marker::setLocalCoords(const Eigen::Vector3d& _offset) {
+  mOffset = _offset;
 }
 
-int Marker::getSkeletonIndex() const
-{
-    return mSkelIndex;
+int Marker::getSkeletonIndex() const {
+  return mSkelIndex;
 }
 
-void Marker::setSkeletonIndex(int _idx)
-{
-    mSkelIndex=_idx;
+void Marker::setSkeletonIndex(int _idx) {
+  mSkelIndex = _idx;
 }
 
-int Marker::getID() const
-{
-    return mID;
+int Marker::getID() const {
+  return mID;
 }
 
-void Marker::setName(const std::string& _name)
-{
-    mName = _name;
+void Marker::setName(const std::string& _name) {
+  mName = _name;
 }
 
-const std::string& Marker::getName() const
-{
-    return mName;
+const std::string& Marker::getName() const {
+  return mName;
 }
 
-Marker::ConstraintType Marker::getConstraintType() const
-{
-    return mType;
+Marker::ConstraintType Marker::getConstraintType() const {
+  return mType;
 }
 
-void Marker::setConstraintType(Marker::ConstraintType _type)
-{
-    mType = _type;
+void Marker::setConstraintType(Marker::ConstraintType _type) {
+  mType = _type;
 }
 
-} // namespace kinematics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

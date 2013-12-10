@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,8 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BALL_JOINT_H
-#define DART_DYNAMICS_BALL_JOINT_H
+#ifndef DART_DYNAMICS_BALLJOINT_H_
+#define DART_DYNAMICS_BALLJOINT_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -46,35 +48,34 @@
 namespace dart {
 namespace dynamics {
 
-class BallJoint : public Joint
-{
+class BallJoint : public Joint {
 public:
-    /// \brief Destructor.
-    BallJoint(const std::string& _name = "Ball joint");
+  /// \brief Destructor.
+  explicit BallJoint(const std::string& _name = "Noname BallJoint");
 
-    /// \brief Constructor.
-    virtual ~BallJoint();
+  /// \brief Constructor.
+  virtual ~BallJoint();
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// \brief
-    GenCoord mCoordinate[3];
+  /// \brief
+  GenCoord mCoordinate[3];
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_BALL_JOINT_H
+#endif  // DART_DYNAMICS_BALLJOINT_H_
 

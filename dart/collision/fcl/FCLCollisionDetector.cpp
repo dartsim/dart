@@ -78,8 +78,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
 //    request.num_max_cost_sources;
 //    request.use_approximate_cost;
 
-    for(int i = 0; i < mCollisionNodes.size(); i++)
-    for(int j = i + 1; j < mCollisionNodes.size(); j++)
+    for (int i = 0; i < mCollisionNodes.size(); i++)
+    for (int j = i + 1; j < mCollisionNodes.size(); j++)
     {
         result.clear();
         FCLCollisionNode* collNode1 = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
@@ -88,8 +88,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
         if (!isCollidable(collNode1, collNode2))
             continue;
 
-        for(int k = 0; k < collNode1->getNumCollisionGeometries(); k++)
-        for(int l = 0; l < collNode2->getNumCollisionGeometries(); l++)
+        for (int k = 0; k < collNode1->getNumCollisionGeometries(); k++)
+        for (int l = 0; l < collNode2->getNumCollisionGeometries(); l++)
         {
             int currContactNum = mContacts.size();
             fcl::collide(collNode1->getCollisionGeometry(k),
@@ -163,7 +163,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
     for (int i = 0; i < numCollNodes; ++i)
     {
         FCLCollisionNode* collisionNode = dynamic_cast<FCLCollisionNode*>(mCollisionNodes[i]);
-        for(int j = 0; j < collisionNode->getNumCollisionGeometries(); j++)
+        for (int j = 0; j < collisionNode->getNumCollisionGeometries(); j++)
         {
             if (collisionNode->getCollisionGeometry(j) == _fclCollGeom)
                 return mCollisionNodes[i];

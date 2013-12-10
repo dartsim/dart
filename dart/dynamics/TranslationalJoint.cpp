@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,7 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "TranslationalJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+
+#include <string>
 
 #include "dart/math/Geometry.h"
 
@@ -43,53 +45,48 @@ namespace dart {
 namespace dynamics {
 
 TranslationalJoint::TranslationalJoint(const std::string& _name)
-    : Joint(TRANSLATIONAL, _name)
-{
-    mGenCoords.push_back(&mCoordinate[0]);
-    mGenCoords.push_back(&mCoordinate[1]);
-    mGenCoords.push_back(&mCoordinate[2]);
+  : Joint(TRANSLATIONAL, _name) {
+  mGenCoords.push_back(&mCoordinate[0]);
+  mGenCoords.push_back(&mCoordinate[1]);
+  mGenCoords.push_back(&mCoordinate[2]);
 
-    mS = Eigen::Matrix<double,6,3>::Zero();
-    mdS = Eigen::Matrix<double,6,3>::Zero();
+  mS = Eigen::Matrix<double, 6, 3>::Zero();
+  mdS = Eigen::Matrix<double, 6, 3>::Zero();
 
-    mSpringStiffness.resize(3, 0.0);
-    mDampingCoefficient.resize(3, 0.0);
+  mSpringStiffness.resize(3, 0.0);
+  mDampingCoefficient.resize(3, 0.0);
 }
 
-TranslationalJoint::~TranslationalJoint()
-{
+TranslationalJoint::~TranslationalJoint() {
 }
 
-void TranslationalJoint::updateTransform()
-{
-    mT = mT_ParentBodyToJoint *
-         Eigen::Translation3d(get_q()) *
-         mT_ChildBodyToJoint.inverse();
-    assert(math::verifyTransform(mT));
+void TranslationalJoint::updateTransform() {
+  mT = mT_ParentBodyToJoint
+       * Eigen::Translation3d(get_q())
+       * mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
-void TranslationalJoint::updateJacobian()
-{
-    Eigen::Vector6d J0;
-    Eigen::Vector6d J1;
-    Eigen::Vector6d J2;
+void TranslationalJoint::updateJacobian() {
+  Eigen::Vector6d J0;
+  Eigen::Vector6d J1;
+  Eigen::Vector6d J2;
 
-    J0 << 0, 0, 0, 1, 0, 0;
-    J1 << 0, 0, 0, 0, 1, 0;
-    J2 << 0, 0, 0, 0, 0, 1;
+  J0 << 0, 0, 0, 1, 0, 0;
+  J1 << 0, 0, 0, 0, 1, 0;
+  J2 << 0, 0, 0, 0, 0, 1;
 
-    mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-    mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-    mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-    assert(!math::isNan(mS));
+  assert(!math::isNan(mS));
 }
 
-void TranslationalJoint::updateJacobianTimeDeriv()
-{
-    //mdS.setZero();
-    assert(mdS == math::Jacobian::Zero(6,3));
+void TranslationalJoint::updateJacobianTimeDeriv() {
+  // mdS.setZero();
+  assert(mdS == math::Jacobian::Zero(6, 3));
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

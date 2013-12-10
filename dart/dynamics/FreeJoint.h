@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FREE_JOINT_H
-#define DART_DYNAMICS_FREE_JOINT_H
+#ifndef DART_DYNAMICS_FREEJOINT_H_
+#define DART_DYNAMICS_FREEJOINT_H_
 
-#include <Eigen/Dense>
+#include <string>
 
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
@@ -46,40 +46,36 @@
 namespace dart {
 namespace dynamics {
 
-class FreeJoint : public Joint
-{
+class FreeJoint : public Joint {
 public:
-    /// \brief Constructor.
-    FreeJoint(const std::string& _name = "Free joint");
+  /// \brief Constructor.
+  explicit FreeJoint(const std::string& _name = "Noname FreeJoint");
 
-    /// \brief Destructor.
-    virtual ~FreeJoint();
+  /// \brief Destructor.
+  virtual ~FreeJoint();
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
-    // Documentation inherited.
-    virtual void clampRotation();
+  // Documentation inherited.
+  virtual void clampRotation();
 
 protected:
-    /// \brief
-    GenCoord mCoordinate[6];
-
-private:
+  /// \brief
+  GenCoord mCoordinate[6];
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_FREE_JOINT_H
-
+#endif  // DART_DYNAMICS_FREEJOINT_H_

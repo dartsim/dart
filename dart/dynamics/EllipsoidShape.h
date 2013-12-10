@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,45 +35,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ELLIPSOID_SHAPE_H
-#define DART_DYNAMICS_ELLIPSOID_SHAPE_H
+#ifndef DART_DYNAMICS_ELLIPSOIDSHAPE_H_
+#define DART_DYNAMICS_ELLIPSOIDSHAPE_H_
 
-#include "Shape.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
 
-class EllipsoidShape : public Shape
-{
+class EllipsoidShape : public Shape {
 public:
-    /// \brief Constructor.
-    EllipsoidShape(Eigen::Vector3d _dim);
+  /// \brief Constructor.
+  explicit EllipsoidShape(const Eigen::Vector3d _dim);
 
-    // Documentation inherited.
-    void draw(renderer::RenderInterface* _ri = NULL,
-              const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-              bool _useDefaultColor = true) const;
+  // Documentation inherited.
+  void draw(renderer::RenderInterface* _ri = NULL,
+            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+            bool _useDefaultColor = true) const;
 
-    // Documentation inherited.
-    virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  // Documentation inherited.
+  virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-    /// \brief True if (mDim[0] == mDim[1] == mDim[2]).
-    bool isSphere(void) const;
+  /// \brief True if (mDim[0] == mDim[1] == mDim[2]).
+  bool isSphere(void) const;
 
 private:
-    // Documentation inherited.
-    void computeVolume();
+  // Documentation inherited.
+  void computeVolume();
 
-    // Documentation inherited.
-    void initMeshes();
+  // Documentation inherited.
+  void initMeshes();
 
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_ELLIPSOID_SHAPE_H
-
-
+#endif  // DART_DYNAMICS_ELLIPSOIDSHAPE_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,45 +35,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "BoxShape.h"
+#include "dart/dynamics/BoxShape.h"
+
 #include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
 
 BoxShape::BoxShape(Eigen::Vector3d _dim)
-    : Shape(BOX)
-{
-    mDim = _dim;
-    initMeshes();
-    if (_dim != Eigen::Vector3d::Zero())
-        computeVolume();
+  : Shape(BOX) {
+  mDim = _dim;
+  initMeshes();
+  if (_dim != Eigen::Vector3d::Zero())
+    computeVolume();
 }
 
-void BoxShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
-    if (!_ri) return;
-    if (!_useDefaultColor)
-        _ri->setPenColor(_color);
-    else
-        _ri->setPenColor(mColor);
-    _ri->pushMatrix();
-    _ri->transform(mTransform);
-    _ri->drawCube(mDim);
-    _ri->popMatrix();
+void BoxShape::draw(renderer::RenderInterface* _ri,
+                    const Eigen::Vector4d& _color,
+                    bool _useDefaultColor) const {
+  if (!_ri) return;
+  if (!_useDefaultColor)
+    _ri->setPenColor(_color);
+  else
+    _ri->setPenColor(mColor);
+  _ri->pushMatrix();
+  _ri->transform(mTransform);
+  _ri->drawCube(mDim);
+  _ri->popMatrix();
 }
 
 Eigen::Matrix3d BoxShape::computeInertia(double _mass) const {
-    Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-    inertia(0, 0) = _mass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
-    inertia(1, 1) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
-    inertia(2, 2) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  inertia(0, 0) = _mass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
+  inertia(1, 1) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
+  inertia(2, 2) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
 
-    return inertia;
+  return inertia;
 }
 
 void BoxShape::computeVolume() {
-    mVolume = mDim(0) * mDim(1) * mDim(2); // a * b * c
+  // a * b * c
+  mVolume = mDim(0) * mDim(1) * mDim(2);
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

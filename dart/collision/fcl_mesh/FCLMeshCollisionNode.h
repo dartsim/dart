@@ -168,7 +168,7 @@ inline int FCLMeshCollisionNode::FFtest(fcl::Vec3f& r1, fcl::Vec3f& r2, fcl::Vec
 
             res1 = fcl::Vec3f(100000, 1000000, 1000000);
             res2 = -res1;
-            for(int i=0; i<count;i++)
+            for (int i=0; i<count;i++)
             {
                 if(fcl::Vec3fCmp(p[i], res1))res1 = p[i];
                 if(!fcl::Vec3fCmp(p[i], res2))res2 = p[i];

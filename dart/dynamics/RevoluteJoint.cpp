@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,61 +35,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/RevoluteJoint.h"
+
+#include <string>
+
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
 
 namespace dart {
 namespace dynamics {
 
 RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
                              const std::string& _name)
-    : Joint(REVOLUTE, _name),
-      mAxis(axis.normalized())
-{
-    mGenCoords.push_back(&mCoordinate);
+  : Joint(REVOLUTE, _name),
+    mAxis(axis.normalized()) {
+  mGenCoords.push_back(&mCoordinate);
 
-    mS = Eigen::Matrix<double,6,1>::Zero();
-    mdS = Eigen::Matrix<double,6,1>::Zero();
+  mS = Eigen::Matrix<double, 6, 1>::Zero();
+  mdS = Eigen::Matrix<double, 6, 1>::Zero();
 
-    mSpringStiffness.resize(1, 0.0);
-    mDampingCoefficient.resize(1, 0.0);
+  mSpringStiffness.resize(1, 0.0);
+  mDampingCoefficient.resize(1, 0.0);
 }
 
-RevoluteJoint::~RevoluteJoint()
-{
+RevoluteJoint::~RevoluteJoint() {
 }
 
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
-{
-    mAxis = _axis.normalized();
+void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis) {
+  mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&RevoluteJoint::getAxis() const
-{
-    return mAxis;
+const Eigen::Vector3d&RevoluteJoint::getAxis() const {
+  return mAxis;
 }
 
-void RevoluteJoint::updateTransform()
-{
-    mT = mT_ParentBodyToJoint
-         * math::expAngular(mAxis * mCoordinate.get_q())
-         * mT_ChildBodyToJoint.inverse();
-    assert(math::verifyTransform(mT));
+void RevoluteJoint::updateTransform() {
+  mT = mT_ParentBodyToJoint
+       * math::expAngular(mAxis * mCoordinate.get_q())
+       * mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
-void RevoluteJoint::updateJacobian()
-{
-    mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
-    assert(!math::isNan(mS));
+void RevoluteJoint::updateJacobian() {
+  mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+  assert(!math::isNan(mS));
 }
 
-void RevoluteJoint::updateJacobianTimeDeriv()
-{
-    //mdS.setZero();
-    assert(mdS == math::Jacobian::Zero(6,1));
+void RevoluteJoint::updateJacobianTimeDeriv() {
+  // mdS.setZero();
+  assert(mdS == math::Jacobian::Zero(6, 1));
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

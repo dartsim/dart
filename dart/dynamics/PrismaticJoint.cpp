@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,63 +35,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/PrismaticJoint.h"
 
+#include <string>
+
+#include "dart/math/Geometry.h"
+#include "dart/dynamics/BodyNode.h"
+
 namespace dart {
-
-using namespace math;
-
 namespace dynamics {
 
 PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
                                const std::string& _name)
-    : Joint(PRISMATIC, _name),
-      mAxis(axis.normalized())
-{
-    mGenCoords.push_back(&mCoordinate);
+  : Joint(PRISMATIC, _name),
+    mAxis(axis.normalized()) {
+  mGenCoords.push_back(&mCoordinate);
 
-    mS = Eigen::Matrix<double,6,1>::Zero();
-    mdS = Eigen::Matrix<double,6,1>::Zero();
+  mS = Eigen::Matrix<double, 6, 1>::Zero();
+  mdS = Eigen::Matrix<double, 6, 1>::Zero();
 
-    mSpringStiffness.resize(1, 0.0);
-    mDampingCoefficient.resize(1, 0.0);
+  mSpringStiffness.resize(1, 0.0);
+  mDampingCoefficient.resize(1, 0.0);
 }
 
-PrismaticJoint::~PrismaticJoint()
-{
+PrismaticJoint::~PrismaticJoint() {
 }
 
-void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
-{
-    mAxis = _axis.normalized();
+void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis) {
+  mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&PrismaticJoint::getAxis() const
-{
-    return mAxis;
+const Eigen::Vector3d&PrismaticJoint::getAxis() const {
+  return mAxis;
 }
 
-void PrismaticJoint::updateTransform()
-{
-    mT = mT_ParentBodyToJoint
-         * Eigen::Translation3d(mAxis * mCoordinate.get_q())
-         * mT_ChildBodyToJoint.inverse();
-    assert(math::verifyTransform(mT));
+void PrismaticJoint::updateTransform() {
+  mT = mT_ParentBodyToJoint
+       * Eigen::Translation3d(mAxis * mCoordinate.get_q())
+       * mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
-void PrismaticJoint::updateJacobian()
-{
-    mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
-    assert(!math::isNan(mS));
+void PrismaticJoint::updateJacobian() {
+  mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+  assert(!math::isNan(mS));
 }
 
-void PrismaticJoint::updateJacobianTimeDeriv()
-{
-    //mdS.setZero();
-    assert(mdS == math::Jacobian::Zero(6,1));
+void PrismaticJoint::updateJacobianTimeDeriv() {
+  // mdS.setZero();
+  assert(mdS == math::Jacobian::Zero(6, 1));
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

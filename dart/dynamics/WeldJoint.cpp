@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,39 +35,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/WeldJoint.h"
+
+#include <string>
+
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
-#include "dart/dynamics/WeldJoint.h"
 
 namespace dart {
 namespace dynamics {
 
 WeldJoint::WeldJoint(const std::string& _name)
-    : Joint(WELD, _name)
-{
-    mS = math::Jacobian::Zero(6,0);
-    mdS = math::Jacobian::Zero(6,0);
+  : Joint(WELD, _name) {
+  mS = math::Jacobian::Zero(6, 0);
+  mdS = math::Jacobian::Zero(6, 0);
 }
 
-WeldJoint::~WeldJoint()
-{
+WeldJoint::~WeldJoint() {
 }
 
-void WeldJoint::updateTransform()
-{
-    // T
-    mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+void WeldJoint::updateTransform() {
+  // T
+  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
 }
 
-void WeldJoint::updateJacobian()
-{
-    // Do nothing
+void WeldJoint::updateJacobian() {
+  // Do nothing
 }
 
-void WeldJoint::updateJacobianTimeDeriv()
-{
-    // Do nothing
+void WeldJoint::updateJacobianTimeDeriv() {
+  // Do nothing
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

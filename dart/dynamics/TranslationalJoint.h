@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_TRANSLATIONAL_JOINT_H
-#define DART_DYNAMICS_TRANSLATIONAL_JOINT_H
+#ifndef DART_DYNAMICS_TRANSLATIONALJOINT_H_
+#define DART_DYNAMICS_TRANSLATIONALJOINT_H_
 
-#include <Eigen/Dense>
+#include <string>
 
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
@@ -46,35 +46,35 @@
 namespace dart {
 namespace dynamics {
 
-class TranslationalJoint : public Joint
-{
+class TranslationalJoint : public Joint {
 public:
-    /// \brief Constructor.
-    TranslationalJoint(const std::string& _name = "Translational joint");
+  /// \brief Constructor.
+  explicit TranslationalJoint(
+      const std::string& _name = "Noname TranslationalJoint");
 
-    /// \brief Destructor.
-    virtual ~TranslationalJoint();
+  /// \brief Destructor.
+  virtual ~TranslationalJoint();
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// \brief
-    GenCoord mCoordinate[3];
+  /// \brief
+  GenCoord mCoordinate[3];
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_BALL_JOINT_H
+#endif  // DART_DYNAMICS_TRANSLATIONALJOINT_H_
 

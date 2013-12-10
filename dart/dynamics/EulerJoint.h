@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,8 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_EULER_JOINT_H
-#define DART_DYNAMICS_EULER_JOINT_H
+#ifndef DART_DYNAMICS_EULERJOINT_H_
+#define DART_DYNAMICS_EULERJOINT_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -46,52 +48,49 @@
 namespace dart {
 namespace dynamics {
 
-class EulerJoint : public Joint
-{
+class EulerJoint : public Joint {
 public:
-    enum AxisOrder
-    {
-        AO_ZYX = 0,
-        AO_ZYZ = 1,
-        AO_XYZ = 2,
-        AO_ZXY = 3
-    };
+  enum AxisOrder {
+    AO_ZYX = 0,
+    AO_ZYZ = 1,
+    AO_XYZ = 2,
+    AO_ZXY = 3
+  };
 
-    /// \brief Constructor.
-    EulerJoint(const std::string& _name = "Euler joint");
+  /// \brief Constructor.
+  explicit EulerJoint(const std::string& _name = "Noname EulerJoint");
 
-    /// \brief Destructor.
-    virtual ~EulerJoint();
+  /// \brief Destructor.
+  virtual ~EulerJoint();
 
-    /// \brief
-    void setAxisOrder(AxisOrder _order);
+  /// \brief
+  void setAxisOrder(AxisOrder _order);
 
-    /// \brief
-    AxisOrder getAxisOrder() const;
+  /// \brief
+  AxisOrder getAxisOrder() const;
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// \brief Euler angles X, Y, Z
-    GenCoord mCoordinate[3];
+  /// \brief Euler angles X, Y, Z
+  GenCoord mCoordinate[3];
 
-    /// \brief
-    AxisOrder mAxisOrder;
+  /// \brief
+  AxisOrder mAxisOrder;
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_EULER_JOINT_H
-
+#endif  // DART_DYNAMICS_EULERJOINT_H_

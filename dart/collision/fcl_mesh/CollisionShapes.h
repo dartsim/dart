@@ -27,12 +27,12 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
     fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
     model->beginModel();
 
-    for(unsigned int i = 0; i < _mesh->mNumMeshes; i++)
+    for (unsigned int i = 0; i < _mesh->mNumMeshes; i++)
     {
-        for(unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
+        for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
         {
             fcl::Vec3f vertices[3];
-            for(unsigned int k = 0; k < 3; k++)
+            for (unsigned int k = 0; k < 3; k++)
             {
                 const aiVector3D& vertex
                         = _mesh->mMeshes[i]->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
@@ -350,7 +350,7 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 	zLow = zBase;
 	p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
 	p1 = _transform.transform(p1);
-	for(i = 1; i < _slices; i++) {
+	for (i = 1; i < _slices; i++) {
 		p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
 		p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
 		p2 = _transform.transform(p2);
@@ -389,7 +389,7 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 	zLow = zBase + _height;
 	p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
 	p1 = _transform.transform(p1);
-	for(i = 1; i < _slices; i++) {
+	for (i = 1; i < _slices; i++) {
 		p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
 		p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
 		p2 = _transform.transform(p2);

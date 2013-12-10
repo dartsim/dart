@@ -56,20 +56,20 @@ void ConstraintBox::add(Constraint *newConstraint) {
     mConstraints.push_back(newConstraint);
     mNumTotalRows += newConstraint->mNumRows;
 
-    for(int i = 0; i < newConstraint->mNumRows; i++) {
+    for (int i = 0; i < newConstraint->mNumRows; i++) {
         mCon.push_back(0.0);
     }
 
-    for(int j = 0; j < newConstraint->mNumRows; j++){
+    for (int j = 0; j < newConstraint->mNumRows; j++){
         std::vector<double> *val = new std::vector<double>;
         val->resize(mNumDofs);
-        for(unsigned int x = 0; x < val->size(); x++)
+        for (unsigned int x = 0; x < val->size(); x++)
             (*val)[x] = 0.0;
         mJac.push_back(val);
 
         std::vector<bool> *val2 = new std::vector<bool>;
         val2->resize(mNumDofs);
-        for(unsigned int x = 0; x < val2->size(); x++)
+        for (unsigned int x = 0; x < val2->size(); x++)
             (*val2)[x] = 0;
         mJacMap.push_back(val2);
     }
@@ -77,8 +77,8 @@ void ConstraintBox::add(Constraint *newConstraint) {
 
 void ConstraintBox::clear()  {
     int count = 0;
-    for(unsigned int i=0; i<mConstraints.size(); i++){
-        for(int j=0; j<mConstraints[i]->mNumRows; j++){
+    for (unsigned int i=0; i<mConstraints.size(); i++){
+        for (int j=0; j<mConstraints[i]->mNumRows; j++){
             delete mJac[count];
             delete mJacMap[count++];
         }
@@ -95,7 +95,7 @@ int ConstraintBox::remove(Constraint *target) {
     unsigned int nConstr = mConstraints.size();
     int index = -1;
     int count = 0;
-    for(unsigned int i = 0; i < nConstr; i++){
+    for (unsigned int i = 0; i < nConstr; i++){
         if(mConstraints[i] == target){
             index = i;
             break;
@@ -111,7 +111,7 @@ int ConstraintBox::remove(Constraint *target) {
     //deallocate memory for Constraint
     mConstraints.erase(mConstraints.begin() + index);
     mCon.erase(mCon.begin() + count, mCon.begin() + count + length);
-    for(int j = 0; j < length; j++){
+    for (int j = 0; j < length; j++){
         delete mJac[count+j];
         delete mJacMap[count+j];
     }
@@ -124,7 +124,7 @@ int ConstraintBox::remove(Constraint *target) {
 }
 
 int ConstraintBox::isInBox(Constraint *testConstraint) {
-    for(unsigned int i = 0; i < mConstraints.size(); i++){
+    for (unsigned int i = 0; i < mConstraints.size(); i++){
         if(mConstraints[i] == testConstraint)
             return i;
     }
@@ -133,7 +133,7 @@ int ConstraintBox::isInBox(Constraint *testConstraint) {
 
 void ConstraintBox::evalJac() {
     int count = 0;
-    for(unsigned int i = 0; i < mConstraints.size(); i++){
+    for (unsigned int i = 0; i < mConstraints.size(); i++){
         if(mConstraints[i]->mActive)
             mConstraints[i]->fillJac(&mJac, &mJacMap, count);
         count += mConstraints[i]->mNumRows;
@@ -142,7 +142,7 @@ void ConstraintBox::evalJac() {
 
 void ConstraintBox::evalCon() {
     int count = 0;
-    for(unsigned int i = 0; i < mConstraints.size(); i++){
+    for (unsigned int i = 0; i < mConstraints.size(); i++){
         if(!mConstraints[i]->mActive){
             count += mConstraints[i]->mNumRows;
             continue;
@@ -150,7 +150,7 @@ void ConstraintBox::evalCon() {
         Eigen::VectorXd constraintVal = mConstraints[i]->evalCon();
         unsigned int n = constraintVal.size();
 
-        for(unsigned int j = 0; j < n; j++) {
+        for (unsigned int j = 0; j < n; j++) {
             mCon[count++] = constraintVal[j];
         }
     }
@@ -158,11 +158,11 @@ void ConstraintBox::evalCon() {
 
 void ConstraintBox::setNumDofs(int numDofs) {
     mNumDofs = numDofs;
-    for(int i = 0; i < mNumTotalRows; i++){
+    for (int i = 0; i < mNumTotalRows; i++){
         if(mJac[i]->size()!=mNumDofs){
             mJac[i]->resize(numDofs);
             mJacMap[i]->resize(numDofs);
-            for(int j = 0; j < numDofs; j++){
+            for (int j = 0; j < numDofs; j++){
                 mJac[i]->at(j) = 0.0;
                 mJacMap[i]->at(j) = 0;
             }
@@ -171,7 +171,7 @@ void ConstraintBox::setNumDofs(int numDofs) {
 }
 
 void ConstraintBox::reallocateMem() {
-    for(unsigned int i = 0; i < mConstraints.size(); i++) {
+    for (unsigned int i = 0; i < mConstraints.size(); i++) {
         mConstraints[i]->allocateMem();
     }
 }

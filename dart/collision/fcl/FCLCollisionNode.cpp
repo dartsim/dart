@@ -52,7 +52,7 @@ namespace collision {
 FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
     : CollisionNode(_bodyNode)
 {
-    for(int i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+    for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
     {
         dynamics::Shape* shape = _bodyNode->getCollisionShape(i);
         mShapes.push_back(shape);
@@ -140,12 +140,12 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
     assert(_mesh);
     fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
     model->beginModel();
-    for(unsigned int i = 0; i < _mesh->mNumMeshes; i++)
+    for (unsigned int i = 0; i < _mesh->mNumMeshes; i++)
     {
-        for(unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
+        for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
         {
             fcl::Vec3f vertices[3];
-            for(unsigned int k = 0; k < 3; k++)
+            for (unsigned int k = 0; k < 3; k++)
             {
                 const aiVector3D& vertex
                         = _mesh->mMeshes[i]->mVertices[

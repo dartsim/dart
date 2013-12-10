@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,91 +35,96 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MARKER_H
-#define DART_DYNAMICS_MARKER_H
+#ifndef DART_DYNAMICS_MARKER_H_
+#define DART_DYNAMICS_MARKER_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
 namespace dart {
-namespace renderer { class RenderInterface; }
+namespace renderer {
+class RenderInterface;
+}  // namespace renderer
+}  // namespace dart
+
+namespace dart {
 namespace dynamics {
 
-class Marker
-{
+class Marker {
 public:
-    enum ConstraintType
-    {
-        NO,
-        HARD,
-        SOFT
-    };
-    
-    /// \brief
-    Marker(const std::string& _name, Eigen::Vector3d& _offset,
-           ConstraintType _type = NO);
+  enum ConstraintType {
+    NO,
+    HARD,
+    SOFT
+  };
 
-    /// \brief
-    virtual ~Marker();
+  /// \brief
+  Marker(const std::string& _name, const Eigen::Vector3d& _offset,
+         ConstraintType _type = NO);
 
-    /// \brief
-    void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true,
-              const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
-              bool _useDefaultColor = true) const;
+  /// \brief
+  virtual ~Marker();
 
-    /// \brief
-    Eigen::Vector3d getLocalCoords() const;
+  /// \brief
+  void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true,
+            const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
+            bool _useDefaultColor = true) const;
 
-    /// \brief
-    void setLocalCoords(Eigen::Vector3d& _offset);
+  /// \brief
+  Eigen::Vector3d getLocalCoords() const;
 
-    /// \brief
-    int getSkeletonIndex() const;
+  /// \brief
+  void setLocalCoords(const Eigen::Vector3d& _offset);
 
-    /// \brief
-    void setSkeletonIndex(int _idx);
+  /// \brief
+  int getSkeletonIndex() const;
 
-    /// \brief
-    int getID() const;
+  /// \brief
+  void setSkeletonIndex(int _idx);
 
-    /// \brief
-    void setName(const std::string&);
+  /// \brief
+  int getID() const;
 
-    /// \brief
-    const std::string& getName() const;
+  /// \brief
+  void setName(const std::string&);
 
-    // useful for IK
-    /// \brief
-    ConstraintType getConstraintType() const;
+  /// \brief
+  const std::string& getName() const;
 
-    /// \brief
-    void setConstraintType(ConstraintType _type);
-    
+  // useful for IK
+  /// \brief
+  ConstraintType getConstraintType() const;
+
+  /// \brief
+  void setConstraintType(ConstraintType _type);
+
 protected:
-    /// \brief local coordinates in the links.
-    Eigen::Vector3d mOffset;
+  /// \brief local coordinates in the links.
+  Eigen::Vector3d mOffset;
 
-    /// \brief name of this marker.
-    std::string mName;
+  /// \brief name of this marker.
+  std::string mName;
 
-    /// \brief position in the model class marker vector.
-    int mSkelIndex;
+  /// \brief position in the model class marker vector.
+  int mSkelIndex;
 
-    /// \brief type of constraint.
-    ConstraintType mType;
-    
+  /// \brief type of constraint.
+  ConstraintType mType;
+
 private:
-    /// \brief a unique ID of this marker globally.
-    int mID;
+  /// \brief a unique ID of this marker globally.
+  int mID;
 
-    /// \brief counts the number of markers globally.
-    static int msMarkerCount;
+  /// \brief counts the number of markers globally.
+  static int msMarkerCount;
 
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace kinematics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_MARKER_H
+#endif  // DART_DYNAMICS_MARKER_H_
 

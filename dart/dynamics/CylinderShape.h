@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Tobias Kunz <tobias@gatech.edu>
@@ -35,54 +35,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_CYLINDER_SHAPE_H
-#define DART_DYNAMICS_CYLINDER_SHAPE_H
+#ifndef DART_DYNAMICS_CYLINDERSHAPE_H_
+#define DART_DYNAMICS_CYLINDERSHAPE_H_
 
-#include "Shape.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
 
 class CylinderShape : public Shape {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    /// \brief Constructor.
-    CylinderShape(double _radius, double _height);
+  /// \brief Constructor.
+  CylinderShape(double _radius, double _height);
 
-    /// \brief
-    inline double getRadius() const { return mRadius; }
+  /// \brief
+  double getRadius() const;
 
-    /// \brief
-    inline void setRadius(double _radius) { mRadius = _radius; }
+  /// \brief
+  void setRadius(double _radius);
 
-    /// \brief
-    inline double getHeight() const { return mHeight; }
+  /// \brief
+  double getHeight() const;
 
-    /// \brief
-    inline void setHeight(double _height) { mHeight = _height; }
+  /// \brief
+  void setHeight(double _height);
 
-    // Documentation inherited.
-    void draw(renderer::RenderInterface* _ri = NULL,
-              const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-              bool _useDefaultColor = true) const;
+  // Documentation inherited.
+  void draw(renderer::RenderInterface* _ri = NULL,
+            const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+            bool _useDefaultColor = true) const;
 
-    // Documentation inherited.
-    virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  // Documentation inherited.
+  virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
 private:
-    // Documentation inherited.
-    void computeVolume();
+  // Documentation inherited.
+  void computeVolume();
 
-    /// \brief
-    double mRadius;
+  /// \brief
+  double mRadius;
 
-    /// \brief Height along z-axis.
-    double mHeight;
+  /// \brief Height along z-axis.
+  double mHeight;
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_CYLINDER_SHAPE_H
-
+#endif  // DART_DYNAMICS_CYLINDERSHAPE_H_

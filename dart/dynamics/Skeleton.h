@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -36,16 +36,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETON_H
-#define DART_DYNAMICS_SKELETON_H
+#ifndef DART_DYNAMICS_SKELETON_H_
+#define DART_DYNAMICS_SKELETON_H_
 
 #include <vector>
+#include <string>
+
 #include <Eigen/Dense>
+
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
-namespace renderer { class RenderInterface; }
+namespace renderer {
+class RenderInterface;
+}  // namespace renderer
+}  // namespace dart
+
+namespace dart {
 namespace dynamics {
 
 class BodyNode;
@@ -53,14 +61,13 @@ class Joint;
 class Marker;
 
 /// \brief
-class Skeleton : public GenCoordSystem
-{
+class Skeleton : public GenCoordSystem {
 public:
     //--------------------------------------------------------------------------
     // Constructor and Destructor
     //--------------------------------------------------------------------------
     /// \brief Constructor
-    Skeleton(const std::string& _name = "Skeleton");
+    explicit Skeleton(const std::string& _name = "Skeleton");
 
     /// \brief Destructor
     virtual ~Skeleton();
@@ -257,7 +264,7 @@ public:
     /// \brief
     void drawMarkers(renderer::RenderInterface* _ri = NULL,
                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                     bool _useDefaultColor = true ) const;
+                     bool _useDefaultColor = true) const;
 
 protected:
     /// \brief Name
@@ -356,8 +363,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_SKELETON_H
-
+#endif  // DART_DYNAMICS_SKELETON_H_

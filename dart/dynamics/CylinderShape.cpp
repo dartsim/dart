@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Tobias Kunz <tobias@gatech.edu>
@@ -35,47 +35,65 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "CylinderShape.h"
+#include "dart/dynamics/CylinderShape.h"
+
 #include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
 
 CylinderShape::CylinderShape(double _radius, double _height)
-    : Shape(CYLINDER),
-      mRadius(_radius),
-      mHeight(_height)
-{
-    initMeshes();
-    if (mRadius > 0.0 && mHeight > 0.0) {
-        computeVolume();
-    }
+  : Shape(CYLINDER),
+    mRadius(_radius),
+    mHeight(_height) {
+  initMeshes();
+  if (mRadius > 0.0 && mHeight > 0.0) {
+    computeVolume();
+  }
 }
 
-void CylinderShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
-    if (!_ri) return;
-    if (!_useDefaultColor)
-        _ri->setPenColor(_color);
-    else
-        _ri->setPenColor(mColor);
-    _ri->pushMatrix();
-    _ri->transform(mTransform);
-    _ri->drawCylinder(mRadius, mHeight);
-    _ri->popMatrix();
+double CylinderShape::getRadius() const {
+  return mRadius;
+}
+
+void CylinderShape::setRadius(double _radius) {
+  mRadius = _radius;
+}
+
+double CylinderShape::getHeight() const {
+  return mHeight;
+}
+
+void CylinderShape::setHeight(double _height) {
+  mHeight = _height;
+}
+
+void CylinderShape::draw(renderer::RenderInterface* _ri,
+                         const Eigen::Vector4d& _color,
+                         bool _useDefaultColor) const {
+  if (!_ri) return;
+  if (!_useDefaultColor)
+    _ri->setPenColor(_color);
+  else
+    _ri->setPenColor(mColor);
+  _ri->pushMatrix();
+  _ri->transform(mTransform);
+  _ri->drawCylinder(mRadius, mHeight);
+  _ri->popMatrix();
 }
 
 void CylinderShape::computeVolume() {
-    mVolume = DART_PI * mRadius * mRadius * mHeight;
+  mVolume = DART_PI * mRadius * mRadius * mHeight;
 }
 
 Eigen::Matrix3d CylinderShape::computeInertia(double _mass) const {
-    Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
-    inertia(0, 0) = _mass * (3.0 * mRadius * mRadius + mHeight * mHeight) / 12.0;
-    inertia(1, 1) = inertia(0, 0);
-    inertia(2, 2) = 0.5 * _mass * mRadius * mRadius;
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  inertia(0, 0) = _mass * (3.0 * mRadius * mRadius + mHeight * mHeight) / 12.0;
+  inertia(1, 1) = inertia(0, 0);
+  inertia(2, 2) = 0.5 * _mass * mRadius * mRadius;
 
-    return inertia;
+  return inertia;
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

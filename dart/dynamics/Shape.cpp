@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,90 +35,76 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Shape.h"
+#include "dart/dynamics/Shape.h"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
 
-Shape::Shape(ShapeType _type) :
-    mType(_type),
+Shape::Shape(ShapeType _type)
+  : mType(_type),
     mDim(0, 0, 0),
     mVolume(0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0),
     mOffset(0, 0, 0),
-    mTransform(Eigen::Isometry3d::Identity())
-{
+    mTransform(Eigen::Isometry3d::Identity()) {
 }
 
-Shape::~Shape()
-{
+Shape::~Shape() {
 }
 
-void Shape::setColor(const Eigen::Vector3d& _color)
-{
-    mColor = _color;
+void Shape::setColor(const Eigen::Vector3d& _color) {
+  mColor = _color;
 }
 
-const Eigen::Vector3d& Shape::getColor() const
-{
-    return mColor;
+const Eigen::Vector3d& Shape::getColor() const {
+  return mColor;
 }
 
-void Shape::setDim(const Eigen::Vector3d& _dim)
-{
-    mDim = _dim;
-    computeVolume();
+void Shape::setDim(const Eigen::Vector3d& _dim) {
+  mDim = _dim;
+  computeVolume();
 }
 
-const Eigen::Vector3d& Shape::getDim() const
-{
-    return mDim;
+const Eigen::Vector3d& Shape::getDim() const {
+  return mDim;
 }
 
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
-{
-    mTransform = _Transform;
+void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
+  mTransform = _Transform;
 }
 
-const Eigen::Isometry3d& Shape::getLocalTransform() const
-{
-    return mTransform;
+const Eigen::Isometry3d& Shape::getLocalTransform() const {
+  return mTransform;
 }
 
-void Shape::setOffset(const Eigen::Vector3d& _offset)
-{
-    mTransform.translation() = _offset;
+void Shape::setOffset(const Eigen::Vector3d& _offset) {
+  mTransform.translation() = _offset;
 }
 
-Eigen::Vector3d Shape::getOffset() const
-{
-    return mTransform.translation();
+Eigen::Vector3d Shape::getOffset() const {
+  return mTransform.translation();
 }
 
-void Shape::setVolume(double _v)
-{
-    mVolume = _v;
+void Shape::setVolume(double _v) {
+  mVolume = _v;
 }
 
-double Shape::getVolume() const
-{
-    return mVolume;
+double Shape::getVolume() const {
+  return mVolume;
 }
 
-int Shape::getID() const
-{
-    return mID;
+int Shape::getID() const {
+  return mID;
 }
 
-Shape::ShapeType Shape::getShapeType() const
-{
-    return mType;
+Shape::ShapeType Shape::getShapeType() const {
+  return mType;
 }
 
 int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

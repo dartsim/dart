@@ -66,7 +66,7 @@ public:
     virtual void fillObjGrad(std::vector<double>& dG) {
         VectorXd dP = evalCon();
 
-        for(unsigned int i = 0; i < mVariables.size(); i++){
+        for (unsigned int i = 0; i < mVariables.size(); i++){
             const optimizer::Var* var = mVariables[i];
             VectorXd J(1);
             if (i == mIndex) {

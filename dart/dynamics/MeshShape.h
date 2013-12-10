@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s):
@@ -35,62 +35,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESH_SHAPE_H
-#define DART_DYNAMICS_MESH_SHAPE_H
+#ifndef DART_DYNAMICS_MESHSHAPE_H_
+#define DART_DYNAMICS_MESHSHAPE_H_
 
-#include "Shape.h"
+#include <string>
+
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
 
-class MeshShape : public Shape
-{
+/// \brief
+class MeshShape : public Shape {
 public:
-    /// \brief Constructor.
-    MeshShape(Eigen::Vector3d _dim, const aiScene *_mesh);
+  /// \brief Constructor.
+  MeshShape(const Eigen::Vector3d& _dim, const aiScene *_mesh);
 
-    /// \brief Destructor.
-    virtual ~MeshShape();
+  /// \brief Destructor.
+  virtual ~MeshShape();
 
-    /// \brief
-    inline const aiScene* getMesh() const { return mMesh; }
+  /// \brief
+  const aiScene* getMesh() const;
 
-    /// \brief
-    inline void setMesh(const aiScene* _mesh) { mMesh = _mesh; }
+  /// \brief
+  void setMesh(const aiScene* _mesh);
 
-    /// \brief
-    inline int getDisplayList() const { return mDisplayList; }
+  /// \brief
+  int getDisplayList() const;
 
-    /// \brief
-    inline void setDisplayList(int _index) { mDisplayList = _index; }
+  /// \brief
+  void setDisplayList(int _index);
 
-    // Documentation inherited.
-    void draw(renderer::RenderInterface* _ri = NULL,
-              const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-              bool _default = true) const;
+  // Documentation inherited.
+  void draw(renderer::RenderInterface* _ri = NULL,
+            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+            bool _default = true) const;
 
-    /// \brief
-    static const aiScene* loadMesh(const std::string& fileName);
+  /// \brief
+  static const aiScene* loadMesh(const std::string& fileName);
 
-    // Documentation inherited.
-    virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  // Documentation inherited.
+  virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
 private:
-    // Documentation inherited.
-    void computeVolume();
+  // Documentation inherited.
+  void computeVolume();
 
-    /// \brief
-    const aiScene *mMesh;
+  /// \brief
+  const aiScene *mMesh;
 
-    /// \brief OpenGL DisplayList id for rendering
-    int mDisplayList;
+  /// \brief OpenGL DisplayList id for rendering
+  int mDisplayList;
 
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_MESH_SHAPE_H
-
+#endif  // DART_DYNAMICS_MESHSHAPE_H_

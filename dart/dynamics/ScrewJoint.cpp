@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,9 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/ScrewJoint.h"
+
+#include <string>
+
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/ScrewJoint.h"
 
 namespace dart {
 namespace dynamics {
@@ -45,76 +48,66 @@ namespace dynamics {
 ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
-    : Joint(SCREW, _name),
-      mAxis(axis.normalized()),
-      mPitch(_pitch)
-{
-    mGenCoords.push_back(&mCoordinate);
+  : Joint(SCREW, _name),
+    mAxis(axis.normalized()),
+    mPitch(_pitch) {
+  mGenCoords.push_back(&mCoordinate);
 
-    mS = Eigen::Matrix<double,6,1>::Zero();
-    mdS = Eigen::Matrix<double,6,1>::Zero();
+  mS = Eigen::Matrix<double, 6, 1>::Zero();
+  mdS = Eigen::Matrix<double, 6, 1>::Zero();
 
-    mSpringStiffness.resize(1, 0.0);
-    mDampingCoefficient.resize(1, 0.0);
+  mSpringStiffness.resize(1, 0.0);
+  mDampingCoefficient.resize(1, 0.0);
 }
 
-ScrewJoint::~ScrewJoint()
-{
+ScrewJoint::~ScrewJoint() {
 }
 
-void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
-{
-    mAxis = _axis.normalized();
+void ScrewJoint::setAxis(const Eigen::Vector3d& _axis) {
+  mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&ScrewJoint::getAxis() const
-{
-    return mAxis;
+const Eigen::Vector3d&ScrewJoint::getAxis() const {
+  return mAxis;
 }
 
-void ScrewJoint::setPitch(double _pitch)
-{
-    mPitch = _pitch;
+void ScrewJoint::setPitch(double _pitch) {
+  mPitch = _pitch;
 }
 
-double ScrewJoint::getPitch() const
-{
-    return mPitch;
+double ScrewJoint::getPitch() const {
+  return mPitch;
 }
 
-void ScrewJoint::updateTransform()
-{
-    Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/DART_2PI;
-    mT = mT_ParentBodyToJoint
-         * math::expMap(S*mCoordinate.get_q())
-         * mT_ChildBodyToJoint.inverse();
-    assert(math::verifyTransform(mT));
+void ScrewJoint::updateTransform() {
+  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  S.head<3>() = mAxis;
+  S.tail<3>() = mAxis*mPitch/DART_2PI;
+  mT = mT_ParentBodyToJoint
+       * math::expMap(S*mCoordinate.get_q())
+       * mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
-void ScrewJoint::updateJacobian()
-{
-    Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/DART_2PI;
-    mS = math::AdT(mT_ChildBodyToJoint, S);
-    assert(!math::isNan(mS));
+void ScrewJoint::updateJacobian() {
+  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  S.head<3>() = mAxis;
+  S.tail<3>() = mAxis*mPitch/DART_2PI;
+  mS = math::AdT(mT_ChildBodyToJoint, S);
+  assert(!math::isNan(mS));
 }
 
-void ScrewJoint::updateJacobianTimeDeriv()
-{
-    //mdS.setZero();
-    assert(mdS == math::Jacobian::Zero(6,1));
+void ScrewJoint::updateJacobianTimeDeriv() {
+  // mdS.setZero();
+  assert(mdS == math::Jacobian::Zero(6, 1));
 }
 
-void ScrewJoint::clampRotation()
-{
-    if( mCoordinate.get_q() > M_PI )
-        mCoordinate.set_q(mCoordinate.get_q() - 2*M_PI);
-    if( mCoordinate.get_q() < -M_PI )
-        mCoordinate.set_q(mCoordinate.get_q() + 2*M_PI);
+void ScrewJoint::clampRotation() {
+  if (mCoordinate.get_q() > M_PI)
+    mCoordinate.set_q(mCoordinate.get_q() - 2*M_PI);
+  if (mCoordinate.get_q() < -M_PI)
+    mCoordinate.set_q(mCoordinate.get_q() + 2*M_PI);
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

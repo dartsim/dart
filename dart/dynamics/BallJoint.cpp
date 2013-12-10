@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,7 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "BallJoint.h"
+#include "dart/dynamics/BallJoint.h"
+
+#include <string>
 
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
@@ -44,84 +46,79 @@ namespace dart {
 namespace dynamics {
 
 BallJoint::BallJoint(const std::string& _name)
-    : Joint(BALL, _name)
-{
-    mGenCoords.push_back(&mCoordinate[0]);
-    mGenCoords.push_back(&mCoordinate[1]);
-    mGenCoords.push_back(&mCoordinate[2]);
+  : Joint(BALL, _name) {
+  mGenCoords.push_back(&mCoordinate[0]);
+  mGenCoords.push_back(&mCoordinate[1]);
+  mGenCoords.push_back(&mCoordinate[2]);
 
-    mS = Eigen::Matrix<double,6,3>::Zero();
-    mdS = Eigen::Matrix<double,6,3>::Zero();
+  mS = Eigen::Matrix<double, 6, 3>::Zero();
+  mdS = Eigen::Matrix<double, 6, 3>::Zero();
 
-    mSpringStiffness.resize(3, 0.0);
-    mDampingCoefficient.resize(3, 0.0);
+  mSpringStiffness.resize(3, 0.0);
+  mDampingCoefficient.resize(3, 0.0);
 }
 
-BallJoint::~BallJoint()
-{
+BallJoint::~BallJoint() {
 }
 
-inline void BallJoint::updateTransform()
-{
-    Eigen::Vector3d q(mCoordinate[0].get_q(),
-                      mCoordinate[1].get_q(),
-                      mCoordinate[2].get_q());
+inline void BallJoint::updateTransform() {
+  Eigen::Vector3d q(mCoordinate[0].get_q(),
+                    mCoordinate[1].get_q(),
+                    mCoordinate[2].get_q());
 
-    mT = mT_ParentBodyToJoint *
-            math::expAngular(q) *
-            mT_ChildBodyToJoint.inverse();
+  mT = mT_ParentBodyToJoint
+       * math::expAngular(q)
+       * mT_ChildBodyToJoint.inverse();
 
-    assert(math::verifyTransform(mT));
+  assert(math::verifyTransform(mT));
 }
 
-inline void BallJoint::updateJacobian()
-{
-    Eigen::Vector3d q(mCoordinate[0].get_q(),
-                      mCoordinate[1].get_q(),
-                      mCoordinate[2].get_q());
+inline void BallJoint::updateJacobian() {
+  Eigen::Vector3d q(mCoordinate[0].get_q(),
+                    mCoordinate[1].get_q(),
+                    mCoordinate[2].get_q());
 
-    Eigen::Matrix3d J = math::expMapJac(q);
+  Eigen::Matrix3d J = math::expMapJac(q);
 
-    Eigen::Vector6d J0;
-    Eigen::Vector6d J1;
-    Eigen::Vector6d J2;
+  Eigen::Vector6d J0;
+  Eigen::Vector6d J1;
+  Eigen::Vector6d J2;
 
-    J0 << J(0,0), J(0,1), J(0,2), 0, 0, 0;
-    J1 << J(1,0), J(1,1), J(1,2), 0, 0, 0;
-    J2 << J(2,0), J(2,1), J(2,2), 0, 0, 0;
+  J0 << J(0, 0), J(0, 1), J(0, 2), 0, 0, 0;
+  J1 << J(1, 0), J(1, 1), J(1, 2), 0, 0, 0;
+  J2 << J(2, 0), J(2, 1), J(2, 2), 0, 0, 0;
 
-    mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-    mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-    mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-    assert(!math::isNan(mS));
+  assert(!math::isNan(mS));
 }
 
-inline void BallJoint::updateJacobianTimeDeriv()
-{
-    Eigen::Vector3d q(mCoordinate[0].get_q(),
-                      mCoordinate[1].get_q(),
-                      mCoordinate[2].get_q());
-    Eigen::Vector3d dq(mCoordinate[0].get_dq(),
-                       mCoordinate[1].get_dq(),
-                       mCoordinate[2].get_dq());
+inline void BallJoint::updateJacobianTimeDeriv() {
+  Eigen::Vector3d q(mCoordinate[0].get_q(),
+      mCoordinate[1].get_q(),
+      mCoordinate[2].get_q());
+  Eigen::Vector3d dq(mCoordinate[0].get_dq(),
+      mCoordinate[1].get_dq(),
+      mCoordinate[2].get_dq());
 
-    Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
+  Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
 
-    Eigen::Vector6d dJ0;
-    Eigen::Vector6d dJ1;
-    Eigen::Vector6d dJ2;
+  Eigen::Vector6d dJ0;
+  Eigen::Vector6d dJ1;
+  Eigen::Vector6d dJ2;
 
-    dJ0 << dJ(0,0), dJ(0,1), dJ(0,2), 0, 0, 0;
-    dJ1 << dJ(1,0), dJ(1,1), dJ(1,2), 0, 0, 0;
-    dJ2 << dJ(2,0), dJ(2,1), dJ(2,2), 0, 0, 0;
+  dJ0 << dJ(0, 0), dJ(0, 1), dJ(0, 2), 0, 0, 0;
+  dJ1 << dJ(1, 0), dJ(1, 1), dJ(1, 2), 0, 0, 0;
+  dJ2 << dJ(2, 0), dJ(2, 1), dJ(2, 2), 0, 0, 0;
 
-    mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
-    mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
-    mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+  mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
+  mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
+  mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
-    assert(!math::isNan(mdS));
+  assert(!math::isNan(mdS));
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

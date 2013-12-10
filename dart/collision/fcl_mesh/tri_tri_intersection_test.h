@@ -278,12 +278,12 @@ inline int tri_tri_intersect(float V0[3],float V1[3],float V2[3],
         std::cerr << "contact error" << std::endl;
     }
             
-    for(int i=3;i>0;i--)
-        for(int j=0;j<i;j++)
+    for (int i=3;i>0;i--)
+        for (int j=0;j<i;j++)
         {
             if(res[j][index]>res[j+1][index])
             {
-                for(int k=0;k<3;k++)
+                for (int k=0;k<3;k++)
                     SWAP(res[j][k], res[j+1][k]);
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -36,174 +36,143 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/Joint.h"
+
+#include <string>
+
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace dynamics {
 
 Joint::Joint(JointType type, const std::string& _name)
-    : mName(_name),
-      mSkelIndex(-1),
-      mJointType(type),
-      mIsPositionLimited(true),
-      mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
-      mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-      mT(Eigen::Isometry3d::Identity())
-{
+  : mName(_name),
+    mSkelIndex(-1),
+    mJointType(type),
+    mIsPositionLimited(true),
+    mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
+    mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
+    mT(Eigen::Isometry3d::Identity()) {
 }
 
-Joint::~Joint()
-{
+Joint::~Joint() {
 }
 
-void Joint::setName(const std::string& _name)
-{
-    mName = _name;
+void Joint::setName(const std::string& _name) {
+  mName = _name;
 }
 
-const std::string& Joint::getName() const
-{
-    return mName;
+const std::string& Joint::getName() const {
+  return mName;
 }
 
-Joint::JointType Joint::getJointType() const
-{
-    return mJointType;
+Joint::JointType Joint::getJointType() const {
+  return mJointType;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransform() const
-{
-    return mT;
+const Eigen::Isometry3d&Joint::getLocalTransform() const {
+  return mT;
 }
 
-const math::Jacobian&Joint::getLocalJacobian() const
-{
-    return mS;
+const math::Jacobian&Joint::getLocalJacobian() const {
+  return mS;
 }
 
-const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const
-{
-    return mdS;
+const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const {
+  return mdS;
 }
 
-bool Joint::contains(const GenCoord* _genCoord) const
-{
-    return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
-            mGenCoords.end() ? true : false;
+bool Joint::contains(const GenCoord* _genCoord) const {
+  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
+      mGenCoords.end() ? true : false;
 }
 
-int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
-{
-    for (unsigned int i = 0; i < mGenCoords.size(); i++)
-        if (mGenCoords[i]->getSkeletonIndex() == _dofSkelIndex)
-            return i;
-
-    return -1;
+int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const {
+  for (unsigned int i = 0; i < mGenCoords.size(); i++)
+    if (mGenCoords[i]->getSkeletonIndex() == _dofSkelIndex)
+      return i;
+  return -1;
 }
 
-void Joint::setPositionLimited(bool _isPositionLimited)
-{
-    mIsPositionLimited = _isPositionLimited;
+void Joint::setPositionLimited(bool _isPositionLimited) {
+  mIsPositionLimited = _isPositionLimited;
 }
 
-bool Joint::isPositionLimited() const
-{
-    return mIsPositionLimited;
+bool Joint::isPositionLimited() const {
+  return mIsPositionLimited;
 }
 
-int Joint::getSkeletonIndex() const
-{
-    return mSkelIndex;
+int Joint::getSkeletonIndex() const {
+  return mSkelIndex;
 }
 
-void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
-{
-    assert(math::verifyTransform(_T));
-
-    mT_ParentBodyToJoint = _T;
+void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
+  assert(math::verifyTransform(_T));
+  mT_ParentBodyToJoint = _T;
 }
 
-void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
-{
-    assert(math::verifyTransform(_T));
-
-    mT_ChildBodyToJoint = _T;
+void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) {
+  assert(math::verifyTransform(_T));
+  mT_ChildBodyToJoint = _T;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
-{
-    return mT_ParentBodyToJoint;
+const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const {
+  return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
-{
-    return mT_ChildBodyToJoint;
+const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const {
+  return mT_ChildBodyToJoint;
 }
 
-void Joint::applyGLTransform(renderer::RenderInterface* _ri)
-{
-    _ri->transform(mT);
+void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
+  _ri->transform(mT);
 }
 
-void Joint::setDampingCoefficient(int _idx, double _d)
-{
-    assert(0 <= _idx && _idx < getNumGenCoords());
-    assert(_d >= 0.0);
-
-    mDampingCoefficient[_idx] = _d;
+void Joint::setDampingCoefficient(int _idx, double _d) {
+  assert(0 <= _idx && _idx < getNumGenCoords());
+  assert(_d >= 0.0);
+  mDampingCoefficient[_idx] = _d;
 }
 
-double Joint::getDampingCoefficient(int _idx) const
-{
-    assert(0 <= _idx && _idx < getNumGenCoords());
-
-    return mDampingCoefficient[_idx];
+double Joint::getDampingCoefficient(int _idx) const {
+  assert(0 <= _idx && _idx < getNumGenCoords());
+  return mDampingCoefficient[_idx];
 }
 
-Eigen::VectorXd Joint::getDampingForces() const
-{
-    int numDofs = getNumGenCoords();
-    Eigen::VectorXd dampingForce(numDofs);
+Eigen::VectorXd Joint::getDampingForces() const {
+  int numDofs = getNumGenCoords();
+  Eigen::VectorXd dampingForce(numDofs);
 
-    for (int i = 0; i < numDofs; ++i)
-        dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->get_dq();
+  for (int i = 0; i < numDofs; ++i)
+    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->get_dq();
 
-    return dampingForce;
+  return dampingForce;
 }
 
-void Joint::setSpringStiffness(int _idx, double _k)
-{
-    assert(0 <= _idx && _idx < getNumGenCoords());
-    assert(_k >= 0.0);
-
-    mSpringStiffness[_idx] = _k;
+void Joint::setSpringStiffness(int _idx, double _k) {
+  assert(0 <= _idx && _idx < getNumGenCoords());
+  assert(_k >= 0.0);
+  mSpringStiffness[_idx] = _k;
 }
 
-double Joint::getSpringCoefficient(int _idx) const
-{
-    assert(0 <= _idx && _idx < getNumGenCoords());
-
-    return mSpringStiffness[_idx];
+double Joint::getSpringCoefficient(int _idx) const  {
+  assert(0 <= _idx && _idx < getNumGenCoords());
+  return mSpringStiffness[_idx];
 }
 
-Eigen::VectorXd Joint::getSpringForces(double _timeStep) const
-{
-    int numDofs = getNumGenCoords();
-    Eigen::VectorXd springForce(numDofs);
+Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
+  int numDofs = getNumGenCoords();
+  Eigen::VectorXd springForce(numDofs);
 
-    for (int i = 0; i < numDofs; ++i)
-    {
-        springForce(i) =
-                -mSpringStiffness[i]*(getGenCoord(i)->get_q() +
-                                      getGenCoord(i)->get_dq()*_timeStep);
-    }
+  for (int i = 0; i < numDofs; ++i)   {
+    springForce(i) =
+        -mSpringStiffness[i]*(getGenCoord(i)->get_q() +
+                              getGenCoord(i)->get_dq()*_timeStep);
+  }
 
-    return springForce;
+  return springForce;
 }
 
-} // namespace dynamics
-} // namespace dart
-
-
+}  // namespace dynamics
+}  // namespace dart

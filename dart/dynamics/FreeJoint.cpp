@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,7 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "FreeJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+
+#include <string>
 
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
@@ -44,8 +46,7 @@ namespace dart {
 namespace dynamics {
 
 FreeJoint::FreeJoint(const std::string& _name)
-    : Joint(FREE, _name)
-{
+    : Joint(FREE, _name) {
     mGenCoords.push_back(&mCoordinate[0]);
     mGenCoords.push_back(&mCoordinate[1]);
     mGenCoords.push_back(&mCoordinate[2]);
@@ -53,19 +54,17 @@ FreeJoint::FreeJoint(const std::string& _name)
     mGenCoords.push_back(&mCoordinate[4]);
     mGenCoords.push_back(&mCoordinate[5]);
 
-    mS = Eigen::Matrix<double,6,6>::Zero();
-    mdS = Eigen::Matrix<double,6,6>::Zero();
+    mS = Eigen::Matrix<double, 6, 6>::Zero();
+    mdS = Eigen::Matrix<double, 6, 6>::Zero();
 
     mSpringStiffness.resize(6, 0.0);
     mDampingCoefficient.resize(6, 0.0);
 }
 
-FreeJoint::~FreeJoint()
-{
+FreeJoint::~FreeJoint() {
 }
 
-void FreeJoint::updateTransform()
-{
+void FreeJoint::updateTransform() {
     Eigen::Vector3d q1(mCoordinate[0].get_q(),
                        mCoordinate[1].get_q(),
                        mCoordinate[2].get_q());
@@ -73,21 +72,15 @@ void FreeJoint::updateTransform()
                        mCoordinate[4].get_q(),
                        mCoordinate[5].get_q());
 
-    // TODO: Debug code
-//    std::cout << "Rigid body (  y): " << mCoordinate[4].get_q() << std::endl;
-//    std::cout << "Rigid body ( dy): " << mCoordinate[4].get_dq() << std::endl;
-//    std::cout << "Rigid body (ddy): " << mCoordinate[4].get_ddq() << std::endl << std::endl;
-
-    mT = mT_ParentBodyToJoint*
-         Eigen::Translation3d(q2)*
-         math::expAngular(q1)*
-         mT_ChildBodyToJoint.inverse();
+    mT = mT_ParentBodyToJoint
+         * Eigen::Translation3d(q2)
+         * math::expAngular(q1)
+         * mT_ChildBodyToJoint.inverse();
 
     assert(math::verifyTransform(mT));
 }
 
-void FreeJoint::updateJacobian()
-{
+void FreeJoint::updateJacobian() {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
                       mCoordinate[1].get_q(),
                       mCoordinate[2].get_q());
@@ -101,9 +94,9 @@ void FreeJoint::updateJacobian()
     Eigen::Vector6d J4;
     Eigen::Vector6d J5;
 
-    J0 << J(0,0), J(0,1), J(0,2), 0, 0, 0;
-    J1 << J(1,0), J(1,1), J(1,2), 0, 0, 0;
-    J2 << J(2,0), J(2,1), J(2,2), 0, 0, 0;
+    J0 << J(0, 0), J(0, 1), J(0, 2), 0, 0, 0;
+    J1 << J(1, 0), J(1, 1), J(1, 2), 0, 0, 0;
+    J2 << J(2, 0), J(2, 1), J(2, 2), 0, 0, 0;
     J3 << 0, 0, 0, 1, 0, 0;
     J4 << 0, 0, 0, 0, 1, 0;
     J5 << 0, 0, 0, 0, 0, 1;
@@ -118,8 +111,7 @@ void FreeJoint::updateJacobian()
     assert(!math::isNan(mS));
 }
 
-void FreeJoint::updateJacobianTimeDeriv()
-{
+void FreeJoint::updateJacobianTimeDeriv() {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
                       mCoordinate[1].get_q(),
                       mCoordinate[2].get_q());
@@ -136,9 +128,9 @@ void FreeJoint::updateJacobianTimeDeriv()
     Eigen::Vector6d J4;
     Eigen::Vector6d J5;
 
-    dJ0 << dJ(0,0), dJ(0,1), dJ(0,2), 0, 0, 0;
-    dJ1 << dJ(1,0), dJ(1,1), dJ(1,2), 0, 0, 0;
-    dJ2 << dJ(2,0), dJ(2,1), dJ(2,2), 0, 0, 0;
+    dJ0 << dJ(0, 0), dJ(0, 1), dJ(0, 2), 0, 0, 0;
+    dJ1 << dJ(1, 0), dJ(1, 1), dJ(1, 2), 0, 0, 0;
+    dJ2 << dJ(2, 0), dJ(2, 1), dJ(2, 2), 0, 0, 0;
     J3 << 0, 0, 0, 1, 0, 0;
     J4 << 0, 0, 0, 0, 1, 0;
     J5 << 0, 0, 0, 0, 0, 1;
@@ -146,23 +138,27 @@ void FreeJoint::updateJacobianTimeDeriv()
     mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
     mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
     mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
-    mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
-    mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
-    mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
+    mdS.col(3) =
+        -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+                  math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
+    mdS.col(4) =
+        -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+                  math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
+    mdS.col(5) =
+        -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+                  math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
     assert(!math::isNan(mdS));
 }
 
-void dart::dynamics::FreeJoint::clampRotation()
-{
-    for (int i = 0; i < 3; i++)
-    {
-        if( mCoordinate[i].get_q() > M_PI )
+void FreeJoint::clampRotation() {
+    for (int i = 0; i < 3; i++) {
+        if (mCoordinate[i].get_q() > M_PI)
             mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
-        if( mCoordinate[i].get_q() < -M_PI )
+        if (mCoordinate[i].get_q() < -M_PI)
             mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
     }
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

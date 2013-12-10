@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAPE_H
-#define DART_DYNAMICS_SHAPE_H
+#ifndef DART_DYNAMICS_SHAPE_H_
+#define DART_DYNAMICS_SHAPE_H_
 
 #include <Eigen/Dense>
 
@@ -45,110 +45,112 @@
 extern "C" { struct aiScene; }
 
 namespace dart {
-namespace renderer { class RenderInterface; }
+namespace renderer {
+class RenderInterface;
+}  // namespace renderer
+}  // namespace dart
+
+namespace dart {
 namespace dynamics {
 
 /// \brief
-class Shape
-{
+class Shape {
 public:
-    /// \brief
-    enum ShapeType {
-        BOX,
-        ELLIPSOID,
-        CYLINDER,
-        MESH
-    };
+  /// \brief
+  enum ShapeType {
+    BOX,
+    ELLIPSOID,
+    CYLINDER,
+    MESH
+  };
 
-    /// \brief
-    Shape(ShapeType _type);
+  /// \brief
+  explicit Shape(ShapeType _type);
 
-    /// \brief
-    virtual ~Shape();
+  /// \brief
+  virtual ~Shape();
 
-    /// \brief
-    void setColor(const Eigen::Vector3d& _color);
+  /// \brief
+  void setColor(const Eigen::Vector3d& _color);
 
-    /// \brief
-    const Eigen::Vector3d& getColor() const;
+  /// \brief
+  const Eigen::Vector3d& getColor() const;
 
-    /// \brief
-    void setDim(const Eigen::Vector3d& _dim);
+  /// \brief
+  void setDim(const Eigen::Vector3d& _dim);
 
-    /// \brief
-    const Eigen::Vector3d& getDim() const;
+  /// \brief
+  const Eigen::Vector3d& getDim() const;
 
-    /// \brief Set local transformation of the Shape w.r.t. parent frame.
-    void setLocalTransform(const Eigen::Isometry3d& _Transform);
+  /// \brief Set local transformation of the Shape w.r.t. parent frame.
+  void setLocalTransform(const Eigen::Isometry3d& _Transform);
 
-    /// \brief Get local transformation of the Shape w.r.t. parent frame.
-    const Eigen::Isometry3d& getLocalTransform() const;
+  /// \brief Get local transformation of the Shape w.r.t. parent frame.
+  const Eigen::Isometry3d& getLocalTransform() const;
 
-    /// \brief
-    void setOffset(const Eigen::Vector3d& _offset);
+  /// \brief
+  void setOffset(const Eigen::Vector3d& _offset);
 
-    /// \brief
-    Eigen::Vector3d getOffset() const;
+  /// \brief
+  Eigen::Vector3d getOffset() const;
 
-    /// \brief
-    virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
+  /// \brief
+  virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
 
-    /// \brief
-    void setVolume(double _v);
+  /// \brief
+  void setVolume(double _v);
 
-    /// \brief
-    double getVolume() const;
+  /// \brief
+  double getVolume() const;
 
-    /// \brief
-    int getID() const;
+  /// \brief
+  int getID() const;
 
-    /// \brief
-    ShapeType getShapeType() const;
+  /// \brief
+  ShapeType getShapeType() const;
 
-    /// \brief
-    virtual void draw(renderer::RenderInterface* _ri = NULL,
-                      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                      bool _useDefaultColor = true) const = 0;
+  /// \brief
+  virtual void draw(renderer::RenderInterface* _ri = NULL,
+                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
+                    bool _useDefaultColor = true) const = 0;
 
 protected:
-    /// \brief
-    virtual void computeVolume() = 0;
+  /// \brief
+  virtual void computeVolume() = 0;
 
-    /// \brief
-    virtual void initMeshes() {}
+  /// \brief
+  virtual void initMeshes() {}
 
-    /// \brief Dimensions for bounding box.
-    Eigen::Vector3d mDim;
+  /// \brief Dimensions for bounding box.
+  Eigen::Vector3d mDim;
 
-    /// \brief Volume enclosed by the geometry.
-    double mVolume;
+  /// \brief Volume enclosed by the geometry.
+  double mVolume;
 
-    /// \brief Unique id.
-    int mID;
+  /// \brief Unique id.
+  int mID;
 
-    /// \brief Color for the primitive.
-    Eigen::Vector3d mColor;
+  /// \brief Color for the primitive.
+  Eigen::Vector3d mColor;
 
-    /// \brief The origin of this primitive in the bodynode frame.
-    Eigen::Vector3d mOffset;
+  /// \brief The origin of this primitive in the bodynode frame.
+  Eigen::Vector3d mOffset;
 
-    /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
-    Eigen::Isometry3d mTransform;
+  /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
+  Eigen::Isometry3d mTransform;
 
-    /// \brief
-    static int mCounter;
+  /// \brief
+  static int mCounter;
 
 private:
-    /// \brief Type of primitive
-    ShapeType mType;
+  /// \brief Type of primitive
+  ShapeType mType;
 
 public:
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_SHAPE_H
-
+#endif  // DART_DYNAMICS_SHAPE_H_

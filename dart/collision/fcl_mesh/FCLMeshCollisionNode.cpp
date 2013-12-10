@@ -61,7 +61,7 @@ namespace collision {
 FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
     : CollisionNode(_bodyNode)
 {
-    for(int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
+    for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
 
         dynamics::Shape *shape = _bodyNode->getCollisionShape(i);
         fcl::Transform3f shapeTransform = getFclTransform(shape->getLocalTransform());
@@ -112,7 +112,7 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
 
 FCLMeshCollisionNode::~FCLMeshCollisionNode()
 {
-    for(int i = 0; i < mMeshes.size(); i++)
+    for (int i = 0; i < mMeshes.size(); i++)
         delete mMeshes[i];
 }
 
@@ -125,8 +125,8 @@ bool FCLMeshCollisionNode::detectCollision(
     _otherNode->evalRT();
     bool collision = false;
 
-    for(int i = 0; i < mMeshes.size(); i++)
-    for(int j = 0; j < _otherNode->mMeshes.size(); j++) {
+    for (int i = 0; i < mMeshes.size(); i++)
+    for (int j = 0; j < _otherNode->mMeshes.size(); j++) {
 
         fcl::CollisionResult res;
         fcl::CollisionRequest req;
@@ -153,7 +153,7 @@ bool FCLMeshCollisionNode::detectCollision(
         std::vector<Contact> unfilteredContactPoints;
         unfilteredContactPoints.reserve(res.numContacts());
 
-        for(int k = 0; k < res.numContacts(); k++) {
+        for (int k = 0; k < res.numContacts(); k++) {
             // for each pair of intersecting triangles, we create two contact points
             Contact pair1, pair2;
 //            pair1.bd1 = mBodyNode;
@@ -300,8 +300,8 @@ int FCLMeshCollisionNode::evalContactPosition(
 void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
     evalRT();
     double M[16];
-    for(int i=0;i<4;i++)
-        for(int j=0;j<4;j++)
+    for (int i=0;i<4;i++)
+        for (int j=0;j<4;j++)
             M[j*4+i] = mWorldTrans(i, j);
     fcl::Vec3f v1, v2, v3;
     glPushMatrix();
@@ -309,8 +309,8 @@ void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
         glMultMatrixd(M);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glBegin(GL_TRIANGLES);
-    for(int i = 0; i < mMeshes.size(); i++) {
-        for(int j = 0; j < mMeshes[i]->num_tris; j++) {
+    for (int i = 0; i < mMeshes.size(); i++) {
+        for (int j = 0; j < mMeshes[i]->num_tris; j++) {
             fcl::Triangle tri = mMeshes[i]->tri_indices[j];
             glVertex3f(mMeshes[i]->vertices[tri[0]][0], mMeshes[i]->vertices[tri[0]][1], mMeshes[i]->vertices[tri[0]][2]);
             glVertex3f(mMeshes[i]->vertices[tri[1]][0], mMeshes[i]->vertices[tri[1]][1], mMeshes[i]->vertices[tri[1]][2]);

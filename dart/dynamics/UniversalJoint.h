@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,8 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_UNIVERSAL_JOINT_H
-#define DART_DYNAMICS_UNIVERSAL_JOINT_H
+#ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
+#define DART_DYNAMICS_UNIVERSALJOINT_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -46,54 +48,53 @@
 namespace dart {
 namespace dynamics {
 
-class UniversalJoint : public Joint
-{
+class UniversalJoint : public Joint {
 public:
-    /// \brief Constructor.
-    UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
-                   const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
-                   const std::string& _name = "Universal joint");
+  /// \brief Constructor.
+  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
+                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
+                 const std::string& _name = "Universal joint");
 
-    /// \brief Destructor.
-    virtual ~UniversalJoint();
+  /// \brief Destructor.
+  virtual ~UniversalJoint();
 
-    /// \brief
-    void setAxis1(const Eigen::Vector3d& _axis);
+  /// \brief
+  void setAxis1(const Eigen::Vector3d& _axis);
 
-    /// \brief
-    void setAxis2(const Eigen::Vector3d& _axis);
+  /// \brief
+  void setAxis2(const Eigen::Vector3d& _axis);
 
-    /// \brief
-    const Eigen::Vector3d& getAxis1() const;
+  /// \brief
+  const Eigen::Vector3d& getAxis1() const;
 
-    /// \brief
-    const Eigen::Vector3d& getAxis2() const;
+  /// \brief
+  const Eigen::Vector3d& getAxis2() const;
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
-    // Documentation inherited.
-    virtual void clampRotation();
+  // Documentation inherited.
+  virtual void clampRotation();
 
 protected:
-    /// \brief Euler angles X, Y, Z
-    GenCoord mCoordinate[2];
+  /// \brief Euler angles X, Y, Z
+  GenCoord mCoordinate[2];
 
-    /// \brief Rotational axis.
-    Eigen::Vector3d mAxis[2];
+  /// \brief Rotational axis.
+  Eigen::Vector3d mAxis[2];
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_UNIVERSAL_JOINT_H
+#endif  // DART_DYNAMICS_UNIVERSALJOINT_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -37,58 +37,53 @@
  */
 
 #include <limits>
+#include <string>
 
-#include "GenCoord.h"
+#include "dart/dynamics/GenCoord.h"
 
 namespace dart {
 namespace dynamics {
 
 GenCoord::GenCoord()
-    : q(0.0),
-      dq(0.0),
-      ddq(0.0),
-      tau(0.0),
-      qMin(-std::numeric_limits<double>::infinity()),
-      dqMin(-std::numeric_limits<double>::infinity()),
-      ddqMin(-std::numeric_limits<double>::infinity()),
-      tauMin(-std::numeric_limits<double>::infinity()),
-      qMax(std::numeric_limits<double>::infinity()),
-      dqMax(std::numeric_limits<double>::infinity()),
-      ddqMax(std::numeric_limits<double>::infinity()),
-      tauMax(std::numeric_limits<double>::infinity()),
-      DqDp(0.0),
-      DdqDp(0.0),
-      DddqDp(0.0),
-      DtauDp(0.0),
-//      mSkelIndex(-1),
-//      mJoint(NULL),
-      mName("dof")
-{
+  : q(0.0),
+    dq(0.0),
+    ddq(0.0),
+    tau(0.0),
+    qMin(-std::numeric_limits<double>::infinity()),
+    dqMin(-std::numeric_limits<double>::infinity()),
+    ddqMin(-std::numeric_limits<double>::infinity()),
+    tauMin(-std::numeric_limits<double>::infinity()),
+    qMax(std::numeric_limits<double>::infinity()),
+    dqMax(std::numeric_limits<double>::infinity()),
+    ddqMax(std::numeric_limits<double>::infinity()),
+    tauMax(std::numeric_limits<double>::infinity()),
+    DqDp(0.0),
+    DdqDp(0.0),
+    DddqDp(0.0),
+    DtauDp(0.0),
+    //      mSkelIndex(-1),
+    //      mJoint(NULL),
+    mName("dof") {
 }
 
-GenCoord::~GenCoord()
-{
+GenCoord::~GenCoord() {
 }
 
-void GenCoord::setName(const std::string& _name)
-{
-    mName = _name;
+void GenCoord::setName(const std::string& _name) {
+  mName = _name;
 }
 
-const std::string& GenCoord::getName() const
-{
-    return mName;
+const std::string& GenCoord::getName() const {
+  return mName;
 }
 
-int GenCoord::getSkeletonIndex() const
-{
-    return mSkelIndex;
+int GenCoord::getSkeletonIndex() const {
+  return mSkelIndex;
 }
 
-void GenCoord::setSkeletonIndex(int _idx)
-{
-    mSkelIndex = _idx;
+void GenCoord::setSkeletonIndex(int _idx) {
+  mSkelIndex = _idx;
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

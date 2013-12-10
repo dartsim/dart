@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,8 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_PRISMATIC_JOINT_H
-#define DART_DYNAMICS_PRISMATIC_JOINT_H
+#ifndef DART_DYNAMICS_PRISMATICJOINT_H_
+#define DART_DYNAMICS_PRISMATICJOINT_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -46,45 +48,43 @@
 namespace dart {
 namespace dynamics {
 
-class PrismaticJoint : public Joint
-{
+class PrismaticJoint : public Joint {
 public:
-    /// \brief Constructor.
-    PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                   const std::string& _name = "Prismatic joint");
+  /// \brief Constructor.
+  PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
+                 const std::string& _name = "Noname PrismaticJoint");
 
-    /// \brief Destructor.
-    virtual ~PrismaticJoint();
+  /// \brief Destructor.
+  virtual ~PrismaticJoint();
 
-    /// \brief
-    void setAxis(const Eigen::Vector3d& _axis);
+  /// \brief
+  void setAxis(const Eigen::Vector3d& _axis);
 
-    /// \brief
-    const Eigen::Vector3d& getAxis() const;
+  /// \brief
+  const Eigen::Vector3d& getAxis() const;
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
 protected:
-    /// \brief
-    GenCoord mCoordinate;
+  /// \brief
+  GenCoord mCoordinate;
 
-    /// \brief Rotational axis.
-    Eigen::Vector3d mAxis;
+  /// \brief Rotational axis.
+  Eigen::Vector3d mAxis;
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_PRISMATIC_JOINT_H
-
+#endif  // DART_DYNAMICS_PRISMATICJOINT_H_

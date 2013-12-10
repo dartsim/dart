@@ -362,7 +362,7 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
 
             glBegin(face_mode);
 
-            for(i = 0; i < face->mNumIndices; i++) {
+            for (i = 0; i < face->mNumIndices; i++) {
                 int index = face->mIndices[i];
                 if(mesh->mColors[0] != NULL)
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
@@ -397,7 +397,7 @@ void OpenGLRenderInterface::compileList(dynamics::Skeleton *_skel) {
     if(_skel == 0)
         return;
 
-    for(int i=0; i < _skel->getNumBodyNodes(); i++) {
+    for (int i=0; i < _skel->getNumBodyNodes(); i++) {
         compileList(_skel->getBodyNode(i));
     }
 }
@@ -406,9 +406,9 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode *_node) {
     if(_node == 0)
         return;
 
-    for(int i = 0; i < _node->getNumVisualizationShapes(); i++)
+    for (int i = 0; i < _node->getNumVisualizationShapes(); i++)
         compileList(_node->getVisualizationShape(i));
-    for(int i = 0; i < _node->getNumCollisionShapes(); i++)
+    for (int i = 0; i < _node->getNumCollisionShapes(); i++)
         compileList(_node->getCollisionShape(i));
 }
 
@@ -456,7 +456,7 @@ void OpenGLRenderInterface::draw(dynamics::Skeleton *_skel, bool _vizCol, bool _
     if(_skel == 0)
         return;
 
-    for(int i=0; i < _skel->getNumBodyNodes(); i++) {
+    for (int i=0; i < _skel->getNumBodyNodes(); i++) {
         draw(_skel->getBodyNode(i), _vizCol, _colMesh);
     }
 }
@@ -480,11 +480,11 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _
     glMultMatrixd(pose.data());
 
     if(_colMesh) {
-        for(int i = 0; i < _node->getNumCollisionShapes(); i++)
+        for (int i = 0; i < _node->getNumCollisionShapes(); i++)
             draw(_node->getCollisionShape(i));
     }
     else {
-        for(int i = 0; i < _node->getNumVisualizationShapes(); i++)
+        for (int i = 0; i < _node->getNumVisualizationShapes(); i++)
             draw(_node->getVisualizationShape(i));
     }
 

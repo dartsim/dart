@@ -129,9 +129,9 @@ bool loadC3DFile(const char *_fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int *
     else
         iRecSize = sizeof(c3d_frameSI) + ( hdr.a_channels * hdr.a_frames * sizeof(short));
 
-    for(int i = 0; i < numFrames; i++) {
+    for (int i = 0; i < numFrames; i++) {
         _pointData[i].resize(numMarkers);
-        for(int j = 0; j < numMarkers; j++) {
+        for (int j = 0; j < numMarkers; j++) {
             if (!fread(buf, iRecSize, 1, file))
                 return false;
             if (c3dScale < 0) {

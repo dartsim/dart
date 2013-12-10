@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,8 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_WELD_JOINT_H
-#define DART_DYNAMICS_WELD_JOINT_H
+#ifndef DART_DYNAMICS_WELDJOINT_H_
+#define DART_DYNAMICS_WELDJOINT_H_
+
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -46,31 +48,30 @@
 namespace dart {
 namespace dynamics {
 
-class WeldJoint : public Joint
-{
+class WeldJoint : public Joint {
 public:
-    /// \brief Constructor.
-    WeldJoint(const std::string& _name = "Weld joint");
+  /// \brief Constructor.
+  explicit WeldJoint(const std::string& _name = "Noname WeldJoint");
 
-    /// \brief Destructor.
-    virtual ~WeldJoint();
+  /// \brief Destructor.
+  virtual ~WeldJoint();
 
-    // Documentation inherited.
-    virtual void updateTransform();
+  // Documentation inherited.
+  virtual void updateTransform();
 
-    // Documentation inherited.
-    virtual void updateJacobian();
+  // Documentation inherited.
+  virtual void updateJacobian();
 
-    // Documentation inherited.
-    virtual void updateJacobianTimeDeriv();
+  // Documentation inherited.
+  virtual void updateJacobianTimeDeriv();
 
 public:
-    //
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // #ifndef DART_DYNAMICS_WELD_JOINT_H
+#endif  // DART_DYNAMICS_WELDJOINT_H_
 

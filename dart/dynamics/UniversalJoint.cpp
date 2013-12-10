@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,7 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "UniversalJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+
+#include <string>
 
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
@@ -46,79 +48,73 @@ namespace dynamics {
 UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const Eigen::Vector3d& _axis1,
                                const std::string& _name)
-    : Joint(UNIVERSAL, _name)
-{
-    mGenCoords.push_back(&mCoordinate[0]);
-    mGenCoords.push_back(&mCoordinate[1]);
+  : Joint(UNIVERSAL, _name) {
+  mGenCoords.push_back(&mCoordinate[0]);
+  mGenCoords.push_back(&mCoordinate[1]);
 
-    mS = Eigen::Matrix<double,6,2>::Zero();
-    mdS = Eigen::Matrix<double,6,2>::Zero();
+  mS = Eigen::Matrix<double, 6, 2>::Zero();
+  mdS = Eigen::Matrix<double, 6, 2>::Zero();
 
-    mSpringStiffness.resize(2, 0.0);
-    mDampingCoefficient.resize(2, 0.0);
+  mSpringStiffness.resize(2, 0.0);
+  mDampingCoefficient.resize(2, 0.0);
 
-    mAxis[0] = _axis0.normalized();
-    mAxis[1] = _axis1.normalized();
+  mAxis[0] = _axis0.normalized();
+  mAxis[1] = _axis1.normalized();
 }
 
-UniversalJoint::~UniversalJoint()
-{
+UniversalJoint::~UniversalJoint() {
 }
 
-void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
-{
-    mAxis[0] = _axis.normalized();
+void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis) {
+  mAxis[0] = _axis.normalized();
 }
 
-void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
-{
-    mAxis[1] = _axis.normalized();
+void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis) {
+  mAxis[1] = _axis.normalized();
 }
 
-const Eigen::Vector3d& UniversalJoint::getAxis1() const
-{
-    return mAxis[0];
+const Eigen::Vector3d& UniversalJoint::getAxis1() const {
+  return mAxis[0];
 }
 
-const Eigen::Vector3d& UniversalJoint::getAxis2() const
-{
-    return mAxis[1];
+const Eigen::Vector3d& UniversalJoint::getAxis2() const {
+  return mAxis[1];
 }
 
-inline void UniversalJoint::updateTransform()
-{
-    mT = mT_ParentBodyToJoint *
-         math::expAngular(mAxis[0] * mCoordinate[0].get_q()) *
-         math::expAngular(mAxis[1] * mCoordinate[1].get_q()) *
-         mT_ChildBodyToJoint.inverse();
-    assert(math::verifyTransform(mT));
+void UniversalJoint::updateTransform() {
+  mT = mT_ParentBodyToJoint
+       * math::expAngular(mAxis[0] * mCoordinate[0].get_q())
+       * math::expAngular(mAxis[1] * mCoordinate[1].get_q())
+       * mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
-inline void UniversalJoint::updateJacobian()
-{
-    mS.col(0) = math::AdTAngular(mT_ChildBodyToJoint*math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
-    mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
-    assert(!math::isNan(mS));
+void UniversalJoint::updateJacobian() {
+  mS.col(0) =  math::AdTAngular(mT_ChildBodyToJoint
+                                * math::expAngular(
+                                  -mAxis[1]*mCoordinate[1].get_q()), mAxis[0]);
+  mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
+  assert(!math::isNan(mS));
 }
 
-inline void UniversalJoint::updateJacobianTimeDeriv()
-{
-    mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(), math::AdTAngular(mT_ChildBodyToJoint * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()), mAxis[0]));
-    //mdS.col(1) = setZero();
-    assert(!math::isNan(mdS.col(0)));
-    assert(mdS.col(1) == Eigen::Vector6d::Zero());
+void UniversalJoint::updateJacobianTimeDeriv() {
+  mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].get_dq(),
+                         math::AdTAngular(mT_ChildBodyToJoint
+                         * math::expAngular(-mAxis[1]*mCoordinate[1].get_q()),
+                                            mAxis[0]));
+  // mdS.col(1) = setZero();
+  assert(!math::isNan(mdS.col(0)));
+  assert(mdS.col(1) == Eigen::Vector6d::Zero());
 }
 
-void UniversalJoint::clampRotation()
-{
-    for (int i = 0; i < 2; i++)
-    {
-        if( mCoordinate[i].get_q() > M_PI )
-            mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
-        if( mCoordinate[i].get_q() < -M_PI )
-            mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
-    }
+void UniversalJoint::clampRotation() {
+  for (int i = 0; i < 2; i++)   {
+    if (mCoordinate[i].get_q() > M_PI)
+      mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
+    if (mCoordinate[i].get_q() < -M_PI)
+      mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+  }
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

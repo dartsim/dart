@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,22 +35,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "EllipsoidShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+
 #include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
 
-EllipsoidShape::EllipsoidShape(Eigen::Vector3d _dim)
-    : Shape(ELLIPSOID)
-{
+EllipsoidShape::EllipsoidShape(const Eigen::Vector3d _dim)
+    : Shape(ELLIPSOID) {
     mDim = _dim;
     initMeshes();
     if (mDim != Eigen::Vector3d::Zero())
         computeVolume();
 }
 
-void EllipsoidShape::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color, bool _useDefaultColor) const {
+void EllipsoidShape::draw(renderer::RenderInterface* _ri,
+                          const Eigen::Vector4d& _color,
+                          bool _useDefaultColor) const {
     if (!_ri)
         return;
     if (!_useDefaultColor)
@@ -80,10 +82,11 @@ bool EllipsoidShape::isSphere() const {
 }
 
 void EllipsoidShape::computeVolume() {
-    mVolume = DART_PI * mDim(0) * mDim(1) *mDim(2) /6;	//	4/3* Pi* a/2* b/2* c/2
+    // 4/3* Pi* a/2* b/2* c/2
+    mVolume = DART_PI * mDim(0) * mDim(1) *mDim(2) / 6;
 }
 void EllipsoidShape::initMeshes() {
 }
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart

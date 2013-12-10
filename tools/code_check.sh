@@ -3,8 +3,9 @@
 # This shell script is for checking code style using "cpplint"
 # https://code.google.com/p/google-styleguide/
 
-CHECK_DIRS="../dart/common \
-            ../dart/math \
+CHECK_DIRS="../dart/common\
+            ../dart/math\
+            ../dart/dynamics\
             ../dart/gui"
 CHECK_FILES=`\
   find $CHECK_DIRS\

@@ -82,7 +82,7 @@ bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
 
 void FCLMeshCollisionDetector::draw()
 {
-    for(int i = 0; i < mCollisionNodes.size(); i++)
+    for (int i = 0; i < mCollisionNodes.size(); i++)
         static_cast<FCLMeshCollisionNode*>(
                 mCollisionNodes[i])->drawCollisionSkeletonNode();
 }

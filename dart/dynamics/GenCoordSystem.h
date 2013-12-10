@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -35,10 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_GENCOORDSYSTEM_H
-#define DART_DYNAMICS_GENCOORDSYSTEM_H
+#ifndef DART_DYNAMICS_GENCOORDSYSTEM_H_
+#define DART_DYNAMICS_GENCOORDSYSTEM_H_
 
 #include <vector>
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
@@ -47,69 +49,72 @@ namespace dart {
 namespace dynamics {
 
 /// \brief System is a base class for every classes that has Dofs.
-class GenCoordSystem
-{
+class GenCoordSystem {
 public:
-    /// \brief
-    GenCoordSystem();
+  /// \brief
+  GenCoordSystem();
 
-    /// \brief
-    virtual ~GenCoordSystem();
+  /// \brief
+  virtual ~GenCoordSystem();
 
-    /// \brief
-    int getNumGenCoords() const;
+  /// \brief
+  int getNumGenCoords() const;
 
-    /// \brief
-    GenCoord* getGenCoord(int _idx) const;
+  /// \brief
+  GenCoord* getGenCoord(int _idx) const;
 
-    /// \brief
-    GenCoord* getGenCoord(const std::string& _name) const;
+  /// \brief
+  GenCoord* getGenCoord(const std::string& _name) const;
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
-    void set_q(const Eigen::VectorXd& _q);     ///< Set generalized coordinate vector
-    void set_dq(const Eigen::VectorXd& _dq);   ///< Set generalized velocity vector
-    void set_ddq(const Eigen::VectorXd& _ddq); ///< Set generalized acceleration vector
-    void set_tau(const Eigen::VectorXd& _tau); ///< Set generalized force vector (internal forces)
+  //--------------------------------------------------------------------------
+  //
+  //--------------------------------------------------------------------------
+  /// \brief Set generalized coordinate vector
+  void set_q(const Eigen::VectorXd& _q);
 
-    void set_qMin(const Eigen::VectorXd& _qMin);
-    void set_dqMin(const Eigen::VectorXd& _dqMin);
-    void set_ddqMin(const Eigen::VectorXd& _ddqMin);
-    void set_tauMin(const Eigen::VectorXd& _tauMin);
+  /// \brief Set generalized velocity vector
+  void set_dq(const Eigen::VectorXd& _dq);
 
-    void set_qMax(const Eigen::VectorXd& _qMax);
-    void set_dqMax(const Eigen::VectorXd& _dqMax);
-    void set_ddqMax(const Eigen::VectorXd& _ddqMax);
-    void set_tauMax(const Eigen::VectorXd& _tauMax);
+  /// \brief Set generalized acceleration vector
+  void set_ddq(const Eigen::VectorXd& _ddq);
 
-    //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
-    Eigen::VectorXd get_q() const;
-    Eigen::VectorXd get_dq() const;
-    Eigen::VectorXd get_ddq() const;
-    Eigen::VectorXd get_tau() const;
+  /// \brief Set generalized force vector (internal forces)
+  void set_tau(const Eigen::VectorXd& _tau);
 
-    Eigen::VectorXd get_qMin() const;
-    Eigen::VectorXd get_dqMin() const;
-    Eigen::VectorXd get_ddqMin() const;
-    Eigen::VectorXd get_tauMin() const;
+  void set_qMin(const Eigen::VectorXd& _qMin);
+  void set_dqMin(const Eigen::VectorXd& _dqMin);
+  void set_ddqMin(const Eigen::VectorXd& _ddqMin);
+  void set_tauMin(const Eigen::VectorXd& _tauMin);
 
-    Eigen::VectorXd get_qMax() const;
-    Eigen::VectorXd get_dqMax() const;
-    Eigen::VectorXd get_ddqMax() const;
-    Eigen::VectorXd get_tauMax() const;
+  void set_qMax(const Eigen::VectorXd& _qMax);
+  void set_dqMax(const Eigen::VectorXd& _dqMax);
+  void set_ddqMax(const Eigen::VectorXd& _ddqMax);
+  void set_tauMax(const Eigen::VectorXd& _tauMax);
+
+  //--------------------------------------------------------------------------
+  //
+  //--------------------------------------------------------------------------
+  Eigen::VectorXd get_q() const;
+  Eigen::VectorXd get_dq() const;
+  Eigen::VectorXd get_ddq() const;
+  Eigen::VectorXd get_tau() const;
+
+  Eigen::VectorXd get_qMin() const;
+  Eigen::VectorXd get_dqMin() const;
+  Eigen::VectorXd get_ddqMin() const;
+  Eigen::VectorXd get_tauMin() const;
+
+  Eigen::VectorXd get_qMax() const;
+  Eigen::VectorXd get_dqMax() const;
+  Eigen::VectorXd get_ddqMax() const;
+  Eigen::VectorXd get_tauMax() const;
 
 protected:
-    /// \brief Pointers to Dofs.
-    std::vector<GenCoord*> mGenCoords;
-
-private:
-
+  /// \brief Pointers to Dofs.
+  std::vector<GenCoord*> mGenCoords;
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace dynamics
+}  // namespace dart
 
-#endif // DART_DYNAMICS_GENCOORDSYSTEM_H
+#endif  // DART_DYNAMICS_GENCOORDSYSTEM_H_
