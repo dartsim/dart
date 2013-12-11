@@ -4512,7 +4512,7 @@ def ProcessLine(filename, file_extension, clean_lines, line,
   CheckForNonStandardConstructs(filename, clean_lines, line,
                                 nesting_state, error)
   CheckVlogArguments(filename, clean_lines, line, error)
-  CheckPosixThreading(filename, clean_lines, line, error)
+#  CheckPosixThreading(filename, clean_lines, line, error)
   CheckInvalidIncrement(filename, clean_lines, line, error)
   CheckMakePairUsesDeduction(filename, clean_lines, line, error)
   for check_fn in extra_check_functions:
