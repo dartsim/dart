@@ -149,7 +149,7 @@ public:
 
   /// \brief Set damping coefficient for viscous force.
   /// \param[in] _idx Index of joint axis.
-  /// \param[in] _d Damping coefficient stiffness.
+  /// \param[in] _d Damping coefficient.
   void setDampingCoefficient(int _idx, double _d);
 
   /// \brief Get damping coefficient for viscous force.
