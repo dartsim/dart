@@ -59,26 +59,31 @@ namespace collision {
 
 FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode) {
+  // using-declaration
+  using dart::dynamics::Shape;
+  using dart::dynamics::EllipsoidShape;
+  using dart::dynamics::CylinderShape;
+  using dart::dynamics::MeshShape;
+
+  // Create meshes according to types of the shapes
   for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
-    dynamics::Shape *shape = _bodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeTransform =
-        getFclTransform(shape->getLocalTransform());
+    Shape* shape = _bodyNode->getCollisionShape(i);
+    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
     switch (shape->getShapeType()) {
-      case dynamics::Shape::ELLIPSOID: {
-        dynamics::EllipsoidShape* ellipsoid =
-            static_cast<dynamics::EllipsoidShape*>(shape);
+      case Shape::ELLIPSOID: {
+        EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape);
+        // Sphere
         if (ellipsoid->isSphere()) {
           fcl::BVHModel<fcl::OBBRSS>* mesh = new fcl::BVHModel<fcl::OBBRSS>;
           fcl::generateBVHModel<fcl::OBBRSS>(
-              *mesh,
-              fcl::Sphere(shape->getDim()[0]*0.5),
-              shapeTransform, 10, 10);
+              *mesh, fcl::Sphere(shape->getDim()[0]*0.5), shapeT, 10, 10);
           mMeshes.push_back(mesh);
+        // Ellipsoid
         } else {
           mMeshes.push_back(createEllipsoid<fcl::OBBRSS>(shape->getDim()[0],
                                                          shape->getDim()[1],
                                                          shape->getDim()[2],
-                                                         shapeTransform));
+                                                         shapeT));
         }
         break;
       }
@@ -86,30 +91,24 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
         mMeshes.push_back(createCube<fcl::OBBRSS>(shape->getDim()[0],
                                                   shape->getDim()[1],
                                                   shape->getDim()[2],
-                                                  shapeTransform));
+                                                  shapeT));
         break;
       }
       case dynamics::Shape::CYLINDER: {
-        dynamics::CylinderShape *cylinder =
-            static_cast<dynamics::CylinderShape *>(shape);
-        if (cylinder) {
-          double radius = cylinder->getRadius();
-          double height = cylinder->getHeight();
-          mMeshes.push_back(createCylinder<fcl::OBBRSS>(
-                              radius, radius, height, 16, 16, shapeTransform));
-        }
+        CylinderShape* cylinder = static_cast<CylinderShape*>(shape);
+        double radius = cylinder->getRadius();
+        double height = cylinder->getHeight();
+        mMeshes.push_back(createCylinder<fcl::OBBRSS>(
+                            radius, radius, height, 16, 16, shapeT));
         break;
       }
       case dynamics::Shape::MESH: {
-        dynamics::MeshShape *shapeMesh =
-            static_cast<dynamics::MeshShape *>(shape);
-        if (shapeMesh) {
-          mMeshes.push_back(createMesh<fcl::OBBRSS>(shape->getDim()[0],
-                                                    shape->getDim()[1],
-                                                    shape->getDim()[2],
-                                                    shapeMesh->getMesh(),
-                                                    shapeTransform));
-        }
+        MeshShape* shapeMesh = static_cast<MeshShape*>(shape);
+        mMeshes.push_back(createMesh<fcl::OBBRSS>(shape->getDim()[0],
+                                                  shape->getDim()[1],
+                                                  shape->getDim()[2],
+                                                  shapeMesh->getMesh(),
+                                                  shapeT));
         break;
       }
       default: {
