@@ -45,6 +45,7 @@
 #include <climits>
 #include <cassert>
 #include <iostream>
+#include <cstdlib>
 
 // External Libraries
 #include <Eigen/Dense>
