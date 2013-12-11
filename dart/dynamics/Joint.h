@@ -182,17 +182,18 @@ public:
   /// \param[in] _idx Index of joint axis.
   double getRestPosition(int _idx) const;
 
-  /// \brief Get spring force, F = -(springStiffness * q(k+1)), where
-  ///        q(k+1) is approximated as q(k) + h * dq(k) * h^2 * ddq(k).
-  /// We apply the spring force in implicit manner. The spring force is
+  /// \brief Get spring force.
+  ///
+  /// We apply spring force in implicit manner. The spring force is
   /// F = -(springStiffness * q(k+1)), where q(k+1) is approximated as
-  /// q(k) + h * dq(k) + h^2 * ddq(k). Since, in the recursive forward dynamics
+  /// q(k) + h * dq(k) * h^2 * ddq(k). Since, in the recursive forward dynamics
   /// algorithm, ddq(k) is unknown variable that we want to obtain as the
   /// result, the spring force here is just
   /// F = -springStiffness * (q(k) + h * dq(k)) and
   /// -springStiffness * h^2 * ddq(k) term is rearranged at the recursive
   /// forward dynamics algorithm, and it affects on the articulated inertia.
   /// \sa BodyNode::updateArticulatedInertia(double).
+  ///
   /// \param[in] _timeStep Time step used for approximating q(k+1).
   Eigen::VectorXd getSpringForces(double _timeStep) const;
 
