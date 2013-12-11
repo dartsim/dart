@@ -15,7 +15,9 @@ CHECK_DIRS="../dart/collision\
             #../dart/planning\
             #../dart/renderer\
             ../dart/simulation\
-            #../dart/utils"
+            #../dart/utils\
+            ../apps/cubes\
+            ../apps/meshCollision"
 CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\

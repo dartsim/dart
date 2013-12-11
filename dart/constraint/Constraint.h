@@ -2,7 +2,7 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  * Date:
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab

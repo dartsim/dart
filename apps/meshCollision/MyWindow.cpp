@@ -2,8 +2,7 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  * Date: 12/10/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
@@ -36,37 +35,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "apps/meshCollision/MyWindow.h"
 
+#include "dart/math/Helpers.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "apps/cubes/MyWindow.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/BoxShape.h"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
-          DART_DATA_PATH"/skel/cubes.skel");
-  assert(myWorld != NULL);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+MyWindow::MyWindow()
+  : SimWindow() {
+}
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+MyWindow::~MyWindow() {
+}
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-  std::cout << "'q': spawn a random cube" << std::endl;
-  std::cout << "'w': delete a spawned cube" << std::endl;
+void MyWindow::timeStepping() {
+  mWorld->step();
+}
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Boxes");
-  glutMainLoop();
+void MyWindow::drawSkels() {
+  glEnable(GL_LIGHTING);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  return 0;
+  SimWindow::drawSkels();
+}
+
+void MyWindow::keyboard(unsigned char key, int x, int y) {
+  switch (key) {
+    case ' ':  // use space key to play or stop the motion
+      mSimulating = !mSimulating;
+      if (mSimulating) {
+        mPlay = false;
+        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
+    case 'p':  // playBack
+      mPlay = !mPlay;
+      if (mPlay) {
+        mSimulating = false;
+        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
+    case '[':  // step backward
+      if (!mSimulating) {
+        mPlayFrame--;
+        if (mPlayFrame < 0)
+          mPlayFrame = 0;
+        glutPostRedisplay();
+      }
+      break;
+    case ']':  // step forwardward
+      if (!mSimulating) {
+        mPlayFrame++;
+        if (mPlayFrame >= mBakedStates.size())
+          mPlayFrame = 0;
+        glutPostRedisplay();
+      }
+      break;
+    case 'v':  // show or hide markers
+      mShowMarkers = !mShowMarkers;
+      break;
+    default:
+      Win3D::keyboard(key, x, y);
+  }
+  glutPostRedisplay();
 }
