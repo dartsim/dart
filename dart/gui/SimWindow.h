@@ -57,7 +57,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class SimWindow : public gui::Win3D {
+class SimWindow : public Win3D {
 public:
   /// \brief
   SimWindow();
