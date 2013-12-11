@@ -57,6 +57,7 @@ RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
 
   mSpringStiffness.resize(1, 0.0);
   mDampingCoefficient.resize(1, 0.0);
+  mRestPosition.resize(1, 0.0);
 }
 
 RevoluteJoint::~RevoluteJoint() {

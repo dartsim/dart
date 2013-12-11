@@ -150,27 +150,27 @@ Eigen::VectorXd Joint::getDampingForces() const {
   return dampingForce;
 }
 
-void Joint::setSpringStiffness(int _idx, double _k) {
+void Joint::setSpringStiffness(int _idx, double _k, double _q0) {
   assert(0 <= _idx && _idx < getNumGenCoords());
   assert(_k >= 0.0);
   mSpringStiffness[_idx] = _k;
+  mRestPosition[_idx]    = _q0;
 }
 
-double Joint::getSpringCoefficient(int _idx) const  {
+double Joint::getSpringStiffness(int _idx) const  {
   assert(0 <= _idx && _idx < getNumGenCoords());
   return mSpringStiffness[_idx];
 }
 
 Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
-  int numDofs = getNumGenCoords();
-  Eigen::VectorXd springForce(numDofs);
-
-  for (int i = 0; i < numDofs; ++i)   {
+  int dof = getNumGenCoords();
+  Eigen::VectorXd springForce(dof);
+  for (int i = 0; i < dof; ++i) {
     springForce(i) =
-        -mSpringStiffness[i]*(getGenCoord(i)->get_q() +
-                              getGenCoord(i)->get_dq()*_timeStep);
+        -mSpringStiffness[i] * (getGenCoord(i)->get_q()
+                                + getGenCoord(i)->get_dq() * _timeStep
+                                - mRestPosition[i]);
   }
-
   return springForce;
 }
 

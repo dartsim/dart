@@ -58,6 +58,7 @@ EulerJoint::EulerJoint(const std::string& _name)
 
   mSpringStiffness.resize(3, 0.0);
   mDampingCoefficient.resize(3, 0.0);
+  mRestPosition.resize(3, 0.0);
 }
 
 EulerJoint::~EulerJoint() {

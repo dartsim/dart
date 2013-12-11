@@ -55,6 +55,7 @@ TranslationalJoint::TranslationalJoint(const std::string& _name)
 
   mSpringStiffness.resize(3, 0.0);
   mDampingCoefficient.resize(3, 0.0);
+  mRestPosition.resize(3, 0.0);
 }
 
 TranslationalJoint::~TranslationalJoint() {

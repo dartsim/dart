@@ -147,30 +147,56 @@ public:
   /// \brief
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  //--------------------------------------------------------------------------
-  // Spring stiffness and damping
-  //--------------------------------------------------------------------------
-  /// \brief
+  /// \brief Set damping coefficient for viscous force.
+  /// \param[in] _idx Index of joint axis.
+  /// \param[in] _d Damping coefficient stiffness.
   void setDampingCoefficient(int _idx, double _d);
 
-  /// \brief
+  /// \brief Get damping coefficient for viscous force.
+  /// \param[in] _idx Index of joint axis.
   double getDampingCoefficient(int _idx) const;
 
-  /// \brief
+  /// \brief Get damping force.
+  ///
+  /// We apply the damping force in implicit manner. The damping force is
+  /// F = -(dampingCoefficient * dq(k+1)), where dq(k+1) is approximated as
+  /// dq(k) + h * ddq(k). Since, in the recursive forward dynamics algorithm,
+  /// ddq(k) is unknown variable that we want to obtain as the result, the
+  /// damping force here is just F = -(dampingCoefficient * dq(k)) and
+  /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
+  /// forward dynamics algorithm, and it affects on the articulated inertia.
+  /// \sa BodyNode::updateArticulatedInertia(double).
   Eigen::VectorXd getDampingForces() const;
 
-  /// \brief
-  void setSpringStiffness(int _idx, double _k);
+  /// \brief Set spring stiffness for spring force.
+  /// \param[in] _idx Index of joint axis.
+  /// \param[in] _k Spring stiffness.
+  /// \param[in] _q0 Rest position.
+  void setSpringStiffness(int _idx, double _k, double _q0 = 0.0);
 
-  /// \brief
-  double getSpringCoefficient(int _idx) const;
+  /// \brief Get spring stiffnes for spring force.
+  /// \param[in] _idx Index of joint axis.
+  double getSpringStiffness(int _idx) const;
 
-  /// \brief
+  /// \brief Get rest position for spring force.
+  /// \param[in] _idx Index of joint axis.
+  double getRestPosition(int _idx) const;
+
+  /// \brief Get spring force, F = -(springStiffness * q(k+1)), where
+  ///        q(k+1) is approximated as q(k) + h * dq(k) * h^2 * ddq(k).
+  /// We apply the spring force in implicit manner. The spring force is
+  /// F = -(springStiffness * q(k+1)), where q(k+1) is approximated as
+  /// q(k) + h * dq(k) + h^2 * ddq(k). Since, in the recursive forward dynamics
+  /// algorithm, ddq(k) is unknown variable that we want to obtain as the
+  /// result, the spring force here is just
+  /// F = -springStiffness * (q(k) + h * dq(k)) and
+  /// -springStiffness * h^2 * ddq(k) term is rearranged at the recursive
+  /// forward dynamics algorithm, and it affects on the articulated inertia.
+  /// \sa BodyNode::updateArticulatedInertia(double).
+  /// \param[in] _timeStep Time step used for approximating q(k+1).
   Eigen::VectorXd getSpringForces(double _timeStep) const;
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
+  /// \brief
   void applyGLTransform(renderer::RenderInterface* _ri);
 
 protected:
@@ -229,6 +255,9 @@ protected:
 
   /// \brief
   std::vector<double> mSpringStiffness;
+
+  /// \brief
+  std::vector<double> mRestPosition;
 
 private:
   /// \brief Type of joint e.g. ball, hinge etc.

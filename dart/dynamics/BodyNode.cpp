@@ -671,7 +671,7 @@ void BodyNode::updateArticulatedInertia(double _timeStep) {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
     for (int i = 0; i < dof; ++i) {
-      K(i, i) = mParentJoint->getSpringCoefficient(i);
+      K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
 

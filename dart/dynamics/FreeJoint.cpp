@@ -59,6 +59,7 @@ FreeJoint::FreeJoint(const std::string& _name)
 
     mSpringStiffness.resize(6, 0.0);
     mDampingCoefficient.resize(6, 0.0);
+    mRestPosition.resize(6, 0.0);
 }
 
 FreeJoint::~FreeJoint() {
