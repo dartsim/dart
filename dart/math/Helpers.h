@@ -147,8 +147,7 @@ inline unsigned seedRand() {
 }
 
 inline double random(double min, double max) {
-  static unsigned int seed = seedRand();
-  return min + ((static_cast<double>(rand_r(&seed)) / (RAND_MAX + 1.0))
+  return min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
                 * (max - min));
 }
 
