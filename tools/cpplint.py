@@ -1538,9 +1538,9 @@ def CheckForMultilineCommentsAndStrings(filename, clean_lines, linenum, error):
           'do well with such strings, and may give bogus warnings.  '
           'Use C++11 raw strings or concatenation instead.')
 
-# TODO(Unknown): CheckPosixThreading is disabled until the list of thread-safe
-#                functions are listed up for both of Linux and Windows.
-#                See also definition of CheckPosixThreading()
+# TODO(JS): CheckPosixThreading is disabled until the list of thread-safe
+#           functions are listed up for both of Linux and Windows.
+#           See also definition of CheckPosixThreading()
 threading_list = (
     ('asctime(', 'asctime_r('),
     ('ctime(', 'ctime_r('),
@@ -4013,6 +4013,48 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
           'http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Namespaces'
           ' for more information.')
 
+def CheckForFunctionParameterNaming(filename, clean_lines, linenum, error):
+  """Check for function parameter names that not start with underscore.
+
+  Args:
+    filename: Filename of the file that is being processed.
+    file_extension: The extension (dot not included) of the file.
+    clean_lines: An array of strings, each representing a line of the file,
+                 with comments stripped.
+    linenum: Number of line being processed.
+  """
+  line = clean_lines.lines[linenum]
+  regexp = r'(\w(\w|::|\*|\&|\s)*)\(((\w|::|\*|\&|\s|\,)*)\)'  # decls * & space::name( ...
+  match_result = Match(regexp, line)
+  if match_result:
+    args = match_result.group(3)
+    if args:
+      args_split = args.split(r",")
+      for type_and_parameter in args_split:
+        type_and_parameter_split = type_and_parameter.split();
+        parameter_name = type_and_parameter_split[len(type_and_parameter_split)-1]
+        parameter_name = parameter_name.lstrip(r' \*\&')
+#        sys.stderr.write('type_and_parameter: %s\n' % type_and_parameter)
+#        sys.stderr.write('parameter_name: %s\n' % parameter_name)
+        # Check if function parameter name starts with underscore.
+        if not parameter_name.startswith('_'):
+          error(filename, linenum, 'readability/naming', 2,
+                'Parameter name, %s, does not start with underscore, '
+                'please use: %s'
+                % (parameter_name, '_' + parameter_name))
+        # Check if function parameter name starts with one underscore.
+        if (parameter_name[0] == '_'
+          and (len(parameter_name) > 1 and parameter_name[1] == '_')):
+          regexp = r'(_*)(\w*)'
+          match_result = Match(regexp, parameter_name)
+          suggest_name = '_' + match_result.group(2)
+          error(filename, linenum, 'readability/naming', 2,
+                'Parameter name, %s, should not start with multiple underscores, '
+                'please use: %s'
+                % (parameter_name, '_' + suggest_name))
+        # TODO(JS): Check if function parameter name starts with one underscore
+        #           and the underscore is followed by lowercase.
+
 def CheckForNonConstReference(filename, clean_lines, linenum,
                               nesting_state, error):
   """Check for non-const references.
@@ -4510,13 +4552,14 @@ def ProcessLine(filename, file_extension, clean_lines, line,
   CheckStyle(filename, clean_lines, line, file_extension, nesting_state, error)
   CheckLanguage(filename, clean_lines, line, file_extension, include_state,
                 nesting_state, error)
+  CheckForFunctionParameterNaming(filename, clean_lines, line, error)
   CheckForNonConstReference(filename, clean_lines, line, nesting_state, error)
   CheckForNonStandardConstructs(filename, clean_lines, line,
                                 nesting_state, error)
   CheckVlogArguments(filename, clean_lines, line, error)
-  # TODO(Unknown): CheckPosixThreading is disabled until the list of thread-safe
-  #                functions are listed up for both of Linux and Windows.
-  #                See also definition of CheckPosixThreading()
+  # TODO(JS): CheckPosixThreading is disabled until the list of thread-safe
+  #           functions are listed up for both of Linux and Windows.
+  #           See also definition of CheckPosixThreading()
 #  CheckPosixThreading(filename, clean_lines, line, error)
   CheckInvalidIncrement(filename, clean_lines, line, error)
   CheckMakePairUsesDeduction(filename, clean_lines, line, error)
