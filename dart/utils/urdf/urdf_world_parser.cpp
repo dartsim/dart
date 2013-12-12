@@ -123,15 +123,13 @@ namespace urdf{
 	    xml_model_string += (line + "\n");
 	  }
 	  xml_file.close();
-	  ModelInterface* model = parseURDF( xml_model_string ).get();
+	  entity.model = parseURDF( xml_model_string );
 
-	  if( !model ) {
+	  if( !entity.model ) {
 	    std::cout<< "[parseWorldURDF] Model in "<<fileFullName<<" not found. Exiting and not loading!" <<std::endl;
 	    return NULL;
 	  }
 	  else {
-	    entity.model.reset(model);
-	    
 	    // Parse location
 	    TiXmlElement *o = entity_xml->FirstChildElement("origin");
 	    if( o ) {
