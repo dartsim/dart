@@ -378,9 +378,17 @@ public:
     void updateTransform();
 
     /// @brief
+    // TODO(JS): This is workaround for Issue #122.
+    void updateTransform_Issue122(double _timeStep);
+
+    /// @brief
     /// parentJoint.V, parentBody.V --> V
     /// parentJoint.S --> J
     void updateVelocity(bool _updateJacobian = true);
+
+    /// @brief
+    // TODO(JS): This is workaround for Issue #122.
+    void updateVelocity_Issue122(bool _updateJacobian = true);
 
     /// @brief
     void updateEta();

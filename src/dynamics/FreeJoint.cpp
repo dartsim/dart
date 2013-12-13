@@ -44,7 +44,8 @@ namespace dart {
 namespace dynamics {
 
 FreeJoint::FreeJoint(const std::string& _name)
-    : Joint(FREE, _name)
+    : Joint(FREE, _name),
+      mT_Joint(Eigen::Isometry3d::Identity())
 {
     mGenCoords.push_back(&mCoordinate[0]);
     mGenCoords.push_back(&mCoordinate[1]);
@@ -72,10 +73,23 @@ void FreeJoint::updateTransform()
                   mCoordinate[4].get_q(),
                   mCoordinate[5].get_q());
 
+    // TODO(JS): This is workaround for Issue #122.
+    mT_Joint = math::expMap(get_q());
+
     mT = mT_ParentBodyToJoint *
             Eigen::Translation3d(q2) *
             math::expAngular(q1) *
             mT_ChildBodyToJoint.inverse();
+
+    assert(math::verifyTransform(mT));
+}
+
+// TODO(JS): This is workaround for Issue #122.
+void FreeJoint::updateTransform_Issue122(double _timeStep)
+{
+    mT_Joint = mT_Joint * math::expMap(_timeStep * get_dq());
+
+    mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
     assert(math::verifyTransform(mT));
 }
@@ -110,6 +124,30 @@ void FreeJoint::updateJacobian()
     mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
 }
 
+void FreeJoint::updateJacobian_Issue122()
+{
+    Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
+    Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
+    Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+    Eigen::Vector6d J3 = Eigen::Vector6d::Zero();
+    Eigen::Vector6d J4 = Eigen::Vector6d::Zero();
+    Eigen::Vector6d J5 = Eigen::Vector6d::Zero();
+
+    J0[0] = 1.0;
+    J1[1] = 1.0;
+    J2[2] = 1.0;
+    J3[3] = 1.0;
+    J4[4] = 1.0;
+    J5[5] = 1.0;
+
+    mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+    mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+    mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+    mS.col(3) = math::AdT(mT_ChildBodyToJoint, J3);
+    mS.col(4) = math::AdT(mT_ChildBodyToJoint, J4);
+    mS.col(5) = math::AdT(mT_ChildBodyToJoint, J5);
+}
+
 void FreeJoint::updateJacobianTimeDeriv()
 {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
@@ -141,6 +179,12 @@ void FreeJoint::updateJacobianTimeDeriv()
     mdS.col(3) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
     mdS.col(4) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
     mdS.col(5) = -math::ad(mS.leftCols<3>() * get_dq().head<3>(), math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
+}
+
+void FreeJoint::updateJacobianTimeDeriv_Issue122()
+{
+    // mdS == 0
+    assert(mdS == Eigen::MatrixXd::Zero(6,6));
 }
 
 } // namespace dynamics

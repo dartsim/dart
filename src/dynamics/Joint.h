@@ -163,15 +163,24 @@ protected:
     /// q --> T(q)
     virtual void updateTransform() = 0;
 
+    /// @brief TODO(JS): This is workaround for Issue #122.
+    virtual void updateTransform_Issue122(double _timeStep) {}
+
     /// @brief
     /// q, dq --> S(q), V(q, dq)
     /// V(q, dq) = S(q) * dq
     virtual void updateJacobian() = 0;
 
+    /// @brief TODO(JS): This is workaround for Issue #122.
+    virtual void updateJacobian_Issue122() {}
+
     /// @brief
     /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
     /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
     virtual void updateJacobianTimeDeriv() = 0;
+
+    /// @brief TODO(JS): This is workaround for Issue #122.
+    virtual void updateJacobianTimeDeriv_Issue122() {}
 
     //--------------------------------------------------------------------------
     //

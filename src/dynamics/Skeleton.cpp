@@ -43,6 +43,8 @@
 #include "dynamics/Joint.h"
 #include "dynamics/Marker.h"
 #include "dynamics/Skeleton.h"
+#include "dynamics/BallJoint.h"
+#include "dynamics/FreeJoint.h"
 
 namespace dart {
 namespace dynamics {
@@ -93,13 +95,26 @@ bool Skeleton::isMobile() const
     return mIsMobile;
 }
 
+void Skeleton::setTimeStep(double _timeStep)
+{
+    assert(_timeStep > 0.0);
+    mTimeStep = _timeStep;
+}
+
+double Skeleton::getTimeStep() const
+{
+    return mTimeStep;
+}
+
 double Skeleton::getMass() const
 {
     return mTotalMass;
 }
 
-void Skeleton::init()
+void Skeleton::init(double _timeStep)
 {
+    mTimeStep = _timeStep;
+
     mGenCoords.clear();
 
     // Initialize body nodes
@@ -256,8 +271,18 @@ void Skeleton::setState(const Eigen::VectorXd& _state)
     for (std::vector<BodyNode*>::iterator itrBody = mBodyNodes.begin();
          itrBody != mBodyNodes.end(); ++itrBody)
     {
-        (*itrBody)->updateTransform();
-        (*itrBody)->updateVelocity();
+        // TODO(JS): This is workaround for Issue #122.
+        if ((*itrBody)->getParentJoint()->getJointType() == Joint::BALL
+            || (*itrBody)->getParentJoint()->getJointType() == Joint::FREE)
+        {
+            (*itrBody)->updateTransform_Issue122(mTimeStep);
+            (*itrBody)->updateVelocity_Issue122();
+        }
+        else
+        {
+            (*itrBody)->updateTransform();
+            (*itrBody)->updateVelocity();
+        }
     }
 }
 

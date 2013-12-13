@@ -175,6 +175,11 @@ void World::setTimeStep(double _timeStep)
 {
     mTimeStep = _timeStep;
     mConstraintHandler->setTimeStep(_timeStep);
+    for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+         it != mSkeletons.end(); ++it)
+    {
+        (*it)->setTimeStep(_timeStep);
+    }
 }
 
 double World::getTimeStep() const
@@ -260,7 +265,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
     }
 
     mSkeletons.push_back(_skeleton);
-    _skeleton->init();
+    _skeleton->init(mTimeStep);
     _skeleton->computeEquationsOfMotionID(mGravity);
     mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
     mConstraintHandler->addSkeleton(_skeleton);

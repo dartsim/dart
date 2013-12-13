@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     LeftLegSkel.addBodyNode(node);
 
     // Initialize the skeleton
-    LeftLegSkel.init();
+    LeftLegSkel.init(0.001);
 
     // Window stuff
     MyWindow window(&LeftLegSkel);

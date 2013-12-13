@@ -97,6 +97,13 @@ public:
     /// @return True if this skeleton is mobile.
     bool isMobile() const;
 
+    /// \brief Set time step. This timestep is used for implicit joint damping
+    ///        force.
+    void setTimeStep(double _timeStep);
+
+    /// \brief Get time step.
+    double getTimeStep() const;
+
     /// @brief
     double getMass() const;
 
@@ -210,7 +217,7 @@ public:
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
     /// @brief
-    void init();
+    void init(double _timeStep = 0.001);
 
     /// @brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
@@ -274,6 +281,9 @@ protected:
     /// to having infinite mass. If the configuration of an immobile skeleton
     /// are manually changed, the collision results might not be correct.
     bool mIsMobile;
+
+    /// \brief Time step for implicit joint damping force.
+    double mTimeStep;
 
     /// @brief
     double mTotalMass;

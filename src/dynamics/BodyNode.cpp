@@ -372,6 +372,23 @@ void BodyNode::updateTransform()
     assert(math::verifyTransform(mW));
 }
 
+void BodyNode::updateTransform_Issue122(double _timeStep)
+{
+    mParentJoint->updateTransform_Issue122(_timeStep);
+
+    if (mParentBodyNode)
+    {
+        mW = mParentBodyNode->getWorldTransform()
+             * mParentJoint->getLocalTransform();
+    }
+    else
+    {
+        mW = mParentJoint->getLocalTransform();
+    }
+
+    assert(math::verifyTransform(mW));
+}
+
 void BodyNode::updateVelocity(bool _updateJacobian)
 {
     //--------------------------------------------------------------------------
@@ -381,6 +398,73 @@ void BodyNode::updateVelocity(bool _updateJacobian)
     //--------------------------------------------------------------------------
 
     mParentJoint->updateJacobian();
+
+    if (mParentJoint->getNumGenCoords() > 0)
+    {
+        if (mParentBodyNode)
+        {
+            mV = math::AdInvT(mParentJoint->getLocalTransform(),
+                              mParentBodyNode->getBodyVelocity()) +
+                    mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+        }
+        else
+        {
+            mV = mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+        }
+    }
+
+    assert(!math::isNan(mV));
+
+    if (_updateJacobian == false)
+        return;
+
+    //--------------------------------------------------------------------------
+    // Jacobian update
+    //
+    // J = | J1 J2 ... Jn |
+    //   = | Ad(T(i,i-1), J_parent) J_local |
+    //
+    //   J_parent: (6 x parentDOF)
+    //    J_local: (6 x localDOF)
+    //         Ji: (6 x 1) se3
+    //          n: number of dependent coordinates
+    //--------------------------------------------------------------------------
+
+    const int numLocalDOFs = mParentJoint->getNumGenCoords();
+    const int numParentDOFs = getNumDependentDofs()-numLocalDOFs;
+
+    // Parent Jacobian
+    if (mParentBodyNode != NULL)
+    {
+        assert(mParentBodyNode->mBodyJacobian.cols() + mParentJoint->getNumGenCoords()
+               == mBodyJacobian.cols());
+
+        for (int i = 0; i < numParentDOFs; ++i)
+        {
+            assert(mParentJoint);
+            mBodyJacobian.col(i) = math::AdInvT(
+                                       mParentJoint->getLocalTransform(),
+                                       mParentBodyNode->mBodyJacobian.col(i));
+        }
+    }
+
+    // Local Jacobian
+    for(int i = 0; i < numLocalDOFs; i++)
+    {
+        mBodyJacobian.col(numParentDOFs + i) =
+                mParentJoint->getLocalJacobian().col(i);
+    }
+}
+
+void BodyNode::updateVelocity_Issue122(bool _updateJacobian)
+{
+    //--------------------------------------------------------------------------
+    // Body velocity update
+    //
+    // V(i) = Ad(T(i, i-1), V(i-1)) + S * dq
+    //--------------------------------------------------------------------------
+
+    mParentJoint->updateJacobian_Issue122();
 
     if (mParentJoint->getNumGenCoords() > 0)
     {
@@ -876,6 +960,10 @@ void BodyNode::update_ddq()
 
     mParentJoint->set_ddq(ddq);
 
+    for (int i = 0; i < ddq.size(); ++i)
+    {
+        assert(ddq[i] < 1e+10);
+    }
     assert(!math::isNan(ddq));
 }
 
