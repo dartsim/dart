@@ -960,10 +960,6 @@ void BodyNode::update_ddq()
 
     mParentJoint->set_ddq(ddq);
 
-    for (int i = 0; i < ddq.size(); ++i)
-    {
-        assert(ddq[i] < 1e+10);
-    }
     assert(!math::isNan(ddq));
 }
 
