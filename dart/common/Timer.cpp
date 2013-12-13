@@ -64,7 +64,7 @@ Timer::~Timer() {
 }
 
 #if WIN32
-double Timer::_convLIToSecs(LARGE_INTEGER& _L) {
+double Timer::_convLIToSecs(const LARGE_INTEGER& _L) {
   return (static_cast<double>(_L.QuadPart)
           / static_cast<double>(mFrequency.QuadPart));
 }
