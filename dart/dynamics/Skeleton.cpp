@@ -636,17 +636,15 @@ void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc) {
 }
 
 Eigen::Vector3d Skeleton::getWorldCOM() {
-  Eigen::Vector3d com(0, 0, 0);
+  Eigen::Vector3d com(0.0, 0.0, 0.0);
 
-  assert(mTotalMass != 0);
   const int nNodes = getNumBodyNodes();
-
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
-    com += bodyNode->getMass() *
-           (bodyNode->getWorldTransform() * bodyNode->getLocalCOM());
+    com += bodyNode->getMass() * bodyNode->getWorldCOM();
   }
 
+  assert(mTotalMass != 0.0);
   return com / mTotalMass;
 }
 

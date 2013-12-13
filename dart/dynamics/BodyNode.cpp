@@ -470,7 +470,7 @@ const Eigen::Vector3d& BodyNode::getLocalCOM() const {
 }
 
 Eigen::Vector3d BodyNode::getWorldCOM() const {
-  return mW.linear() * mCenterOfMass;
+  return mW * mCenterOfMass;
 }
 
 Eigen::Matrix6d BodyNode::getInertia() const {
