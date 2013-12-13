@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
- * Date: 07/18/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

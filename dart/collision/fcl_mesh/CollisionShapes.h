@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Chen Tang
- * Date: 09/18/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

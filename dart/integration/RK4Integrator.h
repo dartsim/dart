@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>
- * Date: 09/16/2011
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

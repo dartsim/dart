@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Tobias Kunz <tobias@gatech.edu>
- * Date: 01/29/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

@@ -4,7 +4,6 @@
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>,
  *            Tobias Kunz <tobias@gatech.edu>
- * Date: 05/11/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

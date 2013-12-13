@@ -4,7 +4,6 @@
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
  *            Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/14/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *

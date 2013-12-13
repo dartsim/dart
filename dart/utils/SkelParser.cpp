@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2012, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/24/2013
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
