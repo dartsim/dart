@@ -153,7 +153,11 @@ bool GlutWindow::screenshot() {
   char fileBase[32] = "frames/Capture";
   char fileName[64];
   // png
+#ifdef WIN32
+  _snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+#else
   std::snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+#endif
   int tw = glutGet(GLUT_WINDOW_WIDTH);
   int th = glutGet(GLUT_WINDOW_HEIGHT);
 
