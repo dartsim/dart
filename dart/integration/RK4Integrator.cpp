@@ -40,25 +40,25 @@ namespace dart {
 namespace integration {
 
 // TODO(kasiu): Slow. Needs to be optimized.
-void RK4Integrator::integrate(IntegrableSystem* system, double dt) const {
+void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) const {
   // calculates the four weighted deltas
-  Eigen::VectorXd deriv = system->evalDeriv();
-  Eigen::VectorXd x = system->getState();
-  k1 = deriv * dt;
+  Eigen::VectorXd deriv = _system->evalDeriv();
+  Eigen::VectorXd x = _system->getState();
+  k1 = deriv * _dt;
 
-  system->setState(x + (k1 * 0.5));
-  deriv = system->evalDeriv();
-  k2 = deriv * dt;
+  _system->setState(x + (k1 * 0.5));
+  deriv = _system->evalDeriv();
+  k2 = deriv * _dt;
 
-  system->setState(x + (k2 * 0.5));
-  deriv = system->evalDeriv();
-  k3 = deriv * dt;
+  _system->setState(x + (k2 * 0.5));
+  deriv = _system->evalDeriv();
+  k3 = deriv * _dt;
 
-  system->setState(x + k3);
-  deriv = system->evalDeriv();
-  k4 = deriv * dt;
+  _system->setState(x + k3);
+  deriv = _system->evalDeriv();
+  k4 = deriv * _dt;
 
-  system->setState(x + ((1.0/6.0) * (k1 + (2.0 * k2) + (2.0 * k3) + k4)));
+  _system->setState(x + ((1.0/6.0) * (k1 + (2.0 * k2) + (2.0 * k3) + k4)));
 }
 
 }  // namespace integration

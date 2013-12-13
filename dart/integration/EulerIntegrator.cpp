@@ -46,10 +46,10 @@ EulerIntegrator::EulerIntegrator()
 EulerIntegrator::~EulerIntegrator() {
 }
 
-void EulerIntegrator::integrate(IntegrableSystem* system, double dt) const {
+void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt) const {
     // Explicit Euler Method
-    Eigen::VectorXd deriv = system->evalDeriv();
-    system->setState(system->getState() + (dt * deriv));
+    Eigen::VectorXd deriv = _system->evalDeriv();
+    _system->setState(_system->getState() + (_dt * deriv));
 }
 
 }  // namespace integration

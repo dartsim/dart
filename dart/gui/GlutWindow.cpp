@@ -74,17 +74,17 @@ GlutWindow::~GlutWindow() {
     delete mRI;
 }
 
-void GlutWindow::initWindow(int w, int h, const char* name) {
+void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mWindows.push_back(this);
 
-  mWinWidth = w;
-  mWinHeight = h;
+  mWinWidth = _w;
+  mWinHeight = _h;
 
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL
                       | GLUT_ACCUM);
   glutInitWindowPosition(150, 100);
-  glutInitWindowSize(w, h);
-  mWinIDs.push_back(glutCreateWindow(name));
+  glutInitWindowSize(_w, _h);
+  mWinIDs.push_back(glutCreateWindow(_name));
 
   glutDisplayFunc(refresh);
   glutReshapeFunc(reshape);
@@ -102,50 +102,50 @@ void GlutWindow::initWindow(int w, int h, const char* name) {
   // glutTimerFunc(mDisplayTimeout, runTimer, 0);
 }
 
-void GlutWindow::reshape(int w, int h) {
-  current()->mScreenshotTemp = std::vector<unsigned char>(w*h*4);
-  current()->mScreenshotTemp2 = std::vector<unsigned char>(w*h*4);
-  current()->resize(w, h);
+void GlutWindow::reshape(int _w, int _h) {
+  current()->mScreenshotTemp = std::vector<unsigned char>(_w*_h*4);
+  current()->mScreenshotTemp2 = std::vector<unsigned char>(_w*_h*4);
+  current()->resize(_w, _h);
 }
 
-void GlutWindow::keyEvent(unsigned char key, int x, int y) {
-  current()->keyboard(key, x, y);
+void GlutWindow::keyEvent(unsigned char _key, int _x, int _y) {
+  current()->keyboard(_key, _x, _y);
 }
 
-void GlutWindow::specKeyEvent(int key, int x, int y) {
-  current()->specKey(key, x, y);
+void GlutWindow::specKeyEvent(int _key, int _x, int _y) {
+  current()->specKey(_key, _x, _y);
 }
 
-void GlutWindow::mouseClick(int button, int state, int x, int y) {
-  current()->click(button, state, x, y);
+void GlutWindow::mouseClick(int _button, int _state, int _x, int _y) {
+  current()->click(_button, _state, _x, _y);
 }
 
-void GlutWindow::mouseDrag(int x, int y) {
-  current()->drag(x, y);
+void GlutWindow::mouseDrag(int _x, int _y) {
+  current()->drag(_x, _y);
 }
 
-void GlutWindow::mouseMove(int x, int y) {
-  current()->move(x, y);
+void GlutWindow::mouseMove(int _x, int _y) {
+  current()->move(_x, _y);
 }
 
 void GlutWindow::refresh() {
   current()->render();
 }
 
-void GlutWindow::refreshTimer(int val) {
-  current()->displayTimer(val);
+void GlutWindow::refreshTimer(int _val) {
+  current()->displayTimer(_val);
 }
 
-void GlutWindow::displayTimer(int val) {
+void GlutWindow::displayTimer(int _val) {
   glutPostRedisplay();
-  glutTimerFunc(mDisplayTimeout, refreshTimer, val);
+  glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
-void GlutWindow::simTimer(int val) {
+void GlutWindow::simTimer(int _val) {
 }
 
-void GlutWindow::runTimer(int val) {
-  current()->simTimer(val);
+void GlutWindow::runTimer(int _val) {
+  current()->simTimer(_val);
 }
 
 bool GlutWindow::screenshot() {
@@ -189,19 +189,19 @@ inline GlutWindow* GlutWindow::current() {
   exit(0);
 }
 
-void GlutWindow::keyboard(unsigned char key, int x, int y) {
+void GlutWindow::keyboard(unsigned char _key, int _x, int _y) {
 }
 
-void GlutWindow::specKey(int key, int x, int y) {
+void GlutWindow::specKey(int _key, int _x, int _y) {
 }
 
-void GlutWindow::click(int button, int state, int x, int y) {
+void GlutWindow::click(int _button, int _state, int _x, int _y) {
 }
 
-void GlutWindow::drag(int x, int y) {
+void GlutWindow::drag(int _x, int _y) {
 }
 
-void GlutWindow::move(int x, int y) {
+void GlutWindow::move(int _x, int _y) {
 }
 
 }  // namespace gui

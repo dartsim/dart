@@ -137,14 +137,14 @@ void MeshShape::computeVolume() {
   mVolume = mDim(0) * mDim(1) * mDim(2);
 }
 
-const aiScene* MeshShape::loadMesh(const std::string& fileName) {
+const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   // remove points and lines
   aiSetImportPropertyInteger(propertyStore,
                              AI_CONFIG_PP_SBP_REMOVE,
                              aiPrimitiveType_POINT | aiPrimitiveType_LINE);
   const aiScene* scene =
-      aiImportFileExWithProperties(fileName.c_str(),
+      aiImportFileExWithProperties(_fileName.c_str(),
                                    aiProcess_GenNormals             |
                                    aiProcess_Triangulate            |
                                    aiProcess_JoinIdenticalVertices  |
@@ -158,8 +158,8 @@ const aiScene* MeshShape::loadMesh(const std::string& fileName) {
   // rotation. We are only catching files with the .dae file ending here. We
   // might miss files with an .xml file ending, which would need to be looked
   // into to figure out whether they are collada files.
-  if (fileName.length() >= 4
-     && fileName.substr(fileName.length() - 4, 4) == ".dae") {
+  if (_fileName.length() >= 4
+     && _fileName.substr(_fileName.length() - 4, 4) == ".dae") {
     scene->mRootNode->mTransformation = aiMatrix4x4();
   }
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);

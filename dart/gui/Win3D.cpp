@@ -54,16 +54,16 @@ Win3D::Win3D()
     mZooming(false) {
 }
 
-void Win3D::initWindow(int w, int h, const char* name) {
-  GlutWindow::initWindow(w, h, name);
+void Win3D::initWindow(int _w, int _h, const char* _name) {
+  GlutWindow::initWindow(_w, _h, _name);
 
-  int smaller = w < h ? w : h;
-  mTrackBall.setTrackball(Eigen::Vector2d(w*0.5, h*0.5), smaller/2.5);
+  int smaller = _w < _h ? _w : _h;
+  mTrackBall.setTrackball(Eigen::Vector2d(_w*0.5, _h*0.5), smaller/2.5);
 }
 
-void Win3D::resize(int w, int h) {
-  mWinWidth = w;
-  mWinHeight = h;
+void Win3D::resize(int _w, int _h) {
+  mWinWidth = _w;
+  mWinHeight = _h;
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -75,15 +75,15 @@ void Win3D::resize(int w, int h) {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  int small = w < h ? w : h;
-  mTrackBall.setCenter(Eigen::Vector2d(w*0.5, h*0.5));
+  int small = _w < _h ? _w : _h;
+  mTrackBall.setCenter(Eigen::Vector2d(_w*0.5, _h*0.5));
   mTrackBall.setRadius(small/2.5);
 
   glutPostRedisplay();
 }
 
-void Win3D::keyboard(unsigned char key, int x, int y) {
-  switch (key) {
+void Win3D::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ',':  // slow down
       mDisplayTimeout +=2;
       break;
@@ -104,30 +104,30 @@ void Win3D::keyboard(unsigned char key, int x, int y) {
   // printf("ascii key: %lu\n", key);
 }
 
-void Win3D::click(int button, int state, int x, int y) {
+void Win3D::click(int _button, int _state, int _x, int _y) {
   mMouseDown = !mMouseDown;
   int mask = glutGetModifiers();
   if (mMouseDown) {
-    if (button == GLUT_LEFT_BUTTON) {
+    if (_button == GLUT_LEFT_BUTTON) {
       if (mask == GLUT_ACTIVE_SHIFT) {
         mZooming = true;
       } else {
         mRotate = true;
-        mTrackBall.startBall(x, mWinHeight - y);
+        mTrackBall.startBall(_x, mWinHeight - _y);
       }
-    } else if (button == GLUT_RIGHT_BUTTON || button == GLUT_MIDDLE_BUTTON) {
+    } else if (_button == GLUT_RIGHT_BUTTON || _button == GLUT_MIDDLE_BUTTON) {
       mTranslate = true;
-    } else if (button == 3 && state == GLUT_DOWN) {  // mouse wheel up
+    } else if (_button == 3 && _state == GLUT_DOWN) {  // mouse wheel up
       // each scroll generates a down and an immediate up,
       // so ignore ups
       mZoom += 0.1;
-    } else if (button == 4 && state == GLUT_DOWN) {  // mouse wheel down?
+    } else if (_button == 4 && _state == GLUT_DOWN) {  // mouse wheel down?
       // each scroll generates a down and an immediate up,
       // so ignore ups
       mZoom -= 0.1;
     }
-    mMouseX = x;
-    mMouseY = y;
+    mMouseX = _x;
+    mMouseY = _y;
   } else {
     mTranslate = false;
     mRotate = false;
@@ -136,16 +136,16 @@ void Win3D::click(int button, int state, int x, int y) {
   glutPostRedisplay();
 }
 
-void Win3D::drag(int x, int y) {
-  double deltaX = x - mMouseX;
-  double deltaY = y - mMouseY;
+void Win3D::drag(int _x, int _y) {
+  double deltaX = _x - mMouseX;
+  double deltaY = _y - mMouseY;
 
-  mMouseX = x;
-  mMouseY = y;
+  mMouseX = _x;
+  mMouseY = _y;
 
   if (mRotate) {
     if (deltaX != 0 || deltaY != 0)
-      mTrackBall.updateBall(x, mWinHeight - y);
+      mTrackBall.updateBall(_x, mWinHeight - _y);
   }
   if (mTranslate) {
     Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();

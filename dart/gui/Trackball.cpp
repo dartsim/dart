@@ -48,19 +48,19 @@ Trackball::Trackball()
     mCurrQuat(1.0, 0.0, 0.0, 0.0) {
 }
 
-Trackball::Trackball(const Eigen::Vector2d& center, double radius)
-  : mCenter(center),
-    mRadius(radius),
+Trackball::Trackball(const Eigen::Vector2d& _center, double _radius)
+  : mCenter(_center),
+    mRadius(_radius),
     mStartPos(0.0, 0.0, 0.0),
     mCurrQuat(1.0, 0.0, 0.0, 0.0) {
 }
 
-void Trackball::startBall(double x, double y) {
-  mStartPos = mouseOnSphere(x, y);
+void Trackball::startBall(double _x, double _y) {
+  mStartPos = mouseOnSphere(_x, _y);
 }
 
-void Trackball::updateBall(double x, double y) {
-  Eigen::Vector3d toPos = mouseOnSphere(x, y);
+void Trackball::updateBall(double _x, double _y) {
+  Eigen::Vector3d toPos = mouseOnSphere(_x, _y);
   Eigen::Quaterniond newQuat(quatFromVectors(mStartPos, toPos));
   mStartPos = toPos;
   mCurrQuat = newQuat*mCurrQuat;
@@ -71,7 +71,7 @@ void Trackball::applyGLRotation() {
   glMultMatrixd(t.data());
 }
 
-void Trackball::draw(int winWidth, int winHeight) {
+void Trackball::draw(int _winWidth, int _winHeight) {
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);
 
@@ -79,8 +79,8 @@ void Trackball::draw(int winWidth, int winHeight) {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glViewport(0, 0, winWidth, winHeight);
-  gluOrtho2D(0.0, (GLdouble)winWidth, 0.0, (GLdouble)winHeight);
+  glViewport(0, 0, _winWidth, _winHeight);
+  gluOrtho2D(0.0, (GLdouble)_winWidth, 0.0, (GLdouble)_winHeight);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -92,30 +92,30 @@ void Trackball::draw(int winWidth, int winHeight) {
     double theta = i / 180.0 * M_PI;
     double x = mRadius * cos(theta);
     double y = mRadius * sin(theta);
-    glVertex2d(static_cast<GLdouble>((winWidth >> 1) + x),
-               static_cast<GLdouble>((winHeight >> 1) + y));
+    glVertex2d(static_cast<GLdouble>((_winWidth >> 1) + x),
+               static_cast<GLdouble>((_winHeight >> 1) + y));
   }
   glEnd();
 
   glPopMatrix();
 }
 
-void Trackball::setTrackball(const Eigen::Vector2d& center,
-                             const double radius) {
-  mCenter = center;
-  mRadius = radius;
+void Trackball::setTrackball(const Eigen::Vector2d& _center,
+                             const double _radius) {
+  mCenter = _center;
+  mRadius = _radius;
 }
 
-void Trackball::setCenter(const Eigen::Vector2d& center) {
-  mCenter = center;
+void Trackball::setCenter(const Eigen::Vector2d& _center) {
+  mCenter = _center;
 }
 
-void Trackball::setRadius(const double radius) {
-  mRadius = radius;
+void Trackball::setRadius(const double _radius) {
+  mRadius = _radius;
 }
 
-void Trackball::setQuaternion(const Eigen::Quaterniond& q) {
-  mCurrQuat = q;
+void Trackball::setQuaternion(const Eigen::Quaterniond& _q) {
+  mCurrQuat = _q;
 }
 
 Eigen::Quaterniond Trackball::getCurrQuat() const {
@@ -134,12 +134,12 @@ double Trackball::getRadius() const {
   return mRadius;
 }
 
-Eigen::Vector3d Trackball::mouseOnSphere(double mouseX, double mouseY) const {
+Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const {
   double mag;
   Eigen::Vector3d pointOnSphere;
 
-  pointOnSphere(0) = (mouseX - mCenter(0)) / mRadius;
-  pointOnSphere(1) = (mouseY - mCenter(1)) / mRadius;
+  pointOnSphere(0) = (_mouseX - mCenter(0)) / mRadius;
+  pointOnSphere(1) = (_mouseY - mCenter(1)) / mRadius;
 
   mag = pointOnSphere(0) * pointOnSphere(0) + pointOnSphere(1)*pointOnSphere(1);
   if (mag > 1.0) {
@@ -154,13 +154,13 @@ Eigen::Vector3d Trackball::mouseOnSphere(double mouseX, double mouseY) const {
   return pointOnSphere;
 }
 
-Eigen::Quaterniond Trackball::quatFromVectors(const Eigen::Vector3d& from,
-                                              const Eigen::Vector3d& to) const {
+Eigen::Quaterniond Trackball::quatFromVectors(
+    const Eigen::Vector3d& _from, const Eigen::Vector3d& _to) const {
   Eigen::Quaterniond quat;
-  quat.x() = from(1)*to(2) - from(2)*to(1);
-  quat.y() = from(2)*to(0) - from(0)*to(2);
-  quat.z() = from(0)*to(1) - from(1)*to(0);
-  quat.w() = from(0)*to(0) + from(1)*to(1) + from(2)*to(2);
+  quat.x() = _from(1)*_to(2) - _from(2)*_to(1);
+  quat.y() = _from(2)*_to(0) - _from(0)*_to(2);
+  quat.z() = _from(0)*_to(1) - _from(1)*_to(0);
+  quat.w() = _from(0)*_to(0) + _from(1)*_to(1) + _from(2)*_to(2);
   return quat;
 }
 

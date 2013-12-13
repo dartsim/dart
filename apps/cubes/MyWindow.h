@@ -56,7 +56,7 @@ public:
   virtual void drawSkels();
 
   /// \brief
-  virtual void keyboard(unsigned char key, int x, int y);
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
   void spawnCube(

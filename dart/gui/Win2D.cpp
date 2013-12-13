@@ -47,14 +47,14 @@ Win2D::Win2D() : GlutWindow() {
   mTranslate = false;
 }
 
-void Win2D::resize(int w, int h) {
-  mWinWidth = w;
-  mWinHeight = h;
+void Win2D::resize(int _w, int _h) {
+  mWinWidth = _w;
+  mWinHeight = _h;
 
-  glViewport(0, 0, w, h);
+  glViewport(0, 0, _w, _h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(-w/2, w/2-1, -h/2, h/2-1, -1, 1);
+  glOrtho(-_w/2, _w/2-1, -_h/2, _h/2-1, -1, 1);
 
   glMatrixMode(GL_MODELVIEW);  // Select The Modelview Matrix
   glLoadIdentity();  // Reset The Modelview Matrix
@@ -62,8 +62,8 @@ void Win2D::resize(int w, int h) {
   glutPostRedisplay();
 }
 
-void Win2D::keyboard(unsigned char key, int x, int y) {
-  switch (key) {
+void Win2D::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ',':  // slow down
       mDisplayTimeout += 2;
       break;
@@ -84,26 +84,26 @@ void Win2D::keyboard(unsigned char key, int x, int y) {
   // printf("ascii key: %lu\n", key);
 }
 
-void Win2D::click(int button, int state, int x, int y) {
+void Win2D::click(int _button, int _state, int _x, int _y) {
   mMouseDown = !mMouseDown;
   if (mMouseDown) {
     mTranslate = true;
 
-    mMouseX = x;
-    mMouseY = y;
+    mMouseX = _x;
+    mMouseY = _y;
   } else {
     mTranslate = false;
   }
   glutPostRedisplay();
 }
 
-void Win2D::drag(int x, int y) {
+void Win2D::drag(int _x, int _y) {
   if (mMouseDown) {
-    mTransX += (x - mMouseX);
-    mTransY += (y - mMouseY);
+    mTransX += (_x - mMouseX);
+    mTransY += (_y - mMouseY);
 
-    mMouseX = x;
-    mMouseY = y;
+    mMouseX = _x;
+    mMouseY = _y;
   }
   glutPostRedisplay();
 }

@@ -58,76 +58,76 @@ namespace math {
 /// const Matd CR(2,2,0.0,-1.0,1.0,0.0);
 const Eigen::Matrix2d CR((Eigen::Matrix2d() << 0.0, -1.0, 1.0, 0.0).finished());
 
-inline int delta(int i, int j) {
-  if (i == j)
+inline int delta(int _i, int _j) {
+  if (_i == _j)
     return 1;
   return 0;
 }
 
-inline int sgn(double a) {
-  if (a < 0)
+inline int sgn(double _a) {
+  if (_a < 0)
     return -1;
-  else if (a == 0)
+  else if (_a == 0)
     return 0;
   else
     return 1;
 }
 
-inline double sqr(double x) {
-  return x*x;
+inline double sqr(double _x) {
+  return _x*_x;
 }
 
-inline double Tsinc(double theta) {
-  return 0.5-sqrt(theta)/48;
+inline double Tsinc(double _theta) {
+  return 0.5-sqrt(_theta)/48;
 }
 
-inline bool isZero(double theta) {
-  return (fabs(theta) < DART_EPSILON);
+inline bool isZero(double _theta) {
+  return (fabs(_theta) < DART_EPSILON);
 }
 
-inline double asinh(double X) {
-  return log(X + sqrt(X * X + 1));
+inline double asinh(double _X) {
+  return log(_X + sqrt(_X * _X + 1));
 }
 
-inline double acosh(double X) {
-  return log(X + sqrt(X * X - 1));
+inline double acosh(double _X) {
+  return log(_X + sqrt(_X * _X - 1));
 }
 
-inline double atanh(double X) {
-  return log((1 + X)/(1 - X))/ 2;
+inline double atanh(double _X) {
+  return log((1 + _X)/(1 - _X))/ 2;
 }
 
-inline double asech(double X) {
-  return log((sqrt(-X * X + 1) + 1) / X);
+inline double asech(double _X) {
+  return log((sqrt(-_X * _X + 1) + 1) / _X);
 }
 
-inline double acosech(double X) {
-  return log((sgn(X) * sqrt(X * X + 1) +1) / X);
+inline double acosech(double _X) {
+  return log((sgn(_X) * sqrt(_X * _X + 1) +1) / _X);
 }
 
-inline double acotanh(double X) {
-  return log((X + 1) / (X - 1)) / 2;
+inline double acotanh(double _X) {
+  return log((_X + 1) / (_X - 1)) / 2;
 }
 
-inline double round(double x) {
-  return floor(x + 0.5);
+inline double round(double _x) {
+  return floor(_x + 0.5);
 }
 
-inline double round2(double x) {
-  int gintx = static_cast<int>(std::floor(x));
-  if (x - gintx < 0.5)
+inline double round2(double _x) {
+  int gintx = static_cast<int>(std::floor(_x));
+  if (_x - gintx < 0.5)
     return static_cast<double>(gintx);
   else
     return static_cast<double>(gintx + 1.0);
 }
 
-inline bool isEqual(double x, double y) {
-  return (std::fabs(x - y) < DART_EPSILON);
+inline bool isEqual(double _x, double _y) {
+  return (std::fabs(_x - _y) < DART_EPSILON);
 }
 
 // check if it is an integer
-inline bool isInt(double x) {
-  if (isEqual(round(x), x))
+inline bool isInt(double _x) {
+  if (isEqual(round(_x), _x))
     return true;
   return false;
 }
@@ -145,9 +145,9 @@ inline unsigned seedRand() {
   return seed;
 }
 
-inline double random(double min, double max) {
-  return min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
-                * (max - min));
+inline double random(double _min, double _max) {
+  return _min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
+                * (_max - _min));
 }
 
 }  // namespace math

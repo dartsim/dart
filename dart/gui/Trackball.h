@@ -52,32 +52,32 @@ public:
   Trackball();
 
   /// \brief Constructor
-  Trackball(const Eigen::Vector2d& center, double radius);
+  Trackball(const Eigen::Vector2d& _center, double _radius);
 
   /// \brief Set the starting position to the project of (x,y) on the trackball
-  void startBall(double x, double y);
+  void startBall(double _x, double _y);
 
   /// \brief Update the current rotation to rotate from mStartPos to the
   ///        projection of (x,y) on trackball, then update mStartPos
-  void updateBall(double x, double y);
+  void updateBall(double _x, double _y);
 
   /// \brief Apply the current rotation to openGL env
   void applyGLRotation();
 
   /// \brief Draw the trackball on screen
-  void draw(int winWidth, int winHeight);
+  void draw(int _winWidth, int _winHeight);
 
   /// \brief
-  void setTrackball(const Eigen::Vector2d& center, const double radius);
+  void setTrackball(const Eigen::Vector2d& _center, const double _radius);
 
   /// \brief
-  void setCenter(const Eigen::Vector2d& center);
+  void setCenter(const Eigen::Vector2d& _center);
 
   /// \brief
-  void setRadius(const double radius);
+  void setRadius(const double _radius);
 
   /// \brief
-  void setQuaternion(const Eigen::Quaterniond& q);
+  void setQuaternion(const Eigen::Quaterniond& _q);
 
   /// \brief
   Eigen::Quaterniond getCurrQuat() const;
@@ -93,12 +93,12 @@ public:
 
 private:
   /// \brief Project screen coordinate (x,y) to the trackball
-  Eigen::Vector3d mouseOnSphere(double mouseX, double mouseY) const;
+  Eigen::Vector3d mouseOnSphere(double _mouseX, double _mouseY) const;
 
   /// \brief Compute the quaternion that rotates from vector "from" to vector
   ///        "to"
-  Eigen::Quaterniond quatFromVectors(const Eigen::Vector3d& from,
-                                     const Eigen::Vector3d& to) const;
+  Eigen::Quaterniond quatFromVectors(const Eigen::Vector3d& _from,
+                                     const Eigen::Vector3d& _to) const;
 
   /// \brief
   Eigen::Vector2d mCenter;

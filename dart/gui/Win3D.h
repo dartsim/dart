@@ -49,13 +49,13 @@ class Win3D : public GlutWindow {
 public:
   Win3D();
 
-  virtual void initWindow(int w, int h, const char* name);
-  virtual void resize(int w, int h);
+  virtual void initWindow(int _w, int _h, const char* _name);
+  virtual void resize(int _w, int _h);
   virtual void render();
 
-  virtual void keyboard(unsigned char key, int x, int y);
-  virtual void click(int button, int state, int x, int y);
-  virtual void drag(int x, int y);
+  virtual void keyboard(unsigned char _key, int _x, int _y);
+  virtual void click(int _button, int _state, int _x, int _y);
+  virtual void drag(int _x, int _y);
 
   virtual void capturing();
   virtual void initGL();

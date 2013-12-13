@@ -45,10 +45,10 @@
 namespace dart {
 namespace dynamics {
 
-Joint::Joint(JointType type, const std::string& _name)
+Joint::Joint(JointType _type, const std::string& _name)
   : mName(_name),
     mSkelIndex(-1),
-    mJointType(type),
+    mJointType(_type),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),

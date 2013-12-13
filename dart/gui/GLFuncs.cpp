@@ -47,7 +47,7 @@
 namespace dart {
 namespace gui {
 
-void drawStringOnScreen(float x, float y, const std::string& s) {
+void drawStringOnScreen(float _x, float _y, const std::string& _s) {
   // draws text on the screen
   GLint oldMode;
   glGetIntegerv(GL_MATRIX_MODE, &oldMode);
@@ -60,10 +60,10 @@ void drawStringOnScreen(float x, float y, const std::string& s) {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
-  glRasterPos2f(x, y);
-  unsigned int length = s.length();
+  glRasterPos2f(_x, _y);
+  unsigned int length = _s.length();
   for (unsigned int c = 0; c < length; c++)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c) );
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, _s.at(c) );
   glPopMatrix();
 
   glMatrixMode(GL_PROJECTION);
@@ -72,17 +72,17 @@ void drawStringOnScreen(float x, float y, const std::string& s) {
 }
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end
-void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir,
-                 const double length, const double thickness,
-                 const double arrowThickness) {
-  Eigen::Vector3d normDir = dir;
+void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
+                 const double _length, const double _thickness,
+                 const double _arrowThickness) {
+  Eigen::Vector3d normDir = _dir;
   normDir.normalize();
 
   double arrowLength;
-  if (arrowThickness == -1)
-    arrowLength = 4*thickness;
+  if (_arrowThickness == -1)
+    arrowLength = 4*_thickness;
   else
-    arrowLength = 2*arrowThickness;
+    arrowLength = 2*_arrowThickness;
 
   // draw the arrow body as a cylinder
   GLUquadricObj *c;
@@ -91,13 +91,13 @@ void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir,
   gluQuadricNormals(c, GLU_SMOOTH);
 
   glPushMatrix();
-  glTranslatef(pt[0], pt[1], pt[2]);
+  glTranslatef(_pt[0], _pt[1], _pt[2]);
   glRotated(acos(normDir[2])*180/M_PI, -normDir[1], normDir[0], 0);
-  gluCylinder(c, thickness, thickness, length-arrowLength, 16, 16);
+  gluCylinder(c, _thickness, _thickness, _length-arrowLength, 16, 16);
 
   // draw the arrowhed as a cone
   glPushMatrix();
-  glTranslatef(0, 0, length-arrowLength);
+  glTranslatef(0, 0, _length-arrowLength);
   gluCylinder(c, arrowLength*0.5, 0.0, arrowLength, 10, 10);
   glPopMatrix();
 
@@ -108,30 +108,30 @@ void drawArrow3D(const Eigen::Vector3d& pt, const Eigen::Vector3d& dir,
 
 // draw a 2D arrow starting from pt along vec, the arrow head is on the other
 // end
-void drawArrow2D(const Eigen::Vector2d& pt, const Eigen::Vector2d& vec,
-                 double thickness) {
+void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
+                 double _thickness) {
   // draw the arrow body as a thick line
-  glLineWidth(thickness);
+  glLineWidth(_thickness);
   glBegin(GL_LINES);
-  glVertex2f(pt[0], pt[1]);
-  glVertex2f(pt[0]+vec[0], pt[1]+vec[1]);
+  glVertex2f(_pt[0], _pt[1]);
+  glVertex2f(_pt[0]+_vec[0], _pt[1]+_vec[1]);
   glEnd();
 
   // draw arrowhead as a triangle
-  double theta = atan2(vec[1], vec[0]);
+  double theta = atan2(_vec[1], _vec[0]);
   glPushMatrix();
-  glTranslatef(pt[0]+vec[0], pt[1]+vec[1], 0.0);
+  glTranslatef(_pt[0]+_vec[0], _pt[1]+_vec[1], 0.0);
   glRotatef(theta*180.0/M_PI, 0.0, 0.0, 1.0);
-  glTranslatef(thickness, 0.0, 0.0);
+  glTranslatef(_thickness, 0.0, 0.0);
   glBegin(GL_TRIANGLES);
-  glVertex2f(0.0, thickness);
-  glVertex2f(2*thickness, 0.0);
-  glVertex2f(0.0, -thickness);
+  glVertex2f(0.0, _thickness);
+  glVertex2f(2*_thickness, 0.0);
+  glVertex2f(0.0, -_thickness);
   glEnd();
   glPopMatrix();
 }
 
-void drawProgressBar(int currFrame, int totalFrame) {
+void drawProgressBar(int _currFrame, int _totalFrame) {
   GLint oldMode;
   glGetIntegerv(GL_MATRIX_MODE, &oldMode);
   glMatrixMode(GL_PROJECTION);
@@ -153,7 +153,7 @@ void drawProgressBar(int currFrame, int totalFrame) {
   glVertex2f(0.15f, 0.08f);
   glEnd();
 
-  float portion = static_cast<float>(currFrame)/totalFrame;
+  float portion = static_cast<float>(_currFrame)/_totalFrame;
   float end = 0.15f+portion*0.7f;
   glPolygonMode(GL_FRONT, GL_FILL);
   glColor4d(0.3, 0.3, 0.3, 0.5);

@@ -266,9 +266,9 @@ int World::getIndex(int _index) const {
   return mIndices[_index];
 }
 
-bool World::checkCollision(bool checkAllCollisions) {
+bool World::checkCollision(bool _checkAllCollisions) {
   return mConstraintHandler->getCollisionDetector()->detectCollision(
-        checkAllCollisions, false);
+        _checkAllCollisions, false);
 }
 
 constraint::ConstraintDynamics*World::getConstraintHandler() const {

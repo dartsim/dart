@@ -154,7 +154,7 @@ public:
   // Kinematics
   //--------------------------------------------------------------------------
   /// \brief
-  bool checkCollision(bool checkAllCollisions = false);
+  bool checkCollision(bool _checkAllCollisions = false);
 
   //--------------------------------------------------------------------------
   // Dynamics

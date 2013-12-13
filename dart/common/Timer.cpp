@@ -64,8 +64,8 @@ Timer::~Timer() {
 }
 
 #if WIN32
-double Timer::_convLIToSecs(LARGE_INTEGER& L) {
-  return (static_cast<double>(L.QuadPart)
+double Timer::_convLIToSecs(LARGE_INTEGER& _L) {
+  return (static_cast<double>(_L.QuadPart)
           / static_cast<double>(mFrequency.QuadPart));
 }
 #endif
@@ -135,8 +135,8 @@ void Timer::print() {
   }
 }
 
-double Timer::_subtractTimes(double endTime, double _startTime) {
-  return (endTime - _startTime) / CLOCKS_PER_SEC;
+double Timer::_subtractTimes(double _endTime, double _startTime) {
+  return (_endTime - _startTime) / CLOCKS_PER_SEC;
 }
 
 }  // namespace common

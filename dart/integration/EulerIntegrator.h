@@ -52,7 +52,7 @@ public:
   virtual ~EulerIntegrator();
 
   // Documentation inherited.
-  virtual void integrate(IntegrableSystem* system, double dt) const;
+  virtual void integrate(IntegrableSystem* _system, double _dt) const;
 };
 
 }  // namespace integration

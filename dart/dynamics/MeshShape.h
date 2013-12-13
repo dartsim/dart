@@ -72,7 +72,7 @@ public:
             bool _default = true) const;
 
   /// \brief
-  static const aiScene* loadMesh(const std::string& fileName);
+  static const aiScene* loadMesh(const std::string& _fileName);
 
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;

@@ -66,8 +66,8 @@ void MyWindow::drawSkels() {
   SimWindow::drawSkels();
 }
 
-void MyWindow::keyboard(unsigned char key, int x, int y) {
-  switch (key) {
+void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating) {
@@ -131,7 +131,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
       break;
     }
     default:
-      Win3D::keyboard(key, x, y);
+      Win3D::keyboard(_key, _x, _y);
   }
   glutPostRedisplay();
 }

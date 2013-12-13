@@ -49,19 +49,19 @@ public:
   Win2D();
 
   /// \brief
-  virtual void resize(int w, int h);
+  virtual void resize(int _w, int _h);
 
   /// \brief
   virtual void render();
 
   /// \brief
-  virtual void keyboard(unsigned char key, int x, int y);
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  virtual void click(int button, int state, int x, int y);
+  virtual void click(int _button, int _state, int _x, int _y);
 
   /// \brief
-  virtual void drag(int x, int y);
+  virtual void drag(int _x, int _y);
 
   /// \brief
   virtual void initGL();

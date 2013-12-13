@@ -53,18 +53,18 @@ public:
   GlutWindow();
   virtual ~GlutWindow();
 
-  virtual void initWindow(int w, int h, const char* name);
+  virtual void initWindow(int _w, int _h, const char* _name);
 
   // callback functions
-  static void reshape(int w, int h);
-  static void keyEvent(unsigned char key, int x, int y);
-  static void specKeyEvent(int key, int x, int y);
-  static void mouseClick(int button, int state, int x, int y);
-  static void mouseDrag(int x, int y);
-  static void mouseMove(int x, int y);
+  static void reshape(int _w, int _h);
+  static void keyEvent(unsigned char _key, int _x, int _y);
+  static void specKeyEvent(int _key, int _x, int _y);
+  static void mouseClick(int _button, int _state, int _x, int _y);
+  static void mouseDrag(int _x, int _y);
+  static void mouseMove(int _x, int _y);
   static void refresh();
-  static void refreshTimer(int val);
-  static void runTimer(int val);
+  static void refreshTimer(int _val);
+  static void runTimer(int _val);
 
   static GlutWindow* current();
   static std::vector<GlutWindow*> mWindows;
@@ -72,15 +72,15 @@ public:
 
 protected:
   // callback implementation
-  virtual void resize(int w, int h) = 0;
+  virtual void resize(int _w, int _h) = 0;
   virtual void render() = 0;
-  virtual void keyboard(unsigned char key, int x, int y);
-  virtual void specKey(int key, int x, int y);
-  virtual void click(int button, int state, int x, int y);
-  virtual void drag(int x, int y);
-  virtual void move(int x, int y);
-  virtual void displayTimer(int val);
-  virtual void simTimer(int val);
+  virtual void keyboard(unsigned char _key, int _x, int _y);
+  virtual void specKey(int _key, int _x, int _y);
+  virtual void click(int _button, int _state, int _x, int _y);
+  virtual void drag(int _x, int _y);
+  virtual void move(int _x, int _y);
+  virtual void displayTimer(int _val);
+  virtual void simTimer(int _val);
 
   virtual bool screenshot();
 

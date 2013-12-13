@@ -81,7 +81,7 @@ public:
   // Constructor and Destructor
   //--------------------------------------------------------------------------
   /// \brief
-  Joint(JointType type, const std::string& _name = "Noname Joint");
+  Joint(JointType _type, const std::string& _name = "Noname Joint");
 
   /// \brief
   virtual ~Joint();
