@@ -4013,6 +4013,7 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
           'http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml#Namespaces'
           ' for more information.')
 
+# TODO(JS): This function can not check multi-lined functions. See Issue #126
 def CheckForFunctionParameterNaming(filename, clean_lines, linenum, error):
   """Check for function parameter names that not start with underscore.
 
