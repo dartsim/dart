@@ -94,7 +94,7 @@ private:
   void _updateBoundingBoxDim();
 
   /// \brief
-  const aiScene *mMesh;
+  const aiScene* mMesh;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;
