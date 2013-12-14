@@ -359,6 +359,19 @@ void BodyNode::updateTransform() {
   mParentJoint->updateJacobian();
 }
 
+void BodyNode::updateTransform_Issue122(double _timeStep) {
+  mParentJoint->updateTransform_Issue122(_timeStep);
+  if (mParentBodyNode) {
+    mW = mParentBodyNode->getWorldTransform()
+         * mParentJoint->getLocalTransform();
+  } else {
+    mW = mParentJoint->getLocalTransform();
+  }
+  assert(math::verifyTransform(mW));
+
+  mParentJoint->updateJacobian_Issue122();
+}
+
 void BodyNode::updateVelocity() {
   //--------------------------------------------------------------------------
   // Body velocity update
@@ -379,6 +392,52 @@ void BodyNode::updateVelocity() {
 
 void BodyNode::updateEta(bool _updateJacobianDeriv) {
   mParentJoint->updateJacobianTimeDeriv();
+
+  if (mParentJoint->getNumGenCoords() > 0) {
+    mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
+                    mParentJoint->get_dq());
+    mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
+                      mParentJoint->get_dq();
+
+    assert(!math::isNan(mEta));
+  }
+
+  if (_updateJacobianDeriv == false)
+    return;
+
+  //--------------------------------------------------------------------------
+  // Jacobian first derivative update
+  //
+  // dJ = | dJ1 dJ2 ... dJn |
+  //   = | Ad(T(i,i-1), dJ_parent) dJ_local |
+  //
+  //   dJ_parent: (6 x parentDOF)
+  //    dJ_local: (6 x localDOF)
+  //         dJi: (6 x 1) se3
+  //          n: number of dependent coordinates
+  //--------------------------------------------------------------------------
+
+  const int numLocalDOFs = mParentJoint->getNumGenCoords();
+  const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
+
+  // Parent Jacobian
+  if (mParentBodyNode) {
+    assert(mParentBodyNode->mBodyJacobianTimeDeriv.cols()
+           + mParentJoint->getNumGenCoords() == mBodyJacobianTimeDeriv.cols());
+
+    assert(mParentJoint);
+    mBodyJacobianTimeDeriv.leftCols(numParentDOFs) =
+        math::AdInvTJac(mParentJoint->getLocalTransform(),
+                        mParentBodyNode->mBodyJacobianTimeDeriv);
+  }
+
+  // Local Jacobian
+  mBodyJacobianTimeDeriv.rightCols(numLocalDOFs) =
+      mParentJoint->getLocalJacobianTimeDeriv();
+}
+
+void BodyNode::updateEta_Issue122(bool _updateJacobianDeriv) {
+  mParentJoint->updateJacobianTimeDeriv_Issue122();
 
   if (mParentJoint->getNumGenCoords() > 0) {
     mEta = math::ad(mV, mParentJoint->getLocalJacobian() *

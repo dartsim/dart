@@ -300,9 +300,17 @@ void Skeleton::setState(const Eigen::VectorXd& _state) {
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it) {
-    (*it)->updateTransform();
-    (*it)->updateVelocity();
-    (*it)->updateEta();
+    // TODO(JS): This is workaround for Issue #122.
+    if ((*it)->getParentJoint()->getJointType() == Joint::BALL
+        || (*it)->getParentJoint()->getJointType() == Joint::FREE) {
+      (*it)->updateTransform_Issue122(mTimeStep);
+      (*it)->updateVelocity();
+      (*it)->updateEta_Issue122();
+    } else {
+      (*it)->updateTransform();
+      (*it)->updateVelocity();
+      (*it)->updateEta();
+    }
   }
 
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();

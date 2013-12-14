@@ -45,7 +45,8 @@ namespace dart {
 namespace dynamics {
 
 BallJoint::BallJoint(const std::string& _name)
-  : Joint(BALL, _name) {
+  : Joint(BALL, _name),
+    mT_Joint(Eigen::Isometry3d::Identity()) {
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
@@ -66,9 +67,18 @@ inline void BallJoint::updateTransform() {
                     mCoordinate[1].get_q(),
                     mCoordinate[2].get_q());
 
-  mT = mT_ParentBodyToJoint
-       * math::expAngular(q)
-       * mT_ChildBodyToJoint.inverse();
+  // TODO(JS): This is workaround for Issue #122.
+  mT_Joint = math::expAngular(q);
+
+  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
+
+  assert(math::verifyTransform(mT));
+}
+
+void BallJoint::updateTransform_Issue122(double _timeStep) {
+  mT_Joint = mT_Joint * math::expAngular(_timeStep * get_dq());
+
+  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -87,6 +97,22 @@ inline void BallJoint::updateJacobian() {
   J0 << J(0, 0), J(0, 1), J(0, 2), 0, 0, 0;
   J1 << J(1, 0), J(1, 1), J(1, 2), 0, 0, 0;
   J2 << J(2, 0), J(2, 1), J(2, 2), 0, 0, 0;
+
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+
+  assert(!math::isNan(mS));
+}
+
+void BallJoint::updateJacobian_Issue122() {
+  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+
+  J0[0] = 1.0;
+  J1[1] = 1.0;
+  J2[2] = 1.0;
 
   mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
   mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
@@ -118,6 +144,11 @@ inline void BallJoint::updateJacobianTimeDeriv() {
   mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
   assert(!math::isNan(mdS));
+}
+
+void BallJoint::updateJacobianTimeDeriv_Issue122() {
+  // mdS == 0
+  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
 }
 
 }  // namespace dynamics

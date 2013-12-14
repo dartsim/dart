@@ -388,12 +388,18 @@ protected:
   /// \brief Update local transformations and world transformations.
   virtual void updateTransform();
 
+  /// @brief // TODO(JS): This is workaround for Issue #122.
+  virtual void updateTransform_Issue122(double _timeStep);
+
   /// \brief
   virtual void updateVelocity();
 
   /// \brief
   /// parentJoint.dS --> dJ
   virtual void updateEta(bool _updateJacobianDeriv = false);
+
+  /// @brief // TODO(JS): This is workaround for Issue #122.
+  virtual void updateEta_Issue122(bool _updateJacobianDeriv = false);
 
   /// \brief
   /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
