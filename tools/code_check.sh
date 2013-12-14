@@ -23,6 +23,7 @@ CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\
   -not -name "DARTCollide.cpp"\
+  -not -name "BulletCollisionDetector.cpp"\
   -not -name "lodepng.cpp"\
   -not -name "error.cpp"\
   -not -name "fastdot.cpp"\
@@ -44,7 +45,9 @@ CHECK_FILES=`\
   -not -name "matrix.h"\
   -not -name "misc.h"\
   -not -name "odeconfig.h"\
-  | grep -v "../dart/collision/bullet"`
+  -not -name "btBulletCollisionCommon.h"\
+  | grep -v "../dart/collision/bullet/LinearMath/"\
+  | grep -v "../dart/collision/bullet/BulletCollision/"`
 
 # cpplint
 echo $CHECK_FILES | xargs python cpplint.py 2>&1
