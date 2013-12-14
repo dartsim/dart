@@ -4,6 +4,7 @@
         <physics>
             <time_step>0.001</time_step>
             <gravity>0 -9.81 0</gravity>
+            <collision_detector>bullet</collision_detector>
         </physics>
         
         <skeleton name="grount skeleton">
@@ -12,18 +13,20 @@
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <box>
-                            <size>2.5 0.05 2.5</size>
-                        </box>
+                        <plane>
+                            <normal>0.0 1.0 0.0</normal>
+                            <point>0.0 0.0 0.0</point>
+                        </plane>
                     </geometry>
                     <color>0.95 0.95 0.95</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <box>
-                            <size>2.5 0.05 2.5</size>
-                        </box>
+                        <plane>
+                            <normal>0.0 1.0 0.0</normal>
+                            <point>0.0 0.0 0.0</point>
+                        </plane>
                     </geometry>
                 </collision_shape>                                
             </body>

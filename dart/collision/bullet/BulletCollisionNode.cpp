@@ -43,7 +43,7 @@
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
-// #include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/MeshShape.h"
 
 namespace dart {
@@ -113,28 +113,27 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
 
         break;
       }
-//      case dynamics::Shape::PLANE:
-//      {
-//        dynamics::PlaneShape* plane =
-//            static_cast<dynamics::PlaneShape*>(shape);
+      case dynamics::Shape::PLANE: {
+        dynamics::PlaneShape* plane =
+            static_cast<dynamics::PlaneShape*>(shape);
 
-//        double d = plane->getNormal().dot(plane->getPoint())
-//                   / plane->getNormal().squaredNorm();
+        double d = plane->getNormal().dot(plane->getPoint())
+                   / plane->getNormal().squaredNorm();
 
-//        btStaticPlaneShape* btStaticPlane =
-//            new btStaticPlaneShape(convertVector3(plane->getNormal()), d);
-//        btStaticPlane->setMargin(0.0);
-//        btCollisionObject* btCollObj = new btCollisionObject();
-//        btCollObj->setCollisionShape(btStaticPlane);
-//        btUserData* userData = new btUserData;
-//        userData->bodyNode = _bodyNode;
-//        userData->shape = shape;
-//        userData->btCollNode = this;
-//        btCollObj->setUserPointer(userData);
-//        mbtCollsionObjects.push_back(btCollObj);
+        btStaticPlaneShape* btStaticPlane =
+            new btStaticPlaneShape(convertVector3(plane->getNormal()), d);
+        btStaticPlane->setMargin(0.0);
+        btCollisionObject* btCollObj = new btCollisionObject();
+        btCollObj->setCollisionShape(btStaticPlane);
+        btUserData* userData = new btUserData;
+        userData->bodyNode = _bodyNode;
+        userData->shape = shape;
+        userData->btCollNode = this;
+        btCollObj->setUserPointer(userData);
+        mbtCollsionObjects.push_back(btCollObj);
 
-//        break;
-//      }
+        break;
+      }
       case dynamics::Shape::MESH: {
         dynamics::MeshShape *shapeMesh
             = static_cast<dynamics::MeshShape *>(shape);

@@ -60,6 +60,7 @@ public:
     BOX,
     ELLIPSOID,
     CYLINDER,
+    PLANE,
     MESH
   };
 

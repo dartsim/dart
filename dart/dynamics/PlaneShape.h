@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,39 +34,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_DYNAMICS_PLANESHAPE_H_
+#define DART_DYNAMICS_PLANESHAPE_H_
 
-#include "dart/collision/bullet/BulletCollisionDetector.h"
-#include "dart/constraint/ConstraintDynamics.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "apps/cubes/MyWindow.h"
+#include "dart/dynamics/Shape.h"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
-          DART_DATA_PATH"/skel/bullet_collision.skel");
-  assert(myWorld != NULL);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+namespace dart {
+namespace dynamics {
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+class PlaneShape : public Shape {
+public:
+  /// @brief Constructor.
+  PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-  std::cout << "'q': spawn a random cube" << std::endl;
-  std::cout << "'w': delete a spawned cube" << std::endl;
+  // Documentation inherited.
+  // TODO(JS): Not implemented yet
+  void draw(renderer::RenderInterface* _ri = NULL,
+            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
+            bool _default = true) const;
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Bullet Collision");
-  glutMainLoop();
+  // Documentation inherited.
+  virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-  return 0;
-}
+  /// @brief
+  void setNormal(const Eigen::Vector3d& _normal);
+
+  /// @brief
+  const Eigen::Vector3d& getNormal() const;
+
+  /// @brief
+  void setPoint(const Eigen::Vector3d& _point);
+
+  /// @brief
+  const Eigen::Vector3d& getPoint() const;
+
+private:
+  // Documentation inherited.
+  void computeVolume();
+
+  /// @brief
+  Eigen::Vector3d mNormal;
+
+  /// @brief
+  Eigen::Vector3d mPoint;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+}  // namespace dynamics
+}  // namespace dart
+
+#endif  // DART_DYNAMICS_PLANESHAPE_H_

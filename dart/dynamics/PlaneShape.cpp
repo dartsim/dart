@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,39 +34,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "dart/dynamics/PlaneShape.h"
 
-#include "dart/collision/bullet/BulletCollisionDetector.h"
-#include "dart/constraint/ConstraintDynamics.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "apps/cubes/MyWindow.h"
+#include "dart/renderer/RenderInterface.h"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
-          DART_DATA_PATH"/skel/bullet_collision.skel");
-  assert(myWorld != NULL);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+namespace dart {
+namespace dynamics {
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
-
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-  std::cout << "'q': spawn a random cube" << std::endl;
-  std::cout << "'w': delete a spawned cube" << std::endl;
-
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Bullet Collision");
-  glutMainLoop();
-
-  return 0;
+PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
+                       const Eigen::Vector3d& _point)
+  : Shape(PLANE),
+    mNormal(_normal),
+    mPoint(_point) {
 }
+
+void PlaneShape::draw(renderer::RenderInterface* _ri,
+                      const Eigen::Vector4d& _color,
+                      bool _useDefaultColor) const {
+  // TODO(JS): Not implemented yet
+  if (!_ri) return;
+  if (!_useDefaultColor)
+    _ri->setPenColor(_color);
+  else
+    _ri->setPenColor(mColor);
+  _ri->pushMatrix();
+  _ri->transform(mTransform);
+//  _ri->drawCube(mDim);
+  _ri->popMatrix();
+}
+
+Eigen::Matrix3d PlaneShape::computeInertia(double _mass) const {
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  return inertia;
+}
+
+void PlaneShape::setNormal(const Eigen::Vector3d& _normal) {
+  mNormal = _normal.normalized();
+}
+
+const Eigen::Vector3d& PlaneShape::getNormal() const {
+  return mNormal;
+}
+
+void PlaneShape::setPoint(const Eigen::Vector3d& _point) {
+  mPoint = _point;
+}
+
+const Eigen::Vector3d& PlaneShape::getPoint() const {
+  return mPoint;
+}
+
+void PlaneShape::computeVolume() {
+  mVolume = 0.0;
+}
+
+}  // namespace dynamics
+}  // namespace dart

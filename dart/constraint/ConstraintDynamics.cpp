@@ -297,6 +297,10 @@ double ConstraintDynamics::getTimeStep() const {
 
 void ConstraintDynamics::setCollisionDetector(
     collision::CollisionDetector* _collisionDetector) {
+  // TODO(JS): If there are collision objects in the old collision detector,
+  //           then we should register the objects to the new collision
+  //           detector. This is not implemented yet. See Issue #127.
+
   assert(_collisionDetector != NULL && "Invalid collision detector.");
 
   if (_collisionDetector == mCollisionDetector)

@@ -41,10 +41,16 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Console.h"
+#include "dart/collision/bullet/BulletCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/constraint/ConstraintDynamics.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
@@ -118,6 +124,28 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
       std::string strGravity = gravityElement->GetText();
       Eigen::Vector3d gravity = toVector3d(strGravity);
       newWorld->setGravity(gravity);
+    }
+
+    // Collision detector
+    if (hasElement(physicsElement, "collision_detector")) {
+      std::string strCD = getValueString(physicsElement, "collision_detector");
+      if (strCD == "fcl_mesh") {
+        newWorld->getConstraintHandler()->setCollisionDetector(
+              new collision::FCLMeshCollisionDetector());
+      } else if (strCD == "fcl") {
+        newWorld->getConstraintHandler()->setCollisionDetector(
+              new collision::FCLCollisionDetector());
+      } else if (strCD == "dart") {
+        newWorld->getConstraintHandler()->setCollisionDetector(
+              new collision::DARTCollisionDetector());
+      } else if (strCD == "bullet") {
+        newWorld->getConstraintHandler()->setCollisionDetector(
+              new collision::BulletCollisionDetector());
+      } else {
+        dtwarn << "Unknown collision detector[" << strCD << "]. "
+               << "Default collision detector[fcl] will be loaded."
+               << std::endl;
+      }
     }
   }
 
@@ -315,48 +343,45 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   return skelBodyNode;
 }
 
-dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizElement) {
+dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizEle) {
   dynamics::Shape* newShape = NULL;
 
-  // type
-  assert(hasElement(vizElement, "geometry"));
-  tinyxml2::XMLElement* geometryElement = getElement(vizElement, "geometry");
+  // Geometry
+  assert(hasElement(vizEle, "geometry"));
+  tinyxml2::XMLElement* geometryEle = getElement(vizEle, "geometry");
 
-  if (hasElement(geometryElement, "box")) {
-    tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
-
-    Eigen::Vector3d size = getValueVector3d(boxElement, "size");
-
+  if (hasElement(geometryEle, "box")) {
+    tinyxml2::XMLElement* boxEle       = getElement(geometryEle, "box");
+    Eigen::Vector3d       size         = getValueVector3d(boxEle, "size");
     newShape = new dynamics::BoxShape(size);
-  } else if (hasElement(geometryElement, "ellipsoid")) {
-    tinyxml2::XMLElement* ellipsoidElement =
-        getElement(geometryElement, "ellipsoid");
-
-    Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
-
+  } else if (hasElement(geometryEle, "ellipsoid")) {
+    tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
+    Eigen::Vector3d       size         = getValueVector3d(ellipsoidEle, "size");
     newShape = new dynamics::EllipsoidShape(size);
-  } else if (hasElement(geometryElement, "cylinder")) {
-    tinyxml2::XMLElement* cylinderElement =
-        getElement(geometryElement, "cylinder");
-
-    double radius = getValueDouble(cylinderElement, "radius");
-    double height = getValueDouble(cylinderElement, "height");
-
+  } else if (hasElement(geometryEle, "cylinder")) {
+    tinyxml2::XMLElement* cylinderEle  = getElement(geometryEle, "cylinder");
+    double                radius       = getValueDouble(cylinderEle, "radius");
+    double                height       = getValueDouble(cylinderEle, "height");
     newShape = new dynamics::CylinderShape(radius, height);
+  } else if (hasElement(geometryEle, "plane")) {
+    tinyxml2::XMLElement* planeEle     = getElement(geometryEle, "plane");
+    Eigen::Vector3d       normal       = getValueVector3d(planeEle, "normal");
+    Eigen::Vector3d       point        = getValueVector3d(planeEle, "point");
+    newShape = new dynamics::PlaneShape(normal, point);
   } else {
     dterr << "Unknown visualization shape.\n";
     assert(0);
   }
 
   // transformation
-  if (hasElement(vizElement, "transformation")) {
-    Eigen::Isometry3d W = getValueIsometry3d(vizElement, "transformation");
+  if (hasElement(vizEle, "transformation")) {
+    Eigen::Isometry3d W = getValueIsometry3d(vizEle, "transformation");
     newShape->setLocalTransform(W);
   }
 
   // color
-  if (hasElement(vizElement, "color")) {
-    Eigen::Vector3d color = getValueVector3d(vizElement, "color");
+  if (hasElement(vizEle, "color")) {
+    Eigen::Vector3d color = getValueVector3d(vizEle, "color");
     newShape->setColor(color);
   }
 
