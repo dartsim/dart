@@ -129,7 +129,7 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
 }
 
 template<class BV>
-fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
+fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
                               const aiScene *_mesh) {
   assert(_mesh);
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
@@ -141,9 +141,9 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vec3f(vertex.x * _sizeX,
-                                 vertex.y * _sizeY,
-                                 vertex.z * _sizeZ);
+        vertices[k] = fcl::Vec3f(vertex.x * _scaleX,
+                                 vertex.y * _scaleY,
+                                 vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
