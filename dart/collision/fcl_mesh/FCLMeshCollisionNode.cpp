@@ -46,6 +46,7 @@
 
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
@@ -60,6 +61,7 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode) {
   // using-declaration
   using dart::dynamics::Shape;
+  using dart::dynamics::BoxShape;
   using dart::dynamics::EllipsoidShape;
   using dart::dynamics::CylinderShape;
   using dart::dynamics::MeshShape;
@@ -75,22 +77,20 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
         if (ellipsoid->isSphere()) {
           fcl::BVHModel<fcl::OBBRSS>* mesh = new fcl::BVHModel<fcl::OBBRSS>;
           fcl::generateBVHModel<fcl::OBBRSS>(
-              *mesh, fcl::Sphere(shape->getDim()[0]*0.5), shapeT, 10, 10);
+              *mesh, fcl::Sphere(ellipsoid->getSize()[0]*0.5), shapeT, 10, 10);
           mMeshes.push_back(mesh);
         // Ellipsoid
         } else {
-          mMeshes.push_back(createEllipsoid<fcl::OBBRSS>(shape->getDim()[0],
-                                                         shape->getDim()[1],
-                                                         shape->getDim()[2],
-                                                         shapeT));
+          mMeshes.push_back(createEllipsoid<fcl::OBBRSS>(
+              ellipsoid->getSize()[0], ellipsoid->getSize()[1],
+              ellipsoid->getSize()[2], shapeT));
         }
         break;
       }
       case dynamics::Shape::BOX: {
-        mMeshes.push_back(createCube<fcl::OBBRSS>(shape->getDim()[0],
-                                                  shape->getDim()[1],
-                                                  shape->getDim()[2],
-                                                  shapeT));
+        BoxShape* box = static_cast<BoxShape*>(shape);
+        mMeshes.push_back(createCube<fcl::OBBRSS>(
+            box->getSize()[0], box->getSize()[1], box->getSize()[2], shapeT));
         break;
       }
       case dynamics::Shape::CYLINDER: {

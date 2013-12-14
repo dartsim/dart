@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -47,6 +48,15 @@ public:
   /// \brief Constructor.
   explicit EllipsoidShape(const Eigen::Vector3d _dim);
 
+  /// \brief Destructor.
+  virtual ~EllipsoidShape();
+
+  /// \brief Set size of this box.
+  void setSize(const Eigen::Vector3d& _size);
+
+  /// \brief Get size of this box.
+  const Eigen::Vector3d& getSize() const;
+
   // Documentation inherited.
   void draw(renderer::RenderInterface* _ri = NULL,
             const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
@@ -58,12 +68,13 @@ public:
   /// \brief True if (mDim[0] == mDim[1] == mDim[2]).
   bool isSphere(void) const;
 
-private:
+protected:
   // Documentation inherited.
   void computeVolume();
 
-  // Documentation inherited.
-  void initMeshes();
+private:
+  /// \brief Size of this ellipsoid
+  Eigen::Vector3d mSize;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

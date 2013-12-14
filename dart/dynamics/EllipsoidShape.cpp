@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -42,49 +43,62 @@ namespace dart {
 namespace dynamics {
 
 EllipsoidShape::EllipsoidShape(const Eigen::Vector3d _dim)
-    : Shape(ELLIPSOID) {
-    mDim = _dim;
-    initMeshes();
-    if (mDim != Eigen::Vector3d::Zero())
-        computeVolume();
+  : Shape(ELLIPSOID) {
+  mBoundingBoxDim = _dim;
+  initMeshes();
+  computeVolume();
+}
+
+EllipsoidShape::~EllipsoidShape() {
+}
+
+void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
+  assert(_size[0] > 0.0);
+  assert(_size[1] > 0.0);
+  assert(_size[2] > 0.0);
+  mSize = _size;
+  mBoundingBoxDim = _size;
+  computeVolume();
+}
+
+const Eigen::Vector3d&EllipsoidShape::getSize() const {
+  return mSize;
 }
 
 void EllipsoidShape::draw(renderer::RenderInterface* _ri,
                           const Eigen::Vector4d& _color,
                           bool _useDefaultColor) const {
-    if (!_ri)
-        return;
-    if (!_useDefaultColor)
-        _ri->setPenColor(_color);
-    else
-        _ri->setPenColor(mColor);
-    _ri->pushMatrix();
-    _ri->transform(mTransform);
-    _ri->drawEllipsoid(mDim);
-    _ri->popMatrix();
+  if (!_ri)
+    return;
+  if (!_useDefaultColor)
+    _ri->setPenColor(_color);
+  else
+    _ri->setPenColor(mColor);
+  _ri->pushMatrix();
+  _ri->transform(mTransform);
+  _ri->drawEllipsoid(mBoundingBoxDim);
+  _ri->popMatrix();
 }
 
 Eigen::Matrix3d EllipsoidShape::computeInertia(double _mass) const {
-    Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-    inertia(0, 0) = _mass / 20.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
-    inertia(1, 1) = _mass / 20.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
-    inertia(2, 2) = _mass / 20.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  inertia(0, 0) = _mass / 20.0 * (mSize(1) * mSize(1) + mSize(2) * mSize(2));
+  inertia(1, 1) = _mass / 20.0 * (mSize(0) * mSize(0) + mSize(2) * mSize(2));
+  inertia(2, 2) = _mass / 20.0 * (mSize(0) * mSize(0) + mSize(1) * mSize(1));
 
-    return inertia;
+  return inertia;
 }
 
 bool EllipsoidShape::isSphere() const {
-    if (mDim[0] == mDim[1] && mDim[1] == mDim[2])
-        return true;
-    else
-        return false;
+  if (mSize[0] == mSize[1] && mSize[1] == mSize[2])
+    return true;
+  else
+    return false;
 }
 
 void EllipsoidShape::computeVolume() {
-    // 4/3* Pi* a/2* b/2* c/2
-    mVolume = DART_PI * mDim(0) * mDim(1) *mDim(2) / 6;
-}
-void EllipsoidShape::initMeshes() {
+  // 4/3* Pi* a/2* b/2* c/2
+  mVolume = DART_PI * mSize(0) * mSize(1) *mSize(2) / 6;
 }
 
 }  // namespace dynamics

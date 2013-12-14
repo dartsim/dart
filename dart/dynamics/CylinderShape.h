@@ -69,9 +69,13 @@ public:
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-private:
+protected:
   // Documentation inherited.
-  void computeVolume();
+  virtual void computeVolume();
+
+private:
+  /// \brief
+  void _updateBoundingBoxDim();
 
   /// \brief
   double mRadius;

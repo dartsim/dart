@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -41,8 +42,6 @@
 
 #include "dart/math/Geometry.h"
 
-extern "C" { struct aiScene; }
-
 namespace dart {
 namespace renderer {
 class RenderInterface;
@@ -63,43 +62,49 @@ public:
     MESH
   };
 
-  /// \brief
+  /// \brief Constructor
   explicit Shape(ShapeType _type);
 
-  /// \brief
+  /// \brief Destructor
   virtual ~Shape();
 
-  /// \brief
+  /// \brief Set color.
   void setColor(const Eigen::Vector3d& _color);
 
-  /// \brief
+  /// \brief Get color.
   const Eigen::Vector3d& getColor() const;
 
-  /// \brief
-  void setDim(const Eigen::Vector3d& _dim);
+  /// \brief Get dimensions of bounding box.
+  ///        The dimension will be automatically determined by the sub-classes
+  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  // TODO(JS): Single Vector3d does not fit to represent bounding box for
+  //           biased mesh shape. Two Vector3ds might be better; one is for
+  //           minimum verterx, and the other is for maximum verterx of the
+  //           bounding box.
+  const Eigen::Vector3d& getBoundingBoxDim() const;
 
-  /// \brief
-  const Eigen::Vector3d& getDim() const;
-
-  /// \brief Set local transformation of the Shape w.r.t. parent frame.
+  /// \brief Set local transformation of the shape w.r.t. parent frame.
   void setLocalTransform(const Eigen::Isometry3d& _Transform);
 
-  /// \brief Get local transformation of the Shape w.r.t. parent frame.
+  /// \brief Get local transformation of the shape w.r.t. parent frame.
   const Eigen::Isometry3d& getLocalTransform() const;
 
-  /// \brief
+  /// \brief Set local transformation of the shape
+  ///        The offset is translational part of the local transformation.
+  /// \sa setLocalTransform()
   void setOffset(const Eigen::Vector3d& _offset);
 
-  /// \brief
+  /// \brief Get local offset of the shape w.r.t. parent frame.
+  ///        The offset is translational part of the local transformation.
+  /// \sa getLocalTransform()
   Eigen::Vector3d getOffset() const;
 
   /// \brief
   virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
 
-  /// \brief
-  void setVolume(double _v);
-
-  /// \brief
+  /// \brief Get volume of this shape.
+  ///        The volume will be automatically calculated by the sub-classes
+  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
   /// \brief
@@ -121,7 +126,7 @@ protected:
   virtual void initMeshes() {}
 
   /// \brief Dimensions for bounding box.
-  Eigen::Vector3d mDim;
+  Eigen::Vector3d mBoundingBoxDim;
 
   /// \brief Volume enclosed by the geometry.
   double mVolume;

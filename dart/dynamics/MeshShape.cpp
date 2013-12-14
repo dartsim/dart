@@ -58,7 +58,7 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
-  _updateBoundingBoxDimension();
+  _updateBoundingBoxDim();
   computeVolume();
   initMeshes();
 }
@@ -73,12 +73,11 @@ const aiScene*MeshShape::getMesh() const {
 void MeshShape::setMesh(const aiScene* _mesh) {
   assert(_mesh);
   mMesh = _mesh;
-  _updateBoundingBoxDimension();
+  _updateBoundingBoxDim();
   computeVolume();
 }
 
-void MeshShape::setScale(const Eigen::Vector3d& _scale)
-{
+void MeshShape::setScale(const Eigen::Vector3d& _scale) {
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
@@ -86,8 +85,7 @@ void MeshShape::setScale(const Eigen::Vector3d& _scale)
   computeVolume();
 }
 
-const Eigen::Vector3d&MeshShape::getScale() const
-{
+const Eigen::Vector3d& MeshShape::getScale() const {
   return mScale;
 }
 
@@ -118,9 +116,9 @@ void MeshShape::draw(renderer::RenderInterface* _ri,
 
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   // use bounding box to represent the mesh
-  double l = mScale[0] * mDim[0];
-  double h = mScale[1] * mDim[1];
-  double w = mScale[2] * mDim[2];
+  double l = mScale[0] * mBoundingBoxDim[0];
+  double h = mScale[1] * mBoundingBoxDim[1];
+  double w = mScale[2] * mBoundingBoxDim[2];
 
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
   inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
@@ -132,14 +130,14 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
 
 void MeshShape::computeVolume() {
   // Use bounding box to represent the mesh
-  double l = mScale[0] * mDim[0];
-  double h = mScale[1] * mDim[1];
-  double w = mScale[2] * mDim[2];
+  double l = mScale[0] * mBoundingBoxDim[0];
+  double h = mScale[1] * mBoundingBoxDim[1];
+  double w = mScale[2] * mBoundingBoxDim[2];
 
   mVolume = l * h * w;
 }
 
-void MeshShape::_updateBoundingBoxDimension() {
+void MeshShape::_updateBoundingBoxDim() {
   double max_X = -std::numeric_limits<double>::infinity();
   double max_Y = -std::numeric_limits<double>::infinity();
   double max_Z = -std::numeric_limits<double>::infinity();
@@ -163,9 +161,9 @@ void MeshShape::_updateBoundingBoxDimension() {
         min_Z = mMesh->mMeshes[i]->mVertices[j].z;
     }
   }
-  mDim[0] = max_X - min_X;
-  mDim[1] = max_Y - min_Y;
-  mDim[2] = max_Z - min_Z;
+  mBoundingBoxDim[0] = max_X - min_X;
+  mBoundingBoxDim[1] = max_Y - min_Y;
+  mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
 const aiScene* MeshShape::loadMesh(const std::string& _fileName) {

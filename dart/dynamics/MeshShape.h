@@ -40,6 +40,8 @@
 
 #include <string>
 
+#include <assimp/scene.h>
+
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -89,7 +91,7 @@ protected:
 
 private:
   /// \brief
-  void _updateBoundingBoxDimension();
+  void _updateBoundingBoxDim();
 
   /// \brief
   const aiScene *mMesh;

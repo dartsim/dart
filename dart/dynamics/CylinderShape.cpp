@@ -45,10 +45,11 @@ CylinderShape::CylinderShape(double _radius, double _height)
   : Shape(CYLINDER),
     mRadius(_radius),
     mHeight(_height) {
+  assert(0.0 < _radius);
+  assert(0.0 < _height);
+  _updateBoundingBoxDim();
   initMeshes();
-  if (mRadius > 0.0 && mHeight > 0.0) {
-    computeVolume();
-  }
+  computeVolume();
 }
 
 double CylinderShape::getRadius() const {
@@ -56,7 +57,10 @@ double CylinderShape::getRadius() const {
 }
 
 void CylinderShape::setRadius(double _radius) {
+  assert(0.0 < _radius);
   mRadius = _radius;
+  _updateBoundingBoxDim();
+  computeVolume();
 }
 
 double CylinderShape::getHeight() const {
@@ -64,7 +68,10 @@ double CylinderShape::getHeight() const {
 }
 
 void CylinderShape::setHeight(double _height) {
+  assert(0.0 < _height);
   mHeight = _height;
+  _updateBoundingBoxDim();
+  computeVolume();
 }
 
 void CylinderShape::draw(renderer::RenderInterface* _ri,
@@ -92,6 +99,12 @@ Eigen::Matrix3d CylinderShape::computeInertia(double _mass) const {
   inertia(2, 2) = 0.5 * _mass * mRadius * mRadius;
 
   return inertia;
+}
+
+void CylinderShape::_updateBoundingBoxDim() {
+  mBoundingBoxDim[0] = mRadius * 2.0;
+  mBoundingBoxDim[1] = mRadius * 2.0;
+  mBoundingBoxDim[2] = mHeight;
 }
 
 }  // namespace dynamics
