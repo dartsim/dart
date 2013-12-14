@@ -126,6 +126,9 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 include_directories("${CMAKE_BINARY_DIR}")
+# TODO(JS): This line will be removed once we have dependency BulletMath and
+#           BulletCollision
+include_directories(dart/collision/bullet)
 
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")

@@ -42,26 +42,28 @@
 namespace dart {
 namespace collision {
 
+/// \brief
 class FCLMeshCollisionDetector : public CollisionDetector {
 public:
-    /// \brief
-    FCLMeshCollisionDetector();
+  /// \brief
+  FCLMeshCollisionDetector();
 
-    /// \brief
-    virtual ~FCLMeshCollisionDetector();
+  /// \brief
+  virtual ~FCLMeshCollisionDetector();
 
-    virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  /// \brief
+  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
-    // Documentation inherited
-    virtual bool detectCollision(bool _checkAllCollisions,
-                                 bool _calculateContactPoints);
+  // Documentation inherited
+  virtual bool detectCollision(bool _checkAllCollisions,
+                               bool _calculateContactPoints);
 
-    // Documentation inherited
-    virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                                 bool _calculateContactPoints);
+  // Documentation inherited
+  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
+                               bool _calculateContactPoints);
 
-    /// \brief
-    void draw();
+  /// \brief
+  void draw();
 };
 
 }  // namespace collision
