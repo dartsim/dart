@@ -18,6 +18,7 @@ CHECK_DIRS="../dart/collision\
             #../dart/utils\
             ../apps/cubes\
             ../apps/meshCollision"
+NOT_CHECK_DIRS=""
 CHECK_FILES=`\
   find $CHECK_DIRS\
   -name "*.cpp"\
@@ -42,7 +43,8 @@ CHECK_FILES=`\
   -not -name "lcp.h"\
   -not -name "matrix.h"\
   -not -name "misc.h"\
-  -not -name "odeconfig.h"`
+  -not -name "odeconfig.h"\
+  | grep -v "../dart/collision/bullet"`
 
 # cpplint
 echo $CHECK_FILES | xargs python cpplint.py 2>&1
