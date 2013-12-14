@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -41,12 +42,31 @@
 namespace dart {
 namespace dynamics {
 
-BoxShape::BoxShape(Eigen::Vector3d _dim)
-  : Shape(BOX) {
-  mDim = _dim;
+BoxShape::BoxShape(const Eigen::Vector3d& _size)
+  : Shape(BOX),
+    mSize(_size) {
+  assert(_size[0] > 0.0);
+  assert(_size[1] > 0.0);
+  assert(_size[2] > 0.0);
+  mBoundingBoxDim = _size;
   initMeshes();
-  if (_dim != Eigen::Vector3d::Zero())
-    computeVolume();
+  computeVolume();
+}
+
+BoxShape::~BoxShape() {
+}
+
+void BoxShape::setSize(const Eigen::Vector3d& _size) {
+  assert(_size[0] > 0.0);
+  assert(_size[1] > 0.0);
+  assert(_size[2] > 0.0);
+  mSize = _size;
+  mBoundingBoxDim = _size;
+  computeVolume();
+}
+
+const Eigen::Vector3d& BoxShape::getSize() const {
+  return mSize;
 }
 
 void BoxShape::draw(renderer::RenderInterface* _ri,
@@ -59,22 +79,22 @@ void BoxShape::draw(renderer::RenderInterface* _ri,
     _ri->setPenColor(mColor);
   _ri->pushMatrix();
   _ri->transform(mTransform);
-  _ri->drawCube(mDim);
+  _ri->drawCube(mBoundingBoxDim);
   _ri->popMatrix();
 }
 
 Eigen::Matrix3d BoxShape::computeInertia(double _mass) const {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 12.0 * (mDim(1) * mDim(1) + mDim(2) * mDim(2));
-  inertia(1, 1) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(2) * mDim(2));
-  inertia(2, 2) = _mass / 12.0 * (mDim(0) * mDim(0) + mDim(1) * mDim(1));
+  inertia(0, 0) = _mass / 12.0 * (mSize(1) * mSize(1) + mSize(2) * mSize(2));
+  inertia(1, 1) = _mass / 12.0 * (mSize(0) * mSize(0) + mSize(2) * mSize(2));
+  inertia(2, 2) = _mass / 12.0 * (mSize(0) * mSize(0) + mSize(1) * mSize(1));
 
   return inertia;
 }
 
 void BoxShape::computeVolume() {
   // a * b * c
-  mVolume = mDim(0) * mDim(1) * mDim(2);
+  mVolume = mSize[0] * mSize[1] * mSize[2];
 }
 
 }  // namespace dynamics

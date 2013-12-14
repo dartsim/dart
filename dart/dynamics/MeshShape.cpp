@@ -38,6 +38,7 @@
 #include "dart/dynamics/MeshShape.h"
 
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include <assimp/Importer.hpp>
@@ -49,14 +50,17 @@
 namespace dart {
 namespace dynamics {
 
-MeshShape::MeshShape(const Eigen::Vector3d& _dim, const aiScene *_mesh)
+MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   : Shape(MESH),
+    mScale(_scale),
     mMesh(_mesh),
     mDisplayList(0) {
-  mDim = _dim;
+  assert(_scale[0] > 0.0);
+  assert(_scale[1] > 0.0);
+  assert(_scale[2] > 0.0);
+  _updateBoundingBoxDim();
+  computeVolume();
   initMeshes();
-  if (mDim != Eigen::Vector3d::Zero())
-    computeVolume();
 }
 
 MeshShape::~MeshShape() {
@@ -67,7 +71,22 @@ const aiScene*MeshShape::getMesh() const {
 }
 
 void MeshShape::setMesh(const aiScene* _mesh) {
+  assert(_mesh);
   mMesh = _mesh;
+  _updateBoundingBoxDim();
+  computeVolume();
+}
+
+void MeshShape::setScale(const Eigen::Vector3d& _scale) {
+  assert(_scale[0] > 0.0);
+  assert(_scale[1] > 0.0);
+  assert(_scale[2] > 0.0);
+  mScale = _scale;
+  computeVolume();
+}
+
+const Eigen::Vector3d& MeshShape::getScale() const {
+  return mScale;
 }
 
 int MeshShape::getDisplayList() const {
@@ -90,19 +109,41 @@ void MeshShape::draw(renderer::RenderInterface* _ri,
   _ri->pushMatrix();
   _ri->transform(mTransform);
 
-  _ri->drawMesh(mDim, mMesh);
+  _ri->drawMesh(mScale, mMesh);
 
   _ri->popMatrix();
 }
 
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   // use bounding box to represent the mesh
-  double max_X = -1e7;
-  double max_Y = -1e7;
-  double max_Z = -1e7;
-  double min_X = 1e7;
-  double min_Y = 1e7;
-  double min_Z = 1e7;
+  double l = mScale[0] * mBoundingBoxDim[0];
+  double h = mScale[1] * mBoundingBoxDim[1];
+  double w = mScale[2] * mBoundingBoxDim[2];
+
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
+  inertia(1, 1) = _mass / 12.0 * (l * l + w * w);
+  inertia(2, 2) = _mass / 12.0 * (l * l + h * h);
+
+  return inertia;
+}
+
+void MeshShape::computeVolume() {
+  // Use bounding box to represent the mesh
+  double l = mScale[0] * mBoundingBoxDim[0];
+  double h = mScale[1] * mBoundingBoxDim[1];
+  double w = mScale[2] * mBoundingBoxDim[2];
+
+  mVolume = l * h * w;
+}
+
+void MeshShape::_updateBoundingBoxDim() {
+  double max_X = -std::numeric_limits<double>::infinity();
+  double max_Y = -std::numeric_limits<double>::infinity();
+  double max_Z = -std::numeric_limits<double>::infinity();
+  double min_X = std::numeric_limits<double>::infinity();
+  double min_Y = std::numeric_limits<double>::infinity();
+  double min_Z = std::numeric_limits<double>::infinity();
 
   for (unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
     for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
@@ -120,21 +161,9 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
         min_Z = mMesh->mMeshes[i]->mVertices[j].z;
     }
   }
-  double l = mDim[0] * (max_X - min_X);
-  double h = mDim[1] * (max_Y - min_Y);
-  double w = mDim[2] * (max_Z - min_Z);
-
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
-  inertia(1, 1) = _mass / 12.0 * (l * l + w * w);
-  inertia(2, 2) = _mass / 12.0 * (l * l + h * h);
-
-  return inertia;
-}
-
-void MeshShape::computeVolume() {
-  // a * b * c
-  mVolume = mDim(0) * mDim(1) * mDim(2);
+  mBoundingBoxDim[0] = max_X - min_X;
+  mBoundingBoxDim[1] = max_Y - min_Y;
+  mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
 const aiScene* MeshShape::loadMesh(const std::string& _fileName) {

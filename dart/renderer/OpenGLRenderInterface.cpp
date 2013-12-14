@@ -40,7 +40,9 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/renderer/LoadOpengl.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
@@ -326,7 +328,7 @@ void applyMaterial(const struct aiMaterial *mtl)
 
 
 // This function is taken from the examples coming with assimp
-void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
+void recursiveRender (const Eigen::Vector3d& _scale, const struct aiScene *sc, const struct aiNode* nd) {
     unsigned int i;
     unsigned int n = 0, t;
     aiMatrix4x4 m = nd->mTransformation;
@@ -367,6 +369,7 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
                 if(mesh->mNormals != NULL)
                     glNormal3fv(&mesh->mNormals[index].x);
+                glScalef((GLfloat)_scale[0], (GLfloat)_scale[1], (GLfloat)_scale[2]);
                 glVertex3fv(&mesh->mVertices[index].x);
             }
 
@@ -377,15 +380,15 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
 
     // draw all children
     for (n = 0; n < nd->mNumChildren; ++n) {
-        recursiveRender(sc, nd->mChildren[n]);
+        recursiveRender(_scale, sc, nd->mChildren[n]);
     }
 
     glPopMatrix();
 }
 
-void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh) {
+void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
     if(_mesh)
-        recursiveRender(_mesh, _mesh->mRootNode);
+        recursiveRender(_scale, _mesh, _mesh->mRootNode);
 }
 
 void OpenGLRenderInterface::drawList(GLuint index) {
@@ -511,31 +514,38 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
     glMultMatrixd(pose.data());
 
     switch(_shape->getShapeType()) {
-        case dynamics::Shape::BOX:
+        case dynamics::Shape::BOX: {
             //FIXME: We are not in a glut instance
-            drawCube(_shape->getDim());
+            dynamics::BoxShape* box = static_cast<dynamics::BoxShape*>(_shape);
+            drawCube(box->getSize());
             break;
-        case dynamics::Shape::CYLINDER:
+        }
+        case dynamics::Shape::CYLINDER: {
             //FIXME: We are not in a glut instance
-            drawCylinder( ((dynamics::CylinderShape*)_shape)->getRadius(), ((dynamics::CylinderShape*)_shape)->getHeight() );
+            dynamics::CylinderShape* cylinder = static_cast<dynamics::CylinderShape*>(_shape);
+            drawCylinder(cylinder->getRadius(), cylinder->getHeight());
             break;
-        case dynamics::Shape::ELLIPSOID:
+        }
+        case dynamics::Shape::ELLIPSOID: {
             //FIXME: We are not in a glut instance
-            drawEllipsoid(_shape->getDim());
+            dynamics::EllipsoidShape* ellipsoid = static_cast<dynamics::EllipsoidShape*>(_shape);
+            drawEllipsoid(ellipsoid->getSize());
             break;
-        case dynamics::Shape::MESH:
+        }
+        case dynamics::Shape::MESH: {
             glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
-            dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
+            dynamics::MeshShape* mesh = static_cast<dynamics::MeshShape*>(_shape);
 
-            if(!shapeMesh)
+            if(!mesh)
                 break;
-            else if(shapeMesh->getDisplayList())
-                drawList(shapeMesh->getDisplayList());
+            else if(mesh->getDisplayList())
+                drawList(mesh->getDisplayList());
             else
-                drawMesh(Eigen::Vector3d::Ones(), shapeMesh->getMesh());
+                drawMesh(Eigen::Vector3d::Ones(), mesh->getMesh());
 
             break;
+        }
     }
 
     glDisable(GL_COLOR_MATERIAL);

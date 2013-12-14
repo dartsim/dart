@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -45,7 +46,16 @@ namespace dynamics {
 class BoxShape : public Shape {
 public:
   /// \brief Constructor.
-  explicit BoxShape(Eigen::Vector3d _dim);
+  explicit BoxShape(const Eigen::Vector3d& _size);
+
+  /// \brief Destructor.
+  virtual ~BoxShape();
+
+  /// \brief Set size of this box.
+  void setSize(const Eigen::Vector3d& _size);
+
+  /// \brief Get size of this box.
+  const Eigen::Vector3d& getSize() const;
 
   // Documentation inherited.
   void draw(renderer::RenderInterface* _ri = NULL,
@@ -55,9 +65,13 @@ public:
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-private:
+protected:
   // Documentation inherited.
   void computeVolume();
+
+private:
+  /// \brief Size of this box
+  Eigen::Vector3d mSize;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -132,7 +132,7 @@ void RenderInterface::drawEllipsoid(const Eigen::Vector3d& _size)
 {
 }
 
-void RenderInterface::drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh)
+void RenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh)
 {
 }
 

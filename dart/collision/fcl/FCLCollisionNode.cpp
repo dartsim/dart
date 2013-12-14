@@ -41,6 +41,7 @@
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
@@ -55,9 +56,11 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
     mShapes.push_back(shape);
     switch (shape->getShapeType()) {
       case dynamics::Shape::BOX: {
-        mCollisionGeometries.push_back(new fcl::Box(shape->getDim()[0],
-                                                    shape->getDim()[1],
-                                                    shape->getDim()[2]));
+        dynamics::BoxShape* box
+                    = static_cast<dynamics::BoxShape*>(shape);
+        mCollisionGeometries.push_back(new fcl::Box(box->getSize()[0],
+                                                    box->getSize()[1],
+                                                    box->getSize()[2]));
         break;
       }
       case dynamics::Shape::ELLIPSOID: {
@@ -66,12 +69,12 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
 
         if (ellipsoid->isSphere())
           mCollisionGeometries.push_back(
-                new fcl::Sphere(ellipsoid->getDim()[0] * 0.5));
+                new fcl::Sphere(ellipsoid->getSize()[0] * 0.5));
         else
           mCollisionGeometries.push_back(
-                createEllipsoid<fcl::OBBRSS>(ellipsoid->getDim()[0],
-                                             ellipsoid->getDim()[1],
-                                             ellipsoid->getDim()[2]));
+                createEllipsoid<fcl::OBBRSS>(ellipsoid->getSize()[0],
+                                             ellipsoid->getSize()[1],
+                                             ellipsoid->getSize()[2]));
         break;
       }
       case dynamics::Shape::CYLINDER: {
@@ -82,14 +85,14 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
         break;
       }
       case dynamics::Shape::MESH: {
-        dynamics::MeshShape *shapeMesh
+        dynamics::MeshShape* shapeMesh
             = dynamic_cast<dynamics::MeshShape *>(shape);
 
         if (shapeMesh)
           mCollisionGeometries.push_back(
-                createMesh<fcl::OBBRSS>(shape->getDim()[0],
-                                        shape->getDim()[1],
-                                        shape->getDim()[2],
+                createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
+                                        shapeMesh->getScale()[1],
+                                        shapeMesh->getScale()[2],
                                         shapeMesh->getMesh()));
         break;
       }
@@ -126,7 +129,7 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
 }
 
 template<class BV>
-fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
+fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
                               const aiScene *_mesh) {
   assert(_mesh);
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
@@ -138,9 +141,9 @@ fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vec3f(vertex.x * _sizeX,
-                                 vertex.y * _sizeY,
-                                 vertex.z * _sizeZ);
+        vertices[k] = fcl::Vec3f(vertex.x * _scaleX,
+                                 vertex.y * _scaleY,
+                                 vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
