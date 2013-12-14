@@ -538,6 +538,21 @@ void BodyNode::updateEta()
     }
 }
 
+void BodyNode::updateEta_Issue122()
+{
+  mParentJoint->updateJacobianTimeDeriv_Issue122();
+
+  if (mParentJoint->getNumGenCoords() > 0)
+  {
+      mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
+                          mParentJoint->get_dq()) +
+                          mParentJoint->getLocalJacobianTimeDeriv() *
+                          mParentJoint->get_dq();
+
+      assert(!math::isNan(mEta));
+  }
+}
+
 void BodyNode::updateAcceleration(bool _updateJacobianDeriv)
 {
     // dV(i) = Ad(T(i, i-1), dV(i-1))

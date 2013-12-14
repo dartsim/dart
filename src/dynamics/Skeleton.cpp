@@ -363,7 +363,16 @@ void Skeleton::computeInverseDynamicsLinear(const Eigen::Vector3d& _gravity,
          itrBody != mBodyNodes.end();
          ++itrBody)
     {
-        (*itrBody)->updateEta();
+        // TODO(JS): This is workaround for Issue #122.
+        if ((*itrBody)->getParentJoint()->getJointType() == Joint::BALL
+            || (*itrBody)->getParentJoint()->getJointType() == Joint::FREE)
+        {
+            (*itrBody)->updateEta_Issue122();
+        }
+        else
+        {
+            (*itrBody)->updateEta();
+        }
         (*itrBody)->updateAcceleration();
     }
 
@@ -488,7 +497,16 @@ void Skeleton::computeForwardDynamicsFS(
         (*ritrBody)->updateBiasForce(_gravity);
         (*ritrBody)->updatePsi(_timeStep);
         (*ritrBody)->updatePi();
-        (*ritrBody)->updateEta();
+        // TODO(JS): This is workaround for Issue #122.
+        if ((*ritrBody)->getParentJoint()->getJointType() == Joint::BALL
+            || (*ritrBody)->getParentJoint()->getJointType() == Joint::FREE)
+        {
+            (*ritrBody)->updateEta_Issue122();
+        }
+        else
+        {
+            (*ritrBody)->updateEta();
+        }
         (*ritrBody)->updateBeta();
     }
 

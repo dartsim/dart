@@ -393,6 +393,9 @@ public:
     /// @brief
     void updateEta();
 
+    /// @brief // TODO(JS): This is workaround for Issue #122.
+    void updateEta_Issue122();
+
     /// @brief
     /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
     /// parentJoint.dS --> dJ
