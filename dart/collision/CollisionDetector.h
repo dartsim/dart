@@ -115,7 +115,8 @@ public:
   virtual bool detectCollision(bool _checkAllCollisions,
                                bool _calculateContactPoints) = 0;
 
-  /// \brief
+  /// \brief Do collision detection using dollicion detection engine, and add
+  ///        all the contacts to mContacts
   bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
                        bool _calculateContactPoints);
 

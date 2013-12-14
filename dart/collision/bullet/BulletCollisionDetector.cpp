@@ -39,12 +39,29 @@
 #include <vector>
 
 #include "dart/collision/bullet/BulletCollisionNode.h"
-#include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace collision {
+
+//struct btContactResultCB : public btCollisionWorld::ContactResultCallback {
+//  virtual btScalar addSingleResult(
+//      btManifoldPoint& cp,
+//      const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,
+//      const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) {
+//    Contact contactPair;
+//    contactPair.point = convertVector3(cp.getPositionWorldOnA());
+//    contactPair.normal = convertVector3(cp.m_normalWorldOnB);
+//    contactPair.penetrationDepth = -cp.m_distance1;
+
+//    mContacts.push_back(contactPair);
+
+//    return 0;
+//  }
+
+//  std::vector<Contact> mContacts;
+//};
 
 struct CollisionFilter : public btOverlapFilterCallback {
   // return true when pairs need collision
@@ -93,8 +110,8 @@ struct CollisionFilter : public btOverlapFilterCallback {
 };
 
 BulletCollisionDetector::BulletCollisionDetector() : CollisionDetector() {
-  btVector3 worldAabbMin(-1000, -1000, -1000);
-  btVector3 worldAabbMax(1000, 1000, 1000);
+//  btVector3 worldAabbMin(-1000, -1000, -1000);
+//  btVector3 worldAabbMax(1000, 1000, 1000);
 //  btBroadphaseInterface* broadphasePairCache =
 //      new btAxisSweep3(worldAabbMin, worldAabbMax);
   btBroadphaseInterface* broadphasePairCache = new btDbvtBroadphase();
@@ -131,44 +148,28 @@ CollisionNode* BulletCollisionDetector::createCollisionNode(
   return newBTCollNode;
 }
 
-struct btContactResultCB : public btCollisionWorld::ContactResultCallback {
-  virtual btScalar addSingleResult(
-      btManifoldPoint& cp,
-      const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,
-      const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) {
-    Contact contactPair;
-    contactPair.point = convertVector3(cp.getPositionWorldOnA());
-    contactPair.normal = convertVector3(cp.m_normalWorldOnB);
-    contactPair.penetrationDepth = -cp.m_distance1;
-
-    mContacts.push_back(contactPair);
-
-    return 0;
-  }
-
-  std::vector<Contact> mContacts;
-};
-
 bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
                                               bool _calculateContactPoints) {
+  // Update all the transformations of the collision nodes
   for (int i = 0; i < mCollisionNodes.size(); ++i)
     static_cast<BulletCollisionNode*>(
         mCollisionNodes[i])->updateBTCollisionObjects();
 
+  // Setting up broadphase collision detection options
   btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
-
-  dispatchInfo.m_timeStep = 0.001;
+  dispatchInfo.m_timeStep  = 0.001;
   dispatchInfo.m_stepCount = 0;
   // dispatchInfo.m_debugDraw = getDebugDrawer();
 
+  // Collision detection
   mBulletCollisionWorld->performDiscreteCollisionDetection();
-
 //  std::cout << "Number of collision objects: "
 //            << collWorld->getNumCollisionObjects() << std::endl;
 
-  // TODO(Unknown): _checkAllCollisions
+  // Clear mContacts which is the list of old contacts
   clearAllContacts();
 
+  // Add all the contacts to mContacts
   int numManifolds = mBulletCollisionWorld->getDispatcher()->getNumManifolds();
   for (int i = 0; i < numManifolds; ++i) {
     btPersistentManifold* contactManifold =
@@ -194,72 +195,14 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
     }
   }
 
-
-//  for(int i = 0; i < mCollisionNodes.size(); i++) {
-//    for(int j = i + 1; j < mCollisionNodes.size(); j++) {
-//      //result.clear();
-//      BulletCollisionNode* collNode1 =
-//          static_cast<BulletCollisionNode*>(mCollisionNodes[i]);
-//      BulletCollisionNode* collNode2 =
-//          static_cast<BulletCollisionNode*>(mCollisionNodes[j]);
-
-//      if (!isCollidable(collNode1, collNode2))
-//        continue;
-
-//      for(int k = 0; k < collNode1->getNumBTCollisionObjects(); k++) {
-//        for(int l = 0; l < collNode2->getNumBTCollisionObjects(); l++) {
-//          int currContactNum = mContacts.size();
-
-//          btContactResultCB result;
-
-//          //------------------------------------------------------------------
-//          // Collide
-//          //------------------------------------------------------------------
-//          mBulletCollisionWorld->contactPairTest(
-//                collNode1->getBTCollisionObject(k),
-//                collNode2->getBTCollisionObject(l),
-//                result);
-//          //------------------------------------------------------------------
-
-//          unsigned int numContacts = result.mContacts.size();
-
-//          if (numContacts > 0)
-//            std::cout << "Contact number: " << numContacts << std::endl;
-
-//          for (int i = 0; i < numContacts; ++i) {
-//            result.mContacts[i].collisionNode1 = collNode1;
-//            result.mContacts[i].collisionNode2 = collNode2;
-//            mContacts.push_back(result.mContacts[i]);
-//          }
-
-//          std::vector<bool> markForDeletion(numContacts, false);
-//          for (int m = 0; m < numContacts; m++) {
-//            for (int n = m + 1; n < numContacts; n++) {
-//              Eigen::Vector3d diff =
-//                  mContacts[currContactNum + m].point -
-//                  mContacts[currContactNum + n].point;
-//              if (diff.dot(diff) < 1e-6) {
-//                markForDeletion[m] = true;
-//                break;
-//              }
-//            }
-//          }
-//          for (int m = numContacts - 1; m >= 0; m--) {
-//            if (markForDeletion[m])
-//              mContacts.erase(mContacts.begin() + currContactNum + m);
-//          }
-//        }
-//      }
-//    }
-//  }
-
+  // Return true if there are contacts
   return !mContacts.empty();
 }
 
 bool BulletCollisionDetector::detectCollision(CollisionNode* _node1,
                                               CollisionNode* _node2,
                                               bool _calculateContactPoints) {
-  assert(false);  // function not implemented
+  assert(false);
   return false;
 }
 

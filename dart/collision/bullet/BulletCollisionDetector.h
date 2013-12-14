@@ -69,8 +69,8 @@ public:
 
 protected:
   // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1,
-                               CollisionNode* _node2,
+  // TODO(JS): Not implemented yet.
+  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
                                bool _calculateContactPoints);
 
   /// @brief
