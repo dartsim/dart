@@ -57,9 +57,9 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       case dynamics::Shape::BOX: {
         dynamics::BoxShape* box = static_cast<dynamics::BoxShape*>(shape);
 
-        btBoxShape* btBox = new btBoxShape(btVector3(box->getDim()[0]*0.5,
-                                                     box->getDim()[1]*0.5,
-                                                     box->getDim()[2]*0.5));
+        btBoxShape* btBox = new btBoxShape(btVector3(box->getSize()[0]*0.5,
+                                                     box->getSize()[1]*0.5,
+                                                     box->getSize()[2]*0.5));
         btBox->setMargin(0.0);
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btBox);
@@ -77,11 +77,11 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
             static_cast<dynamics::EllipsoidShape*>(shape);
 
         if (ellipsoid->isSphere()) {
-          btSphereShape* btCylinder =
-              new btSphereShape(ellipsoid->getDim()[0] * 0.5);
-          btCylinder->setMargin(0.0);
+          btSphereShape* btSphere = new btSphereShape(ellipsoid->getSize()[0] *
+                                                      0.5);
+          btSphere->setMargin(0.0);
           btCollisionObject* btCollObj = new btCollisionObject();
-          btCollObj->setCollisionShape(btCylinder);
+          btCollObj->setCollisionShape(btSphere);
           btUserData* userData = new btUserData;
           userData->bodyNode = _bodyNode;
           userData->shape = shape;
@@ -89,6 +89,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
           btCollObj->setUserPointer(userData);
           mbtCollsionObjects.push_back(btCollObj);
         } else {
+          // TODO(JS): Add mesh for ellipsoid
         }
 
         break;
@@ -135,8 +136,23 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         break;
       }
       case dynamics::Shape::MESH: {
-        dynamics::MeshShape *shapeMesh
-            = static_cast<dynamics::MeshShape *>(shape);
+        dynamics::MeshShape* shapeMesh
+            = static_cast<dynamics::MeshShape*>(shape);
+        btConvexTriangleMeshShape* btMesh = _createMesh(shapeMesh->getScale(),
+                                                        shapeMesh->getMesh());
+        btMesh->setMargin(0.0);
+        btCollisionObject* btCollObj = new btCollisionObject();
+
+        // Add user data
+        btCollObj->setCollisionShape(btMesh);
+        btUserData* userData = new btUserData;
+        userData->bodyNode   = _bodyNode;
+        userData->shape      = shape;
+        userData->btCollNode = this;
+        btCollObj->setUserPointer(userData);
+
+        //
+        mbtCollsionObjects.push_back(btCollObj);
 
         break;
       }
@@ -170,6 +186,30 @@ int BulletCollisionNode::getNumBTCollisionObjects() const {
 
 btCollisionObject*BulletCollisionNode::getBTCollisionObject(int _i) {
   return mbtCollsionObjects[_i];
+}
+
+btConvexTriangleMeshShape*_createMesh(const Eigen::Vector3d& _scale,
+                                      const aiScene* _mesh) {
+  btTriangleMesh* btMesh = new btTriangleMesh();
+
+  for (unsigned int i = 0; i < _mesh->mNumMeshes; i++) {
+    for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
+      btVector3 vertices[3];
+      for (unsigned int k = 0; k < 3; k++) {
+        const aiVector3D& vertex = _mesh->mMeshes[i]->mVertices[
+                                   _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
+        vertices[k] = btVector3(vertex.x * _scale[0],
+                                vertex.y * _scale[1],
+                                vertex.z * _scale[2]);
+      }
+      btMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+    }
+  }
+
+  btConvexTriangleMeshShape* btMeshShape =
+      new btConvexTriangleMeshShape(btMesh);
+
+  return btMeshShape;
 }
 
 }  // namespace collision

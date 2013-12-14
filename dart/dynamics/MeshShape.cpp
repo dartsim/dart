@@ -66,7 +66,7 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
 MeshShape::~MeshShape() {
 }
 
-const aiScene*MeshShape::getMesh() const {
+const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 

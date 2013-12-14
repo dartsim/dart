@@ -39,6 +39,7 @@
 
 #include <vector>
 
+#include <assimp/scene.h>
 #include <Eigen/Dense>
 
 #include "dart/dynamics/Shape.h"
@@ -86,6 +87,10 @@ private:
     /// @brief
     std::vector<btCollisionObject*> mbtCollsionObjects;
 };
+
+/// @brief
+btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
+                                       const aiScene* _mesh);
 
 }  // namespace collision
 }  // namespace dart

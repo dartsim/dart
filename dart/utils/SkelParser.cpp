@@ -51,6 +51,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
@@ -63,6 +64,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/Paths.h"
 
 namespace dart {
 namespace utils {
@@ -368,6 +370,18 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizEle) {
     Eigen::Vector3d       normal       = getValueVector3d(planeEle, "normal");
     Eigen::Vector3d       point        = getValueVector3d(planeEle, "point");
     newShape = new dynamics::PlaneShape(normal, point);
+  } else if (hasElement(geometryEle, "mesh")) {
+    tinyxml2::XMLElement* meshEle      = getElement(geometryEle, "mesh");
+    std::string           filename     = getValueString(meshEle, "file_name");
+    Eigen::Vector3d       scale        = getValueVector3d(meshEle, "scale");
+    // TODO(JS): Do we assume that all mesh files place at DART_DATA_PATH?
+    const aiScene* model = dynamics::MeshShape::loadMesh(DART_DATA_PATH +
+                                                         filename);
+    if (model) {
+      newShape = new dynamics::MeshShape(scale, model);
+    } else {
+      dterr << "Fail to load model[" << filename << "]." << std::endl;
+    }
   } else {
     dterr << "Unknown visualization shape.\n";
     assert(0);
