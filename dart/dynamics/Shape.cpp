@@ -47,7 +47,6 @@ Shape::Shape(ShapeType _type)
     mVolume(0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0),
-    mOffset(0, 0, 0),
     mTransform(Eigen::Isometry3d::Identity()) {
 }
 

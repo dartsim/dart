@@ -132,9 +132,6 @@ protected:
   /// \brief Color for the primitive.
   Eigen::Vector3d mColor;
 
-  /// \brief The origin of this primitive in the bodynode frame.
-  Eigen::Vector3d mOffset;
-
   /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
   Eigen::Isometry3d mTransform;
 
