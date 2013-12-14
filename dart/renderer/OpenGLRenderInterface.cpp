@@ -326,7 +326,7 @@ void applyMaterial(const struct aiMaterial *mtl)
 
 
 // This function is taken from the examples coming with assimp
-void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
+void recursiveRender (const Eigen::Vector3d& _scale, const struct aiScene *sc, const struct aiNode* nd) {
     unsigned int i;
     unsigned int n = 0, t;
     aiMatrix4x4 m = nd->mTransformation;
@@ -367,6 +367,7 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
                 if(mesh->mNormals != NULL)
                     glNormal3fv(&mesh->mNormals[index].x);
+                glScalef((GLfloat)_scale[0], (GLfloat)_scale[1], (GLfloat)_scale[2]);
                 glVertex3fv(&mesh->mVertices[index].x);
             }
 
@@ -377,15 +378,15 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
 
     // draw all children
     for (n = 0; n < nd->mNumChildren; ++n) {
-        recursiveRender(sc, nd->mChildren[n]);
+        recursiveRender(_scale, sc, nd->mChildren[n]);
     }
 
     glPopMatrix();
 }
 
-void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh) {
+void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
     if(_mesh)
-        recursiveRender(_mesh, _mesh->mRootNode);
+        recursiveRender(_scale, _mesh, _mesh->mRootNode);
 }
 
 void OpenGLRenderInterface::drawList(GLuint index) {

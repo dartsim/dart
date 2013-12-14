@@ -49,7 +49,7 @@ namespace dynamics {
 class MeshShape : public Shape {
 public:
   /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _dim, const aiScene *_mesh);
+  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
   /// \brief Destructor.
   virtual ~MeshShape();
@@ -59,6 +59,12 @@ public:
 
   /// \brief
   void setMesh(const aiScene* _mesh);
+
+  /// \brief
+  void setScale(const Eigen::Vector3d& _scale);
+
+  /// \brief
+  const Eigen::Vector3d& getScale() const;
 
   /// \brief
   int getDisplayList() const;
@@ -77,15 +83,22 @@ public:
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-private:
+protected:
   // Documentation inherited.
-  void computeVolume();
+  virtual void computeVolume();
+
+private:
+  /// \brief
+  void _updateBoundingBoxDimension();
 
   /// \brief
   const aiScene *mMesh;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;
+
+  /// \brief Scale
+  Eigen::Vector3d mScale;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

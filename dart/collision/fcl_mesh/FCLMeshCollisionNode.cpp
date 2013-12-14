@@ -103,9 +103,9 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::MESH: {
         MeshShape* shapeMesh = static_cast<MeshShape*>(shape);
-        mMeshes.push_back(createMesh<fcl::OBBRSS>(shape->getDim()[0],
-                                                  shape->getDim()[1],
-                                                  shape->getDim()[2],
+        mMeshes.push_back(createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
+                                                  shapeMesh->getScale()[1],
+                                                  shapeMesh->getScale()[2],
                                                   shapeMesh->getMesh(),
                                                   shapeT));
         break;
