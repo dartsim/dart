@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -43,11 +44,10 @@ namespace dynamics {
 
 Shape::Shape(ShapeType _type)
   : mType(_type),
-    mDim(0, 0, 0),
+    mBoundingBoxDim(0, 0, 0),
     mVolume(0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0),
-    mOffset(0, 0, 0),
     mTransform(Eigen::Isometry3d::Identity()) {
 }
 
@@ -62,13 +62,8 @@ const Eigen::Vector3d& Shape::getColor() const {
   return mColor;
 }
 
-void Shape::setDim(const Eigen::Vector3d& _dim) {
-  mDim = _dim;
-  computeVolume();
-}
-
-const Eigen::Vector3d& Shape::getDim() const {
-  return mDim;
+const Eigen::Vector3d& Shape::getBoundingBoxDim() const {
+  return mBoundingBoxDim;
 }
 
 void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
@@ -85,10 +80,6 @@ void Shape::setOffset(const Eigen::Vector3d& _offset) {
 
 Eigen::Vector3d Shape::getOffset() const {
   return mTransform.translation();
-}
-
-void Shape::setVolume(double _v) {
-  mVolume = _v;
 }
 
 double Shape::getVolume() const {

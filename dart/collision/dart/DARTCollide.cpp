@@ -1233,15 +1233,14 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
         case dynamics::Shape::BOX:
         {
           const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
-          return collideBoxBox(box0->getDim(), _T0,
-                               box1->getDim(), _T1,
-                               _result);
+          return collideBoxBox(box0->getSize(), _T0,
+                               box1->getSize(), _T1, _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
           const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1);
-          return collideBoxSphere(box0->getDim(), _T0,
-                                  ellipsoid1->getDim()[0] * 0.5, _T1,
+          return collideBoxSphere(box0->getSize(), _T0,
+                                  ellipsoid1->getSize()[0] * 0.5, _T1,
               _result);
         }
         case dynamics::Shape::CYLINDER:
@@ -1254,9 +1253,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
           Eigen::Vector3d dimTemp(cylinder1->getRadius() * sqrt(2.0),
                                   cylinder1->getRadius() * sqrt(2.0),
                                   cylinder1->getHeight());
-          return collideBoxBox(box0->getDim(), _T0,
-                               dimTemp, _T1,
-                               _result);
+          return collideBoxBox(box0->getSize(), _T0, dimTemp, _T1, _result);
         }
         default:
           return false;
@@ -1275,16 +1272,16 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
         case dynamics::Shape::BOX:
         {
           const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
-          return collideSphereBox(ellipsoid0->getDim()[0] * 0.5, _T0,
-              box1->getDim(), _T1,
-              _result);
+          return collideSphereBox(ellipsoid0->getSize()[0] * 0.5, _T0,
+                                  box1->getSize(), _T1,
+                                  _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
           const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape0);
-          return collideSphereSphere(ellipsoid0->getDim()[0] * 0.5, _T0,
-              ellipsoid1->getDim()[0] * 0.5, _T1,
-              _result);
+          return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, _T0,
+                                     ellipsoid1->getSize()[0] * 0.5, _T1,
+                                     _result);
         }
         case dynamics::Shape::CYLINDER:
         {
@@ -1296,9 +1293,8 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
           Eigen::Vector3d dimTemp1(cylinder1->getRadius() * sqrt(2.0),
                                    cylinder1->getRadius() * sqrt(2.0),
                                    cylinder1->getHeight());
-          return collideSphereBox(ellipsoid0->getDim()[0] * 0.5, _T0,
-              dimTemp1, _T1,
-              _result);
+          return collideSphereBox(
+                ellipsoid0->getSize()[0] * 0.5, _T0, dimTemp1, _T1, _result);
         }
         default:
           return false;
@@ -1323,12 +1319,12 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
         case dynamics::Shape::BOX:
         {
           const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
-          return collideBoxBox(dimTemp0, _T0, box1->getDim(), _T1, _result);
+          return collideBoxBox(dimTemp0, _T0, box1->getSize(), _T1, _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
           const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1);
-          return collideBoxSphere(dimTemp0, _T0, ellipsoid1->getDim()[0] * 0.5, _T1, _result);
+          return collideBoxSphere(dimTemp0, _T0, ellipsoid1->getSize()[0] * 0.5, _T1, _result);
         }
         case dynamics::Shape::CYLINDER:
         {
