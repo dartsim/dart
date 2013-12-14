@@ -269,7 +269,12 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   joint->setName(_jt->name);
   joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
   joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-
+  if(joint->getNumGenCoords() == 1 && _jt->limits) {
+    joint->getGenCoord(0)->set_dqMin(-_jt->limits->velocity);
+    joint->getGenCoord(0)->set_dqMax(_jt->limits->velocity);
+    joint->getGenCoord(0)->set_tauMin(-_jt->limits->effort);
+    joint->getGenCoord(0)->set_tauMax(_jt->limits->effort);
+  }
   return joint;
 }
 
