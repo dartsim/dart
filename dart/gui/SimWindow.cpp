@@ -104,7 +104,6 @@ void SimWindow::draw() {
       int nSkels = mWorld->getNumSkeletons();
       for (unsigned int i = 0; i < nSkels; i++) {
         int start = mWorld->getIndex(i);
-        // int size = mWorld->getDofs(i).size();
         int size = mWorld->getSkeleton(i)->getNumGenCoords();
         mWorld->getSkeleton(i)->setConfig(
               mBakedStates[mPlayFrame].segment(start, size));

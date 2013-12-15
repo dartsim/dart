@@ -78,6 +78,8 @@ inline void BallJoint::updateTransform() {
 void BallJoint::updateTransform_Issue122(double _timeStep) {
   mT_Joint = mT_Joint * math::expAngular(_timeStep * get_dq());
 
+  set_q(math::logMap(mT_Joint).head<3>());
+
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));

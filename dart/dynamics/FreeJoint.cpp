@@ -84,6 +84,8 @@ void FreeJoint::updateTransform() {
 void FreeJoint::updateTransform_Issue122(double _timeStep) {
   mT_Joint = mT_Joint * math::expMap(_timeStep * get_dq());
 
+  set_q(math::logMap(mT_Joint));
+
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
