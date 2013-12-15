@@ -117,10 +117,10 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
     double k1 = 20.0;
     double k2 = 10.0;
     double kd = 100.0;
-    mTorques[10] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[12] += -k2 * offset + kd * (mPreOffset - offset);
     mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[19] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
     mPreOffset = offset;
   }
 
