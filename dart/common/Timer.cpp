@@ -51,7 +51,8 @@ Timer::Timer(const std::string& _name)
   : mName(_name),
     mCount(0.0),
     mTotalElapsedTime(0.0),
-    mIsStarted(false) {
+    mIsStarted(false)
+{
 #if WIN32
   mTimer.start.QuadPart = 0;
   mTimer.stop.QuadPart = 0;
@@ -59,18 +60,21 @@ Timer::Timer(const std::string& _name)
 #endif
 }
 
-Timer::~Timer() {
+Timer::~Timer()
+{
   print();
 }
 
 #if WIN32
-double Timer::_convLIToSecs(const LARGE_INTEGER& _L) {
+double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
+{
   return (static_cast<double>(_L.QuadPart)
           / static_cast<double>(mFrequency.QuadPart));
 }
 #endif
 
-void Timer::start() {
+void Timer::start()
+{
   mIsStarted = true;
   mCount++;
 #if WIN32
@@ -80,7 +84,8 @@ void Timer::start() {
 #endif
 }
 
-void Timer::stop() {
+void Timer::stop()
+{
   mIsStarted = false;
 #if WIN32
   QueryPerformanceCounter(&mTimer.stop);
@@ -94,7 +99,8 @@ void Timer::stop() {
   mTotalElapsedTime += mLastElapsedTime;
 }
 
-double Timer::getElapsedTime() {
+double Timer::getElapsedTime()
+{
 #if WIN32
   LARGE_INTEGER timenow;
   QueryPerformanceCounter(&timenow);
@@ -108,20 +114,25 @@ double Timer::getElapsedTime() {
   return mLastElapsedTime;
 }
 
-double Timer::getLastElapsedTime() const {
+double Timer::getLastElapsedTime() const
+{
   return mLastElapsedTime;
 }
 
-double Timer::getTotalElapsedTime() const {
+double Timer::getTotalElapsedTime() const
+{
   return mTotalElapsedTime;
 }
 
-bool Timer::isStarted() const {
+bool Timer::isStarted() const
+{
   return mIsStarted;
 }
 
-void Timer::print() {
-  if (mCount > 0) {
+void Timer::print()
+{
+  if (mCount > 0)
+  {
     std::cout << "Timer [" << mName << "] : " << std::endl
               << "Last elapsed : " << mLastElapsedTime << "; "
               << "Total time : " << " "
@@ -129,13 +140,15 @@ void Timer::print() {
               << "Total count : " << mCount << "; "
               << "Average time : " << mTotalElapsedTime / mCount << " "
               << "FPS : " << mCount / mTotalElapsedTime << "hz " << std::endl;
-
-  } else {
+  }
+  else
+  {
     std::cout << "Timer " << mName << " doesn't have any record." << std::endl;
   }
 }
 
-double Timer::_subtractTimes(double _endTime, double _startTime) {
+double Timer::_subtractTimes(double _endTime, double _startTime)
+{
   return (_endTime - _startTime) / CLOCKS_PER_SEC;
 }
 

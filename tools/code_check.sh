@@ -3,21 +3,21 @@
 # This shell script is for checking code style using "cpplint"
 # https://code.google.com/p/google-styleguide/
 
-CHECK_DIRS="../dart/collision\
+CHECK_DIRS="#../dart/collision\
             ../dart/common\
-            ../dart/constraint\
-            ../dart/dynamics\
-            ../dart/gui\
-            ../dart/integration\
-            ../dart/lcpsolver\
-            ../dart/math\
+            #../dart/constraint\
+            #../dart/dynamics\
+            #../dart/gui\
+            #../dart/integration\
+            #../dart/lcpsolver\
+            #../dart/math\
             #../dart/optimizer\
             #../dart/planning\
             #../dart/renderer\
-            ../dart/simulation\
+            #../dart/simulation\
             #../dart/utils\
-            ../apps/cubes\
-            ../apps/meshCollision"
+            #../apps/cubes\
+            #../apps/meshCollision"
 NOT_CHECK_DIRS=""
 CHECK_FILES=`\
   find $CHECK_DIRS\

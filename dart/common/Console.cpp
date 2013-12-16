@@ -42,7 +42,8 @@
 namespace dart {
 namespace common {
 
-std::ostream& colorMsg(const std::string& _msg, int _color) {
+std::ostream& colorMsg(const std::string& _msg, int _color)
+{
   std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
   return std::cout;
 }
@@ -50,7 +51,8 @@ std::ostream& colorMsg(const std::string& _msg, int _color) {
 std::ostream& colorErr(const std::string& _msg,
                        const std::string& _file,
                        unsigned int       _line,
-                       int                _color) {
+                       int                _color)
+{
   int index = _file.find_last_of("/") + 1;
 
   std::cerr << "\033[1;" << _color << "m" << _msg << " [" <<
