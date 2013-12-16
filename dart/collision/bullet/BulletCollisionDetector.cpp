@@ -80,10 +80,10 @@ struct CollisionFilter : public btOverlapFilterCallback {
     btCollisionObject* collObj1 =
         static_cast<btCollisionObject*>(_proxy1->m_clientObject);
 
-    btUserData* userData0 =
-        static_cast<btUserData*>(collObj0->getUserPointer());
-    btUserData* userData1 =
-        static_cast<btUserData*>(collObj1->getUserPointer());
+    BulletUserData* userData0 =
+        static_cast<BulletUserData*>(collObj0->getUserPointer());
+    BulletUserData* userData1 =
+        static_cast<BulletUserData*>(collObj1->getUserPointer());
 
 //    if (!userData0->btCollDet->isCollidable(userData0->btCollNode,
 //                                            userData1->btCollNode)) {
@@ -134,18 +134,17 @@ BulletCollisionDetector::~BulletCollisionDetector() {
 
 CollisionNode* BulletCollisionDetector::createCollisionNode(
     dynamics::BodyNode* _bodyNode) {
-  BulletCollisionNode* newBTCollNode = new BulletCollisionNode(_bodyNode);
+  BulletCollisionNode* collNode = new BulletCollisionNode(_bodyNode);
 
-  for (int i = 0; i < newBTCollNode->getNumBTCollisionObjects(); ++i) {
-    btUserData* userData =
-        static_cast<btUserData*>(
-          newBTCollNode->getBTCollisionObject(i)->getUserPointer());
+  for (int i = 0; i < collNode->getNumBulletCollisionObjects(); ++i) {
+    btCollisionObject* collObj = collNode->getBulletCollisionObject(i);
+    BulletUserData* userData
+        = static_cast<BulletUserData*>(collObj->getUserPointer());
     userData->btCollDet = this;
-    mBulletCollisionWorld->addCollisionObject(
-          newBTCollNode->getBTCollisionObject(i));
+    mBulletCollisionWorld->addCollisionObject(collObj);
   }
 
-  return newBTCollNode;
+  return collNode;
 }
 
 bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
@@ -153,7 +152,7 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
   // Update all the transformations of the collision nodes
   for (int i = 0; i < mCollisionNodes.size(); ++i)
     static_cast<BulletCollisionNode*>(
-        mCollisionNodes[i])->updateBTCollisionObjects();
+        mCollisionNodes[i])->updateBulletCollisionObjects();
 
   // Setting up broadphase collision detection options
   btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
@@ -171,25 +170,28 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
 
   // Add all the contacts to mContacts
   int numManifolds = mBulletCollisionWorld->getDispatcher()->getNumManifolds();
+  btDispatcher* dispatcher = mBulletCollisionWorld->getDispatcher();
   for (int i = 0; i < numManifolds; ++i) {
-    btPersistentManifold* contactManifold =
-        mBulletCollisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+    btPersistentManifold* contactManifold
+        = dispatcher->getManifoldByIndexInternal(i);
     const btCollisionObject* obA = contactManifold->getBody0();
     const btCollisionObject* obB = contactManifold->getBody1();
 
-    btUserData* userDataA = static_cast<btUserData*>(obA->getUserPointer());
-    btUserData* userDataB = static_cast<btUserData*>(obB->getUserPointer());
+    BulletUserData* userDataA
+        = static_cast<BulletUserData*>(obA->getUserPointer());
+    BulletUserData* userDataB
+        = static_cast<BulletUserData*>(obB->getUserPointer());
 
     int numContacts = contactManifold->getNumContacts();
     for (int j = 0; j < numContacts; j++) {
       btManifoldPoint& cp = contactManifold->getContactPoint(j);
 
       Contact contactPair;
-      contactPair.point = convertVector3(cp.getPositionWorldOnA());
-      contactPair.normal = convertVector3(cp.m_normalWorldOnB);
+      contactPair.point            = convertVector3(cp.getPositionWorldOnA());
+      contactPair.normal           = convertVector3(cp.m_normalWorldOnB);
       contactPair.penetrationDepth = -cp.m_distance1;
-      contactPair.collisionNode1 = userDataA->btCollNode;
-      contactPair.collisionNode2 = userDataB->btCollNode;
+      contactPair.collisionNode1   = userDataA->btCollNode;
+      contactPair.collisionNode2   = userDataB->btCollNode;
 
       mContacts.push_back(contactPair);
     }

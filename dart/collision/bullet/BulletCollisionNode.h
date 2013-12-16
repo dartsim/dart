@@ -58,7 +58,7 @@ namespace collision {
 class BulletCollisionNode;
 class BulletCollisionDetector;
 
-struct btUserData {
+struct BulletUserData {
     dynamics::BodyNode* bodyNode;
     dynamics::Shape* shape;
     BulletCollisionNode* btCollNode;
@@ -75,13 +75,13 @@ public:
     virtual ~BulletCollisionNode();
 
     /// @brief Update transformation of all the bullet collision objects.
-    void updateBTCollisionObjects();
+    void updateBulletCollisionObjects();
 
     /// @brief
-    int getNumBTCollisionObjects() const;
+    int getNumBulletCollisionObjects() const;
 
     /// @brief
-    btCollisionObject* getBTCollisionObject(int _i);
+    btCollisionObject* getBulletCollisionObject(int _i);
 
 private:
     /// @brief
