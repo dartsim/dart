@@ -4,6 +4,7 @@
         <physics>
             <time_step>0.001</time_step>
             <gravity>0 0 -9.81</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
         </physics>
         
         <skeleton name="skeleton_1">
