@@ -68,10 +68,17 @@ void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
     return;
   }
 
+  // Create collision node and set index
   CollisionNode* collNode = createCollisionNode(_bodyNode);
   collNode->setIndex(mCollisionNodes.size());
+
+  // Add the collision node to collision node list
   mCollisionNodes.push_back(collNode);
+
+  // Add the collision node to map (BodyNode -> CollisionNode)
   mBodyCollisionMap[_bodyNode] = collNode;
+
+  // Add collidable pairs for the collision node
   mCollidablePairs.push_back(
         std::vector<bool>(mCollisionNodes.size() - 1, true));
 
