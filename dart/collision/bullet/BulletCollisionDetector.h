@@ -40,11 +40,11 @@
 #include <vector>
 #include <map>
 
+#include <bullet/btBulletCollisionCommon.h>
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/bullet/BulletTypes.h"
-#include "dart/collision/bullet/btBulletCollisionCommon.h"
 
 namespace dart {
 namespace collision {
