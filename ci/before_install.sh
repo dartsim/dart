@@ -23,7 +23,7 @@ before_install() {
 
 APT='freeglut3 freeglut3-dev libglu1-mesa-dev libboost-all-dev cmake
 cmake-curses-gui libeigen3-dev libxmu-dev libxi-dev libwxgtk2.8-dev
-libgtest-dev libtinyxml-dev libgtest-dev'
+libgtest-dev libtinyxml-dev libgtest-dev libbullet-dev'
 
 sudo apt-get install $APT
 (before_install)

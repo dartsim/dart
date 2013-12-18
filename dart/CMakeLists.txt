@@ -38,7 +38,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Library
 add_library(dart-core ${core_srcs})
-target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+target_link_libraries(dart-core ${FCL_LIBRARIES} ${BULLET_MATH_LIBRARY} ${BULLET_COLLISION_LIBRARY} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}"
                                            SOVERSION ${DART_MINOR_VERSION}
                                            VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
