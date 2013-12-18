@@ -54,13 +54,15 @@ namespace dynamics {
 /// \brief
 class Shape {
 public:
+  // TODO(JS): We should don't use ShapeType since this is not extendable.
   /// \brief
   enum ShapeType {
     BOX,
     ELLIPSOID,
     CYLINDER,
     PLANE,
-    MESH
+    MESH,
+    SOFT_MESH
   };
 
   /// \brief Constructor
