@@ -117,7 +117,7 @@ if (BULLET_FOUND)
   message (STATUS "Looking for Bullet - found")
 else()
   set (HAVE_BULLET FALSE)
-  BUILD_WARNING ("DART not found, for bullet collision detector option, please install libbullet-dev.")
+  BUILD_WARNING ("Bullet not found, for bullet collision detector option, please install libbullet-dev.")
 endif()
 
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
