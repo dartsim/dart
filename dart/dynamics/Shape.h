@@ -54,7 +54,7 @@ namespace dynamics {
 /// \brief
 class Shape {
 public:
-  // TODO(JS): We should don't use ShapeType since this is not extendable.
+  // TODO(JS): We should not use ShapeType because this is not extendable.
   /// \brief
   enum ShapeType {
     BOX,
