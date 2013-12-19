@@ -80,6 +80,12 @@ public:
     /// \brief Get name.
     const std::string& getName() const;
 
+    /// \brief Set an unique index in the world.
+    void setWorldIndex(int _idx);
+
+    /// \brief Get an unique index in the world.
+    int getWorldIndex() const;
+
     /// \brief Set whether this skeleton allows self collisions between body
     ///        nodes in this skeleton.
     /// \param[in] _isSelfCollidable True if self collision is allowed.
@@ -241,8 +247,10 @@ public:
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
     /// \brief
-    void init(double _timeStep = 0.001, const Eigen::Vector3d& _gravity =
-            Eigen::Vector3d(0.0, 0.0, -9.81));
+    void init(
+        double _timeStep = 0.001,
+        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
+        int _worldIndex = -1);
 
     /// \brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(bool _computeJacobian = true,
@@ -268,6 +276,9 @@ public:
 protected:
     /// \brief Name
     std::string mName;
+
+    /// \brief Unique index in the world.
+    int mWorldIndex;
 
     /// \brief
     bool mIsSelfCollidable;
