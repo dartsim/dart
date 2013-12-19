@@ -197,7 +197,7 @@ Eigen::Vector6d BodyNode::getWorldVelocity(
     const Eigen::Vector3d& _offset, bool _isLocal) const {
   Eigen::Isometry3d T = mW;
   if (_isLocal)
-    T.translation() = -mW.linear() * _offset;
+    T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
   return math::AdT(T, mV);
@@ -211,7 +211,7 @@ Eigen::Vector6d BodyNode::getWorldAcceleration(
     const Eigen::Vector3d& _offset, bool _isOffsetLocal) const {
   Eigen::Isometry3d T = mW;
   if (_isOffsetLocal)
-    T.translation() = -mW.linear() * _offset;
+    T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
   return math::AdT(T, mdV);
@@ -227,7 +227,7 @@ math::Jacobian BodyNode::getWorldJacobian(
     const Eigen::Vector3d& _offset, bool _isOffsetLocal) {
   Eigen::Isometry3d T = mW;
   if (_isOffsetLocal)
-    T.translation() = -mW.linear() * _offset;
+    T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
   return math::AdTJac(T, getBodyJacobian());
@@ -241,7 +241,7 @@ math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
     const Eigen::Vector3d& _offset, bool _isOffsetLocal) const {
   Eigen::Isometry3d T = mW;
   if (_isOffsetLocal)
-    T.translation() = -mW.linear() * _offset;
+    T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
   return math::AdTJac(T, mBodyJacobianTimeDeriv);
