@@ -246,10 +246,12 @@ public:
 
   /// \brief Get the generalized velocity at a point on this body node where
   ///        the velocity is expressed in the world frame.
-  /// \param[in] _offset Point vector from the origin of this body frame where
-  ///                    the point vector is expressed in the world frame.
+  /// \param[in] _offset Position vector relative to the origin the body frame.
+  /// \param[in] _isLocal True if _offset is expressed in the body frame.
+  ///                     False if _offset is expressed in the world frame.
   Eigen::Vector6d getWorldVelocity(
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isLocal                  = false) const;
 
   /// \brief Get generalized acceleration at the origin of this body node
   /// where the acceleration is expressed in this body node frame.
@@ -257,10 +259,12 @@ public:
 
   /// \brief Get generalized acceleration at a point on this body node where
   ///        the acceleration is expressed in the world frame.
-  /// \param[in] _offset Point vector from the origin of this body frame where
-  ///                    the point vector is expressed in the world frame.
+  /// \param[in] _offset Position vector relative to the origin the body frame.
+  /// \param[in] _isLocal True if _offset is expressed in the body frame.
+  ///                     False if _offset is expressed in the world frame.
   Eigen::Vector6d getWorldAcceleration(
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isOffsetLocal            = false) const;
 
   /// \brief Get generalized Jacobian at the origin of this body node where
   ///        the Jacobian is expressed in this body node frame.
@@ -268,10 +272,12 @@ public:
 
   /// \brief Get generalized Jacobian at a point on this body node where the
   ///        Jacobian is expressed in the world frame.
-  /// \param[in] _offset Point vector from the origin of this body frame where
-  ///                    the point vector is expressed in the world frame.
+  /// \param[in] _offset Position vector relative to the origin the body frame.
+  /// \param[in] _isLocal True if _offset is expressed in the body frame.
+  ///                     False if _offset is expressed in the world frame.
   math::Jacobian getWorldJacobian(
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero());
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isOffsetLocal            = false);
 
   /// \brief Get time derivative of generalized Jacobian at the origin of this
   ///        body node where the Jacobian is expressed in this body node
@@ -281,10 +287,12 @@ public:
   /// \brief Get time derivative of generalized Jacobian at a point on this
   ///        body node where the time derivative of Jacobian is expressed in
   ///        the world frame.
-  /// \param[in] _offset Point vector from the origin of this body frame where
-  ///                    the point vector is expressed in the world frame.
+  /// \param[in] _offset Position vector relative to the origin the body frame.
+  /// \param[in] _isLocal True if _offset is expressed in the body frame.
+  ///                     False if _offset is expressed in the world frame.
   math::Jacobian getWorldJacobianTimeDeriv(
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero()) const;
+      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      bool _isOffsetLocal            = false) const;
 
   /// \brief Set whether this body node is colliding with others.
   /// \param[in] True if this body node is colliding.
