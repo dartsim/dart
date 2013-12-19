@@ -21,14 +21,9 @@ before_install() {
   (cd urdfdom; cmake .; make && sudo make install)
 }
 
-# For libbullet-dev
-sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
-wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-sudo apt-get update
-
 APT='freeglut3 freeglut3-dev libglu1-mesa-dev libboost-all-dev cmake
 cmake-curses-gui libeigen3-dev libxmu-dev libxi-dev libwxgtk2.8-dev
-libgtest-dev libtinyxml-dev libgtest-dev libbullet-dev'
+libgtest-dev libtinyxml-dev libgtest-dev'
 
 sudo apt-get install $APT
 (before_install)
