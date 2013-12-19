@@ -81,6 +81,7 @@ public:
     const std::string& getName() const;
 
     /// \brief Set an unique index in the world.
+    /// \warning This index should be managed by World class not by the user.
     void setWorldIndex(int _idx);
 
     /// \brief Get an unique index in the world.
