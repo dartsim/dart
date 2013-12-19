@@ -129,13 +129,10 @@ double Skeleton::getMass() const {
   return mTotalMass;
 }
 
-void Skeleton::init(double _timeStep,
-                    const Eigen::Vector3d& _gravity,
-                    int _worldIndex) {
+void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
   // Set timestep, gravity, and index in the world
   setTimeStep(_timeStep);
   setGravity(_gravity);
-  mWorldIndex = _worldIndex;
 
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;

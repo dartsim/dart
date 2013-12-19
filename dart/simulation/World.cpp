@@ -225,7 +225,8 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton) {
     return;
   }
 
-  _skeleton->init(mTimeStep, mGravity, mSkeletons.size());
+  _skeleton->init(mTimeStep, mGravity);
+  _skeleton->setWorldIndex(mSkeletons.size());
   mSkeletons.push_back(_skeleton);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
   mConstraintHandler->addSkeleton(_skeleton);

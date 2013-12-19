@@ -247,10 +247,8 @@ public:
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------
     /// \brief
-    void init(
-        double _timeStep = 0.001,
-        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
-        int _worldIndex = -1);
+    void init(double _timeStep = 0.001,
+        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
     /// \brief (q, dq, ddq) --> (tau)
     void computeInverseDynamicsLinear(bool _computeJacobian = true,
