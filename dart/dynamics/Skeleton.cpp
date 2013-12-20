@@ -82,6 +82,16 @@ const std::string& Skeleton::getName() const {
   return mName;
 }
 
+void Skeleton::setWorldIndex(int _idx)
+{
+  mWorldIndex = _idx;
+}
+
+int Skeleton::getWorldIndex() const
+{
+  return mWorldIndex;
+}
+
 void Skeleton::setSelfCollidable(bool _isSelfCollidable) {
   mIsSelfCollidable = _isSelfCollidable;
 }
@@ -120,7 +130,7 @@ double Skeleton::getMass() const {
 }
 
 void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
-  // Set timestep and gravity
+  // Set timestep, gravity, and index in the world
   setTimeStep(_timeStep);
   setGravity(_gravity);
 

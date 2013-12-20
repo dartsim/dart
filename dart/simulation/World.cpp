@@ -225,13 +225,15 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton) {
     return;
   }
 
-  mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
+  _skeleton->setWorldIndex(mSkeletons.size());
+  mSkeletons.push_back(_skeleton);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
   mConstraintHandler->addSkeleton(_skeleton);
 }
 
-void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
+void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+{
   assert(_skeleton != NULL && "Invalid skeleton.");
 
   // Find index of _skeleton in mSkeleton.
@@ -242,7 +244,8 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
 
   // If i is equal to the number of skeletons, then _skeleton is not in
   // mSkeleton. We do nothing.
-  if (i == mSkeletons.size()) {
+  if (i == mSkeletons.size())
+  {
     std::cout << "Skeleton [" << _skeleton->getName()
               << "] is not in the world." << std::endl;
     return;
@@ -259,6 +262,11 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
   // Remove _skeleton in mSkeletons and delete it.
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
+
+  // Update world index.
+  for (int i = 0; i < mSkeletons.size(); ++i)
+    mSkeletons[i]->setWorldIndex(i);
+
   delete _skeleton;
 }
 
