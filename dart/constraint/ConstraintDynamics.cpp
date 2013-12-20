@@ -847,8 +847,8 @@ void ConstraintDynamics::updateNBMatrices() {
       // else
       //   B12 = -B21;
       Eigen::MatrixXd J12t = getJacobian(c.collisionNode2->getBodyNode(), p);
-      mN.block(index2, i, NDOF2, 1).noalias() = J12t * N12;
-      mB.block(index2, i * mNumDir, NDOF2, mNumDir).noalias() = J12t * B12;
+      mN.block(index2, i, NDOF2, 1).noalias() += J12t * N12;
+      mB.block(index2, i * mNumDir, NDOF2, mNumDir).noalias() += J12t * B12;
     }
   }
 }
