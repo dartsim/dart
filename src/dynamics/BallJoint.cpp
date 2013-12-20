@@ -64,8 +64,8 @@ BallJoint::~BallJoint()
 void BallJoint::updateTransform()
 {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
-            mCoordinate[1].get_q(),
-            mCoordinate[2].get_q());
+                      mCoordinate[1].get_q(),
+                      mCoordinate[2].get_q());
 
     // TODO(JS): This is workaround for Issue #122.
     mT_Joint = math::expAngular(q);
@@ -80,6 +80,8 @@ void BallJoint::updateTransform_Issue122(double _timeStep)
 {
     mT_Joint = mT_Joint * math::expAngular(_timeStep * get_dq());
 
+    set_q(math::logMap(mT_Joint).head<3>());
+
     mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
     assert(math::verifyTransform(mT));
@@ -88,8 +90,8 @@ void BallJoint::updateTransform_Issue122(double _timeStep)
 void BallJoint::updateJacobian()
 {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
-            mCoordinate[1].get_q(),
-            mCoordinate[2].get_q());
+                      mCoordinate[1].get_q(),
+                      mCoordinate[2].get_q());
 
     Eigen::Matrix3d J = math::expMapJac(q);
 
@@ -126,11 +128,11 @@ void BallJoint::updateJacobian_Issue122()
 void BallJoint::updateJacobianTimeDeriv()
 {
     Eigen::Vector3d q(mCoordinate[0].get_q(),
-            mCoordinate[1].get_q(),
-            mCoordinate[2].get_q());
+                      mCoordinate[1].get_q(),
+                      mCoordinate[2].get_q());
     Eigen::Vector3d dq(mCoordinate[0].get_dq(),
-            mCoordinate[1].get_dq(),
-            mCoordinate[2].get_dq());
+                       mCoordinate[1].get_dq(),
+                       mCoordinate[2].get_dq());
 
     Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
 
