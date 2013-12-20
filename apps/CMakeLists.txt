@@ -4,7 +4,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 # List of all the subdirectories to include
 foreach(APPDIR
     #meshCollision
-    #viewer
+    #viewer    
     forwardSim
     cubes
     #motionAnalysis
@@ -14,7 +14,7 @@ foreach(APPDIR
     #hybrid
     #hanging
     hardcodedDesign
-    #closedLoop
+    closedLoop
     drawRRT
     testBed
     sdfLoader

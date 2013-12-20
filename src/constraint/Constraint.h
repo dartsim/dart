@@ -42,6 +42,11 @@
 #include <Eigen/Dense>
 
 namespace dart {
+
+namespace dynamics {
+    class BodyNode;
+}
+
 namespace constraint {
 
     class Constraint {
@@ -55,8 +60,16 @@ namespace constraint {
         inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; }
 
     protected:
+        virtual void getJacobian() {};
         int mNumRows;
         Eigen::VectorXd mLagrangeMultipliers;
+
+        dynamics::BodyNode* mBody1;
+        dynamics::BodyNode* mBody2;
+        Eigen::MatrixXd mJ1;
+        Eigen::MatrixXd mJ2;
+        int mSkelIndex1;
+        int mSkelIndex2;
     };
 
 } // namespace constraint
