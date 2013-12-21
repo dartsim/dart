@@ -37,12 +37,12 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::B
 BallJointConstraint::~BallJointConstraint() {
 }
 
-void BallJointConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
+void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
     if (mBody2) {
-        _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()).setZero();
-        _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getNumGenCoords()) = mJ1;
-        _J[mSkelIndex2].block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()) += mJ2;
+        _J.block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()).setZero();
+        _J.block(_rowIndex, 0, 3, mBody1->getSkeleton()->getNumGenCoords()) = mJ1;
+        _J.block(_rowIndex, 0, 3, mBody2->getSkeleton()->getNumGenCoords()) += mJ2;
 
         Eigen::Vector3d worldP1 = mBody1->getWorldTransform() * mOffset1;
         Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBody1->getSkeleton())->get_dq();
@@ -52,27 +52,14 @@ void BallJointConstraint::updateDynamics(std::vector<Eigen::MatrixXd> & _J, Eige
         _C.segment(_rowIndex, 3) = worldP1 - worldP2;
         _CDot.segment(_rowIndex, 3) = mJ1 * qDot1 + mJ2 * qDot2;
     } else {
-        _J[mSkelIndex1].block(_rowIndex, 0, 3, mBody1->getSkeleton()->getNumGenCoords()) = mJ1;
+        _J.block(_rowIndex, 0, 3, mBody1->getSkeleton()->getNumGenCoords()) = mJ1;
         Eigen::Vector3d worldP1 = mBody1->getWorldTransform() * mOffset1;
         Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBody1->getSkeleton())->get_dq();
         _C.segment(_rowIndex, 3) = worldP1 - mOffset2;
         _CDot.segment(_rowIndex, 3) = mJ1 * qDot1;
     }
 }
-    /*
-    void BallJointConstraint::getJacobian() {
-        for(int i = 0; i < mBody1->getNumDependentDofs(); i++) {
-            int dofIndex = mBody1->getDependentDof(i);
-            Eigen::VectorXd Jcol = xformHom(mBody1->getDerivWorldTransform(i), mOffset1);
-            mJ1.col(dofIndex) = Jcol;
-        }
-        for(int i = 0; i < mBody2->getNumDependentDofs(); i++) {
-            int dofIndex = mBody2->getDependentDof(i);
-            Eigen::VectorXd Jcol = xformHom(mBody2->getDerivWorldTransform(i), mOffset2);
-            mJ2.col(dofIndex) = -Jcol;
-        }
-    }
-    */
+ 
 void BallJointConstraint::getJacobian() {
     Eigen::Vector3d offsetWorld = mBody1->getWorldTransform().rotation() * mOffset1;
     Eigen::MatrixXd JBody1 = mBody1->getWorldJacobian(offsetWorld).bottomRows<3>();

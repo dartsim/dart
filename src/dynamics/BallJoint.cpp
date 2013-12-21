@@ -69,6 +69,7 @@ void BallJoint::updateTransform()
 
     // TODO(JS): This is workaround for Issue #122.
     mT_Joint = math::expAngular(q);
+    
 
     mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -79,6 +80,8 @@ void BallJoint::updateTransform()
 void BallJoint::updateTransform_Issue122(double _timeStep)
 {
     mT_Joint = mT_Joint * math::expAngular(_timeStep * get_dq());
+
+    set_q(math::logMap(mT_Joint).head<3>());
 
     mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
