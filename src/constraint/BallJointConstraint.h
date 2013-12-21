@@ -51,10 +51,11 @@ namespace constraint {
 
 class BallJointConstraint : public Constraint {
 public:
-    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2, int _skelIndex1, int _skelIndex2);
-    BallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2, int _skelIndex1);
+    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2);
+    BallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
     virtual ~BallJointConstraint();
-    virtual void updateDynamics(Eigen::MatrixXd & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
 
 private:
     virtual void getJacobian();

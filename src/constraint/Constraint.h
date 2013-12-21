@@ -54,22 +54,23 @@ namespace constraint {
         Constraint() {}
         virtual ~Constraint() {}
 
-        virtual void updateDynamics(Eigen::MatrixXd & _J, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
+        virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
+        virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
         inline int getNumRows() const { return mNumRows; }
         inline Eigen::VectorXd getLagrangeMultipliers() const { return mLagrangeMultipliers; }
         inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; }
+        inline dynamics::BodyNode* getBodyNode1() { return mBodyNode1; }
+        inline dynamics::BodyNode* getBodyNode2() { return mBodyNode2; }
 
     protected:
         virtual void getJacobian() {};
         int mNumRows;
         Eigen::VectorXd mLagrangeMultipliers;
 
-        dynamics::BodyNode* mBody1;
-        dynamics::BodyNode* mBody2;
+        dynamics::BodyNode* mBodyNode1;
+        dynamics::BodyNode* mBodyNode2;
         Eigen::MatrixXd mJ1;
         Eigen::MatrixXd mJ2;
-        int mSkelIndex1;
-        int mSkelIndex2;
     };
 
 } // namespace constraint

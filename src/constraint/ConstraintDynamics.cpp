@@ -12,13 +12,14 @@
 using namespace dart;
 using namespace collision;
 using namespace math;
+using namespace dynamics;
 
 #define CONSTRAIN_DYNAMICS_EPSILON 1e-6
 
 namespace dart {
 namespace constraint {
 
-ConstraintDynamics::ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skeletons, double _dt, double _mu, int _d, bool _useODE, collision::CollisionDetector* _collisionDetector)
+ConstraintDynamics::ConstraintDynamics(const std::vector<Skeleton*>& _skeletons, double _dt, double _mu, int _d, bool _useODE, CollisionDetector* _collisionDetector)
     : mSkeletons(_skeletons), mDt(_dt), mMu(_mu), mNumDir(_d), mCollisionDetector(_collisionDetector), mUseODELCPSolver(_useODE) {
     assert(_collisionDetector != NULL && "Invalid collision detector.");
     initialize();
@@ -45,12 +46,12 @@ void ConstraintDynamics::computeConstraintForces() {
             continue;
 
         for (int j = 0; j < mSkeletons[i]->getNumBodyNodes(); j++) {
-            dynamics::Joint* joint = mSkeletons[i]->getJoint(j);
+            Joint* joint = mSkeletons[i]->getJoint(j);
             if (!joint->isPositionLimited())
                 continue;
             for (int k = 0; k < mSkeletons[i]->getJoint(j)->getNumGenCoords(); k++) {
 
-                dynamics::GenCoord* genCoord = joint->getGenCoord(k);
+                GenCoord* genCoord = joint->getGenCoord(k);
                 double val = genCoord->get_q();
                 double ub  = genCoord->get_qMax();
                 double lb  = genCoord->get_qMin();
@@ -92,6 +93,36 @@ void ConstraintDynamics::computeConstraintForces() {
 }
 
 void ConstraintDynamics::addConstraint(Constraint *_constr) {
+    // create an entry in the mSkeletonIDMap
+    Eigen::Vector2i id(-1, -1);
+    Skeleton *skel1 = _constr->getBodyNode1()->getSkeleton();
+    for (int i = 0; i < mSkeletons.size(); i++) {
+        if (skel1 == mSkeletons[i]) {
+            id[0] = i;
+            break;
+        }
+    }
+    if (id[0] == -1) {
+        std::cout << "Invalid constraint" << std::endl;
+        return;
+    }
+
+    if (_constr->getBodyNode2()) {        
+        Skeleton *skel2 = _constr->getBodyNode2()->getSkeleton();
+        for (int i = 0; i < mSkeletons.size(); i++) {
+            if (skel2 == mSkeletons[i]) {
+                id[1] = i;
+                break;
+            }
+        }
+        if (id[1] == -1) {
+            std::cout << "Invalid constraint" << std::endl;
+            return;
+        }        
+    }
+    mSkeletonIDMap[_constr] = id;
+
+    // extend global structures for the new constraint
     mConstraints.push_back(_constr);
     mTotalRows += _constr->getNumRows();
     for (int i = 0; i < mSkeletons.size(); i++) {
@@ -131,10 +162,11 @@ void ConstraintDynamics::deleteConstraint(Constraint* _constr) {
     mTauHat.resize(mTotalRows);
 
     mConstraints.erase(mConstraints.begin() + index);
+    mSkeletonIDMap.erase(_constr);
     delete _constr;
 }
 
-void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _skeleton)
+void ConstraintDynamics::addSkeleton(Skeleton* _skeleton)
 {
     assert(_skeleton != NULL && "Invalid skeleton.");
 
@@ -181,7 +213,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _skeleton)
     mZ = Eigen::MatrixXd(N, N);
 }
 
-void ConstraintDynamics::removeSkeleton(dynamics::Skeleton* _skeleton)
+void ConstraintDynamics::removeSkeleton(Skeleton* _skeleton)
 {
     assert(_skeleton != NULL && "Invalid skeleton.");
 
@@ -266,11 +298,11 @@ void ConstraintDynamics::initialize() {
     int rows = 0;
     int cols = 0;
     for (int i = 0; i < mSkeletons.size(); i++) {
-        dynamics::Skeleton* skel = mSkeletons[i];
+        Skeleton* skel = mSkeletons[i];
         int nNodes = skel->getNumBodyNodes();
 
         for (int j = 0; j < nNodes; j++) {
-            dynamics::BodyNode* node = skel->getBodyNode(j);
+            BodyNode* node = skel->getBodyNode(j);
             if(node->isCollidable()) {
                 mCollisionDetector->addCollisionSkeletonNode(node);
                 mBodyIndexToSkelIndex.push_back(i);
@@ -308,7 +340,7 @@ void ConstraintDynamics::initialize() {
     mIndices.push_back(sumNDofs);
 
     for (int i = 0; i < mSkeletons.size(); i++) {
-        dynamics::Skeleton* skel = mSkeletons[i];
+        Skeleton* skel = mSkeletons[i];
         int nDofs = skel->getNumGenCoords();
         if (!mSkeletons[i]->isMobile())
             nDofs = 0;
@@ -743,7 +775,7 @@ void ConstraintDynamics::updateNBMatricesODE() {
     }
 }
 
-Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node, const Eigen::Vector3d& p) {
+Eigen::MatrixXd ConstraintDynamics::getJacobian(BodyNode* node, const Eigen::Vector3d& p) {
     int nDofs = node->getSkeleton()->getNumGenCoords();
     Eigen::MatrixXd Jt = Eigen::MatrixXd::Zero(nDofs, 3);
 
@@ -820,7 +852,6 @@ Eigen::MatrixXd ConstraintDynamics::getContactMatrix() const {
 Eigen::MatrixXd ConstraintDynamics::getMuMatrix() const {
     int c = getNumContacts();
     return Eigen::MatrixXd::Identity(c, c) * mMu;
-
 }
 
 void ConstraintDynamics::updateConstraintTerms(){
@@ -829,7 +860,11 @@ void ConstraintDynamics::updateConstraintTerms(){
     // compute J
     int count = 0;
     for (int i = 0; i < mConstraints.size(); i++) {
-        mConstraints[i]->updateDynamics(mJ[0], mC, mCDot, count);
+        if (mSkeletonIDMap[mConstraints[i]][1] == -1)
+            mConstraints[i]->updateDynamics(mJ[mSkeletonIDMap[mConstraints[i]][0]], mC, mCDot, count);
+        else
+            mConstraints[i]->updateDynamics(mJ[mSkeletonIDMap[mConstraints[i]][0]], mJ[mSkeletonIDMap[mConstraints[i]][1]], mC, mCDot, count);
+
         count += mConstraints[i]->getNumRows();
     }
     // compute JMInv, GInv, Z

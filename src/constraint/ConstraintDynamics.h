@@ -133,6 +133,9 @@ private:
     Eigen::VectorXd mCDot; // M * 1
     std::vector<int> mLimitingDofIndex; // if dof i hits upper limit, we store this information as mLimitingDofIndex.push_back(i+1), if dof i hits lower limite, mLimitingDofIndex.push_back(-(i+1));
     bool mUseODELCPSolver;
+
+    // TODO: this map needs to be rebuilt when the order of skeletons changes
+    std::map<Constraint*, Eigen::Vector2i> mSkeletonIDMap;
 };
 
 } // namespace constraint
