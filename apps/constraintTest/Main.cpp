@@ -32,8 +32,16 @@ int main(int argc, char* argv[])
     int dof =  myWorld->getSkeleton(0)->getNumGenCoords();
     Eigen::VectorXd initPose(dof);
     for (int i = 0; i < dof; i++)
-        initPose[i] = random(-0.1, 0.1);
+        initPose[i] = random(-0.5, 0.5);
     myWorld->getSkeleton(0)->setConfig(initPose);
+    
+    // Add damping to every joint
+    for (int i = 0; i < myWorld->getSkeleton(0)->getNumBodyNodes(); i++) {
+        BodyNode *bd = myWorld->getSkeleton(0)->getBodyNode(i);
+        Joint *jt = bd->getParentJoint();
+        for (int j = 0; j < jt->getNumGenCoords(); j++)
+            jt->setDampingCoefficient(j, 0.02);
+    }
 
     // create a window and link it to the world
     MyWindow window;

@@ -896,7 +896,7 @@ void ConstraintDynamics::updateConstraintTerms(){
             continue;
         Eigen::VectorXd qDot = mSkeletons[i]->get_dq();
         mTauHat.noalias() += -(mJ[i] - mPreJ[i]) / mDt * qDot;
-        mTauHat.noalias() -= mJMInv[i] * (mSkeletons[i]->getInternalForces() + mSkeletons[i]->getExternalForces() - mSkeletons[i]->getCombinedVector());
+        mTauHat.noalias() -= mJMInv[i] * (mSkeletons[i]->getInternalForces() + mSkeletons[i]->getExternalForces() + mSkeletons[i]->getDampingForces() - mSkeletons[i]->getCombinedVector());
     }
     mTauHat -= ks * mC + kd * mCDot;
 }
