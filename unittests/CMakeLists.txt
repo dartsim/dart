@@ -29,7 +29,7 @@ if(NOT WIN32)
     add_library(gtest /usr/local/share/gtest/src/gtest-all.cc ${gtest_hdrs})
   endif()
 
-  target_link_libraries(gtest)
+  target_link_libraries(gtest pthread)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
@@ -47,10 +47,6 @@ foreach(test ${tests})
 		target_link_libraries(${base} dart gtest)
 	endif()
 
-	# Link to pthread if necessary
-	if(APPLE OR UNIX)
-		target_link_libraries(${base} pthread)
-	endif()
 	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 
 	# Add the executable if not to be ignored
