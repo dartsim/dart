@@ -214,7 +214,11 @@ Eigen::Vector6d BodyNode::getWorldAcceleration(
     T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
-  return math::AdT(T, mdV);
+
+  Eigen::Vector6d dV = mdV;
+  dV.tail<3>() += mV.head<3>().cross(mV.tail<3>());
+
+  return math::AdT(T, dV);
 }
 
 const math::Jacobian& BodyNode::getBodyJacobian() {
