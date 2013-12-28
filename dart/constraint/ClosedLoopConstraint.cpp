@@ -50,7 +50,8 @@ ClosedLoopConstraint::ClosedLoopConstraint(dynamics::BodyNode *_body1,
                                            dynamics::BodyNode *_body2,
                                            const Eigen::Vector3d& _offset1,
                                            const Eigen::Vector3d& _offset2,
-                                           int _skelIndex1, int _skelIndex2) {
+                                           int _skelIndex1, int _skelIndex2)
+{
   mBody1 = _body1;
   mBody2 = _body2;
   mOffset1 = _offset1;
@@ -62,13 +63,15 @@ ClosedLoopConstraint::ClosedLoopConstraint(dynamics::BodyNode *_body1,
   mSkelIndex2 = _skelIndex2;
 }
 
-ClosedLoopConstraint::~ClosedLoopConstraint() {
+ClosedLoopConstraint::~ClosedLoopConstraint()
+{
 }
 
 void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd>* _J,
                                           Eigen::VectorXd* _C,
                                           Eigen::VectorXd* _CDot,
-                                          int _rowIndex) {
+                                          int _rowIndex)
+{
   getJacobian();
   _J->at(mSkelIndex2).block(_rowIndex, 0, 3,
                             mBody2->getSkeleton()->getNumGenCoords()).setZero();
@@ -85,18 +88,21 @@ void ClosedLoopConstraint::updateDynamics(std::vector<Eigen::MatrixXd>* _J,
   _CDot->segment(_rowIndex, 3) = mJ1 * qDot1 + mJ2 * qDot2;
 }
 
-void ClosedLoopConstraint::getJacobian() {
+void ClosedLoopConstraint::getJacobian()
+{
   Eigen::MatrixXd JBody1 =
       mBody1->getWorldJacobian(
         mOffset1 - mBody1->getWorldTransform().translation()).bottomRows<3>();
-  for (int i = 0; i < mBody1->getNumDependentGenCoords(); i++) {
+  for (int i = 0; i < mBody1->getNumDependentGenCoords(); i++)
+  {
     int dofIndex = mBody1->getDependentGenCoord(i);
     mJ1.col(dofIndex) = JBody1.col(dofIndex);
   }
   Eigen::MatrixXd JBody2 =
       mBody2->getWorldJacobian(
         mOffset2 - mBody2->getWorldTransform().translation()).bottomRows<3>();
-  for (int i = 0; i < mBody2->getNumDependentGenCoords(); i++) {
+  for (int i = 0; i < mBody2->getNumDependentGenCoords(); i++)
+  {
     int dofIndex = mBody2->getDependentGenCoord(i);
     mJ2.col(dofIndex) = JBody2.col(dofIndex);
   }

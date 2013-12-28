@@ -53,7 +53,8 @@ namespace dart {
 namespace constraint {
 
 /// \brief
-class PointConstraint : public Constraint {
+class PointConstraint : public Constraint
+{
 public:
   /// \brief
   PointConstraint(dynamics::BodyNode* _body,

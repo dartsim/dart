@@ -45,7 +45,8 @@ namespace dart {
 namespace constraint {
 
 /// \brief
-class Constraint {
+class Constraint
+{
 public:
   /// \brief
   Constraint();

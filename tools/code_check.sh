@@ -5,7 +5,7 @@
 
 CHECK_DIRS="#../dart/collision\
             ../dart/common\
-            #../dart/constraint\
+            ../dart/constraint\
             #../dart/dynamics\
             #../dart/gui\
             #../dart/integration\

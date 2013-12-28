@@ -53,7 +53,8 @@ namespace dart {
 namespace constraint {
 
 /// \brief
-class ClosedLoopConstraint : public Constraint {
+class ClosedLoopConstraint : public Constraint
+{
 public:
   /// \brief
   ClosedLoopConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,

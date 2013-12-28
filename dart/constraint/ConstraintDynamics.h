@@ -58,7 +58,8 @@ class BodyNode;
 namespace dart {
 namespace constraint {
 
-class ConstraintDynamics {
+class ConstraintDynamics
+{
 public:
   ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
                      double _dt, double _mu = 1.0, int _d = 4,
