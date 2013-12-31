@@ -579,8 +579,21 @@ void ConstraintDynamics::applySolution() {
             Contact& contact = mCollisionDetector->getContact(i);
             contact.force.noalias() = getTangentBasisMatrix(contact.point, contact.normal) * f_d.segment(i * mNumDir, mNumDir);
             contact.force.noalias() += contact.normal * f_n[i];
+            // Add contact force to body nodes
+            Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+            Eigen::Vector6d F = Eigen::Vector6d::Zero();
+            T.translation() = contact.collisionNode1->getBodyNode()->getWorldTransform().inverse() * contact.point;
+            F.tail<3>() = contact.collisionNode1->getBodyNode()->getWorldTransform().linear().transpose() * contact.force;
+            Eigen::Vector6d contactForce = math::dAdInvT(T, F);
+            contact.collisionNode1->getBodyNode()->addContactForce(contactForce);
+
+            T.translation() = contact.collisionNode2->getBodyNode()->getWorldTransform().inverse() * contact.point;
+            F.tail<3>() = contact.collisionNode2->getBodyNode()->getWorldTransform().linear().transpose() * (-contact.force);
+            contactForce = math::dAdInvT(T, F);
+            contact.collisionNode2->getBodyNode()->addContactForce(contactForce);
         }
     }
+
     for (int i = 0; i < mLimitingDofIndex.size(); i++) {
         if (mLimitingDofIndex[i] > 0) { // hitting upper bound
             jointLimitForces[mLimitingDofIndex[i] - 1] = -mX[getNumContacts() * (2 + mNumDir) + i];
@@ -860,13 +873,15 @@ void ConstraintDynamics::updateConstraintTerms(){
     // compute J
     int count = 0;
     for (int i = 0; i < mConstraints.size(); i++) {
-        if (mSkeletonIDMap[mConstraints[i]][1] == -1)
+        if (mSkeletonIDMap[mConstraints[i]][1] == -1) {
             mConstraints[i]->updateDynamics(mJ[mSkeletonIDMap[mConstraints[i]][0]], mC, mCDot, count);
-        else
+        } else {
             mConstraints[i]->updateDynamics(mJ[mSkeletonIDMap[mConstraints[i]][0]], mJ[mSkeletonIDMap[mConstraints[i]][1]], mC, mCDot, count);
+        }
 
         count += mConstraints[i]->getNumRows();
     }
+
     // compute JMInv, GInv, Z
     mGInv.triangularView<Eigen::Lower>().setZero();
     for (int i = 0; i < mSkeletons.size(); i++) {

@@ -18,7 +18,9 @@ foreach(APPDIR
     drawRRT
     testBed
     sdfLoader
-    constraintTest
+    ballJointConstraintTest
+    hingeJointConstraintTest
+    holding
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
