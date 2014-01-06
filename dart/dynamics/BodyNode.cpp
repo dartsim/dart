@@ -281,8 +281,9 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
 
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
-  for (int i = 0; i < mDependentGenCoordIndices.size() - 1; i++) {
-    for (int j = i + 1; j < mDependentGenCoordIndices.size(); j++) {
+  int nDepGenCoordIndices = mDependentGenCoordIndices.size();
+  for (int i = 0; i < nDepGenCoordIndices - 1; i++) {
+    for (int j = i + 1; j < nDepGenCoordIndices; j++) {
       assert(mDependentGenCoordIndices[i] !=
           mDependentGenCoordIndices[j] &&
           "Duplicated index is found in mDependentGenCoordIndices.");
