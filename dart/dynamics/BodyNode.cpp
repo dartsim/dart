@@ -801,15 +801,13 @@ void BodyNode::updateBiasForce(double _timeStep,
   // Cache data: alpha
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
-    mAlpha = mParentJoint->get_tau() +
-             mParentJoint->getSpringForces(_timeStep);
-    mParentJoint->getDampingForces();
+    mAlpha = mParentJoint->get_tau()
+             + mParentJoint->getSpringForces(_timeStep)
+             + mParentJoint->getDampingForces();
     for (int i = 0; i < dof; i++) {
-      mAlpha(i) += mSkeleton->getConstraintForceVector()[
-                   mParentJoint->getGenCoord(i)->getSkeletonIndex()];
+      int idx = mParentJoint->getGenCoord(i)->getSkeletonIndex();
+      mAlpha(i) += mSkeleton->getConstraintForceVector()[idx];
     }
-//    mAlpha.noalias() -= mParentJoint->getLocalJacobian().transpose()*(
-//                          mAI*mEta + mB);
     mAlpha.noalias() -= mAI_S.transpose() * mEta;
     mAlpha.noalias() -= mParentJoint->getLocalJacobian().transpose() * mB;
     assert(!math::isNan(mAlpha));
