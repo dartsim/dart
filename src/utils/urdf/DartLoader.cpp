@@ -81,9 +81,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
       Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
 
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
-          Eigen::Vector6d coordinates;
-          coordinates << math::logMap(transform.linear()), transform.translation();
-          rootJoint->set_q(coordinates);
+          rootJoint->set_q(math::logMap(transform));
       }
       else {
           rootJoint->setTransformFromParentBodyNode(transform);
