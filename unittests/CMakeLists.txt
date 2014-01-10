@@ -25,7 +25,11 @@ endif()
   file(GLOB unittests_hdrs "*.h")
 
 add_executable(unittests ${unittests_srcs} ${unittests_hdrs})
-target_link_libraries(unittests optimized dart debug dartd optimized gtest debug gtestd ${DARTExt_LIBRARIES})
+if(MSVC)
+  target_link_libraries(unittests optimized dart debug dartd optimized gtest debug gtestd ${DARTExt_LIBRARIES})
+else()
+  target_link_libraries(unittests dart gtest ${DARTExt_LIBRARIES})
+endif()
 
 if(APPLE OR UNIX)
   target_link_libraries(unittests pthread)
