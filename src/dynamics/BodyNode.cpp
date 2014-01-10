@@ -229,9 +229,13 @@ const Eigen::Vector6d&BodyNode::getBodyAcceleration() const
 Eigen::Vector6d BodyNode::getWorldAcceleration(
         const Eigen::Vector3d& _offset) const
 {
-    Eigen::Isometry3d T = mW;
-    T.translation() = -_offset;
-    return math::AdT(T, mdV);
+  Eigen::Isometry3d T = mW;
+  T.translation() = -_offset;
+
+  Eigen::Vector6d dV = mdV;
+  dV.tail<3>() += mV.head<3>().cross(mV.tail<3>());
+
+  return math::AdT(T, dV);
 }
 
 const math::Jacobian&BodyNode::getBodyJacobian() const
