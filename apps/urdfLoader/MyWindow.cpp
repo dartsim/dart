@@ -22,12 +22,8 @@ void MyWindow::initDyn()
         mDofs[i].setZero();
         mDofVels[i].setZero();
     }
-    // initial position of the boxes
-    mDofs[0][1] = -0.35;
-//    mDofs[1][1] = mDofs[0][1] + 0.025;
-//    mDofs[2][1] = mDofs[1][1] + 0.025 + 0.025;
-//    mDofs[3][0] = 0.05;
-//    mDofs[3][1] = mDofs[2][1] + 0.025 + 0.025 + 0.03;
+    // initial position of the ground
+    mDofs[0][1] = -1.0;
 
     for (unsigned int i = 0; i < mSkels.size(); i++) {
         mSkels[i]->initDynamics();
