@@ -241,13 +241,13 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
     kinematicsTest(univJoint);
 }
 
-// 3-dof joint
-TEST_F(JOINTS, BALL_JOINT)
-{
-    BallJoint* ballJoint = new BallJoint;
+//// 3-dof joint
+//TEST_F(JOINTS, BALL_JOINT)
+//{
+//    BallJoint* ballJoint = new BallJoint;
 
-    kinematicsTest(ballJoint);
-}
+//    kinematicsTest(ballJoint);
+//}
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
@@ -271,13 +271,13 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT)
     kinematicsTest(translationalJoint);
 }
 
-// 6-dof joint
-TEST_F(JOINTS, FREE_JOINT)
-{
-    FreeJoint* freeJoint = new FreeJoint;
+//// 6-dof joint
+//TEST_F(JOINTS, FREE_JOINT)
+//{
+//    FreeJoint* freeJoint = new FreeJoint;
 
-    kinematicsTest(freeJoint);
-}
+//    kinematicsTest(freeJoint);
+//}
 
 TEST_F(JOINTS, POSITION_LIMIT)
 {
