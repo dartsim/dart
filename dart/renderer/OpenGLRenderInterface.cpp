@@ -244,7 +244,7 @@ void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
     gluDisk(quadObj, 0, radius, slices, stacks);
 }
 
-void color4_to_float4(const aiColor4D *c, float f[4])
+void OpenGLRenderInterface::color4_to_float4(const aiColor4D *c, float f[4])
 {
     f[0] = c->r;
     f[1] = c->g;
@@ -252,7 +252,7 @@ void color4_to_float4(const aiColor4D *c, float f[4])
     f[3] = c->a;
 }
 
-void set_float4(float f[4], float a, float b, float c, float d)
+void OpenGLRenderInterface::set_float4(float f[4], float a, float b, float c, float d)
 {
     f[0] = a;
     f[1] = b;
@@ -261,7 +261,7 @@ void set_float4(float f[4], float a, float b, float c, float d)
 }
 
 // This function is taken from the examples coming with assimp
-void applyMaterial(const struct aiMaterial *mtl)
+void OpenGLRenderInterface::applyMaterial(const struct aiMaterial *mtl)
 {
     float c[4];
 
@@ -328,7 +328,7 @@ void applyMaterial(const struct aiMaterial *mtl)
 
 
 // This function is taken from the examples coming with assimp
-void recursiveRender (const Eigen::Vector3d& _scale, const struct aiScene *sc, const struct aiNode* nd) {
+void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const struct aiNode* nd) {
     unsigned int i;
     unsigned int n = 0, t;
     aiMatrix4x4 m = nd->mTransformation;
@@ -369,7 +369,6 @@ void recursiveRender (const Eigen::Vector3d& _scale, const struct aiScene *sc, c
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
                 if(mesh->mNormals != NULL)
                     glNormal3fv(&mesh->mNormals[index].x);
-                glScalef((GLfloat)_scale[0], (GLfloat)_scale[1], (GLfloat)_scale[2]);
                 glVertex3fv(&mesh->mVertices[index].x);
             }
 
@@ -380,15 +379,19 @@ void recursiveRender (const Eigen::Vector3d& _scale, const struct aiScene *sc, c
 
     // draw all children
     for (n = 0; n < nd->mNumChildren; ++n) {
-        recursiveRender(_scale, sc, nd->mChildren[n]);
+        recursiveRender(sc, nd->mChildren[n]);
     }
 
     glPopMatrix();
 }
 
 void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
-    if(_mesh)
-        recursiveRender(_scale, _mesh, _mesh->mRootNode);
+    if(_mesh) {
+        glPushMatrix();
+        glScaled(_scale(0), _scale(1), _scale(2));
+        recursiveRender(_mesh, _mesh->mRootNode);
+        glPopMatrix();
+    }
 }
 
 void OpenGLRenderInterface::drawList(GLuint index) {
@@ -434,13 +437,13 @@ void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
             if(shapeMesh == 0)
                 return;
 
-            shapeMesh->setDisplayList(compileList(shapeMesh->getMesh()));
+            shapeMesh->setDisplayList(compileList(shapeMesh->getScale(), shapeMesh->getMesh()));
 
             break;
     }
 }
 
-GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
+GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
     if(!_mesh)
         return 0;
 
@@ -448,7 +451,7 @@ GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
     GLuint index = glGenLists(1);
     // Compile list
     glNewList(index, GL_COMPILE);
-    drawMesh(Eigen::Vector3d::Ones(), _mesh);
+    drawMesh(_scale, _mesh);
     glEndList();
 
     return index;
@@ -542,7 +545,7 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
             else if(mesh->getDisplayList())
                 drawList(mesh->getDisplayList());
             else
-                drawMesh(Eigen::Vector3d::Ones(), mesh->getMesh());
+                drawMesh(mesh->getScale(), mesh->getMesh());
 
             break;
         }

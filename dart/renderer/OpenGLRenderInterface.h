@@ -86,7 +86,7 @@ public:
     void compileList(dynamics::Skeleton *_skel);
     void compileList(dynamics::BodyNode *_node);
     void compileList(dynamics::Shape *_shape);
-    GLuint compileList(const aiScene *_mesh);
+    GLuint compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh);
 
     virtual void draw(dynamics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
     virtual void draw(dynamics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
@@ -105,6 +105,11 @@ public:
     virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels);
 
 private:
+    void color4_to_float4(const aiColor4D *c, float f[4]);
+    void set_float4(float f[4], float a, float b, float c, float d);
+    void applyMaterial(const struct aiMaterial *mtl);
+    void recursiveRender(const struct aiScene *sc, const struct aiNode* nd);
+
     int mViewportX, mViewportY, mViewportWidth, mViewportHeight;
 
 public:
