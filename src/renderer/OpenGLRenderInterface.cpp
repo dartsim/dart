@@ -385,8 +385,12 @@ void recursiveRender (const struct aiScene *sc, const struct aiNode* nd) {
 }
 
 void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _size, const aiScene *_mesh) {
-    if(_mesh)
+    if(_mesh) {
+        glPushMatrix();
+        glScaled(_size(0), _size(1), _size(2));
         recursiveRender(_mesh, _mesh->mRootNode);
+        glPopMatrix();
+    }
 }
 
 void OpenGLRenderInterface::drawList(GLuint index) {
@@ -432,13 +436,13 @@ void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
             if(shapeMesh == 0)
                 return;
 
-            shapeMesh->setDisplayList(compileList(shapeMesh->getMesh()));
+            shapeMesh->setDisplayList(compileList(shapeMesh->getDim(), shapeMesh->getMesh()));
 
             break;
     }
 }
 
-GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
+GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
     if(!_mesh)
         return 0;
 
@@ -446,7 +450,7 @@ GLuint OpenGLRenderInterface::compileList(const aiScene *_mesh) {
     GLuint index = glGenLists(1);
     // Compile list
     glNewList(index, GL_COMPILE);
-    drawMesh(Eigen::Vector3d::Ones(), _mesh);
+    drawMesh(_scale, _mesh);
     glEndList();
 
     return index;
@@ -534,7 +538,7 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
             else if(shapeMesh->getDisplayList())
                 drawList(shapeMesh->getDisplayList());
             else
-                drawMesh(Eigen::Vector3d::Ones(), shapeMesh->getMesh());
+                drawMesh(shapeMesh->getDim(), shapeMesh->getMesh());
 
             break;
     }
