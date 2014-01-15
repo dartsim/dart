@@ -87,7 +87,7 @@ public:
     void compileList(dynamics::Skeleton *_skel);
     void compileList(dynamics::BodyNode *_node);
     void compileList(dynamics::Shape *_shape);
-    GLuint compileList(const aiScene *_mesh);
+    GLuint compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh);
 
     virtual void draw(dynamics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
     virtual void draw(dynamics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
