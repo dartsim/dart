@@ -94,7 +94,6 @@ void draw (const RRT* t1, const RRT* t2) {
 	gnuplot = fopen(".gnuplot", "w");
 
 	// Set options
-	fprintf(gnuplot, "");
 	fprintf(gnuplot, "set terminal wxt size 600,600;\n");
 	fprintf(gnuplot, "set xrange [-3.14:3.14];\n");
 	fprintf(gnuplot, "set yrange [-3.14:3.14];\n");
