@@ -1143,6 +1143,7 @@ void ConstraintDynamics::updateConstraintTerms()
     mTauHat.noalias() += -(mJ[i] - mPreJ[i]) / mDt * qDot;
     mTauHat.noalias() -= mJMInv[i] * (mSkeletons[i]->getInternalForceVector()
                                       + mSkeletons[i]->getExternalForceVector()
+                                      + mSkeletons[i]->getDampingForceVector()
                                       - mSkeletons[i]->getCombinedVector());
   }
   mTauHat -= ks * mC + kd * mCDot;
