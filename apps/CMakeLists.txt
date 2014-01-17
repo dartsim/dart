@@ -15,7 +15,6 @@ foreach(APPDIR
     #hanging
     hardcodedDesign
     #closedLoop
-    drawRRT
     testBed
     sdfLoader
     )
