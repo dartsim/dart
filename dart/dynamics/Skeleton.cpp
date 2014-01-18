@@ -497,6 +497,10 @@ void Skeleton::updateCoriolisForceVector() {
   assert(getNumGenCoords() > 0);
 
   mCvec.setZero();
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it) {
+    (*it)->updateCombinedVector();
+  }
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it) {
     (*it)->aggregateCoriolisForceVector(&mCvec);
