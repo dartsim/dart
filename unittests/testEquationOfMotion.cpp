@@ -59,153 +59,260 @@
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
+using namespace std;
+using namespace Eigen;
+
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 
-#define EOM_TOL 0.01
-
-/******************************************************************************/
-class EOM : public testing::Test
+//==============================================================================
+MatrixXd getMassMatrix(dynamics::Skeleton* _skel)
 {
-public:
-    void equationsOfMotionTest(const std::string& _fileName);
-};
+  int skelDof = _skel->getNumGenCoords();
 
-#ifndef NDEBUG
-TEST_F(EOM, EquationOfMotionPerformance)
-{
-    common::Timer timer;
-    std::vector<int> dofs;
+  MatrixXd skelM = MatrixXd::Zero(skelDof, skelDof);  // Mass matrix of skeleton
+  MatrixXd M;  // Body mass
+  MatrixXd I;  // Body inertia
+  MatrixXd J;  // Body Jacobian
 
-    // Set 1
-#ifdef NDEBUG // Release mode
-    int numItr = 1000;
-#else          // Debug mode
-    int numItr = 10;
-#endif
-    dofs.push_back(5);
-    dofs.push_back(10);
-    dofs.push_back(15);
-    dofs.push_back(20);
-    dofs.push_back(25);
-    dofs.push_back(30);
-    dofs.push_back(35);
-    dofs.push_back(40);
-    dofs.push_back(45);
-    dofs.push_back(50);
+  for (int i = 0; i < _skel->getNumBodyNodes(); ++i)
+  {
+    dynamics::BodyNode* body = _skel->getBodyNode(i);
 
-    // Set 2
-//#ifdef NDEBUG // Release mode
-//    int numItr = 500;
-//#else          // Debug mode
-//    int numItr = 5;
-//#endif
-//    dofs.push_back(10);
-//    dofs.push_back(20);
-//    dofs.push_back(30);
-//    dofs.push_back(40);
-//    dofs.push_back(50);
-//    dofs.push_back(60);
-//    dofs.push_back(70);
-//    dofs.push_back(80);
-//    dofs.push_back(90);
-//    dofs.push_back(100);
+    int dof = body->getNumDependentGenCoords();
+    I = body->getInertia();
+    J = body->getBodyJacobian();
 
-    // Set 3
-//#ifdef NDEBUG // Release mode
-//    int numItr = 5;
-//#else          // Debug mode
-//    int numItr = 1;
-//#endif
-//    dofs.push_back(100);
-//    dofs.push_back(200);
-//    dofs.push_back(300);
-//    dofs.push_back(400);
-//    dofs.push_back(500);
-//    dofs.push_back(600);
-//    dofs.push_back(700);
+    EXPECT_EQ(I.rows(), 6);
+    EXPECT_EQ(I.cols(), 6);
+    EXPECT_EQ(J.rows(), 6);
+    EXPECT_EQ(J.cols(), dof);
 
-    std::vector<double> newResult(dofs.size(), 0);
-    std::vector<double> newResultWithEOM(dofs.size(), 0);
+    M = J.transpose() * I * J;  // (dof x dof) matrix
 
-    for (int i = 0; i < dofs.size(); ++i)
+    for (int j = 0; j < dof; ++j)
     {
-        simulation::World world;
-        dynamics::Skeleton* skeleton =
-                createNLinkRobot(dofs[i], Eigen::Vector3d::Ones(), DOF_X, true);
-        world.addSkeleton(skeleton);
+      int jIdx = body->getDependentGenCoord(j);
 
-        // Random state
-        Eigen::VectorXd state = skeleton->getState();
-        for (int k = 0; k < state.size(); ++k)
-        {
-            // TODO: The range is [-0.4pi, 0.4pi] until we resolve
-            //       singular Jacobian issue.
-            state[k] = math::random(-DART_PI*0.4, DART_PI*0.4);
-        }
-        skeleton->setState(state);
+      for (int k = 0; k < dof; ++k)
+      {
+        int kIdx = body->getDependentGenCoord(k);
 
-        timer.start();
-        for (int j = 0; j < numItr; j++)
-        {
-            world.step();
-        }
-        timer.stop();
-        newResult[i] = timer.getLastElapsedTime();
+        skelM(jIdx, kIdx) += M(j, k);
+      }
     }
+  }
 
-    for (int i = 0; i < dofs.size(); ++i)
-    {
-        simulation::World world;
-        dynamics::Skeleton* skeleton =
-                createNLinkRobot(dofs[i], Eigen::Vector3d::Ones(), DOF_X, true);
-        world.addSkeleton(skeleton);
-
-        // Random state
-        Eigen::VectorXd state = skeleton->getState();
-        for (int k = 0; k < state.size(); ++k)
-        {
-            // TODO: The range is [-0.4pi, 0.4pi] until we resolve
-            //       singular Jacobian issue.
-            state[k] = math::random(-DART_PI*0.4, DART_PI*0.4);
-        }
-        skeleton->setState(state);
-
-        timer.start();
-        for (int j = 0; j < numItr; j++)
-        {
-            world.step();
-            Eigen::MatrixXd M    = skeleton->getMassMatrix();
-            Eigen::MatrixXd MInv = skeleton->getInvMassMatrix();
-            Eigen::VectorXd Cg   = skeleton->getCombinedVector();
-            Eigen::VectorXd C    = skeleton->getCoriolisForceVector();
-            Eigen::VectorXd g    = skeleton->getGravityForceVector();
-            Eigen::VectorXd Fext = skeleton->getExternalForceVector();
-            Eigen::MatrixXd J = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1)->getBodyJacobian();
-        }
-        timer.stop();
-        newResultWithEOM[i] = timer.getLastElapsedTime();
-    }
-
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    std::cout << std::setw(12) << " dof";
-    for (int i = 0; i < dofs.size(); ++i)
-        std::cout << " | " << std::setw(4) << dofs[i] << "";
-    std::cout << std::endl;
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    std::cout << std::setw(12) << " new w/o EOM";
-    for (int i = 0; i < dofs.size(); ++i)
-        std::cout << " | " << std::setw(4) << newResult[i] << "";
-    std::cout << std::endl;
-    std::cout << std::setw(12) << " new w EOM";
-    for (int i = 0; i < dofs.size(); ++i)
-        std::cout << " | " << std::setw(4) << newResultWithEOM[i] << "";
-    std::cout << std::endl;
+  return skelM;
 }
-#endif
 
-/******************************************************************************/
+//==============================================================================
+void equationsOfMotionTest(const string& _fileName)
+{
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeletons
+  int nRandomItr = 1000;
+
+  // Lower and upper bound of configuration for system
+  double lb = -1.5 * DART_PI;
+  double ub =  1.5 * DART_PI;
+
+  simulation::World* myWorld = NULL;
+
+  //----------------------------- Tests ----------------------------------------
+  // Check whether multiplication of mass matrix and its inverse is identity
+  // matrix.
+  {
+    myWorld = utils::SkelParser::readSkelFile(_fileName);
+    EXPECT_TRUE(myWorld != NULL);
+
+    for (int j = 0; j < myWorld->getNumSkeletons(); ++j)
+    {
+      dynamics::Skeleton* skel = myWorld->getSkeleton(j);
+
+      int dof            = skel->getNumGenCoords();
+      int nBodyNodes     = skel->getNumBodyNodes();
+
+      if (dof == 0)
+      {
+        cout << "Skeleton [" << skel->getName() << "] is skipped since it has "
+             << "0 DOF." << endl;
+        continue;
+      }
+
+      for (int k = 0; k < nRandomItr; ++k)
+      {
+        // Set random states
+        VectorXd x = skel->getState();
+        for (int l = 0; l < x.size(); ++l)
+          x[l] = math::random(lb, ub);
+        skel->setState(x);
+
+        //------------------------ Mass Matrix Test ----------------------------
+        // Get matrices
+        MatrixXd M      = skel->getMassMatrix();
+        MatrixXd M2     = getMassMatrix(skel);
+        MatrixXd InvM   = skel->getInvMassMatrix();
+        MatrixXd InvM2  = M.inverse();
+        MatrixXd M_InvM = M * InvM;
+        MatrixXd InvM_M = InvM * M;
+        MatrixXd I      = MatrixXd::Identity(dof, dof);
+
+        // Check if the number of generalized coordinates and dimension of mass
+        // matrix are same.
+        EXPECT_EQ(M.rows(), dof);
+        EXPECT_EQ(M.cols(), dof);
+
+        // Check mass matrix
+        EXPECT_TRUE(equals(M, M2, 1e-6));
+        if (!equals(M, M2, 1e-6))
+        {
+          cout << "M :" << endl << M  << endl << endl;
+          cout << "M2:" << endl << M2 << endl << endl;
+        }
+
+        // Check mass inverse matrix
+        EXPECT_TRUE(equals(InvM, InvM2, 1e-6));
+        if (!equals(InvM, InvM2, 1e-6))
+        {
+          cout << "InvM :" << endl << InvM  << endl << endl;
+          cout << "InvM2:" << endl << InvM2 << endl << endl;
+        }
+
+        // Check if both of (M * InvM) and (InvM * M) are identity.
+        EXPECT_TRUE(equals(M_InvM, I, 1e-6));
+        if (!equals(M_InvM, I, 1e-6))
+        {
+          cout << "M_InvM:" << endl << M_InvM << endl << endl;
+        }
+        EXPECT_TRUE(equals(InvM_M, I, 1e-6));
+        if (!equals(InvM_M, I, 1e-6))
+        {
+          cout << "InvM_M:" << endl << InvM_M << endl << endl;
+        }
+
+        //------- Coriolis Force Vector and Combined Force Vector Tests --------
+        // Get C1, Coriolis force vector using recursive method
+        VectorXd C = skel->getCoriolisForceVector();
+        VectorXd Cg = skel->getCombinedVector();
+
+        // Get C2, Coriolis force vector using inverse dynamics algorithm
+        Vector3d oldGravity = skel->getGravity();
+        VectorXd oldTau     = skel->getInternalForceVector();
+        VectorXd oldDdq     = skel->get_ddq();
+        // TODO(JS): Save external forces of body nodes
+
+        skel->clearInternalForceVector();
+        skel->clearExternalForceVector();
+        skel->set_ddq(VectorXd::Zero(dof));
+
+        EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
+        EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
+        EXPECT_TRUE(skel->get_ddq()                == VectorXd::Zero(dof));
+
+        skel->setGravity(Vector3d::Zero());
+        EXPECT_TRUE(skel->getGravity() == Vector3d::Zero());
+        skel->computeInverseDynamicsLinear(false, false, false, false);
+        VectorXd C2 = skel->get_tau();
+
+        skel->setGravity(oldGravity);
+        EXPECT_TRUE(skel->getGravity() == oldGravity);
+        skel->computeInverseDynamicsLinear(false, false, false, false);
+        VectorXd Cg2 = skel->get_tau();
+
+        EXPECT_TRUE(equals(C, C2, 1e-6));
+        if (!equals(C, C2, 1e-6))
+        {
+          cout << "C :" << C.transpose()  << endl;
+          cout << "C2:" << C2.transpose() << endl;
+        }
+
+        EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
+        if (!equals(Cg, Cg2, 1e-6))
+        {
+          cout << "Cg :" << Cg.transpose()  << endl;
+          cout << "Cg2:" << Cg2.transpose() << endl;
+        }
+
+        skel->set_tau(oldTau);
+        skel->set_ddq(oldDdq);
+        // TODO(JS): Restore external forces of body nodes
+
+        //------------------- Combined Force Vector Test -----------------------
+        // TODO(JS): Not implemented yet.
+
+        //---------------------- Damping Force Test ----------------------------
+        // TODO(JS): Not implemented yet.
+
+        //--------------------- External Force Test ----------------------------
+        // TODO(JS): Not implemented yet.
+      }
+    }
+
+    delete myWorld;
+  }
+}
+
+//==============================================================================
+TEST(EOM, EquationOfMotion)
+{
+  dtdbg << "single_pendulum.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/single_pendulum.skel");
+
+  dtdbg << "single_pendulum_euler_joint.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/single_pendulum_euler_joint.skel");
+
+  dtdbg << "single_pendulum_ball_joint.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/single_pendulum_ball_joint.skel");
+
+  dtdbg << "double_pendulum.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/double_pendulum.skel");
+
+//  dtdbg << "double_pendulum_euler_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/double_pendulum_euler_joint.skel");
+
+//  dtdbg << "double_pendulum_ball_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/double_pendulum_ball_joint.skel");
+
+  dtdbg << "serial_chain_revolute_joint.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/serial_chain_revolute_joint.skel");
+
+//  dtdbg << "serial_chain_eulerxyz_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/serial_chain_eulerxyz_joint.skel");
+
+//  dtdbg << "serial_chain_ball_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/serial_chain_ball_joint.skel");
+
+//  dtdbg << "serial_chain_ball_joint_20.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/serial_chain_ball_joint_20.skel");
+
+//  dtdbg << "serial_chain_ball_joint_40.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/serial_chain_ball_joint_40.skel");
+
+  dtdbg << "simple_tree_structure.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/simple_tree_structure.skel");
+
+//  dtdbg << "simple_tree_structure_euler_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/simple_tree_structure_euler_joint.skel");
+
+//  dtdbg << "simple_tree_structure_ball_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/simple_tree_structure_ball_joint.skel");
+
+  dtdbg << "tree_structure.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/tree_structure.skel");
+
+//  dtdbg << "tree_structure_euler_joint.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/test/tree_structure_euler_joint.skel");
+
+  dtdbg << "tree_structure_ball_joint.skel" << std::endl;
+  equationsOfMotionTest(DART_DATA_PATH"/skel/test/tree_structure_ball_joint.skel");
+
+//  dtdbg << "fullbody1.skel" << std::endl;
+//  equationsOfMotionTest(DART_DATA_PATH"/skel/fullbody1.skel");
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
