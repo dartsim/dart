@@ -679,6 +679,11 @@ double BodyNode::getKineticEnergy() const {
   return 0.5 * mV.dot(mI * mV);
 }
 
+double dart::dynamics::BodyNode::getPotentialEnergy(
+    const Eigen::Vector3d& _gravity) const {
+  return -mMass * mW.translation().dot(_gravity);
+}
+
 Eigen::Vector3d BodyNode::getLinearMomentum() const {
   return (mI * mV).tail<3>();
 }

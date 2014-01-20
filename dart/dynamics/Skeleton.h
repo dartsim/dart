@@ -237,6 +237,12 @@ public:
     /// \brief
     Eigen::Vector3d getWorldCOM();
 
+    /// \brief Get kinetic energy of this skeleton.
+    virtual double getKineticEnergy() const;
+
+    /// \brief Get potential energy of this skeleton.
+    virtual double getPotentialEnergy() const;
+
     //--------------------------------------------------------------------------
     // Recursive dynamics algorithms
     //--------------------------------------------------------------------------

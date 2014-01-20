@@ -660,5 +660,31 @@ Eigen::Vector3d Skeleton::getWorldCOM() {
   return com / mTotalMass;
 }
 
+double Skeleton::getKineticEnergy() const {
+  double KE = 0.0;
+
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    KE += (*it)->getKineticEnergy();
+  }
+
+  assert(KE >= 0.0 && "Kinetic energy should be positive value.");
+  return KE;
+}
+
+double Skeleton::getPotentialEnergy() const {
+  double PE = 0.0;
+
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    PE += (*it)->getPotentialEnergy(mGravity);
+    PE += (*it)->getParentJoint()->getPotentialEnergy();
+  }
+
+  return PE;
+}
+
 }  // namespace dynamics
 }  // namespace dart

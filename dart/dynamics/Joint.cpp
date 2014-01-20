@@ -173,5 +173,20 @@ Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
   return springForce;
 }
 
+double Joint::getPotentialEnergy() const {
+  double PE = 0.0;
+  int dof = getNumGenCoords();
+
+  // Spring energy
+  Eigen::VectorXd q = get_q();
+  assert(q.size() == dof);
+  for (int i = 0; i < dof; ++i) {
+    PE += 0.5 * mSpringStiffness[i]
+          * (q[i] - mRestPosition[i]) * (q[i] - mRestPosition[i]);
+  }
+
+  return PE;
+}
+
 }  // namespace dynamics
 }  // namespace dart

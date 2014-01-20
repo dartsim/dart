@@ -196,6 +196,9 @@ public:
   /// \param[in] _timeStep Time step used for approximating q(k+1).
   Eigen::VectorXd getSpringForces(double _timeStep) const;
 
+  /// \brief Get potential energy.
+  double getPotentialEnergy() const;
+
   /// \brief
   void applyGLTransform(renderer::RenderInterface* _ri);
 

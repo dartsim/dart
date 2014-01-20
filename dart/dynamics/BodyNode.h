@@ -358,7 +358,10 @@ public:
   const Eigen::Vector6d& getBodyForce() const;
 
   /// \brief Get kinetic energy.
-  double getKineticEnergy() const;
+  virtual double getKineticEnergy() const;
+
+  /// \brief Get potential energy.
+  virtual double getPotentialEnergy(const Eigen::Vector3d& _gravity) const;
 
   /// \brief Get linear momentum.
   Eigen::Vector3d getLinearMomentum() const;
