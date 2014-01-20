@@ -248,7 +248,15 @@ math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
     T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
-  return math::AdTJac(T, mBodyJacobianTimeDeriv);
+
+  Eigen::Vector6d bodyJacobianTimeDeriv = mBodyJacobianTimeDeriv;
+  for (int i = 0; i < mBodyJacobianTimeDeriv.cols(); ++i)
+  {
+    bodyJacobianTimeDeriv.col(i).tail<3>()
+        += mV.head<3>().cross(mBodyJacobian.col(i).tail<3>());
+  }
+
+  return math::AdTJac(T, bodyJacobianTimeDeriv);
 }
 
 void BodyNode::setColliding(bool _isColliding) {
