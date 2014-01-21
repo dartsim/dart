@@ -215,6 +215,38 @@ Eigen::Vector3d toVector3d(const std::string& _str)
     return ret;
 }
 
+Eigen::Vector3i toVector3i(const std::string& _str)
+{
+  Eigen::Vector3i ret;
+
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(_str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  assert(pieces.size() == 3);
+
+  for (int i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        ret(i) = boost::lexical_cast<int>(pieces[i].c_str());
+      }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid int for Eigen::Vector3i["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
+    }
+  }
+
+  return ret;
+}
+
 Eigen::Vector6d toVector6d(const std::string& _str)
 {
     Eigen::Vector6d ret;
@@ -380,6 +412,16 @@ Eigen::Vector3d getValueVector3d(tinyxml2::XMLElement* _parentElement, const std
     std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
 
     return toVector3d(str);
+}
+
+Eigen::Vector3i getValueVector3i(tinyxml2::XMLElement* _parentElement, const std::string& _name)
+{
+  assert(_parentElement != NULL);
+  assert(!_name.empty());
+
+  std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+
+  return toVector3i(str);
 }
 
 Eigen::Vector6d getValueVector6d(tinyxml2::XMLElement* _parentElement, const std::string& _name)
