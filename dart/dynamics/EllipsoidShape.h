@@ -46,7 +46,7 @@ namespace dynamics {
 class EllipsoidShape : public Shape {
 public:
   /// \brief Constructor.
-  explicit EllipsoidShape(const Eigen::Vector3d _dim);
+  explicit EllipsoidShape(const Eigen::Vector3d& _size);
 
   /// \brief Destructor.
   virtual ~EllipsoidShape();
