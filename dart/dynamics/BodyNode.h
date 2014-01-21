@@ -282,7 +282,7 @@ public:
   /// \brief Get time derivative of generalized Jacobian at the origin of this
   ///        body node where the Jacobian is expressed in this body node
   ///        frame.
-  const math::Jacobian& getBodyJacobianTimeDeriv() const;
+  const math::Jacobian& getBodyJacobianTimeDeriv();
 
   /// \brief Get time derivative of generalized Jacobian at a point on this
   ///        body node where the time derivative of Jacobian is expressed in
@@ -292,7 +292,7 @@ public:
   ///                     False if _offset is expressed in the world frame.
   math::Jacobian getWorldJacobianTimeDeriv(
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-      bool _isOffsetLocal            = false) const;
+      bool _isOffsetLocal            = false);
 
   /// \brief Set whether this body node is colliding with others.
   /// \param[in] True if this body node is colliding.
@@ -407,10 +407,10 @@ protected:
 
   /// \brief
   /// parentJoint.dS --> dJ
-  virtual void updateEta(bool _updateJacobianDeriv = false);
+  virtual void updateEta();
 
   /// @brief // TODO(JS): This is workaround for Issue #122.
-  virtual void updateEta_Issue122(bool _updateJacobianDeriv = false);
+  virtual void updateEta_Issue122();
 
   /// \brief
   /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
@@ -533,14 +533,17 @@ protected:
   /// \brief World transformation.
   Eigen::Isometry3d mW;
 
-  /// \brief
+  /// \brief Body Jacobian.
   math::Jacobian mBodyJacobian;
 
-  /// \brief
+  /// \brief Dirty flag for body Jacobian.
   bool mIsBodyJacobianDirty;
 
-  /// \brief
+  /// \brief Time derivative of body Jacobian.
   math::Jacobian mBodyJacobianTimeDeriv;
+
+  /// \brief Dirty flag for time derivative of body Jacobian.
+  bool mIsBodyJacobianTimeDerivDirty;
 
   /// \brief Generalized body velocity w.r.t. body frame.
   Eigen::Vector6d mV;
@@ -616,8 +619,13 @@ protected:
   Eigen::VectorXd mMInv_MInvVec;
   Eigen::Vector6d mMInv_U;
 
-  /// \brief
+  /// \brief Update body Jacobian. getBodyJacobian() calls this function if
+  ///        mIsBodyJacobianDirty is true.
   void _updateBodyJacobian();
+
+  /// \brief Update time derivative of body Jacobian. getBodyJacobianTimeDeriv()
+  ///        calls this function if mIsBodyJacobianTimeDerivDirty is true.
+  void _updateBodyJacobianTimeDeriv();
 
 private:
   /// \brief

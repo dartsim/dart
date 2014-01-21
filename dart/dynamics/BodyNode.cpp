@@ -83,7 +83,9 @@ BodyNode::BodyNode(const std::string& _name)
     mAI(Eigen::Matrix6d::Identity()),
     mB(Eigen::Vector6d::Zero()),
     mBeta(Eigen::Vector6d::Zero()),
-    mID(BodyNode::msBodyNodeCount++) {
+    mID(BodyNode::msBodyNodeCount++),
+    mIsBodyJacobianDirty(true),
+    mIsBodyJacobianTimeDerivDirty(true) {
 }
 
 BodyNode::~BodyNode() {
@@ -237,19 +239,21 @@ math::Jacobian BodyNode::getWorldJacobian(
   return math::AdTJac(T, getBodyJacobian());
 }
 
-const math::Jacobian& BodyNode::getBodyJacobianTimeDeriv() const {
+const math::Jacobian& BodyNode::getBodyJacobianTimeDeriv() {
+  if (mIsBodyJacobianTimeDerivDirty)
+    _updateBodyJacobianTimeDeriv();
   return mBodyJacobianTimeDeriv;
 }
 
 math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
-    const Eigen::Vector3d& _offset, bool _isOffsetLocal) const {
+    const Eigen::Vector3d& _offset, bool _isOffsetLocal) {
   Eigen::Isometry3d T = mW;
   if (_isOffsetLocal)
     T.translation() = mW.linear() * -_offset;
   else
     T.translation() = -_offset;
 
-  Eigen::Vector6d bodyJacobianTimeDeriv = mBodyJacobianTimeDeriv;
+  math::Jacobian bodyJacobianTimeDeriv = getBodyJacobianTimeDeriv();
   for (int i = 0; i < mBodyJacobianTimeDeriv.cols(); ++i)
   {
     bodyJacobianTimeDeriv.col(i).tail<3>()
@@ -416,7 +420,7 @@ void BodyNode::updateVelocity() {
   assert(!math::isNan(mV));
 }
 
-void BodyNode::updateEta(bool _updateJacobianDeriv) {
+void BodyNode::updateEta() {
   mParentJoint->updateJacobianTimeDeriv();
 
   if (mParentJoint->getNumGenCoords() > 0) {
@@ -424,45 +428,11 @@ void BodyNode::updateEta(bool _updateJacobianDeriv) {
                     mParentJoint->get_dq());
     mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
                       mParentJoint->get_dq();
-
     assert(!math::isNan(mEta));
   }
-
-  if (_updateJacobianDeriv == false)
-    return;
-
-  //--------------------------------------------------------------------------
-  // Jacobian first derivative update
-  //
-  // dJ = | dJ1 dJ2 ... dJn |
-  //   = | Ad(T(i,i-1), dJ_parent) dJ_local |
-  //
-  //   dJ_parent: (6 x parentDOF)
-  //    dJ_local: (6 x localDOF)
-  //         dJi: (6 x 1) se3
-  //          n: number of dependent coordinates
-  //--------------------------------------------------------------------------
-
-  const int numLocalDOFs = mParentJoint->getNumGenCoords();
-  const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
-
-  // Parent Jacobian
-  if (mParentBodyNode) {
-    assert(mParentBodyNode->mBodyJacobianTimeDeriv.cols()
-           + mParentJoint->getNumGenCoords() == mBodyJacobianTimeDeriv.cols());
-
-    assert(mParentJoint);
-    mBodyJacobianTimeDeriv.leftCols(numParentDOFs) =
-        math::AdInvTJac(mParentJoint->getLocalTransform(),
-                        mParentBodyNode->mBodyJacobianTimeDeriv);
-  }
-
-  // Local Jacobian
-  mBodyJacobianTimeDeriv.rightCols(numLocalDOFs) =
-      mParentJoint->getLocalJacobianTimeDeriv();
 }
 
-void BodyNode::updateEta_Issue122(bool _updateJacobianDeriv) {
+void BodyNode::updateEta_Issue122() {
   mParentJoint->updateJacobianTimeDeriv_Issue122();
 
   if (mParentJoint->getNumGenCoords() > 0) {
@@ -470,42 +440,8 @@ void BodyNode::updateEta_Issue122(bool _updateJacobianDeriv) {
                     mParentJoint->get_dq());
     mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
                       mParentJoint->get_dq();
-
     assert(!math::isNan(mEta));
   }
-
-  if (_updateJacobianDeriv == false)
-    return;
-
-  //--------------------------------------------------------------------------
-  // Jacobian first derivative update
-  //
-  // dJ = | dJ1 dJ2 ... dJn |
-  //   = | Ad(T(i,i-1), dJ_parent) dJ_local |
-  //
-  //   dJ_parent: (6 x parentDOF)
-  //    dJ_local: (6 x localDOF)
-  //         dJi: (6 x 1) se3
-  //          n: number of dependent coordinates
-  //--------------------------------------------------------------------------
-
-  const int numLocalDOFs = mParentJoint->getNumGenCoords();
-  const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
-
-  // Parent Jacobian
-  if (mParentBodyNode) {
-    assert(mParentBodyNode->mBodyJacobianTimeDeriv.cols()
-           + mParentJoint->getNumGenCoords() == mBodyJacobianTimeDeriv.cols());
-
-    assert(mParentJoint);
-    mBodyJacobianTimeDeriv.leftCols(numParentDOFs) =
-        math::AdInvTJac(mParentJoint->getLocalTransform(),
-                        mParentBodyNode->mBodyJacobianTimeDeriv);
-  }
-
-  // Local Jacobian
-  mBodyJacobianTimeDeriv.rightCols(numLocalDOFs) =
-      mParentJoint->getLocalJacobianTimeDeriv();
 }
 
 void BodyNode::updateAcceleration() {
@@ -1060,6 +996,44 @@ void BodyNode::_updateBodyJacobian() {
   mBodyJacobian.rightCols(localDof) = mParentJoint->getLocalJacobian();
 
   mIsBodyJacobianDirty = false;
+}
+
+void BodyNode::_updateBodyJacobianTimeDeriv()
+{
+  //--------------------------------------------------------------------------
+  // Jacobian first derivative update
+  //
+  // dJ = | dJ1 dJ2 ... dJn |
+  //   = | Ad(T(i,i-1), dJ_parent) dJ_local |
+  //
+  //   dJ_parent: (6 x parentDOF)
+  //    dJ_local: (6 x localDOF)
+  //         dJi: (6 x 1) se3
+  //          n: number of dependent coordinates
+  //--------------------------------------------------------------------------
+
+  const int numLocalDOFs = mParentJoint->getNumGenCoords();
+  const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
+  math::Jacobian J = getBodyJacobian();
+
+  // Parent Jacobian
+  if (mParentBodyNode) {
+    assert(mParentBodyNode->mBodyJacobianTimeDeriv.cols()
+           + mParentJoint->getNumGenCoords() == mBodyJacobianTimeDeriv.cols());
+
+    assert(mParentJoint);
+    mBodyJacobianTimeDeriv.leftCols(numParentDOFs)
+        = math::AdInvTJac(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->mBodyJacobianTimeDeriv);
+    for (int i = 0; i < numParentDOFs; ++i)
+      mBodyJacobianTimeDeriv.col(i) -= math::ad(mV, J.col(i));
+  }
+
+  // Local Jacobian
+  mBodyJacobianTimeDeriv.rightCols(numLocalDOFs) =
+      mParentJoint->getLocalJacobianTimeDeriv();
+
+  mIsBodyJacobianTimeDerivDirty = false;
 }
 
 void BodyNode::_updateGeralizedInertia() {

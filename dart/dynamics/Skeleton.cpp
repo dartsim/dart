@@ -268,6 +268,12 @@ void Skeleton::setConfig(const std::vector<int>& _id,
   mIsCombinedVectorDirty = true;
   mIsExternalForceVectorDirty = true;
   // mIsDampingForceVectorDirty = true;
+
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it) {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+  }
 }
 
 void Skeleton::setConfig(const Eigen::VectorXd& _config) {
@@ -292,6 +298,12 @@ void Skeleton::setConfig(const Eigen::VectorXd& _config) {
   mIsCombinedVectorDirty = true;
   mIsExternalForceVectorDirty = true;
   // mIsDampingForceVectorDirty = true;
+
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it) {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+  }
 }
 
 void Skeleton::setState(const Eigen::VectorXd& _state) {
@@ -329,6 +341,7 @@ void Skeleton::setState(const Eigen::VectorXd& _state) {
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it) {
     (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
   }
 }
 
