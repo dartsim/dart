@@ -343,25 +343,25 @@ protected:
     bool mIsDampingForceVectorDirty;
 
     /// \brief Update mass matrix of the skeleton.
-    void updateMassMatrix();
+    virtual void updateMassMatrix();
 
     /// \brief Update inverse of mass matrix of the skeleton.
-    void updateInvMassMatrix();
+    virtual void updateInvMassMatrix();
 
     /// \brief Update Coriolis force vector of the skeleton.
-    void updateCoriolisForceVector();
+    virtual void updateCoriolisForceVector();
 
     /// \brief Update gravity force vector of the skeleton.
-    void updateGravityForceVector();
+    virtual void updateGravityForceVector();
 
     /// \brief Update combined vector of the skeletong.
-    void updateCombinedVector();
+    virtual void updateCombinedVector();
 
     /// \brief update external force vector to generalized torques.
-    void updateExternalForceVector();
+    virtual void updateExternalForceVector();
 
     /// \brief Update damping force vector.
-    void updateDampingForceVector();
+    virtual void updateDampingForceVector();
 
 public:
     //

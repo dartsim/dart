@@ -79,9 +79,9 @@ public:
   Eigen::Isometry3d mWorldTrans;
 
   /// \brief
-  bool detectCollision(FCLMeshCollisionNode* _otherNode,
-                       std::vector<Contact>* _contactPoints,
-                       int _max_num_contact);
+  virtual bool detectCollision(FCLMeshCollisionNode* _otherNode,
+                               std::vector<Contact>* _contactPoints,
+                               int _max_num_contact);
 
   /// \brief
   void evalRT();

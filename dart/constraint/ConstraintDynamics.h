@@ -83,22 +83,22 @@ public:
   int getNumContacts() const;
   Constraint* getConstraint(int _index) const;
 
-private:
+protected:
   void initialize();
 
   void computeConstraintWithoutContact();
-  void fillMatrices();
-  void fillMatricesODE();
+  virtual void fillMatrices();
+  virtual void fillMatricesODE();
   bool solve();
-  void applySolution();
-  void applySolutionODE();
+  virtual void applySolution();
+  virtual void applySolutionODE();
 
   void updateMassMat();
   void updateTauStar();
-  void updateNBMatrices();
-  void updateNBMatricesODE();
-  Eigen::MatrixXd getJacobian(dynamics::BodyNode* node,
-                              const Eigen::Vector3d& p);
+  virtual void updateNBMatrices();
+  virtual void updateNBMatricesODE();
+  virtual Eigen::MatrixXd getJacobian(dynamics::BodyNode* node,
+                                      const Eigen::Vector3d& p);
   // gets a matrix of tangent dirs.
   Eigen::MatrixXd getTangentBasisMatrix(const Eigen::Vector3d& p,
                                         const Eigen::Vector3d& n);

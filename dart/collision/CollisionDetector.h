@@ -83,6 +83,10 @@ struct Contact {
   // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
   /// \brief
   int triID2;
+
+  // TODO(JS): userData is an experimental variable.
+  /// \brief User data.
+  void* userData;
 };
 
 /// \brief

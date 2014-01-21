@@ -334,7 +334,7 @@ public:
   ///        mExtForceBody and mExtTorqueBody.
   ///
   /// Called from @Skeleton::clearExternalForces.
-  void clearExternalForces();
+  virtual void clearExternalForces();
 
   /// \brief
   void addContactForce(const Eigen::Vector6d& _contactForce);
@@ -383,7 +383,9 @@ public:
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
 
-protected:
+// TODO(JS): Temporary change for soft body dynamics
+// protected:
+public:
   /// \brief Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton, int _skeletonIndex);
 
@@ -439,28 +441,28 @@ protected:
   virtual void update_F_fs();
 
   /// \brief
-  void updateMassMatrix();
-  void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  virtual void updateMassMatrix();
+  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
 
   /// \brief
-  void updateMassInverseMatrix();
-  void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
+  virtual void updateMassInverseMatrix();
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
 
   /// \brief
-  void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
 
   /// \brief
-  void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
                                    const Eigen::Vector3d& _gravity);
 
   /// \brief
-  void updateCombinedVector();
-  void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  virtual void updateCombinedVector();
+  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
                                const Eigen::Vector3d& _gravity);
 
   /// \brief Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
-  void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
 
   //--------------------------------------------------------------------------
   // General properties
@@ -593,7 +595,9 @@ public:  // TODO(JS): This will be removed once Node class is implemented.
   /// \brief
   Eigen::Vector6d mBeta;
 
-protected:
+// TODO(JS): Temporary code for soft body dynamics
+// protected:
+public:
   /// \brief Cache data for combined vector of the system.
   Eigen::Vector6d mCg_dV;
   Eigen::Vector6d mCg_F;
