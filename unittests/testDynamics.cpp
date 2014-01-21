@@ -469,7 +469,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-  int nRandomItr = 1000;
+  int nRandomItr = 100;
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
