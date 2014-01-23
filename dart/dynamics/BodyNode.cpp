@@ -719,7 +719,8 @@ void BodyNode::updateArticulatedInertia(double _timeStep) {
   assert(!math::isNan(mPsi));
 
   // Cache data: AI_S_Psi
-  mAI_S_Psi = mAI_S * mPsi;
+  mAI_S_Psi         = mAI_S * mPsi;
+  mAI_S_ImplicitPsi = mAI_S * mImplicitPsi;
 
   // Cache data: Pi
   mPi = mAI;
@@ -910,58 +911,141 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col) {
   }
 }
 
-void BodyNode::updateMassInverseMatrix() {
-  mMInv_c.setZero();
+void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+                                      double _timeStep) {
+  mM_F.noalias() = mI * mM_dV;
+  assert(!math::isNan(mM_F));
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it) {
-    mMInv_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                             (*it)->mMInv_b);
+    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                          (*it)->mM_F);
   }
-  assert(!math::isNan(mMInv_c));
+  assert(!math::isNan(mM_F));
 
-  // Cache data: mMInv2_a
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
-    mMInv_a = mParentJoint->get_tau();
-    mMInv_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mMInv_c;
-    assert(!math::isNan(mMInv_a));
+    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
+    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
+    for (int i = 0; i < dof; ++i) {
+      K(i, i) = mParentJoint->getSpringStiffness(i);
+      D(i, i) = mParentJoint->getDampingCoefficient(i);
+    }
+    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    _MCol->block(iStart, _col, dof, 1).noalias()
+        = mParentJoint->getLocalJacobian().transpose() * mM_F
+          + _timeStep * _timeStep * K
+          + _timeStep * D;
   }
-
-  // Cache data: mMInv2_b
-  if (mParentBodyNode) {
-    mMInv_b = mMInv_c;
-    if (dof > 0)
-      mMInv_b.noalias() += mAI_S_Psi * mMInv_a;
-  }
-  assert(!math::isNan(mMInv_b));
 }
 
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _MCol, int _col) {
+void BodyNode::updateInvMassMatrix() {
+  mInvM_c.setZero();
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it) {
+    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                             (*it)->mInvM_b);
+  }
+  assert(!math::isNan(mInvM_c));
+
+  // Cache data: mInvM2_a
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0) {
+    mInvM_a = mParentJoint->get_tau();
+    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
+    assert(!math::isNan(mInvM_a));
+  }
+
+  // Cache data: mInvM2_b
+  if (mParentBodyNode) {
+    mInvM_b = mInvM_c;
+    if (dof > 0)
+      mInvM_b.noalias() += mAI_S_Psi * mInvM_a;
+  }
+  assert(!math::isNan(mInvM_b));
+}
+
+void BodyNode::updateInvAugMassMatrix() {
+  mInvM_c.setZero();
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it) {
+    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                             (*it)->mInvM_b);
+  }
+  assert(!math::isNan(mInvM_c));
+
+  // Cache data: mInvM2_a
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0) {
+    mInvM_a = mParentJoint->get_tau();
+    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
+    assert(!math::isNan(mInvM_a));
+  }
+
+  // Cache data: mInvM2_b
+  if (mParentBodyNode) {
+    mInvM_b = mInvM_c;
+    if (dof > 0)
+      mInvM_b.noalias() += mAI_S_ImplicitPsi * mInvM_a;
+  }
+  assert(!math::isNan(mInvM_b));
+}
+
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col) {
   Eigen::VectorXd MInvCol;
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
     if (mParentBodyNode) {
-      MInvCol.noalias() = mPsi * mMInv_a;
+      MInvCol.noalias() = mPsi * mInvM_a;
       MInvCol.noalias() -= mAI_S_Psi.transpose()
                            * math::AdInvT(mParentJoint->getLocalTransform(),
-                                          mParentBodyNode->mMInv_U);
+                                          mParentBodyNode->mInvM_U);
     } else {
-      MInvCol.noalias() = mPsi * mMInv_a;
+      MInvCol.noalias() = mPsi * mInvM_a;
     }
     assert(!math::isNan(MInvCol));
 
     // Assign
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
-    _MCol->block(iStart, _col, dof, 1) = MInvCol;
+    _InvMCol->block(iStart, _col, dof, 1) = MInvCol;
   }
 
   if (mChildBodyNodes.size() > 0) {
-    mMInv_U.noalias() = mParentJoint->getLocalJacobian() * MInvCol;
+    mInvM_U.noalias() = mParentJoint->getLocalJacobian() * MInvCol;
     if (mParentBodyNode) {
-      mMInv_U += math::AdInvT(mParentJoint->getLocalTransform(),
-                              mParentBodyNode->mMInv_U);
+      mInvM_U += math::AdInvT(mParentJoint->getLocalTransform(),
+                              mParentBodyNode->mInvM_U);
     }
-    assert(!math::isNan(mMInv_U));
+    assert(!math::isNan(mInvM_U));
+  }
+}
+
+void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
+                                         double /*_timeStep*/) {
+  Eigen::VectorXd MInvCol;
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0) {
+    if (mParentBodyNode) {
+      MInvCol.noalias() = mImplicitPsi * mInvM_a;
+      MInvCol.noalias() -= mAI_S_ImplicitPsi.transpose()
+                           * math::AdInvT(mParentJoint->getLocalTransform(),
+                                          mParentBodyNode->mInvM_U);
+    } else {
+      MInvCol.noalias() = mImplicitPsi * mInvM_a;
+    }
+    assert(!math::isNan(MInvCol));
+
+    // Assign
+    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    _InvMCol->block(iStart, _col, dof, 1) = MInvCol;
+  }
+
+  if (mChildBodyNodes.size() > 0) {
+    mInvM_U.noalias() = mParentJoint->getLocalJacobian() * MInvCol;
+    if (mParentBodyNode) {
+      mInvM_U += math::AdInvT(mParentJoint->getLocalTransform(),
+                              mParentBodyNode->mInvM_U);
+    }
+    assert(!math::isNan(mInvM_U));
   }
 }
 

@@ -443,22 +443,27 @@ public:
   /// \brief
   virtual void updateMassMatrix();
   virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+                                      double _timeStep);
 
   /// \brief
-  virtual void updateMassInverseMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
+  virtual void updateInvMassMatrix();
+  virtual void updateInvAugMassMatrix();
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
+                                         double _timeStep);
 
   /// \brief
   virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
 
   /// \brief
   virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
-                                   const Eigen::Vector3d& _gravity);
+                                           const Eigen::Vector3d& _gravity);
 
   /// \brief
   virtual void updateCombinedVector();
   virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
-                               const Eigen::Vector3d& _gravity);
+                                       const Eigen::Vector3d& _gravity);
 
   /// \brief Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
@@ -578,6 +583,9 @@ public:
   math::Jacobian mAI_S_Psi;
 
   /// \brief
+  math::Jacobian mAI_S_ImplicitPsi;
+
+  /// \brief
   Eigen::MatrixXd mPsi;
 
   /// \brief
@@ -617,11 +625,11 @@ public:
   Eigen::Vector6d mM_F;
 
   /// \brief Cache data for inverse mass matrix of the system.
-  Eigen::VectorXd mMInv_a;
-  Eigen::Vector6d mMInv_b;
-  Eigen::Vector6d mMInv_c;
-  Eigen::VectorXd mMInv_MInvVec;
-  Eigen::Vector6d mMInv_U;
+  Eigen::VectorXd mInvM_a;
+  Eigen::Vector6d mInvM_b;
+  Eigen::Vector6d mInvM_c;
+  Eigen::VectorXd mInvM_MInvVec;
+  Eigen::Vector6d mInvM_U;
 
   /// \brief Update body Jacobian. getBodyJacobian() calls this function if
   ///        mIsBodyJacobianDirty is true.
