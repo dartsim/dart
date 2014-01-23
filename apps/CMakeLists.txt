@@ -3,6 +3,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
+    atlasRobot
     meshCollision
     #viewer
     forwardSim
