@@ -167,7 +167,11 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 10;
+#else
   int nRandomItr = 100;
+#endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
   double dqLB = -0.5 * DART_PI;
@@ -282,7 +286,11 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 10;
+#else
   int nRandomItr = 100;
+#endif
   double qLB   = -0.5 * DART_PI;
   double qUB   =  0.5 * DART_PI;
   double dqLB  = -0.5 * DART_PI;
@@ -469,7 +477,11 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 10;
+#else
   int nRandomItr = 100;
+#endif
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
