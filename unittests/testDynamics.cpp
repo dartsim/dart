@@ -327,7 +327,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 5;
+  int nRandomItr = 2;
 #else
   int nRandomItr = 10;
 #endif
@@ -518,7 +518,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 10;
+  int nRandomItr = 5;
 #else
   int nRandomItr = 100;
 #endif
@@ -532,10 +532,6 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double ubD = 10.0;
   double lbK =  0.0;
   double ubK = 10.0;
-
-  // Lower and upper bound of joint rest position
-  double lbRP = -1.0 * DART_PI;
-  double ubRP =  1.0 * DART_PI;
 
   simulation::World* myWorld = NULL;
 
@@ -572,6 +568,9 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         {
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
+
+          double lbRP = joint->getGenCoord(l)->get_qMin();
+          double ubRP = joint->getGenCoord(l)->get_qMax();
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }
