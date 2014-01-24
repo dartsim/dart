@@ -170,15 +170,20 @@ public:
   /// \brief Set spring stiffness for spring force.
   /// \param[in] _idx Index of joint axis.
   /// \param[in] _k Spring stiffness.
-  /// \param[in] _q0 Rest position.
-  void setSpringStiffness(int _idx, double _k, double _q0 = 0.0);
+  void setSpringStiffness(int _idx, double _k);
 
   /// \brief Get spring stiffnes for spring force.
   /// \param[in] _idx Index of joint axis.
   double getSpringStiffness(int _idx) const;
 
+  /// \brief Set rest position for spring force.
+  /// \param[in] _idx Index of joint axis.
+  /// \param[in] _q0 Rest position.
+  double setRestPosition(int _idx, double _q0);
+
   /// \brief Get rest position for spring force.
   /// \param[in] _idx Index of joint axis.
+  /// \return Rest position.
   double getRestPosition(int _idx) const;
 
   /// \brief Get spring force.

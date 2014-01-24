@@ -573,6 +573,9 @@ public:
   /// \brief Articulated inertia
   math::Inertia mAI;
 
+  /// \brief Articulated inertia
+  math::Inertia mImplicitAI;
+
   /// \brief Bias force
   Eigen::Vector6d mB;
 
@@ -580,10 +583,13 @@ public:
   math::Jacobian mAI_S;
 
   /// \brief
+  math::Jacobian mImplicitAI_S;
+
+  /// \brief
   math::Jacobian mAI_S_Psi;
 
   /// \brief
-  math::Jacobian mAI_S_ImplicitPsi;
+  math::Jacobian mImplicitAI_S_ImplicitPsi;
 
   /// \brief
   Eigen::MatrixXd mPsi;
@@ -594,6 +600,9 @@ public:
 public:  // TODO(JS): This will be removed once Node class is implemented.
   /// \brief
   math::Inertia mPi;
+
+  /// \brief
+  math::Inertia mImplicitPi;
 
 protected:  // TODO(JS):
   /// \brief
