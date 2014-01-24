@@ -168,7 +168,7 @@ double Joint::setRestPosition(int _idx, double _q0) {
       || getGenCoord(_idx)->get_qMax() < _q0)
   {
     dtwarn << "Rest position of joint[" << getName() << "], " << _q0
-           << ", is out of the limit["
+           << ", is out of the limit range["
            << getGenCoord(_idx)->get_qMin() << ", "
            << getGenCoord(_idx)->get_qMax() << "] in index[" << _idx
            << "].\n";
