@@ -161,7 +161,7 @@ double Joint::getSpringStiffness(int _idx) const {
   return mSpringStiffness[_idx];
 }
 
-double Joint::setRestPosition(int _idx, double _q0) {
+void Joint::setRestPosition(int _idx, double _q0) {
   assert(0 <= _idx && _idx < getNumGenCoords());
 
   if (getGenCoord(_idx)->get_qMin() > _q0

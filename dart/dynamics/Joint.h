@@ -179,7 +179,7 @@ public:
   /// \brief Set rest position for spring force.
   /// \param[in] _idx Index of joint axis.
   /// \param[in] _q0 Rest position.
-  double setRestPosition(int _idx, double _q0);
+  void setRestPosition(int _idx, double _q0);
 
   /// \brief Get rest position for spring force.
   /// \param[in] _idx Index of joint axis.
