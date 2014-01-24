@@ -66,9 +66,6 @@ public:
   // each body in _skel.
   MatrixXd getAugMassMatrix(dynamics::Skeleton* _skel);
 
-  // Get inverse of mass matrix of _skel
-  MatrixXd getInvMassMatrix(dynamics::Skeleton* _skel);
-
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
   void compareVelocities(const std::string& _fileName);
@@ -198,14 +195,6 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
 }
 
 //==============================================================================
-MatrixXd DynamicsTest::getInvMassMatrix(Skeleton* _skel)
-{
-  MatrixXd InvM = getMassMatrix(_skel).inverse();
-
-  return InvM;
-}
-
-//==============================================================================
 void DynamicsTest::compareVelocities(const std::string& _fileName)
 {
   using namespace std;
@@ -221,7 +210,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 #ifndef NDEBUG  // Debug mode
   int nRandomItr = 10;
 #else
-  int nRandomItr = 100;
+  int nRandomItr = 1;
 #endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
@@ -338,9 +327,9 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 10;
+  int nRandomItr = 5;
 #else
-  int nRandomItr = 100;
+  int nRandomItr = 10;
 #endif
   double qLB   = -0.5 * DART_PI;
   double qUB   =  0.5 * DART_PI;
@@ -539,10 +528,10 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double ub =  1.5 * DART_PI;
 
   // Lower and upper bound of joint damping and stiffness
-  double lbD = -10.0;
-  double ubD =  10.0;
-  double lbK = -10.0;
-  double ubK =  10.0;
+  double lbD =  0.0;
+  double ubD = 10.0;
+  double lbK =  0.0;
+  double ubK = 10.0;
 
   // Lower and upper bound of joint rest position
   double lbRP = -1.0 * DART_PI;
@@ -565,8 +554,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
     if (dof == 0)
     {
-      cout << "Skeleton [" << skel->getName() << "] is skipped since it has "
-           << "0 DOF." << endl;
+      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
+            << "0 DOF." << endl;
       continue;
     }
 
@@ -595,16 +584,19 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
-      MatrixXd M       = skel->getMassMatrix();
-      MatrixXd M2      = getMassMatrix(skel);
-      MatrixXd AugM    = skel->getAugMassMatrix();
-      MatrixXd AugM2   = getAugMassMatrix(skel);
-      MatrixXd InvM    = skel->getInvMassMatrix();
-      MatrixXd InvM2   = getInvMassMatrix(skel);
-      MatrixXd InvAugM = skel->getInvAugMassMatrix();
-      MatrixXd M_InvM  = M * InvM;
-      MatrixXd InvM_M  = InvM * M;
-      MatrixXd I       = MatrixXd::Identity(dof, dof);
+      MatrixXd M      = skel->getMassMatrix();
+      MatrixXd M2     = getMassMatrix(skel);
+      MatrixXd InvM   = skel->getInvMassMatrix();
+      MatrixXd M_InvM = M * InvM;
+      MatrixXd InvM_M = InvM * M;
+
+      MatrixXd AugM         = skel->getAugMassMatrix();
+      MatrixXd AugM2        = getAugMassMatrix(skel);
+      MatrixXd InvAugM      = skel->getInvAugMassMatrix();
+      MatrixXd AugM_InvAugM = AugM * InvAugM;
+      MatrixXd InvAugM_AugM = InvAugM * AugM;
+
+      MatrixXd I        = MatrixXd::Identity(dof, dof);
 
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
@@ -623,7 +615,6 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
       if (!equals(AugM, AugM2, 1e-6))
       {
-        cout << "M    :" << endl << M     << endl << endl;
         cout << "AugM :" << endl << AugM  << endl << endl;
         cout << "AugM2:" << endl << AugM2 << endl << endl;
       }
@@ -632,17 +623,25 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       EXPECT_TRUE(equals(M_InvM, I, 1e-6));
       if (!equals(M_InvM, I, 1e-6))
       {
-        cout << "InvM  :" << endl << InvM   << endl << endl;
-        cout << "InvM2 :" << endl << InvM2  << endl << endl;
-        cout << "InvAugM :" << endl << InvAugM  << endl << endl;
-        cout << "M_InvM:" << endl << M_InvM << endl << endl;
-        cout << "M_InvM2:" << endl << M * InvM2 << endl << endl;
+        cout << "InvM  :" << endl << InvM << endl << endl;
       }
-//      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
-//      if (!equals(InvM_M, I, 1e-6))
-//      {
-//        cout << "InvM_M:" << endl << InvM_M << endl << endl;
-//      }
+      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
+      if (!equals(InvM_M, I, 1e-6))
+      {
+        cout << "InvM_M:" << endl << InvM_M << endl << endl;
+      }
+
+      // Check if both of (M * InvM) and (InvM * M) are identity.
+      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
+      if (!equals(AugM_InvAugM, I, 1e-6))
+      {
+        cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
+      }
+      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
+      if (!equals(InvAugM_AugM, I, 1e-6))
+      {
+        cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
+      }
 
       //------- Coriolis Force Vector and Combined Force Vector Tests --------
       // Get C1, Coriolis force vector using recursive method
