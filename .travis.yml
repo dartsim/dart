@@ -1,7 +1,7 @@
 language: cpp
 compiler:
   - gcc
-  # - clang  # Disable clang compiler until clang fully supports OpenMP
+  - clang
 before_install:
   - 'ci/before_install.sh'
 env:

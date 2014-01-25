@@ -58,9 +58,13 @@ public:
   // Get Skel file list to test.
   const std::vector<std::string>& getList();
 
-  // Get mass matrix of _skel computed using Jacobians and inertias of each body
+  // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
   MatrixXd getMassMatrix(dynamics::Skeleton* _skel);
+
+  // Get augmented mass matrix of _skel using Jacobians and inertias of
+  // each body in _skel.
+  MatrixXd getAugMassMatrix(dynamics::Skeleton* _skel);
 
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
@@ -155,6 +159,42 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 }
 
 //==============================================================================
+MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
+{
+  int    dof = _skel->getNumGenCoords();
+  double dt  = _skel->getTimeStep();
+
+  MatrixXd M = getMassMatrix(_skel);
+  MatrixXd D = MatrixXd::Zero(dof, dof);
+  MatrixXd K = MatrixXd::Zero(dof, dof);
+  MatrixXd AugM;
+
+  // Compute diagonal matrices of joint damping and joint stiffness
+  for (int i = 0; i < _skel->getNumBodyNodes(); ++i)
+  {
+    dynamics::BodyNode* body  = _skel->getBodyNode(i);
+    dynamics::Joint*    joint = body->getParentJoint();
+
+    EXPECT_TRUE(body  != NULL);
+    EXPECT_TRUE(joint != NULL);
+
+    int dof = joint->getNumGenCoords();
+
+    for (int j = 0; j < dof; ++j)
+    {
+      int idx = joint->getGenCoord(j)->getSkeletonIndex();
+
+      D(idx, idx) = joint->getDampingCoefficient(j);
+      K(idx, idx) = joint->getSpringStiffness(j);
+    }
+  }
+
+  AugM = M + (dt * D) + (dt * dt * K);
+
+  return AugM;
+}
+
+//==============================================================================
 void DynamicsTest::compareVelocities(const std::string& _fileName)
 {
   using namespace std;
@@ -167,7 +207,11 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
-  int nRandomItr = 100;
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 10;
+#else
+  int nRandomItr = 1;
+#endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
   double dqLB = -0.5 * DART_PI;
@@ -282,7 +326,11 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
-  int nRandomItr = 100;
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 2;
+#else
+  int nRandomItr = 10;
+#endif
   double qLB   = -0.5 * DART_PI;
   double qUB   =  0.5 * DART_PI;
   double dqLB  = -0.5 * DART_PI;
@@ -469,11 +517,21 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 5;
+#else
   int nRandomItr = 100;
+#endif
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
   double ub =  1.5 * DART_PI;
+
+  // Lower and upper bound of joint damping and stiffness
+  double lbD =  0.0;
+  double ubD = 10.0;
+  double lbK =  0.0;
+  double ubK = 10.0;
 
   simulation::World* myWorld = NULL;
 
@@ -488,21 +546,39 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
     int dof            = skel->getNumGenCoords();
-    int nBodyNodes     = skel->getNumBodyNodes();
+//    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0)
     {
-      cout << "Skeleton [" << skel->getName() << "] is skipped since it has "
-           << "0 DOF." << endl;
+      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
+            << "0 DOF." << endl;
       continue;
     }
 
     for (int j = 0; j < nRandomItr; ++j)
     {
+      // Random joint stiffness and damping coefficient
+      for (int k = 0; k < skel->getNumBodyNodes(); ++k)
+      {
+        BodyNode* body     = skel->getBodyNode(k);
+        Joint*    joint    = body->getParentJoint();
+        int       localDof = joint->getNumGenCoords();
+
+        for (int l = 0; l < localDof; ++l)
+        {
+          joint->setDampingCoefficient(l, random(lbD,  ubD));
+          joint->setSpringStiffness   (l, random(lbK,  ubK));
+
+          double lbRP = joint->getGenCoord(l)->get_qMin();
+          double ubRP = joint->getGenCoord(l)->get_qMax();
+          joint->setRestPosition      (l, random(lbRP, ubRP));
+        }
+      }
+
       // Set random states
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
-        x[k] = math::random(lb, ub);
+        x[k] = random(lb, ub);
       skel->setState(x);
 
       //------------------------ Mass Matrix Test ----------------------------
@@ -510,10 +586,16 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       MatrixXd M      = skel->getMassMatrix();
       MatrixXd M2     = getMassMatrix(skel);
       MatrixXd InvM   = skel->getInvMassMatrix();
-      //        MatrixXd InvM2  = M.inverse();
       MatrixXd M_InvM = M * InvM;
       MatrixXd InvM_M = InvM * M;
-      MatrixXd I      = MatrixXd::Identity(dof, dof);
+
+      MatrixXd AugM         = skel->getAugMassMatrix();
+      MatrixXd AugM2        = getAugMassMatrix(skel);
+      MatrixXd InvAugM      = skel->getInvAugMassMatrix();
+      MatrixXd AugM_InvAugM = AugM * InvAugM;
+      MatrixXd InvAugM_AugM = InvAugM * AugM;
+
+      MatrixXd I        = MatrixXd::Identity(dof, dof);
 
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
@@ -528,16 +610,36 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         cout << "M2:" << endl << M2 << endl << endl;
       }
 
+      // Check augmented mass matrix
+      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
+      if (!equals(AugM, AugM2, 1e-6))
+      {
+        cout << "AugM :" << endl << AugM  << endl << endl;
+        cout << "AugM2:" << endl << AugM2 << endl << endl;
+      }
+
       // Check if both of (M * InvM) and (InvM * M) are identity.
       EXPECT_TRUE(equals(M_InvM, I, 1e-6));
       if (!equals(M_InvM, I, 1e-6))
       {
-        cout << "M_InvM:" << endl << M_InvM << endl << endl;
+        cout << "InvM  :" << endl << InvM << endl << endl;
       }
       EXPECT_TRUE(equals(InvM_M, I, 1e-6));
       if (!equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
+      }
+
+      // Check if both of (M * InvM) and (InvM * M) are identity.
+      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
+      if (!equals(AugM_InvAugM, I, 1e-6))
+      {
+        cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
+      }
+      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
+      if (!equals(InvAugM_AugM, I, 1e-6))
+      {
+        cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
       }
 
       //------- Coriolis Force Vector and Combined Force Vector Tests --------
