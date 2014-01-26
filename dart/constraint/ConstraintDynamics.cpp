@@ -396,8 +396,8 @@ void ConstraintDynamics::initialize()
     if (mSkeletons[i]->isMobile() && mSkeletons[i]->getNumGenCoords() > 0)
     {
       // Immobile objets have mass of infinity
-      rows += skel->getMassMatrix().rows();
-      cols += skel->getMassMatrix().cols();
+      rows += skel->getAugMassMatrix().rows();
+      cols += skel->getAugMassMatrix().cols();
     }
   }
 
@@ -883,7 +883,8 @@ void ConstraintDynamics::updateMassMat()
     mMInv.block(
           start, start,
           mSkeletons[i]->getNumGenCoords(),
-          mSkeletons[i]->getNumGenCoords()) = mSkeletons[i]->getInvMassMatrix();
+          mSkeletons[i]->getNumGenCoords())
+        = mSkeletons[i]->getInvAugMassMatrix();
     start += mSkeletons[i]->getNumGenCoords();
   }
 }
@@ -900,7 +901,7 @@ void ConstraintDynamics::updateTauStar()
                           + mSkeletons[i]->getInternalForceVector()
                           + mSkeletons[i]->getDampingForceVector();
     Eigen::VectorXd tauStar =
-        (mSkeletons[i]->getMassMatrix() * mSkeletons[i]->get_dq())
+        (mSkeletons[i]->getAugMassMatrix() * mSkeletons[i]->get_dq())
         - (mDt * (mSkeletons[i]->getCombinedVector() - tau));
     mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
     startRow += tauStar.rows();
@@ -1108,7 +1109,7 @@ void ConstraintDynamics::updateConstraintTerms()
   {
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
-    mJMInv[i] = mJ[i] * mSkeletons[i]->getInvMassMatrix();
+    mJMInv[i] = mJ[i] * mSkeletons[i]->getInvAugMassMatrix();
     mGInv.triangularView<Eigen::Lower>() += (mJMInv[i] * mJ[i].transpose());
   }
   mGInv = mGInv.ldlt().solve(Eigen::MatrixXd::Identity(mTotalRows, mTotalRows));

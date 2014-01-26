@@ -183,8 +183,18 @@ public:
     /// \brief Get mass matrix of the skeleton.
     const Eigen::MatrixXd& getMassMatrix();
 
+    /// \brief Get augmented mass matrix of the skeleton. This matrix is used
+    ///        in ConstraintDynamics to compute constraint forces. The matrix is
+    ///        M + h*D + h*h*K where D is diagonal joint damping coefficient
+    ///        matrix, K is diagonal joint stiffness matrix, and h is simulation
+    ///        time step.
+    const Eigen::MatrixXd& getAugMassMatrix();
+
     /// \brief Get inverse of mass matrix of the skeleton.
     const Eigen::MatrixXd& getInvMassMatrix();
+
+    /// \brief Get inverse of augmented mass matrix of the skeleton.
+    const Eigen::MatrixXd& getInvAugMassMatrix();
 
     /// \brief Get Coriolis force vector of the skeleton.
     const Eigen::VectorXd& getCoriolisForceVector();
@@ -302,11 +312,23 @@ protected:
     /// \brief Dirty flag for the mass matrix.
     bool mIsMassMatrixDirty;
 
+    /// \brief Mass matrix for the skeleton.
+    Eigen::MatrixXd mAugM;
+
+    /// \brief Dirty flag for the mass matrix.
+    bool mIsAugMassMatrixDirty;
+
     /// \brief Inverse of mass matrix for the skeleton.
-    Eigen::MatrixXd mMInv;
+    Eigen::MatrixXd mInvM;
 
     /// \brief Dirty flag for the inverse of mass matrix.
-    bool mIsMassInvMatrixDirty;
+    bool mIsInvMassMatrixDirty;
+
+    /// \brief Inverse of augmented mass matrix for the skeleton.
+    Eigen::MatrixXd mInvAugM;
+
+    /// \brief Dirty flag for the inverse of augmented mass matrix.
+    bool mIsInvAugMassMatrixDirty;
 
     /// \brief Coriolis vector for the skeleton which is C(q,dq)*dq.
     Eigen::VectorXd mCvec;
@@ -345,8 +367,14 @@ protected:
     /// \brief Update mass matrix of the skeleton.
     virtual void updateMassMatrix();
 
+    /// \brief Update augmented mass matrix of the skeleton.
+    virtual void updateAugMassMatrix();
+
     /// \brief Update inverse of mass matrix of the skeleton.
     virtual void updateInvMassMatrix();
+
+    /// \brief Update inverse of augmented mass matrix of the skeleton.
+    virtual void updateInvAugMassMatrix();
 
     /// \brief Update Coriolis force vector of the skeleton.
     virtual void updateCoriolisForceVector();
