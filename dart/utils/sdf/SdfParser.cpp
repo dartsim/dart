@@ -7,6 +7,7 @@
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
@@ -19,6 +20,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/Paths.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
@@ -65,12 +67,71 @@ simulation::World* SdfParser::readSdfFile(const std::string& _filename)
     if (worldElement == NULL)
         return NULL;
 
-    simulation::World* newWorld = readWorld(worldElement);
+    // Change path to a Unix-style path if given a Windows one
+    // Windows can handle Unix-style paths (apparently)
+    std::string unixFileName = _filename;
+    std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
+    std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
+
+    simulation::World* newWorld = readWorld(worldElement, skelPath);
 
     return newWorld;
 }
 
-simulation::World* SdfParser::readWorld(tinyxml2::XMLElement* _worldElement)
+dart::dynamics::Skeleton* SdfParser::readSkeleton(const std::string& _filename)
+{
+  //--------------------------------------------------------------------------
+  // Load xml and create Document
+  tinyxml2::XMLDocument _dartFile;
+  try
+  {
+      openXMLFile(_dartFile, _filename.c_str());
+  }
+  catch(std::exception const& e)
+  {
+      std::cout << "LoadFile Fails: " << e.what() << std::endl;
+      return NULL;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load sdf
+  tinyxml2::XMLElement* sdfElement = NULL;
+  sdfElement = _dartFile.FirstChildElement("sdf");
+  if (sdfElement == NULL)
+      return NULL;
+
+  //--------------------------------------------------------------------------
+  // version attribute
+  std::string version = getAttribute(sdfElement, "version");
+  // We support 1.4 only for now.
+  if (version != "1.4")
+  {
+      dterr << "The file format of ["
+        << _filename
+        << "] is not sdf 1.4. Please try with sdf 1.4." << std::endl;
+      return NULL;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load skeleton
+  tinyxml2::XMLElement* skelElement = NULL;
+  skelElement = sdfElement->FirstChildElement("model");
+  if (skelElement == NULL)
+      return NULL;
+
+  // Change path to a Unix-style path if given a Windows one
+  // Windows can handle Unix-style paths (apparently)
+  std::string unixFileName = _filename;
+  std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
+  std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
+
+  dynamics::Skeleton* newSkeleton = readSkeleton(skelElement, skelPath);
+
+  return newSkeleton;
+}
+
+simulation::World* SdfParser::readWorld(tinyxml2::XMLElement* _worldElement,
+                                        const std::string& _skelPath)
 {
     assert(_worldElement != NULL);
 
@@ -97,7 +158,7 @@ simulation::World* SdfParser::readWorld(tinyxml2::XMLElement* _worldElement)
     while (skeletonElements.next())
     {
         dynamics::Skeleton* newSkeleton
-                = readSkeleton(skeletonElements.get(), newWorld);
+                = readSkeleton(skeletonElements.get(), _skelPath);
 
         newWorld->addSkeleton(newSkeleton);
     }
@@ -133,11 +194,10 @@ void SdfParser::readPhysics(tinyxml2::XMLElement* _physicsElement,
     }
 }
 
-dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonElement,
-                                 simulation::World* _world)
+dynamics::Skeleton* SdfParser::readSkeleton(
+    tinyxml2::XMLElement* _skeletonElement, const std::string& _skelPath)
 {
     assert(_skeletonElement != NULL);
-    assert(_world != NULL);
 
     dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
     Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
@@ -170,7 +230,8 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
     while (bodies.next())
     {
         SDFBodyNode newSDFBodyNode
-                = readBodyNode(bodies.get(), newSkeleton, skeletonFrame);
+                = readBodyNode(bodies.get(), newSkeleton, skeletonFrame,
+                               _skelPath);
         assert(newSDFBodyNode.bodyNode);
         sdfBodyNodes.push_back(newSDFBodyNode);
     }
@@ -213,7 +274,8 @@ dynamics::Skeleton* SdfParser::readSkeleton(tinyxml2::XMLElement* _skeletonEleme
 SdfParser::SDFBodyNode SdfParser::readBodyNode(
         tinyxml2::XMLElement* _bodyNodeElement,
         dynamics::Skeleton* _skeleton,
-        const Eigen::Isometry3d& _skeletonFrame)
+        const Eigen::Isometry3d& _skeletonFrame,
+        const std::string& _skelPath)
 {
     assert(_bodyNodeElement != NULL);
     assert(_skeleton != NULL);
@@ -258,7 +320,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     while (vizShapes.next())
     {
         dynamics::Shape* newShape
-                = readShape(vizShapes.get());
+                = readShape(vizShapes.get(), _skelPath);
         if (newShape)
             newBodyNode->addVisualizationShape(newShape);
     }
@@ -269,7 +331,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     while (collShapes.next())
     {
         dynamics::Shape* newShape
-                = readShape(collShapes.get());
+                = readShape(collShapes.get(), _skelPath);
 
         if (newShape)
             newBodyNode->addCollisionShape(newShape);
@@ -329,7 +391,8 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     return sdfBodyNode;
 }
 
-dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement)
+dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
+                                      const std::string& _skelPath)
 {
     dynamics::Shape* newShape = NULL;
 
@@ -378,9 +441,15 @@ dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement)
     }
     else if (hasElement(geometryElement, "mesh"))
     {
-        std::cout << "DART sdf parser does not support mesh shape yet."
-                  << std::endl;
-        return NULL;
+      tinyxml2::XMLElement* meshEle = getElement(geometryElement, "mesh");
+      // TODO(JS): We assume that uri is just file name for the mesh
+      std::string           uri     = getValueString(meshEle, "uri");
+      Eigen::Vector3d       scale   = getValueVector3d(meshEle, "scale");
+      const aiScene* model = dynamics::MeshShape::loadMesh(_skelPath + uri);
+      if (model)
+        newShape = new dynamics::MeshShape(scale, model);
+      else
+        dterr << "Fail to load model[" << uri << "]." << std::endl;
     }
     else
     {

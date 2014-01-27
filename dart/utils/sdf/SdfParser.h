@@ -41,7 +41,10 @@ public:
     /// \brief
     static simulation::World* readSdfFile(const std::string& _filename);
 
-private:
+    /// \brief
+    static dynamics::Skeleton* readSkeleton(const std::string& _fileName);
+
+public:
     struct SDFBodyNode
     {
         dynamics::BodyNode* bodyNode;
@@ -50,7 +53,8 @@ private:
     };
 
     /// \brief
-    static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
+    static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement,
+                                        const std::string& _skelPath);
 
     /// \brief
     static void readPhysics(
@@ -59,18 +63,20 @@ private:
 
     /// \brief
     static dynamics::Skeleton* readSkeleton(
-            tinyxml2::XMLElement* _skeletonElement,
-            simulation::World* _world);
+        tinyxml2::XMLElement* _skeletonElement,
+        const std::string& _skelPath);
 
     /// \brief
     static SDFBodyNode readBodyNode(
             tinyxml2::XMLElement* _bodyNodeElement,
             dynamics::Skeleton* _skeleton,
-            const Eigen::Isometry3d& _skeletonFrame);
+            const Eigen::Isometry3d& _skeletonFrame,
+            const std::string& _skelPath);
 
     /// \brief
     static dynamics::Shape* readShape(
-            tinyxml2::XMLElement* _shapelement);
+            tinyxml2::XMLElement* _shapelement,
+            const std::string& _skelPath);
 
     /// \brief
     static dynamics::Joint* readJoint(
