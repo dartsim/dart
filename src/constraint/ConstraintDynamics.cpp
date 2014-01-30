@@ -166,6 +166,13 @@ void ConstraintDynamics::deleteConstraint(Constraint* _constr) {
     delete _constr;
 }
 
+void ConstraintDynamics::deleteConstraint() {
+    int nConstr = mConstraints.size();
+    for (int i = nConstr - 1; i >= 0; i--) {
+        deleteConstraint(mConstraints[i]);
+    }
+}
+
 void ConstraintDynamics::addSkeleton(Skeleton* _skeleton)
 {
     assert(_skeleton != NULL && "Invalid skeleton.");

@@ -21,6 +21,7 @@ foreach(APPDIR
     ballJointConstraintTest
     hingeJointConstraintTest
     holding
+    harnessTest
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

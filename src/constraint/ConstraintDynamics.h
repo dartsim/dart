@@ -63,6 +63,7 @@ public:
     void computeConstraintForces();
     void addConstraint(Constraint *_constr);
     void deleteConstraint(Constraint *_constr);
+    void deleteConstraint();
     void addSkeleton(dynamics::Skeleton* _skeleton);
     void removeSkeleton(dynamics::Skeleton* _skeleton);
     void setTimeStep(double _timeStep) { mDt = _timeStep; }
