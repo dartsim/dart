@@ -3,7 +3,7 @@
 
 using namespace Eigen;
 
-void Particle::draw(renderer::RenderInterface* _ri) {
+void Particle::draw(dart::renderer::RenderInterface* _ri) {
     if (!_ri)
         return;
 

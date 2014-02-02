@@ -3,8 +3,11 @@
 
 #include <Eigen/Dense>
 
-namespace renderer {
-    class RenderInterface;
+namespace dart
+{
+	namespace renderer {
+		class RenderInterface;
+	}
 }
 
 class Particle {
@@ -20,7 +23,7 @@ class Particle {
     }
     virtual ~Particle() {}
 
-    void draw(renderer::RenderInterface* _ri);
+    void draw(dart::renderer::RenderInterface* _ri);
     
     double mMass;
     Eigen::Vector3d mPosition;

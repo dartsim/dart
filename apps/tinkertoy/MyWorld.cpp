@@ -1,6 +1,5 @@
 #include "MyWorld.h"
 #include "Particle.h"
-#include "math/UtilsMath.h"
 
 using namespace Eigen;
 

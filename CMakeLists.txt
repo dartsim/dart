@@ -153,8 +153,8 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 ###############
 add_subdirectory(src)
 if(NOT BUILD_CORE_ONLY)
-  enable_testing()
-  add_subdirectory(unittests)
+  #enable_testing()
+  #add_subdirectory(unittests)
   add_subdirectory(apps)
 endif()
 

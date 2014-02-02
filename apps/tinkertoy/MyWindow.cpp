@@ -39,7 +39,7 @@ void MyWindow::draw() {
     std::string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
-    yui::drawStringOnScreen(0.02f,0.02f,frame);
+    dart::yui::drawStringOnScreen(0.02f,0.02f,frame);
     glEnable(GL_LIGHTING);
 }
 
