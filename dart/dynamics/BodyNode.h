@@ -151,13 +151,17 @@ public:
   /// \brief
   void setLocalCOM(const Eigen::Vector3d& _com);
 
-  /// \brief Get a point vector from the origin of body frame to the center of
-  ///        mass in the body frame.
+  /// \brief Get body's COM w.r.t. body frame.
   const Eigen::Vector3d& getLocalCOM() const;
 
-  /// \brief Get a point vector from the origin world frame to the center of
-  ///        mass in the world frame.
+  /// \brief Get body's COM w.r.t. world frame.
   Eigen::Vector3d getWorldCOM() const;
+
+  /// \brief Get body's COM velocity w.r.t. world frame.
+  Eigen::Vector3d getWorldCOMVelocity() const;
+
+  /// \brief Get body's COM acceleration w.r.t. world frame.
+  Eigen::Vector3d getWorldCOMAcceleration() const;
 
   /// \brief
   Eigen::Matrix6d getInertia() const;

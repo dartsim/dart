@@ -494,6 +494,14 @@ Eigen::Vector3d BodyNode::getWorldCOM() const {
   return mW * mCenterOfMass;
 }
 
+Eigen::Vector3d BodyNode::getWorldCOMVelocity() const {
+  return getWorldVelocity(mCenterOfMass, true).tail<3>();
+}
+
+Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const {
+  return getWorldAcceleration(mCenterOfMass, true).tail<3>();
+}
+
 Eigen::Matrix6d BodyNode::getInertia() const {
   return mI;
 }

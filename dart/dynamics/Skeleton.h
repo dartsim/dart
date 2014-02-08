@@ -244,8 +244,20 @@ public:
     /// \brief Set constraint force vector.
     void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
-    /// \brief
+    /// \brief Get skeleton's COM w.r.t. world frame.
     Eigen::Vector3d getWorldCOM();
+
+    /// \brief Get skeleton's COM velocity w.r.t. world frame.
+    Eigen::Vector3d getWorldCOMVelocity();
+
+    /// \brief Get skeleton's COM acceleration w.r.t. world frame.
+    Eigen::Vector3d getWorldCOMAcceleration();
+
+    /// \brief Get skeleton's COM Jacobian w.r.t. world frame.
+    Eigen::MatrixXd getWorldCOMJacobian();
+
+    /// \brief Get skeleton's COM Jacobian time derivative w.r.t. world frame.
+    Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
     /// \brief Get kinetic energy of this skeleton.
     virtual double getKineticEnergy() const;

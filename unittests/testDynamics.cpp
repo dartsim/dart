@@ -79,6 +79,9 @@ public:
   // force vector.
   void compareEquationsOfMotion(const std::string& _fileName);
 
+  // Test skeleton's COM and its related quantities.
+  void centerOfMass(const std::string& _fileName);
+
 protected:
   // Sets up the test fixture.
   virtual void SetUp();
@@ -704,6 +707,123 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 }
 
 //==============================================================================
+void DynamicsTest::centerOfMass(const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeletons
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 5;
+#else
+  int nRandomItr = 1;
+#endif
+
+  // Lower and upper bound of configuration for system
+  double lb = -1.5 * DART_PI;
+  double ub =  1.5 * DART_PI;
+
+  // Lower and upper bound of joint damping and stiffness
+  double lbD =  0.0;
+  double ubD = 10.0;
+  double lbK =  0.0;
+  double ubK = 10.0;
+
+  simulation::World* myWorld = NULL;
+
+  //----------------------------- Tests ----------------------------------------
+  // Check whether multiplication of mass matrix and its inverse is identity
+  // matrix.
+  myWorld = utils::SkelParser::readSkelFile(_fileName);
+  EXPECT_TRUE(myWorld != NULL);
+
+  for (int i = 0; i < myWorld->getNumSkeletons(); ++i)
+  {
+    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+
+    int dof            = skel->getNumGenCoords();
+//    int nBodyNodes     = skel->getNumBodyNodes();
+
+    if (dof == 0)
+    {
+      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
+            << "0 DOF." << endl;
+      continue;
+    }
+
+    for (int j = 0; j < nRandomItr; ++j)
+    {
+      // Random joint stiffness and damping coefficient
+      for (int k = 0; k < skel->getNumBodyNodes(); ++k)
+      {
+        BodyNode* body     = skel->getBodyNode(k);
+        Joint*    joint    = body->getParentJoint();
+        int       localDof = joint->getNumGenCoords();
+
+        for (int l = 0; l < localDof; ++l)
+        {
+          joint->setDampingCoefficient(l, random(lbD,  ubD));
+          joint->setSpringStiffness   (l, random(lbK,  ubK));
+
+          double lbRP = joint->getGenCoord(l)->get_qMin();
+          double ubRP = joint->getGenCoord(l)->get_qMax();
+          joint->setRestPosition      (l, random(lbRP, ubRP));
+        }
+      }
+
+      // Set random states
+      VectorXd x = skel->getState();
+      for (int k = 0; k < x.size(); ++k)
+        x[k] = random(lb, ub);
+      skel->setState(x);
+
+      VectorXd tau = skel->get_tau();
+      for (int k = 0; k < tau.size(); ++k)
+        tau[k] = random(lb, ub);
+      skel->set_tau(tau);
+
+      skel->computeForwardDynamics();
+
+      VectorXd q  = skel->get_q();
+      VectorXd dq = skel->get_dq();
+      VectorXd ddq = skel->get_ddq();
+
+      VectorXd com   = skel->getWorldCOM();
+      VectorXd dcom  = skel->getWorldCOMVelocity();
+      VectorXd ddcom = skel->getWorldCOMAcceleration();
+
+      MatrixXd comJ  = skel->getWorldCOMJacobian();
+      MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();
+
+      VectorXd dcom2  = comJ * dq;
+      VectorXd ddcom2 = comdJ * dq + comJ * ddq;
+
+      EXPECT_TRUE(equals(dcom, dcom2, 1e-6));
+      if (!equals(dcom, dcom2, 1e-6))
+      {
+        cout << "dcom :" << dcom.transpose()  << endl;
+        cout << "dcom2:" << dcom2.transpose() << endl;
+      }
+
+      EXPECT_TRUE(equals(ddcom, ddcom2, 1e-6));
+      if (!equals(ddcom, ddcom2, 1e-6))
+      {
+        cout << "ddcom :" << ddcom.transpose()  << endl;
+        cout << "ddcom2:" << ddcom2.transpose() << endl;
+      }
+    }
+  }
+
+  delete myWorld;
+}
+
+//==============================================================================
 TEST_F(DynamicsTest, compareVelocities)
 {
   for (int i = 0; i < getList().size(); ++i)
@@ -750,6 +870,18 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     dtdbg << getList()[i] << std::endl;
 #endif
     compareEquationsOfMotion(getList()[i]);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, testCenterOfMass)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    centerOfMass(getList()[i]);
   }
 }
 

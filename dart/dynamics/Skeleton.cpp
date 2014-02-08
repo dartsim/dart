@@ -181,7 +181,7 @@ void Skeleton::addBodyNode(BodyNode* _body) {
 }
 
 int Skeleton::getNumBodyNodes() const {
-  return mBodyNodes.size();
+  return static_cast<int>(mBodyNodes.size());
 }
 
 BodyNode* Skeleton::getRootBodyNode() const {
@@ -775,16 +775,108 @@ void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc) {
 }
 
 Eigen::Vector3d Skeleton::getWorldCOM() {
+  // COM
   Eigen::Vector3d com(0.0, 0.0, 0.0);
 
+  // Compute sum of each body's COM multiplied by body's mass
   const int nNodes = getNumBodyNodes();
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
     com += bodyNode->getMass() * bodyNode->getWorldCOM();
   }
 
+  // Divide the sum by the total mass
   assert(mTotalMass != 0.0);
   return com / mTotalMass;
+}
+
+Eigen::Vector3d Skeleton::getWorldCOMVelocity() {
+  // Velocity of COM
+  Eigen::Vector3d comVel(0.0, 0.0, 0.0);
+
+  // Compute sum of each body's COM velocities multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++) {
+    BodyNode* bodyNode = getBodyNode(i);
+    comVel += bodyNode->getMass() * bodyNode->getWorldCOMVelocity();
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comVel / mTotalMass;
+}
+
+Eigen::Vector3d Skeleton::getWorldCOMAcceleration() {
+  // Acceleration of COM
+  Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
+
+  // Compute sum of each body's COM accelerations multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++) {
+    BodyNode* bodyNode = getBodyNode(i);
+    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comAcc / mTotalMass;
+}
+
+Eigen::MatrixXd Skeleton::getWorldCOMJacobian() {
+  // Jacobian of COM
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, getNumGenCoords());
+
+  // Compute sum of each body's Jacobian of COM accelerations multiplied by
+  // body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++) {
+    // BodyNode iterator
+    BodyNode* bodyNode = getBodyNode(i);
+
+    // Compute weighted Jacobian
+    Eigen::MatrixXd localJ
+        = bodyNode->getMass()
+          * bodyNode->getWorldJacobian(
+              bodyNode->getLocalCOM(), true).bottomRows<3>();
+
+    // Assign the weighted Jacobian to total Jacobian
+    for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {
+      int idx = bodyNode->getDependentGenCoord(j);
+      J.col(idx) += localJ.col(j);
+    }
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return J / mTotalMass;
+}
+
+Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv() {
+  // Jacobian time derivative of COM
+  Eigen::MatrixXd dJ = Eigen::MatrixXd::Zero(3, getNumGenCoords());
+
+  // Compute sum of each body's Jacobian time derivative of COM accelerations
+  // multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++) {
+    // BodyNode iterator
+    BodyNode* bodyNode = getBodyNode(i);
+
+    // Compute weighted Jacobian time derivative
+    Eigen::MatrixXd localJ
+        = bodyNode->getMass()
+          * bodyNode->getWorldJacobianTimeDeriv(bodyNode->getLocalCOM(), true).bottomRows<3>();
+
+    // Assign the weighted Jacobian to total Jacobian time derivative
+    for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {
+      int idx = bodyNode->getDependentGenCoord(j);
+      dJ.col(idx) += localJ.col(j);
+    }
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return dJ / mTotalMass;
 }
 
 double Skeleton::getKineticEnergy() const {
