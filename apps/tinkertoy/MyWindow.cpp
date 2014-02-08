@@ -2,6 +2,7 @@
 #include "yui/GLFuncs.h"
 #include "Particle.h"
 #include <iostream>
+#include <cstdio>
 
 using namespace Eigen;
 
@@ -35,7 +36,7 @@ void MyWindow::draw() {
 
     // Display the frame count in 2D text
     char buff[64];
-    sprintf(buff,"%d",mFrame);
+    std::sprintf(buff,"%d",mFrame);
     std::string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
