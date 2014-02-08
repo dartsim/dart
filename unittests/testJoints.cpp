@@ -72,6 +72,8 @@ public:
 /******************************************************************************/
 void JOINTS::kinematicsTest(Joint* _joint)
 {
+    int numTests = 100;
+
     BodyNode* bodyNode = new BodyNode();
     bodyNode->setParentJoint(_joint);
 
@@ -190,6 +192,24 @@ void JOINTS::kinematicsTest(Joint* _joint)
         for (int i = 0; i < dof; ++i)
             for (int j = 0; j < 6; ++j)
                 EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+    }
+
+    // Forward kinematics test with high joint position
+    double posMin = -1e+64;
+    double posMax = +1e+64;
+
+    for (int idxTest = 0; idxTest < numTests; ++idxTest)
+    {
+        for (int i = 0; i < dof; ++i)
+            q(i) = random(posMin, posMax);
+
+        skeleton.setConfig(q);
+
+        if (_joint->getNumGenCoords() == 0)
+            return;
+
+        Eigen::Isometry3d T = _joint->getLocalTransform();
+        EXPECT_TRUE(math::verifyTransform(T));
     }
 }
 
