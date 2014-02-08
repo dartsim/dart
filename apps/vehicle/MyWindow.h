@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,59 +34,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/RevoluteJoint.h"
 
-#include <string>
+#ifndef APPS_VEHICLE_MYWINDOW_H_
+#define APPS_VEHICLE_MYWINDOW_H_
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/gui/SimWindow.h"
 
-namespace dart {
-namespace dynamics {
+/// \brief
+class MyWindow : public dart::gui::SimWindow {
+public:
+  /// \brief
+  MyWindow();
 
-RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
-                             const std::string& _name)
-  : Joint(REVOLUTE, _name),
-    mAxis(axis.normalized()) {
-  mGenCoords.push_back(&mCoordinate);
+  /// \brief
+  virtual ~MyWindow();
 
-  mS = Eigen::Matrix<double, 6, 1>::Zero();
-  mdS = Eigen::Matrix<double, 6, 1>::Zero();
+  /// \brief
+  virtual void timeStepping();
 
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
-}
+  /// \brief
+  virtual void drawSkels();
 
-RevoluteJoint::~RevoluteJoint() {
-}
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis) {
-  mAxis = _axis.normalized();
-}
+private:
+  /// \brief
+  double mBackWheelVelocity;
 
-const Eigen::Vector3d&RevoluteJoint::getAxis() const {
-  return mAxis;
-}
+  /// \brief
+  double mSteeringWheelAngle;
 
-void RevoluteJoint::updateTransform() {
-  mT = mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(mCoordinate.get_q(), mAxis)
-       * mT_ChildBodyToJoint.inverse();
+  /// \brief
+  double mK;
 
-  assert(math::verifyTransform(mT));
-}
+  /// \brief
+  double mD;
+};
 
-void RevoluteJoint::updateJacobian() {
-  mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
-  assert(!math::isNan(mS));
-}
-
-void RevoluteJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 1));
-}
-
-}  // namespace dynamics
-}  // namespace dart
+#endif  // APPS_VEHICLE_MYWINDOW_H_

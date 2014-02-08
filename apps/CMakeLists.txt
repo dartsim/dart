@@ -17,6 +17,7 @@ foreach(APPDIR
     #closedLoop
     testBed
     sdfLoader
+    vehicle
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

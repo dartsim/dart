@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,59 +34,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/RevoluteJoint.h"
+#include <iostream>
 
-#include <string>
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "apps/vehicle/MyWindow.h"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/BodyNode.h"
+int main(int argc, char* argv[])
+{
+  using namespace dart;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
 
-namespace dart {
-namespace dynamics {
+  // create and initialize the world
+  World* myWorld = SkelParser::readSkelFile(DART_DATA_PATH"/skel/vehicle.skel");
+  assert(myWorld != NULL);
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
 
-RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
-                             const std::string& _name)
-  : Joint(REVOLUTE, _name),
-    mAxis(axis.normalized()) {
-  mGenCoords.push_back(&mCoordinate);
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
 
-  mS = Eigen::Matrix<double, 6, 1>::Zero();
-  mdS = Eigen::Matrix<double, 6, 1>::Zero();
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  std::cout << "'w': move forward" << std::endl;
+  std::cout << "'s': stop" << std::endl;
+  std::cout << "'x': move backward" << std::endl;
+  std::cout << "'a': rotate steering wheels to left" << std::endl;
+  std::cout << "'d': rotate steering wheels to right" << std::endl;
 
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Vehicle");
+  glutMainLoop();
+
+  return 0;
 }
-
-RevoluteJoint::~RevoluteJoint() {
-}
-
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis) {
-  mAxis = _axis.normalized();
-}
-
-const Eigen::Vector3d&RevoluteJoint::getAxis() const {
-  return mAxis;
-}
-
-void RevoluteJoint::updateTransform() {
-  mT = mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(mCoordinate.get_q(), mAxis)
-       * mT_ChildBodyToJoint.inverse();
-
-  assert(math::verifyTransform(mT));
-}
-
-void RevoluteJoint::updateJacobian() {
-  mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
-  assert(!math::isNan(mS));
-}
-
-void RevoluteJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 1));
-}
-
-}  // namespace dynamics
-}  // namespace dart
