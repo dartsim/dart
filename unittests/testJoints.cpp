@@ -50,6 +50,7 @@
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
@@ -281,6 +282,14 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT)
     TranslationalJoint* translationalJoint = new TranslationalJoint;
 
     kinematicsTest(translationalJoint);
+}
+
+// 3-dof joint
+TEST_F(JOINTS, PLANAR_JOINT)
+{
+    PlanarJoint* planarJoint = new PlanarJoint;
+
+    kinematicsTest(planarJoint);
 }
 
 // 6-dof joint

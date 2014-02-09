@@ -70,9 +70,9 @@ public:
     PRISMATIC,      // 1-dof
     SCREW,          // 1-dof
     UNIVERSAL,      // 2-dof
-    PLANAR,         // 2-dof
     TRANSLATIONAL,  // 3-dof
     BALL,           // 3-dof
+    PLANAR,         // 3-dof
     EULER,          // 3-dof
     FREE            // 6-dof
   };
