@@ -84,7 +84,7 @@ void PointConstraint::getJacobian()
         mOffset - mBody->getWorldTransform().translation()).bottomRows<3>();
   for (int i = 0; i < mBody->getNumDependentGenCoords(); i++)
   {
-    int dofIndex = mBody->getDependentGenCoord(i);
+    int dofIndex = mBody->getDependentGenCoordIndex(i);
     mJ.col(dofIndex) = JBody.col(i);
   }
 }

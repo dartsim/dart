@@ -147,11 +147,11 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 
     for (int j = 0; j < dof; ++j)
     {
-      int jIdx = body->getDependentGenCoord(j);
+      int jIdx = body->getDependentGenCoordIndex(j);
 
       for (int k = 0; k < dof; ++k)
       {
-        int kIdx = body->getDependentGenCoord(k);
+        int kIdx = body->getDependentGenCoordIndex(k);
 
         skelM(jIdx, kIdx) += M(j, k);
       }
@@ -275,7 +275,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
         Vector6d aWorld2 = Vector6d::Zero();
         for (int l = 0; l < bn->getNumDependentGenCoords(); ++l)
         {
-          int idx = bn->getDependentGenCoord(l);
+          int idx = bn->getDependentGenCoordIndex(l);
           vBody2  += JBody.col(l)  * dq[idx];
           vWorld2 += JWorld.col(l) * dq[idx];
           aBody2  += dJBody.col(l) * dq[idx] + JBody.col(l) * ddq[idx];
@@ -437,7 +437,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 //          skeleton->setConfig(q);
 //          Jacobian JBody_a = bn->getBodyJacobian();
 
-//          int idx = bn->getDependentGenCoord(l);
+//          int idx = bn->getDependentGenCoordIndex(l);
 //          VectorXd qGrad = q;
 //          qGrad[idx] = qNext[idx];
 //          skeleton->setConfig(qGrad);

@@ -182,7 +182,7 @@ int BodyNode::getNumDependentGenCoords() const {
   return mDependentGenCoordIndices.size();
 }
 
-int BodyNode::getDependentGenCoord(int _arrayIndex) const {
+int BodyNode::getDependentGenCoordIndex(int _arrayIndex) const {
   assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
   return mDependentGenCoordIndices[_arrayIndex];
 }

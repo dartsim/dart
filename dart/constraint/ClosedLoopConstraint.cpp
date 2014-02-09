@@ -95,7 +95,7 @@ void ClosedLoopConstraint::getJacobian()
         mOffset1 - mBody1->getWorldTransform().translation()).bottomRows<3>();
   for (int i = 0; i < mBody1->getNumDependentGenCoords(); i++)
   {
-    int dofIndex = mBody1->getDependentGenCoord(i);
+    int dofIndex = mBody1->getDependentGenCoordIndex(i);
     mJ1.col(dofIndex) = JBody1.col(dofIndex);
   }
   Eigen::MatrixXd JBody2 =
@@ -103,7 +103,7 @@ void ClosedLoopConstraint::getJacobian()
         mOffset2 - mBody2->getWorldTransform().translation()).bottomRows<3>();
   for (int i = 0; i < mBody2->getNumDependentGenCoords(); i++)
   {
-    int dofIndex = mBody2->getDependentGenCoord(i);
+    int dofIndex = mBody2->getDependentGenCoordIndex(i);
     mJ2.col(dofIndex) = JBody2.col(dofIndex);
   }
 }

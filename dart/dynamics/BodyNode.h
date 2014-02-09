@@ -226,7 +226,7 @@ public:
   /// \param[in] _genCoordIndex Index of generalized coordinate in the
   ///                           skeleton.
   /// \warning You may want to use getNumDependentGenCoords or
-  ///          getDependentGenCoord for efficiency.
+  ///          getDependentGenCoordIndex for efficiency.
   bool dependsOn(int _genCoordIndex) const;
 
   /// \brief The number of the generalized coordinates by which this node is
@@ -235,7 +235,7 @@ public:
 
   /// \brief Return a generalized coordinate index from the array index
   ///        (< getNumDependentDofs).
-  int getDependentGenCoord(int _arrayIndex) const;
+  int getDependentGenCoordIndex(int _arrayIndex) const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)

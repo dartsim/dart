@@ -841,7 +841,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian() {
 
     // Assign the weighted Jacobian to total Jacobian
     for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {
-      int idx = bodyNode->getDependentGenCoord(j);
+      int idx = bodyNode->getDependentGenCoordIndex(j);
       J.col(idx) += localJ.col(j);
     }
   }
@@ -869,7 +869,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv() {
 
     // Assign the weighted Jacobian to total Jacobian time derivative
     for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {
-      int idx = bodyNode->getDependentGenCoord(j);
+      int idx = bodyNode->getDependentGenCoordIndex(j);
       dJ.col(idx) += localJ.col(j);
     }
   }

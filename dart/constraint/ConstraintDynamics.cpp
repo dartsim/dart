@@ -1014,7 +1014,7 @@ Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node,
   for (int dofIndex = 0; dofIndex < node->getNumDependentGenCoords();
        dofIndex++)
   {
-    int i = node->getDependentGenCoord(dofIndex);
+    int i = node->getDependentGenCoordIndex(dofIndex);
     Jt.row(i) = JtBody.row(dofIndex);
   }
 
