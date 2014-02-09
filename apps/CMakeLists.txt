@@ -19,8 +19,8 @@ foreach(APPDIR
     testBed
     sdfLoader
     ballJointConstraintTest
-    hingeJointConstraintTest
-    holding
+    #hingeJointConstraintTest
+    #holding
     harnessTest
     )
     add_subdirectory(${APPDIR})
