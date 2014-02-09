@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     genCoordIds.push_back(16); // right knee
     genCoordIds.push_back(17); // right ankle
     genCoordIds.push_back(21); // lower back
-    Eigen::VectorXd initConfig(8);
+    Eigen::VectorXd initConfig(9);
     initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
     myWorld->getSkeleton(1)->setConfig(genCoordIds, initConfig);
 
