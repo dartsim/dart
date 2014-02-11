@@ -142,8 +142,7 @@ void SnoptInterface::resizeJacobian(int coef_tot, int nonlin_coef_tot,
     mNumNonlinJacCoef = nonlin_coef_tot;
 
     // modify constraint type for each constraint
-    if (mConstrEqns != NULL)
-        delete[] mConstrEqns;
+    delete[] mConstrEqns;
 
     if(mNumConstr != 0)
         mConstrEqns = new int[mNumConstr];
@@ -176,10 +175,8 @@ void SnoptInterface::resizeJacobian(int coef_tot, int nonlin_coef_tot,
 
     mdObjdCoef->resize(mNumCoef);
 
-    if(mSolverX)
-        delete[] mSolverX;
-    if(mProblemX)
-        delete[] mProblemX;
+    delete[] mSolverX;
+    delete[] mProblemX;
 
     mSolverX = new double[mNumCoef];
     mProblemX = new double[mNumCoef];
@@ -394,12 +391,9 @@ SnoptInterface::Return SnoptInterface::solve(double *x, double *lo_bounds,
     lencw = 1000 * sizeof(char[8]);
     leniw = 800 * nm;
     lenrw = 6400 * nm;
-    if(cw)
-        delete[] cw;
-    if(iw)
-        delete[] iw;
-    if(rw)
-        delete[] rw;
+    delete[] cw;
+    delete[] iw;
+    delete[] rw;
 
     cw = new char[lencw];
     iw = new int[leniw];
@@ -552,12 +546,9 @@ void SnoptInterface::fillUpSnoptFormat(VVD jacobian, double **a, int **ha, int *
         nElts += (1 > nonZeroInCol[j]) ? 1 : nonZeroInCol[j];
     }
 
-    if(*a != NULL)
-        delete[] *a;
-    if(*ha != NULL)
-        delete[] *ha;
-    if(*ka != NULL)
-        delete[] *ka;
+    delete[] *a;
+    delete[] *ha;
+    delete[] *ka;
     *a = new double[nElts];
     *ha = new int[nElts];
     *ka = new int[mNumCoef + 1];

@@ -52,13 +52,9 @@ Problem::Problem()
 }
 
 Problem::~Problem() {
-    if (mConBox) {
-        delete mConBox;
-    }
+    delete mConBox;
 
-    if (mObjBox) {
-        delete mObjBox;
-    }
+    delete mObjBox;
 
     for (unsigned int i = 0; i < mVariables.size(); ++i) {
         delete mVariables[i];

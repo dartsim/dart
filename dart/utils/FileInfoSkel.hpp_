@@ -69,10 +69,7 @@ namespace kinematics {
 
     template <class SkeletonType>
     FileInfoSkel<SkeletonType>::~FileInfoSkel(){
-        if(mSkel){ 
-            delete mSkel;
-            mSkel = NULL;
-        }
+        delete mSkel;
     }
 
     template <class SkeletonType>
@@ -99,8 +96,7 @@ namespace kinematics {
 
     template <class SkeletonType>
     bool FileInfoSkel<SkeletonType>::loadFile( const char* _fName, SkeletonFileType _type ) {
-        if( mSkel )
-            delete mSkel;
+        delete mSkel;
         // mSkel = new Skeleton;
         mSkel = new SkeletonType;
 

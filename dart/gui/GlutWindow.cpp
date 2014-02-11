@@ -70,8 +70,7 @@ GlutWindow::GlutWindow() {
 }
 
 GlutWindow::~GlutWindow() {
-  if (mRI)
-    delete mRI;
+  delete mRI;
 }
 
 void GlutWindow::initWindow(int _w, int _h, const char* _name) {
@@ -94,8 +93,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   glutMotionFunc(mouseDrag);
   glutPassiveMotionFunc(mouseMove);
 
-  if (mRI)
-    delete mRI;
+  delete mRI;
   mRI = new renderer::OpenGLRenderInterface();
   mRI->initialize();
   // glutTimerFunc(mDisplayTimeout, refreshTimer, 0);

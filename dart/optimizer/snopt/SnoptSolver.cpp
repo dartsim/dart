@@ -38,9 +38,7 @@ SnoptSolver::SnoptSolver(Problem *problem)
 }
 
 SnoptSolver::~SnoptSolver() {
-    if(mSnopt) {
-        delete mSnopt;
-    }
+    delete mSnopt;
 }
 
 bool SnoptSolver::solve() {
@@ -173,10 +171,7 @@ int SnoptSolver::iterUpdate(long mask, int compute_gradients, double *coefs, voi
 }
 
 void SnoptSolver::resetSolver() {
-    if(mSnopt != NULL){
-        delete mSnopt;
-        mSnopt = NULL;
-    }
+    delete mSnopt;
 
     mSnopt = new SnoptInterface(1, &conBox()->mJac, &conBox()->mJacMap, &conBox()->mCon, &objBox()->mObj, &objBox()->mObjGrad, SnoptSolver::iterUpdate, this);
 

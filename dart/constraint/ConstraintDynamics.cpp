@@ -75,8 +75,7 @@ ConstraintDynamics::ConstraintDynamics(
 
 ConstraintDynamics::~ConstraintDynamics()
 {
-  if (mCollisionDetector)
-    delete mCollisionDetector;
+  delete mCollisionDetector;
 }
 
 void ConstraintDynamics::computeConstraintForces()
@@ -335,11 +334,7 @@ void ConstraintDynamics::setCollisionDetector(
   if (_collisionDetector == mCollisionDetector)
     return;
 
-  if (mCollisionDetector != NULL)
-  {
-    delete mCollisionDetector;
-    mCollisionDetector = NULL;
-  }
+  delete mCollisionDetector;
 
   mCollisionDetector = _collisionDetector;
 

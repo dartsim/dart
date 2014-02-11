@@ -103,8 +103,7 @@ BodyNode::~BodyNode() {
        it != mMarkers.end(); ++it)
     delete (*it);
 
-  if (mParentJoint)
-    delete mParentJoint;
+  delete mParentJoint;
 }
 
 void BodyNode::setName(const std::string& _name) {
