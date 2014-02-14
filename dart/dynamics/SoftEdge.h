@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,32 +34,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef SOFT_DYNAMICS_SOFTEDGE_H_
+#define SOFT_DYNAMICS_SOFTEDGE_H_
 
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "apps/testBed/MyWindow.h"
+#include <string>
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
-          DART_DATA_PATH"/skel/test/double_pendulum_with_base.skel");
-  assert(myWorld != NULL);
+namespace dart {
+namespace dynamics {
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+class PointMass;
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
+/// \brief
+class Edge
+{
+public:
+  //--------------------------------------------------------------------------
+  // Constructor and Desctructor
+  //--------------------------------------------------------------------------
+  /// \brief
+  explicit Edge(const std::string& _name = "Unnamed PointMass");
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Test Bed");
-  glutMainLoop();
+  /// \brief
+  virtual ~Edge();
 
-  return 0;
-}
+  /// \brief
+  void setLeftPointMass(PointMass* _pointMass);
+
+  /// \brief
+  void setRightPointMass(PointMass* _pointMass);
+
+protected:
+  /// \brief
+  std::string mName;
+
+  /// \brief
+  PointMass* mLeftPointMass;
+
+  /// \brief
+  PointMass* mRightPointMass;
+};
+
+}  // namespace dynamics
+}  // namespace dart
+
+#endif  // SOFT_DYNAMICS_SOFTEDGE_H_
