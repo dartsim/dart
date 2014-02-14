@@ -83,7 +83,6 @@ SoftFCLMeshCollisionNode::SoftFCLMeshCollisionNode(
     {
       case Shape::ELLIPSOID:
       {
-        std::cout << "Creating ELLIPSOID..." << std::endl;
         EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape);
         // Sphere
         if (ellipsoid->isSphere())
@@ -104,7 +103,6 @@ SoftFCLMeshCollisionNode::SoftFCLMeshCollisionNode(
       }
       case dynamics::Shape::BOX:
       {
-        std::cout << "Creating BOX..." << std::endl;
         BoxShape* box = static_cast<BoxShape*>(shape);
         mMeshes.push_back(createCube<fcl::OBBRSS>(
                             box->getSize()[0], box->getSize()[1], box->getSize()[2], shapeT));
@@ -112,7 +110,6 @@ SoftFCLMeshCollisionNode::SoftFCLMeshCollisionNode(
       }
       case dynamics::Shape::CYLINDER:
       {
-        std::cout << "Creating CYLINDER..." << std::endl;
         CylinderShape* cylinder = static_cast<CylinderShape*>(shape);
         double radius = cylinder->getRadius();
         double height = cylinder->getHeight();
@@ -122,7 +119,6 @@ SoftFCLMeshCollisionNode::SoftFCLMeshCollisionNode(
       }
       case dynamics::Shape::MESH:
       {
-        std::cout << "Creating MESH..." << std::endl;
         MeshShape* shapeMesh = static_cast<MeshShape*>(shape);
         mMeshes.push_back(createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
                           shapeMesh->getScale()[1],
@@ -133,7 +129,6 @@ SoftFCLMeshCollisionNode::SoftFCLMeshCollisionNode(
       }
       case dynamics::Shape::SOFT_MESH:
       {
-        std::cout << "Creating SOFT_MESH..." << std::endl;
         SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
         mMeshes.push_back(createSoftMesh<fcl::OBBRSS>(
                             softMeshShape->getAssimpMesh(), shapeT));
