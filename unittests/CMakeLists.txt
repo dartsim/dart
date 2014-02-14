@@ -54,6 +54,6 @@ foreach(test ${tests})
 	if(NOT contains)
 		add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
 		message("-- Adding test: " ${base})
-	endif(NOT contains) 
+	endif(NOT contains)
 endforeach(test)
 

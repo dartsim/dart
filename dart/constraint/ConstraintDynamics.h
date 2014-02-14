@@ -70,7 +70,8 @@ public:
 
   void computeConstraintForces();
   void addConstraint(Constraint *_constr);
-  void deleteConstraint(int _index);
+  void deleteConstraint(Constraint *_constr);
+  void deleteConstraint();
   void addSkeleton(dynamics::Skeleton* _skeleton);
   void removeSkeleton(dynamics::Skeleton* _skeleton);
   void setTimeStep(double _timeStep);
@@ -151,6 +152,9 @@ protected:
   // mLimitingDofIndex.push_back(-(i+1));
   std::vector<int> mLimitingDofIndex;
   bool mUseODELCPSolver;
+
+  // TODO: this map needs to be rebuilt when the order of skeletons changes
+  std::map<Constraint*, Eigen::Vector2i> mSkeletonIDMap;
 };
 
 }  // namespace constraint

@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -35,46 +34,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H
-#define DART_CONSTRAINT_CONSTRAINT_H
+#ifndef APPS_BALLJOINTCONSTRAINT_MYWINDOW_H_
+#define APPS_BALLJOINTCONSTRAINT_MYWINDOW_H_
 
-#include <vector>
-#include <Eigen/Dense>
+#include "dart/gui/SimWindow.h"
 
 namespace dart {
 
-namespace dynamics {
-class BodyNode;
+namespace constraint {
+    class Constraint;
+}
 }
 
-namespace constraint {
-
-class Constraint {
+class MyWindow : public dart::gui::SimWindow
+{
 public:
-  Constraint() {}
-  virtual ~Constraint() {}
+    MyWindow() : SimWindow() {
+        mHeadConstraint = NULL;
+        mTailConstraint = NULL;
+    }
+    virtual ~MyWindow() {}
+    
+    virtual void timeStepping();
+    //  virtual void drawSkels();
+    //  virtual void displayTimer(int _val);
+    //  virtual void draw();
+    virtual void keyboard(unsigned char key, int x, int y);
 
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  inline int getNumRows() const { return mNumRows; }
-  inline Eigen::VectorXd getLagrangeMultipliers() const { return mLagrangeMultipliers; }
-  inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; }
-  inline dynamics::BodyNode* getBodyNode1() { return mBodyNode1; }
-  inline dynamics::BodyNode* getBodyNode2() { return mBodyNode2; }
+private:
+    Eigen::VectorXd computeDamping();
+    dart::constraint::Constraint* addHeadConstraint();
+    dart::constraint::Constraint* addTailConstraint();
 
-protected:
-  virtual void getJacobian() {}
-  int mNumRows;
-  Eigen::VectorXd mLagrangeMultipliers;
-
-  dynamics::BodyNode* mBodyNode1;
-  dynamics::BodyNode* mBodyNode2;
-  Eigen::MatrixXd mJ1;
-  Eigen::MatrixXd mJ2;
+    dart::constraint::Constraint* mHeadConstraint;
+    dart::constraint::Constraint* mTailConstraint;
 };
 
-} // namespace constraint
-} // namespace dart
-
-#endif // #ifndef DART_CONSTRAINT_CONSTRAINT_H
-
+#endif  // APPS_BALLJOINTCONSTRAINT_MYWINDOW_H_

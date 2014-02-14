@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,63 +34,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_POINTCONSTRAINT_H_
-#define DART_CONSTRAINT_POINTCONSTRAINT_H_
+#include "apps/closedLoop/MyWindow.h"
 
-#include <vector>
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
-#include "dart/constraint/Constraint.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-}  // namespace dynamics
-}  // namespace dart
-
-namespace dart {
-namespace constraint {
-
-/// \brief
-class PointConstraint : public Constraint
+void MyWindow::timeStepping()
 {
-public:
-  /// \brief
-  PointConstraint(dynamics::BodyNode* _body,
-                  const Eigen::Vector3d& _offset,
-                  const Eigen::Vector3d& _target,
-                  int _skelIndex);
+    Eigen::VectorXd damping = computeDamping();
+    mWorld->getSkeleton(0)->setInternalForceVector(damping);
+    mWorld->step();
+}
 
-  /// \brief
-  virtual ~PointConstraint();
-
-  /// \brief
-  virtual void updateDynamics(std::vector<Eigen::MatrixXd>* _J,
-                              Eigen::VectorXd* _C,
-                              Eigen::VectorXd* _CDot,
-                              int _rowIndex);
-
-private:
-  /// \brief
-  void getJacobian();
-
-  /// \brief
-  dynamics::BodyNode* mBody;
-
-  /// \brief
-  Eigen::Vector3d mOffset;
-
-  /// \brief
-  Eigen::Vector3d mTarget;
-
-  /// \brief
-  Eigen::MatrixXd mJ;
-
-  /// \brief
-  int mSkelIndex;
-};
-
-}  // namespace constraint
-}  // namespace dart
-
-#endif  // DART_CONSTRAINT_POINTCONSTRAINT_H_
+Eigen::VectorXd MyWindow::computeDamping()
+{
+    int nDof = mWorld->getSkeleton(0)->getNumGenCoords();
+    Eigen::VectorXd damping = Eigen::VectorXd::Zero(nDof);
+    // add damping to each joint; twist-dof has smaller damping
+    damping = -0.01 * mWorld->getSkeleton(0)->get_dq();
+    for (int i = 0; i < nDof; i++)
+        if (i % 3 == 1)
+            damping[i] *= 0.1;
+    return damping;
+}

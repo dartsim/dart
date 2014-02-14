@@ -42,35 +42,5 @@
 namespace dart {
 namespace constraint {
 
-Constraint::Constraint()
-{
-}
-
-Constraint::~Constraint()
-{
-}
-
-void Constraint::updateDynamics(std::vector<Eigen::MatrixXd>* _J,
-                                Eigen::VectorXd* _C,
-                                Eigen::VectorXd* _CDot,
-                                int _rowIndex)
-{
-}
-
-int Constraint::getNumRows() const
-{
-  return mNumRows;
-}
-
-Eigen::VectorXd Constraint::getLagrangeMultipliers() const
-{
-  return mLagrangeMultipliers;
-}
-
-void Constraint::setLagrangeMultipliers(const Eigen::VectorXd& _lambda)
-{
-  mLagrangeMultipliers = _lambda;
-}
-
 }  // namespace constraint
 }  // namespace dart

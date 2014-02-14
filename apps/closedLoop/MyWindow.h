@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,72 +34,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
-#define DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
+#ifndef APPS_CLOSEDLOOP_MYWINDOW_H_
+#define APPS_CLOSEDLOOP_MYWINDOW_H_
 
-#include <vector>
+#include "dart/gui/SimWindow.h"
 
-#include "dart/constraint/Constraint.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-}  // namespace dynamics
-}  // namespace dart
-
-namespace dart {
-namespace constraint {
-
-/// \brief
-class ClosedLoopConstraint : public Constraint
+class MyWindow : public dart::gui::SimWindow
 {
 public:
-  /// \brief
-  ClosedLoopConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
-                       const Eigen::Vector3d& _offset1,
-                       const Eigen::Vector3d& _offset2,
-                       int _skelIndex1, int _skelIndex2);
-
-  /// \brief
-  virtual ~ClosedLoopConstraint();
-
-  /// \brief
-  virtual void updateDynamics(std::vector<Eigen::MatrixXd>* _J,
-                              Eigen::VectorXd* _C,
-                              Eigen::VectorXd* _CDot,
-                              int _rowIndex);
+    MyWindow() : SimWindow() {}
+    virtual ~MyWindow() {}
+    
+    virtual void timeStepping();
+    //  virtual void drawSkels();
+    //  virtual void displayTimer(int _val);
+    //  virtual void draw();
+    //  virtual void keyboard(unsigned char key, int x, int y);
 
 private:
-  /// \brief
-  void getJacobian();
-
-  /// \brief
-  dynamics::BodyNode* mBody1;
-
-  /// \brief
-  dynamics::BodyNode* mBody2;
-
-  /// \brief
-  Eigen::Vector3d mOffset1;
-
-  /// \brief
-  Eigen::Vector3d mOffset2;
-
-  /// \brief
-  Eigen::MatrixXd mJ1;
-
-  /// \brief
-  Eigen::MatrixXd mJ2;
-
-  /// \brief
-  int mSkelIndex1;
-
-  /// \brief
-  int mSkelIndex2;
+    Eigen::VectorXd computeDamping();
 };
 
-}  // namespace constraint
-}  // namespace dart
-
-#endif  // DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
+#endif  // APPS_CLOSEDLOOP_MYWINDOW_H_

@@ -35,46 +35,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H
-#define DART_CONSTRAINT_CONSTRAINT_H
+#ifndef DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
+#define DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
 
-#include <vector>
-#include <Eigen/Dense>
+#include "dart/constraint/Constraint.h"
 
 namespace dart {
 
 namespace dynamics {
 class BodyNode;
+class Skeleton;
 }
 
 namespace constraint {
 
-class Constraint {
+class RevoluteJointConstraint : public Constraint {
 public:
-  Constraint() {}
-  virtual ~Constraint() {}
+    RevoluteJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _axis1, Eigen::Vector3d _axis2);
+    RevoluteJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
+    virtual ~RevoluteJointConstraint();
+    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
 
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  inline int getNumRows() const { return mNumRows; }
-  inline Eigen::VectorXd getLagrangeMultipliers() const { return mLagrangeMultipliers; }
-  inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; }
-  inline dynamics::BodyNode* getBodyNode1() { return mBodyNode1; }
-  inline dynamics::BodyNode* getBodyNode2() { return mBodyNode2; }
-
-protected:
-  virtual void getJacobian() {}
-  int mNumRows;
-  Eigen::VectorXd mLagrangeMultipliers;
-
-  dynamics::BodyNode* mBodyNode1;
-  dynamics::BodyNode* mBodyNode2;
-  Eigen::MatrixXd mJ1;
-  Eigen::MatrixXd mJ2;
+private:
+    virtual void getJacobian();
+    Eigen::Vector3d mAxis1;
+    Eigen::Vector3d mAxis2;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_CONSTRAINT_H
+#endif // #ifndef DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
 
