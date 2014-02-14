@@ -22,6 +22,7 @@ foreach(APPDIR
     #hingeJointConstraintTest
     #holding
     harnessTest
+    vehicle
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

@@ -83,8 +83,8 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const {
 
 void UniversalJoint::updateTransform() {
   mT = mT_ParentBodyToJoint
-       * math::expAngular(mAxis[0] * mCoordinate[0].get_q())
-       * math::expAngular(mAxis[1] * mCoordinate[1].get_q())
+       * Eigen::AngleAxisd(mCoordinate[0].get_q(), mAxis[0])
+       * Eigen::AngleAxisd(mCoordinate[1].get_q(), mAxis[1])
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
