@@ -38,11 +38,15 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
+#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/SoftSkeleton.h"
 #include "dart/utils/Paths.h"
 #include "dart/simulation/World.h"
+#include "dart/simulation/SoftWorld.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/SoftParser.h"
 
 using namespace dart;
 using namespace math;
@@ -162,6 +166,34 @@ TEST(SKEL_PARSER, SERIAL_CAHIN)
     world->step();
 
     delete world;
+}
+
+TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
+{
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  SoftWorld* softWorld
+      = SoftSkelParser::readSoftFile(
+          DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
+  EXPECT_TRUE(softWorld != NULL);
+
+  Skeleton* skel1 = softWorld->getSkeleton("skeleton 1");
+  SoftSkeleton* softSkel1 = dynamic_cast<SoftSkeleton*>(skel1);
+  EXPECT_TRUE(softSkel1 != NULL);
+  EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
+  EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);
+  EXPECT_EQ(softSkel1->getNumSoftBodyNodes(), 1);
+
+  SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
+  EXPECT_TRUE(sbn->getNumPointMasses() > 0);
+
+  softWorld->step();
+
+  delete softWorld;
 }
 
 /******************************************************************************/

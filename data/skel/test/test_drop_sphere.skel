@@ -1,0 +1,86 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+
+	<skeleton name="grount skeleton">
+            <body name="ground">
+                <transformation>0 -0.375 0 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>2.5 0.05 2.5</size>
+                        </box>
+                    </geometry>
+                    <color>0.95 0.95 0.95</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>2.5 0.05 2.5</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint>
+        </skeleton>	
+
+        <skeleton name="skeleton 1">
+            <body name="link 1">
+                <gravity>1</gravity>
+                <transformation>0.1 0.15 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1.0</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <soft_shape>
+                    <total_mass>0.5</total_mass>
+                    <geometry>
+                        <ellipsoid>
+                            <size>0.25 0.25 0.25</size>
+                            <num_slices>12</num_slices>
+                            <num_stacks>12</num_stacks>
+                        </ellipsoid>
+                    </geometry>
+		<kv>1000.0</kv>
+		<ke>100.0</ke>
+		<damp>50.0</damp>
+                </soft_shape>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>0.2 0.2 0.2</size>
+                        </ellipsoid>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <ellipsoid>
+                            <size>0.2 0.2 0.2</size>
+                        </ellipsoid>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>link 1</child>
+                <!--transformation>-0.1 0 0 0 0 0</transformation-->
+                <!--transformation>0 -0.1 0 0 0 0</transformation-->
+                <axis>
+                    <xyz>0 1 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>

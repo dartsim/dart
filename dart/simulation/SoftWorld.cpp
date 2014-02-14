@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -19,6 +19,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -34,59 +40,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/testBed/MyWindow.h"
+#include "dart/simulation/SoftWorld.h"
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/constraint/SoftConstraintDynamics.h"
+#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
 
-MyWindow::MyWindow()
-    : SimWindow() {
+namespace dart {
+namespace simulation {
+
+SoftWorld::SoftWorld()
+  : World()
+{
+  // TODO(JS): Temporary code
+  delete mConstraintHandler;
+
+  mConstraintHandler = new constraint::SoftConstraintDynamics(mSkeletons,
+                                                              mTimeStep);
+
+  mConstraintHandler->setCollisionDetector(
+        new collision::SoftFCLMeshCollisionDetector());
 }
 
-MyWindow::~MyWindow() {
+SoftWorld::~SoftWorld()
+{
 }
 
-void MyWindow::timeStepping() {
-    mWorld->step();
-}
-
-void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
-    switch (_key) {
-        case ' ':  // use space key to play or stop the motion
-            mSimulating = !mSimulating;
-            if (mSimulating) {
-                mPlay = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case 'p':  // playBack
-            mPlay = !mPlay;
-            if (mPlay) {
-                mSimulating = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case '[':  // step backward
-            if (!mSimulating) {
-                mPlayFrame--;
-                if (mPlayFrame < 0)
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case ']':  // step forwardward
-            if (!mSimulating) {
-                mPlayFrame++;
-                if (mPlayFrame >= mBakedStates.size())
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case 'v':  // show or hide markers
-            mShowMarkers = !mShowMarkers;
-            break;
-        default:
-            Win3D::keyboard(_key, _x, _y);
-    }
-    glutPostRedisplay();
-}
+}  // namespace simulation
+}  // namespace dart

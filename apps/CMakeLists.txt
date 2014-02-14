@@ -16,13 +16,31 @@ foreach(APPDIR
     #hanging
     hardcodedDesign
     closedLoop
-    testBed
+    doublePendulumWithBase
     sdfLoader
     ballJointConstraintTest
     #hingeJointConstraintTest
     #holding
     harnessTest
     vehicle
+
+    softArticulatedBodiesTest
+    softCubes
+    softDoublePendulumTest
+    softDropBoxTest
+    softDropBoxCOMOffsetTest
+    softDropBoxLowStiffnessTest
+    softDropSphereTest
+    softFeetAtlasRobot
+    softOpenChain
+    softSingleBodyTest
+    softSinglePendulumTest
+
+
+
+
+
+
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
