@@ -49,6 +49,7 @@ int main(int argc, char* argv[])
     std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
     std::cout << "'v': visualization on/off" << std::endl;
     std::cout << "'1'--'4': programmed interaction" << std::endl;
+    std::cout << "'h': harness on/off" << std::endl;
 
     glutInit(&argc, argv);
     window.initWindow(640, 480, "Balance");
