@@ -79,9 +79,6 @@ void MyWindow::timeStepping() {
   }
   vehicle->setInternalForceVector(tau);
 
-//  std::cout << "mBackWheelVelocity: " << mBackWheelVelocity << std::endl;
-  std::cout << "tau: " << tau.transpose() << std::endl;
-
   mWorld->step();
 }
 
