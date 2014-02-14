@@ -1,115 +1,114 @@
-#include "MyWindow.h"
-#include "dynamics/BodyNodeDynamics.h"
-#include "dynamics/SkeletonDynamics.h"
-#include "kinematics/FileInfoSkel.hpp"
-#include "utils/Paths.h"
+/*
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ *
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
 
-// To load Mesh and Skel
-#include  <kinematics/Joint.h>
-#include <kinematics/ShapeMesh.h>
-#include <kinematics/Transformation.h>
-#include <kinematics/TrfmTranslate.h>
-#include <kinematics/TrfmRotateEuler.h>
-#include <dynamics/BodyNodeDynamics.h>
-#include <kinematics/Dof.h>
 #include <assimp/cimport.h>
 
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "apps/meshCollision/MyWindow.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace kinematics;
-using namespace dynamics;
+int main(int argc, char* argv[]) {
+  using dart::dynamics::BodyNode;
+  using dart::dynamics::FreeJoint;
+  using dart::dynamics::MeshShape;
+  using dart::dynamics::Skeleton;
+  using dart::simulation::World;
+  using dart::utils::SkelParser;
 
-int main(int argc, char* argv[])
-{
-	FileInfoSkel<SkeletonDynamics> model, model2, model3, model4, model5;
-	model.loadFile(DART_DATA_PATH"/skel/ground1.skel", kinematics::SKEL);
-	model2.loadFile(DART_DATA_PATH"/skel/cube2.skel", kinematics::SKEL);
-	model3.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
-	// Replace with real mesh
-	model4.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
-	model5.loadFile(DART_DATA_PATH"/skel/cube1.skel", kinematics::SKEL);
+  // Create and initialize the world
+  World* myWorld = dart::utils::SkelParser::readSkelFile(
+                     DART_DATA_PATH"/skel/mesh_collision.skel");
 
-	// **********
-	//-- Create a skeleton
-	dynamics::SkeletonDynamics MeshSkel;
+  // Create a skeleton
+  Skeleton* MeshSkel = new Skeleton("Mesh Skeleton");
 
-	// Always set the root node ( 6DOF for rotation and translation )
-	kinematics::Joint* joint;
-	dynamics::BodyNodeDynamics* node;
-	kinematics::Transformation* trans;
+  // Always set the root node ( 6DOF for rotation and translation )
+  FreeJoint* joint;
+  BodyNode* node;
 
-	// Set the initial Rootnode that controls the position and orientation of the whole robot
-	node = (dynamics::BodyNodeDynamics*) MeshSkel.createBodyNode("rootBodyNode");
-	joint = new kinematics::Joint( NULL, node, "rootJoint" );
+  // Set the initial Rootnode that controls the position and orientation of the
+  // whole robot
+  node = new BodyNode("rootBodyNode");
+  joint = new FreeJoint("rootJoint");
 
-	// Add RPY and XYZ of the whole robot
-	trans = new kinematics::TrfmTranslateX( new kinematics::Dof( 0, "rootX" ), "Tx" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  // Add joint to the body node
+  node->setParentJoint(joint);
 
-	trans = new kinematics::TrfmTranslateY( new kinematics::Dof( 0, "rootY" ), "Ty" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  // Load a Mesh3DTriangle to save in Shape
+  const aiScene* m3d = MeshShape::loadMesh(DART_DATA_PATH"/obj/foot.obj");
 
-	trans = new kinematics::TrfmTranslateZ( new kinematics::Dof( 0, "rootZ" ), "Tz" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  //  Create Shape and assign it to node
+  MeshShape* Shape0 = new MeshShape(Eigen::Vector3d(1.0, 1.0, 1.0), m3d);
 
-	trans = new kinematics::TrfmRotateEulerZ( new kinematics::Dof( 0, "rootYaw" ), "Try" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  node->addVisualizationShape(Shape0);
+  node->addCollisionShape(Shape0);
+  node->setInertia(0.000416667, 0.000416667, 0.000416667);
+  node->setMass(1.0);  // 1 Kg according to cube1.skel
 
-	trans = new kinematics::TrfmRotateEulerY( new kinematics::Dof( 0, "rootPitch" ), "Trp" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  // Add node to Skel
+  MeshSkel->addBodyNode(node);
 
-	trans = new kinematics::TrfmRotateEulerX( new kinematics::Dof( 0, "rootRoll" ), "Trr" );
-	joint->addTransform( trans, true );
-	MeshSkel.addTransform( trans );
+  // Add MeshSkel to the world
+  myWorld->addSkeleton(MeshSkel);
 
-	// Load a Mesh3DTriangle to save in Shape
-	const aiScene* m3d = ShapeMesh::loadMesh( DART_DATA_PATH"/obj/foot.obj");
+  // Verify that our skeleton has something inside :)
+  std::printf("Our skeleton has %d nodes \n", MeshSkel->getNumBodyNodes());
+  // std::printf("Our skeleton has %d joints \n", MeshSkel->getNumJoints());
+  std::printf("Our skeleton has %d DOFs \n", MeshSkel->getNumGenCoords());
 
-	//  Create Shape and assign it to node
-	kinematics::ShapeMesh *Shape0 = new kinematics::ShapeMesh(Eigen::Vector3d(1.0, 1.0, 1.0), m3d);
+  MyWindow window;
+  window.setWorld(myWorld);
 
-	node->addVisualizationShape(Shape0);
-	node->addCollisionShape(Shape0);
-	Matrix3d M;
-	M << 0.000416667, 0.0, 0.0, 0.0, 0.000416667, 0.0, 0.0, 0.0, 0.000416667;
-	node->setLocalInertia(M);
-	node->setMass(1); // 1 Kg according to cube1.skel
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'s': simulate one step" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1' and '2': programmed interaction" << std::endl;
 
-	// Add node to Skel
-	MeshSkel.addNode( node );
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "meshCollision");
+  glutMainLoop();
 
-	//-- Initialize mySkeleton
-	MeshSkel.initSkel();
+  aiReleaseImport(m3d);
 
-	// Verify that our skeleton has something inside :)
-	printf( "Our skeleton has %d nodes \n", MeshSkel.getNumNodes() );
-	printf( "Our skeleton has %d joints \n", MeshSkel.getNumJoints() );
-	printf( "Our skeleton has %d DOFs \n", MeshSkel.getNumDofs() );
-
-	//   exit(0);
-
-	MyWindow window((SkeletonDynamics*)model.getSkel(), &MeshSkel, NULL); //
-	//    MyWindow window((SkeletonDynamics*)model.getSkel(), (SkeletonDynamics*)model2.getSkel(), (SkeletonDynamics*)model3.getSkel(), (SkeletonDynamics*)model4.getSkel(), &MeshSkel, NULL); //
-
-	cout << "space bar: simulation on/off" << endl;
-	cout << "'s': simulate one step" << endl;
-	cout << "'p': playback/stop" << endl;
-	cout << "'[' and ']': play one frame backward and forward" << endl;
-	cout << "'v': visualization on/off" << endl;
-	cout << "'1' and '2': programmed interaction" << endl;
-
-
-	glutInit(&argc, argv);
-	window.initWindow(640, 480, "Cubes");
-	glutMainLoop();
-
-	aiReleaseImport(m3d);
-
-	return 0;
+  return 0;
 }

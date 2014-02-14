@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/23/2013
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -39,11 +38,11 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/Skeleton.h"
-#include "utils/Paths.h"
-#include "simulation/World.h"
-#include "utils/SkelParser.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/utils/Paths.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/SkelParser.h"
 
 using namespace dart;
 using namespace math;
@@ -96,7 +95,7 @@ TEST(SKEL_PARSER, DATA_STRUCTUER)
     EXPECT_EQ(f, v4);
     EXPECT_EQ(d, v5);
     EXPECT_EQ(c, v6);
-    for(int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
         EXPECT_EQ(vec2[i], v7[i]);
     }
     EXPECT_EQ(vec3, v8);
@@ -136,7 +135,7 @@ TEST(SKEL_PARSER, PENDULUM)
     EXPECT_EQ(world->getGravity()(2), 0);
     EXPECT_EQ(world->getNumSkeletons(), 1);
 
-    Skeleton* skel1 = world->getSkeleton("skeleton 1");
+    Skeleton* skel1 = world->getSkeleton("single_pendulum");
 
     EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 

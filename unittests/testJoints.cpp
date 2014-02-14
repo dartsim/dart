@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/23/2013
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -39,23 +38,24 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "math/Geometry.h"
-#include "math/Helpers.h"
-#include "dynamics/BallJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/Skeleton.h"
-#include "dynamics/TranslationalJoint.h"
-#include "dynamics/UniversalJoint.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/EulerJoint.h"
-#include "dynamics/ScrewJoint.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/Skeleton.h"
-#include "simulation/World.h"
-#include "utils/Paths.h"
-#include "utils/SkelParser.h"
+#include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
 
 using namespace dart;
 using namespace math;
@@ -73,11 +73,13 @@ public:
 /******************************************************************************/
 void JOINTS::kinematicsTest(Joint* _joint)
 {
-    BodyNode bodyNode;
-    bodyNode.setParentJoint(_joint);
+    int numTests = 100;
+
+    BodyNode* bodyNode = new BodyNode();
+    bodyNode->setParentJoint(_joint);
 
     Skeleton skeleton;
-    skeleton.addBodyNode(&bodyNode);
+    skeleton.addBodyNode(bodyNode);
     skeleton.init();
 
     int dof = _joint->getNumGenCoords();
@@ -87,27 +89,21 @@ void JOINTS::kinematicsTest(Joint* _joint)
     //--------------------------------------------------------------------------
     VectorXd q = VectorXd::Zero(dof);
     VectorXd dq = VectorXd::Zero(dof);
-    VectorXd ddq = VectorXd::Zero(dof);
 
     for (int idxTest = 0; idxTest < 100; ++idxTest)
     {
-        double dt = 0.000001;
+        double q_delta = 0.000001;
 
         for (int i = 0; i < dof; ++i)
         {
-            q(i) = random(-DART_PI, DART_PI);
-            dq(i) = random(-DART_PI, DART_PI);
-            ddq(i) = random(-DART_PI, DART_PI);
+            q(i) = random(-DART_PI*1.0, DART_PI*1.0);
+            dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
         }
 
-        _joint->set_q(q);
-        _joint->set_dq(dq);
-        _joint->set_ddq(ddq);
-
-        bodyNode.updateTransform();
-        bodyNode.updateVelocity();
-        bodyNode.updateEta();
-        bodyNode.updateAcceleration();
+        Eigen::VectorXd state = Eigen::VectorXd::Zero(2*dof);
+        state.head(dof) = q;
+        state.tail(dof) = dq;
+        skeleton.setState(state);
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -131,14 +127,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            bodyNode.updateTransform();
+            skeleton.setConfig(q_a);
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
-            q_b(i) += dt;
+            q_b(i) += q_delta;
             _joint->set_q(q_b);
-            bodyNode.updateTransform();
+            skeleton.setConfig(q_b);
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -148,7 +144,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
             // dTdq
             Eigen::Matrix4d T_a_eigen = T_a.matrix();
             Eigen::Matrix4d T_b_eigen = T_b.matrix();
-            Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / dt;
+            Eigen::Matrix4d dTdq_eigen = (T_b_eigen - T_a_eigen) / q_delta;
             //Matrix4d dTdq_eigen = (T_b_eigen * T_a_eigen.inverse()) / dt;
 
             // J(i)
@@ -174,22 +170,21 @@ void JOINTS::kinematicsTest(Joint* _joint)
         Jacobian numeric_dJ = Jacobian::Zero(6,dof);
         for (int i = 0; i < dof; ++i)
         {
-
             // a
             Eigen::VectorXd q_a = q;
             _joint->set_q(q_a);
-            bodyNode.updateVelocity();
+            skeleton.setConfig(q_a);
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
-            q_b(i) += dt;
+            q_b(i) += q_delta;
             _joint->set_q(q_b);
-            bodyNode.updateVelocity();
+            skeleton.setConfig(q_b);
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
-            Jacobian dJ_dq = (J_b - J_a) / dt;
+            Jacobian dJ_dq = (J_b - J_a) / q_delta;
 
             // J(i)
             numeric_dJ += dJ_dq * dq(i);
@@ -198,6 +193,24 @@ void JOINTS::kinematicsTest(Joint* _joint)
         for (int i = 0; i < dof; ++i)
             for (int j = 0; j < 6; ++j)
                 EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+    }
+
+    // Forward kinematics test with high joint position
+    double posMin = -1e+64;
+    double posMax = +1e+64;
+
+    for (int idxTest = 0; idxTest < numTests; ++idxTest)
+    {
+        for (int i = 0; i < dof; ++i)
+            q(i) = random(posMin, posMax);
+
+        skeleton.setConfig(q);
+
+        if (_joint->getNumGenCoords() == 0)
+            return;
+
+        Eigen::Isometry3d T = _joint->getLocalTransform();
+        EXPECT_TRUE(math::verifyTransform(T));
     }
 }
 
@@ -269,6 +282,14 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT)
     TranslationalJoint* translationalJoint = new TranslationalJoint;
 
     kinematicsTest(translationalJoint);
+}
+
+// 3-dof joint
+TEST_F(JOINTS, PLANAR_JOINT)
+{
+    PlanarJoint* planarJoint = new PlanarJoint;
+
+    kinematicsTest(planarJoint);
 }
 
 // 6-dof joint

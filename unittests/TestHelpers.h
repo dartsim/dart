@@ -10,48 +10,53 @@
 
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
-#include "constraint/ConstraintDynamics.h"
-#include "dynamics/BodyNode.h"
-#include "dynamics/GenCoord.h"
-#include "dynamics/Joint.h"
-#include "dynamics/WeldJoint.h"
-#include "dynamics/PrismaticJoint.h"
-#include "dynamics/RevoluteJoint.h"
-#include "dynamics/ScrewJoint.h"
-#include "dynamics/TranslationalJoint.h"
-#include "dynamics/BallJoint.h"
-#include "dynamics/FreeJoint.h"
-#include "dynamics/EulerJoint.h"
-#include "dynamics/UniversalJoint.h"
-#include "dynamics/BoxShape.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/BoxShape.h"
 
 using namespace dart;
 using namespace dynamics;
 using namespace Eigen;
 
 /// Function headers
-enum TypeOfDOF {
+enum TypeOfDOF
+{
     DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
 
-/* ********************************************************************************************* */
+/*******************************************************************************/
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
-bool equals (const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& B, double tol = 1e-5) {
-
+bool equals(const Eigen::DenseBase<MATRIX>& A,
+            const Eigen::DenseBase<MATRIX>& B, double tol = 1e-5)
+{
     // Get the matrix sizes and sanity check the call
     const size_t n1 = A.cols(), m1 = A.rows();
     const size_t n2 = B.cols(), m2 = B.rows();
-    if(m1!=m2 || n1!=n2) return false;
+    if (m1 != m2 || n1 != n2)
+        return false;
 
     // Check each index
-    for(size_t i=0; i<m1; i++) {
-        for(size_t j=0; j<n1; j++) {
-            if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+    for (size_t i = 0; i < m1; i++)
+    {
+        for (size_t j = 0; j < n1; j++)
+        {
+            if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
                 return false;
-            else if(fabs(A(i,j) - B(i,j)) > tol)
+            else if (fabs(A(i,j) - B(i,j)) > tol)
                 return false;
         }
     }
@@ -60,10 +65,10 @@ bool equals (const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& 
     return true;
 }
 
-/* ********************************************************************************************* */
+/******************************************************************************/
 /// Add an end-effector to the last link of the given robot
-void addEndEffector (Skeleton* robot, BodyNode* parent_node, Vector3d dim) {
-
+void addEndEffector(Skeleton* robot, BodyNode* parent_node, Vector3d dim)
+{
     // Create the end-effector node with a random dimension
     BodyNode* node = new BodyNode("ee");
     WeldJoint* joint = new WeldJoint("eeJoint");
@@ -80,10 +85,10 @@ void addEndEffector (Skeleton* robot, BodyNode* parent_node, Vector3d dim) {
     robot->addBodyNode(node);
 }
 
-/* ********************************************************************************************* */
+/******************************************************************************/
 /// Add a DOF to a given joint
-Joint* create1DOFJoint(double val, double min, double max, int type) {
-
+Joint* create1DOFJoint(double val, double min, double max, int type)
+{
     // Create the transformation based on the type
     Joint* newJoint = NULL;
     if(type == DOF_X)
@@ -106,12 +111,14 @@ Joint* create1DOFJoint(double val, double min, double max, int type) {
     return newJoint;
 }
 
-/* ********************************************************************************************* */
-/// Creates a two link manipulator with the given dimensions where the first link rotates around
-/// z-axis and second rotates around x in the zero configuration.
-Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2, bool
-        unfinished = false) {
-
+/******************************************************************************/
+/// Creates a two link manipulator with the given dimensions where the first
+/// link rotates around z-axis and second rotates around x in the zero
+/// configuration.
+Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
+                             Vector3d dim2, TypeOfDOF type2,
+                             bool finished = true)
+{
     Skeleton* robot = new Skeleton();
 
     // Create the first link, the joint with the ground and its shape
@@ -145,19 +152,23 @@ Skeleton* createTwoLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, Typ
     robot->addBodyNode(node);
 
     // If finished, initialize the skeleton
-    if(!unfinished) {
+    if(finished)
+    {
         addEndEffector(robot, node, dim2);
         robot->init();
     }
     return robot;
 }
 
-/* ********************************************************************************************* */
-/// Creates a two link manipulator with the given dimensions where the first link rotates around
-/// z-axis and second rotates around x in the zero configuration.
-Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, TypeOfDOF type2,
-        Vector3d dim3, TypeOfDOF type3, bool unfinished = false) {
-
+/******************************************************************************/
+/// Creates a two link manipulator with the given dimensions where the first
+/// link rotates around z-axis and second rotates around x in the zero
+/// configuration.
+Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
+                               Vector3d dim2, TypeOfDOF type2,
+                               Vector3d dim3, TypeOfDOF type3,
+                               bool finished = false)
+{
     Skeleton* robot = new Skeleton();
 
     // Create the first link, the joint with the ground and its shape
@@ -208,8 +219,70 @@ Skeleton* createThreeLinkRobot (Vector3d dim1, TypeOfDOF type1, Vector3d dim2, T
     robot->addBodyNode(node);
 
     // If finished, initialize the skeleton
-    if(!unfinished) {
+    if(finished)
+    {
         addEndEffector(robot, node, dim3);
+        robot->init();
+    }
+    return robot;
+}
+
+/******************************************************************************/
+/// Creates a N link manipulator with the given dimensions where the first link
+/// rotates around z-axis and second rotates around x in the zero configuration.
+Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
+                           bool finished = false)
+{
+    assert(_n > 0);
+
+    Skeleton* robot = new Skeleton();
+    robot->setSelfCollidable(false);
+    double mass = 1.0;
+
+    // Create the first link, the joint with the ground and its shape
+    BodyNode* parent_node = NULL;
+    BodyNode* node = new BodyNode("link1");
+    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type);
+    joint->setName("joint1");
+    joint->setDampingCoefficient(0, 0.01);
+    Shape* shape = new BoxShape(dim);
+    node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+    node->addVisualizationShape(shape);
+    node->addCollisionShape(shape);
+    node->setMass(mass);
+    node->setParentJoint(joint);
+    robot->addBodyNode(node);
+    parent_node = node;
+
+    // Create links iteratively
+    for (int i = 1; i < _n; ++i)
+    {
+        std::ostringstream ssLink;
+        std::ostringstream ssJoint;
+        ssLink << "link" << i;
+        ssLink << "joint" << i;
+        node = new BodyNode(ssLink.str());
+        joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type);
+        joint->setName(ssJoint.str());
+        Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+        T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
+        joint->setTransformFromParentBodyNode(T);
+        joint->setDampingCoefficient(0, 0.01);
+        shape = new BoxShape(dim);
+        node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+        node->addVisualizationShape(shape);
+        node->addCollisionShape(shape);
+        node->setMass(mass);
+        node->setParentJoint(joint);
+        parent_node->addChildBodyNode(node);
+        robot->addBodyNode(node);
+        parent_node = node;
+    }
+
+    // If finished, initialize the skeleton
+    if(finished)
+    {
+        addEndEffector(robot, node, dim);
         robot->init();
     }
     return robot;

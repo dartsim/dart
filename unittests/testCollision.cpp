@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/07/2013
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -42,9 +41,9 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "common/Console.h"
-#include "math/Helpers.h"
-//#include "collision/unc/UNCCollisionDetector.h"
+#include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
+//#include "dart/collision/unc/UNCCollisionDetector.h"
 
 using namespace dart;
 using namespace math;

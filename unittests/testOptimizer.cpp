@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -36,11 +36,11 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "optimizer/Var.h"
-#include "optimizer/Constraint.h"
-#include "optimizer/Problem.h"
-#include "optimizer/ObjectiveBox.h"
-#include "optimizer/snopt/SnoptSolver.h"
+#include "dart/optimizer/Var.h"
+#include "dart/optimizer/Constraint.h"
+#include "dart/optimizer/Problem.h"
+#include "dart/optimizer/ObjectiveBox.h"
+#include "dart/optimizer/snopt/SnoptSolver.h"
 
 /* ********************************************************************************************* *
 class SampleConstraint : public optimizer::Constraint {
@@ -66,7 +66,7 @@ public:
     virtual void fillObjGrad(std::vector<double>& dG) {
         VectorXd dP = evalCon();
 
-        for(unsigned int i = 0; i < mVariables.size(); i++){
+        for (unsigned int i = 0; i < mVariables.size(); i++){
             const optimizer::Var* var = mVariables[i];
             VectorXd J(1);
             if (i == mIndex) {
