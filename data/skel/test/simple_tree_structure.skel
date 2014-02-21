@@ -1,0 +1,108 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+        <skeleton name="double_pendulum">
+            <body name="link 1">
+                <gravity>1</gravity>
+                <transformation>0.1 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <body name="link 2">
+                <gravity>1</gravity>
+                <transformation>0.3 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <body name="link 3">
+                <gravity>1</gravity>
+                <transformation>0.3 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.1 0.2 0.3</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            <joint type="revolute" name="joint 1">
+                <parent>world</parent>
+                <child>link 1</child>
+                <transformation>-0.1 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 2">
+                <parent>link 1</parent>
+                <child>link 2</child>
+                <transformation>-0.1 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>link 1</parent>
+                <child>link 3</child>
+                <transformation>-0.1 0 0 0 0 0</transformation>
+                <axis>
+                    <xyz>0 0 1</xyz>
+                </axis>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>

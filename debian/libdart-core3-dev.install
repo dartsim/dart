@@ -1,0 +1,11 @@
+usr/include/dart/collision/*
+usr/include/dart/common/*
+usr/include/dart/constraint/*
+usr/include/dart/dynamics/*
+usr/include/dart/integration/*
+usr/include/dart/lcpsolver/*
+usr/include/dart/math/*
+usr/include/dart/renderer/*
+usr/include/dart/simulation/*
+usr/share/dartcore/DARTCoreConfig.cmake
+usr/share/dartcore/DARTCoreTargets*.cmake

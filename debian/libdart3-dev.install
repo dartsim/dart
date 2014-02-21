@@ -1,0 +1,6 @@
+usr/include/dart/optimizer/*
+usr/include/dart/planning/*
+usr/include/dart/utils/*
+usr/include/dart/yui/*
+usr/share/dart/DARTConfig.cmake
+usr/share/dart/DARTTargets*.cmake

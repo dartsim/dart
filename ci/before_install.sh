@@ -1,29 +1,31 @@
-before_install() {
-  cd /tmp
-  PROJECTS='tinyxml2 assimp flann libccd fcl'
-  for REPO in $PROJECTS
-  do
-    git clone git://github.com/dartsim/$REPO.git
-    (cd $REPO; cmake .; make && sudo make install)
-  done
-  
-  # Set github and bitbucket free of host checking questions
-  echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-  echo -e "Host bitbucket.org\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-  # Install console_bridge
-  git clone git://github.com/ros/console_bridge.git
-  (cd console_bridge; cmake .; make && sudo make install)
-  # Install urdfdom_headers
-  hg clone https://bitbucket.org/osrf/urdfdom_headers
-  (cd urdfdom_headers; cmake .; make && sudo make install)
-  # Install console_bridge
-  hg clone https://bitbucket.org/osrf/urdfdom
-  (cd urdfdom; cmake .; make && sudo make install)
-}
+sudo add-apt-repository --yes ppa:libccd-debs/ppa
+sudo add-apt-repository --yes ppa:fcl-debs/ppa
+sudo add-apt-repository --yes ppa:dartsim/ppa
+sudo apt-get update
 
-APT='freeglut3 freeglut3-dev libglu1-mesa-dev libboost-all-dev cmake
-cmake-curses-gui libeigen3-dev libxmu-dev libxi-dev libwxgtk2.8-dev
-libgtest-dev libtinyxml-dev libgtest-dev'
+APT_CORE='
+cmake
+freeglut3-dev
+libassimp-dev
+libboost-all-dev
+libccd-dev
+libeigen3-dev
+libfcl-dev
+libxi-dev
+libxmu-dev 
+'
 
-sudo apt-get install $APT
-(before_install)
+APT=$APT_CORE' 
+libflann-dev
+libgtest-dev
+libtinyxml-dev
+libtinyxml2-dev
+liburdfdom-dev
+liburdfdom-headers-dev
+'
+
+if [ $BUILD_CORE_ONLY = OFF ]; then
+  sudo apt-get --yes --force-yes install $APT
+else
+  sudo apt-get --yes --force-yes install $APT_CORE
+fi

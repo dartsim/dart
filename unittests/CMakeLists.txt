@@ -29,7 +29,7 @@ if(NOT WIN32)
     add_library(gtest /usr/local/share/gtest/src/gtest-all.cc ${gtest_hdrs})
   endif()
 
-  target_link_libraries(gtest)
+  target_link_libraries(gtest pthread)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
@@ -41,12 +41,12 @@ foreach(test ${tests})
 	get_filename_component(base ${test} NAME_WE)
 	link_directories(${DARTExt_LIBRARY_DIRS})
 	add_executable(${base} ${test})
-	target_link_libraries(${base} dart optimized gtest debug gtestd)
-
-	# Link to pthread if necessary
-	if(APPLE OR UNIX)
-		target_link_libraries(${base} pthread)
+	if(MSVC)
+		target_link_libraries(${base} dart optimized gtest debug gtestd)
+	else()
+		target_link_libraries(${base} dart gtest)
 	endif()
+
 	set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 
 	# Add the executable if not to be ignored
@@ -54,6 +54,6 @@ foreach(test ${tests})
 	if(NOT contains)
 		add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
 		message("-- Adding test: " ${base})
-	endif(NOT contains) 
+	endif(NOT contains)
 endforeach(test)
 

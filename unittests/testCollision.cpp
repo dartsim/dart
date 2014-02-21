@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
- * Date: 05/07/2013
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -42,14 +41,9 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "common/Console.h"
-#include "math/Helpers.h"
-#include "dynamics/Skeleton.h"
-#include "dynamics/BodyNode.h"
-#include "constraint/ConstraintDynamics.h"
-#include "simulation/World.h"
-#include "utils/SkelParser.h"
-#include "utils/Paths.h"
+#include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
+//#include "dart/collision/unc/UNCCollisionDetector.h"
 
 using namespace dart;
 using namespace math;
@@ -219,6 +213,8 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 	std::cout << std::endl;
 }
 
+/* ********************************************************************************************* */
+
 //TEST_F(COLLISION, BOX_BOX_X) {
 //	fcl::Box box1(2, 2, 2);
 //	fcl::Box box2(1, 1, 1);
@@ -381,6 +377,7 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
+
 TEST_F(COLLISION, DROP)
 {
     dtdbg << "Unrotated box\n";
@@ -500,54 +497,10 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 
 //}
 
-TEST_F(COLLISION, PENETRATION_REDUCTION)
-{
-    double tol = 1e-5;
-    double allowedPenetration = 1e-5;
-    double contactERP = 0.001;
-    int steps = 4000;
-
-    simulation::World* world =
-            utils::SkelParser::readSkelFile(
-                DART_DATA_PATH"skel/test/drop.skel");
-    EXPECT_TRUE(world != NULL);
-
-    dynamics::Skeleton* boxSkeleton = world->getSkeleton("box_skeleton");
-    dynamics::Skeleton* ellipsoidSkeleton = world->getSkeleton("ellipsoid_skeleton");
-
-    EXPECT_TRUE(boxSkeleton != NULL);
-    EXPECT_TRUE(ellipsoidSkeleton != NULL);
-
-    world->getConstraintHandler()->setAllowedContactPenetration(allowedPenetration);
-    world->getConstraintHandler()->setContactERP(contactERP);
-
-    // Step forward until the objects are settled down.
-    for (int i = 0; i < steps; ++i)
-        world->step();
-
-    Eigen::Vector3d pos1 =
-            boxSkeleton->getBodyNode(0)->getWorldTransform().translation();
-    Eigen::Vector3d pos2 =
-            boxSkeleton->getBodyNode(0)->getWorldTransform().translation();
-
-    //std::cout << "allowable penetration: " << allowablePenetration << std::endl;
-    //std::cout << "pos1.y() - 0.5: " << (0.5 - pos1.y()) << std::endl;
-    //std::cout << "pos2.y() - 0.5: " << (0.5 - pos2.y()) << std::endl;
-
-    // Flying height check
-    EXPECT_LE(pos1.y() - 0.5, tol);
-    EXPECT_LE(pos2.y() - 0.5, tol);
-
-    // Penetration check
-    EXPECT_LE(0.5 - pos1.y(), allowedPenetration);
-    EXPECT_LE(0.5 - pos2.y(), allowedPenetration);
-
-    delete world;
-}
-
-int main(int argc, char* argv[])
-{
+/* ********************************************************************************************* */
+int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+/* ********************************************************************************************* */
 

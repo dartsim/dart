@@ -29,7 +29,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL) {
     Vector3d expectedPos [numTests] = {Vector3d(temp, -temp, l1), Vector3d(temp / sqrt(2.0), temp / sqrt(2.0), l1+temp)};
 
     // Check each case by setting the joint values and obtaining the end-effector position
-    for(size_t i = 0; i < numTests; i++) {
+    for (size_t i = 0; i < numTests; i++) {
         robot->setConfig(twoLinkIndices, joints[i]);
         Vector3d actual = robot->getBodyNode("ee")->getWorldTransform().translation();
         bool equality = equals(actual, expectedPos[i], 1e-3);
@@ -58,7 +58,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS) {
     Vector3d expectedPos [numTests] = {Vector3d(0.0, -1.0, 1.5), Vector3d(0.0, -2.06, -1.06)};
 
     // Check each case by setting the joint values and obtaining the end-effector position
-    for(size_t i = 0; i < numTests; i++) {
+    for (size_t i = 0; i < numTests; i++) {
         robot->setConfig(twoLinkIndices, joints[i]);
         Vector3d actual = robot->getBodyNode("ee")->getWorldTransform().translation();
         bool equality = equals(actual, expectedPos[i], 1e-3);

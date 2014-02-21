@@ -3,7 +3,8 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-    #meshCollision
+    atlasRobot
+    meshCollision
     #viewer
     forwardSim
     cubes
@@ -14,10 +15,32 @@ foreach(APPDIR
     #hybrid
     #hanging
     hardcodedDesign
-    #closedLoop
-    drawRRT
-    testBed
+    closedLoop
+    doublePendulumWithBase
     sdfLoader
+    ballJointConstraintTest
+    #hingeJointConstraintTest
+    #holding
+    harnessTest
+    vehicle
+
+    softArticulatedBodiesTest
+    softCubes
+    softDoublePendulumTest
+    softDropBoxTest
+    softDropBoxCOMOffsetTest
+    softDropBoxLowStiffnessTest
+    softDropSphereTest
+    softFeetAtlasRobot
+    softOpenChain
+    softSingleBodyTest
+    softSinglePendulumTest
+
+
+
+
+
+
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

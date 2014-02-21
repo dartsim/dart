@@ -1,0 +1,20 @@
+###############################################################################
+# Config file for DART
+#
+# This sets the following variables:
+# DARTCore_INCLUDE_DIRS - Directories containing the DART include files.
+# DARTCore_LIBRARIES - Libraries needed to use DART.
+# DARTCore_LIBRARY_DIRS - Directories that contain the DART libraries.
+
+get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+set(DARTCore_INCLUDE_DIRS
+  "@CMAKE_INSTALL_PREFIX@/include"
+  "@Eigen_INCLUDE_DIRS@"
+)
+
+set(DARTCore_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
+
+include("${CURRENT_DIR}/DARTCoreTargets.cmake")
+
+set(DARTCore_LIBRARIES dart-core)
