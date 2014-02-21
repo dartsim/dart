@@ -68,10 +68,10 @@ ConstraintDynamics::ConstraintDynamics(
     mNumDir(_d),
     mCollisionDetector(_collisionDetector),
     mUseODELCPSolver(_useODE),
-    mAllowedContactPenetration(DART_DEFAULT_CONTACT_PENETRATION_ALLOWANCE),
+    mContactErrorAllowance(DART_DEFAULT_CONTACT_ERROR_ALLOWANCE),
     mContactERP(DART_DEFAULT_CONTACT_ERP),
-    mAllowedJointViolation(DART_DEFAULT_JOINT_VIOLATION_ALLOWANCE),
-    mJointERP(DART_DEFAULT_CONTACT_ERP)
+    mJointLimitErrorAllowance(DART_DEFAULT_JOINT_LIMIT_ERROR_ALLOWANCE),
+    mJointLimitERP(DART_DEFAULT_CONTACT_ERP)
 {
   assert(_collisionDetector != NULL && "Invalid collision detector.");
   initialize();
@@ -93,7 +93,7 @@ void ConstraintDynamics::computeConstraintForces()
 
   //            t1.startTimer();
   mLimitingDofIndex.clear();
-  mJointERVelocity.clear();
+  mJointLimitERVelocity.clear();
 
   for (int i = 0; i < mSkeletons.size(); i++)
   {
@@ -131,12 +131,12 @@ void ConstraintDynamics::computeConstraintForces()
         }
 
         double jerv = 0.0;
-        if (violation > mAllowedJointViolation)
+        if (violation > mJointLimitErrorAllowance)
         {
             jerv = violation / mDt;
-            jerv *= mJointERP;
+            jerv *= mJointLimitERP;
         }
-        mJointERVelocity.push_back(jerv);
+        mJointLimitERVelocity.push_back(jerv);
       }
     }
   }
@@ -429,21 +429,21 @@ Constraint*ConstraintDynamics::getConstraint(int _index) const
   return mConstraints[_index];
 }
 
-void ConstraintDynamics::setAllowedContactPenetration(double _penetration)
+void ConstraintDynamics::setContactErrorAllowance(double _allowance)
 {
-    if (_penetration < 0.0)
+    if (_allowance < 0.0)
     {
         std::cout << "Invalid allowed contact penetration depth ["
-                  << _penetration << "]."
+                  << _allowance << "]."
                   << "]. It should be zero or positive value." << std::endl;
         return;
     }
-    mAllowedContactPenetration = _penetration;
+    mContactErrorAllowance = _allowance;
 }
 
-double ConstraintDynamics::getAllowedContactPenetration() const
+double ConstraintDynamics::getContactErrorAllowance() const
 {
-    return mAllowedContactPenetration;
+    return mContactErrorAllowance;
 }
 
 void ConstraintDynamics::setContactERP(double _erp)
@@ -463,24 +463,24 @@ double ConstraintDynamics::getContactERP() const
     return mContactERP;
 }
 
-void ConstraintDynamics::setAllowedJointLimitViolation(double _violation)
+void ConstraintDynamics::setJointLimitErrorAllowance(double _allowance)
 {
-    if (_violation < 0.0)
+    if (_allowance < 0.0)
     {
         std::cout << "Invalid allowed joint position limit violation ["
-                  << _violation << "]. It should be zero or positive value."
+                  << _allowance << "]. It should be zero or positive value."
                   << std::endl;
         return;
     }
-    mAllowedJointViolation = _violation;
+    mJointLimitErrorAllowance = _allowance;
 }
 
-double ConstraintDynamics::getAllowedJointLimitViolation() const
+double ConstraintDynamics::getJointLimitErrorAllowance() const
 {
-    return mAllowedJointViolation;
+    return mJointLimitErrorAllowance;
 }
 
-void ConstraintDynamics::setJointERP(double _erp)
+void ConstraintDynamics::setJointLimitERP(double _erp)
 {
     if (_erp < 0.0 || 1.0 < _erp)
     {
@@ -489,12 +489,12 @@ void ConstraintDynamics::setJointERP(double _erp)
                   << std::endl;
         return;
     }
-    mJointERP = _erp;
+    mJointLimitERP = _erp;
 }
 
-double ConstraintDynamics::getJointERP() const
+double ConstraintDynamics::getJointLimitERP() const
 {
-    return mJointERP;
+    return mJointLimitERP;
 }
 
 void ConstraintDynamics::initialize()
@@ -665,10 +665,10 @@ void ConstraintDynamics::fillMatrices()
     {
       if (mLimitingDofIndex[i] > 0)  // hitting upper bound
         mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1]
-                                + mJointERVelocity[i] * mDt;
+                                + mJointLimitERVelocity[i] * mDt;
       else  // hitting lower bound
         mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1]
-                                - mJointERVelocity[i] * mDt;
+                                - mJointLimitERVelocity[i] * mDt;
     }
 
     if (nContacts > 0)
@@ -795,10 +795,10 @@ void ConstraintDynamics::fillMatricesODE()
     {
       if (mLimitingDofIndex[i] > 0)  // hitting upper bound
         mQBar[jointStart + i] = -tauVec[abs(mLimitingDofIndex[i]) - 1]
-                                + mJointERVelocity[i] * mDt;
+                                + mJointLimitERVelocity[i] * mDt;
       else  // hitting lower bound
         mQBar[jointStart + i] = tauVec[abs(mLimitingDofIndex[i]) - 1]
-                                - mJointERVelocity[i] * mDt;
+                                - mJointLimitERVelocity[i] * mDt;
     }
 
     if (nContacts > 0)
@@ -1086,7 +1086,7 @@ void ConstraintDynamics::updateNBMatrices()
     }
 
     double penetration = c.penetrationDepth;
-    if (penetration > mAllowedContactPenetration)
+    if (penetration > mContactErrorAllowance)
     {
         double erv = penetration / mDt;
         erv *= mContactERP;
@@ -1142,7 +1142,7 @@ void ConstraintDynamics::updateNBMatricesODE()
     }
 
     double penetration = c.penetrationDepth;
-    if (penetration > mAllowedContactPenetration)
+    if (penetration > mContactErrorAllowance)
     {
         double erv = penetration / mDt;
         erv *= mContactERP;

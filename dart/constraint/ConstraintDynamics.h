@@ -47,11 +47,11 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
-#define DART_DEFAULT_CONTACT_ERP 0.2  // should be in range of [0.0, 1.0]
-#define DART_DEFAULT_JOINT_ERP   0.2  // should be in range of [0.0, 1.0]
+#define DART_DEFAULT_CONTACT_ERP     0.2  // should be in range of [0.0, 1.0]
+#define DART_DEFAULT_JOINT_LIMIT_ERP 0.2  // should be in range of [0.0, 1.0]
 
-#define DART_DEFAULT_CONTACT_PENETRATION_ALLOWANCE 0.0
-#define DART_DEFAULT_JOINT_VIOLATION_ALLOWANCE     0.0
+#define DART_DEFAULT_CONTACT_ERROR_ALLOWANCE     0.0
+#define DART_DEFAULT_JOINT_LIMIT_ERROR_ALLOWANCE 0.0
 
 namespace dart {
 namespace dynamics {
@@ -90,15 +90,15 @@ public:
   int getNumContacts() const;
   Constraint* getConstraint(int _index) const;
 
-  void setAllowedContactPenetration(double _penetration);
-  double getAllowedContactPenetration() const;
+  void setContactErrorAllowance(double _allowance);
+  double getContactErrorAllowance() const;
   void setContactERP(double _erp);
   double getContactERP() const;
 
-  void setAllowedJointLimitViolation(double _violation);
-  double getAllowedJointLimitViolation() const;
-  void setJointERP(double _erp);
-  double getJointERP() const;
+  void setJointLimitErrorAllowance(double _allowance);
+  double getJointLimitErrorAllowance() const;
+  void setJointLimitERP(double _erp);
+  double getJointLimitERP() const;
 
 protected:
   void initialize();
@@ -173,12 +173,12 @@ protected:
   std::map<Constraint*, Eigen::Vector2i> mSkeletonIDMap;
 
   Eigen::VectorXd mContactERVelocity; // Contact error reduction velocity
-  double mAllowedContactPenetration;  // Allowed contact penetration
-  double mContactERP;                 // Contact error reduction parameter (0.0 to 1.0)
+  double mContactErrorAllowance;      // Contact error allowance
+  double mContactERP;                 // Contact error reduction parameter [0.0, 1.0]
 
-  std::vector<double> mJointERVelocity;  // Joint position limit error reduction velocity
-  double mAllowedJointViolation;         // Allowed joint position limit violation
-  double mJointERP;
+  std::vector<double> mJointLimitERVelocity;  // Joint limit error reduction velocity
+  double mJointLimitErrorAllowance;           // Joint limit error allowance
+  double mJointLimitERP;                      // Joint limit error reduction parameter [0.0, 1.0]
 };
 
 }  // namespace constraint
