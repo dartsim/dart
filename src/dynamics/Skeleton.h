@@ -76,12 +76,13 @@ public:
 
     /// @brief Set whether this skeleton allows self collisions between body
     ///        nodes in this skeleton.
-    /// @param[in] _isSelfCollidable True if self collision is allowed.
+    /// @param[in] _isSelfCollidable True if the skeleton is checked for self
+    ///                              collision.
     void setSelfCollidable(bool _isSelfCollidable);
 
     /// @brief Get whether this skeleton allows self collisions between body
     ///        nodes in this skeleton.
-    /// @return True if self collision is allowed.
+    /// @return True if the skeleton is checked for self collision.
     bool isSelfCollidable() const;
 
     /// @brief Set whether this skeleton will be updated by forward dynamics.
