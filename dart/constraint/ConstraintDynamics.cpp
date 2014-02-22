@@ -70,8 +70,10 @@ ConstraintDynamics::ConstraintDynamics(
     mUseODELCPSolver(_useODE),
     mContactErrorAllowance(DART_DEFAULT_CONTACT_ERROR_ALLOWANCE),
     mContactERP(DART_DEFAULT_CONTACT_ERP),
+    mMaxContactERV(DART_DEFAULT_MAX_CONTACT_ERV),
     mJointLimitErrorAllowance(DART_DEFAULT_JOINT_LIMIT_ERROR_ALLOWANCE),
-    mJointLimitERP(DART_DEFAULT_CONTACT_ERP)
+    mJointLimitERP(DART_DEFAULT_JOINT_LIMIT_ERP),
+    mMaxJointLimitERV(DART_DEFAULT_MAX_JOINT_LIMIT_ERV)
 {
   assert(_collisionDetector != NULL && "Invalid collision detector.");
   initialize();
@@ -135,6 +137,8 @@ void ConstraintDynamics::computeConstraintForces()
         {
             jerv = violation / mDt;
             jerv *= mJointLimitERP;
+            if (jerv > mMaxJointLimitERV)
+              jerv = mMaxJointLimitERV;
         }
         mJointLimitERVelocity.push_back(jerv);
       }
@@ -463,6 +467,18 @@ double ConstraintDynamics::getContactERP() const
     return mContactERP;
 }
 
+void ConstraintDynamics::setMaxContactERV(double _maxErv)
+{
+  assert(_maxErv >= 0.0
+         && "Invalid value for maximum contact error reduction velocity.");
+  mMaxContactERV = _maxErv;
+}
+
+double ConstraintDynamics::getMaxContactERV() const
+{
+  return mMaxContactERV;
+}
+
 void ConstraintDynamics::setJointLimitErrorAllowance(double _allowance)
 {
     if (_allowance < 0.0)
@@ -494,7 +510,19 @@ void ConstraintDynamics::setJointLimitERP(double _erp)
 
 double ConstraintDynamics::getJointLimitERP() const
 {
-    return mJointLimitERP;
+  return mJointLimitERP;
+}
+
+void ConstraintDynamics::setMaxJointLimitERV(double _maxErv)
+{
+  assert(_maxErv >= 0.0
+         && "Invalid value for maximum joint limit error reduction velocity.");
+  mMaxJointLimitERV = _maxErv;
+}
+
+double ConstraintDynamics::getMaxJointLimitERV() const
+{
+  return mMaxJointLimitERV;
 }
 
 void ConstraintDynamics::initialize()
@@ -1090,7 +1118,10 @@ void ConstraintDynamics::updateNBMatrices()
     {
         double erv = penetration / mDt;
         erv *= mContactERP;
-        mContactERVelocity[i] = erv;
+        if (erv > mMaxContactERV)
+          mContactERVelocity[i] = mMaxContactERV;
+        else
+          mContactERVelocity[i] = erv;
     }
   }
 }
@@ -1146,7 +1177,10 @@ void ConstraintDynamics::updateNBMatricesODE()
     {
         double erv = penetration / mDt;
         erv *= mContactERP;
-        mContactERVelocity[i] = erv;
+        if (erv > mMaxContactERV)
+          mContactERVelocity[i] = mMaxContactERV;
+        else
+          mContactERVelocity[i] = erv;
     }
   }
 }
