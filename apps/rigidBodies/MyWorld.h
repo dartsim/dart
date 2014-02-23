@@ -3,8 +3,10 @@
 
 #include <vector>
 
-namespace kinematics {
-    class Skeleton;
+namespace dart{
+	namespace dynamics {
+		class Skeleton;
+	}
 }
 
 class RigidBody;
@@ -27,11 +29,11 @@ class MyWorld {
     // TODO: your simulation code goes here
     void simulate();
    
-    kinematics::Skeleton* getBlender() {
+    dart::dynamics::Skeleton* getBlender() {
         return mBlender;
     }
 
-    kinematics::Skeleton* getBlade() {
+    dart::dynamics::Skeleton* getBlade() {
         return mBlade;
     }
     
@@ -48,8 +50,8 @@ class MyWorld {
     int mFrame;
     std::vector<RigidBody*> mRigidBodies;
     CollisionInterface* mCollisionDetector; // Access to collision detection information
-    kinematics::Skeleton* mBlender;
-    kinematics::Skeleton* mBlade;
+    dart::dynamics::Skeleton* mBlender;
+    dart::dynamics::Skeleton* mBlade;
 };
 
 #endif

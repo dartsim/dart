@@ -4,7 +4,7 @@
 #include "yui/Win3D.h"
 #include "MyWorld.h"
 
-class MyWindow : public yui::Win3D {
+class MyWindow : public dart::yui::Win3D {
  public:
  MyWindow(): Win3D()
         {

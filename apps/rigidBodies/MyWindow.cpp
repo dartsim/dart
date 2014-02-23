@@ -1,7 +1,7 @@
 #include "MyWindow.h"
 #include "yui/GLFuncs.h"
 #include "RigidBody.h"
-#include "kinematics/Skeleton.h"
+#include "dynamics/Skeleton.h"
 #include "CollisionInterface.h"
 
 using namespace Eigen;
@@ -47,9 +47,10 @@ void MyWindow::draw() {
                     mRI->popMatrix();
                 }
             }
-            VectorXd pose = mWorld->getBlade()->getPose();
+			VectorXd pose = mWorld->getBlade()->getConfig();
             pose[4] = mBakedStates[mPlayFrame][mBakedStates[mPlayFrame].size() - 1];
-            mWorld->getBlade()->setPose(pose, true, false);
+            //mWorld->getBlade()->setConfig(pose, true, false);
+			mWorld->getBlade()->setConfig(pose);
         }
     }else{ // Simulation mode
         if (mShowMarkers) {
@@ -73,9 +74,10 @@ void MyWindow::draw() {
     for (int i = 0; i < mWorld->getNumRigidBodies(); i++)
         mWorld->getRigidBody(i)->draw(mRI);
     
-    // Draw the blender and blade
+	glPolygonMode(GL_FRONT, GL_LINE);
+        // Draw the blender and blade
     mWorld->getBlender()->draw(mRI);
-    mWorld->getBlade()->draw(mRI);
+    mWorld->getBlade()->draw(mRI);  
 
     // Display the frame count in 2D text
     char buff[64];
@@ -86,7 +88,7 @@ void MyWindow::draw() {
     std::string frame(buff);
     glDisable(GL_LIGHTING);
     glColor3f(0.0,0.0,0.0);
-    yui::drawStringOnScreen(0.02f, 0.02f, frame);
+    dart::yui::drawStringOnScreen(0.02f, 0.02f, frame);
     glEnable(GL_LIGHTING);
 }
 
@@ -151,6 +153,6 @@ void MyWindow::bake()
         state.segment(begin, 3) = mWorld->getCollisionDetector()->getContact(i).point;
         state.segment(begin + 3, 3) = mWorld->getCollisionDetector()->getContact(i).normal;
     }
-    state[state.size() - 1] = mWorld->getBlade()->getPose()[4];
+    state[state.size() - 1] = mWorld->getBlade()->getConfig()[4];
     mBakedStates.push_back(state);
 }

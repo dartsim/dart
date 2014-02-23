@@ -34,10 +34,10 @@ namespace utils {
  */
 dynamics::Skeleton* DartLoader::parseSkeleton(std::string _urdfFileName) {
 
+
     boost::shared_ptr<urdf::ModelInterface> skeletonModelPtr = urdf::parseURDF(readFileToString(_urdfFileName));
     if(!skeletonModelPtr)
-        return NULL;
-
+          return NULL;
     // Change path to a Unix-style path if given a Windows one
     // Windows can handle Unix-style paths (apparently)
     std::replace(_urdfFileName.begin(), _urdfFileName.end(), '\\' , '/' );

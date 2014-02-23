@@ -5,13 +5,17 @@
 #include <map>
 #include <Eigen/Dense>
 
-namespace kinematics {
-    class BodyNode;
-    class Skeleton;
+namespace dart {
+	namespace dynamics {
+		class BodyNode;
+		class Skeleton;
+	}
 }
 
-namespace collision {
-    class CollisionDetector;
+namespace dart {
+	namespace collision {
+		class CollisionDetector;
+	}
 }
 
 class RigidBody;
@@ -28,7 +32,7 @@ class CollisionInterface {
     CollisionInterface();
     virtual ~CollisionInterface();
 
-    void addSkeleton(kinematics::Skeleton* _skel);
+    void addSkeleton(dart::dynamics::Skeleton* _skel);
     void addRigidBody(RigidBody *_rb);
 
     // Run the collision detector
@@ -50,9 +54,9 @@ class CollisionInterface {
     void updateBodyNodes();
     void postProcess();
 
-    collision::CollisionDetector* mCollisionChecker;   
+    dart::collision::CollisionDetector* mCollisionChecker;   
     std::vector<RigidContact> mContacts;
-    std::map<kinematics::BodyNode*, RigidBody*> mNodeMap;
+    std::map<dart::dynamics::BodyNode*, RigidBody*> mNodeMap;
 };
 
 #endif

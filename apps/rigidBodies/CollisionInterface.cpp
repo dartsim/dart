@@ -1,18 +1,17 @@
 #include "CollisionInterface.h"
 #include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
-#include "kinematics/Skeleton.h"
-#include "kinematics/BodyNode.h"
-#include "kinematics/Shape.h"
+#include "dynamics/Skeleton.h"
+#include "dynamics/BodyNode.h"
+#include "dynamics/Shape.h"
 #include "rigidBody.h"
 
 using namespace Eigen;
-using namespace collision;
-using namespace kinematics;
-using namespace collision;
+using namespace dart::dynamics;
+using namespace dart::collision;
 
 CollisionInterface::CollisionInterface() {
-    mCollisionChecker = new FCLMESHCollisionDetector();
-    mCollisionChecker->setNumMaxContacts(2);
+	mCollisionChecker = new dart::collision::FCLMeshCollisionDetector();
+    //mCollisionChecker->setNumMaxContacts(2);
 }
 
 CollisionInterface::~CollisionInterface() {
@@ -21,20 +20,20 @@ CollisionInterface::~CollisionInterface() {
 }
 
 
-void CollisionInterface::addSkeleton(kinematics::Skeleton* _skel) {
-    int nNodes = _skel->getNumNodes();
+void CollisionInterface::addSkeleton(dart::dynamics::Skeleton* _skel) {
+	int nNodes = _skel->getNumBodyNodes();
     for (int i = 0; i < nNodes; i++) {
-        BodyNode *bn = _skel->getNode(i);
+		BodyNode *bn = _skel->getBodyNode(i);
         mCollisionChecker->addCollisionSkeletonNode(bn);
-        mNodeMap[_skel->getNode(i)] = NULL;
+        mNodeMap[_skel->getBodyNode(i)] = NULL;
     }
 }
 
 void CollisionInterface::addRigidBody(RigidBody *_rb) {
     BodyNode *bn = new BodyNode();
-    bn->addShape(_rb->mShape);
-    Skeleton *skel = new Skeleton();    
-    bn->setSkel(skel);
+	bn->addCollisionShape(_rb->mShape);
+    /*Skeleton *skel = new Skeleton();    
+    bn->setSkel(skel);*/
     mCollisionChecker->addCollisionSkeletonNode(bn);
     mNodeMap[bn] = _rb;
 }
@@ -42,7 +41,7 @@ void CollisionInterface::addRigidBody(RigidBody *_rb) {
 void CollisionInterface::checkCollision() {
     updateBodyNodes();
     mCollisionChecker->clearAllContacts();    
-    mCollisionChecker->checkCollision(true, true);
+    mCollisionChecker->detectCollision(true, true);
     postProcess();
 }
 
@@ -57,7 +56,7 @@ void CollisionInterface::updateBodyNodes() {
         W.setIdentity();
         W.topLeftCorner(3, 3) = rb->mOrientation;
         W.topRightCorner(3, 1) = rb->mPosition;
-        bn->setWorldTransform(W);
+        //bn->setWorldTransform(W);
     }
 }
 
