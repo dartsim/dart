@@ -3,6 +3,7 @@
 #include "RigidBody.h"
 #include "dynamics/Skeleton.h"
 #include "CollisionInterface.h"
+#include <cstdio>
 
 using namespace Eigen;
 

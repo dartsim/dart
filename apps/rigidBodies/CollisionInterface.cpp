@@ -1,9 +1,9 @@
 #include "CollisionInterface.h"
-#include "collision/fcl_mesh/FCLMESHCollisionDetector.h"
+#include "collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dynamics/Skeleton.h"
 #include "dynamics/BodyNode.h"
 #include "dynamics/Shape.h"
-#include "rigidBody.h"
+#include "RigidBody.h"
 
 using namespace Eigen;
 using namespace dart::dynamics;

@@ -31,6 +31,9 @@ MyWorld::MyWorld() {
 	dart::utils::DartLoader dl;
 	std::string blenderFileName(DART_DATA_PATH"urdf/cylinder.urdf");
     mBlender = dl.parseSkeleton(blenderFileName);
+    if (mBlender)
+      mBlender->init();
+
     mCollisionDetector->addSkeleton(mBlender); // Put blender in collision detector
 
 	dart::utils::FileInfoDof dofFile(mBlender);
@@ -38,6 +41,8 @@ MyWorld::MyWorld() {
 
 	std::string bladeFileName(DART_DATA_PATH"urdf/blade.urdf");
     mBlade = dl.parseSkeleton(bladeFileName);
+    if (mBlade)
+      mBlade->init();
 	VectorXd pose = mBlade->getState();
     pose[1] = -0.3;
 	mBlade->setState(pose);
