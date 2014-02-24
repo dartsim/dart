@@ -4,36 +4,45 @@
 #include "dynamics/BodyNode.h"
 #include "dynamics/Shape.h"
 #include "RigidBody.h"
+#include "dynamics/FreeJoint.h"
 
 using namespace Eigen;
 using namespace dart::dynamics;
 using namespace dart::collision;
 
 CollisionInterface::CollisionInterface() {
-	mCollisionChecker = new dart::collision::FCLMeshCollisionDetector();
-    //mCollisionChecker->setNumMaxContacts(2);
+    mCollisionChecker = new dart::collision::FCLMeshCollisionDetector();
+    mCollisionChecker->setNumMaxContacs(2);
 }
 
 CollisionInterface::~CollisionInterface() {
     if (mCollisionChecker)
         delete mCollisionChecker;
+    for (int i = 0; i < mSkeletons.size(); i++)
+    {
+        delete mSkeletons[i];
+    }
 }
 
 
 void CollisionInterface::addSkeleton(dart::dynamics::Skeleton* _skel) {
-	int nNodes = _skel->getNumBodyNodes();
+    int nNodes = _skel->getNumBodyNodes();
     for (int i = 0; i < nNodes; i++) {
-		BodyNode *bn = _skel->getBodyNode(i);
+        BodyNode *bn = _skel->getBodyNode(i);
         mCollisionChecker->addCollisionSkeletonNode(bn);
         mNodeMap[_skel->getBodyNode(i)] = NULL;
     }
 }
 
-void CollisionInterface::addRigidBody(RigidBody *_rb) {
+void CollisionInterface::addRigidBody(RigidBody *_rb, const std::string& name) {
+    Skeleton *skel = new Skeleton();
     BodyNode *bn = new BodyNode();
-	bn->addCollisionShape(_rb->mShape);
-    /*Skeleton *skel = new Skeleton();    
-    bn->setSkel(skel);*/
+    bn->setParentJoint( new dart::dynamics::FreeJoint("freeJoint") );
+    bn->addCollisionShape(_rb->mShape);
+    skel->addBodyNode( bn );
+    skel->setName( name );
+    skel->setSelfCollidable(false);
+    skel->init();
     mCollisionChecker->addCollisionSkeletonNode(bn);
     mNodeMap[bn] = _rb;
 }
@@ -52,11 +61,12 @@ void CollisionInterface::updateBodyNodes() {
         RigidBody *rb = it->second;
         if (rb == NULL)
             continue;
-        Matrix4d W;
+        Eigen::Isometry3d W;
         W.setIdentity();
-        W.topLeftCorner(3, 3) = rb->mOrientation;
-        W.topRightCorner(3, 1) = rb->mPosition;
-        //bn->setWorldTransform(W);
+        W.linear() = rb->mOrientation;
+        W.translation() = rb->mPosition;
+        W.makeAffine();
+        bn->getSkeleton()->getJoint("freeJoint")->setTransformFromParentBodyNode(W);
     }
 }
 

@@ -12,7 +12,7 @@ class MyWindow : public dart::yui::Win3D {
             mBackground[1] = 1.0;
             mBackground[2] = 1.0;
             mBackground[3] = 1.0;
-		
+        
             mPlaying = false;
             mSimulating = false;
             mPlayFrame = 0;

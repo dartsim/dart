@@ -4,9 +4,9 @@
 #include <vector>
 
 namespace dart{
-	namespace dynamics {
-		class Skeleton;
-	}
+    namespace dynamics {
+        class Skeleton;
+    }
 }
 
 class RigidBody;

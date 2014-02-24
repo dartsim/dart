@@ -22,7 +22,6 @@ void MyWindow::displayTimer(int _val) {
 }
 
 void MyWindow::draw() {
-
     if (!mSimulating) { // Playback mode
         if (mPlayFrame < mBakedStates.size()) {
             int numRigids = mWorld->getNumRigidBodies();
@@ -48,10 +47,9 @@ void MyWindow::draw() {
                     mRI->popMatrix();
                 }
             }
-			VectorXd pose = mWorld->getBlade()->getConfig();
+            VectorXd pose = mWorld->getBlade()->getState();
             pose[4] = mBakedStates[mPlayFrame][mBakedStates[mPlayFrame].size() - 1];
-            //mWorld->getBlade()->setConfig(pose, true, false);
-			mWorld->getBlade()->setConfig(pose);
+            mWorld->getBlade()->setState(pose);
         }
     }else{ // Simulation mode
         if (mShowMarkers) {
@@ -75,10 +73,12 @@ void MyWindow::draw() {
     for (int i = 0; i < mWorld->getNumRigidBodies(); i++)
         mWorld->getRigidBody(i)->draw(mRI);
     
-	glPolygonMode(GL_FRONT, GL_LINE);
-        // Draw the blender and blade
+    // Draw the blender and blade
+    mRI->pushMatrix();
+    mRI->scale( Eigen::Vector3d(0.2, 0.2, 0.2) );
     mWorld->getBlender()->draw(mRI);
     mWorld->getBlade()->draw(mRI);  
+    mRI->popMatrix();
 
     // Display the frame count in 2D text
     char buff[64];
@@ -154,6 +154,6 @@ void MyWindow::bake()
         state.segment(begin, 3) = mWorld->getCollisionDetector()->getContact(i).point;
         state.segment(begin + 3, 3) = mWorld->getCollisionDetector()->getContact(i).normal;
     }
-    state[state.size() - 1] = mWorld->getBlade()->getConfig()[4];
+    state[state.size() - 1] = mWorld->getBlade()->getState()[4];
     mBakedStates.push_back(state);
 }

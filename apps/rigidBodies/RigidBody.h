@@ -7,9 +7,9 @@
 #include "dynamics/EllipsoidShape.h"
 
 namespace dart{
-	namespace renderer {
-		class RenderInterface;
-	}
+    namespace renderer {
+        class RenderInterface;
+    }
 }
 
 class RigidBody {
@@ -21,10 +21,10 @@ class RigidBody {
         mPosition.setZero(); // x = (0, 0, 0)
         mOrientation.setIdentity(); // R = identity
         mColor << 0.9, 0.2, 0.2, 1.0; // Red
-		if (_type == dart::dynamics::Shape::BOX) {
-			mShape = new dart::dynamics::BoxShape(_dim);
-		} else if (_type == dart::dynamics::Shape::ELLIPSOID) {
-			mShape = new dart::dynamics::EllipsoidShape(_dim);
+        if (_type == dart::dynamics::Shape::BOX) {
+            mShape = new dart::dynamics::BoxShape(_dim);
+        } else if (_type == dart::dynamics::Shape::ELLIPSOID) {
+            mShape = new dart::dynamics::EllipsoidShape(_dim);
         }
     }
     virtual ~RigidBody() {}

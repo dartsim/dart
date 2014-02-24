@@ -71,7 +71,7 @@ void OpenGLRenderInterface::initialize() {
     glCullFace(GL_FRONT);
     glDisable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
-    //glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glShadeModel(GL_SMOOTH);
     clear(Eigen::Vector3d(1.0, 1.0, 1.0));
 }

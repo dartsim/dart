@@ -6,16 +6,16 @@
 #include <Eigen/Dense>
 
 namespace dart {
-	namespace dynamics {
-		class BodyNode;
-		class Skeleton;
-	}
+     namespace dynamics {
+        class BodyNode;
+        class Skeleton;
+    }
 }
 
 namespace dart {
-	namespace collision {
-		class CollisionDetector;
-	}
+    namespace collision {
+        class CollisionDetector;
+    }
 }
 
 class RigidBody;
@@ -33,7 +33,7 @@ class CollisionInterface {
     virtual ~CollisionInterface();
 
     void addSkeleton(dart::dynamics::Skeleton* _skel);
-    void addRigidBody(RigidBody *_rb);
+    void addRigidBody(RigidBody *_rb, const std::string& name);
 
     // Run the collision detector
     void checkCollision();
@@ -54,8 +54,9 @@ class CollisionInterface {
     void updateBodyNodes();
     void postProcess();
 
-    dart::collision::CollisionDetector* mCollisionChecker;   
+    dart::collision::CollisionDetector* mCollisionChecker;
     std::vector<RigidContact> mContacts;
+    std::vector<dart::dynamics::Skeleton*> mSkeletons;
     std::map<dart::dynamics::BodyNode*, RigidBody*> mNodeMap;
 };
 
