@@ -44,7 +44,7 @@ MyWorld::MyWorld() {
     }
 
     VectorXd pose = mBlade->getState();
-    pose[1] = -0.3;
+    pose[4] = -4.0;
     mBlade->setState(pose);
     mCollisionDetector->addSkeleton(mBlade); // Put blade in collision detector
 }
@@ -72,10 +72,10 @@ void MyWorld::simulate() {
 
     // Move the blade
     VectorXd pose = mBlade->getState();
-    pose[4] += 0.01;
-    if (pose[4] > 2 * 3.14)
+    pose[1] += 0.01;
+    if (pose[1] > 2 * 3.14)
     {
-        pose[4] = 0.0;
+        pose[1] = 0.0;
     }
     mBlade->setState(pose);
 }

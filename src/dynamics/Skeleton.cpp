@@ -272,13 +272,13 @@ void Skeleton::setState(const Eigen::VectorXd& _state)
          itrBody != mBodyNodes.end(); ++itrBody)
     {
         // TODO(JS): This is workaround for Issue #122.
-        if ((*itrBody)->getParentJoint()->getJointType() == Joint::BALL
+        /*if ((*itrBody)->getParentJoint()->getJointType() == Joint::BALL
             || (*itrBody)->getParentJoint()->getJointType() == Joint::FREE)
         {
             (*itrBody)->updateTransform_Issue122(mTimeStep);
             (*itrBody)->updateVelocity_Issue122();
         }
-        else
+        else*/
         {
             (*itrBody)->updateTransform();
             (*itrBody)->updateVelocity();

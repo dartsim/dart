@@ -48,7 +48,7 @@ void MyWindow::draw() {
                 }
             }
             VectorXd pose = mWorld->getBlade()->getState();
-            pose[4] = mBakedStates[mPlayFrame][mBakedStates[mPlayFrame].size() - 1];
+            pose[1] = mBakedStates[mPlayFrame][mBakedStates[mPlayFrame].size() - 1];
             mWorld->getBlade()->setState(pose);
         }
     }else{ // Simulation mode
@@ -154,6 +154,6 @@ void MyWindow::bake()
         state.segment(begin, 3) = mWorld->getCollisionDetector()->getContact(i).point;
         state.segment(begin + 3, 3) = mWorld->getCollisionDetector()->getContact(i).normal;
     }
-    state[state.size() - 1] = mWorld->getBlade()->getState()[4];
+    state[state.size() - 1] = mWorld->getBlade()->getState()[1];
     mBakedStates.push_back(state);
 }
