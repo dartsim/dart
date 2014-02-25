@@ -49,7 +49,6 @@ void CollisionInterface::addRigidBody(RigidBody *_rb, const std::string& name) {
 
 void CollisionInterface::checkCollision() {
     updateBodyNodes();
-    mCollisionChecker->clearAllContacts();    
     mCollisionChecker->detectCollision(true, true);
     postProcess();
 }
@@ -67,6 +66,7 @@ void CollisionInterface::updateBodyNodes() {
         W.translation() = rb->mPosition;
         W.makeAffine();
         bn->getSkeleton()->getJoint("freeJoint")->setTransformFromParentBodyNode(W);
+        bn->updateTransform();
     }
 }
 

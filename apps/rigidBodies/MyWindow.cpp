@@ -74,11 +74,8 @@ void MyWindow::draw() {
         mWorld->getRigidBody(i)->draw(mRI);
     
     // Draw the blender and blade
-    mRI->pushMatrix();
-    mRI->scale( Eigen::Vector3d(0.2, 0.2, 0.2) );
     mWorld->getBlender()->draw(mRI);
-    mWorld->getBlade()->draw(mRI);  
-    mRI->popMatrix();
+    mWorld->getBlade()->draw(mRI);
 
     // Display the frame count in 2D text
     char buff[64];
