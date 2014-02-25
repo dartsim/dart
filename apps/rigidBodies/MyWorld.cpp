@@ -6,7 +6,10 @@
 #include "dynamics/Skeleton.h"
 #include "dynamics/EllipsoidShape.h"
 #include "dynamics/BoxShape.h"
-#include "utils/FileInfoDof.h"
+#include "dynamics/BodyNode.h"
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include "dynamics/MeshShape.h"
 
 using namespace Eigen;
 
@@ -34,6 +37,12 @@ MyWorld::MyWorld() {
     if (mBlender) {
       mBlender->init();
     }
+
+    //Make the blender a WIREFRAME -- this is a hack as URDF doesn't have material properties signifying wireframes to
+    //allow assimp to handle this autmatically
+    dart::dynamics::MeshShape* shape = (dart::dynamics::MeshShape*)mBlender->getBodyNode(0)->getVisualizationShape(0);
+    bool wireFrame = true;
+    shape->getMesh()->mMaterials[0]->AddProperty(&wireFrame, 1, AI_MATKEY_ENABLE_WIREFRAME);
 
     mCollisionDetector->addSkeleton(mBlender); // Put blender in collision detector
 
