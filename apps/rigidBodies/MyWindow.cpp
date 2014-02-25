@@ -75,7 +75,6 @@ void MyWindow::draw() {
     
     // Draw the blender and blade
     mRI->pushMatrix();
-    mRI->scale( Eigen::Vector3d(0.2, 0.2, 0.2) );
     mWorld->getBlender()->draw(mRI);
     mWorld->getBlade()->draw(mRI);  
     mRI->popMatrix();

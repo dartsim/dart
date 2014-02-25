@@ -20,7 +20,7 @@ class MyWindow : public dart::yui::Win3D {
             
             mPersp = 30.f;
             mTrans[1] = 0.f;
-            mZoom = 0.4f;
+            mZoom = 0.05f;
             mDisplayTimeout = 5;
         }
 
