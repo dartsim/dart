@@ -5,6 +5,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 foreach(APPDIR
         Galileo
         tinkertoy
+        fluid
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
