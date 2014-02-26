@@ -12,7 +12,7 @@ using namespace dart::collision;
 
 CollisionInterface::CollisionInterface() {
     mCollisionChecker = new dart::collision::FCLMeshCollisionDetector();
-    mCollisionChecker->setNumMaxContacs(2);
+    mCollisionChecker->setNumMaxContacs(10);
 }
 
 CollisionInterface::~CollisionInterface() {
@@ -79,5 +79,16 @@ void CollisionInterface::postProcess() {
         mContacts[i].normal = mCollisionChecker->getContact(i).normal;
         mContacts[i].rb1 = mNodeMap[mCollisionChecker->getContact(i).collisionNode1->getBodyNode()];
         mContacts[i].rb2 = mNodeMap[mCollisionChecker->getContact(i).collisionNode2->getBodyNode()];
+        if ( mContacts[i].rb2 == NULL ) //Colliding with something static. Reflect
+        {
+            Eigen::Vector3d vApproachPreImpulsePointOfContact = ( mContacts[i].rb1->mMomentum / mContacts[i].rb1->mMass ).dot(mContacts[i].normal)*mContacts[i].normal;
+
+            if (vApproachPreImpulsePointOfContact.dot(mContacts[i].normal) < 0) //If approaching
+            {
+                Eigen::Vector3d vTangential = ( mContacts[i].rb1->mMomentum / mContacts[i].rb1->mMass ) - vApproachPreImpulsePointOfContact;
+                Eigen::Vector3d vReflected = vTangential - vApproachPreImpulsePointOfContact;
+                mContacts[i].rb1->mMomentum = mContacts[i].rb1->mMass * (vTangential + vReflected);
+            }
+        }
     }
 }

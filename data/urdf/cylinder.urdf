@@ -8,14 +8,14 @@
         <visual>
             <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
             <geometry name="cylinder_visual">
-                <mesh filename="cylinder.obj" scale="0.1 0.1 0.1"/>
+                <mesh filename="cylinder.obj" scale="1.0 1.0 1.0"/>
             </geometry>
             <material name="Yellow"/>
         </visual>
         <collision>
             <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
             <geometry name="cylinder_collision">
-                <mesh filename="cylinder.obj" scale="0.1 0.1 0.1"/>
+                <mesh filename="cylinder.obj" scale="1.0 1.0 1.0"/>
             </geometry>
         </collision>
     </link>
