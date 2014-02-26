@@ -8,14 +8,14 @@
         <visual>
             <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
             <geometry name="blade_visual">
-                <mesh filename="blade.obj" scale="0.1 0.1 0.1"/>
+                <mesh filename="blade.obj" scale="1.0 1.0 1.0"/>
             </geometry>
             <material name="LightGrey"/>
         </visual>
         <collision>
             <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
             <geometry name="blade_collision">
-                <mesh filename="blade.obj" scale="0.1 0.1 0.1"/>
+                <mesh filename="blade.obj" scale="1.0 1.0 1.0"/>
             </geometry>
         </collision>
     </link>
