@@ -74,7 +74,7 @@ MyWorld::~MyWorld() {
 
 void MyWorld::simulate() {
     mFrame++;
-    // TODO: Replace the following code
+    // TODO: Replace the following code with your simulation
     for (int i = 0; i < mRigidBodies.size(); i++) {
         mRigidBodies[i]->mPosition += mTimeStep * (mRigidBodies[i]->mLinMomentum / mRigidBodies[i]->mMass);
         mRigidBodies[i]->mLinMomentum += mTimeStep * (mRigidBodies[i]->mMass * mGravity);
@@ -108,7 +108,7 @@ void MyWorld::collisionHandling() {
             {
                 Eigen::Vector3d vTangential = ( contact.rb1->mLinMomentum / contact.rb1->mMass ) - vApproachPreImpulsePointOfContact;
                 Eigen::Vector3d vReflected = vTangential - vApproachPreImpulsePointOfContact;
-                contact.rb1->mLinMomentum = contact.rb1->mMass * (vTangential + vReflected);
+                contact.rb1->mLinMomentum = contact.rb1->mMass * (vTangential + vReflected * 0.9);
             }
         }
     }
