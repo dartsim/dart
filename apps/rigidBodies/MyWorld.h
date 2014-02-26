@@ -2,6 +2,7 @@
 #define _MYWORLD_
 
 #include <vector>
+#include <Eigen/Dense>
 
 namespace dart{
     namespace dynamics {
@@ -14,6 +15,7 @@ class CollisionInterface;
 
 class MyWorld {
  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     MyWorld();
 
     virtual ~MyWorld();
@@ -49,6 +51,8 @@ class MyWorld {
 
  protected:
     int mFrame;
+    double mTimeStep;
+    Eigen::Vector3d mGravity;
     std::vector<RigidBody*> mRigidBodies;
     CollisionInterface* mCollisionDetector; // Access to collision detection information
     dart::dynamics::Skeleton* mBlender;

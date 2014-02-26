@@ -15,7 +15,8 @@ using namespace Eigen;
 
 MyWorld::MyWorld() {
     mFrame = 0;
-
+    mTimeStep = 0.01;
+    mGravity = Vector3d(0.0, -9.8, 0.0);
     // Create a collision detector
     mCollisionDetector = new CollisionInterface();
 
@@ -74,9 +75,10 @@ MyWorld::~MyWorld() {
 void MyWorld::simulate() {
     mFrame++;
     // TODO: Replace the following code
-    for (int i = 0; i < mRigidBodies.size(); i++) 
-        mRigidBodies[i]->mPosition += (mRigidBodies[i]->mLinMomentum / mRigidBodies[i]->mMass);
-    
+    for (int i = 0; i < mRigidBodies.size(); i++) {
+        mRigidBodies[i]->mPosition += mTimeStep * (mRigidBodies[i]->mLinMomentum / mRigidBodies[i]->mMass);
+        mRigidBodies[i]->mLinMomentum += mTimeStep * (mRigidBodies[i]->mMass * mGravity);
+    }
 
     // Run collision detector
     mCollisionDetector->checkCollision();
