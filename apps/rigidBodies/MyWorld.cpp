@@ -74,11 +74,15 @@ MyWorld::~MyWorld() {
 void MyWorld::simulate() {
     mFrame++;
     // TODO: Replace the following code
-    for (int i = 0; i < mRigidBodies.size(); i++)
-        mRigidBodies[i]->mPosition += (mRigidBodies[i]->mMomentum / mRigidBodies[i]->mMass);
+    for (int i = 0; i < mRigidBodies.size(); i++) 
+        mRigidBodies[i]->mPosition += (mRigidBodies[i]->mLinMomentum / mRigidBodies[i]->mMass);
+    
 
     // Run collision detector
     mCollisionDetector->checkCollision();
+
+    // TODO: make a better collision handler
+    collisionHandling();
 
     // Move the blade
     VectorXd pose = mBlade->getState();
@@ -88,4 +92,22 @@ void MyWorld::simulate() {
         pose[1] = 0.0;
     }
     mBlade->setState(pose);
+}
+
+void MyWorld::collisionHandling() {
+    int numContacts = mCollisionDetector->getNumContacts();
+    for (int i = 0; i < numContacts; i++) {
+        RigidContact contact = mCollisionDetector->getContact(i);
+        if ( contact.rb2 == NULL ) //Colliding with something static. Reflect
+        {
+            Eigen::Vector3d vApproachPreImpulsePointOfContact = ( contact.rb1->mLinMomentum / contact.rb1->mMass ).dot(contact.normal)*contact.normal;
+
+            if (vApproachPreImpulsePointOfContact.dot(contact.normal) < 0) //If approaching
+            {
+                Eigen::Vector3d vTangential = ( contact.rb1->mLinMomentum / contact.rb1->mMass ) - vApproachPreImpulsePointOfContact;
+                Eigen::Vector3d vReflected = vTangential - vApproachPreImpulsePointOfContact;
+                contact.rb1->mLinMomentum = contact.rb1->mMass * (vTangential + vReflected);
+            }
+        }
+    }
 }

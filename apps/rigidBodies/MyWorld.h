@@ -26,9 +26,10 @@ class MyWorld {
         return mRigidBodies[_index];
     }
    
-    // TODO: your simulation code goes here
+    // TODO: your simulation and collision handling code goes here
     void simulate();
-   
+    void collisionHandling();
+
     dart::dynamics::Skeleton* getBlender() {
         return mBlender;
     }

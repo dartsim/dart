@@ -26,7 +26,8 @@ class RigidBody {
         } else if (_type == dart::dynamics::Shape::ELLIPSOID) {
             mShape = new dart::dynamics::EllipsoidShape(_dim);
         }
-        mMomentum<<0, -0.005, 0;
+        mLinMomentum.setZero();
+        mAngMomentum.setZero();
     }
     virtual ~RigidBody() {}
 
@@ -35,7 +36,8 @@ class RigidBody {
     double mMass;
     Eigen::Vector3d mPosition;
     Eigen::Matrix3d mOrientation;
-    Eigen::Vector3d mMomentum;
+    Eigen::Vector3d mLinMomentum;
+    Eigen::Vector3d mAngMomentum;
     dart::dynamics::Shape* mShape;
 
     Eigen::Vector4d mColor;
