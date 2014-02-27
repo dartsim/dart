@@ -349,7 +349,7 @@ public:
   /// \brief
   const Eigen::Vector6d& getContactForce(int _idx);
 
-  /// \brief
+  /// \brief Clear contact forces added by constraint solver
   void clearContactForces();
 
   /// \brief

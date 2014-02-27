@@ -1200,7 +1200,6 @@ void BodyNode::_updateGeralizedInertia() {
 
 void BodyNode::clearExternalForces() {
   mFext.setZero();
-  mContactForces.clear();
 }
 
 }  // namespace dynamics

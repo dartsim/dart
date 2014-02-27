@@ -164,8 +164,8 @@ void World::step() {
 
   for (std::vector<dynamics::Skeleton*>::iterator itr = mSkeletons.begin();
        itr != mSkeletons.end(); ++itr) {
-    (*itr)->clearInternalForceVector();
-    (*itr)->clearExternalForceVector();
+    (*itr)->clearInternalForces();
+    (*itr)->clearExternalForces();
   }
 
   mTime += mTimeStep;

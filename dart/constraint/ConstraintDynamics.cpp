@@ -99,6 +99,9 @@ void ConstraintDynamics::computeConstraintForces()
 
   for (int i = 0; i < mSkeletons.size(); i++)
   {
+    // Clear contact forces
+    mSkeletons[i]->clearContactForces();
+
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
 

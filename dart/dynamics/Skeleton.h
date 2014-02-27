@@ -234,13 +234,20 @@ public:
     /// \brief Get upper limit of the internal force vector.
     Eigen::VectorXd getMaxInternalForceVector() const;
 
-    /// \brief Clear internal force vector.
-    void clearInternalForceVector();
+    /// \brief Clear internal forces.
+    void clearInternalForces();
 
-    /// \brief Clear all the contacts of external force vector.
-    ///        Automatically called after each (forward/inverse) dynamics
-    ///        computation, which marks the end of a cycle.
-    void clearExternalForceVector();
+    /// \brief Clear external forces, which are manually added to the body nodes
+    ///        by the user.
+    void clearExternalForces();
+
+    /// \brief Clear contact forces of the body nodes in this skeleton.
+    ///
+    /// This function called by constraint solver before computing constraint
+    /// forces. Don't call this function after simulation step so that the user
+    /// can access the contact information.
+    ///
+    void clearContactForces();
 
     /// \brief Set constraint force vector.
     void setConstraintForceVector(const Eigen::VectorXd& _Fc);

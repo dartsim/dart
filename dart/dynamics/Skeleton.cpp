@@ -166,8 +166,8 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
   mFd   = Eigen::VectorXd::Zero(dof);
 
   // Clear external/internal force
-  clearExternalForceVector();
-  clearInternalForceVector();
+  clearExternalForces();
+  clearInternalForces();
 
   // Calculate mass
   mTotalMass = 0.0;
@@ -720,10 +720,17 @@ void Skeleton::computeInverseDynamicsLinear(bool _computeJacobian,
   }
 }
 
-void Skeleton::clearExternalForceVector() {
+void Skeleton::clearExternalForces() {
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it) {
     (*it)->clearExternalForces();
+  }
+}
+
+void Skeleton::clearContactForces() {
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it) {
+    (*it)->clearContactForces();
   }
 }
 
@@ -766,7 +773,7 @@ Eigen::VectorXd Skeleton::getMaxInternalForceVector() const {
   return get_tauMax();
 }
 
-void Skeleton::clearInternalForceVector() {
+void Skeleton::clearInternalForces() {
   set_tau(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
