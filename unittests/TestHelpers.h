@@ -167,7 +167,8 @@ Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
 Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
                                Vector3d dim2, TypeOfDOF type2,
                                Vector3d dim3, TypeOfDOF type3,
-                               bool finished = false)
+                               bool finished = false,
+                               bool collisionShape = true)
 {
     Skeleton* robot = new Skeleton();
 
@@ -179,7 +180,8 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     Shape* shape = new BoxShape(dim1);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
+    if (collisionShape)
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     robot->addBodyNode(node);
@@ -195,7 +197,8 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     shape = new BoxShape(dim2);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
+    if (collisionShape)
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);
@@ -212,7 +215,8 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     shape = new BoxShape(dim3);
     node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
+    if (collisionShape)
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);

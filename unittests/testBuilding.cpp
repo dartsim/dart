@@ -141,28 +141,32 @@ TEST(BUILDING, ADDING_AND_REMOVING_SKELETONS)
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_Y,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z);
+                                               DOF_Z,
+                                               false, false);
 
     Skeleton* skeleton2 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_X,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_Y,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z);
+                                               DOF_Z,
+                                               false, false);
 
     Skeleton* skeleton3 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_X,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_Y,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z);
+                                               DOF_Z,
+                                               false, false);
 
     Skeleton* skeleton4 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_X,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
                                                DOF_Y,
                                                Eigen::Vector3d(1.0, 1.0, 1.0),
-                                               DOF_Z);
+                                               DOF_Z,
+                                               false, false);
 
     int nSteps = 20;
 

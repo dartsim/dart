@@ -47,6 +47,15 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
+#define DART_DEFAULT_CONTACT_ERP     0.2  // should be in range of [0.0, 1.0]
+#define DART_DEFAULT_JOINT_LIMIT_ERP 0.2  // should be in range of [0.0, 1.0]
+
+#define DART_DEFAULT_MAX_CONTACT_ERV     10.0
+#define DART_DEFAULT_MAX_JOINT_LIMIT_ERV 10.0
+
+#define DART_DEFAULT_CONTACT_ERROR_ALLOWANCE     0.00
+#define DART_DEFAULT_JOINT_LIMIT_ERROR_ALLOWANCE 0.00
+
 namespace dart {
 namespace dynamics {
 class BodyNode;
@@ -83,6 +92,20 @@ public:
   collision::CollisionDetector* getCollisionDetector() const;
   int getNumContacts() const;
   Constraint* getConstraint(int _index) const;
+
+  void setContactErrorAllowance(double _allowance);
+  double getContactErrorAllowance() const;
+  void setContactERP(double _erp);
+  double getContactERP() const;
+  void setMaxContactERV(double _maxErv);
+  double getMaxContactERV() const;
+
+  void setJointLimitErrorAllowance(double _allowance);
+  double getJointLimitErrorAllowance() const;
+  void setJointLimitERP(double _erp);
+  double getJointLimitERP() const;
+  void setMaxJointLimitERV(double _maxErv);
+  double getMaxJointLimitERV() const;
 
 protected:
   void initialize();
@@ -155,6 +178,16 @@ protected:
 
   // TODO: this map needs to be rebuilt when the order of skeletons changes
   std::map<Constraint*, Eigen::Vector2i> mSkeletonIDMap;
+
+  Eigen::VectorXd mContactERVelocity; // Contact error reduction velocity
+  double mContactErrorAllowance;      // Contact error allowance
+  double mContactERP;                 // Contact error reduction parameter [0.0, 1.0]
+  double mMaxContactERV;              // Maximum contact error reduction velocity
+
+  std::vector<double> mJointLimitERVelocity;  // Joint limit error reduction velocity
+  double mJointLimitErrorAllowance;           // Joint limit error allowance
+  double mJointLimitERP;                      // Joint limit error reduction parameter [0.0, 1.0]
+  double mMaxJointLimitERV;                   // Maximum joint limit error reduction velocity
 };
 
 }  // namespace constraint
