@@ -321,9 +321,9 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial *mtl)
 
     max = 1;
     if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
-        glDisable(GL_CULL_FACE);
-    else
         glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
 }
 
 
@@ -342,6 +342,7 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
     for (; n < nd->mNumMeshes; ++n) {
         const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
+        glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT);  // for applyMaterial()
         applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
         if(mesh->mNormals == NULL) {
@@ -375,6 +376,7 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
             glEnd();
         }
 
+        glPopAttrib();  // for applyMaterial()
     }
 
     // draw all children
