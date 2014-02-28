@@ -179,6 +179,7 @@ void SoftConstraintDynamics::updateNBMatricesODE()
 {
   mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
   mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
+  mContactERVelocity = Eigen::VectorXd::Zero(getNumContacts());
   for (int i = 0; i < getNumContacts(); i++)
   {
     collision::Contact& cnt = mCollisionDetector->getContact(i);
@@ -251,6 +252,17 @@ void SoftConstraintDynamics::updateNBMatricesODE()
 
       mN.block(index2, i, NDOF2, 1).noalias() += J12t * N12;
       mB.block(index2, i * 2, NDOF2, 2).noalias() += J12t * B12;
+    }
+
+    double penetration = cnt.penetrationDepth;
+    if (penetration > mContactErrorAllowance)
+    {
+        double erv = penetration / mDt;
+        erv *= mContactERP;
+        if (erv > mMaxContactERV)
+          mContactERVelocity[i] = mMaxContactERV;
+        else
+          mContactERVelocity[i] = erv;
     }
   }
 }
