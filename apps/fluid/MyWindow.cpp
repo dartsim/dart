@@ -3,7 +3,10 @@
 #include <iostream>
 #include <cstdio>
 
+#ifdef IX
+#undef IX
 #define IX(i, j) ((i)+(mWorld->getNumCells()+2)*(j))
+#endif
 
 using namespace Eigen;
 
