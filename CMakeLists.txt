@@ -137,16 +137,23 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 ###############
-# Generate the Dart CMake Config file
+# Generate the Dart CMake Config and version files
+include(WriteBasicConfigVersionFile)
 configure_file(cmake/DARTCoreConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake" @ONLY)
-configure_file(cmake/DARTConfigVersion.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake" @ONLY)
+write_basic_config_version_file(cmake/DARTCoreConfigVersion.cmake
+  VERSION ${DART_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
 install(FILES
         ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake
         ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake
         DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
   configure_file(cmake/DARTConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake" @ONLY)
-  configure_file(cmake/DARTConfigVersion.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake" @ONLY)
+  write_basic_config_version_file(cmake/DARTConfigVersion.cmake
+    VERSION ${DART_VERSION}
+    COMPATIBILITY SameMajorVersion
+  )
   install(FILES
           ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake
           ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake
