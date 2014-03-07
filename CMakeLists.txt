@@ -6,7 +6,7 @@ set(CMAKE_CXX_WARNING_LEVEL 4)
 project(dart)
 message(STATUS "Generate makefile/project file for DART")
 
-set(DART_MAJOR_VERSION "3")
+set(DART_MAJOR_VERSION "4")
 set(DART_MINOR_VERSION "0")
 set(DART_PATCH_VERSION "0")
 set(PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -137,12 +137,27 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 ###############
-# Generate the Dart CMake Config file
+# Generate the Dart CMake Config and version files
+include(WriteBasicConfigVersionFile)
 configure_file(cmake/DARTCoreConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake" @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake DESTINATION share/dartcore)
+write_basic_config_version_file(cmake/DARTCoreConfigVersion.cmake
+  VERSION ${DART_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+        ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake
+        ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake
+        DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
   configure_file(cmake/DARTConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake" @ONLY)
-  install(FILES ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake DESTINATION share/dart)
+  write_basic_config_version_file(cmake/DARTConfigVersion.cmake
+    VERSION ${DART_VERSION}
+    COMPATIBILITY SameMajorVersion
+  )
+  install(FILES
+          ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake
+          ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake
+          DESTINATION share/dart)
 endif()
 
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
