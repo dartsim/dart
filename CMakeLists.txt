@@ -139,7 +139,7 @@ endif()
 ###############
 # Generate the Dart CMake Config file
 configure_file(cmake/DARTCoreConfig.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake" @ONLY)
-configure_file(cmake/DARTCoreConfigVersion.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake" @ONLY)
+configure_file(cmake/DARTConfigVersion.cmake.in "${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake" @ONLY)
 install(FILES
         ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake
         ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake
