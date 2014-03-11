@@ -978,16 +978,10 @@ void ConstraintDynamics::applySolutionODE()
       Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
       dynamics::BodyNode* bn1 = contact.collisionNode1->getBodyNode();
-      T.translation() = bn1->getWorldTransform().inverse() * contact.point;
-      F.tail<3>()     = bn1->getWorldTransform().linear().transpose()
-                        * contact.force;
-      bn1->addContactForce(math::dAdInvT(T, F));
+      bn1->addContactForce(contact.force, contact.point, false, false);
 
       dynamics::BodyNode* bn2 = contact.collisionNode2->getBodyNode();
-      T.translation() = bn2->getWorldTransform().inverse() * contact.point;
-      F.tail<3>()     = bn2->getWorldTransform().linear().transpose()
-                        * (-contact.force);
-      bn2->addContactForce(math::dAdInvT(T, F));
+      bn2->addContactForce(-contact.force, contact.point, false, false);
     }
   }
   for (int i = 0; i < mLimitingDofIndex.size(); i++)

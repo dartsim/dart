@@ -98,14 +98,11 @@ void SoftConstraintDynamics::applySolutionODE()
             = static_cast<collision::SoftCollisionInfo*>(cnt.userData);
         assert(sci != NULL);
         assert(sci->pm1 != NULL);
-        sci->pm1->addExtForce(cnt.force);
+        sci->pm1->addContactForce(cnt.force);
       }
       else
       {
-        T.translation() = bn1->getWorldTransform().inverse() * cnt.point;
-        F.tail<3>()     = bn1->getWorldTransform().linear().transpose()
-                          * cnt.force;
-        bn1->addContactForce(math::dAdInvT(T, F));
+        bn1->addContactForce(cnt.force, cnt.point, false, false);
       }
 
       dynamics::BodyNode* bn2 = cnt.collisionNode2->getBodyNode();
@@ -119,14 +116,11 @@ void SoftConstraintDynamics::applySolutionODE()
             = static_cast<collision::SoftCollisionInfo*>(cnt.userData);
         assert(sci != NULL);
         assert(sci->pm2 != NULL);
-        sci->pm2->addExtForce(-cnt.force);
+        sci->pm2->addContactForce(-cnt.force);
       }
       else
       {
-        T.translation() = bn2->getWorldTransform().inverse() * cnt.point;
-        F.tail<3>()     = bn2->getWorldTransform().linear().transpose()
-                          * (-cnt.force);
-        bn2->addContactForce(math::dAdInvT(T, F));
+        bn2->addContactForce(-cnt.force, cnt.point, false, false);
       }
     }
   }

@@ -207,6 +207,14 @@ int SoftBodyNode::getNumFaces()
   return mFaces.size();
 }
 
+void SoftBodyNode::clearContactForces()
+{
+  BodyNode::clearContactForces();
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->clearContactForces();
+}
+
 void SoftBodyNode::updateTransform()
 {
   BodyNode::updateTransform();

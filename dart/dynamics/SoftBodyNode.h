@@ -117,6 +117,8 @@ public:
   /// \brief
   int getNumFaces();
 
+  // Documentation inherited.
+  virtual void clearContactForces();
 
 protected:
   //--------------------------------------------------------------------------

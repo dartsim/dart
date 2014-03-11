@@ -517,7 +517,7 @@ int BodyNode::getNumVisualizationShapes() const {
   return mVizShapes.size();
 }
 
-Shape*BodyNode::getVisualizationShape(int _idx) const {
+Shape* BodyNode::getVisualizationShape(int _idx) const {
   return mVizShapes[_idx];
 }
 
@@ -529,11 +529,11 @@ int BodyNode::getNumCollisionShapes() const {
   return mColShapes.size();
 }
 
-Shape*BodyNode::getCollisionShape(int _idx) const {
+Shape* BodyNode::getCollisionShape(int _idx) const {
   return mColShapes[_idx];
 }
 
-Skeleton*BodyNode::getSkeleton() const {
+Skeleton* BodyNode::getSkeleton() const {
   return mSkeleton;
 }
 
@@ -541,7 +541,7 @@ void BodyNode::setParentJoint(Joint* _joint) {
   mParentJoint = _joint;
 }
 
-Joint*BodyNode::getParentJoint() const {
+Joint* BodyNode::getParentJoint() const {
   return mParentJoint;
 }
 
@@ -587,14 +587,14 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal) {
   if (_isLocal)
     mFext.head<3>() += _torque;
   else
-    mFext.head<3>() += mW.linear() * _torque;
+    mFext.head<3>() += mW.linear().transpose() * _torque;
 }
 
 void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal) {
   if (_isLocal)
     mFext.head<3>() = _torque;
   else
-    mFext.head<3>() = mW.linear() * _torque;
+    mFext.head<3>() = mW.linear().transpose() * _torque;
 }
 
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const {
@@ -605,8 +605,23 @@ Eigen::Vector6d BodyNode::getExternalForceGlobal() const {
   return math::dAdInvT(mW, mFext);
 }
 
-void BodyNode::addContactForce(const Eigen::Vector6d& _contactForce) {
-  mContactForces.push_back(_contactForce);
+void BodyNode::addContactForce(const Eigen::Vector3d& _force,
+                               const Eigen::Vector3d& _offset,
+                               bool _isOffsetLocal, bool _isForceLocal) {
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+
+  if (_isOffsetLocal)
+    T.translation() = _offset;
+  else
+    T.translation() = getWorldTransform().inverse() * _offset;
+
+  if (_isForceLocal)
+    F.tail<3>() = _force;
+  else
+    F.tail<3>() = mW.linear().transpose() * _force;
+
+  mContactForces.push_back(math::dAdInvT(T, F));
 }
 
 int BodyNode::getNumContactForces() const {
@@ -630,7 +645,7 @@ double BodyNode::getKineticEnergy() const {
   return 0.5 * mV.dot(mI * mV);
 }
 
-double dart::dynamics::BodyNode::getPotentialEnergy(
+double BodyNode::getPotentialEnergy(
     const Eigen::Vector3d& _gravity) const {
   return -mMass * mW.translation().dot(_gravity);
 }
@@ -655,6 +670,9 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
   mF.noalias() = mI * mdV;       // Inertial force
   if (_withExternalForces)
     mF -= mFext;                 // External force
+  for (int i = 0; i < mContactForces.size(); ++i)
+    mF -= mContactForces[i];
+  assert(!math::isNan(mF));
   mF -= mFgravity;               // Gravity force
   mF -= math::dad(mV, mI * mV);  // Coriolis force
 

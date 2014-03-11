@@ -44,6 +44,8 @@
 
 #include "dart/dynamics/SoftBodyNode.h"
 
+using namespace Eigen;
+
 namespace dart {
 namespace dynamics {
 
@@ -133,6 +135,37 @@ void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 void PointMass::clearExtForce()
 {
   mFext.setZero();
+}
+
+void PointMass::addContactForce(const Eigen::Vector3d& _contactForce,
+                                bool _isLocal)
+{
+  if (_isLocal)
+  {
+    mContactForces.push_back(_contactForce);
+  }
+  else
+  {
+    const Matrix3d Rt
+        = mParentSoftBodyNode->getWorldTransform().linear().transpose();
+    mContactForces.push_back(Rt * _contactForce);
+  }
+}
+
+int PointMass::getNumContactForces() const
+{
+  return mContactForces.size();
+}
+
+const Eigen::Vector3d&PointMass::getContactForce(int _idx)
+{
+  assert(0 <= _idx && _idx < mContactForces.size());
+  return mContactForces[_idx];
+}
+
+void PointMass::clearContactForces()
+{
+  mContactForces.clear();
 }
 
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
@@ -286,6 +319,9 @@ void PointMass::updateBodyForce(const Eigen::Vector3d& _gravity,
                    * _gravity);
   }
   assert(!math::isNan(mF));
+  for (int i = 0; i < mContactForces.size(); ++i)
+    mF -= mContactForces[i];
+  assert(!math::isNan(mF));
 }
 
 void PointMass::updateArticulatedInertia(double _dt)
@@ -329,6 +365,9 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _gravity);
   }
+  assert(!math::isNan(mB));
+  for (int i = 0; i < mContactForces.size(); ++i)
+    mB -= mContactForces[i];
   assert(!math::isNan(mB));
 
   // Cache data: alpha

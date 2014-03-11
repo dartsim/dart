@@ -341,7 +341,10 @@ public:
   virtual void clearExternalForces();
 
   /// \brief
-  void addContactForce(const Eigen::Vector6d& _contactForce);
+  void addContactForce(const Eigen::Vector3d& _force,
+                       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+                       bool _isOffsetLocal = true,
+                       bool _isForceLocal = false);
 
   /// \brief
   int getNumContactForces() const;
@@ -350,7 +353,7 @@ public:
   const Eigen::Vector6d& getContactForce(int _idx);
 
   /// \brief Clear contact forces added by constraint solver
-  void clearContactForces();
+  virtual void clearContactForces();
 
   /// \brief
   const Eigen::Vector6d& getExternalForceLocal() const;
