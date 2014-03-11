@@ -35,32 +35,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_URDFLOADER_MYWINDOW_H_
-#define APPS_URDFLOADER_MYWINDOW_H_
+#ifndef APPS_ATLASROBOT_MYWINDOW_H_
+#define APPS_ATLASROBOT_MYWINDOW_H_
 
 #include "dart/gui/SimWindow.h"
+#include "apps/atlasRobot/Controller.h"
 
-/// \brief
-class MyWindow : public dart::gui::SimWindow {
+/// \brief class MyWindow
+class MyWindow : public dart::gui::SimWindow
+{
 public:
-  /// \brief
-  MyWindow();
+  /// \brief Constructor
+  explicit MyWindow(Controller* _controller);
 
-  /// \brief
+  /// \brief Destructor
   virtual ~MyWindow();
 
-  /// \brief
+  // Documentation inherited
   virtual void timeStepping();
 
-  /// \brief
+  // Documentation inherited
   virtual void drawSkels();
 
-  /// \brief
+  // Documentation inherited
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
 private:
-  /// \brief
+  /// \brief External force to exert on Atlas robot
   Eigen::Vector3d mForce;
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
+
+  /// \brief Constroller
+  Controller* mController;
+
+  /// \brief Atlas robot
+  dart::dynamics::Skeleton* mAtlasRobot;
 };
 
-#endif  // APPS_URDFLOADER_MYWINDOW_H_
+#endif  // APPS_ATLASROBOT_MYWINDOW_H_

@@ -12,7 +12,7 @@
     <revision></revision>
     <subject></subject>
     <title></title>
-    <unit meter="1.0" name="meter"></unit>
+    <unit meter="1" name="meter"></unit>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_images>
@@ -6610,15 +6610,15 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="l_lleg" name="l_lleg">
       <node name="g27" id="g27" sid="g27">
-        <matrix sid="matrix">1.0000 0.000000 0.000000 0.000000 0.000000 1.0000 0.000000 0.000000 0.000000 0.000000 1.00000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
+        <matrix sid="matrix">1.00000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
           <technique profile="FCOLLADA">
             <visibility>1.000000</visibility>
           </technique>
         </extra>
-        <node name="l_lleg" id="l_lleg" sid="l_lleg">
+        <node name="l_lleg_node" id="l_lleg_node" sid="l_lleg_node">
           <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
           <extra>
             <technique profile="FCOLLADA">
@@ -6654,7 +6654,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#l_lleg"></instance_visual_scene>
   </scene>
 </COLLADA>
 

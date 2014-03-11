@@ -9022,15 +9022,15 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="r_uleg" name="r_uleg">
       <node name="g27" id="g27" sid="g27">
-        <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
+        <matrix sid="matrix">1.00000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
           <technique profile="FCOLLADA">
             <visibility>1.000000</visibility>
           </technique>
         </extra>
-        <node name="r_uleg" id="r_uleg" sid="r_uleg">
+        <node name="r_uleg_node" id="r_uleg_node" sid="r_uleg_node">
           <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
           <extra>
             <technique profile="FCOLLADA">
@@ -9081,7 +9081,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#r_uleg"></instance_visual_scene>
   </scene>
 </COLLADA>
 

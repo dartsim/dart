@@ -38,43 +38,71 @@
 #include <iostream>
 
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/SoftSkeleton.h"
 #include "dart/simulation/World.h"
+#include "dart/simulation/SoftWorld.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/SoftParser.h"
+#include "dart/utils/sdf/SoftSdfParser.h"
 #include "dart/utils/urdf/DartLoader.h"
+
 #include "apps/atlasRobot/MyWindow.h"
+#include "apps/atlasRobot/Controller.h"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
-          DART_DATA_PATH"/skel/empty.skel");
+using namespace std;
+using namespace Eigen;
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::utils;
 
-  dart::utils::DartLoader urdfLoader;
-  dart::dynamics::Skeleton* ground
-      = urdfLoader.parseSkeleton(DART_DATA_PATH"urdf/atlas/ground.urdf");
-  dart::dynamics::Skeleton* atlas
-      = urdfLoader.parseSkeleton(DART_DATA_PATH"urdf/atlas/atlas_no_head.urdf");
-  myWorld->addSkeleton(ground);
+int main(int argc, char* argv[])
+{
+  // Create and initialize the world
+  SoftWorld* myWorld
+      = SoftSkelParser::readSoftFile(DART_DATA_PATH"/skel/empty.skel");
+  assert(myWorld != NULL);
+
+  // Load ground and Atlas robot and add them to the world
+  DartLoader urdfLoader;
+  Skeleton* ground = urdfLoader.parseSkeleton(
+        DART_DATA_PATH"urdf/atlas/ground.urdf");
+//  Skeleton* atlas = urdfLoader.parseSkeleton(
+//        DART_DATA_PATH"urdf/atlas/atlas_v3_no_head.urdf");
+  Skeleton* atlas
+      = SoftSdfParser::readSoftSkeleton(
+          DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
-  Eigen::VectorXd q = atlas->getConfig();
+  myWorld->addSkeleton(ground);
+
+  // Set initial configuration for Atlas robot
+  VectorXd q = atlas->getConfig();
   q[0] = -0.5 * DART_PI;
   atlas->setConfig(q);
 
-  assert(myWorld != NULL);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  // Set gravity of the world
+  myWorld->setGravity(Vector3d(0.0, -9.81, 0.0));
 
-  // create a window and link it to the world
-  MyWindow window;
+  // Create a window and link it to the world
+  MyWindow window(new Controller(atlas, myWorld->getConstraintHandler()));
   window.setWorld(myWorld);
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  // Print manual
+  cout << "space bar: simulation on/off" << endl;
+  cout << "'p': playback/stop" << endl;
+  cout << "'[' and ']': play one frame backward and forward" << endl;
+  cout << "'v': visualization on/off" << endl;
+  cout << endl;
+  cout << "'h': harness pelvis on/off" << endl;
+  cout << "'j': harness left foot on/off" << endl;
+  cout << "'k': harness right foot on/off" << endl;
+  cout << "'r': reset robot" << endl;
+  cout << "'n': transite to the next state manually" << endl;
+  cout << endl;
+  cout << "'1': standing controller" << endl;
+  cout << "'2': walking controller" << endl;
 
+  // Run glut loop
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Atlas Robot");
   glutMainLoop();

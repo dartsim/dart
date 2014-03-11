@@ -43,78 +43,138 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/dynamics/BoxShape.h"
+#include "dart/gui/GLFuncs.h"
 
-MyWindow::MyWindow()
-  : SimWindow() {
+//==============================================================================
+MyWindow::MyWindow(Controller* _controller)
+  : SimWindow(),
+    mController(_controller),
+    mAtlasRobot(_controller->getAtlasRobot())
+{
   mForce = Eigen::Vector3d::Zero();
+  mImpulseDuration = 0.0;
 }
 
-MyWindow::~MyWindow() {
+//==============================================================================
+MyWindow::~MyWindow()
+{
+  delete mController;
 }
 
-void MyWindow::timeStepping() {
-//  mWorld->getSkeleton(0)->getBodyNode(0)->addExtForce(mForce);
+//==============================================================================
+void MyWindow::timeStepping()
+{
+  // External force
+  mAtlasRobot->getBodyNode("pelvis")->addExtForce(mForce);
+
+  // Internal force
+  mController->update(mWorld->getTime());
+
+  // simulate one step
   mWorld->step();
-  mForce /= 2.0;
+
+  // for perturbation test
+  mImpulseDuration--;
+  if (mImpulseDuration <= 0)
+  {
+    mImpulseDuration = 0;
+    mForce.setZero();
+  }
 }
 
-void MyWindow::drawSkels() {
+//==============================================================================
+void MyWindow::drawSkels()
+{
 //  glEnable(GL_LIGHTING);
 //  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  SimWindow::drawSkels();
+  for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
+    mWorld->getSkeleton(i)->draw(mRI);
+
+  // draw arrow
+  if (mImpulseDuration > 0)
+  {
+    Eigen::Vector3d poa
+        =  mAtlasRobot->getBodyNode("pelvis")->getWorldTransform()
+           * Eigen::Vector3d(0.0, 0.0, 0.0);
+    Eigen::Vector3d start = poa - mForce / 500.0;
+    double len = mForce.norm() / 500.0;
+    dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
+  }
 }
 
-void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
-  switch (_key) {
-    case ' ':  // use space key to play or stop the motion
-      mSimulating = !mSimulating;
-      if (mSimulating) {
-        mPlay = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
-      break;
-    case 'p':  // playBack
-      mPlay = !mPlay;
-      if (mPlay) {
-        mSimulating = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
-      break;
-    case '[':  // step backward
-      if (!mSimulating) {
-        mPlayFrame--;
-        if (mPlayFrame < 0)
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case ']':  // step forwardward
-      if (!mSimulating) {
-        mPlayFrame++;
-        if (mPlayFrame >= mBakedStates.size())
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case 'v':  // show or hide markers
-      mShowMarkers = !mShowMarkers;
-      break;
-    case '1':  // upper right force
-      mForce[0] = -500;
-      break;
-    case '2':  // upper right force
-      mForce[0] = 500;
-      break;
-    case '3':  // upper right force
-      mForce[2] = -500;
-      break;
-    case '4':  // upper right force
-      mForce[2] = 500;
-      break;
-    default:
-      Win3D::keyboard(_key, _x, _y);
+//==============================================================================
+void MyWindow::keyboard(unsigned char _key, int _x, int _y)
+{
+  switch (_key)
+  {
+  case ' ':  // use space key to play or stop the motion
+    mSimulating = !mSimulating;
+    if (mSimulating)
+    {
+      mPlay = false;
+      glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+    }
+    break;
+  case 'p':  // playBack
+    mPlay = !mPlay;
+    if (mPlay)
+    {
+      mSimulating = false;
+      glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+    }
+    break;
+  case '[':  // step backward
+    if (!mSimulating)
+    {
+      mPlayFrame--;
+      if (mPlayFrame < 0)
+        mPlayFrame = 0;
+      glutPostRedisplay();
+    }
+    break;
+  case ']':  // step forwardward
+    if (!mSimulating)
+    {
+      mPlayFrame++;
+      if (mPlayFrame >= mBakedStates.size())
+        mPlayFrame = 0;
+      glutPostRedisplay();
+    }
+    break;
+  case 'i':  // print debug information
+    mController->printDebugInfo();
+    break;
+  case 'v':  // show or hide markers
+    mShowMarkers = !mShowMarkers;
+    break;
+  case 'a':  // upper right force
+    mForce[0] = 500;
+    mImpulseDuration = 100;
+    std::cout << "push forward" << std::endl;
+    break;
+  case 's':  // upper right force
+    mForce[0] = -500;
+    mImpulseDuration = 100;
+    std::cout << "push backward" << std::endl;
+    break;
+  case 'd':  // upper right force
+    mForce[2] = 500;
+    mImpulseDuration = 100;
+    std::cout << "push right" << std::endl;
+    break;
+  case 'f':  // upper right force
+    mForce[2] = -500;
+    mImpulseDuration = 100;
+    std::cout << "push left" << std::endl;
+    break;
+  default:
+    Win3D::keyboard(_key, _x, _y);
   }
+
+  // Keyboard control for Controller
+  mController->keyboard(_key, _x, _y, mWorld->getTime());
+
   glutPostRedisplay();
 }
 

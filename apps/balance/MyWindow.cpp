@@ -54,8 +54,7 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(
-        Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
+  mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
   mController->setConstrForces(
         mWorld->getConstraintHandler()->getTotalConstraintForce(1));
@@ -124,12 +123,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case '1':
-      mForce[0] = 20;
+      mForce[0] = 40;
       mImpulseDuration = 100.0;
       std::cout << "push forward" << std::endl;
       break;
     case '2':
-      mForce[0] = -10;
+      mForce[0] = -40;
       mImpulseDuration = 100.0;
       std::cout << "push backward" << std::endl;
       break;

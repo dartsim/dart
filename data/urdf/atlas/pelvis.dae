@@ -12,7 +12,7 @@
     <revision></revision>
     <subject></subject>
     <title></title>
-    <unit meter="1.0" name="meter"></unit>
+    <unit meter="1.000000" name="meter"></unit>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_images>
@@ -8669,7 +8669,7 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="pelvis" name="pelvis">
       <node name="g27" id="g27" sid="g27">
         <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
@@ -8677,7 +8677,7 @@
             <visibility>1.000000</visibility>
           </technique>
         </extra>
-        <node name="pelvis" id="pelvis" sid="pelvis">
+        <node name="pelvis_node" id="pelvis_node" sid="pelvis_node">
           <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
           <extra>
             <technique profile="FCOLLADA">
@@ -8721,7 +8721,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#pelvis"></instance_visual_scene>
   </scene>
 </COLLADA>
 

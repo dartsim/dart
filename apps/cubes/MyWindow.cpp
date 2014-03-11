@@ -53,8 +53,7 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(
-        Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
+  mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(mForce);
   mWorld->step();
   mForce /= 2.0;
 }

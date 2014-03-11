@@ -348,7 +348,7 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="r_uglut" name="r_uglut">
       <node name="g27" id="g27" sid="g27">
         <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
@@ -356,7 +356,7 @@
             <visibility>1.000000</visibility>
           </technique>
         </extra>
-        <node name="r_uglut" id="r_uglut" sid="r_uglut">
+        <node name="r_uglut_node" id="r_uglut_node" sid="r_uglut_node">
           <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
           <extra>
             <technique profile="FCOLLADA">
@@ -392,7 +392,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#r_uglut"></instance_visual_scene>
   </scene>
 </COLLADA>
 

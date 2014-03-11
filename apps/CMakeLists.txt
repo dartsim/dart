@@ -31,16 +31,9 @@ foreach(APPDIR
     softDropBoxCOMOffsetTest
     softDropBoxLowStiffnessTest
     softDropSphereTest
-    softFeetAtlasRobot
     softOpenChain
     softSingleBodyTest
     softSinglePendulumTest
-
-
-
-
-
-
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

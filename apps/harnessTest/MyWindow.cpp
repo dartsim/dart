@@ -55,7 +55,7 @@ using namespace dart::constraint;
 
 void MyWindow::timeStepping()
 {
-    mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.0), mForce);
+    mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
     mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->get_q(), mWorld->getSkeleton(1)->get_dq());
@@ -122,12 +122,12 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
         mShowMarkers = !mShowMarkers;
         break;
     case '1':
-        mForce[0] = 20;
+        mForce[0] = 40;
         mImpulseDuration = 100.0;
         std::cout << "push forward" << std::endl;
         break;
     case '2':
-        mForce[0] = -10;
+        mForce[0] = -40;
         mImpulseDuration = 100.0;
         std::cout << "push backward" << std::endl;
         break;

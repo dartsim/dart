@@ -4,7 +4,7 @@
       <pose>0 0 0 0 -0 0</pose>
       <inertial>
         <pose>0.0111 0 0.0271 0 -0 0</pose>
-        <mass>14.2529</mass>
+        <mass>17.882</mass>
         <inertia>
           <ixx>0.1244</ixx>
           <ixy>0.0008</ixy>
@@ -41,7 +41,7 @@
       <pose>-0.0125 0 0 0 -0 0</pose>
       <inertial>
         <pose>-0.0112984 -3.15366e-06 0.0746835 0 -0 0</pose>
-        <mass>1.92</mass>
+        <mass>2.409</mass>
         <inertia>
           <ixx>0.0039092</ixx>
           <ixy>-5.04491e-08</ixy>
@@ -74,27 +74,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='back_lbz' type='revolute'>
+    <joint name='back_bkz' type='revolute'>
       <child>ltorso</child>
       <parent>pelvis</parent>
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-0.610865</lower>
-          <upper>0.610865</upper>
+          <lower>-0.663225</lower>
+          <upper>0.663225</upper>
           <effort>124.016</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='mtorso'>
-      <pose>-0.0125 0 0.09 0 -0 0</pose>
+      <pose>-0.0125 0 0.16197 0 -0 0</pose>
       <inertial>
         <pose>-0.00816266 -0.0131245 0.0305974 0 -0 0</pose>
-        <mass>0.55</mass>
+        <mass>0.69</mass>
         <inertia>
           <ixx>0.000454181</ixx>
           <ixy>-6.10764e-05</ixy>
@@ -127,34 +128,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='back_mby' type='revolute'>
+    <joint name='back_bky' type='revolute'>
       <child>mtorso</child>
       <parent>ltorso</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.2</lower>
-          <upper>1.28</upper>
+          <lower>-0.610691</lower>
+          <upper>0.438427</upper>
           <effort>206.843</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='utorso'>
-      <pose>-0.0125 0 0.14 0 -0 0</pose>
+      <pose>-0.0125 0 0.21197 0 -0 0</pose>
       <inertial>
-        <pose>0.02 -0.001 0.211 0 -0 0</pose>
-        <mass>18.484</mass>
+        <pose>-0.0909481 5.04713e-05 0.301106 0 -0 0</pose>
+        <mass>52.307</mass>
         <inertia>
-          <ixx>0.395</ixx>
-          <ixy>0</ixy>
-          <ixz>0.083</ixz>
-          <iyy>1.089</iyy>
-          <iyz>-0.003</iyz>
-          <izz>0.327</izz>
+          <ixx>1.4846</ixx>
+          <ixy>0.00338676</ixy>
+          <ixz>0.326214</ixz>
+          <iyy>1.54533</iyy>
+          <iyz>3.95833e-05</iyz>
+          <izz>1.32284</izz>
         </inertia>
       </inertial>
       <collision name='utorso_collision'>
@@ -163,6 +165,15 @@
           <mesh>
             <scale>1 1 1</scale>
             <uri>utorso.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='utorso_collision_utorso_1'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>utorso_pack.stl</uri>
           </mesh>
         </geometry>
       </collision>
@@ -175,39 +186,73 @@
           </mesh>
         </geometry>
       </visual>
+      <visual name='utorso_visual_utorso_1'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>utorso_pack.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='utorso_visual_l_situational_awareness_camera_link'>
+        <pose>0.216409 0.121799 0.406759 -1.5708 5.55112e-17 1.309</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.01 0.01</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name='utorso_visual_r_situational_awareness_camera_link'>
+        <pose>0.216409 -0.121799 0.406759 1.5708 5.55112e-17 -1.309</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.01 0.01</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name='utorso_visual_rear_situational_awareness_camera_link'>
+        <pose>-0.0026 0.0264 0.6649 0 -0 3.14159</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.01 0.01</size>
+          </box>
+        </geometry>
+      </visual>
       <velocity_decay>
         <linear>0</linear>
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='back_ubx' type='revolute'>
+    <joint name='back_bkx' type='revolute'>
       <child>utorso</child>
       <parent>mtorso</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.790809</lower>
-          <upper>0.790809</upper>
-          <effort>94.91</effort>
+          <lower>-0.698132</lower>
+          <upper>0.698132</upper>
+          <effort>200</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_clav'>
-      <pose>0.0115 0.221 0.429 0 -0 0</pose>
+      <pose>0.05191 0.13866 0.31915 0 -0 0</pose>
       <inertial>
-        <pose>0.014 0.058 0.029 1.0472 -0 0</pose>
-        <mass>2.369</mass>
+        <pose>0 0.048 0.084 0 -0 0</pose>
+        <mass>3.45</mass>
         <inertia>
-          <ixx>0.004</ixx>
-          <ixy>0.001</ixy>
+          <ixx>0.011</ixx>
+          <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.006</iyy>
-          <iyz>0</iyz>
-          <izz>0.007</izz>
+          <iyy>0.009</iyy>
+          <iyz>-0.004</iyz>
+          <izz>0.004</izz>
         </inertia>
       </inertial>
       <collision name='l_clav_collision'>
@@ -233,34 +278,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_arm_usy' type='revolute'>
+    <joint name='l_arm_shy' type='revolute'>
       <child>l_clav</child>
       <parent>utorso</parent>
       <axis>
         <xyz>0 0.5 0.866025</xyz>
         <limit>
-          <lower>-1.9635</lower>
-          <upper>1.9635</upper>
+          <lower>-1.5708</lower>
+          <upper>0.785398</upper>
           <effort>212</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_scap'>
-      <pose>0.0115 0.296 0.465 0 -0 0</pose>
+      <pose>0.05191 0.27901 0.51524 0 -0 0</pose>
       <inertial>
-        <pose>-0.002 0.108 0 0 -0 0</pose>
-        <mass>2.707</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>3.012</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>0.00319</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.005</iyy>
+          <iyy>0.00583</iyy>
           <iyz>0</iyz>
-          <izz>0.013</izz>
+          <izz>0.00583</izz>
         </inertia>
       </inertial>
       <collision name='l_scap_collision'>
@@ -292,28 +338,29 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-1.39626</lower>
-          <upper>1.74533</upper>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
           <effort>170</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_uarm'>
-      <pose>0.0115 0.481 0.465 0 -0 0</pose>
+      <pose>0.05191 0.46601 0.53124 0 -0 0</pose>
       <inertial>
-        <pose>0.007 0.114 0.008 0 -0 0</pose>
-        <mass>1.881</mass>
+        <pose>0 -0.065 0 0 -0 0</pose>
+        <mass>3.388</mass>
         <inertia>
-          <ixx>0.002</ixx>
+          <ixx>0.00656</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.003</iyy>
+          <iyy>0.00358</iyy>
           <iyz>0</iyz>
-          <izz>0.003</izz>
+          <izz>0.00656</izz>
         </inertia>
       </inertial>
       <collision name='l_uarm_collision'>
@@ -353,20 +400,21 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_larm'>
-      <pose>0.0115 0.602 0.478 0 -0 0</pose>
+      <pose>0.05191 0.58501 0.54045 0 -0 0</pose>
       <inertial>
-        <pose>-0.003 0.099 -0.014 0 -0 0</pose>
-        <mass>2.148</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>2.509</mass>
         <inertia>
-          <ixx>0.005</ixx>
+          <ixx>0.00265</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.003</iyy>
+          <iyy>0.00446</iyy>
           <iyz>0</iyz>
-          <izz>0.006</izz>
+          <izz>0.00446</izz>
         </inertia>
       </inertial>
       <collision name='l_larm_collision'>
@@ -406,20 +454,21 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_farm'>
-      <pose>0.0115 0.79 0.465 0 -0 0</pose>
+      <pose>0.05191 0.77201 0.53124 0 -0 0</pose>
       <inertial>
-        <pose>0 0.041 0 0 -0 0</pose>
-        <mass>0.981</mass>
+        <pose>0 -0.065 0 0 -0 0</pose>
+        <mass>3.388</mass>
         <inertia>
-          <ixx>0.003</ixx>
+          <ixx>0.00656</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.001</iyy>
+          <iyy>0.00358</iyy>
           <iyz>0</iyz>
-          <izz>0.003</izz>
+          <izz>0.00656</izz>
         </inertia>
       </inertial>
       <collision name='l_farm_collision'>
@@ -445,34 +494,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_arm_uwy' type='revolute'>
+    <joint name='l_arm_wry' type='revolute'>
       <child>l_farm</child>
       <parent>l_larm</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.571</lower>
-          <upper>1.571</upper>
+          <lower>0</lower>
+          <upper>3.14159</upper>
           <effort>114</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_hand'>
-      <pose>0.0115 0.848 0.465 0 -0 0</pose>
+      <pose>0.05191 0.89101 0.54045 0 -0 0</pose>
       <inertial>
-        <pose>0 0.093 0 0 -0 0</pose>
-        <mass>2.263</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>2.509</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>0.00265</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.002</iyy>
+          <iyy>0.00446</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>0.00446</izz>
         </inertia>
       </inertial>
       <collision name='l_hand_collision'>
@@ -498,34 +548,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_arm_mwx' type='revolute'>
+    <joint name='l_arm_wrx' type='revolute'>
       <child>l_hand</child>
       <parent>l_farm</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.436</lower>
-          <upper>1.571</upper>
+          <lower>-1.1781</lower>
+          <upper>1.1781</upper>
           <effort>60</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_clav'>
-      <pose>0.0115 -0.221 0.429 0 -0 0</pose>
+      <pose>0.05191 -0.13866 0.31915 0 -0 0</pose>
       <inertial>
-        <pose>0.014 -0.058 0.029 -1.0472 0 0</pose>
-        <mass>2.369</mass>
+        <pose>0 -0.048 0.084 0 -0 0</pose>
+        <mass>3.45</mass>
         <inertia>
-          <ixx>0.004</ixx>
-          <ixy>-0.001</ixy>
+          <ixx>0.011</ixx>
+          <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.006</iyy>
-          <iyz>0</iyz>
-          <izz>0.007</izz>
+          <iyy>0.009</iyy>
+          <iyz>0.004</iyz>
+          <izz>0.004</izz>
         </inertia>
       </inertial>
       <collision name='r_clav_collision'>
@@ -551,34 +602,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_arm_usy' type='revolute'>
+    <joint name='r_arm_shy' type='revolute'>
       <child>r_clav</child>
       <parent>utorso</parent>
       <axis>
         <xyz>0 0.5 -0.866025</xyz>
         <limit>
-          <lower>-1.9635</lower>
-          <upper>1.9635</upper>
+          <lower>-1.5708</lower>
+          <upper>0.785398</upper>
           <effort>212</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_scap'>
-      <pose>0.0115 -0.296 0.465 0 -0 0</pose>
+      <pose>0.05191 -0.27901 0.51524 0 -0 0</pose>
       <inertial>
-        <pose>-0.002 -0.108 0 0 -0 0</pose>
-        <mass>2.707</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>3.012</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>0.00319</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.005</iyy>
+          <iyy>0.00583</iyy>
           <iyz>0</iyz>
-          <izz>0.013</izz>
+          <izz>0.00583</izz>
         </inertia>
       </inertial>
       <collision name='r_scap_collision'>
@@ -610,28 +662,29 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-1.74533</lower>
-          <upper>1.39626</upper>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
           <effort>170</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_uarm'>
-      <pose>0.0115 -0.481 0.465 0 -0 0</pose>
+      <pose>0.05191 -0.46601 0.53124 0 -0 0</pose>
       <inertial>
-        <pose>0.007 -0.114 0.008 0 -0 0</pose>
-        <mass>1.881</mass>
+        <pose>0 0.065 0 0 -0 0</pose>
+        <mass>3.388</mass>
         <inertia>
-          <ixx>0.002</ixx>
+          <ixx>0.00656</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.003</iyy>
+          <iyy>0.00358</iyy>
           <iyz>0</iyz>
-          <izz>0.003</izz>
+          <izz>0.00656</izz>
         </inertia>
       </inertial>
       <collision name='r_uarm_collision'>
@@ -671,20 +724,21 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_larm'>
-      <pose>0.0115 -0.602 0.478 0 -0 0</pose>
+      <pose>0.05191 -0.58501 0.54045 0 -0 0</pose>
       <inertial>
-        <pose>-0.003 -0.099 -0.014 0 -0 0</pose>
-        <mass>2.148</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>2.509</mass>
         <inertia>
-          <ixx>0.005</ixx>
+          <ixx>0.00265</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.003</iyy>
+          <iyy>0.00446</iyy>
           <iyz>0</iyz>
-          <izz>0.006</izz>
+          <izz>0.00446</izz>
         </inertia>
       </inertial>
       <collision name='r_larm_collision'>
@@ -724,20 +778,21 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_farm'>
-      <pose>0.0115 -0.79 0.465 0 -0 0</pose>
+      <pose>0.05191 -0.77201 0.53124 0 -0 0</pose>
       <inertial>
-        <pose>0 -0.041 0 0 -0 0</pose>
-        <mass>0.981</mass>
+        <pose>0 0.065 0 0 -0 0</pose>
+        <mass>3.388</mass>
         <inertia>
-          <ixx>0.003</ixx>
+          <ixx>0.00656</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.001</iyy>
+          <iyy>0.00358</iyy>
           <iyz>0</iyz>
-          <izz>0.003</izz>
+          <izz>0.00656</izz>
         </inertia>
       </inertial>
       <collision name='r_farm_collision'>
@@ -763,34 +818,35 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_arm_uwy' type='revolute'>
+    <joint name='r_arm_wry' type='revolute'>
       <child>r_farm</child>
       <parent>r_larm</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.571</lower>
-          <upper>1.571</upper>
+          <lower>0</lower>
+          <upper>3.14159</upper>
           <effort>114</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_hand'>
-      <pose>0.0115 -0.848 0.465 0 -0 0</pose>
+      <pose>0.05191 -0.89101 0.54045 0 -0 0</pose>
       <inertial>
-        <pose>0 -0.093 0 0 -0 0</pose>
-        <mass>2.263</mass>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>2.509</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>0.00265</ixx>
           <ixy>0</ixy>
-          <ixz>-0</ixz>
-          <iyy>0.002</iyy>
+          <ixz>0</ixz>
+          <iyy>0.00446</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>0.00446</izz>
         </inertia>
       </inertial>
       <collision name='r_hand_collision'>
@@ -816,27 +872,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_arm_mwx' type='revolute'>
+    <joint name='r_arm_wrx' type='revolute'>
       <child>r_hand</child>
       <parent>r_farm</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-1.571</lower>
-          <upper>0.436</upper>
+          <lower>-1.1781</lower>
+          <upper>1.1781</upper>
           <effort>60</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_uglut'>
       <pose>0 0.089 0 0 -0 0</pose>
       <inertial>
         <pose>0.00529262 -0.00344732 0.00313046 0 -0 0</pose>
-        <mass>0.5166</mass>
+        <mass>0.648</mass>
         <inertia>
           <ixx>0.00074276</ixx>
           <ixy>-3.79607e-08</ixy>
@@ -869,27 +926,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_leg_uhz' type='revolute'>
+    <joint name='l_leg_hpz' type='revolute'>
       <child>l_uglut</child>
       <parent>pelvis</parent>
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-0.32</lower>
-          <upper>1.14</upper>
+          <lower>-0.174533</lower>
+          <upper>1.22173</upper>
           <effort>110</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_lglut'>
       <pose>0 0.089 0 0 -0 0</pose>
       <inertial>
         <pose>0.0133341 0.0170484 -0.0312052 0 -0 0</pose>
-        <mass>0.69</mass>
+        <mass>0.866</mass>
         <inertia>
           <ixx>0.000691326</ixx>
           <ixy>-2.24344e-05</ixy>
@@ -922,27 +980,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_leg_mhx' type='revolute'>
+    <joint name='l_leg_hpx' type='revolute'>
       <child>l_lglut</child>
       <parent>l_uglut</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.47</lower>
-          <upper>0.495</upper>
+          <lower>-0.523599</lower>
+          <upper>0.523599</upper>
           <effort>180</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_uleg'>
       <pose>0.05 0.089 -0.05 0 -0 0</pose>
       <inertial>
         <pose>0 0 -0.21 0 -0 0</pose>
-        <mass>7.34</mass>
+        <mass>9.209</mass>
         <inertia>
           <ixx>0.09</ixx>
           <ixy>0</ixy>
@@ -975,27 +1034,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_leg_lhy' type='revolute'>
+    <joint name='l_leg_hpy' type='revolute'>
       <child>l_uleg</child>
       <parent>l_lglut</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.75</lower>
-          <upper>0.524</upper>
+          <lower>-1.72072</lower>
+          <upper>0.524821</upper>
           <effort>260</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_lleg'>
       <pose>0 0.089 -0.424 0 -0 0</pose>
       <inertial>
         <pose>0.001 0 -0.187 0 -0 0</pose>
-        <mass>4.367</mass>
+        <mass>5.479</mass>
         <inertia>
           <ixx>0.077</ixx>
           <ixy>0</ixy>
@@ -1035,20 +1095,21 @@
         <xyz>0 1 0</xyz>
         <limit>
           <lower>0</lower>
-          <upper>2.45</upper>
+          <upper>2.38569</upper>
           <effort>220</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_talus'>
       <pose>0 0.089 -0.846 0 -0 0</pose>
       <inertial>
         <pose>0 0 0 0 -0 0</pose>
-        <mass>0.1</mass>
+        <mass>0.125</mass>
         <inertia>
           <ixx>1.01674e-05</ixx>
           <ixy>0</ixy>
@@ -1081,27 +1142,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_leg_uay' type='revolute'>
+    <joint name='l_leg_aky' type='revolute'>
       <child>l_talus</child>
       <parent>l_lleg</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-0.698</lower>
-          <upper>0.698</upper>
-          <effort>220</effort>
+          <lower>-1</lower>
+          <upper>0.7</upper>
+          <effort>700</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='l_foot'>
       <pose>0 0.089 -0.846 0 -0 0</pose>
       <inertial>
         <pose>0.027 0 -0.067 0 -0 0</pose>
-        <mass>1.634</mass>
+        <mass>2.05</mass>
         <inertia>
           <ixx>0.002</ixx>
           <ixy>0</ixy>
@@ -1113,16 +1175,16 @@
       </inertial>
       <soft_shape>
         <total_mass>0.5</total_mass>
-        <pose>0.05 0 -0.05 0 0 0</pose>
+        <pose>0.05 0 -0.06 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.4 0.175 0.125</size>
+            <size>0.275 0.15 0.075</size>
             <frags>2 2 2</frags>
           </box>
         </geometry>
-	<kv>5000.0</kv>
+	<kv>50000.0</kv>
 	<ke>100.0</ke>
-	<damp>50.0</damp>
+	<damp>1000.0</damp>
       </soft_shape>
       <collision name='l_foot_collision'>
         <pose>0 0 0 0 -0 0</pose>
@@ -1147,27 +1209,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='l_leg_lax' type='revolute'>
+    <joint name='l_leg_akx' type='revolute'>
       <child>l_foot</child>
       <parent>l_talus</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.436</lower>
-          <upper>0.436</upper>
+          <lower>-0.8</lower>
+          <upper>0.8</upper>
           <effort>90</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_uglut'>
       <pose>0 -0.089 0 0 -0 0</pose>
       <inertial>
         <pose>0.00529262 0.00344732 0.00313046 0 -0 0</pose>
-        <mass>0.5166</mass>
+        <mass>0.648</mass>
         <inertia>
           <ixx>0.00074276</ixx>
           <ixy>3.79607e-08</ixy>
@@ -1200,27 +1263,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_leg_uhz' type='revolute'>
+    <joint name='r_leg_hpz' type='revolute'>
       <child>r_uglut</child>
       <parent>pelvis</parent>
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-1.14</lower>
-          <upper>0.32</upper>
+          <lower>-1.22173</lower>
+          <upper>0.174533</upper>
           <effort>110</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_lglut'>
       <pose>0 -0.089 0 0 -0 0</pose>
       <inertial>
         <pose>0.0133341 -0.0170484 -0.0312052 0 -0 0</pose>
-        <mass>0.69</mass>
+        <mass>0.866</mass>
         <inertia>
           <ixx>0.000691326</ixx>
           <ixy>2.24344e-05</ixy>
@@ -1253,27 +1317,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_leg_mhx' type='revolute'>
+    <joint name='r_leg_hpx' type='revolute'>
       <child>r_lglut</child>
       <parent>r_uglut</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.495</lower>
-          <upper>0.47</upper>
+          <lower>-0.523599</lower>
+          <upper>0.523599</upper>
           <effort>180</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_uleg'>
       <pose>0.05 -0.089 -0.05 0 -0 0</pose>
       <inertial>
         <pose>0 0 -0.21 0 -0 0</pose>
-        <mass>7.34</mass>
+        <mass>9.209</mass>
         <inertia>
           <ixx>0.09</ixx>
           <ixy>0</ixy>
@@ -1306,31 +1371,32 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_leg_lhy' type='revolute'>
+    <joint name='r_leg_hpy' type='revolute'>
       <child>r_uleg</child>
       <parent>r_lglut</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.745</lower>
-          <upper>0.524</upper>
+          <lower>-1.72072</lower>
+          <upper>0.524821</upper>
           <effort>260</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_lleg'>
       <pose>0 -0.089 -0.424 0 -0 0</pose>
       <inertial>
         <pose>0.001 0 -0.187 0 -0 0</pose>
-        <mass>4.367</mass>
+        <mass>5.479</mass>
         <inertia>
           <ixx>0.077</ixx>
           <ixy>-0</ixy>
-          <ixz>0.003</ixz>
+          <ixz>-0.003</ixz>
           <iyy>0.076</iyy>
           <iyz>-0</iyz>
           <izz>0.01</izz>
@@ -1366,20 +1432,21 @@
         <xyz>0 1 0</xyz>
         <limit>
           <lower>0</lower>
-          <upper>2.45</upper>
+          <upper>2.38569</upper>
           <effort>220</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_talus'>
       <pose>0 -0.089 -0.846 0 -0 0</pose>
       <inertial>
         <pose>0 0 0 0 -0 0</pose>
-        <mass>0.1</mass>
+        <mass>0.125</mass>
         <inertia>
           <ixx>1.01674e-05</ixx>
           <ixy>0</ixy>
@@ -1412,27 +1479,28 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_leg_uay' type='revolute'>
+    <joint name='r_leg_aky' type='revolute'>
       <child>r_talus</child>
       <parent>r_lleg</parent>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-0.698</lower>
-          <upper>0.698</upper>
-          <effort>220</effort>
+          <lower>-1</lower>
+          <upper>0.7</upper>
+          <effort>700</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
     <link name='r_foot'>
       <pose>0 -0.089 -0.846 0 -0 0</pose>
       <inertial>
         <pose>0.027 0 -0.067 0 -0 0</pose>
-        <mass>1.634</mass>
+        <mass>2.05</mass>
         <inertia>
           <ixx>0.002</ixx>
           <ixy>0</ixy>
@@ -1444,16 +1512,16 @@
       </inertial>
       <soft_shape>
         <total_mass>0.5</total_mass>
-        <pose>0.05 0 -0.05 0 0 0</pose>
+        <pose>0.05 0 -0.06 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.4 0.175 0.125</size>
+            <size>0.275 0.15 0.075</size>
             <frags>2 2 2</frags>
           </box>
         </geometry>
-	<kv>5000.0</kv>
+	<kv>50000.0</kv>
 	<ke>100.0</ke>
-	<damp>50.0</damp>
+	<damp>1000.0</damp>
       </soft_shape>
       <collision name='r_foot_collision'>
         <pose>0 0 0 0 -0 0</pose>
@@ -1478,20 +1546,21 @@
         <angular>0</angular>
       </velocity_decay>
     </link>
-    <joint name='r_leg_lax' type='revolute'>
+    <joint name='r_leg_akx' type='revolute'>
       <child>r_foot</child>
       <parent>r_talus</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>-0.436</lower>
-          <upper>0.436</upper>
+          <lower>-0.8</lower>
+          <upper>0.8</upper>
           <effort>90</effort>
           <velocity>12</velocity>
         </limit>
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
+        <use_parent_model_frame>0</use_parent_model_frame>
       </axis>
     </joint>
   </model>

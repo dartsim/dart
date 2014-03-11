@@ -12,7 +12,7 @@
     <revision></revision>
     <subject></subject>
     <title></title>
-    <unit meter="1.0" name="meter"></unit>
+    <unit meter="1.000000" name="centimeter"></unit>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_images>
@@ -914,7 +914,7 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="l_hand" name="l_hand">
       <node name="g27" id="g27" sid="g27">
         <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
@@ -922,7 +922,7 @@
             <visibility>1.000000</visibility>
           </technique>
         </extra>
-        <node name="l_hand" id="l_hand" sid="l_hand">
+        <node name="l_hand_node" id="l_hand_node" sid="l_hand_node">
           <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
           <extra>
             <technique profile="FCOLLADA">
@@ -958,7 +958,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#l_hand"></instance_visual_scene>
   </scene>
 </COLLADA>
 

@@ -12,7 +12,7 @@
     <revision></revision>
     <subject></subject>
     <title></title>
-    <unit meter="1.00000" name="centimeter"></unit>
+    <unit meter="1.000000" name="centimeter"></unit>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_images>
@@ -8471,7 +8471,7 @@
     </geometry>
   </library_geometries>
   <library_visual_scenes>
-    <visual_scene id="test" name="">
+    <visual_scene id="utorso" name="utorso">
       <node name="g27" id="g27" sid="g27">
         <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
         <extra>
@@ -8515,7 +8515,7 @@
     </visual_scene>
   </library_visual_scenes>
   <scene>
-    <instance_visual_scene url="#test"></instance_visual_scene>
+    <instance_visual_scene url="#utorso"></instance_visual_scene>
   </scene>
 </COLLADA>
 
