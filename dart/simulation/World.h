@@ -140,11 +140,14 @@ public:
   /// \brief Get the number of skeletons.
   int getNumSkeletons() const;
 
-  /// \brief .
-  /// \param[in] _skel
+  /// \brief Add a skeleton to this world.
   void addSkeleton(dynamics::Skeleton* _skeleton);
 
+  /// \brief Remove a skeleton in this world.
   void removeSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// \brief Remove all the skeletons in this world.
+  void removeAllSkeletons();
 
   /// \brief Get the dof index for the indexed skeleton.
   /// \param[in] _index

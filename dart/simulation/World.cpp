@@ -262,6 +262,11 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
   delete _skeleton;
 }
 
+void World::removeAllSkeletons() {
+  while (getNumSkeletons() > 0)
+    removeSkeleton(getSkeleton(0));
+}
+
 int World::getIndex(int _index) const {
   return mIndices[_index];
 }
