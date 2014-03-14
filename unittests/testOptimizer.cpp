@@ -105,6 +105,8 @@ private:
 //==============================================================================
 TEST(Optimizer, BasicNlopt)
 {
+  // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
+
   Problem prob(2);
 
   prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
