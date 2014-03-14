@@ -33,5 +33,5 @@ fi
 
 # Install nlopt from source since Ubuntu 12.04 does not provide debian package for nlopt
 git clone git://github.com/stevengj/nlopt
-(cd nlopt; sh autogen.sh; make && sudo make install)
+(cd nlopt; ./configure; make && sudo make install)
 
