@@ -13,6 +13,7 @@ libeigen3-dev
 libfcl-dev
 libxi-dev
 libxmu-dev 
+libnlopt-dev
 '
 
 APT=$APT_CORE' 
