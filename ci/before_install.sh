@@ -30,3 +30,8 @@ if [ $BUILD_CORE_ONLY = OFF ]; then
 else
   sudo apt-get --yes --force-yes install $APT_CORE
 fi
+
+# Install nlopt from source since Ubuntu 12.04 does not provide debian package for nlopt
+git clone git://github.com/stevengj/nlopt
+(cd nlopt; sh autogen.sh; make && sudo make install)
+
