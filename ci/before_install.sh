@@ -4,7 +4,7 @@ before_install() {
   # Install nlopt from source since Ubuntu 12.04 does not provide debian package for nlopt
   curl -o nlopt-2.4.1.tar.gz http://ab-initio.mit.edu/nlopt/nlopt-2.4.1.tar.gz
   tar -xf nlopt-2.4.1.tar.gz
-  (cd nlopt-2.4.1/; sh autogen.sh; make CXXFLAGS='-fPIC' && sudo make install)
+  (cd nlopt-2.4.1/; sh autogen.sh; make CPPFLAGS='{$CPPFLAGS} -fPIC' && sudo make install)
 }
 
 sudo add-apt-repository --yes ppa:libccd-debs/ppa
