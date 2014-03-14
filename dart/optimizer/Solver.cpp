@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,51 +35,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Solver.h"
-#include "Var.h"
-#include "Problem.h"
+#include "dart/optimizer/Solver.h"
+#include "dart/optimizer/Problem.h"
 
 namespace dart {
 namespace optimizer {
 
-Solver::Solver()
-    : mProb(NULL) {
+//==============================================================================
+Solver::Solver(Problem* _prob)
+  : mProblem(_prob)
+{
 }
 
-Solver::Solver(Problem *prob)
-    : mProb(prob) {
+//==============================================================================
+Solver::~Solver()
+{
 }
 
-Solver::~Solver() {
+//==============================================================================
+Problem* Solver::getProblem() const
+{
+  return mProblem;
 }
 
-Eigen::VectorXd Solver::getState() {
-    int nVar = mProb->getNumVariables();
-    std::vector<Var *>& vars(mProb->vars());
-
-    Eigen::VectorXd x(nVar);
-    for (int i = 0; i < nVar; i++) {
-        x(i) = vars[i]->mVal;
-    }
-    return x;
-}
-
-void Solver::setState(const Eigen::VectorXd& x) {
-    int nVar = mProb->getNumVariables();
-    std::vector<Var *>& vars(mProb->vars());
-
-    for (int i = 0; i < nVar; i++) {
-        vars[i]->mVal = x(i);
-    }
-}
-
-void Solver::setProblem(Problem * prob) {
-    this->mProb = prob;
-}
-
-Problem* Solver::getProblem() const {
-    return mProb;
-}
-
-} // namespace optimizer
-} // namespace dart
+}  // namespace optimizer
+}  // namespace dart

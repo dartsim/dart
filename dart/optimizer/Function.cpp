@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,20 +35,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
-#define DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
-
-#include <vector>
+#include "dart/optimizer/Function.h"
 
 namespace dart {
 namespace optimizer {
 
-typedef std::vector<std::vector<double> * > * VVD;
-typedef std::vector<std::vector<int> * > * VVI;
-typedef std::vector<std::vector<bool> * > * VVB;
+//==============================================================================
+Function::Function()
+{
+}
 
-} // namespace optimizer
-} // namespace dart
+//==============================================================================
+Function::~Function()
+{
+}
 
-#endif // #ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+//==============================================================================
+MultiFunction::MultiFunction()
+{
+}
 
+//==============================================================================
+MultiFunction::~MultiFunction()
+{
+}
+
+}  // namespace optimizer
+}  // namespace dart

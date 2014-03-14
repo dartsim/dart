@@ -16,17 +16,36 @@ set(PKG_EXTERNAL_DEPS "flann, ccd, fcl")
 message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 
-option(BUILD_SNOPT "Build with SNOPT optimizer" OFF)
 option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(NOT MSVC)
     OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release CACHE STRING
+###############
+message(STATUS "Checking dart build type")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo Profile."
       FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+endif(NOT CMAKE_BUILD_TYPE)
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+
+set(BUILD_TYPE_PROFILE FALSE)
+set(BUILD_TYPE_RELEASE FALSE)
+set(BUILD_TYPE_RELWITHDEBINFO FALSE)
+set(BUILD_TYPE_DEBUG FALSE)
+
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "PROFILE")
+  set(BUILD_TYPE_PROFILE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
+  set(BUILD_TYPE_RELEASE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
+  set(BUILD_TYPE_RELWITHDEBINFO TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
+  set(BUILD_TYPE_DEBUG TRUE)
+else()
+  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug Release RelWithDebInfo Profile Check")
+endif()
 
 # GCCFilter, if appliciable
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCPP)
@@ -58,14 +77,6 @@ set(CMAKE_DEBUG_POSTFIX "d")
 if(WIN32 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 endif()
-
-###############
-# Generate the path header file
-set(PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/dart/utils/Paths.h.in)
-set(PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/dart/utils/Paths.h)
-message(STATUS "Generate the path header file to ${PATH_HEADER_OUT}")
-configure_file(${PATH_HEADER_IN} ${PATH_HEADER_OUT} @ONLY)
-install(FILES ${PATH_HEADER_OUT} DESTINATION include/dart/utils)
 
 ###############
 # Find dependencies
@@ -108,6 +119,19 @@ if(NOT BUILD_CORE_ONLY)
                             optimized urdfdom_world       debug urdfdom_worldd
                             optimized console_bridge      debug console_bridged)
   endif()
+
+  # NLOPT
+  find_package(NLOPT REQUIRED)
+
+  # IPOPT
+  find_package(IPOPT)
+  if(IPOPT_FOUND)
+    message(STATUS "Looking for IPOPT - found")
+    set(HAVE_IPOPT TRUE)
+  else()
+    build_warning("IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
+    set(HAVE_IPOPT FALSE)
+  endif()
 endif()
 
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
@@ -123,6 +147,7 @@ if(NOT BUILD_CORE_ONLY)
   include_directories(${urdfdom_INCLUDE_DIRS})
   include_directories(${TinyXML_INCLUDE_DIRS})
   include_directories(${TinyXML2_INCLUDE_DIRS})
+  include_directories(${NLOPT_INCLUDE_DIRS})
 endif()
 
 include_directories("${CMAKE_BINARY_DIR}")
@@ -131,10 +156,33 @@ link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
 
-set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
+set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
+                           ${Assimp_LIBRARIES}
+                           ${Boost_LIBRARIES}
+                           ${OPENGL_LIBRARIES}
+                           ${GLUT_LIBRARY})
 if(NOT BUILD_CORE_ONLY)
-  set(DART_DEPENDENCIES ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+  set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
+                        ${TinyXML_LIBRARIES}
+                        ${TinyXML2_LIBRARIES}
+                        ${NLOPT_LIBRARIES})
 endif()
+
+###############
+# Generate the dart config file (reference: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks)
+set(DART_CONFIG_IN cmake/config.h.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
+message(STATUS "Generate the config file to ${DART_CONFIG_OUT}")
+configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
+install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
+
+###############
+# Generate the path header file
+set(PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/dart/utils/Paths.h.in)
+set(PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/dart/utils/Paths.h)
+message(STATUS "Generate the path header file to ${PATH_HEADER_OUT}")
+configure_file(${PATH_HEADER_IN} ${PATH_HEADER_OUT} @ONLY)
+install(FILES ${PATH_HEADER_OUT} DESTINATION include/dart/utils)
 
 ###############
 # Generate the Dart CMake Config and version files

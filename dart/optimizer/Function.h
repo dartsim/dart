@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -33,8 +34,9 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_OPTIMIZER_OBJECTIVE_BOX_H
-#define DART_OPTIMIZER_OBJECTIVE_BOX_H
+
+#ifndef DART_OPTIMIZER_FUNCTION_H_
+#define DART_OPTIMIZER_FUNCTION_H_
 
 #include <vector>
 #include <Eigen/Dense>
@@ -42,38 +44,39 @@
 namespace dart {
 namespace optimizer {
 
-class Constraint;
-
-class ObjectiveBox {
+/// \brief class Function
+class Function
+{
 public:
-    ObjectiveBox(int numDofs);
-    virtual ~ObjectiveBox();
+  /// \brief Constructor
+  explicit Function();
 
-    void add(Constraint *_newobj);
-    void clear();
-    int remove(Constraint *_obj);
-    int isInBox(Constraint *_obj);
+  /// \brief Destructor
+  virtual ~Function();
 
-    int getNumConstraints() const { return mObjectives.size(); }
-    Constraint * getConstraint(int index) const { return mObjectives[index]; }
-
-    void evalObj();
-    void evalObjGrad();
-    void evalObjHess();
-
-    //Must be called befob re using Constraints
-    void setNumDofs(int _numdofs);
-    void reallocateMem();
-
-    int mNumDofs; //number of Model DOFs
-    std::vector<Constraint *> mObjectives;
-    double mObj;
-    std::vector<double> mObjGrad;
-    Eigen::MatrixXd mObjHess;
+  /// \brief Operator ()
+  virtual double operator()(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd>& _grad) = 0;
 };
 
-} // namespace optimizer
-} // namespace dart
+/// \brief class MultiFunction
+class MultiFunction
+{
+public:
+  /// \brief Constructor
+  MultiFunction();
 
-#endif // #ifndef DART_OPTIMIZER_OBJECTIVE_BOX_H
+  /// \brief Destructor
+  virtual ~MultiFunction();
+
+  /// \brief Operator ()
+  virtual void operator()(Eigen::Map<const Eigen::VectorXd>& _x,
+                          Eigen::Map<Eigen::VectorXd>& _f,
+                          Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
+};
+
+}  // namespace optimizer
+}  // namespace dart
+
+#endif  // DART_OPTIMIZER_FUNCTION_H_
 

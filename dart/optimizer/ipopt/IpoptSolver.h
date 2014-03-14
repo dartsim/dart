@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,29 +34,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Constraint.h"
+#ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+
+#include "dart/optimizer/Solver.h"
 
 namespace dart {
 namespace optimizer {
 
-Constraint::Constraint(std::vector<Var*>& var)
-    : mVariables(var){
-    mIndex = 0;
-    // mWeight = vl_1;
-    // mWeight = VectorXd::Ones(1);
-    mSlack = false;
-    // mConstTerm = VectorXd::Zero(0);
-    mEquality = 0;
-    // mCompletion = vl_0;
-    mConfigIndecies.push_back(0);
-    mActive = true;
-}
+class Problem;
 
-double Constraint::evalObj() {
-    Eigen::VectorXd constr = evalCon();
-    return 0.5 * constr.dot(constr);
-    /* return 0.5*dot(constr, constr); */
-}
+/// \brief class IpoptSolver
+class IpoptSolver : public Solver
+{
+public:
+  /// \brief Constructor
+  explicit IpoptSolver(Problem* _problem);
 
-} // namespace optimizer
-} // namespace dart
+  /// \brief Destructor
+  virtual ~IpoptSolver();
+
+  /// \copydoc Solver::solve
+  virtual bool solve();
+};
+
+}  // namespace optimizer
+}  // namespace dart
+
+#endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+

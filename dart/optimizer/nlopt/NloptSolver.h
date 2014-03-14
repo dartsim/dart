@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,48 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
-#define DART_OPTIMIZER_CONSTRAINT_BOX_H
+#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 
-#include <vector>
+#include <nlopt.h>
+
+#include "dart/optimizer/Solver.h"
 
 namespace dart {
 namespace optimizer {
 
-class Constraint;
+class Problem;
 
-class ConstraintBox {
+/// \brief class NloptSolver
+class NloptSolver : public Solver
+{
 public:
-    ConstraintBox(int numDofs);
-    virtual ~ConstraintBox();
+  /// \brief Constructor
+  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
-    void add(Constraint *newConstraint);
-    void clear();
-    int remove(Constraint *target);
-    int isInBox(Constraint *testConstraint);	//return index of component if true
+  /// \brief Destructor
+  virtual ~NloptSolver();
 
-    int getNumConstraints() const { return mConstraints.size(); }
-    Constraint * getConstraint(int index) const { return mConstraints[index]; }
+  /// \copydoc Solver::solve
+  virtual bool solve();
 
-    void evalJac();
-    void evalCon();
-    void reallocateMem();
+private:
+  /// \brief Wrapping function for nlopt callback function, nlopt_func
+  static double _nlopt_func(unsigned _n,
+                            const double* _x,
+                            double* _gradient,  // NULL if not needed
+                            void* _func_data);
 
-    //Must be called before using ConstraintBox
-    int getNumDofs() const { return mNumDofs; }
-    void setNumDofs(int numDofs);
-    int getNumTotalRows() const { return mNumTotalRows; }
+  /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
+  static void _nlopt_mfunc(unsigned _m,
+                           double* _result,
+                           unsigned _n,
+                           const double* _x,
+                           double* _gradient,  // NULL if not needed
+                           void* _func_data);
 
-    int mNumDofs; //number of Model DOFs
-    int mNumTotalRows;
-    std::vector<Constraint *> mConstraints;
-    std::vector<double> mCon;
-    std::vector< std::vector<double> *> mJac; //Jacobian
-    std::vector< std::vector<bool> *> mJacMap; //Show nonzero elements of Jacobian
+  /// \brief NLOPT data structure
+  nlopt_opt mOpt;
+
+  /// \brief Optimization parameters
+  Eigen::VectorXd mX;
+
+  /// \brief Optimal value of objective function
+  double mMinF;
 };
 
-} // namespace optimizer
-} // namespace dart
+}  // namespace optimizer
+}  // namespace dart
 
-#endif // #ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
+#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 

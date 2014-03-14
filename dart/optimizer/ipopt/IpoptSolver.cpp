@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,25 +34,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_VAR_H
-#define DART_OPTIMIZER_VAR_H
+#include "dart/optimizer/ipopt/IpoptSolver.h"
+
+#include "dart/optimizer/Problem.h"
 
 namespace dart {
 namespace optimizer {
 
-class Var {
-public:
-    Var(double val, double lower, double upper);
-    void setWeight(double weight);
-public:
-    double mVal;
-    double mLower;
-    double mUpper;
-    double mWeight;
-};
+IpoptSolver::IpoptSolver(Problem* _problem)
+  : Solver(_problem)
+{
+}
 
-} // namespace optimizer
-} // namespace dart
+IpoptSolver::~IpoptSolver()
+{
+}
 
-#endif // #ifndef DART_OPTIMIZER_VAR_H
+bool IpoptSolver::solve()
+{
+  // TODO(JS): Not implemented yet.
+}
 
+}  // namespace optimizer
+}  // namespace dart
