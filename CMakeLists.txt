@@ -141,13 +141,16 @@ include_directories(${Assimp_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
+include_directories(${NLOPT_INCLUDE_DIRS})
+if(HAVE_IPOPT)
+  include_directories(${IPOPT_INCLUDE_DIRS})
+endif()
 
 if(NOT BUILD_CORE_ONLY)
   include_directories(${FLANN_INCLUDE_DIRS})
   include_directories(${urdfdom_INCLUDE_DIRS})
   include_directories(${TinyXML_INCLUDE_DIRS})
   include_directories(${TinyXML2_INCLUDE_DIRS})
-  include_directories(${NLOPT_INCLUDE_DIRS})
 endif()
 
 include_directories("${CMAKE_BINARY_DIR}")
@@ -161,6 +164,10 @@ set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
                            ${GLUT_LIBRARY})
+if(HAVE_IPOPT)
+  set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${IPOPT_LIBRARIES})
+endif()
+
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
