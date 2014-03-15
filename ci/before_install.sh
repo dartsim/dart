@@ -21,8 +21,7 @@ libccd-dev
 libeigen3-dev
 libfcl-dev
 libxi-dev
-libxmu-dev 
-coinor-libipopt-dev
+libxmu-dev
 '
 
 APT=$APT_CORE' 
