@@ -22,6 +22,7 @@ libeigen3-dev
 libfcl-dev
 libxi-dev
 libxmu-dev 
+coinor-libipopt-dev
 '
 
 APT=$APT_CORE' 
