@@ -156,7 +156,7 @@ TEST(Optimizer, BasicNlopt)
 #ifdef HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
-  dterr << "Ipopt does not pass this test.\n";
+  dterr << "Ipopt does not pass this test yet. Please see #153.";
   return;
 
   Problem prob(2);
