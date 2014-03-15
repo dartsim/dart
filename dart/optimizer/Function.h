@@ -54,9 +54,17 @@ public:
   /// \brief Destructor
   virtual ~Function();
 
-  /// \brief Operator ()
-  virtual double operator()(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd>& _grad) = 0;
+  /// \brief Evaluate and return the objective function at the point x
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) = 0;
+
+  /// \brief Evaluate and return the objective function at the point x
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) = 0;
+
+  /// \brief Evaluate and return the objective function at the point x
+  virtual void evalHessian(
+      Eigen::Map<const Eigen::VectorXd>& _x,
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) = 0;
 };
 
 /// \brief class MultiFunction

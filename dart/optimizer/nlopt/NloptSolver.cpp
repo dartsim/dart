@@ -106,7 +106,7 @@ bool NloptSolver::solve()
   // Store optimal and optimum values
   mProblem->setOptimalValue(mMinF);
   Eigen::VectorXd minX = Eigen::VectorXd::Zero(mProblem->getDimension());
-  for (int i = 0; i < mProblem->getDimension(); ++i)
+  for (size_t i = 0; i < mProblem->getDimension(); ++i)
     minX[i] = mX[i];
   mProblem->setOptimumParameters(minX);
 
@@ -119,12 +119,17 @@ double NloptSolver::_nlopt_func(unsigned _n,
                                 double* _gradient,
                                 void* _func_data)
 {
-  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-  Eigen::Map<Eigen::VectorXd> grad(_gradient, 0);
-  if (_gradient)
-    new (&grad) Eigen::Map<Eigen::VectorXd>(_gradient, _n);
+  Function* fn = static_cast<Function*>(_func_data);
 
-  return (*static_cast<Function*>(_func_data))(x, grad);
+  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
+
+  if (_gradient)
+  {
+    Eigen::Map<Eigen::VectorXd> grad(_gradient, _n);
+    fn->evalGradient(x, grad);
+  }
+
+  return fn->eval(x);
 }
 
 //==============================================================================

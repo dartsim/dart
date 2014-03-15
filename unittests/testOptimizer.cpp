@@ -55,51 +55,71 @@ using namespace Eigen;
 using namespace dart::optimizer;
 
 //==============================================================================
+/// \brief class SampleObjFunc
 class SampleObjFunc : public Function
 {
 public:
-  SampleObjFunc()
-    : Function()
-  {
-  }
+  /// \brief Constructor
+  SampleObjFunc() : Function() {}
 
-  virtual double operator()(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd>& _grad)
+  /// \brief Destructor
+  virtual ~SampleObjFunc() {}
+
+  /// \copydoc Function::eval
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
   {
-    if (_grad.size() > 0)
-    {
-      _grad[0] = 0.0;
-      _grad[1] = 0.5 / std::sqrt(_x[1]);
-    }
     return std::sqrt(_x[1]);
   }
+
+  /// \copydoc Function::evalGradient
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+  {
+    _grad[0] = 0.0;
+    _grad[1] = 0.5 / std::sqrt(_x[1]);
+  }
+
+  /// \copydoc Function::evalHessian
+  virtual void evalHessian(
+      Eigen::Map<const Eigen::VectorXd>& _x,
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) {}
 };
 
 //==============================================================================
 class SampleConstFunc : public Function
 {
 public:
-  SampleConstFunc(double _a, double _b)
-    : Function(),
-      a(_a),
-      b(_b)
+  /// \brief Constructor
+  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b) {}
+
+  /// \brief Destructor
+  virtual ~SampleConstFunc() {}
+
+  /// \copydoc Function::eval
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
   {
+    return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
   }
 
-  virtual double operator()(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd>& _grad)
+  /// \copydoc Function::evalGradient
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
   {
-    if (_grad.size() > 0)
-    {
-      _grad[0] = 3 * a * (a*_x[0] + b) * (a*_x[0] + b);
-      _grad[1] = -1.0;
-    }
-    return ((a*_x[0] + b) * (a*_x[0] + b) * (a*_x[0] + b) - _x[1]);
+    _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
+    _grad[1] = -1.0;
   }
+
+  /// \copydoc Function::evalHessian
+  virtual void evalHessian(
+      Eigen::Map<const Eigen::VectorXd>& _x,
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) {}
 
 private:
-  double a;
-  double b;
+  /// \brief Data
+  double mA;
+
+  /// \brief Data
+  double mB;
 };
 
 //==============================================================================
@@ -136,8 +156,32 @@ TEST(Optimizer, BasicNlopt)
 #ifdef HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
-  dterr << "IPOPT is not implemented yet.\n";
+  dterr << "Ipopt does not pass this test.\n";
   return;
+
+  Problem prob(2);
+
+  prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  SampleObjFunc* c = new SampleObjFunc();
+  prob.setObjective(c);
+
+  SampleConstFunc const1 = SampleConstFunc( 2, 0);
+  SampleConstFunc const2 = SampleConstFunc(-1, 1);
+  prob.addIneqConstraint(&const1);
+  prob.addIneqConstraint(&const2);
+
+  IpoptSolver solver(&prob);
+  solver.solve();
+
+  double minF = prob.getOptimalValue();
+  Eigen::VectorXd optX = prob.getOptimumParameters();
+
+  EXPECT_NEAR(minF, 0.544330847, 1e-6);
+  EXPECT_EQ(optX.size(), prob.getDimension());
+  EXPECT_NEAR(optX[0], 0.333334, 1e-6);
+  EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
 #endif
 
