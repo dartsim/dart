@@ -59,7 +59,7 @@ NloptSolver::NloptSolver(Problem* _problem, nlopt_algorithm _alg)
   mOpt = nlopt_create(_alg, dim);
 
   // Set relative tolerance on function value
-  nlopt_set_ftol_rel(mOpt, 1e-6);
+  nlopt_set_ftol_rel(mOpt, 1e-8);
 
   // Set initial guess for x
   mX = mProblem->getInitialGuess();

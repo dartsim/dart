@@ -114,8 +114,8 @@ TEST(InverseKinematics, BasicTest)
   Joint* joint2 = body2->getParentJoint();
 
   //------------------------- Free joint test ----------------------------------
-  // The parent joint of body1 is free joint so body1 should transform to
-  // arbitrary tramsformation.
+  // The parent joint of body1 is free joint so body1 should be able to
+  // transform to arbitrary tramsformation.
   for (size_t i = 0; i < numRandomTests; ++i)
   {
     // Get desiredT2 by transforming body1 to arbitrary transformation
