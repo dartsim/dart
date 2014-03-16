@@ -37,6 +37,8 @@
 
 #include "dart/optimizer/Function.h"
 
+#include "dart/common/Console.h"
+
 namespace dart {
 namespace optimizer {
 
@@ -48,6 +50,20 @@ Function::Function()
 //==============================================================================
 Function::~Function()
 {
+}
+
+//==============================================================================
+void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+{
+  dterr << "Gradient is not provided. Use gradient-free algorithm.\n";
+}
+
+//==============================================================================
+void Function::evalHessian(Eigen::Map<const Eigen::VectorXd>& _x,
+                           Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+{
+  dterr << "Hessian is not provided. Use Hessian-free algorithm.\n";
 }
 
 //==============================================================================

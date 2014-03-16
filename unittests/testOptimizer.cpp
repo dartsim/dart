@@ -78,11 +78,6 @@ public:
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
   }
-
-  /// \copydoc Function::evalHessian
-  virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) {}
 };
 
 //==============================================================================
@@ -109,11 +104,6 @@ public:
     _grad[1] = -1.0;
   }
 
-  /// \copydoc Function::evalHessian
-  virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) {}
-
 private:
   /// \brief Data
   double mA;
@@ -132,11 +122,11 @@ TEST(Optimizer, BasicNlopt)
   prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
   prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
 
-  SampleObjFunc* c = new SampleObjFunc();
-  prob.setObjective(c);
+  SampleObjFunc obj;
+  prob.setObjective(&obj);
 
-  SampleConstFunc const1 = SampleConstFunc( 2, 0);
-  SampleConstFunc const2 = SampleConstFunc(-1, 1);
+  SampleConstFunc const1( 2, 0);
+  SampleConstFunc const2(-1, 1);
   prob.addIneqConstraint(&const1);
   prob.addIneqConstraint(&const2);
 
@@ -164,11 +154,11 @@ TEST(Optimizer, BasicIpopt)
   prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
   prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
 
-  SampleObjFunc* c = new SampleObjFunc();
-  prob.setObjective(c);
+  SampleObjFunc obj;
+  prob.setObjective(&obj);
 
-  SampleConstFunc const1 = SampleConstFunc( 2, 0);
-  SampleConstFunc const2 = SampleConstFunc(-1, 1);
+  SampleConstFunc const1( 2, 0);
+  SampleConstFunc const2(-1, 1);
   prob.addIneqConstraint(&const1);
   prob.addIneqConstraint(&const2);
 

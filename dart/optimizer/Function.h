@@ -59,12 +59,12 @@ public:
 
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad) = 0;
+                            Eigen::Map<Eigen::VectorXd> _grad);
 
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalHessian(
       Eigen::Map<const Eigen::VectorXd>& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) = 0;
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
 };
 
 /// \brief class MultiFunction

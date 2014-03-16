@@ -62,7 +62,7 @@ NloptSolver::NloptSolver(Problem* _problem, nlopt_algorithm _alg)
   mX = mProblem->getInitialGuess();
 
   // Set tolerance for x
-  nlopt_set_xtol_rel(mOpt, 1e-4);
+  nlopt_set_xtol_rel(mOpt, 1e-7);
 
   // Set lower/upper bounds
   nlopt_set_lower_bounds(mOpt, mProblem->getLowerBounds().data());
