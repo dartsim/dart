@@ -36,16 +36,14 @@ void MyWorld::simulate() {
 }
 
 void MyWorld::densityStep(double *_x, double *_x0) {
-    addDensity(_x, _x0); // Add density to _x which points at mDensity
-    SWAP(_x, _x0); // _x now points at mPresendity
+    SWAP(_x, _x0); // _x now points at mPreDensity
     diffuseDensity(_x, _x0); // Diffusion on _x which pointst at mPreDensity
     SWAP(_x, _x0); // _x now points at mDensity
-    advectDensity(_x, _x0, mU, mV); // Advection on _x which points atmDensity
+    advectDensity(_x, _x0, mU, mV); // Advection on _x which points at mDensity
 }
 
 
 void MyWorld::velocityStep(double *_u, double *_v, double *_u0, double *_v0) {
-    addVelocity(_u, _v, _u0, _v0);
     SWAP(_u, _u0); // _u now points at mPreU
     SWAP(_v, _v0); // _v now points at mPreV
     diffuseVelocity(_u, _v, _u0, _v0);
@@ -54,20 +52,6 @@ void MyWorld::velocityStep(double *_u, double *_v, double *_u0, double *_v0) {
     SWAP(_v, _v0); // _u now points at mV
     advectVelocity(_u, _v, _u0, _v0);
     project(_u, _v, _u0, _v0);
-}
-
-void MyWorld::addDensity(double *_x, double *_x0) {
-    int size = (mNumCells + 2) * (mNumCells + 2);
-    for (int i = 0; i < size; i++)
-        _x[i] += mTimeStep * _x0[i];
-}
-
-void MyWorld::addVelocity(double *_u, double *_v, double *_u0, double *_v0) {
-    int size = (mNumCells + 2) * (mNumCells + 2);
-    for (int i = 0; i < size; i++) {
-        _u[i] += mTimeStep * _u0[i];
-        _v[i] += mTimeStep * _v0[i];
-    }
 }
 
 void MyWorld::diffuseDensity(double *_x, double *_x0) {

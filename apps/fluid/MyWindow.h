@@ -23,6 +23,7 @@ class MyWindow : public dart::yui::Win3D {
             mDisplayTimeout = 5;
             mLeftClick = false;
             mRightClick = false;
+            mViewVelocity = false;
         }
 
     virtual ~MyWindow() {};
@@ -51,6 +52,8 @@ protected:
     MyWorld *mWorld;
     bool mLeftClick;
     bool mRightClick;
+    bool mViewVelocity;
+
 };
 
 #endif

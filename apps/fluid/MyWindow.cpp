@@ -3,15 +3,15 @@
 #include <iostream>
 #include <cstdio>
 
-#define IX(i, j) ((i)+(mWorld->getNumCells()+2)*(j))
+#define IX2(i, j) ((i)+(mWorld->getNumCells()+2)*(j))
 
 using namespace Eigen;
 
 void MyWindow::displayTimer(int _val) {
-    mWorld->simulate();
+        mWorld->simulate();
     glutPostRedisplay();
     mFrame++;
-    if(mPlaying)
+    if (mPlaying)
         glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
@@ -22,8 +22,10 @@ void MyWindow::draw() {
     glLoadIdentity ();
     gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
 
-    drawVelocity();
-    drawDensity();
+    if (mViewVelocity)
+        drawVelocity();
+    else
+        drawDensity();
 
     // Display the frame count in 2D text
     char buff[64];
@@ -42,6 +44,10 @@ void MyWindow::keyboard(unsigned char key, int x, int y) {
         if(mPlaying)
             glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
         break;
+    case 'v':
+        mViewVelocity = !mViewVelocity;
+        break;
+
     default:
         Win3D::keyboard(key,x,y);
     }
@@ -62,12 +68,12 @@ void MyWindow::click(int button, int state, int x, int y) {
         
         if (button == GLUT_LEFT_BUTTON) {
             mLeftClick = true;
-            mWorld->setPreDensity(i, j, 100.0);
+            mWorld->setDensity(i, j, 100.0);
         
         } else if (button == GLUT_RIGHT_BUTTON || button == GLUT_MIDDLE_BUTTON) {
             mRightClick = true;
-            mWorld->setPreU(i, j, 5.0);
-            mWorld->setPreV(i, j, 5.0);
+            mWorld->setU(i, j, 5.0);
+            mWorld->setV(i, j, 5.0);
         }
     } else {
         mLeftClick = false;
@@ -84,10 +90,10 @@ void MyWindow::drag(int x, int y) {
         return;
         
     if (mLeftClick)
-        mWorld->setPreDensity(i, j, 100.0);
+        mWorld->setDensity(i, j, 100.0);
     else if (mRightClick) {        
-        mWorld->setPreU(i, j, x - mMouseX);
-        mWorld->setPreV(i, j, mMouseY - y);
+        mWorld->setU(i, j, x - mMouseX);
+        mWorld->setV(i, j, mMouseY - y);
     }
 
     mMouseX = x;
@@ -103,10 +109,10 @@ void MyWindow::drawDensity() {
         for (int j = 0; j <= mWorld->getNumCells(); j++) {
             double y = (j - 0.5) * h;
                 
-            double d00 = mWorld->getDensity(IX(i, j));
-            double d01 = mWorld->getDensity(IX(i, j+1));
-            double d10 = mWorld->getDensity(IX(i+1, j));
-            double d11 = mWorld->getDensity(IX(i+1, j+1));
+            double d00 = mWorld->getDensity(IX2(i, j));
+            double d01 = mWorld->getDensity(IX2(i, j+1));
+            double d10 = mWorld->getDensity(IX2(i+1, j));
+            double d11 = mWorld->getDensity(IX2(i+1, j+1));
 
             glColor3d(d00, d00, d00); 
             glVertex3f(x, y, 0);
@@ -134,7 +140,7 @@ void MyWindow::drawVelocity() {
             double y = (j - 0.5) * h;
 
             glVertex2f(x, y );
-            glVertex2f (x + mWorld->getVelocityU(IX(i,j)), y + mWorld->getVelocityV(IX(i,j)));
+            glVertex2f (x + mWorld->getVelocityU(IX2(i,j)), y + mWorld->getVelocityV(IX2(i,j)));
         }
     }
     glEnd ();

@@ -17,17 +17,15 @@ class MyWorld {
     double getDensity(int _index) { return mDensity[_index]; }
     double getVelocityU(int _index) { return mU[_index]; }
     double getVelocityV(int _index) { return mV[_index]; }
-    void setPreDensity(int _i, int _j, double _source) { mPreDensity[IX(_i, _j)] = _source; }
-    void setPreU(int _i, int _j, double _force) { mPreU[IX(_i, _j)] = _force; }
-    void setPreV(int _i, int _j, double _force) { mPreV[IX(_i, _j)] = _force; }
+    void setDensity(int _i, int _j, double _source) { mDensity[IX(_i, _j)] += mTimeStep * _source; }
+    void setU(int _i, int _j, double _force) { mU[IX(_i, _j)] += mTimeStep * _force; }
+    void setV(int _i, int _j, double _force) { mV[IX(_i, _j)] += mTimeStep * _force; }
     
     void simulate();
     
  protected:
     void densityStep(double *_x, double *_x0);
     void velocityStep(double *_u, double *_v, double *_u0, double *_v0);
-    void addDensity(double *_x, double *_x0);
-    void addVelocity(double *_u, double *_v, double *_u0, double *_v0);
     void diffuseDensity(double *_x, double *_x0);
     void diffuseVelocity(double *_u, double *_v, double *_u0, double *_v0);
     void advectDensity(double *_d, double *_d0, double *_u, double *_v);
