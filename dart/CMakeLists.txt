@@ -14,25 +14,27 @@ foreach(SUBDIR ${CORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(core_srcs ${core_srcs} ${subdir_srcs})
 endforeach()
-foreach(SUBDIR ${NONCORE_SUBDIRS})
-  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-endforeach()
 
 file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
 file(GLOB_RECURSE subdir_srcs optimizer/nlopt/*.cpp optimizer/nlopt/*.h)
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+set(core_srcs ${core_srcs} ${subdir_srcs})
 
 if(HAVE_IPOPT)
   file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
 endif()
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+set(core_srcs ${core_srcs} ${subdir_srcs})
 
 if(HAVE_SNOPT)
   file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
 endif()
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+foreach(SUBDIR ${NONCORE_SUBDIRS})
+  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+endforeach()
 
 # Setup directory structure for Visual Studio
 foreach(SUBDIR ${CORE_SUBDIRS} ${NONCORE_SUBDIRS})

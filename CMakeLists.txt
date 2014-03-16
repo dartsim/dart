@@ -163,7 +163,8 @@ set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
-                           ${GLUT_LIBRARY})
+                           ${GLUT_LIBRARY}
+                           ${NLOPT_LIBRARIES})
 if(HAVE_IPOPT)
   set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${IPOPT_LIBRARIES})
 endif()
@@ -171,8 +172,7 @@ endif()
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
-                        ${TinyXML2_LIBRARIES}
-                        ${NLOPT_LIBRARIES})
+                        ${TinyXML2_LIBRARIES})
 endif()
 
 ###############
