@@ -37,16 +37,21 @@
 
 #include "dart/dynamics/Skeleton.h"
 
+#include <algorithm>
 #include <queue>
 #include <string>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
+#include "dart/optimizer/Problem.h"
+#include "dart/optimizer/Function.h"
+#include "dart/optimizer/nlopt/NloptSolver.h"
 
 namespace dart {
 namespace dynamics {
@@ -910,6 +915,101 @@ double Skeleton::getPotentialEnergy() const {
   }
 
   return PE;
+}
+
+void Skeleton::solveInvKinematics(BodyNode* _body,
+                                         const Eigen::Isometry3d& _target,
+                                         InverseKinematicsPolicy _policy,
+                                         bool _jointLimit)
+{
+  assert(_body && "Null point is not allowed.");
+
+  // Check if _body is contained in this skeleton
+  std::vector<BodyNode*>::iterator it
+      = std::find(mBodyNodes.begin(), mBodyNodes.end(), _body);
+  if (it == mBodyNodes.end())
+  {
+    dtwarn << "BodyNode[" << _body->getName() << "] is not contained in "
+           << "skeleton[" << mName << "].\n";
+  }
+
+  if (_policy == IKP_PARENT_JOINT)
+    solveInvKinematicsParentJointImpl(_body, _target, _jointLimit);
+  else if (_policy == IKP_ANCESTOR_JOINTS)
+    solveInvKinematicsAncestorJointsImpl(_body, _target, _jointLimit);
+  else if (_policy == IKP_ALL_JOINTS)
+    solveInvKinematicsAllJointsImpl(_body, _target, _jointLimit);
+}
+
+void Skeleton::solveInvKinematicsParentJointImpl(
+    BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit)
+{
+  Joint* joint = _body->getParentJoint();
+  size_t dof = joint->getNumGenCoords();
+
+  if (dof == 0)
+    return;
+
+  optimizer::Problem prob(dof);
+
+  // Objective function
+  ObjFuncTramsfDist obj(_body, _target, this);
+  prob.setObjective(&obj);
+
+  // Joint limit
+  if (_jointLimit)
+  {
+    prob.setLowerBounds(joint->get_qMin());
+    prob.setUpperBounds(joint->get_qMax());
+  }
+
+  // Solve with gradient-free local minima algorithm
+  optimizer::NloptSolver solver(&prob, NLOPT_LN_COBYLA);
+  solver.solve();
+
+  // Set optimal configuration of the parent joint
+  Eigen::VectorXd jointQ = prob.getOptimumParameters();
+  joint->set_q(jointQ);
+
+  // Update forward kinematics information
+  // TODO(JS): Need more efficient api for this
+  setConfig(getConfig());
+}
+
+void Skeleton::solveInvKinematicsAncestorJointsImpl(
+    BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit)
+{
+}
+
+void Skeleton::solveInvKinematicsAllJointsImpl(
+    BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit)
+{
+}
+
+Skeleton::ObjFuncTramsfDist::ObjFuncTramsfDist(
+    BodyNode* _body, const Eigen::Isometry3d& _T, Skeleton* _skeleton)
+  : Function(), mBodyNode(_body), mTransf(_T), mSkeleton(_skeleton)
+{
+}
+
+Skeleton::ObjFuncTramsfDist::~ObjFuncTramsfDist()
+{
+}
+
+double Skeleton::ObjFuncTramsfDist::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+{
+  assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
+
+  // Update forward kinematics information with _x
+  // TODO(JS): Need more efficient api for this
+  mBodyNode->getParentJoint()->set_q(_x);
+  mSkeleton->setConfig(mSkeleton->getConfig());
+
+  // Compute and return the geometric distance between body node transformation
+  // and target transformation
+  Eigen::Isometry3d bodyT = mBodyNode->getWorldTransform();
+  Eigen::Vector6d distIn_se3 = math::logMap(bodyT.inverse() * mTransf);
+  return distIn_se3.norm();
 }
 
 }  // namespace dynamics
