@@ -1,4 +1,5 @@
 #include "MyWindow.h"
+#include <iostream>
 
 int main(int argc, char* argv[])
 {
@@ -12,7 +13,12 @@ int main(int argc, char* argv[])
     window.setWorld(world);
     glutInit(&argc, argv);
     window.initWindow(640, 640, "Fluid");
-    glutMainLoop();
 
+    std::cout << "Left click+drag: add density" << std::endl;
+    std::cout << "Right click+drag: add velocity" << std::endl;
+    std::cout << "'v': visualization density/velocity" << std::endl;
+    std::cout << "space bar: simulation on/off" << std::endl;
+
+    glutMainLoop();
     return 0;
 }
