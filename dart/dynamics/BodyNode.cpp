@@ -835,7 +835,7 @@ void BodyNode::update_ddq() {
 
 void BodyNode::update_F_fs() {
   mF = mB;
-  mF.noalias() = mAI * mdV;
+  mF.noalias() += mAI * mdV;
   assert(!math::isNan(mF));
 }
 
