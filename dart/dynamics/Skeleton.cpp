@@ -952,6 +952,9 @@ void Skeleton::solveInvKinematicsParentJointImpl(
 
   optimizer::Problem prob(dof);
 
+  // Use the current joint configuration as initial guess
+  prob.setInitialGuess(joint->get_q());
+
   // Objective function
   ObjFuncTramsfDist obj(_body, _target, this);
   prob.setObjective(&obj);
@@ -964,7 +967,7 @@ void Skeleton::solveInvKinematicsParentJointImpl(
   }
 
   // Solve with gradient-free local minima algorithm
-  optimizer::NloptSolver solver(&prob, NLOPT_LN_COBYLA);
+  optimizer::NloptSolver solver(&prob, NLOPT_LN_BOBYQA);
   solver.solve();
 
   // Set optimal configuration of the parent joint

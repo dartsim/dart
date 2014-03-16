@@ -67,7 +67,7 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis) {
   mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&ScrewJoint::getAxis() const {
+const Eigen::Vector3d& ScrewJoint::getAxis() const {
   return mAxis;
 }
 
