@@ -86,6 +86,17 @@ find_package(Eigen REQUIRED)
 find_package(FCL REQUIRED)
 find_package(Assimp REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(NLOPT REQUIRED)
+
+# IPOPT
+find_package(IPOPT)
+if(IPOPT_FOUND)
+  message(STATUS "Looking for IPOPT - found")
+  set(HAVE_IPOPT TRUE)
+else(IPOPT_FOUND)
+  message(WARNING "IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
+  set(HAVE_IPOPT FALSE)
+endif()
 
 # GLUT
 if(WIN32 AND NOT CYGWIN)
@@ -118,19 +129,6 @@ if(NOT BUILD_CORE_ONLY)
                             optimized urdfdom_model       debug urdfdom_modeld
                             optimized urdfdom_world       debug urdfdom_worldd
                             optimized console_bridge      debug console_bridged)
-  endif()
-
-  # NLOPT
-  find_package(NLOPT REQUIRED)
-
-  # IPOPT
-  find_package(IPOPT)
-  if(IPOPT_FOUND)
-    message(STATUS "Looking for IPOPT - found")
-    set(HAVE_IPOPT TRUE)
-  else(IPOPT_FOUND)
-    message(WARNING "IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
-    set(HAVE_IPOPT FALSE)
   endif()
 endif()
 
