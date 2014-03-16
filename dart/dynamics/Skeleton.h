@@ -426,15 +426,15 @@ protected:
   virtual void updateDampingForceVector();
 
   /// \brief class SampleObjFunc
-  class ObjFuncTramsfDist : public optimizer::Function
+  class InvKinObjFunc : public optimizer::Function
   {
   public:
     /// \brief Constructor
-    ObjFuncTramsfDist(
+    InvKinObjFunc(
         BodyNode* _body, const Eigen::Isometry3d& _T, Skeleton* _skeleton);
 
     /// \brief Destructor
-    virtual ~ObjFuncTramsfDist();
+    virtual ~InvKinObjFunc();
 
     /// \copydoc Function::eval
     virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);

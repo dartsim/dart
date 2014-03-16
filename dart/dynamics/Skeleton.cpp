@@ -956,7 +956,7 @@ void Skeleton::solveInvKinematicsParentJointImpl(
   prob.setInitialGuess(joint->get_q());
 
   // Objective function
-  ObjFuncTramsfDist obj(_body, _target, this);
+  InvKinObjFunc obj(_body, _target, this);
   prob.setObjective(&obj);
 
   // Joint limit
@@ -989,17 +989,17 @@ void Skeleton::solveInvKinematicsAllJointsImpl(
 {
 }
 
-Skeleton::ObjFuncTramsfDist::ObjFuncTramsfDist(
+Skeleton::InvKinObjFunc::InvKinObjFunc(
     BodyNode* _body, const Eigen::Isometry3d& _T, Skeleton* _skeleton)
   : Function(), mBodyNode(_body), mTransf(_T), mSkeleton(_skeleton)
 {
 }
 
-Skeleton::ObjFuncTramsfDist::~ObjFuncTramsfDist()
+Skeleton::InvKinObjFunc::~InvKinObjFunc()
 {
 }
 
-double Skeleton::ObjFuncTramsfDist::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+double Skeleton::InvKinObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
 {
   assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
 
