@@ -234,18 +234,24 @@ TEST(InverseKinematics, FittingVelocity)
     // Test for linear velocity
     Vector3d desiredVel = Vector3d::Random();
     body1->fitWorldLinearVel(desiredVel);
-    Vector3d fittedVel = body1->getWorldVelocity().tail<3>();
-    Vector3d diff = fittedVel - desiredVel;
+    Vector3d fittedLinVel = body1->getWorldVelocity().tail<3>();
+    Vector3d fittedAngVel = body1->getWorldVelocity().head<3>();
+    Vector3d diff = fittedLinVel - desiredVel;
     EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
+    EXPECT_NEAR(fittedAngVel.dot(fittedAngVel), 0.0, TOLERANCE);
     joint1->set_dq(Vector6d::Zero());
+    robot->setState(robot->getState());
 
     // Test for angular velocity
     desiredVel = Vector3d::Random();
     body1->fitWorldAngularVel(desiredVel);
-    fittedVel = body1->getWorldVelocity().head<3>();
-    diff = fittedVel - desiredVel;
+    fittedLinVel = body1->getWorldVelocity().tail<3>();
+    fittedAngVel = body1->getWorldVelocity().head<3>();
+    diff = fittedAngVel - desiredVel;
+    EXPECT_NEAR(fittedLinVel.dot(fittedLinVel), 0.0, TOLERANCE);
     EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
     joint1->set_dq(Vector6d::Zero());
+    robot->setState(robot->getState());
   }
 }
 

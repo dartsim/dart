@@ -566,7 +566,7 @@ public:
     BodyNode* mBodyNode;
 
     /// \brief Target transform
-    Eigen::Vector3d mVelocity;
+    Eigen::Vector6d mVelocity;
 
     /// \brief Skeleton
     Skeleton* mSkeleton;

@@ -1399,10 +1399,19 @@ BodyNode::VelocityObjFunc::VelocityObjFunc(BodyNode* _body,
                                            Skeleton* _skeleton)
   : Function(),
     mBodyNode(_body),
-    mVelocity(_vel),
     mVelocityType(_velType),
     mSkeleton(_skeleton)
 {
+  if (mVelocityType == VT_LINEAR)
+  {
+    mVelocity.head<3>() = mBodyNode->getWorldVelocity().head<3>();
+    mVelocity.tail<3>() = _vel;
+  }
+  else  // mVelocityType == VT_ANGULAR
+  {
+    mVelocity.head<3>() = _vel;
+    mVelocity.tail<3>() = mBodyNode->getWorldVelocity().tail<3>();
+  }
 }
 
 BodyNode::VelocityObjFunc::~VelocityObjFunc()
@@ -1420,11 +1429,7 @@ double BodyNode::VelocityObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
 
   // Compute and return the geometric distance between body node transformation
   // and target transformation
-  Eigen::VectorXd diff;
-  if (mVelocityType == VT_LINEAR)
-    diff = mBodyNode->getWorldVelocity().tail<3>() - mVelocity;
-  else
-    diff = mBodyNode->getWorldVelocity().head<3>() - mVelocity;
+  Eigen::Vector6d diff = mBodyNode->getWorldVelocity() - mVelocity;
   return diff.dot(diff);
 }
 
