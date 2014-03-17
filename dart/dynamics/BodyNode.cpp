@@ -193,8 +193,6 @@ void BodyNode::fitWorldTransform(const Eigen::Isometry3d& _target,
                                  InverseKinematicsPolicy _policy,
                                  bool _jointLimit)
 {
-  assert(_body && "Null point is not allowed.");
-
   if (_policy == IKP_PARENT_JOINT)
     fitWorldTransformParentJointImpl(_target, _jointLimit);
   else if (_policy == IKP_ANCESTOR_JOINTS)
