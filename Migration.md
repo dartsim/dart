@@ -13,14 +13,6 @@
   * void fitWorldTransformAncestorJointsImpl(BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit = true)
   * void fitWorldTransformAllJointsImpl(BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit = true)
 
-1. **dart/optimizer/Function.h**
-
-1. **dart/optimizer/Problem.h**
-
-1. **dart/optimizer/Solver.h**
-
-1. **dart/optimizer/nlopt/NloptSolver.h**
-
 ### Deletions
 ### Modifications
 ### New Deprecations

@@ -40,7 +40,11 @@
 
 #include <Eigen/Dense>
 
+#include "dart/config.h"
 #include "dart/common/Console.h"
+#ifdef HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/BulletCollisionDetector.h"
+#endif
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
@@ -139,6 +143,11 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
       } else if (strCD == "dart") {
         newWorld->getConstraintHandler()->setCollisionDetector(
               new collision::DARTCollisionDetector());
+#ifdef HAVE_BULLET_COLLISION
+      } else if (strCD == "bullet") {
+              newWorld->getConstraintHandler()->setCollisionDetector(
+                    new collision::BulletCollisionDetector());
+#endif
       } else {
         dtwarn << "Unknown collision detector[" << strCD << "]. "
                << "Default collision detector[fcl] will be loaded."
