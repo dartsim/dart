@@ -106,6 +106,8 @@ TEST(InverseKinematics, FittingTransformation)
                       Vector3d(0.3, 0.3, l1),
                       Vector3d(0.3, 0.3, l2), DOF_ROLL);
   robot->init();
+  size_t dof = robot->getNumGenCoords();
+  VectorXd oldConfig = robot->getConfig();
 
   BodyNode* body1 = robot->getBodyNode(0);
   BodyNode* body2 = robot->getBodyNode(1);
@@ -126,6 +128,9 @@ TEST(InverseKinematics, FittingTransformation)
     Isometry3d newT1 = body1->getWorldTransform();
     EXPECT_NEAR(math::logMap(newT1.inverse() * desiredT1).norm(),
                 0.0, TOLERANCE);
+
+    // Set to initial configuration
+    robot->setConfig(oldConfig);
   }
 
   //----------------------- Revolute joint test ---------------------------------

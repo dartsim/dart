@@ -53,7 +53,7 @@ Problem::Problem(size_t _dim)
   mInitialGuess = Eigen::VectorXd::Zero(mDimension);
   mLowerBounds = Eigen::VectorXd::Constant(mDimension, -HUGE_VAL);
   mUpperBounds = Eigen::VectorXd::Constant(mDimension,  HUGE_VAL);
-  mOptimumParameters = Eigen::VectorXd::Zero(mDimension);
+  mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
 }
 
 //==============================================================================
@@ -194,28 +194,28 @@ void Problem::removeAllIneqConstraints()
 }
 
 //==============================================================================
-void Problem::setOptimalValue(double _val)
+void Problem::setOptimumValue(double _val)
 {
-  mOptimalValue = _val;
+  mOptimumValue = _val;
 }
 
 //==============================================================================
-double Problem::getOptimalValue() const
+double Problem::getOptimumValue() const
 {
-  return mOptimalValue;
+  return mOptimumValue;
 }
 
 //==============================================================================
-void Problem::setOptimumParameters(const Eigen::VectorXd& _optParam)
+void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
   assert(_optParam.size() == mDimension && "Invalid size.");
-  mOptimumParameters = _optParam;
+  mOptimalSolution = _optParam;
 }
 
 //==============================================================================
-const Eigen::VectorXd&Problem::getOptimumParameters()
+const Eigen::VectorXd& Problem::getOptimalSolution()
 {
-  return mOptimumParameters;
+  return mOptimalSolution;
 }
 
 }  // namespace optimizer

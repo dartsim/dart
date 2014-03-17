@@ -76,7 +76,7 @@ private:
   Ipopt::SmartPtr<Ipopt::IpoptApplication> mIpoptApp;
 };
 
-/// \brief
+/// \brief class DartTNLP
 class DartTNLP : public Ipopt::TNLP
 {
 public:

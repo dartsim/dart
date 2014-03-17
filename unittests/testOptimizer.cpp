@@ -133,8 +133,8 @@ TEST(Optimizer, BasicNlopt)
   NloptSolver solver(&prob, NLOPT_LD_MMA);
   solver.solve();
 
-  double minF = prob.getOptimalValue();
-  Eigen::VectorXd optX = prob.getOptimumParameters();
+  double minF = prob.getOptimumValue();
+  Eigen::VectorXd optX = prob.getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
   EXPECT_EQ(optX.size(), prob.getDimension());
@@ -165,8 +165,8 @@ TEST(Optimizer, BasicIpopt)
   IpoptSolver solver(&prob);
   solver.solve();
 
-  double minF = prob.getOptimalValue();
-  Eigen::VectorXd optX = prob.getOptimumParameters();
+  double minF = prob.getOptimumValue();
+  Eigen::VectorXd optX = prob.getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
   EXPECT_EQ(optX.size(), prob.getDimension());
@@ -185,7 +185,8 @@ TEST(Optimizer, BasicSnopt)
 #endif
 
 //==============================================================================
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

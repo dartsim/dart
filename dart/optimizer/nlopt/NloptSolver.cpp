@@ -107,11 +107,11 @@ bool NloptSolver::solve()
     return false;
 
   // Store optimal and optimum values
-  mProblem->setOptimalValue(mMinF);
+  mProblem->setOptimumValue(mMinF);
   Eigen::VectorXd minX = Eigen::VectorXd::Zero(mProblem->getDimension());
   for (size_t i = 0; i < mProblem->getDimension(); ++i)
     minX[i] = mX[i];
-  mProblem->setOptimumParameters(minX);
+  mProblem->setOptimalSolution(minX);
 
   return true;
 }

@@ -234,7 +234,7 @@ void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
   solver.solve();
 
   // Set optimal configuration of the parent joint
-  Eigen::VectorXd jointDQ = prob.getOptimumParameters();
+  Eigen::VectorXd jointDQ = prob.getOptimalSolution();
   parentJoint->set_dq(jointDQ);
 
   // Update forward kinematics information
@@ -275,7 +275,7 @@ void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
   solver.solve();
 
   // Set optimal configuration of the parent joint
-  Eigen::VectorXd jointDQ = prob.getOptimumParameters();
+  Eigen::VectorXd jointDQ = prob.getOptimalSolution();
   parentJoint->set_dq(jointDQ);
 
   // Update forward kinematics information
@@ -1347,7 +1347,7 @@ void BodyNode::fitWorldTransformParentJointImpl(
   solver.solve();
 
   // Set optimal configuration of the parent joint
-  Eigen::VectorXd jointQ = prob.getOptimumParameters();
+  Eigen::VectorXd jointQ = prob.getOptimalSolution();
   parentJoint->set_q(jointQ);
 
   // Update forward kinematics information
