@@ -25,8 +25,6 @@
 
 1. **dart/optimizer/nlopt/NloptSolver.h**
 
-1. **dart/optimizer/ipopt/IpoptSolver.h**
-
 ### Deletions
 
 
