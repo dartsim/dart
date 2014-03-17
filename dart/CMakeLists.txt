@@ -14,18 +14,27 @@ foreach(SUBDIR ${CORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(core_srcs ${core_srcs} ${subdir_srcs})
 endforeach()
+
+file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+file(GLOB_RECURSE subdir_srcs optimizer/nlopt/*.cpp optimizer/nlopt/*.h)
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+if(HAVE_IPOPT)
+  file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
+endif()
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+if(HAVE_SNOPT)
+  file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
+endif()
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
 foreach(SUBDIR ${NONCORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
 endforeach()
-if(BUILD_SNOPT)
-  message(STATUS "Building SNOPT")
-  file(GLOB_RECURSE subdir_srcs optimizer/*.cpp optimizer/*.h)
-else()
-  message(STATUS "Not building SNOPT")
-  file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
-endif()
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
 
 # Setup directory structure for Visual Studio
 foreach(SUBDIR ${CORE_SUBDIRS} ${NONCORE_SUBDIRS})
@@ -38,14 +47,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Library
 add_library(dart-core ${core_srcs})
-target_link_libraries(dart-core ${FCL_LIBRARIES} ${Assimp_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
+target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
 set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}"
                                            SOVERSION ${DART_MINOR_VERSION}
                                            VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
 
 if(NOT BUILD_CORE_ONLY)
   add_library(dart ${noncore_srcs})
-  target_link_libraries(dart dart-core ${urdfdom_LIBRARIES} ${TinyXML_LIBRARIES} ${TinyXML2_LIBRARIES})
+  target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
   set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}"
                                         SOVERSION ${DART_MINOR_VERSION}
                                         VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")

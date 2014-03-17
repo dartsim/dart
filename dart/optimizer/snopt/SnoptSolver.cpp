@@ -61,7 +61,7 @@ bool SnoptSolver::solve() {
     double* upper_bounds = new double[nVar];
 
 
-    std::vector<Var *>& vars(mProb->vars());
+    std::vector<Variable *>& vars(mProb->vars());
     for(int i = 0; i < nVar; i++){
         upper_bounds[i] = vars[i]->mUpper;
         lower_bounds[i] = vars[i]->mLower;
@@ -134,7 +134,7 @@ int SnoptSolver::iterUpdate(long mask, int compute_gradients, double *coefs, voi
 
     // UPDATE MODELS
 
-    std::vector<Var *>& vars(m->mProb->vars());
+    std::vector<Variable *>& vars(m->mProb->vars());
     for(int i = 0; i < m->mTotalDofs; i++)
         vars[i]->mVal = coefs[i];
 
@@ -178,10 +178,10 @@ void SnoptSolver::resetSolver() {
 }
 
 
-ConstraintBox* SnoptSolver::conBox() {
+ConstraintSet* SnoptSolver::conBox() {
     return mProb->conBox();
 }
-ObjectiveBox* SnoptSolver::objBox() {
+ObjectiveSet* SnoptSolver::objBox() {
     return mProb->objBox();
 }
 

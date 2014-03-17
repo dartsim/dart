@@ -1,6 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
+ *
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -36,79 +38,156 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "dart/optimizer/Var.h"
-#include "dart/optimizer/Constraint.h"
+#include "dart/config.h"
+#include "dart/common/Console.h"
+#include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
-#include "dart/optimizer/ObjectiveBox.h"
-#include "dart/optimizer/snopt/SnoptSolver.h"
+#include "dart/optimizer/nlopt/NloptSolver.h"
+#ifdef HAVE_IPOPT
+  #include "dart/optimizer/ipopt/IpoptSolver.h"
+#endif
+#ifdef HAVE_SNOPT
+  #include "dart/optimizer/snopt/SnoptSolver.h"
+#endif
 
-/* ********************************************************************************************* *
-class SampleConstraint : public optimizer::Constraint {
+using namespace std;
+using namespace Eigen;
+using namespace dart::optimizer;
+
+//==============================================================================
+/// \brief class SampleObjFunc
+class SampleObjFunc : public Function
+{
 public:
-    SampleConstraint(std::vector<optimizer::Var *>& var, int index, double target)
-        : optimizer::Constraint(var), mIndex(index), mTarget(target) {
-        mNumRows = 1;
+  /// \brief Constructor
+  SampleObjFunc() : Function() {}
 
-        mWeight = Eigen::VectorXd::Ones(1);
-        mConstTerm = Eigen::VectorXd::Zero(1);
-        mCompletion = Eigen::VectorXd::Zero(1);
-    }
-    
-    virtual Eigen::VectorXd evalCon() {
-        std::vector<optimizer::Var *>& vars = mVariables;
-        Eigen::VectorXd x(1);
-        x(0) = vars[mIndex]->mVal - mTarget;
-        return x;
-    }
+  /// \brief Destructor
+  virtual ~SampleObjFunc() {}
 
-    virtual void fillJac(optimizer::VVD, int index) {}
-    virtual void fillJac(optimizer::VVD, optimizer::VVB, int index) {}
-    virtual void fillObjGrad(std::vector<double>& dG) {
-        VectorXd dP = evalCon();
+  /// \copydoc Function::eval
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  {
+    return std::sqrt(_x[1]);
+  }
 
-        for (unsigned int i = 0; i < mVariables.size(); i++){
-            const optimizer::Var* var = mVariables[i];
-            VectorXd J(1);
-            if (i == mIndex) {
-                J(0) = 1.0;
-            } else {
-                J(1) = 0.0;
-            }
-
-            J /= var->mWeight;
-            dG.at(i) += dP.dot(J);
-        }
-    }
-
-private:
-    int mIndex;
-    double mTarget;
+  /// \copydoc Function::evalGradient
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+  {
+    _grad[0] = 0.0;
+    _grad[1] = 0.5 / std::sqrt(_x[1]);
+  }
 };
 
-/* ********************************************************************************************* *
-TEST(SIMPLE_SNOPT, OPTIMIZER) {
-    using namespace optimizer;
-    
-    Problem prob;
-    prob.addVariable(0.0, -10.0, 10.0);
-    prob.createBoxes();
+//==============================================================================
+class SampleConstFunc : public Function
+{
+public:
+  /// \brief Constructor
+  SampleConstFunc(double _a, double _b) : Function(), mA(_a), mB(_b) {}
 
-    SampleConstraint* c = new SampleConstraint(
-        prob.vars(), 0, 3.0);
-    prob.objBox()->add(c);
+  /// \brief Destructor
+  virtual ~SampleConstFunc() {}
 
-    snopt::SnoptSolver solver(&prob);
-    solver.solve();
+  /// \copydoc Function::eval
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  {
+    return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
+  }
 
-    Eigen::VectorXd sol = solver.getState();
-    const double TOLERANCE = 0.000001;
-    EXPECT_EQ(sol.size(), 1);
-    EXPECT_NEAR(sol(0), 3.0, TOLERANCE);
+  /// \copydoc Function::evalGradient
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+  {
+    _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
+    _grad[1] = -1.0;
+  }
+
+private:
+  /// \brief Data
+  double mA;
+
+  /// \brief Data
+  double mB;
+};
+
+//==============================================================================
+TEST(Optimizer, BasicNlopt)
+{
+  // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
+
+  Problem prob(2);
+
+  prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  SampleObjFunc obj;
+  prob.setObjective(&obj);
+
+  SampleConstFunc const1( 2, 0);
+  SampleConstFunc const2(-1, 1);
+  prob.addIneqConstraint(&const1);
+  prob.addIneqConstraint(&const2);
+
+  NloptSolver solver(&prob, NLOPT_LD_MMA);
+  solver.solve();
+
+  double minF = prob.getOptimumValue();
+  Eigen::VectorXd optX = prob.getOptimalSolution();
+
+  EXPECT_NEAR(minF, 0.544330847, 1e-6);
+  EXPECT_EQ(optX.size(), prob.getDimension());
+  EXPECT_NEAR(optX[0], 0.333334, 1e-6);
+  EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
 
-/* ********************************************************************************************* */
-int main(int argc, char* argv[]) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+//==============================================================================
+#ifdef HAVE_IPOPT
+TEST(Optimizer, BasicIpopt)
+{
+  dterr << "Ipopt does not pass this test yet. Please see #153.";
+  return;
+
+  Problem prob(2);
+
+  prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  SampleObjFunc obj;
+  prob.setObjective(&obj);
+
+  SampleConstFunc const1( 2, 0);
+  SampleConstFunc const2(-1, 1);
+  prob.addIneqConstraint(&const1);
+  prob.addIneqConstraint(&const2);
+
+  IpoptSolver solver(&prob);
+  solver.solve();
+
+  double minF = prob.getOptimumValue();
+  Eigen::VectorXd optX = prob.getOptimalSolution();
+
+  EXPECT_NEAR(minF, 0.544330847, 1e-6);
+  EXPECT_EQ(optX.size(), prob.getDimension());
+  EXPECT_NEAR(optX[0], 0.333334, 1e-6);
+  EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
-/* ********************************************************************************************* */
+#endif
+
+//==============================================================================
+#ifdef HAVE_SNOPT
+TEST(Optimizer, BasicSnopt)
+{
+  dterr << "SNOPT is not implemented yet.\n";
+  return;
+}
+#endif
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+

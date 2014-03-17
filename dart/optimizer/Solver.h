@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_SOLVER_H
-#define DART_OPTIMIZER_SOLVER_H
+#ifndef DART_OPTIMIZER_SOLVER_H_
+#define DART_OPTIMIZER_SOLVER_H_
 
 #include <Eigen/Dense>
 
@@ -44,25 +45,28 @@ namespace optimizer {
 
 class Problem;
 
-class Solver {
+/// \brief class Solver
+class Solver
+{
 public:
-    Solver();
-    Solver(Problem *prob);
-    virtual ~Solver();
+  /// \brief Constructor
+  explicit Solver(Problem* _prob);
 
-    virtual bool solve() = 0;
-    virtual Eigen::VectorXd getState();
-    virtual void setState(const Eigen::VectorXd& x);
+  /// \brief Destructor
+  virtual ~Solver();
 
+  /// \brief Get nonlinear optimization problem
+  Problem* getProblem() const;
 
-    virtual void setProblem(Problem * prob);
-    Problem* getProblem() const;
+  /// \brief Solve optimization problem
+  virtual bool solve() = 0;
+
 protected:
-    Problem *mProb;
+  /// \brief Nonlinear optimization problem
+  Problem* mProblem;
 };
 
-} // namespace optimizer
-} // namespace dart
+}  // namespace optimizer
+}  // namespace dart
 
-#endif // #ifndef DART_OPTIMIZER_SOLVER_H
-
+#endif  // DART_OPTIMIZER_SOLVER_H_

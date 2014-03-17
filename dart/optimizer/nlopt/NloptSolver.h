@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,20 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
-#define DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 
-#include <vector>
+#include <nlopt.h>
+
+#include "dart/optimizer/Solver.h"
 
 namespace dart {
 namespace optimizer {
 
-typedef std::vector<std::vector<double> * > * VVD;
-typedef std::vector<std::vector<int> * > * VVI;
-typedef std::vector<std::vector<bool> * > * VVB;
+class Problem;
 
-} // namespace optimizer
-} // namespace dart
+/// \brief class NloptSolver
+class NloptSolver : public Solver
+{
+public:
+  /// \brief Constructor
+  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
-#endif // #ifndef DART_OPTIMIZER_OPTIMIZER_ARRAY_TYPES_H
+  /// \brief Destructor
+  virtual ~NloptSolver();
+
+  /// \copydoc Solver::solve
+  virtual bool solve();
+
+private:
+  /// \brief Wrapping function for nlopt callback function, nlopt_func
+  static double _nlopt_func(unsigned _n,
+                            const double* _x,
+                            double* _gradient,  // NULL if not needed
+                            void* _func_data);
+
+  /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
+  static void _nlopt_mfunc(unsigned _m,
+                           double* _result,
+                           unsigned _n,
+                           const double* _x,
+                           double* _gradient,  // NULL if not needed
+                           void* _func_data);
+
+  /// \brief NLOPT data structure
+  nlopt_opt mOpt;
+
+  /// \brief Optimization parameters
+  Eigen::VectorXd mX;
+
+  /// \brief Optimum value of the objective function
+  double mMinF;
+};
+
+}  // namespace optimizer
+}  // namespace dart
+
+#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,29 +35,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Constraint.h"
+#ifndef DART_OPTIMIZER_FUNCTION_H_
+#define DART_OPTIMIZER_FUNCTION_H_
+
+#include <vector>
+#include <Eigen/Dense>
 
 namespace dart {
 namespace optimizer {
 
-Constraint::Constraint(std::vector<Var*>& var)
-    : mVariables(var){
-    mIndex = 0;
-    // mWeight = vl_1;
-    // mWeight = VectorXd::Ones(1);
-    mSlack = false;
-    // mConstTerm = VectorXd::Zero(0);
-    mEquality = 0;
-    // mCompletion = vl_0;
-    mConfigIndecies.push_back(0);
-    mActive = true;
-}
+/// \brief class Function
+class Function
+{
+public:
+  /// \brief Constructor
+  explicit Function();
 
-double Constraint::evalObj() {
-    Eigen::VectorXd constr = evalCon();
-    return 0.5 * constr.dot(constr);
-    /* return 0.5*dot(constr, constr); */
-}
+  /// \brief Destructor
+  virtual ~Function();
 
-} // namespace optimizer
-} // namespace dart
+  /// \brief Evaluate and return the objective function at the point x
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) = 0;
+
+  /// \brief Evaluate and return the objective function at the point x
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad);
+
+  /// \brief Evaluate and return the objective function at the point x
+  virtual void evalHessian(
+      Eigen::Map<const Eigen::VectorXd>& _x,
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
+};
+
+/// \brief class MultiFunction
+class MultiFunction
+{
+public:
+  /// \brief Constructor
+  MultiFunction();
+
+  /// \brief Destructor
+  virtual ~MultiFunction();
+
+  /// \brief Operator ()
+  virtual void operator()(Eigen::Map<const Eigen::VectorXd>& _x,
+                          Eigen::Map<Eigen::VectorXd>& _f,
+                          Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
+};
+
+}  // namespace optimizer
+}  // namespace dart
+
+#endif  // DART_OPTIMIZER_FUNCTION_H_
+

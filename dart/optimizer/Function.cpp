@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,48 +35,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
-#define DART_OPTIMIZER_CONSTRAINT_BOX_H
+#include "dart/optimizer/Function.h"
 
-#include <vector>
+#include "dart/common/Console.h"
 
 namespace dart {
 namespace optimizer {
 
-class Constraint;
+//==============================================================================
+Function::Function()
+{
+}
 
-class ConstraintBox {
-public:
-    ConstraintBox(int numDofs);
-    virtual ~ConstraintBox();
+//==============================================================================
+Function::~Function()
+{
+}
 
-    void add(Constraint *newConstraint);
-    void clear();
-    int remove(Constraint *target);
-    int isInBox(Constraint *testConstraint);	//return index of component if true
+//==============================================================================
+void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+{
+  dterr << "Gradient is not provided. Use gradient-free algorithm.\n";
+}
 
-    int getNumConstraints() const { return mConstraints.size(); }
-    Constraint * getConstraint(int index) const { return mConstraints[index]; }
+//==============================================================================
+void Function::evalHessian(Eigen::Map<const Eigen::VectorXd>& _x,
+                           Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+{
+  dterr << "Hessian is not provided. Use Hessian-free algorithm.\n";
+}
 
-    void evalJac();
-    void evalCon();
-    void reallocateMem();
+//==============================================================================
+MultiFunction::MultiFunction()
+{
+}
 
-    //Must be called before using ConstraintBox
-    int getNumDofs() const { return mNumDofs; }
-    void setNumDofs(int numDofs);
-    int getNumTotalRows() const { return mNumTotalRows; }
+//==============================================================================
+MultiFunction::~MultiFunction()
+{
+}
 
-    int mNumDofs; //number of Model DOFs
-    int mNumTotalRows;
-    std::vector<Constraint *> mConstraints;
-    std::vector<double> mCon;
-    std::vector< std::vector<double> *> mJac; //Jacobian
-    std::vector< std::vector<bool> *> mJacMap; //Show nonzero elements of Jacobian
-};
-
-} // namespace optimizer
-} // namespace dart
-
-#endif // #ifndef DART_OPTIMIZER_CONSTRAINT_BOX_H
-
+}  // namespace optimizer
+}  // namespace dart

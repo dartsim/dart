@@ -18,9 +18,9 @@ namespace dart {
 namespace optimizer {
 
 class Problem;
-class ConstraintBox;
-class ObjectiveBox;
-class Var;
+class ConstraintSet;
+class ObjectiveSet;
+class Variable;
 
 namespace snopt {
 
@@ -39,8 +39,8 @@ private:
     /* ConstrBox* mConstrBox; */
     /* ObjBox* mObjBox; */
 
-    ConstraintBox* conBox();
-    ObjectiveBox* objBox();
+    ConstraintSet* conBox();
+    ObjectiveSet* objBox();
 
     bool mNoDisplay;
     int mSolverIter;

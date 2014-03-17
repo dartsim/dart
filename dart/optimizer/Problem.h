@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -37,34 +38,128 @@
 #ifndef DART_OPTIMIZER_PROBLEM_H
 #define DART_OPTIMIZER_PROBLEM_H
 
+#include <cstddef>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace dart {
 namespace optimizer {
 
-class Var;
-class ConstraintBox;
-class ObjectiveBox;
+class Function;
 
-class Problem {
+/// \brief class Problem
+class Problem
+{
 public:
-    Problem();
-    virtual ~Problem();
-    virtual void update(double* coefs);
+  /// \brief Constructor
+  explicit Problem(size_t _dim);
 
-    int getNumVariables() const { return mVariables.size(); }
-    void addVariable(double value, double lower, double upper);
-    void createBoxes();
+  /// \brief Destructor
+  virtual ~Problem();
 
-    ConstraintBox* conBox() const;
-    ObjectiveBox* objBox() const;
-    std::vector<Var *>& vars();
+  //--------------------------- Problem Setting --------------------------------
+  /// \brief Set dimension
+  void setDimension(size_t _dim);
+
+  /// \brief Get dimension
+  size_t getDimension() const;
+
+  /// \brief Set initial guess for opimization parameters
+  void setInitialGuess(const Eigen::VectorXd& _initGuess);
+
+  /// \brief Set initial guess for opimization parameters
+  const Eigen::VectorXd& getInitialGuess() const;
+
+  /// \brief Set lower bounds for optimization parameters
+  void setLowerBounds(const Eigen::VectorXd& _lb);
+
+  /// \brief Get lower bounds for optimization parameters
+  const Eigen::VectorXd& getLowerBounds() const;
+
+  /// \brief Set upper bounds for optimization parameters
+  void setUpperBounds(const Eigen::VectorXd& _ub);
+
+  /// \brief Get upper bounds for optimization parameters
+  const Eigen::VectorXd& getUpperBounds() const;
+
+  /// \brief Set minimum objective function
+  void setObjective(Function* _obj);
+
+  /// \brief Get objective function
+  Function* getObjective() const;
+
+  /// \brief Add equality constraint
+  void addEqConstraint(Function* _eqConst);
+
+  /// \brief Add inequality constraint
+  void addIneqConstraint(Function* _ineqConst);
+
+  /// \brief Get number of equality constraints
+  size_t getNumEqConstraints();
+
+  /// \brief Get number of inequality constraints
+  size_t getNumIneqConstraints();
+
+  /// \brief Get equality constraint
+  Function* getEqConstraint(size_t _idx) const;
+
+  /// \brief Get inequality constraint
+  Function* getIneqConstraint(size_t _idx) const;
+
+  /// \brief Remove equality constraint
+  void removeEqConstraint(Function* _eqConst);
+
+  /// \brief Remove inequality constraint
+  void removeIneqConstraint(Function* _ineqConst);
+
+  /// \brief Remove all equality constraints
+  void removeAllEqConstraints();
+
+  /// \brief Remove all inequality constraints
+  void removeAllIneqConstraints();
+
+  //------------------------------ Result --------------------------------------
+  /// \brief Set optimum value of the objective function. This function called
+  ///        by Solver.
+  void setOptimumValue(double _val);
+
+  /// \brief Get optimum value of the objective function
+  double getOptimumValue() const;
+
+  /// \brief Set optimal solution. This function called by Solver.
+  void setOptimalSolution(const Eigen::VectorXd& _optParam);
+
+  /// \brief Get optimal solution
+  const Eigen::VectorXd& getOptimalSolution();
 
 protected:
-    ConstraintBox* mConBox;
-    ObjectiveBox* mObjBox;
-    std::vector<Var *> mVariables;
+  /// \brief Dimension of this problem
+  size_t mDimension;
 
+  /// \brief Initial guess for optimization parameters
+  Eigen::VectorXd mInitialGuess;
+
+  /// \brief Lower bounds for optimization parameters
+  Eigen::VectorXd mLowerBounds;
+
+  /// \brief Upper bounds for optimization parameters
+  Eigen::VectorXd mUpperBounds;
+
+  /// \brief Objective function
+  Function* mObjective;
+
+  /// \brief Equality constraint functions
+  std::vector<Function*> mEqConstraints;
+
+  /// \brief Inequality constraint functions
+  std::vector<Function*> mIneqConstraints;
+
+  /// \brief Optimal objective value
+  double mOptimumValue;
+
+  /// \brief Optimal solution
+  Eigen::VectorXd mOptimalSolution;
 };
 
 } // namespace optimizer

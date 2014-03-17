@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,58 +35,188 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Problem.h"
+#include "dart/optimizer/Problem.h"
 
+#include <algorithm>
 #include <iostream>
+#include <limits>
 
-#include "Var.h"
-#include "Constraint.h"
-#include "ConstraintBox.h"
-#include "ObjectiveBox.h"
+#include "dart/optimizer/Function.h"
 
 namespace dart {
 namespace optimizer {
 
-Problem::Problem()
-    : mConBox(NULL), mObjBox(NULL) {
-    mVariables.clear();
+//==============================================================================
+Problem::Problem(size_t _dim)
+  : mDimension(_dim)
+{
+  mInitialGuess = Eigen::VectorXd::Zero(mDimension);
+  mLowerBounds = Eigen::VectorXd::Constant(mDimension, -HUGE_VAL);
+  mUpperBounds = Eigen::VectorXd::Constant(mDimension,  HUGE_VAL);
+  mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
 }
 
-Problem::~Problem() {
-    delete mConBox;
-
-    delete mObjBox;
-
-    for (unsigned int i = 0; i < mVariables.size(); ++i) {
-        delete mVariables[i];
-    }
-    mVariables.clear();
+//==============================================================================
+Problem::~Problem()
+{
 }
 
-void Problem::update(double* coefs) {
+//==============================================================================
+size_t Problem::getDimension() const
+{
+  return mDimension;
 }
 
-void Problem::addVariable(double value, double lower, double upper) {
-    Var* var = new Var(value, lower, upper);
-    mVariables.push_back(var);
+//==============================================================================
+void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
+{
+  assert(_initGuess.size() == mDimension && "Invalid size.");
+  mInitialGuess = _initGuess;
 }
 
-void Problem::createBoxes() {
-    mConBox = new ConstraintBox(this->mVariables.size());
-    mObjBox = new ObjectiveBox(this->mVariables.size());
+//==============================================================================
+const Eigen::VectorXd& Problem::getInitialGuess() const
+{
+  return mInitialGuess;
 }
 
-ConstraintBox* Problem::conBox() const {
-    return mConBox;
+//==============================================================================
+void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
+{
+  assert(_lb.size() == mDimension && "Invalid size.");
+  mLowerBounds = _lb;
 }
 
-ObjectiveBox* Problem::objBox() const {
-    return mObjBox;
+//==============================================================================
+const Eigen::VectorXd& Problem::getLowerBounds() const
+{
+  return mLowerBounds;
 }
 
-std::vector<Var *>& Problem::vars() {
-    return mVariables;
+//==============================================================================
+void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
+{
+  assert(_ub.size() == mDimension && "Invalid size.");
+  mUpperBounds = _ub;
 }
 
-} // namespace optimizer
-} // namespace dart
+//==============================================================================
+const Eigen::VectorXd& Problem::getUpperBounds() const
+{
+  return mUpperBounds;
+}
+
+//==============================================================================
+void Problem::setObjective(Function* _obj)
+{
+  assert(_obj && "NULL pointer is not allowed.");
+  mObjective = _obj;
+}
+
+//==============================================================================
+Function* Problem::getObjective() const
+{
+  return mObjective;
+}
+
+//==============================================================================
+void Problem::addEqConstraint(Function* _eqConst)
+{
+  assert(_eqConst);
+  mEqConstraints.push_back(_eqConst);
+}
+
+//==============================================================================
+void Problem::addIneqConstraint(Function* _ineqConst)
+{
+  assert(_ineqConst);
+  mIneqConstraints.push_back(_ineqConst);
+}
+
+//==============================================================================
+size_t Problem::getNumEqConstraints()
+{
+  return mEqConstraints.size();
+}
+
+//==============================================================================
+size_t Problem::getNumIneqConstraints()
+{
+  return mIneqConstraints.size();
+}
+
+//==============================================================================
+Function* Problem::getEqConstraint(size_t _idx) const
+{
+  assert(_idx < mEqConstraints.size());
+  return mEqConstraints[_idx];
+}
+
+//==============================================================================
+Function* Problem::getIneqConstraint(size_t _idx) const
+{
+  assert(_idx < mIneqConstraints.size());
+  return mIneqConstraints[_idx];
+}
+
+//==============================================================================
+void Problem::removeEqConstraint(Function* _eqConst)
+{
+  // TODO(JS): Need to delete?
+  mEqConstraints.erase(
+        std::remove(mEqConstraints.begin(), mEqConstraints.end(),
+                    _eqConst),
+        mEqConstraints.end());
+}
+
+//==============================================================================
+void Problem::removeIneqConstraint(Function* _ineqConst)
+{
+  // TODO(JS): Need to delete?
+  mIneqConstraints.erase(
+        std::remove(mIneqConstraints.begin(), mIneqConstraints.end(),
+                    _ineqConst),
+        mIneqConstraints.end());
+}
+
+//==============================================================================
+void Problem::removeAllEqConstraints()
+{
+  // TODO(JS): Need to delete?
+  mEqConstraints.clear();
+}
+
+//==============================================================================
+void Problem::removeAllIneqConstraints()
+{
+  // TODO(JS): Need to delete?
+  mIneqConstraints.clear();
+}
+
+//==============================================================================
+void Problem::setOptimumValue(double _val)
+{
+  mOptimumValue = _val;
+}
+
+//==============================================================================
+double Problem::getOptimumValue() const
+{
+  return mOptimumValue;
+}
+
+//==============================================================================
+void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
+{
+  assert(_optParam.size() == mDimension && "Invalid size.");
+  mOptimalSolution = _optParam;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Problem::getOptimalSolution()
+{
+  return mOptimalSolution;
+}
+
+}  // namespace optimizer
+}  // namespace dart
