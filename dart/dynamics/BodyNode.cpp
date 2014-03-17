@@ -43,6 +43,9 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
+#include "dart/optimizer/Problem.h"
+#include "dart/optimizer/Function.h"
+#include "dart/optimizer/nlopt/NloptSolver.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Shape.h"
@@ -184,6 +187,100 @@ int BodyNode::getNumDependentGenCoords() const {
 int BodyNode::getDependentGenCoordIndex(int _arrayIndex) const {
   assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
   return mDependentGenCoordIndices[_arrayIndex];
+}
+
+void BodyNode::fitWorldTransform(const Eigen::Isometry3d& _target,
+                                 InverseKinematicsPolicy _policy,
+                                 bool _jointLimit)
+{
+  if (_policy == IKP_PARENT_JOINT)
+    fitWorldTransformParentJointImpl(_target, _jointLimit);
+  else if (_policy == IKP_ANCESTOR_JOINTS)
+    fitWorldTransformAncestorJointsImpl(_target, _jointLimit);
+  else if (_policy == IKP_ALL_JOINTS)
+    fitWorldTransformAllJointsImpl(_target, _jointLimit);
+}
+
+void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
+                                 BodyNode::InverseKinematicsPolicy /*_policy*/,
+                                 bool _jointVelLimit)
+{
+  // TODO: Only IKP_PARENT_JOINT policy is supported now.
+
+  Joint* parentJoint = getParentJoint();
+  size_t dof = parentJoint->getNumGenCoords();
+
+  if (dof == 0)
+    return;
+
+  optimizer::Problem prob(dof);
+
+  // Use the current joint configuration as initial guess
+  prob.setInitialGuess(parentJoint->get_dq());
+
+  // Objective function
+  VelocityObjFunc obj(this, _targetLinVel, VelocityObjFunc::VT_LINEAR, mSkeleton);
+  prob.setObjective(&obj);
+
+  // Joint limit
+  if (_jointVelLimit)
+  {
+    prob.setLowerBounds(parentJoint->get_dqMin());
+    prob.setUpperBounds(parentJoint->get_dqMax());
+  }
+
+  // Solve with gradient-free local minima algorithm
+  optimizer::NloptSolver solver(&prob, NLOPT_LN_BOBYQA);
+  solver.solve();
+
+  // Set optimal configuration of the parent joint
+  Eigen::VectorXd jointDQ = prob.getOptimalSolution();
+  parentJoint->set_dq(jointDQ);
+
+  // Update forward kinematics information
+  // TODO(JS): Need more efficient api for this
+  mSkeleton->setState(mSkeleton->getState());
+}
+
+void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
+                                  BodyNode::InverseKinematicsPolicy /*_policy*/,
+                                  bool _jointVelLimit)
+{
+  // TODO: Only IKP_PARENT_JOINT policy is supported now.
+
+  Joint* parentJoint = getParentJoint();
+  size_t dof = parentJoint->getNumGenCoords();
+
+  if (dof == 0)
+    return;
+
+  optimizer::Problem prob(dof);
+
+  // Use the current joint configuration as initial guess
+  prob.setInitialGuess(parentJoint->get_dq());
+
+  // Objective function
+  VelocityObjFunc obj(this, _targetAngVel, VelocityObjFunc::VT_ANGULAR, mSkeleton);
+  prob.setObjective(&obj);
+
+  // Joint limit
+  if (_jointVelLimit)
+  {
+    prob.setLowerBounds(parentJoint->get_dqMin());
+    prob.setUpperBounds(parentJoint->get_dqMax());
+  }
+
+  // Solve with gradient-free local minima algorithm
+  optimizer::NloptSolver solver(&prob, NLOPT_LN_BOBYQA);
+  solver.solve();
+
+  // Set optimal configuration of the parent joint
+  Eigen::VectorXd jointDQ = prob.getOptimalSolution();
+  parentJoint->set_dq(jointDQ);
+
+  // Update forward kinematics information
+  // TODO(JS): Need more efficient api for this
+  mSkeleton->setState(mSkeleton->getState());
 }
 
 const Eigen::Isometry3d& BodyNode::getWorldTransform() const {
@@ -1218,6 +1315,122 @@ void BodyNode::_updateGeralizedInertia() {
 
 void BodyNode::clearExternalForces() {
   mFext.setZero();
+}
+
+void BodyNode::fitWorldTransformParentJointImpl(
+    const Eigen::Isometry3d& _target, bool _jointLimit)
+{
+  Joint* parentJoint = getParentJoint();
+  size_t dof = parentJoint->getNumGenCoords();
+
+  if (dof == 0)
+    return;
+
+  optimizer::Problem prob(dof);
+
+  // Use the current joint configuration as initial guess
+  prob.setInitialGuess(parentJoint->get_q());
+
+  // Objective function
+  TransformObjFunc obj(this, _target, mSkeleton);
+  prob.setObjective(&obj);
+
+  // Joint limit
+  if (_jointLimit)
+  {
+    prob.setLowerBounds(parentJoint->get_qMin());
+    prob.setUpperBounds(parentJoint->get_qMax());
+  }
+
+  // Solve with gradient-free local minima algorithm
+  optimizer::NloptSolver solver(&prob, NLOPT_LN_BOBYQA);
+  solver.solve();
+
+  // Set optimal configuration of the parent joint
+  Eigen::VectorXd jointQ = prob.getOptimalSolution();
+  parentJoint->set_q(jointQ);
+
+  // Update forward kinematics information
+  // TODO(JS): Need more efficient api for this
+  mSkeleton->setConfig(mSkeleton->getConfig());
+}
+
+void BodyNode::fitWorldTransformAncestorJointsImpl(
+    const Eigen::Isometry3d& /*_target*/, bool /*_jointLimit*/)
+{
+  dterr << "Not implemented yet.\n";
+}
+
+void BodyNode::fitWorldTransformAllJointsImpl(
+    const Eigen::Isometry3d& /*_target*/, bool /*_jointLimit*/)
+{
+  dterr << "Not implemented yet.\n";
+}
+
+BodyNode::TransformObjFunc::TransformObjFunc(
+    BodyNode* _body, const Eigen::Isometry3d& _T, Skeleton* _skeleton)
+  : Function(), mBodyNode(_body), mT(_T), mSkeleton(_skeleton)
+{
+}
+
+BodyNode::TransformObjFunc::~TransformObjFunc()
+{
+}
+
+double BodyNode::TransformObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+{
+  assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
+
+  // Update forward kinematics information with _x
+  // TODO(JS): Need more efficient api for this
+  mBodyNode->getParentJoint()->set_q(_x);
+  mSkeleton->setConfig(mSkeleton->getConfig());
+
+  // Compute and return the geometric distance between body node transformation
+  // and target transformation
+  Eigen::Isometry3d bodyT = mBodyNode->getWorldTransform();
+  Eigen::Vector6d dist = math::logMap(bodyT.inverse() * mT);
+  return dist.dot(dist);
+}
+
+BodyNode::VelocityObjFunc::VelocityObjFunc(BodyNode* _body,
+                                           const Eigen::Vector3d& _vel,
+                                           VelocityType _velType,
+                                           Skeleton* _skeleton)
+  : Function(),
+    mBodyNode(_body),
+    mVelocityType(_velType),
+    mSkeleton(_skeleton)
+{
+  if (mVelocityType == VT_LINEAR)
+  {
+    mVelocity.head<3>() = mBodyNode->getWorldVelocity().head<3>();
+    mVelocity.tail<3>() = _vel;
+  }
+  else  // mVelocityType == VT_ANGULAR
+  {
+    mVelocity.head<3>() = _vel;
+    mVelocity.tail<3>() = mBodyNode->getWorldVelocity().tail<3>();
+  }
+}
+
+BodyNode::VelocityObjFunc::~VelocityObjFunc()
+{
+}
+
+double BodyNode::VelocityObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+{
+  assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
+
+  // Update forward kinematics information with _x
+  // TODO(JS): Need more efficient api for this
+  mBodyNode->getParentJoint()->set_dq(_x);
+  mSkeleton->setState(mSkeleton->getState());
+
+  // Compute and return the geometric distance between body node transformation
+  // and target transformation
+  Eigen::Vector6d diff = mBodyNode->getWorldVelocity() - mVelocity;
+  return diff.dot(diff);
 }
 
 }  // namespace dynamics

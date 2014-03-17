@@ -86,6 +86,17 @@ find_package(Eigen REQUIRED)
 find_package(FCL REQUIRED)
 find_package(Assimp REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(NLOPT REQUIRED)
+
+# IPOPT
+find_package(IPOPT)
+if(IPOPT_FOUND)
+  message(STATUS "Looking for IPOPT - found")
+  set(HAVE_IPOPT TRUE)
+else(IPOPT_FOUND)
+  message(WARNING "IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
+  set(HAVE_IPOPT FALSE)
+endif()
 
 # GLUT
 if(WIN32 AND NOT CYGWIN)
@@ -119,19 +130,6 @@ if(NOT BUILD_CORE_ONLY)
                             optimized urdfdom_world       debug urdfdom_worldd
                             optimized console_bridge      debug console_bridged)
   endif()
-
-  # NLOPT
-  find_package(NLOPT REQUIRED)
-
-  # IPOPT
-  find_package(IPOPT)
-  if(IPOPT_FOUND)
-    message(STATUS "Looking for IPOPT - found")
-    set(HAVE_IPOPT TRUE)
-  else(IPOPT_FOUND)
-    message(WARNING "IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
-    set(HAVE_IPOPT FALSE)
-  endif()
 endif()
 
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
@@ -163,7 +161,8 @@ set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
-                           ${GLUT_LIBRARY})
+                           ${GLUT_LIBRARY}
+                           ${NLOPT_LIBRARIES})
 if(HAVE_IPOPT)
   set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${IPOPT_LIBRARIES})
 endif()
@@ -171,8 +170,7 @@ endif()
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
-                        ${TinyXML2_LIBRARIES}
-                        ${NLOPT_LIBRARIES})
+                        ${TinyXML2_LIBRARIES})
 endif()
 
 ###############

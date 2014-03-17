@@ -58,11 +58,14 @@ NloptSolver::NloptSolver(Problem* _problem, nlopt_algorithm _alg)
   // Create nlopt object
   mOpt = nlopt_create(_alg, dim);
 
+  // Set relative tolerance on function value
+  nlopt_set_ftol_rel(mOpt, 1e-8);
+
   // Set initial guess for x
   mX = mProblem->getInitialGuess();
 
   // Set tolerance for x
-  nlopt_set_xtol_rel(mOpt, 1e-4);
+  nlopt_set_xtol_rel(mOpt, 1e-9);
 
   // Set lower/upper bounds
   nlopt_set_lower_bounds(mOpt, mProblem->getLowerBounds().data());
@@ -104,11 +107,11 @@ bool NloptSolver::solve()
     return false;
 
   // Store optimal and optimum values
-  mProblem->setOptimalValue(mMinF);
+  mProblem->setOptimumValue(mMinF);
   Eigen::VectorXd minX = Eigen::VectorXd::Zero(mProblem->getDimension());
   for (size_t i = 0; i < mProblem->getDimension(); ++i)
     minX[i] = mX[i];
-  mProblem->setOptimumParameters(minX);
+  mProblem->setOptimalSolution(minX);
 
   return true;
 }

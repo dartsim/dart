@@ -120,20 +120,21 @@ public:
   void removeAllIneqConstraints();
 
   //------------------------------ Result --------------------------------------
-  /// \brief Set optimal value. This function called by Solver.
-  void setOptimalValue(double _val);
+  /// \brief Set optimum value of the objective function. This function called
+  ///        by Solver.
+  void setOptimumValue(double _val);
 
-  /// \brief Get optimal value
-  double getOptimalValue() const;
+  /// \brief Get optimum value of the objective function
+  double getOptimumValue() const;
 
-  /// \brief Set optimum parameters. This function called by Solver.
-  void setOptimumParameters(const Eigen::VectorXd& _optParam);
+  /// \brief Set optimal solution. This function called by Solver.
+  void setOptimalSolution(const Eigen::VectorXd& _optParam);
 
-  /// \brief Get optimum parameters
-  const Eigen::VectorXd& getOptimumParameters();
+  /// \brief Get optimal solution
+  const Eigen::VectorXd& getOptimalSolution();
 
 protected:
-  /// \brief Dimension
+  /// \brief Dimension of this problem
   size_t mDimension;
 
   /// \brief Initial guess for optimization parameters
@@ -154,11 +155,11 @@ protected:
   /// \brief Inequality constraint functions
   std::vector<Function*> mIneqConstraints;
 
-  /// \brief Optimal value
-  double mOptimalValue;
+  /// \brief Optimal objective value
+  double mOptimumValue;
 
-  /// \brief Optimum parameters
-  Eigen::VectorXd mOptimumParameters;
+  /// \brief Optimal solution
+  Eigen::VectorXd mOptimalSolution;
 };
 
 } // namespace optimizer

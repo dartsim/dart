@@ -80,7 +80,7 @@ private:
   /// \brief Optimization parameters
   Eigen::VectorXd mX;
 
-  /// \brief Optimal value of objective function
+  /// \brief Optimum value of the objective function
   double mMinF;
 };
 

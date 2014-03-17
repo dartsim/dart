@@ -365,11 +365,11 @@ void DartTNLP::finalize_solution(Ipopt::SolverReturn _status,
                                  Ipopt::IpoptCalculatedQuantities* _ip_cq)
 {
   // Store optimal and optimum values
-  mProblem->setOptimalValue(_obj_value);
+  mProblem->setOptimumValue(_obj_value);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(_n);
   for (size_t i = 0; i < _n; ++i)
     x[i] = _x[i];
-  mProblem->setOptimumParameters(x);
+  mProblem->setOptimalSolution(x);
 }
 
 }  // namespace optimizer
