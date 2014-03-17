@@ -44,13 +44,9 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
-#include "dart/optimizer/Function.h"
 #include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
-namespace optimizer {
-class Function;
-}  // namespace optimizer
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
@@ -67,19 +63,6 @@ class Marker;
 class Skeleton : public GenCoordSystem
 {
 public:
-  /// \brief Inverse kinematics policy
-  /// IKP_PARENT_JOINT   : search optimal configuration for the parent joint of
-  ///                      the target body node
-  /// IKP_ANCESTOR_JOINTS: search optimal configurations for the ancestor joints
-  ///                      of the target body node
-  /// IKP_ALL_JOINTS     : search optimal configurations for the all joints in
-  ///                      the skeleton.
-  enum InverseKinematicsPolicy {
-    IKP_PARENT_JOINT,
-    IKP_ANCESTOR_JOINTS,
-    IKP_ALL_JOINTS
-  };
-
   //---------------------- Constructor and Destructor --------------------------
   /// \brief Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
@@ -278,17 +261,6 @@ public:
   /// \brief Get potential energy of this skeleton.
   virtual double getPotentialEnergy() const;
 
-  //------------------------ Inverse Kinematics --------------------------------
-  /// \brief Try to find optimal configurations to fit the world transform
-  ///        of body node, _body, to the target transformation, _target.
-  /// This problem is solved by optimization. The objective is to minimize the
-  /// geometric distance between the target transformation and the world
-  /// transformation of this body.
-  void solveInvKinematics(BodyNode* _body,
-                          const Eigen::Isometry3d& _target,
-                          InverseKinematicsPolicy _policy = IKP_PARENT_JOINT,
-                          bool _jointLimit = true);
-
   //------------------- Recursive dynamics algorithms --------------------------
   /// \brief Initialize this skeleton for kinematics and dynamics
   void init(double _timeStep = 0.001,
@@ -424,52 +396,6 @@ protected:
 
   /// \brief Update damping force vector.
   virtual void updateDampingForceVector();
-
-  /// \brief class SampleObjFunc
-  class InvKinObjFunc : public optimizer::Function
-  {
-  public:
-    /// \brief Constructor
-    InvKinObjFunc(
-        BodyNode* _body, const Eigen::Isometry3d& _T, Skeleton* _skeleton);
-
-    /// \brief Destructor
-    virtual ~InvKinObjFunc();
-
-    /// \copydoc Function::eval
-    virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);
-
-  protected:
-    /// \brief Target body node
-    BodyNode* mBodyNode;
-
-    /// \brief Target transform
-    Eigen::Isometry3d mTransf;
-
-    /// \brief Skeleton
-    Skeleton* mSkeleton;
-  };
-
-  /// \brief Implementation for setWorldTransformByInvKin with IKP_PARENT_JOINT
-  ///        policy
-  virtual void solveInvKinematicsParentJointImpl(
-      BodyNode* _body,
-      const Eigen::Isometry3d& _target,
-      bool _jointLimit = true);
-
-  /// \brief Implementation for setWorldTransformByInvKin with
-  ///        IKP_ANCESTOR_JOINTS policy
-  virtual void solveInvKinematicsAncestorJointsImpl(
-      BodyNode* _body,
-      const Eigen::Isometry3d& _target,
-      bool _jointLimit = true);
-
-  /// \brief Implementation for setWorldTransformByInvKin with IKP_ALL_JOINTS
-  ///        policy
-  virtual void solveInvKinematicsAllJointsImpl(
-      BodyNode* _body,
-      const Eigen::Isometry3d& _target,
-      bool _jointLimit = true);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

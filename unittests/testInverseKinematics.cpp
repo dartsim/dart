@@ -90,7 +90,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 }
 
 //==============================================================================
-TEST(InverseKinematics, BasicTest)
+TEST(InverseKinematics, FittingTransformation)
 {
   const double TOLERANCE = 1e-6;
 #ifdef BUILD_TYPE_RELEASE
@@ -120,7 +120,7 @@ TEST(InverseKinematics, BasicTest)
   {
     // Get desiredT2 by transforming body1 to arbitrary transformation
     Isometry3d desiredT1 = math::expMap(Vector6d::Random());
-    robot->solveInvKinematics(body1, desiredT1);
+    body1->fitWorldTransform(desiredT1);
 
     // Check
     Isometry3d newT1 = body1->getWorldTransform();
@@ -151,7 +151,7 @@ TEST(InverseKinematics, BasicTest)
           0.0, TOLERANCE);
 
     // Try to find optimal joint angle
-    robot->solveInvKinematics(body2, desiredT2);
+    body2->fitWorldTransform(desiredT2);
 
     // Check
     Isometry3d newT2 = body2->getWorldTransform();
@@ -185,8 +185,7 @@ TEST(InverseKinematics, BasicTest)
           0.0, TOLERANCE);
 
     // Try to find optimal joint angle without joint limit constraint
-    robot->solveInvKinematics(body2, desiredT2, Skeleton::IKP_PARENT_JOINT,
-                              false);
+    body2->fitWorldTransform(desiredT2, BodyNode::IKP_PARENT_JOINT, false);
 
     // Check if the optimal body2 transformation is reached to the desired one
     Isometry3d newT2 = body2->getWorldTransform();
@@ -194,13 +193,59 @@ TEST(InverseKinematics, BasicTest)
                 0.0, TOLERANCE);
 
     // Try to find optimal joint angle with joint limit constraint
-    robot->solveInvKinematics(body2, desiredT2, Skeleton::IKP_PARENT_JOINT,
-                              true);
+    body2->fitWorldTransform(desiredT2, BodyNode::IKP_PARENT_JOINT, true);
 
     // Check if the optimal joint anlge is in the range
     double newQ2 = joint2->getGenCoord(0)->get_q();
     EXPECT_GE(newQ2, DART_RADIAN *  0.0);
     EXPECT_LE(newQ2, DART_RADIAN * 15.0);
+  }
+}
+
+//==============================================================================
+TEST(InverseKinematics, FittingVelocity)
+{
+  const double TOLERANCE = 1e-4;
+#ifdef BUILD_TYPE_RELEASE
+  const size_t numRandomTests = 100;
+#else
+  const size_t numRandomTests = 10;
+#endif
+
+  // Create two link robot
+  const double l1 = 1.5;
+  const double l2 = 1.0;
+  Skeleton* robot = createFreeFloatingTwoLinkRobot(
+                      Vector3d(0.3, 0.3, l1),
+                      Vector3d(0.3, 0.3, l2), DOF_ROLL);
+  robot->init();
+
+  BodyNode* body1 = robot->getBodyNode(0);
+  BodyNode* body2 = robot->getBodyNode(1);
+
+  Joint* joint1 = body1->getParentJoint();
+//  Joint* joint2 = body2->getParentJoint();
+
+  //------------------------- Free joint test ----------------------------------
+  // The parent joint of body1 is free joint so body1 should be able to
+  // transform to arbitrary tramsformation.
+  for (size_t i = 0; i < numRandomTests; ++i)
+  {
+    // Test for linear velocity
+    Vector3d desiredVel = Vector3d::Random();
+    body1->fitWorldLinearVel(desiredVel);
+    Vector3d fittedVel = body1->getWorldVelocity().tail<3>();
+    Vector3d diff = fittedVel - desiredVel;
+    EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
+    joint1->set_dq(Vector6d::Zero());
+
+    // Test for angular velocity
+    desiredVel = Vector3d::Random();
+    body1->fitWorldAngularVel(desiredVel);
+    fittedVel = body1->getWorldVelocity().head<3>();
+    diff = fittedVel - desiredVel;
+    EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
+    joint1->set_dq(Vector6d::Zero());
   }
 }
 
