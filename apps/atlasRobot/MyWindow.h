@@ -69,9 +69,6 @@ private:
 
   /// \brief Constroller
   Controller* mController;
-
-  /// \brief Atlas robot
-  dart::dynamics::Skeleton* mAtlasRobot;
 };
 
 #endif  // APPS_ATLASROBOT_MYWINDOW_H_

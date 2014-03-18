@@ -48,8 +48,7 @@
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
   : SimWindow(),
-    mController(_controller),
-    mAtlasRobot(_controller->getAtlasRobot())
+    mController(_controller)
 {
   mForce = Eigen::Vector3d::Zero();
   mImpulseDuration = 0.0;
@@ -65,7 +64,8 @@ MyWindow::~MyWindow()
 void MyWindow::timeStepping()
 {
   // External force
-  mAtlasRobot->getBodyNode("pelvis")->addExtForce(mForce);
+  mWorld->getSkeleton("drc_skeleton")->getBodyNode("pelvis")->addExtForce(
+        mForce);
 
   // Internal force
   mController->update(mWorld->getTime());
@@ -95,7 +95,8 @@ void MyWindow::drawSkels()
   if (mImpulseDuration > 0)
   {
     Eigen::Vector3d poa
-        =  mAtlasRobot->getBodyNode("pelvis")->getWorldTransform()
+        =  mWorld->getSkeleton("drc_skeleton")->getBodyNode(
+             "pelvis")->getWorldTransform()
            * Eigen::Vector3d(0.0, 0.0, 0.0);
     Eigen::Vector3d start = poa - mForce / 500.0;
     double len = mForce.norm() / 500.0;

@@ -58,10 +58,8 @@ using namespace dart::utils;
 
 int main(int argc, char* argv[])
 {
-  // Create and initialize the world
-  SoftWorld* myWorld
-      = SoftSkelParser::readSoftFile(DART_DATA_PATH"/skel/empty.skel");
-  assert(myWorld != NULL);
+  // Create empty soft world
+  SoftWorld* myWorld = new SoftWorld;
 
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
