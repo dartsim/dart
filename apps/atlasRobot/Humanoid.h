@@ -57,6 +57,7 @@ class State;
 
 //==============================================================================
 /// \brief class Humanoid
+/// \warning This class is not used now.
 class Humanoid
 {
 public:
@@ -118,6 +119,7 @@ protected:
 
 //==============================================================================
 /// \brief class AtlasRobot
+/// \warning This class is not used now.
 class AtlasRobot : public Humanoid
 {
 public:
