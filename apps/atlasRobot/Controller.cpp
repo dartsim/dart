@@ -388,7 +388,7 @@ StateMachine* Controller::_createStandingStateMachine()
 
   standingState0->setNextState(standingState0);
 
-  standingState0->setDesiredJointPosition( 9, DART_RADIAN *  15.00);
+  standingState0->setDesiredJointPosition( 9, DART_RADIAN *  15.00); // angle b/w pelvis and torso
   standingState0->setDesiredJointPosition(13, DART_RADIAN * -10.00);
   standingState0->setDesiredJointPosition(14, DART_RADIAN * -10.00);
   standingState0->setDesiredJointPosition(17, DART_RADIAN *  30.00); // left knee
@@ -412,19 +412,19 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis   = DART_RADIAN * -4.75;
+  const double pelvis = DART_RADIAN * -4.75;  // angle b/w pelvis and torso
 
-  const double swh02    =  0.50;  // swing hip
-  const double swk02    = -1.10;  // swing knee
-  const double swa02    =  0.60;  // swing angle
-  const double stk02    = -0.05;  // stance knee
-  const double sta02    =  0.00;  // stance ankle
+  const double swh02  =  0.50;  // swing hip
+  const double swk02  = -1.10;  // swing knee
+  const double swa02  =  0.60;  // swing angle
+  const double stk02  = -0.05;  // stance knee
+  const double sta02  =  0.00;  // stance ankle
 
-  const double swh13    = -0.10;  // swing hip
-  const double swk13    = -0.05;  // swing knee
-  const double swa13    =  0.15;  // swing angle
-  const double stk13    = -0.10;  // stance knee
-  const double sta13    =  0.00;  // stance ankle
+  const double swh13  = -0.10;  // swing hip
+  const double swk13  = -0.05;  // swing knee
+  const double swa13  =  0.15;  // swing angle
+  const double stk13  = -0.10;  // stance knee
+  const double sta13  =  0.00;  // stance ankle
 
   StateMachine* sm = new StateMachine("walking in place");
 
@@ -454,10 +454,20 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state2->setStanceFootToRightFoot();
   state3->setStanceFootToRightFoot();
 
+  // Set global desired pelvis angle
+  state0->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state1->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state2->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state3->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state2->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state3->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+
   // Set desired joint position
   //-- State 0
   //---- pelvis
-  state0->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state0->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state0->setDesiredJointPosition(14, -swh02); // right hip
   state0->setDesiredJointPosition(18, -swk02); // right knee
@@ -470,19 +480,19 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state0->setDesiredJointPosition(16, DART_RADIAN * +10.00); // right arm
   state0->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state0->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
-  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal right hip
-  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal right hip
+  //---- feedback gain for hip joints
+  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
+  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
   state0->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital right knee
-  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right knee
+  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 1
   //---- pelvis
-  state1->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state1->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state1->setDesiredJointPosition(13, -swh13); // left hip
   state1->setDesiredJointPosition(17, -swk13); // left knee
@@ -495,19 +505,19 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state1->setDesiredJointPosition(16, DART_RADIAN * -20.00); // right arm
   state1->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state1->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
+  //---- feedback gain for hip joints
   state1->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // correct left hip
-  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // correct left hip
-  state1->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left knee
-  state1->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left knee
-  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital left knee
-  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital left knee
+  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
+  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
+  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
+  state1->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state1->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 2
   //---- pelvis
-  state2->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state2->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state2->setDesiredJointPosition(13, -swh02); // left hip
   state2->setDesiredJointPosition(17, -swk02); // left knee
@@ -520,19 +530,19 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state2->setDesiredJointPosition(16, DART_RADIAN * -20.00); // right arm
   state2->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state2->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
+  //---- feedback gain for hip joints
   state2->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
-  state2->setFeedbackCoronalCOMVelocity(10, -cv);  // correct left hip
-  state2->setFeedbackCoronalCOMDistance(11, -cd);  // coronal left hip
-  state2->setFeedbackCoronalCOMVelocity(11, -cv);  // correct left hip
+  state2->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
+  state2->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
+  state2->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
   state2->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
   state2->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
-  state2->setFeedbackSagitalCOMDistance(14, -cd);  // sagital left hip
-  state2->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital left hip
+  state2->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state2->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 3
   //---- pelvis
-  state3->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state3->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state3->setDesiredJointPosition(14, -swh13); // right hip
   state3->setDesiredJointPosition(18, -swk13); // right knee
@@ -545,15 +555,15 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state3->setDesiredJointPosition(16, DART_RADIAN * +10.00); // right arm
   state3->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state3->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
-  state3->setFeedbackCoronalCOMDistance(10, -cd);  // coronal right hip
-  state3->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal right hip
+  //---- feedback gain for hip joints
+  state3->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
+  state3->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
   state3->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
   state3->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
-  state3->setFeedbackSagitalCOMDistance(13, -cd);  // sagital right knee
-  state3->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital right knee
-  state3->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right knee
-  state3->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right knee
+  state3->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state3->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state3->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state3->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   sm->addState(state0);
   sm->addState(state1);
@@ -571,19 +581,19 @@ StateMachine* Controller::_createWalkingStateMachine()
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis   = DART_RADIAN * -10.0;
+  const double pelvis = DART_RADIAN * -10.0;  // angle b/w pelvis and torso
 
-  const double swh02    =  0.50;  // swing hip
-  const double swk02    = -1.10;  // swing knee
-  const double swa02    =  0.60;  // swing angle
-  const double stk02    = -0.05;  // stance knee
-  const double sta02    =  0.00;  // stance ankle
+  const double swh02  =  0.50;  // swing hip
+  const double swk02  = -1.10;  // swing knee
+  const double swa02  =  0.60;  // swing angle
+  const double stk02  = -0.05;  // stance knee
+  const double sta02  =  0.00;  // stance ankle
 
-  const double swh13    = -0.10;  // swing hip
-  const double swk13    = -0.05;  // swing knee
-  const double swa13    =  0.15;  // swing angle
-  const double stk13    = -0.10;  // stance knee
-  const double sta13    =  0.00;  // stance ankle
+  const double swh13  = -0.10;  // swing hip
+  const double swk13  = -0.05;  // swing knee
+  const double swa13  =  0.15;  // swing angle
+  const double stk13  = -0.10;  // stance knee
+  const double sta13  =  0.00;  // stance ankle
 
   StateMachine* sm = new StateMachine("walking");
 
@@ -613,10 +623,20 @@ StateMachine* Controller::_createWalkingStateMachine()
   state2->setStanceFootToRightFoot();
   state3->setStanceFootToRightFoot();
 
+  // Set global desired pelvis angle
+  state0->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 5.0);
+  state1->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state2->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 5.0);
+  state3->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state2->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state3->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+
   // Set desired joint position
   //-- State 0
   //---- pelvis
-  state0->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state0->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state0->setDesiredJointPosition(14, -swh02); // right hip
   state0->setDesiredJointPosition(18, -swk02); // right knee
@@ -629,19 +649,19 @@ StateMachine* Controller::_createWalkingStateMachine()
   state0->setDesiredJointPosition(16, DART_RADIAN * +10.00); // right arm
   state0->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state0->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
-  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal right hip
-  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal right hip
+  //---- feedback gain for hip joints
+  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
+  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
   state0->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital right knee
-  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right knee
+  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 1
   //---- pelvis
-  state1->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state1->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state1->setDesiredJointPosition(13, -swh13); // left hip
   state1->setDesiredJointPosition(17, -swk13); // left knee
@@ -654,19 +674,19 @@ StateMachine* Controller::_createWalkingStateMachine()
   state1->setDesiredJointPosition(16, DART_RADIAN * -20.00); // right arm
   state1->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state1->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
+  //---- feedback gain for hip joints
   state1->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // correct left hip
-  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // correct left hip
-  state1->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left knee
-  state1->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left knee
-  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital left knee
-  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital left knee
+  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
+  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
+  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
+  state1->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state1->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 2
   //---- pelvis
-  state2->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state2->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state2->setDesiredJointPosition(13, -swh02); // left hip
   state2->setDesiredJointPosition(17, -swk02); // left knee
@@ -679,19 +699,19 @@ StateMachine* Controller::_createWalkingStateMachine()
   state2->setDesiredJointPosition(16, DART_RADIAN * -20.00); // right arm
   state2->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state2->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
+  //---- feedback gain for hip joints
   state2->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
-  state2->setFeedbackCoronalCOMVelocity(10, -cv);  // correct left hip
-  state2->setFeedbackCoronalCOMDistance(11, -cd);  // coronal left hip
-  state2->setFeedbackCoronalCOMVelocity(11, -cv);  // correct left hip
+  state2->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
+  state2->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
+  state2->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
   state2->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
   state2->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
-  state2->setFeedbackSagitalCOMDistance(14, -cd);  // sagital left hip
-  state2->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital left hip
+  state2->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state2->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 3
   //---- pelvis
-  state3->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state3->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state3->setDesiredJointPosition(14, -swh13); // right hip
   state3->setDesiredJointPosition(18, -swk13); // right knee
@@ -704,15 +724,15 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setDesiredJointPosition(16, DART_RADIAN * +15.00); // right arm
   state3->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state3->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
-
-  state3->setFeedbackCoronalCOMDistance(10, -cd);  // coronal right hip
-  state3->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal right hip
+  //---- feedback gain for hip joints
+  state3->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
+  state3->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
   state3->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
   state3->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
-  state3->setFeedbackSagitalCOMDistance(13, -cd);  // sagital right knee
-  state3->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital right knee
-  state3->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right knee
-  state3->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right knee
+  state3->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state3->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state3->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state3->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   sm->addState(state0);
   sm->addState(state1);
@@ -730,13 +750,13 @@ StateMachine* Controller::_createRunningStateMachine()
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis   = DART_RADIAN * -10.0;
+  const double pelvis   = DART_RADIAN * -10.0;  // angle b/w pelvis and torso
 
-  const double swh01    =  0.50;  // swing hip
-  const double swk01    = -1.10;  // swing knee
-  const double swa01    =  0.60;  // swing angle
-  const double stk01    = -0.05;  // stance knee
-  const double sta01    =  0.00;  // stance ankle
+  const double swh01 =  0.50;  // swing hip
+  const double swk01 = -1.10;  // swing knee
+  const double swa01 =  0.60;  // swing angle
+  const double stk01 = -0.05;  // stance knee
+  const double sta01 =  0.00;  // stance ankle
 
   StateMachine* sm = new StateMachine("running");
 
@@ -756,10 +776,16 @@ StateMachine* Controller::_createRunningStateMachine()
   state0->setStanceFootToLeftFoot();
   state1->setStanceFootToRightFoot();
 
+  // Set global desired pelvis angle
+  state0->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state1->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
+
   // Set desired joint position
   //-- State 0
   //---- pelvis
-  state0->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state0->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state0->setDesiredJointPosition(14, -swh01); // right hip
   state0->setDesiredJointPosition(18, -swk01); // right knee
@@ -776,19 +802,19 @@ StateMachine* Controller::_createRunningStateMachine()
 //  state0->setDesiredJointPosition(24, DART_RADIAN * +90.00); // right arm
 //  state0->setDesiredJointPosition(27, DART_RADIAN * +90.00); // left arm
 //  state0->setDesiredJointPosition(28, DART_RADIAN * -90.00); // right arm
-
-  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal right hip
-  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal right hip
+  //---- feedback gain for hip joints
+  state0->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
+  state0->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
   state0->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
   state0->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
-  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital right knee
-  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right knee
-  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right knee
+  state0->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
+  state0->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
+  state0->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state0->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   //-- State 2
   //---- pelvis
-  state1->setDesiredJointPosition( 9, -pelvis); // pelvis
+  state1->setDesiredJointPosition( 9, -pelvis); // angle b/w pelvis and torso
   //---- swing leg
   state1->setDesiredJointPosition(13, -swh01); // left hip
   state1->setDesiredJointPosition(17, -swk01); // left knee
@@ -805,15 +831,15 @@ StateMachine* Controller::_createRunningStateMachine()
 //  state1->setDesiredJointPosition(24, DART_RADIAN * +90.00); // right arm
 //  state1->setDesiredJointPosition(27, DART_RADIAN * +90.00); // left arm
 //  state1->setDesiredJointPosition(28, DART_RADIAN * -90.00); // right arm
-
+  //---- feedback gain for hip joints
   state1->setFeedbackCoronalCOMDistance(10, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // correct left hip
-  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal left hip
-  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // correct left hip
+  state1->setFeedbackCoronalCOMVelocity(10, -cv);  // coronal left hip
+  state1->setFeedbackCoronalCOMDistance(11, -cd);  // coronal right hip
+  state1->setFeedbackCoronalCOMVelocity(11, -cv);  // coronal right hip
   state1->setFeedbackSagitalCOMDistance(13, -cd);  // sagital left hip
   state1->setFeedbackSagitalCOMVelocity(13, -cv);  // sagital left hip
-  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital left hip
-  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital left hip
+  state1->setFeedbackSagitalCOMDistance(14, -cd);  // sagital right hip
+  state1->setFeedbackSagitalCOMVelocity(14, -cv);  // sagital right hip
 
   sm->addState(state0);
   sm->addState(state1);

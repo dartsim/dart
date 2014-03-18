@@ -474,8 +474,9 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on sagital plane
     double pelvisSagitalAngle = getSagitalPelvisAngle();
-    double tauTorsoSagital = -5000.0 * (pelvisSagitalAngle - DART_RADIAN * -0.0)
-                             - 1.0 * (0);
+    double tauTorsoSagital
+        = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
+          - 1.0 * (0);
     mTorque[13] = tauTorsoSagital - mTorque[14];
 
 //    cout << "Torque[13]     : " << mTorque[13] << endl;
@@ -485,8 +486,9 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on coronal plane
     double pelvisCoronalAngle = getCoronalPelvisAngle();
-    double tauTorsoCoronal = -5000.0 * (pelvisCoronalAngle - DART_RADIAN * 0.0)
-                             - 1.0 * (0);
+    double tauTorsoCoronal
+        = -5000.0 * (pelvisCoronalAngle - mDesiredGlobalPelvisAngleOnCoronal)
+          - 1.0 * (0);
     mTorque[10] = -tauTorsoCoronal - mTorque[11];
 
 //    cout << "Torque[10]     : " << mTorque[10] << endl;
@@ -505,8 +507,9 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on sagital plane
     double pelvisSagitalAngle = getSagitalPelvisAngle();
-    double tauTorsoSagital = -5000.0 * (pelvisSagitalAngle - DART_RADIAN * -0.0)
-                             - 1.0 * (0);
+    double tauTorsoSagital
+        = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
+          - 1.0 * (0);
     mTorque[14] = tauTorsoSagital - mTorque[13];
 
 //    cout << "Torque[13]     : " << mTorque[13] << endl;
@@ -516,8 +519,9 @@ void State::_updateTorqueForStanceLeg()
 
     // Torso control on coronal plane
     double pelvisCoronalAngle = getCoronalPelvisAngle();
-    double tauTorsoCoronal = -5000.0 * (pelvisCoronalAngle - DART_RADIAN * 0.0)
-                             - 1.0 * (0);
+    double tauTorsoCoronal
+        = -5000.0 * (pelvisCoronalAngle - mDesiredGlobalPelvisAngleOnCoronal)
+          - 1.0 * (0);
     mTorque[11] = -tauTorsoCoronal - mTorque[10];
 
     //    cout << "Torque[10]     : " << mTorque[10] << endl;
