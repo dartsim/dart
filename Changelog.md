@@ -14,6 +14,8 @@
   * [Pull request #152](https://github.com/dartsim/dart/pull/152)
 1. Added initial implementation of inverse kinematics functions
   * [Pull request #154](https://github.com/dartsim/dart/pull/154)
+1. Added optional collision detector: BulletCollision.
+  * [Pull request #156](https://github.com/dartsim/dart/pull/156)
 
 ### Version 3.0 (2013-11-04)
 

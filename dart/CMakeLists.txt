@@ -5,7 +5,7 @@ if(MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 
-set(CORE_SUBDIRS common math dynamics renderer collision lcpsolver constraint integration simulation)
+set(CORE_SUBDIRS common math dynamics renderer lcpsolver constraint integration simulation)
 set(NONCORE_SUBDIRS gui planning utils)
 # optimizer is also a NONCORE_SUBDIR, but it will be handled separately
 
@@ -23,13 +23,30 @@ set(core_srcs ${core_srcs} ${subdir_srcs})
 
 if(HAVE_IPOPT)
   file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
+  set(core_srcs ${core_srcs} ${subdir_srcs})
 endif()
-set(core_srcs ${core_srcs} ${subdir_srcs})
 
 if(HAVE_SNOPT)
   file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
+  set(core_srcs ${core_srcs} ${subdir_srcs})
 endif()
+
+file(GLOB subdir_srcs collision/*.cpp collision/*.h)
 set(core_srcs ${core_srcs} ${subdir_srcs})
+
+file(GLOB_RECURSE subdir_srcs collision/fcl_mesh/*.cpp collision/fcl_mesh/*.h)
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+file(GLOB_RECURSE subdir_srcs collision/fcl/*.cpp collision/fcl/*.h)
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+file(GLOB_RECURSE subdir_srcs collision/dart/*.cpp collision/dart/*.h)
+set(core_srcs ${core_srcs} ${subdir_srcs})
+
+if(HAVE_BULLET_COLLISION)
+  file(GLOB_RECURSE subdir_srcs collision/bullet/*.cpp collision/bullet/*.h)
+  set(core_srcs ${core_srcs} ${subdir_srcs})
+endif()
 
 foreach(SUBDIR ${NONCORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)

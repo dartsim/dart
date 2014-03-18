@@ -98,6 +98,16 @@ else(IPOPT_FOUND)
   set(HAVE_IPOPT FALSE)
 endif()
 
+# BulletCollision
+find_package(Bullet COMPONENTS BulletMath BulletCollision)
+if(BULLET_FOUND)
+  message(STATUS "Looking for BulletCollision - found")
+  set(HAVE_BULLET_COLLISION TRUE)
+else(BULLET_FOUND)
+  message(WARNING "BulletCollision not found, for bullet collision detector option, please install libbullet-dev.")
+  set(HAVE_BULLET_COLLISION FALSE)
+endif()
+
 # GLUT
 if(WIN32 AND NOT CYGWIN)
     set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
@@ -143,6 +153,9 @@ include_directories(${NLOPT_INCLUDE_DIRS})
 if(HAVE_IPOPT)
   include_directories(${IPOPT_INCLUDE_DIRS})
 endif()
+if(HAVE_BULLET_COLLISION)
+  include_directories(${BULLET_INCLUDE_DIRS})
+endif()
 
 if(NOT BUILD_CORE_ONLY)
   include_directories(${FLANN_INCLUDE_DIRS})
@@ -165,6 +178,9 @@ set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${NLOPT_LIBRARIES})
 if(HAVE_IPOPT)
   set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${IPOPT_LIBRARIES})
+endif()
+if(HAVE_BULLET_COLLISION)
+  set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${BULLET_MATH_LIBRARY} ${BULLET_COLLISION_LIBRARY})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
@@ -272,8 +288,17 @@ endif()
 set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
 set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
 set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2), fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev, libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1), urdfdom,
-libnlopt-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
+     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev,
+     libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
+     urdfdom, libnlopt-dev")
+if(HAVE_IPOPT)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
+endif()
+if(HAVE_BULLET_COLLISION)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libbullet-dev (>=2.8.0)")
+endif()
 
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_SYSTEM_NAME}")
