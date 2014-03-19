@@ -118,13 +118,13 @@ bool BodyContactCondition::isSatisfied()
     for (int i = 0; i < soft->getNumPointMasses(); ++i)
     {
       PointMass* pm = soft->getPointMass(i);
-      if (pm->getNumContactForces() > 0)
+      if (pm->getNumContacts() > 0)
         return true;
     }
   }
 
   // TODO(JS): Need more elegant condition check method
-  if (mBodyNode->getNumContactForces() > 0)
+  if (mBodyNode->getNumContacts() > 0)
   {
 //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
 //          << std::endl;

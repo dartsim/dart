@@ -106,8 +106,8 @@ public:
   void addContactForce(const Eigen::Vector3d& _contactForce,
                        bool _isLocal = false);
 
-  /// \brief Get number of contact forces
-  int getNumContactForces() const;
+  /// \brief Get number of contacts on this point mass
+  int getNumContacts() const;
 
   /// \brief Get contact force whoes index is _idx
   const Eigen::Vector3d& getContactForce(int _idx);
@@ -317,7 +317,7 @@ protected:
   /// \brief External force.
   Eigen::Vector3d mFext;
 
-  /// \brief Contact forces added by constraint dynamics solver.
+  /// \brief Contact forces which are calculated by constraint solver
   std::vector<Eigen::Vector3d> mContactForces;
 
   /// \brief A increasingly sorted list of dependent dof indices.

@@ -385,8 +385,8 @@ public:
                        bool _isOffsetLocal = true,
                        bool _isForceLocal = false);
 
-  /// \brief
-  int getNumContactForces() const;
+  /// \brief Get number of contacts on this body node
+  int getNumContacts() const;
 
   /// \brief
   const Eigen::Vector6d& getContactForce(int _idx);
@@ -744,7 +744,7 @@ public:
   /// \brief Cache data for external force vector of the system.
   Eigen::Vector6d mFext_F;
 
-  /// \brief
+  /// \brief Contact forces which are calculated by constraint solver
   std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> >
   mContactForces;
 

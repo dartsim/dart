@@ -152,12 +152,12 @@ void PointMass::addContactForce(const Eigen::Vector3d& _contactForce,
   }
 }
 
-int PointMass::getNumContactForces() const
+int PointMass::getNumContacts() const
 {
   return mContactForces.size();
 }
 
-const Eigen::Vector3d&PointMass::getContactForce(int _idx)
+const Eigen::Vector3d& PointMass::getContactForce(int _idx)
 {
   assert(0 <= _idx && _idx < mContactForces.size());
   return mContactForces[_idx];

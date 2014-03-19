@@ -721,7 +721,7 @@ void BodyNode::addContactForce(const Eigen::Vector3d& _force,
   mContactForces.push_back(math::dAdInvT(T, F));
 }
 
-int BodyNode::getNumContactForces() const {
+int BodyNode::getNumContacts() const {
   return mContactForces.size();
 }
 
