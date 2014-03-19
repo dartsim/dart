@@ -624,9 +624,9 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 5.0);
+  state0->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
   state1->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
-  state2->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 5.0);
+  state2->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
   state3->setDesiredPelvisGlobalAngleOnSagital(DART_RADIAN * 0.0);
   state0->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
   state1->setDesiredPelvisGlobalAngleOnCoronal(DART_RADIAN * 0.0);
@@ -720,8 +720,8 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setDesiredJointPosition(17, -stk13); // left knee
   state3->setDesiredJointPosition(21, -sta13); // left ankle
   //---- arm
-  state3->setDesiredJointPosition(15, DART_RADIAN * -30.00); // left arm
-  state3->setDesiredJointPosition(16, DART_RADIAN * +15.00); // right arm
+  state3->setDesiredJointPosition(15, DART_RADIAN * -20.00); // left arm
+  state3->setDesiredJointPosition(16, DART_RADIAN * +10.00); // right arm
   state3->setDesiredJointPosition(19, DART_RADIAN * -80.00); // left arm
   state3->setDesiredJointPosition(20, DART_RADIAN * +80.00); // right arm
   //---- feedback gain for hip joints
