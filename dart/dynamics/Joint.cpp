@@ -67,6 +67,11 @@ const std::string& Joint::getName() const {
   return mName;
 }
 
+Skeleton*Joint::getSkeleton() const
+{
+  return mSkeleton;
+}
+
 const Eigen::Isometry3d& Joint::getLocalTransform() const {
   return mT;
 }
@@ -123,6 +128,12 @@ const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const {
 
 void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
   _ri->transform(mT);
+}
+
+void Joint::init(Skeleton* _skel, int _skelIdx)
+{
+  mSkeleton = _skel;
+  mSkelIndex = _skelIdx;
 }
 
 void Joint::setDampingCoefficient(int _idx, double _d) {

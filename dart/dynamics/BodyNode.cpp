@@ -367,12 +367,13 @@ bool BodyNode::isColliding() {
   return mIsColliding;
 }
 
-void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
+void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
+{
   assert(_skeleton);
 
   mSkeleton = _skeleton;
   mSkelIndex = _skeletonIndex;
-  mParentJoint->mSkelIndex = _skeletonIndex;
+  mParentJoint->init(_skeleton, _skeletonIndex);
 
   //--------------------------------------------------------------------------
   // Fill the list of generalized coordinates this node depends on, and sort
@@ -380,6 +381,7 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
   //--------------------------------------------------------------------------
   if (mParentBodyNode)
     mDependentGenCoordIndices = mParentBodyNode->mDependentGenCoordIndices;
+
   else
     mDependentGenCoordIndices.clear();
   for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
@@ -390,8 +392,10 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
   int nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (int i = 0; i < nDepGenCoordIndices - 1; i++) {
-    for (int j = i + 1; j < nDepGenCoordIndices; j++) {
+  for (int i = 0; i < nDepGenCoordIndices - 1; i++)
+  {
+    for (int j = i + 1; j < nDepGenCoordIndices; j++)
+    {
       assert(mDependentGenCoordIndices[i] !=
           mDependentGenCoordIndices[j] &&
           "Duplicated index is found in mDependentGenCoordIndices.");
