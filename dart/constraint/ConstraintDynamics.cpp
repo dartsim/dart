@@ -113,9 +113,9 @@ void ConstraintDynamics::computeConstraintForces()
       for (int k = 0; k < mSkeletons[i]->getJoint(j)->getNumGenCoords(); k++)
       {
         dynamics::GenCoord* genCoord = joint->getGenCoord(k);
-        double val = genCoord->get_q();
-        double ub  = genCoord->get_qMax();
-        double lb  = genCoord->get_qMin();
+        double val = genCoord->getConfig();
+        double ub  = genCoord->getConfigMax();
+        double lb  = genCoord->getConfigMin();
         double violation = 0.0;
 
         if (val >= ub)

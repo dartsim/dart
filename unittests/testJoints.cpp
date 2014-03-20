@@ -323,12 +323,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
     double limit1 = DART_PI / 6.0;
 
     joint0->setPositionLimited(true);
-    joint0->getGenCoord(0)->set_qMin(-limit0);
-    joint0->getGenCoord(0)->set_qMax(limit0);
+    joint0->getGenCoord(0)->setConfigMin(-limit0);
+    joint0->getGenCoord(0)->setConfigMax(limit0);
 
     joint1->setPositionLimited(true);
-    joint1->getGenCoord(0)->set_qMin(-limit1);
-    joint1->getGenCoord(0)->set_qMax(limit1);
+    joint1->getGenCoord(0)->setConfigMin(-limit1);
+    joint1->getGenCoord(0)->setConfigMax(limit1);
 
     double simTime = 2.0;
     double timeStep = myWorld->getTimeStep();
@@ -339,11 +339,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
         myWorld->step();
     }
 
-    double jointPos0 = joint0->getGenCoord(0)->get_q();
-    double jointPos1 = joint1->getGenCoord(0)->get_q();
+    double jointPos0 = joint0->getGenCoord(0)->getConfig();
+    double jointPos1 = joint1->getGenCoord(0)->getConfig();
 
-    double jointVel0 = joint0->getGenCoord(0)->get_dq();
-    double jointVel1 = joint1->getGenCoord(0)->get_dq();
+    double jointVel0 = joint0->getGenCoord(0)->getVel();
+    double jointVel1 = joint1->getGenCoord(0)->getVel();
 
     // NOTE: The ideal result is that the joint position limit was obeyed with
     //       zero tolerance. To do so, DART should correct the joint limit

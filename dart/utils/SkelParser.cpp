@@ -567,13 +567,13 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newRevoluteJoint->getGenCoord(0)->set_qMin(lower);
+        newRevoluteJoint->getGenCoord(0)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newRevoluteJoint->getGenCoord(0)->set_qMax(upper);
+        newRevoluteJoint->getGenCoord(0)->setConfigMax(upper);
       }
     }
   } else {
@@ -631,13 +631,13 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newPrismaticJoint->getGenCoord(0)->set_qMin(lower);
+        newPrismaticJoint->getGenCoord(0)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newPrismaticJoint->getGenCoord(0)->set_qMax(upper);
+        newPrismaticJoint->getGenCoord(0)->setConfigMax(upper);
       }
     }
   } else {
@@ -701,13 +701,13 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newScrewJoint->getGenCoord(0)->set_qMin(lower);
+        newScrewJoint->getGenCoord(0)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newScrewJoint->getGenCoord(0)->set_qMax(upper);
+        newScrewJoint->getGenCoord(0)->setConfigMax(upper);
       }
     }
   } else {
@@ -765,13 +765,13 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->getGenCoord(0)->set_qMin(lower);
+        newUniversalJoint->getGenCoord(0)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->getGenCoord(0)->set_qMax(upper);
+        newUniversalJoint->getGenCoord(0)->setConfigMax(upper);
       }
     }
   } else {
@@ -802,13 +802,13 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->getGenCoord(1)->set_qMin(lower);
+        newUniversalJoint->getGenCoord(1)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->getGenCoord(1)->set_qMax(upper);
+        newUniversalJoint->getGenCoord(1)->setConfigMax(upper);
       }
     }
   } else {
@@ -893,13 +893,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(0)->set_qMin(lower);
+        newEulerJoint->getGenCoord(0)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(0)->set_qMax(upper);
+        newEulerJoint->getGenCoord(0)->setConfigMax(upper);
       }
     }
   }
@@ -924,13 +924,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(1)->set_qMin(lower);
+        newEulerJoint->getGenCoord(1)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(1)->set_qMax(upper);
+        newEulerJoint->getGenCoord(1)->setConfigMax(upper);
       }
     }
   }
@@ -955,13 +955,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(2)->set_qMin(lower);
+        newEulerJoint->getGenCoord(2)->setConfigMin(lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(2)->set_qMax(upper);
+        newEulerJoint->getGenCoord(2)->setConfigMax(upper);
       }
     }
   }

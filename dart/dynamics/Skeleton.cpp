@@ -243,7 +243,7 @@ Eigen::VectorXd Skeleton::getConfig(const std::vector<int>& _id) const {
   Eigen::VectorXd q(_id.size());
 
   for (unsigned int i = 0; i < _id.size(); i++)
-    q[i] = mGenCoords[_id[i]]->get_q();
+    q[i] = mGenCoords[_id[i]]->getConfig();
 
   return q;
 }
@@ -255,7 +255,7 @@ Eigen::VectorXd Skeleton::getConfig() const {
 void Skeleton::setConfig(const std::vector<int>& _id,
                          const Eigen::VectorXd& _config) {
   for ( unsigned int i = 0; i < _id.size(); i++ )
-    mGenCoords[_id[i]]->set_q(_config(i));
+    mGenCoords[_id[i]]->setConfig(_config(i));
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it) {

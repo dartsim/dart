@@ -86,9 +86,9 @@ void FreeJoint::updateTransform_Issue122(double _timeStep) {
 }
 
 void FreeJoint::updateJacobian() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
 
   Eigen::Matrix3d J = math::expMapJac(q);
 
@@ -142,12 +142,12 @@ void FreeJoint::updateJacobian_Issue122() {
 }
 
 void FreeJoint::updateJacobianTimeDeriv() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
-  Eigen::Vector3d dq(mCoordinate[0].get_dq(),
-                     mCoordinate[1].get_dq(),
-                     mCoordinate[2].get_dq());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
+  Eigen::Vector3d dq(mCoordinate[0].getVel(),
+                     mCoordinate[1].getVel(),
+                     mCoordinate[2].getVel());
 
   Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
 
@@ -188,10 +188,10 @@ void FreeJoint::updateJacobianTimeDeriv_Issue122() {
 
 void FreeJoint::clampRotation() {
   for (int i = 0; i < 3; i++) {
-    if (mCoordinate[i].get_q() > M_PI)
-      mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
-    if (mCoordinate[i].get_q() < -M_PI)
-      mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+    if (mCoordinate[i].getConfig() > M_PI)
+      mCoordinate[i].setConfig(mCoordinate[i].getConfig() - 2*M_PI);
+    if (mCoordinate[i].getConfig() < -M_PI)
+      mCoordinate[i].setConfig(mCoordinate[i].getConfig() + 2*M_PI);
   }
 }
 

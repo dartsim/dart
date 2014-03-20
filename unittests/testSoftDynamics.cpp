@@ -346,8 +346,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getGenCoord(l)->get_qMin();
-          double ubRP = joint->getGenCoord(l)->get_qMax();
+          double lbRP = joint->getGenCoord(l)->getConfigMin();
+          double ubRP = joint->getGenCoord(l)->getConfigMax();
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }

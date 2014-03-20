@@ -152,7 +152,7 @@ Eigen::VectorXd Joint::getDampingForces() const {
   Eigen::VectorXd dampingForce(numDofs);
 
   for (int i = 0; i < numDofs; ++i)
-    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->get_dq();
+    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->getVel();
 
   return dampingForce;
 }
@@ -171,13 +171,13 @@ double Joint::getSpringStiffness(int _idx) const {
 void Joint::setRestPosition(int _idx, double _q0) {
   assert(0 <= _idx && _idx < getNumGenCoords());
 
-  if (getGenCoord(_idx)->get_qMin() > _q0
-      || getGenCoord(_idx)->get_qMax() < _q0)
+  if (getGenCoord(_idx)->getConfigMin() > _q0
+      || getGenCoord(_idx)->getConfigMax() < _q0)
   {
     dtwarn << "Rest position of joint[" << getName() << "], " << _q0
            << ", is out of the limit range["
-           << getGenCoord(_idx)->get_qMin() << ", "
-           << getGenCoord(_idx)->get_qMax() << "] in index[" << _idx
+           << getGenCoord(_idx)->getConfigMin() << ", "
+           << getGenCoord(_idx)->getConfigMax() << "] in index[" << _idx
            << "].\n";
   }
 
@@ -194,8 +194,8 @@ Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
   Eigen::VectorXd springForce(dof);
   for (int i = 0; i < dof; ++i) {
     springForce(i) =
-        -mSpringStiffness[i] * (getGenCoord(i)->get_q()
-                                + getGenCoord(i)->get_dq() * _timeStep
+        -mSpringStiffness[i] * (getGenCoord(i)->getConfig()
+                                + getGenCoord(i)->getVel() * _timeStep
                                 - mRestPosition[i]);
   }
   return springForce;

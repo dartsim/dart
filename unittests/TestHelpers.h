@@ -104,9 +104,9 @@ Joint* create1DOFJoint(double val, double min, double max, int type)
     else if(type == DOF_ROLL)
         newJoint = new RevoluteJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     // Add the transformation to the joint, set the min/max values and set it to the skeleton
-    newJoint->getGenCoord(0)->set_q(val);
-    newJoint->getGenCoord(0)->set_qMin(min);
-    newJoint->getGenCoord(0)->set_qMax(max);
+    newJoint->getGenCoord(0)->setConfig(val);
+    newJoint->getGenCoord(0)->setConfigMin(min);
+    newJoint->getGenCoord(0)->setConfigMax(max);
 
     return newJoint;
 }

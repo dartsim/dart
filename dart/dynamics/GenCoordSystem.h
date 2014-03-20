@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -48,26 +48,24 @@ namespace dart {
 namespace dynamics {
 
 /// \brief System is a base class for every classes that has Dofs.
-class GenCoordSystem {
+class GenCoordSystem
+{
 public:
-  /// \brief
+  /// \brief Constructor
   GenCoordSystem();
 
-  /// \brief
+  /// \brief Destructor
   virtual ~GenCoordSystem();
 
-  /// \brief
+  /// \brief Get number of generalized coordinates in this system
   int getNumGenCoords() const;
 
-  /// \brief
+  /// \brief Get generalized coordinate whose index is _idx
   GenCoord* getGenCoord(int _idx) const;
 
-  /// \brief
+  /// \brief Get gneralized coordinate whose name is _name
   GenCoord* getGenCoord(const std::string& _name) const;
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
   /// \brief Set generalized coordinate vector
   void set_q(const Eigen::VectorXd& _q);
 
@@ -80,32 +78,64 @@ public:
   /// \brief Set generalized force vector (internal forces)
   void set_tau(const Eigen::VectorXd& _tau);
 
-  void set_qMin(const Eigen::VectorXd& _qMin);
+  /// \brief
+  void setGenPosMin(const Eigen::VectorXd& _qMin);
+
+  /// \brief
   void set_dqMin(const Eigen::VectorXd& _dqMin);
+
+  /// \brief
   void set_ddqMin(const Eigen::VectorXd& _ddqMin);
+
+  /// \brief
   void set_tauMin(const Eigen::VectorXd& _tauMin);
 
-  void set_qMax(const Eigen::VectorXd& _qMax);
+  /// \brief
+  void setGenPosMax(const Eigen::VectorXd& _qMax);
+
+  /// \brief
   void set_dqMax(const Eigen::VectorXd& _dqMax);
+
+  /// \brief
   void set_ddqMax(const Eigen::VectorXd& _ddqMax);
+
+  /// \brief
   void set_tauMax(const Eigen::VectorXd& _tauMax);
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
+  /// \brief
   Eigen::VectorXd get_q() const;
+
+  /// \brief
   Eigen::VectorXd get_dq() const;
+
+  /// \brief
   Eigen::VectorXd get_ddq() const;
+
+  /// \brief
   Eigen::VectorXd get_tau() const;
 
+  /// \brief
   Eigen::VectorXd get_qMin() const;
+
+  /// \brief
   Eigen::VectorXd get_dqMin() const;
+
+  /// \brief
   Eigen::VectorXd get_ddqMin() const;
+
+  /// \brief
   Eigen::VectorXd get_tauMin() const;
 
+  /// \brief
   Eigen::VectorXd get_qMax() const;
+
+  /// \brief
   Eigen::VectorXd get_dqMax() const;
+
+  /// \brief
   Eigen::VectorXd get_ddqMax() const;
+
+  /// \brief
   Eigen::VectorXd get_tauMax() const;
 
 protected:

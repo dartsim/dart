@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -38,7 +38,7 @@
 #ifndef DART_DYNAMICS_GENCOORD_H_
 #define DART_DYNAMICS_GENCOORD_H_
 
-#include <cassert>
+#include <cstddef>
 #include <string>
 
 #include "dart/math/Geometry.h"
@@ -46,102 +46,186 @@
 namespace dart {
 namespace dynamics {
 
-class Joint;
-
-/// \brief Generalized coordinate.
-/// A set of generalized coordiante describes the configuration of a system.
-class GenCoord {
+/// \brief Generalized coordinate
+class GenCoord
+{
 public:
-  /// \brief
+  /// \brief Constructor
   GenCoord();
 
-  /// \brief
+  /// \brief Destructor
   virtual ~GenCoord();
 
-  /// \brief
+  /// \brief Set name
   void setName(const std::string& _name);
 
-  /// \brief
+  /// \brief Get name
   const std::string& getName() const;
 
-  /// \brief
-  int getSkeletonIndex() const;
+  /// \brief Set skeleton index
+  void setSkeletonIndex(size_t _idx);
 
-  /// \brief
-  void setSkeletonIndex(int _idx);
+  /// \brief Get skeleton index
+  size_t getSkeletonIndex() const;
 
-public:
-  double get_q() const { return q; }            ///< Configuration
-  double get_dq() const { return dq; }          ///< Velocity
-  double get_ddq() const { return ddq; }        ///< Acceleration
-  double get_tau() const { return tau; }        ///< torque or force
+  //---------------------------- Configuration ---------------------------------
+  /// \brief Set configuration
+  void setConfig(double _config);
 
-  double get_qMin() const { return qMin; }      ///< Minimum value of q
-  double get_dqMin() const { return dqMin; }    ///< Minimum value of dq
-  double get_ddqMin() const { return ddqMin; }  ///< Minimum value of ddq
-  double get_tauMin() const { return tauMin; }  ///< Minimum value of tau
+  /// \brief Get configuration
+  double getConfig() const;
 
-  double get_qMax() const { return qMax; }      ///< Maximum value of q
-  double get_dqMax() const { return dqMax; }    ///< Maximum value of dq
-  double get_ddqMax() const { return ddqMax; }  ///< Maximum value of ddq
-  double get_tauMax() const { return tauMax; }  ///< Maximum value of tau
+  /// \brief Set lower bound for configuration
+  void setConfigMin(double _configMin);
 
-  void set_q(double _q) { assert(_q == _q); q = _q; }
-  void set_dq(double _dq) { assert(_dq == _dq); dq = _dq; }
-  void set_ddq(double _ddq) { assert(_ddq == _ddq); ddq = _ddq; }
-  void set_tau(double _tau) { assert(_tau == _tau); tau = _tau; }
+  /// \brief Get lower bound for configuration
+  double getConfigMin() const;
 
-  void set_qMin(double _qMin) { qMin = _qMin; }
-  void set_dqMin(double _dqMin) { dqMin = _dqMin; }
-  void set_ddqMin(double _ddqMin) { ddqMin = _ddqMin; }
-  void set_tauMin(double _tauMin) { tauMin = _tauMin; }
+  /// \brief Set upper bound for configuration
+  void setConfigMax(double _configMax);
 
-  void set_qMax(double _qMax) { qMax = _qMax; }
-  void set_dqMax(double _dqMax) { dqMax = _dqMax; }
-  void set_ddqMax(double _ddqMax) { ddqMax = _ddqMax; }
-  void set_tauMax(double _tauMax) { tauMax = _tauMax; }
+  /// \brief Get upper bound for configuration
+  double getConfigMax() const;
+
+  /// \brief Set derivative w.r.t. arbitrary scalar value
+  void setConfigDeriv(double _configDeriv);
+
+  /// \brief Get derivative w.r.t. arbitrary scalar value
+  double getConfigDeriv() const;
+
+  //------------------------------ Velocity ------------------------------------
+  /// \brief Set generalized velocity
+  void setVel(double _vel);
+
+  /// \brief Get generalized velocity
+  double getVel() const;
+
+  /// \brief Set lower bound for generalized velocity
+  void setVelMin(double _velMin);
+
+  /// \brief Get lower bound for generalized velocity
+  double getVelMin() const;
+
+  /// \brief Set upper bound for generalized velocity
+  void setVelMax(double _velMax);
+
+  /// \brief Get upper bound for generalized velocity
+  double getVelMax() const;
+
+  /// \brief Set derivative w.r.t. arbitrary scalar value
+  void setVelDeriv(double _velDeriv);
+
+  /// \brief Get derivative w.r.t. arbitrary scalar value
+  double getVelDeriv() const;
+
+  //---------------------------- Acceleration ----------------------------------
+  /// \brief Set generalized acceleration
+  void setAcc(double _acc);
+
+  /// \brief Get generalized acceleration
+  double getAcc() const;
+
+  /// \brief Set lower bound for generalized acceleration
+  void setAccMin(double _accMin);
+
+  /// \brief Get lower bound for generalized acceleration
+  double getAccMin() const;
+
+  /// \brief Set upper bound for generalized acceleration
+  void setAccMax(double _accMax);
+
+  /// \brief Get upper bound for generalized acceleration
+  double getAccMax() const;
+
+  /// \brief Set derivative w.r.t. arbitrary scalar value
+  void setAccDeriv(double _accDeriv);
+
+  /// \brief Get derivative w.r.t. arbitrary scalar value
+  double getAccDeriv() const;
+
+  //------------------------------- Force --------------------------------------
+  /// \brief Set generalized force
+  void setForce(double _force);
+
+  /// \brief Get generalized force
+  double getForce() const;
+
+  /// \brief Set lower bound for generalized force
+  void setForceMin(double _forceMin);
+
+  /// \brief Get lower bound for generalized force
+  double getForceMin() const;
+
+  /// \brief Set upper bound for generalized force
+  void setForceMax(double _forceMax);
+
+  /// \brief Get upper bound for generalized force
+  double getForceMax() const;
+
+  /// \brief Set derivative w.r.t. arbitrary scalar value
+  void setForceDeriv(double _forceDeriv);
+
+  /// \brief Get derivative w.r.t. arbitrary scalar value
+  double getForceDeriv() const;
 
 protected:
-  /// \brief
+  /// \brief Name
   std::string mName;
 
-  /// \brief Unique to dof in model.
-  int mSkelIndex;
+  /// \brief Index in Skeleton
+  size_t mSkelIndex;
 
-  /// \brief Joint to which it belongs.
-  // Joint *mJoint;
+  //----------------------------- Configuration --------------------------------
+  /// \brief Configuration
+  double mConfig;
 
-  //--------------------------------------------------------------------------
-  // Position
-  //--------------------------------------------------------------------------
-  double q;       ///< Position
-  double qMin;    ///< Min value allowed.
-  double qMax;    ///< Max value allowed.
-  double DqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
+  /// \brief Lower bound for configuration
+  double mConfigMin;
 
-  //--------------------------------------------------------------------------
-  // Velocity
-  //--------------------------------------------------------------------------
-  double dq;       ///< Velocity
-  double dqMin;    ///< Min value allowed.
-  double dqMax;    ///< Max value allowed.
-  double DdqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
+  /// \brief Upper bound for configuration
+  double mConfigMax;
 
-  //--------------------------------------------------------------------------
-  // Force (torque)
-  //--------------------------------------------------------------------------
-  double ddq;       ///< Acceleration
-  double ddqMin;    ///< Min value allowed.
-  double ddqMax;    ///< Max value allowed.
-  double DddqDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
+  /// \brief Derivatives w.r.t. an arbitrary scalr variable
+  double mConfigDeriv;
 
-  //--------------------------------------------------------------------------
-  // Force (torque)
-  //--------------------------------------------------------------------------
-  double tau;       ///< Force (torque)
-  double tauMin;    ///< Min value allowed.
-  double tauMax;    ///< Max value allowed.
-  double DtauDp;    ///< derivatives w.r.t. an arbitrary scalr variable p
+  //------------------------------- Velocity -----------------------------------
+  /// \brief Generalized velocity
+  double mVel;
+
+  /// \brief Min value allowed.
+  double mVelMin;
+
+  /// \brief Max value allowed.
+  double mVelMax;
+
+  /// \brief Derivatives w.r.t. an arbitrary scalr variable
+  double mVelDeriv;
+
+  //----------------------------- Acceleration ---------------------------------
+  /// \brief Generalized acceleration
+  double mAcc;
+
+  /// \brief Min value allowed.
+  double mAccMin;
+
+  /// \brief upper bound for generalized acceleration
+  double mAccMax;
+
+  /// \brief Derivatives w.r.t. an arbitrary scalr variable
+  double mAccDeriv;
+
+  //-------------------------------- Force -------------------------------------
+  /// \brief Generalized force
+  double mForce;
+
+  /// \brief Min value allowed.
+  double mForceMin;
+
+  /// \brief Max value allowed.
+  double mForceMax;
+
+  /// \brief Derivatives w.r.t. an arbitrary scalr variable
+  double mForceDeriv;
 };
 
 }  // namespace dynamics
