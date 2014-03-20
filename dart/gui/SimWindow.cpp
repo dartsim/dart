@@ -105,7 +105,7 @@ void SimWindow::draw() {
       for (unsigned int i = 0; i < nSkels; i++) {
         int start = mWorld->getIndex(i);
         int size = mWorld->getSkeleton(i)->getNumGenCoords();
-        mWorld->getSkeleton(i)->setConfig(
+        mWorld->getSkeleton(i)->setConfigs(
               mBakedStates[mPlayFrame].segment(start, size));
       }
       if (mShowMarkers) {
@@ -223,7 +223,7 @@ void SimWindow::bake() {
   for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++) {
     state.segment(mWorld->getIndex(i),
                   mWorld->getSkeleton(i)->getNumGenCoords()) =
-        mWorld->getSkeleton(i)->get_q();
+        mWorld->getSkeleton(i)->getConfigs();
   }
   for (int i = 0; i < nContacts; i++) {
     int begin = mWorld->getIndex(nSkeletons) + i * 6;

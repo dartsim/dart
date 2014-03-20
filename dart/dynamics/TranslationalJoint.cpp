@@ -63,7 +63,7 @@ TranslationalJoint::~TranslationalJoint() {
 
 void TranslationalJoint::updateTransform() {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(get_q())
+       * Eigen::Translation3d(getConfigs())
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }

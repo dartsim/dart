@@ -77,14 +77,14 @@ void EulerJoint::updateTransform() {
     case AO_XYZ:
     {
       mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerXYZToMatrix(get_q())) *
+           Eigen::Isometry3d(math::eulerXYZToMatrix(getConfigs())) *
            mT_ChildBodyToJoint.inverse();
       break;
     }
     case AO_ZYX:
     {
       mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerZYXToMatrix(get_q())) *
+           Eigen::Isometry3d(math::eulerZYXToMatrix(getConfigs())) *
            mT_ChildBodyToJoint.inverse();
       break;
     }

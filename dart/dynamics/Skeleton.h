@@ -144,24 +144,24 @@ public:
   /// \brief Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
+  //---------------- Virtual functions for GenCoordSystem ----------------------
+  /// \copydoc GenCoordSystem::setConfigs()
+  virtual void setConfigs(const Eigen::VectorXd& _configs,
+                          bool _updateCartesian = true);
+
+  /// \copydoc GenCoordSystem::getConfigs()
+  virtual Eigen::VectorXd getConfigs() const;
+
   //------------------ Properties updated by dynamics --------------------------
   /// \brief Set the configuration of this skeleton described in generalized
   ///        coordinates. The order of input configuration is determined by
   ///        _id.
-  void setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config);
-
-  /// \brief Set the configuration of this skeleton described in generalized
-  ///        coordinates.
-  void setConfig(const Eigen::VectorXd& _config);
+  void setConfigs(const std::vector<int>& _id, const Eigen::VectorXd& _config);
 
   /// \brief Get the configuration of this skeleton described in generalized
   ///        coordinates. The returned order of configuration is determined by
   ///        _id.
-  Eigen::VectorXd getConfig(const std::vector<int>& _id) const;
-
-  /// \brief Get the configuration of this skeleton described in generalized
-  ///        coordinates.
-  Eigen::VectorXd getConfig() const;
+  Eigen::VectorXd getConfigs(const std::vector<int>& _id) const;
 
   /// \brief Set the state of this skeleton described in generalized
   ///        coordinates.
@@ -171,6 +171,7 @@ public:
   ///        coordinates.
   Eigen::VectorXd getState();
 
+  //----------------------------------------------------------------------------
   /// \brief Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 

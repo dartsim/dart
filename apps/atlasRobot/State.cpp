@@ -155,8 +155,8 @@ void State::computeControlForce(double _timestep)
   assert(mNextState != NULL && "Next state should be set.");
 
   int dof = mSkeleton->getNumGenCoords();
-  VectorXd q = mSkeleton->get_q();
-  VectorXd dq = mSkeleton->get_dq();
+  VectorXd q = mSkeleton->getConfigs();
+  VectorXd dq = mSkeleton->getGenVels();
 
   // Compute relative joint angles from desired global angles of the pelvis and
   // the swing leg

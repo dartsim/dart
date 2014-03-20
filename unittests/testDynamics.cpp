@@ -250,7 +250,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
       VectorXd state = VectorXd::Zero(dof * 2);
       state << q, dq;
       skeleton->setState(state);
-      skeleton->set_ddq(ddq);
+      skeleton->setGenAccs(ddq);
       skeleton->computeInverseDynamicsLinear(true, true, false, false);
 
       // For each body node
@@ -375,7 +375,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
       VectorXd x = VectorXd::Zero(dof * 2);
       x << q, dq;
       skeleton->setState(x);
-      skeleton->set_ddq(ddq);
+      skeleton->setGenAccs(ddq);
 
       // Set x(k+1) = x(k) + dt * dx(k)
       VectorXd qNext  = q  + timeStep * dq;
@@ -391,7 +391,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 
         // Calculation of velocities and Jacobian at k-th time step
         skeleton->setState(x);
-        skeleton->set_ddq(ddq);
+        skeleton->setGenAccs(ddq);
         skeleton->computeInverseDynamicsLinear(true, true, false, false);
         Vector6d vBody1  = bn->getBodyVelocity();
         Vector6d vWorld1 = bn->getWorldVelocity();
@@ -407,7 +407,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
         skeleton->setState(xNext);
-        skeleton->set_ddq(ddq);
+        skeleton->setGenAccs(ddq);
         skeleton->computeInverseDynamicsLinear(true, true, false, false);
         Vector6d vBody2  = bn->getBodyVelocity();
         Vector6d vWorld2 = bn->getWorldVelocity();
@@ -653,26 +653,26 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       // Get C2, Coriolis force vector using inverse dynamics algorithm
       Vector3d oldGravity = skel->getGravity();
       VectorXd oldTau     = skel->getInternalForceVector();
-      VectorXd oldDdq     = skel->get_ddq();
+      VectorXd oldDdq     = skel->getGenAccs();
       // TODO(JS): Save external forces of body nodes
 
       skel->clearInternalForces();
       skel->clearExternalForces();
-      skel->set_ddq(VectorXd::Zero(dof));
+      skel->setGenAccs(VectorXd::Zero(dof));
 
       EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
-      EXPECT_TRUE(skel->get_ddq()                == VectorXd::Zero(dof));
+      EXPECT_TRUE(skel->getGenAccs()                == VectorXd::Zero(dof));
 
       skel->setGravity(Vector3d::Zero());
       EXPECT_TRUE(skel->getGravity() == Vector3d::Zero());
       skel->computeInverseDynamicsLinear(false, false, false, false);
-      VectorXd C2 = skel->get_tau();
+      VectorXd C2 = skel->getGenForces();
 
       skel->setGravity(oldGravity);
       EXPECT_TRUE(skel->getGravity() == oldGravity);
       skel->computeInverseDynamicsLinear(false, false, false, false);
-      VectorXd Cg2 = skel->get_tau();
+      VectorXd Cg2 = skel->getGenForces();
 
       EXPECT_TRUE(equals(C, C2, 1e-6));
       if (!equals(C, C2, 1e-6))
@@ -688,8 +688,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         cout << "Cg2:" << Cg2.transpose() << endl;
       }
 
-      skel->set_tau(oldTau);
-      skel->set_ddq(oldDdq);
+      skel->setGenForces(oldTau);
+      skel->setGenAccs(oldDdq);
       // TODO(JS): Restore external forces of body nodes
 
       //------------------- Combined Force Vector Test -----------------------
@@ -783,16 +783,16 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
         x[k] = random(lb, ub);
       skel->setState(x);
 
-      VectorXd tau = skel->get_tau();
+      VectorXd tau = skel->getGenForces();
       for (int k = 0; k < tau.size(); ++k)
         tau[k] = random(lb, ub);
-      skel->set_tau(tau);
+      skel->setGenForces(tau);
 
       skel->computeForwardDynamics();
 
-      VectorXd q  = skel->get_q();
-      VectorXd dq = skel->get_dq();
-      VectorXd ddq = skel->get_ddq();
+      VectorXd q  = skel->getConfigs();
+      VectorXd dq = skel->getGenVels();
+      VectorXd ddq = skel->getGenAccs();
 
       VectorXd com   = skel->getWorldCOM();
       VectorXd dcom  = skel->getWorldCOMVelocity();

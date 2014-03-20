@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_GENCOORDSYSTEM_H_
 #define DART_DYNAMICS_GENCOORDSYSTEM_H_
 
+#include <cstddef>
 #include <vector>
 #include <string>
 
@@ -47,100 +48,110 @@
 namespace dart {
 namespace dynamics {
 
-/// \brief System is a base class for every classes that has Dofs.
+/// \brief Base class for generalized coordinate systems
+///
+///
 class GenCoordSystem
 {
 public:
+  /// \brief Get number of generalized coordinates
+  size_t getNumGenCoords() const;
+
+  /// \brief Get generalized coordinate whose index is _idx
+  GenCoord* getGenCoord(size_t _idx) const;
+
+  /// \brief Get gneralized coordinate whose name is _name
+  GenCoord* getGenCoord(const std::string& _name) const;
+
+  //--------------------------- Configurations ---------------------------------
+  /// \brief Set configurations defined in terms of generalized coordinates
+  virtual void setConfigs(const Eigen::VectorXd& _configs,
+                          bool _updateCartesian = true);
+
+  /// \brief Get configurations defined in terms of generalized coordinates
+  virtual Eigen::VectorXd getConfigs() const;
+
+  /// \brief Set lower bounds for configurations
+  virtual void setConfigsMin(const Eigen::VectorXd& _configsMin,
+                             bool _updateCartesian = true);
+
+  /// \brief Get lower bounds for configurations
+  virtual Eigen::VectorXd getConfigsMin() const;
+
+  /// \brief Set upper bounds for configurations
+  virtual void setConfigsMax(const Eigen::VectorXd& _configsMax,
+                             bool _updateCartesian = true);
+
+  /// \brief Get uppoer bounds for configurations
+  virtual Eigen::VectorXd getConfigsMax() const;
+
+  //----------------------------- Velocities -----------------------------------
+  /// \brief Set generalized velocities
+  virtual void setGenVels(const Eigen::VectorXd& _vels);
+
+  /// \brief Get generalized velocities
+  virtual Eigen::VectorXd getGenVels() const;
+
+  /// \brief Set lower bounds for generalized velocities
+  virtual void setGenVelsMin(const Eigen::VectorXd& _velsMin);
+
+  /// \brief Get lower bounds for generalized velocities
+  virtual Eigen::VectorXd getGenVelsMin() const;
+
+  /// \brief Set upper bounds for generalized velocities
+  virtual void setGenVelsMax(const Eigen::VectorXd& _velsMax);
+
+  /// \brief Get uppoer bounds for generalized velocities
+  virtual Eigen::VectorXd getGenVelsMax() const;
+
+  //---------------------------- Accelerations ---------------------------------
+  /// \brief Set generalized accelerations
+  virtual void setGenAccs(const Eigen::VectorXd& _accs);
+
+  /// \brief Get generalized accelerations
+  virtual Eigen::VectorXd getGenAccs() const;
+
+  /// \brief Set lower bounds for generalized accelerations
+  virtual void setGenAccsMin(const Eigen::VectorXd& _accsMin);
+
+  /// \brief Get lower bounds for generalized accelerations
+  virtual Eigen::VectorXd getGenAccsMin() const;
+
+  /// \brief Set upper bounds for generalized accelerations
+  virtual void setGenAccsMax(const Eigen::VectorXd& _accsMax);
+
+  /// \brief Get uppoer bounds for generalized accelerations
+  virtual Eigen::VectorXd getGenAccsMax() const;
+
+  //------------------------------- Forces -------------------------------------
+  /// \brief Set generalized forces
+  virtual void setGenForces(const Eigen::VectorXd& _forces);
+
+  /// \brief Get generalized forces
+  virtual Eigen::VectorXd getGenForces() const;
+
+  /// \brief Set lower bounds for generalized forces
+  virtual void setGenForcesMin(const Eigen::VectorXd& _forcesMin);
+
+  /// \brief Get lower bounds for generalized forces
+  virtual Eigen::VectorXd getGenForcesMin() const;
+
+  /// \brief Set upper bounds for generalized forces
+  virtual void setGenForcesMax(const Eigen::VectorXd& _forcesMax);
+
+  /// \brief Get uppoer bounds for generalized forces
+  virtual Eigen::VectorXd getGenForcesMax() const;
+
+protected:
+  /// \brief Array of pointers to generalized coordinates
+  std::vector<GenCoord*> mGenCoords;
+
+protected:
   /// \brief Constructor
   GenCoordSystem();
 
   /// \brief Destructor
   virtual ~GenCoordSystem();
-
-  /// \brief Get number of generalized coordinates in this system
-  int getNumGenCoords() const;
-
-  /// \brief Get generalized coordinate whose index is _idx
-  GenCoord* getGenCoord(int _idx) const;
-
-  /// \brief Get gneralized coordinate whose name is _name
-  GenCoord* getGenCoord(const std::string& _name) const;
-
-  /// \brief Set generalized coordinate vector
-  void set_q(const Eigen::VectorXd& _q);
-
-  /// \brief Set generalized velocity vector
-  void set_dq(const Eigen::VectorXd& _dq);
-
-  /// \brief Set generalized acceleration vector
-  void set_ddq(const Eigen::VectorXd& _ddq);
-
-  /// \brief Set generalized force vector (internal forces)
-  void set_tau(const Eigen::VectorXd& _tau);
-
-  /// \brief
-  void setGenPosMin(const Eigen::VectorXd& _qMin);
-
-  /// \brief
-  void set_dqMin(const Eigen::VectorXd& _dqMin);
-
-  /// \brief
-  void set_ddqMin(const Eigen::VectorXd& _ddqMin);
-
-  /// \brief
-  void set_tauMin(const Eigen::VectorXd& _tauMin);
-
-  /// \brief
-  void setGenPosMax(const Eigen::VectorXd& _qMax);
-
-  /// \brief
-  void set_dqMax(const Eigen::VectorXd& _dqMax);
-
-  /// \brief
-  void set_ddqMax(const Eigen::VectorXd& _ddqMax);
-
-  /// \brief
-  void set_tauMax(const Eigen::VectorXd& _tauMax);
-
-  /// \brief
-  Eigen::VectorXd get_q() const;
-
-  /// \brief
-  Eigen::VectorXd get_dq() const;
-
-  /// \brief
-  Eigen::VectorXd get_ddq() const;
-
-  /// \brief
-  Eigen::VectorXd get_tau() const;
-
-  /// \brief
-  Eigen::VectorXd get_qMin() const;
-
-  /// \brief
-  Eigen::VectorXd get_dqMin() const;
-
-  /// \brief
-  Eigen::VectorXd get_ddqMin() const;
-
-  /// \brief
-  Eigen::VectorXd get_tauMin() const;
-
-  /// \brief
-  Eigen::VectorXd get_qMax() const;
-
-  /// \brief
-  Eigen::VectorXd get_dqMax() const;
-
-  /// \brief
-  Eigen::VectorXd get_ddqMax() const;
-
-  /// \brief
-  Eigen::VectorXd get_tauMax() const;
-
-protected:
-  /// \brief Pointers to Dofs.
-  std::vector<GenCoord*> mGenCoords;
 };
 
 }  // namespace dynamics

@@ -429,7 +429,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       // Get C2, Coriolis force vector using inverse dynamics algorithm
       Vector3d oldGravity = skel->getGravity();
       VectorXd oldTau     = skel->getInternalForceVector();
-      VectorXd oldDdq     = skel->get_ddq();
+      VectorXd oldDdq     = skel->getGenAccs();
       // TODO(JS): Save external forces of body nodes
       vector<double> oldKv(nSoftBodyNodes, 0.0);
       vector<double> oldKe(nSoftBodyNodes, 0.0);
@@ -445,7 +445,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       skel->clearInternalForces();
       skel->clearExternalForces();
-      skel->set_ddq(VectorXd::Zero(dof));
+      skel->setGenAccs(VectorXd::Zero(dof));
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
         assert(softSkel != NULL);
@@ -457,17 +457,17 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
-      EXPECT_TRUE(skel->get_ddq()                == VectorXd::Zero(dof));
+      EXPECT_TRUE(skel->getGenAccs()                == VectorXd::Zero(dof));
 
       skel->setGravity(Vector3d::Zero());
       EXPECT_TRUE(skel->getGravity() == Vector3d::Zero());
       skel->computeInverseDynamicsLinear(false, false, false, false);
-      VectorXd C2 = skel->get_tau();
+      VectorXd C2 = skel->getGenForces();
 
       skel->setGravity(oldGravity);
       EXPECT_TRUE(skel->getGravity() == oldGravity);
       skel->computeInverseDynamicsLinear(false, false, false, false);
-      VectorXd Cg2 = skel->get_tau();
+      VectorXd Cg2 = skel->getGenForces();
 
       EXPECT_TRUE(equals(C, C2, 1e-6));
       if (!equals(C, C2, 1e-6))
@@ -483,8 +483,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         cout << "Cg2:" << Cg2.transpose() << endl;
       }
 
-      skel->set_tau(oldTau);
-      skel->set_ddq(oldDdq);
+      skel->setGenForces(oldTau);
+      skel->setGenAccs(oldDdq);
       // TODO(JS): Restore external forces of body nodes
     }
   }

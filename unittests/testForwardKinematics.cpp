@@ -68,7 +68,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setConfig(twoLinkIndices, joints[i]);
+    robot->setConfigs(twoLinkIndices, joints[i]);
     Vector3d actual
         = robot->getBodyNode("ee")->getWorldTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
@@ -110,7 +110,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setConfig(twoLinkIndices, joints[i]);
+    robot->setConfigs(twoLinkIndices, joints[i]);
     Vector3d actual
         = robot->getBodyNode("ee")->getWorldTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);

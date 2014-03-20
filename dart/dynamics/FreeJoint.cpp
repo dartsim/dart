@@ -68,7 +68,7 @@ FreeJoint::~FreeJoint() {
 
 void FreeJoint::updateTransform() {
   // TODO(JS): This is workaround for Issue #122.
-  mT_Joint = math::expMap(get_q());
+  mT_Joint = math::expMap(getConfigs());
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -76,9 +76,9 @@ void FreeJoint::updateTransform() {
 }
 
 void FreeJoint::updateTransform_Issue122(double _timeStep) {
-  mT_Joint = mT_Joint * math::expMap(_timeStep * get_dq());
+  mT_Joint = mT_Joint * math::expMap(_timeStep * getGenVels());
 
-  set_q(math::logMap(mT_Joint));
+  setConfigs(math::logMap(mT_Joint));
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -169,13 +169,13 @@ void FreeJoint::updateJacobianTimeDeriv() {
   mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
   mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
   mdS.col(3) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
   mdS.col(4) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
   mdS.col(5) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
   assert(!math::isNan(mdS));

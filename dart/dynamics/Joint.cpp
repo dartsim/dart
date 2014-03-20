@@ -206,7 +206,7 @@ double Joint::getPotentialEnergy() const {
   int dof = getNumGenCoords();
 
   // Spring energy
-  Eigen::VectorXd q = get_q();
+  Eigen::VectorXd q = getConfigs();
   assert(q.size() == dof);
   for (int i = 0; i < dof; ++i) {
     PE += 0.5 * mSpringStiffness[i]
