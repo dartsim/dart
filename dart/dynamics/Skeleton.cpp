@@ -48,6 +48,8 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/BallJoint.h"  // Fix for #122 should remove this too
+#include "dart/dynamics/FreeJoint.h"  // Fix for #122 should remove this too
 #include "dart/dynamics/Marker.h"
 
 namespace dart {
@@ -316,19 +318,26 @@ void Skeleton::setConfig(const Eigen::VectorXd& _config) {
   }
 }
 
-void Skeleton::setState(const Eigen::VectorXd& _state) {
+void Skeleton::setState(const Eigen::VectorXd& _state)
+{
   set_q(_state.head(_state.size() / 2));
   set_dq(_state.tail(_state.size() / 2));
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     // TODO(JS): This is workaround for Issue #122.
-    if ((*it)->getParentJoint()->getJointType() == Joint::BALL
-        || (*it)->getParentJoint()->getJointType() == Joint::FREE) {
+    // TODO(JS): If possible we recomment not to use dynamic_cast. Fix for this
+    //           issue should not to use dynamic_cast.
+    if (dynamic_cast<BallJoint*>((*it)->getParentJoint())
+        || dynamic_cast<FreeJoint*>((*it)->getParentJoint()))
+    {
       (*it)->updateTransform_Issue122(mTimeStep);
       (*it)->updateVelocity();
       (*it)->updateEta_Issue122();
-    } else {
+    }
+    else
+    {
       (*it)->updateTransform();
       (*it)->updateVelocity();
       (*it)->updateEta();
@@ -336,7 +345,8 @@ void Skeleton::setState(const Eigen::VectorXd& _state) {
   }
 
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
+       it != mBodyNodes.rend(); ++it)
+  {
     (*it)->updateArticulatedInertia(mTimeStep);
   }
 
@@ -351,7 +361,8 @@ void Skeleton::setState(const Eigen::VectorXd& _state) {
   mIsDampingForceVectorDirty = true;
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->mIsBodyJacobianDirty = true;
     (*it)->mIsBodyJacobianTimeDerivDirty = true;
   }

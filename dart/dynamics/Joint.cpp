@@ -46,14 +46,14 @@
 namespace dart {
 namespace dynamics {
 
-Joint::Joint(JointType _type, const std::string& _name)
+Joint::Joint(const std::string& _name)
   : mName(_name),
     mSkelIndex(-1),
-    mJointType(_type),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-    mT(Eigen::Isometry3d::Identity()) {
+    mT(Eigen::Isometry3d::Identity())
+{
 }
 
 Joint::~Joint() {
@@ -67,19 +67,15 @@ const std::string& Joint::getName() const {
   return mName;
 }
 
-Joint::JointType Joint::getJointType() const {
-  return mJointType;
-}
-
-const Eigen::Isometry3d&Joint::getLocalTransform() const {
+const Eigen::Isometry3d& Joint::getLocalTransform() const {
   return mT;
 }
 
-const math::Jacobian&Joint::getLocalJacobian() const {
+const math::Jacobian& Joint::getLocalJacobian() const {
   return mS;
 }
 
-const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const {
+const math::Jacobian& Joint::getLocalJacobianTimeDeriv() const {
   return mdS;
 }
 

@@ -46,8 +46,9 @@ namespace dynamics {
 
 PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
                                const std::string& _name)
-  : Joint(PRISMATIC, _name),
-    mAxis(axis.normalized()) {
+  : Joint(_name),
+    mAxis(axis.normalized())
+{
   mGenCoords.push_back(&mCoordinate);
 
   mS = Eigen::Matrix<double, 6, 1>::Zero();

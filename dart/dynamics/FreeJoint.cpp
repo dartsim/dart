@@ -45,8 +45,9 @@ namespace dart {
 namespace dynamics {
 
 FreeJoint::FreeJoint(const std::string& _name)
-  : Joint(FREE, _name),
-    mT_Joint(Eigen::Isometry3d::Identity()) {
+  : Joint(_name),
+    mT_Joint(Eigen::Isometry3d::Identity())
+{
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);

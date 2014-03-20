@@ -56,51 +56,27 @@ namespace dynamics {
 class BodyNode;
 
 /// \brief
-class Joint : public GenCoordSystem {
+class Joint : public GenCoordSystem
+{
 public:
+  /// \brief Set BodyNode as friend class
   friend class BodyNode;
 
-  //--------------------------------------------------------------------------
-  // Types
-  //--------------------------------------------------------------------------
-  /// \brief
-  enum JointType {
-    WELD,           // 0-dof
-    REVOLUTE,       // 1-dof
-    PRISMATIC,      // 1-dof
-    SCREW,          // 1-dof
-    UNIVERSAL,      // 2-dof
-    TRANSLATIONAL,  // 3-dof
-    BALL,           // 3-dof
-    PLANAR,         // 3-dof
-    EULER,          // 3-dof
-    FREE            // 6-dof
-  };
+  //--------------------- Constructor and Destructor ---------------------------
+  /// \brief Constructor
+  Joint(const std::string& _name = "Noname Joint");
 
-  //--------------------------------------------------------------------------
-  // Constructor and Destructor
-  //--------------------------------------------------------------------------
-  /// \brief
-  Joint(JointType _type, const std::string& _name = "Noname Joint");
-
-  /// \brief
+  /// \brief Destructor
   virtual ~Joint();
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  /// \brief
+  //----------------------------------------------------------------------------
+  /// \brief Set joint name
   void setName(const std::string& _name);
 
-  /// \brief
+  /// \brief Get joint name
   const std::string& getName() const;
 
-  //--------------------------------------------------------------------------
-  // Kinematical Properties
-  //--------------------------------------------------------------------------
-  /// \brief
-  JointType getJointType() const;
-
+  //------------------------ Kinematical Properties ----------------------------
   /// \brief
   const Eigen::Isometry3d& getLocalTransform() const;
 
@@ -119,18 +95,14 @@ public:
   /// presented at this joint, return -1.
   int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
-  //--------------------------------------------------------------------------
-  // Dynamics Properties
-  //--------------------------------------------------------------------------
+  //------------------------ Dynamics Properties -------------------------------
   /// \brief
   void setPositionLimited(bool _isPositionLimited);
 
   /// \brief
   bool isPositionLimited() const;
 
-  //--------------------------------------------------------------------------
-  // Structueral Properties
-  //--------------------------------------------------------------------------
+  //----------------------- Structueral Properties -----------------------------
   /// \brief
   int getSkeletonIndex() const;
 
@@ -275,10 +247,6 @@ protected:
 
   /// \brief
   std::vector<double> mRestPosition;
-
-private:
-  /// \brief Type of joint e.g. ball, hinge etc.
-  JointType mJointType;
 };
 
 }  // namespace dynamics

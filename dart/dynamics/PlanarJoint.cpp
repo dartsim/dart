@@ -45,7 +45,7 @@ namespace dart {
 namespace dynamics {
 
 PlanarJoint::PlanarJoint(const std::string& _name)
-  : Joint(PLANAR, _name)
+  : Joint(_name)
 {
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);

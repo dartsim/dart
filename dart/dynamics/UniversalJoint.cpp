@@ -47,7 +47,8 @@ namespace dynamics {
 UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const Eigen::Vector3d& _axis1,
                                const std::string& _name)
-  : Joint(UNIVERSAL, _name) {
+  : Joint(_name)
+{
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
 
