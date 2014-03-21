@@ -346,15 +346,6 @@ protected:
   /// \brief Total mass.
   double mTotalMass;
 
-  /// \brief True when configurations are modified
-  bool mIsConfigsModified;
-
-  /// \brief True when generalized velocities are modified
-  bool mIsGenVelsModified;
-
-  /// \brief True when generalized accelerations are modified
-  bool mIsGenAccsModified;
-
   /// \brief Mass matrix for the skeleton.
   Eigen::MatrixXd mM;
 
