@@ -65,22 +65,19 @@ public:
 
   //--------------------------- Configurations ---------------------------------
   /// \brief Set configurations defined in terms of generalized coordinates
-  virtual void setConfigs(const Eigen::VectorXd& _configs,
-                          bool _updateCartesian = true);
+  virtual void setConfigs(const Eigen::VectorXd& _configs);
 
   /// \brief Get configurations defined in terms of generalized coordinates
   virtual Eigen::VectorXd getConfigs() const;
 
   /// \brief Set lower bounds for configurations
-  virtual void setConfigsMin(const Eigen::VectorXd& _configsMin,
-                             bool _updateCartesian = true);
+  virtual void setConfigsMin(const Eigen::VectorXd& _configsMin);
 
   /// \brief Get lower bounds for configurations
   virtual Eigen::VectorXd getConfigsMin() const;
 
   /// \brief Set upper bounds for configurations
-  virtual void setConfigsMax(const Eigen::VectorXd& _configsMax,
-                             bool _updateCartesian = true);
+  virtual void setConfigsMax(const Eigen::VectorXd& _configsMax);
 
   /// \brief Get uppoer bounds for configurations
   virtual Eigen::VectorXd getConfigsMax() const;

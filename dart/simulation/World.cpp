@@ -92,7 +92,7 @@ void World::setState(const Eigen::VectorXd& _newState) {
   for (int i = 0; i < getNumSkeletons(); i++) {
     int start = 2 * mIndices[i];
     int size = 2 * getSkeleton(i)->getNumGenCoords();
-    getSkeleton(i)->setState(_newState.segment(start, size));
+    getSkeleton(i)->setState(_newState.segment(start, size), true, true, false);
   }
 }
 

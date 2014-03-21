@@ -251,7 +251,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
       state << q, dq;
       skeleton->setState(state);
       skeleton->setGenAccs(ddq);
-      skeleton->computeInverseDynamicsLinear(true, true, false, false);
+      skeleton->computeInverseDynamics(false, false);
 
       // For each body node
       for (int k = 0; k < skeleton->getNumBodyNodes(); ++k)
@@ -392,7 +392,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         // Calculation of velocities and Jacobian at k-th time step
         skeleton->setState(x);
         skeleton->setGenAccs(ddq);
-        skeleton->computeInverseDynamicsLinear(true, true, false, false);
+        skeleton->computeInverseDynamics(false, false);
         Vector6d vBody1  = bn->getBodyVelocity();
         Vector6d vWorld1 = bn->getWorldVelocity();
         MatrixXd JBody1  = bn->getBodyJacobian();
@@ -408,7 +408,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         // Calculation of velocities and Jacobian at (k+1)-th time step
         skeleton->setState(xNext);
         skeleton->setGenAccs(ddq);
-        skeleton->computeInverseDynamicsLinear(true, true, false, false);
+        skeleton->computeInverseDynamics(false, false);
         Vector6d vBody2  = bn->getBodyVelocity();
         Vector6d vWorld2 = bn->getWorldVelocity();
         MatrixXd JBody2  = bn->getBodyJacobian();
@@ -658,7 +658,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       skel->clearInternalForces();
       skel->clearExternalForces();
-      skel->setGenAccs(VectorXd::Zero(dof));
+      skel->setGenAccs(VectorXd::Zero(dof), false);
 
       EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
@@ -666,12 +666,12 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       skel->setGravity(Vector3d::Zero());
       EXPECT_TRUE(skel->getGravity() == Vector3d::Zero());
-      skel->computeInverseDynamicsLinear(false, false, false, false);
+      skel->computeInverseDynamics(false, false);
       VectorXd C2 = skel->getGenForces();
 
       skel->setGravity(oldGravity);
       EXPECT_TRUE(skel->getGravity() == oldGravity);
-      skel->computeInverseDynamicsLinear(false, false, false, false);
+      skel->computeInverseDynamics(false, false);
       VectorXd Cg2 = skel->getGenForces();
 
       EXPECT_TRUE(equals(C, C2, 1e-6));
@@ -689,7 +689,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
 
       skel->setGenForces(oldTau);
-      skel->setGenAccs(oldDdq);
+      skel->setGenAccs(oldDdq, false);
       // TODO(JS): Restore external forces of body nodes
 
       //------------------- Combined Force Vector Test -----------------------
@@ -720,9 +720,9 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 5;
+  int nRandomItr = 10;
 #else
-  int nRandomItr = 1;
+  int nRandomItr = 100;
 #endif
 
   // Lower and upper bound of configuration for system

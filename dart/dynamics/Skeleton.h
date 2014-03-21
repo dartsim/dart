@@ -70,7 +70,7 @@ public:
   /// \brief Destructor
   virtual ~Skeleton();
 
-  //--------------------------------------------------------------------------
+  //------------------------------ Properties ----------------------------------
   /// \brief Set name.
   void setName(const std::string& _name);
 
@@ -78,23 +78,18 @@ public:
   const std::string& getName() const;
 
   /// \brief Set whether this skeleton allows self collisions between body
-  ///        nodes in this skeleton.
+  /// nodes in this skeleton.
   /// \param[in] _isSelfCollidable True if the skeleton is checked for self
-  ///                              collision.
+  /// collision.
   void setSelfCollidable(bool _isSelfCollidable);
 
   /// \brief Get whether this skeleton allows self collisions between body
-  ///        nodes in this skeleton.
+  /// nodes in this skeleton.
   /// \return True if the skeleton is checked for self collision.
   bool isSelfCollidable() const;
 
   /// \brief Set whether this skeleton will be updated by forward dynamics.
   /// \param[in] _isMobile True if this skeleton is mobile.
-  /// \warning This function should be called before this skeleton is added to
-  ///          the world. If not, the constraint dynamics algorithm will not
-  ///          work. If the user want to change the immobile state after this
-  ///          skeleton is added to the world, the user should remove this
-  ///          skeleton from the world and add it to the world again.
   void setMobile(bool _isMobile);
 
   /// \brief Get whether this skeleton will be updated by forward dynamics.
@@ -102,21 +97,21 @@ public:
   bool isMobile() const;
 
   /// \brief Set time step. This timestep is used for implicit joint damping
-  ///        force.
+  /// force.
   void setTimeStep(double _timeStep);
 
   /// \brief Get time step.
   double getTimeStep() const;
 
   /// \brief Set 3-dim gravitational acceleration. The gravity is used for
-  ///        calculating gravity force vector of the skeleton.
+  /// calculating gravity force vector of the skeleton.
   void setGravity(const Eigen::Vector3d& _gravity);
 
   /// \brief Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
 
   /// \brief Get total mass of the skeleton. The total mass is calculated at
-  ///        init().
+  /// init().
   double getMass() const;
 
   //----------------------- Structueral Properties -----------------------------
@@ -144,42 +139,95 @@ public:
   /// \brief Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
-  //---------------- Virtual functions for GenCoordSystem ----------------------
-  /// \copydoc GenCoordSystem::setConfigs()
+  //--------------------------- Initialization ---------------------------------
+  /// \brief Initialize this skeleton for kinematics and dynamics
+  void init(double _timeStep = 0.001,
+            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  //--------------- Interfaces for generalized coordinates ---------------------
+  /// \brief Set configurations defined in terms of generalized coordinates
+  /// and update Cartesian terms of body nodes using following parameters.
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setConfigs(const Eigen::VectorXd& _configs,
-                          bool _updateCartesian = true);
+                          bool _updateTransforms = true,
+                          bool _updateVels = true,
+                          bool _updateAccs = true);
 
-  /// \copydoc GenCoordSystem::getConfigs()
-  virtual Eigen::VectorXd getConfigs() const;
+  /// \brief Set generalized velocities
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenVels(const Eigen::VectorXd& _genVels,
+                          bool _updateVels = true,
+                          bool _updateAccs = true);
 
-  //------------------ Properties updated by dynamics --------------------------
+  /// \brief Set generalized accelerations
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
+                          bool _updateAccs = true);
+
   /// \brief Set the configuration of this skeleton described in generalized
-  ///        coordinates. The order of input configuration is determined by
-  ///        _id.
-  void setConfigs(const std::vector<int>& _id, const Eigen::VectorXd& _config);
+  /// coordinates. The order of input configuration is determined by _id.
+  /// \param[in] _id
+  /// \param[in] _configs
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  void setConfigSegs(const std::vector<int>& _id,
+                     const Eigen::VectorXd& _configs,
+                     bool _updateTransforms = true,
+                     bool _updateVels = true,
+                     bool _updateAccs = true);
 
   /// \brief Get the configuration of this skeleton described in generalized
-  ///        coordinates. The returned order of configuration is determined by
-  ///        _id.
-  Eigen::VectorXd getConfigs(const std::vector<int>& _id) const;
+  /// coordinates. The returned order of configuration is determined by _id.
+  Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const;
 
-  /// \brief Set the state of this skeleton described in generalized
-  ///        coordinates.
-  void setState(const Eigen::VectorXd& _state);
+  /// \brief Set the state of this skeleton described in generalized coordinates
+  /// \param[in] _state
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  void setState(const Eigen::VectorXd& _state,
+                bool _updateTransforms = true,
+                bool _updateVels = true,
+                bool _updateAccs = true);
 
-  /// \brief Get the state of this skeleton described in generalized
-  ///        coordinates.
-  Eigen::VectorXd getState();
+  /// \brief Get the state of this skeleton described in generalized coordinates
+  Eigen::VectorXd getState() const;
 
-  //----------------------------------------------------------------------------
+  //----------------------- Kinematics algorithms ------------------------------
+  /// \brief Compute forward kinematics
+  void computeForwardKinematics(bool _updateTransforms = true,
+                                bool _updateVels = true,
+                                bool _updateAccs = true);
+
+  /// \brief Compute forward kinematics
+  /// \warning This is called by Skeleton::setState() as workaround for #122
+  void computeForwardKinematicsIssue122(bool _updateTransforms = true,
+                                        bool _updateVels = true,
+                                        bool _updateAccs = true);
+
+  //------------------------ Dynamics algorithms -------------------------------
+  /// \brief Compute forward dynamics
+  void computeForwardDynamics();
+
+  /// \brief Compute inverse dynamics
+  void computeInverseDynamics(bool _withExternalForces = false,
+                              bool _withDampingForces = false);
+
+  /// \brief Compute hybrid dynamics
+  void computeHybridDynamics();
+
+  //------------------------- Equations of Motion ------------------------------
   /// \brief Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 
   /// \brief Get augmented mass matrix of the skeleton. This matrix is used
-  ///        in ConstraintDynamics to compute constraint forces. The matrix is
-  ///        M + h*D + h*h*K where D is diagonal joint damping coefficient
-  ///        matrix, K is diagonal joint stiffness matrix, and h is simulation
-  ///        time step.
+  /// in ConstraintDynamics to compute constraint forces. The matrix is
+  /// M + h*D + h*h*K where D is diagonal joint damping coefficient matrix, K is
+  /// diagonal joint stiffness matrix, and h is simulation time step.
   const Eigen::MatrixXd& getAugMassMatrix();
 
   /// \brief Get inverse of mass matrix of the skeleton.
@@ -229,7 +277,7 @@ public:
   void clearInternalForces();
 
   /// \brief Clear external forces, which are manually added to the body nodes
-  ///        by the user.
+  /// by the user.
   void clearExternalForces();
 
   /// \brief Clear contact forces of the body nodes in this skeleton.
@@ -262,20 +310,6 @@ public:
   /// \brief Get potential energy of this skeleton.
   virtual double getPotentialEnergy() const;
 
-  //------------------- Recursive dynamics algorithms --------------------------
-  /// \brief Initialize this skeleton for kinematics and dynamics
-  void init(double _timeStep = 0.001,
-            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
-
-  /// \brief (q, dq, ddq) --> (tau)
-  void computeInverseDynamicsLinear(bool _computeJacobian = true,
-                                    bool _computeJacobianDeriv = true,
-                                    bool _withExternalForces = false,
-                                    bool _withDampingForces = false);
-
-  /// \brief (q, dq, tau) --> (ddq)
-  void computeForwardDynamics();
-
   //--------------------------- Rendering --------------------------------------
   /// \brief Draw this skeleton
   void draw(renderer::RenderInterface* _ri = NULL,
@@ -292,16 +326,15 @@ protected:
   std::string mName;
 
   /// \brief Flags for selfcollision test. True if the collision detector checks
-  ///        selfcollision.
+  ///  selfcollision.
   bool mIsSelfCollidable;
 
   /// \brief List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
 
   /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
-  ///        to having infinite mass. If the configuration of an immobile
-  ///        skeleton are manually changed, the collision results might not be
-  ///        correct.
+  /// to having infinite mass. If the configuration of an immobile skeleton are
+  /// manually changed, the collision results might not be correct.
   bool mIsMobile;
 
   /// \brief Time step for implicit joint damping force.
@@ -312,6 +345,15 @@ protected:
 
   /// \brief Total mass.
   double mTotalMass;
+
+  /// \brief True when configurations are modified
+  bool mIsConfigsModified;
+
+  /// \brief True when generalized velocities are modified
+  bool mIsGenVelsModified;
+
+  /// \brief True when generalized accelerations are modified
+  bool mIsGenAccsModified;
 
   /// \brief Mass matrix for the skeleton.
   Eigen::MatrixXd mM;
@@ -344,7 +386,7 @@ protected:
   bool mIsCoriolisVectorDirty;
 
   /// \brief Gravity vector for the skeleton; computed in nonrecursive
-  ///        dynamics only.
+  /// dynamics only.
   Eigen::VectorXd mG;
 
   /// \brief Dirty flag for the gravity force vector.
@@ -371,6 +413,7 @@ protected:
   /// \brief Dirty flag for the damping force vector.
   bool mIsDampingForceVectorDirty;
 
+protected:
   /// \brief Update mass matrix of the skeleton.
   virtual void updateMassMatrix();
 

@@ -75,8 +75,8 @@ public:
   int getNumRigidBodyNodes() const;
 
   /// \brief
-  void init(double _timeStep = 0.001, const Eigen::Vector3d& _gravity =
-      Eigen::Vector3d(0.0, 0.0, -9.81));
+  void init(double _timeStep = 0.001,
+            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
 protected:
   // Documentation inherited.

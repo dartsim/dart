@@ -73,8 +73,7 @@ GenCoord* GenCoordSystem::getGenCoord(const std::string& _name) const
 }
 
 //==============================================================================
-void GenCoordSystem::setConfigs(const Eigen::VectorXd& _configs,
-                                bool _updateCartesian)
+void GenCoordSystem::setConfigs(const Eigen::VectorXd& _configs)
 {
   assert(_configs.size() == getNumGenCoords());
 
@@ -118,7 +117,7 @@ void GenCoordSystem::setGenForces(const Eigen::VectorXd& _forces)
 }
 
 //==============================================================================
-void GenCoordSystem::setConfigsMin(const Eigen::VectorXd& _configsMin, bool _updateCartesian)
+void GenCoordSystem::setConfigsMin(const Eigen::VectorXd& _configsMin)
 {
   assert(_configsMin.size() == getNumGenCoords());
 
@@ -162,7 +161,7 @@ void GenCoordSystem::setGenForcesMin(const Eigen::VectorXd& _forcesMin)
 }
 
 //==============================================================================
-void GenCoordSystem::setConfigsMax(const Eigen::VectorXd& _configsMax, bool _updateCartesian)
+void GenCoordSystem::setConfigsMax(const Eigen::VectorXd& _configsMax)
 {
   assert(_configsMax.size() == getNumGenCoords());
 

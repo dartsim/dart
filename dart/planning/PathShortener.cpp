@@ -33,7 +33,7 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 	printf("--> Start Brute Force Shortener \n"); 
 	srand(time(NULL));
 
-	VectorXd savedDofs = robot->getConfigs(dofs);
+  VectorXd savedDofs = robot->getConfigSegs(dofs);
 
 	const int numShortcuts = path.size() * 5;
 	
@@ -63,7 +63,7 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 			path.splice(node2Iter, intermediatePoints);
 		}
 	}
-	robot->setConfigs(dofs, savedDofs);
+  robot->setConfigSegs(dofs, savedDofs);
 
 	printf("End Brute Force Shortener \n");
 }
@@ -90,7 +90,7 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 
 	VectorXd midpoint = (double)n2 / (double)n * config1 + (double)n1 / (double)n * config2;
 	list<VectorXd> intermediatePoints1, intermediatePoints2;
-	robot->setConfigs(dofs, midpoint);
+  robot->setConfigSegs(dofs, midpoint);
 	if(!world->checkCollision() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
 			&& segmentCollisionFree(intermediatePoints2, midpoint, config2))
 	{
