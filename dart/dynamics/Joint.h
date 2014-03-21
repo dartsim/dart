@@ -56,17 +56,16 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 
-/// \class joint
+/// \brief Joint
 class Joint : public GenCoordSystem
 {
 public:
-  /// \brief Set BodyNode as friend class
+  /// \brief Friend class declaration
   friend class BodyNode;
 
 public:
-  //---------------------- Constructor and Destructor --------------------------
   /// \brief Constructor
-  Joint(const std::string& _name = "Noname Joint");
+  explicit Joint(const std::string& _name = "Noname Joint");
 
   /// \brief Destructor
   virtual ~Joint();
@@ -78,7 +77,8 @@ public:
   /// \brief Get joint name
   const std::string& getName() const;
 
-  /// \brief Get skeleton that this joint belongs to
+  /// \brief Get skeleton that this joint belongs to. The skeleton set by
+  /// init().
   Skeleton* getSkeleton() const;
 
   /// \brief Get index of this joint in the skeleton that this joint belongs to
@@ -130,6 +130,59 @@ public:
   /// \param[in] _idx Index of joint axis.
   double getDampingCoefficient(int _idx) const;
 
+  //----------------- Interface for generalized coordinates --------------------
+  /// \brief Set single configuration in terms of generalized coordinates
+  /// \param[in] _idx
+  /// \param[in] _config
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setConfig(size_t _idx, double _config,
+                         bool _updateTransforms = true,
+                         bool _updateVels = true,
+                         bool _updateAccs = true);
+
+  /// \brief Set configurations in terms of generalized coordinates
+  /// \param[in] _configs
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setConfigs(const Eigen::VectorXd& _configs,
+                          bool _updateTransforms = true,
+                          bool _updateVels = true,
+                          bool _updateAccs = true);
+
+  /// \brief Set single generalized velocity
+  /// \param[in] _idx
+  /// \param[in] _genVel
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenVel(size_t _idx, double _genVel,
+                         bool _updateVels = true,
+                         bool _updateAccs = true);
+
+  /// \brief Set generalized velocities
+  /// \param[in] _genVels
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenVels(const Eigen::VectorXd& _genVels,
+                          bool _updateVels = true,
+                          bool _updateAccs = true);
+
+  /// \brief Set single generalized acceleration
+  /// \param[in] _idx
+  /// \param[in] _genAcc
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenAcc(size_t _idx, double _genAcc,
+                         bool _updateAccs = true);
+
+  /// \brief Set generalized accelerations
+  /// \param[in] _genAccs
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
+                          bool _updateAccs = true);
+
+  //----------------------------------------------------------------------------
   /// \brief Get potential energy.
   double getPotentialEnergy() const;
 

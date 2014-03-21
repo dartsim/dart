@@ -249,8 +249,8 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
       }
       VectorXd state = VectorXd::Zero(dof * 2);
       state << q, dq;
-      skeleton->setState(state);
-      skeleton->setGenAccs(ddq);
+      skeleton->setState(state, true, true, true);
+      skeleton->setGenAccs(ddq, true);
       skeleton->computeInverseDynamics(false, false);
 
       // For each body node
@@ -374,8 +374,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
       }
       VectorXd x = VectorXd::Zero(dof * 2);
       x << q, dq;
-      skeleton->setState(x);
-      skeleton->setGenAccs(ddq);
+      skeleton->setState(x, true, true, true);
+      skeleton->setGenAccs(ddq, true);
 
       // Set x(k+1) = x(k) + dt * dx(k)
       VectorXd qNext  = q  + timeStep * dq;
@@ -390,8 +390,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         int nDepGenCoord = bn->getNumDependentGenCoords();
 
         // Calculation of velocities and Jacobian at k-th time step
-        skeleton->setState(x);
-        skeleton->setGenAccs(ddq);
+        skeleton->setState(x, true, true, true);
+        skeleton->setGenAccs(ddq, true);
         skeleton->computeInverseDynamics(false, false);
         Vector6d vBody1  = bn->getBodyVelocity();
         Vector6d vWorld1 = bn->getWorldVelocity();
@@ -406,8 +406,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         MatrixXd dJWorld1 = bn->getWorldJacobianTimeDeriv();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->setState(xNext);
-        skeleton->setGenAccs(ddq);
+        skeleton->setState(xNext, true, true, true);
+        skeleton->setGenAccs(ddq, true);
         skeleton->computeInverseDynamics(false, false);
         Vector6d vBody2  = bn->getBodyVelocity();
         Vector6d vWorld2 = bn->getWorldVelocity();
@@ -582,7 +582,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x);
+      skel->setState(x, true, true, false);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
@@ -658,7 +658,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       skel->clearInternalForces();
       skel->clearExternalForces();
-      skel->setGenAccs(VectorXd::Zero(dof), false);
+      skel->setGenAccs(VectorXd::Zero(dof), true);
 
       EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
@@ -781,7 +781,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x);
+      skel->setState(x, true, true, false);
 
       VectorXd tau = skel->getGenForces();
       for (int k = 0; k < tau.size(); ++k)
@@ -823,55 +823,55 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   delete myWorld;
 }
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareVelocities)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareVelocities(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareVelocities)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareVelocities(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareAccelerations)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareAccelerations(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareAccelerations)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareAccelerations(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareEquationsOfMotion)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//    ////////////////////////////////////////////////////////////////////////////
-//    // TODO(JS): Following five skel files, which contain euler joints couldn't
-//    //           pass EQUATIONS_OF_MOTION, are disabled.
-//    std::string skelFileName = getList()[i];
-//    if (skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
-//    {
-//        continue;
-//    }
-//    ////////////////////////////////////////////////////////////////////////////
+//==============================================================================
+TEST_F(DynamicsTest, compareEquationsOfMotion)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+    ////////////////////////////////////////////////////////////////////////////
+    // TODO(JS): Following five skel files, which contain euler joints couldn't
+    //           pass EQUATIONS_OF_MOTION, are disabled.
+    std::string skelFileName = getList()[i];
+    if (skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
+    {
+        continue;
+    }
+    ////////////////////////////////////////////////////////////////////////////
 
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareEquationsOfMotion(getList()[i]);
-//  }
-//}
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareEquationsOfMotion(getList()[i]);
+  }
+}
 
 //==============================================================================
 TEST_F(DynamicsTest, testCenterOfMass)

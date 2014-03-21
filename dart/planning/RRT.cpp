@@ -222,7 +222,8 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-  robot->setConfigSegs(dofs, c);
+  // TODO(JS): What kinematic values should be updated here?
+  robot->setConfigSegs(dofs, c, true, true, true);
 	return world->checkCollision();
 }
 

@@ -356,7 +356,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x);
+      skel->setState(x, true, true, true);
 
       //////////////////////////////////////////////////////////////////////////
       /// TODO: Workaround code for Issue #122

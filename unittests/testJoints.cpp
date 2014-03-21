@@ -103,7 +103,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
         Eigen::VectorXd state = Eigen::VectorXd::Zero(2*dof);
         state.head(dof) = q;
         state.tail(dof) = dq;
-        skeleton.setState(state);
+        skeleton.setState(state, true, true, false);
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -126,15 +126,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
         {
             // a
             Eigen::VectorXd q_a = q;
-            _joint->setConfigs(q_a);
-            skeleton.setConfigs(q_a);
+            _joint->setConfigs(q_a, true, false, false);
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += q_delta;
-            _joint->setConfigs(q_b);
-            skeleton.setConfigs(q_b);
+            _joint->setConfigs(q_b, true, false, false);
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -172,15 +170,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
         {
             // a
             Eigen::VectorXd q_a = q;
-            _joint->setConfigs(q_a);
-            skeleton.setConfigs(q_a);
+            _joint->setConfigs(q_a, true, false, false);
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += q_delta;
-            _joint->setConfigs(q_b);
-            skeleton.setConfigs(q_b);
+            _joint->setConfigs(q_b, true, false, false);
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
@@ -204,7 +200,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
         for (int i = 0; i < dof; ++i)
             q(i) = random(posMin, posMax);
 
-        skeleton.setConfigs(q);
+        skeleton.setConfigs(q, true, false, false);
 
         if (_joint->getNumGenCoords() == 0)
             return;

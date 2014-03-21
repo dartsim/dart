@@ -79,7 +79,7 @@ inline void BallJoint::updateTransform() {
 void BallJoint::updateTransform_Issue122(double _timeStep) {
   mT_Joint = mT_Joint * math::expAngular(_timeStep * getGenVels());
 
-  setConfigs(math::logMap(mT_Joint).head<3>());
+  GenCoordSystem::setConfigs(math::logMap(mT_Joint).head<3>());
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -151,7 +151,8 @@ inline void BallJoint::updateJacobianTimeDeriv() {
 
 void BallJoint::updateJacobianTimeDeriv_Issue122() {
   // mdS == 0
-  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
+  mdS.setZero();
+//  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
 }
 
 }  // namespace dynamics

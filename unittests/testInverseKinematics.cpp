@@ -130,7 +130,7 @@ TEST(InverseKinematics, FittingTransformation)
                 0.0, TOLERANCE);
 
     // Set to initial configuration
-    robot->setConfigs(oldConfig);
+    robot->setConfigs(oldConfig, true, false, false);
   }
 
   //----------------------- Revolute joint test ---------------------------------
@@ -143,14 +143,12 @@ TEST(InverseKinematics, FittingTransformation)
     VectorXd oldQ2 = joint2->getConfigs();
 
     // Get desiredT2 by rotating the revolute joint with random angle
-    joint2->setConfigs(VectorXd::Random(1));
-    robot->setConfigs(robot->getConfigs());
+    joint2->setConfigs(VectorXd::Random(1), true, false, false);
     Isometry3d desiredT2 = body2->getWorldTransform();
 
     // Transform body2 to the original transofrmation and check if it is done
     // well
-    joint2->setConfigs(oldQ2);
-    robot->setConfigs(robot->getConfigs());
+    joint2->setConfigs(oldQ2, true, false, false);
     EXPECT_NEAR(
           math::logMap(oldT2.inverse() * body2->getWorldTransform()).norm(),
           0.0, TOLERANCE);
@@ -178,13 +176,12 @@ TEST(InverseKinematics, FittingTransformation)
     // Get desiredT2 by rotating the revolute joint with random angle out of
     // the joint limit range
     joint2->getGenCoord(0)->setConfig(math::random(DART_RADIAN * 15.5, DART_PI));
-    robot->setConfigs(robot->getConfigs());
+    robot->setConfigs(robot->getConfigs(), true, false, false);
     Isometry3d desiredT2 = body2->getWorldTransform();
 
     // Transform body2 to the original transofrmation and check if it is done
     // well
-    joint2->setConfigs(oldQ2);
-    robot->setConfigs(robot->getConfigs());
+    joint2->setConfigs(oldQ2, true, false, false);
     EXPECT_NEAR(
           math::logMap(oldT2.inverse() * body2->getWorldTransform()).norm(),
           0.0, TOLERANCE);
@@ -226,7 +223,7 @@ TEST(InverseKinematics, FittingVelocity)
   robot->init();
 
   BodyNode* body1 = robot->getBodyNode(0);
-  BodyNode* body2 = robot->getBodyNode(1);
+//  BodyNode* body2 = robot->getBodyNode(1);
 
   Joint* joint1 = body1->getParentJoint();
 //  Joint* joint2 = body2->getParentJoint();
@@ -244,8 +241,8 @@ TEST(InverseKinematics, FittingVelocity)
     Vector3d diff = fittedLinVel - desiredVel;
     EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
     EXPECT_NEAR(fittedAngVel.dot(fittedAngVel), 0.0, TOLERANCE);
-    joint1->setGenVels(Vector6d::Zero());
-    robot->setState(robot->getState());
+    joint1->setGenVels(Vector6d::Zero(), true, true);
+    robot->setState(robot->getState(), true, true, false);
 
     // Test for angular velocity
     desiredVel = Vector3d::Random();
@@ -255,8 +252,8 @@ TEST(InverseKinematics, FittingVelocity)
     diff = fittedAngVel - desiredVel;
     EXPECT_NEAR(fittedLinVel.dot(fittedLinVel), 0.0, TOLERANCE);
     EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
-    joint1->setGenVels(Vector6d::Zero());
-    robot->setState(robot->getState());
+    joint1->setGenVels(Vector6d::Zero(), true, true);
+    robot->setState(robot->getState(), true, true, false);
   }
 }
 

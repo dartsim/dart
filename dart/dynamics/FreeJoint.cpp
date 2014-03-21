@@ -78,7 +78,7 @@ void FreeJoint::updateTransform() {
 void FreeJoint::updateTransform_Issue122(double _timeStep) {
   mT_Joint = mT_Joint * math::expMap(_timeStep * getGenVels());
 
-  setConfigs(math::logMap(mT_Joint));
+  GenCoordSystem::setConfigs(math::logMap(mT_Joint));
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -183,7 +183,8 @@ void FreeJoint::updateJacobianTimeDeriv() {
 
 void FreeJoint::updateJacobianTimeDeriv_Issue122() {
   // mdS == 0
-  assert(mdS == Eigen::MatrixXd::Zero(6, 6));
+//  assert(mdS == Eigen::MatrixXd::Zero(6, 6));
+  mdS.setZero();
 }
 
 void FreeJoint::clampRotation() {

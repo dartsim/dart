@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   Eigen::VectorXd initPose(dof);
   for (int i = 0; i < dof; i++)
     initPose[i] = dart::math::random(-0.5, 0.5);
-  myWorld->getSkeleton(0)->setConfigs(initPose);
+  myWorld->getSkeleton(0)->setConfigs(initPose, true, true, false);
 
   // create a window and link it to the world
   MyWindow window;

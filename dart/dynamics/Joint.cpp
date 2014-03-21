@@ -42,12 +42,15 @@
 #include "dart/common/Console.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    mSkeleton(NULL),
     mSkelIndex(-1),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
@@ -145,6 +148,98 @@ void Joint::setDampingCoefficient(int _idx, double _d) {
 double Joint::getDampingCoefficient(int _idx) const {
   assert(0 <= _idx && _idx < getNumGenCoords());
   return mDampingCoefficient[_idx];
+}
+
+//==============================================================================
+void Joint::setConfig(size_t _idx,
+                      double _config,
+                      bool _updateTransforms,
+                      bool _updateVels,
+                      bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setConfig(_config);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
+                                        _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setConfigs(const Eigen::VectorXd& _configs,
+                       bool _updateTransforms,
+                       bool _updateVels,
+                       bool _updateAccs)
+{
+  GenCoordSystem::setConfigs(_configs);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
+                                        _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenVel(size_t _idx,
+                      double _genVel,
+                      bool _updateVels,
+                      bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setVel(_genVel);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenVels(const Eigen::VectorXd& _genVels,
+                       bool _updateVels,
+                       bool _updateAccs)
+{
+  GenCoordSystem::setGenVels(_genVels);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenAcc(size_t _idx, double _genAcc, bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setAcc(_genAcc);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs)
+{
+  GenCoordSystem::setGenAccs(_genAccs);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
+  }
 }
 
 Eigen::VectorXd Joint::getDampingForces() const {

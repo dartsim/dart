@@ -572,8 +572,8 @@ void Skeleton::updateMassMatrix() {
   }
   mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
-  // Restore the origianl internal force
-  setGenAccs(originalGenAcceleration);
+  // Restore the origianl generalized accelerations
+  setGenAccs(originalGenAcceleration, false);
 
   mIsMassMatrixDirty = false;
 }

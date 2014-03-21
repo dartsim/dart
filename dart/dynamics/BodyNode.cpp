@@ -235,11 +235,7 @@ void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointDQ = prob.getOptimalSolution();
-  parentJoint->setGenVels(jointDQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setState(mSkeleton->getState());
+  parentJoint->setGenVels(jointDQ, true, true);
 }
 
 void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
@@ -276,11 +272,7 @@ void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointDQ = prob.getOptimalSolution();
-  parentJoint->setGenVels(jointDQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setState(mSkeleton->getState());
+  parentJoint->setGenVels(jointDQ, true, true);
 }
 
 const Eigen::Isometry3d& BodyNode::getWorldTransform() const {
@@ -928,7 +920,7 @@ void BodyNode::update_ddq() {
     ddq.noalias() = mImplicitPsi * mAlpha;
   }
 
-  mParentJoint->setGenAccs(ddq);
+  mParentJoint->GenCoordSystem::setGenAccs(ddq);
   assert(!math::isNan(ddq));
 
   updateAcceleration();
@@ -1352,11 +1344,7 @@ void BodyNode::fitWorldTransformParentJointImpl(
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointQ = prob.getOptimalSolution();
-  parentJoint->setConfigs(jointQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setConfigs(mSkeleton->getConfigs());
+  parentJoint->setConfigs(jointQ, true, true, true);
 }
 
 void BodyNode::fitWorldTransformAncestorJointsImpl(
@@ -1386,9 +1374,8 @@ double BodyNode::TransformObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
   assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
 
   // Update forward kinematics information with _x
-  // TODO(JS): Need more efficient api for this
-  mBodyNode->getParentJoint()->setConfigs(_x);
-  mSkeleton->setConfigs(mSkeleton->getConfigs());
+  // We are just insterested in transformation of mBodyNode
+  mBodyNode->getParentJoint()->setConfigs(_x, true, false, false);
 
   // Compute and return the geometric distance between body node transformation
   // and target transformation
@@ -1427,9 +1414,8 @@ double BodyNode::VelocityObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
   assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
 
   // Update forward kinematics information with _x
-  // TODO(JS): Need more efficient api for this
-  mBodyNode->getParentJoint()->setGenVels(_x);
-  mSkeleton->setState(mSkeleton->getState());
+  // We are just insterested in spacial velocity of mBodyNode
+  mBodyNode->getParentJoint()->setGenVels(_x, true, false);
 
   // Compute and return the geometric distance between body node transformation
   // and target transformation
