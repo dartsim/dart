@@ -16,6 +16,8 @@
   * [Pull request #154](https://github.com/dartsim/dart/pull/154)
 1. Added optional collision detector: BulletCollision.
   * [Pull request #156](https://github.com/dartsim/dart/pull/156)
+1. Improved kinematics API for skeleton and joint
+  * [Pull request #161](https://github.com/dartsim/dart/pull/161)
 
 ### Version 3.0 (2013-11-04)
 
