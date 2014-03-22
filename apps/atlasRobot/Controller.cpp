@@ -891,7 +891,7 @@ bool Controller::_containStateMachine(StateMachine* _stateMachine)
 //==============================================================================
 bool Controller::_containStateMachine(const string& _name)
 {
-  _containStateMachine(_findStateMachine(_name));
+  return _containStateMachine(_findStateMachine(_name));
 }
 
 //==============================================================================

@@ -210,7 +210,7 @@ bool StateMachine::_containState(State* _state)
 //==============================================================================
 bool StateMachine::_containState(const string& _name)
 {
-  _containState(_findState(_name));
+  return _containState(_findState(_name));
 }
 
 //==============================================================================
