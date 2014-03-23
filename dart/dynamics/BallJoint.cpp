@@ -45,8 +45,7 @@ namespace dart {
 namespace dynamics {
 
 BallJoint::BallJoint(const std::string& _name)
-  : Joint(_name),
-    mT_Joint(Eigen::Isometry3d::Identity())
+  : Joint(_name)
 {
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
@@ -63,30 +62,17 @@ BallJoint::BallJoint(const std::string& _name)
 BallJoint::~BallJoint() {
 }
 
-inline void BallJoint::updateTransform() {
+void BallJoint::updateTransform() {
   Eigen::Vector3d q(mCoordinate[0].getConfig(),
                     mCoordinate[1].getConfig(),
                     mCoordinate[2].getConfig());
 
-  // TODO(JS): This is workaround for Issue #122.
-  mT_Joint = math::expAngular(q);
-
-  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
+  mT = mT_ParentBodyToJoint * math::expAngular(q) * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
 
-void BallJoint::updateTransform_Issue122(double _timeStep) {
-  mT_Joint = mT_Joint * math::expAngular(_timeStep * getGenVels());
-
-  GenCoordSystem::setConfigs(math::logMap(mT_Joint).head<3>());
-
-  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
-
-  assert(math::verifyTransform(mT));
-}
-
-inline void BallJoint::updateJacobian() {
+void BallJoint::updateJacobian() {
   Eigen::Vector3d q(mCoordinate[0].getConfig(),
                     mCoordinate[1].getConfig(),
                     mCoordinate[2].getConfig());
@@ -108,23 +94,7 @@ inline void BallJoint::updateJacobian() {
   assert(!math::isNan(mS));
 }
 
-void BallJoint::updateJacobian_Issue122() {
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
-
-  J0[0] = 1.0;
-  J1[1] = 1.0;
-  J2[2] = 1.0;
-
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-
-  assert(!math::isNan(mS));
-}
-
-inline void BallJoint::updateJacobianTimeDeriv() {
+void BallJoint::updateJacobianTimeDeriv() {
   Eigen::Vector3d q(mCoordinate[0].getConfig(),
       mCoordinate[1].getConfig(),
       mCoordinate[2].getConfig());
@@ -147,12 +117,6 @@ inline void BallJoint::updateJacobianTimeDeriv() {
   mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
   assert(!math::isNan(mdS));
-}
-
-void BallJoint::updateJacobianTimeDeriv_Issue122() {
-  // mdS == 0
-  mdS.setZero();
-//  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
 }
 
 }  // namespace dynamics

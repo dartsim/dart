@@ -56,20 +56,11 @@ public:
   // Documentation inherited.
   virtual void updateTransform();
 
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateTransform_Issue122(double _timeStep);
-
   // Documentation inherited.
   virtual void updateJacobian();
 
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobian_Issue122();
-
   // Documentation inherited.
   virtual void updateJacobianTimeDeriv();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobianTimeDeriv_Issue122();
 
   // Documentation inherited.
   virtual void clampRotation();
@@ -77,10 +68,6 @@ public:
 protected:
   /// \brief
   GenCoord mCoordinate[6];
-
-  /// @brief
-  // TODO(JS): This is workaround for Issue #122.
-  Eigen::Isometry3d mT_Joint;
 
 public:
   //

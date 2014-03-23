@@ -244,27 +244,13 @@ protected:
   /// \brief Update transformation from parent body node to child body node
   virtual void updateTransform() = 0;
 
-  // TODO(JS): This is workaround for Issue #122.
-  /// \brief Update transformation from parent body node to child body node
-  virtual void updateTransform_Issue122(double _timeStep) {}
-
   /// \brief Update generalized Jacobian from parent body node to child body
   ///  node w.r.t. local generalized coordinate
   virtual void updateJacobian() = 0;
 
-  // TODO(JS): This is workaround for Issue #122.
-  /// \brief Update generalized Jacobian from parent body node to child body
-  ///  node w.r.t. local generalized coordinate
-  virtual void updateJacobian_Issue122() {}
-
   /// \brief Update time derivative of generalized Jacobian from parent body
   /// node to child body node w.r.t. local generalized coordinate
   virtual void updateJacobianTimeDeriv() = 0;
-
-  // TODO(JS): This is workaround for Issue #122.
-  /// \brief Update time derivative of generalized Jacobian from parent body
-  /// node to child body node w.r.t. local generalized coordinate
-  virtual void updateJacobianTimeDeriv_Issue122() {}
 
 protected:
   /// \brief Joint name

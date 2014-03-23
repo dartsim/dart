@@ -45,8 +45,7 @@ namespace dart {
 namespace dynamics {
 
 FreeJoint::FreeJoint(const std::string& _name)
-  : Joint(_name),
-    mT_Joint(Eigen::Isometry3d::Identity())
+  : Joint(_name)
 {
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
@@ -66,21 +65,20 @@ FreeJoint::FreeJoint(const std::string& _name)
 FreeJoint::~FreeJoint() {
 }
 
-void FreeJoint::updateTransform() {
-  // TODO(JS): This is workaround for Issue #122.
-  mT_Joint = math::expMap(getConfigs());
+void FreeJoint::updateTransform()
+{
+  Eigen::Vector3d q1(mCoordinate[0].getConfig(),
+                     mCoordinate[1].getConfig(),
+                     mCoordinate[2].getConfig());
 
-  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
+  Eigen::Vector3d q2(mCoordinate[3].getConfig(),
+                     mCoordinate[4].getConfig(),
+                     mCoordinate[5].getConfig());
 
-  assert(math::verifyTransform(mT));
-}
-
-void FreeJoint::updateTransform_Issue122(double _timeStep) {
-  mT_Joint = mT_Joint * math::expMap(_timeStep * getGenVels());
-
-  GenCoordSystem::setConfigs(math::logMap(mT_Joint));
-
-  mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
+  mT = mT_ParentBodyToJoint
+       * Eigen::Translation3d(q2)
+       * math::expAngular(q1)
+       * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -112,31 +110,6 @@ void FreeJoint::updateJacobian() {
   mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
   mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
   mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
-
-  assert(!math::isNan(mS));
-}
-
-void FreeJoint::updateJacobian_Issue122() {
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J3 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J4 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J5 = Eigen::Vector6d::Zero();
-
-  J0[0] = 1.0;
-  J1[1] = 1.0;
-  J2[2] = 1.0;
-  J3[3] = 1.0;
-  J4[4] = 1.0;
-  J5[5] = 1.0;
-
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-  mS.col(3) = math::AdT(mT_ChildBodyToJoint, J3);
-  mS.col(4) = math::AdT(mT_ChildBodyToJoint, J4);
-  mS.col(5) = math::AdT(mT_ChildBodyToJoint, J5);
 
   assert(!math::isNan(mS));
 }
@@ -179,12 +152,6 @@ void FreeJoint::updateJacobianTimeDeriv() {
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
   assert(!math::isNan(mdS));
-}
-
-void FreeJoint::updateJacobianTimeDeriv_Issue122() {
-  // mdS == 0
-//  assert(mdS == Eigen::MatrixXd::Zero(6, 6));
-  mdS.setZero();
 }
 
 void FreeJoint::clampRotation() {

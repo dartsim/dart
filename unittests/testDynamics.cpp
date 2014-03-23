@@ -527,8 +527,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.0 * DART_PI;
+  double ub =  1.0 * DART_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;
@@ -781,7 +781,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x, true, true, false);
+      skel->setState(x, true, true, true);
 
       VectorXd tau = skel->getGenForces();
       for (int k = 0; k < tau.size(); ++k)
@@ -886,7 +886,8 @@ TEST_F(DynamicsTest, testCenterOfMass)
 }
 
 //==============================================================================
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

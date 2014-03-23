@@ -203,12 +203,6 @@ public:
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
 
-  /// \brief Compute forward kinematics
-  /// \warning This is called by Skeleton::setState() as workaround for #122
-  void computeForwardKinematicsIssue122(bool _updateTransforms = true,
-                                        bool _updateVels = true,
-                                        bool _updateAccs = true);
-
   //------------------------ Dynamics algorithms -------------------------------
   /// \brief Compute forward dynamics
   void computeForwardDynamics();
