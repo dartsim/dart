@@ -73,7 +73,14 @@ public:
 //==============================================================================
 void JOINTS::kinematicsTest(Joint* _joint)
 {
-  int numTests = 1;
+  assert(_joint);
+
+  int numTests = 100;
+
+  _joint->setTransformFromChildBodyNode(
+        math::expMap(Eigen::Vector6d::Random()));
+  _joint->setTransformFromParentBodyNode(
+        math::expMap(Eigen::Vector6d::Random()));
 
   BodyNode* bodyNode = new BodyNode();
   bodyNode->setParentJoint(_joint);

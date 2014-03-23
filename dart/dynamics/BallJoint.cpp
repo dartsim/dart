@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -44,6 +44,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 BallJoint::BallJoint(const std::string& _name)
   : Joint(_name)
 {
@@ -51,7 +52,7 @@ BallJoint::BallJoint(const std::string& _name)
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
 
-  mS = Eigen::Matrix<double, 6, 3>::Zero();
+  mS  = Eigen::Matrix<double, 6, 3>::Zero();
   mdS = Eigen::Matrix<double, 6, 3>::Zero();
 
   mSpringStiffness.resize(3, 0.0);
@@ -59,25 +60,25 @@ BallJoint::BallJoint(const std::string& _name)
   mRestPosition.resize(3, 0.0);
 }
 
-BallJoint::~BallJoint() {
+//==============================================================================
+BallJoint::~BallJoint()
+{
 }
 
-void BallJoint::updateTransform() {
-  Eigen::Vector3d q(mCoordinate[0].getConfig(),
-                    mCoordinate[1].getConfig(),
-                    mCoordinate[2].getConfig());
-
-  mT = mT_ParentBodyToJoint * math::expAngular(q) * mT_ChildBodyToJoint.inverse();
+//==============================================================================
+void BallJoint::updateTransform()
+{
+  mT = mT_ParentBodyToJoint
+       * math::expAngular(getConfigs())
+       * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
 
-void BallJoint::updateJacobian() {
-  Eigen::Vector3d q(mCoordinate[0].getConfig(),
-                    mCoordinate[1].getConfig(),
-                    mCoordinate[2].getConfig());
-
-  Eigen::Matrix3d J = math::expMapJac(q);
+//==============================================================================
+void BallJoint::updateJacobian()
+{
+  Eigen::Matrix3d J = math::expMapJac(getConfigs());
 
   Eigen::Vector6d J0;
   Eigen::Vector6d J1;
@@ -94,15 +95,10 @@ void BallJoint::updateJacobian() {
   assert(!math::isNan(mS));
 }
 
-void BallJoint::updateJacobianTimeDeriv() {
-  Eigen::Vector3d q(mCoordinate[0].getConfig(),
-      mCoordinate[1].getConfig(),
-      mCoordinate[2].getConfig());
-  Eigen::Vector3d dq(mCoordinate[0].getVel(),
-      mCoordinate[1].getVel(),
-      mCoordinate[2].getVel());
-
-  Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
+//==============================================================================
+void BallJoint::updateJacobianTimeDeriv()
+{
+  Eigen::Matrix3d dJ = math::expMapJacDot(getConfigs(), getGenVels());
 
   Eigen::Vector6d dJ0;
   Eigen::Vector6d dJ1;
@@ -121,3 +117,4 @@ void BallJoint::updateJacobianTimeDeriv() {
 
 }  // namespace dynamics
 }  // namespace dart
+

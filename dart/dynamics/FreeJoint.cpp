@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -44,6 +44,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 FreeJoint::FreeJoint(const std::string& _name)
   : Joint(_name)
 {
@@ -54,7 +55,7 @@ FreeJoint::FreeJoint(const std::string& _name)
   mGenCoords.push_back(&mCoordinate[4]);
   mGenCoords.push_back(&mCoordinate[5]);
 
-  mS = Eigen::Matrix<double, 6, 6>::Zero();
+  mS  = Eigen::Matrix<double, 6, 6>::Zero();
   mdS = Eigen::Matrix<double, 6, 6>::Zero();
 
   mSpringStiffness.resize(6, 0.0);
@@ -62,9 +63,12 @@ FreeJoint::FreeJoint(const std::string& _name)
   mRestPosition.resize(6, 0.0);
 }
 
-FreeJoint::~FreeJoint() {
+//==============================================================================
+FreeJoint::~FreeJoint()
+{
 }
 
+//==============================================================================
 void FreeJoint::updateTransform()
 {
   Eigen::Vector3d q1(mCoordinate[0].getConfig(),
@@ -83,7 +87,9 @@ void FreeJoint::updateTransform()
   assert(math::verifyTransform(mT));
 }
 
-void FreeJoint::updateJacobian() {
+//==============================================================================
+void FreeJoint::updateJacobian()
+{
   Eigen::Vector3d q(mCoordinate[0].getConfig(),
                     mCoordinate[1].getConfig(),
                     mCoordinate[2].getConfig());
@@ -114,7 +120,9 @@ void FreeJoint::updateJacobian() {
   assert(!math::isNan(mS));
 }
 
-void FreeJoint::updateJacobianTimeDeriv() {
+//==============================================================================
+void FreeJoint::updateJacobianTimeDeriv()
+{
   Eigen::Vector3d q(mCoordinate[0].getConfig(),
                     mCoordinate[1].getConfig(),
                     mCoordinate[2].getConfig());
@@ -152,15 +160,6 @@ void FreeJoint::updateJacobianTimeDeriv() {
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
   assert(!math::isNan(mdS));
-}
-
-void FreeJoint::clampRotation() {
-  for (int i = 0; i < 3; i++) {
-    if (mCoordinate[i].getConfig() > M_PI)
-      mCoordinate[i].setConfig(mCoordinate[i].getConfig() - 2*M_PI);
-    if (mCoordinate[i].getConfig() < -M_PI)
-      mCoordinate[i].setConfig(mCoordinate[i].getConfig() + 2*M_PI);
-  }
 }
 
 }  // namespace dynamics

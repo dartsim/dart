@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -45,32 +45,32 @@
 namespace dart {
 namespace dynamics {
 
-class FreeJoint : public Joint {
+/// \brief class FreeJoint
+class FreeJoint : public Joint
+{
 public:
-  /// \brief Constructor.
-  explicit FreeJoint(const std::string& _name = "Noname FreeJoint");
+  /// \brief Constructor
+  explicit FreeJoint(const std::string& _name = "FreeJoint");
 
-  /// \brief Destructor.
+  /// \brief Destructor
   virtual ~FreeJoint();
 
-  // Documentation inherited.
+protected:
+  // Documentation inherited
   virtual void updateTransform();
 
-  // Documentation inherited.
+  // Documentation inherited
   virtual void updateJacobian();
 
-  // Documentation inherited.
+  // Documentation inherited
   virtual void updateJacobianTimeDeriv();
 
-  // Documentation inherited.
-  virtual void clampRotation();
-
 protected:
-  /// \brief
+  /// \brief Generalized coordinates
   GenCoord mCoordinate[6];
 
 public:
-  //
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

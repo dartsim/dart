@@ -103,12 +103,5 @@ void ScrewJoint::updateJacobianTimeDeriv() {
   assert(mdS == math::Jacobian::Zero(6, 1));
 }
 
-void ScrewJoint::clampRotation() {
-  if (mCoordinate.getConfig() > M_PI)
-    mCoordinate.setConfig(mCoordinate.getConfig() - 2*M_PI);
-  if (mCoordinate.getConfig() < -M_PI)
-    mCoordinate.setConfig(mCoordinate.getConfig() + 2*M_PI);
-}
-
 }  // namespace dynamics
 }  // namespace dart
