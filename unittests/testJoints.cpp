@@ -57,9 +57,9 @@
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
-using namespace dart;
-using namespace math;
-using namespace dynamics;
+using namespace dart::math;
+using namespace dart::dynamics;
+using namespace dart::simulation;
 
 #define JOINT_TOL 0.01
 
@@ -304,6 +304,7 @@ TEST_F(JOINTS, FREE_JOINT)
   kinematicsTest(freeJoint);
 }
 
+//==============================================================================
 TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-4;
@@ -358,6 +359,44 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   EXPECT_NEAR(jointVel0, 0.0, tol);
   EXPECT_NEAR(jointVel1, 0.0, tol);
+}
+
+//==============================================================================
+TEST_F(JOINTS, Issue122)
+{
+  World* world = new World;
+
+  Skeleton* skel1 = new Skeleton;
+  BodyNode* bodyNode1 = new BodyNode;
+  BallJoint* joint1 = new BallJoint;
+
+  Skeleton* skel2 = new Skeleton;
+  BodyNode* bodyNode2 = new BodyNode;
+  FreeJoint* joint2 = new FreeJoint;
+
+  bodyNode1->setParentJoint(joint1);
+  bodyNode2->setParentJoint(joint2);
+
+  skel1->addBodyNode(bodyNode1);
+  skel2->addBodyNode(bodyNode2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  int frameCount = 10000;  // 10 seconds
+
+  for (int i = 0; i < frameCount; ++i)
+  {
+    joint1->setGenForces(Eigen::Vector3d::Random() * 1000.0);
+    joint2->setGenForces(Eigen::Vector6d::Random() * 1000.0);
+
+    world->step();
+
+    EXPECT_TRUE(math::verifyTransform(bodyNode1->getWorldTransform()));
+    EXPECT_TRUE(math::verifyTransform(bodyNode2->getWorldTransform()));
+  }
+
+  delete world;
 }
 
 //==============================================================================
