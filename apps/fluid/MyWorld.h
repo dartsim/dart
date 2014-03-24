@@ -30,7 +30,7 @@ class MyWorld {
     void diffuseVelocity(double *_u, double *_v, double *_u0, double *_v0);
     void advectDensity(double *_d, double *_d0, double *_u, double *_v);
     void advectVelocity(double *_u, double *_v, double *_u0, double *_v0);
-    void project(double *_u, double *_v, double *_p, double *_div);
+    void project(double *_u, double *_v);
     void externalForces();
     void linearSolve(double *_x, double *_x0, double _a, double _c);
     void setBoundary(double *_x);

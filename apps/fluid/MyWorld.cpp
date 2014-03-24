@@ -47,11 +47,11 @@ void MyWorld::velocityStep(double *_u, double *_v, double *_u0, double *_v0) {
     SWAP(_u, _u0); // _u now points at mPreU
     SWAP(_v, _v0); // _v now points at mPreV
     diffuseVelocity(_u, _v, _u0, _v0);
-    project (_u, _v, _u0, _v0);
+    project (_u, _v);
     SWAP(_u, _u0); // _u now points at mU
     SWAP(_v, _v0); // _u now points at mV
     advectVelocity(_u, _v, _u0, _v0);
-    project(_u, _v, _u0, _v0);
+    project(_u, _v);
 }
 
 void MyWorld::diffuseDensity(double *_x, double *_x0) {
@@ -68,10 +68,10 @@ void MyWorld::diffuseVelocity(double *_u, double *_v, double *_u0, double *_v0) 
 }
 
 void MyWorld::advectDensity(double *_d, double *_d0, double *_u, double *_v) {
-    double dt0 = mTimeStep * mNumCells;
+    double dt0 = mTimeStep * mNumCells;  // h / x 
     for (int i = 1; i <= mNumCells; i++) {
         for (int j = 1; j <= mNumCells; j++) {
-            double x = i- dt0 * _u[IX(i,j)]; 
+            double x = i- dt0 * _u[IX(i,j)];  // dt0 * _u[IX(i,j)] computes how many cells can a particle travel in one time step 
             double y = j - dt0 * _v[IX(i,j)];
             if (x < 0.5) 
                 x = 0.5f; 
@@ -99,7 +99,7 @@ void MyWorld::advectVelocity(double *_u, double *_v, double *_u0, double *_v0) {
     // TODO: Add velocity advection code here
 }
 
-void MyWorld::project(double *_u, double *_v, double *_p, double *_div) {
+void MyWorld::project(double *_u, double *_v) {
     // TODO: Add projection code here
 }
 
