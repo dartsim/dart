@@ -132,8 +132,6 @@ public:
 
   //----------------- Interface for generalized coordinates --------------------
   /// \brief Set single configuration in terms of generalized coordinates
-  /// \param[in] _idx
-  /// \param[in] _config
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
@@ -143,7 +141,6 @@ public:
                          bool _updateAccs = false);
 
   /// \brief Set configurations in terms of generalized coordinates
-  /// \param[in] _configs
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
@@ -153,8 +150,6 @@ public:
                           bool _updateAccs = false);
 
   /// \brief Set single generalized velocity
-  /// \param[in] _idx
-  /// \param[in] _genVel
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVel(size_t _idx, double _genVel,
@@ -162,7 +157,6 @@ public:
                          bool _updateAccs = false);
 
   /// \brief Set generalized velocities
-  /// \param[in] _genVels
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVels(const Eigen::VectorXd& _genVels,
@@ -170,14 +164,11 @@ public:
                           bool _updateAccs = false);
 
   /// \brief Set single generalized acceleration
-  /// \param[in] _idx
-  /// \param[in] _genAcc
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAcc(size_t _idx, double _genAcc,
                          bool _updateAccs = true);
 
   /// \brief Set generalized accelerations
-  /// \param[in] _genAccs
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
                           bool _updateAccs = true);
