@@ -481,19 +481,6 @@ void BodyNode::updateTransform() {
   mParentJoint->updateJacobian();
 }
 
-void BodyNode::updateTransform_Issue122(double _timeStep) {
-  mParentJoint->updateTransform_Issue122(_timeStep);
-  if (mParentBodyNode) {
-    mW = mParentBodyNode->getWorldTransform()
-         * mParentJoint->getLocalTransform();
-  } else {
-    mW = mParentJoint->getLocalTransform();
-  }
-  assert(math::verifyTransform(mW));
-
-  mParentJoint->updateJacobian_Issue122();
-}
-
 void BodyNode::updateVelocity() {
   //--------------------------------------------------------------------------
   // Body velocity update
@@ -514,18 +501,6 @@ void BodyNode::updateVelocity() {
 
 void BodyNode::updateEta() {
   mParentJoint->updateJacobianTimeDeriv();
-
-  if (mParentJoint->getNumGenCoords() > 0) {
-    mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
-                    mParentJoint->getGenVels());
-    mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
-                      mParentJoint->getGenVels();
-    assert(!math::isNan(mEta));
-  }
-}
-
-void BodyNode::updateEta_Issue122() {
-  mParentJoint->updateJacobianTimeDeriv_Issue122();
 
   if (mParentJoint->getNumGenCoords() > 0) {
     mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
