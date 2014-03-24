@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,52 +35,263 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <limits>
-#include <string>
+#include <cassert>
 
+#include "dart/math/MathTypes.h"
 #include "dart/dynamics/GenCoord.h"
 
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 GenCoord::GenCoord()
-  : q(0.0),
-    dq(0.0),
-    ddq(0.0),
-    tau(0.0),
-    qMin(-std::numeric_limits<double>::infinity()),
-    dqMin(-std::numeric_limits<double>::infinity()),
-    ddqMin(-std::numeric_limits<double>::infinity()),
-    tauMin(-std::numeric_limits<double>::infinity()),
-    qMax(std::numeric_limits<double>::infinity()),
-    dqMax(std::numeric_limits<double>::infinity()),
-    ddqMax(std::numeric_limits<double>::infinity()),
-    tauMax(std::numeric_limits<double>::infinity()),
-    DqDp(0.0),
-    DdqDp(0.0),
-    DddqDp(0.0),
-    DtauDp(0.0),
-    //      mSkelIndex(-1),
-    //      mJoint(NULL),
-    mName("dof") {
+  : mConfig(0.0),
+    mVel(0.0),
+    mAcc(0.0),
+    mForce(0.0),
+    mConfigMin(-DART_DBL_INF),
+    mVelMin(-DART_DBL_INF),
+    mAccMin(-DART_DBL_INF),
+    mForceMin(-DART_DBL_INF),
+    mConfigMax(DART_DBL_INF),
+    mVelMax(DART_DBL_INF),
+    mAccMax(DART_DBL_INF),
+    mForceMax(DART_DBL_INF),
+    mConfigDeriv(0.0),
+    mVelDeriv(0.0),
+    mAccDeriv(0.0),
+    mForceDeriv(0.0),
+    mSkelIndex(0u),
+    mName("dof")
+{
 }
 
-GenCoord::~GenCoord() {
+//==============================================================================
+GenCoord::~GenCoord()
+{
 }
 
-void GenCoord::setName(const std::string& _name) {
+//==============================================================================
+void GenCoord::setName(const std::string& _name)
+{
   mName = _name;
 }
 
-const std::string& GenCoord::getName() const {
+//==============================================================================
+const std::string& GenCoord::getName() const
+{
   return mName;
 }
 
-int GenCoord::getSkeletonIndex() const {
+//==============================================================================
+size_t GenCoord::getSkeletonIndex() const
+{
   return mSkelIndex;
 }
 
-void GenCoord::setSkeletonIndex(int _idx) {
+//==============================================================================
+double GenCoord::getConfig() const
+{
+  return mConfig;
+}
+
+//==============================================================================
+double GenCoord::getVel() const
+{
+  return mVel;
+}
+
+//==============================================================================
+double GenCoord::getAcc() const
+{
+  return mAcc;
+}
+
+//==============================================================================
+double GenCoord::getForce() const
+{
+  return mForce;
+}
+
+//==============================================================================
+double GenCoord::getConfigMin() const
+{
+  return mConfigMin;
+}
+
+//==============================================================================
+double GenCoord::getVelMin() const
+{
+  return mVelMin;
+}
+
+//==============================================================================
+double GenCoord::getAccMin() const
+{
+  return mAccMin;
+}
+
+//==============================================================================
+double GenCoord::getForceMin() const
+{
+  return mForceMin;
+}
+
+//==============================================================================
+double GenCoord::getConfigMax() const
+{
+  return mConfigMax;
+}
+
+//==============================================================================
+void GenCoord::setConfigDeriv(double _configDeriv)
+{
+  assert(_configDeriv == _configDeriv);
+  mConfigDeriv = _configDeriv;
+}
+
+//==============================================================================
+double GenCoord::getConfigDeriv() const
+{
+  return mConfigDeriv;
+}
+
+//==============================================================================
+double GenCoord::getVelMax() const
+{
+  return mVelMax;
+}
+
+//==============================================================================
+void GenCoord::setVelDeriv(double _velDeriv)
+{
+  assert(_velDeriv == _velDeriv);
+  mVelDeriv = _velDeriv;
+}
+
+//==============================================================================
+double GenCoord::getVelDeriv() const
+{
+  return mVelDeriv;
+}
+
+//==============================================================================
+double GenCoord::getAccMax() const
+{
+  return mAccMax;
+}
+
+//==============================================================================
+void GenCoord::setAccDeriv(double _accDeriv)
+{
+  assert(_accDeriv == _accDeriv);
+  mAccDeriv = _accDeriv;
+}
+
+//==============================================================================
+double GenCoord::getAccDeriv() const
+{
+  return mAccDeriv;
+}
+
+//==============================================================================
+double GenCoord::getForceMax() const
+{
+  return mForceMax;
+}
+
+//==============================================================================
+void GenCoord::setForceDeriv(double _forceDeriv)
+{
+  assert(_forceDeriv == _forceDeriv);
+  mForceDeriv = _forceDeriv;
+}
+
+//==============================================================================
+double GenCoord::getForceDeriv() const
+{
+  return mForceDeriv;
+}
+
+//==============================================================================
+void GenCoord::setConfig(double _config)
+{
+  assert(_config == _config);
+  mConfig = _config;
+}
+
+//==============================================================================
+void GenCoord::setVel(double _vel)
+{
+  assert(_vel == _vel);
+  mVel = _vel;
+}
+
+//==============================================================================
+void GenCoord::setAcc(double _acc)
+{
+  assert(_acc == _acc);
+  mAcc = _acc;
+}
+
+//==============================================================================
+void GenCoord::setForce(double _force)
+{
+  assert(_force == _force);
+  mForce = _force;
+}
+
+//==============================================================================
+void GenCoord::setConfigMin(double _configMin)
+{
+  mConfigMin = _configMin;
+}
+
+//==============================================================================
+void GenCoord::setVelMin(double _velMin)
+{
+  mVelMin = _velMin;
+}
+
+//==============================================================================
+void GenCoord::setAccMin(double _accMin)
+{
+  mAccMin = _accMin;
+}
+
+//==============================================================================
+void GenCoord::setForceMin(double _forceMin)
+{
+  mForceMin = _forceMin;
+}
+
+//==============================================================================
+void GenCoord::setConfigMax(double _configMax)
+{
+  mConfigMax = _configMax;
+}
+
+//==============================================================================
+void GenCoord::setVelMax(double _velMax)
+{
+  mVelMax = _velMax;
+}
+
+//==============================================================================
+void GenCoord::setAccMax(double _accMax)
+{
+  mAccMax = _accMax;
+}
+
+//==============================================================================
+void GenCoord::setForceMax(double _forceMax)
+{
+  mForceMax = _forceMax;
+}
+
+//==============================================================================
+void GenCoord::setSkeletonIndex(size_t _idx)
+{
   mSkelIndex = _idx;
 }
 

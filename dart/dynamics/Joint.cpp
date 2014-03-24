@@ -42,18 +42,21 @@
 #include "dart/common/Console.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
 
-Joint::Joint(JointType _type, const std::string& _name)
+//==============================================================================
+Joint::Joint(const std::string& _name)
   : mName(_name),
+    mSkeleton(NULL),
     mSkelIndex(-1),
-    mJointType(_type),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-    mT(Eigen::Isometry3d::Identity()) {
+    mT(Eigen::Isometry3d::Identity())
+{
 }
 
 Joint::~Joint() {
@@ -67,19 +70,20 @@ const std::string& Joint::getName() const {
   return mName;
 }
 
-Joint::JointType Joint::getJointType() const {
-  return mJointType;
+Skeleton*Joint::getSkeleton() const
+{
+  return mSkeleton;
 }
 
-const Eigen::Isometry3d&Joint::getLocalTransform() const {
+const Eigen::Isometry3d& Joint::getLocalTransform() const {
   return mT;
 }
 
-const math::Jacobian&Joint::getLocalJacobian() const {
+const math::Jacobian& Joint::getLocalJacobian() const {
   return mS;
 }
 
-const math::Jacobian&Joint::getLocalJacobianTimeDeriv() const {
+const math::Jacobian& Joint::getLocalJacobianTimeDeriv() const {
   return mdS;
 }
 
@@ -129,6 +133,12 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
   _ri->transform(mT);
 }
 
+void Joint::init(Skeleton* _skel, int _skelIdx)
+{
+  mSkeleton = _skel;
+  mSkelIndex = _skelIdx;
+}
+
 void Joint::setDampingCoefficient(int _idx, double _d) {
   assert(0 <= _idx && _idx < getNumGenCoords());
   assert(_d >= 0.0);
@@ -140,12 +150,104 @@ double Joint::getDampingCoefficient(int _idx) const {
   return mDampingCoefficient[_idx];
 }
 
+//==============================================================================
+void Joint::setConfig(size_t _idx,
+                      double _config,
+                      bool _updateTransforms,
+                      bool _updateVels,
+                      bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setConfig(_config);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
+                                        _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setConfigs(const Eigen::VectorXd& _configs,
+                       bool _updateTransforms,
+                       bool _updateVels,
+                       bool _updateAccs)
+{
+  GenCoordSystem::setConfigs(_configs);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
+                                        _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenVel(size_t _idx,
+                      double _genVel,
+                      bool _updateVels,
+                      bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setVel(_genVel);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenVels(const Eigen::VectorXd& _genVels,
+                       bool _updateVels,
+                       bool _updateAccs)
+{
+  GenCoordSystem::setGenVels(_genVels);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenAcc(size_t _idx, double _genAcc, bool _updateAccs)
+{
+  assert(_idx < mGenCoords.size());
+
+  mGenCoords[_idx]->setAcc(_genAcc);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
+  }
+}
+
+//==============================================================================
+void Joint::setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs)
+{
+  GenCoordSystem::setGenAccs(_genAccs);
+
+  if (mSkeleton)
+  {
+    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
+    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
+  }
+}
+
 Eigen::VectorXd Joint::getDampingForces() const {
   int numDofs = getNumGenCoords();
   Eigen::VectorXd dampingForce(numDofs);
 
   for (int i = 0; i < numDofs; ++i)
-    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->get_dq();
+    dampingForce(i) = -mDampingCoefficient[i] * getGenCoord(i)->getVel();
 
   return dampingForce;
 }
@@ -164,13 +266,13 @@ double Joint::getSpringStiffness(int _idx) const {
 void Joint::setRestPosition(int _idx, double _q0) {
   assert(0 <= _idx && _idx < getNumGenCoords());
 
-  if (getGenCoord(_idx)->get_qMin() > _q0
-      || getGenCoord(_idx)->get_qMax() < _q0)
+  if (getGenCoord(_idx)->getConfigMin() > _q0
+      || getGenCoord(_idx)->getConfigMax() < _q0)
   {
     dtwarn << "Rest position of joint[" << getName() << "], " << _q0
            << ", is out of the limit range["
-           << getGenCoord(_idx)->get_qMin() << ", "
-           << getGenCoord(_idx)->get_qMax() << "] in index[" << _idx
+           << getGenCoord(_idx)->getConfigMin() << ", "
+           << getGenCoord(_idx)->getConfigMax() << "] in index[" << _idx
            << "].\n";
   }
 
@@ -187,8 +289,8 @@ Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
   Eigen::VectorXd springForce(dof);
   for (int i = 0; i < dof; ++i) {
     springForce(i) =
-        -mSpringStiffness[i] * (getGenCoord(i)->get_q()
-                                + getGenCoord(i)->get_dq() * _timeStep
+        -mSpringStiffness[i] * (getGenCoord(i)->getConfig()
+                                + getGenCoord(i)->getVel() * _timeStep
                                 - mRestPosition[i]);
   }
   return springForce;
@@ -199,7 +301,7 @@ double Joint::getPotentialEnergy() const {
   int dof = getNumGenCoords();
 
   // Spring energy
-  Eigen::VectorXd q = get_q();
+  Eigen::VectorXd q = getConfigs();
   assert(q.size() == dof);
   for (int i = 0; i < dof; ++i) {
     PE += 0.5 * mSpringStiffness[i]

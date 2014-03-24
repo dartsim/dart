@@ -198,7 +198,7 @@ VectorXd RRT::getRandomConfig() {
 	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-        config[i] = randomInRange(robot->getGenCoord(dofs[i])->get_qMin(), robot->getGenCoord(dofs[i])->get_qMax());
+        config[i] = randomInRange(robot->getGenCoord(dofs[i])->getConfigMin(), robot->getGenCoord(dofs[i])->getConfigMax());
 	}
 	return config;
 }
@@ -222,7 +222,8 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-	robot->setConfig(dofs, c);
+  // TODO(JS): What kinematic values should be updated here?
+  robot->setConfigSegs(dofs, c, true, true, true);
 	return world->checkCollision();
 }
 

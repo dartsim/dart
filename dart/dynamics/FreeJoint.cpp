@@ -45,8 +45,9 @@ namespace dart {
 namespace dynamics {
 
 FreeJoint::FreeJoint(const std::string& _name)
-  : Joint(FREE, _name),
-    mT_Joint(Eigen::Isometry3d::Identity()) {
+  : Joint(_name),
+    mT_Joint(Eigen::Isometry3d::Identity())
+{
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
@@ -67,7 +68,7 @@ FreeJoint::~FreeJoint() {
 
 void FreeJoint::updateTransform() {
   // TODO(JS): This is workaround for Issue #122.
-  mT_Joint = math::expMap(get_q());
+  mT_Joint = math::expMap(getConfigs());
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -75,9 +76,9 @@ void FreeJoint::updateTransform() {
 }
 
 void FreeJoint::updateTransform_Issue122(double _timeStep) {
-  mT_Joint = mT_Joint * math::expMap(_timeStep * get_dq());
+  mT_Joint = mT_Joint * math::expMap(_timeStep * getGenVels());
 
-  set_q(math::logMap(mT_Joint));
+  GenCoordSystem::setConfigs(math::logMap(mT_Joint));
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -85,9 +86,9 @@ void FreeJoint::updateTransform_Issue122(double _timeStep) {
 }
 
 void FreeJoint::updateJacobian() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
 
   Eigen::Matrix3d J = math::expMapJac(q);
 
@@ -141,12 +142,12 @@ void FreeJoint::updateJacobian_Issue122() {
 }
 
 void FreeJoint::updateJacobianTimeDeriv() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
-  Eigen::Vector3d dq(mCoordinate[0].get_dq(),
-                     mCoordinate[1].get_dq(),
-                     mCoordinate[2].get_dq());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
+  Eigen::Vector3d dq(mCoordinate[0].getVel(),
+                     mCoordinate[1].getVel(),
+                     mCoordinate[2].getVel());
 
   Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
 
@@ -168,13 +169,13 @@ void FreeJoint::updateJacobianTimeDeriv() {
   mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
   mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
   mdS.col(3) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
   mdS.col(4) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
   mdS.col(5) =
-      -math::ad(mS.leftCols<3>() * get_dq().head<3>(),
+      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
                 math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
 
   assert(!math::isNan(mdS));
@@ -182,15 +183,16 @@ void FreeJoint::updateJacobianTimeDeriv() {
 
 void FreeJoint::updateJacobianTimeDeriv_Issue122() {
   // mdS == 0
-  assert(mdS == Eigen::MatrixXd::Zero(6, 6));
+//  assert(mdS == Eigen::MatrixXd::Zero(6, 6));
+  mdS.setZero();
 }
 
 void FreeJoint::clampRotation() {
   for (int i = 0; i < 3; i++) {
-    if (mCoordinate[i].get_q() > M_PI)
-      mCoordinate[i].set_q(mCoordinate[i].get_q() - 2*M_PI);
-    if (mCoordinate[i].get_q() < -M_PI)
-      mCoordinate[i].set_q(mCoordinate[i].get_q() + 2*M_PI);
+    if (mCoordinate[i].getConfig() > M_PI)
+      mCoordinate[i].setConfig(mCoordinate[i].getConfig() - 2*M_PI);
+    if (mCoordinate[i].getConfig() < -M_PI)
+      mCoordinate[i].setConfig(mCoordinate[i].getConfig() + 2*M_PI);
   }
 }
 

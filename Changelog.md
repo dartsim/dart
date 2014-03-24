@@ -10,12 +10,14 @@
 1. Added planar joint
 1. Added initial implementation of soft body dynamics
 1. Added useful kinematical properties pertain to COM of skeleton
-1. Renewed optimizer interface and added nlopt solver
+1. Improved optimizer interface and added nlopt solver
   * [Pull request #152](https://github.com/dartsim/dart/pull/152)
 1. Added initial implementation of inverse kinematics functions
   * [Pull request #154](https://github.com/dartsim/dart/pull/154)
 1. Added optional collision detector: BulletCollision.
   * [Pull request #156](https://github.com/dartsim/dart/pull/156)
+1. Improved kinematics API for skeleton and joint
+  * [Pull request #161](https://github.com/dartsim/dart/pull/161)
 
 ### Version 3.0 (2013-11-04)
 

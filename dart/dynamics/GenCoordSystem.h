@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_GENCOORDSYSTEM_H_
 #define DART_DYNAMICS_GENCOORDSYSTEM_H_
 
+#include <cstddef>
 #include <vector>
 #include <string>
 
@@ -47,70 +48,107 @@
 namespace dart {
 namespace dynamics {
 
-/// \brief System is a base class for every classes that has Dofs.
-class GenCoordSystem {
+/// \brief Base class for generalized coordinate systems
+///
+///
+class GenCoordSystem
+{
 public:
-  /// \brief
-  GenCoordSystem();
+  /// \brief Get number of generalized coordinates
+  size_t getNumGenCoords() const;
 
-  /// \brief
-  virtual ~GenCoordSystem();
+  /// \brief Get generalized coordinate whose index is _idx
+  GenCoord* getGenCoord(size_t _idx) const;
 
-  /// \brief
-  int getNumGenCoords() const;
-
-  /// \brief
-  GenCoord* getGenCoord(int _idx) const;
-
-  /// \brief
+  /// \brief Get gneralized coordinate whose name is _name
   GenCoord* getGenCoord(const std::string& _name) const;
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  /// \brief Set generalized coordinate vector
-  void set_q(const Eigen::VectorXd& _q);
+  //--------------------------- Configurations ---------------------------------
+  /// \brief Set configurations defined in terms of generalized coordinates
+  virtual void setConfigs(const Eigen::VectorXd& _configs);
 
-  /// \brief Set generalized velocity vector
-  void set_dq(const Eigen::VectorXd& _dq);
+  /// \brief Get configurations defined in terms of generalized coordinates
+  virtual Eigen::VectorXd getConfigs() const;
 
-  /// \brief Set generalized acceleration vector
-  void set_ddq(const Eigen::VectorXd& _ddq);
+  /// \brief Set lower bounds for configurations
+  virtual void setConfigsMin(const Eigen::VectorXd& _configsMin);
 
-  /// \brief Set generalized force vector (internal forces)
-  void set_tau(const Eigen::VectorXd& _tau);
+  /// \brief Get lower bounds for configurations
+  virtual Eigen::VectorXd getConfigsMin() const;
 
-  void set_qMin(const Eigen::VectorXd& _qMin);
-  void set_dqMin(const Eigen::VectorXd& _dqMin);
-  void set_ddqMin(const Eigen::VectorXd& _ddqMin);
-  void set_tauMin(const Eigen::VectorXd& _tauMin);
+  /// \brief Set upper bounds for configurations
+  virtual void setConfigsMax(const Eigen::VectorXd& _configsMax);
 
-  void set_qMax(const Eigen::VectorXd& _qMax);
-  void set_dqMax(const Eigen::VectorXd& _dqMax);
-  void set_ddqMax(const Eigen::VectorXd& _ddqMax);
-  void set_tauMax(const Eigen::VectorXd& _tauMax);
+  /// \brief Get uppoer bounds for configurations
+  virtual Eigen::VectorXd getConfigsMax() const;
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  Eigen::VectorXd get_q() const;
-  Eigen::VectorXd get_dq() const;
-  Eigen::VectorXd get_ddq() const;
-  Eigen::VectorXd get_tau() const;
+  //----------------------------- Velocities -----------------------------------
+  /// \brief Set generalized velocities
+  virtual void setGenVels(const Eigen::VectorXd& _vels);
 
-  Eigen::VectorXd get_qMin() const;
-  Eigen::VectorXd get_dqMin() const;
-  Eigen::VectorXd get_ddqMin() const;
-  Eigen::VectorXd get_tauMin() const;
+  /// \brief Get generalized velocities
+  virtual Eigen::VectorXd getGenVels() const;
 
-  Eigen::VectorXd get_qMax() const;
-  Eigen::VectorXd get_dqMax() const;
-  Eigen::VectorXd get_ddqMax() const;
-  Eigen::VectorXd get_tauMax() const;
+  /// \brief Set lower bounds for generalized velocities
+  virtual void setGenVelsMin(const Eigen::VectorXd& _velsMin);
+
+  /// \brief Get lower bounds for generalized velocities
+  virtual Eigen::VectorXd getGenVelsMin() const;
+
+  /// \brief Set upper bounds for generalized velocities
+  virtual void setGenVelsMax(const Eigen::VectorXd& _velsMax);
+
+  /// \brief Get uppoer bounds for generalized velocities
+  virtual Eigen::VectorXd getGenVelsMax() const;
+
+  //---------------------------- Accelerations ---------------------------------
+  /// \brief Set generalized accelerations
+  virtual void setGenAccs(const Eigen::VectorXd& _accs);
+
+  /// \brief Get generalized accelerations
+  virtual Eigen::VectorXd getGenAccs() const;
+
+  /// \brief Set lower bounds for generalized accelerations
+  virtual void setGenAccsMin(const Eigen::VectorXd& _accsMin);
+
+  /// \brief Get lower bounds for generalized accelerations
+  virtual Eigen::VectorXd getGenAccsMin() const;
+
+  /// \brief Set upper bounds for generalized accelerations
+  virtual void setGenAccsMax(const Eigen::VectorXd& _accsMax);
+
+  /// \brief Get uppoer bounds for generalized accelerations
+  virtual Eigen::VectorXd getGenAccsMax() const;
+
+  //------------------------------- Forces -------------------------------------
+  /// \brief Set generalized forces
+  virtual void setGenForces(const Eigen::VectorXd& _forces);
+
+  /// \brief Get generalized forces
+  virtual Eigen::VectorXd getGenForces() const;
+
+  /// \brief Set lower bounds for generalized forces
+  virtual void setGenForcesMin(const Eigen::VectorXd& _forcesMin);
+
+  /// \brief Get lower bounds for generalized forces
+  virtual Eigen::VectorXd getGenForcesMin() const;
+
+  /// \brief Set upper bounds for generalized forces
+  virtual void setGenForcesMax(const Eigen::VectorXd& _forcesMax);
+
+  /// \brief Get uppoer bounds for generalized forces
+  virtual Eigen::VectorXd getGenForcesMax() const;
 
 protected:
-  /// \brief Pointers to Dofs.
+  /// \brief Array of pointers to generalized coordinates
   std::vector<GenCoord*> mGenCoords;
+
+protected:
+  /// \brief Constructor
+  GenCoordSystem();
+
+  /// \brief Destructor
+  virtual ~GenCoordSystem();
 };
 
 }  // namespace dynamics

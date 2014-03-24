@@ -54,118 +54,53 @@ namespace dart {
 namespace dynamics {
 
 class BodyNode;
+class Skeleton;
 
-/// \brief
-class Joint : public GenCoordSystem {
+/// \brief Joint
+class Joint : public GenCoordSystem
+{
 public:
+  /// \brief Friend class declaration
   friend class BodyNode;
 
-  //--------------------------------------------------------------------------
-  // Types
-  //--------------------------------------------------------------------------
-  /// \brief
-  enum JointType {
-    WELD,           // 0-dof
-    REVOLUTE,       // 1-dof
-    PRISMATIC,      // 1-dof
-    SCREW,          // 1-dof
-    UNIVERSAL,      // 2-dof
-    TRANSLATIONAL,  // 3-dof
-    BALL,           // 3-dof
-    PLANAR,         // 3-dof
-    EULER,          // 3-dof
-    FREE            // 6-dof
-  };
+public:
+  /// \brief Constructor
+  explicit Joint(const std::string& _name = "Noname Joint");
 
-  //--------------------------------------------------------------------------
-  // Constructor and Destructor
-  //--------------------------------------------------------------------------
-  /// \brief
-  Joint(JointType _type, const std::string& _name = "Noname Joint");
-
-  /// \brief
+  /// \brief Destructor
   virtual ~Joint();
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  /// \brief
+  //------------------------------ Properties ----------------------------------
+  /// \brief Set joint name
   void setName(const std::string& _name);
 
-  /// \brief
+  /// \brief Get joint name
   const std::string& getName() const;
 
-  //--------------------------------------------------------------------------
-  // Kinematical Properties
-  //--------------------------------------------------------------------------
-  /// \brief
-  JointType getJointType() const;
+  /// \brief Get skeleton that this joint belongs to. The skeleton set by
+  /// init().
+  Skeleton* getSkeleton() const;
 
-  /// \brief
-  const Eigen::Isometry3d& getLocalTransform() const;
-
-  /// \brief
-  const math::Jacobian& getLocalJacobian() const;
-
-  /// \brief
-  const math::Jacobian& getLocalJacobianTimeDeriv() const;
-
-  /// \brief Get whether this joint contains _genCoord.
-  /// \param[in] Generalized coordinate to see.
-  /// \return True if this joint contains _genCoord.
-  bool contains(const GenCoord* _genCoord) const;
-
-  /// \brief Get local index of the dof at this joint; if the dof is not
-  /// presented at this joint, return -1.
-  int getGenCoordLocalIndex(int _dofSkelIndex) const;
-
-  //--------------------------------------------------------------------------
-  // Dynamics Properties
-  //--------------------------------------------------------------------------
-  /// \brief
-  void setPositionLimited(bool _isPositionLimited);
-
-  /// \brief
-  bool isPositionLimited() const;
-
-  //--------------------------------------------------------------------------
-  // Structueral Properties
-  //--------------------------------------------------------------------------
-  /// \brief
+  /// \brief Get index of this joint in the skeleton that this joint belongs to
   int getSkeletonIndex() const;
 
-  /// \brief
+  /// \brief Set transformation from parent body node to this joint
   void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
-  /// \brief
+  /// \brief Set transformation from child body node to this joint
   void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
-  /// \brief
+  /// \brief Get transformation from parent body node to this joint
   const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
 
-  /// \brief
+  /// \brief Get transformation from child body node to this joint
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  /// \brief Set damping coefficient for viscous force.
-  /// \param[in] _idx Index of joint axis.
-  /// \param[in] _d Damping coefficient.
-  void setDampingCoefficient(int _idx, double _d);
+  /// \brief Set to enforce joint position limit
+  void setPositionLimited(bool _isPositionLimited);
 
-  /// \brief Get damping coefficient for viscous force.
-  /// \param[in] _idx Index of joint axis.
-  double getDampingCoefficient(int _idx) const;
-
-  /// \brief Get damping force.
-  ///
-  /// We apply the damping force in implicit manner. The damping force is
-  /// F = -(dampingCoefficient * dq(k+1)), where dq(k+1) is approximated as
-  /// dq(k) + h * ddq(k). Since, in the recursive forward dynamics algorithm,
-  /// ddq(k) is unknown variable that we want to obtain as the result, the
-  /// damping force here is just F = -(dampingCoefficient * dq(k)) and
-  /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
-  /// forward dynamics algorithm, and it affects on the articulated inertia.
-  /// \sa BodyNode::updateArticulatedInertia(double).
-  Eigen::VectorXd getDampingForces() const;
+  /// \brief Get whether enforcing joint position limit
+  bool isPositionLimited() const;
 
   /// \brief Set spring stiffness for spring force.
   /// \param[in] _idx Index of joint axis.
@@ -186,6 +121,82 @@ public:
   /// \return Rest position.
   double getRestPosition(int _idx) const;
 
+  /// \brief Set damping coefficient for viscous force.
+  /// \param[in] _idx Index of joint axis.
+  /// \param[in] _d Damping coefficient.
+  void setDampingCoefficient(int _idx, double _d);
+
+  /// \brief Get damping coefficient for viscous force.
+  /// \param[in] _idx Index of joint axis.
+  double getDampingCoefficient(int _idx) const;
+
+  //----------------- Interface for generalized coordinates --------------------
+  /// \brief Set single configuration in terms of generalized coordinates
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setConfig(size_t _idx, double _config,
+                         bool _updateTransforms = true,
+                         bool _updateVels = false,
+                         bool _updateAccs = false);
+
+  /// \brief Set configurations in terms of generalized coordinates
+  /// \param[in] _updateTransforms True to update transformations of body nodes
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setConfigs(const Eigen::VectorXd& _configs,
+                          bool _updateTransforms = true,
+                          bool _updateVels = false,
+                          bool _updateAccs = false);
+
+  /// \brief Set single generalized velocity
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenVel(size_t _idx, double _genVel,
+                         bool _updateVels = true,
+                         bool _updateAccs = false);
+
+  /// \brief Set generalized velocities
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenVels(const Eigen::VectorXd& _genVels,
+                          bool _updateVels = true,
+                          bool _updateAccs = false);
+
+  /// \brief Set single generalized acceleration
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenAcc(size_t _idx, double _genAcc,
+                         bool _updateAccs = true);
+
+  /// \brief Set generalized accelerations
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
+                          bool _updateAccs = true);
+
+  //----------------------------------------------------------------------------
+  /// \brief Get potential energy.
+  double getPotentialEnergy() const;
+
+  /// \brief Get transformation from parent body node to child body node
+  const Eigen::Isometry3d& getLocalTransform() const;
+
+  /// \brief Get generalized Jacobian from parent body node to child body node
+  /// w.r.t. local generalized coordinate
+  const math::Jacobian& getLocalJacobian() const;
+
+  /// \brief Get time derivative of generalized Jacobian from parent body node
+  /// to child body node w.r.t. local generalized coordinate
+  const math::Jacobian& getLocalJacobianTimeDeriv() const;
+
+  /// \brief Get whether this joint contains _genCoord.
+  /// \param[in] Generalized coordinate to see.
+  /// \return True if this joint contains _genCoord.
+  bool contains(const GenCoord* _genCoord) const;
+
+  /// \brief Get local index of the dof at this joint; if the dof is not
+  /// presented at this joint, return -1.
+  int getGenCoordLocalIndex(int _dofSkelIndex) const;
+
   /// \brief Get spring force.
   ///
   /// We apply spring force in implicit manner. The spring force is
@@ -201,57 +212,67 @@ public:
   /// \param[in] _timeStep Time step used for approximating q(k+1).
   Eigen::VectorXd getSpringForces(double _timeStep) const;
 
-  /// \brief Get potential energy.
-  double getPotentialEnergy() const;
+  /// \brief Get damping force.
+  ///
+  /// We apply the damping force in implicit manner. The damping force is
+  /// F = -(dampingCoefficient * dq(k+1)), where dq(k+1) is approximated as
+  /// dq(k) + h * ddq(k). Since, in the recursive forward dynamics algorithm,
+  /// ddq(k) is unknown variable that we want to obtain as the result, the
+  /// damping force here is just F = -(dampingCoefficient * dq(k)) and
+  /// -dampingCoefficient * h * ddq(k) term is rearranged at the recursive
+  /// forward dynamics algorithm, and it affects on the articulated inertia.
+  /// \sa BodyNode::updateArticulatedInertia(double).
+  Eigen::VectorXd getDampingForces() const;
 
+  //----------------------------- Rendering ------------------------------------
   /// \brief
   void applyGLTransform(renderer::RenderInterface* _ri);
 
 protected:
-  /// \brief
-  /// q --> T(q)
+  /// \brief Initialize this joint. This function is called by BodyNode::init()
+  virtual void init(Skeleton* _skel, int _skelIdx);
+
+  /// \brief Update transformation from parent body node to child body node
   virtual void updateTransform() = 0;
 
-  /// @brief TODO(JS): This is workaround for Issue #122.
+  // TODO(JS): This is workaround for Issue #122.
+  /// \brief Update transformation from parent body node to child body node
   virtual void updateTransform_Issue122(double _timeStep) {}
 
-  /// \brief
-  /// q, dq --> S(q), V(q, dq)
-  /// V(q, dq) = S(q) * dq
+  /// \brief Update generalized Jacobian from parent body node to child body
+  ///  node w.r.t. local generalized coordinate
   virtual void updateJacobian() = 0;
 
-  /// @brief TODO(JS): This is workaround for Issue #122.
+  // TODO(JS): This is workaround for Issue #122.
+  /// \brief Update generalized Jacobian from parent body node to child body
+  ///  node w.r.t. local generalized coordinate
   virtual void updateJacobian_Issue122() {}
 
-  /// \brief
-  /// dq, ddq, S(q) --> dS(q), dV(q, dq, ddq)
-  /// dV(q, dq, ddq) = dS(q) * dq + S(q) * ddq
+  /// \brief Update time derivative of generalized Jacobian from parent body
+  /// node to child body node w.r.t. local generalized coordinate
   virtual void updateJacobianTimeDeriv() = 0;
 
-  /// @brief TODO(JS): This is workaround for Issue #122.
+  // TODO(JS): This is workaround for Issue #122.
+  /// \brief Update time derivative of generalized Jacobian from parent body
+  /// node to child body node w.r.t. local generalized coordinate
   virtual void updateJacobianTimeDeriv_Issue122() {}
 
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  /// \brief
+protected:
+  /// \brief Joint name
   std::string mName;
 
-  //--------------------------------------------------------------------------
-  // Structueral Properties
-  //--------------------------------------------------------------------------
+  /// \brief Skeleton pointer that this joint belongs to
+  Skeleton* mSkeleton;
+
   /// \brief Unique dof id in skeleton
   int mSkelIndex;
 
-  /// \brief
+  /// \brief Transformation from parent body node to this joint
   Eigen::Isometry3d mT_ParentBodyToJoint;
 
-  /// \brief
+  /// \brief Transformation from child body node to this joint
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
-  //--------------------------------------------------------------------------
-  // Kinematics variables
-  //--------------------------------------------------------------------------
   /// \brief Local transformation.
   Eigen::Isometry3d mT;
 
@@ -261,24 +282,17 @@ protected:
   /// \brief Time derivative of local Jacobian.
   math::Jacobian mdS;
 
-  //--------------------------------------------------------------------------
-  // Dynamics variables
-  //--------------------------------------------------------------------------
   /// \brief True if the joint limits are enforced in dynamic simulation.
   bool mIsPositionLimited;
 
-  /// \brief
-  std::vector<double> mDampingCoefficient;
-
-  /// \brief
+  /// \brief Joint spring stiffness
   std::vector<double> mSpringStiffness;
 
-  /// \brief
+  /// \brief Rest joint position for joint spring
   std::vector<double> mRestPosition;
 
-private:
-  /// \brief Type of joint e.g. ball, hinge etc.
-  JointType mJointType;
+  /// \brief Joint damping coefficient
+  std::vector<double> mDampingCoefficient;
 };
 
 }  // namespace dynamics

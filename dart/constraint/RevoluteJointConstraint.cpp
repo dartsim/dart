@@ -37,7 +37,7 @@ void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::Vecto
     getJacobian();
     _J1.block(_rowIndex, 0, mNumRows, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
     Eigen::Vector3d v1 = mBodyNode1->getWorldTransform().rotation() * mAxis1;
-    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->get_dq();
+    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->getGenVels();
     _C.segment(_rowIndex, mNumRows) = v1 - mAxis2;
     _CDot.segment(_rowIndex, mNumRows) = mJ1 * qDot1;
 }
@@ -49,9 +49,9 @@ void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::Matri
     _J2.block(_rowIndex, 0, mNumRows, mBodyNode2->getSkeleton()->getNumGenCoords()) += mJ2;
 
     Eigen::Vector3d v1 = mBodyNode1->getWorldTransform().rotation() * mAxis1;
-    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->get_dq();
+    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->getGenVels();
     Eigen::VectorXd v2 = mBodyNode2->getWorldTransform().rotation() * mAxis2;
-    Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBodyNode2->getSkeleton())->get_dq();
+    Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBodyNode2->getSkeleton())->getGenVels();
     
     _C.segment(_rowIndex, mNumRows) = v1 - v2;
     _CDot.segment(_rowIndex, mNumRows) = mJ1 * qDot1 + mJ2 * qDot2;

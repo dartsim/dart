@@ -81,8 +81,8 @@ Eigen::VectorXd World::getState() const {
   for (unsigned int i = 0; i < getNumSkeletons(); i++) {
     int start = mIndices[i] * 2;
     int size = getSkeleton(i)->getNumGenCoords();
-    state.segment(start, size) = getSkeleton(i)->get_q();
-    state.segment(start + size, size) = getSkeleton(i)->get_dq();
+    state.segment(start, size) = getSkeleton(i)->getConfigs();
+    state.segment(start + size, size) = getSkeleton(i)->getGenVels();
   }
 
   return state;
@@ -92,7 +92,7 @@ void World::setState(const Eigen::VectorXd& _newState) {
   for (int i = 0; i < getNumSkeletons(); i++) {
     int start = 2 * mIndices[i];
     int size = 2 * getSkeleton(i)->getNumGenCoords();
-    getSkeleton(i)->setState(_newState.segment(start, size));
+    getSkeleton(i)->setState(_newState.segment(start, size), true, true, false);
   }
 }
 
@@ -134,11 +134,11 @@ Eigen::VectorXd World::evalDeriv() {
     int size = getSkeleton(i)->getNumGenCoords();
 
     // set velocities
-    deriv.segment(start, size) = getSkeleton(i)->get_dq()
-                                 + mTimeStep * getSkeleton(i)->get_ddq();
+    deriv.segment(start, size) = getSkeleton(i)->getGenVels()
+                                 + mTimeStep * getSkeleton(i)->getGenAccs();
 
     // set qddot (accelerations)
-    deriv.segment(start + size, size) = getSkeleton(i)->get_ddq();
+    deriv.segment(start + size, size) = getSkeleton(i)->getGenAccs();
   }
 
   return deriv;

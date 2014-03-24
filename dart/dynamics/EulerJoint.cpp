@@ -46,8 +46,9 @@ namespace dart {
 namespace dynamics {
 
 EulerJoint::EulerJoint(const std::string& _name)
-  : Joint(EULER, _name),
-    mAxisOrder(AO_XYZ) {
+  : Joint(_name),
+    mAxisOrder(AO_XYZ)
+{
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
@@ -76,14 +77,14 @@ void EulerJoint::updateTransform() {
     case AO_XYZ:
     {
       mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerXYZToMatrix(get_q())) *
+           Eigen::Isometry3d(math::eulerXYZToMatrix(getConfigs())) *
            mT_ChildBodyToJoint.inverse();
       break;
     }
     case AO_ZYX:
     {
       mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerZYXToMatrix(get_q())) *
+           Eigen::Isometry3d(math::eulerZYXToMatrix(getConfigs())) *
            mT_ChildBodyToJoint.inverse();
       break;
     }
@@ -98,9 +99,9 @@ void EulerJoint::updateTransform() {
 }
 
 void EulerJoint::updateJacobian() {
-  double q0 = mCoordinate[0].get_q();
-  double q1 = mCoordinate[1].get_q();
-  double q2 = mCoordinate[2].get_q();
+  double q0 = mCoordinate[0].getConfig();
+  double q1 = mCoordinate[1].getConfig();
+  double q2 = mCoordinate[2].getConfig();
 
   // double c0 = cos(q0);
   double c1 = cos(q1);
@@ -130,12 +131,12 @@ void EulerJoint::updateJacobian() {
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].get_q()) == DART_PI * 0.5)
+      if (fabs(mCoordinate[1].getConfig()) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].get_q() << ", "
-                  << mCoordinate[1].get_q() << ", "
-                  << mCoordinate[2].get_q() << ")"
+                  << mCoordinate[0].getConfig() << ", "
+                  << mCoordinate[1].getConfig() << ", "
+                  << mCoordinate[2].getConfig() << ")"
                   << std::endl;
 #endif
 
@@ -156,12 +157,12 @@ void EulerJoint::updateJacobian() {
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].get_q()) == DART_PI * 0.5)
+      if (fabs(mCoordinate[1].getConfig()) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].get_q() << ", "
-                  << mCoordinate[1].get_q() << ", "
-                  << mCoordinate[2].get_q() << ")"
+                  << mCoordinate[0].getConfig() << ", "
+                  << mCoordinate[1].getConfig() << ", "
+                  << mCoordinate[2].getConfig() << ")"
                   << std::endl;
 #endif
 
@@ -197,13 +198,13 @@ void EulerJoint::updateJacobian() {
 }
 
 void EulerJoint::updateJacobianTimeDeriv() {
-  double q0 = mCoordinate[0].get_q();
-  double q1 = mCoordinate[1].get_q();
-  double q2 = mCoordinate[2].get_q();
+  double q0 = mCoordinate[0].getConfig();
+  double q1 = mCoordinate[1].getConfig();
+  double q2 = mCoordinate[2].getConfig();
 
   // double dq0 = mCoordinate[0].get_dq();
-  double dq1 = mCoordinate[1].get_dq();
-  double dq2 = mCoordinate[2].get_dq();
+  double dq1 = mCoordinate[1].getVel();
+  double dq2 = mCoordinate[2].getVel();
 
   // double c0 = cos(q0);
   double c1 = cos(q1);

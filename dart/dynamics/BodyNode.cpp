@@ -216,7 +216,7 @@ void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
   optimizer::Problem prob(dof);
 
   // Use the current joint configuration as initial guess
-  prob.setInitialGuess(parentJoint->get_dq());
+  prob.setInitialGuess(parentJoint->getGenVels());
 
   // Objective function
   VelocityObjFunc obj(this, _targetLinVel, VelocityObjFunc::VT_LINEAR, mSkeleton);
@@ -225,8 +225,8 @@ void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
   // Joint limit
   if (_jointVelLimit)
   {
-    prob.setLowerBounds(parentJoint->get_dqMin());
-    prob.setUpperBounds(parentJoint->get_dqMax());
+    prob.setLowerBounds(parentJoint->getGenVelsMin());
+    prob.setUpperBounds(parentJoint->getGenVelsMax());
   }
 
   // Solve with gradient-free local minima algorithm
@@ -235,11 +235,7 @@ void BodyNode::fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointDQ = prob.getOptimalSolution();
-  parentJoint->set_dq(jointDQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setState(mSkeleton->getState());
+  parentJoint->setGenVels(jointDQ, true, true);
 }
 
 void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
@@ -257,7 +253,7 @@ void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
   optimizer::Problem prob(dof);
 
   // Use the current joint configuration as initial guess
-  prob.setInitialGuess(parentJoint->get_dq());
+  prob.setInitialGuess(parentJoint->getGenVels());
 
   // Objective function
   VelocityObjFunc obj(this, _targetAngVel, VelocityObjFunc::VT_ANGULAR, mSkeleton);
@@ -266,8 +262,8 @@ void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
   // Joint limit
   if (_jointVelLimit)
   {
-    prob.setLowerBounds(parentJoint->get_dqMin());
-    prob.setUpperBounds(parentJoint->get_dqMax());
+    prob.setLowerBounds(parentJoint->getGenVelsMin());
+    prob.setUpperBounds(parentJoint->getGenVelsMax());
   }
 
   // Solve with gradient-free local minima algorithm
@@ -276,11 +272,7 @@ void BodyNode::fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointDQ = prob.getOptimalSolution();
-  parentJoint->set_dq(jointDQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setState(mSkeleton->getState());
+  parentJoint->setGenVels(jointDQ, true, true);
 }
 
 const Eigen::Isometry3d& BodyNode::getWorldTransform() const {
@@ -367,12 +359,13 @@ bool BodyNode::isColliding() {
   return mIsColliding;
 }
 
-void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
+void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
+{
   assert(_skeleton);
 
   mSkeleton = _skeleton;
   mSkelIndex = _skeletonIndex;
-  mParentJoint->mSkelIndex = _skeletonIndex;
+  mParentJoint->init(_skeleton, _skeletonIndex);
 
   //--------------------------------------------------------------------------
   // Fill the list of generalized coordinates this node depends on, and sort
@@ -380,6 +373,7 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
   //--------------------------------------------------------------------------
   if (mParentBodyNode)
     mDependentGenCoordIndices = mParentBodyNode->mDependentGenCoordIndices;
+
   else
     mDependentGenCoordIndices.clear();
   for (int i = 0; i < mParentJoint->getNumGenCoords(); i++)
@@ -390,8 +384,10 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex) {
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
   int nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (int i = 0; i < nDepGenCoordIndices - 1; i++) {
-    for (int j = i + 1; j < nDepGenCoordIndices; j++) {
+  for (int i = 0; i < nDepGenCoordIndices - 1; i++)
+  {
+    for (int j = i + 1; j < nDepGenCoordIndices; j++)
+    {
       assert(mDependentGenCoordIndices[i] !=
           mDependentGenCoordIndices[j] &&
           "Duplicated index is found in mDependentGenCoordIndices.");
@@ -506,7 +502,7 @@ void BodyNode::updateVelocity() {
   //--------------------------------------------------------------------------
 
   if (mParentJoint->getNumGenCoords() > 0) {
-    mV.noalias() = mParentJoint->getLocalJacobian() * mParentJoint->get_dq();
+    mV.noalias() = mParentJoint->getLocalJacobian() * mParentJoint->getGenVels();
     if (mParentBodyNode) {
       mV += math::AdInvT(mParentJoint->getLocalTransform(),
                          mParentBodyNode->getBodyVelocity());
@@ -521,9 +517,9 @@ void BodyNode::updateEta() {
 
   if (mParentJoint->getNumGenCoords() > 0) {
     mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
-                    mParentJoint->get_dq());
+                    mParentJoint->getGenVels());
     mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
-                      mParentJoint->get_dq();
+                      mParentJoint->getGenVels();
     assert(!math::isNan(mEta));
   }
 }
@@ -533,9 +529,9 @@ void BodyNode::updateEta_Issue122() {
 
   if (mParentJoint->getNumGenCoords() > 0) {
     mEta = math::ad(mV, mParentJoint->getLocalJacobian() *
-                    mParentJoint->get_dq());
+                    mParentJoint->getGenVels());
     mEta.noalias() += mParentJoint->getLocalJacobianTimeDeriv() *
-                      mParentJoint->get_dq();
+                      mParentJoint->getGenVels();
     assert(!math::isNan(mEta));
   }
 }
@@ -550,7 +546,7 @@ void BodyNode::updateAcceleration() {
 
   if (mParentJoint->getNumGenCoords() > 0) {
     mdV = mEta;
-    mdV.noalias() += mParentJoint->getLocalJacobian() * mParentJoint->get_ddq();
+    mdV.noalias() += mParentJoint->getLocalJacobian() * mParentJoint->getGenAccs();
     if (mParentBodyNode) {
       mdV += math::AdInvT(mParentJoint->getLocalTransform(),
                           mParentBodyNode->getBodyAcceleration());
@@ -795,7 +791,7 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces) {
 
   assert(!math::isNan(J.transpose()*mF));
 
-  mParentJoint->set_tau(J.transpose()*mF);
+  mParentJoint->setGenForces(J.transpose()*mF);
 }
 
 void BodyNode::updateArticulatedInertia(double _timeStep) {
@@ -889,7 +885,7 @@ void BodyNode::updateBiasForce(double _timeStep,
   // Cache data: alpha
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
-    mAlpha = mParentJoint->get_tau()
+    mAlpha = mParentJoint->getGenForces()
              + mParentJoint->getSpringForces(_timeStep)
              + mParentJoint->getDampingForces();
     for (int i = 0; i < dof; i++) {
@@ -924,7 +920,7 @@ void BodyNode::update_ddq() {
     ddq.noalias() = mImplicitPsi * mAlpha;
   }
 
-  mParentJoint->set_ddq(ddq);
+  mParentJoint->GenCoordSystem::setGenAccs(ddq);
   assert(!math::isNan(ddq));
 
   updateAcceleration();
@@ -1022,7 +1018,7 @@ void BodyNode::updateMassMatrix() {
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
     mM_dV.noalias() += mParentJoint->getLocalJacobian() *
-                       mParentJoint->get_ddq();
+                       mParentJoint->getGenAccs();
     assert(!math::isNan(mM_dV));
   }
   if (mParentBodyNode)
@@ -1071,8 +1067,8 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->get_ddq())
-          + K * (_timeStep * _timeStep * mParentJoint->get_ddq());
+          + D * (_timeStep * mParentJoint->getGenAccs())
+          + K * (_timeStep * _timeStep * mParentJoint->getGenAccs());
   }
 }
 
@@ -1088,7 +1084,7 @@ void BodyNode::updateInvMassMatrix() {
   // Cache data: mInvM2_a
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
-    mInvM_a = mParentJoint->get_tau();
+    mInvM_a = mParentJoint->getGenForces();
     mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
     assert(!math::isNan(mInvM_a));
   }
@@ -1114,7 +1110,7 @@ void BodyNode::updateInvAugMassMatrix() {
   // Cache data: mInvM2_a
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0) {
-    mInvM_a = mParentJoint->get_tau();
+    mInvM_a = mParentJoint->getGenForces();
     mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
     assert(!math::isNan(mInvM_a));
   }
@@ -1329,7 +1325,7 @@ void BodyNode::fitWorldTransformParentJointImpl(
   optimizer::Problem prob(dof);
 
   // Use the current joint configuration as initial guess
-  prob.setInitialGuess(parentJoint->get_q());
+  prob.setInitialGuess(parentJoint->getConfigs());
 
   // Objective function
   TransformObjFunc obj(this, _target, mSkeleton);
@@ -1338,8 +1334,8 @@ void BodyNode::fitWorldTransformParentJointImpl(
   // Joint limit
   if (_jointLimit)
   {
-    prob.setLowerBounds(parentJoint->get_qMin());
-    prob.setUpperBounds(parentJoint->get_qMax());
+    prob.setLowerBounds(parentJoint->getConfigsMin());
+    prob.setUpperBounds(parentJoint->getConfigsMax());
   }
 
   // Solve with gradient-free local minima algorithm
@@ -1348,11 +1344,7 @@ void BodyNode::fitWorldTransformParentJointImpl(
 
   // Set optimal configuration of the parent joint
   Eigen::VectorXd jointQ = prob.getOptimalSolution();
-  parentJoint->set_q(jointQ);
-
-  // Update forward kinematics information
-  // TODO(JS): Need more efficient api for this
-  mSkeleton->setConfig(mSkeleton->getConfig());
+  parentJoint->setConfigs(jointQ, true, true, true);
 }
 
 void BodyNode::fitWorldTransformAncestorJointsImpl(
@@ -1382,9 +1374,8 @@ double BodyNode::TransformObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
   assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
 
   // Update forward kinematics information with _x
-  // TODO(JS): Need more efficient api for this
-  mBodyNode->getParentJoint()->set_q(_x);
-  mSkeleton->setConfig(mSkeleton->getConfig());
+  // We are just insterested in transformation of mBodyNode
+  mBodyNode->getParentJoint()->setConfigs(_x, true, false, false);
 
   // Compute and return the geometric distance between body node transformation
   // and target transformation
@@ -1423,9 +1414,8 @@ double BodyNode::VelocityObjFunc::eval(Eigen::Map<const Eigen::VectorXd>& _x)
   assert(mBodyNode->getParentJoint()->getNumGenCoords() == _x.size());
 
   // Update forward kinematics information with _x
-  // TODO(JS): Need more efficient api for this
-  mBodyNode->getParentJoint()->set_dq(_x);
-  mSkeleton->setState(mSkeleton->getState());
+  // We are just insterested in spacial velocity of mBodyNode
+  mBodyNode->getParentJoint()->setGenVels(_x, true, false);
 
   // Compute and return the geometric distance between body node transformation
   // and target transformation

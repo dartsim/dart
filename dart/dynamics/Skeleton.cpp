@@ -48,6 +48,8 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/BallJoint.h"  // Fix for #122 should remove this too
+#include "dart/dynamics/FreeJoint.h"  // Fix for #122 should remove this too
 #include "dart/dynamics/Marker.h"
 
 namespace dart {
@@ -237,109 +239,207 @@ Marker* Skeleton::getMarker(const std::string& _name) const {
   return NULL;
 }
 
-Eigen::VectorXd Skeleton::getConfig(const std::vector<int>& _id) const {
+//==============================================================================
+Eigen::VectorXd Skeleton::getConfigSegs(const std::vector<int>& _id) const
+{
   Eigen::VectorXd q(_id.size());
 
   for (unsigned int i = 0; i < _id.size(); i++)
-    q[i] = mGenCoords[_id[i]]->get_q();
+    q[i] = mGenCoords[_id[i]]->getConfig();
 
   return q;
 }
 
-Eigen::VectorXd Skeleton::getConfig() const {
-  return get_q();
-}
-
-void Skeleton::setConfig(const std::vector<int>& _id,
-                         const Eigen::VectorXd& _config) {
+//==============================================================================
+void Skeleton::setConfigSegs(const std::vector<int>& _id,
+                             const Eigen::VectorXd& _configs,
+                             bool _updateTransforms,
+                             bool _updateVels,
+                             bool _updateAccs)
+{
   for ( unsigned int i = 0; i < _id.size(); i++ )
-    mGenCoords[_id[i]]->set_q(_config(i));
+    mGenCoords[_id[i]]->setConfig(_configs(i));
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->updateTransform();
-    (*it)->updateVelocity();
-    (*it)->updateEta();
-  }
-
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
-
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
-  // mIsDampingForceVectorDirty = true;
-
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
-  }
+  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
 }
 
-void Skeleton::setConfig(const Eigen::VectorXd& _config) {
-  set_q(_config);
+//==============================================================================
+void Skeleton::setConfigs(const Eigen::VectorXd& _configs,
+                          bool _updateTransforms,
+                          bool _updateVels,
+                          bool _updateAccs)
+{
+  GenCoordSystem::setConfigs(_configs);
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->updateTransform();
-    (*it)->updateVelocity();
-    (*it)->updateEta();
-  }
-
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
-
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
-  // mIsDampingForceVectorDirty = true;
-
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
-  }
+  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
 }
 
-void Skeleton::setState(const Eigen::VectorXd& _state) {
-  set_q(_state.head(_state.size() / 2));
-  set_dq(_state.tail(_state.size() / 2));
+//==============================================================================
+void Skeleton::setGenVels(const Eigen::VectorXd& _genVels,
+                          bool _updateVels,
+                          bool _updateAccs)
+{
+  GenCoordSystem::setGenVels(_genVels);
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    // TODO(JS): This is workaround for Issue #122.
-    if ((*it)->getParentJoint()->getJointType() == Joint::BALL
-        || (*it)->getParentJoint()->getJointType() == Joint::FREE) {
-      (*it)->updateTransform_Issue122(mTimeStep);
-      (*it)->updateVelocity();
-      (*it)->updateEta_Issue122();
-    } else {
+  computeForwardKinematics(false, _updateVels, _updateAccs);
+}
+
+//==============================================================================
+void Skeleton::setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs)
+{
+  GenCoordSystem::setGenAccs(_genAccs);
+
+  computeForwardKinematics(false, false, _updateAccs);
+}
+
+//==============================================================================
+void Skeleton::setState(const Eigen::VectorXd& _state,
+                        bool _updateTransforms,
+                        bool _updateVels,
+                        bool _updateAccs)
+{
+  assert(_state.size() % 2 == 0);
+  GenCoordSystem::setConfigs(_state.head(_state.size() / 2));
+  GenCoordSystem::setGenVels(_state.tail(_state.size() / 2));
+
+  // computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
+  computeForwardKinematicsIssue122(_updateTransforms, _updateVels, _updateAccs);
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getState() const
+{
+  Eigen::VectorXd state(2 * mGenCoords.size());
+  state << getConfigs(), getGenVels();
+  return state;
+}
+
+//==============================================================================
+void Skeleton::computeForwardKinematics(bool _updateTransforms,
+                                        bool _updateVels,
+                                        bool _updateAccs)
+{
+  if (_updateTransforms)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
       (*it)->updateTransform();
+    }
+  }
+
+  if (_updateVels)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
       (*it)->updateVelocity();
       (*it)->updateEta();
     }
   }
 
+  if (_updateAccs)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
+      (*it)->updateAcceleration();
+    }
+  }
+
+  // TODO(JS): This will be moved to forward dynamics and hybrid dynamics
+  //           routine
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
+       it != mBodyNodes.rend(); ++it)
+  {
     (*it)->updateArticulatedInertia(mTimeStep);
   }
 
+    // TODO(JS):
+  mIsMassMatrixDirty = true;
+  mIsAugMassMatrixDirty = true;
+  mIsInvMassMatrixDirty = true;
+  mIsInvAugMassMatrixDirty = true;
+  mIsCoriolisVectorDirty = true;
+  mIsGravityForceVectorDirty = true;
+  mIsCombinedVectorDirty = true;
+  mIsExternalForceVectorDirty = true;
+//  mIsDampingForceVectorDirty = true;
+
+    // TODO(JS):
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+  }
+}
+
+//==============================================================================
+void Skeleton::computeForwardKinematicsIssue122(bool _updateTransforms,
+                                                bool _updateVels,
+                                                bool _updateAccs)
+{
+  if (_updateTransforms)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
+      // TODO(JS): This is workaround for Issue #122.
+      // TODO(JS): If possible we recomment not to use dynamic_cast. Fix for this
+      //           issue should not to use dynamic_cast.
+      if (dynamic_cast<BallJoint*>((*it)->getParentJoint())
+          || dynamic_cast<FreeJoint*>((*it)->getParentJoint()))
+      {
+        (*it)->updateTransform_Issue122(mTimeStep);
+      }
+      else
+      {
+        (*it)->updateTransform();
+      }
+    }
+  }
+
+  if (_updateVels)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
+      (*it)->updateVelocity();
+
+      // TODO(JS): This is workaround for Issue #122.
+      // TODO(JS): If possible we recomment not to use dynamic_cast. Fix for this
+      //           issue should not to use dynamic_cast.
+      if (dynamic_cast<BallJoint*>((*it)->getParentJoint())
+          || dynamic_cast<FreeJoint*>((*it)->getParentJoint()))
+      {
+        (*it)->updateEta_Issue122();
+      }
+      else
+      {
+        (*it)->updateEta();
+      }
+    }
+  }
+
+  if (_updateAccs)
+  {
+    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+         it != mBodyNodes.end(); ++it)
+    {
+      (*it)->updateAcceleration();
+    }
+  }
+
+  // TODO(JS): This will be moved to forward dynamics and hybrid dynamics
+  //           routine
+  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+       it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateArticulatedInertia(mTimeStep);
+  }
+
+  // TODO(JS):
   mIsMassMatrixDirty = true;
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
@@ -350,17 +450,13 @@ void Skeleton::setState(const Eigen::VectorXd& _state) {
   mIsExternalForceVectorDirty = true;
   mIsDampingForceVectorDirty = true;
 
+  // TODO(JS):
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->mIsBodyJacobianDirty = true;
     (*it)->mIsBodyJacobianTimeDerivDirty = true;
   }
-}
-
-Eigen::VectorXd Skeleton::getState() {
-  Eigen::VectorXd state(2 * mGenCoords.size());
-  state << get_q(), get_dq();
-  return state;
 }
 
 const Eigen::MatrixXd& Skeleton::getMassMatrix() {
@@ -412,7 +508,7 @@ const Eigen::VectorXd& Skeleton::getExternalForceVector() {
 }
 
 Eigen::VectorXd Skeleton::getInternalForceVector() const {
-  return get_tau();
+  return getGenForces();
 }
 
 const Eigen::VectorXd& Skeleton::getDampingForceVector() {
@@ -444,13 +540,13 @@ void Skeleton::updateMassMatrix() {
   mM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = get_ddq();
+  Eigen::VectorXd originalGenAcceleration = getGenAccs();
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    set_ddq(e);
+    GenCoordSystem::setGenAccs(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -476,8 +572,8 @@ void Skeleton::updateMassMatrix() {
   }
   mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
-  // Restore the origianl internal force
-  set_ddq(originalGenAcceleration);
+  // Restore the origianl generalized accelerations
+  setGenAccs(originalGenAcceleration, false);
 
   mIsMassMatrixDirty = false;
 }
@@ -489,13 +585,13 @@ void Skeleton::updateAugMassMatrix() {
   mAugM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = get_ddq();
+  Eigen::VectorXd originalGenAcceleration = getGenAccs();
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    set_ddq(e);
+    GenCoordSystem::setGenAccs(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -522,7 +618,7 @@ void Skeleton::updateAugMassMatrix() {
   mAugM.triangularView<Eigen::StrictlyUpper>() = mAugM.transpose();
 
   // Restore the origianl internal force
-  set_ddq(originalGenAcceleration);
+  GenCoordSystem::setGenAccs(originalGenAcceleration);
 
   mIsAugMassMatrixDirty = false;
 }
@@ -536,13 +632,13 @@ void Skeleton::updateInvMassMatrix() {
   // mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = get_tau();
+  Eigen::VectorXd originalInternalForce = getGenForces();
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    set_tau(e);
+    setGenForces(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
@@ -569,7 +665,7 @@ void Skeleton::updateInvMassMatrix() {
   mInvM.triangularView<Eigen::StrictlyLower>() = mInvM.transpose();
 
   // Restore the origianl internal force
-  set_tau(originalInternalForce);
+  setGenForces(originalInternalForce);
 
   mIsInvMassMatrixDirty = false;
 }
@@ -583,13 +679,13 @@ void Skeleton::updateInvAugMassMatrix() {
   // mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = get_tau();
+  Eigen::VectorXd originalInternalForce = getGenForces();
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    set_tau(e);
+    setGenForces(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
@@ -616,7 +712,7 @@ void Skeleton::updateInvAugMassMatrix() {
   mInvAugM.triangularView<Eigen::StrictlyLower>() = mInvAugM.transpose();
 
   // Restore the origianl internal force
-  set_tau(originalInternalForce);
+  setGenForces(originalInternalForce);
 
   mIsInvAugMassMatrixDirty = false;
 }
@@ -700,26 +796,27 @@ void Skeleton::updateDampingForceVector() {
   }
 }
 
-void Skeleton::computeInverseDynamicsLinear(bool _computeJacobian,
-                                            bool _computeJacobianDeriv,
-                                            bool _withExternalForces,
-                                            bool _withDampingForces) {
+//==============================================================================
+void Skeleton::computeInverseDynamics(bool _withExternalForces,
+                                      bool _withDampingForces)
+{
   // Skip immobile or 0-dof skeleton
   if (getNumGenCoords() == 0)
     return;
 
-  // Forward recursion
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->updateAcceleration();
-  }
-
   // Backward recursion
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
+       it != mBodyNodes.rend(); ++it)
+  {
     (*it)->updateBodyForce(mGravity, _withExternalForces);
     (*it)->updateGeneralizedForce(_withDampingForces);
   }
+}
+
+//==============================================================================
+void Skeleton::computeHybridDynamics()
+{
+  dterr << "Not implemented yet.\n";
 }
 
 void Skeleton::clearExternalForces() {
@@ -756,27 +853,27 @@ void Skeleton::computeForwardDynamics() {
 }
 
 void Skeleton::setInternalForceVector(const Eigen::VectorXd& _forces) {
-  set_tau(_forces);
+  setGenForces(_forces);
 }
 
 void Skeleton::setMinInternalForceVector(const Eigen::VectorXd& _minForces) {
-  set_tauMin(_minForces);
+  setGenForcesMin(_minForces);
 }
 
 Eigen::VectorXd Skeleton::getMinInternalForces() const {
-  return get_tauMin();
+  return getGenForcesMin();
 }
 
 void Skeleton::setMaxInternalForceVector(const Eigen::VectorXd& _maxForces) {
-  set_tauMax(_maxForces);
+  setGenForcesMax(_maxForces);
 }
 
 Eigen::VectorXd Skeleton::getMaxInternalForceVector() const {
-  return get_tauMax();
+  return getGenForcesMax();
 }
 
 void Skeleton::clearInternalForces() {
-  set_tau(Eigen::VectorXd::Zero(getNumGenCoords()));
+  setGenForces(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
 void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc) {

@@ -37,6 +37,7 @@
 #ifndef DART_MATH_MATHTYPES_H_
 #define DART_MATH_MATHTYPES_H_
 
+#include <limits>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -64,6 +65,8 @@
 #define DART_1_720   (0.00138888888888888888889)   // = 1 / 720
 #define DART_1_1260  (0.000793650793650793650794)  // = 1 / 1260
 #define DART_4_3     (1.33333333333333333333)      // = 4 / 3
+
+#define DART_DBL_INF (std::numeric_limits<double>::infinity())
 
 //------------------------------------------------------------------------------
 // Macros

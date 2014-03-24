@@ -83,7 +83,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
           Eigen::Vector6d coordinates;
           coordinates << math::logMap(transform.linear()), transform.translation();
-          rootJoint->set_q(coordinates);
+          rootJoint->setConfigs(coordinates, false, false, false);
       }
       else {
           rootJoint->setTransformFromParentBodyNode(transform);
@@ -240,8 +240,8 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   switch(_jt->type) {
   case urdf::Joint::REVOLUTE:
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
-      joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
-      joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
+      joint->getGenCoord(0)->setConfigMin(_jt->limits->lower);
+      joint->getGenCoord(0)->setConfigMax(_jt->limits->upper);
       joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::CONTINUOUS:
@@ -250,8 +250,8 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
       break;
   case urdf::Joint::PRISMATIC:
       joint = new dynamics::PrismaticJoint(toEigen(_jt->axis));
-      joint->getGenCoord(0)->set_qMin(_jt->limits->lower);
-      joint->getGenCoord(0)->set_qMax(_jt->limits->upper);
+      joint->getGenCoord(0)->setConfigMin(_jt->limits->lower);
+      joint->getGenCoord(0)->setConfigMax(_jt->limits->upper);
       joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::FIXED:
@@ -273,10 +273,10 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
   joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
   if(joint->getNumGenCoords() == 1 && _jt->limits) {
-    joint->getGenCoord(0)->set_dqMin(-_jt->limits->velocity);
-    joint->getGenCoord(0)->set_dqMax(_jt->limits->velocity);
-    joint->getGenCoord(0)->set_tauMin(-_jt->limits->effort);
-    joint->getGenCoord(0)->set_tauMax(_jt->limits->effort);
+    joint->getGenCoord(0)->setVelMin(-_jt->limits->velocity);
+    joint->getGenCoord(0)->setVelMax(_jt->limits->velocity);
+    joint->getGenCoord(0)->setForceMin(-_jt->limits->effort);
+    joint->getGenCoord(0)->setForceMax(_jt->limits->effort);
   }
   return joint;
 }

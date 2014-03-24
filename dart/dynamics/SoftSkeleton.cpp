@@ -126,14 +126,14 @@ void SoftSkeleton::updateExternalForceVector()
       int nN = pm->getNumConnectedPointMasses();
 
       // Vertex restoring force
-      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->get_q()
-                             - (mTimeStep * (kv + nN*ke)) * pm->get_dq();
+      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getConfigs()
+                             - (mTimeStep * (kv + nN*ke)) * pm->getGenVels();
 
       // Edge restoring force
       for (int j = 0; j < nN; ++j)
       {
-        Fext += ke * (pm->getConnectedPointMass(j)->get_q()
-                        + mTimeStep * pm->getConnectedPointMass(j)->get_dq());
+        Fext += ke * (pm->getConnectedPointMass(j)->getConfigs()
+                        + mTimeStep * pm->getConnectedPointMass(j)->getGenVels());
       }
 
       // Assign
@@ -154,7 +154,7 @@ void SoftSkeleton::updateDampingForceVector()
     {
       PointMass* pm = (*it)->getPointMass(i);
       int iStart = pm->getGenCoord(0)->getSkeletonIndex();
-      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->get_dq();
+      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->getGenVels();
     }
   }
 }

@@ -419,7 +419,7 @@ void SoftBodyNode::updateBiasForce(double _timeStep,
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0)
   {
-    mAlpha = mParentJoint->get_tau()
+    mAlpha = mParentJoint->getGenForces()
              + mParentJoint->getSpringForces(_timeStep)
              + mParentJoint->getDampingForces();
     for (int i = 0; i < dof; i++)
@@ -536,8 +536,8 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->get_ddq())
-          + K * (_timeStep * _timeStep * mParentJoint->get_ddq());
+          + D * (_timeStep * mParentJoint->getGenAccs())
+          + K * (_timeStep * _timeStep * mParentJoint->getGenAccs());
   }
 }
 
@@ -567,7 +567,7 @@ void SoftBodyNode::updateInvMassMatrix()
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0)
   {
-    mInvM_a = mParentJoint->get_tau();
+    mInvM_a = mParentJoint->getGenForces();
     mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
     assert(!math::isNan(mInvM_a));
   }
@@ -608,7 +608,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0)
   {
-    mInvM_a = mParentJoint->get_tau();
+    mInvM_a = mParentJoint->getGenForces();
     mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
     assert(!math::isNan(mInvM_a));
   }

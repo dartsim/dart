@@ -271,7 +271,7 @@ void PointMass::init()
 void PointMass::updateTransform()
 {
   // Local transpose
-  mX = get_q() + mX0;
+  mX = getConfigs() + mX0;
   assert(!math::isNan(mX));
 
   // World transpose
@@ -285,14 +285,14 @@ void PointMass::updateVelocity()
   // v = w(parent) x mX + v(parent) + dq
   mV = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mX)
        + mParentSoftBodyNode->getBodyVelocity().tail<3>()
-       + get_dq();
+       + getGenVels();
   assert(!math::isNan(mV));
 }
 
 void PointMass::updateEta()
 {
   // eta = w(parent) x dq
-  Eigen::Vector3d dq = get_dq();
+  Eigen::Vector3d dq = getGenVels();
   mEta = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(dq);
   assert(!math::isNan(mEta));
 }
@@ -302,7 +302,7 @@ void PointMass::updateAcceleration()
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
   mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        mEta + get_ddq();
+        mEta + getGenAccs();
   assert(!math::isNan(mdV));
 }
 
@@ -350,7 +350,7 @@ void PointMass::updateArticulatedInertia(double _dt)
 void PointMass::updateGeneralizedForce(bool _withDampingForces)
 {
   // tau = f
-  set_tau(mF);
+  setGenForces(mF);
 }
 
 void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
@@ -375,15 +375,15 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
   double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
   double kd = mParentSoftBodyNode->getDampingCoefficient();
   int nN = mConnectedPointMasses.size();
-  mAlpha = get_tau()
-           - (kv + nN * ke) * get_q()
-           - (_dt * (kv + nN * ke) + kd) * get_dq()
+  mAlpha = getGenForces()
+           - (kv + nN * ke) * getConfigs()
+           - (_dt * (kv + nN * ke) + kd) * getGenVels()
            - mMass * mEta
            - mB;
   for (int i = 0; i < mConnectedPointMasses.size(); ++i)
   {
-    mAlpha += ke * (mConnectedPointMasses[i]->get_q()
-                    + _dt * mConnectedPointMasses[i]->get_dq());
+    mAlpha += ke * (mConnectedPointMasses[i]->getConfigs()
+                    + _dt * mConnectedPointMasses[i]->getGenVels());
   }
   assert(!math::isNan(mAlpha));
 
@@ -401,7 +401,7 @@ void PointMass::update_ddq()
       * (mAlpha - mMass
          * (mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX)
             + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
-  set_ddq(ddq);
+  setGenAccs(ddq);
   assert(!math::isNan(ddq));
 
   // Update dv
@@ -418,7 +418,7 @@ void PointMass::update_F_fs()
 
 void PointMass::updateMassMatrix()
 {
-  mM_dV = get_ddq()
+  mM_dV = getGenAccs()
           + mParentSoftBodyNode->mM_dV.head<3>().cross(mX)
           + mParentSoftBodyNode->mM_dV.tail<3>();
   assert(!math::isNan(mM_dV));
@@ -444,17 +444,17 @@ void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   double d = mParentSoftBodyNode->getDampingCoefficient();
   double kv = mParentSoftBodyNode->getVertexSpringStiffness();
   _MCol->block<3, 1>(iStart, _col).noalias()
-      = mM_F + (_timeStep * _timeStep * kv + _timeStep * d) * get_ddq();
+      = mM_F + (_timeStep * _timeStep * kv + _timeStep * d) * getGenAccs();
 }
 
 void PointMass::updateInvMassMatrix()
 {
-  mInvM_beta = get_tau();
+  mInvM_beta = getGenForces();
 }
 
 void PointMass::updateInvAugMassMatrix()
 {
-  mInvM_beta = mMass * mImplicitPsi * get_tau();
+  mInvM_beta = mMass * mImplicitPsi * getGenForces();
 }
 
 void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
@@ -463,7 +463,7 @@ void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
   // We assume that the three generalized coordinates are in a row.
   int iStart = getGenCoord(0)->getSkeletonIndex();
   _MInvCol->block<3, 1>(iStart, _col)
-      = mPsi * get_tau()
+      = mPsi * getGenForces()
         - mParentSoftBodyNode->mInvM_U.head<3>().cross(mX)
         - mParentSoftBodyNode->mInvM_U.tail<3>();
 }
@@ -476,7 +476,7 @@ void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
   int iStart = getGenCoord(0)->getSkeletonIndex();
   _MInvCol->block<3, 1>(iStart, _col)
       = mImplicitPsi
-        * (get_tau()
+        * (getGenForces()
            - mMass * (mParentSoftBodyNode->mInvM_U.head<3>().cross(mX)
                       + mParentSoftBodyNode->mInvM_U.tail<3>()));
 }

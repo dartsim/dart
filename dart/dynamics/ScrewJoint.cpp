@@ -47,9 +47,10 @@ namespace dynamics {
 ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
-  : Joint(SCREW, _name),
+  : Joint(_name),
     mAxis(axis.normalized()),
-    mPitch(_pitch) {
+    mPitch(_pitch)
+{
   mGenCoords.push_back(&mCoordinate);
 
   mS = Eigen::Matrix<double, 6, 1>::Zero();
@@ -84,7 +85,7 @@ void ScrewJoint::updateTransform() {
   S.head<3>() = mAxis;
   S.tail<3>() = mAxis*mPitch/DART_2PI;
   mT = mT_ParentBodyToJoint
-       * math::expMap(S*mCoordinate.get_q())
+       * math::expMap(S*mCoordinate.getConfig())
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -103,10 +104,10 @@ void ScrewJoint::updateJacobianTimeDeriv() {
 }
 
 void ScrewJoint::clampRotation() {
-  if (mCoordinate.get_q() > M_PI)
-    mCoordinate.set_q(mCoordinate.get_q() - 2*M_PI);
-  if (mCoordinate.get_q() < -M_PI)
-    mCoordinate.set_q(mCoordinate.get_q() + 2*M_PI);
+  if (mCoordinate.getConfig() > M_PI)
+    mCoordinate.setConfig(mCoordinate.getConfig() - 2*M_PI);
+  if (mCoordinate.getConfig() < -M_PI)
+    mCoordinate.setConfig(mCoordinate.getConfig() + 2*M_PI);
 }
 
 }  // namespace dynamics

@@ -46,7 +46,7 @@ void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd 
     getJacobian();
     _J1.block(_rowIndex, 0, 3, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
     Eigen::Vector3d worldP1 = mBodyNode1->getWorldTransform() * mOffset1;
-    Eigen::VectorXd qDot1 = mBodyNode1->getSkeleton()->get_dq();
+    Eigen::VectorXd qDot1 = mBodyNode1->getSkeleton()->getGenVels();
     _C.segment(_rowIndex, 3) = worldP1 - mOffset2;
     _CDot.segment(_rowIndex, 3) = mJ1 * qDot1;
 }
@@ -58,9 +58,9 @@ void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd 
     _J2.block(_rowIndex, 0, 3, mBodyNode2->getSkeleton()->getNumGenCoords()) += mJ2;
 
     Eigen::Vector3d worldP1 = mBodyNode1->getWorldTransform() * mOffset1;
-    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->get_dq();
+    Eigen::VectorXd qDot1 = ((dynamics::Skeleton*)mBodyNode1->getSkeleton())->getGenVels();
     Eigen::VectorXd worldP2 = mBodyNode2->getWorldTransform() * mOffset2;
-    Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBodyNode2->getSkeleton())->get_dq();
+    Eigen::VectorXd qDot2 = ((dynamics::Skeleton*)mBodyNode2->getSkeleton())->getGenVels();
     
     _C.segment(_rowIndex, 3) = worldP1 - worldP2;
     _CDot.segment(_rowIndex, 3) = mJ1 * qDot1 + mJ2 * qDot2;

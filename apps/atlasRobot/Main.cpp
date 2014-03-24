@@ -74,9 +74,9 @@ int main(int argc, char* argv[])
   myWorld->addSkeleton(ground);
 
   // Set initial configuration for Atlas robot
-  VectorXd q = atlas->getConfig();
+  VectorXd q = atlas->getConfigs();
   q[0] = -0.5 * DART_PI;
-  atlas->setConfig(q);
+  atlas->setConfigs(q, true, true, false);
 
   // Set gravity of the world
   myWorld->setGravity(Vector3d(0.0, -9.81, 0.0));

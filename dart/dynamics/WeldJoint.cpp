@@ -45,7 +45,8 @@ namespace dart {
 namespace dynamics {
 
 WeldJoint::WeldJoint(const std::string& _name)
-  : Joint(WELD, _name) {
+  : Joint(_name)
+{
   mS = math::Jacobian::Zero(6, 0);
   mdS = math::Jacobian::Zero(6, 0);
 }

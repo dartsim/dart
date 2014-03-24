@@ -13,11 +13,48 @@
   + void fitWorldTransformAncestorJointsImpl(BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit = true)
   + void fitWorldTransformAllJointsImpl(BodyNode* _body, const Eigen::Isometry3d& _target, bool _jointLimit = true)
 
+1. **dart/dynamics/Joint.h**
+  + virtual void setConfig(size_t _idx, double _config, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+  + virtual void setConfigs(const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+  + virtual void setGenVel(size_t _idx, double _genVel, bool _updateVels = true, bool _updateAccs = true)
+  + virtual void setGenVels(const Eigen::VectorXd& _genVels, bool _updateVels = true, bool _updateAccs = true)
+  + virtual void setGenAcc(size_t _idx, double _genAcc, bool _updateAccs = true)
+  + virtual void setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs = true)
+
+1. **dart/dynamics/Skeleton.h**
+  + virtual void setGenVels(const Eigen::VectorXd& _genVels, bool _updateVels = true, bool _updateAccs = true)
+  + virtual void setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs = true)
+  + void computeForwardKinematics(bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+
 ### Deletions
+
+1. **dart/dynamics/Skeleton.h**
+  + Eigen::VectorXd getConfig() const
+
 ### Modifications
 
+1. **dart/dynamics/Skeleton.h**
+
+  + ***From:*** void setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config)
+  + ***To:*** void setConfigSegs(const std::vector<int>& _id, const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+
+  + ***From:*** Eigen::VectorXd getConfig(const std::vector<int>& _id) const
+  + ***To:*** Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const
+
+  + ***From:*** void setConfig(const Eigen::VectorXd& _config)
+  + ***To:*** virtual void setConfigs(const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+
+  + ***From:*** void setState(const Eigen::VectorXd& _state)
+  + ***To:*** void setState(const Eigen::VectorXd& _state, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+
+  + ***From:*** Eigen::VectorXd getState()
+  + ***To:*** Eigen::VectorXd getState() const
+
 1. **dart/dynamics/BodyNode.h**
+
   + ***From:*** int getNumContactForces() const
   + ***To:*** int getNumContacts() const
 
 ### New Deprecations
+
+

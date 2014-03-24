@@ -103,7 +103,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
         Eigen::VectorXd state = Eigen::VectorXd::Zero(2*dof);
         state.head(dof) = q;
         state.tail(dof) = dq;
-        skeleton.setState(state);
+        skeleton.setState(state, true, true, false);
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -126,15 +126,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
         {
             // a
             Eigen::VectorXd q_a = q;
-            _joint->set_q(q_a);
-            skeleton.setConfig(q_a);
+            _joint->setConfigs(q_a, true, false, false);
             Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += q_delta;
-            _joint->set_q(q_b);
-            skeleton.setConfig(q_b);
+            _joint->setConfigs(q_b, true, false, false);
             Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
             //
@@ -172,15 +170,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
         {
             // a
             Eigen::VectorXd q_a = q;
-            _joint->set_q(q_a);
-            skeleton.setConfig(q_a);
+            _joint->setConfigs(q_a, true, false, false);
             Jacobian J_a = _joint->getLocalJacobian();
 
             // b
             Eigen::VectorXd q_b = q;
             q_b(i) += q_delta;
-            _joint->set_q(q_b);
-            skeleton.setConfig(q_b);
+            _joint->setConfigs(q_b, true, false, false);
             Jacobian J_b = _joint->getLocalJacobian();
 
             //
@@ -204,7 +200,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
         for (int i = 0; i < dof; ++i)
             q(i) = random(posMin, posMax);
 
-        skeleton.setConfig(q);
+        skeleton.setConfigs(q, true, false, false);
 
         if (_joint->getNumGenCoords() == 0)
             return;
@@ -323,12 +319,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
     double limit1 = DART_PI / 6.0;
 
     joint0->setPositionLimited(true);
-    joint0->getGenCoord(0)->set_qMin(-limit0);
-    joint0->getGenCoord(0)->set_qMax(limit0);
+    joint0->getGenCoord(0)->setConfigMin(-limit0);
+    joint0->getGenCoord(0)->setConfigMax(limit0);
 
     joint1->setPositionLimited(true);
-    joint1->getGenCoord(0)->set_qMin(-limit1);
-    joint1->getGenCoord(0)->set_qMax(limit1);
+    joint1->getGenCoord(0)->setConfigMin(-limit1);
+    joint1->getGenCoord(0)->setConfigMax(limit1);
 
     double simTime = 2.0;
     double timeStep = myWorld->getTimeStep();
@@ -339,11 +335,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
         myWorld->step();
     }
 
-    double jointPos0 = joint0->getGenCoord(0)->get_q();
-    double jointPos1 = joint1->getGenCoord(0)->get_q();
+    double jointPos0 = joint0->getGenCoord(0)->getConfig();
+    double jointPos1 = joint1->getGenCoord(0)->getConfig();
 
-    double jointVel0 = joint0->getGenCoord(0)->get_dq();
-    double jointVel1 = joint1->getGenCoord(0)->get_dq();
+    double jointVel0 = joint0->getGenCoord(0)->getVel();
+    double jointVel1 = joint1->getGenCoord(0)->getVel();
 
     // NOTE: The ideal result is that the joint position limit was obeyed with
     //       zero tolerance. To do so, DART should correct the joint limit

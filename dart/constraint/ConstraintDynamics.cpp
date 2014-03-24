@@ -113,9 +113,9 @@ void ConstraintDynamics::computeConstraintForces()
       for (int k = 0; k < mSkeletons[i]->getJoint(j)->getNumGenCoords(); k++)
       {
         dynamics::GenCoord* genCoord = joint->getGenCoord(k);
-        double val = genCoord->get_q();
-        double ub  = genCoord->get_qMax();
-        double lb  = genCoord->get_qMin();
+        double val = genCoord->getConfig();
+        double ub  = genCoord->getConfigMax();
+        double lb  = genCoord->getConfigMin();
         double violation = 0.0;
 
         if (val >= ub)
@@ -1057,7 +1057,7 @@ void ConstraintDynamics::updateTauStar()
                           + mSkeletons[i]->getInternalForceVector()
                           + mSkeletons[i]->getDampingForceVector();
     Eigen::VectorXd tauStar =
-        (mSkeletons[i]->getAugMassMatrix() * mSkeletons[i]->get_dq())
+        (mSkeletons[i]->getAugMassMatrix() * mSkeletons[i]->getGenVels())
         - (mDt * (mSkeletons[i]->getCombinedVector() - tau));
     mTauStar.block(startRow, 0, tauStar.rows(), 1) = tauStar;
     startRow += tauStar.rows();
@@ -1324,7 +1324,7 @@ void ConstraintDynamics::updateConstraintTerms()
   {
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
-    Eigen::VectorXd qDot = mSkeletons[i]->get_dq();
+    Eigen::VectorXd qDot = mSkeletons[i]->getGenVels();
     mTauHat.noalias() += -(mJ[i] - mPreJ[i]) / mDt * qDot;
     mTauHat.noalias() -= mJMInv[i] * (mSkeletons[i]->getInternalForceVector()
                                       + mSkeletons[i]->getExternalForceVector()

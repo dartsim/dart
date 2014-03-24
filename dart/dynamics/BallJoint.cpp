@@ -45,8 +45,9 @@ namespace dart {
 namespace dynamics {
 
 BallJoint::BallJoint(const std::string& _name)
-  : Joint(BALL, _name),
-    mT_Joint(Eigen::Isometry3d::Identity()) {
+  : Joint(_name),
+    mT_Joint(Eigen::Isometry3d::Identity())
+{
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
@@ -63,9 +64,9 @@ BallJoint::~BallJoint() {
 }
 
 inline void BallJoint::updateTransform() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
 
   // TODO(JS): This is workaround for Issue #122.
   mT_Joint = math::expAngular(q);
@@ -76,9 +77,9 @@ inline void BallJoint::updateTransform() {
 }
 
 void BallJoint::updateTransform_Issue122(double _timeStep) {
-  mT_Joint = mT_Joint * math::expAngular(_timeStep * get_dq());
+  mT_Joint = mT_Joint * math::expAngular(_timeStep * getGenVels());
 
-  set_q(math::logMap(mT_Joint).head<3>());
+  GenCoordSystem::setConfigs(math::logMap(mT_Joint).head<3>());
 
   mT = mT_ParentBodyToJoint * mT_Joint * mT_ChildBodyToJoint.inverse();
 
@@ -86,9 +87,9 @@ void BallJoint::updateTransform_Issue122(double _timeStep) {
 }
 
 inline void BallJoint::updateJacobian() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-                    mCoordinate[1].get_q(),
-                    mCoordinate[2].get_q());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+                    mCoordinate[1].getConfig(),
+                    mCoordinate[2].getConfig());
 
   Eigen::Matrix3d J = math::expMapJac(q);
 
@@ -124,12 +125,12 @@ void BallJoint::updateJacobian_Issue122() {
 }
 
 inline void BallJoint::updateJacobianTimeDeriv() {
-  Eigen::Vector3d q(mCoordinate[0].get_q(),
-      mCoordinate[1].get_q(),
-      mCoordinate[2].get_q());
-  Eigen::Vector3d dq(mCoordinate[0].get_dq(),
-      mCoordinate[1].get_dq(),
-      mCoordinate[2].get_dq());
+  Eigen::Vector3d q(mCoordinate[0].getConfig(),
+      mCoordinate[1].getConfig(),
+      mCoordinate[2].getConfig());
+  Eigen::Vector3d dq(mCoordinate[0].getVel(),
+      mCoordinate[1].getVel(),
+      mCoordinate[2].getVel());
 
   Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
 
@@ -150,7 +151,8 @@ inline void BallJoint::updateJacobianTimeDeriv() {
 
 void BallJoint::updateJacobianTimeDeriv_Issue122() {
   // mdS == 0
-  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
+  mdS.setZero();
+//  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
 }
 
 }  // namespace dynamics
