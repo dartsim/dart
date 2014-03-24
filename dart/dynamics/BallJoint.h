@@ -51,10 +51,10 @@ namespace dynamics {
 class BallJoint : public Joint
 {
 public:
-  /// \brief Destructor
+  /// \brief Constructor
   explicit BallJoint(const std::string& _name = "BallJoint");
 
-  /// \brief Constructor
+  /// \brief Destructor
   virtual ~BallJoint();
 
 protected:
