@@ -139,8 +139,8 @@ public:
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setConfig(size_t _idx, double _config,
                          bool _updateTransforms = true,
-                         bool _updateVels = true,
-                         bool _updateAccs = true);
+                         bool _updateVels = false,
+                         bool _updateAccs = false);
 
   /// \brief Set configurations in terms of generalized coordinates
   /// \param[in] _configs
@@ -149,8 +149,8 @@ public:
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setConfigs(const Eigen::VectorXd& _configs,
                           bool _updateTransforms = true,
-                          bool _updateVels = true,
-                          bool _updateAccs = true);
+                          bool _updateVels = false,
+                          bool _updateAccs = false);
 
   /// \brief Set single generalized velocity
   /// \param[in] _idx
@@ -159,7 +159,7 @@ public:
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVel(size_t _idx, double _genVel,
                          bool _updateVels = true,
-                         bool _updateAccs = true);
+                         bool _updateAccs = false);
 
   /// \brief Set generalized velocities
   /// \param[in] _genVels
@@ -167,7 +167,7 @@ public:
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVels(const Eigen::VectorXd& _genVels,
                           bool _updateVels = true,
-                          bool _updateAccs = true);
+                          bool _updateAccs = false);
 
   /// \brief Set single generalized acceleration
   /// \param[in] _idx
