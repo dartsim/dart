@@ -48,8 +48,9 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/dynamics/PointMass.h"
+#include "dart/gui/GLFuncs.h"
 
-#define FORCE_ON_RIGIDBODY 500.0;
+#define FORCE_ON_RIGIDBODY 10.0;
 #define FORCE_ON_VERTEX 1.00;
 
 MyWindow::MyWindow()
@@ -57,6 +58,7 @@ MyWindow::MyWindow()
 {
   mForceOnRigidBody = Eigen::Vector3d::Zero();
   mForceOnVertex = Eigen::Vector3d::Zero();
+  mImpulseDuration = 0.0;
 }
 
 MyWindow::~MyWindow()
@@ -72,7 +74,14 @@ void MyWindow::timeStepping()
 
   mWorld->step();
 
-  mForceOnRigidBody /= 2.0;
+  // for perturbation test
+  mImpulseDuration--;
+  if (mImpulseDuration <= 0)
+  {
+    mImpulseDuration = 0;
+    mForceOnRigidBody.setZero();
+  }
+
   mForceOnVertex /= 2.0;
 }
 
@@ -83,6 +92,21 @@ void MyWindow::drawSkels()
 //  Eigen::Vector4d color;
 //  color << 0.5, 0.8, 0.6, 1.0;
 //  mWorld->getSkeleton(0)->draw(mRI, color, false);
+
+  // draw arrow
+  if (mImpulseDuration > 0)
+  {
+    dart::dynamics::SoftSkeleton* softSkeleton =
+        static_cast<dart::dynamics::SoftSkeleton*>(mWorld->getSkeleton(1));
+    dart::dynamics::SoftBodyNode* softBodyNode = softSkeleton->getSoftBodyNode(0);
+    softBodyNode->addExtForce(mForceOnRigidBody);
+    Eigen::Vector3d poa
+        = softBodyNode->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
+    Eigen::Vector3d start = poa - mForceOnRigidBody / 25.0;
+    double len = mForceOnRigidBody.norm() / 25.0;
+    dart::gui::drawArrow3D(start, mForceOnRigidBody, len, 0.025, 0.05);
+  }
+
   SimWindow::drawSkels();
 }
 
@@ -135,21 +159,27 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       break;
     case 'q':  // upper right force
       mForceOnRigidBody[0] = -FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     case 'w':  // upper right force
       mForceOnRigidBody[0] = FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     case 'e':  // upper right force
       mForceOnRigidBody[1] = -FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     case 'r':  // upper right force
       mForceOnRigidBody[1] = FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     case 't':  // upper right force
       mForceOnRigidBody[2] = -FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     case 'y':  // upper right force
       mForceOnRigidBody[2] = FORCE_ON_RIGIDBODY;
+      mImpulseDuration = 100;
       break;
     default:
       Win3D::keyboard(key, x, y);
