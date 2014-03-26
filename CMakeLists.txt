@@ -127,15 +127,10 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
+# OpenMP
 if(ENABLE_OPENMP)
   find_package(OpenMP)
-  if(OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(STATUS "Looking for OpenMP - found")
-  else()
-    message(WARNING "OpenMP not found, ENABLE_OPENMP option is ignored.")
-  endif()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 if(NOT BUILD_CORE_ONLY)
