@@ -152,6 +152,27 @@ inline bool isNan(const Eigen::MatrixXd& _m) {
   return false;
 }
 
+/// \brief Returns whether _v is an infinity value (either positive infinity or
+/// negative infinity).
+inline bool isInf(double _v) {
+#ifdef WIN32
+  return !_finite(_v);
+#else
+  return std::isinf(_v);
+#endif
+}
+
+/// \brief Returns whether _m is an infinity matrix (either positive infinity or
+/// negative infinity).
+inline bool isInf(const Eigen::MatrixXd& _m) {
+  for (int i = 0; i < _m.rows(); ++i)
+    for (int j = 0; j < _m.cols(); ++j)
+      if (isInf(_m(i, j)))
+        return true;
+
+  return false;
+}
+
 inline unsigned seedRand() {
   time_t now = time(0);
   unsigned char* p = reinterpret_cast<unsigned char*>(&now);
