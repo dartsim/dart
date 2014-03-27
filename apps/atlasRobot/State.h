@@ -141,8 +141,8 @@ public:
   /// \brief Get derivative gain for PD controller
   double getDerivativeGain(int _idx) const;
 
-  /// \brief Get derivative gain for PD controller
-  double getDerivativeGain(const std::string& _jointName) const;
+  // /// \brief Get derivative gain for PD controller
+  // double getDerivativeGain(const std::string& _jointName) const;
 
   /// \brief Set balance feedback gain parameter for sagital com distance
   void setFeedbackSagitalCOMDistance(int _idx, double _val);

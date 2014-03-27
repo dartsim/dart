@@ -152,15 +152,15 @@ public:
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setConfigs(const Eigen::VectorXd& _configs,
                           bool _updateTransforms = true,
-                          bool _updateVels = true,
-                          bool _updateAccs = true);
+                          bool _updateVels = false,
+                          bool _updateAccs = false);
 
   /// \brief Set generalized velocities
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVels(const Eigen::VectorXd& _genVels,
                           bool _updateVels = true,
-                          bool _updateAccs = true);
+                          bool _updateAccs = false);
 
   /// \brief Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
@@ -169,30 +169,27 @@ public:
 
   /// \brief Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
-  /// \param[in] _id
-  /// \param[in] _configs
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   void setConfigSegs(const std::vector<int>& _id,
                      const Eigen::VectorXd& _configs,
                      bool _updateTransforms = true,
-                     bool _updateVels = true,
-                     bool _updateAccs = true);
+                     bool _updateVels = false,
+                     bool _updateAccs = false);
 
   /// \brief Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
   Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const;
 
   /// \brief Set the state of this skeleton described in generalized coordinates
-  /// \param[in] _state
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   void setState(const Eigen::VectorXd& _state,
                 bool _updateTransforms = true,
                 bool _updateVels = true,
-                bool _updateAccs = true);
+                bool _updateAccs = false);
 
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;

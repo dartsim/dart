@@ -71,6 +71,9 @@ private:
   /// \brief
   Eigen::Vector3d mForceOnRigidBody;
 
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
+
   /// \brief
   Eigen::Vector3d mForceOnVertex;
 };

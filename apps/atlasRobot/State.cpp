@@ -669,11 +669,11 @@ double State::getDerivativeGain(int _idx) const
 }
 
 //==============================================================================
-double State::getDerivativeGain(const string& _jointName) const
-{
-  // TODO(JS)
-  NOT_YET(State::getDerivativeGain());
-}
+//double State::getDerivativeGain(const string& _jointName) const
+//{
+//  // TODO(JS)
+//  NOT_YET(State::getDerivativeGain());
+//}
 
 //==============================================================================
 void State::setFeedbackSagitalCOMDistance(int _idx, double _val)
