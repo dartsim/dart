@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -36,7 +36,12 @@
  */
 
 #include <algorithm>
+#include <cassert>
+#include <cfloat>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <vector>
 
 #include "dart/math/Geometry.h"
 
@@ -1426,15 +1431,6 @@ bool verifyTransform(const Eigen::Isometry3d& _T) {
       && fabs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
-bool isNan(const Eigen::MatrixXd& _m) {
-  for (int i = 0; i < _m.rows(); ++i)
-    for (int j = 0; j < _m.cols(); ++j)
-      if (_m(i, j) != _m(i, j))
-        return true;
-
-  return false;
-}
-
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
 #ifndef NDEBUG
   if (fabs(_m(0, 0)) > DART_EPSILON
@@ -1461,6 +1457,23 @@ Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v) {
   result(2, 1) =  _v(0);
 
   return result;
+}
+
+bool isNan(double _v) {
+#ifdef WIN32
+  return _isnan(_v);
+#else
+  return std::isnan(_v);
+#endif
+}
+
+bool isNan(const Eigen::MatrixXd& _m) {
+  for (int i = 0; i < _m.rows(); ++i)
+    for (int j = 0; j < _m.cols(); ++j)
+      if (isNan(_m(i, j)))
+        return true;
+
+  return false;
 }
 
 }  // namespace math

@@ -2,6 +2,9 @@
 
 ### Additions
 
+1 **dart/math/Geometry.h**
+  + bool isNan(double _v)
+
 1. **dart/dynamics/BodyNode.h**
   + enum InverseKinematicsPolicy
   + class TransformObjFunc

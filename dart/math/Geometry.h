@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -37,12 +37,6 @@
 
 #ifndef DART_MATH_GEOMETRY_H_
 #define DART_MATH_GEOMETRY_H_
-
-#include <vector>
-#include <cassert>
-#include <iostream>
-#include <cmath>
-#include <cfloat>
 
 #include <Eigen/Dense>
 
@@ -287,7 +281,10 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
-/// \brief
+/// \brief Returns whether _v is a NaN (Not-A-Number) value
+bool isNan(double _v);
+
+/// \brief Returns whether _m is a NaN (Not-A-Number) matrix
 bool isNan(const Eigen::MatrixXd& _m);
 
 }  // namespace math

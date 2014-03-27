@@ -35,6 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
 #include <vector>
 
 #include "dart/utils/Paths.h"
