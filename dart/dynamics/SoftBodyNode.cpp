@@ -39,6 +39,7 @@
 #include <string>
 #include <vector>
 
+#include "dart/math/Helpers.h"
 #include <dart/common/Console.h>
 #include <dart/dynamics/Joint.h>
 #include <dart/dynamics/Shape.h>

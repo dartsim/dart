@@ -38,6 +38,7 @@
 #include "dart/collision/CollisionDetector.h"
 
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 #include "dart/dynamics/BodyNode.h"

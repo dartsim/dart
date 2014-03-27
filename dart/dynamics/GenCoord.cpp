@@ -38,6 +38,7 @@
 #include <cassert>
 
 #include "dart/math/MathTypes.h"
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/GenCoord.h"
 
 namespace dart {
@@ -146,7 +147,7 @@ double GenCoord::getConfigMax() const
 //==============================================================================
 void GenCoord::setConfigDeriv(double _configDeriv)
 {
-  assert(_configDeriv == _configDeriv);
+  assert(!math::isNan(_configDeriv));
   mConfigDeriv = _configDeriv;
 }
 
@@ -165,7 +166,7 @@ double GenCoord::getVelMax() const
 //==============================================================================
 void GenCoord::setVelDeriv(double _velDeriv)
 {
-  assert(_velDeriv == _velDeriv);
+  assert(!math::isNan(_velDeriv));
   mVelDeriv = _velDeriv;
 }
 
@@ -184,7 +185,7 @@ double GenCoord::getAccMax() const
 //==============================================================================
 void GenCoord::setAccDeriv(double _accDeriv)
 {
-  assert(_accDeriv == _accDeriv);
+  assert(!math::isNan(_accDeriv));
   mAccDeriv = _accDeriv;
 }
 
@@ -203,7 +204,7 @@ double GenCoord::getForceMax() const
 //==============================================================================
 void GenCoord::setForceDeriv(double _forceDeriv)
 {
-  assert(_forceDeriv == _forceDeriv);
+  assert(!math::isNan(_forceDeriv));
   mForceDeriv = _forceDeriv;
 }
 
@@ -216,28 +217,28 @@ double GenCoord::getForceDeriv() const
 //==============================================================================
 void GenCoord::setConfig(double _config)
 {
-  assert(_config == _config);
+  assert(!math::isNan(_config));
   mConfig = _config;
 }
 
 //==============================================================================
 void GenCoord::setVel(double _vel)
 {
-  assert(_vel == _vel);
+  assert(!math::isNan(_vel));
   mVel = _vel;
 }
 
 //==============================================================================
 void GenCoord::setAcc(double _acc)
 {
-  assert(_acc == _acc);
+  assert(!math::isNan(_acc));
   mAcc = _acc;
 }
 
 //==============================================================================
 void GenCoord::setForce(double _force)
 {
-  assert(_force == _force);
+  assert(!math::isNan(_force));
   mForce = _force;
 }
 

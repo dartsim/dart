@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -36,9 +36,14 @@
  */
 
 #include <algorithm>
+#include <cassert>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <vector>
 
 #include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace math {
@@ -1424,15 +1429,6 @@ bool verifyRotation(const Eigen::Matrix3d& _T) {
 bool verifyTransform(const Eigen::Isometry3d& _T) {
   return !isNan(_T.matrix().topRows<3>())
       && fabs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
-}
-
-bool isNan(const Eigen::MatrixXd& _m) {
-  for (int i = 0; i < _m.rows(); ++i)
-    for (int j = 0; j < _m.cols(); ++j)
-      if (_m(i, j) != _m(i, j))
-        return true;
-
-  return false;
 }
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {

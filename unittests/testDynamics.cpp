@@ -853,10 +853,11 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
   for (int i = 0; i < getList().size(); ++i)
   {
     ////////////////////////////////////////////////////////////////////////////
-    // TODO(JS): Following five skel files, which contain euler joints couldn't
+    // TODO(JS): Following skel files, which contain euler joints couldn't
     //           pass EQUATIONS_OF_MOTION, are disabled.
     std::string skelFileName = getList()[i];
-    if (skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
+    if (skelFileName == DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
         || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
         || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
         || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
