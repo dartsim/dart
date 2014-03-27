@@ -281,12 +281,6 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
-/// \brief Returns whether _v is a NaN (Not-A-Number) value
-bool isNan(double _v);
-
-/// \brief Returns whether _m is a NaN (Not-A-Number) matrix
-bool isNan(const Eigen::MatrixXd& _m);
-
 }  // namespace math
 }  // namespace dart
 

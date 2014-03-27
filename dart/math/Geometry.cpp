@@ -37,13 +37,13 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cfloat>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <vector>
 
 #include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace math {
@@ -1457,23 +1457,6 @@ Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v) {
   result(2, 1) =  _v(0);
 
   return result;
-}
-
-bool isNan(double _v) {
-#ifdef WIN32
-  return _isnan(_v);
-#else
-  return std::isnan(_v);
-#endif
-}
-
-bool isNan(const Eigen::MatrixXd& _m) {
-  for (int i = 0; i < _m.rows(); ++i)
-    for (int j = 0; j < _m.cols(); ++j)
-      if (isNan(_m(i, j)))
-        return true;
-
-  return false;
 }
 
 }  // namespace math

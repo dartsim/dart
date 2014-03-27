@@ -2,8 +2,9 @@
 
 ### Additions
 
-1 **dart/math/Geometry.h**
+1 **dart/math/Helpers.h**
   + bool isNan(double _v)
+  + bool isNan(const Eigen::MatrixXd& _m)
 
 1. **dart/dynamics/BodyNode.h**
   + enum InverseKinematicsPolicy
@@ -33,6 +34,10 @@
 
 1. **dart/dynamics/Skeleton.h**
   + Eigen::VectorXd getConfig() const
+
+1 **dart/math/Geometry.h**
+  + bool isNan(const Eigen::MatrixXd& _m)
+    + Note: moved to dart/math/Helpers.h
 
 ### Modifications
 

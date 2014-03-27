@@ -40,6 +40,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 
 namespace dart {

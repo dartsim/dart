@@ -38,6 +38,7 @@
 #include <cassert>
 
 #include "dart/math/MathTypes.h"
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/GenCoord.h"
 
 namespace dart {
