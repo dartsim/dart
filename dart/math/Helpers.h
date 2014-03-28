@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -39,6 +39,7 @@
 
 // Standard Libraries
 #include <vector>
+#include <cfloat>
 #include <cmath>
 #include <ctime>
 #include <climits>
@@ -129,6 +130,46 @@ inline bool isEqual(double _x, double _y) {
 inline bool isInt(double _x) {
   if (isEqual(round(_x), _x))
     return true;
+  return false;
+}
+
+/// \brief Returns whether _v is a NaN (Not-A-Number) value
+inline bool isNan(double _v) {
+#ifdef WIN32
+  return _isnan(_v);
+#else
+  return std::isnan(_v);
+#endif
+}
+
+/// \brief Returns whether _m is a NaN (Not-A-Number) matrix
+inline bool isNan(const Eigen::MatrixXd& _m) {
+  for (int i = 0; i < _m.rows(); ++i)
+    for (int j = 0; j < _m.cols(); ++j)
+      if (isNan(_m(i, j)))
+        return true;
+
+  return false;
+}
+
+/// \brief Returns whether _v is an infinity value (either positive infinity or
+/// negative infinity).
+inline bool isInf(double _v) {
+#ifdef WIN32
+  return !_finite(_v);
+#else
+  return std::isinf(_v);
+#endif
+}
+
+/// \brief Returns whether _m is an infinity matrix (either positive infinity or
+/// negative infinity).
+inline bool isInf(const Eigen::MatrixXd& _m) {
+  for (int i = 0; i < _m.rows(); ++i)
+    for (int j = 0; j < _m.cols(); ++j)
+      if (isInf(_m(i, j)))
+        return true;
+
   return false;
 }
 

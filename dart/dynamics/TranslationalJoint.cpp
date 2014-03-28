@@ -39,6 +39,7 @@
 #include <string>
 
 #include "dart/math/Geometry.h"
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace dynamics {

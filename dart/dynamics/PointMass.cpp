@@ -335,7 +335,7 @@ void PointMass::updateArticulatedInertia(double _dt)
       = 1.0 / (mMass
                + _dt * mParentSoftBodyNode->getDampingCoefficient()
                + _dt * _dt * mParentSoftBodyNode->getVertexSpringStiffness());
-  assert(!std::isnan(mImplicitPsi));
+  assert(!math::isNan(mImplicitPsi));
 
   // Cache data: AI_S_Psi
   // - Do nothing
@@ -343,8 +343,8 @@ void PointMass::updateArticulatedInertia(double _dt)
   // Cache data: Pi
   mPi         = mMass - mMass * mMass * mPsi;
   mImplicitPi = mMass - mMass * mMass * mImplicitPsi;
-  assert(!std::isnan(mPi));
-  assert(!std::isnan(mImplicitPi));
+  assert(!math::isNan(mPi));
+  assert(!math::isNan(mImplicitPi));
 }
 
 void PointMass::updateGeneralizedForce(bool _withDampingForces)

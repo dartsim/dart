@@ -36,6 +36,8 @@
 
 #include "dart/collision/bullet/BulletCollisionNode.h"
 
+#include <iostream>
+
 #include <assimp/scene.h>
 
 #include "dart/collision/bullet/BulletTypes.h"
