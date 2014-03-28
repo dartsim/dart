@@ -165,9 +165,17 @@ void JOINTS::kinematicsTest(Joint* _joint)
       numericJ.col(i) = Ji;
     }
 
-    for (int i = 0; i < dof; ++i)
-      for (int j = 0; j < 6; ++j)
-        EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
+    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+    {
+      // Skip this test for BallJoint and FreeJoint since Jacobian of BallJoint
+      // and FreeJoint is not obtained by the above method.
+    }
+    else
+    {
+      for (int i = 0; i < dof; ++i)
+        for (int j = 0; j < 6; ++j)
+          EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
+    }
 
     //--------------------------------------------------------------------------
     // Test first time derivative of analytic Jacobian and numerical Jacobian
@@ -194,9 +202,19 @@ void JOINTS::kinematicsTest(Joint* _joint)
       numeric_dJ += dJ_dq * dq(i);
     }
 
-    for (int i = 0; i < dof; ++i)
-      for (int j = 0; j < 6; ++j)
-        EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+
+    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+    {
+      // Skip this test for BallJoint and FreeJoint since time derivative of
+      // Jacobian of BallJoint and FreeJoint is not obtained by the above
+      // method.
+    }
+    else
+    {
+      for (int i = 0; i < dof; ++i)
+        for (int j = 0; j < 6; ++j)
+          EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+    }
   }
 
   // Forward kinematics test with high joint position
@@ -259,12 +277,12 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
 }
 
 // 3-dof joint
-//TEST_F(JOINTS, BALL_JOINT)
-//{
-//  BallJoint* ballJoint = new BallJoint;
+TEST_F(JOINTS, BALL_JOINT)
+{
+  BallJoint* ballJoint = new BallJoint;
 
-//  kinematicsTest(ballJoint);
-//}
+  kinematicsTest(ballJoint);
+}
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
@@ -296,13 +314,13 @@ TEST_F(JOINTS, PLANAR_JOINT)
   kinematicsTest(planarJoint);
 }
 
-//// 6-dof joint
-//TEST_F(JOINTS, FREE_JOINT)
-//{
-//  FreeJoint* freeJoint = new FreeJoint;
+// 6-dof joint
+TEST_F(JOINTS, FREE_JOINT)
+{
+  FreeJoint* freeJoint = new FreeJoint;
 
-//  kinematicsTest(freeJoint);
-//}
+  kinematicsTest(freeJoint);
+}
 
 //==============================================================================
 TEST_F(JOINTS, POSITION_LIMIT)
