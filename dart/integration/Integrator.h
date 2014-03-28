@@ -75,7 +75,7 @@ public:
   virtual Eigen::VectorXd getGenAccs() const = 0;
 
   /// \brief Evaulate generalized accelerations and store them in the system
-  virtual void evalAccs() = 0;
+  virtual void evalGenAccs() = 0;
 
   /// \brief Integrate configruations and store them in the system
   virtual void integrateConfigs(double _dt) = 0;

@@ -146,7 +146,7 @@ Eigen::VectorXd World::getGenAccs() const
 }
 
 //==============================================================================
-void World::evalAccs()
+void World::evalGenAccs()
 {
   // compute constraint (contact/contact, joint limit) forces
   mConstraintHandler->computeConstraintForces();

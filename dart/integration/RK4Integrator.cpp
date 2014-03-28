@@ -55,7 +55,7 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) const
   Eigen::VectorXd  q = _system->getConfigs();
   Eigen::VectorXd dq = _system->getGenVels();
 
-  _system->evalAccs();
+  _system->evalGenAccs();
 //   dq1 = _system->getGenVels();
 //  ddq1 = _system->getAccs();
 
