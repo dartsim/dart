@@ -52,11 +52,11 @@ EulerIntegrator::~EulerIntegrator()
 }
 
 //==============================================================================
-void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt) const
+void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
 {
   _system->evalGenAccs();
-  _system->integrateConfigs(_dt);
   _system->integrateGenVels(_dt);
+  _system->integrateConfigs(_dt);
 }
 
 }  // namespace integration

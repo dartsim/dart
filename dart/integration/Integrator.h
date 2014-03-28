@@ -98,7 +98,7 @@ public:
 
 public:
   /// \brief Integrate the system with time step dt
-  virtual void integrate(IntegrableSystem* system, double dt) const = 0;
+  virtual void integrate(IntegrableSystem* system, double dt) = 0;
 };
 
 }  // namespace integration

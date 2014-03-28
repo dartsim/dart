@@ -53,12 +53,13 @@ public:
   virtual ~RK4Integrator();
 
   // Documentation inherited
-  virtual void integrate(IntegrableSystem* _system, double _dt) const;
+  virtual void integrate(IntegrableSystem* _system, double _dt);
 
 private:
   /// \brief Weights
-  mutable Eigen::VectorXd dq1, dq2, dq3, dq4;
-  mutable Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
+  Eigen::VectorXd q1;
+  Eigen::VectorXd dq1, dq2, dq3, dq4;
+  Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
 };
 
 }  // namespace integration

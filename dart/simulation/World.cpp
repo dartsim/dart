@@ -142,7 +142,16 @@ Eigen::VectorXd World::getGenVels() const
 //==============================================================================
 Eigen::VectorXd World::getGenAccs() const
 {
+  Eigen::VectorXd genAccs(mIndices.back());
 
+  for (unsigned int i = 0; i < getNumSkeletons(); i++)
+  {
+    int start = mIndices[i];
+    int size = getSkeleton(i)->getNumGenCoords();
+    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
+  }
+
+  return genAccs;
 }
 
 //==============================================================================
