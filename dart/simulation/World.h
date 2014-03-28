@@ -82,12 +82,6 @@ public:
   //--------------------------------------------------------------------------
   // Virtual functions
   //--------------------------------------------------------------------------
-//  virtual Eigen::VectorXd getState() const;
-
-//  virtual void setState(const Eigen::VectorXd &_newState);
-
-//  virtual Eigen::VectorXd evalDeriv();
-
   // Documentation inherited
   virtual void setConfigs(const Eigen::VectorXd& _configs);
 
@@ -95,10 +89,16 @@ public:
   virtual void setGenVels(const Eigen::VectorXd& _genVels);
 
   // Documentation inherited
+  virtual void setGenAccs(const Eigen::VectorXd& _genAccs);
+
+  // Documentation inherited
   virtual Eigen::VectorXd getConfigs() const;
 
   // Documentation inherited
   virtual Eigen::VectorXd getGenVels() const;
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getGenAccs() const;
 
   // Documentation inherited
   virtual void evalAccs();

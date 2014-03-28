@@ -51,16 +51,16 @@ RK4Integrator::~RK4Integrator()
 
 void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) const
 {
-//  // TODO(kasiu): Slow. Needs to be optimized.
-//  Eigen::VectorXd  q = _system->getConfigs();
-//  Eigen::VectorXd dq = _system->getGenVels();
+  // TODO(kasiu): Slow. Needs to be optimized.
+  Eigen::VectorXd  q = _system->getConfigs();
+  Eigen::VectorXd dq = _system->getGenVels();
 
-//  _system->evalAccs();
-////   dq1 = _system->getGenVels();
-////  ddq1 = _system->getAccs();
+  _system->evalAccs();
+//   dq1 = _system->getGenVels();
+//  ddq1 = _system->getAccs();
 
-//  _system->integrateConfigs(0.5 * _dt);
-//  _system->integrateGenVels(0.5 * _dt);
+  _system->integrateConfigs(0.5 * _dt);
+  _system->integrateGenVels(0.5 * _dt);
 
 //   dq2 = _system->getGenVels();
 //  ddq2 = _system->evalAccs();

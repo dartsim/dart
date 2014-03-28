@@ -99,6 +99,17 @@ void World::setGenVels(const Eigen::VectorXd& _genVels)
 }
 
 //==============================================================================
+void World::setGenAccs(const Eigen::VectorXd& _genAccs)
+{
+  for (int i = 0; i < getNumSkeletons(); i++)
+  {
+    int start = mIndices[i];
+    int size  = getSkeleton(i)->getNumGenCoords();
+    getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
+  }
+}
+
+//==============================================================================
 Eigen::VectorXd World::getConfigs() const
 {
   Eigen::VectorXd config(mIndices.back());
@@ -126,6 +137,12 @@ Eigen::VectorXd World::getGenVels() const
   }
 
   return genVels;
+}
+
+//==============================================================================
+Eigen::VectorXd World::getGenAccs() const
+{
+
 }
 
 //==============================================================================
