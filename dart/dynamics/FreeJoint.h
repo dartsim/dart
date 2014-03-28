@@ -75,8 +75,8 @@ protected:
   /// \brief Generalized coordinates
   GenCoord mCoordinate[6];
 
-  /// \brief
-  Eigen::Isometry3d mR;
+  /// \brief Transformation matrix dependant on generalized coordinates
+  Eigen::Isometry3d mQ;
 
 public:
   // To get byte-aligned Eigen vectors

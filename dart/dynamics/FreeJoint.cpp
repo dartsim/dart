@@ -97,17 +97,17 @@ void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 //==============================================================================
 void FreeJoint::integrateConfigs(double _dt)
 {
-  mR = mR * math::expMap(getGenVels() * _dt);
+  mQ = mQ * math::expMap(getGenVels() * _dt);
 
-  GenCoordSystem::setConfigs(math::logMap(mR));
+  GenCoordSystem::setConfigs(math::logMap(mQ));
 }
 
 //==============================================================================
 void FreeJoint::updateTransform()
 {
-  mR = math::expMap(getConfigs());
+  mQ = math::expMap(getConfigs());
 
-  mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
+  mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
