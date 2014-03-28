@@ -35,28 +35,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/EulerIntegrator.h"
+#include "dart/integration/SemiImplicitEulerIntegrator.h"
 
 namespace dart {
 namespace integration {
 
 //==============================================================================
-EulerIntegrator::EulerIntegrator()
+SemiImplicitEulerIntegrator::SemiImplicitEulerIntegrator()
   : Integrator()
 {
 }
 
 //==============================================================================
-EulerIntegrator::~EulerIntegrator()
+SemiImplicitEulerIntegrator::~SemiImplicitEulerIntegrator()
 {
 }
 
 //==============================================================================
-void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
+void SemiImplicitEulerIntegrator::integrate(IntegrableSystem* _system,
+                                            double _dt)
 {
   _system->evalGenAccs();
-  _system->integrateConfigs(_dt);
   _system->integrateGenVels(_dt);
+  _system->integrateConfigs(_dt);
 }
 
 }  // namespace integration

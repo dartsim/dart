@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Kristin Siu <kasiu@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,29 +34,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/EulerIntegrator.h"
+#ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_
+#define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_
+
+#include "dart/integration/Integrator.h"
 
 namespace dart {
 namespace integration {
 
-//==============================================================================
-EulerIntegrator::EulerIntegrator()
-  : Integrator()
+/// \brief class SemiImplicitEulerIntegrator
+class SemiImplicitEulerIntegrator : public Integrator
 {
-}
+public:
+  /// \brief Constructor
+  SemiImplicitEulerIntegrator();
 
-//==============================================================================
-EulerIntegrator::~EulerIntegrator()
-{
-}
+  /// \brief Destructor
+  virtual ~SemiImplicitEulerIntegrator();
 
-//==============================================================================
-void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
-{
-  _system->evalGenAccs();
-  _system->integrateConfigs(_dt);
-  _system->integrateGenVels(_dt);
-}
+  // Documentation inherited
+  virtual void integrate(IntegrableSystem* _system, double _dt);
+};
 
 }  // namespace integration
 }  // namespace dart
+
+#endif  // DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_

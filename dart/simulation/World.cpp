@@ -46,7 +46,7 @@
 #include <string>
 #include <vector>
 
-#include "dart/integration/EulerIntegrator.h"
+#include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintDynamics.h"
@@ -60,7 +60,7 @@ World::World()
     mTime(0.0),
     mTimeStep(0.001),
     mFrame(0),
-    mIntegrator(new integration::EulerIntegrator()),
+    mIntegrator(new integration::SemiImplicitEulerIntegrator()),
     mConstraintHandler(
       new constraint::ConstraintDynamics(mSkeletons, mTimeStep)) {
   mIndices.push_back(0);
