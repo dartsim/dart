@@ -82,6 +82,10 @@ void World::setConfigs(const Eigen::VectorXd& _configs)
   {
     int start = mIndices[i];
     int size  = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     getSkeleton(i)->setConfigs(_configs.segment(start, size),
                                false, false, false);
   }
@@ -94,6 +98,10 @@ void World::setGenVels(const Eigen::VectorXd& _genVels)
   {
     int start = mIndices[i];
     int size  = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
   }
 }
@@ -107,6 +115,10 @@ Eigen::VectorXd World::getConfigs() const
   {
     int start = mIndices[i];
     int size = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     config.segment(start, size) = getSkeleton(i)->getConfigs();
   }
 
@@ -122,6 +134,10 @@ Eigen::VectorXd World::getGenVels() const
   {
     int start = mIndices[i];
     int size = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     genVels.segment(start, size) = getSkeleton(i)->getGenVels();
   }
 
@@ -177,6 +193,10 @@ void World::integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
   {
     int start = mIndices[i];
     int size  = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
     getSkeleton(i)->integrateConfigs(_dt);
   }
@@ -189,6 +209,10 @@ void World::integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
   {
     int start = mIndices[i];
     int size  = getSkeleton(i)->getNumGenCoords();
+
+    if (size == 0 || !mSkeletons[i]->isMobile())
+      continue;
+
     getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
     getSkeleton(i)->integrateGenVels(_dt);
   }
