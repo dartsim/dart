@@ -61,6 +61,7 @@ Skeleton::Skeleton(const std::string& _name)
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
     mIsMobile(true),
+    mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
     mIsAugMassMatrixDirty(true),
     mIsInvMassMatrixDirty(true),
@@ -312,6 +313,24 @@ Eigen::VectorXd Skeleton::getState() const
 }
 
 //==============================================================================
+void Skeleton::integrateConfigs(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
+
+  computeForwardKinematics(true, false, false);
+}
+
+//==============================================================================
+void Skeleton::integrateGenVels(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
+
+  computeForwardKinematics(false, true, false);
+}
+
+//==============================================================================
 void Skeleton::computeForwardKinematics(bool _updateTransforms,
                                         bool _updateVels,
                                         bool _updateAccs)
@@ -344,15 +363,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
     }
   }
 
-  // TODO(JS): This will be moved to forward dynamics and hybrid dynamics
-  //           routine
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
-
-    // TODO(JS):
+  mIsArticulatedInertiaDirty = true;
   mIsMassMatrixDirty = true;
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
@@ -363,7 +374,6 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
   mIsExternalForceVectorDirty = true;
 //  mIsDampingForceVectorDirty = true;
 
-    // TODO(JS):
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
@@ -546,6 +556,17 @@ void Skeleton::updateInvMassMatrix() {
 
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getGenForces();
+
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArticulatedInertia(mTimeStep);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
@@ -746,20 +767,38 @@ void Skeleton::clearContactForces() {
   }
 }
 
-void Skeleton::computeForwardDynamics() {
+//==============================================================================
+void Skeleton::computeForwardDynamics()
+{
   // Skip immobile or 0-dof skeleton
   if (!isMobile() || getNumGenCoords() == 0)
     return;
 
   // Backward recursion
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
-    (*it)->updateBiasForce(mTimeStep, mGravity);
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArticulatedInertia(mTimeStep);
+      (*it)->updateBiasForce(mTimeStep, mGravity);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateBiasForce(mTimeStep, mGravity);
+    }
   }
 
   // Forward recursion
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->update_ddq();
     (*it)->update_F_fs();
   }

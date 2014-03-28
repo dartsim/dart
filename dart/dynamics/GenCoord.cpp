@@ -214,6 +214,18 @@ double GenCoord::getForceDeriv() const
 }
 
 //==============================================================================
+void GenCoord::integrateConfig(double _dt)
+{
+  mConfig += mVel * _dt;
+}
+
+//==============================================================================
+void GenCoord::integrateVel(double _dt)
+{
+  mVel += mAcc * _dt;
+}
+
+//==============================================================================
 void GenCoord::setConfig(double _config)
 {
   assert(_config == _config);

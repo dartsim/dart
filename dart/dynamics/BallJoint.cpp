@@ -46,13 +46,25 @@ namespace dynamics {
 
 //==============================================================================
 BallJoint::BallJoint(const std::string& _name)
-  : Joint(_name)
+  : Joint(_name),
+    mR(Eigen::Isometry3d::Identity())
 {
   mGenCoords.push_back(&mCoordinate[0]);
   mGenCoords.push_back(&mCoordinate[1]);
   mGenCoords.push_back(&mCoordinate[2]);
 
-  mS  = Eigen::Matrix<double, 6, 3>::Zero();
+  mS = Eigen::Matrix<double, 6, 3>::Zero();
+  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+  J0[0] = 1.0;
+  J1[1] = 1.0;
+  J2[2] = 1.0;
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  assert(!math::isNan(mS));
+
   mdS = Eigen::Matrix<double, 6, 3>::Zero();
 
   mSpringStiffness.resize(3, 0.0);
@@ -66,27 +78,16 @@ BallJoint::~BallJoint()
 }
 
 //==============================================================================
-void BallJoint::updateTransform()
+void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
-  mT = mT_ParentBodyToJoint
-       * math::expAngular(getConfigs())
-       * mT_ChildBodyToJoint.inverse();
+  Joint::setTransformFromChildBodyNode(_T);
 
-  assert(math::verifyTransform(mT));
-}
-
-//==============================================================================
-void BallJoint::updateJacobian()
-{
-  Eigen::Matrix3d J = math::expMapJac(getConfigs());
-
-  Eigen::Vector6d J0;
-  Eigen::Vector6d J1;
-  Eigen::Vector6d J2;
-
-  J0 << J(0, 0), J(0, 1), J(0, 2), 0, 0, 0;
-  J1 << J(1, 0), J(1, 1), J(1, 2), 0, 0, 0;
-  J2 << J(2, 0), J(2, 1), J(2, 2), 0, 0, 0;
+  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+  J0[0] = 1.0;
+  J1[1] = 1.0;
+  J2[2] = 1.0;
 
   mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
   mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
@@ -96,23 +97,34 @@ void BallJoint::updateJacobian()
 }
 
 //==============================================================================
+void BallJoint::integrateConfigs(double _dt)
+{
+  mR.linear() = mR.linear() * math::expMapRot(getGenVels() * _dt);
+
+  GenCoordSystem::setConfigs(math::logMap(mR.linear()));
+}
+
+//==============================================================================
+void BallJoint::updateTransform()
+{
+  mR.linear() = math::expMapRot(getConfigs());
+
+  mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
+
+  assert(math::verifyTransform(mT));
+}
+
+//==============================================================================
+void BallJoint::updateJacobian()
+{
+  // Jacobian is constant
+}
+
+//==============================================================================
 void BallJoint::updateJacobianTimeDeriv()
 {
-  Eigen::Matrix3d dJ = math::expMapJacDot(getConfigs(), getGenVels());
-
-  Eigen::Vector6d dJ0;
-  Eigen::Vector6d dJ1;
-  Eigen::Vector6d dJ2;
-
-  dJ0 << dJ(0, 0), dJ(0, 1), dJ(0, 2), 0, 0, 0;
-  dJ1 << dJ(1, 0), dJ(1, 1), dJ(1, 2), 0, 0, 0;
-  dJ2 << dJ(2, 0), dJ(2, 1), dJ(2, 2), 0, 0, 0;
-
-  mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
-  mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
-  mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
-
-  assert(!math::isNan(mdS));
+  // Time derivative of Jacobian is constant
+  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
 }
 
 }  // namespace dynamics

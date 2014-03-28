@@ -63,6 +63,9 @@ public:
   /// \brief Friend class declaration
   friend class BodyNode;
 
+  /// \brief Friend class declaration
+  friend class Skeleton;
+
 public:
   /// \brief Constructor
   explicit Joint(const std::string& _name = "Noname Joint");
@@ -85,10 +88,10 @@ public:
   int getSkeletonIndex() const;
 
   /// \brief Set transformation from parent body node to this joint
-  void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
   /// \brief Set transformation from child body node to this joint
-  void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
   /// \brief Get transformation from parent body node to this joint
   const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
@@ -166,12 +169,12 @@ public:
   /// \brief Set single generalized acceleration
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAcc(size_t _idx, double _genAcc,
-                         bool _updateAccs = true);
+                         bool _updateAccs );
 
   /// \brief Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
-                          bool _updateAccs = true);
+                          bool _updateAccs);
 
   //----------------------------------------------------------------------------
   /// \brief Get potential energy.

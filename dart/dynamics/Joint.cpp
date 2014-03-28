@@ -179,6 +179,7 @@ void Joint::setConfigs(const Eigen::VectorXd& _configs,
 
   if (mSkeleton)
   {
+    if (_updateTransforms || _updateVels || _updateAccs)
     // TODO(JS): It would be good if we know whether the skeleton is initialzed.
     mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
                                         _updateAccs);

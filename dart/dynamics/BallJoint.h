@@ -57,7 +57,13 @@ public:
   /// \brief Destructor
   virtual ~BallJoint();
 
+  // Documentation inherited
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+
 protected:
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
   // Documentation inherited
   virtual void updateTransform();
 
@@ -70,6 +76,9 @@ protected:
 protected:
   /// \brief Generalized coordinates
   GenCoord mCoordinate[3];
+
+  /// \brief Rotation matrix
+  Eigen::Isometry3d mR;
 
 public:
   // To get byte-aligned Eigen vectors

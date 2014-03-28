@@ -168,6 +168,14 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getForceDeriv() const;
 
+  //------------------------------- Integration --------------------------------
+  /// \brief Integrate configuration with generalized velocity and _dt
+  void integrateConfig(double _dt);
+
+  /// \brief Integrate generalized velocity with generalized acceleration and
+  /// _dt
+  void integrateVel(double _dt);
+
 protected:
   /// \brief Name
   std::string mName;

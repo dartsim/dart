@@ -55,7 +55,16 @@ FreeJoint::FreeJoint(const std::string& _name)
   mGenCoords.push_back(&mCoordinate[4]);
   mGenCoords.push_back(&mCoordinate[5]);
 
-  mS  = Eigen::Matrix<double, 6, 6>::Zero();
+  mS = Eigen::Matrix<double, 6, 6>::Zero();
+  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+  mS.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
+  mS.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
+  mS.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
+  assert(!math::isNan(mS));
+
   mdS = Eigen::Matrix<double, 6, 6>::Zero();
 
   mSpringStiffness.resize(6, 0.0);
@@ -69,20 +78,36 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
+void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+{
+  Joint::setTransformFromChildBodyNode(_T);
+
+  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
+
+  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
+  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
+  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+  mS.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
+  mS.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
+  mS.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
+
+  assert(!math::isNan(mS));
+}
+
+//==============================================================================
+void FreeJoint::integrateConfigs(double _dt)
+{
+  mR = mR * math::expMap(getGenVels() * _dt);
+
+  GenCoordSystem::setConfigs(math::logMap(mR));
+}
+
+//==============================================================================
 void FreeJoint::updateTransform()
 {
-  Eigen::Vector3d q1(mCoordinate[0].getConfig(),
-                     mCoordinate[1].getConfig(),
-                     mCoordinate[2].getConfig());
+  mR = math::expMap(getConfigs());
 
-  Eigen::Vector3d q2(mCoordinate[3].getConfig(),
-                     mCoordinate[4].getConfig(),
-                     mCoordinate[5].getConfig());
-
-  mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(q2)
-       * math::expAngular(q1)
-       * mT_ChildBodyToJoint.inverse();
+  mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -90,76 +115,14 @@ void FreeJoint::updateTransform()
 //==============================================================================
 void FreeJoint::updateJacobian()
 {
-  Eigen::Vector3d q(mCoordinate[0].getConfig(),
-                    mCoordinate[1].getConfig(),
-                    mCoordinate[2].getConfig());
-
-  Eigen::Matrix3d J = math::expMapJac(q);
-
-  Eigen::Vector6d J0;
-  Eigen::Vector6d J1;
-  Eigen::Vector6d J2;
-  Eigen::Vector6d J3;
-  Eigen::Vector6d J4;
-  Eigen::Vector6d J5;
-
-  J0 << J(0, 0), J(0, 1), J(0, 2), 0, 0, 0;
-  J1 << J(1, 0), J(1, 1), J(1, 2), 0, 0, 0;
-  J2 << J(2, 0), J(2, 1), J(2, 2), 0, 0, 0;
-  J3 << 0, 0, 0, 1, 0, 0;
-  J4 << 0, 0, 0, 0, 1, 0;
-  J5 << 0, 0, 0, 0, 0, 1;
-
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-  mS.col(3) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3);
-  mS.col(4) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4);
-  mS.col(5) = math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5);
-
-  assert(!math::isNan(mS));
+  // Jacobian is constant
 }
 
 //==============================================================================
 void FreeJoint::updateJacobianTimeDeriv()
 {
-  Eigen::Vector3d q(mCoordinate[0].getConfig(),
-                    mCoordinate[1].getConfig(),
-                    mCoordinate[2].getConfig());
-  Eigen::Vector3d dq(mCoordinate[0].getVel(),
-                     mCoordinate[1].getVel(),
-                     mCoordinate[2].getVel());
-
-  Eigen::Matrix3d dJ = math::expMapJacDot(q, dq);
-
-  Eigen::Vector6d dJ0;
-  Eigen::Vector6d dJ1;
-  Eigen::Vector6d dJ2;
-  Eigen::Vector6d J3;
-  Eigen::Vector6d J4;
-  Eigen::Vector6d J5;
-
-  dJ0 << dJ(0, 0), dJ(0, 1), dJ(0, 2), 0, 0, 0;
-  dJ1 << dJ(1, 0), dJ(1, 1), dJ(1, 2), 0, 0, 0;
-  dJ2 << dJ(2, 0), dJ(2, 1), dJ(2, 2), 0, 0, 0;
-  J3 << 0, 0, 0, 1, 0, 0;
-  J4 << 0, 0, 0, 0, 1, 0;
-  J5 << 0, 0, 0, 0, 0, 1;
-
-  mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
-  mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
-  mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
-  mdS.col(3) =
-      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
-                math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J3));
-  mdS.col(4) =
-      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
-                math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J4));
-  mdS.col(5) =
-      -math::ad(mS.leftCols<3>() * getGenVels().head<3>(),
-                math::AdT(mT_ChildBodyToJoint * math::expAngular(-q), J5));
-
-  assert(!math::isNan(mdS));
+  // Time derivative of Jacobian is constant
+  assert(mdS == Eigen::Matrix6d::Zero());
 }
 
 }  // namespace dynamics

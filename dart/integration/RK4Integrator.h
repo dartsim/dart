@@ -42,21 +42,23 @@
 namespace dart {
 namespace integration {
 
-/// \brief
-class RK4Integrator : public Integrator {
+/// \brief class RK4Integrator
+class RK4Integrator : public Integrator
+{
 public:
-  /// \brief Default constructor.
-  RK4Integrator() {}
+  /// \brief Constructor
+  RK4Integrator();
 
-  /// \brief Default destructor.
-  virtual ~RK4Integrator() {}
+  /// \brief Destructor
+  virtual ~RK4Integrator();
 
-  // Documentation inherited.
+  // Documentation inherited
   virtual void integrate(IntegrableSystem* _system, double _dt) const;
 
 private:
-  /// \brief Weights.
-  mutable Eigen::VectorXd k1, k2, k3, k4;
+  /// \brief Weights
+  mutable Eigen::VectorXd dq1, dq2, dq3, dq4;
+  mutable Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
 };
 
 }  // namespace integration

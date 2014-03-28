@@ -374,12 +374,14 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
       }
       VectorXd x = VectorXd::Zero(dof * 2);
       x << q, dq;
-      skeleton->setState(x, true, true, true);
+      skeleton->setState(x, true, true, false);
       skeleton->setGenAccs(ddq, true);
 
-      // Set x(k+1) = x(k) + dt * dx(k)
-      VectorXd qNext  = q  + timeStep * dq;
-      VectorXd dqNext = dq + timeStep * ddq;
+      // Integrate state
+      skeleton->integrateConfigs(timeStep);
+      skeleton->integrateGenVels(timeStep);
+      VectorXd qNext  = skeleton->getConfigs();
+      VectorXd dqNext = skeleton->getGenVels();
       VectorXd xNext  = VectorXd::Zero(dof * 2);
       xNext << qNext, dqNext;
 
@@ -390,9 +392,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         int nDepGenCoord = bn->getNumDependentGenCoords();
 
         // Calculation of velocities and Jacobian at k-th time step
-        skeleton->setState(x, true, true, true);
+        skeleton->setState(x, true, true, false);
         skeleton->setGenAccs(ddq, true);
-        skeleton->computeInverseDynamics(false, false);
         Vector6d vBody1  = bn->getBodyVelocity();
         Vector6d vWorld1 = bn->getWorldVelocity();
         MatrixXd JBody1  = bn->getBodyJacobian();
@@ -406,9 +407,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         MatrixXd dJWorld1 = bn->getWorldJacobianTimeDeriv();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->setState(xNext, true, true, true);
+        skeleton->setState(xNext, true, true, false);
         skeleton->setGenAccs(ddq, true);
-        skeleton->computeInverseDynamics(false, false);
         Vector6d vBody2  = bn->getBodyVelocity();
         Vector6d vWorld2 = bn->getWorldVelocity();
         MatrixXd JBody2  = bn->getBodyJacobian();
@@ -572,8 +572,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = -1e+1;
-          double ubRP = +1e+1;
+          double lbRP = joint->getGenCoord(l)->getConfigMin();
+          double ubRP = joint->getGenCoord(l)->getConfigMax();
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }
@@ -771,8 +771,8 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = -1e+1;
-          double ubRP = +1e+1;
+          double lbRP = joint->getGenCoord(l)->getConfigMin();
+          double ubRP = joint->getGenCoord(l)->getConfigMax();
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }

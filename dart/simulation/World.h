@@ -73,22 +73,41 @@ public:
   //--------------------------------------------------------------------------
   // Constructor and Destructor
   //--------------------------------------------------------------------------
-  /// \brief Constructor.
+  /// \brief Constructor
   World();
 
-  /// \brief Destructor.
+  /// \brief Destructor
   virtual ~World();
 
   //--------------------------------------------------------------------------
   // Virtual functions
   //--------------------------------------------------------------------------
-  virtual Eigen::VectorXd getState() const;
+//  virtual Eigen::VectorXd getState() const;
 
-  virtual void setState(const Eigen::VectorXd &_newState);
+//  virtual void setState(const Eigen::VectorXd &_newState);
 
-  virtual void setControlInput();
+//  virtual Eigen::VectorXd evalDeriv();
 
-  virtual Eigen::VectorXd evalDeriv();
+  // Documentation inherited
+  virtual void setConfigs(const Eigen::VectorXd& _configs);
+
+  // Documentation inherited
+  virtual void setGenVels(const Eigen::VectorXd& _genVels);
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getConfigs() const;
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getGenVels() const;
+
+  // Documentation inherited
+  virtual void evalAccs();
+
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void integrateGenVels(double _dt);
 
   //--------------------------------------------------------------------------
   // Simulation

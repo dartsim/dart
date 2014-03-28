@@ -36,29 +36,57 @@
 
 #include "dart/integration/RK4Integrator.h"
 
+#include "dart/math/MathTypes.h"
+
 namespace dart {
 namespace integration {
 
-// TODO(kasiu): Slow. Needs to be optimized.
-void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) const {
-  // calculates the four weighted deltas
-  Eigen::VectorXd deriv = _system->evalDeriv();
-  Eigen::VectorXd x = _system->getState();
-  k1 = deriv * _dt;
+RK4Integrator::RK4Integrator()
+{
+}
 
-  _system->setState(x + (k1 * 0.5));
-  deriv = _system->evalDeriv();
-  k2 = deriv * _dt;
+RK4Integrator::~RK4Integrator()
+{
+}
 
-  _system->setState(x + (k2 * 0.5));
-  deriv = _system->evalDeriv();
-  k3 = deriv * _dt;
+void RK4Integrator::integrate(IntegrableSystem* _system, double _dt) const
+{
+//  // TODO(kasiu): Slow. Needs to be optimized.
+//  Eigen::VectorXd  q = _system->getConfigs();
+//  Eigen::VectorXd dq = _system->getGenVels();
 
-  _system->setState(x + k3);
-  deriv = _system->evalDeriv();
-  k4 = deriv * _dt;
+//  _system->evalAccs();
+////   dq1 = _system->getGenVels();
+////  ddq1 = _system->getAccs();
 
-  _system->setState(x + ((1.0/6.0) * (k1 + (2.0 * k2) + (2.0 * k3) + k4)));
+//  _system->integrateConfigs(0.5 * _dt);
+//  _system->integrateGenVels(0.5 * _dt);
+
+//   dq2 = _system->getGenVels();
+//  ddq2 = _system->evalAccs();
+
+//  _system->setConfigs( q);
+//  _system->setGenVels(dq);
+//  _system->integrateConfigs( dq2, 0.5 * _dt);
+//  _system->integrateGenVels(ddq2, 0.5 * _dt);
+
+//   dq3 = _system->getGenVels();
+//  ddq3 = _system->evalAccs();
+
+//  _system->setConfigs( q);
+//  _system->setGenVels(dq);
+//  _system->integrateConfigs( dq3, _dt);
+//  _system->integrateGenVels(ddq3, _dt);
+
+//   dq4 = _system->getGenVels();
+//  ddq4 = _system->evalAccs();
+
+//  _system->setConfigs( q);
+//  _system->setGenVels(dq);
+//  _system->integrateConfigs(
+//        DART_1_6 * ( dq1 + (2.0 *  dq2) + (2.0 *  dq3) +  dq4), _dt);
+//  _system->integrateGenVels(
+//        DART_1_6 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
 }
 
 }  // namespace integration

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Kristin Siu <kasiu@gatech.edu>
+ * Author(s): Kristin Siu <kasiu@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -39,17 +40,23 @@
 namespace dart {
 namespace integration {
 
+//==============================================================================
 EulerIntegrator::EulerIntegrator()
-    : Integrator() {
+  : Integrator()
+{
 }
 
-EulerIntegrator::~EulerIntegrator() {
+//==============================================================================
+EulerIntegrator::~EulerIntegrator()
+{
 }
 
-void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt) const {
-    // Explicit Euler Method
-    Eigen::VectorXd deriv = _system->evalDeriv();
-    _system->setState(_system->getState() + (_dt * deriv));
+//==============================================================================
+void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt) const
+{
+  _system->evalAccs();
+  _system->integrateConfigs(_dt);
+  _system->integrateGenVels(_dt);
 }
 
 }  // namespace integration
