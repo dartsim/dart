@@ -62,7 +62,7 @@ public:
   /// \brief Set generalized velocities
   virtual void setGenVels(const Eigen::VectorXd& _genVels) = 0;
 
-  /// \brief Set generalized velocities
+  /// \brief Set generalized accelerations
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs) = 0;
 
   /// \brief Get configurations
@@ -71,16 +71,16 @@ public:
   /// \brief Get generalized velocities
   virtual Eigen::VectorXd getGenVels() const = 0;
 
-  /// \brief Get generalized velocities
+  /// \brief Get generalized accelerations
   virtual Eigen::VectorXd getGenAccs() const = 0;
 
-  /// \brief Evaulate generalized acceleration
+  /// \brief Evaulate generalized accelerations and store them in the system
   virtual void evalAccs() = 0;
 
-  /// \brief Integrate configruations
+  /// \brief Integrate configruations and store them in the system
   virtual void integrateConfigs(double _dt) = 0;
 
-  /// \brief Integrate generalized velocities
+  /// \brief Integrate generalized velocities and store them in the system
   virtual void integrateGenVels(double _dt) = 0;
 };
 
