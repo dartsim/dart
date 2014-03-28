@@ -19,7 +19,7 @@
 1. Fixed self collision bug
   * [Issue #125](https://github.com/dartsim/dart/issues/125)
 1. Fixed incorrect integration of BallJoint and FreeJoint
-  * [Issue #122](https://github.com/dartsim/dart/issues/125)
+  * [Issue #122](https://github.com/dartsim/dart/issues/122)
   * [Pull request #168](https://github.com/dartsim/dart/pull/168)
 
 ### Version 3.0 (2013-11-04)
