@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Kristin Siu <kasiu@gatech.edu>
+ * Author(s): Kristin Siu <kasiu@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -56,9 +57,13 @@ public:
   virtual void integrate(IntegrableSystem* _system, double _dt);
 
 private:
-  /// \brief Weights
+  /// \brief Initial configurations
   Eigen::VectorXd q1;
+
+  /// \brief Chache data for generalized velocities
   Eigen::VectorXd dq1, dq2, dq3, dq4;
+
+  /// \brief Chache data for generalized accelerations
   Eigen::VectorXd ddq1, ddq2, ddq3, ddq4;
 };
 

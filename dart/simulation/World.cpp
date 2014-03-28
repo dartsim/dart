@@ -99,17 +99,6 @@ void World::setGenVels(const Eigen::VectorXd& _genVels)
 }
 
 //==============================================================================
-void World::setGenAccs(const Eigen::VectorXd& _genAccs)
-{
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
-    getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
-  }
-}
-
-//==============================================================================
 Eigen::VectorXd World::getConfigs() const
 {
   Eigen::VectorXd config(mIndices.back());
@@ -140,22 +129,7 @@ Eigen::VectorXd World::getGenVels() const
 }
 
 //==============================================================================
-Eigen::VectorXd World::getGenAccs() const
-{
-  Eigen::VectorXd genAccs(mIndices.back());
-
-  for (unsigned int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
-    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
-  }
-
-  return genAccs;
-}
-
-//==============================================================================
-void World::evalGenAccs()
+Eigen::VectorXd World::evalGenAccs()
 {
   // compute constraint (contact/contact, joint limit) forces
   mConstraintHandler->computeConstraintForces();
@@ -178,20 +152,46 @@ void World::evalGenAccs()
   {
     (*it)->computeForwardDynamics();
   }
+
+  // compute derivatives for integration
+  Eigen::VectorXd genAccs = Eigen::VectorXd::Zero(mIndices.back());
+  for (unsigned int i = 0; i < getNumSkeletons(); i++) {
+    // skip immobile objects in forward simulation
+    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
+      continue;
+
+    int start = mIndices[i];
+    int size = getSkeleton(i)->getNumGenCoords();
+
+    // set accelerations
+    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
+  }
+
+  return genAccs;
 }
 
 //==============================================================================
-void World::integrateConfigs(double _dt)
+void World::integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
 {
   for (int i = 0; i < getNumSkeletons(); i++)
+  {
+    int start = mIndices[i];
+    int size  = getSkeleton(i)->getNumGenCoords();
+    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
     getSkeleton(i)->integrateConfigs(_dt);
+  }
 }
 
 //==============================================================================
-void World::integrateGenVels(double _dt)
+void World::integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
 {
   for (int i = 0; i < getNumSkeletons(); i++)
+  {
+    int start = mIndices[i];
+    int size  = getSkeleton(i)->getNumGenCoords();
+    getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
     getSkeleton(i)->integrateGenVels(_dt);
+  }
 }
 
 void World::setTimeStep(double _timeStep) {

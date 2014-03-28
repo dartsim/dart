@@ -89,25 +89,19 @@ public:
   virtual void setGenVels(const Eigen::VectorXd& _genVels);
 
   // Documentation inherited
-  virtual void setGenAccs(const Eigen::VectorXd& _genAccs);
-
-  // Documentation inherited
   virtual Eigen::VectorXd getConfigs() const;
 
   // Documentation inherited
   virtual Eigen::VectorXd getGenVels() const;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getGenAccs() const;
+  virtual Eigen::VectorXd evalGenAccs();
 
   // Documentation inherited
-  virtual void evalGenAccs();
+  virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt);
 
   // Documentation inherited
-  virtual void integrateConfigs(double _dt);
-
-  // Documentation inherited
-  virtual void integrateGenVels(double _dt);
+  virtual void integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt);
 
   //--------------------------------------------------------------------------
   // Simulation

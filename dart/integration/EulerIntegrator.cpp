@@ -54,9 +54,8 @@ EulerIntegrator::~EulerIntegrator()
 //==============================================================================
 void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
 {
-  _system->evalGenAccs();
-  _system->integrateConfigs(_dt);
-  _system->integrateGenVels(_dt);
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
 }
 
 }  // namespace integration
