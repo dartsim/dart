@@ -32,6 +32,12 @@
   + virtual void setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs = true)
   + void computeForwardKinematics(bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
 
+1. **dart/utils/SkelParser.h**
+  + static dynamics::Skeleton* readSkeleton(const std::string& _filename)
+
+1. **dart/utils/SoftSkelParser.h**
+  + static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename)
+
 ### Deletions
 
 1. **dart/dynamics/Skeleton.h**
