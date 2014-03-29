@@ -39,11 +39,11 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"
-#include "dart/constraint/BallJointConstraint.h"
-#include "dart/constraint/RevoluteJointConstraint.h"
+#include "dart/constraint/OldBallJointConstraint.h"
+#include "dart/constraint/OldRevoluteJointConstraint.h"
 
 
 using namespace dart;
@@ -162,12 +162,12 @@ void MyWindow::addWeldConstraint() {
     BodyNode *bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
     Eigen::Vector3d offset(0.0, 0.0, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
-    BallJointConstraint *bj = new BallJointConstraint(bd, offset, target);
+    OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
     mWorld->getConstraintHandler()->addConstraint(bj);
 
     Eigen::Vector3d axis1(0.0, 1.0, 0.0);
     Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-    RevoluteJointConstraint *rj = new RevoluteJointConstraint(bd, axis1, globalAxis1);
+    OldRevoluteJointConstraint *rj = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
       mWorld->getConstraintHandler()->addConstraint(rj);
 
     mHarnessOn = true;

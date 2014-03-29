@@ -59,7 +59,7 @@ namespace dynamics {
 class Skeleton;
 }  // namespace dynamics
 namespace constraint {
-class ConstraintDynamics;
+class OldConstraintDynamics;
 }  // namespace constraint
 }  // namespace dart
 
@@ -170,7 +170,7 @@ public:
   // Constraint
   //--------------------------------------------------------------------------
   /// \brief Get the constraint handler
-  constraint::ConstraintDynamics* getConstraintHandler() const;
+  constraint::OldConstraintDynamics* getConstraintHandler() const;
 
 protected:
   /// \brief Skeletones in this world
@@ -198,7 +198,7 @@ protected:
   integration::Integrator* mIntegrator;
 
   /// \brief The constraint handler
-  constraint::ConstraintDynamics* mConstraintHandler;
+  constraint::OldConstraintDynamics* mConstraintHandler;
 
 };
 

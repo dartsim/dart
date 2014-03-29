@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/SoftConstraintDynamics.h"
+#include "dart/constraint/OldSoftConstraintDynamics.h"
 
 #include <vector>
 
@@ -48,22 +48,22 @@
 namespace dart {
 namespace constraint {
 
-SoftConstraintDynamics::SoftConstraintDynamics(
+OldSoftConstraintDynamics::OldSoftConstraintDynamics(
     const std::vector<dynamics::Skeleton*>& _skeletons,
     double _dt,
     double _mu,
     int _d,
     bool _useODE,
     collision::CollisionDetector* _collisionDetector)
-  : ConstraintDynamics(_skeletons, _dt, _mu, _d, _useODE, _collisionDetector)
+  : OldConstraintDynamics(_skeletons, _dt, _mu, _d, _useODE, _collisionDetector)
 {
 }
 
-SoftConstraintDynamics::~SoftConstraintDynamics()
+OldSoftConstraintDynamics::~OldSoftConstraintDynamics()
 {
 }
 
-void SoftConstraintDynamics::applySolutionODE()
+void OldSoftConstraintDynamics::applySolutionODE()
 {
   Eigen::VectorXd contactForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
   Eigen::VectorXd jointLimitForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
@@ -169,7 +169,7 @@ void SoftConstraintDynamics::applySolutionODE()
   }
 }
 
-void SoftConstraintDynamics::updateNBMatricesODE()
+void OldSoftConstraintDynamics::updateNBMatricesODE()
 {
   mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
   mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
@@ -209,7 +209,7 @@ void SoftConstraintDynamics::updateNBMatricesODE()
       }
       else
       {
-        J21t = ConstraintDynamics::getJacobian(
+        J21t = OldConstraintDynamics::getJacobian(
                  cnt.collisionNode1->getBodyNode(), p);
       }
 
@@ -240,7 +240,7 @@ void SoftConstraintDynamics::updateNBMatricesODE()
       }
       else
       {
-        J12t = ConstraintDynamics::getJacobian(
+        J12t = OldConstraintDynamics::getJacobian(
                  cnt.collisionNode2->getBodyNode(),  p);
       }
 
@@ -261,7 +261,7 @@ void SoftConstraintDynamics::updateNBMatricesODE()
   }
 }
 
-Eigen::MatrixXd SoftConstraintDynamics::getJacobian(
+Eigen::MatrixXd OldSoftConstraintDynamics::getJacobian(
     dynamics::PointMass* pointMass)
 {
   dynamics::Skeleton* skel = pointMass->getParentSoftBodyNode()->getSkeleton();

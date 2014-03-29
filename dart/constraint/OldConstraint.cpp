@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/OldConstraint.h"
 
 #include <vector>
 

@@ -48,14 +48,14 @@ class BodyNode;
 class Skeleton;
 }  // namespace dynamics
 namespace constraint {
-class ConstraintDynamics;
+class OldConstraintDynamics;
 }  // namespace constraint
 }  // namespace dart
 
 class Controller {
 public:
   Controller(dart::dynamics::Skeleton*_skel,
-             dart::constraint::ConstraintDynamics* _collisionHandle,
+             dart::constraint::OldConstraintDynamics* _collisionHandle,
              double _t);
   virtual ~Controller();
 
@@ -77,7 +77,7 @@ protected:
   Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum,
                                     Eigen::VectorXd _controlledAxis);
   dart::dynamics::Skeleton* mSkel;
-  dart::constraint::ConstraintDynamics* mCollisionHandle;
+  dart::constraint::OldConstraintDynamics* mCollisionHandle;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;

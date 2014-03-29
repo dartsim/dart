@@ -1,4 +1,4 @@
-#include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/OldBallJointConstraint.h"
 
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
@@ -10,7 +10,7 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2) {
+OldBallJointConstraint::OldBallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2) {
     mBodyNode1 = _body1;
     mBodyNode2 = _body2;
     mOffset1 = _offset1;
@@ -20,7 +20,7 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::B
     mJ2 = Eigen::MatrixXd::Zero(mNumRows, mBodyNode2->getSkeleton()->getNumGenCoords());
 }
 
-BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _jointPosition) {
+OldBallJointConstraint::OldBallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _jointPosition) {
     mBodyNode1 = _body1;
     mBodyNode2 = _body2;
     mOffset1 = mBodyNode1->getWorldTransform().inverse() * _jointPosition;
@@ -30,7 +30,7 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::B
     mJ2 = Eigen::MatrixXd::Zero(mNumRows, mBodyNode2->getSkeleton()->getNumGenCoords());
 }
 
-    BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target) {
+    OldBallJointConstraint::OldBallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target) {
     mBodyNode1 = _body1;
     mBodyNode2 = NULL;
     mOffset1 = _offset1;
@@ -39,10 +39,10 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode *_body1, dynamics::B
     mJ1 = Eigen::MatrixXd::Zero(mNumRows, mBodyNode1->getSkeleton()->getNumGenCoords());
 }
 
-BallJointConstraint::~BallJointConstraint() {
+OldBallJointConstraint::~OldBallJointConstraint() {
 }
 
-void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
+void OldBallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
     _J1.block(_rowIndex, 0, 3, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
     Eigen::Vector3d worldP1 = mBodyNode1->getWorldTransform() * mOffset1;
@@ -51,7 +51,7 @@ void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd 
     _CDot.segment(_rowIndex, 3) = mJ1 * qDot1;
 }
  
-void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
+void OldBallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
     _J2.block(_rowIndex, 0, 3, mBodyNode2->getSkeleton()->getNumGenCoords()).setZero();
     _J1.block(_rowIndex, 0, 3, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
@@ -66,7 +66,7 @@ void BallJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd 
     _CDot.segment(_rowIndex, 3) = mJ1 * qDot1 + mJ2 * qDot2;
 }
  
-void BallJointConstraint::getJacobian() {
+void OldBallJointConstraint::getJacobian() {
     Eigen::Vector3d offsetWorld = mBodyNode1->getWorldTransform().rotation() * mOffset1;
     Eigen::MatrixXd JBody1 = mBodyNode1->getWorldJacobian(offsetWorld).bottomRows<3>();
     for(int i = 0; i < mBodyNode1->getNumDependentGenCoords(); i++) {

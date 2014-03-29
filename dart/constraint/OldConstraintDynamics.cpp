@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 
 #include <vector>
 
@@ -55,7 +55,7 @@
 namespace dart {
 namespace constraint {
 
-ConstraintDynamics::ConstraintDynamics(
+OldConstraintDynamics::OldConstraintDynamics(
     const std::vector<dynamics::Skeleton*>& _skeletons,
     double _dt,
     double _mu,
@@ -79,12 +79,12 @@ ConstraintDynamics::ConstraintDynamics(
   initialize();
 }
 
-ConstraintDynamics::~ConstraintDynamics()
+OldConstraintDynamics::~OldConstraintDynamics()
 {
   delete mCollisionDetector;
 }
 
-void ConstraintDynamics::computeConstraintForces()
+void OldConstraintDynamics::computeConstraintForces()
 {
   //            static Timer t1("t1");
 
@@ -182,7 +182,7 @@ void ConstraintDynamics::computeConstraintForces()
   //            t1.printScreen();
 }
 
-void ConstraintDynamics::addConstraint(Constraint *_constr)
+void OldConstraintDynamics::addConstraint(OldConstraint *_constr)
 {
   // create an entry in the mSkeletonIDMap
   Eigen::Vector2i id(-1, -1);
@@ -226,7 +226,7 @@ void ConstraintDynamics::addConstraint(Constraint *_constr)
   mTauHat = Eigen::VectorXd(mTotalRows);
 }
 
-void ConstraintDynamics::deleteConstraint(Constraint* _constr)
+void OldConstraintDynamics::deleteConstraint(OldConstraint* _constr)
 {
   int index = -1;
   for (int i = 0; i < mConstraints.size(); i++) {
@@ -258,7 +258,7 @@ void ConstraintDynamics::deleteConstraint(Constraint* _constr)
   delete _constr;
 }
 
-void dart::constraint::ConstraintDynamics::deleteConstraint()
+void dart::constraint::OldConstraintDynamics::deleteConstraint()
 {
   int nConstr = mConstraints.size();
   for (int i = nConstr - 1; i >= 0; i--) {
@@ -266,7 +266,7 @@ void dart::constraint::ConstraintDynamics::deleteConstraint()
   }
 }
 
-void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _skeleton)
+void OldConstraintDynamics::addSkeleton(dynamics::Skeleton* _skeleton)
 {
   assert(_skeleton != NULL && "Invalid skeleton.");
 
@@ -315,7 +315,7 @@ void ConstraintDynamics::addSkeleton(dynamics::Skeleton* _skeleton)
   mZ = Eigen::MatrixXd(N, N);
 }
 
-void ConstraintDynamics::removeSkeleton(dynamics::Skeleton* _skeleton)
+void OldConstraintDynamics::removeSkeleton(dynamics::Skeleton* _skeleton)
 {
   assert(_skeleton != NULL && "Invalid skeleton.");
 
@@ -381,17 +381,17 @@ void ConstraintDynamics::removeSkeleton(dynamics::Skeleton* _skeleton)
                    mSkeletons.end());
 }
 
-void ConstraintDynamics::setTimeStep(double _timeStep)
+void OldConstraintDynamics::setTimeStep(double _timeStep)
 {
   mDt = _timeStep;
 }
 
-double ConstraintDynamics::getTimeStep() const
+double OldConstraintDynamics::getTimeStep() const
 {
   return mDt;
 }
 
-void ConstraintDynamics::setCollisionDetector(
+void OldConstraintDynamics::setCollisionDetector(
     collision::CollisionDetector* _collisionDetector)
 {
   // TODO(JS): If there are collision objects in the old collision detector,
@@ -410,33 +410,33 @@ void ConstraintDynamics::setCollisionDetector(
   initialize();
 }
 
-Eigen::VectorXd ConstraintDynamics::getTotalConstraintForce(
+Eigen::VectorXd OldConstraintDynamics::getTotalConstraintForce(
     int _skelIndex) const
 {
   return mTotalConstrForces[_skelIndex];
 }
 
-Eigen::VectorXd ConstraintDynamics::getContactForce(int _skelIndex) const
+Eigen::VectorXd OldConstraintDynamics::getContactForce(int _skelIndex) const
 {
   return mContactForces[_skelIndex];
 }
 
-collision::CollisionDetector* ConstraintDynamics::getCollisionDetector() const
+collision::CollisionDetector* OldConstraintDynamics::getCollisionDetector() const
 {
   return mCollisionDetector;
 }
 
-int ConstraintDynamics::getNumContacts() const
+int OldConstraintDynamics::getNumContacts() const
 {
   return mCollisionDetector->getNumContacts();
 }
 
-Constraint*ConstraintDynamics::getConstraint(int _index) const
+OldConstraint*OldConstraintDynamics::getConstraint(int _index) const
 {
   return mConstraints[_index];
 }
 
-void ConstraintDynamics::setContactErrorAllowance(double _allowance)
+void OldConstraintDynamics::setContactErrorAllowance(double _allowance)
 {
     if (_allowance < 0.0)
     {
@@ -448,12 +448,12 @@ void ConstraintDynamics::setContactErrorAllowance(double _allowance)
     mContactErrorAllowance = _allowance;
 }
 
-double ConstraintDynamics::getContactErrorAllowance() const
+double OldConstraintDynamics::getContactErrorAllowance() const
 {
     return mContactErrorAllowance;
 }
 
-void ConstraintDynamics::setContactERP(double _erp)
+void OldConstraintDynamics::setContactERP(double _erp)
 {
     if (_erp < 0.0 || 1.0 < _erp)
     {
@@ -465,24 +465,24 @@ void ConstraintDynamics::setContactERP(double _erp)
     mContactERP = _erp;
 }
 
-double ConstraintDynamics::getContactERP() const
+double OldConstraintDynamics::getContactERP() const
 {
     return mContactERP;
 }
 
-void ConstraintDynamics::setMaxContactERV(double _maxErv)
+void OldConstraintDynamics::setMaxContactERV(double _maxErv)
 {
   assert(_maxErv >= 0.0
          && "Invalid value for maximum contact error reduction velocity.");
   mMaxContactERV = _maxErv;
 }
 
-double ConstraintDynamics::getMaxContactERV() const
+double OldConstraintDynamics::getMaxContactERV() const
 {
   return mMaxContactERV;
 }
 
-void ConstraintDynamics::setJointLimitErrorAllowance(double _allowance)
+void OldConstraintDynamics::setJointLimitErrorAllowance(double _allowance)
 {
     if (_allowance < 0.0)
     {
@@ -494,12 +494,12 @@ void ConstraintDynamics::setJointLimitErrorAllowance(double _allowance)
     mJointLimitErrorAllowance = _allowance;
 }
 
-double ConstraintDynamics::getJointLimitErrorAllowance() const
+double OldConstraintDynamics::getJointLimitErrorAllowance() const
 {
     return mJointLimitErrorAllowance;
 }
 
-void ConstraintDynamics::setJointLimitERP(double _erp)
+void OldConstraintDynamics::setJointLimitERP(double _erp)
 {
     if (_erp < 0.0 || 1.0 < _erp)
     {
@@ -511,24 +511,24 @@ void ConstraintDynamics::setJointLimitERP(double _erp)
     mJointLimitERP = _erp;
 }
 
-double ConstraintDynamics::getJointLimitERP() const
+double OldConstraintDynamics::getJointLimitERP() const
 {
   return mJointLimitERP;
 }
 
-void ConstraintDynamics::setMaxJointLimitERV(double _maxErv)
+void OldConstraintDynamics::setMaxJointLimitERV(double _maxErv)
 {
   assert(_maxErv >= 0.0
          && "Invalid value for maximum joint limit error reduction velocity.");
   mMaxJointLimitERV = _maxErv;
 }
 
-double ConstraintDynamics::getMaxJointLimitERV() const
+double OldConstraintDynamics::getMaxJointLimitERV() const
 {
   return mMaxJointLimitERV;
 }
 
-void ConstraintDynamics::initialize()
+void OldConstraintDynamics::initialize()
 {
   mBodyIndexToSkelIndex.clear();
   // Add all body nodes into mCollisionDetector
@@ -599,7 +599,7 @@ void ConstraintDynamics::initialize()
   mZ = Eigen::MatrixXd(rows, cols);
 }
 
-void ConstraintDynamics::computeConstraintWithoutContact()
+void OldConstraintDynamics::computeConstraintWithoutContact()
 {
   updateMassMat();
   updateConstraintTerms();
@@ -613,7 +613,7 @@ void ConstraintDynamics::computeConstraintWithoutContact()
   }
 }
 
-void ConstraintDynamics::fillMatrices()
+void OldConstraintDynamics::fillMatrices()
 {
   int nContacts = getNumContacts();
   int nJointLimits = mLimitingDofIndex.size();
@@ -746,7 +746,7 @@ void ConstraintDynamics::fillMatrices()
     mA(i, i) += 0.001 * mA(i, i);
 }
 
-void ConstraintDynamics::fillMatricesODE()
+void OldConstraintDynamics::fillMatricesODE()
 {
   int nContacts = getNumContacts();
   int nJointLimits = mLimitingDofIndex.size();
@@ -875,7 +875,7 @@ void ConstraintDynamics::fillMatricesODE()
     mA(i, i) += 0.001 * mA(i, i);
 }
 
-bool ConstraintDynamics::solve()
+bool OldConstraintDynamics::solve()
 {
   lcpsolver::LCPSolver solver = lcpsolver::LCPSolver();
   bool b = solver.Solve(mA, mQBar, &mX, getNumContacts(), mMu, mNumDir,
@@ -883,7 +883,7 @@ bool ConstraintDynamics::solve()
   return b;
 }
 
-void ConstraintDynamics::applySolution()
+void OldConstraintDynamics::applySolution()
 {
   Eigen::VectorXd contactForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
   Eigen::VectorXd jointLimitForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
@@ -953,7 +953,7 @@ void ConstraintDynamics::applySolution()
   }
 }
 
-void ConstraintDynamics::applySolutionODE()
+void OldConstraintDynamics::applySolutionODE()
 {
   Eigen::VectorXd contactForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
   Eigen::VectorXd jointLimitForces(Eigen::VectorXd::Zero(getTotalNumDofs()));
@@ -1029,7 +1029,7 @@ void ConstraintDynamics::applySolutionODE()
   }
 }
 
-void ConstraintDynamics::updateMassMat()
+void OldConstraintDynamics::updateMassMat()
 {
   int start = 0;
   for (int i = 0; i < mSkeletons.size(); i++)
@@ -1045,7 +1045,7 @@ void ConstraintDynamics::updateMassMat()
   }
 }
 
-void ConstraintDynamics::updateTauStar()
+void OldConstraintDynamics::updateTauStar()
 {
   int startRow = 0;
   for (int i = 0; i < mSkeletons.size(); i++)
@@ -1064,7 +1064,7 @@ void ConstraintDynamics::updateTauStar()
   }
 }
 
-void ConstraintDynamics::updateNBMatrices()
+void OldConstraintDynamics::updateNBMatrices()
 {
   mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
   mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * mNumDir);
@@ -1123,7 +1123,7 @@ void ConstraintDynamics::updateNBMatrices()
   }
 }
 
-void ConstraintDynamics::updateNBMatricesODE()
+void OldConstraintDynamics::updateNBMatricesODE()
 {
   mN = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts());
   mB = Eigen::MatrixXd::Zero(getTotalNumDofs(), getNumContacts() * 2);
@@ -1182,7 +1182,7 @@ void ConstraintDynamics::updateNBMatricesODE()
   }
 }
 
-Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node,
+Eigen::MatrixXd OldConstraintDynamics::getJacobian(dynamics::BodyNode* node,
                                                 const Eigen::Vector3d& p)
 {
   int nDofs = node->getSkeleton()->getNumGenCoords();
@@ -1201,7 +1201,7 @@ Eigen::MatrixXd ConstraintDynamics::getJacobian(dynamics::BodyNode* node,
   return Jt;
 }
 
-Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrix(
+Eigen::MatrixXd OldConstraintDynamics::getTangentBasisMatrix(
     const Eigen::Vector3d& p, const Eigen::Vector3d& n)
 {
   Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, mNumDir));
@@ -1232,7 +1232,7 @@ Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrix(
   return T;
 }
 
-Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrixODE(
+Eigen::MatrixXd OldConstraintDynamics::getTangentBasisMatrixODE(
     const Eigen::Vector3d& p, const Eigen::Vector3d& n)
 {
   Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, 2));
@@ -1256,7 +1256,7 @@ Eigen::MatrixXd ConstraintDynamics::getTangentBasisMatrixODE(
   return T;
 }
 
-Eigen::MatrixXd ConstraintDynamics::getContactMatrix() const
+Eigen::MatrixXd OldConstraintDynamics::getContactMatrix() const
 {
   Eigen::MatrixXd E = Eigen::MatrixXd::Zero(getNumContacts() * mNumDir,
                                             getNumContacts());
@@ -1266,13 +1266,13 @@ Eigen::MatrixXd ConstraintDynamics::getContactMatrix() const
   return E;
 }
 
-Eigen::MatrixXd ConstraintDynamics::getMuMatrix() const
+Eigen::MatrixXd OldConstraintDynamics::getMuMatrix() const
 {
   int c = getNumContacts();
   return Eigen::MatrixXd::Identity(c, c) * mMu;
 }
 
-void ConstraintDynamics::updateConstraintTerms()
+void OldConstraintDynamics::updateConstraintTerms()
 {
   // update preJ
   mPreJ = mJ;
@@ -1334,7 +1334,7 @@ void ConstraintDynamics::updateConstraintTerms()
   mTauHat -= ks * mC + kd * mCDot;
 }
 
-int ConstraintDynamics::getTotalNumDofs() const
+int OldConstraintDynamics::getTotalNumDofs() const
 {
   return mIndices[mIndices.size() - 1];
 }

@@ -49,7 +49,7 @@
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 
 namespace dart {
 namespace simulation {
@@ -62,7 +62,7 @@ World::World()
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
     mConstraintHandler(
-      new constraint::ConstraintDynamics(mSkeletons, mTimeStep)) {
+      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)) {
   mIndices.push_back(0);
 }
 
@@ -350,7 +350,7 @@ bool World::checkCollision(bool _checkAllCollisions) {
         _checkAllCollisions, false);
 }
 
-constraint::ConstraintDynamics*World::getConstraintHandler() const {
+constraint::OldConstraintDynamics* World::getConstraintHandler() const {
   return mConstraintHandler;
 }
 

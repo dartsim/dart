@@ -48,7 +48,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"

@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
-#define DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
+#ifndef DART_CONSTRAINT_OLDBALLJOINTCONSTRAINT_H
+#define DART_CONSTRAINT_OLDBALLJOINTCONSTRAINT_H
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/OldConstraint.h"
 
 namespace dart {
 
@@ -49,12 +49,12 @@ class Skeleton;
 
 namespace constraint {
 
-class BallJointConstraint : public Constraint {
+class OldBallJointConstraint : public OldConstraint {
 public:
-    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2);
-    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _jointPosition);
-    BallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
-    virtual ~BallJointConstraint();
+    OldBallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2);
+    OldBallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _jointPosition);
+    OldBallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
+    virtual ~OldBallJointConstraint();
     virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
     virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
 
@@ -67,5 +67,5 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
+#endif // #ifndef DART_CONSTRAINT_OLDBALLJOINTCONSTRAINT_H
 

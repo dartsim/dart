@@ -41,8 +41,8 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/constraint/ConstraintDynamics.h"
-#include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/OldBallJointConstraint.h"
 
 #include "apps/ballJointConstraintTest/MyWindow.h"
 

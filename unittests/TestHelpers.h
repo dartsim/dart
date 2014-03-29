@@ -12,7 +12,7 @@
 #include <Eigen/Dense>
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"

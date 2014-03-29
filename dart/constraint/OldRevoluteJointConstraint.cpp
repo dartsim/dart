@@ -1,4 +1,4 @@
-#include "dart/constraint/RevoluteJointConstraint.h"
+#include "dart/constraint/OldRevoluteJointConstraint.h"
 
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
@@ -10,7 +10,7 @@ using namespace math;
 namespace dart {
 namespace constraint {
 
-RevoluteJointConstraint::RevoluteJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _axis1, Eigen::Vector3d _axis2) {
+OldRevoluteJointConstraint::OldRevoluteJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _axis1, Eigen::Vector3d _axis2) {
     mBodyNode1 = _body1;
     mBodyNode2 = _body2;    
     mAxis1 = _axis1.normalized();
@@ -20,7 +20,7 @@ RevoluteJointConstraint::RevoluteJointConstraint(dynamics::BodyNode *_body1, dyn
     mJ2 = Eigen::MatrixXd::Zero(mNumRows, mBodyNode2->getSkeleton()->getNumGenCoords());
 }
 
-RevoluteJointConstraint::RevoluteJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _axis1, Eigen::Vector3d _target) {
+OldRevoluteJointConstraint::OldRevoluteJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _axis1, Eigen::Vector3d _target) {
     mBodyNode1 = _body1;
     mBodyNode2 = NULL;
     mAxis1 = _axis1.normalized();
@@ -30,10 +30,10 @@ RevoluteJointConstraint::RevoluteJointConstraint(dynamics::BodyNode *_body1, Eig
     mJ1 = Eigen::MatrixXd::Zero(mNumRows, mBodyNode1->getSkeleton()->getNumGenCoords());
 }
 
-RevoluteJointConstraint::~RevoluteJointConstraint() {
+OldRevoluteJointConstraint::~OldRevoluteJointConstraint() {
 }
 
-void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
+void OldRevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
     _J1.block(_rowIndex, 0, mNumRows, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
     Eigen::Vector3d v1 = mBodyNode1->getWorldTransform().rotation() * mAxis1;
@@ -42,7 +42,7 @@ void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::Vecto
     _CDot.segment(_rowIndex, mNumRows) = mJ1 * qDot1;
 }
  
-void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
+void OldRevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {
     getJacobian();
     _J2.block(_rowIndex, 0, mNumRows, mBodyNode2->getSkeleton()->getNumGenCoords()).setZero();
     _J1.block(_rowIndex, 0, mNumRows, mBodyNode1->getSkeleton()->getNumGenCoords()) = mJ1;
@@ -57,7 +57,7 @@ void RevoluteJointConstraint::updateDynamics(Eigen::MatrixXd & _J1, Eigen::Matri
     _CDot.segment(_rowIndex, mNumRows) = mJ1 * qDot1 + mJ2 * qDot2;
 }
  
-void RevoluteJointConstraint::getJacobian() {
+void OldRevoluteJointConstraint::getJacobian() {
     Eigen::Vector3d offsetWorld = mBodyNode1->getWorldTransform().rotation() * mAxis1;
     Eigen::Vector3d origin(0.0, 0.0, 0.0);
 

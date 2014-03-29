@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H
-#define DART_CONSTRAINT_CONSTRAINT_H
+#ifndef DART_CONSTRAINT_OLDCONSTRAINT_H
+#define DART_CONSTRAINT_OLDCONSTRAINT_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -49,10 +49,10 @@ class BodyNode;
 
 namespace constraint {
 
-class Constraint {
+class OldConstraint {
 public:
-  Constraint() {}
-  virtual ~Constraint() {}
+  OldConstraint() {}
+  virtual ~OldConstraint() {}
 
   virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
   virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
@@ -76,5 +76,5 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_CONSTRAINT_H
+#endif // #ifndef DART_CONSTRAINT_OLDCONSTRAINT_H
 

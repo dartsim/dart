@@ -36,14 +36,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINTDYNAMICS_H_
-#define DART_CONSTRAINT_CONSTRAINTDYNAMICS_H_
+#ifndef DART_CONSTRAINT_OLDCONSTRAINTDYNAMICS_H_
+#define DART_CONSTRAINT_OLDCONSTRAINTDYNAMICS_H_
 
 #include <vector>
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/OldConstraint.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
@@ -67,19 +67,19 @@ class BodyNode;
 namespace dart {
 namespace constraint {
 
-class ConstraintDynamics
+class OldConstraintDynamics
 {
 public:
-  ConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
+  OldConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
                      double _dt, double _mu = 1.0, int _d = 4,
                      bool _useODE = true,
                      collision::CollisionDetector* _collisionDetector =
                        new collision::FCLMeshCollisionDetector());
-  virtual ~ConstraintDynamics();
+  virtual ~OldConstraintDynamics();
 
   void computeConstraintForces();
-  void addConstraint(Constraint *_constr);
-  void deleteConstraint(Constraint *_constr);
+  void addConstraint(OldConstraint *_constr);
+  void deleteConstraint(OldConstraint *_constr);
   void deleteConstraint();
   void addSkeleton(dynamics::Skeleton* _skeleton);
   void removeSkeleton(dynamics::Skeleton* _skeleton);
@@ -91,7 +91,7 @@ public:
   Eigen::VectorXd getContactForce(int _skelIndex) const;
   collision::CollisionDetector* getCollisionDetector() const;
   int getNumContacts() const;
-  Constraint* getConstraint(int _index) const;
+  OldConstraint* getConstraint(int _index) const;
 
   void setContactErrorAllowance(double _allowance);
   double getContactErrorAllowance() const;
@@ -159,7 +159,7 @@ protected:
   // mTotalConstrForces[i] is the constraint force for the ith skeleton
   std::vector<Eigen::VectorXd> mTotalConstrForces;
   // constraints
-  std::vector<Constraint*> mConstraints;
+  std::vector<OldConstraint*> mConstraints;
   int mTotalRows;
 
   Eigen::MatrixXd mZ;  // N x N, symmetric (only lower triangle filled)
@@ -177,7 +177,7 @@ protected:
   bool mUseODELCPSolver;
 
   // TODO: this map needs to be rebuilt when the order of skeletons changes
-  std::map<Constraint*, Eigen::Vector2i> mSkeletonIDMap;
+  std::map<OldConstraint*, Eigen::Vector2i> mSkeletonIDMap;
 
   Eigen::VectorXd mContactERVelocity; // Contact error reduction velocity
   double mContactErrorAllowance;      // Contact error allowance

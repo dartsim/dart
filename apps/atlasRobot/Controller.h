@@ -47,9 +47,9 @@ class BodyNode;
 class Skeleton;
 }  // namespace dynamics
 namespace constraint {
-class ConstraintDynamics;
-class BallJointConstraint;
-class RevoluteJointConstraint;
+class OldConstraintDynamics;
+class OldBallJointConstraint;
+class OldRevoluteJointConstraint;
 }  // namespace constraint
 }  // namespace dart
 
@@ -61,7 +61,7 @@ class Controller
 public:
   /// \brief Constructor
   Controller(dart::dynamics::Skeleton* _atlasRobot,
-             dart::constraint::ConstraintDynamics* _collisionHandle);
+             dart::constraint::OldConstraintDynamics* _collisionHandle);
 
   /// \brief Destructor
   virtual ~Controller();
@@ -117,7 +117,7 @@ protected:
   dart::dynamics::Skeleton* mAtlasRobot;
 
   /// \brief Conllision detector
-  dart::constraint::ConstraintDynamics* mConstratinSolver;
+  dart::constraint::OldConstraintDynamics* mConstratinSolver;
 
   /// \brief List of state machines
   std::vector<StateMachine*> mStateMachines;
@@ -170,22 +170,22 @@ private:
   dart::dynamics::BodyNode* _getRightFoot() const;
 
   /// \brief Ball joint constraint for pelvis harnessing
-  dart::constraint::BallJointConstraint* mBallJointConstraintPelvis;
+  dart::constraint::OldBallJointConstraint* mBallJointConstraintPelvis;
 
   /// \brief Revolute joint constraint for pelvis harnessing
-  dart::constraint::RevoluteJointConstraint* mRevoluteJointConstraintPelvis;
+  dart::constraint::OldRevoluteJointConstraint* mRevoluteJointConstraintPelvis;
 
   /// \brief Ball joint constraint for left foot harnessing
-  dart::constraint::BallJointConstraint* mBallJointConstraintLeftFoot;
+  dart::constraint::OldBallJointConstraint* mBallJointConstraintLeftFoot;
 
   /// \brief Revolute joint constraint for left foot harnessing
-  dart::constraint::RevoluteJointConstraint* mRevoluteJointConstraintLeftFoot;
+  dart::constraint::OldRevoluteJointConstraint* mRevoluteJointConstraintLeftFoot;
 
   /// \brief Ball joint constraint for right foot harnessing
-  dart::constraint::BallJointConstraint* mBallJointConstraintRightFoot;
+  dart::constraint::OldBallJointConstraint* mBallJointConstraintRightFoot;
 
   /// \brief Revolute joint constraint for right foot harnessing
-  dart::constraint::RevoluteJointConstraint* mRevoluteJointConstraintRightFoot;
+  dart::constraint::OldRevoluteJointConstraint* mRevoluteJointConstraintRightFoot;
 
   /// \brief Initial state of the robot
   Eigen::VectorXd mInitialState;

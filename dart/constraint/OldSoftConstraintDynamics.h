@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
-#define SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
+#ifndef DART_CONSTRAINT_OLDSOFTCONSTRAINTDYNAMICS_H_
+#define DART_CONSTRAINT_OLDSOFTCONSTRAINTDYNAMICS_H_
 
 #include <vector>
 
-#include <dart/constraint/ConstraintDynamics.h>
+#include "dart/constraint/OldConstraintDynamics.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,11 +50,11 @@ class PointMass;
 namespace dart {
 namespace constraint {
 
-class SoftConstraintDynamics : public ConstraintDynamics
+class OldSoftConstraintDynamics : public OldConstraintDynamics
 {
 public:
   /// \brief Constructor
-  SoftConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
+  OldSoftConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
                          double _dt,
                          double _mu = 1.0,
                          int _d = 4,
@@ -63,7 +63,7 @@ public:
                          = new collision::FCLMeshCollisionDetector());
 
   /// \brief Destructor
-  virtual ~SoftConstraintDynamics();
+  virtual ~OldSoftConstraintDynamics();
 
 protected:
   // Documentation inherited.
@@ -79,4 +79,4 @@ protected:
 }  // namespace constraint
 }  // namespace dart
 
-#endif  // SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
+#endif  // SOFT_CONSTRAINT_OLDSOFTCONSTRAINTDYNAMICS_H_

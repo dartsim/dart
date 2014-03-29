@@ -41,14 +41,14 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 
 using namespace dart;
 using namespace dynamics;
 using namespace math;
 
-Controller::Controller(dynamics::Skeleton* _skel, constraint::ConstraintDynamics* _collisionHandle, double _t) {
+Controller::Controller(dynamics::Skeleton* _skel, constraint::OldConstraintDynamics* _collisionHandle, double _t) {
     mSkel = _skel;
     mCollisionHandle = _collisionHandle;
     mTimestep = _t;

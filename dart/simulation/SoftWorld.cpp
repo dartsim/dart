@@ -42,7 +42,7 @@
 
 #include "dart/simulation/SoftWorld.h"
 
-#include "dart/constraint/SoftConstraintDynamics.h"
+#include "dart/constraint/OldSoftConstraintDynamics.h"
 #include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
 
 namespace dart {
@@ -54,7 +54,7 @@ SoftWorld::SoftWorld()
   // TODO(JS): Temporary code
   delete mConstraintHandler;
 
-  mConstraintHandler = new constraint::SoftConstraintDynamics(mSkeletons,
+  mConstraintHandler = new constraint::OldSoftConstraintDynamics(mSkeletons,
                                                               mTimeStep);
 
   mConstraintHandler->setCollisionDetector(

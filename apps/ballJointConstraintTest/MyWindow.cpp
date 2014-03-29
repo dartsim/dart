@@ -39,8 +39,8 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/simulation/World.h"
-#include "dart/constraint/ConstraintDynamics.h"
-#include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/OldBallJointConstraint.h"
 
 using namespace dart::dynamics;
 using namespace dart::constraint;
@@ -125,20 +125,20 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
-Constraint* MyWindow::addHeadConstraint() {
+OldConstraint* MyWindow::addHeadConstraint() {
     BodyNode *bd = mWorld->getSkeleton(0)->getBodyNode("link 1");
     Eigen::Vector3d offset(0.0, 0.025, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
-    BallJointConstraint *bj = new BallJointConstraint(bd, offset, target);
+    OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
     mWorld->getConstraintHandler()->addConstraint(bj);
     return bj;
 }
 
-Constraint* MyWindow::addTailConstraint() {
+OldConstraint* MyWindow::addTailConstraint() {
     BodyNode *bd = mWorld->getSkeleton(0)->getBodyNode("link 10");
     Eigen::Vector3d offset(0.0, -0.025, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
-    BallJointConstraint *bj = new BallJointConstraint(bd, offset, target);
+    OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
     mWorld->getConstraintHandler()->addConstraint(bj);
     return bj;
 }

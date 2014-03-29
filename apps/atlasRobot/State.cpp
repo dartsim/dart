@@ -43,7 +43,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/constraint/ConstraintDynamics.h"
+#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 
 #include "apps/atlasRobot/TerminalCondition.h"
