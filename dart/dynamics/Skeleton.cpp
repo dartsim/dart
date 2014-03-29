@@ -53,6 +53,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 Skeleton::Skeleton(const std::string& _name)
   : GenCoordSystem(),
     mName(_name),
@@ -70,7 +71,9 @@ Skeleton::Skeleton(const std::string& _name)
     mIsGravityForceVectorDirty(true),
     mIsCombinedVectorDirty(true),
     mIsExternalForceVectorDirty(true),
-    mIsDampingForceVectorDirty(true) {
+    mIsDampingForceVectorDirty(true),
+    mIsImpulseApplied(false)
+{
 }
 
 Skeleton::~Skeleton() {
@@ -768,6 +771,16 @@ void Skeleton::clearContactForces() {
 }
 
 //==============================================================================
+void Skeleton::clearConstraintImpulses()
+{
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->clearConstraintImpulse();
+  }
+}
+
+//==============================================================================
 void Skeleton::computeForwardDynamics()
 {
   // Skip immobile or 0-dof skeleton
@@ -802,6 +815,113 @@ void Skeleton::computeForwardDynamics()
     (*it)->update_ddq();
     (*it)->update_F_fs();
   }
+}
+
+//==============================================================================
+void Skeleton::clearImpulseTest()
+{
+  // Clear external impulses
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->mImpB.setZero();
+    (*it)->mImpFext.setZero();
+    (*it)->mConstImp.setZero();
+  }
+
+  // Clear velocity change
+  setVelsChange(Eigen::VectorXd::Zero(getNumGenCoords()));
+  setImpulses(Eigen::VectorXd::Zero(getNumGenCoords()));
+}
+
+//==============================================================================
+void Skeleton::updateImpBiasForce(BodyNode* _bodyNode,
+                                  const Eigen::Vector6d& _imp)
+{
+  assert(0);
+
+  // Assertions
+  assert(_bodyNode != NULL);
+  assert(getNumGenCoords() > 0);
+
+  // Set impulse to _bodyNode
+  _bodyNode->mImpFext = _imp;
+
+  // Prepare cache data
+  BodyNode* it = _bodyNode;
+  while (it != NULL)
+  {
+    it->updateImpBiasForce();
+    it = _bodyNode->getParentBodyNode();
+  }
+
+  // TODO(JS): Do we need to backup and restore the original value?
+  _bodyNode->mImpFext.setZero();
+}
+
+//==============================================================================
+void Skeleton::updateVelocityChange()
+{
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateJointVelocityChange();
+    (*it)->updateBodyVelocityChange();
+  }
+}
+
+//==============================================================================
+void Skeleton::setImpulseApplied(bool _val)
+{
+  mIsImpulseApplied = _val;
+}
+
+//==============================================================================
+bool Skeleton::isImpulseApplied() const
+{
+  return mIsImpulseApplied;
+}
+
+//==============================================================================
+void Skeleton::computeImpulseForwardDynamics()
+{
+  // Skip immobile or 0-dof skeleton
+  if (!isMobile() || getNumGenCoords() == 0)
+    return;
+
+  // Backward recursion
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArticulatedInertia(mTimeStep);
+      (*it)->updateImpBiasForce();
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateImpBiasForce();
+    }
+  }
+
+  // Forward recursion
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateJointVelocityChange();
+    (*it)->updateBodyVelocityChange();
+    (*it)->updateBodyImpForceFwdDyn();
+  }
+
+  //DEBUG_CODE//////////////////////////////////////////////////////////////////
+//  dtdbg << "Velocity change: " << getVelsChange().transpose() << std::endl;
+  //////////////////////////////////////////////////////////////////////////////
 }
 
 void Skeleton::setInternalForceVector(const Eigen::VectorXd& _forces) {

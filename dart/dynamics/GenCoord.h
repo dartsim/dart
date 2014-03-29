@@ -168,6 +168,19 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getForceDeriv() const;
 
+  //------------------------------- Impulse ------------------------------------
+  /// \brief Set velocity change
+  void setVelChange(double _velChange);
+
+  /// \brief Get velocity change
+  double getVelChange() const;
+
+  /// \brief Set impulse
+  void setImpulse(double _impulse);
+
+  /// \brief Get impulse
+  double getImpulse() const;
+
   //------------------------------- Integration --------------------------------
   /// \brief Integrate configuration with generalized velocity and _dt
   void integrateConfig(double _dt);
@@ -234,6 +247,13 @@ protected:
 
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
   double mForceDeriv;
+
+  //------------------------------- Impulse ------------------------------------
+  /// \brief Change of generalized velocity
+  double mVelChange;
+
+  /// \brief Generalized impulse
+  double mImpulse;
 };
 
 }  // namespace dynamics

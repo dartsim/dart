@@ -63,14 +63,18 @@ class Marker;
 class Skeleton : public GenCoordSystem
 {
 public:
-  //---------------------- Constructor and Destructor --------------------------
+  //----------------------------------------------------------------------------
+  // Constructor and Destructor
+  //----------------------------------------------------------------------------
   /// \brief Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
   /// \brief Destructor
   virtual ~Skeleton();
 
-  //------------------------------ Properties ----------------------------------
+  //----------------------------------------------------------------------------
+  // Properties
+  //----------------------------------------------------------------------------
   /// \brief Set name.
   void setName(const std::string& _name);
 
@@ -114,7 +118,9 @@ public:
   /// init().
   double getMass() const;
 
-  //----------------------- Structueral Properties -----------------------------
+  //----------------------------------------------------------------------------
+  // Structueral Properties
+  //----------------------------------------------------------------------------
   /// \brief Add a body node
   void addBodyNode(BodyNode* _body);
 
@@ -139,12 +145,17 @@ public:
   /// \brief Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
-  //--------------------------- Initialization ---------------------------------
+  //----------------------------------------------------------------------------
+  // Initialization
+  //----------------------------------------------------------------------------
   /// \brief Initialize this skeleton for kinematics and dynamics
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
-  //--------------- Interfaces for generalized coordinates ---------------------
+
+  //----------------------------------------------------------------------------
+  // Interfaces for generalized coordinates
+  //----------------------------------------------------------------------------
   /// \brief Set configurations defined in terms of generalized coordinates
   /// and update Cartesian terms of body nodes using following parameters.
   /// \param[in] _updateTransforms True to update transformations of body nodes
@@ -194,20 +205,26 @@ public:
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
 
-  //------------------------------ Integration ---------------------------------
+  //----------------------------------------------------------------------------
+  // Integration
+  //----------------------------------------------------------------------------
   // Documentation inherited
   virtual void integrateConfigs(double _dt);
 
   // Documentation inherited
   virtual void integrateGenVels(double _dt);
 
-  //----------------------- Kinematics algorithms ------------------------------
+  //----------------------------------------------------------------------------
+  // Kinematics algorithms
+  //----------------------------------------------------------------------------
   /// \brief Compute forward kinematics
   void computeForwardKinematics(bool _updateTransforms = true,
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
 
-  //------------------------ Dynamics algorithms -------------------------------
+  //----------------------------------------------------------------------------
+  // Dynamics algorithms
+  //----------------------------------------------------------------------------
   /// \brief Compute forward dynamics
   void computeForwardDynamics();
 
@@ -218,7 +235,41 @@ public:
   /// \brief Compute hybrid dynamics
   void computeHybridDynamics();
 
-  //------------------------- Equations of Motion ------------------------------
+  //----------------------------------------------------------------------------
+  // Impulse-based dynamics
+  //----------------------------------------------------------------------------
+  /// \brief Clear velocity change and external impulses
+  void clearImpulseTest();
+
+  // TODO(JS): Not implemented yet
+  /// \brief Compute changes in generalized coordinate velocities due to
+  /// impulse, _imp, exerted on a body node, _bodyNode
+  void updateImpBiasForce(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+
+  /// \brief Update velocity changes in body nodes and joints due to applied
+  /// impulse
+  void updateVelocityChange();
+
+  // TODO(JS): Better naming
+  /// \brief Set whether this skeleton is constrained. ConstraintSolver will
+  ///  mark this.
+  void setImpulseApplied(bool _val);
+
+  /// \brief Get whether this skeleton is constrained
+  bool isImpulseApplied() const;
+
+  /// \brief Compute impulse-based forward dynamics
+  void computeImpulseForwardDynamics();
+
+  /// \brief Compute impulse-based inverse dynamics
+  void computeImpulseInverseDynamics() {}
+
+  /// \brief Compute impulse-based hybrid dynamics
+  void computeImpulseHybridDynamics() {}
+
+  //----------------------------------------------------------------------------
+  // Equations of Motion
+  //----------------------------------------------------------------------------
   /// \brief Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 
@@ -284,6 +335,9 @@ public:
   /// can access the contact information.
   void clearContactForces();
 
+  /// \brief Celar constraint impulses
+  void clearConstraintImpulses();
+
   /// \brief Set constraint force vector.
   void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
@@ -308,7 +362,9 @@ public:
   /// \brief Get potential energy of this skeleton.
   virtual double getPotentialEnergy() const;
 
-  //--------------------------- Rendering --------------------------------------
+  //----------------------------------------------------------------------------
+  // Rendering
+  //----------------------------------------------------------------------------
   /// \brief Draw this skeleton
   void draw(renderer::RenderInterface* _ri = NULL,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -404,6 +460,10 @@ protected:
 
   /// \brief Dirty flag for the damping force vector.
   bool mIsDampingForceVectorDirty;
+
+  // TODO(JS): Better naming
+  /// \brief Flag for status of impulse testing.
+  bool mIsImpulseApplied;
 
 protected:
   /// \brief Update mass matrix of the skeleton.

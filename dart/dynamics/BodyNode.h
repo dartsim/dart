@@ -183,6 +183,12 @@ public:
   /// \brief
   Eigen::Matrix6d getInertia() const;
 
+  /// \brief Set coefficient of friction in range of [0, ~]
+  void setFrictionCoeff(double _coeff);
+
+  /// \brief Get frictional coefficient.
+  double getFrictionCoeff() const;
+
   //--------------------------------------------------------------------------
   // Structueral Properties
   //--------------------------------------------------------------------------
@@ -337,6 +343,9 @@ public:
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
       bool _isOffsetLocal            = false);
 
+  /// \brief
+  const Eigen::Vector6d& getBodyVelocityChange() const;
+
   /// \brief Set whether this body node is colliding with others.
   /// \param[in] True if this body node is colliding.
   void setColliding(bool _isColliding);
@@ -402,6 +411,21 @@ public:
 
   /// \brief
   const Eigen::Vector6d& getBodyForce() const;
+
+  //------------------- Impulse-based constraint dynamics ----------------------
+  // Following functions are called by class ConstraintSolver.
+
+  /// \brief Set constraint impulse
+  void setConstraintImpulse(const Eigen::Vector6d& _constImp);
+
+  /// \brief Add constraint impulse
+  void addConstraintImpulse(const Eigen::Vector6d& _constImp);
+
+  /// \brief Add constraint impulse
+  void clearConstraintImpulse();
+
+  /// \brief Get constraint impulse
+  const Eigen::Vector6d& getConstraintImpulse();
 
   /// \brief Get kinetic energy.
   virtual double getKineticEnergy() const;
@@ -479,6 +503,25 @@ public:
 
   /// \brief
   virtual void update_F_fs();
+
+  //------------------------ Impluse-based Dynamics ----------------------------
+  /// \brief
+  bool isImpulseReponsible() const;
+
+  /// \brief Update impulsive bias force for impulse-based forward dynamics
+  /// algorithm
+  void updateImpBiasForce();
+
+  /// \brief Update joint velocity change for impulse-based forward dynamics
+  /// algorithm
+  void updateJointVelocityChange();
+
+  /// \brief Update body velocity change for impulse-based forward dynamics
+  /// algorithm
+  void updateBodyVelocityChange();
+
+  /// \brief
+  void updateBodyImpForceFwdDyn();
 
   /// \brief
   virtual void updateMassMatrix();
@@ -613,6 +656,9 @@ public:
   double mIxz;
   double mIyz;
   double mMass;
+
+  /// \brief Coefficient of friction
+  double mFrictionCoeff;
 
   /// \brief
   std::vector<Shape*> mVizShapes;
@@ -752,6 +798,30 @@ public:
   Eigen::Vector6d mInvM_c;
   Eigen::VectorXd mInvM_MInvVec;
   Eigen::Vector6d mInvM_U;
+
+  //------------------------- Impulse-based Dyanmics ---------------------------
+  /// \brief Velocity change due to to external impulsive force exerted on
+  ///        bodies of the parent skeleton.
+  Eigen::Vector6d mDelV;
+
+  /// \brief Impulsive external force
+  Eigen::Vector6d mImpFext;
+
+  /// \brief Impulsive bias force due to external impulsive force exerted on
+  ///        bodies of the parent skeleton.
+  Eigen::Vector6d mImpB;
+
+  /// \brief Cache data for mImpB
+  Eigen::VectorXd mImpAlpha;
+
+  /// \brief Cache data for mImpB
+  Eigen::Vector6d mImpBeta;
+
+  /// \brief Constraint impluse
+  Eigen::Vector6d mConstImp;
+
+  /// \brief Generalized impulsive body force w.r.t. body frame.
+  Eigen::Vector6d mImpF;
 
   /// \brief Update body Jacobian. getBodyJacobian() calls this function if
   ///        mIsBodyJacobianDirty is true.

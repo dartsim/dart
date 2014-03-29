@@ -215,6 +215,32 @@ double GenCoord::getForceDeriv() const
 }
 
 //==============================================================================
+void GenCoord::setVelChange(double _velChange)
+{
+  assert(!math::isNan(_velChange));
+  mVelChange = _velChange;
+}
+
+//==============================================================================
+double GenCoord::getVelChange() const
+{
+  return mVelChange;
+}
+
+//==============================================================================
+void GenCoord::setImpulse(double _impulse)
+{
+  assert(!math::isNan(_impulse));
+  mImpulse = _impulse;
+}
+
+//==============================================================================
+double GenCoord::getImpulse() const
+{
+  return mImpulse;
+}
+
+//==============================================================================
 void GenCoord::integrateConfig(double _dt)
 {
   mConfig += mVel * _dt;

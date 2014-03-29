@@ -52,11 +52,14 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
+#define DART_DEFAULT_FRICTION_COEFF 0.4
+
 namespace dart {
 namespace dynamics {
 
 int BodyNode::msBodyNodeCount = 0;
 
+//==============================================================================
 BodyNode::BodyNode(const std::string& _name)
   : mSkelIndex(-1),
     mName(_name),
@@ -75,6 +78,7 @@ BodyNode::BodyNode(const std::string& _name)
     mIxy(0.0),
     mIxz(0.0),
     mIyz(0.0),
+    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
     mI(Eigen::Matrix6d::Identity()),
     mW(Eigen::Isometry3d::Identity()),
     mV(Eigen::Vector6d::Zero()),
@@ -88,7 +92,15 @@ BodyNode::BodyNode(const std::string& _name)
     mBeta(Eigen::Vector6d::Zero()),
     mID(BodyNode::msBodyNodeCount++),
     mIsBodyJacobianDirty(true),
-    mIsBodyJacobianTimeDerivDirty(true) {
+    mIsBodyJacobianTimeDerivDirty(true),
+    mDelV(Eigen::Vector6d::Zero()),
+    mImpFext(Eigen::Vector6d::Zero()),
+    mImpB(Eigen::Vector6d::Zero()),
+    mImpAlpha(Eigen::Vector6d::Zero()),
+    mImpBeta(Eigen::Vector6d::Zero()),
+    mConstImp(Eigen::Vector6d::Zero()),
+    mImpF(Eigen::Vector6d::Zero())
+{
 }
 
 BodyNode::~BodyNode() {
@@ -141,6 +153,20 @@ void BodyNode::setMass(double _mass) {
 
 double BodyNode::getMass() const {
   return mMass;
+}
+
+//==============================================================================
+void BodyNode::setFrictionCoeff(double _coeff)
+{
+  assert(0.0 <= _coeff
+         && "Frictional coefficient should be non-negative value.");
+  mFrictionCoeff = _coeff;
+}
+
+//==============================================================================
+double BodyNode::getFrictionCoeff() const
+{
+  return mFrictionCoeff;
 }
 
 BodyNode* BodyNode::getParentBodyNode() const {
@@ -349,6 +375,12 @@ math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
   }
 
   return math::AdTJac(T, bodyJacobianTimeDeriv);
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
+{
+  return mDelV;
 }
 
 void BodyNode::setColliding(bool _isColliding) {
@@ -709,6 +741,31 @@ const Eigen::Vector6d& BodyNode::getBodyForce() const {
   return mF;
 }
 
+//==============================================================================
+void BodyNode::setConstraintImpulse(const Eigen::Vector6d& _constImp)
+{
+  mConstImp = _constImp;
+}
+
+//==============================================================================
+void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
+{
+  assert(!math::isNan(_constImp));
+  mConstImp += _constImp;
+}
+
+//==============================================================================
+void BodyNode::clearConstraintImpulse()
+{
+  mConstImp.setZero();
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getConstraintImpulse()
+{
+  return mConstImp;
+}
+
 double BodyNode::getKineticEnergy() const {
   return 0.5 * mV.dot(mI * mV);
 }
@@ -905,6 +962,94 @@ void BodyNode::update_F_fs() {
   mF = mB;
   mF.noalias() += mAI * mdV;
   assert(!math::isNan(mF));
+}
+
+//==============================================================================
+bool BodyNode::isImpulseReponsible() const
+{
+  // Should be called at BodyNode::init()
+  // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
+  //           type of parent joint.
+  if (mParentJoint->getNumGenCoords() > 0)
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+void BodyNode::updateImpBiasForce()
+{
+  // Update impulsive bias force
+  mImpB = -mConstImp - mImpFext;
+//  assert(mImpFext == Eigen::Vector6d::Zero());
+
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mImpB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                           (*it)->mImpBeta);
+  }
+  assert(!math::isNan(mImpB));
+
+  // Cache data: mImpAlpha
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0)
+  {
+    mImpAlpha = mParentJoint->getImpulses()
+                - mParentJoint->getLocalJacobian().transpose() * mImpB;
+  }
+
+  // Cache data: mImpBeta
+  if (mParentBodyNode)
+  {
+    mImpBeta = mImpB;
+    if (dof > 0)
+      mImpBeta.noalias() += mAI_S_Psi * mImpAlpha;
+  }
+  assert(!math::isNan(mImpBeta));
+}
+
+//==============================================================================
+void BodyNode::updateJointVelocityChange()
+{
+  if (mParentJoint->getNumGenCoords() == 0)
+    return;
+
+  Eigen::VectorXd del_dq = mPsi * mImpAlpha;
+  if (mParentBodyNode)
+  {
+    del_dq -= mAI_S_Psi.transpose()
+              * math::AdInvT(mParentJoint->getLocalTransform(),
+                             mParentBodyNode->mDelV);
+  }
+
+  mParentJoint->setVelsChange(del_dq);
+  assert(!math::isNan(del_dq));
+}
+
+//==============================================================================
+void BodyNode::updateBodyVelocityChange()
+{
+  if (mParentJoint->getNumGenCoords() > 0)
+    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+  else
+    mDelV.setZero();
+
+  if (mParentBodyNode)
+  {
+    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->mDelV);
+  }
+
+  assert(!math::isNan(mDelV));
+}
+
+//==============================================================================
+void BodyNode::updateBodyImpForceFwdDyn()
+{
+  mImpF = mImpB;
+  mImpF.noalias() += mAI * mDelV;
+  assert(!math::isNan(mImpF));
 }
 
 void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C) {

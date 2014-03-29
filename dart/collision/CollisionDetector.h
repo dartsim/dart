@@ -48,6 +48,7 @@
 namespace dart {
 namespace dynamics {
 class BodyNode;
+class Skeleton;
 }  // namespace dynamics
 }  // namespace dart
 
@@ -89,19 +90,31 @@ struct Contact {
   void* userData;
 };
 
-/// \brief
-class CollisionDetector {
+/// \brief class CollisionDetector
+class CollisionDetector
+{
 public:
-  /// \brief
+  /// \brief Constructor
   CollisionDetector();
 
-  /// \brief
+  /// \brief Destructor
   virtual ~CollisionDetector();
 
+  /// \brief Add skeleton
+  virtual void addSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// \brief Remove skeleton
+  virtual void removeSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// \brief Remove all skeletons
+  virtual void removeAllSkeletons();
+
+  // TODO(JS): Change accessibility to private
   /// \brief
   virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                         bool _isRecursive = false);
 
+  // TODO(JS): Change accessibility to private
   /// \brief
   virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                            bool _isRecursive = false);
@@ -156,7 +169,13 @@ protected:
   /// \brief
   int mNumMaxContacts;
 
+  /// \brief Skeleton array
+  std::vector<dynamics::Skeleton*> mSkeletons;
+
 private:
+  /// \brief Return true if _skeleton is contained
+  bool containSkeleton(const dynamics::Skeleton* _skeleton);
+
   /// \brief
   std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1,
                                                  const CollisionNode* _node2);

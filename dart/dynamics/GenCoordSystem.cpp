@@ -368,5 +368,51 @@ size_t GenCoordSystem::getNumGenCoords() const
   return mGenCoords.size();
 }
 
+//==============================================================================
+void GenCoordSystem::setVelsChange(const Eigen::VectorXd& _velsChange)
+{
+  assert(_velsChange.size() == getNumGenCoords());
+
+  size_t size = getNumGenCoords();
+
+  for (size_t i = 0; i < size; ++i)
+    mGenCoords[i]->setVelChange(_velsChange[i]);
+}
+
+//==============================================================================
+Eigen::VectorXd GenCoordSystem::getVelsChange() const
+{
+  size_t size = getNumGenCoords();
+  Eigen::VectorXd velsChange = Eigen::VectorXd::Zero(size);
+
+  for (size_t i = 0; i < size; ++i)
+    velsChange(i) = mGenCoords[i]->getVelChange();
+
+  return velsChange;
+}
+
+//==============================================================================
+void GenCoordSystem::setImpulses(const Eigen::VectorXd& _impulses)
+{
+  assert(_impulses.size() == getNumGenCoords());
+
+  size_t size = getNumGenCoords();
+
+  for (size_t i = 0; i < size; ++i)
+    mGenCoords[i]->setImpulse(_impulses[i]);
+}
+
+//==============================================================================
+Eigen::VectorXd GenCoordSystem::getImpulses() const
+{
+  size_t size = getNumGenCoords();
+  Eigen::VectorXd impulse = Eigen::VectorXd::Zero(size);
+
+  for (size_t i = 0; i < size; ++i)
+    impulse(i) = mGenCoords[i]->getImpulse();
+
+  return impulse;
+}
+
 }  // namespace dynamics
 }  // namespace dart
