@@ -901,6 +901,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       }
       skel->setConfigs(VectorXd::Zero(dof));
 
+      // TODO(JS): Just clear what should be
       skel->clearExternalForces();
       skel->clearContactForces();
       skel->clearConstraintImpulses();
@@ -932,68 +933,68 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   delete myWorld;
 }
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareVelocities)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareVelocities(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareVelocities)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareVelocities(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareAccelerations)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareAccelerations(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareAccelerations)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareAccelerations(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareEquationsOfMotion)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//    ////////////////////////////////////////////////////////////////////////////
-//    // TODO(JS): Following skel files, which contain euler joints couldn't
-//    //           pass EQUATIONS_OF_MOTION, are disabled.
-//    std::string skelFileName = getList()[i];
-//    if (skelFileName == DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
-//        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
-//    {
-//        continue;
-//    }
-//    ////////////////////////////////////////////////////////////////////////////
+//==============================================================================
+TEST_F(DynamicsTest, compareEquationsOfMotion)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+    ////////////////////////////////////////////////////////////////////////////
+    // TODO(JS): Following skel files, which contain euler joints couldn't
+    //           pass EQUATIONS_OF_MOTION, are disabled.
+    std::string skelFileName = getList()[i];
+    if (skelFileName == DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
+        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
+    {
+        continue;
+    }
+    ////////////////////////////////////////////////////////////////////////////
 
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareEquationsOfMotion(getList()[i]);
-//  }
-//}
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareEquationsOfMotion(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, testCenterOfMass)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    centerOfMass(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, testCenterOfMass)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    centerOfMass(getList()[i]);
+  }
+}
 
 //==============================================================================
 TEST_F(DynamicsTest, testImpulseBasedDynamics)
