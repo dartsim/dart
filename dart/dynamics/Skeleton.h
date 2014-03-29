@@ -165,7 +165,7 @@ public:
   /// \brief Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
-                          bool _updateAccs = true);
+                          bool _updateAccs);
 
   /// \brief Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
@@ -194,17 +194,18 @@ public:
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
 
+  //------------------------------ Integration ---------------------------------
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void integrateGenVels(double _dt);
+
   //----------------------- Kinematics algorithms ------------------------------
   /// \brief Compute forward kinematics
   void computeForwardKinematics(bool _updateTransforms = true,
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
-
-  /// \brief Compute forward kinematics
-  /// \warning This is called by Skeleton::setState() as workaround for #122
-  void computeForwardKinematicsIssue122(bool _updateTransforms = true,
-                                        bool _updateVels = true,
-                                        bool _updateAccs = true);
 
   //------------------------ Dynamics algorithms -------------------------------
   /// \brief Compute forward dynamics
@@ -342,6 +343,9 @@ protected:
 
   /// \brief Total mass.
   double mTotalMass;
+
+  /// \brief Dirty flag for articulated body inertia
+  bool mIsArticulatedInertiaDirty;
 
   /// \brief Mass matrix for the skeleton.
   Eigen::MatrixXd mM;

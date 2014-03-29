@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -45,45 +45,41 @@
 namespace dart {
 namespace dynamics {
 
-class FreeJoint : public Joint {
+/// \brief class FreeJoint
+class FreeJoint : public Joint
+{
 public:
-  /// \brief Constructor.
-  explicit FreeJoint(const std::string& _name = "Noname FreeJoint");
+  /// \brief Constructor
+  explicit FreeJoint(const std::string& _name = "FreeJoint");
 
-  /// \brief Destructor.
+  /// \brief Destructor
   virtual ~FreeJoint();
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateTransform_Issue122(double _timeStep);
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobian_Issue122();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobianTimeDeriv_Issue122();
-
-  // Documentation inherited.
-  virtual void clampRotation();
+  // Documentation inherited
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
 protected:
-  /// \brief
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void updateTransform();
+
+  // Documentation inherited
+  virtual void updateJacobian();
+
+  // Documentation inherited
+  virtual void updateJacobianTimeDeriv();
+
+protected:
+  /// \brief Generalized coordinates
   GenCoord mCoordinate[6];
 
-  /// @brief
-  // TODO(JS): This is workaround for Issue #122.
-  Eigen::Isometry3d mT_Joint;
+  /// \brief Transformation matrix dependant on generalized coordinates
+  Eigen::Isometry3d mQ;
 
 public:
-  //
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
@@ -179,6 +180,7 @@ void Joint::setConfigs(const Eigen::VectorXd& _configs,
 
   if (mSkeleton)
   {
+    if (_updateTransforms || _updateVels || _updateAccs)
     // TODO(JS): It would be good if we know whether the skeleton is initialzed.
     mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
                                         _updateAccs);
@@ -293,6 +295,7 @@ Eigen::VectorXd Joint::getSpringForces(double _timeStep) const {
                                 + getGenCoord(i)->getVel() * _timeStep
                                 - mRestPosition[i]);
   }
+  assert(!math::isNan(springForce));
   return springForce;
 }
 

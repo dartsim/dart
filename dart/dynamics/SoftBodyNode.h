@@ -137,16 +137,10 @@ protected:
   virtual void updateTransform();
 
   // Documentation inherited.
-  virtual void updateTransform_Issue122(double _timeStep);
-
-  // Documentation inherited.
   virtual void updateVelocity();
 
   // Documentation inherited.
   virtual void updateEta();
-
-  // Documentation inherited.
-  virtual void updateEta_Issue122();
 
   // Documentation inherited.
   virtual void updateAcceleration();

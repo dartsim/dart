@@ -52,6 +52,20 @@ GenCoordSystem::~GenCoordSystem()
 }
 
 //==============================================================================
+void GenCoordSystem::integrateConfigs(double _dt)
+{
+  for (size_t i = 0; i < mGenCoords.size(); ++i)
+    mGenCoords[i]->integrateConfig(_dt);
+}
+
+//==============================================================================
+void GenCoordSystem::integrateGenVels(double _dt)
+{
+  for (size_t i = 0; i < mGenCoords.size(); ++i)
+    mGenCoords[i]->integrateVel(_dt);
+}
+
+//==============================================================================
 GenCoord* GenCoordSystem::getGenCoord(size_t _idx) const
 {
   assert(0 <= _idx && _idx < getNumGenCoords());

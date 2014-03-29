@@ -78,6 +78,13 @@ public:
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
+  //------------------------------ Integration ---------------------------------
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void integrateGenVels(double _dt);
+
 protected:
   // Documentation inherited.
   virtual void updateExternalForceVector();

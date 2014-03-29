@@ -358,11 +358,6 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         x[k] = random(lb, ub);
       skel->setState(x, true, true, true);
 
-      //////////////////////////////////////////////////////////////////////////
-      /// TODO: Workaround code for Issue #122
-      skel->computeForwardKinematics(true, true, true);
-      //////////////////////////////////////////////////////////////////////////
-
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
       MatrixXd M      = skel->getMassMatrix();

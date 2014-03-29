@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Kristin Siu <kasiu@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,63 +35,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
-#define DART_DYNAMICS_UNIVERSALJOINT_H_
-
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/integration/SemiImplicitEulerIntegrator.h"
 
 namespace dart {
-namespace dynamics {
+namespace integration {
 
-class UniversalJoint : public Joint {
-public:
-  /// \brief Constructor.
-  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
-                 const std::string& _name = "Universal joint");
+//==============================================================================
+SemiImplicitEulerIntegrator::SemiImplicitEulerIntegrator()
+  : Integrator()
+{
+}
 
-  /// \brief Destructor.
-  virtual ~UniversalJoint();
+//==============================================================================
+SemiImplicitEulerIntegrator::~SemiImplicitEulerIntegrator()
+{
+}
 
-  /// \brief
-  void setAxis1(const Eigen::Vector3d& _axis);
+//==============================================================================
+void SemiImplicitEulerIntegrator::integrate(IntegrableSystem* _system,
+                                            double _dt)
+{
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+}
 
-  /// \brief
-  void setAxis2(const Eigen::Vector3d& _axis);
-
-  /// \brief
-  const Eigen::Vector3d& getAxis1() const;
-
-  /// \brief
-  const Eigen::Vector3d& getAxis2() const;
-
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[2];
-
-  /// \brief Rotational axis.
-  Eigen::Vector3d mAxis[2];
-
-public:
-  //
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-}  // namespace dynamics
+}  // namespace integration
 }  // namespace dart
-
-#endif  // DART_DYNAMICS_UNIVERSALJOINT_H_

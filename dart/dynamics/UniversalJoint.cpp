@@ -108,14 +108,5 @@ void UniversalJoint::updateJacobianTimeDeriv() {
   assert(mdS.col(1) == Eigen::Vector6d::Zero());
 }
 
-void UniversalJoint::clampRotation() {
-  for (int i = 0; i < 2; i++)   {
-    if (mCoordinate[i].getConfig() > M_PI)
-      mCoordinate[i].setConfig(mCoordinate[i].getConfig() - 2*M_PI);
-    if (mCoordinate[i].getConfig() < -M_PI)
-      mCoordinate[i].setConfig(mCoordinate[i].getConfig() + 2*M_PI);
-  }
-}
-
 }  // namespace dynamics
 }  // namespace dart

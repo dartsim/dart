@@ -48,8 +48,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/BallJoint.h"  // Fix for #122 should remove this too
-#include "dart/dynamics/FreeJoint.h"  // Fix for #122 should remove this too
 #include "dart/dynamics/Marker.h"
 
 namespace dart {
@@ -63,6 +61,7 @@ Skeleton::Skeleton(const std::string& _name)
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
     mIsMobile(true),
+    mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
     mIsAugMassMatrixDirty(true),
     mIsInvMassMatrixDirty(true),
@@ -302,8 +301,7 @@ void Skeleton::setState(const Eigen::VectorXd& _state,
   GenCoordSystem::setConfigs(_state.head(_state.size() / 2));
   GenCoordSystem::setGenVels(_state.tail(_state.size() / 2));
 
-  // computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
-  computeForwardKinematicsIssue122(_updateTransforms, _updateVels, _updateAccs);
+  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
 }
 
 //==============================================================================
@@ -312,6 +310,24 @@ Eigen::VectorXd Skeleton::getState() const
   Eigen::VectorXd state(2 * mGenCoords.size());
   state << getConfigs(), getGenVels();
   return state;
+}
+
+//==============================================================================
+void Skeleton::integrateConfigs(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
+
+  computeForwardKinematics(true, false, false);
+}
+
+//==============================================================================
+void Skeleton::integrateGenVels(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
+
+  computeForwardKinematics(false, true, false);
 }
 
 //==============================================================================
@@ -347,15 +363,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
     }
   }
 
-  // TODO(JS): This will be moved to forward dynamics and hybrid dynamics
-  //           routine
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
-
-    // TODO(JS):
+  mIsArticulatedInertiaDirty = true;
   mIsMassMatrixDirty = true;
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
@@ -366,91 +374,6 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
   mIsExternalForceVectorDirty = true;
 //  mIsDampingForceVectorDirty = true;
 
-    // TODO(JS):
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
-  }
-}
-
-//==============================================================================
-void Skeleton::computeForwardKinematicsIssue122(bool _updateTransforms,
-                                                bool _updateVels,
-                                                bool _updateAccs)
-{
-  if (_updateTransforms)
-  {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
-    {
-      // TODO(JS): This is workaround for Issue #122.
-      // TODO(JS): If possible we recomment not to use dynamic_cast. Fix for this
-      //           issue should not to use dynamic_cast.
-      if (dynamic_cast<BallJoint*>((*it)->getParentJoint())
-          || dynamic_cast<FreeJoint*>((*it)->getParentJoint()))
-      {
-        (*it)->updateTransform_Issue122(mTimeStep);
-      }
-      else
-      {
-        (*it)->updateTransform();
-      }
-    }
-  }
-
-  if (_updateVels)
-  {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
-    {
-      (*it)->updateVelocity();
-
-      // TODO(JS): This is workaround for Issue #122.
-      // TODO(JS): If possible we recomment not to use dynamic_cast. Fix for this
-      //           issue should not to use dynamic_cast.
-      if (dynamic_cast<BallJoint*>((*it)->getParentJoint())
-          || dynamic_cast<FreeJoint*>((*it)->getParentJoint()))
-      {
-        (*it)->updateEta_Issue122();
-      }
-      else
-      {
-        (*it)->updateEta();
-      }
-    }
-  }
-
-  if (_updateAccs)
-  {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
-    {
-      (*it)->updateAcceleration();
-    }
-  }
-
-  // TODO(JS): This will be moved to forward dynamics and hybrid dynamics
-  //           routine
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
-
-  // TODO(JS):
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
-  mIsDampingForceVectorDirty = true;
-
-  // TODO(JS):
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
@@ -633,6 +556,17 @@ void Skeleton::updateInvMassMatrix() {
 
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getGenForces();
+
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArticulatedInertia(mTimeStep);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
 
   int dof = getNumGenCoords();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
@@ -833,20 +767,38 @@ void Skeleton::clearContactForces() {
   }
 }
 
-void Skeleton::computeForwardDynamics() {
+//==============================================================================
+void Skeleton::computeForwardDynamics()
+{
   // Skip immobile or 0-dof skeleton
   if (!isMobile() || getNumGenCoords() == 0)
     return;
 
   // Backward recursion
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
-    (*it)->updateBiasForce(mTimeStep, mGravity);
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArticulatedInertia(mTimeStep);
+      (*it)->updateBiasForce(mTimeStep, mGravity);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateBiasForce(mTimeStep, mGravity);
+    }
   }
 
   // Forward recursion
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->update_ddq();
     (*it)->update_F_fs();
   }
