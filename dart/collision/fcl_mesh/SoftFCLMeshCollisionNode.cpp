@@ -36,13 +36,13 @@
 
 #include "dart/collision/fcl_mesh/SoftFCLMeshCollisionNode.h"
 
-#include <dart/common/Console.h>
-#include <dart/dynamics/Shape.h>
-#include <dart/dynamics/BoxShape.h>
-#include <dart/dynamics/MeshShape.h>
-#include <dart/dynamics/EllipsoidShape.h>
-#include <dart/dynamics/CylinderShape.h>
-#include <dart/collision/fcl_mesh/CollisionShapes.h>
+#include "dart/common/Console.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/collision/fcl_mesh/CollisionShapes.h"
 
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/shape/geometric_shape_to_BVH_model.h>

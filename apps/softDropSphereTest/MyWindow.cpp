@@ -42,8 +42,8 @@
 
 #include "apps/softDropSphereTest/MyWindow.h"
 
-#include <dart/dynamics/Skeleton.h>
-#include <dart/simulation/World.h>
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/SoftSkeleton.h"

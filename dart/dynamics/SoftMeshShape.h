@@ -40,7 +40,7 @@
 #include <vector>
 
 #include <assimp/scene.h>
-#include <dart/dynamics/Shape.h>
+#include "dart/dynamics/Shape.h"
 #include <Eigen/Dense>
 
 namespace dart {

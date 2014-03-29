@@ -37,7 +37,7 @@
 #ifndef SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONDETECTOR_H_
 #define SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONDETECTOR_H_
 
-#include <dart/collision/fcl_mesh/FCLMeshCollisionDetector.h>
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 namespace dart {
 namespace dynamics {

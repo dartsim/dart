@@ -46,7 +46,7 @@
 
 #include <Eigen/Dense>
 
-#include <dart/dynamics/BodyNode.h>
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace dynamics {

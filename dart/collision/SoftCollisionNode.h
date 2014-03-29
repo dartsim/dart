@@ -37,7 +37,7 @@
 #ifndef SOFT_COLLISION_SOFTCOLLISIONNODE_H_
 #define SOFT_COLLISION_SOFTCOLLISIONNODE_H_
 
-#include <dart/collision/CollisionNode.h>
+#include "dart/collision/CollisionNode.h"
 
 namespace dart {
 namespace dynamics {

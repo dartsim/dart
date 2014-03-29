@@ -43,7 +43,7 @@
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
-#include <dart/utils/SkelParser.h>
+#include "dart/utils/SkelParser.h"
 
 namespace dart {
 namespace dynamics {

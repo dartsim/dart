@@ -41,9 +41,9 @@
 #include <gtest/gtest.h>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include <dart/common/Console.h>
-#include <dart/math/Helpers.h>
-#include <dart/dynamics/Joint.h>
+#include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
+#include "dart/dynamics/Joint.h"
 
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/dynamics/SoftBodyNode.h"

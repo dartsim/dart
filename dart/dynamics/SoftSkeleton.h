@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-#include <dart/dynamics/Skeleton.h>
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {

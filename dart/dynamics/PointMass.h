@@ -39,7 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include <dart/dynamics/GenCoordSystem.h>
+#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer {

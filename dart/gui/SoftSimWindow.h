@@ -43,7 +43,7 @@
 #ifndef SOFT_GUI_SOFTSIMWINDOW_H_
 #define SOFT_GUI_SOFTSIMWINDOW_H_
 
-#include <dart/gui/SimWindow.h>
+#include "dart/gui/SimWindow.h"
 
 namespace dart {
 namespace gui {

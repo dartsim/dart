@@ -38,8 +38,8 @@
 
 #include <vector>
 
-#include <dart/dynamics/Skeleton.h>
-#include <dart/dynamics/Joint.h>
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Joint.h"
 
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"

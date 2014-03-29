@@ -38,7 +38,7 @@
 #define SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
 
 #include <assimp/mesh.h>
-#include <dart/collision/fcl_mesh/FCLMeshCollisionNode.h>
+#include "dart/collision/fcl_mesh/FCLMeshCollisionNode.h"
 
 namespace dart {
 namespace collision {

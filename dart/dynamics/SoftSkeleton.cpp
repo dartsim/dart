@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-#include <dart/dynamics/Joint.h>
+#include "dart/dynamics/Joint.h"
 
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"

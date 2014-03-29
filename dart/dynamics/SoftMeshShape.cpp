@@ -36,7 +36,7 @@
 
 #include "dart/dynamics/SoftMeshShape.h"
 
-#include <dart/common/Console.h>
+#include "dart/common/Console.h"
 
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
