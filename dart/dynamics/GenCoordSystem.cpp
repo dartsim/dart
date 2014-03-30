@@ -315,6 +315,29 @@ Eigen::VectorXd GenCoordSystem::getGenForcesMax() const
 }
 
 //==============================================================================
+void GenCoordSystem::setConstraintImpulses(const Eigen::VectorXd& _constImps)
+{
+  assert(_constImps.size() == getNumGenCoords());
+
+  size_t size = getNumGenCoords();
+
+  for (size_t i = 0; i < size; ++i)
+    mGenCoords[i]->setConstraintImpulse(_constImps[i]);
+}
+
+//==============================================================================
+Eigen::VectorXd GenCoordSystem::getConstraintImpulses() const
+{
+  size_t size = getNumGenCoords();
+  Eigen::VectorXd constraintImpulses = Eigen::VectorXd::Zero(size);
+
+  for (size_t i = 0; i < size; ++i)
+    constraintImpulses(i) = mGenCoords[i]->getConstraintImpulse();
+
+  return constraintImpulses;
+}
+
+//==============================================================================
 Eigen::VectorXd GenCoordSystem::getConfigsMin() const
 {
   size_t size = getNumGenCoords();
@@ -391,28 +414,28 @@ Eigen::VectorXd GenCoordSystem::getVelsChange() const
   return velsChange;
 }
 
-//==============================================================================
-void GenCoordSystem::setImpulses(const Eigen::VectorXd& _impulses)
-{
-  assert(_impulses.size() == getNumGenCoords());
+////==============================================================================
+//void GenCoordSystem::setImpulses(const Eigen::VectorXd& _impulses)
+//{
+//  assert(_impulses.size() == getNumGenCoords());
 
-  size_t size = getNumGenCoords();
+//  size_t size = getNumGenCoords();
 
-  for (size_t i = 0; i < size; ++i)
-    mGenCoords[i]->setImpulse(_impulses[i]);
-}
+//  for (size_t i = 0; i < size; ++i)
+//    mGenCoords[i]->setImpulse(_impulses[i]);
+//}
 
-//==============================================================================
-Eigen::VectorXd GenCoordSystem::getImpulses() const
-{
-  size_t size = getNumGenCoords();
-  Eigen::VectorXd impulse = Eigen::VectorXd::Zero(size);
+////==============================================================================
+//Eigen::VectorXd GenCoordSystem::getImpulses() const
+//{
+//  size_t size = getNumGenCoords();
+//  Eigen::VectorXd impulse = Eigen::VectorXd::Zero(size);
 
-  for (size_t i = 0; i < size; ++i)
-    impulse(i) = mGenCoords[i]->getImpulse();
+//  for (size_t i = 0; i < size; ++i)
+//    impulse(i) = mGenCoords[i]->getImpulse();
 
-  return impulse;
-}
+//  return impulse;
+//}
 
 }  // namespace dynamics
 }  // namespace dart

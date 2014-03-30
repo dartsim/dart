@@ -61,6 +61,10 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
                                             bool /*_calculateContactPoints*/) {
   clearAllContacts();
 
+  // Set all the body nodes are not in colliding
+  for (int i = 0; i < mCollisionNodes.size(); i++)
+    mCollisionNodes[i]->getBodyNode()->setColliding(false);
+
   std::vector<Contact> contacts;
 
   for (int i = 0; i < mCollisionNodes.size(); i++) {
@@ -120,6 +124,14 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
       }
     }
   }
+
+  for (size_t i = 0; i < mContacts.size(); ++i)
+  {
+    // Set these two bodies are in colliding
+    mContacts[i].collisionNode1->getBodyNode()->setColliding(true);
+    mContacts[i].collisionNode2->getBodyNode()->setColliding(true);
+  }
+
   return !mContacts.empty();
 }
 

@@ -9,6 +9,8 @@
   + bool isInf(const Eigen::MatrixXd& _m)
 
 1. **dart/dynamics/GenCoord.h**
+  + void setConstraintForce(double _constForce)
+  + double getConstraintForce() const
   + void setVelChange(double _velChange)
   + double getVelChange() const
   + void setImpulse(double _impulse)
@@ -17,6 +19,8 @@
   + void integrateVel(double _dt)
 
 1. **dart/dynamics/GenCoordSystem**
+  + void setConstraintForces(const Eigen::VectorXd& _constForces)
+  + Eigen::VectorXd getConstraintForces() const
   + virtual void setVelsChange(const Eigen::VectorXd& _velsChange)
   + virtual Eigen::VectorXd getVelsChange() const
   + virtual void setImpulses(const Eigen::VectorXd& _impulses)

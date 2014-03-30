@@ -98,11 +98,11 @@ void OldSoftConstraintDynamics::applySolutionODE()
             = static_cast<collision::SoftCollisionInfo*>(cnt.userData);
         assert(sci != NULL);
         assert(sci->pm1 != NULL);
-        sci->pm1->addContactForce(cnt.force);
+        sci->pm1->addConstraintImpulse(cnt.force);
       }
       else
       {
-        bn1->addContactForce(cnt.force, cnt.point, false, false);
+        bn1->addConstraintImpulse(cnt.force, cnt.point, false, false);
       }
 
       dynamics::BodyNode* bn2 = cnt.collisionNode2->getBodyNode();
@@ -116,11 +116,11 @@ void OldSoftConstraintDynamics::applySolutionODE()
             = static_cast<collision::SoftCollisionInfo*>(cnt.userData);
         assert(sci != NULL);
         assert(sci->pm2 != NULL);
-        sci->pm2->addContactForce(-cnt.force);
+        sci->pm2->addConstraintImpulse(-cnt.force);
       }
       else
       {
-        bn2->addContactForce(-cnt.force, cnt.point, false, false);
+        bn2->addConstraintImpulse(-cnt.force, cnt.point, false, false);
       }
     }
   }

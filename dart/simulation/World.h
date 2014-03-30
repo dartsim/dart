@@ -80,7 +80,7 @@ public:
   virtual ~World();
 
   //--------------------------------------------------------------------------
-  // Virtual functions
+  // Virtual functions for integration::IntegrableSystem
   //--------------------------------------------------------------------------
   // Documentation inherited
   virtual void setConfigs(const Eigen::VectorXd& _configs);

@@ -903,7 +903,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 
       // TODO(JS): Just clear what should be
       skel->clearExternalForces();
-      skel->clearContactForces();
+      skel->clearConstraintImpulses();
       skel->clearConstraintImpulses();
       skel->clearImpulseTest();
 
@@ -911,7 +911,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       VectorXd impulses = VectorXd::Zero(dof);
       for (size_t k = 0; k < impulses.size(); ++k)
         impulses[k] = random(lb, ub);
-      skel->setImpulses(impulses);
+      skel->setConstraintImpulses(impulses);
 
       // Compute impulse-based forward dynamics
       skel->computeImpulseForwardDynamics();

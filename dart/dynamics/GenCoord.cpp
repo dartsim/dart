@@ -63,7 +63,10 @@ GenCoord::GenCoord()
     mAccDeriv(0.0),
     mForceDeriv(0.0),
     mSkelIndex(0u),
-    mName("dof")
+    mName("dof"),
+    mVelChange(0.0),
+//    mImpulse(0.0),
+    mConstraintImpulse(0.0)
 {
 }
 
@@ -215,6 +218,19 @@ double GenCoord::getForceDeriv() const
 }
 
 //==============================================================================
+void GenCoord::setConstraintImpulse(double _constraintImpulse)
+{
+  assert(!math::isNan(_constraintImpulse));
+  mConstraintImpulse = _constraintImpulse;
+}
+
+//==============================================================================
+double GenCoord::getConstraintImpulse() const
+{
+  return mConstraintImpulse;
+}
+
+//==============================================================================
 void GenCoord::setVelChange(double _velChange)
 {
   assert(!math::isNan(_velChange));
@@ -227,18 +243,18 @@ double GenCoord::getVelChange() const
   return mVelChange;
 }
 
-//==============================================================================
-void GenCoord::setImpulse(double _impulse)
-{
-  assert(!math::isNan(_impulse));
-  mImpulse = _impulse;
-}
+////==============================================================================
+//void GenCoord::setImpulse(double _impulse)
+//{
+//  assert(!math::isNan(_impulse));
+//  mImpulse = _impulse;
+//}
 
-//==============================================================================
-double GenCoord::getImpulse() const
-{
-  return mImpulse;
-}
+////==============================================================================
+//double GenCoord::getImpulse() const
+//{
+//  return mImpulse;
+//}
 
 //==============================================================================
 void GenCoord::integrateConfig(double _dt)

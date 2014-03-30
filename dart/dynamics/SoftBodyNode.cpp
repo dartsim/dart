@@ -208,12 +208,12 @@ int SoftBodyNode::getNumFaces()
   return mFaces.size();
 }
 
-void SoftBodyNode::clearContactForces()
+void SoftBodyNode::clearConstraintImpulse()
 {
-  BodyNode::clearContactForces();
+  BodyNode::clearConstraintImpulse();
 
   for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->clearContactForces();
+    mPointMasses.at(i)->clearConstraintImpulse();
 }
 
 void SoftBodyNode::updateTransform()
@@ -384,8 +384,10 @@ void SoftBodyNode::updateBiasForce(double _timeStep,
     mFgravity.setZero();
   mB = -math::dad(mV, mI * mV) - mFext - mFgravity;
   assert(!math::isNan(mB));
-  for (int i = 0; i < mContactForces.size(); ++i)
-    mB -= mContactForces[i];
+
+  // TODO(JS): This will be removed once new constraint solver is done
+  mB -= mConstraintImpulse;
+
   assert(!math::isNan(mB));
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)

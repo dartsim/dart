@@ -118,7 +118,7 @@ public:
   int getNumFaces();
 
   // Documentation inherited.
-  virtual void clearContactForces();
+  virtual void clearConstraintImpulse();
 
 protected:
   //--------------------------------------------------------------------------

@@ -137,35 +137,51 @@ void PointMass::clearExtForce()
   mFext.setZero();
 }
 
-void PointMass::addContactForce(const Eigen::Vector3d& _contactForce,
-                                bool _isLocal)
+//==============================================================================
+void PointMass::setConstraintImpulse(const Eigen::Vector3d& _constImp,
+                                     bool _isLocal)
 {
   if (_isLocal)
   {
-    mContactForces.push_back(_contactForce);
+    GenCoordSystem::setConstraintImpulses(_constImp);
   }
   else
   {
     const Matrix3d Rt
         = mParentSoftBodyNode->getWorldTransform().linear().transpose();
-    mContactForces.push_back(Rt * _contactForce);
+    GenCoordSystem::setConstraintImpulses(Rt * _constImp);
   }
 }
 
-int PointMass::getNumContacts() const
+//==============================================================================
+void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
+                                     bool _isLocal)
 {
-  return mContactForces.size();
+  if (_isLocal)
+  {
+    GenCoordSystem::setConstraintImpulses(
+          GenCoordSystem::getConstraintImpulses() + _constImp);
+  }
+  else
+  {
+    const Matrix3d Rt
+        = mParentSoftBodyNode->getWorldTransform().linear().transpose();
+    GenCoordSystem::setConstraintImpulses(
+          GenCoordSystem::getConstraintImpulses() + Rt * _constImp);
+  }
 }
 
-const Eigen::Vector3d& PointMass::getContactForce(int _idx)
+//==============================================================================
+Eigen::Vector3d PointMass::getConstraintImpulse() const
 {
-  assert(0 <= _idx && _idx < mContactForces.size());
-  return mContactForces[_idx];
+  return GenCoordSystem::getConstraintImpulses();
 }
 
-void PointMass::clearContactForces()
+//==============================================================================
+void PointMass::clearConstraintImpulse()
 {
-  mContactForces.clear();
+  assert(GenCoordSystem::getNumGenCoords() == 3);
+  GenCoordSystem::setConstraintImpulses(Eigen::Vector3d::Zero());
 }
 
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
@@ -319,8 +335,9 @@ void PointMass::updateBodyForce(const Eigen::Vector3d& _gravity,
                    * _gravity);
   }
   assert(!math::isNan(mF));
-  for (int i = 0; i < mContactForces.size(); ++i)
-    mF -= mContactForces[i];
+
+  // TODO(JS): This will be removed once new constratin solver is done.
+  mF -= GenCoordSystem::getConstraintImpulses();
   assert(!math::isNan(mF));
 }
 
@@ -366,8 +383,9 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
              * _gravity);
   }
   assert(!math::isNan(mB));
-  for (int i = 0; i < mContactForces.size(); ++i)
-    mB -= mContactForces[i];
+
+  // TODO(JS): This will be removed once new constratin solver is done.
+  mB -= GenCoordSystem::getConstraintImpulses();
   assert(!math::isNan(mB));
 
   // Cache data: alpha

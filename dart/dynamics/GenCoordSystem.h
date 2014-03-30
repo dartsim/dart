@@ -144,11 +144,17 @@ public:
   /// \brief Get velocity change
   virtual Eigen::VectorXd getVelsChange() const;
 
-  /// \brief Set impulses
-  virtual void setImpulses(const Eigen::VectorXd& _impulses);
+//  /// \brief Set impulses
+//  virtual void setImpulses(const Eigen::VectorXd& _impulses);
 
-  /// \brief Get impulses
-  virtual Eigen::VectorXd getImpulses() const;
+//  /// \brief Get impulses
+//  virtual Eigen::VectorXd getImpulses() const;
+
+  /// \brief Set generalized constraint impulses
+  void setConstraintImpulses(const Eigen::VectorXd& _constImps);
+
+  /// \brief Get generalized constraint impulses
+  Eigen::VectorXd getConstraintImpulses() const;
 
   //----------------------------- Integration ----------------------------------
   /// \brief Integrate configurations with timestep _dt

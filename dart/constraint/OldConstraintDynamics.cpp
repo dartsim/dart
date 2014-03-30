@@ -100,7 +100,7 @@ void OldConstraintDynamics::computeConstraintForces()
   for (int i = 0; i < mSkeletons.size(); i++)
   {
     // Clear contact forces
-    mSkeletons[i]->clearContactForces();
+    mSkeletons[i]->clearConstraintImpulses();
 
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
@@ -978,10 +978,10 @@ void OldConstraintDynamics::applySolutionODE()
       Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
       dynamics::BodyNode* bn1 = contact.collisionNode1->getBodyNode();
-      bn1->addContactForce(contact.force, contact.point, false, false);
+      bn1->addConstraintImpulse(contact.force, contact.point, false, false);
 
       dynamics::BodyNode* bn2 = contact.collisionNode2->getBodyNode();
-      bn2->addContactForce(-contact.force, contact.point, false, false);
+      bn2->addConstraintImpulse(-contact.force, contact.point, false, false);
     }
   }
   for (int i = 0; i < mLimitingDofIndex.size(); i++)

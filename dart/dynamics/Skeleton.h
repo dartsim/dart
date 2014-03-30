@@ -329,18 +329,19 @@ public:
   /// by the user.
   void clearExternalForces();
 
-  /// \brief Clear contact forces of the body nodes in this skeleton.
-  /// This function called by constraint solver before computing constraint
-  /// forces. Don't call this function after simulation step so that the user
-  /// can access the contact information.
-  void clearContactForces();
-
-  /// \brief Celar constraint impulses
+  //----------------------------------------------------------------------------
+  // Constraints
+  //   - Following functions are managed by constraint solver.
+  //----------------------------------------------------------------------------
+  /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
+  /// (b) generalized constraints on Joint
   void clearConstraintImpulses();
 
+  // TODO(JS): To be deprecated
   /// \brief Set constraint force vector.
   void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
+  //----------------------------------------------------------------------------
   /// \brief Get skeleton's COM w.r.t. world frame.
   Eigen::Vector3d getWorldCOM();
 

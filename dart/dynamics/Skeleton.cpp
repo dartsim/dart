@@ -763,13 +763,6 @@ void Skeleton::clearExternalForces() {
   }
 }
 
-void Skeleton::clearContactForces() {
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
-    (*it)->clearContactForces();
-  }
-}
-
 //==============================================================================
 void Skeleton::clearConstraintImpulses()
 {
@@ -826,12 +819,12 @@ void Skeleton::clearImpulseTest()
   {
     (*it)->mImpB.setZero();
     (*it)->mImpFext.setZero();
-    (*it)->mConstImp.setZero();
+//    (*it)->mConstImp.setZero();
   }
 
   // Clear velocity change
   setVelsChange(Eigen::VectorXd::Zero(getNumGenCoords()));
-  setImpulses(Eigen::VectorXd::Zero(getNumGenCoords()));
+  setConstraintImpulses(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
 //==============================================================================

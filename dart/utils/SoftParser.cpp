@@ -46,8 +46,9 @@
 #include "dart/common/Console.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/constraint/OldConstraintDynamics.h"
-// #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -57,14 +58,14 @@
 #include "dart/dynamics/TranslationalJoint.h"
 #include "dart/dynamics/BallJoint.h"
 #include "dart/dynamics/FreeJoint.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-
-#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
+#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/SoftSkeleton.h"
+#include "dart/simulation/World.h"
 #include "dart/simulation/SoftWorld.h"
+#include "dart/utils/SkelParser.h"
 
 namespace dart {
 namespace utils {
@@ -220,14 +221,13 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
 
   //--------------------------------------------------------------------------
   // immobile attribute
-//  tinyxml2::XMLElement* immobileElement = NULL;
-//  immobileElement = _softSkeletonElement->FirstChildElement("immobile");
-//  if (immobileElement != NULL)
-//  {
-//    std::string stdImmobile = immobileElement->GetText();
-//    bool immobile = toBool(stdImmobile);
-//    newSoftSkeleton->setImmobileState(immobile);
-//  }
+  tinyxml2::XMLElement* mobileElement = NULL;
+  mobileElement = _softSkeletonElement->FirstChildElement("mobile");
+  if (mobileElement != NULL) {
+    std::string stdMobile = mobileElement->GetText();
+    bool mobile = toBool(stdMobile);
+    newSoftSkeleton->setMobile(mobile);
+  }
 
   //--------------------------------------------------------------------------
   // Bodies
@@ -598,17 +598,21 @@ dynamics::Joint* SoftSkelParser::readSoftJoint(
   std::string type = getAttribute(_jointElement, "type");
   assert(!type.empty());
   if (type == std::string("weld"))
-    newJoint = SkelParser::readWeldJoint(_jointElement);
-  if (type == std::string("revolute"))
-    newJoint = SkelParser::readRevoluteJoint(_jointElement);
+    newJoint = readWeldJoint(_jointElement);
   if (type == std::string("prismatic"))
-    newJoint = SkelParser::readPrismaticJoint(_jointElement);
+    newJoint = readPrismaticJoint(_jointElement);
+  if (type == std::string("revolute"))
+    newJoint = readRevoluteJoint(_jointElement);
+  if (type == std::string("universal"))
+    newJoint = readUniversalJoint(_jointElement);
   if (type == std::string("ball"))
-    newJoint = SkelParser::readBallJoint(_jointElement);
+    newJoint = readBallJoint(_jointElement);
+  if (type == std::string("euler"))
+    newJoint = readEulerJoint(_jointElement);
   if (type == std::string("translational"))
-    newJoint = SkelParser::readTranslationalJoint(_jointElement);
+    newJoint = readTranslationalJoint(_jointElement);
   if (type == std::string("free"))
-    newJoint = SkelParser::readFreeJoint(_jointElement);
+    newJoint = readFreeJoint(_jointElement);
   assert(newJoint != NULL);
 
   //--------------------------------------------------------------------------

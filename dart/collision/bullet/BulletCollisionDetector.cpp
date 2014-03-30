@@ -180,6 +180,10 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
   // Clear mContacts which is the list of old contacts
   clearAllContacts();
 
+  // Set all the body nodes are not in colliding
+  for (int i = 0; i < mCollisionNodes.size(); i++)
+    mCollisionNodes[i]->getBodyNode()->setColliding(false);
+
   // Add all the contacts to mContacts
   int numManifolds = mBulletCollisionWorld->getDispatcher()->getNumManifolds();
   btDispatcher* dispatcher = mBulletCollisionWorld->getDispatcher();
@@ -208,6 +212,10 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
       contactPair.collisionNode2   = userDataB->btCollNode;
 
       mContacts.push_back(contactPair);
+
+      // Set these two bodies are in colliding
+      contactPair.collisionNode1->getBodyNode()->setColliding(true);
+      contactPair.collisionNode2->getBodyNode()->setColliding(true);
     }
   }
 

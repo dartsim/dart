@@ -80,6 +80,19 @@ bool SoftFCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
   FCLMeshCollisionDetector::detectCollision(_checkAllCollisions,
                                             _calculateContactPoints);
 
+  // Set all the point masses are not colliding
+  // TODO(JS): Consider more efficient way
+  for (int i = 0; i < mCollisionNodes.size(); i++)
+  {
+    dynamics::SoftBodyNode* sb = dynamic_cast<dynamics::SoftBodyNode*>(
+                                   mCollisionNodes[i]->getBodyNode());
+    if (sb)
+    {
+      for (int j = 0; j < sb->getNumPointMasses(); ++j)
+        sb->getPointMass(j)->setColliding(false);
+    }
+  }
+
   // Convert face contact to vertex contact
   dynamics::BodyNode* body1 = NULL;
   dynamics::BodyNode* body2 = NULL;
@@ -108,6 +121,8 @@ bool SoftFCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
 
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm1 = pm;
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm2 = NULL;
+
+      pm->setColliding(true);
     }
 
     if (soft2 != NULL
@@ -122,6 +137,8 @@ bool SoftFCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
 
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm1 = NULL;
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm2 = pm;
+
+      pm->setColliding(true);
     }
 
     if (soft1 != NULL && soft2 != NULL
@@ -142,6 +159,9 @@ bool SoftFCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
 
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm1 = pm1;
       static_cast<collision::SoftCollisionInfo*>(cnt.userData)->pm2 = pm2;
+
+      pm1->setColliding(true);
+      pm2->setColliding(true);
     }
   }
 

@@ -68,7 +68,9 @@ public:
   /// \brief Get skeleton index
   size_t getSkeletonIndex() const;
 
-  //---------------------------- Configuration ---------------------------------
+  //----------------------------------------------------------------------------
+  // Configuration
+  //----------------------------------------------------------------------------
   /// \brief Set configuration
   void setConfig(double _config);
 
@@ -93,7 +95,9 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getConfigDeriv() const;
 
-  //------------------------------ Velocity ------------------------------------
+  //----------------------------------------------------------------------------
+  // Velocity
+  //----------------------------------------------------------------------------
   /// \brief Set generalized velocity
   void setVel(double _vel);
 
@@ -118,7 +122,9 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getVelDeriv() const;
 
-  //---------------------------- Acceleration ----------------------------------
+  //----------------------------------------------------------------------------
+  // Acceleration
+  //----------------------------------------------------------------------------
   /// \brief Set generalized acceleration
   void setAcc(double _acc);
 
@@ -143,7 +149,9 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getAccDeriv() const;
 
-  //------------------------------- Force --------------------------------------
+  //----------------------------------------------------------------------------
+  // Force
+  //----------------------------------------------------------------------------
   /// \brief Set generalized force
   void setForce(double _force);
 
@@ -168,20 +176,30 @@ public:
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getForceDeriv() const;
 
-  //------------------------------- Impulse ------------------------------------
+  //----------------------------------------------------------------------------
+  // Impulse
+  //----------------------------------------------------------------------------
   /// \brief Set velocity change
   void setVelChange(double _velChange);
 
   /// \brief Get velocity change
   double getVelChange() const;
 
-  /// \brief Set impulse
-  void setImpulse(double _impulse);
+//  /// \brief Set impulse
+//  void setImpulse(double _impulse);
 
-  /// \brief Get impulse
-  double getImpulse() const;
+//  /// \brief Get impulse
+//  double getImpulse() const;
 
-  //------------------------------- Integration --------------------------------
+  /// \brief Set generalized constraint impulse
+  void setConstraintImpulse(double _constraintImpulse);
+
+  /// \brief Get generalized constraint impulse
+  double getConstraintImpulse() const;
+
+  //----------------------------------------------------------------------------
+  // Integration
+  //----------------------------------------------------------------------------
   /// \brief Integrate configuration with generalized velocity and _dt
   void integrateConfig(double _dt);
 
@@ -196,7 +214,9 @@ protected:
   /// \brief Index in Skeleton
   size_t mSkelIndex;
 
-  //----------------------------- Configuration --------------------------------
+  //----------------------------------------------------------------------------
+  // Configuration
+  //----------------------------------------------------------------------------
   /// \brief Configuration
   double mConfig;
 
@@ -209,7 +229,9 @@ protected:
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
   double mConfigDeriv;
 
-  //------------------------------- Velocity -----------------------------------
+  //----------------------------------------------------------------------------
+  // Velocity
+  //----------------------------------------------------------------------------
   /// \brief Generalized velocity
   double mVel;
 
@@ -222,7 +244,9 @@ protected:
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
   double mVelDeriv;
 
-  //----------------------------- Acceleration ---------------------------------
+  //----------------------------------------------------------------------------
+  // Acceleration
+  //----------------------------------------------------------------------------
   /// \brief Generalized acceleration
   double mAcc;
 
@@ -235,7 +259,9 @@ protected:
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
   double mAccDeriv;
 
-  //-------------------------------- Force -------------------------------------
+  //----------------------------------------------------------------------------
+  // Force
+  //----------------------------------------------------------------------------
   /// \brief Generalized force
   double mForce;
 
@@ -248,12 +274,17 @@ protected:
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
   double mForceDeriv;
 
-  //------------------------------- Impulse ------------------------------------
+  //----------------------------------------------------------------------------
+  // Impulse
+  //----------------------------------------------------------------------------
   /// \brief Change of generalized velocity
   double mVelChange;
 
-  /// \brief Generalized impulse
-  double mImpulse;
+//  /// \brief Generalized impulse
+//  double mImpulse;
+
+  /// \brief Generalized constraint impulse
+  double mConstraintImpulse;
 };
 
 }  // namespace dynamics
