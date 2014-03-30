@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::SoftWorld* myWorld
       = dart::utils::SoftSkelParser::readSoftFile(
-          DART_DATA_PATH"skel/soft_cubes.skel");
+          DART_DATA_PATH"skel/soft_fullbody1.skel");
   assert(myWorld != NULL);
 
   // create a window and link it to the world
