@@ -57,6 +57,12 @@
 1. **dart/integration/Integrator.h**
   + virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt) = 0
   + virtual void integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt) = 0
+====
+1. **dart/utils/SkelParser.h**
+  + static dynamics::Skeleton* readSkeleton(const std::string& _filename)
+
+1. **dart/utils/SoftSkelParser.h**
+  + static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename)
 
 ### Deletions
 

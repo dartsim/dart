@@ -115,6 +115,51 @@ simulation::SoftWorld* SoftSkelParser::readSoftFile(
   return newWorld;
 }
 
+dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
+    const std::string& _filename)
+{
+  //--------------------------------------------------------------------------
+  // Load xml and create Document
+  tinyxml2::XMLDocument _dartFile;
+  try
+  {
+    openXMLFile(_dartFile, _filename.c_str());
+  }
+  catch(std::exception const& e)
+  {
+    std::cout << "LoadFile [" << _filename << "] Fails: "
+              << e.what() << std::endl;
+    return NULL;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load DART
+  tinyxml2::XMLElement* skelElement = NULL;
+  skelElement = _dartFile.FirstChildElement("skel");
+  if (skelElement == NULL)
+  {
+    dterr << "Skel file[" << _filename << "] does not contain <skel> as the "
+          << "element.\n";
+    return NULL;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load World
+  tinyxml2::XMLElement* skeletonElement = NULL;
+  skeletonElement = skelElement->FirstChildElement("skeleton");
+  if (skeletonElement == NULL)
+  {
+    dterr << "Skel file[" << _filename
+          << "] does not contain <skeleton> element "
+          <<"under <skel> element.\n";
+    return NULL;
+  }
+
+  dynamics::SoftSkeleton* newSoftSkeleton = readSoftSkeleton(skeletonElement);
+
+  return newSoftSkeleton;
+}
+
 simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     tinyxml2::XMLElement* _worldElement)
 {
@@ -188,7 +233,7 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
   while (softSkeletonElements.next())
   {
     dynamics::SoftSkeleton* newSoftSkeleton
-        = readSoftSkeleton(softSkeletonElements.get(), newSoftWorld);
+        = readSoftSkeleton(softSkeletonElements.get());
 
     newSoftWorld->addSkeleton(newSoftSkeleton);
   }
@@ -197,11 +242,9 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
 }
 
 dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
-    tinyxml2::XMLElement *_softSkeletonElement,
-    simulation::World *_softWorld)
+    tinyxml2::XMLElement* _softSkeletonElement)
 {
   assert(_softSkeletonElement != NULL);
-  assert(_softWorld != NULL);
 
   dynamics::SoftSkeleton* newSoftSkeleton = new dynamics::SoftSkeleton;
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
