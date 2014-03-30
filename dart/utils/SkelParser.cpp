@@ -133,6 +133,9 @@ dynamics::Skeleton* SkelParser::readSkeleton(const std::string& _filename)
 
   dynamics::Skeleton* newSkeleton = readSkeleton(skeletonElement);
 
+  // Initialize skeleto to be ready for use
+  newSkeleton->init();
+
   return newSkeleton;
 }
 

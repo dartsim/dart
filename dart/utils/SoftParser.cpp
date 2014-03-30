@@ -155,6 +155,9 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
 
   dynamics::SoftSkeleton* newSoftSkeleton = readSoftSkeleton(skeletonElement);
 
+  // Initialize skeleto to be ready for use
+  newSoftSkeleton->init();
+
   return newSoftSkeleton;
 }
 
