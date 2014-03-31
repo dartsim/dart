@@ -191,8 +191,6 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
 
   if (bn1->getSkeleton() == bn2->getSkeleton())
   {
-//    return false;
-
     if (bn1->getSkeleton()->isEnabledSelfCollisionCheck())
     {
       if (isAdjacentBodies(bn1, bn2))
