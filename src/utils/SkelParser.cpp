@@ -341,7 +341,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
     ElementEnumerator markers(_bodyNodeElement, "marker");
     while (markers.next())
     {
-        dynamics::Marker* newMarker = readMarker(markers.get());
+        dynamics::Marker* newMarker = readMarker(markers.get(), newBodyNode);
         newBodyNode->addMarker(newMarker);
     }
 
@@ -410,7 +410,8 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizElement)
     return newShape;
 }
 
-dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement)
+dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement,
+                                         dynamics::BodyNode* _bodyNode)
 {
     // Name attribute
     std::string name = getAttribute(_markerElement, "name");
@@ -420,7 +421,7 @@ dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement)
     if (hasElement(_markerElement, "offset"))
         offset = getValueVector3d(_markerElement, "offset");
 
-    dynamics::Marker* newMarker = new dynamics::Marker(name, offset);
+    dynamics::Marker* newMarker = new dynamics::Marker(name, offset, _bodyNode);
 
     return newMarker;
 }

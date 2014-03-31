@@ -44,6 +44,8 @@ namespace dart {
 namespace renderer { class RenderInterface; }
 namespace dynamics {
 
+class BodyNode;
+
 class Marker
 {
 public:
@@ -55,7 +57,9 @@ public:
     };
     
     /// @brief
-    Marker(const std::string& _name, Eigen::Vector3d& _offset,
+    Marker(const std::string& _name,
+           const Eigen::Vector3d& _offset,
+           BodyNode* _bodyNode,
            ConstraintType _type = NO);
 
     /// @brief
@@ -67,10 +71,13 @@ public:
               bool _useDefaultColor = true) const;
 
     /// @brief
-    Eigen::Vector3d getLocalCoords() const;
+    const Eigen::Vector3d& getLocalPosition() const;
 
     /// @brief
-    void setLocalCoords(Eigen::Vector3d& _offset);
+    void setLocalPosition(Eigen::Vector3d& _offset);
+
+    /// @brief Get position w.r.t. world frame
+    Eigen::Vector3d getWorldPosition() const;
 
     /// @brief
     int getSkeletonIndex() const;
@@ -95,7 +102,10 @@ public:
     void setConstraintType(ConstraintType _type);
     
 protected:
-    /// @brief local coordinates in the links.
+    /// @brief BodyNode this marker belongs to
+    BodyNode* mBodyNode;
+
+    /// @brief local position in the links.
     Eigen::Vector3d mOffset;
 
     /// @brief name of this marker.
