@@ -583,7 +583,7 @@ SkelParser::SkelBodyNode SoftSkelParser::readSoftBodyNode(
   ElementEnumerator markers(_softBodyNodeElement, "marker");
   while (markers.next())
   {
-    dynamics::Marker* newMarker = readMarker(markers.get());
+    dynamics::Marker* newMarker = readMarker(markers.get(), newSoftBodyNode);
     newSoftBodyNode->addMarker(newMarker);
   }
 
