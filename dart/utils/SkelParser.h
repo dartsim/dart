@@ -59,6 +59,7 @@ class EulerXYZJoint;
 class EulerJoint;
 class TranslationalJoint;
 class FreeJoint;
+class Marker;
 }
 
 namespace dynamics {
@@ -104,6 +105,10 @@ protected:
     /// \brief
     static dynamics::Shape* readShape(
             tinyxml2::XMLElement* _shapeElement);
+
+    /// \brief Read marker
+    static dart::dynamics::Marker* readMarker(
+        tinyxml2::XMLElement* _markerElement);
 
     /// \brief
     static dynamics::Joint* readJoint(

@@ -65,6 +65,7 @@
 #include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/Paths.h"
@@ -343,6 +344,15 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
     }
   }
 
+  //--------------------------------------------------------------------------
+  // marker
+  ElementEnumerator markers(_bodyNodeElement, "marker");
+  while (markers.next())
+  {
+    dynamics::Marker* newMarker = readMarker(markers.get());
+    newBodyNode->addMarker(newMarker);
+  }
+
   SkelBodyNode skelBodyNode;
   skelBodyNode.bodyNode = newBodyNode;
   skelBodyNode.initTransform = initTransform;
@@ -405,6 +415,21 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizEle) {
   }
 
   return newShape;
+}
+
+dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement)
+{
+  // Name attribute
+  std::string name = getAttribute(_markerElement, "name");
+
+  // offset
+  Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+  if (hasElement(_markerElement, "offset"))
+    offset = getValueVector3d(_markerElement, "offset");
+
+  dynamics::Marker* newMarker = new dynamics::Marker(name, offset);
+
+  return newMarker;
 }
 
 dynamics::Joint* SkelParser::readJoint(
