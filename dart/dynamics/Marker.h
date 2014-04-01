@@ -50,6 +50,8 @@ class RenderInterface;
 namespace dart {
 namespace dynamics {
 
+class BodyNode;
+
 class Marker {
 public:
   enum ConstraintType {
@@ -60,7 +62,7 @@ public:
 
   /// \brief
   Marker(const std::string& _name, const Eigen::Vector3d& _offset,
-         ConstraintType _type = NO);
+         BodyNode* _bodyNode, ConstraintType _type = NO);
 
   /// \brief
   virtual ~Marker();
@@ -71,10 +73,13 @@ public:
             bool _useDefaultColor = true) const;
 
   /// \brief
-  Eigen::Vector3d getLocalCoords() const;
+  const Eigen::Vector3d& getLocalPosition() const;
 
   /// \brief
-  void setLocalCoords(const Eigen::Vector3d& _offset);
+  void setLocalPosition(const Eigen::Vector3d& _offset);
+
+  /// \brief Get position w.r.t. world frame
+  Eigen::Vector3d getWorldPosition() const;
 
   /// \brief
   int getSkeletonIndex() const;
@@ -99,6 +104,9 @@ public:
   void setConstraintType(ConstraintType _type);
 
 protected:
+  /// \brief BodyNode this marker belongs to
+  BodyNode* mBodyNode;
+
   /// \brief local coordinates in the links.
   Eigen::Vector3d mOffset;
 
