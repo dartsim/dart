@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -47,42 +47,41 @@
 namespace dart {
 namespace dynamics {
 
-class BallJoint : public Joint {
+/// \brief class BallJoint
+class BallJoint : public Joint
+{
 public:
-  /// \brief Destructor.
-  explicit BallJoint(const std::string& _name = "Noname BallJoint");
+  /// \brief Constructor
+  explicit BallJoint(const std::string& _name = "BallJoint");
 
-  /// \brief Constructor.
+  /// \brief Destructor
   virtual ~BallJoint();
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateTransform_Issue122(double _timeStep);
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobian_Issue122();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-  /// @brief TODO(JS): This is workaround for Issue #122.
-  virtual void updateJacobianTimeDeriv_Issue122();
+  // Documentation inherited
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
 protected:
-  /// \brief
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void updateTransform();
+
+  // Documentation inherited
+  virtual void updateJacobian();
+
+  // Documentation inherited
+  virtual void updateJacobianTimeDeriv();
+
+protected:
+  /// \brief Generalized coordinates
   GenCoord mCoordinate[3];
 
-  /// @brief
-  // TODO(JS): This is workaround for Issue #122.
-  Eigen::Isometry3d mT_Joint;
+  /// \brief Rotation matrix
+  Eigen::Isometry3d mR;
 
 public:
-  //
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

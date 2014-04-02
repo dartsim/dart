@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Kristin Siu <kasiu@gatech.edu>
+ * Author(s): Kristin Siu <kasiu@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -42,17 +43,18 @@
 namespace dart {
 namespace integration {
 
-/// \brief
-class EulerIntegrator : public Integrator {
+/// \brief class EulerIntegrator
+class EulerIntegrator : public Integrator
+{
 public:
-  /// \brief Default constructor.
+  /// \brief Constructor
   EulerIntegrator();
 
-  /// \brief Default destructor.
+  /// \brief Destructor
   virtual ~EulerIntegrator();
 
-  // Documentation inherited.
-  virtual void integrate(IntegrableSystem* _system, double _dt) const;
+  // Documentation inherited
+  virtual void integrate(IntegrableSystem* _system, double _dt);
 };
 
 }  // namespace integration

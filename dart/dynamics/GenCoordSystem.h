@@ -49,8 +49,6 @@ namespace dart {
 namespace dynamics {
 
 /// \brief Base class for generalized coordinate systems
-///
-///
 class GenCoordSystem
 {
 public:
@@ -138,6 +136,13 @@ public:
 
   /// \brief Get uppoer bounds for generalized forces
   virtual Eigen::VectorXd getGenForcesMax() const;
+
+  //----------------------------- Integration ----------------------------------
+  /// \brief Integrate configurations with timestep _dt
+  virtual void integrateConfigs(double _dt);
+
+  /// \brief Integrate generalized velocities with timespte _dt
+  virtual void integrateGenVels(double _dt);
 
 protected:
   /// \brief Array of pointers to generalized coordinates

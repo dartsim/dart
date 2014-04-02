@@ -8,6 +8,14 @@
   + bool isInf(double _v)
   + bool isInf(const Eigen::MatrixXd& _m)
 
+1. **dart/dynamics/GenCoord.h**
+  + void integrateConfig(double _dt)
+  + void integrateVel(double _dt)
+
+1. **dart/dynamics/GenCoordSystem**
+  + virtual void integrateConfigs(double _dt)
+  + virtual void integrateGenVels(double _dt)
+
 1. **dart/dynamics/BodyNode.h**
   + enum InverseKinematicsPolicy
   + class TransformObjFunc
@@ -27,18 +35,39 @@
   + virtual void setGenAcc(size_t _idx, double _genAcc, bool _updateAccs = true)
   + virtual void setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs = true)
 
+1. **dart/dynamics/BallJoint.h**
+  + virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+  + virtual void integrateConfigs(double _dt)
+
+1. **dart/dynamics/FreeJoint.h**
+  + virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+  + virtual void integrateConfigs(double _dt)
+
 1. **dart/dynamics/Skeleton.h**
   + virtual void setGenVels(const Eigen::VectorXd& _genVels, bool _updateVels = true, bool _updateAccs = true)
   + virtual void setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs = true)
+  + virtual void integrateConfigs(double _dt)
+  + virtual void integrateGenVels(double _dt)
   + void computeForwardKinematics(bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
 
-1. **dart/utils/SkelParser.h**
-  + static dynamics::Skeleton* readSkeleton(const std::string& _filename)
+1. **dart/simulation/World.h**
+  + virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
+  + virtual void integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
 
-1. **dart/utils/SoftSkelParser.h**
-  + static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename)
+1. **dart/integration/Integrator.h**
+  + virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt) = 0
+  + virtual void integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt) = 0
 
 ### Deletions
+
+1. **dart/dynamics/BodyNode.h**
+  + virtual void updateTransform_Issue122(double _timeStep)
+  + virtual void updateEta_Issue122()
+
+1. **dart/dynamics/Joint.h**
+  + virtual void updateTransform_Issue122(double _timeStep)
+  + virtual void updateEta_Issue122()
+  + virtual void updateJacobianTimeDeriv_Issue122()
 
 1. **dart/dynamics/Skeleton.h**
   + Eigen::VectorXd getConfig() const
@@ -49,27 +78,55 @@
 
 ### Modifications
 
-1. **dart/dynamics/Skeleton.h**
-
-  + ***From:*** void setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config)
-  + ***To:*** void setConfigSegs(const std::vector<int>& _id, const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
-
-  + ***From:*** Eigen::VectorXd getConfig(const std::vector<int>& _id) const
-  + ***To:*** Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const
-
-  + ***From:*** void setConfig(const Eigen::VectorXd& _config)
-  + ***To:*** virtual void setConfigs(const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
-
-  + ***From:*** void setState(const Eigen::VectorXd& _state)
-  + ***To:*** void setState(const Eigen::VectorXd& _state, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
-
-  + ***From:*** Eigen::VectorXd getState()
-  + ***To:*** Eigen::VectorXd getState() const
-
 1. **dart/dynamics/BodyNode.h**
-
   + ***From:*** int getNumContactForces() const
-  + ***To:*** int getNumContacts() const
+    + ***To:*** int getNumContacts() const
+
+1. **dart/dynamics/Joint.h**
+  + ***From:*** void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+    + ***To:*** virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+
+1. **dart/dynamics/Skeleton.h**
+  + ***From:*** void setConfig(const std::vector<int>& _id, const Eigen::VectorXd& _config)
+    + ***To:*** void setConfigSegs(const std::vector<int>& _id, const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+  + ***From:*** Eigen::VectorXd getConfig(const std::vector<int>& _id) const
+    + ***To:*** Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const
+  + ***From:*** void setConfig(const Eigen::VectorXd& _config)
+    + ***To:*** virtual void setConfigs(const Eigen::VectorXd& _configs, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+  + ***From:*** void setState(const Eigen::VectorXd& _state)
+    + ***To:*** void setState(const Eigen::VectorXd& _state, bool _updateTransforms = true, bool _updateVels = true, bool _updateAccs = true)
+  + ***From:*** Eigen::VectorXd getState()
+    + ***To:*** Eigen::VectorXd getState() const
+
+1. **dart/simulation/World.h**
+  + ***From:*** virtual void setState(const Eigen::VectorXd &_newState)
+    + ***To:*** virtual void setConfigs(const Eigen::VectorXd& _configs)
+    + ***To:*** virtual void setGenVels(const Eigen::VectorXd& _genVels)
+  + ***From:*** virtual Eigen::VectorXd getState() const
+    + ***To:*** virtual Eigen::VectorXd getConfigs() const
+    + ***To:*** virtual Eigen::VectorXd getGenVels() const
+  + ***From:*** virtual Eigen::VectorXd evalDeriv()
+    + ***To:*** virtual Eigen::VectorXd evalGenAccs()
+
+1. **dart/integration/Integrator.h**
+  + ***From:*** virtual void setState(const Eigen::VectorXd &_newState) = 0
+    + ***To:*** virtual void setConfigs(const Eigen::VectorXd& _configs) = 0
+    + ***To:*** virtual void setGenVels(const Eigen::VectorXd& _genVels) = 0
+  + ***From:*** virtual Eigen::VectorXd getState() const = 0
+    + ***To:*** virtual Eigen::VectorXd getConfigs() const = 0
+    + ***To:*** virtual Eigen::VectorXd getGenVels() const = 0
+  + ***From:*** virtual Eigen::VectorXd evalDeriv() = 0
+    + ***To:*** virtual Eigen::VectorXd evalGenAccs() = 0
+  + ***From:*** virtual void integrate(IntegrableSystem* system, double dt) const = 0
+    + ***To:*** virtual void integrate(IntegrableSystem* system, double dt) = 0
+
+1. **dart/integration/EulerIntegrator.h**
+  + ***From:*** virtual void integrate(IntegrableSystem* system, double dt) const = 0
+    + ***To:*** virtual void integrate(IntegrableSystem* system, double dt) = 0
+
+1. **dart/integration/RK4Integrator.h**
+  + ***From:*** virtual void integrate(IntegrableSystem* system, double dt) const = 0
+    + ***To:*** virtual void integrate(IntegrableSystem* system, double dt) = 0
 
 ### New Deprecations
 

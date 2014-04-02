@@ -57,6 +57,8 @@
 #include <dart/dynamics/TranslationalJoint.h>
 #include <dart/dynamics/BallJoint.h>
 #include <dart/dynamics/FreeJoint.h>
+#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
 #include <dart/simulation/World.h>
 #include <dart/utils/SkelParser.h>
 
@@ -266,14 +268,13 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
 
   //--------------------------------------------------------------------------
   // immobile attribute
-//  tinyxml2::XMLElement* immobileElement = NULL;
-//  immobileElement = _softSkeletonElement->FirstChildElement("immobile");
-//  if (immobileElement != NULL)
-//  {
-//    std::string stdImmobile = immobileElement->GetText();
-//    bool immobile = toBool(stdImmobile);
-//    newSoftSkeleton->setImmobileState(immobile);
-//  }
+  tinyxml2::XMLElement* mobileElement = NULL;
+  mobileElement = _softSkeletonElement->FirstChildElement("mobile");
+  if (mobileElement != NULL) {
+    std::string stdMobile = mobileElement->GetText();
+    bool mobile = toBool(stdMobile);
+    newSoftSkeleton->setMobile(mobile);
+  }
 
   //--------------------------------------------------------------------------
   // Bodies
@@ -623,6 +624,15 @@ SkelParser::SkelBodyNode SoftSkelParser::readSoftBodyNode(
     }
   }
 
+  //--------------------------------------------------------------------------
+  // marker
+  ElementEnumerator markers(_softBodyNodeElement, "marker");
+  while (markers.next())
+  {
+    dynamics::Marker* newMarker = readMarker(markers.get(), newSoftBodyNode);
+    newSoftBodyNode->addMarker(newMarker);
+  }
+
   SkelBodyNode softBodyNode;
   softBodyNode.bodyNode = newSoftBodyNode;
   softBodyNode.initTransform = initTransform;
@@ -644,17 +654,21 @@ dynamics::Joint* SoftSkelParser::readSoftJoint(
   std::string type = getAttribute(_jointElement, "type");
   assert(!type.empty());
   if (type == std::string("weld"))
-    newJoint = SkelParser::readWeldJoint(_jointElement);
-  if (type == std::string("revolute"))
-    newJoint = SkelParser::readRevoluteJoint(_jointElement);
+    newJoint = readWeldJoint(_jointElement);
   if (type == std::string("prismatic"))
-    newJoint = SkelParser::readPrismaticJoint(_jointElement);
+    newJoint = readPrismaticJoint(_jointElement);
+  if (type == std::string("revolute"))
+    newJoint = readRevoluteJoint(_jointElement);
+  if (type == std::string("universal"))
+    newJoint = readUniversalJoint(_jointElement);
   if (type == std::string("ball"))
-    newJoint = SkelParser::readBallJoint(_jointElement);
+    newJoint = readBallJoint(_jointElement);
+  if (type == std::string("euler"))
+    newJoint = readEulerJoint(_jointElement);
   if (type == std::string("translational"))
-    newJoint = SkelParser::readTranslationalJoint(_jointElement);
+    newJoint = readTranslationalJoint(_jointElement);
   if (type == std::string("free"))
-    newJoint = SkelParser::readFreeJoint(_jointElement);
+    newJoint = readFreeJoint(_jointElement);
   assert(newJoint != NULL);
 
   //--------------------------------------------------------------------------

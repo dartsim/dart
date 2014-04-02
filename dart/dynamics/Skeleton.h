@@ -43,6 +43,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/GenCoordSystem.h"
 
@@ -77,16 +78,18 @@ public:
   /// \brief Get name.
   const std::string& getName() const;
 
-  /// \brief Set whether this skeleton allows self collisions between body
-  /// nodes in this skeleton.
-  /// \param[in] _isSelfCollidable True if the skeleton is checked for self
-  /// collision.
-  void setSelfCollidable(bool _isSelfCollidable);
+  /// \brief Enable self collision check
+  void enableSelfCollision(bool _enableAdjecentBodies = false);
 
-  /// \brief Get whether this skeleton allows self collisions between body
-  /// nodes in this skeleton.
-  /// \return True if the skeleton is checked for self collision.
-  bool isSelfCollidable() const;
+  /// \brief Disable self collision check
+  void disableSelfCollision();
+
+  /// \brief Return true if self collision check is enabled
+  bool isEnabledSelfCollisionCheck() const;
+
+  /// \brief Return true if self collision check is enabled including adjacent
+  /// bodies
+  bool isEnabledAdjacentBodyCheck() const;
 
   /// \brief Set whether this skeleton will be updated by forward dynamics.
   /// \param[in] _isMobile True if this skeleton is mobile.
@@ -165,7 +168,7 @@ public:
   /// \brief Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
-                          bool _updateAccs = true);
+                          bool _updateAccs);
 
   /// \brief Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
@@ -194,17 +197,18 @@ public:
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
 
+  //------------------------------ Integration ---------------------------------
+  // Documentation inherited
+  virtual void integrateConfigs(double _dt);
+
+  // Documentation inherited
+  virtual void integrateGenVels(double _dt);
+
   //----------------------- Kinematics algorithms ------------------------------
   /// \brief Compute forward kinematics
   void computeForwardKinematics(bool _updateTransforms = true,
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
-
-  /// \brief Compute forward kinematics
-  /// \warning This is called by Skeleton::setState() as workaround for #122
-  void computeForwardKinematicsIssue122(bool _updateTransforms = true,
-                                        bool _updateVels = true,
-                                        bool _updateAccs = true);
 
   //------------------------ Dynamics algorithms -------------------------------
   /// \brief Compute forward dynamics
@@ -322,9 +326,11 @@ protected:
   /// \brief Name
   std::string mName;
 
-  /// \brief Flags for selfcollision test. True if the collision detector checks
-  ///  selfcollision.
-  bool mIsSelfCollidable;
+  /// \brief True if self collision check is enabled
+  bool mEnabledSelfCollisionCheck;
+
+  /// \brief True if self collision check is enabled including adjacent bodies
+  bool mEnabledAdjacentBodyCheck;
 
   /// \brief List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
@@ -342,6 +348,9 @@ protected:
 
   /// \brief Total mass.
   double mTotalMass;
+
+  /// \brief Dirty flag for articulated body inertia
+  bool mIsArticulatedInertiaDirty;
 
   /// \brief Mass matrix for the skeleton.
   Eigen::MatrixXd mM;

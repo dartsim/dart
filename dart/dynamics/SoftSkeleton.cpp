@@ -110,6 +110,42 @@ void SoftSkeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   }
 }
 
+//==============================================================================
+void SoftSkeleton::integrateConfigs(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
+
+    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
+    if (soft)
+    {
+      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
+        soft->getPointMass(j)->integrateConfigs(_dt);
+    }
+  }
+
+  computeForwardKinematics(true, false, false);
+}
+
+//==============================================================================
+void SoftSkeleton::integrateGenVels(double _dt)
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
+
+    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
+    if (soft)
+    {
+      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
+        soft->getPointMass(j)->integrateGenVels(_dt);
+    }
+  }
+
+  computeForwardKinematics(false, true, false);
+}
+
 void SoftSkeleton::updateExternalForceVector()
 {
   Skeleton::updateExternalForceVector();

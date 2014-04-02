@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,63 +34,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
-#define DART_DYNAMICS_UNIVERSALJOINT_H_
+#ifndef DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_
+#define DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/integration/Integrator.h"
 
 namespace dart {
-namespace dynamics {
+namespace integration {
 
-class UniversalJoint : public Joint {
+/// \brief class SemiImplicitEulerIntegrator
+class SemiImplicitEulerIntegrator : public Integrator
+{
 public:
-  /// \brief Constructor.
-  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
-                 const std::string& _name = "Universal joint");
+  /// \brief Constructor
+  SemiImplicitEulerIntegrator();
 
-  /// \brief Destructor.
-  virtual ~UniversalJoint();
+  /// \brief Destructor
+  virtual ~SemiImplicitEulerIntegrator();
 
-  /// \brief
-  void setAxis1(const Eigen::Vector3d& _axis);
-
-  /// \brief
-  void setAxis2(const Eigen::Vector3d& _axis);
-
-  /// \brief
-  const Eigen::Vector3d& getAxis1() const;
-
-  /// \brief
-  const Eigen::Vector3d& getAxis2() const;
-
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[2];
-
-  /// \brief Rotational axis.
-  Eigen::Vector3d mAxis[2];
-
-public:
-  //
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  // Documentation inherited
+  virtual void integrate(IntegrableSystem* _system, double _dt);
 };
 
-}  // namespace dynamics
+}  // namespace integration
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_UNIVERSALJOINT_H_
+#endif  // DART_INTEGRATION_SEMIIMPLICITEULERINTEGRATOR_H_

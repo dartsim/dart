@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Kristin Siu <kasiu@gatech.edu>
+ * Author(s): Kristin Siu <kasiu@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -44,40 +45,56 @@
 namespace dart {
 namespace integration {
 
-/// \brief Any class that uses an integrator should implement this interface.
-class IntegrableSystem {
+/// \brief Any class that uses an integrator should implement this interface
+class IntegrableSystem
+{
 public:
-  /// \brief Default constructor.
+  /// \brief Constructor
   IntegrableSystem();
 
-  /// \brief Default destructor.
+  /// \brief Destructor
   virtual ~IntegrableSystem();
 
 public:
-  /// \brief Get state of the system.
-  virtual Eigen::VectorXd getState() const = 0;
+  /// \brief Set configurations
+  virtual void setConfigs(const Eigen::VectorXd& _configs) = 0;
 
-  /// \brief Set state of the system.
-  virtual void setState(const Eigen::VectorXd& _state) = 0;
+  /// \brief Set generalized velocities
+  virtual void setGenVels(const Eigen::VectorXd& _genVels) = 0;
 
-  /// \brief Evaluate the derivatives of the system.
-  virtual Eigen::VectorXd evalDeriv() = 0;
+  /// \brief Get configurations
+  virtual Eigen::VectorXd getConfigs() const = 0;
+
+  /// \brief Get generalized velocities
+  virtual Eigen::VectorXd getGenVels() const = 0;
+
+  /// \brief Evaulate generalized accelerations
+  virtual Eigen::VectorXd evalGenAccs() = 0;
+
+  /// \brief Integrate configruations and store them in the system
+  virtual void integrateConfigs(const Eigen::VectorXd& _genVels,
+                                double _dt) = 0;
+
+  /// \brief Integrate generalized velocities and store them in the system
+  virtual void integrateGenVels(const Eigen::VectorXd& _genVels,
+                                double _dt) = 0;
 };
 
 // TODO(kasiu): Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
-/// \brief
-class Integrator {
+/// \brief class Integrator
+class Integrator
+{
 public:
-  /// \brief Default constructor.
+  /// \brief Constructor
   Integrator();
 
-  /// \brief Default destructor.
+  /// \brief Destructor
   virtual ~Integrator();
 
 public:
-  /// \brief Integrate the system with time step dt.
-  virtual void integrate(IntegrableSystem* system, double dt) const = 0;
+  /// \brief Integrate the system with time step dt
+  virtual void integrate(IntegrableSystem* system, double dt) = 0;
 };
 
 }  // namespace integration

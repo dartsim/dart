@@ -224,14 +224,6 @@ void SoftBodyNode::updateTransform()
     mPointMasses.at(i)->updateTransform();
 }
 
-void SoftBodyNode::updateTransform_Issue122(double _timeStep)
-{
-  BodyNode::updateTransform_Issue122(_timeStep);
-
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateTransform();
-}
-
 void SoftBodyNode::updateVelocity()
 {
   BodyNode::updateVelocity();
@@ -243,14 +235,6 @@ void SoftBodyNode::updateVelocity()
 void SoftBodyNode::updateEta()
 {
   BodyNode::updateEta();
-
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateEta();
-}
-
-void SoftBodyNode::updateEta_Issue122()
-{
-  BodyNode::updateEta_Issue122();
 
   for (int i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateEta();

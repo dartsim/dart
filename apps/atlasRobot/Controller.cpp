@@ -347,7 +347,6 @@ void Controller::unharnessRightFoot()
 void Controller::resetRobot()
 {
   int dof = mAtlasRobot->getNumGenCoords();
-  mAtlasRobot->setConfigs(mInitialState.head(dof), true, true, false);  // See #122
   mAtlasRobot->setState(mInitialState, true, true, false);
 
   dtmsg << "Robot is reset." << std::endl;
