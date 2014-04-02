@@ -330,6 +330,12 @@ void World::step()
 
   mIntegrator->integratePos(this, mTimeStep);
 
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    (*it)->computeForwardKinematics(true, true, false);
+  }
+
   for (std::vector<dynamics::Skeleton*>::iterator itr = mSkeletons.begin();
        itr != mSkeletons.end(); ++itr)
   {

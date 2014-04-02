@@ -131,10 +131,10 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
       bodyDirection2.noalias()
           = mBodyNode2->getWorldTransform().linear().transpose() * -D.col(0);
 
-      bodyPoint1.noalias()
-          = mBodyNode1->getWorldTransform().inverse() * ct.point;
-      bodyPoint2.noalias()
-          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+//      bodyPoint1.noalias()
+//          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+//      bodyPoint2.noalias()
+//          = mBodyNode2->getWorldTransform().inverse() * ct.point;
 
       mJacobians1[idx].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
@@ -150,10 +150,10 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
       bodyDirection2.noalias()
           = mBodyNode2->getWorldTransform().linear().transpose() * -D.col(1);
 
-      bodyPoint1.noalias()
-          = mBodyNode1->getWorldTransform().inverse() * ct.point;
-      bodyPoint2.noalias()
-          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+//      bodyPoint1.noalias()
+//          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+//      bodyPoint2.noalias()
+//          = mBodyNode2->getWorldTransform().inverse() * ct.point;
 
       mJacobians1[idx].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
@@ -256,6 +256,7 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       // Upper and lower bounds of normal impulsive force
       _lcp->lb[_idx] = 0.0;
       _lcp->ub[_idx] = dInfinity;
+      assert(_lcp->frictionIndex[_idx] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
       _lcp->lb[_idx + 1] = -_frictionalCoff;
@@ -399,20 +400,26 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
     {
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
-      mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[_idx]);
-      mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[_idx]);
+      if (mBodyNode1->isImpulseReponsible())
+        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 0] * _lambda[_idx]);
+      if (mBodyNode2->isImpulseReponsible())
+        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 0] * _lambda[_idx]);
       _idx++;
 
       // Tangential direction-1 impulsive force
 //      mContacts[i]->lambda[1] = _lambda[_idx];
-      mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[_idx]);
-      mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[_idx]);
+      if (mBodyNode1->isImpulseReponsible())
+        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 1] * _lambda[_idx]);
+      if (mBodyNode2->isImpulseReponsible())
+        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 1] * _lambda[_idx]);
       _idx++;
 
       // Tangential direction-2 impulsive force
 //      mContacts[i]->lambda[2] = _lambda[_idx];
-      mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[_idx]);
-      mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[_idx]);
+      if (mBodyNode1->isImpulseReponsible())
+        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 2] * _lambda[_idx]);
+      if (mBodyNode2->isImpulseReponsible())
+        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 2] * _lambda[_idx]);
       _idx++;
     }
   }
@@ -473,9 +480,9 @@ void ContactConstraint::_updateVelocityChange(int _idx)
 //==============================================================================
 void ContactConstraint::_updateFirstFrictionalDirection()
 {
-  std::cout << "ContactConstraintTEST::_updateFirstFrictionalDirection(): "
-            << "Not finished implementation."
-            << std::endl;
+//  std::cout << "ContactConstraintTEST::_updateFirstFrictionalDirection(): "
+//            << "Not finished implementation."
+//            << std::endl;
 
   // TODO(JS): Not implemented
   // Refer to:
@@ -509,9 +516,8 @@ Eigen::MatrixXd ContactConstraint::_getTangentBasisMatrixODE(
   // Note: a possible speedup is in place for mNumDir % 2 = 0
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
-  double angle = 0.5 * DART_PI;
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(angle, _n)) * tangent;
+  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
   return T;
 }
 

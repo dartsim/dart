@@ -52,7 +52,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 0.0
+#define DART_DEFAULT_FRICTION_COEFF 0.1
 
 namespace dart {
 namespace dynamics {
