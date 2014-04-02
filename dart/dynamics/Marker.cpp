@@ -86,6 +86,10 @@ void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
   _ri->popName();
 }
 
+BodyNode* Marker::getBodyNode() const {
+  return mBodyNode;
+}
+
 const Eigen::Vector3d& Marker::getLocalPosition() const {
   return mOffset;
 }

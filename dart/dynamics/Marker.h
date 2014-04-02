@@ -72,6 +72,9 @@ public:
             const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
             bool _useDefaultColor = true) const;
 
+  /// \brief Get BodyNode this Marker belongs to
+  BodyNode* getBodyNode() const;
+
   /// \brief
   const Eigen::Vector3d& getLocalPosition() const;
 
