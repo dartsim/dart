@@ -818,8 +818,7 @@ void Skeleton::clearImpulseTest()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mImpB.setZero();
-    (*it)->mImpFext.setZero();
-//    (*it)->mConstImp.setZero();
+    (*it)->mConstraintImpulse.setZero();
   }
 
   // Clear velocity change
@@ -828,17 +827,26 @@ void Skeleton::clearImpulseTest()
 }
 
 //==============================================================================
-void Skeleton::updateImpBiasForce(BodyNode* _bodyNode,
+void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                   const Eigen::Vector6d& _imp)
 {
-  assert(0);
-
   // Assertions
   assert(_bodyNode != NULL);
   assert(getNumGenCoords() > 0);
 
+  // This skeleton should contains _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (int i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
   // Set impulse to _bodyNode
-  _bodyNode->mImpFext = _imp;
+  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
+  _bodyNode->mConstraintImpulse = _imp;
 
   // Prepare cache data
   BodyNode* it = _bodyNode;
@@ -849,7 +857,7 @@ void Skeleton::updateImpBiasForce(BodyNode* _bodyNode,
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
-  _bodyNode->mImpFext.setZero();
+  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
 }
 
 //==============================================================================
@@ -915,6 +923,31 @@ void Skeleton::computeImpulseForwardDynamics()
   //DEBUG_CODE//////////////////////////////////////////////////////////////////
 //  dtdbg << "Velocity change: " << getVelsChange().transpose() << std::endl;
   //////////////////////////////////////////////////////////////////////////////
+
+
+  // 1. dq = dq + del_dq
+  // 2. ddq = ddq + del_dq / dt
+  // 3. tau = tau + imp / dt
+
+//  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
+
+  GenCoordSystem::setGenVels(GenCoordSystem::getGenVels()
+                             + GenCoordSystem::getVelsChange());
+
+//  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
+
+//  GenCoordSystem::setGenAccs(GenCoordSystem::getGenAccs()
+//                             + GenCoordSystem::getVelsChange() / mTimeStep);
+
+//  GenCoordSystem::setGenForces(
+//        GenCoordSystem::getGenForces()
+//        + GenCoordSystem::getConstraintImpulses() / mTimeStep);
+
+  // 4. F = F + impF / dt
+
+  // Integration
+//  integrateConfigs(mTimeStep);
+//  computeForwardKinematics(false, true, false);
 }
 
 void Skeleton::setInternalForceVector(const Eigen::VectorXd& _forces) {

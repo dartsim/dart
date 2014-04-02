@@ -50,10 +50,12 @@
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {
 namespace simulation {
 
+//==============================================================================
 World::World()
   : integration::IntegrableSystem(),
     mGravity(0.0, 0.0, -9.81),
@@ -62,17 +64,23 @@ World::World()
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
     mConstraintHandler(
-      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)) {
+      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)),
+    mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep))
+{
   mIndices.push_back(0);
 }
 
-World::~World() {
+//==============================================================================
+World::~World()
+{
   delete mIntegrator;
   delete mConstraintHandler;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
+  {
     delete (*it);
+  }
 }
 
 //==============================================================================
@@ -147,6 +155,13 @@ Eigen::VectorXd World::getGenVels() const
 //==============================================================================
 Eigen::VectorXd World::evalGenAccs()
 {
+//  return _evalGenAccsOld();
+  return _evalGenAccsNew();
+}
+
+//==============================================================================
+Eigen::VectorXd World::_evalGenAccsOld()
+{
   // compute constraint (contact/contact, joint limit) forces
   mConstraintHandler->computeConstraintForces();
 
@@ -172,6 +187,62 @@ Eigen::VectorXd World::evalGenAccs()
   // compute derivatives for integration
   Eigen::VectorXd genAccs = Eigen::VectorXd::Zero(mIndices.back());
   for (unsigned int i = 0; i < getNumSkeletons(); i++) {
+    // skip immobile objects in forward simulation
+    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
+      continue;
+
+    int start = mIndices[i];
+    int size = getSkeleton(i)->getNumGenCoords();
+
+    // set accelerations
+    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
+  }
+
+  return genAccs;
+}
+
+//==============================================================================
+Eigen::VectorXd World::_evalGenAccsNew()
+{
+  // Compute unconstrained acceleration.
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    // Transmitted body force doesn't need to be computed here since it will be
+    // computed at below.
+    (*it)->computeForwardDynamics();
+
+    // TODO(JS): Just do Euler integration for test
+//    (*it)->integrateConfigs(mTimeStep);
+//    (*it)->integrateGenVels(mTimeStep);
+  }
+
+//  // compute constraint (contact/contact, joint limit) forces
+//  mConstraintHandler->computeConstraintForces();
+
+//  // set constraint force
+//  for (int i = 0; i < getNumSkeletons(); i++)
+//  {
+//    // skip immobile objects in forward simulation
+//    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
+//      continue;
+
+//    mSkeletons[i]->setConstraintForceVector(
+//          mConstraintHandler->getTotalConstraintForce(i) -
+//          mConstraintHandler->getContactForce(i));
+//  }
+
+//  // compute forward dynamics
+//  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+//       it != mSkeletons.end(); ++it)
+//  {
+//    (*it)->computeForwardDynamics();
+//  }
+
+  // compute derivatives for integration
+  Eigen::VectorXd genAccs = Eigen::VectorXd::Zero(mIndices.back());
+  for (unsigned int i = 0; i < getNumSkeletons(); i++)
+  {
     // skip immobile objects in forward simulation
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
@@ -233,13 +304,38 @@ double World::getTimeStep() const {
   return mTimeStep;
 }
 
-void World::step() {
-  mIntegrator->integrate(this, mTimeStep);
+//==============================================================================
+void World::step()
+{
+  // Integrate velocity unconstrained skeletons
+  mIntegrator->integrateVel(this, mTimeStep);
+
+  // Detect active constraints and compute constraint impulses
+  mConstraintSolver->solve();
+
+  // Integrate skeletons with constraint impulses
+//  mIntegrator->integrate(this, mTimeStep);
+
+  // Compute velocity changes given constraint impulses
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    if ((*it)->isImpulseApplied())
+    {
+      (*it)->computeImpulseForwardDynamics();
+//      (*it)->updateForwardKinematicsWithVelocityChanges();
+      (*it)->setImpulseApplied(false);
+    }
+  }
+
+  mIntegrator->integratePos(this, mTimeStep);
 
   for (std::vector<dynamics::Skeleton*>::iterator itr = mSkeletons.begin();
-       itr != mSkeletons.end(); ++itr) {
+       itr != mSkeletons.end(); ++itr)
+  {
     (*itr)->clearInternalForces();
     (*itr)->clearExternalForces();
+    (*itr)->clearConstraintImpulses();
   }
 
   mTime += mTimeStep;
@@ -288,12 +384,14 @@ int World::getNumSkeletons() const {
   return mSkeletons.size();
 }
 
-void World::addSkeleton(dynamics::Skeleton* _skeleton) {
+//==============================================================================
+void World::addSkeleton(dynamics::Skeleton* _skeleton)
+{
   assert(_skeleton != NULL && "Invalid skeleton.");
 
   // If mSkeletons already has _skeleton, then we do nothing.
-  if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) !=
-      mSkeletons.end()) {
+  if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) != mSkeletons.end())
+  {
     std::cout << "Skeleton [" << _skeleton->getName()
               << "] is already in the world." << std::endl;
     return;
@@ -302,7 +400,8 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton) {
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
-  mConstraintHandler->addSkeleton(_skeleton);
+//  mConstraintHandler->addSkeleton(_skeleton);
+  mConstraintSolver->addSkeleton(_skeleton);
 }
 
 void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
@@ -350,8 +449,15 @@ bool World::checkCollision(bool _checkAllCollisions) {
         _checkAllCollisions, false);
 }
 
-constraint::OldConstraintDynamics* World::getConstraintHandler() const {
+constraint::OldConstraintDynamics* World::getConstraintHandler() const
+{
   return mConstraintHandler;
+}
+
+//==============================================================================
+constraint::ConstraintSolver* World::getConstraintSolver() const
+{
+  return mConstraintSolver;
 }
 
 }  // namespace simulation

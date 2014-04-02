@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,64 +35,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_EULERJOINT_H_
-#define DART_DYNAMICS_EULERJOINT_H_
+#include <iostream>
 
-#include <string>
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "dart/constraint/ConstraintSolver.h"
+#include "apps/cubes/MyWindow.h"
 
-#include <Eigen/Dense>
+int main(int argc, char* argv[]) {
+  // create and initialize the world
+  dart::simulation::World *myWorld
+      = dart::utils::SkelParser::readSkelFile(DART_DATA_PATH"/skel/cube.skel");
+  assert(myWorld != NULL);
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
 
-#include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
 
-namespace dart {
-namespace dynamics {
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  std::cout << "'q': spawn a random cube" << std::endl;
+  std::cout << "'w': delete a spawned cube" << std::endl;
 
-class EulerJoint : public Joint {
-public:
-  enum AxisOrder {
-    AO_ZYX = 0,
-    AO_ZYZ = 1,
-    AO_XYZ = 2,
-    AO_ZXY = 3
-  };
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Boxes");
+  glutMainLoop();
 
-  /// \brief Constructor.
-  explicit EulerJoint(const std::string& _name = "Noname EulerJoint");
-
-  /// \brief Destructor.
-  virtual ~EulerJoint();
-
-  /// \brief
-  void setAxisOrder(AxisOrder _order);
-
-  /// \brief
-  AxisOrder getAxisOrder() const;
-
-  Eigen::Isometry3d getTransform(size_t _index) const;
-
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[3];
-
-  /// \brief
-  AxisOrder mAxisOrder;
-
-public:
-  //
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_EULERJOINT_H_
+  return 0;
+}

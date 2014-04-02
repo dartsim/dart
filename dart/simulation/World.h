@@ -60,6 +60,7 @@ class Skeleton;
 }  // namespace dynamics
 namespace constraint {
 class OldConstraintDynamics;
+class ConstraintSolver;
 }  // namespace constraint
 }  // namespace dart
 
@@ -96,6 +97,8 @@ public:
 
   // Documentation inherited
   virtual Eigen::VectorXd evalGenAccs();
+  virtual Eigen::VectorXd _evalGenAccsOld();
+  virtual Eigen::VectorXd _evalGenAccsNew();
 
   // Documentation inherited
   virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt);
@@ -169,8 +172,12 @@ public:
   //--------------------------------------------------------------------------
   // Constraint
   //--------------------------------------------------------------------------
-  /// \brief Get the constraint handler
+  // TODO(JS): To be deprecated (DART 4.0)
+  /// \brief Get the constraint solver
   constraint::OldConstraintDynamics* getConstraintHandler() const;
+
+  /// \brief Get the constraint solver
+  constraint::ConstraintSolver* getConstraintSolver() const;
 
 protected:
   /// \brief Skeletones in this world
@@ -200,6 +207,8 @@ protected:
   /// \brief The constraint handler
   constraint::OldConstraintDynamics* mConstraintHandler;
 
+  /// \brief Constraint solver
+  constraint::ConstraintSolver* mConstraintSolver;
 };
 
 }  // namespace simulation

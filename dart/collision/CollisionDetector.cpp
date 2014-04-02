@@ -100,9 +100,10 @@ void CollisionDetector::removeSkeleton(dynamics::Skeleton* _skeleton)
 //==============================================================================
 void CollisionDetector::removeAllSkeletons()
 {
-  std::cout << "CollisionDetector::removeAllSkeletons(): "
-            << "Not implemented yet."
-            << std::endl;
+  for (size_t i = 0; i < mSkeletons.size(); ++i)
+    removeSkeleton(mSkeletons[i]);
+
+  mSkeletons.clear();
 }
 
 void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,

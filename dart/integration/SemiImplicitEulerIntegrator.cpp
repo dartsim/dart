@@ -59,5 +59,19 @@ void SemiImplicitEulerIntegrator::integrate(IntegrableSystem* _system,
   _system->integrateConfigs(_system->getGenVels(), _dt);
 }
 
+//==============================================================================
+void SemiImplicitEulerIntegrator::integratePos(IntegrableSystem* _system,
+                                               double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+}
+
+//==============================================================================
+void SemiImplicitEulerIntegrator::integrateVel(IntegrableSystem* _system,
+                                               double _dt)
+{
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
+
 }  // namespace integration
 }  // namespace dart

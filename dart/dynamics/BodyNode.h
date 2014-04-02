@@ -416,7 +416,7 @@ public:
   /// \brief Add constraint impulse
   void addConstraintImpulse(
       const Eigen::Vector3d& _constImp,
-      const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _offset,
       bool _isImpulseLocal = false,
       bool _isOffsetLocal = true);
 
@@ -801,9 +801,6 @@ public:
   /// \brief Velocity change due to to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mDelV;
-
-  /// \brief Impulsive external force
-  Eigen::Vector6d mImpFext;
 
   /// \brief Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.

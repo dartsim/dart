@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,64 +35,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_EULERJOINT_H_
-#define DART_DYNAMICS_EULERJOINT_H_
+#ifndef APPS_CUBES_MYWINDOW_H_
+#define APPS_CUBES_MYWINDOW_H_
 
-#include <string>
+#include "dart/gui/SimWindow.h"
 
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
-
-namespace dart {
-namespace dynamics {
-
-class EulerJoint : public Joint {
+/// \brief
+class MyWindow : public dart::gui::SimWindow {
 public:
-  enum AxisOrder {
-    AO_ZYX = 0,
-    AO_ZYZ = 1,
-    AO_XYZ = 2,
-    AO_ZXY = 3
-  };
-
-  /// \brief Constructor.
-  explicit EulerJoint(const std::string& _name = "Noname EulerJoint");
-
-  /// \brief Destructor.
-  virtual ~EulerJoint();
+  /// \brief
+  MyWindow();
 
   /// \brief
-  void setAxisOrder(AxisOrder _order);
+  virtual ~MyWindow();
 
   /// \brief
-  AxisOrder getAxisOrder() const;
-
-  Eigen::Isometry3d getTransform(size_t _index) const;
-
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
-
-protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[3];
+  virtual void timeStepping();
 
   /// \brief
-  AxisOrder mAxisOrder;
+  virtual void drawSkels();
 
-public:
-  //
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
+
+  /// \brief
+  void spawnCube(
+      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
+      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 1.0);
+
+private:
+  /// \brief
+  Eigen::Vector3d mForce;
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
 };
 
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_EULERJOINT_H_
+#endif  // APPS_CUBES_MYWINDOW_H_

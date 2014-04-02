@@ -239,12 +239,10 @@ public:
   // Impulse-based dynamics
   //----------------------------------------------------------------------------
   /// \brief Clear velocity change and external impulses
-  void clearImpulseTest();
+  virtual void clearImpulseTest();
 
-  // TODO(JS): Not implemented yet
-  /// \brief Compute changes in generalized coordinate velocities due to
-  /// impulse, _imp, exerted on a body node, _bodyNode
-  void updateImpBiasForce(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
   /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
@@ -335,7 +333,7 @@ public:
   //----------------------------------------------------------------------------
   /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
-  void clearConstraintImpulses();
+  virtual void clearConstraintImpulses();
 
   // TODO(JS): To be deprecated
   /// \brief Set constraint force vector.

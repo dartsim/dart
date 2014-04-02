@@ -49,6 +49,7 @@
 #include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -154,17 +155,17 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
       std::string strCD = getValueString(physicsElement, "collision_detector");
       if (strCD == "fcl_mesh")
       {
-        newSoftWorld->getConstraintHandler()->setCollisionDetector(
+        newSoftWorld->getConstraintSolver()->setCollisionDetector(
               new collision::SoftFCLMeshCollisionDetector());
       }
       else if (strCD == "fcl")
       {
-        newSoftWorld->getConstraintHandler()->setCollisionDetector(
+        newSoftWorld->getConstraintSolver()->setCollisionDetector(
               new collision::FCLCollisionDetector());
       }
       else if (strCD == "dart")
       {
-        newSoftWorld->getConstraintHandler()->setCollisionDetector(
+        newSoftWorld->getConstraintSolver()->setCollisionDetector(
               new collision::DARTCollisionDetector());
       }
       else
@@ -176,7 +177,7 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     }
     else
     {
-      newSoftWorld->getConstraintHandler()->setCollisionDetector(
+      newSoftWorld->getConstraintSolver()->setCollisionDetector(
             new collision::SoftFCLMeshCollisionDetector());
     }
   }

@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,64 +35,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_EULERJOINT_H_
-#define DART_DYNAMICS_EULERJOINT_H_
+#ifndef DART_CONSTRAINT_JOINTCONSTRAINT_H_
+#define DART_CONSTRAINT_JOINTCONSTRAINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/constraint/Constraint.h"
 
 namespace dart {
-namespace dynamics {
+namespace constraint {
 
-class EulerJoint : public Joint {
+class JointConstraint : public Constraint
+{
 public:
-  enum AxisOrder {
-    AO_ZYX = 0,
-    AO_ZYZ = 1,
-    AO_XYZ = 2,
-    AO_ZXY = 3
-  };
+  /// \brief Default contructor
+  JointConstraint();
 
-  /// \brief Constructor.
-  explicit EulerJoint(const std::string& _name = "Noname EulerJoint");
-
-  /// \brief Destructor.
-  virtual ~EulerJoint();
+  /// \brief Default destructor
+  virtual ~JointConstraint();
 
   /// \brief
-  void setAxisOrder(AxisOrder _order);
-
-  /// \brief
-  AxisOrder getAxisOrder() const;
-
-  Eigen::Isometry3d getTransform(size_t _index) const;
-
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  bool isActive();
 
 protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[3];
-
-  /// \brief
-  AxisOrder mAxisOrder;
-
-public:
-  //
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_DYNAMICS_EULERJOINT_H_
+#endif  // DART_CONSTRAINT_CONSTRAINT_H_
+

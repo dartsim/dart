@@ -52,7 +52,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 0.4
+#define DART_DEFAULT_FRICTION_COEFF 0.0
 
 namespace dart {
 namespace dynamics {
@@ -94,9 +94,7 @@ BodyNode::BodyNode(const std::string& _name)
     mIsBodyJacobianDirty(true),
     mIsBodyJacobianTimeDerivDirty(true),
     mDelV(Eigen::Vector6d::Zero()),
-    mImpFext(Eigen::Vector6d::Zero()),
     mImpB(Eigen::Vector6d::Zero()),
-    mImpAlpha(Eigen::Vector6d::Zero()),
     mImpBeta(Eigen::Vector6d::Zero()),
     mConstraintImpulse(Eigen::Vector6d::Zero()),
     mImpF(Eigen::Vector6d::Zero())
@@ -442,6 +440,8 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
   mPsi.setZero(dof, dof);
   mImplicitPsi.setZero(dof, dof);
   mAlpha.setZero(dof);
+
+  mImpAlpha.setZero(dof);
 }
 
 void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords) {
@@ -979,7 +979,7 @@ bool BodyNode::isImpulseReponsible() const
   // Should be called at BodyNode::init()
   // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
   //           type of parent joint.
-  if (mParentJoint->getNumGenCoords() > 0)
+  if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
     return true;
   else
     return false;
@@ -989,7 +989,7 @@ bool BodyNode::isImpulseReponsible() const
 void BodyNode::updateImpBiasForce()
 {
   // Update impulsive bias force
-  mImpB = -mConstraintImpulse - mImpFext;
+  mImpB = -mConstraintImpulse;
 //  assert(mImpFext == Eigen::Vector6d::Zero());
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();

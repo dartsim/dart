@@ -49,6 +49,7 @@
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
@@ -135,17 +136,17 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
     if (hasElement(physicsElement, "collision_detector")) {
       std::string strCD = getValueString(physicsElement, "collision_detector");
       if (strCD == "fcl_mesh") {
-        newWorld->getConstraintHandler()->setCollisionDetector(
+        newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::FCLMeshCollisionDetector());
       } else if (strCD == "fcl") {
-        newWorld->getConstraintHandler()->setCollisionDetector(
+        newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::FCLCollisionDetector());
       } else if (strCD == "dart") {
-        newWorld->getConstraintHandler()->setCollisionDetector(
+        newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::DARTCollisionDetector());
 #ifdef HAVE_BULLET_COLLISION
       } else if (strCD == "bullet") {
-              newWorld->getConstraintHandler()->setCollisionDetector(
+              newWorld->getConstraintSolver()->setCollisionDetector(
                     new collision::BulletCollisionDetector());
 #endif
       } else {
