@@ -209,8 +209,9 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 //      _lcp->print();
 //      std::cout << std::endl;
 
-      _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j]
-          = _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] * 1.01;
+      // Add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
+      int diagIndex = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j;
+      _lcp->A[diagIndex] += _lcp->A[diagIndex] * 0.001;
 
 //      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
 

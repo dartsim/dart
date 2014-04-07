@@ -49,7 +49,7 @@
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/OldConstraintDynamics.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {

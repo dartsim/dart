@@ -41,8 +41,8 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/constraint/OldBallJointConstraint.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
+//#include "dart/constraint/OldBallJointConstraint.h"
 
 #include "apps/closedLoop/MyWindow.h"
 
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
     Eigen::Vector3d offset1 = bd1->getParentJoint()->getTransformFromChildBodyNode().translation();
     Eigen::Vector3d offset2(0.0, -0.025, 0.0);
-    OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
+//    OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
 //    myWorld->getConstraintHandler()->addConstraint(cl);
 
     // create a window and link it to the world

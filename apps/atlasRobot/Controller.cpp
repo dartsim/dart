@@ -43,9 +43,9 @@
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/constraint/OldBallJointConstraint.h"
-#include "dart/constraint/OldRevoluteJointConstraint.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
+//#include "dart/constraint/OldBallJointConstraint.h"
+//#include "dart/constraint/OldRevoluteJointConstraint.h"
 #include "dart/collision/CollisionDetector.h"
 
 #include "apps/atlasRobot/State.h"
@@ -244,13 +244,13 @@ void Controller::harnessPelvis()
   BodyNode* bd = mAtlasRobot->getBodyNode("pelvis");
   Eigen::Vector3d offset(0.0, 0.0, 0.0);
   Eigen::Vector3d target = bd->getWorldTransform() * offset;
-  mBallJointConstraintPelvis = new OldBallJointConstraint(bd, offset, target);
-  mConstratinSolver->addConstraint(mBallJointConstraintPelvis);
+//  mBallJointConstraintPelvis = new OldBallJointConstraint(bd, offset, target);
+//  mConstratinSolver->addConstraint(mBallJointConstraintPelvis);
 
   Eigen::Vector3d axis1(0.0, 0.0, 1.0);
   Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-  mRevoluteJointConstraintPelvis = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-  mConstratinSolver->addConstraint(mRevoluteJointConstraintPelvis);
+//  mRevoluteJointConstraintPelvis = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
+//  mConstratinSolver->addConstraint(mRevoluteJointConstraintPelvis);
 
   mPelvisHarnessOn = true;
 
@@ -263,8 +263,8 @@ void Controller::unharnessPelvis()
   if (!mPelvisHarnessOn)
     return;
 
-  mConstratinSolver->deleteConstraint(mBallJointConstraintPelvis);
-  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintPelvis);
+//  mConstratinSolver->deleteConstraint(mBallJointConstraintPelvis);
+//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintPelvis);
 
   mPelvisHarnessOn = false;
 
@@ -280,13 +280,13 @@ void Controller::harnessLeftFoot()
   BodyNode* bd = mAtlasRobot->getBodyNode("l_foot");
   Eigen::Vector3d offset(0.0, 0.0, 0.0);
   Eigen::Vector3d target = bd->getWorldTransform() * offset;
-  mBallJointConstraintLeftFoot = new OldBallJointConstraint(bd, offset, target);
-  mConstratinSolver->addConstraint(mBallJointConstraintLeftFoot);
+//  mBallJointConstraintLeftFoot = new OldBallJointConstraint(bd, offset, target);
+//  mConstratinSolver->addConstraint(mBallJointConstraintLeftFoot);
 
   Eigen::Vector3d axis1(0.0, 0.0, 1.0);
   Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-  mRevoluteJointConstraintLeftFoot = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-  mConstratinSolver->addConstraint(mRevoluteJointConstraintLeftFoot);
+//  mRevoluteJointConstraintLeftFoot = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
+//  mConstratinSolver->addConstraint(mRevoluteJointConstraintLeftFoot);
 
   mLeftFootHarnessOn = true;
 
@@ -299,8 +299,8 @@ void Controller::unharnessLeftFoot()
   if (!mLeftFootHarnessOn)
     return;
 
-  mConstratinSolver->deleteConstraint(mBallJointConstraintLeftFoot);
-  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintLeftFoot);
+//  mConstratinSolver->deleteConstraint(mBallJointConstraintLeftFoot);
+//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintLeftFoot);
 
   mLeftFootHarnessOn = false;
 
@@ -316,13 +316,13 @@ void Controller::harnessRightFoot()
   BodyNode* bd = mAtlasRobot->getBodyNode("r_foot");
   Eigen::Vector3d offset(0.0, 0.0, 0.0);
   Eigen::Vector3d target = bd->getWorldTransform() * offset;
-  mBallJointConstraintRightFoot = new OldBallJointConstraint(bd, offset, target);
-  mConstratinSolver->addConstraint(mBallJointConstraintRightFoot);
+//  mBallJointConstraintRightFoot = new OldBallJointConstraint(bd, offset, target);
+//  mConstratinSolver->addConstraint(mBallJointConstraintRightFoot);
 
   Eigen::Vector3d axis1(0.0, 0.0, 1.0);
   Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-  mRevoluteJointConstraintRightFoot= new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-  mConstratinSolver->addConstraint(mRevoluteJointConstraintRightFoot);
+//  mRevoluteJointConstraintRightFoot= new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
+//  mConstratinSolver->addConstraint(mRevoluteJointConstraintRightFoot);
 
   mRightFootHarnessOn = true;
 
@@ -335,8 +335,8 @@ void Controller::unharnessRightFoot()
   if (!mRightFootHarnessOn)
     return;
 
-  mConstratinSolver->deleteConstraint(mBallJointConstraintRightFoot);
-  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintRightFoot);
+//  mConstratinSolver->deleteConstraint(mBallJointConstraintRightFoot);
+//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintRightFoot);
 
   mRightFootHarnessOn = false;
 

@@ -149,6 +149,10 @@ private:
 
   /// \brief
   bool _IsFrictionOn;
+
+  /// \brief Small value to add to diagnal of A matrix of LCP to keep it away
+  /// from singular, similar to cfm varaible in ODE. Default is 0.001.
+  double mCfm;
 };
 
 } // namespace constraint

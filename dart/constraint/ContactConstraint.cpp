@@ -44,6 +44,7 @@
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_CONTACT_CONSTRAIN_EPSILON 1e-6
+#define DART_CONTACT_DEFAULT_CFM 0.001
 
 namespace dart {
 namespace constraint {
@@ -52,7 +53,8 @@ namespace constraint {
 ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   : Constraint(CT_DYNAMIC),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    _IsFrictionOn(true)
+    _IsFrictionOn(true),
+    mCfm(DART_CONTACT_DEFAULT_CFM)
 {
   mContacts.push_back(_contact);
 
@@ -271,19 +273,14 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       assert(_lcp->frictionIndex[_idx] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
-      _lcp->lb[_idx + 1] = -dInfinity;
-      _lcp->ub[_idx + 1] =  dInfinity;
+      _lcp->lb[_idx + 1] = -_frictionalCoff;
+      _lcp->ub[_idx + 1] =  _frictionalCoff;
       _lcp->frictionIndex[_idx + 1] = _idx;
 
       // Upper and lower bounds of tangential direction-2 impulsive force
-      _lcp->lb[_idx + 2] = -dInfinity;
-      _lcp->ub[_idx + 2] =  dInfinity;
+      _lcp->lb[_idx + 2] = -_frictionalCoff;
+      _lcp->ub[_idx + 2] =  _frictionalCoff;
       _lcp->frictionIndex[_idx + 2] = _idx;
-
-      // x
-      _lcp->x[_idx] = 0.0;
-      _lcp->x[_idx + 1] = 0.0;
-      _lcp->x[_idx + 2] = 0.0;
 
 //      std::cout << "_frictionalCoff: " << _frictionalCoff << std::endl;
 
@@ -295,6 +292,10 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       // TODO(JS): Bounce condition should be here
 
       // TODO(JS): Initial guess
+      // x
+      _lcp->x[_idx] = 0.0;
+      _lcp->x[_idx + 1] = 0.0;
+      _lcp->x[_idx + 2] = 0.0;
 
       // Increase index
       _idx += 3;
@@ -315,14 +316,13 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       _lcp->ub[_idx] = dInfinity;
       assert(_lcp->frictionIndex[_idx] == -1);
 
-      // x
-      _lcp->x[_idx] = 0.0;
-
       // TODO(JS): Penetration correction should be here
 
       // TODO(JS): Bounce condition should be here
 
       // TODO(JS): Initial guess
+      // x
+      _lcp->x[_idx] = 0.0;
 
       // Increase index
       _idx++;

@@ -42,7 +42,7 @@
 
 #include "dart/simulation/SoftWorld.h"
 
-#include "dart/constraint/OldSoftConstraintDynamics.h"
+//#include "dart/constraint/OldSoftConstraintDynamics.h"
 #include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
 
 namespace dart {

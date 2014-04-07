@@ -60,7 +60,7 @@ ConstraintSolver::ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skel
     bool   _useODE)
   : mTimeStep(_timeStep),
     mUseODE(_useODE),
-    mCollisionDetector(new collision::DARTCollisionDetector())
+    mCollisionDetector(new collision::FCLMeshCollisionDetector())
 {
   _init();
 }
