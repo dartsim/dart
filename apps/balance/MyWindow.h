@@ -54,11 +54,11 @@ public:
   virtual void drawSkels();
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  void setController(Controller *_controller);
+//  void setController(Controller *_controller);
 
 private:
   Eigen::Vector3d mForce;
-  Controller *mController;
+//  Controller *mController;
   int mImpulseDuration;
 };
 

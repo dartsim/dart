@@ -69,14 +69,14 @@ int main(int argc, char* argv[]) {
                                          true, true, false);
 
   // create controller
-  Controller* myController = new Controller(myWorld->getSkeleton(1),
-                                            myWorld->getConstraintHandler(),
-                                            myWorld->getTimeStep());
+//  Controller* myController = new Controller(myWorld->getSkeleton(1),
+//                                            myWorld->getConstraintHandler(),
+//                                            myWorld->getTimeStep());
 
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
-  window.setController(myController);
+//  window.setController(myController);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;

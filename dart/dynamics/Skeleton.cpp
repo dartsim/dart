@@ -463,6 +463,8 @@ void Skeleton::updateMassMatrix() {
   assert(mM.cols() == getNumGenCoords() && mM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
 
+  std::cout << "Great!" << std::endl;
+
   mM.setZero();
 
   // Backup the origianl internal force
@@ -507,6 +509,8 @@ void Skeleton::updateMassMatrix() {
 void Skeleton::updateAugMassMatrix() {
   assert(mAugM.cols() == getNumGenCoords() && mAugM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
+
+  std::cout << "Great!" << std::endl;
 
   mAugM.setZero();
 
@@ -553,6 +557,8 @@ void Skeleton::updateInvMassMatrix() {
   assert(mInvM.cols() == getNumGenCoords() &&
          mInvM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
+
+  std::cout << "Great!" << std::endl;
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -611,6 +617,8 @@ void Skeleton::updateInvAugMassMatrix() {
   assert(mInvAugM.cols() == getNumGenCoords() &&
          mInvAugM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
+
+  std::cout << "Great!" << std::endl;
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -848,12 +856,18 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
 
+  // Backward recursion
+  if (!mIsArticulatedInertiaDirty)
+  {
+    std::cout << "WOW" << std::endl;
+  }
+
   // Prepare cache data
   BodyNode* it = _bodyNode;
   while (it != NULL)
   {
     it->updateImpBiasForce();
-    it = _bodyNode->getParentBodyNode();
+    it = it->getParentBodyNode();
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
@@ -889,6 +903,11 @@ void Skeleton::computeImpulseForwardDynamics()
   // Skip immobile or 0-dof skeleton
   if (!isMobile() || getNumGenCoords() == 0)
     return;
+
+  if (!mIsArticulatedInertiaDirty)
+  {
+    std::cout << "WOW" << std::endl;
+  }
 
   // Backward recursion
   if (mIsArticulatedInertiaDirty)
@@ -932,7 +951,7 @@ void Skeleton::computeImpulseForwardDynamics()
 //  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
 
   GenCoordSystem::setGenVels(GenCoordSystem::getGenVels()
-                             + GenCoordSystem::getVelsChange());
+                             + GenCoordSystem::getVelsChange() * 1.0);
 
 //  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
 

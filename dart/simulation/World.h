@@ -174,7 +174,7 @@ public:
   //--------------------------------------------------------------------------
   // TODO(JS): To be deprecated (DART 4.0)
   /// \brief Get the constraint solver
-  constraint::OldConstraintDynamics* getConstraintHandler() const;
+//  constraint::OldConstraintDynamics* getConstraintHandler() const;
 
   /// \brief Get the constraint solver
   constraint::ConstraintSolver* getConstraintSolver() const;
@@ -205,7 +205,7 @@ protected:
   integration::Integrator* mIntegrator;
 
   /// \brief The constraint handler
-  constraint::OldConstraintDynamics* mConstraintHandler;
+//  constraint::OldConstraintDynamics* mConstraintHandler;
 
   /// \brief Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;

@@ -57,7 +57,7 @@ void MyWindow::timeStepping()
 {
     mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
-    mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
+//    mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
     mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(), mWorld->getSkeleton(1)->getGenVels());
     mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
 
@@ -144,7 +144,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
     case 'h':
         if (mHarnessOn) {
-            mWorld->getConstraintHandler()->deleteConstraint();
+//            mWorld->getConstraintHandler()->deleteConstraint();
             mHarnessOn = false;
         } else {
             addWeldConstraint();
@@ -163,12 +163,12 @@ void MyWindow::addWeldConstraint() {
     Eigen::Vector3d offset(0.0, 0.0, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
     OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
-    mWorld->getConstraintHandler()->addConstraint(bj);
+//    mWorld->getConstraintHandler()->addConstraint(bj);
 
     Eigen::Vector3d axis1(0.0, 1.0, 0.0);
     Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
     OldRevoluteJointConstraint *rj = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-      mWorld->getConstraintHandler()->addConstraint(rj);
+//      mWorld->getConstraintHandler()->addConstraint(rj);
 
     mHarnessOn = true;
 }

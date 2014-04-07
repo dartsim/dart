@@ -46,7 +46,7 @@
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
-  mController = NULL;
+//  mController = NULL;
   mImpulseDuration = 0;
 }
 
@@ -54,37 +54,37 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
+//  mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
-  mController->setConstrForces(
-        mWorld->getConstraintHandler()->getTotalConstraintForce(1));
-  mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(),
-                              mWorld->getSkeleton(1)->getGenVels());
-  mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
+//  mController->setConstrForces(
+//        mWorld->getConstraintHandler()->getTotalConstraintForce(1));
+//  mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(),
+//                              mWorld->getSkeleton(1)->getGenVels());
+//  mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
 
   mWorld->step();
 
   // for perturbation test
-  mImpulseDuration--;
-  if (mImpulseDuration <= 0) {
-    mImpulseDuration = 0;
-    mForce.setZero();
-  }
+//  mImpulseDuration--;
+//  if (mImpulseDuration <= 0) {
+//    mImpulseDuration = 0;
+//    mForce.setZero();
+//  }
 }
 
 void MyWindow::drawSkels() {
   for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
     mWorld->getSkeleton(i)->draw(mRI);
 
-  // draw arrow
-  if (mImpulseDuration > 0) {
-    Eigen::Vector3d poa =
-        mWorld->getSkeleton(1)->getBodyNode("h_spine")->getWorldTransform()
-        * Eigen::Vector3d(0.0, 0.0, 0.0);
-    Eigen::Vector3d start = poa - mForce / 10.0;
-    double len = mForce.norm() / 10.0;
-    dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
-  }
+//  // draw arrow
+//  if (mImpulseDuration > 0) {
+//    Eigen::Vector3d poa =
+//        mWorld->getSkeleton(1)->getBodyNode("h_spine")->getWorldTransform()
+//        * Eigen::Vector3d(0.0, 0.0, 0.0);
+//    Eigen::Vector3d start = poa - mForce / 10.0;
+//    double len = mForce.norm() / 10.0;
+//    dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
+//  }
 }
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
@@ -148,6 +148,6 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void MyWindow::setController(Controller* _controller) {
-  mController = _controller;
-}
+//void MyWindow::setController(Controller* _controller) {
+//  mController = _controller;
+//}

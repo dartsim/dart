@@ -1,3 +1,40 @@
+/*
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
+ *
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file TestHelper.h
  * @author Can Erdogan
@@ -10,9 +47,9 @@
 
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/math/Geometry.h"
 #include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
@@ -26,18 +63,24 @@
 #include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/collision/CollisionDetector.h"
+#include "dart/constraint/ConstraintSolver.h"
+#include "dart/simulation/World.h"
 
-using namespace dart;
-using namespace dynamics;
 using namespace Eigen;
+using namespace dart::math;
+using namespace dart::collision;
+using namespace dart::dynamics;
+using namespace dart::simulation;
 
 /// Function headers
 enum TypeOfDOF
 {
-    DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
+  DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
 
-/*******************************************************************************/
+/******************************************************************************/
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
 bool equals(const Eigen::DenseBase<MATRIX>& A,
@@ -290,6 +333,96 @@ Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
         robot->init();
     }
     return robot;
+}
+
+Skeleton* createGround(
+        const Eigen::Vector3d& _size,
+        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+{
+    double mass = 1.0;
+
+//    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+//    T.translation() = _position;
+//    T.linear() = eulerXYZToMatrix(_orientation);
+
+    WeldJoint* joint = new WeldJoint("joint1");
+//    joint->setConfigs(logMap(T));
+
+    Shape* shape = new BoxShape(_size);
+
+    BodyNode* node = new BodyNode("link1");
+    node->addVisualizationShape(shape);
+    node->addCollisionShape(shape);
+    node->setMass(mass);
+    node->setParentJoint(joint);
+
+    Skeleton* skeleton = new Skeleton();
+    skeleton->addBodyNode(node);
+
+    skeleton->init();
+
+    return skeleton;
+}
+
+Skeleton* createSphere(
+        const double _radius,
+        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
+{
+    double mass = 1.0;
+
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translation() = _position;
+
+    FreeJoint* joint = new FreeJoint("joint1");
+    joint->setConfigs(logMap(T));
+
+    EllipsoidShape* ellipShape = new EllipsoidShape(Vector3d(_radius * 2.0,
+                                                             _radius * 2.0,
+                                                             _radius * 2.0));
+
+    BodyNode* node = new BodyNode("link1");
+    node->addVisualizationShape(ellipShape);
+    node->addCollisionShape(ellipShape);
+    node->setMass(mass);
+    node->setParentJoint(joint);
+
+    Skeleton* skeleton = new Skeleton();
+    skeleton->addBodyNode(node);
+
+    skeleton->init();
+
+    return skeleton;
+}
+
+Skeleton* createBox(
+        const Eigen::Vector3d& _size,
+        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+{
+    double mass = 1.0;
+
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translation() = _position;
+    T.linear() = eulerXYZToMatrix(_orientation);
+
+    FreeJoint* joint = new FreeJoint("joint1");
+    joint->setConfigs(logMap(T));
+
+    Shape* shape = new BoxShape(_size);
+
+    BodyNode* node = new BodyNode("link1");
+    node->addVisualizationShape(shape);
+    node->addCollisionShape(shape);
+    node->setMass(mass);
+    node->setParentJoint(joint);
+
+    Skeleton* skeleton = new Skeleton();
+    skeleton->addBodyNode(node);
+
+    skeleton->init();
+
+    return skeleton;
 }
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     Eigen::Vector3d offset1 = bd1->getParentJoint()->getTransformFromChildBodyNode().translation();
     Eigen::Vector3d offset2(0.0, -0.025, 0.0);
     OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
-    myWorld->getConstraintHandler()->addConstraint(cl);
+//    myWorld->getConstraintHandler()->addConstraint(cl);
 
     // create a window and link it to the world
     MyWindow window;

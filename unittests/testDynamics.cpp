@@ -51,6 +51,9 @@
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/Paths.h"
 
+using namespace Eigen;
+using namespace dart;
+
 //==============================================================================
 class DynamicsTest : public ::testing::Test
 {

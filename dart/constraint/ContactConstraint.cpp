@@ -106,6 +106,14 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = _getTangentBasisMatrixODE(ct.normal);
 
+      assert(std::fabs(ct.normal.dot(D.col(0))) < DART_EPSILON);
+      assert(std::fabs(ct.normal.dot(D.col(1))) < DART_EPSILON);
+//      if (D.col(0).dot(D.col(1)) > 0.0)
+//        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
+      assert(fabs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+
+//      std::cout << "D: " << std::endl << D << std::endl;
+
       // Jacobian for normal contact
       bodyDirection1.noalias()
           = mBodyNode1->getWorldTransform().linear().transpose() * ct.normal;
@@ -117,11 +125,11 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
       bodyPoint2.noalias()
           = mBodyNode2->getWorldTransform().inverse() * ct.point;
 
-      mJacobians1[idx].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
-      mJacobians2[idx].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
+      mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
+      mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
 
-      mJacobians1[idx].tail<3>().noalias() = bodyDirection1;
-      mJacobians2[idx].tail<3>().noalias() = bodyDirection2;
+      mJacobians1[idx].tail<3>() = bodyDirection1;
+      mJacobians2[idx].tail<3>() = bodyDirection2;
 
       ++idx;
 
@@ -136,11 +144,13 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
 //      bodyPoint2.noalias()
 //          = mBodyNode2->getWorldTransform().inverse() * ct.point;
 
-      mJacobians1[idx].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
-      mJacobians2[idx].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
+//      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
 
-      mJacobians1[idx].tail<3>().noalias() = bodyDirection1;
-      mJacobians2[idx].tail<3>().noalias() = bodyDirection2;
+      mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
+      mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
+
+      mJacobians1[idx].tail<3>() = bodyDirection1;
+      mJacobians2[idx].tail<3>() = bodyDirection2;
 
       ++idx;
 
@@ -155,11 +165,13 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
 //      bodyPoint2.noalias()
 //          = mBodyNode2->getWorldTransform().inverse() * ct.point;
 
-      mJacobians1[idx].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
-      mJacobians2[idx].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
+//      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
 
-      mJacobians1[idx].tail<3>().noalias() = bodyDirection1;
-      mJacobians2[idx].tail<3>().noalias() = bodyDirection2;
+      mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
+      mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
+
+      mJacobians1[idx].tail<3>() = bodyDirection1;
+      mJacobians2[idx].tail<3>() = bodyDirection2;
 
       ++idx;
     }
@@ -214,7 +226,7 @@ void ContactConstraint::setFirstFrictionDir(
 }
 
 //==============================================================================
-const Eigen::Vector3d&ContactConstraint::getFirstFrictionlDir() const
+const Eigen::Vector3d& ContactConstraint::getFirstFrictionlDir() const
 {
   return mFirstFrictionalDirection;
 }
@@ -259,14 +271,24 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       assert(_lcp->frictionIndex[_idx] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
-      _lcp->lb[_idx + 1] = -_frictionalCoff;
-      _lcp->ub[_idx + 1] =  _frictionalCoff;
+      _lcp->lb[_idx + 1] = -dInfinity;
+      _lcp->ub[_idx + 1] =  dInfinity;
       _lcp->frictionIndex[_idx + 1] = _idx;
 
       // Upper and lower bounds of tangential direction-2 impulsive force
-      _lcp->lb[_idx + 2] = -_frictionalCoff;
-      _lcp->ub[_idx + 2] =  _frictionalCoff;
+      _lcp->lb[_idx + 2] = -dInfinity;
+      _lcp->ub[_idx + 2] =  dInfinity;
       _lcp->frictionIndex[_idx + 2] = _idx;
+
+      // x
+      _lcp->x[_idx] = 0.0;
+      _lcp->x[_idx + 1] = 0.0;
+      _lcp->x[_idx + 2] = 0.0;
+
+//      std::cout << "_frictionalCoff: " << _frictionalCoff << std::endl;
+
+//      std::cout << "_lcp->ub[_idx + 1]: " << _lcp->ub[_idx + 1] << std::endl;
+//      std::cout << "_lcp->ub[_idx + 2]: " << _lcp->ub[_idx + 2] << std::endl;
 
       // TODO(JS): Penetration correction should be here
 
@@ -291,6 +313,10 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       // Upper and lower bounds of normal impulsive force
       _lcp->lb[_idx] = 0.0;
       _lcp->ub[_idx] = dInfinity;
+      assert(_lcp->frictionIndex[_idx] == -1);
+
+      // x
+      _lcp->x[_idx] = 0.0;
 
       // TODO(JS): Penetration correction should be here
 
@@ -398,12 +424,21 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
   {
     for (int i = 0; i < mContacts.size(); ++i)
     {
+//      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
+//      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
+//      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
+
+//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[_idx] << std::endl;
+//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[_idx + 1] << std::endl;
+//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
+
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
       if (mBodyNode1->isImpulseReponsible())
         mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 0] * _lambda[_idx]);
       if (mBodyNode2->isImpulseReponsible())
         mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 0] * _lambda[_idx]);
+//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       _idx++;
 
       // Tangential direction-1 impulsive force
@@ -412,6 +447,7 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
         mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 1] * _lambda[_idx]);
       if (mBodyNode2->isImpulseReponsible())
         mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 1] * _lambda[_idx]);
+//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       _idx++;
 
       // Tangential direction-2 impulsive force
@@ -420,6 +456,7 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
         mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 2] * _lambda[_idx]);
       if (mBodyNode2->isImpulseReponsible())
         mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 2] * _lambda[_idx]);
+//      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       _idx++;
     }
   }

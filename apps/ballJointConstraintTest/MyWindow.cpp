@@ -103,7 +103,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
     case 'h':
         if (mHeadConstraint) {
-            mWorld->getConstraintHandler()->deleteConstraint(mHeadConstraint);
+//            mWorld->getConstraintHandler()->deleteConstraint(mHeadConstraint);
             mHeadConstraint = NULL;
         } else {
             mHeadConstraint = addHeadConstraint();
@@ -112,7 +112,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
 
     case 't':
         if (mTailConstraint) {
-            mWorld->getConstraintHandler()->deleteConstraint(mTailConstraint);
+//            mWorld->getConstraintHandler()->deleteConstraint(mTailConstraint);
             mTailConstraint = NULL;
         } else {
             mTailConstraint = addTailConstraint();
@@ -130,7 +130,7 @@ OldConstraint* MyWindow::addHeadConstraint() {
     Eigen::Vector3d offset(0.0, 0.025, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
     OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
-    mWorld->getConstraintHandler()->addConstraint(bj);
+//    mWorld->getConstraintHandler()->addConstraint(bj);
     return bj;
 }
 
@@ -139,6 +139,6 @@ OldConstraint* MyWindow::addTailConstraint() {
     Eigen::Vector3d offset(0.0, -0.025, 0.0);
     Eigen::Vector3d target = bd->getWorldTransform() * offset;
     OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
-    mWorld->getConstraintHandler()->addConstraint(bj);
+//    mWorld->getConstraintHandler()->addConstraint(bj);
     return bj;
 }

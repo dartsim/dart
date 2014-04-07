@@ -52,7 +52,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 0.1
+#define DART_DEFAULT_FRICTION_COEFF 0.0
 
 namespace dart {
 namespace dynamics {
@@ -802,7 +802,7 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
     mF -= mFext;                 // External force
 
   // TODO(JS): This will be removed once new constraint solver is done.
-  mF -= mConstraintImpulse;
+//  mF -= mConstraintImpulse * 1000.0;
 
   assert(!math::isNan(mF));
   mF -= mFgravity;               // Gravity force

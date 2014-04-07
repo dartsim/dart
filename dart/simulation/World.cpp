@@ -63,8 +63,8 @@ World::World()
     mTimeStep(0.001),
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
-    mConstraintHandler(
-      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)),
+//    mConstraintHandler(
+//      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)),
     mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep))
 {
   mIndices.push_back(0);
@@ -74,7 +74,7 @@ World::World()
 World::~World()
 {
   delete mIntegrator;
-  delete mConstraintHandler;
+//  delete mConstraintHandler;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -163,7 +163,7 @@ Eigen::VectorXd World::evalGenAccs()
 Eigen::VectorXd World::_evalGenAccsOld()
 {
   // compute constraint (contact/contact, joint limit) forces
-  mConstraintHandler->computeConstraintForces();
+//  mConstraintHandler->computeConstraintForces();
 
   // set constraint force
   for (int i = 0; i < getNumSkeletons(); i++)
@@ -172,9 +172,9 @@ Eigen::VectorXd World::_evalGenAccsOld()
     if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
       continue;
 
-    mSkeletons[i]->setConstraintForceVector(
-          mConstraintHandler->getTotalConstraintForce(i) -
-          mConstraintHandler->getContactForce(i));
+//    mSkeletons[i]->setConstraintForceVector(
+//          mConstraintHandler->getTotalConstraintForce(i) -
+//          mConstraintHandler->getContactForce(i));
   }
 
   // compute forward dynamics
@@ -268,7 +268,9 @@ void World::integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
 
-    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
+    // TODO(JS)
+//    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
+    getSkeleton(i)->setGenVels(_genVels.segment(start, size), true, false);
     getSkeleton(i)->integrateConfigs(_dt);
   }
 }
@@ -293,7 +295,8 @@ void World::setTimeStep(double _timeStep) {
   assert(_timeStep > 0.0 && "Invalid timestep.");
 
   mTimeStep = _timeStep;
-  mConstraintHandler->setTimeStep(_timeStep);
+//  mConstraintHandler->setTimeStep(_timeStep);
+  mConstraintSolver->setTimeStep(_timeStep);
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it) {
     (*it)->setTimeStep(_timeStep);
@@ -433,7 +436,8 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
-  mConstraintHandler->removeSkeleton(_skeleton);
+//  mConstraintHandler->removeSkeleton(_skeleton);
+  mConstraintSolver->removeSkeleton(_skeleton);
 
   // Remove _skeleton in mSkeletons and delete it.
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
@@ -451,14 +455,14 @@ int World::getIndex(int _index) const {
 }
 
 bool World::checkCollision(bool _checkAllCollisions) {
-  return mConstraintHandler->getCollisionDetector()->detectCollision(
+  return mConstraintSolver->getCollisionDetector()->detectCollision(
         _checkAllCollisions, false);
 }
 
-constraint::OldConstraintDynamics* World::getConstraintHandler() const
-{
-  return mConstraintHandler;
-}
+//constraint::OldConstraintDynamics* World::getConstraintHandler() const
+//{
+//  return mConstraintHandler;
+//}
 
 //==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver() const

@@ -34,10 +34,10 @@
             </joint>
         </skeleton>	
         
-        <skeleton name="box skeleton">
-            <body name="box">
+        <skeleton name="skeleton1">
+            <body name="link1">
                 <gravity>1</gravity>
-                <transformation>0 0.125 0 1 2 3</transformation>
+                <transformation>0 -0.025 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -45,25 +45,25 @@
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <box>
-                            <size>0.2 0.2 0.2</size>
-                        </box>
+                        <ellipsoid>
+                            <size>0.1 0.1 0.1</size>
+                        </ellipsoid>
                     </geometry>
                     <color>0.8 0.3 0.3</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <box>
-                            <size>0.2 0.2 0.2</size>
-                        </box>
+                        <ellipsoid>
+                            <size>0.1 0.1 0.1</size>
+                        </ellipsoid>
                     </geometry>
                 </collision_shape>                                
             </body>
             
-            <joint type="free" name="joint 1">
+            <joint type="free" name="joint1">
                 <parent>world</parent>
-                <child>box</child>
+                <child>link1</child>
             </joint>
         </skeleton>	
         

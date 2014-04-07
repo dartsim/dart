@@ -114,15 +114,15 @@ bool ConstrainedGroup::solve()
   _fillLCPTermsODE(&lcp);
 
   //////////////////////////////////////////////////////////////////////////////
-//  dtmsg << "Before solve" << std::endl;
-//  lcp.print();
+  dtmsg << "Before solve" << std::endl;
+  lcp.print();
   //////////////////////////////////////////////////////////////////////////////
 
   // Solve LCP
   bool result = _solveODE(&lcp);
 
-//  dtmsg << "After solve" << std::endl;
-//  lcp.print();
+  dtmsg << "After solve" << std::endl;
+  lcp.print();
 
   // Apply impulse
   _applyODE(&lcp);
@@ -187,10 +187,17 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
         mConstraints[k]->getVelocityChange(_lcp->A, index);
       }
 
-//      std::cout << "idx: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] << std::endl;
+//      std::cout << "idx: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
 
-      _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i]]
-          = _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i]] * 1.001;
+//      if (j == 0)
+
+//      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
+//      std::cout << "index: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
+
+      _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j]
+          = _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] * 1.01;
+
+//      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
 
       // Filling symmetric part of A matrix
       for (int k = 0; k < i; ++k)
@@ -213,6 +220,14 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 //==============================================================================
 bool ConstrainedGroup::_solveODE(ODELcp* _lcp)
 {
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->lb[" << i << "]: " << _lcp->lb[i] << std::endl;
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->ub[" << i << "]: " << _lcp->ub[i] << std::endl;
+
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->x[" << i << "]: " << _lcp->x[i] << std::endl;
+
   // Solve LCP using ODE's Dantzig algorithm
   dSolveLCP(_lcp->dim,
             _lcp->A,
@@ -223,6 +238,16 @@ bool ConstrainedGroup::_solveODE(ODELcp* _lcp)
             _lcp->lb,
             _lcp->ub,
             _lcp->frictionIndex);
+
+//  std::cout << "FINISHED ----" << std::endl;
+
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->lb[" << i << "]: " << _lcp->lb[i] << std::endl;
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->ub[" << i << "]: " << _lcp->ub[i] << std::endl;
+
+//  for (int i = 0; i < _lcp->dim; ++i)
+//    std::cout << "_lcp->x[" << i << "]: " << _lcp->x[i] << std::endl;
 
   // TODO(JS): Do we need to return boolean?
   return true;

@@ -52,13 +52,13 @@ SoftWorld::SoftWorld()
   : World()
 {
   // TODO(JS): Temporary code
-  delete mConstraintHandler;
+//  delete mConstraintHandler;
 
-  mConstraintHandler = new constraint::OldSoftConstraintDynamics(mSkeletons,
-                                                              mTimeStep);
+//  mConstraintHandler = new constraint::OldSoftConstraintDynamics(mSkeletons,
+//                                                              mTimeStep);
 
-  mConstraintHandler->setCollisionDetector(
-        new collision::SoftFCLMeshCollisionDetector());
+//  mConstraintHandler->setCollisionDetector(
+//        new collision::SoftFCLMeshCollisionDetector());
 }
 
 SoftWorld::~SoftWorld()

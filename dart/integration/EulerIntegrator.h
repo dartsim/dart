@@ -55,6 +55,12 @@ public:
 
   // Documentation inherited
   virtual void integrate(IntegrableSystem* _system, double _dt);
+
+  // Documentation inherited
+  virtual void integratePos(IntegrableSystem* _system, double _dt);
+
+  // Documentation inherited
+  virtual void integrateVel(IntegrableSystem* _system, double _dt);
 };
 
 }  // namespace integration

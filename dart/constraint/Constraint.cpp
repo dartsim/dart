@@ -38,6 +38,7 @@
 #include "dart/constraint/Constraint.h"
 
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 
 namespace dart {
@@ -78,58 +79,91 @@ ODELcp::~ODELcp()
 //==============================================================================
 void ODELcp::print()
 {
-  std::cout << "A: " << std::endl;
+//  std::cout << "A: " << std::endl;
+//  for (int i = 0; i < dim; ++i)
+//  {
+//    for (int j = 0; j < nSkip; ++j)
+//    {
+//      std::cout << A[i * nSkip + j] << " ";
+//    }
+//    std::cout << std::endl;
+//  }
+
+  std::cout << "b: ";
   for (int i = 0; i < dim; ++i)
   {
-    for (int j = 0; j < nSkip; ++j)
-    {
-      std::cout << A[i * nSkip + j] << " ";
-    }
-    std::cout << std::endl;
+    std::cout << std::setprecision(4) << b[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "b: " << std::endl;
-  for (int i = 0; i < dim; ++i)
-  {
-    std::cout << b[i] << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "w: " << std::endl;
+  std::cout << "w: ";
   for (int i = 0; i < dim; ++i)
   {
     std::cout << w[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "x: " << std::endl;
+  std::cout << "x: ";
   for (int i = 0; i < dim; ++i)
   {
     std::cout << x[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "lb: " << std::endl;
-  for (int i = 0; i < dim; ++i)
-  {
-    std::cout << lb[i] << " ";
-  }
-  std::cout << std::endl;
+//  std::cout << "lb: ";
+//  for (int i = 0; i < dim; ++i)
+//  {
+//    std::cout << lb[i] << " ";
+//  }
+//  std::cout << std::endl;
 
-  std::cout << "ub: " << std::endl;
-  for (int i = 0; i < dim; ++i)
-  {
-    std::cout << ub[i] << " ";
-  }
-  std::cout << std::endl;
+//  std::cout << "ub: ";
+//  for (int i = 0; i < dim; ++i)
+//  {
+//    std::cout << ub[i] << " ";
+//  }
+//  std::cout << std::endl;
 
-  std::cout << "frictionIndex: " << std::endl;
+  std::cout << "frictionIndex: ";
   for (int i = 0; i < dim; ++i)
   {
     std::cout << frictionIndex[i] << " ";
   }
   std::cout << std::endl;
+
+
+  int nSkip = dPAD(dim);
+
+  double* Ax  = new double[dim];
+
+  for (int i = 0; i < dim; ++i)
+  {
+    Ax[i] = 0.0;
+  }
+
+  for (int i = 0; i < dim; ++i)
+  {
+    for (int j = 0; j < dim; ++j)
+    {
+      Ax[i] += A[i * nSkip + j] * x[j];
+    }
+  }
+
+  std::cout << "Ax   : ";
+  for (int i = 0; i < dim; ++i)
+  {
+    std::cout << Ax[i] << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "b + w: ";
+  for (int i = 0; i < dim; ++i)
+  {
+    std::cout << b[i] + w[i] << " ";
+  }
+  std::cout << std::endl;
+
+  delete[] Ax;
 }
 
 //==============================================================================

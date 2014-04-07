@@ -57,6 +57,7 @@
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
+using namespace dart;
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
