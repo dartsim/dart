@@ -826,7 +826,10 @@ void Skeleton::clearImpulseTest()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mImpB.setZero();
+    (*it)->mImpAlpha.setZero();
+    (*it)->mImpBeta.setZero();
     (*it)->mConstraintImpulse.setZero();
+    (*it)->mImpF.setZero();
   }
 
   // Clear velocity change

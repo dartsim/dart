@@ -114,15 +114,15 @@ bool ConstrainedGroup::solve()
   _fillLCPTermsODE(&lcp);
 
   //////////////////////////////////////////////////////////////////////////////
-  dtmsg << "Before solve" << std::endl;
-  lcp.print();
+//  dtmsg << "Before solve" << std::endl;
+//  lcp.print();
   //////////////////////////////////////////////////////////////////////////////
 
   // Solve LCP
   bool result = _solveODE(&lcp);
 
-  dtmsg << "After solve" << std::endl;
-  lcp.print();
+//  dtmsg << "After solve" << std::endl;
+//  lcp.print();
 
   // Apply impulse
   _applyODE(&lcp);
@@ -151,6 +151,8 @@ bool ConstrainedGroup::_checkAndAddConstraint(Constraint* _constraint)
 //==============================================================================
 void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 {
+  _lcp->clear();
+
   // Compute offset indices
   int* offsetIndex = new int[_lcp->dim];
   offsetIndex[0] = 0;
@@ -158,7 +160,7 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
   {
     assert(mConstraints[i - 1]->getDimension() > 0);
     offsetIndex[i] = offsetIndex[i - 1] + mConstraints[i - 1]->getDimension();
-    std::cout << "offsetIndex[" << i << "]: " << offsetIndex[i] << std::endl;
+//    std::cout << "offsetIndex[" << i << "]: " << offsetIndex[i] << std::endl;
   }
 
   // For each constraint
@@ -180,8 +182,8 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
       // Apply impulse for mipulse test
       constraint->applyUnitImpulse(j);
 
-      _lcp->print();
-      std::cout << std::endl;
+//      _lcp->print();
+//      std::cout << std::endl;
 
       // Fill upper triangle blocks of A matrix
       for (int k = i; k < mConstraints.size(); ++k)
@@ -189,11 +191,13 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
         int index = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[k];
         mConstraints[k]->getVelocityChange(_lcp->A, index);
 
-        std::cout << "index: " << index << std::endl;
+//        std::cout << "index: " << index << std::endl;
 
-        _lcp->print();
-        std::cout << std::endl;
+//        _lcp->print();
+//        std::cout << std::endl;
       }
+
+      assert(_lcp->checkSymmetric2(j));
 
 //      std::cout << "idx: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
 
@@ -202,8 +206,8 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 //      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
 //      std::cout << "index: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
 
-      _lcp->print();
-      std::cout << std::endl;
+//      _lcp->print();
+//      std::cout << std::endl;
 
       _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j]
           = _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] * 1.01;
@@ -220,15 +224,15 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 
           _lcp->A[index1] = _lcp->A[index2];
 
-          std::cout << "index1: " << index1 << std::endl;
-          std::cout << "index2: " << index2 << std::endl;
-          _lcp->print();
-          std::cout << std::endl;
+//          std::cout << "index1: " << index1 << std::endl;
+//          std::cout << "index2: " << index2 << std::endl;
+//          _lcp->print();
+//          std::cout << std::endl;
         }
       }
 
-      _lcp->print();
-      std::cout << std::endl;
+//      _lcp->print();
+//      std::cout << std::endl;
 
     }
     constraint->unexcite();

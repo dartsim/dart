@@ -167,11 +167,44 @@ void ODELcp::print()
   delete[] Ax;
 }
 
+void ODELcp::clear()
+{
+  std::memset(A, 0.0, dim * nSkip * sizeof(double));
+}
+
 bool ODELcp::checkSymmetric()
 {
   for (int i = 0; i < dim; ++i)
   {
     for (int j = 0; j < dim; ++j)
+    {
+      if (std::fabs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
+      {
+        std::cout << "A: " << std::endl;
+        for (int k = 0; k < dim; ++k)
+        {
+          for (int l = 0; l < nSkip; ++l)
+          {
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool ODELcp::checkSymmetric2(int _index)
+{
+  for (int i = 0; i < _index; ++i)
+  {
+    for (int j = 0; j < _index; ++j)
     {
       if (std::fabs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
       {

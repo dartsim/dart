@@ -57,7 +57,11 @@ public:
   //-------------------------- TEST CODE ---------------------------------------
   void print();
 
+  void clear();
+
   bool checkSymmetric();
+
+  bool checkSymmetric2(int _index);
 
   //----------------------------------------------------------------------------
   /// \brief
