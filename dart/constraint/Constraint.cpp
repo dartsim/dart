@@ -37,6 +37,7 @@
 
 #include "dart/constraint/Constraint.h"
 
+#include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -79,15 +80,15 @@ ODELcp::~ODELcp()
 //==============================================================================
 void ODELcp::print()
 {
-//  std::cout << "A: " << std::endl;
-//  for (int i = 0; i < dim; ++i)
-//  {
-//    for (int j = 0; j < nSkip; ++j)
-//    {
-//      std::cout << A[i * nSkip + j] << " ";
-//    }
-//    std::cout << std::endl;
-//  }
+  std::cout << "A: " << std::endl;
+  for (int i = 0; i < dim; ++i)
+  {
+    for (int j = 0; j < nSkip; ++j)
+    {
+      std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
+    }
+    std::cout << std::endl;
+  }
 
   std::cout << "b: ";
   for (int i = 0; i < dim; ++i)
@@ -164,6 +165,34 @@ void ODELcp::print()
   std::cout << std::endl;
 
   delete[] Ax;
+}
+
+bool ODELcp::checkSymmetric()
+{
+  for (int i = 0; i < dim; ++i)
+  {
+    for (int j = 0; j < dim; ++j)
+    {
+      if (std::fabs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
+      {
+        std::cout << "A: " << std::endl;
+        for (int k = 0; k < dim; ++k)
+        {
+          for (int l = 0; l < nSkip; ++l)
+          {
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 //==============================================================================
