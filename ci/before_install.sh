@@ -45,6 +45,6 @@ fi
 sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu precise main" > /etc/apt/sources.list.d/gazebo-latest.list'
 wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get update
-sudo apt-get install libbullet2.82-dev
+sudo apt-get install libbullet-dev
 
 
