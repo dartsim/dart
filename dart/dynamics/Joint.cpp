@@ -100,6 +100,12 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const {
   return -1;
 }
 
+//==============================================================================
+Eigen::Vector6d Joint::getBodyConstraintWrench() const
+{
+  return mWrench - mS * GenCoordSystem::getGenForces();
+}
+
 void Joint::setPositionLimited(bool _isPositionLimited) {
   mIsPositionLimited = _isPositionLimited;
 }
