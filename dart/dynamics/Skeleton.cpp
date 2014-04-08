@@ -73,7 +73,9 @@ Skeleton::Skeleton(const std::string& _name)
     mIsCombinedVectorDirty(true),
     mIsExternalForceVectorDirty(true),
     mIsDampingForceVectorDirty(true),
-    mIsImpulseApplied(false)
+    mIsImpulseApplied(false),
+    mUnionRootSkeleton(this),
+    mUnionSize(1)
 {
 }
 

@@ -469,6 +469,19 @@ protected:
   /// \brief Flag for status of impulse testing.
   bool mIsImpulseApplied;
 
+  //----------------------------------------------------------------------------
+  // Union finding
+  //----------------------------------------------------------------------------
+public:
+  /// \brief
+  Skeleton* mUnionRootSkeleton;
+
+  /// \brief
+  size_t mUnionSize;
+
+  /// \brief
+  size_t mUnionIndex;
+
 protected:
   /// \brief Update mass matrix of the skeleton.
   virtual void updateMassMatrix();

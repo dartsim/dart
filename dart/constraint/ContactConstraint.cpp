@@ -240,6 +240,11 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
       mJacobians2[i].tail<3>().noalias() = bodyDirection2;
     }
   }
+
+  //----------------------------------------------------------------------------
+  // Union finding
+  //----------------------------------------------------------------------------
+  uniteSkeletons();
 }
 
 //==============================================================================
@@ -635,6 +640,36 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   T.col(0) = tangent;
   T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
   return T;
+}
+
+void ContactConstraint::uniteSkeletons()
+{
+  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+    return;
+
+  if (!mBodyNode1->isImpulseReponsible() || !mBodyNode2->isImpulseReponsible())
+    return;
+
+  dynamics::Skeleton* unionId1
+      = Constraint::compressPath(mBodyNode1->getSkeleton());
+  dynamics::Skeleton* unionId2
+      = Constraint::compressPath(mBodyNode2->getSkeleton());
+
+  if (unionId1 == unionId2)
+    return;
+
+  if (unionId1->mUnionSize < unionId2->mUnionSize)
+  {
+    // Merge root1 --> root2
+    unionId1->mUnionRootSkeleton = unionId2;
+    unionId2->mUnionSize += unionId1->mUnionSize;
+  }
+  else
+  {
+    // Merge root2 --> root1
+    unionId2->mUnionRootSkeleton = unionId1;
+    unionId1->mUnionSize += unionId2->mUnionSize;
+  }
 }
 
 }  // namespace constraint

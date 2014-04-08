@@ -18,6 +18,7 @@ foreach(APPDIR
     #holding
     #hybrid
     #ik
+    jointLimitTest
     meshCollision
     #motionAnalysis
     #pdController

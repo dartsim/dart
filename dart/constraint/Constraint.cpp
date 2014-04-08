@@ -42,6 +42,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "dart/dynamics/Skeleton.h"
+
 namespace dart {
 namespace constraint {
 
@@ -243,6 +245,19 @@ Constraint::~Constraint()
 int Constraint::getDimension() const
 {
   return mDim;
+}
+
+//==============================================================================
+dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+  {
+    _skeleton->mUnionRootSkeleton
+        = _skeleton->mUnionRootSkeleton->mUnionRootSkeleton;
+    _skeleton = _skeleton->mUnionRootSkeleton;
+  }
+
+  return _skeleton;
 }
 
 }  // namespace constraint

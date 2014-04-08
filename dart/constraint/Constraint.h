@@ -35,10 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H_TEST
-#define DART_CONSTRAINT_CONSTRAINT_H_TEST
+#ifndef DART_CONSTRAINT_CONSTRAINT_H_
+#define DART_CONSTRAINT_CONSTRAINT_H_
 
 namespace dart {
+
+namespace dynamics {
+class Skeleton;
+}  // namespace dynamics
+
 namespace constraint {
 
 //==============================================================================
@@ -141,6 +146,10 @@ public:
   //----------------------------------------------------------------------------
   /// \brief
   int getDimension() const;
+
+  //----------------------------------------------------------------------------
+  /// \brief
+  static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
 
 protected:
 //  /// \brief

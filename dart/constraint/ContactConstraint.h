@@ -163,6 +163,9 @@ private:
 
   /// \brief
   bool mIsBounceOn;
+
+  /// \brief
+  void uniteSkeletons();
 };
 
 } // namespace constraint

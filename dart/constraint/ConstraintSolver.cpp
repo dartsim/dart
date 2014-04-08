@@ -48,7 +48,7 @@
 //#include "dart/constraint/BallJointConstraint.h"
 //#include "dart/constraint/ClosedLoopConstraint.h"
 #include "dart/constraint/ContactConstraint.h"
-//#include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/JointLimitConstraint.h"
 //#include "dart/constraint/RevoluteJointConstraint.h"
 //#include "dart/constraint/WeldJointConstraint.h"
 
@@ -255,6 +255,14 @@ void ConstraintSolver::solve()
     mSkeletons[i]->clearConstraintImpulses();
 
   _updateDynamicConstraints();
+
+  // DEBUG CODE ////////////////////////////////////////////////////////////////
+//  for (int i = 0; i < mSkeletons.size(); ++i)
+//  {
+//    std::cout << "Skeleton[" << i << "]: " << mSkeletons[i]->mUnionId << ", "
+//              << mSkeletons[i]->mUnionSize << std::endl;
+//  }
+
   _buildConstrainedGroups();
   _solveConstrainedGroups();
 }
@@ -462,13 +470,13 @@ void ConstraintSolver::_updateDynamicConstraints()
   }
 
   // Joint limit constraints
-//  for (std::vector<JointLimitConstraint*>::const_iterator it
-//       = mBakedJointLimitContraints.begin();
-//       it != mBakedJointLimitContraints.end(); ++it)
-//  {
-//    if ((*it)->isActive())
-//      mDynamicConstraints.push_back(*it);
-//  }
+  for (std::vector<JointLimitConstraint*>::const_iterator it
+       = mBakedJointLimitContraints.begin();
+       it != mBakedJointLimitContraints.end(); ++it)
+  {
+    if ((*it)->isActive())
+      mDynamicConstraints.push_back(*it);
+  }
 
   // Joint constraints
 //  for (std::vector<JointConstraint*>::const_iterator it
