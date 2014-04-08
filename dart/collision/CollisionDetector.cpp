@@ -226,14 +226,36 @@ void CollisionDetector::disablePair(dynamics::BodyNode* _node1,
     getPairCollidable(collisionNode1, collisionNode2) = false;
 }
 
+//==============================================================================
 bool CollisionDetector::isCollidable(const CollisionNode* _node1,
-                                     const CollisionNode* _node2) {
-  return getPairCollidable(_node1, _node2)
-      && _node1->getBodyNode()->isCollidable()
-      && _node2->getBodyNode()->isCollidable()
-      && (_node1->getBodyNode()->getSkeleton()
-          != _node2->getBodyNode()->getSkeleton()
-      || _node1->getBodyNode()->getSkeleton()->isSelfCollidable());
+                                     const CollisionNode* _node2)
+{
+  dynamics::BodyNode* bn1 = _node1->getBodyNode();
+  dynamics::BodyNode* bn2 = _node2->getBodyNode();
+
+  if (!getPairCollidable(_node1, _node2))
+    return false;
+
+  if (!bn1->isCollidable() || !bn2->isCollidable())
+    return false;
+
+  if (bn1->getSkeleton() == bn2->getSkeleton())
+  {
+    if (bn1->getSkeleton()->isEnabledSelfCollisionCheck())
+    {
+      if (isAdjacentBodies(bn1, bn2))
+      {
+        if (!bn1->getSkeleton()->isEnabledAdjacentBodyCheck())
+          return false;
+      }
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 //==============================================================================
@@ -257,6 +279,19 @@ std::vector<bool>::reference CollisionDetector::getPairCollidable(
   if (index1 < index2)
     std::swap(index1, index2);
   return mCollidablePairs[index1][index2];
+}
+
+bool CollisionDetector::isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
+                                         const dynamics::BodyNode* _bodyNode2)
+{
+  if ((_bodyNode1->getParentBodyNode() == _bodyNode2)
+      || (_bodyNode2->getParentBodyNode() == _bodyNode1))
+  {
+    assert(_bodyNode1->getSkeleton() == _bodyNode2->getSkeleton());
+    return true;
+  }
+
+  return false;
 }
 
 CollisionNode* CollisionDetector::getCollisionNode(

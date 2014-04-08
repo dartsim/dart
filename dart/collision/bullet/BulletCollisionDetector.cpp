@@ -105,7 +105,7 @@ struct CollisionFilter : public btOverlapFilterCallback
 
     if (userData0->bodyNode->getSkeleton() ==
         userData1->bodyNode->getSkeleton())
-      if (!userData0->bodyNode->getSkeleton()->isSelfCollidable())
+      if (!userData0->bodyNode->getSkeleton()->isEnabledSelfCollisionCheck())
         return false;
 
     return collide;

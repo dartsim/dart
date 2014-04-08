@@ -62,8 +62,11 @@ namespace utils {
 class SoftSkelParser : public SkelParser
 {
 public:
-  /// \brief
+  /// \brief Read SoftWorld from skel file
   static simulation::SoftWorld* readSoftFile(const std::string& _filename);
+
+  /// \brief Read SoftSkeleton from skel file
+  static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename);
 
 protected:
   /// \brief
@@ -71,8 +74,7 @@ protected:
 
   /// \brief
   static dynamics::SoftSkeleton* readSoftSkeleton(
-      tinyxml2::XMLElement* _softSkeletonElement,
-      simulation::World* _world);
+      tinyxml2::XMLElement* _softSkeletonElement);
 
   /// \brief
   static SkelBodyNode readSoftBodyNode(

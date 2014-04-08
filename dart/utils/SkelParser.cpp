@@ -66,6 +66,7 @@
 #include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/Paths.h"
@@ -101,6 +102,43 @@ simulation::World* SkelParser::readSkelFile(const std::string& _filename) {
   simulation::World* newWorld = readWorld(worldElement);
 
   return newWorld;
+}
+
+dynamics::Skeleton* SkelParser::readSkeleton(const std::string& _filename)
+{
+  //--------------------------------------------------------------------------
+  // Load xml and create Document
+  tinyxml2::XMLDocument _dartFile;
+  try
+  {
+      openXMLFile(_dartFile, _filename.c_str());
+  }
+  catch(std::exception const& e)
+  {
+      std::cout << "LoadFile Fails: " << e.what() << std::endl;
+      return NULL;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load Skel file
+  tinyxml2::XMLElement* skeElement = NULL;
+  skeElement = _dartFile.FirstChildElement("skel");
+  if (skeElement == NULL)
+      return NULL;
+
+  //--------------------------------------------------------------------------
+  // Load skeleton
+  tinyxml2::XMLElement* skeletonElement = NULL;
+  skeletonElement = skeElement->FirstChildElement("skeleton");
+  if (skeletonElement == NULL)
+      return NULL;
+
+  dynamics::Skeleton* newSkeleton = readSkeleton(skeletonElement);
+
+  // Initialize skeleto to be ready for use
+  newSkeleton->init();
+
+  return newSkeleton;
 }
 
 simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
@@ -161,8 +199,7 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
   // Load skeletons
   ElementEnumerator skeletonElements(_worldElement, "skeleton");
   while (skeletonElements.next()) {
-    dynamics::Skeleton* newSkeleton
-        = readSkeleton(skeletonElements.get(), newWorld);
+    dynamics::Skeleton* newSkeleton = readSkeleton(skeletonElements.get());
 
     newWorld->addSkeleton(newSkeleton);
   }
@@ -171,10 +208,8 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
 }
 
 dynamics::Skeleton* SkelParser::readSkeleton(
-    tinyxml2::XMLElement* _skeletonElement,
-    simulation::World* _world) {
+    tinyxml2::XMLElement* _skeletonElement) {
   assert(_skeletonElement != NULL);
-  assert(_world != NULL);
 
   dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
@@ -344,6 +379,15 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
     }
   }
 
+  //--------------------------------------------------------------------------
+  // marker
+  ElementEnumerator markers(_bodyNodeElement, "marker");
+  while (markers.next())
+  {
+    dynamics::Marker* newMarker = readMarker(markers.get(), newBodyNode);
+    newBodyNode->addMarker(newMarker);
+  }
+
   SkelBodyNode skelBodyNode;
   skelBodyNode.bodyNode = newBodyNode;
   skelBodyNode.initTransform = initTransform;
@@ -406,6 +450,22 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizEle) {
   }
 
   return newShape;
+}
+
+dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement,
+                                         dynamics::BodyNode* _bodyNode)
+{
+  // Name attribute
+  std::string name = getAttribute(_markerElement, "name");
+
+  // offset
+  Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+  if (hasElement(_markerElement, "offset"))
+    offset = getValueVector3d(_markerElement, "offset");
+
+  dynamics::Marker* newMarker = new dynamics::Marker(name, offset, _bodyNode);
+
+  return newMarker;
 }
 
 dynamics::Joint* SkelParser::readJoint(

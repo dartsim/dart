@@ -131,7 +131,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         dynamics::PlaneShape* plane =
             static_cast<dynamics::PlaneShape*>(shape);
 
-        double d = plane->getNormal().dot(plane->getPoint())
+        btScalar d = plane->getNormal().dot(plane->getPoint())
                    / plane->getNormal().squaredNorm();
 
         btStaticPlaneShape* btStaticPlane =

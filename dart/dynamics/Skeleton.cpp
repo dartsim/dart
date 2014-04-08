@@ -57,7 +57,8 @@ namespace dynamics {
 Skeleton::Skeleton(const std::string& _name)
   : GenCoordSystem(),
     mName(_name),
-    mIsSelfCollidable(false),
+    mEnabledSelfCollisionCheck(false),
+    mEnabledAdjacentBodyCheck(false),
     mTimeStep(0.001),
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
@@ -90,12 +91,26 @@ const std::string& Skeleton::getName() const {
   return mName;
 }
 
-void Skeleton::setSelfCollidable(bool _isSelfCollidable) {
-  mIsSelfCollidable = _isSelfCollidable;
+void Skeleton::enableSelfCollision(bool _enableAdjecentBodyCheck)
+{
+  mEnabledSelfCollisionCheck = true;
+  mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
 }
 
-bool Skeleton::isSelfCollidable() const {
-  return mIsSelfCollidable;
+void Skeleton::disableSelfCollision()
+{
+  mEnabledSelfCollisionCheck = false;
+  mEnabledAdjacentBodyCheck = false;
+}
+
+bool Skeleton::isEnabledSelfCollisionCheck() const
+{
+  return mEnabledSelfCollisionCheck;
+}
+
+bool Skeleton::isEnabledAdjacentBodyCheck() const
+{
+  return mEnabledAdjacentBodyCheck;
 }
 
 void Skeleton::setMobile(bool _isMobile) {
