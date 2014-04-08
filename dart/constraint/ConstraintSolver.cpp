@@ -41,7 +41,9 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/collision/bullet/BulletCollisionDetector.h"
+#ifdef HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/BulletCollisionDetector.h"
+#endif
 #include "dart/constraint/ConstrainedGroup.h"
 //#include "dart/constraint/BallJointConstraint.h"
 //#include "dart/constraint/ClosedLoopConstraint.h"
@@ -61,7 +63,7 @@ ConstraintSolver::ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skel
     bool   _useODE)
   : mTimeStep(_timeStep),
     mUseODE(_useODE),
-    mCollisionDetector(new collision::BulletCollisionDetector())
+    mCollisionDetector(new collision::DARTCollisionDetector())
 {
   _init();
 }
