@@ -190,6 +190,12 @@ public:
   /// \brief Get frictional coefficient.
   double getFrictionCoeff() const;
 
+  /// \brief Set coefficient of restitution in range of [0, 1]
+  void setRestitutionCoeff(double _coeff);
+
+  /// \brief Get coefficient of restitution
+  double getRestitutionCoeff() const;
+
   //--------------------------------------------------------------------------
   // Structueral Properties
   //--------------------------------------------------------------------------
@@ -661,6 +667,9 @@ public:
 
   /// \brief Coefficient of friction
   double mFrictionCoeff;
+
+  /// \brief Coefficient of friction
+  double mRestitutionCoeff;
 
   /// \brief
   std::vector<Shape*> mVizShapes;

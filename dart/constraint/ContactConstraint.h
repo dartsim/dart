@@ -48,8 +48,6 @@
 //#define DART_MAX_NUM_FRICTION_CONE_BASES 16
 //#define DART_DEFAULT_NUM_FRICTION_CONE_BASES 2
 
-#define DART_FRICTION_THRESHOLD 1e-4
-
 namespace dart {
 namespace constraint {
 
@@ -91,7 +89,7 @@ public:
   virtual void applyUnitImpulse(int _idx);
 
   // Documentaion inherited.
-  virtual void getVelocityChange(double* _delVel, int _idx);
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
   // Documentaion inherited.
   virtual void excite();
@@ -121,8 +119,14 @@ protected:
   /// \brief First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;
 
-  /// \brief Frictional coefficient
-  double _frictionalCoff;
+  /// \brief Constraint error redection parameter in range of [0, 1]
+  double mErrorReductionParameter;
+
+  /// \brief Coefficient of Friction
+  double mFrictionCoeff;
+
+  /// \brief Coefficient of restitution
+  double mRestitutionCoeff;
 
 private:
   /// \brief Get change in relative velocity at contact point due to external
@@ -130,16 +134,16 @@ private:
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
   /// \param[in] _idx Index the relative velocity change will be stored
-  void _getRelVelocity(double* _relVel, int _idx);
+  void getRelVelocity(double* _relVel, int _idx);
 
   /// \brief Compute change in velocity due to _idx-th impulse.
-  void _updateVelocityChange(int _idx);
+  void updateVelocityChange(int _idx);
 
   /// \brief
-  void _updateFirstFrictionalDirection();
+  void updateFirstFrictionalDirection();
 
   /// \brief
-  Eigen::MatrixXd _getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
+  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
   /// \brief Local body jacobians for mBodyNode1
   std::vector<Eigen::Vector6d> mJacobians1;
@@ -148,11 +152,17 @@ private:
   std::vector<Eigen::Vector6d> mJacobians2;
 
   /// \brief
-  bool _IsFrictionOn;
+  bool mIsFrictionOn;
 
   /// \brief Small value to add to diagnal of A matrix of LCP to keep it away
   /// from singular, similar to cfm varaible in ODE. Default is 0.001.
   double mCfm;
+
+  /// \brief Index of applied impulse
+  int mAppliedImpulseIndex;
+
+  /// \brief
+  bool mIsBounceOn;
 };
 
 } // namespace constraint

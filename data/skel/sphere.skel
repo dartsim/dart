@@ -37,7 +37,7 @@
         <skeleton name="skeleton1">
             <body name="link1">
                 <gravity>1</gravity>
-                <transformation>0 -0.025 0 1 2 3</transformation>
+                <transformation>0 -0.025 0 0 0 0</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -61,9 +61,10 @@
                 </collision_shape>                                
             </body>
             
-            <joint type="free" name="joint1">
+            <joint type="prismatic" name="joint1">
                 <parent>world</parent>
                 <child>link1</child>
+                <axis><xyz>0 1 0</xyz></axis>
             </joint>
         </skeleton>	
         

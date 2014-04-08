@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
@@ -319,6 +320,9 @@ void World::step()
   // Integrate skeletons with constraint impulses
 //  mIntegrator->integrate(this, mTimeStep);
 
+//  dtdbg << "GenCoordSystem::getConfigs(): "
+//        << getConfigs().transpose() << std::endl;
+
   // Compute velocity changes given constraint impulses
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -332,6 +336,9 @@ void World::step()
   }
 
   mIntegrator->integratePos(this, mTimeStep);
+
+//  dtdbg << "GenCoordSystem::getConfigs(): "
+//        << getConfigs().transpose() << std::endl;
 
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)

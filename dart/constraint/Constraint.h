@@ -90,6 +90,8 @@ public:
 
   /// \brief
   int nSkip;
+
+  double timestep;
 };
 
 //==============================================================================
@@ -125,13 +127,13 @@ public:
   virtual void applyUnitImpulse(int _idx) = 0;
 
   /// \brief
-  virtual void getVelocityChange(double* _delVel, int _idx) = 0;
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) = 0;
 
   /// \brief
-  virtual void excite() {}
+  virtual void excite() = 0;
 
   /// \brief
-  virtual void unexcite() {}
+  virtual void unexcite() = 0;
 
   /// \brief Apply computed constraint impulse to constrained skeletons
   virtual void applyConstraintImpulse(double* _lambda, int _idx) = 0;

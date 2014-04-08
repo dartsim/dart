@@ -966,10 +966,19 @@ void Skeleton::computeImpulseForwardDynamics()
   // 2. ddq = ddq + del_dq / dt
   // 3. tau = tau + imp / dt
 
-//  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
+
+
+//  dtdbg << "GenCoordSystem::getGenVels(): "
+//        << GenCoordSystem::getGenVels().transpose() << std::endl;
+
+//  dtdbg << "GenCoordSystem::getVelsChange(): "
+//        << GenCoordSystem::getVelsChange().transpose() << std::endl;
 
   GenCoordSystem::setGenVels(GenCoordSystem::getGenVels()
-                             + GenCoordSystem::getVelsChange() * 1.0);
+                             + GenCoordSystem::getVelsChange());
+
+//  dtdbg << "GenCoordSystem::getGenVels(): "
+//        << GenCoordSystem::getGenVels().transpose() << std::endl;
 
 //  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
 

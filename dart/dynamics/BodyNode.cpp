@@ -53,6 +53,7 @@
 #include "dart/dynamics/Marker.h"
 
 #define DART_DEFAULT_FRICTION_COEFF 0.4
+#define DART_DEFAULT_RESTITUTION_COEFF 0.0
 
 namespace dart {
 namespace dynamics {
@@ -79,6 +80,7 @@ BodyNode::BodyNode(const std::string& _name)
     mIxz(0.0),
     mIyz(0.0),
     mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
+    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
     mI(Eigen::Matrix6d::Identity()),
     mW(Eigen::Isometry3d::Identity()),
     mV(Eigen::Vector6d::Zero()),
@@ -157,7 +159,7 @@ double BodyNode::getMass() const {
 void BodyNode::setFrictionCoeff(double _coeff)
 {
   assert(0.0 <= _coeff
-         && "Frictional coefficient should be non-negative value.");
+         && "Coefficient of friction should be non-negative value.");
   mFrictionCoeff = _coeff;
 }
 
@@ -165,6 +167,20 @@ void BodyNode::setFrictionCoeff(double _coeff)
 double BodyNode::getFrictionCoeff() const
 {
   return mFrictionCoeff;
+}
+
+//==============================================================================
+void BodyNode::setRestitutionCoeff(double _coeff)
+{
+  assert(0.0 <= _coeff && _coeff <= 1.0
+         && "Coefficient of restitution should be in range of [0, 1].");
+  mRestitutionCoeff = _coeff;
+}
+
+//==============================================================================
+double BodyNode::getRestitutionCoeff() const
+{
+  return mRestitutionCoeff;
 }
 
 BodyNode* BodyNode::getParentBodyNode() const {

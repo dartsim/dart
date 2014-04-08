@@ -110,6 +110,8 @@ bool ConstrainedGroup::solve()
   // Build LCP terms by aggregating them from constraints
   ODELcp lcp(getTotalDimension());
 
+  lcp.timestep = 0.001;
+
   // Fill LCP terms
   _fillLCPTermsODE(&lcp);
 
@@ -185,11 +187,14 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 //      _lcp->print();
 //      std::cout << std::endl;
 
+      mConstraints[i]->getVelocityChange(
+            _lcp->A, _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i], true);
+
       // Fill upper triangle blocks of A matrix
-      for (int k = i; k < mConstraints.size(); ++k)
+      for (int k = i + 1; k < mConstraints.size(); ++k)
       {
         int index = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[k];
-        mConstraints[k]->getVelocityChange(_lcp->A, index);
+        mConstraints[k]->getVelocityChange(_lcp->A, index, false);
 
 //        std::cout << "index: " << index << std::endl;
 
@@ -208,10 +213,6 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 
 //      _lcp->print();
 //      std::cout << std::endl;
-
-      // Add small values to diagnal to keep it away from singular, similar to cfm varaible in ODE
-      int diagIndex = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j;
-      _lcp->A[diagIndex] += _lcp->A[diagIndex] * 0.001;
 
 //      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
 
