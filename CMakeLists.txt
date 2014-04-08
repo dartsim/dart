@@ -185,6 +185,9 @@ include_directories("${CMAKE_BINARY_DIR}")
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
+if(HAVE_BULLET_COLLISION)
+  link_directories("${BULLET_LIBRARY_DIRS}")
+endif()
 
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
