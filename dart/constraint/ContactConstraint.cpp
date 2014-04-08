@@ -326,7 +326,7 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       }
       else
       {
-        bouncingVelocity *= mErrorReductionParameter / _lcp->timestep;
+        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
         if (bouncingVelocity > DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY)
           bouncingVelocity = DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY;
       }
@@ -489,10 +489,6 @@ void ContactConstraint::unexcite()
 
   if (mBodyNode2->isImpulseReponsible())
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
-
-  //////////// DEBUG CODE //////////////////////////////////////////////////////
-  mBodyNode1->getSkeleton()->clearImpulseTest();
-  mBodyNode2->getSkeleton()->clearImpulseTest();
 }
 
 //==============================================================================

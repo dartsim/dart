@@ -45,6 +45,7 @@
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 #include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {
 namespace constraint {
@@ -52,8 +53,10 @@ namespace constraint {
 using namespace lcpsolver;
 
 //==============================================================================
-ConstrainedGroup::ConstrainedGroup()
+ConstrainedGroup::ConstrainedGroup(ConstraintSolver* _solver)
+  : mConstraintSolver(_solver)
 {
+  assert(_solver);
 }
 
 //==============================================================================
@@ -110,9 +113,8 @@ bool ConstrainedGroup::solve()
   // Build LCP terms by aggregating them from constraints
   ODELcp lcp(getTotalDimension());
 
-  lcp.timestep = 0.001;
-
   // Fill LCP terms
+  lcp.invTimestep = 1.0 / mConstraintSolver->getTimeStep();
   _fillLCPTermsODE(&lcp);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -289,12 +291,6 @@ void ConstrainedGroup::_applyODE(ODELcp* _lcp)
   offsetIndex[0] = 0;
   for (int i = 1; i < mConstraints.size(); ++i)
     offsetIndex[i] = offsetIndex[i - 1] + mConstraints[i - 1]->getDimension();
-
-//  // TODO(JS): Clear constraint impulses
-//  for (int i = 0; i < mConstraints.size(); ++i)
-//  {
-//    mConstraints[i]->get
-//  }
 
   // Apply constraint impulses
   for (int i = 0; i < mConstraints.size(); ++i)

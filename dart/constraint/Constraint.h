@@ -91,7 +91,7 @@ public:
   /// \brief
   int nSkip;
 
-  double timestep;
+  double invTimestep;
 };
 
 //==============================================================================

@@ -51,6 +51,8 @@ class Constraint;
 namespace dart {
 namespace constraint {
 
+class ConstraintSolver;
+
 //==============================================================================
 /// \brief class ConstrainedGroup is a set of skeletons interacting each
 ///        other by various kinds of constraints.
@@ -62,7 +64,7 @@ public:
   // Constructor / Desctructor
   //----------------------------------------------------------------------------
   /// \brief Default contructor
-  ConstrainedGroup();
+  explicit ConstrainedGroup(ConstraintSolver* _solver);
 
   /// \brief Default destructor
   virtual ~ConstrainedGroup();
@@ -93,6 +95,9 @@ public:
 protected:
   /// \brief List of constraints
   std::vector<Constraint*> mConstraints;
+
+  /// \brief Constraint solver
+  ConstraintSolver* mConstraintSolver;
 
 private:
   /// \brief Check if _constraint is contained

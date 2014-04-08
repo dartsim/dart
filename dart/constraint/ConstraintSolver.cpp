@@ -300,7 +300,7 @@ void ConstraintSolver::_init()
   }
   mConstrainedGroups.clear();
   mConstrainedGroups.resize(1);
-  mConstrainedGroups[0] = new ConstrainedGroup;
+  mConstrainedGroups[0] = new ConstrainedGroup(this);
 }
 
 //==============================================================================
