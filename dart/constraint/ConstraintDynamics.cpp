@@ -973,8 +973,6 @@ void ConstraintDynamics::applySolutionODE()
           * f_d.segment(i * 2, 2);
       contact.force.noalias() += contact.normal * f_n[i];
 
-      std::cout << "Contact force: " << contact.force.transpose() << std::endl;
-
       // Add contact force to body nodes
       Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
       Eigen::Vector6d F = Eigen::Vector6d::Zero();
