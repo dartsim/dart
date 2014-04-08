@@ -40,7 +40,7 @@
 #include <vector>
 #include <map>
 
-#include <bullet/btBulletCollisionCommon.h>
+#include <btBulletCollisionCommon.h>
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionDetector.h"
