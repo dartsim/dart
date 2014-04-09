@@ -260,5 +260,14 @@ dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
   return _skeleton;
 }
 
+//==============================================================================
+dynamics::Skeleton*Constraint::getRootSkeleton(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+    _skeleton = _skeleton->mUnionRootSkeleton;
+
+  return _skeleton;
+}
+
 }  // namespace constraint
 }  // namespace dart

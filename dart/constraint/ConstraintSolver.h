@@ -161,6 +161,8 @@ protected:
   /// \brief
 //  std::vector<ClosedLoopContraint_TEST*> mBakedClosedLoopConstraints;
 
+  std::vector<dynamics::Skeleton*> mSkeletonUnion;
+
 private:
   /// \brief
   void _init();

@@ -151,6 +151,9 @@ public:
   /// \brief
   static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
 
+  /// \brief
+  static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
+
 protected:
 //  /// \brief
 //  void impulseTest();

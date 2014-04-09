@@ -71,6 +71,12 @@ ConstraintSolver::ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skel
 //==============================================================================
 ConstraintSolver::~ConstraintSolver()
 {
+  for (std::vector<ConstrainedGroup*>::iterator it = mConstrainedGroups.begin();
+       it != mConstrainedGroups.end(); ++it)
+  {
+    delete *it;
+  }
+
   delete mCollisionDetector;
 }
 
@@ -259,8 +265,8 @@ void ConstraintSolver::solve()
   // DEBUG CODE ////////////////////////////////////////////////////////////////
 //  for (int i = 0; i < mSkeletons.size(); ++i)
 //  {
-//    std::cout << "Skeleton[" << i << "]: " << mSkeletons[i]->mUnionId << ", "
-//              << mSkeletons[i]->mUnionSize << std::endl;
+//    std::cout << "Skeleton[" << i << "]: " << mSkeletons[i]->mUnionRootSkeleton
+//              << ", " << mSkeletons[i]->mUnionSize << std::endl;
 //  }
 
   _buildConstrainedGroups();
@@ -300,7 +306,7 @@ void ConstraintSolver::_init()
   //----------------------------------------------------------------------------
   // Communities
   //----------------------------------------------------------------------------
-  // TODO(JS): Create one community for test
+  // TODO(JS): Create one ConstrainedGroup for test
   for (std::vector<ConstrainedGroup*>::iterator it = mConstrainedGroups.begin();
        it != mConstrainedGroups.end(); ++it)
   {
@@ -309,6 +315,8 @@ void ConstraintSolver::_init()
   mConstrainedGroups.clear();
   mConstrainedGroups.resize(1);
   mConstrainedGroups[0] = new ConstrainedGroup(this);
+
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
@@ -491,6 +499,14 @@ void ConstraintSolver::_updateDynamicConstraints()
 //==============================================================================
 void ConstraintSolver::_buildConstrainedGroups()
 {
+//  for (int i = 0; i < mSkeletons.size(); ++i)
+//  {
+//    if (mSkeletons[i]->mUnionRootSkeleton == mSkeletons[i])
+//    {
+
+//    }
+//  }
+
   // TODO(JS):
   mConstrainedGroups[0]->removeAllConstraints();
 
