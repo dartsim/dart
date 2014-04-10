@@ -4,7 +4,7 @@
         <physics>
             <time_step>0.001</time_step>
             <gravity>0 -9.81 0</gravity>
-            <collision_detector>fcl_mesh</collision_detector>
+            <collision_detector>bullet</collision_detector>
         </physics>
         
         <skeleton name="grount skeleton">
@@ -225,7 +225,7 @@
         </skeleton>
 
         <skeleton name="skeleton_box1">
-            <transformation>0.75 -0.175 0 0 0 0.35</transformation>
+            <transformation>0.75 -0.170 0 0 0 0.35</transformation>
             <body name="box">
                 <gravity>1</gravity>
                 <transformation>0 0 0 0 0 0</transformation>
