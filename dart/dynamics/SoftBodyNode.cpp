@@ -279,6 +279,10 @@ void SoftBodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
     mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
     mF.tail<3>() += mPointMasses[i]->mF;
   }
+
+  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
+  mParentJoint->mWrench = mF;
+
   assert(!math::isNan(mF));
 }
 
