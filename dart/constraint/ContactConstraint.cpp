@@ -244,7 +244,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   //----------------------------------------------------------------------------
   // Union finding
   //----------------------------------------------------------------------------
-  uniteSkeletons();
+//  uniteSkeletons();
 }
 
 //==============================================================================
@@ -387,9 +387,48 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       _lcp->ub[_idx] = dInfinity;
       assert(_lcp->frictionIndex[_idx] == -1);
 
-      // TODO(JS): Penetration correction should be here
+      //------------------------------------------------------------------------
+      // Bouncing
+      //------------------------------------------------------------------------
+      // A. Penetration correction
+      double bouncingVelocity = mContacts[i].penetrationDepth
+                                - DART_DEFAULT_CONTACT_ERROR_ALLOWANCE;
+      if (bouncingVelocity < 0.0)
+      {
+        bouncingVelocity = 0.0;
+      }
+      else
+      {
+        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
+        if (bouncingVelocity > DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY)
+          bouncingVelocity = DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY;
+      }
 
-      // TODO(JS): Bounce condition should be here
+      // B. Restitution
+      if (mIsBounceOn)
+      {
+        double& negativeRelativeVel = _lcp->b[_idx];
+        double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
+
+        if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
+        {
+          if (restitutionVel > bouncingVelocity)
+          {
+            bouncingVelocity = restitutionVel;
+
+            if (bouncingVelocity > DART_MAXIMUM_BOUNCING_VELOCITY)
+            {
+              bouncingVelocity = DART_MAXIMUM_BOUNCING_VELOCITY;
+            }
+          }
+        }
+      }
+
+      //
+//      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
+//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
+      _lcp->b[_idx] += bouncingVelocity;
+//      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
 
       // TODO(JS): Initial guess
       // x
@@ -588,6 +627,15 @@ bool ContactConstraint::isActive()
 //            << std::endl;
 
   return true;
+}
+
+//==============================================================================
+dynamics::Skeleton* ContactConstraint::getRootSkeleton() const
+{
+  if (mBodyNode1->isImpulseReponsible())
+    return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
+  else
+    return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
 }
 
 //==============================================================================

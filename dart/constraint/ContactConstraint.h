@@ -49,6 +49,13 @@
 //#define DART_DEFAULT_NUM_FRICTION_CONE_BASES 2
 
 namespace dart {
+namespace dynamics {
+class BodyNode;
+class Skeleton;
+}  // namespace dynamics
+}  // namespace dart
+
+namespace dart {
 namespace constraint {
 
 //==============================================================================
@@ -105,6 +112,12 @@ public:
   //----------------------------------------------------------------------------
   /// \brief
   bool isActive();
+
+  // Documentation inherited
+  virtual dynamics::Skeleton* getRootSkeleton() const;
+
+  // Documentation inherited
+  virtual void uniteSkeletons();
 
 protected:
   /// \brief Fircst body node
@@ -164,8 +177,6 @@ private:
   /// \brief
   bool mIsBounceOn;
 
-  /// \brief
-  void uniteSkeletons();
 };
 
 } // namespace constraint

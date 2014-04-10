@@ -46,10 +46,13 @@
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
+
 namespace dynamics {
 class Skeleton;
-}
+}  // namespace dynamics
+
 namespace constraint {
+
 class ConstrainedGroup;
 class Constraint;
 class BallJointContraintTEST;
@@ -59,12 +62,40 @@ class JointLimitConstraint;
 class RevoluteJointContraintTEST;
 class WeldJointContraintTEST;
 class JointConstraint;
-}  // namespace constraint
-}  // namespace dart
 
-namespace dart {
-namespace constraint {
+class SkeletonGroup
+{
+public:
+  SkeletonGroup();
+  ~SkeletonGroup();
 
+  dynamics::Skeleton* getRootSkeleton() const { return mSkeletons[0]; }
+
+  void appendSkeletonGroup(const SkeletonGroup& _group)
+  {
+    mSkeletons.insert(mSkeletons.end(),
+                      _group.mSkeletons.begin(), _group.mSkeletons.end());
+  }
+
+protected:
+  std::vector<dynamics::Skeleton*> mSkeletons;
+};
+
+
+//==============================================================================
+/// \brief Constraint solver
+///
+/// Procedure:
+///
+/// -# Warm start
+///   -# Build solid skeleton groups using solid constraints
+///   -# Build constraint groups using solid skeleton groups
+///
+/// -# Solving
+///   -# Update or create blink constraints with new skeleton states
+///   -# Merge solid skeleton groups using blink constraints
+///   -# Merge constraint groups using merged skeleton groups
+//==============================================================================
 class ConstraintSolver
 {
 public:
@@ -109,10 +140,10 @@ public:
   void removeAllConstraints();
 
   //----------------------------------------------------------------------------
-  /// \brief
+  /// \brief Set timestep
   void setTimeStep(double _timeStep);
 
-  /// \brief
+  /// \brief Get timestep
   double getTimeStep() const;
 
   //----------------------------------------------------------------------------
@@ -133,6 +164,7 @@ protected:
   /// \brief
   std::vector<dynamics::Skeleton*> mSkeletons;
 
+  //----------------------------------------------------------------------------
 //  /// \brief
 //  std::vector<ConstraintTEST*> mBakedConstraints;
 
@@ -155,6 +187,7 @@ protected:
   /// \brief
   std::vector<Constraint*> mDynamicConstraints;
 
+  //----------------------------------------------------------------------------
   /// \brief List of communities
   std::vector<ConstrainedGroup*> mConstrainedGroups;
 

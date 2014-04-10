@@ -42,15 +42,15 @@
 #include <Eigen/Dense>
 
 namespace dart {
+
+namespace dynamics {
+class Skeleton;
+}  // namespace dynamics
+
 namespace constraint {
+
 class ODELcp;
 class Constraint;
-}  // namespace constraint
-}  // namespace dart
-
-namespace dart {
-namespace constraint {
-
 class ConstraintSolver;
 
 //==============================================================================
@@ -91,6 +91,8 @@ public:
   /// \brief Solve constraints and store the results of constraint impulse to
   ///        each skeleton.
   bool solve();
+
+  dynamics::Skeleton* mRootSkeleton;
 
 protected:
   /// \brief List of constraints

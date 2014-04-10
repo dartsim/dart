@@ -143,6 +143,13 @@ public:
   /// \brief Apply computed constraint impulse to constrained skeletons
   virtual void applyConstraintImpulse(double* _lambda, int _idx) = 0;
 
+  // TODO(JS): Make pure virtual function
+  /// \brief
+  virtual dynamics::Skeleton* getRootSkeleton() const {}
+
+  /// \brief
+  virtual void uniteSkeletons() {}
+
   //----------------------------------------------------------------------------
   /// \brief
   int getDimension() const;
@@ -153,6 +160,8 @@ public:
 
   /// \brief
   static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
+
+
 
 protected:
 //  /// \brief

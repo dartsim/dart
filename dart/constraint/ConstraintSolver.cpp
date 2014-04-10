@@ -262,7 +262,7 @@ void ConstraintSolver::solve()
 
   _updateDynamicConstraints();
 
-  // DEBUG CODE ////////////////////////////////////////////////////////////////
+//  // DEBUG CODE ////////////////////////////////////////////////////////////////
 //  for (int i = 0; i < mSkeletons.size(); ++i)
 //  {
 //    std::cout << "Skeleton[" << i << "]: " << mSkeletons[i]->mUnionRootSkeleton
@@ -304,7 +304,16 @@ void ConstraintSolver::_init()
   mDynamicConstraints.reserve(maxNumDynamicConstraints);
 
   //----------------------------------------------------------------------------
-  // Communities
+  // Build skeleton group using solid constraints
+  //----------------------------------------------------------------------------
+  for (std::vector<Constraint*>::const_iterator it = mStaticConstraints.begin();
+       it != mStaticConstraints.end(); ++it)
+  {
+    (*it);
+  }
+
+  //----------------------------------------------------------------------------
+  // Constraint groups
   //----------------------------------------------------------------------------
   // TODO(JS): Create one ConstrainedGroup for test
   for (std::vector<ConstrainedGroup*>::iterator it = mConstrainedGroups.begin();
@@ -499,18 +508,67 @@ void ConstraintSolver::_updateDynamicConstraints()
 //==============================================================================
 void ConstraintSolver::_buildConstrainedGroups()
 {
-//  for (int i = 0; i < mSkeletons.size(); ++i)
-//  {
-//    if (mSkeletons[i]->mUnionRootSkeleton == mSkeletons[i])
-//    {
+  //----------------------------------------------------------------------------
+  // Build skeleton unions using constraints
+  //----------------------------------------------------------------------------
+  // TODO(JS): Warm start
+  // Static constraints
+  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
+       it != mStaticConstraints.end(); ++it)
+  {
+    (*it)->uniteSkeletons();
+  }
 
-//    }
-//  }
+  // Dynamics constraints
+  for (std::vector<Constraint*>::iterator it = mDynamicConstraints.begin();
+       it != mDynamicConstraints.end(); ++it)
+  {
+    (*it)->uniteSkeletons();
+  }
+
+  // DEBUG CODE ////////////////////////////////////////////////////////////////
+  for (int i = 0; i < mSkeletons.size(); ++i)
+  {
+    std::cout << "Skeleton[" << i << "]: "
+              << mSkeletons[i] << ", "
+              << mSkeletons[i]->mUnionRootSkeleton << ", "
+              << mSkeletons[i]->mUnionSize << std::endl;
+  }
+  std::cout << std::endl;
+
+  //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+  for (std::vector<Constraint*>::iterator itConstraint
+       = mStaticConstraints.begin(); itConstraint != mStaticConstraints.end();
+       ++itConstraint)
+  {
+    dynamics::Skeleton* skel = (*itConstraint)->getRootSkeleton();
+
+    for (std::vector<ConstrainedGroup*>::iterator itGroup
+         = mConstrainedGroups.begin();  itGroup != mConstrainedGroups.end();
+         ++itGroup)
+    {
+      if ((*itGroup)->mRootSkeleton == skel)
+      {
+
+      }
+    }
+  }
+
+  // Dynamics constraints
+  for (std::vector<Constraint*>::iterator it = mDynamicConstraints.begin();
+       it != mDynamicConstraints.end(); ++it)
+  {
+    (*it)->uniteSkeletons();
+  }
 
   // TODO(JS):
   mConstrainedGroups[0]->removeAllConstraints();
 
-  //-------------- Add Constraints to constrained groups -----------------------
+  //----------------------------------------------------------------------------
+  // Add Constraints to constrained groups
+  //----------------------------------------------------------------------------
   // Static constraints
   for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
        it != mStaticConstraints.end(); ++it)
@@ -525,6 +583,15 @@ void ConstraintSolver::_buildConstrainedGroups()
   {
     // TODO(JS):
     mConstrainedGroups[0]->addConstraint(*it);
+  }
+
+  //----------------------------------------------------------------------------
+  // Reset union. We don't need union information anymore.
+  //----------------------------------------------------------------------------
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    (*it)->resetUnion();
   }
 }
 

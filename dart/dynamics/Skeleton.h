@@ -473,6 +473,14 @@ protected:
   // Union finding
   //----------------------------------------------------------------------------
 public:
+
+  /// \brief
+  void resetUnion()
+  {
+    mUnionRootSkeleton = this;
+    mUnionSize = 1;
+  }
+
   /// \brief
   Skeleton* mUnionRootSkeleton;
 
