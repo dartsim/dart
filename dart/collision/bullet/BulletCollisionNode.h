@@ -40,7 +40,7 @@
 #include <vector>
 
 #include <assimp/scene.h>
-#include <bullet/btBulletCollisionCommon.h>
+#include <btBulletCollisionCommon.h>
 #include <Eigen/Dense>
 
 #include "dart/dynamics/Shape.h"
