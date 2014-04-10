@@ -200,6 +200,9 @@ public:
   /// presented at this joint, return -1.
   int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
+  /// \brief Get constraint wrench expressed in body node frame
+  Eigen::Vector6d getBodyConstraintWrench() const;
+
   /// \brief Get spring force.
   ///
   /// We apply spring force in implicit manner. The spring force is
@@ -271,6 +274,13 @@ protected:
   /// \brief Time derivative of local Jacobian.
   math::Jacobian mdS;
 
+  // TODO(JS): Temporary code
+public:
+  /// \brief Transmitting wrench from parent body to child body expressed in
+  /// child body
+  Eigen::Vector6d mWrench;
+
+protected:
   /// \brief True if the joint limits are enforced in dynamic simulation.
   bool mIsPositionLimited;
 

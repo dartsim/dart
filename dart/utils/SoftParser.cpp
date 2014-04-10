@@ -157,6 +157,9 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
 
   dynamics::SoftSkeleton* newSoftSkeleton = readSoftSkeleton(skeletonElement);
 
+  // Initialize skeleto to be ready for use
+  newSoftSkeleton->init();
+
   return newSoftSkeleton;
 }
 
@@ -619,6 +622,15 @@ SkelParser::SkelBodyNode SoftSkelParser::readSoftBodyNode(
       double damp = getValueDouble(softShapeEle, "damp");
       newSoftBodyNode->setDampingCoefficient(damp);
     }
+  }
+
+  //--------------------------------------------------------------------------
+  // marker
+  ElementEnumerator markers(_softBodyNodeElement, "marker");
+  while (markers.next())
+  {
+    dynamics::Marker* newMarker = readMarker(markers.get(), newSoftBodyNode);
+    newSoftBodyNode->addMarker(newMarker);
   }
 
   SkelBodyNode softBodyNode;

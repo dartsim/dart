@@ -240,7 +240,7 @@ Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     assert(_n > 0);
 
     Skeleton* robot = new Skeleton();
-    robot->setSelfCollidable(false);
+    robot->disableSelfCollision();
     double mass = 1.0;
 
     // Create the first link, the joint with the ground and its shape

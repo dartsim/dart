@@ -161,6 +161,10 @@ private:
   std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1,
                                                  const CollisionNode* _node2);
 
+  /// \brief Return true if _bodyNode1 and _bodyNode2 are adjacent bodies
+  bool isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
+                        const dynamics::BodyNode* _bodyNode2);
+
   /// \brief
   CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
 

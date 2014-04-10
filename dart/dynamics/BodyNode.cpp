@@ -753,6 +753,9 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
                         (*iChildBody)->getBodyForce());
   }
 
+  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
+  mParentJoint->mWrench = mF;
+
   assert(!math::isNan(mF));
 }
 
@@ -904,6 +907,10 @@ void BodyNode::update_ddq() {
 void BodyNode::update_F_fs() {
   mF = mB;
   mF.noalias() += mAI * mdV;
+
+  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
+  mParentJoint->mWrench = mF;
+
   assert(!math::isNan(mF));
 }
 
