@@ -189,7 +189,7 @@ protected:
 
   //----------------------------------------------------------------------------
   /// \brief List of communities
-  std::vector<ConstrainedGroup*> mConstrainedGroups;
+  std::vector<ConstrainedGroup> mConstrainedGroups;
 
   /// \brief
 //  std::vector<ClosedLoopContraint_TEST*> mBakedClosedLoopConstraints;
