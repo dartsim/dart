@@ -578,8 +578,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getGenCoord(l)->getConfigMin();
-          double ubRP = joint->getGenCoord(l)->getConfigMax();
+          double lbRP = joint->getGenCoord(l)->getPosMin();
+          double ubRP = joint->getGenCoord(l)->getPosMax();
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)
@@ -781,8 +781,8 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getGenCoord(l)->getConfigMin();
-          double ubRP = joint->getGenCoord(l)->getConfigMax();
+          double lbRP = joint->getGenCoord(l)->getPosMin();
+          double ubRP = joint->getGenCoord(l)->getPosMax();
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)
@@ -893,8 +893,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 
         for (int l = 0; l < localDof; ++l)
         {
-          double lbRP = joint->getGenCoord(l)->getConfigMin();
-          double ubRP = joint->getGenCoord(l)->getConfigMax();
+          double lbRP = joint->getGenCoord(l)->getPosMin();
+          double ubRP = joint->getGenCoord(l)->getPosMax();
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)

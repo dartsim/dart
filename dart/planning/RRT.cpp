@@ -198,7 +198,7 @@ VectorXd RRT::getRandomConfig() {
 	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-        config[i] = randomInRange(robot->getGenCoord(dofs[i])->getConfigMin(), robot->getGenCoord(dofs[i])->getConfigMax());
+        config[i] = randomInRange(robot->getGenCoord(dofs[i])->getPosMin(), robot->getGenCoord(dofs[i])->getPosMax());
 	}
 	return config;
 }

@@ -41,6 +41,7 @@
 #include <cstddef>
 #include <string>
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 
 namespace dart {
@@ -69,31 +70,56 @@ public:
   size_t getSkeletonIndex() const;
 
   //----------------------------------------------------------------------------
-  // Configuration
+  // Position
+  // Deprecated functions will be remove by DART 4.0.1 or DART 4.1
   //----------------------------------------------------------------------------
+  /// \brief Set position
+  void setPos(double _pos);
+
   /// \brief Set configuration
-  void setConfig(double _config);
+  void setConfig(double _config) DEPRECATED(4.0);
+
+  /// \brief Get position
+  double getPos() const;
 
   /// \brief Get configuration
-  double getConfig() const;
+  double getConfig() const DEPRECATED(4.0);
 
   /// \brief Set lower bound for configuration
-  void setConfigMin(double _configMin);
+  void setPosMin(double _posMin);
+
+  /// \brief Set lower bound for configuration
+  void setConfigMin(double _configMin) DEPRECATED(4.0);
 
   /// \brief Get lower bound for configuration
-  double getConfigMin() const;
+  double getPosMin() const;
+
+  /// \brief Get lower bound for configuration
+  double getConfigMin() const DEPRECATED(4.0);
 
   /// \brief Set upper bound for configuration
-  void setConfigMax(double _configMax);
+  void setPosMax(double _posMax);
+
+  /// \brief Set upper bound for configuration
+  void setConfigMax(double _configMax) DEPRECATED(4.0);
 
   /// \brief Get upper bound for configuration
-  double getConfigMax() const;
+  double getPosMax() const;
+
+  /// \brief Get upper bound for configuration
+  double getConfigMax() const DEPRECATED(4.0);
 
   /// \brief Set derivative w.r.t. arbitrary scalar value
-  void setConfigDeriv(double _configDeriv);
+  void setPosDeriv(double _posDeriv);
+
+  /// \brief Set derivative w.r.t. arbitrary scalar value
+  void setConfigDeriv(double _configDeriv) DEPRECATED(4.0);
 
   /// \brief Get derivative w.r.t. arbitrary scalar value
-  double getConfigDeriv() const;
+  double getPosDeriv() const;
+
+  /// \brief Get derivative w.r.t. arbitrary scalar value
+  double getConfigDeriv() const DEPRECATED(4.0);
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -217,17 +243,17 @@ protected:
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
-  /// \brief Configuration
-  double mConfig;
+  /// \brief Position
+  double mPos;
 
-  /// \brief Lower bound for configuration
-  double mConfigMin;
+  /// \brief Lower bound for position
+  double mPosMin;
 
-  /// \brief Upper bound for configuration
-  double mConfigMax;
+  /// \brief Upper bound for position
+  double mPosMax;
 
   /// \brief Derivatives w.r.t. an arbitrary scalr variable
-  double mConfigDeriv;
+  double mPosDeriv;
 
   //----------------------------------------------------------------------------
   // Velocity

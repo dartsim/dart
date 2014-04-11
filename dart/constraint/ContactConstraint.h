@@ -83,28 +83,28 @@ public:
   //----------------------------------------------------------------------------
   // Constraint virtual function
   //----------------------------------------------------------------------------
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void preprocess();
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void update();
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void applyUnitImpulse(int _idx);
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void excite();
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void unexcite();
 
-  // Documentaion inherited.
+  // Documentaion inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
 
   //----------------------------------------------------------------------------

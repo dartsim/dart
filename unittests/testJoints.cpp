@@ -348,12 +348,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit1 = DART_PI / 6.0;
 
   joint0->setPositionLimited(true);
-  joint0->getGenCoord(0)->setConfigMin(-limit0);
-  joint0->getGenCoord(0)->setConfigMax(limit0);
+  joint0->getGenCoord(0)->setPosMin(-limit0);
+  joint0->getGenCoord(0)->setPosMax(limit0);
 
   joint1->setPositionLimited(true);
-  joint1->getGenCoord(0)->setConfigMin(-limit1);
-  joint1->getGenCoord(0)->setConfigMax(limit1);
+  joint1->getGenCoord(0)->setPosMin(-limit1);
+  joint1->getGenCoord(0)->setPosMax(limit1);
 
   double simTime = 2.0;
   double timeStep = myWorld->getTimeStep();

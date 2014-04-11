@@ -94,7 +94,7 @@ void GenCoordSystem::setConfigs(const Eigen::VectorXd& _configs)
   size_t size = getNumGenCoords();
 
   for (size_t i = 0; i < size; ++i)
-    mGenCoords[i]->setConfig(_configs[i]);
+    mGenCoords[i]->setPos(_configs[i]);
 }
 
 //==============================================================================

@@ -244,6 +244,9 @@ public:
   /// \brief Clear velocity change and external impulses
   virtual void clearImpulseTest();
 
+  /// \brief Update bias impulses
+  void updateBiasImpulse(BodyNode* _bodyNode);
+
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 

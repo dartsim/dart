@@ -39,20 +39,191 @@
 
 #include <iostream>
 
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/lcpsolver/lcp.h"
+
+#define DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE 0.0
+#define DART_DEFAUT_JOINT_POSITION_ERP 0.01
+
 namespace dart {
 namespace constraint {
 
-JointLimitConstraint::JointLimitConstraint()
-  : Constraint(CT_DYNAMIC)
+//==============================================================================
+JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
+  : Constraint(CT_DYNAMIC), mJoint(_joint)
 {
+  assert(_joint);
 
+  mLifeTime[0] = 0;
+  mLifeTime[1] = 0;
+  mLifeTime[2] = 0;
+  mLifeTime[3] = 0;
+  mLifeTime[4] = 0;
+  mLifeTime[5] = 0;
+
+  mActive[0] = false;
+  mActive[1] = false;
+  mActive[2] = false;
+  mActive[3] = false;
+  mActive[4] = false;
+  mActive[5] = false;
 }
 
+//==============================================================================
 JointLimitConstraint::~JointLimitConstraint()
 {
 
 }
 
+//==============================================================================
+void JointLimitConstraint::update()
+{
+  // Reset dimention
+  mDim = 0;
+
+  dynamics::GenCoord* genCoord;
+
+  size_t dof = mJoint->getNumGenCoords();
+  for (size_t i = 0; i < dof ; ++i)
+  {
+    genCoord = mJoint->getGenCoord(i);
+
+    // Lower bound check
+    mViolation[i] = genCoord->getPos() - genCoord->getPosMin();
+    if (mViolation[i] <= 0.0)
+    {
+      mNegativeVel[i] = -genCoord->getVel();
+
+      mLowerBound[i] = 0.0;
+      mUpperBound[i] = dInfinity;
+
+      if (mActive[i])
+      {
+        ++(mLifeTime[i]);
+      }
+      else
+      {
+        mActive[i] = true;
+        mLifeTime[i] = 0;
+      }
+
+      ++mDim;
+      continue;
+    }
+
+    // Upper bound check
+    mViolation[i] = genCoord->getPos() - genCoord->getPosMax();
+    if (mViolation[i] >= 0.0)
+    {
+      mNegativeVel[i] = -genCoord->getVel();
+
+      mLowerBound[i] = -dInfinity;
+      mUpperBound[i] = 0.0;
+
+      if (mActive[i])
+      {
+        ++(mLifeTime[i]);
+      }
+      else
+      {
+        mActive[i] = true;
+        mLifeTime[i] = 0;
+      }
+
+      ++mDim;
+      continue;
+    }
+
+    mActive[i] = false;
+  }
+}
+
+//==============================================================================
+void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
+{
+  size_t localIndex = 0;
+  size_t dof = mJoint->getNumGenCoords();
+  for (size_t i = 0; i < dof ; ++i)
+  {
+    if (mActive[i] == false)
+      continue;
+
+    assert(_lcp->w[_idx + localIndex] == 0.0);
+
+    double bouncingVel = -mViolation[i];
+
+    if (bouncingVel > 0.0)
+      bouncingVel = -DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE;
+    else
+      bouncingVel = +DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE;
+
+    bouncingVel *= _lcp->invTimestep * DART_DEFAUT_JOINT_POSITION_ERP;
+
+    _lcp->b[_idx + localIndex] = mNegativeVel[localIndex] + bouncingVel;
+
+    _lcp->lb[_idx + localIndex] = mLowerBound[localIndex];
+    _lcp->ub[_idx + localIndex] = mUpperBound[localIndex];
+
+    assert(_lcp->frictionIndex[_idx] == -1);
+
+    if (mLifeTime[i])
+      _lcp->x[_idx + localIndex] = mOldX[localIndex];
+    else
+      _lcp->x[_idx + localIndex] = 0.0;
+
+    ++localIndex;
+  }
+}
+
+//==============================================================================
+void JointLimitConstraint::applyUnitImpulse(int _idx)
+{
+  assert(0 <= _idx && _idx < mDim && "Invalid Index.");
+
+  size_t localIndex = 0;
+  dynamics::GenCoord* genCoord;
+  dynamics::Skeleton* skeleton = mJoint->getSkeleton();
+
+  size_t dof = mJoint->getNumGenCoords();
+  for (size_t i = 0; i < dof ; ++i)
+  {
+    if (mActive[i] == false)
+      continue;
+
+    genCoord = mJoint->getGenCoord(i);
+
+    genCoord->setConstraintImpulse(1.0);
+
+    skeleton->clearImpulseTest();
+    skeleton->updateBiasImpulse(mJoint->getBodyNode());
+    skeleton->updateVelocityChange();
+  }
+}
+
+//==============================================================================
+void JointLimitConstraint::applyConstraintImpulse(double* _lambda, int _idx)
+{
+  size_t localIndex = 0;
+  size_t dof = mJoint->getNumGenCoords();
+  for (size_t i = 0; i < dof ; ++i)
+  {
+    if (mActive[i] == false)
+      continue;
+
+    mOldX[i] = _lambda[_idx + localIndex];
+
+    ++localIndex;
+  }
+}
+
+//==============================================================================
+dynamics::Skeleton* JointLimitConstraint::getRootSkeleton() const
+{
+  return mJoint->getSkeleton()->mUnionRootSkeleton;
+}
+
+//==============================================================================
 bool JointLimitConstraint::isActive()
 {
   std::cout << "JointLimitConstraintTEST::isActive(): Not implemented."

@@ -167,8 +167,8 @@ TEST(InverseKinematics, FittingTransformation)
   for (size_t i = 0; i < numRandomTests; ++i)
   {
     // Set joint limit
-    joint2->getGenCoord(0)->setConfigMin(DART_RADIAN *  0.0);
-    joint2->getGenCoord(0)->setConfigMax(DART_RADIAN * 15.0);
+    joint2->getGenCoord(0)->setPosMin(DART_RADIAN *  0.0);
+    joint2->getGenCoord(0)->setPosMax(DART_RADIAN * 15.0);
 
     // Store the original transformation and joint angle
     Isometry3d oldT2 = body2->getWorldTransform();

@@ -38,6 +38,8 @@
 #ifndef DART_CONSTRAINT_CONSTRAINT_H_
 #define DART_CONSTRAINT_CONSTRAINT_H_
 
+#include <cstddef>
+
 namespace dart {
 
 namespace dynamics {
@@ -152,7 +154,7 @@ public:
 
   //----------------------------------------------------------------------------
   /// \brief
-  int getDimension() const;
+  size_t getDimension() const;
 
   //----------------------------------------------------------------------------
   /// \brief
@@ -161,14 +163,9 @@ public:
   /// \brief
   static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
 
-
-
 protected:
-//  /// \brief
-//  void impulseTest();
-
-  /// \brief
-  int mDim;
+  /// \brief Dimension of constraint
+  size_t mDim;
 
   /// \brief
   ConstraintType mConstraintType;

@@ -2,8 +2,7 @@
  * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -62,25 +61,6 @@ class JointLimitConstraint;
 class RevoluteJointContraintTEST;
 class WeldJointContraintTEST;
 class JointConstraint;
-
-class SkeletonGroup
-{
-public:
-  SkeletonGroup();
-  ~SkeletonGroup();
-
-  dynamics::Skeleton* getRootSkeleton() const { return mSkeletons[0]; }
-
-  void appendSkeletonGroup(const SkeletonGroup& _group)
-  {
-    mSkeletons.insert(mSkeletons.end(),
-                      _group.mSkeletons.begin(), _group.mSkeletons.end());
-  }
-
-protected:
-  std::vector<dynamics::Skeleton*> mSkeletons;
-};
-
 
 //==============================================================================
 /// \brief Constraint solver
@@ -181,52 +161,49 @@ protected:
   std::vector<JointConstraint*> mBakedJointConstraints;
 
   //----------------------------------------------------------------------------
-  /// \brief
+  /// \brief Constraint list that should be satisfied regardless of skeleton's
+  /// state such as dynamic joint constraints
   std::vector<Constraint*> mStaticConstraints;
 
-  /// \brief
+  /// \brief Constraint list that should be satisfied depend on skeleton's state
+  /// such as contact constraint and joint limit constraint.
   std::vector<Constraint*> mDynamicConstraints;
 
   //----------------------------------------------------------------------------
-  /// \brief List of communities
+  /// \brief Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
-
-  /// \brief
-//  std::vector<ClosedLoopContraint_TEST*> mBakedClosedLoopConstraints;
-
-  std::vector<dynamics::Skeleton*> mSkeletonUnion;
 
 private:
   /// \brief
-  void _init();
+  void init();
 
   /// \brief
-  void _bakeConstraints();
-  void __bakeContactConstraints();
-  void __bakeJointLimitConstraints();
-  void __bakeClosedLoopConstraints();
-  void __bakeJointConstraints();
+  void bakeConstraints();
+  void bakeContactConstraints();
+  void bakeJointLimitConstraints();
+  void bakeClosedLoopConstraints();
+  void bakeJointConstraints();
 
   /// \brief Check if the skeleton is contained in this solver
-  bool _containSkeleton(const dynamics::Skeleton* _skeleton) const;
+  bool containSkeleton(const dynamics::Skeleton* _skeleton) const;
 
   /// \brief Add skeleton if the constraint is not contained in this solver
-  bool _checkAndAddSkeleton(dynamics::Skeleton* _skeleton);
+  bool checkAndAddSkeleton(dynamics::Skeleton* _skeleton);
 
   /// \brief Check if the constraint is contained in this solver
-  bool _containConstraint(const Constraint* _constraint) const;
+  bool containConstraint(const Constraint* _constraint) const;
 
   /// \brief Add constraint if the constraint is not contained in this solver
-  bool _checkAndAddConstraint(Constraint* _constraint);
+  bool checkAndAddConstraint(Constraint* _constraint);
 
   /// \brief Update dynamic constraints
-  void _updateDynamicConstraints();
+  void updateDynamicConstraints();
 
   /// \brief Build constrained groups
-  void _buildConstrainedGroups();
+  void buildConstrainedGroups();
 
   /// \brief Solve constrained groups
-  void _solveConstrainedGroups();
+  void solveConstrainedGroups();
 
   /// \brief Collision detector
   collision::CollisionDetector* mCollisionDetector;

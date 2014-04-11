@@ -295,9 +295,9 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
     for (int i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
-      _lcp->w[_idx] = 0.0;
-      _lcp->w[_idx + 1] = 0.0;
-      _lcp->w[_idx + 2] = 0.0;
+      assert(_lcp->w[_idx] == 0.0);
+      assert(_lcp->w[_idx + 1] == 0.0);
+      assert(_lcp->w[_idx + 2] == 0.0);
 
       // Upper and lower bounds of normal impulsive force
       _lcp->lb[_idx] = 0.0;

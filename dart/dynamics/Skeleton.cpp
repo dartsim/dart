@@ -855,8 +855,34 @@ void Skeleton::clearImpulseTest()
 }
 
 //==============================================================================
+void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
+{
+  // Assertions
+  assert(_bodyNode != NULL);
+  assert(getNumGenCoords() > 0);
+
+  // This skeleton should contains _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (int i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Prepare cache data
+  BodyNode* it = _bodyNode;
+  while (it != NULL)
+  {
+    it->updateImpBiasForce();
+    it = it->getParentBodyNode();
+  }
+}
+
+//==============================================================================
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
-                                  const Eigen::Vector6d& _imp)
+                                 const Eigen::Vector6d& _imp)
 {
   // Assertions
   assert(_bodyNode != NULL);
@@ -875,12 +901,6 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   // Set impulse to _bodyNode
   Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
-
-  // Backward recursion
-  if (!mIsArticulatedInertiaDirty)
-  {
-    std::cout << "WOW" << std::endl;
-  }
 
   // Prepare cache data
   BodyNode* it = _bodyNode;

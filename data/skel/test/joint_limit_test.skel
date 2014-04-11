@@ -55,7 +55,7 @@
                     </geometry>
                 </collision_shape>                                
             </body>
-            <joint type="revolute" name="joint0">
+            <joint type="weld" name="joint0">
                 <parent>world</parent>
                 <child>link 1</child>
                 <transformation>-0 0 0 0 0 0</transformation>
@@ -69,6 +69,10 @@
                 <transformation>-0 0 0 0 0 0</transformation>
                 <axis>
                     <xyz>1 0 0</xyz>
+                    <limit>
+                        <lower>-1.57</lower>
+                        <upper>+1.57</upper>
+                    </limit>
                 </axis>
             </joint>
         </skeleton>	

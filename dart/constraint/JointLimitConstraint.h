@@ -54,10 +54,37 @@ class JointLimitConstraint : public Constraint
 {
 public:
   /// \brief Default constructor
-  JointLimitConstraint();
+  explicit JointLimitConstraint(dynamics::Joint* _joint);
 
   /// \brief Default destructor
   ~JointLimitConstraint();
+
+  // Documentaion inherited
+  virtual void preprocess() {}
+
+  // Documentaion inherited
+  virtual void update();
+
+  // Documentaion inherited
+  virtual void fillLcpOde(ODELcp* _lcp, int _idx);
+
+  // Documentaion inherited
+  virtual void applyUnitImpulse(int _idx);
+
+  // Documentaion inherited
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) {}
+
+  // Documentaion inherited
+  virtual void excite() {}
+
+  // Documentaion inherited
+  virtual void unexcite() {}
+
+  // Documentaion inherited
+  virtual void applyConstraintImpulse(double* _lambda, int _idx);
+
+  // Documentation inherited
+  virtual dynamics::Skeleton* getRootSkeleton() const;
 
   /// \brief
   bool isActive();
@@ -67,6 +94,26 @@ protected:
   dynamics::Joint* mJoint;
 
 private:
+  /// \brief
+  size_t mLifeTime[6];
+
+  /// \brief
+  bool mActive[6];
+
+  /// \brief
+  double mViolation[6];
+
+  /// \brief
+  double mNegativeVel[6];
+
+  /// \brief
+  double mOldX[6];
+
+  /// \brief
+  double mUpperBound[6];
+
+  /// \brief
+  double mLowerBound[6];
 };
 
 }  // namespace constraint

@@ -64,6 +64,7 @@ ODELcp::ODELcp(int _n)
   dim = _n;
 
 //  std::memset(A, 0, _n * nSkip * sizeof(double));
+  std::memset(w, 0.0, _n * sizeof(int));
   std::memset(frictionIndex, -1, _n * sizeof(int));
 }
 
@@ -242,7 +243,7 @@ Constraint::~Constraint()
 }
 
 //==============================================================================
-int Constraint::getDimension() const
+size_t Constraint::getDimension() const
 {
   return mDim;
 }
