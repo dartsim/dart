@@ -487,7 +487,7 @@ void ContactConstraint::getVelocityChange(double* _delVel, int _idx,
 {
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
-  for (int i = 0; i < mDim; ++i)
+  for (size_t i = 0; i < mDim; ++i)
   {
     _delVel[i + _idx] = 0.0;
 

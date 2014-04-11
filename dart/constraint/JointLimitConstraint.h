@@ -42,6 +42,7 @@
 
 namespace dart {
 namespace dynamics {
+class BodyNode;
 class Joint;
 }  // namespace dynamics
 }  // namespace dart
@@ -69,16 +70,16 @@ public:
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
   // Documentaion inherited
-  virtual void applyUnitImpulse(int _idx);
+  virtual void applyUnitImpulse(int _localIndex);
 
   // Documentaion inherited
-  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) {}
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
   // Documentaion inherited
-  virtual void excite() {}
+  virtual void excite();
 
   // Documentaion inherited
-  virtual void unexcite() {}
+  virtual void unexcite();
 
   // Documentaion inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
@@ -92,6 +93,9 @@ public:
 protected:
   /// \brief
   dynamics::Joint* mJoint;
+
+  /// \brief
+  dynamics::BodyNode* mBodyNode;
 
 private:
   /// \brief

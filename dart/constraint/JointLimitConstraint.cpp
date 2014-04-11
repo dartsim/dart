@@ -39,6 +39,7 @@
 
 #include <iostream>
 
+#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
@@ -68,6 +69,16 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
   mActive[3] = false;
   mActive[4] = false;
   mActive[5] = false;
+
+  // TODO(JS): We need to be able to access child body node from joint
+  for (int i = 0; i < mJoint->getSkeleton()->getNumBodyNodes(); ++i)
+  {
+    dynamics::BodyNode* bodyNode = mJoint->getSkeleton()->getBodyNode(i);
+    if (bodyNode->getParentJoint() == mJoint)
+      mBodyNode = bodyNode;
+
+    assert(mBodyNode);
+  }
 }
 
 //==============================================================================
@@ -177,28 +188,61 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 }
 
 //==============================================================================
-void JointLimitConstraint::applyUnitImpulse(int _idx)
+void JointLimitConstraint::applyUnitImpulse(int _localIndex)
 {
-  assert(0 <= _idx && _idx < mDim && "Invalid Index.");
+  assert(0 <= _localIndex && _localIndex < mDim && "Invalid Index.");
 
-  size_t localIndex = 0;
-  dynamics::GenCoord* genCoord;
+//  size_t localIndex = 0;
   dynamics::Skeleton* skeleton = mJoint->getSkeleton();
 
+  size_t dof = mJoint->getNumGenCoords();
+  for (size_t i = 0; i < dof; ++i)
+  {
+    if (mActive[i] == false)
+      continue;
+
+    mJoint->getGenCoord(i)->setConstraintImpulse(1.0);
+
+    skeleton->clearImpulseTest();
+    skeleton->updateBiasImpulse(mBodyNode);
+    skeleton->updateVelocityChange();
+  }
+}
+
+//==============================================================================
+void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
+                                             bool /*_withCfm*/)
+{
+  assert(_delVel != NULL && "Null pointer is not allowed.");
+
+  size_t localIndex = 0;
   size_t dof = mJoint->getNumGenCoords();
   for (size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
 
-    genCoord = mJoint->getGenCoord(i);
+    if (mJoint->getSkeleton()->isImpulseApplied())
+      _delVel[_idx + localIndex] = mJoint->getGenCoord(i)->getVelChange();
+    else
+      _delVel[_idx + localIndex] = 0.0;
 
-    genCoord->setConstraintImpulse(1.0);
-
-    skeleton->clearImpulseTest();
-    skeleton->updateBiasImpulse(mJoint->getBodyNode());
-    skeleton->updateVelocityChange();
+    ++localIndex;
   }
+
+  assert(localIndex == mDim);
+}
+
+//==============================================================================
+void JointLimitConstraint::excite()
+{
+  mJoint->getSkeleton()->setImpulseApplied(true);
+}
+
+//==============================================================================
+void JointLimitConstraint::unexcite()
+{
+  mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
@@ -210,6 +254,10 @@ void JointLimitConstraint::applyConstraintImpulse(double* _lambda, int _idx)
   {
     if (mActive[i] == false)
       continue;
+
+    mJoint->getGenCoord(i)->setConstraintImpulse(
+          mJoint->getGenCoord(i)->getConstraintImpulse()
+          + _lambda[_idx + localIndex]);
 
     mOldX[i] = _lambda[_idx + localIndex];
 
