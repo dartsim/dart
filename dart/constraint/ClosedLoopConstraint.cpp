@@ -40,16 +40,16 @@
 namespace dart {
 namespace constraint {
 
-ClosedLoopConstraint::ClosedLoopConstraint()
-  : Constraint(CT_STATIC)
-{
+//ClosedLoopConstraint::ClosedLoopConstraint()
+//  : WeldJointConstraint()
+//{
 
-}
+//}
 
-ClosedLoopConstraint::~ClosedLoopConstraint()
-{
+//ClosedLoopConstraint::~ClosedLoopConstraint()
+//{
 
-}
+//}
 
 } // namespace constraint
 } // namespace dart

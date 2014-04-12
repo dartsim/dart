@@ -37,25 +37,35 @@
 
 #include "dart/constraint/JointConstraint.h"
 
+#include <cassert>
 #include <iostream>
 
 namespace dart {
 namespace constraint {
 
-JointConstraint::JointConstraint()
-  : Constraint(CT_DYNAMIC)
+//==============================================================================
+JointConstraint::JointConstraint(dynamics::BodyNode* _body)
+  : Constraint(CT_DYNAMIC),
+    mBodyNode1(_body),
+    mBodyNode2(NULL)
 {
+  assert(_body);
 }
 
+//==============================================================================
+JointConstraint::JointConstraint(dynamics::BodyNode* _body1,
+                                 dynamics::BodyNode* _body2)
+  : Constraint(CT_DYNAMIC),
+    mBodyNode1(_body1),
+    mBodyNode2(_body2)
+{
+  assert(_body1);
+  assert(_body2);
+}
+
+//==============================================================================
 JointConstraint::~JointConstraint()
 {
-}
-
-bool JointConstraint::isActive()
-{
-  std::cout << "JointConstraintTEST::isActive(): Not implemented."
-            << std::endl;
-  return false;
 }
 
 }  // namespace constraint

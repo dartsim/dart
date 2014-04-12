@@ -68,7 +68,7 @@ ConstrainedGroup::~ConstrainedGroup()
 void ConstrainedGroup::addConstraint(Constraint* _constraint)
 {
   assert(_constraint != NULL && "Null constraint pointer is now allowed.");
-  assert(_containConstraint(_constraint) == false
+  assert(containConstraint(_constraint) == false
          && "Don't try to add same constraint multiple times into Community.");
 
   mConstraints.push_back(_constraint);
@@ -78,7 +78,7 @@ void ConstrainedGroup::addConstraint(Constraint* _constraint)
 void ConstrainedGroup::removeConstraint(Constraint* _constraint)
 {
   assert(_constraint != NULL && "Null constraint pointer is now allowed.");
-  assert(_containConstraint(_constraint) == true
+  assert(containConstraint(_constraint) == true
          && "Don't try to remove a constraint not contained in Community.");
 
   mConstraints.erase(
@@ -115,7 +115,7 @@ bool ConstrainedGroup::solve()
 
   // Fill LCP terms
   lcp.invTimestep = 1.0 / mConstraintSolver->getTimeStep();
-  _fillLCPTermsODE(&lcp);
+  fillLCPTermsODE(&lcp);
 
   //////////////////////////////////////////////////////////////////////////////
 //  dtmsg << "Before solve" << std::endl;
@@ -123,19 +123,19 @@ bool ConstrainedGroup::solve()
   //////////////////////////////////////////////////////////////////////////////
 
   // Solve LCP
-  bool result = _solveODE(&lcp);
+  bool result = solveODE(&lcp);
 
 //  dtmsg << "After solve" << std::endl;
 //  lcp.print();
 
   // Apply impulse
-  _applyODE(&lcp);
+  applyODE(&lcp);
 
   return result;
 }
 
 //==============================================================================
-bool ConstrainedGroup::_containConstraint(Constraint* _constraint) const
+bool ConstrainedGroup::containConstraint(Constraint* _constraint) const
 {
 //  std::cout << "CommunityTEST::_containConstraint(): Not implemented."
 //            << std::endl;
@@ -144,7 +144,7 @@ bool ConstrainedGroup::_containConstraint(Constraint* _constraint) const
 }
 
 //==============================================================================
-bool ConstrainedGroup::_checkAndAddConstraint(Constraint* _constraint)
+bool ConstrainedGroup::checkAndAddConstraint(Constraint* _constraint)
 {
   std::cout << "CommunityTEST::_checkAndAddConstraint(): Not implemented."
             << std::endl;
@@ -153,7 +153,7 @@ bool ConstrainedGroup::_checkAndAddConstraint(Constraint* _constraint)
 }
 
 //==============================================================================
-void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
+void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
 {
   _lcp->clear();
 
@@ -245,7 +245,7 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 }
 
 //==============================================================================
-bool ConstrainedGroup::_solveODE(ODELcp* _lcp)
+bool ConstrainedGroup::solveODE(ODELcp* _lcp)
 {
 //  for (int i = 0; i < _lcp->dim; ++i)
 //    std::cout << "_lcp->lb[" << i << "]: " << _lcp->lb[i] << std::endl;
@@ -281,7 +281,7 @@ bool ConstrainedGroup::_solveODE(ODELcp* _lcp)
 }
 
 //==============================================================================
-void ConstrainedGroup::_applyODE(ODELcp* _lcp)
+void ConstrainedGroup::applyODE(ODELcp* _lcp)
 {
   // Compute offset indices
   int* offsetIndex = new int[_lcp->dim];

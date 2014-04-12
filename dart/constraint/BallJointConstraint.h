@@ -40,15 +40,56 @@
 
 #include "dart/constraint/JointConstraint.h"
 
+#include <Eigen/Dense>
+
 namespace dart {
 namespace constraint {
 
 class BallJointConstraint : public JointConstraint
 {
 public:
-  BallJointConstraint();
+  /// \brief Default constructor
+  BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
+                      const Eigen::Vector3d& _offset1,
+                      const Eigen::Vector3d& _offset2);
 
+  /// \brief Default destructor
   ~BallJointConstraint();
+
+  // Documentaion inherited
+  virtual void preprocess() {}
+
+  // Documentaion inherited
+  virtual void update();
+
+  // Documentaion inherited
+  virtual void fillLcpOde(ODELcp* _lcp, int _idx);
+
+  // Documentaion inherited
+  virtual void applyUnitImpulse(int _localIndex);
+
+  // Documentaion inherited
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
+
+  // Documentaion inherited
+  virtual void excite();
+
+  // Documentaion inherited
+  virtual void unexcite();
+
+  // Documentaion inherited
+  virtual void applyConstraintImpulse(double* _lambda, int _idx);
+
+  // Documentation inherited
+  virtual dynamics::Skeleton* getRootSkeleton() const {}
+
+protected:
+  /// \brief
+  Eigen::Vector3d mOffset1;
+
+  /// \brief
+  Eigen::Vector3d mOffset2;
+
 };
 
 }  // namespace constraint

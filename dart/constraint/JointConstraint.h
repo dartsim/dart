@@ -41,21 +41,33 @@
 #include "dart/constraint/Constraint.h"
 
 namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}  // namespace dynamics
+
 namespace constraint {
 
+/// \brief class JointConstraint
 class JointConstraint : public Constraint
 {
 public:
-  /// \brief Default contructor
-  JointConstraint();
+  /// \brief Contructor
+  explicit JointConstraint(dynamics::BodyNode *_body);
 
-  /// \brief Default destructor
+  /// \brief Contructor
+  JointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2);
+
+  /// \brief Destructor
   virtual ~JointConstraint();
 
-  /// \brief
-  bool isActive();
-
 protected:
+  /// \brief
+  dynamics::BodyNode* mBodyNode1;
+
+  /// \brief
+  dynamics::BodyNode* mBodyNode2;
+
 };
 
 } // namespace constraint

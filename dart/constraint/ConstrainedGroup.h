@@ -103,13 +103,13 @@ protected:
 
 private:
   /// \brief Check if _constraint is contained
-  bool _containConstraint(Constraint* _constraint) const;
+  bool containConstraint(Constraint* _constraint) const;
 
   /// \brief Check if _constraint is contained and, if so, add the constraint
-  bool _checkAndAddConstraint(Constraint* _constraint);
+  bool checkAndAddConstraint(Constraint* _constraint);
 
   /// \brief
-  void _fillLCPTermsODE(ODELcp* _lcp);
+  void fillLCPTermsODE(ODELcp* _lcp);
 
 //  /// \brief
 //  void fillLCPTermsLemke(const LCPTermsODE& _lcp);
@@ -119,13 +119,13 @@ private:
 
   // TODO(JS): more solvers
   /// \brief
-  bool _solveODE(ODELcp* _lcp);
+  bool solveODE(ODELcp* _lcp);
 
 //  bool _solveLemke();
 
 //  bool _solvePGS();
 
-  void _applyODE(ODELcp* _lcp);
+  void applyODE(ODELcp* _lcp);
 
 //  // Matrices to pass to solver
 //  Eigen::MatrixXd mA;

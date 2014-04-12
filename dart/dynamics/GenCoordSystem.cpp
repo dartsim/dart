@@ -138,7 +138,7 @@ void GenCoordSystem::setConfigsMin(const Eigen::VectorXd& _configsMin)
   size_t size = getNumGenCoords();
 
   for (size_t i = 0; i < size; ++i)
-    mGenCoords[i]->setConfigMin(_configsMin[i]);
+    mGenCoords[i]->setPosMin(_configsMin[i]);
 }
 
 //==============================================================================
@@ -182,7 +182,7 @@ void GenCoordSystem::setConfigsMax(const Eigen::VectorXd& _configsMax)
   size_t size = getNumGenCoords();
 
   for (size_t i = 0; i < size; ++i)
-    mGenCoords[i]->setConfigMax(_configsMax[i]);
+    mGenCoords[i]->setPosMax(_configsMax[i]);
 }
 
 //==============================================================================
@@ -225,7 +225,7 @@ Eigen::VectorXd GenCoordSystem::getConfigs() const
   Eigen::VectorXd q = Eigen::VectorXd::Zero(size);
 
   for (size_t i = 0; i < size; ++i)
-    q(i) = mGenCoords[i]->getConfig();
+    q(i) = mGenCoords[i]->getPos();
 
   return q;
 }
@@ -273,7 +273,7 @@ Eigen::VectorXd GenCoordSystem::getConfigsMax() const
   Eigen::VectorXd q = Eigen::VectorXd::Zero(size);
 
   for (size_t i = 0; i < size; ++i)
-    q(i) = mGenCoords[i]->getConfigMax();
+    q(i) = mGenCoords[i]->getPosMax();
 
   return q;
 }
@@ -344,7 +344,7 @@ Eigen::VectorXd GenCoordSystem::getConfigsMin() const
   Eigen::VectorXd q = Eigen::VectorXd::Zero(size);
 
   for (size_t i = 0; i < size; ++i)
-    q(i) = mGenCoords[i]->getConfigMin();
+    q(i) = mGenCoords[i]->getPosMin();
 
   return q;
 }

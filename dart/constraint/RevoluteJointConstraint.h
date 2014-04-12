@@ -46,9 +46,9 @@ namespace constraint {
 class RevoluteJointConstraint : public JointConstraint
 {
 public:
-  RevoluteJointConstraint();
+//  RevoluteJointConstraint();
 
-  ~RevoluteJointConstraint();
+//  ~RevoluteJointConstraint();
 };
 
 }  // namespace constraint

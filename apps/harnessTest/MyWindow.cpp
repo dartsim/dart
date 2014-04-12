@@ -39,12 +39,8 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"
-//#include "dart/constraint/OldBallJointConstraint.h"
-//#include "dart/constraint/OldRevoluteJointConstraint.h"
-
 
 using namespace dart;
 using namespace math;
@@ -52,123 +48,126 @@ using namespace dynamics;
 using namespace gui;
 using namespace dart::constraint;
 
-
 void MyWindow::timeStepping()
 {
-    mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
+  mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
-//    mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
-    mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(), mWorld->getSkeleton(1)->getGenVels());
-    mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
+  //    mController->setConstrForces(mWorld->getConstraintHandler()->getTotalConstraintForce(1));
+  mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(),
+                              mWorld->getSkeleton(1)->getGenVels());
+  mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
 
-    mWorld->step();
+  mWorld->step();
 
-    // for perturbation test
-    mImpulseDuration--;
-    if (mImpulseDuration <= 0) {
-        mImpulseDuration = 0;
-        mForce.setZero();
-    }    
+  // for perturbation test
+  mImpulseDuration--;
+  if (mImpulseDuration <= 0)
+  {
+    mImpulseDuration = 0;
+    mForce.setZero();
+  }
 }
 
 void MyWindow::drawSkels()
 {
-    for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
-        mWorld->getSkeleton(i)->draw(mRI);
+  for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
+    mWorld->getSkeleton(i)->draw(mRI);
 
-    // draw arrow
-    if (mImpulseDuration > 0) {
-        Eigen::Vector3d poa = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
-        Eigen::Vector3d start = poa - mForce / 10.0;
-        double len = mForce.norm() / 10.0;
-        drawArrow3D(start, mForce, len, 0.05, 0.1);
-    }
+  // draw arrow
+  if (mImpulseDuration > 0)
+  {
+    Eigen::Vector3d poa = mWorld->getSkeleton(1)->getBodyNode("h_spine")->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
+    Eigen::Vector3d start = poa - mForce / 10.0;
+    double len = mForce.norm() / 10.0;
+    drawArrow3D(start, mForce, len, 0.05, 0.1);
+  }
 }
 
 void MyWindow::keyboard(unsigned char key, int x, int y)
 {
-    switch(key){
+  switch(key){
     case ' ': // use space key to play or stop the motion
-        mSimulating = !mSimulating;
-        if(mSimulating) {
-            mPlay = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
-        }
-        break;
+      mSimulating = !mSimulating;
+      if(mSimulating)
+      {
+        mPlay = false;
+        glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
     case 'p': // playBack
-        mPlay = !mPlay;
-        if (mPlay) {
-            mSimulating = false;
-            glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
-        }
-        break;
+      mPlay = !mPlay;
+      if (mPlay)
+      {
+        mSimulating = false;
+        glutTimerFunc( mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
     case '[': // step backward
-        if (!mSimulating) {
-            mPlayFrame--;
-            if(mPlayFrame < 0)
-                mPlayFrame = 0;
-            glutPostRedisplay();
-        }
-        break;
+      if (!mSimulating)
+      {
+        mPlayFrame--;
+        if(mPlayFrame < 0)
+          mPlayFrame = 0;
+        glutPostRedisplay();
+      }
+      break;
     case ']': // step forwardward
-        if (!mSimulating) {
-            mPlayFrame++;
-            if(mPlayFrame >= mBakedStates.size())
-                mPlayFrame = 0;
-            glutPostRedisplay();
-        }
-        break;
+      if (!mSimulating)
+      {
+        mPlayFrame++;
+        if(mPlayFrame >= mBakedStates.size())
+          mPlayFrame = 0;
+        glutPostRedisplay();
+      }
+      break;
     case 'v': // show or hide markers
-        mShowMarkers = !mShowMarkers;
-        break;
+      mShowMarkers = !mShowMarkers;
+      break;
     case '1':
-        mForce[0] = 40;
-        mImpulseDuration = 100.0;
-        std::cout << "push forward" << std::endl;
-        break;
+      mForce[0] = 40;
+      mImpulseDuration = 100.0;
+      std::cout << "push forward" << std::endl;
+      break;
     case '2':
-        mForce[0] = -40;
-        mImpulseDuration = 100.0;
-        std::cout << "push backward" << std::endl;
-        break;
+      mForce[0] = -40;
+      mImpulseDuration = 100.0;
+      std::cout << "push backward" << std::endl;
+      break;
     case '3':
-        mForce[2] = 50;
-        mImpulseDuration = 100.0;
-        std::cout << "push right" << std::endl;
-        break;
+      mForce[2] = 50;
+      mImpulseDuration = 100.0;
+      std::cout << "push right" << std::endl;
+      break;
     case '4':
-        mForce[2] = -50;
-        mImpulseDuration = 100.0;
-        std::cout << "push left" << std::endl;
-        break;
+      mForce[2] = -50;
+      mImpulseDuration = 100.0;
+      std::cout << "push left" << std::endl;
+      break;
 
     case 'h':
-        if (mHarnessOn) {
-//            mWorld->getConstraintHandler()->deleteConstraint();
-            mHarnessOn = false;
-        } else {
-            addWeldConstraint();
-        }
-        break;
+      if (mHarnessOn)
+      {
+        mWorld->getConstraintSolver()->removeConstraint(mWeldJoint);
+        mHarnessOn = false;
+      }
+      else
+      {
+        addWeldConstraint();
+      }
+      break;
 
     default:
-        Win3D::keyboard(key,x,y);
+      Win3D::keyboard(key,x,y);
 
-    }
-    glutPostRedisplay();
+  }
+  glutPostRedisplay();
 }
 
-void MyWindow::addWeldConstraint() {
-    BodyNode *bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
-    Eigen::Vector3d offset(0.0, 0.0, 0.0);
-    Eigen::Vector3d target = bd->getWorldTransform() * offset;
-//    OldBallJointConstraint *bj = new OldBallJointConstraint(bd, offset, target);
-//    mWorld->getConstraintHandler()->addConstraint(bj);
+void MyWindow::addWeldConstraint()
+{
+  BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
+  mWeldJoint = new WeldJointConstraint(bd);
+  mWorld->getConstraintSolver()->addConstraint(mWeldJoint);
 
-    Eigen::Vector3d axis1(0.0, 1.0, 0.0);
-    Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-//    OldRevoluteJointConstraint *rj = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-//      mWorld->getConstraintHandler()->addConstraint(rj);
-
-    mHarnessOn = true;
+  mHarnessOn = true;
 }

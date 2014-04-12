@@ -55,29 +55,29 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  dart::dynamics::Skeleton* vehicle = mWorld->getSkeleton("car_skeleton");
-  assert(vehicle != 0);
+//  dart::dynamics::Skeleton* vehicle = mWorld->getSkeleton("car_skeleton");
+//  assert(vehicle != 0);
 
-  Eigen::VectorXd q   = vehicle->getConfigs();
-  Eigen::VectorXd dq  = vehicle->getGenVels();
-  Eigen::VectorXd tau = vehicle->getGenForces();
-  tau.setZero();
+//  Eigen::VectorXd q   = vehicle->getConfigs();
+//  Eigen::VectorXd dq  = vehicle->getGenVels();
+//  Eigen::VectorXd tau = vehicle->getGenForces();
+//  tau.setZero();
 
-  if (true)
-  {
-    tau[6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
-    tau[8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
-    tau[10] = -mD * (dq[10] - mBackWheelVelocity);
-    tau[11] = -mD * (dq[11] - mBackWheelVelocity);
-  }
-  else
-  {
-    tau[0] = -mK * (q[0] - mSteeringWheelAngle) - mD * dq[0];
-    tau[2] = -mK * (q[2] - mSteeringWheelAngle) - mD * dq[2];
-    tau[4] = -mD * (dq[4] - mBackWheelVelocity);
-    tau[5] = -mD * (dq[5] - mBackWheelVelocity);
-  }
-  vehicle->setInternalForceVector(tau);
+//  if (true)
+//  {
+//    tau[6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
+//    tau[8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
+//    tau[10] = -mD * (dq[10] - mBackWheelVelocity);
+//    tau[11] = -mD * (dq[11] - mBackWheelVelocity);
+//  }
+//  else
+//  {
+//    tau[0] = -mK * (q[0] - mSteeringWheelAngle) - mD * dq[0];
+//    tau[2] = -mK * (q[2] - mSteeringWheelAngle) - mD * dq[2];
+//    tau[4] = -mD * (dq[4] - mBackWheelVelocity);
+//    tau[5] = -mD * (dq[5] - mBackWheelVelocity);
+//  }
+//  vehicle->setInternalForceVector(tau);
 
   mWorld->step();
 }

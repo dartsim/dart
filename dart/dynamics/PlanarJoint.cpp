@@ -69,9 +69,9 @@ PlanarJoint::~PlanarJoint()
 void PlanarJoint::updateTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTranAxis1 * mCoordinate[1].getConfig())
-       * Eigen::Translation3d(mTranAxis2 * mCoordinate[2].getConfig())
-       * math::expAngular    (mRotAxis   * mCoordinate[0].getConfig())
+       * Eigen::Translation3d(mTranAxis1 * mCoordinate[1].getPos())
+       * Eigen::Translation3d(mTranAxis2 * mCoordinate[2].getPos())
+       * math::expAngular    (mRotAxis   * mCoordinate[0].getPos())
        * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
@@ -87,7 +87,7 @@ void PlanarJoint::updateJacobian()
   mS.col(0)     = math::AdTJac(mT_ChildBodyToJoint, J.col(0));
   mS.rightCols<2>()
       = math::AdTJac(mT_ChildBodyToJoint
-                     * math::expAngular(mRotAxis * -mCoordinate[0].getConfig()),
+                     * math::expAngular(mRotAxis * -mCoordinate[0].getPos()),
                      J.rightCols<2>());
 
   assert(!math::isNan(mS));
@@ -104,14 +104,14 @@ void PlanarJoint::updateJacobianTimeDeriv()
       = -math::ad(mS.col(0)*mCoordinate[0].getVel(),
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mCoordinate[0].getConfig()),
+                                               * -mCoordinate[0].getPos()),
                             J.col(1)));
 
   mdS.col(2)
       = -math::ad(mS.col(0)*mCoordinate[0].getVel(),
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mCoordinate[0].getConfig()),
+                                               * -mCoordinate[0].getPos()),
                             J.col(2)));
 
   assert(mdS.col(0) == Eigen::Vector6d::Zero());

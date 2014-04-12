@@ -196,6 +196,9 @@ private:
   /// \brief Add constraint if the constraint is not contained in this solver
   bool checkAndAddConstraint(Constraint* _constraint);
 
+  /// \brief Update static constraints
+  void updateStaticConstraints();
+
   /// \brief Update dynamic constraints
   void updateDynamicConstraints();
 

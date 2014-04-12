@@ -87,7 +87,7 @@ dart::dynamics::Joint* create1DOFJoint(double val, double min, double max,
                  Eigen::Vector3d(1.0, 0.0, 0.0));
   // Add the transformation to the joint, set the min/max values and set it to
   // the skeleton
-  newJoint->getGenCoord(0)->setConfig(val);
+  newJoint->getGenCoord(0)->setPos(val);
   newJoint->getGenCoord(0)->setPosMin(min);
   newJoint->getGenCoord(0)->setPosMax(max);
 

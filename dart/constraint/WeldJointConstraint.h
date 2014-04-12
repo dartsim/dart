@@ -38,6 +38,9 @@
 #ifndef DART_CONSTRAINT_WELDJOINTCONSTRAINT_H_
 #define DART_CONSTRAINT_WELDJOINTCONSTRAINT_H_
 
+#include <Eigen/Dense>
+
+#include "dart/math/MathTypes.h"
 #include "dart/constraint/JointConstraint.h"
 
 namespace dart {
@@ -46,9 +49,73 @@ namespace constraint {
 class WeldJointConstraint : public JointConstraint
 {
 public:
-  WeldJointConstraint();
+  /// \brief Constructor
+  explicit WeldJointConstraint(dynamics::BodyNode *_body);
 
+  /// \brief Constructor
+  WeldJointConstraint(dynamics::BodyNode *_body, const Eigen::Isometry3d& _T);
+
+  /// \brief Constructor
+  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2);
+
+  /// \brief Constructor
+  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
+                      const Eigen::Isometry3d& _T);
+
+  /// \brief Destructor
   ~WeldJointConstraint();
+
+  // Documentaion inherited
+  virtual void preprocess() {}
+
+  // Documentaion inherited
+  virtual void update();
+
+  // Documentaion inherited
+  virtual void fillLcpOde(ODELcp* _lcp, int _idx);
+
+  // Documentaion inherited
+  virtual void applyUnitImpulse(int _localIndex);
+
+  // Documentaion inherited
+  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
+
+  // Documentaion inherited
+  virtual void excite();
+
+  // Documentaion inherited
+  virtual void unexcite();
+
+  // Documentaion inherited
+  virtual void applyConstraintImpulse(double* _lambda, int _idx);
+
+  // Documentation inherited
+  virtual dynamics::Skeleton* getRootSkeleton() const;
+
+  // Documentation inherited
+  virtual void uniteSkeletons();
+
+  bool isActive() const;
+protected:
+
+  /// \brief
+  Eigen::Isometry3d mRelativeTransform;
+
+  /// \brief
+  Eigen::Vector6d mViolation;
+
+  /// \brief
+  Eigen::Matrix6d mIdentity6d;
+
+  /// \brief
+  double mOldX[6];
+
+  /// \brief Index of applied impulse
+  size_t mAppliedImpulseIndex;
+
+  /// \brief Small value to add to diagnal of A matrix of LCP to keep it away
+  /// from singular, similar to cfm varaible in ODE. Default is 0.001.
+  double mCfm;
 };
 
 }  // namespace constraint

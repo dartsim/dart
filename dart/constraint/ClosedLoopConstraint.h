@@ -38,18 +38,18 @@
 #ifndef DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
 #define DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/WeldJointConstraint.h"
 
 namespace dart {
 namespace constraint {
 
-class ClosedLoopConstraint : public Constraint
-{
-public:
-  ClosedLoopConstraint();
+//class ClosedLoopConstraint : public WeldJointConstraint
+//{
+//public:
+//  ClosedLoopConstraint();
 
-  ~ClosedLoopConstraint();
-};
+//  ~ClosedLoopConstraint();
+//};
 
 }  // namespace constraint
 }  // namespace dart

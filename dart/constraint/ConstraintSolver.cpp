@@ -193,9 +193,17 @@ void ConstraintSolver::removeAllSkeletons()
 //==============================================================================
 void ConstraintSolver::addConstraint(Constraint* _constraint)
 {
-  std::cout << "ConstraintSolver::addConstraint(): "
-            << "Not implemented yet."
-            << std::endl;
+  assert(_constraint);
+
+  if (containConstraint(_constraint))
+  {
+    dtwarn << "Constraint solver already contains constraint that you are "
+           << "trying to add." << std::endl;
+    return;
+  }
+
+//  if (_constraint->getType())
+  mStaticConstraints.push_back(_constraint);
 }
 
 //==============================================================================
@@ -209,9 +217,18 @@ void ConstraintSolver::addConstraints(const std::vector<Constraint*>& _constrain
 //==============================================================================
 void ConstraintSolver::removeConstraint(Constraint* _constraint)
 {
-  std::cout << "ConstraintSolver::removeConstraint(): "
-            << "Not implemented yet."
-            << std::endl;
+  assert(_constraint);
+
+  if (!containConstraint(_constraint))
+  {
+    dtwarn << "Constraint solver deos not contain constraint that you are "
+           << "trying to remove." << std::endl;
+    return;
+  }
+
+  mStaticConstraints.erase(remove(mStaticConstraints.begin(),
+                                  mStaticConstraints.end(), _constraint),
+                           mStaticConstraints.end());
 }
 
 //==============================================================================
@@ -263,7 +280,10 @@ void ConstraintSolver::solve()
   for (int i = 0; i < mSkeletons.size(); ++i)
     mSkeletons[i]->clearConstraintImpulses();
 
-  // Refresh dynamic constraint list based on the new states of skeletons
+  // Update static constraints based on the new states of skeletons
+  updateStaticConstraints();
+
+  // Refresh dynamic constraints based on the new states of skeletons
   updateDynamicConstraints();
 
   //
@@ -410,9 +430,12 @@ bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
 //==============================================================================
 bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 {
-  std::cout << "ConstraintSolverTEST::_containConstraint(): "
-            << "Not implemented."
-            << std::endl;
+  if (std::find(mStaticConstraints.begin(), mStaticConstraints.end(),
+                _constraint)
+      != mStaticConstraints.end())
+  {
+    return true;
+  }
 
   return false;
 }
@@ -435,6 +458,16 @@ bool ConstraintSolver::checkAndAddConstraint(Constraint* _constraint)
   }
 
   return false;
+}
+
+//==============================================================================
+void ConstraintSolver::updateStaticConstraints()
+{
+  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
+       it != mStaticConstraints.end(); ++it)
+  {
+    (*it)->update();
+  }
 }
 
 //==============================================================================
@@ -471,8 +504,8 @@ void ConstraintSolver::updateDynamicConstraints()
   {
     (*it)->update();
 
-    // if ((*it)->isActive())
-    mDynamicConstraints.push_back(*it);
+    if ((*it)->isActive())
+      mDynamicConstraints.push_back(*it);
   }
 
   //----------------------------------------------------------------------------

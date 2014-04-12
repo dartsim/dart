@@ -480,8 +480,6 @@ void Skeleton::updateMassMatrix() {
   assert(mM.cols() == getNumGenCoords() && mM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
 
-  std::cout << "Great!" << std::endl;
-
   mM.setZero();
 
   // Backup the origianl internal force
@@ -526,8 +524,6 @@ void Skeleton::updateMassMatrix() {
 void Skeleton::updateAugMassMatrix() {
   assert(mAugM.cols() == getNumGenCoords() && mAugM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
-
-  std::cout << "Great!" << std::endl;
 
   mAugM.setZero();
 
@@ -574,8 +570,6 @@ void Skeleton::updateInvMassMatrix() {
   assert(mInvM.cols() == getNumGenCoords() &&
          mInvM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
-
-  std::cout << "Great!" << std::endl;
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -634,8 +628,6 @@ void Skeleton::updateInvAugMassMatrix() {
   assert(mInvAugM.cols() == getNumGenCoords() &&
          mInvAugM.rows() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
-
-  std::cout << "Great!" << std::endl;
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();

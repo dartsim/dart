@@ -40,13 +40,63 @@
 namespace dart {
 namespace constraint {
 
-BallJointConstraint::BallJointConstraint()
-  : JointConstraint()
+//==============================================================================
+BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
+                                         dynamics::BodyNode* _body2,
+                                         const Eigen::Vector3d& _offset1,
+                                         const Eigen::Vector3d& _offset2)
+  : JointConstraint(_body1, _body2),
+    mOffset1(_offset1),
+    mOffset2(_offset2)
 {
 
 }
 
+//==============================================================================
 BallJointConstraint::~BallJointConstraint()
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::update()
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::applyUnitImpulse(int _localIndex)
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::getVelocityChange(double* _delVel, int _idx,
+                                            bool _withCfm)
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::excite()
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::unexcite()
+{
+
+}
+
+//==============================================================================
+void BallJointConstraint::applyConstraintImpulse(double* _lambda, int _idx)
 {
 
 }

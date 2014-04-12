@@ -40,16 +40,16 @@
 namespace dart {
 namespace constraint {
 
-RevoluteJointConstraint::RevoluteJointConstraint()
-  : JointConstraint()
-{
+//RevoluteJointConstraint::RevoluteJointConstraint()
+//  : JointConstraint()
+//{
 
-}
+//}
 
-RevoluteJointConstraint::~RevoluteJointConstraint()
-{
+//RevoluteJointConstraint::~RevoluteJointConstraint()
+//{
 
-}
+//}
 
 } // namespace constraint
 } // namespace dart

@@ -172,11 +172,13 @@ private:
   double mCfm;
 
   /// \brief Index of applied impulse
-  int mAppliedImpulseIndex;
+  size_t mAppliedImpulseIndex;
 
   /// \brief
   bool mIsBounceOn;
 
+  /// \brief
+  bool mActive;
 };
 
 } // namespace constraint
