@@ -45,14 +45,14 @@
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE 0.0
-#define DART_DEFAUT_JOINT_POSITION_ERP 0.01
+#define DART_DEFAUT_JOINT_POSITION_ERP 1.0
 
 namespace dart {
 namespace constraint {
 
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
-  : Constraint(CT_DYNAMIC), mJoint(_joint)
+  : Constraint(CT_DYNAMIC), mJoint(_joint), mBodyNode(NULL)
 {
   assert(_joint);
 
@@ -76,9 +76,9 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
     dynamics::BodyNode* bodyNode = mJoint->getSkeleton()->getBodyNode(i);
     if (bodyNode->getParentJoint() == mJoint)
       mBodyNode = bodyNode;
-
-    assert(mBodyNode);
   }
+
+  assert(mBodyNode);
 }
 
 //==============================================================================
@@ -160,6 +160,9 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
     if (mActive[i] == false)
       continue;
 
+    if (_lcp->w[_idx + localIndex] != 0.0)
+      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
+                << std::endl;
     assert(_lcp->w[_idx + localIndex] == 0.0);
 
     double bouncingVel = -mViolation[i];
@@ -192,7 +195,7 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
 {
   assert(0 <= _localIndex && _localIndex < mDim && "Invalid Index.");
 
-//  size_t localIndex = 0;
+  size_t localIndex = 0;
   dynamics::Skeleton* skeleton = mJoint->getSkeleton();
 
   size_t dof = mJoint->getNumGenCoords();
@@ -201,11 +204,12 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
     if (mActive[i] == false)
       continue;
 
-    mJoint->getGenCoord(i)->setConstraintImpulse(1.0);
-
     skeleton->clearImpulseTest();
+    mJoint->getGenCoord(localIndex)->setConstraintImpulse(1.0);
     skeleton->updateBiasImpulse(mBodyNode);
     skeleton->updateVelocityChange();
+
+    ++localIndex;
   }
 }
 
@@ -255,9 +259,21 @@ void JointLimitConstraint::applyConstraintImpulse(double* _lambda, int _idx)
     if (mActive[i] == false)
       continue;
 
+//    std::cout << "lambda[" << localIndex << "]: " << _lambda[_idx + localIndex]
+//              << std::endl;
+
+//    std::cout << "mJoint->getGenCoord(i)->getConstraintImpulse(): "
+//              << mJoint->getGenCoord(i)->getConstraintImpulse()
+//              << std::endl;
+
     mJoint->getGenCoord(i)->setConstraintImpulse(
-          mJoint->getGenCoord(i)->getConstraintImpulse()
-          + _lambda[_idx + localIndex]);
+//          mJoint->getGenCoord(i)->getConstraintImpulse()
+//          +
+          _lambda[_idx + localIndex]);
+
+//    std::cout << "mJoint->getGenCoord(i)->getConstraintImpulse(): "
+//              << mJoint->getGenCoord(i)->getConstraintImpulse()
+//              << std::endl;
 
     mOldX[i] = _lambda[_idx + localIndex];
 
@@ -274,8 +290,11 @@ dynamics::Skeleton* JointLimitConstraint::getRootSkeleton() const
 //==============================================================================
 bool JointLimitConstraint::isActive()
 {
-  std::cout << "JointLimitConstraintTEST::isActive(): Not implemented."
-            << std::endl;
+  for (size_t i = 0; i < 6; ++i)
+  {
+    if (mActive[i])
+      return true;
+  }
 
   return false;
 }

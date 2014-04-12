@@ -37,6 +37,8 @@
 #include "dart/constraint/ConstraintSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
@@ -296,7 +298,7 @@ void ConstraintSolver::init()
 
   int maxNumDynamicConstraints = 0;
   maxNumDynamicConstraints += mBakedContactConstraints.size();
-  maxNumDynamicConstraints += mBakedJointLimitContraints.size();
+  maxNumDynamicConstraints += mBakedJointLimitConstraints.size();
   maxNumDynamicConstraints += mBakedJointConstraints.size();
 
   mDynamicConstraints.reserve(maxNumDynamicConstraints);
@@ -467,6 +469,8 @@ void ConstraintSolver::updateDynamicConstraints()
        = mBakedContactConstraints.begin();
        it != mBakedContactConstraints.end(); ++it)
   {
+    (*it)->update();
+
     // if ((*it)->isActive())
     mDynamicConstraints.push_back(*it);
   }
@@ -474,11 +478,36 @@ void ConstraintSolver::updateDynamicConstraints()
   //----------------------------------------------------------------------------
   // Inspect joint limit constraints
   //----------------------------------------------------------------------------
+  // Clear previous joint limit constraints
+  for (std::vector<JointLimitConstraint*>::const_iterator it
+       = mBakedJointLimitConstraints.begin();
+       it != mBakedJointLimitConstraints.end(); ++it)
+  {
+    delete *it;
+  }
+  mBakedJointLimitConstraints.clear();
+
+  // Create new joint limit constraints
+  for (std::vector<Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    for (size_t i = 0; i < (*it)->getNumBodyNodes(); i++)
+    {
+      dynamics::Joint* joint = (*it)->getBodyNode(i)->getParentJoint();
+      if (!joint->isPositionLimited())
+        continue;
+
+      mBakedJointLimitConstraints.push_back(new JointLimitConstraint(joint));
+    }
+  }
+
   // Joint limit constraints
   for (std::vector<JointLimitConstraint*>::const_iterator it
-       = mBakedJointLimitContraints.begin();
-       it != mBakedJointLimitContraints.end(); ++it)
+       = mBakedJointLimitConstraints.begin();
+       it != mBakedJointLimitConstraints.end(); ++it)
   {
+    (*it)->update();
+
     if ((*it)->isActive())
       mDynamicConstraints.push_back(*it);
   }

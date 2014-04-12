@@ -152,7 +152,7 @@ protected:
   std::vector<ContactConstraint*> mBakedContactConstraints;
 
   /// \brief
-  std::vector<JointLimitConstraint*> mBakedJointLimitContraints;
+  std::vector<JointLimitConstraint*> mBakedJointLimitConstraints;
 
   /// \brief
   std::vector<ClosedLoopConstraint*> mBakedClosedLoopConstraints;

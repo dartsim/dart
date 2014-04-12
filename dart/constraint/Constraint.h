@@ -124,7 +124,7 @@ public:
   /// \brief
   virtual void preprocess() = 0;
 
-  /// \brief
+  /// \brief Update constraint using updated Skeleton's states
   virtual void update() = 0;
 
   /// \brief

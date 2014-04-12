@@ -157,10 +157,6 @@ void ConstrainedGroup::_fillLCPTermsODE(ODELcp* _lcp)
 {
   _lcp->clear();
 
-  // Update constraints
-  for (int i = 0; i < mConstraints.size(); ++i)
-    mConstraints[i]->update();
-
   // Compute offset indices
   int* offsetIndex = new int[_lcp->dim];
   offsetIndex[0] = 0;

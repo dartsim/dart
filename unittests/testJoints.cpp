@@ -366,8 +366,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->setForce(0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getConfig();
-    double jointPos1 = joint1->getGenCoord(0)->getConfig();
+    double jointPos0 = joint0->getGenCoord(0)->getPos();
+    double jointPos1 = joint1->getGenCoord(0)->getPos();
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);
@@ -383,8 +383,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->setForce(-0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getConfig();
-    double jointPos1 = joint1->getGenCoord(0)->getConfig();
+    double jointPos0 = joint0->getGenCoord(0)->getPos();
+    double jointPos1 = joint1->getGenCoord(0)->getPos();
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);

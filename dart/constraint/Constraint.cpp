@@ -64,7 +64,7 @@ ODELcp::ODELcp(int _n)
   dim = _n;
 
 //  std::memset(A, 0, _n * nSkip * sizeof(double));
-  std::memset(w, 0.0, _n * sizeof(int));
+  std::memset(w, 0.0, _n * sizeof(double));
   std::memset(frictionIndex, -1, _n * sizeof(int));
 }
 

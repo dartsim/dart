@@ -264,7 +264,7 @@ Eigen::VectorXd Skeleton::getConfigSegs(const std::vector<int>& _id) const
   Eigen::VectorXd q(_id.size());
 
   for (unsigned int i = 0; i < _id.size(); i++)
-    q[i] = mGenCoords[_id[i]]->getConfig();
+    q[i] = mGenCoords[_id[i]]->getPos();
 
   return q;
 }
@@ -277,7 +277,7 @@ void Skeleton::setConfigSegs(const std::vector<int>& _id,
                              bool _updateAccs)
 {
   for ( unsigned int i = 0; i < _id.size(); i++ )
-    mGenCoords[_id[i]]->setConfig(_configs(i));
+    mGenCoords[_id[i]]->setPos(_configs(i));
 
   computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
 }
@@ -943,11 +943,6 @@ void Skeleton::computeImpulseForwardDynamics()
   // Skip immobile or 0-dof skeleton
   if (!isMobile() || getNumGenCoords() == 0)
     return;
-
-  if (!mIsArticulatedInertiaDirty)
-  {
-    std::cout << "WOW" << std::endl;
-  }
 
   // Backward recursion
   if (mIsArticulatedInertiaDirty)

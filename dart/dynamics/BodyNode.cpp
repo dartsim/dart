@@ -1030,6 +1030,7 @@ void BodyNode::updateImpBiasForce()
     mImpAlpha = mParentJoint->getConstraintImpulses()
                 - mParentJoint->getLocalJacobian().transpose() * mImpB;
   }
+  assert(!math::isNan(mImpAlpha));
 
   // Cache data: mImpBeta
   if (mParentBodyNode)
