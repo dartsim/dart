@@ -62,7 +62,8 @@ World::World()
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
     mConstraintHandler(
-      new constraint::ConstraintDynamics(mSkeletons, mTimeStep)) {
+                       new constraint::ConstraintDynamics(mSkeletons, mTimeStep)),
+    mRecording(new Recording(mSkeletons)) {
   mIndices.push_back(0);
 }
 
@@ -303,6 +304,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton) {
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
   mConstraintHandler->addSkeleton(_skeleton);
+  mRecording->addSkeleton(_skeleton->getNumGenCoords());
 }
 
 void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
@@ -353,6 +355,27 @@ bool World::checkCollision(bool _checkAllCollisions) {
 constraint::ConstraintDynamics*World::getConstraintHandler() const {
   return mConstraintHandler;
 }
+
+void World::bake() {
+  collision::CollisionDetector* cd =
+      getConstraintHandler()->getCollisionDetector();
+  int nContacts  = cd->getNumContacts();
+  int nSkeletons = getNumSkeletons();
+  Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
+  for (unsigned int i = 0; i < getNumSkeletons(); i++) {
+    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords()) =
+        getSkeleton(i)->getConfigs();
+  }
+  for (int i = 0; i < nContacts; i++) {
+    int begin = getIndex(nSkeletons) + i * 6;
+    state.segment(begin, 3)     = cd->getContact(i).point;
+    state.segment(begin + 3, 3) = cd->getContact(i).force;
+  }
+  mRecording->addState(state);
+  
+  //  mBakedStates.push_back(state);
+}
+
 
 }  // namespace simulation
 }  // namespace dart

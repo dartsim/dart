@@ -37,61 +37,67 @@
 #include <fstream>
 #include <string>
 
-#include "dart/utils/FileInfoDof.h"
+#include "dart/utils/FileInfoWorld.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
 namespace utils {
 
-FileInfoDof::FileInfoDof(dynamics::Skeleton* _skel, double _fps)
-  : mSkel(_skel), mFPS(_fps), mNumFrames(0) {
+
+FileInfoWorld::~FileInfoWorld() {
+    if (mRecord)
+        delete mRecord;
 }
 
-FileInfoDof::~FileInfoDof() {
-  mDofs.clear();
-  mNumFrames = 0;
-}
-
-bool FileInfoDof::loadFile(const char* _fName) {
+bool FileInfoWorld::loadFile(const char* _fName) {
   std::ifstream inFile(_fName);
   if (inFile.fail() == 1) return false;
 
-  inFile.precision(20);
+  inFile.precision(8);
   char buffer[256];
-  int nDof;
+  int numFrames;
+  int numSkeletons;
+  int intVal;
+  double doubleVal;
+  std::vector<int> numDofsForSkels;
+  std::vector<double> tempState;
+  Eigen::VectorXd state;
 
-  // nFrames =
   inFile >> buffer;
+  inFile >> numFrames;
   inFile >> buffer;
-  inFile >> mNumFrames;
+  inFile >> numSkeletons;
 
-  // nDof =
-  inFile >> buffer;
-  inFile >> buffer;
-  inFile >> nDof;
-
-  if (mSkel == NULL || mSkel->getNumGenCoords() != nDof)
-    return false;
-
-  mDofs.resize(mNumFrames);
-
-  // dof names
-  for (int i = 0; i < nDof; i++)
-    inFile >> buffer;
-  for (int j = 0; j < mNumFrames; j++) {
-    mDofs[j].resize(nDof);
-    for (int i = 0; i < nDof; i++) {
-      double val;
-      inFile >> val;
-      mDofs[j][i] = val;
-    }
+  for (int i = 0; i < numSkeletons; i++) {
+      inFile >> buffer;
+      inFile >> intVal;
+      numDofsForSkels.push_back(intVal);
   }
+  mRecord = new simulation::Recording(numDofsForSkels);
 
-  // fps
-  inFile >> buffer;
-  if (!inFile.eof())
-    inFile>>mFPS;
+  for (int i = 0; i < numFrames; i++) {
+      for (int j = 0; j < numSkeletons; j++) {
+          for (int k = 0; k < mRecord->getNumGenCoords(j); k++) {
+              inFile >> doubleVal;
+              tempState.push_back(doubleVal);
+          }
+      }
 
+      inFile >> buffer;
+      inFile >> intVal;
+      for (int j = 0; j < intVal; j++) {
+          for (int k = 0; k < 6; k++) {
+              inFile >> doubleVal;
+              tempState.push_back(doubleVal);
+          }
+      }
+
+      state.resize(tempState.size());
+      for (int j = 0; j < tempState.size(); j++)
+          state[j] = tempState[j];
+      mRecord->addState(state);
+      tempState.clear();
+  }
   inFile.close();
 
   std::string text = _fName;
@@ -101,32 +107,34 @@ bool FileInfoDof::loadFile(const char* _fName) {
   return true;
 }
 
-bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
-                           double _sampleRate ) {
-  if (_end < _start) return false;
+bool FileInfoWorld::saveFile(const char* _fName, 
+                           simulation::Recording *_record) {
 
   std::ofstream outFile(_fName, std::ios::out);
   if (outFile.fail()) return false;
 
-  int first = _start < mNumFrames ? _start : mNumFrames - 1;
-  int last = _end < mNumFrames ? _end : mNumFrames - 1;
+  outFile.precision(8);
 
-  outFile.precision(20);
-  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumGenCoords() << std::endl;
-
-  for (int i = 0; i < mSkel->getNumGenCoords(); i++)
-    outFile << mSkel->getGenCoord(i)->getName() << ' ';
+  outFile << "numFrames " << _record->getNumFrames() << std::endl;
+  outFile << "numSkeletons " << _record->getNumSkeletons() << std::endl;
+  for (int i = 0; i < _record->getNumSkeletons(); i++) 
+      outFile << "Skeleton" << i << " " << _record->getNumGenCoords(i) << " ";
   outFile << std::endl;
+  for (int i = 0; i < _record->getNumFrames(); i++) {
+      for (int j = 0; j < _record->getNumSkeletons(); j++) {
+          for (int k = 0; k < _record->getNumGenCoords(j); k++)
+              outFile << _record->getGenCoord(i, j, k) << " ";
+          outFile << std::endl;
+      }
+      outFile << "Contacts " << _record->getNumContacts(i) << std::endl;
 
-  for (int i = first; i <= last; i++) {
-    for (int j = 0; j < mSkel->getNumGenCoords(); j++) {
-      outFile << mDofs[i][j] << ' ';
-    }
-    outFile << std::endl;
+      for (int j = 0; j < _record->getNumContacts(i); j++) {
+          outFile << _record->getContactPoint(i, j) << std::endl;
+          outFile << _record->getContactForce(i, j) << std::endl;
+      }
+      outFile << std::endl;
   }
-
-  outFile << "FPS " << mFPS << std::endl;
-
+  
   outFile.close();
 
   std::string text = _fName;

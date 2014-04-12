@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,56 +34,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/sdfLoader/MyWindow.h"
+#ifndef DART_UTILS_FILEINFOWORLD_H_
+#define DART_UTILS_FILEINFOWORLD_H_
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include <vector>
+#include <cassert>
+#include <climits>
+#include <Eigen/Dense>
 
-MyWindow::MyWindow()
-    : SimWindow() {
-}
-
-void MyWindow::timeStepping() {
-    mWorld->step();
-}
-
-void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
-    switch (_key) {
-        case ' ':  // use space key to play or stop the motion
-            mSimulating = !mSimulating;
-            if (mSimulating) {
-                mPlay = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case 'p':  // playBack
-            mPlay = !mPlay;
-            if (mPlay) {
-                mSimulating = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case '[':  // step backward
-            if (!mSimulating) {
-                mPlayFrame--;
-                if (mPlayFrame < 0)
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case ']':  // step forwardward
-            if (!mSimulating) {
-                mPlayFrame++;
-                if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case 'v':  // show or hide markers
-            mShowMarkers = !mShowMarkers;
-            break;
-        default:
-            Win3D::keyboard(_key, _x, _y);
+namespace dart {
+    namespace simulation {
+        class Recording;
     }
-    glutPostRedisplay();
 }
+
+namespace dart {
+namespace utils {
+
+class FileInfoWorld {
+ public:
+
+    FileInfoWorld() {
+        mRecord = NULL;
+    };
+    
+    virtual ~FileInfoWorld();
+
+    bool loadFile(const char* _fileName);
+
+    /// \note Down sampling not implemented yet
+    bool saveFile(const char* _fileName, simulation::Recording *_record);
+
+    inline simulation::Recording* getRecording() {
+        return mRecord;
+    }
+
+ protected:
+    char mFileName[256]; ///< file name
+    simulation::Recording *mRecord;
+};
+
+}  // namespace utils
+}  // namespace dart
+
+#endif  // DART_UTILS_FILEINFOWORLD_H_

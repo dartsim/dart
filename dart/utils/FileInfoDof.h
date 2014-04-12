@@ -91,5 +91,4 @@ protected:
 
 }  // namespace utils
 }  // namespace dart
-
 #endif  // DART_UTILS_FILEINFODOF_H_

@@ -50,6 +50,7 @@
 
 #include "dart/common/Timer.h"
 #include "dart/integration/Integrator.h"
+#include "dart/simulation/Recording.h"
 
 namespace dart {
 namespace integration {
@@ -172,6 +173,13 @@ public:
   /// \brief Get the constraint handler
   constraint::ConstraintDynamics* getConstraintHandler() const;
 
+  /// \brief
+  void bake();
+
+  inline Recording* getRecording() {
+      return mRecording;
+  }
+
 protected:
   /// \brief Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
@@ -199,6 +207,11 @@ protected:
 
   /// \brief The constraint handler
   constraint::ConstraintDynamics* mConstraintHandler;
+
+  /// \brief
+  Recording* mRecording;
+  //  std::vector<Eigen::VectorXd> mBakedStates;
+
 
 };
 

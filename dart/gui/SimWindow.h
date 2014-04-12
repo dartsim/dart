@@ -104,11 +104,6 @@ protected:
   /// \brief
   bool mShowMarkers;
 
-  /// \brief
-  std::vector<Eigen::VectorXd> mBakedStates;
-
-  /// \brief
-  void bake();
 };
 
 }  // namespace gui

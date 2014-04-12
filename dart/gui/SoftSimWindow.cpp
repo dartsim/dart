@@ -76,24 +76,24 @@ void SoftSimWindow::keyboard(unsigned char key, int x, int y)
         glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
       }
       break;
-    case '[':  // step backward
-      if (!mSimulating)
-      {
-        mPlayFrame--;
-        if (mPlayFrame < 0)
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case ']':  // step forwardward
-      if (!mSimulating)
-      {
-        mPlayFrame++;
-        if (mPlayFrame >= mBakedStates.size())
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
+    // case '[':  // step backward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame--;
+    //     if (mPlayFrame < 0)
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
+    // case ']':  // step forwardward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame++;
+    //     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
     case 'v':  // show or hide markers
       mShowMarkers = !mShowMarkers;
       break;
