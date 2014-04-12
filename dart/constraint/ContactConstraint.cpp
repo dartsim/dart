@@ -268,14 +268,6 @@ const Eigen::Vector3d& ContactConstraint::getFirstFrictionlDir() const
 }
 
 //==============================================================================
-void ContactConstraint::preprocess()
-{
-  std::cout << "ContactConstraintTEST::preprocess(): "
-            << "Not implemented."
-            << std::endl;
-}
-
-//==============================================================================
 void ContactConstraint::update()
 {
   if (mBodyNode1->isImpulseReponsible() || mBodyNode2->isImpulseReponsible())

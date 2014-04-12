@@ -84,9 +84,6 @@ public:
   // Constraint virtual function
   //----------------------------------------------------------------------------
   // Documentaion inherited
-  virtual void preprocess();
-
-  // Documentaion inherited
   virtual void update();
 
   // Documentaion inherited

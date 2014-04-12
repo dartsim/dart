@@ -121,9 +121,6 @@ public:
   //----------------------------------------------------------------------------
   // Pure virtual functions for solving
   //----------------------------------------------------------------------------
-  /// \brief
-  virtual void preprocess() = 0;
-
   /// \brief Update constraint using updated Skeleton's states
   virtual void update() = 0;
 
