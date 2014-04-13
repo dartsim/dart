@@ -110,6 +110,13 @@ public:
   /// \brief Add constraints.
   void addConstraints(const std::vector<Constraint*>& _constraints);
 
+  /// \brief
+  size_t getNumConstraints() const;
+
+  Constraint* getConstraint(size_t _index);
+
+
+
   /// \brief Remove single constraint.
   void removeConstraint(Constraint* _constraint);
 
@@ -118,6 +125,8 @@ public:
 
   /// \brief Remove all constraints.
   void removeAllConstraints();
+
+
 
   //----------------------------------------------------------------------------
   /// \brief Set timestep

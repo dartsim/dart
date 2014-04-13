@@ -53,10 +53,6 @@
 //#include "dart/constraint/RevoluteJointConstraint.h"
 //#include "dart/constraint/WeldJointConstraint.h"
 
-#ifdef _OPENMP
-  #include <omp.h>
-#endif
-
 namespace dart {
 namespace constraint {
 
@@ -676,21 +672,11 @@ void ConstraintSolver::buildConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
-  // TODO(JS): Parallel computing is possible here.
-//  for (std::vector<ConstrainedGroup>::iterator it = mConstrainedGroups.begin();
-//      it != mConstrainedGroups.end(); ++it)
-//  {
-//    (*it).solve();
-//  }
-
-#ifdef _OPENMP
-  #pragma omp parallel for if(mConstrainedGroups.size() > 50)
-  for (size_t i = 0; i < mConstrainedGroups.size(); ++i)
-    mConstrainedGroups[i].solve();
-#else
-  for (size_t i = 0; i < mConstrainedGroups.size(); ++i)
-    mConstrainedGroups[i].solve();
-#endif
+  for (std::vector<ConstrainedGroup>::iterator it = mConstrainedGroups.begin();
+       it != mConstrainedGroups.end(); ++it)
+  {
+    (*it).solve();
+  }
 }
 
 }  // namespace constraint

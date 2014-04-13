@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
   initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   myWorld->getSkeleton(1)->setConfigSegs(genCoordIds, initConfig,
                                          true, true, false);
+  myWorld->getSkeleton(1)->enableSelfCollision(false);
 
   // create controller
 //  Controller* myController = new Controller(myWorld->getSkeleton(1),

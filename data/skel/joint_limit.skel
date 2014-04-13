@@ -46,7 +46,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.2 0.2 0.2</size>
+                            <size>0.1 1.2 0.2</size>
                         </box>
                     </geometry>
                     <color>0.8 0.3 0.3</color>
@@ -55,7 +55,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.2 0.2 0.2</size>
+                            <size>0.1 1.2 0.2</size>
                         </box>
                     </geometry>
                 </collision_shape>                                
@@ -97,8 +97,8 @@
                 <axis>
                    <xyz>0 0 1</xyz>
                    <limit>
-                       <lower>-1.00</lower>
-                       <upper>1.00</upper>
+                       <!--lower>-1.00</lower>
+                       <upper>1.00</upper-->
                    </limit>
                 </axis>
             </joint>

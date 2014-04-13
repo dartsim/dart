@@ -115,8 +115,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
     case 'q':  // Spawn a cube
     case 'Q': {  // Spawn a cube
       Eigen::Vector3d position = Eigen::Vector3d(dart::math::random(-1.0, 1.0),
-                                                 dart::math::random(-1.0, 1.0),
-                                                 dart::math::random(0.5, 1.0));
+                                                 dart::math::random( 0.5, 1.0),
+                                                 dart::math::random(-1.0, 1.0));
       Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.01, 0.2),
                                              dart::math::random(0.01, 0.2),
                                              dart::math::random(0.01, 0.2));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -50,7 +50,6 @@
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {
@@ -64,8 +63,6 @@ World::World()
     mTimeStep(0.001),
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
-//    mConstraintHandler(
-//      new constraint::OldConstraintDynamics(mSkeletons, mTimeStep)),
     mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep))
 {
   mIndices.push_back(0);
@@ -75,7 +72,6 @@ World::World()
 World::~World()
 {
   delete mIntegrator;
-//  delete mConstraintHandler;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -155,55 +151,6 @@ Eigen::VectorXd World::getGenVels() const
 
 //==============================================================================
 Eigen::VectorXd World::evalGenAccs()
-{
-//  return _evalGenAccsOld();
-  return _evalGenAccsNew();
-}
-
-//==============================================================================
-Eigen::VectorXd World::_evalGenAccsOld()
-{
-  // compute constraint (contact/contact, joint limit) forces
-//  mConstraintHandler->computeConstraintForces();
-
-  // set constraint force
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    // skip immobile objects in forward simulation
-    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
-      continue;
-
-//    mSkeletons[i]->setConstraintForceVector(
-//          mConstraintHandler->getTotalConstraintForce(i) -
-//          mConstraintHandler->getContactForce(i));
-  }
-
-  // compute forward dynamics
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    (*it)->computeForwardDynamics();
-  }
-
-  // compute derivatives for integration
-  Eigen::VectorXd genAccs = Eigen::VectorXd::Zero(mIndices.back());
-  for (unsigned int i = 0; i < getNumSkeletons(); i++) {
-    // skip immobile objects in forward simulation
-    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
-      continue;
-
-    int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
-
-    // set accelerations
-    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
-  }
-
-  return genAccs;
-}
-
-//==============================================================================
-Eigen::VectorXd World::_evalGenAccsNew()
 {
   // Compute unconstrained acceleration.
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
@@ -292,19 +239,24 @@ void World::integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
   }
 }
 
-void World::setTimeStep(double _timeStep) {
+//==============================================================================
+void World::setTimeStep(double _timeStep)
+{
   assert(_timeStep > 0.0 && "Invalid timestep.");
 
   mTimeStep = _timeStep;
 //  mConstraintHandler->setTimeStep(_timeStep);
   mConstraintSolver->setTimeStep(_timeStep);
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it) {
+       it != mSkeletons.end(); ++it)
+  {
     (*it)->setTimeStep(_timeStep);
   }
 }
 
-double World::getTimeStep() const {
+//==============================================================================
+double World::getTimeStep() const
+{
   return mTimeStep;
 }
 
@@ -344,51 +296,62 @@ void World::step()
        it != mSkeletons.end(); ++it)
   {
     (*it)->computeForwardKinematics(true, true, false);
-  }
-
-  for (std::vector<dynamics::Skeleton*>::iterator itr = mSkeletons.begin();
-       itr != mSkeletons.end(); ++itr)
-  {
-    (*itr)->clearInternalForces();
-    (*itr)->clearExternalForces();
-    (*itr)->clearConstraintImpulses();
+    (*it)->clearInternalForces();
+    (*it)->clearExternalForces();
+    (*it)->clearConstraintImpulses();
   }
 
   mTime += mTimeStep;
   mFrame++;
 }
 
-void World::setTime(double _time) {
+//==============================================================================
+void World::setTime(double _time)
+{
   mTime = _time;
 }
 
-double World::getTime() const {
+//==============================================================================
+double World::getTime() const
+{
   return mTime;
 }
 
-int World::getSimFrames() const {
+//==============================================================================
+int World::getSimFrames() const
+{
   return mFrame;
 }
 
-void World::setGravity(const Eigen::Vector3d& _gravity) {
+//==============================================================================
+void World::setGravity(const Eigen::Vector3d& _gravity)
+{
   mGravity = _gravity;
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it) {
+       it != mSkeletons.end(); ++it)
+  {
     (*it)->setGravity(_gravity);
   }
 }
 
-const Eigen::Vector3d&World::getGravity() const {
+//==============================================================================
+const Eigen::Vector3d& World::getGravity() const
+{
   return mGravity;
 }
 
-dynamics::Skeleton* World::getSkeleton(int _index) const {
+//==============================================================================
+dynamics::Skeleton* World::getSkeleton(int _index) const
+{
   return mSkeletons[_index];
 }
 
-dynamics::Skeleton* World::getSkeleton(const std::string& _name) const {
+//==============================================================================
+dynamics::Skeleton* World::getSkeleton(const std::string& _name) const
+{
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it) {
+       it != mSkeletons.end(); ++it)
+  {
     if ((*it)->getName() == _name)
       return *it;
   }
@@ -396,7 +359,9 @@ dynamics::Skeleton* World::getSkeleton(const std::string& _name) const {
   return NULL;
 }
 
-int World::getNumSkeletons() const {
+//==============================================================================
+int World::getNumSkeletons() const
+{
   return mSkeletons.size();
 }
 
@@ -416,22 +381,26 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
-//  mConstraintHandler->addSkeleton(_skeleton);
   mConstraintSolver->addSkeleton(_skeleton);
 }
 
-void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
+//==============================================================================
+void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+{
   assert(_skeleton != NULL && "Invalid skeleton.");
 
   // Find index of _skeleton in mSkeleton.
   int i = 0;
   for (; i < mSkeletons.size(); ++i)
+  {
     if (mSkeletons[i] == _skeleton)
       break;
+  }
 
   // If i is equal to the number of skeletons, then _skeleton is not in
   // mSkeleton. We do nothing.
-  if (i == mSkeletons.size()) {
+  if (i == mSkeletons.size())
+  {
     std::cout << "Skeleton [" << _skeleton->getName()
               << "] is not in the world." << std::endl;
     return;
@@ -452,24 +421,25 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
   delete _skeleton;
 }
 
-void World::removeAllSkeletons() {
+//==============================================================================
+void World::removeAllSkeletons()
+{
   while (getNumSkeletons() > 0)
     removeSkeleton(getSkeleton(0));
 }
 
-int World::getIndex(int _index) const {
+//==============================================================================
+int World::getIndex(int _index) const
+{
   return mIndices[_index];
 }
 
-bool World::checkCollision(bool _checkAllCollisions) {
+//==============================================================================
+bool World::checkCollision(bool _checkAllCollisions)
+{
   return mConstraintSolver->getCollisionDetector()->detectCollision(
         _checkAllCollisions, false);
 }
-
-//constraint::OldConstraintDynamics* World::getConstraintHandler() const
-//{
-//  return mConstraintHandler;
-//}
 
 //==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver() const

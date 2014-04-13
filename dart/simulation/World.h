@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -52,19 +52,20 @@
 #include "dart/integration/Integrator.h"
 
 namespace dart {
+
 namespace integration {
 class Integrator;
 }  // namespace integration
+
 namespace dynamics {
 class Skeleton;
 }  // namespace dynamics
+
 namespace constraint {
 class OldConstraintDynamics;
 class ConstraintSolver;
 }  // namespace constraint
-}  // namespace dart
 
-namespace dart {
 namespace simulation {
 
 /// \brief class World
@@ -97,8 +98,6 @@ public:
 
   // Documentation inherited
   virtual Eigen::VectorXd evalGenAccs();
-  virtual Eigen::VectorXd _evalGenAccsOld();
-  virtual Eigen::VectorXd _evalGenAccsNew();
 
   // Documentation inherited
   virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt);
@@ -172,10 +171,6 @@ public:
   //--------------------------------------------------------------------------
   // Constraint
   //--------------------------------------------------------------------------
-  // TODO(JS): To be deprecated (DART 4.0)
-  /// \brief Get the constraint solver
-//  constraint::OldConstraintDynamics* getConstraintHandler() const;
-
   /// \brief Get the constraint solver
   constraint::ConstraintSolver* getConstraintSolver() const;
 
@@ -203,9 +198,6 @@ protected:
 
   /// \brief The integrator
   integration::Integrator* mIntegrator;
-
-  /// \brief The constraint handler
-//  constraint::OldConstraintDynamics* mConstraintHandler;
 
   /// \brief Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;
