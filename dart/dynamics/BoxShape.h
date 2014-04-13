@@ -38,6 +38,7 @@
 #ifndef DART_DYNAMICS_BOXSHAPE_H_
 #define DART_DYNAMICS_BOXSHAPE_H_
 
+#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -50,6 +51,9 @@ public:
 
   /// \brief Destructor.
   virtual ~BoxShape();
+
+  /// \brief Set size of this box.
+  void setDim(const Eigen::Vector3d& _size) DEPRECATED(4.0);
 
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);

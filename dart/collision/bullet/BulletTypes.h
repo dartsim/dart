@@ -38,7 +38,7 @@
 #define DART_COLLISION_BULLET_BULLETTYPES_H_
 
 #include <Eigen/Dense>
-#include <bullet/btBulletCollisionCommon.h>
+#include <btBulletCollisionCommon.h>
 
 namespace dart {
 namespace collision {

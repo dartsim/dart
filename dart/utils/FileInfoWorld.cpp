@@ -83,12 +83,15 @@ bool FileInfoWorld::loadFile(const char* _fName) {
           }
       }
 
-      inFile >> buffer;
-      inFile >> intVal;
-      for (int j = 0; j < intVal; j++) {
-          for (int k = 0; k < 6; k++) {
-              inFile >> doubleVal;
-              tempState.push_back(doubleVal);
+      char c = inFile.peek();
+      if (c == 'C') {
+          inFile >> buffer;      
+          inFile >> intVal;
+          for (int j = 0; j < intVal; j++) {
+              for (int k = 0; k < 6; k++) {
+                  inFile >> doubleVal;
+                  tempState.push_back(doubleVal);
+              }
           }
       }
 

@@ -83,6 +83,7 @@ public:
 
   /// \brief
   void setWorld(simulation::World *_world);
+  void saveWorld();
 
 //  bool isSimulating() const { return mSimulating; }
 

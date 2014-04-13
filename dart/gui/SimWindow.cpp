@@ -49,6 +49,7 @@
 #include "dart/constraint/ConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/GLFuncs.h"
+#include "dart/utils/FileInfoWorld.h"
 
 namespace dart {
 namespace gui {
@@ -202,6 +203,10 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
     case 'v':  // show or hide markers
       mShowMarkers = !mShowMarkers;
       break;
+  case 's':
+      saveWorld();
+      std::cout << "World Saved in 'tempWorld.txt'" << std::endl;
+      break;
     default:
       Win3D::keyboard(_key, _x, _y);
   }
@@ -212,6 +217,12 @@ void SimWindow::setWorld(simulation::World* _world) {
   mWorld = _world;
 }
 
+    void SimWindow::saveWorld() {
+        if (!mWorld)
+            return;
+        dart::utils::FileInfoWorld worldFile;
+        worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
+    }
 
 }  // namespace gui
 }  // namespace dart
