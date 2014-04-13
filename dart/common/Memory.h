@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_COMMON_MEMORY_H_
-#define SOFT_COMMON_MEMORY_H_
+#ifndef DART_COMMON_MEMORY_H_
+#define DART_COMMON_MEMORY_H_
 
 #ifdef __GNUC__
   #define DART_ALIGNED(v) __attribute__ ((aligned(v)))

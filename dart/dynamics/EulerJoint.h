@@ -39,8 +39,6 @@
 
 #include <string>
 
-#include <Eigen/Dense>
-
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 
@@ -67,8 +65,6 @@ public:
 
   /// \brief
   AxisOrder getAxisOrder() const;
-
-  Eigen::Isometry3d getTransform(size_t _index) const;
 
   // Documentation inherited.
   virtual void updateTransform();
