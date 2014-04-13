@@ -70,6 +70,7 @@ World::World()
 World::~World() {
   delete mIntegrator;
   delete mConstraintHandler;
+  delete mRecording;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -356,26 +357,33 @@ constraint::ConstraintDynamics*World::getConstraintHandler() const {
   return mConstraintHandler;
 }
 
-void World::bake() {
-  collision::CollisionDetector* cd =
-      getConstraintHandler()->getCollisionDetector();
-  int nContacts  = cd->getNumContacts();
+//==============================================================================
+void World::bake()
+{
+  collision::CollisionDetector* cd
+      = getConstraintHandler()->getCollisionDetector();
+  int nContacts = cd->getNumContacts();
   int nSkeletons = getNumSkeletons();
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
-  for (unsigned int i = 0; i < getNumSkeletons(); i++) {
-    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords()) =
-        getSkeleton(i)->getConfigs();
+  for (unsigned int i = 0; i < getNumSkeletons(); i++)
+  {
+    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords())
+        = getSkeleton(i)->getConfigs();
   }
-  for (int i = 0; i < nContacts; i++) {
+  for (int i = 0; i < nContacts; i++)
+  {
     int begin = getIndex(nSkeletons) + i * 6;
     state.segment(begin, 3)     = cd->getContact(i).point;
     state.segment(begin + 3, 3) = cd->getContact(i).force;
   }
   mRecording->addState(state);
-  
-  //  mBakedStates.push_back(state);
 }
 
+//==============================================================================
+Recording* World::getRecording()
+{
+  return mRecording;
+}
 
 }  // namespace simulation
 }  // namespace dart

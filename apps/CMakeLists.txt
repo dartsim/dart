@@ -33,7 +33,7 @@ foreach(APPDIR
     softSinglePendulumTest
     vehicle
     #viewer
-    inverseDyn
+    #inverseDyn
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

@@ -42,6 +42,7 @@
 #include "dart/gui/SimWindow.h"
 
 #include <cstdio>
+#include <iostream>
 #include <string>
 
 #include "dart/simulation/World.h"
