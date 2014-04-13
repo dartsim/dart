@@ -305,7 +305,9 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton) {
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
   mConstraintHandler->addSkeleton(_skeleton);
-  mRecording->addSkeleton(_skeleton->getNumGenCoords());
+
+  // Update recording
+  mRecording->updateNumGenCoords(mSkeletons);
 }
 
 void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
@@ -336,6 +338,10 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton) {
   // Remove _skeleton in mSkeletons and delete it.
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
+
+  // Update recording
+  mRecording->updateNumGenCoords(mSkeletons);
+
   delete _skeleton;
 }
 

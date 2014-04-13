@@ -138,9 +138,12 @@ void Recording::addState(const Eigen::VectorXd& _state)
 }
 
 //==============================================================================
-void Recording::addSkeleton(int _numDof)
+void Recording::updateNumGenCoords(
+    const std::vector<dynamics::Skeleton*>& _skeletons)
 {
-  mNumGenCoordsForSkeletons.push_back(_numDof);
+  mNumGenCoordsForSkeletons.clear();
+  for (int i = 0; i < _skeletons.size(); ++i)
+    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumGenCoords());
 }
 
 }  // namespace simulation

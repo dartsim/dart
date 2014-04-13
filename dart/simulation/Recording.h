@@ -100,9 +100,8 @@ public:
   /// \brief Add state
   void addState(const Eigen::VectorXd& _state);
 
-  /// \brief Add number of generalized coordinates
-  /// \note Recording is not aware of removing skeletons
-  void addSkeleton(int _numDof);
+  /// \brief Update list for number of generalized coordinates
+  void updateNumGenCoords(const std::vector<dynamics::Skeleton*>& _skeletons);
 
 private:
   /// \brief Baked states

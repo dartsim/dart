@@ -218,12 +218,12 @@ void SimWindow::setWorld(simulation::World* _world) {
   mWorld = _world;
 }
 
-    void SimWindow::saveWorld() {
-        if (!mWorld)
-            return;
-        dart::utils::FileInfoWorld worldFile;
-        worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
-    }
+void SimWindow::saveWorld() {
+  if (!mWorld)
+    return;
+  dart::utils::FileInfoWorld worldFile;
+  worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
+}
 
 }  // namespace gui
 }  // namespace dart

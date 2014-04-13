@@ -83,6 +83,8 @@ public:
 
   /// \brief
   void setWorld(simulation::World *_world);
+
+  /// \brief Save world in 'tempWorld.txt'
   void saveWorld();
 
 //  bool isSimulating() const { return mSimulating; }
