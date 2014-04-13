@@ -229,7 +229,8 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
         mBodyNode1->getSkeleton()->updateBiasImpulse(
               mBodyNode1, mIdentity6d.col(_localIndex));
       }
-      else
+
+      if (mBodyNode2->isImpulseReponsible())
       {
         mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, math::dAdT(mRelativeTransform,
@@ -248,7 +249,8 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
               mBodyNode1, mIdentity6d.col(_localIndex));
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
-      else
+
+      if (mBodyNode2->isImpulseReponsible())
       {
         mBodyNode2->getSkeleton()->clearImpulseTest();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
