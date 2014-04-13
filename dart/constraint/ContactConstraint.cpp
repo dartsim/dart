@@ -452,7 +452,8 @@ void ContactConstraint::applyUnitImpulse(int _idx)
       mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
                                                    mJacobians1[_idx]);
     }
-    else
+
+    if (mBodyNode2->isImpulseReponsible())
     {
       mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
                                                    mJacobians2[_idx]);
@@ -470,7 +471,8 @@ void ContactConstraint::applyUnitImpulse(int _idx)
                                                    mJacobians1[_idx]);
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
-    else
+
+    if (mBodyNode2->isImpulseReponsible())
     {
       mBodyNode2->getSkeleton()->clearImpulseTest();
       mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,

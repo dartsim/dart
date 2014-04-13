@@ -179,9 +179,17 @@ private:
 
   /// \brief
   void bakeConstraints();
+
+  /// \brief
   void bakeContactConstraints();
+
+  /// \brief
   void bakeJointLimitConstraints();
+
+  /// \brief
   void bakeClosedLoopConstraints();
+
+  /// \brief
   void bakeJointConstraints();
 
   /// \brief Check if the skeleton is contained in this solver
