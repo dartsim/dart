@@ -2,8 +2,7 @@
  * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -41,6 +40,16 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
+BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
+                                         const Eigen::Vector3d& _offset)
+  : JointConstraint(_body),
+    mOffset1(_offset),
+    mOffset2(Eigen::Vector3d::Zero())
+{
+
+}
+
+//==============================================================================
 BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2,
                                          const Eigen::Vector3d& _offset1,
@@ -61,7 +70,24 @@ BallJointConstraint::~BallJointConstraint()
 //==============================================================================
 void BallJointConstraint::update()
 {
+  // mBodyNode1 should not be null pointer ever
+  assert(mBodyNode1);
 
+//  if (mBodyNode2)
+//  {
+//    const Eigen::Isometry3d& violationT
+//        = mBodyNode2->getWorldTransform().inverse()
+//          * mBodyNode1->getWorldTransform();
+
+//    mViolation = math::logMap(violationT);
+//  }
+//  else
+//  {
+//    const Eigen::Isometry3d& violationT
+//        = mBodyNode1->getWorldTransform().inverse() * mRelativeTransform;
+
+//    mViolation = math::logMap(violationT);
+//  }
 }
 
 //==============================================================================

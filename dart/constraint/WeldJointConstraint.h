@@ -2,8 +2,7 @@
  * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -50,17 +49,26 @@ class WeldJointConstraint : public JointConstraint
 {
 public:
   /// \brief Constructor
-  explicit WeldJointConstraint(dynamics::BodyNode *_body);
+  /// \param[in] _body1
+  explicit WeldJointConstraint(dynamics::BodyNode* _body);
 
   /// \brief Constructor
-  WeldJointConstraint(dynamics::BodyNode *_body, const Eigen::Isometry3d& _T);
+  /// \param[in] _body1
+  /// \param[in] _targetT Traget transformation expressed in world frame
+  WeldJointConstraint(dynamics::BodyNode* _body,
+                      const Eigen::Isometry3d& _targetT);
 
   /// \brief Constructor
-  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2);
+  /// \param[in] _body1
+  /// \param[in] _body2
+  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2);
 
   /// \brief Constructor
-  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
-                      const Eigen::Isometry3d& _T);
+  /// \param[in] _body1
+  /// \param[in] _body2
+  /// \param[in] _T1to2 Relative transformation from _body1 to _body2
+  WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2,
+                      const Eigen::Isometry3d& _T1to2);
 
   /// \brief Destructor
   ~WeldJointConstraint();
@@ -92,7 +100,9 @@ public:
   // Documentation inherited
   virtual void uniteSkeletons();
 
+  /// \brief
   bool isActive() const;
+
 protected:
 
   /// \brief

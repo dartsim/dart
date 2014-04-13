@@ -2,8 +2,7 @@
  * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -48,7 +47,20 @@ namespace constraint {
 class BallJointConstraint : public JointConstraint
 {
 public:
-  /// \brief Default constructor
+  /// \brief Constructor
+  /// \param[in] _body
+  /// \param[in] _offset Offset from _body's origin to ball joint position
+  ///                    expressed in _body's frame
+  BallJointConstraint(dynamics::BodyNode *_body,
+                      const Eigen::Vector3d& _offset);
+
+  /// \brief Constructor
+  /// \param[in] _body1
+  /// \param[in] _body2
+  /// \param[in] _offset1 Offset from _body1's origin to ball joint position
+  ///                     expressed in _body1's frame
+  /// \param[in] _offset2 Offset from _body2's origin to ball joint position
+  ///                     expressed in _body2's frame
   BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
                       const Eigen::Vector3d& _offset1,
                       const Eigen::Vector3d& _offset2);

@@ -2,8 +2,7 @@
  * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -66,9 +65,9 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
-                                         const Eigen::Isometry3d& _T)
+                                         const Eigen::Isometry3d& _targetT)
   : JointConstraint(_body),
-    mRelativeTransform(_T)
+    mRelativeTransform(_targetT)
 {
   mDim = 6;
 
@@ -101,9 +100,9 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2,
-                                         const Eigen::Isometry3d& _T)
+                                         const Eigen::Isometry3d& _T1to2)
   : JointConstraint(_body1, _body2),
-    mRelativeTransform(_T),
+    mRelativeTransform(_T1to2),
     mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
