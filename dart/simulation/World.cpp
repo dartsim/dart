@@ -63,7 +63,8 @@ World::World()
     mTimeStep(0.001),
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
-    mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep))
+    mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep)),
+    mRecording(new Recording(mSkeletons))
 {
   mIndices.push_back(0);
 }
@@ -72,6 +73,7 @@ World::World()
 World::~World()
 {
   delete mIntegrator;
+  delete mRecording;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -382,6 +384,9 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
   mConstraintSolver->addSkeleton(_skeleton);
+
+  // Update recording
+  mRecording->updateNumGenCoords(mSkeletons);
 }
 
 //==============================================================================
@@ -418,6 +423,10 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
   // Remove _skeleton in mSkeletons and delete it.
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
+
+  // Update recording
+  mRecording->updateNumGenCoords(mSkeletons);
+
   delete _skeleton;
 }
 
@@ -445,6 +454,34 @@ bool World::checkCollision(bool _checkAllCollisions)
 constraint::ConstraintSolver* World::getConstraintSolver() const
 {
   return mConstraintSolver;
+}
+
+//==============================================================================
+void World::bake()
+{
+  collision::CollisionDetector* cd
+      = getConstraintSolver()->getCollisionDetector();
+  int nContacts = cd->getNumContacts();
+  int nSkeletons = getNumSkeletons();
+  Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
+  for (unsigned int i = 0; i < getNumSkeletons(); i++)
+  {
+    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords())
+        = getSkeleton(i)->getConfigs();
+  }
+  for (int i = 0; i < nContacts; i++)
+  {
+    int begin = getIndex(nSkeletons) + i * 6;
+    state.segment(begin, 3)     = cd->getContact(i).point;
+    state.segment(begin + 3, 3) = cd->getContact(i).force;
+  }
+  mRecording->addState(state);
+}
+
+//==============================================================================
+Recording* World::getRecording()
+{
+  return mRecording;
 }
 
 }  // namespace simulation

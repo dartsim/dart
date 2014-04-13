@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,56 +34,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/sdfLoader/MyWindow.h"
+#ifndef DART_UTILS_FILEINFOWORLD_H_
+#define DART_UTILS_FILEINFOWORLD_H_
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+namespace dart {
 
-MyWindow::MyWindow()
-    : SimWindow() {
-}
+namespace simulation {
+class Recording;
+}  // namespace simulation
 
-void MyWindow::timeStepping() {
-    mWorld->step();
-}
+namespace utils {
 
-void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
-    switch (_key) {
-        case ' ':  // use space key to play or stop the motion
-            mSimulating = !mSimulating;
-            if (mSimulating) {
-                mPlay = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case 'p':  // playBack
-            mPlay = !mPlay;
-            if (mPlay) {
-                mSimulating = false;
-                glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-            }
-            break;
-        case '[':  // step backward
-            if (!mSimulating) {
-                mPlayFrame--;
-                if (mPlayFrame < 0)
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case ']':  // step forwardward
-            if (!mSimulating) {
-                mPlayFrame++;
-                if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-                    mPlayFrame = 0;
-                glutPostRedisplay();
-            }
-            break;
-        case 'v':  // show or hide markers
-            mShowMarkers = !mShowMarkers;
-            break;
-        default:
-            Win3D::keyboard(_key, _x, _y);
-    }
-    glutPostRedisplay();
-}
+/// \brief class FileInfoWorld
+class FileInfoWorld
+{
+public:
+  /// \brief Constructor
+  FileInfoWorld();
+
+  /// \brief Destructor
+  virtual ~FileInfoWorld();
+
+  /// \brief Load file
+  bool loadFile(const char* _fileName);
+
+  /// \brief Save file
+  /// \note Down sampling not implemented yet
+  bool saveFile(const char* _fileName, simulation::Recording* _record);
+
+  /// \brief Get recording
+  simulation::Recording* getRecording() const;
+
+protected:
+  /// \brief File name
+  char mFileName[256];
+
+  /// \brief Recording
+  simulation::Recording* mRecord;
+};
+
+}  // namespace utils
+}  // namespace dart
+
+#endif  // DART_UTILS_FILEINFOWORLD_H_

@@ -42,6 +42,7 @@
 #include "dart/gui/SimWindow.h"
 
 #include <cstdio>
+#include <iostream>
 #include <string>
 
 #include "dart/simulation/World.h"
@@ -50,6 +51,7 @@
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/GLFuncs.h"
+#include "dart/utils/FileInfoWorld.h"
 
 namespace dart {
 namespace gui {
@@ -85,12 +87,12 @@ void SimWindow::displayTimer(int _val) {
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
   if (mPlay) {
     mPlayFrame += 16;
-    if (mPlayFrame >= mBakedStates.size())
+    if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
       mPlayFrame = 0;
   } else if (mSimulating) {
     for (int i = 0; i < numIter; i++) {
       timeStepping();
-      bake();
+      mWorld->bake();
     }
   }
   glutPostRedisplay();
@@ -101,22 +103,20 @@ void SimWindow::draw() {
   glDisable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   if (!mSimulating) {
-    if (mPlayFrame < mBakedStates.size()) {
+      if (mPlayFrame < mWorld->getRecording()->getNumFrames()) {
       int nSkels = mWorld->getNumSkeletons();
       for (unsigned int i = 0; i < nSkels; i++) {
         int start = mWorld->getIndex(i);
         int size = mWorld->getSkeleton(i)->getNumGenCoords();
-        mWorld->getSkeleton(i)->setConfigs(
-              mBakedStates[mPlayFrame].segment(start, size), true, false, false);
+        mWorld->getSkeleton(i)->setConfigs(mWorld->getRecording()->getConfig(mPlayFrame, i), true, false, false);
       }
       if (mShowMarkers) {
         int sumDofs = mWorld->getIndex(nSkels);
-        int nContact = (mBakedStates[mPlayFrame].size() - sumDofs) / 6;
+        int nContact = mWorld->getRecording()->getNumContacts(mPlayFrame);
         for (int i = 0; i < nContact; i++) {
-          Eigen::Vector3d v =
-              mBakedStates[mPlayFrame].segment(sumDofs + i * 6, 3);
-          Eigen::Vector3d f =
-              mBakedStates[mPlayFrame].segment(sumDofs + i * 6 + 3, 3) / 10.0;
+            Eigen::Vector3d v = mWorld->getRecording()->getContactPoint(mPlayFrame, i);
+            Eigen::Vector3d f = mWorld->getRecording()->getContactForce(mPlayFrame, i);
+
           glBegin(GL_LINES);
           glVertex3f(v[0], v[1], v[2]);
           glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
@@ -197,13 +197,17 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
     case ']':  // step forwardward
       if (!mSimulating) {
         mPlayFrame++;
-        if (mPlayFrame >= mBakedStates.size())
+        if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
         glutPostRedisplay();
       }
       break;
     case 'v':  // show or hide markers
       mShowMarkers = !mShowMarkers;
+      break;
+  case 's':
+      saveWorld();
+      std::cout << "World Saved in 'tempWorld.txt'" << std::endl;
       break;
     default:
       Win3D::keyboard(_key, _x, _y);
@@ -215,23 +219,11 @@ void SimWindow::setWorld(simulation::World* _world) {
   mWorld = _world;
 }
 
-void SimWindow::bake() {
-  collision::CollisionDetector* cd =
-      mWorld->getConstraintSolver()->getCollisionDetector();
-  int nContacts  = cd->getNumContacts();
-  int nSkeletons = mWorld->getNumSkeletons();
-  Eigen::VectorXd state(mWorld->getIndex(nSkeletons) + 6 * nContacts);
-  for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++) {
-    state.segment(mWorld->getIndex(i),
-                  mWorld->getSkeleton(i)->getNumGenCoords()) =
-        mWorld->getSkeleton(i)->getConfigs();
-  }
-  for (int i = 0; i < nContacts; i++) {
-    int begin = mWorld->getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3)     = cd->getContact(i).point;
-    state.segment(begin + 3, 3) = cd->getContact(i).force;
-  }
-  mBakedStates.push_back(state);
+void SimWindow::saveWorld() {
+  if (!mWorld)
+    return;
+  dart::utils::FileInfoWorld worldFile;
+  worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
 }
 
 }  // namespace gui

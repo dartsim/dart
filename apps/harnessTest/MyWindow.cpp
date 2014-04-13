@@ -112,10 +112,9 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       }
       break;
     case ']': // step forwardward
-      if (!mSimulating)
-      {
+      if (!mSimulating) {
         mPlayFrame++;
-        if(mPlayFrame >= mBakedStates.size())
+        if(mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
         glutPostRedisplay();
       }

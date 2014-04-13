@@ -50,6 +50,7 @@
 
 #include "dart/common/Timer.h"
 #include "dart/integration/Integrator.h"
+#include "dart/simulation/Recording.h"
 
 namespace dart {
 
@@ -174,6 +175,12 @@ public:
   /// \brief Get the constraint solver
   constraint::ConstraintSolver* getConstraintSolver() const;
 
+  /// \brief Bake simulated current state and store it into mRecording
+  void bake();
+
+  /// \brief Get recording
+  Recording* getRecording();
+
 protected:
   /// \brief Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
@@ -201,6 +208,9 @@ protected:
 
   /// \brief Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;
+
+  /// \brief
+  Recording* mRecording;
 };
 
 }  // namespace simulation

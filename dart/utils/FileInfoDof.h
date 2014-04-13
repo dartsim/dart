@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -38,58 +38,73 @@
 #define DART_UTILS_FILEINFODOF_H_
 
 #include <vector>
-#include <cassert>
-#include <climits>
+
 #include <Eigen/Dense>
 
 namespace dart {
+
 namespace dynamics {
 class Skeleton;
-}  // namespace dart
 }  // namespace dynamics
 
-namespace dart {
 namespace utils {
 
-class FileInfoDof {
+/// \brief class FileInfoDof
+class FileInfoDof
+{
 public:
-
+  /// \brief Constructor
   FileInfoDof(dynamics::Skeleton* _skel, double _fps = 120.0);
 
+  /// \brief Destructor
   virtual ~FileInfoDof();
 
+  /// \brief Load file
   bool loadFile(const char* _fileName);
 
+  /// \brief Save file
   /// \note Down sampling not implemented yet
-  bool saveFile(const char* _fileName, int _start, int _end, double _sampleRate = 1.0);
+  bool saveFile(const char* _fileName, int _start, int _end,
+                double _sampleRate = 1.0);
 
-  inline void addDof(Eigen::VectorXd& _dofs) {
-    mDofs.push_back(_dofs); mNumFrames++;
-  }
+  /// \brief Add Dof
+  void addDof(const Eigen::VectorXd& _dofs);
 
-  inline double getDofAt(int _frame, int _id) const {
-    assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id];
-  }
+  /// \brief Get Dof
+  double getDofAt(int _frame, int _id) const;
 
-  inline Eigen::VectorXd getPoseAtFrame(int _frame) { return mDofs.at(_frame); }
+  /// \brief Get pose at frame
+  Eigen::VectorXd getPoseAtFrame(int _frame) const;
 
-  inline void setFPS(double _fps) { mFPS = _fps; }
+  /// \brief Set frames per second
+  void setFPS(double _fps);
 
-  inline double getFPS() const { return mFPS; }
+  /// \brief Get frames per second
+  double getFPS() const;
 
-  inline int getNumFrames() const { return mNumFrames; }
+  /// \brief Get number of frames
+  int getNumFrames() const;
 
-  inline dynamics::Skeleton* getSkel() const { return mSkel; }
+  /// \brief Get skeleton associated with
+  dynamics::Skeleton* getSkel() const;
 
 protected:
-  dynamics::Skeleton* mSkel; ///< model associated with
-  double mFPS; ///< frame rate
-  int mNumFrames; ///< number of frames
-  char mFileName[256]; ///< file name
-  std::vector< Eigen::VectorXd > mDofs; ///< dof data [frame][dofIndex]
+  /// \brief Model associated with
+  dynamics::Skeleton* mSkel;
+
+  /// \brief Frame rate
+  double mFPS;
+
+  /// \brief Number of frames
+  int mNumFrames;
+
+  /// \brief File name
+  char mFileName[256];
+
+  /// \brief Dof data [frame][dofIndex]
+  std::vector<Eigen::VectorXd> mDofs;
 };
 
 }  // namespace utils
 }  // namespace dart
-
 #endif  // DART_UTILS_FILEINFODOF_H_

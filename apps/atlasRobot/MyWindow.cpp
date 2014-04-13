@@ -138,7 +138,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
     if (!mSimulating)
     {
       mPlayFrame++;
-      if (mPlayFrame >= mBakedStates.size())
+      if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
         mPlayFrame = 0;
       glutPostRedisplay();
     }

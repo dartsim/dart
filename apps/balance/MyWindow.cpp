@@ -43,6 +43,7 @@
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"
+#include "dart/utils/FileInfoWorld.h"
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
@@ -114,7 +115,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
     case ']':  // step forwardward
       if (!mSimulating) {
         mPlayFrame++;
-        if (mPlayFrame >= mBakedStates.size())
+        if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
         glutPostRedisplay();
       }
@@ -148,6 +149,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-//void MyWindow::setController(Controller* _controller) {
-//  mController = _controller;
-//}
+void MyWindow::setController(Controller* _controller) {
+  mController = _controller;
+}
+

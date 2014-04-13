@@ -57,8 +57,7 @@ SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
 
 SoftMeshShape::~SoftMeshShape()
 {
-  if (mAssimpMesh != NULL)
-    delete mAssimpMesh;
+  delete mAssimpMesh;
 }
 
 const aiMesh* SoftMeshShape::getAssimpMesh() const

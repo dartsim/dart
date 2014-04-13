@@ -84,6 +84,9 @@ public:
   /// \brief
   void setWorld(simulation::World *_world);
 
+  /// \brief Save world in 'tempWorld.txt'
+  void saveWorld();
+
 //  bool isSimulating() const { return mSimulating; }
 
 //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
@@ -104,11 +107,6 @@ protected:
   /// \brief
   bool mShowMarkers;
 
-  /// \brief
-  std::vector<Eigen::VectorXd> mBakedStates;
-
-  /// \brief
-  void bake();
 };
 
 }  // namespace gui

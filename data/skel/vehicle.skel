@@ -34,7 +34,7 @@
             </joint>
         </skeleton>	
         
-        <!--skeleton name="car_skeleton">
+        <skeleton name="car_skeleton">
             <transformation>0 -0.3 0 0 0 0</transformation>
             <body name="main_body">
                 <gravity>1</gravity>
@@ -222,10 +222,10 @@
                     <damping>0.00</damping>
                 </axis>
             </joint>
-        </skeleton-->
+        </skeleton>
 
         <skeleton name="skeleton_box1">
-            <transformation>0.75 -0.180 0 0 0 0.35</transformation>
+            <transformation>0.75 -0.170 0 0 0 0.35</transformation>
             <body name="box">
                 <gravity>1</gravity>
                 <transformation>0 0 0 0 0 0</transformation>
