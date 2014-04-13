@@ -46,7 +46,7 @@ void JumpController::computeTorques(const VectorXd& _dof, const VectorXd& _dofVe
         mTorques = p + d - mKd * qddot * mTimestep;
     }
         
-    if (mFrame > 600 && mFrame < 800) {
+    if (mFrame > 800 && mFrame < 1000) {
         Vector3d localPoint = mSkel->getNode("fullbody1_h_heel_left")->getLocalCOM();
         Vector3d virtualForce(-200, -1385, 0.0);
         MatrixXd jacobian = mSkel->getJacobian(mSkel->getNode("fullbody1_h_heel_left"), localPoint);
@@ -56,7 +56,7 @@ void JumpController::computeTorques(const VectorXd& _dof, const VectorXd& _dofVe
         mTorques += jacobian.transpose() * virtualForce;
     }    
     
-    if (mFrame > 800) {
+    if (mFrame > 1000) {
         mDesiredDofs[6] = 1.0;
         mDesiredDofs[9] = -2.0;
         mDesiredDofs[13] = 1.0;
