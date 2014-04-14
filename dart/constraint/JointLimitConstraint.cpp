@@ -44,7 +44,7 @@
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE 0.0
-#define DART_DEFAUT_JOINT_POSITION_ERP 1.0
+#define DART_DEFAUT_JOINT_POSITION_ERP 0.0
 
 namespace dart {
 namespace constraint {
@@ -154,14 +154,14 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 {
   size_t localIndex = 0;
   size_t dof = mJoint->getNumGenCoords();
-  for (size_t i = 0; i < dof ; ++i)
+  for (size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
 
-    if (_lcp->w[_idx + localIndex] != 0.0)
-      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
-                << std::endl;
+//    if (_lcp->w[_idx + localIndex] != 0.0)
+//      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
+//                << std::endl;
     assert(_lcp->w[_idx + localIndex] == 0.0);
 
     double bouncingVel = -mViolation[i];
@@ -173,15 +173,24 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 
     bouncingVel *= _lcp->invTimestep * DART_DEFAUT_JOINT_POSITION_ERP;
 
-    _lcp->b[_idx + localIndex] = mNegativeVel[localIndex] + bouncingVel;
+    _lcp->b[_idx + localIndex] = mNegativeVel[i] + bouncingVel;
 
-    _lcp->lb[_idx + localIndex] = mLowerBound[localIndex];
-    _lcp->ub[_idx + localIndex] = mUpperBound[localIndex];
+    _lcp->lb[_idx + localIndex] = mLowerBound[i];
+    _lcp->ub[_idx + localIndex] = mUpperBound[i];
 
-    assert(_lcp->frictionIndex[_idx] == -1);
+    if (_lcp->lb[_idx + localIndex] > _lcp->ub[_idx + localIndex])
+    {
+      std::cout << "dim: " << mDim << std::endl;
+      std::cout << "lb: " << mLowerBound[i] << std::endl;
+      std::cout << "ub: " << mUpperBound[i] << std::endl;
+      std::cout << "lb: " << _lcp->lb[_idx + localIndex] << std::endl;
+      std::cout << "ub: " << _lcp->ub[_idx + localIndex] << std::endl;
+    }
+
+    assert(_lcp->frictionIndex[_idx + localIndex] == -1);
 
     if (mLifeTime[i])
-      _lcp->x[_idx + localIndex] = mOldX[localIndex];
+      _lcp->x[_idx + localIndex] = mOldX[i];
     else
       _lcp->x[_idx + localIndex] = 0.0;
 
@@ -203,10 +212,14 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
     if (mActive[i] == false)
       continue;
 
-    skeleton->clearImpulseTest();
-    mJoint->getGenCoord(localIndex)->setConstraintImpulse(1.0);
-    skeleton->updateBiasImpulse(mBodyNode);
-    skeleton->updateVelocityChange();
+    if (localIndex == _localIndex)
+    {
+
+      skeleton->clearImpulseTest();
+      mJoint->getGenCoord(i)->setConstraintImpulse(1.0);
+      skeleton->updateBiasImpulse(mBodyNode);
+      skeleton->updateVelocityChange();
+    }
 
     ++localIndex;
   }
