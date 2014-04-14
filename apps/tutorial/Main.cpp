@@ -26,14 +26,14 @@ int main(int argc, char* argv[])
     // Initialize skeletons
     // uncomment this for swing controller
     
-    Eigen::VectorXd pose1 = model1.getSkel()->getPose();
-    pose1[27] = -2.5;
-    pose1[28] = 0.75;
-    pose1[29] = 0.3;
-    pose1[33] = 2.5;
-    pose1[34] = -0.75;
-    pose1[35] = 0.3;
-    model1.getSkel()->setPose(pose1);
+    // Eigen::VectorXd pose1 = model1.getSkel()->getPose();
+    // pose1[27] = -2.5;
+    // pose1[28] = 0.75;
+    // pose1[29] = 0.3;
+    // pose1[33] = 2.5;
+    // pose1[34] = -0.75;
+    // pose1[35] = 0.3;
+    // model1.getSkel()->setPose(pose1);
     
 
     Eigen::VectorXd pose2 = model2.getSkel()->getPose();
@@ -54,14 +54,14 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
 
     // Create a controller
-    //Controller* myController = new Controller(myWorld->getSkeleton(0));
+    Controller* myController = new Controller(myWorld->getSkeleton(0));
     //PDController* myController = new PDController(myWorld->getSkeleton(0));
 
     //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
-    JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 

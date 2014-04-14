@@ -102,7 +102,7 @@ void SwingController::computeTorques(const VectorXd& _dof, const VectorXd& _dofV
             mTorques[i] += temp[i];
     }
 
-    if (mFrame == 1500) {
+    if (mFrame == 8000) {
         int nConstr = mConstraintHandle->getNumConstraints();
         for (int i = nConstr - 1; i >= 0; i--)
             mConstraintHandle->deleteConstraint(mConstraintHandle->getConstraint(i));

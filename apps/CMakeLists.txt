@@ -4,6 +4,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 # List of all the subdirectories to include
 foreach(APPDIR
         tutorial
+        balance
 	)
     add_subdirectory(${APPDIR})
     if(WIN32)
