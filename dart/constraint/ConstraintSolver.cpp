@@ -59,7 +59,8 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
-ConstraintSolver::ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skeletons,
+ConstraintSolver::ConstraintSolver(
+    const std::vector<dynamics::Skeleton*>& _skeletons,
     double _timeStep,
     bool   _useODE)
   : mTimeStep(_timeStep),
