@@ -154,8 +154,6 @@ bool ConstrainedGroup::checkAndAddConstraint(Constraint* _constraint)
 //==============================================================================
 void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
 {
-  _lcp->clear();
-
   // Compute offset indices
   int* offsetIndex = new int[_lcp->dim];
   offsetIndex[0] = 0;
