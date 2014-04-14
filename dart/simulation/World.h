@@ -173,12 +173,11 @@ public:
   /// \brief Get the constraint handler
   constraint::ConstraintDynamics* getConstraintHandler() const;
 
-  /// \brief
+  /// \brief Bake simulated current state and store it into mRecording
   void bake();
 
-  inline Recording* getRecording() {
-      return mRecording;
-  }
+  /// \brief Get recording
+  Recording* getRecording();
 
 protected:
   /// \brief Skeletones in this world
@@ -210,9 +209,6 @@ protected:
 
   /// \brief
   Recording* mRecording;
-  //  std::vector<Eigen::VectorXd> mBakedStates;
-
-
 };
 
 }  // namespace simulation

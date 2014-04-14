@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,22 +34,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/utils/FileInfoWorld.h"
+
 #include <fstream>
 #include <string>
 
-#include "dart/utils/FileInfoWorld.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
 namespace utils {
 
-
-FileInfoWorld::~FileInfoWorld() {
-    if (mRecord)
-        delete mRecord;
+//==============================================================================
+FileInfoWorld::FileInfoWorld()
+  : mRecord(NULL)
+{
 }
 
-bool FileInfoWorld::loadFile(const char* _fName) {
+//==============================================================================
+FileInfoWorld::~FileInfoWorld()
+{
+  delete mRecord;
+}
+
+//==============================================================================
+bool FileInfoWorld::loadFile(const char* _fName)
+{
   std::ifstream inFile(_fName);
   if (inFile.fail() == 1) return false;
 
@@ -68,38 +77,45 @@ bool FileInfoWorld::loadFile(const char* _fName) {
   inFile >> buffer;
   inFile >> numSkeletons;
 
-  for (int i = 0; i < numSkeletons; i++) {
-      inFile >> buffer;
-      inFile >> intVal;
-      numDofsForSkels.push_back(intVal);
+  for (int i = 0; i < numSkeletons; i++)
+  {
+    inFile >> buffer;
+    inFile >> intVal;
+    numDofsForSkels.push_back(intVal);
   }
   mRecord = new simulation::Recording(numDofsForSkels);
 
-  for (int i = 0; i < numFrames; i++) {
-      for (int j = 0; j < numSkeletons; j++) {
-          for (int k = 0; k < mRecord->getNumGenCoords(j); k++) {
-              inFile >> doubleVal;
-              tempState.push_back(doubleVal);
-          }
+  for (int i = 0; i < numFrames; i++)
+  {
+    for (int j = 0; j < numSkeletons; j++)
+    {
+      for (int k = 0; k < mRecord->getNumGenCoords(j); k++)
+      {
+        inFile >> doubleVal;
+        tempState.push_back(doubleVal);
       }
+    }
 
-      char c = inFile.peek();
-      if (c == 'C') {
-          inFile >> buffer;      
-          inFile >> intVal;
-          for (int j = 0; j < intVal; j++) {
-              for (int k = 0; k < 6; k++) {
-                  inFile >> doubleVal;
-                  tempState.push_back(doubleVal);
-              }
-          }
+    char c = inFile.peek();
+    if (c == 'C')
+    {
+      inFile >> buffer;
+      inFile >> intVal;
+      for (int j = 0; j < intVal; j++)
+      {
+        for (int k = 0; k < 6; k++)
+        {
+          inFile >> doubleVal;
+          tempState.push_back(doubleVal);
+        }
       }
+    }
 
-      state.resize(tempState.size());
-      for (int j = 0; j < tempState.size(); j++)
-          state[j] = tempState[j];
-      mRecord->addState(state);
-      tempState.clear();
+    state.resize(tempState.size());
+    for (int j = 0; j < tempState.size(); j++)
+      state[j] = tempState[j];
+    mRecord->addState(state);
+    tempState.clear();
   }
   inFile.close();
 
@@ -110,9 +126,9 @@ bool FileInfoWorld::loadFile(const char* _fName) {
   return true;
 }
 
-bool FileInfoWorld::saveFile(const char* _fName, 
-                           simulation::Recording *_record) {
-
+//==============================================================================
+bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
+{
   std::ofstream outFile(_fName, std::ios::out);
   if (outFile.fail()) return false;
 
@@ -120,22 +136,25 @@ bool FileInfoWorld::saveFile(const char* _fName,
 
   outFile << "numFrames " << _record->getNumFrames() << std::endl;
   outFile << "numSkeletons " << _record->getNumSkeletons() << std::endl;
-  for (int i = 0; i < _record->getNumSkeletons(); i++) 
-      outFile << "Skeleton" << i << " " << _record->getNumGenCoords(i) << " ";
+  for (int i = 0; i < _record->getNumSkeletons(); i++)
+    outFile << "Skeleton" << i << " " << _record->getNumGenCoords(i) << " ";
   outFile << std::endl;
-  for (int i = 0; i < _record->getNumFrames(); i++) {
-      for (int j = 0; j < _record->getNumSkeletons(); j++) {
-          for (int k = 0; k < _record->getNumGenCoords(j); k++)
-              outFile << _record->getGenCoord(i, j, k) << " ";
-          outFile << std::endl;
-      }
-      outFile << "Contacts " << _record->getNumContacts(i) << std::endl;
-
-      for (int j = 0; j < _record->getNumContacts(i); j++) {
-          outFile << _record->getContactPoint(i, j) << std::endl;
-          outFile << _record->getContactForce(i, j) << std::endl;
-      }
+  for (int i = 0; i < _record->getNumFrames(); i++)
+  {
+    for (int j = 0; j < _record->getNumSkeletons(); j++)
+    {
+      for (int k = 0; k < _record->getNumGenCoords(j); k++)
+        outFile << _record->getGenCoord(i, j, k) << " ";
       outFile << std::endl;
+    }
+    outFile << "Contacts " << _record->getNumContacts(i) << std::endl;
+
+    for (int j = 0; j < _record->getNumContacts(i); j++)
+    {
+      outFile << _record->getContactPoint(i, j) << std::endl;
+      outFile << _record->getContactForce(i, j) << std::endl;
+    }
+    outFile << std::endl;
   }
   
   outFile.close();
@@ -145,6 +164,12 @@ bool FileInfoWorld::saveFile(const char* _fName,
   text = text.substr(lastSlash+1);
   std::strcpy(mFileName, text.c_str());
   return true;
+}
+
+//==============================================================================
+simulation::Recording* FileInfoWorld::getRecording() const
+{
+  return mRecord;
 }
 
 }  // namespace utils

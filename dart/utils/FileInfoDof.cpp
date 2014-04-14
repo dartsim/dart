@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -34,25 +34,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/utils/FileInfoDof.h"
+
 #include <fstream>
 #include <string>
 
-#include "dart/utils/FileInfoDof.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
 namespace utils {
 
+//==============================================================================
 FileInfoDof::FileInfoDof(dynamics::Skeleton* _skel, double _fps)
-  : mSkel(_skel), mFPS(_fps), mNumFrames(0) {
+  : mSkel(_skel), mFPS(_fps), mNumFrames(0)
+{
 }
 
-FileInfoDof::~FileInfoDof() {
+//==============================================================================
+FileInfoDof::~FileInfoDof()
+{
   mDofs.clear();
   mNumFrames = 0;
 }
 
-bool FileInfoDof::loadFile(const char* _fName) {
+//==============================================================================
+bool FileInfoDof::loadFile(const char* _fName)
+{
   std::ifstream inFile(_fName);
   if (inFile.fail() == 1) return false;
 
@@ -78,9 +86,11 @@ bool FileInfoDof::loadFile(const char* _fName) {
   // dof names
   for (int i = 0; i < nDof; i++)
     inFile >> buffer;
-  for (int j = 0; j < mNumFrames; j++) {
+  for (int j = 0; j < mNumFrames; j++)
+  {
     mDofs[j].resize(nDof);
-    for (int i = 0; i < nDof; i++) {
+    for (int i = 0; i < nDof; i++)
+    {
       double val;
       inFile >> val;
       mDofs[j][i] = val;
@@ -101,8 +111,10 @@ bool FileInfoDof::loadFile(const char* _fName) {
   return true;
 }
 
+//==============================================================================
 bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
-                           double _sampleRate ) {
+                           double _sampleRate )
+{
   if (_end < _start) return false;
 
   std::ofstream outFile(_fName, std::ios::out);
@@ -118,10 +130,10 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
     outFile << mSkel->getGenCoord(i)->getName() << ' ';
   outFile << std::endl;
 
-  for (int i = first; i <= last; i++) {
-    for (int j = 0; j < mSkel->getNumGenCoords(); j++) {
+  for (int i = first; i <= last; i++)
+  {
+    for (int j = 0; j < mSkel->getNumGenCoords(); j++)
       outFile << mDofs[i][j] << ' ';
-    }
     outFile << std::endl;
   }
 
@@ -134,6 +146,48 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
   text = text.substr(lastSlash+1);
   std::strcpy(mFileName, text.c_str());
   return true;
+}
+
+//==============================================================================
+void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
+{
+  mDofs.push_back(_dofs); mNumFrames++;
+}
+
+//==============================================================================
+double FileInfoDof::getDofAt(int _frame, int _id) const
+{
+  assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id];
+}
+
+//==============================================================================
+Eigen::VectorXd FileInfoDof::getPoseAtFrame(int _frame) const
+{
+  return mDofs.at(_frame);
+}
+
+//==============================================================================
+void FileInfoDof::setFPS(double _fps)
+{
+  mFPS = _fps;
+}
+
+//==============================================================================
+double FileInfoDof::getFPS() const
+{
+  return mFPS;
+}
+
+//==============================================================================
+int FileInfoDof::getNumFrames() const
+{
+  return mNumFrames;
+}
+
+//==============================================================================
+dynamics::Skeleton*FileInfoDof::getSkel() const
+{
+  return mSkel;
 }
 
 }  // namespace utils

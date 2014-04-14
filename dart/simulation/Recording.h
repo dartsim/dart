@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -44,89 +44,74 @@
 #define DART_SIMULATION_RECORDING_H_
 
 #include <vector>
-#include <iostream>
 
 #include <Eigen/Dense>
-#include "dart/dynamics/Skeleton.h"
-
 
 namespace dart {
+
+namespace dynamics {
+class Skeleton;
+}  // namespace dynamics
+
 namespace simulation {
 
 /// \brief class Recording
 class Recording
 {
 public:
-  //--------------------------------------------------------------------------
-  // Constructor and Destructor
-  //--------------------------------------------------------------------------
-  /// \brief Constructor
-    Recording(std::vector<dynamics::Skeleton*> & _skeletons) {
-        for (int i = 0; i < _skeletons.size(); i++)
-            mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumGenCoords());
-    }
-    Recording(std::vector<int> & _skelDofs) {
-        for (int i = 0; i < _skelDofs.size(); i++)
-            mNumGenCoordsForSkeletons.push_back(_skelDofs[i]);
-    }
+  /// \brief Create Recording with a list of skeletons
+  explicit Recording(const std::vector<dynamics::Skeleton*>& _skeletons);
+
+  /// \brief Create Recording with a list of number of dofs
+  explicit Recording(const std::vector<int>& _skelDofs);
 
   /// \brief Destructor
-    virtual ~Recording() {};
+  virtual ~Recording();
 
-    int getNumFrames() {
-        return mBakedStates.size();
-    }
-    int getNumSkeletons() {
-        return mNumGenCoordsForSkeletons.size();
-    }
-    int getNumGenCoords(int _skelIdx) {
-        return mNumGenCoordsForSkeletons[_skelIdx];
-    }
-    int getNumContacts(int _frameIdx) {
-        int totalDofs = 0;
-        for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
-            totalDofs += mNumGenCoordsForSkeletons[i];
-        return (mBakedStates[_frameIdx].size() - totalDofs) / 6;
-    }
-    Eigen::VectorXd getConfig(int _frameIdx, int _skelIdx) {
-        int index = 0;
-        for (int i = 0; i < _skelIdx; i++)
-            index += mNumGenCoordsForSkeletons[i];
-        return mBakedStates[_frameIdx].segment(index, getNumGenCoords(_skelIdx));
-    }
-        
-    double getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) {
-        int index = 0;
-        for (int i = 0; i < _skelIdx; i++)
-            index += mNumGenCoordsForSkeletons[i];        
-        return mBakedStates[_frameIdx][index + _dofIdx];
-    }
-    Eigen::Vector3d getContactPoint(int _frameIdx, int _contactIdx) {
-        int totalDofs = 0;
-        for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
-            totalDofs += mNumGenCoordsForSkeletons[i];
-        return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6, 3);
-    }
-    Eigen::Vector3d getContactForce(int _frameIdx, int _contactIdx) {
-        int totalDofs = 0;
-        for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
-            totalDofs += mNumGenCoordsForSkeletons[i];
-        return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6 + 3, 3);
-    }
-    void addState(Eigen::VectorXd & _state) {
-        mBakedStates.push_back(_state);
-    }
+  /// \brief Get number of frames
+  int getNumFrames() const;
 
-    void addSkeleton(int _numDof) {
-        mNumGenCoordsForSkeletons.push_back(_numDof);
-    }
+  /// \brief Get number of skeletons
+  int getNumSkeletons() const;
 
- private:
-    std::vector<Eigen::VectorXd> mBakedStates;
-    std::vector<int> mNumGenCoordsForSkeletons;
+  /// \brief Get number of generalized coordinates of skeleton whoes index is
+  /// _skelIdx
+  int getNumGenCoords(int _skelIdx) const;
+
+  /// \brief Get number of contacts at frame number _frameIdx
+  int getNumContacts(int _frameIdx) const;
+
+  /// \brief Get skeleton configurations whose index is _skelIdx at frame number
+  /// _frameIdx
+  Eigen::VectorXd getConfig(int _frameIdx, int _skelIdx) const;
+
+  /// \brief Get _dofIdx-th single configruation of a skeleton whose index is
+  /// _skelIdx at frame number _frameIdx
+  double getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const;
+
+  /// \brief Get contact point whose index is _contactIdx at frame number
+  /// _frameIdx
+  Eigen::Vector3d getContactPoint(int _frameIdx, int _contactIdx) const;
+
+  /// \brief Get contact force whose index is _contactIdx at frame number
+  /// _frameIdx
+  Eigen::Vector3d getContactForce(int _frameIdx, int _contactIdx) const;
+
+  /// \brief Add state
+  void addState(const Eigen::VectorXd& _state);
+
+  /// \brief Update list for number of generalized coordinates
+  void updateNumGenCoords(const std::vector<dynamics::Skeleton*>& _skeletons);
+
+private:
+  /// \brief Baked states
+  std::vector<Eigen::VectorXd> mBakedStates;
+
+  /// \brief Number of generalized coordinates for skeletons
+  std::vector<int> mNumGenCoordsForSkeletons;
 };
 
 }  // namespace simulation
 }  // namespace dart
 
-#endif  // DART_SIMULATION_WORLD_H_
+#endif  // DART_SIMULATION_RECORDING_H_

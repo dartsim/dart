@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -37,41 +37,40 @@
 #ifndef DART_UTILS_FILEINFOWORLD_H_
 #define DART_UTILS_FILEINFOWORLD_H_
 
-#include <vector>
-#include <cassert>
-#include <climits>
-#include <Eigen/Dense>
-
 namespace dart {
-    namespace simulation {
-        class Recording;
-    }
-}
 
-namespace dart {
+namespace simulation {
+class Recording;
+}  // namespace simulation
+
 namespace utils {
 
-class FileInfoWorld {
- public:
+/// \brief class FileInfoWorld
+class FileInfoWorld
+{
+public:
+  /// \brief Constructor
+  FileInfoWorld();
 
-    FileInfoWorld() {
-        mRecord = NULL;
-    };
-    
-    virtual ~FileInfoWorld();
+  /// \brief Destructor
+  virtual ~FileInfoWorld();
 
-    bool loadFile(const char* _fileName);
+  /// \brief Load file
+  bool loadFile(const char* _fileName);
 
-    /// \note Down sampling not implemented yet
-    bool saveFile(const char* _fileName, simulation::Recording *_record);
+  /// \brief Save file
+  /// \note Down sampling not implemented yet
+  bool saveFile(const char* _fileName, simulation::Recording* _record);
 
-    inline simulation::Recording* getRecording() {
-        return mRecord;
-    }
+  /// \brief Get recording
+  simulation::Recording* getRecording() const;
 
- protected:
-    char mFileName[256]; ///< file name
-    simulation::Recording *mRecord;
+protected:
+  /// \brief File name
+  char mFileName[256];
+
+  /// \brief Recording
+  simulation::Recording* mRecord;
 };
 
 }  // namespace utils
