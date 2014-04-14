@@ -73,6 +73,7 @@ World::World()
 World::~World()
 {
   delete mIntegrator;
+  delete mConstraintSolver;
   delete mRecording;
 
   for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
