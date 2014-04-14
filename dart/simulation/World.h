@@ -181,12 +181,6 @@ public:
   /// \brief Get recording
   Recording* getRecording();
 
-  /// \brief Bake simulated current state and store it into mRecording
-  void bake();
-
-  /// \brief Get recording
-  Recording* getRecording();
-
 protected:
   /// \brief Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
