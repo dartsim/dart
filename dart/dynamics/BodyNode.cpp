@@ -53,7 +53,7 @@
 #include "dart/dynamics/Marker.h"
 
 #define DART_DEFAULT_FRICTION_COEFF 0.4
-#define DART_DEFAULT_RESTITUTION_COEFF 0.0
+#define DART_DEFAULT_RESTITUTION_COEFF 0.5
 
 namespace dart {
 namespace dynamics {
