@@ -39,6 +39,9 @@
 #include <vector>
 
 #include "dart/utils/Paths.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
@@ -67,7 +70,16 @@ int main(int argc, char* argv[]) {
   initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   myWorld->getSkeleton(1)->setConfigSegs(genCoordIds, initConfig,
                                          true, true, false);
-  myWorld->getSkeleton(1)->enableSelfCollision(false);
+  dart::dynamics::Skeleton* skeleton = myWorld->getSkeleton(1);
+  for (int i = 1; i < skeleton->getNumBodyNodes(); ++i)
+  {
+    dart::dynamics::Joint* joint = skeleton->getBodyNode(i)->getParentJoint();
+    for (int j = 0; j < joint->getNumGenCoords(); ++j)
+    {
+      joint->getGenCoord(j)->setPosMin(-0.1);
+      joint->getGenCoord(j)->setPosMax(0.1);
+    }
+  }
 
   // create controller
 //  Controller* myController = new Controller(myWorld->getSkeleton(1),
