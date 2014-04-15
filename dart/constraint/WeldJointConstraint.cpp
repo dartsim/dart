@@ -47,11 +47,11 @@ namespace constraint {
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
   : JointConstraint(_body),
     mIdentity6d(Eigen::Matrix6d::Identity()),
-    mCfm(0.001)
+    mAppliedImpulseIndex(0),
+    mRelativeTransform(_body->getWorldTransform()),
+    mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
-
-  mRelativeTransform = _body->getWorldTransform();
 
   mOldX[0] = 0.0;
   mOldX[1] = 0.0;
@@ -65,7 +65,10 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
                                          const Eigen::Isometry3d& _targetT)
   : JointConstraint(_body),
-    mRelativeTransform(_targetT)
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0),
+    mRelativeTransform(_targetT),
+    mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
 
@@ -80,12 +83,14 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2)
-  : JointConstraint(_body1, _body2)
+  : JointConstraint(_body1, _body2),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0),
+    mRelativeTransform(_body1->getWorldTransform().inverse()
+                       * _body2->getWorldTransform()),
+    mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
-
-  mRelativeTransform
-      = _body1->getWorldTransform().inverse() * _body2->getWorldTransform();
 
   mOldX[0] = 0.0;
   mOldX[1] = 0.0;
@@ -100,6 +105,8 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2,
                                          const Eigen::Isometry3d& _T1to2)
   : JointConstraint(_body1, _body2),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0),
     mRelativeTransform(_T1to2),
     mViolation(Eigen::Vector6d::Zero())
 {
@@ -116,7 +123,6 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
 //==============================================================================
 WeldJointConstraint::~WeldJointConstraint()
 {
-
 }
 
 //==============================================================================
@@ -128,7 +134,8 @@ void WeldJointConstraint::update()
   if (mBodyNode2)
   {
     const Eigen::Isometry3d& violationT
-        = mBodyNode2->getWorldTransform().inverse()
+        = mRelativeTransform.inverse()
+          * mBodyNode2->getWorldTransform().inverse()
           * mBodyNode1->getWorldTransform();
 
     mViolation = math::logMap(violationT);
@@ -136,7 +143,7 @@ void WeldJointConstraint::update()
   else
   {
     const Eigen::Isometry3d& violationT
-        = mBodyNode1->getWorldTransform().inverse() * mRelativeTransform;
+        = mRelativeTransform.inverse() * mBodyNode1->getWorldTransform();
 
     mViolation = math::logMap(violationT);
   }
@@ -198,12 +205,12 @@ void WeldJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 
   mViolation *= mErrorReductionParameter * _lcp->invTimestep;
 
-  _lcp->b[_idx + 0] = negativeVel[0] + mViolation[0];
-  _lcp->b[_idx + 1] = negativeVel[1] + mViolation[1];
-  _lcp->b[_idx + 2] = negativeVel[2] + mViolation[2];
-  _lcp->b[_idx + 3] = negativeVel[3] + mViolation[3];
-  _lcp->b[_idx + 4] = negativeVel[4] + mViolation[4];
-  _lcp->b[_idx + 5] = negativeVel[5] + mViolation[5];
+  _lcp->b[_idx + 0] = negativeVel[0] - mViolation[0];
+  _lcp->b[_idx + 1] = negativeVel[1] - mViolation[1];
+  _lcp->b[_idx + 2] = negativeVel[2] - mViolation[2];
+  _lcp->b[_idx + 3] = negativeVel[3] - mViolation[3];
+  _lcp->b[_idx + 4] = negativeVel[4] - mViolation[4];
+  _lcp->b[_idx + 5] = negativeVel[5] - mViolation[5];
 }
 
 //==============================================================================
@@ -309,7 +316,7 @@ void WeldJointConstraint::getVelocityChange(double* _delVel, int _idx,
   if (_withCfm)
   {
     _delVel[_idx + mAppliedImpulseIndex]
-        += _delVel[_idx + mAppliedImpulseIndex] * mCfm;
+        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 }
 
@@ -340,30 +347,27 @@ void WeldJointConstraint::unexcite()
 }
 
 //==============================================================================
-void WeldJointConstraint::applyConstraintImpulse(double* _lambda, int _idx)
+void WeldJointConstraint::applyConstraintImpulse(double* _lambda)
 {
-  mOldX[_idx + 0] = _lambda[_idx + 0];
-  mOldX[_idx + 1] = _lambda[_idx + 1];
-  mOldX[_idx + 2] = _lambda[_idx + 2];
-  mOldX[_idx + 3] = _lambda[_idx + 3];
-  mOldX[_idx + 4] = _lambda[_idx + 4];
-  mOldX[_idx + 5] = _lambda[_idx + 5];
+  mOldX[0] = _lambda[0];
+  mOldX[1] = _lambda[1];
+  mOldX[2] = _lambda[2];
+  mOldX[3] = _lambda[3];
+  mOldX[4] = _lambda[4];
+  mOldX[5] = _lambda[5];
 
   Eigen::Vector6d imp;
-  imp << _lambda[_idx + 0],
-      _lambda[_idx + 1],
-      _lambda[_idx + 2],
-      _lambda[_idx + 3],
-      _lambda[_idx + 4],
-      _lambda[_idx + 5];
+  imp << _lambda[0],
+      _lambda[1],
+      _lambda[2],
+      _lambda[3],
+      _lambda[4],
+      _lambda[5];
 
   mBodyNode1->addConstraintImpulse(imp);
 
   if (mBodyNode2)
-  {
-    mBodyNode2->addConstraintImpulse(
-          math::dAdT(mRelativeTransform, -imp));
-  }
+    mBodyNode2->addConstraintImpulse(math::dAdT(mRelativeTransform, -imp));
 }
 
 //==============================================================================

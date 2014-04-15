@@ -122,7 +122,7 @@ void BallJointConstraint::unexcite()
 }
 
 //==============================================================================
-void BallJointConstraint::applyConstraintImpulse(double* _lambda, int _idx)
+void BallJointConstraint::applyConstraintImpulse(double* _lambda)
 {
 
 }

@@ -635,13 +635,15 @@ void ContactConstraint::unexcite()
 }
 
 //==============================================================================
-void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
+void ContactConstraint::applyConstraintImpulse(double* _lambda)
 {
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
+    size_t index = 0;
+
     for (int i = 0; i < mContacts.size(); ++i)
     {
 //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
@@ -652,38 +654,38 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
 //      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[_idx + 1] << std::endl;
 //      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
 
-      assert(!math::isNan(_lambda[_idx]));
+      assert(!math::isNan(_lambda[index]));
 
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
       if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 0] * _lambda[_idx]);
+        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 0] * _lambda[_idx]);
+        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
-      _idx++;
+      index++;
 
-      assert(!math::isNan(_lambda[_idx]));
+      assert(!math::isNan(_lambda[index]));
 
       // Tangential direction-1 impulsive force
 //      mContacts[i]->lambda[1] = _lambda[_idx];
       if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 1] * _lambda[_idx]);
+        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 1] * _lambda[_idx]);
+        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
-      _idx++;
+      index++;
 
-      assert(!math::isNan(_lambda[_idx]));
+      assert(!math::isNan(_lambda[index]));
 
       // Tangential direction-2 impulsive force
 //      mContacts[i]->lambda[2] = _lambda[_idx];
       if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[i * 3 + 2] * _lambda[_idx]);
+        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[i * 3 + 2] * _lambda[_idx]);
+        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
-      _idx++;
+      index++;
     }
   }
   //----------------------------------------------------------------------------
@@ -696,11 +698,10 @@ void ContactConstraint::applyConstraintImpulse(double* _lambda, int _idx)
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
       if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[_idx]);
+        mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[i]);
 
       if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[_idx]);
-      _idx++;
+        mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
     }
   }
 }

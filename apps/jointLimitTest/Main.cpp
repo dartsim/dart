@@ -52,6 +52,8 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
+  myWorld->getSkeleton(1)->enableSelfCollision(true);
+
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);

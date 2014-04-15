@@ -169,11 +169,13 @@ void ODELcp::print()
   delete[] Ax;
 }
 
+//==============================================================================
 void ODELcp::clear()
 {
   std::memset(A, 0.0, dim * nSkip * sizeof(double));
 }
 
+//==============================================================================
 bool ODELcp::checkSymmetric()
 {
   for (int i = 0; i < dim; ++i)
@@ -202,6 +204,7 @@ bool ODELcp::checkSymmetric()
   return true;
 }
 
+//==============================================================================
 bool ODELcp::checkSymmetric2(int _index)
 {
   for (int i = 0; i < _index; ++i)
@@ -214,9 +217,8 @@ bool ODELcp::checkSymmetric2(int _index)
         for (int k = 0; k < dim; ++k)
         {
           for (int l = 0; l < nSkip; ++l)
-          {
             std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
-          }
+
           std::cout << std::endl;
         }
 

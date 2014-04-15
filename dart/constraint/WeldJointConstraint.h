@@ -93,7 +93,7 @@ protected:
   virtual void unexcite();
 
   // Documentation inherited
-  virtual void applyConstraintImpulse(double* _lambda, int _idx);
+  virtual void applyConstraintImpulse(double* _lambda);
 
   // Documentation inherited
   virtual bool isActive() const;
@@ -104,7 +104,7 @@ protected:
   // Documentation inherited
   virtual void uniteSkeletons();
 
-protected:
+private:
   ///
   Eigen::Isometry3d mRelativeTransform;
 
@@ -112,17 +112,13 @@ protected:
   Eigen::Vector6d mViolation;
 
   ///
-  Eigen::Matrix6d mIdentity6d;
+  const Eigen::Matrix6d mIdentity6d;
 
   ///
   double mOldX[6];
 
   /// Index of applied impulse
   size_t mAppliedImpulseIndex;
-
-  /// Small value to add to diagnal of A matrix of LCP to keep it away from
-  /// singular, similar to cfm varaible in ODE. Default is 0.001.
-  double mCfm;
 };
 
 }  // namespace constraint

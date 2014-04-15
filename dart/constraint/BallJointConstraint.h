@@ -88,7 +88,7 @@ protected:
   virtual void unexcite();
 
   // Documentation inherited
-  virtual void applyConstraintImpulse(double* _lambda, int _idx);
+  virtual void applyConstraintImpulse(double* _lambda);
 
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const {}

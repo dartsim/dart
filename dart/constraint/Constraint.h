@@ -136,7 +136,7 @@ protected:
   virtual void unexcite() = 0;
 
   /// Apply computed constraint impulse to constrained skeletons
-  virtual void applyConstraintImpulse(double* _lambda, int _idx) = 0;
+  virtual void applyConstraintImpulse(double* _lambda) = 0;
 
   /// Return true if this constraint is active
   virtual bool isActive() const = 0;

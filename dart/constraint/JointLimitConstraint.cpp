@@ -380,7 +380,7 @@ void JointLimitConstraint::unexcite()
 }
 
 //==============================================================================
-void JointLimitConstraint::applyConstraintImpulse(double* _lambda, int _idx)
+void JointLimitConstraint::applyConstraintImpulse(double* _lambda)
 {
   size_t localIndex = 0;
   size_t dof = mJoint->getNumGenCoords();
@@ -399,13 +399,13 @@ void JointLimitConstraint::applyConstraintImpulse(double* _lambda, int _idx)
     mJoint->getGenCoord(i)->setConstraintImpulse(
 //          mJoint->getGenCoord(i)->getConstraintImpulse()
 //          +
-          _lambda[_idx + localIndex]);
+          _lambda[localIndex]);
 
 //    std::cout << "mJoint->getGenCoord(i)->getConstraintImpulse(): "
 //              << mJoint->getGenCoord(i)->getConstraintImpulse()
 //              << std::endl;
 
-    mOldX[i] = _lambda[_idx + localIndex];
+    mOldX[i] = _lambda[localIndex];
 
     ++localIndex;
   }

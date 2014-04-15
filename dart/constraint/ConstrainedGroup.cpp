@@ -180,9 +180,6 @@ void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
       // Apply impulse for mipulse test
       constraint->applyUnitImpulse(j);
 
-//      _lcp->print();
-//      std::cout << std::endl;
-
       mConstraints[i]->getVelocityChange(
             _lcp->A, _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i], true);
 
@@ -191,26 +188,9 @@ void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
       {
         int index = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[k];
         mConstraints[k]->getVelocityChange(_lcp->A, index, false);
-
-//        std::cout << "index: " << index << std::endl;
-
-//        _lcp->print();
-//        std::cout << std::endl;
       }
 
       assert(_lcp->checkSymmetric2(j));
-
-//      std::cout << "idx: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
-
-//      if (j == 0)
-
-//      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
-//      std::cout << "index: " << _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j << std::endl;
-
-//      _lcp->print();
-//      std::cout << std::endl;
-
-//      std::cout << "A: " << _lcp->A[_lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i] + j] << std::endl;
 
       // Filling symmetric part of A matrix
       for (int k = 0; k < i; ++k)
@@ -221,17 +201,8 @@ void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
           int index2 = _lcp->nSkip * (offsetIndex[k] + l) + offsetIndex[i] + j;
 
           _lcp->A[index1] = _lcp->A[index2];
-
-//          std::cout << "index1: " << index1 << std::endl;
-//          std::cout << "index2: " << index2 << std::endl;
-//          _lcp->print();
-//          std::cout << std::endl;
         }
       }
-
-//      _lcp->print();
-//      std::cout << std::endl;
-
     }
     constraint->unexcite();
   }
@@ -289,7 +260,7 @@ void ConstrainedGroup::applyODE(ODELcp* _lcp)
   // Apply constraint impulses
   for (int i = 0; i < mConstraints.size(); ++i)
   {
-    mConstraints[i]->applyConstraintImpulse(_lcp->x, offsetIndex[i]);
+    mConstraints[i]->applyConstraintImpulse(_lcp->x + offsetIndex[i]);
     mConstraints[i]->excite();
   }
 

@@ -590,7 +590,7 @@ void ConstraintSolver::buildConstrainedGroups()
   std::vector<dynamics::Skeleton*> possibleSkeletonGroupRoots;
   possibleSkeletonGroupRoots.reserve(mSkeletons.size());
 
-  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
+  for (std::vector<Constraint*>::const_iterator it = mStaticConstraints.begin();
        it != mStaticConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();
@@ -603,7 +603,7 @@ void ConstraintSolver::buildConstrainedGroups()
     }
   }
 
-  for (std::vector<Constraint*>::iterator it = mDynamicConstraints.begin();
+  for (std::vector<Constraint*>::const_iterator it = mDynamicConstraints.begin();
        it != mDynamicConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();
@@ -616,13 +616,13 @@ void ConstraintSolver::buildConstrainedGroups()
     }
   }
 
-  for (std::vector<dynamics::Skeleton*>::iterator itSkel
+  for (std::vector<dynamics::Skeleton*>::const_iterator itSkel
        = possibleSkeletonGroupRoots.begin();
        itSkel != possibleSkeletonGroupRoots.end(); ++itSkel)
   {
     bool found = false;
 
-    for (std::vector<ConstrainedGroup>::iterator itConstGroup
+    for (std::vector<ConstrainedGroup>::const_iterator itConstGroup
          = mConstrainedGroups.begin();
          itConstGroup != mConstrainedGroups.end(); ++itConstGroup)
     {
@@ -646,7 +646,7 @@ void ConstraintSolver::buildConstrainedGroups()
   // Add Constraints to constrained groups
   //----------------------------------------------------------------------------
   // Static constraints
-  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
+  for (std::vector<Constraint*>::const_iterator it = mStaticConstraints.begin();
        it != mStaticConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();
@@ -654,7 +654,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Dynamics constraints
-  for (std::vector<Constraint*>::iterator it = mDynamicConstraints.begin();
+  for (std::vector<Constraint*>::const_iterator it = mDynamicConstraints.begin();
        it != mDynamicConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();
