@@ -78,7 +78,7 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void fillLcpOde(ODELcp* _lcp, int _idx);
+  virtual void getLCPVectors(ConstraintInfo* _lcp);
 
   // Documentation inherited
   virtual void applyUnitImpulse(int _localIndex);

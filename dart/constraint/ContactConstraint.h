@@ -111,7 +111,7 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void fillLcpOde(ODELcp* _lcp, int _idx);
+  virtual void getLCPVectors(ConstraintInfo* _lcp);
 
   // Documentation inherited
   virtual void applyUnitImpulse(int _idx);
@@ -141,8 +141,7 @@ private:
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
-  /// \param[in] _idx Index the relative velocity change will be stored
-  void getRelVelocity(double* _relVel, int _idx);
+  void getRelVelocity(double* _relVel);
 
   /// Compute change in velocity due to _idx-th impulse.
   void updateVelocityChange(int _idx);

@@ -150,42 +150,42 @@ void WeldJointConstraint::update()
 }
 
 //==============================================================================
-void WeldJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
+void WeldJointConstraint::getLCPVectors(ConstraintInfo* _lcp)
 {
-  assert(_lcp->w[_idx + 0] == 0.0);
-  assert(_lcp->w[_idx + 1] == 0.0);
-  assert(_lcp->w[_idx + 2] == 0.0);
-  assert(_lcp->w[_idx + 3] == 0.0);
-  assert(_lcp->w[_idx + 4] == 0.0);
-  assert(_lcp->w[_idx + 5] == 0.0);
+  assert(_lcp->w[0] == 0.0);
+  assert(_lcp->w[1] == 0.0);
+  assert(_lcp->w[2] == 0.0);
+  assert(_lcp->w[3] == 0.0);
+  assert(_lcp->w[4] == 0.0);
+  assert(_lcp->w[5] == 0.0);
 
-  assert(_lcp->frictionIndex[_idx + 0] == -1);
-  assert(_lcp->frictionIndex[_idx + 1] == -1);
-  assert(_lcp->frictionIndex[_idx + 2] == -1);
-  assert(_lcp->frictionIndex[_idx + 3] == -1);
-  assert(_lcp->frictionIndex[_idx + 4] == -1);
-  assert(_lcp->frictionIndex[_idx + 5] == -1);
+  assert(_lcp->frictionIndex[0] == -1);
+  assert(_lcp->frictionIndex[1] == -1);
+  assert(_lcp->frictionIndex[2] == -1);
+  assert(_lcp->frictionIndex[3] == -1);
+  assert(_lcp->frictionIndex[4] == -1);
+  assert(_lcp->frictionIndex[5] == -1);
 
-  _lcp->lb[_idx + 0] = -dInfinity;
-  _lcp->lb[_idx + 1] = -dInfinity;
-  _lcp->lb[_idx + 2] = -dInfinity;
-  _lcp->lb[_idx + 3] = -dInfinity;
-  _lcp->lb[_idx + 4] = -dInfinity;
-  _lcp->lb[_idx + 5] = -dInfinity;
+  _lcp->lo[0] = -dInfinity;
+  _lcp->lo[1] = -dInfinity;
+  _lcp->lo[2] = -dInfinity;
+  _lcp->lo[3] = -dInfinity;
+  _lcp->lo[4] = -dInfinity;
+  _lcp->lo[5] = -dInfinity;
 
-  _lcp->ub[_idx + 0] = dInfinity;
-  _lcp->ub[_idx + 1] = dInfinity;
-  _lcp->ub[_idx + 2] = dInfinity;
-  _lcp->ub[_idx + 3] = dInfinity;
-  _lcp->ub[_idx + 4] = dInfinity;
-  _lcp->ub[_idx + 5] = dInfinity;
+  _lcp->hi[0] = dInfinity;
+  _lcp->hi[1] = dInfinity;
+  _lcp->hi[2] = dInfinity;
+  _lcp->hi[3] = dInfinity;
+  _lcp->hi[4] = dInfinity;
+  _lcp->hi[5] = dInfinity;
 
-  _lcp->x[_idx + 0] = mOldX[0];
-  _lcp->x[_idx + 1] = mOldX[1];
-  _lcp->x[_idx + 2] = mOldX[2];
-  _lcp->x[_idx + 3] = mOldX[3];
-  _lcp->x[_idx + 4] = mOldX[4];
-  _lcp->x[_idx + 5] = mOldX[5];
+  _lcp->x[0] = mOldX[0];
+  _lcp->x[1] = mOldX[1];
+  _lcp->x[2] = mOldX[2];
+  _lcp->x[3] = mOldX[3];
+  _lcp->x[4] = mOldX[4];
+  _lcp->x[5] = mOldX[5];
 
 //  Eigen::Vector6d negativeVel;
 
@@ -205,12 +205,12 @@ void WeldJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 
   mViolation *= mErrorReductionParameter * _lcp->invTimestep;
 
-  _lcp->b[_idx + 0] = negativeVel[0] - mViolation[0];
-  _lcp->b[_idx + 1] = negativeVel[1] - mViolation[1];
-  _lcp->b[_idx + 2] = negativeVel[2] - mViolation[2];
-  _lcp->b[_idx + 3] = negativeVel[3] - mViolation[3];
-  _lcp->b[_idx + 4] = negativeVel[4] - mViolation[4];
-  _lcp->b[_idx + 5] = negativeVel[5] - mViolation[5];
+  _lcp->b[0] = negativeVel[0] - mViolation[0];
+  _lcp->b[1] = negativeVel[1] - mViolation[1];
+  _lcp->b[2] = negativeVel[2] - mViolation[2];
+  _lcp->b[3] = negativeVel[3] - mViolation[3];
+  _lcp->b[4] = negativeVel[4] - mViolation[4];
+  _lcp->b[5] = negativeVel[5] - mViolation[5];
 }
 
 //==============================================================================

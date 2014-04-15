@@ -36,26 +36,18 @@
 
 #include "dart/constraint/ConstrainedGroup.h"
 
-#include <iostream>
 #include <vector>
 
 #include "dart/common/Console.h"
-#include "dart/lcpsolver/LCPSolver.h"
-#include "dart/lcpsolver/Lemke.h"
-#include "dart/lcpsolver/lcp.h"
 #include "dart/constraint/Constraint.h"
 #include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {
 namespace constraint {
 
-using namespace lcpsolver;
-
 //==============================================================================
-ConstrainedGroup::ConstrainedGroup(ConstraintSolver* _solver)
-  : mConstraintSolver(_solver)
+ConstrainedGroup::ConstrainedGroup()
 {
-  assert(_solver);
 }
 
 //==============================================================================
@@ -71,6 +63,18 @@ void ConstrainedGroup::addConstraint(Constraint* _constraint)
          && "Don't try to add same constraint multiple times into Community.");
 
   mConstraints.push_back(_constraint);
+}
+
+//==============================================================================
+size_t ConstrainedGroup::getNumConstraints() const
+{
+  return mConstraints.size();
+}
+
+//==============================================================================
+Constraint* ConstrainedGroup::getConstraint(size_t _index) const
+{
+  return mConstraints[_index];
 }
 
 //==============================================================================
@@ -101,39 +105,6 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-bool ConstrainedGroup::solve()
-{
-  // If there is no constraint, then just return true.
-  if (mConstraints.size() == 0)
-    return true;
-
-//  for (std::vector<Constraint*>::iterator it = mConstraints)
-
-  // Build LCP terms by aggregating them from constraints
-  ODELcp lcp(getTotalDimension());
-
-  // Fill LCP terms
-  lcp.invTimestep = 1.0 / mConstraintSolver->getTimeStep();
-  fillLCPTermsODE(&lcp);
-
-  //////////////////////////////////////////////////////////////////////////////
-//  dtmsg << "Before solve" << std::endl;
-//  lcp.print();
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Solve LCP
-  bool result = solveODE(&lcp);
-
-//  dtmsg << "After solve" << std::endl;
-//  lcp.print();
-
-  // Apply impulse
-  applyODE(&lcp);
-
-  return result;
-}
-
-//==============================================================================
 bool ConstrainedGroup::containConstraint(Constraint* _constraint) const
 {
 //  std::cout << "CommunityTEST::_containConstraint(): Not implemented."
@@ -152,123 +123,7 @@ bool ConstrainedGroup::checkAndAddConstraint(Constraint* _constraint)
 }
 
 //==============================================================================
-void ConstrainedGroup::fillLCPTermsODE(ODELcp* _lcp)
-{
-  // Compute offset indices
-  int* offsetIndex = new int[_lcp->dim];
-  offsetIndex[0] = 0;
-  for (int i = 1; i < mConstraints.size(); ++i)
-  {
-    assert(mConstraints[i - 1]->getDimension() > 0);
-    offsetIndex[i] = offsetIndex[i - 1] + mConstraints[i - 1]->getDimension();
-//    std::cout << "offsetIndex[" << i << "]: " << offsetIndex[i] << std::endl;
-  }
-
-  // For each constraint
-  Constraint* constraint;
-  for (int i = 0; i < mConstraints.size(); ++i)
-  {
-    constraint = mConstraints[i];
-
-    // Fill vectors: lo, hi, b, w
-    constraint->fillLcpOde(_lcp, offsetIndex[i]);
-
-    // Fill a matrix by impulse tests: A
-    constraint->excite();
-    for (int j = 0; j < constraint->getDimension(); ++j)
-    {
-      // Apply impulse for mipulse test
-      constraint->applyUnitImpulse(j);
-
-      mConstraints[i]->getVelocityChange(
-            _lcp->A, _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[i], true);
-
-      // Fill upper triangle blocks of A matrix
-      for (int k = i + 1; k < mConstraints.size(); ++k)
-      {
-        int index = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[k];
-        mConstraints[k]->getVelocityChange(_lcp->A, index, false);
-      }
-
-      assert(_lcp->checkSymmetric2(j));
-
-      // Filling symmetric part of A matrix
-      for (int k = 0; k < i; ++k)
-      {
-        for (int l = 0; l < mConstraints[k]->getDimension(); ++l)
-        {
-          int index1 = _lcp->nSkip * (offsetIndex[i] + j) + offsetIndex[k] + l;
-          int index2 = _lcp->nSkip * (offsetIndex[k] + l) + offsetIndex[i] + j;
-
-          _lcp->A[index1] = _lcp->A[index2];
-        }
-      }
-    }
-    constraint->unexcite();
-  }
-
-  assert(_lcp->checkSymmetric());
-
-  delete[] offsetIndex;
-}
-
-//==============================================================================
-bool ConstrainedGroup::solveODE(ODELcp* _lcp)
-{
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->lb[" << i << "]: " << _lcp->lb[i] << std::endl;
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->ub[" << i << "]: " << _lcp->ub[i] << std::endl;
-
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->x[" << i << "]: " << _lcp->x[i] << std::endl;
-
-  // Solve LCP using ODE's Dantzig algorithm
-  dSolveLCP(_lcp->dim,
-            _lcp->A,
-            _lcp->x,
-            _lcp->b,
-            _lcp->w,
-            0,
-            _lcp->lb,
-            _lcp->ub,
-            _lcp->frictionIndex);
-
-//  std::cout << "FINISHED ----" << std::endl;
-
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->lb[" << i << "]: " << _lcp->lb[i] << std::endl;
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->ub[" << i << "]: " << _lcp->ub[i] << std::endl;
-
-//  for (int i = 0; i < _lcp->dim; ++i)
-//    std::cout << "_lcp->x[" << i << "]: " << _lcp->x[i] << std::endl;
-
-  // TODO(JS): Do we need to return boolean?
-  return true;
-}
-
-//==============================================================================
-void ConstrainedGroup::applyODE(ODELcp* _lcp)
-{
-  // Compute offset indices
-  int* offsetIndex = new int[_lcp->dim];
-  offsetIndex[0] = 0;
-  for (int i = 1; i < mConstraints.size(); ++i)
-    offsetIndex[i] = offsetIndex[i - 1] + mConstraints[i - 1]->getDimension();
-
-  // Apply constraint impulses
-  for (int i = 0; i < mConstraints.size(); ++i)
-  {
-    mConstraints[i]->applyConstraintImpulse(_lcp->x + offsetIndex[i]);
-    mConstraints[i]->excite();
-  }
-
-  delete[] offsetIndex;
-}
-
-//==============================================================================
-int ConstrainedGroup::getTotalDimension() const
+size_t ConstrainedGroup::getTotalDimension() const
 {
   int totalDim = 0;
 

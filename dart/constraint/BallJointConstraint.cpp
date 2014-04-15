@@ -91,7 +91,7 @@ void BallJointConstraint::update()
 }
 
 //==============================================================================
-void BallJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
+void BallJointConstraint::getLCPVectors(ConstraintInfo* _lcp, int _idx)
 {
 
 }

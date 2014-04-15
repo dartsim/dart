@@ -255,9 +255,9 @@ void JointLimitConstraint::update()
 }
 
 //==============================================================================
-void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
+void JointLimitConstraint::getLCPVectors(ConstraintInfo* _lcp)
 {
-  size_t localIndex = 0;
+  size_t index = 0;
   size_t dof = mJoint->getNumGenCoords();
   for (size_t i = 0; i < dof; ++i)
   {
@@ -267,7 +267,7 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
 //    if (_lcp->w[_idx + localIndex] != 0.0)
 //      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
 //                << std::endl;
-    assert(_lcp->w[_idx + localIndex] == 0.0);
+    assert(_lcp->w[_idx + index] == 0.0);
 
     double bouncingVel = -mViolation[i];
 
@@ -281,28 +281,28 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
     if (bouncingVel > mMaxErrorReductionVelocity)
       bouncingVel = mMaxErrorReductionVelocity;
 
-    _lcp->b[_idx + localIndex] = mNegativeVel[i] + bouncingVel;
+    _lcp->b[index] = mNegativeVel[i] + bouncingVel;
 
-    _lcp->lb[_idx + localIndex] = mLowerBound[i];
-    _lcp->ub[_idx + localIndex] = mUpperBound[i];
+    _lcp->lo[index] = mLowerBound[i];
+    _lcp->hi[index] = mUpperBound[i];
 
-    if (_lcp->lb[_idx + localIndex] > _lcp->ub[_idx + localIndex])
+    if (_lcp->lo[index] > _lcp->hi[index])
     {
       std::cout << "dim: " << mDim << std::endl;
       std::cout << "lb: " << mLowerBound[i] << std::endl;
       std::cout << "ub: " << mUpperBound[i] << std::endl;
-      std::cout << "lb: " << _lcp->lb[_idx + localIndex] << std::endl;
-      std::cout << "ub: " << _lcp->ub[_idx + localIndex] << std::endl;
+      std::cout << "lb: " << _lcp->lo[index] << std::endl;
+      std::cout << "ub: " << _lcp->hi[index] << std::endl;
     }
 
-    assert(_lcp->frictionIndex[_idx + localIndex] == -1);
+    assert(_lcp->frictionIndex[index] == -1);
 
     if (mLifeTime[i])
-      _lcp->x[_idx + localIndex] = mOldX[i];
+      _lcp->x[index] = mOldX[i];
     else
-      _lcp->x[_idx + localIndex] = 0.0;
+      _lcp->x[index] = 0.0;
 
-    ++localIndex;
+    index++;
   }
 }
 

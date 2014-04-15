@@ -47,18 +47,14 @@ class Skeleton;
 
 namespace constraint {
 
-//==============================================================================
-// TODO(JS): Restricted to ODE LCP solver. Generalize this class for various
-//           types of LCP solvers.
-/// LCPTerms class
-class ODELcp
+/// ConstraintInfo
+struct ConstraintInfo
 {
-public:
-  ///  Constructor
-  explicit ODELcp(int _n);
+  /// Allocate
+  void allocate(int _n);
 
-  ///  Destructor
-  ~ODELcp();
+  /// Deallocate
+  void deallocate();
 
   //-------------------------- TEST CODE ---------------------------------------
   void print();
@@ -83,13 +79,13 @@ public:
   double* w;
 
   /// Lower bound of x
-  double* lb;
+  double* lo;
 
   /// Upper bound of x
-  double* ub;
+  double* hi;
 
   /// Friction index
-  int* frictionIndex;
+  int* findex;
 
   /// Total dimension of contraints
   int dim;
@@ -107,21 +103,18 @@ enum ConstraintType
   CT_DYNAMIC
 };
 
-/// ConstraintTEST class
+/// Constraint is a base class of concrete constraints classes
 class Constraint
 {
-protected:
-  /// Default contructor
-  explicit Constraint(ConstraintType _type);
-
-  /// Destructor
-  virtual ~Constraint();
+public:
+  /// Return dimesion of this constranit
+  size_t getDimension() const;
 
   /// Update constraint using updated Skeleton's states
   virtual void update() = 0;
 
   /// Fill LCP variables
-  virtual void fillLcpOde(ODELcp* _lcp, int _idx) = 0;
+  virtual void getLCPVectors(ConstraintInfo* _lcp) = 0;
 
   /// Apply unit impulse to constraint space of _idx
   virtual void applyUnitImpulse(int _idx) = 0;
@@ -129,10 +122,10 @@ protected:
   ///
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) = 0;
 
-  ///
+  /// Excite the constraint
   virtual void excite() = 0;
 
-  ///
+  /// Unexcite the constraint
   virtual void unexcite() = 0;
 
   /// Apply computed constraint impulse to constrained skeletons
@@ -148,13 +141,17 @@ protected:
   virtual void uniteSkeletons() {}
 
   ///
-  size_t getDimension() const;
-
-  ///
   static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
 
   ///
   static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
+
+protected:
+  /// Default contructor
+  explicit Constraint(ConstraintType _type);
+
+  /// Destructor
+  virtual ~Constraint();
 
 protected:
   /// Dimension of constraint

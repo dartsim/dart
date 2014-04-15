@@ -49,7 +49,7 @@ namespace constraint {
 #define dPAD(a) (((a) > 1) ? ((((a)-1)|3)+1) : (a))
 
 //==============================================================================
-ODELcp::ODELcp(int _n)
+void ConstraintInfo::allocate(int _n)
 {
   nSkip = dPAD(_n);
 
@@ -57,30 +57,30 @@ ODELcp::ODELcp(int _n)
   b  = new double[_n];
   w  = new double[_n];
   x  = new double[_n];
-  lb = new double[_n];
-  ub = new double[_n];
-  frictionIndex = new int[_n];
+  lo = new double[_n];
+  hi = new double[_n];
+  findex = new int[_n];
   dim = _n;
 
 //  std::memset(A, 0, _n * nSkip * sizeof(double));
   std::memset(w, 0.0, _n * sizeof(double));
-  std::memset(frictionIndex, -1, _n * sizeof(int));
+  std::memset(findex, -1, _n * sizeof(int));
 }
 
 //==============================================================================
-ODELcp::~ODELcp()
+void ConstraintInfo::deallocate()
 {
   delete[] A;
   delete[] b;
   delete[] w;
   delete[] x;
-  delete[] lb;
-  delete[] ub;
-  delete[] frictionIndex;
+  delete[] lo;
+  delete[] hi;
+  delete[] findex;
 }
 
 //==============================================================================
-void ODELcp::print()
+void ConstraintInfo::print()
 {
   std::cout << "A: " << std::endl;
   for (int i = 0; i < dim; ++i)
@@ -130,7 +130,7 @@ void ODELcp::print()
   std::cout << "frictionIndex: ";
   for (int i = 0; i < dim; ++i)
   {
-    std::cout << frictionIndex[i] << " ";
+    std::cout << findex[i] << " ";
   }
   std::cout << std::endl;
 
@@ -170,13 +170,13 @@ void ODELcp::print()
 }
 
 //==============================================================================
-void ODELcp::clear()
+void ConstraintInfo::clear()
 {
   std::memset(A, 0.0, dim * nSkip * sizeof(double));
 }
 
 //==============================================================================
-bool ODELcp::checkSymmetric()
+bool ConstraintInfo::checkSymmetric()
 {
   for (int i = 0; i < dim; ++i)
   {
@@ -205,7 +205,7 @@ bool ODELcp::checkSymmetric()
 }
 
 //==============================================================================
-bool ODELcp::checkSymmetric2(int _index)
+bool ConstraintInfo::checkSymmetric2(int _index)
 {
   for (int i = 0; i < _index; ++i)
   {

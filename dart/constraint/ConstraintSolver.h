@@ -61,6 +61,7 @@ class JointLimitConstraint;
 class RevoluteJointContraintTEST;
 class WeldJointContraintTEST;
 class JointConstraint;
+class LCPSolver;
 
 //==============================================================================
 /// ConstraintSolver manages all the constraints and solves constraint impulses
@@ -253,6 +254,9 @@ private:
 
   /// Flag for using ODE
   bool mUseODE;
+
+  ///
+  LCPSolver* mLCPSolver;
 };
 
 }  // namespace constraint

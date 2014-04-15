@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_COMMUNITY_H_
-#define DART_CONSTRAINT_COMMUNITY_H_
+#ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_H_
+#define DART_CONSTRAINT_CONSTRAINEDGROUP_H_
 
 #include <vector>
 #include <Eigen/Dense>
@@ -48,7 +48,7 @@ class Skeleton;
 
 namespace constraint {
 
-class ODELcp;
+class ConstraintInfo;
 class Constraint;
 class ConstraintSolver;
 
@@ -62,7 +62,7 @@ public:
   // Constructor / Desctructor
   //----------------------------------------------------------------------------
   /// Default contructor
-  explicit ConstrainedGroup(ConstraintSolver* _solver);
+  ConstrainedGroup();
 
   /// Destructor
   virtual ~ConstrainedGroup();
@@ -73,6 +73,12 @@ public:
   /// Add constraint
   void addConstraint(Constraint* _constraint);
 
+  /// Return number of constraints in this constrained group
+  size_t getNumConstraints() const;
+
+  /// Return a constraint
+  Constraint* getConstraint(size_t _index) const;
+
   /// Remove constraint
   void removeConstraint(Constraint* _constraint);
 
@@ -80,24 +86,12 @@ public:
   void removeAllConstraints();
 
   /// Get total dimension of contraints in this group
-  int getTotalDimension() const;
+  size_t getTotalDimension() const;
 
   //----------------------------------------------------------------------------
-  // Solving
+  // Friendship
   //----------------------------------------------------------------------------
-  // TODO(JS): Pass option
-  /// Solve constraints and store the results of constraint impulse to each
-  /// skeleton.
-  bool solve();
-
-  dynamics::Skeleton* mRootSkeleton;
-
-protected:
-  /// List of constraints
-  std::vector<Constraint*> mConstraints;
-
-  /// Constraint solver
-  ConstraintSolver* mConstraintSolver;
+  friend class ConstraintSolver;
 
 private:
   /// Return true if _constraint is contained
@@ -106,19 +100,15 @@ private:
   /// Return true and add the constraint if _constraint is contained
   bool checkAndAddConstraint(Constraint* _constraint);
 
-  ///
-  void fillLCPTermsODE(ODELcp* _lcp);
+  /// List of constraints
+  std::vector<Constraint*> mConstraints;
 
   ///
-  bool solveODE(ODELcp* _lcp);
-
-  ///
-  void applyODE(ODELcp* _lcp);
-
+  dynamics::Skeleton* mRootSkeleton;
 };
 
 }  // namespace constraint
 }  // namespace dart
 
-#endif  // DART_CONSTRAINT_COMMUNITY_H_
+#endif  // DART_CONSTRAINT_CONSTRAINEDGROUP_H_
 

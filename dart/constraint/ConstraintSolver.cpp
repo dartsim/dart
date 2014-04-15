@@ -52,6 +52,7 @@
 #include "dart/constraint/JointLimitConstraint.h"
 //#include "dart/constraint/RevoluteJointConstraint.h"
 //#include "dart/constraint/WeldJointConstraint.h"
+#include "dart/constraint/DantzigSolver.h"
 
 namespace dart {
 namespace constraint {
@@ -65,7 +66,8 @@ ConstraintSolver::ConstraintSolver(
     bool   _useODE)
   : mTimeStep(_timeStep),
     mUseODE(_useODE),
-    mCollisionDetector(new collision::FCLMeshCollisionDetector())
+    mCollisionDetector(new collision::FCLMeshCollisionDetector()),
+    mLCPSolver(new DantzigSolver())
 {
   init();
 }
@@ -636,7 +638,7 @@ void ConstraintSolver::buildConstrainedGroups()
     if (found)
       continue;
 
-    ConstrainedGroup newConstGroup(this);
+    ConstrainedGroup newConstGroup;
     newConstGroup.mRootSkeleton = *itSkel;
     (*itSkel)->mUnionIndex = mConstrainedGroups.size();
     mConstrainedGroups.push_back(newConstGroup);
@@ -674,10 +676,11 @@ void ConstraintSolver::buildConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
+
   for (std::vector<ConstrainedGroup>::iterator it = mConstrainedGroups.begin();
        it != mConstrainedGroups.end(); ++it)
   {
-    (*it).solve();
+    mLCPSolver->solve(&(*it));
   }
 }
 
