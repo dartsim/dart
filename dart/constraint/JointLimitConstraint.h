@@ -49,14 +49,14 @@ class Joint;
 namespace dart {
 namespace constraint {
 
-/// \brief JointLimitConstraint handles joint position or velocity limits
+/// JointLimitConstraint handles joint position or velocity limits
 class JointLimitConstraint : public Constraint
 {
 public:
-  /// \brief Default constructor
+  /// Default constructor
   explicit JointLimitConstraint(dynamics::Joint* _joint);
 
-  /// \brief Default destructor
+  /// Default destructor
   ~JointLimitConstraint();
 
   // Documentaion inherited
@@ -83,36 +83,36 @@ public:
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const;
 
-  /// \brief
+  ///
   bool isActive();
 
 protected:
-  /// \brief
+  ///
   dynamics::Joint* mJoint;
 
-  /// \brief
+  ///
   dynamics::BodyNode* mBodyNode;
 
 private:
-  /// \brief
+  ///
   size_t mLifeTime[6];
 
-  /// \brief
+  ///
   bool mActive[6];
 
-  /// \brief
+  ///
   double mViolation[6];
 
-  /// \brief
+  ///
   double mNegativeVel[6];
 
-  /// \brief
+  ///
   double mOldX[6];
 
-  /// \brief
+  ///
   double mUpperBound[6];
 
-  /// \brief
+  ///
   double mLowerBound[6];
 };
 

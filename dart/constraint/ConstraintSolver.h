@@ -63,7 +63,7 @@ class WeldJointContraintTEST;
 class JointConstraint;
 
 //==============================================================================
-/// \brief Constraint solver
+/// Constraint solver
 ///
 /// Procedure:
 ///
@@ -79,159 +79,159 @@ class JointConstraint;
 class ConstraintSolver
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skeletons,
       double _timeStep,
       bool   _useODE                = true);
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~ConstraintSolver();
 
   //----------------------------------------------------------------------------
-  /// \brief Add single skeleton
+  /// Add single skeleton
   void addSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// \brief Add skeletons
+  /// Add skeletons
   void addSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
 
-  /// \brief Remove single skeleton.
+  /// Remove single skeleton.
   void removeSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// \brief Remove skeletons.
+  /// Remove skeletons.
   void removeSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
 
-  /// \brief Remove all skeletons.
+  /// Remove all skeletons.
   void removeAllSkeletons();
 
   //----------------------------------------------------------------------------
-  /// \brief Add single constraint.
+  /// Add single constraint.
   void addConstraint(Constraint* _constraint);
 
-  /// \brief Add constraints.
+  /// Add constraints.
   void addConstraints(const std::vector<Constraint*>& _constraints);
 
-  /// \brief
+  ///
   size_t getNumConstraints() const;
 
   Constraint* getConstraint(size_t _index);
 
 
 
-  /// \brief Remove single constraint.
+  /// Remove single constraint.
   void removeConstraint(Constraint* _constraint);
 
-  /// \brief Remove constraints.
+  /// Remove constraints.
   void removeConstraints(const std::vector<Constraint*>& _constraints);
 
-  /// \brief Remove all constraints.
+  /// Remove all constraints.
   void removeAllConstraints();
 
 
 
   //----------------------------------------------------------------------------
-  /// \brief Set timestep
+  /// Set timestep
   void setTimeStep(double _timeStep);
 
-  /// \brief Get timestep
+  /// Get timestep
   double getTimeStep() const;
 
   //----------------------------------------------------------------------------
-  /// \brief Set collision detector
+  /// Set collision detector
   void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
-  /// \brief Get collision detector
+  /// Get collision detector
   collision::CollisionDetector* getCollisionDetector() const;
 
   //----------------------------------------------------------------------------
   // Solving
   //----------------------------------------------------------------------------
-  /// \brief Solve constraint impulses and apply them to the skeletons
+  /// Solve constraint impulses and apply them to the skeletons
   virtual void solve();
 
 protected:
   //----------------------------------------------------------------------------
-  /// \brief
+  ///
   std::vector<dynamics::Skeleton*> mSkeletons;
 
   //----------------------------------------------------------------------------
-//  /// \brief
+//  ///
 //  std::vector<ConstraintTEST*> mBakedConstraints;
 
-  /// \brief
+  ///
   std::vector<ContactConstraint*> mBakedContactConstraints;
 
-  /// \brief
+  ///
   std::vector<JointLimitConstraint*> mBakedJointLimitConstraints;
 
-  /// \brief
+  ///
   std::vector<ClosedLoopConstraint*> mBakedClosedLoopConstraints;
 
-  /// \brief
+  ///
   std::vector<JointConstraint*> mBakedJointConstraints;
 
   //----------------------------------------------------------------------------
-  /// \brief Constraint list that should be satisfied regardless of skeleton's
-  /// state such as dynamic joint constraints
+  /// Constraint list that should be satisfied regardless of skeleton's state
+  /// such as dynamic joint constraints
   std::vector<Constraint*> mStaticConstraints;
 
-  /// \brief Constraint list that should be satisfied depend on skeleton's state
-  /// such as contact constraint and joint limit constraint.
+  /// Constraint list that should be satisfied depend on skeleton's state such
+  /// as contact constraint and joint limit constraint.
   std::vector<Constraint*> mDynamicConstraints;
 
   //----------------------------------------------------------------------------
-  /// \brief Constraint group list
+  /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
 
 private:
-  /// \brief
+  ///
   void init();
 
-  /// \brief
+  ///
   void bakeConstraints();
 
-  /// \brief
+  ///
   void bakeContactConstraints();
 
-  /// \brief
+  ///
   void bakeJointLimitConstraints();
 
-  /// \brief
+  ///
   void bakeClosedLoopConstraints();
 
-  /// \brief
+  ///
   void bakeJointConstraints();
 
-  /// \brief Check if the skeleton is contained in this solver
+  /// Check if the skeleton is contained in this solver
   bool containSkeleton(const dynamics::Skeleton* _skeleton) const;
 
-  /// \brief Add skeleton if the constraint is not contained in this solver
+  /// Add skeleton if the constraint is not contained in this solver
   bool checkAndAddSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// \brief Check if the constraint is contained in this solver
+  /// Check if the constraint is contained in this solver
   bool containConstraint(const Constraint* _constraint) const;
 
-  /// \brief Add constraint if the constraint is not contained in this solver
+  /// Add constraint if the constraint is not contained in this solver
   bool checkAndAddConstraint(Constraint* _constraint);
 
-  /// \brief Update static constraints
+  /// Update static constraints
   void updateStaticConstraints();
 
-  /// \brief Update dynamic constraints
+  /// Update dynamic constraints
   void updateDynamicConstraints();
 
-  /// \brief Build constrained groups
+  /// Build constrained groups
   void buildConstrainedGroups();
 
-  /// \brief Solve constrained groups
+  /// Solve constrained groups
   void solveConstrainedGroups();
 
-  /// \brief Collision detector
+  /// Collision detector
   collision::CollisionDetector* mCollisionDetector;
 
-  /// \brief Time step
+  /// Time step
   double mTimeStep;
 
-  /// \brief Flag for using ODE
+  /// Flag for using ODE
   bool mUseODE;
 };
 

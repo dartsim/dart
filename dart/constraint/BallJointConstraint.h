@@ -47,14 +47,14 @@ namespace constraint {
 class BallJointConstraint : public JointConstraint
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body
   /// \param[in] _offset Offset from _body's origin to ball joint position
   ///                    expressed in _body's frame
   BallJointConstraint(dynamics::BodyNode *_body,
                       const Eigen::Vector3d& _offset);
 
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body1
   /// \param[in] _body2
   /// \param[in] _offset1 Offset from _body1's origin to ball joint position
@@ -65,7 +65,7 @@ public:
                       const Eigen::Vector3d& _offset1,
                       const Eigen::Vector3d& _offset2);
 
-  /// \brief Default destructor
+  /// Default destructor
   ~BallJointConstraint();
 
   // Documentaion inherited
@@ -93,10 +93,10 @@ public:
   virtual dynamics::Skeleton* getRootSkeleton() const {}
 
 protected:
-  /// \brief
+  ///
   Eigen::Vector3d mOffset1;
 
-  /// \brief
+  ///
   Eigen::Vector3d mOffset2;
 
 };

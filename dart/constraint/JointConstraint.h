@@ -47,24 +47,24 @@ class BodyNode;
 
 namespace constraint {
 
-/// \brief class JointConstraint
+/// class JointConstraint
 class JointConstraint : public Constraint
 {
 public:
-  /// \brief Contructor
+  /// Contructor
   explicit JointConstraint(dynamics::BodyNode *_body);
 
-  /// \brief Contructor
+  /// Contructor
   JointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2);
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~JointConstraint();
 
 protected:
-  /// \brief
+  ///
   dynamics::BodyNode* mBodyNode1;
 
-  /// \brief
+  ///
   dynamics::BodyNode* mBodyNode2;
 
 };

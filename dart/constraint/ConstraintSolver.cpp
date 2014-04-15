@@ -208,7 +208,8 @@ void ConstraintSolver::addConstraint(Constraint* _constraint)
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraints(const std::vector<Constraint*>& _constraints)
+void ConstraintSolver::addConstraints(
+    const std::vector<Constraint*>& _constraints)
 {
   std::cout << "ConstraintSolver::addConstraints(): "
             << "Not implemented yet."

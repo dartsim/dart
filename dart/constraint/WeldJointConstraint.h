@@ -45,32 +45,34 @@
 namespace dart {
 namespace constraint {
 
+/// WeldJointConstraint represents weld joint constraint between a body and the
+/// world or between two bodies
 class WeldJointConstraint : public JointConstraint
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body1
   explicit WeldJointConstraint(dynamics::BodyNode* _body);
 
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body1
   /// \param[in] _targetT Traget transformation expressed in world frame
   WeldJointConstraint(dynamics::BodyNode* _body,
                       const Eigen::Isometry3d& _targetT);
 
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body1
   /// \param[in] _body2
   WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2);
 
-  /// \brief Constructor
+  /// Constructor
   /// \param[in] _body1
   /// \param[in] _body2
   /// \param[in] _T1to2 Relative transformation from _body1 to _body2
   WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2,
                       const Eigen::Isometry3d& _T1to2);
 
-  /// \brief Destructor
+  /// Destructor
   ~WeldJointConstraint();
 
   // Documentaion inherited
@@ -100,28 +102,28 @@ public:
   // Documentation inherited
   virtual void uniteSkeletons();
 
-  /// \brief
+  ///
   bool isActive() const;
 
 protected:
 
-  /// \brief
+  ///
   Eigen::Isometry3d mRelativeTransform;
 
-  /// \brief
+  ///
   Eigen::Vector6d mViolation;
 
-  /// \brief
+  ///
   Eigen::Matrix6d mIdentity6d;
 
-  /// \brief
+  ///
   double mOldX[6];
 
-  /// \brief Index of applied impulse
+  /// Index of applied impulse
   size_t mAppliedImpulseIndex;
 
-  /// \brief Small value to add to diagnal of A matrix of LCP to keep it away
-  /// from singular, similar to cfm varaible in ODE. Default is 0.001.
+  /// Small value to add to diagnal of A matrix of LCP to keep it away from
+  /// singular, similar to cfm varaible in ODE. Default is 0.001.
   double mCfm;
 };
 

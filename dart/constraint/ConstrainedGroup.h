@@ -52,9 +52,8 @@ class ODELcp;
 class Constraint;
 class ConstraintSolver;
 
-//==============================================================================
-/// \brief class ConstrainedGroup is a set of skeletons interacting each
-///        other by various kinds of constraints.
+/// ConstrainedGroup is a group of skeletons that interact each other with
+/// constraints
 /// \sa class ConstraintSolver
 class ConstrainedGroup
 {
@@ -62,80 +61,64 @@ public:
   //----------------------------------------------------------------------------
   // Constructor / Desctructor
   //----------------------------------------------------------------------------
-  /// \brief Default contructor
+  /// Default contructor
   explicit ConstrainedGroup(ConstraintSolver* _solver);
 
-  /// \brief Default destructor
+  /// Default destructor
   virtual ~ConstrainedGroup();
 
   //----------------------------------------------------------------------------
   // Setting
   //----------------------------------------------------------------------------
-  /// \brief Add constraint
+  /// Add constraint
   void addConstraint(Constraint* _constraint);
 
-  /// \brief Remove constraint
+  /// Remove constraint
   void removeConstraint(Constraint* _constraint);
 
-  /// \brief Remove all constraints
+  /// Remove all constraints
   void removeAllConstraints();
 
-  /// \brief Get total dimension of contraints in this group
+  /// Get total dimension of contraints in this group
   int getTotalDimension() const;
 
   //----------------------------------------------------------------------------
   // Solving
   //----------------------------------------------------------------------------
   // TODO(JS): Pass option
-  /// \brief Solve constraints and store the results of constraint impulse to
-  ///        each skeleton.
+  /// Solve constraints and store the results of constraint impulse to each
+  /// skeleton.
   bool solve();
 
   dynamics::Skeleton* mRootSkeleton;
 
 protected:
-  /// \brief List of constraints
+  /// List of constraints
   std::vector<Constraint*> mConstraints;
 
-  /// \brief Constraint solver
+  /// Constraint solver
   ConstraintSolver* mConstraintSolver;
 
 private:
-  /// \brief Check if _constraint is contained
+  /// Return true if _constraint is contained
   bool containConstraint(Constraint* _constraint) const;
 
-  /// \brief Check if _constraint is contained and, if so, add the constraint
+  /// Return true and add the constraint if _constraint is contained
   bool checkAndAddConstraint(Constraint* _constraint);
 
-  /// \brief
+  ///
   void fillLCPTermsODE(ODELcp* _lcp);
 
-//  /// \brief
-//  void fillLCPTermsLemke(const LCPTermsODE& _lcp);
-
-//  /// \brief
-//  void fillLCPTermsPGS(const LCPTermsODE& _lcp);
-
-  // TODO(JS): more solvers
-  /// \brief
+  ///
   bool solveODE(ODELcp* _lcp);
 
-//  bool _solveLemke();
-
-//  bool _solvePGS();
-
+  ///
   void applyODE(ODELcp* _lcp);
-
-//  // Matrices to pass to solver
-//  Eigen::MatrixXd mA;
-//  Eigen::VectorXd mQBar;
-//  Eigen::VectorXd mX;
-
 
 };
 
-} // namespace constraint
-} // namespace dart
+}  // namespace constraint
+}  // namespace dart
 
 #endif  // DART_CONSTRAINT_COMMUNITY_H_
 

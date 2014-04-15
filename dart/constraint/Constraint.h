@@ -50,14 +50,14 @@ namespace constraint {
 //==============================================================================
 // TODO(JS): Restricted to ODE LCP solver. Generalize this class for various
 //           types of LCP solvers.
-/// \brief LCPTerms class
+/// LCPTerms class
 class ODELcp
 {
 public:
-  /// \brief Constructor
+  ///  Constructor
   explicit ODELcp(int _n);
 
-  /// \brief Destructor
+  ///  Destructor
   ~ODELcp();
 
   //-------------------------- TEST CODE ---------------------------------------
@@ -70,38 +70,38 @@ public:
   bool checkSymmetric2(int _index);
 
   //----------------------------------------------------------------------------
-  /// \brief
+  ///
   double* A;
 
-  /// \brief
+  ///
   double* b;
 
-  /// \brief
+  ///
   double* x;
 
-  /// \brief
+  ///
   double* w;
 
-  /// \brief Lower bound of x
+  /// Lower bound of x
   double* lb;
 
-  /// \brief Upper bound of x
+  /// Upper bound of x
   double* ub;
 
-  /// \brief Friction index
+  /// Friction index
   int* frictionIndex;
 
-  /// \brief Total dimension of contraints
+  /// Total dimension of contraints
   int dim;
 
-  /// \brief
+  ///
   int nSkip;
 
   double invTimestep;
 };
 
 //==============================================================================
-/// \brief ConstraintTEST class
+/// ConstraintTEST class
 class Constraint
 {
 public:
@@ -111,59 +111,59 @@ public:
     CT_DYNAMIC
   };
 
-  /// \brief Default contructor
+  /// Default contructor
   explicit Constraint(ConstraintType _type);
 
-  /// \brief Default destructor
+  /// Default destructor
   virtual ~Constraint();
 
   //----------------------------------------------------------------------------
   // Pure virtual functions for solving
   //----------------------------------------------------------------------------
-  /// \brief Update constraint using updated Skeleton's states
+  /// Update constraint using updated Skeleton's states
   virtual void update() = 0;
 
-  /// \brief
+  ///
   virtual void fillLcpOde(ODELcp* _lcp, int _idx) = 0;
 
-  /// \brief Apply unit impulse to constraint space of _idx
+  /// Apply unit impulse to constraint space of _idx
   virtual void applyUnitImpulse(int _idx) = 0;
 
-  /// \brief
+  ///
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) = 0;
 
-  /// \brief
+  ///
   virtual void excite() = 0;
 
-  /// \brief
+  ///
   virtual void unexcite() = 0;
 
-  /// \brief Apply computed constraint impulse to constrained skeletons
+  /// Apply computed constraint impulse to constrained skeletons
   virtual void applyConstraintImpulse(double* _lambda, int _idx) = 0;
 
   // TODO(JS): Make pure virtual function
-  /// \brief
+  ///
   virtual dynamics::Skeleton* getRootSkeleton() const {}
 
-  /// \brief
+  ///
   virtual void uniteSkeletons() {}
 
   //----------------------------------------------------------------------------
-  /// \brief
+  ///
   size_t getDimension() const;
 
   //----------------------------------------------------------------------------
-  /// \brief
+  ///
   static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
 
-  /// \brief
+  ///
   static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
 
 protected:
-  /// \brief Dimension of constraint
+  /// Dimension of constraint
   size_t mDim;
 
-  /// \brief
+  ///
   ConstraintType mConstraintType;
 };
 

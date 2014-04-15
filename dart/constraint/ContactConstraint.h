@@ -47,36 +47,34 @@
 //#define DART_MAX_NUM_FRICTION_CONE_BASES 16
 //#define DART_DEFAULT_NUM_FRICTION_CONE_BASES 2
 
+// TODO: Max contact number
+
 namespace dart {
+
 namespace dynamics {
 class BodyNode;
 class Skeleton;
 }  // namespace dynamics
-}  // namespace dart
 
-namespace dart {
 namespace constraint {
 
-//==============================================================================
-/// \brief The ContactConstraintTEST class
+/// ContactConstraint represents a contact constraint between two bodies
 class ContactConstraint : public Constraint
 {
 public:
-  //----------------------------------------------------------------------------
-  // TODO(JS): One contact constraint is allowed now.
-  /// \brief Constructor
+  /// Constructor
   ContactConstraint(const collision::Contact& _contact);
 
-  /// \brief Default destructor
+  /// Default destructor
   virtual ~ContactConstraint();
 
   //----------------------------------------------------------------------------
   // Settings
   //----------------------------------------------------------------------------
-  /// \brief Set first frictional direction
+  /// Set first frictional direction
   void setFirstFrictionDir(const Eigen::Vector3d& _dir);
 
-  /// \brief Get first frictional direction
+  /// Get first frictional direction
   const Eigen::Vector3d& getFirstFrictionlDir() const;
 
   //----------------------------------------------------------------------------
@@ -106,7 +104,7 @@ public:
   //----------------------------------------------------------------------------
   // Solving
   //----------------------------------------------------------------------------
-  /// \brief
+  ///
   bool isActive();
 
   // Documentation inherited
@@ -116,64 +114,63 @@ public:
   virtual void uniteSkeletons();
 
 protected:
-  /// \brief Fircst body node
+  /// Fircst body node
   dynamics::BodyNode* mBodyNode1;
 
-  /// \brief Second body node
+  /// Second body node
   dynamics::BodyNode* mBodyNode2;
 
-  /// \brief Contacts between mBodyNode1 and mBodyNode2
+  /// Contacts between mBodyNode1 and mBodyNode2
   std::vector<collision::Contact> mContacts;
 
-  /// \brief First frictional direction
+  /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;
 
-  /// \brief Constraint error redection parameter in range of [0, 1]
+  /// Constraint error redection parameter in range of [0, 1]
   double mErrorReductionParameter;
 
-  /// \brief Coefficient of Friction
+  /// Coefficient of Friction
   double mFrictionCoeff;
 
-  /// \brief Coefficient of restitution
+  /// Coefficient of restitution
   double mRestitutionCoeff;
 
 private:
-  /// \brief Get change in relative velocity at contact point due to external
-  ///        impulse
+  /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
   /// \param[in] _idx Index the relative velocity change will be stored
   void getRelVelocity(double* _relVel, int _idx);
 
-  /// \brief Compute change in velocity due to _idx-th impulse.
+  /// Compute change in velocity due to _idx-th impulse.
   void updateVelocityChange(int _idx);
 
-  /// \brief
+  ///
   void updateFirstFrictionalDirection();
 
-  /// \brief
+  ///
   Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
-  /// \brief Local body jacobians for mBodyNode1
+  /// Local body jacobians for mBodyNode1
   std::vector<Eigen::Vector6d> mJacobians1;
 
-  /// \brief Local body jacobians for mBodyNode2
+  /// Local body jacobians for mBodyNode2
   std::vector<Eigen::Vector6d> mJacobians2;
 
-  /// \brief
+  ///
   bool mIsFrictionOn;
 
-  /// \brief Small value to add to diagnal of A matrix of LCP to keep it away
+  /// Small value to add to diagnal of A matrix of LCP to keep it away
   /// from singular, similar to cfm varaible in ODE. Default is 0.001.
   double mCfm;
 
-  /// \brief Index of applied impulse
+  /// Index of applied impulse
   size_t mAppliedImpulseIndex;
 
-  /// \brief
+  ///
   bool mIsBounceOn;
 
-  /// \brief
+  ///
   bool mActive;
 };
 
