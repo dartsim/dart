@@ -54,14 +54,14 @@ int main(int argc, char* argv[])
     myWorld->addSkeleton((SkeletonDynamics*)model2.getSkel());
 
     // Create a controller
-    Controller* myController = new Controller(myWorld->getSkeleton(0));
+    //Controller* myController = new Controller(myWorld->getSkeleton(0));
     //PDController* myController = new PDController(myWorld->getSkeleton(0));
 
     //SPDController* myController = new SPDController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     //JTController* myController = new JTController(myWorld->getSkeleton(0), myWorld->getSkeleton(0)->getNode("fullbody1_h_heel_left"));
 
-    //JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
+    JumpController* myController = new JumpController(myWorld->getSkeleton(0), myWorld->getTimeStep());
 
     //SwingController* myController = new SwingController(myWorld->getSkeleton(0), myWorld->getCollisionHandle(), myWorld->getTimeStep());
 
