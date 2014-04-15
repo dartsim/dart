@@ -87,6 +87,14 @@ public:
   static double getConstraintForceMixing();
 
   //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
+
+protected:
+  //----------------------------------------------------------------------------
   // Constraint virtual functions
   //----------------------------------------------------------------------------
 
@@ -148,7 +156,6 @@ private:
   ///
   double mLowerBound[6];
 
-private:
   /// Global constraint error allowance
   static double mErrorAllowance;
 

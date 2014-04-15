@@ -96,6 +96,14 @@ public:
   const Eigen::Vector3d& getFrictionDirection1() const;
 
   //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
+
+protected:
+  //----------------------------------------------------------------------------
   // Constraint virtual functions
   //----------------------------------------------------------------------------
 
@@ -182,7 +190,6 @@ private:
   ///
   bool mActive;
 
-private:
   /// Global constraint error allowance
   static double mErrorAllowance;
 

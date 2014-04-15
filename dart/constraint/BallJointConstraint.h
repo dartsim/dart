@@ -68,6 +68,7 @@ public:
   /// Destructor
   ~BallJointConstraint();
 
+protected:
   // Documentation inherited
   virtual void update();
 
