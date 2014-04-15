@@ -11,7 +11,7 @@ foreach(APPDIR
     cubes
     doublePendulumWithBase
     forwardSim
-    #hanging
+    hanging
     hardcodedDesign
     harnessTest
     #hingeJointConstraintTest
