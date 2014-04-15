@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_DYNAMICS_POINTMASS_H_
-#define SOFT_DYNAMICS_POINTMASS_H_
+#define DART_DYNAMICS_POINTMASS_H_
 
 #include <vector>
 #include <Eigen/Dense>

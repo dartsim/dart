@@ -34,7 +34,7 @@
  */
 
 #ifndef SOFT_DYNAMICS_SOFTSKELETON_H_
-#define SOFT_DYNAMICS_SOFTSKELETON_H_
+#define DART_DYNAMICS_SOFTSKELETON_H_
 
 #include <string>
 #include <vector>

@@ -63,9 +63,8 @@ class WeldJointContraintTEST;
 class JointConstraint;
 
 //==============================================================================
-/// Constraint solver
-///
-/// Procedure:
+/// ConstraintSolver manages all the constraints and solves constraint impulses
+/// for skeletons
 ///
 /// -# Warm start
 ///   -# Build solid skeleton groups using solid constraints
@@ -81,29 +80,34 @@ class ConstraintSolver
 public:
   /// Constructor
   ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skeletons,
-      double _timeStep,
-      bool   _useODE                = true);
+      double _timeStep, bool   _useODE = true);
 
   /// Destructor
   virtual ~ConstraintSolver();
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Add single skeleton
   void addSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// Add skeletons
+  /// Add mutiple skeletons
   void addSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
 
-  /// Remove single skeleton.
+  /// Remove single skeleton
   void removeSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// Remove skeletons.
+  /// Remove multiple skeletons
   void removeSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
 
-  /// Remove all skeletons.
+  /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Add single constraint.
   void addConstraint(Constraint* _constraint);
 
@@ -113,9 +117,8 @@ public:
   ///
   size_t getNumConstraints() const;
 
+  ///
   Constraint* getConstraint(size_t _index);
-
-
 
   /// Remove single constraint.
   void removeConstraint(Constraint* _constraint);
@@ -126,9 +129,10 @@ public:
   /// Remove all constraints.
   void removeAllConstraints();
 
-
-
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Set timestep
   void setTimeStep(double _timeStep);
 
@@ -136,6 +140,9 @@ public:
   double getTimeStep() const;
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Set collision detector
   void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
 
@@ -145,15 +152,22 @@ public:
   //----------------------------------------------------------------------------
   // Solving
   //----------------------------------------------------------------------------
+
   /// Solve constraint impulses and apply them to the skeletons
   virtual void solve();
 
 protected:
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   ///
   std::vector<dynamics::Skeleton*> mSkeletons;
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
 //  ///
 //  std::vector<ConstraintTEST*> mBakedConstraints;
 
@@ -170,6 +184,9 @@ protected:
   std::vector<JointConstraint*> mBakedJointConstraints;
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Constraint list that should be satisfied regardless of skeleton's state
   /// such as dynamic joint constraints
   std::vector<Constraint*> mStaticConstraints;
@@ -179,6 +196,9 @@ protected:
   std::vector<Constraint*> mDynamicConstraints;
 
   //----------------------------------------------------------------------------
+  //
+  //----------------------------------------------------------------------------
+
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
 

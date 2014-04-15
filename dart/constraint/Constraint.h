@@ -100,30 +100,27 @@ public:
   double invTimestep;
 };
 
-//==============================================================================
+/// Type of the constraint
+enum ConstraintType
+{
+  CT_STATIC,
+  CT_DYNAMIC
+};
+
 /// ConstraintTEST class
 class Constraint
 {
-public:
-  enum ConstraintType
-  {
-    CT_STATIC,
-    CT_DYNAMIC
-  };
-
+protected:
   /// Default contructor
   explicit Constraint(ConstraintType _type);
 
-  /// Default destructor
+  /// Destructor
   virtual ~Constraint();
 
-  //----------------------------------------------------------------------------
-  // Pure virtual functions for solving
-  //----------------------------------------------------------------------------
   /// Update constraint using updated Skeleton's states
   virtual void update() = 0;
 
-  ///
+  /// Fill LCP variables
   virtual void fillLcpOde(ODELcp* _lcp, int _idx) = 0;
 
   /// Apply unit impulse to constraint space of _idx
@@ -141,18 +138,18 @@ public:
   /// Apply computed constraint impulse to constrained skeletons
   virtual void applyConstraintImpulse(double* _lambda, int _idx) = 0;
 
-  // TODO(JS): Make pure virtual function
+  /// Return true if this constraint is active
+  virtual bool isActive() const = 0;
+
   ///
   virtual dynamics::Skeleton* getRootSkeleton() const {}
 
   ///
   virtual void uniteSkeletons() {}
 
-  //----------------------------------------------------------------------------
   ///
   size_t getDimension() const;
 
-  //----------------------------------------------------------------------------
   ///
   static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
 
@@ -163,8 +160,15 @@ protected:
   /// Dimension of constraint
   size_t mDim;
 
-  ///
+  /// Constraint type: static or dynamic
   ConstraintType mConstraintType;
+
+public:
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
 };
 
 } // namespace constraint

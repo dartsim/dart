@@ -38,39 +38,42 @@
 
 #include <iostream>
 
+#include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_FRICTION_THRESHOLD 1e-4
+#define DART_ERROR_ALLOWANCE 0.0
+#define DART_ERP     0.01
+#define DART_MAX_ERV 1e+1
+#define DART_CFM     1e-5
+// #define DART_MAX_NUMBER_OF_CONTACTS 32
+
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
-// TODO(JS): This may need to consider body's bounding box
+#define DART_FRICTION_COEFF_THRESHOLD    1e-3
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
-#define DART_MAXIMUM_BOUNCING_VELOCITY 1e+1
-#define DART_CONTACT_CONSTRAIN_EPSILON 1e-6
-
-#define DART_CONTACT_DEFAULT_CFM 0.001
-
-#define DART_DEFALUT_ERROR_REDUCTION_PARAMETER 0.01
-#define DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY 1e+1
-
-#define DART_DEFAULT_CONTACT_ERROR_ALLOWANCE 0.0
+#define DART_MAX_BOUNCING_VELOCITY       1e+2
+#define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
 
 namespace dart {
 namespace constraint {
+
+double ContactConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
+double ContactConstraint::mErrorReductionParameter   = DART_ERP;
+double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
+double ContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   : Constraint(CT_DYNAMIC),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
-    mCfm(DART_CONTACT_DEFAULT_CFM),
     mAppliedImpulseIndex(-1),
     mIsBounceOn(false),
-    mErrorReductionParameter(DART_DEFALUT_ERROR_REDUCTION_PARAMETER),
     mActive(false)
 {
+  // TODO(JS): Assumed single contact
   mContacts.push_back(_contact);
 
   // TODO(JS):
@@ -95,7 +98,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   // Update mFrictionalCoff
   mFrictionCoeff = std::min(mBodyNode1->getFrictionCoeff(),
                             mBodyNode2->getFrictionCoeff());
-  if (mFrictionCoeff > DART_FRICTION_THRESHOLD)
+  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
 
@@ -254,14 +257,108 @@ ContactConstraint::~ContactConstraint()
 }
 
 //==============================================================================
-void ContactConstraint::setFirstFrictionDir(
+void ContactConstraint::setErrorAllowance(double _allowance)
+{
+  // Clamp error reduction parameter if it is out of the range
+  if (_allowance < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _allowance
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorAllowance = 0.0;
+  }
+
+  mErrorAllowance = _allowance;
+}
+
+//==============================================================================
+double ContactConstraint::getErrorAllowance()
+{
+  return mErrorAllowance;
+}
+
+//==============================================================================
+void ContactConstraint::setErrorReductionParameter(double _erp)
+{
+  // Clamp error reduction parameter if it is out of the range [0, 1]
+  if (_erp < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorReductionParameter = 0.0;
+  }
+  if (_erp > 1.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
+    mErrorReductionParameter = 1.0;
+  }
+
+  mErrorReductionParameter = _erp;
+}
+
+//==============================================================================
+double ContactConstraint::getErrorReductionParameter()
+{
+  return mErrorReductionParameter;
+}
+
+//==============================================================================
+void ContactConstraint::setMaxErrorReductionVelocity(double _erv)
+{
+  // Clamp maximum error reduction velocity if it is out of the range
+  if (_erv < 0.0)
+  {
+    dtwarn << "Maximum error reduction velocity[" << _erv
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mMaxErrorReductionVelocity = 0.0;
+  }
+
+  mMaxErrorReductionVelocity = _erv;
+}
+
+//==============================================================================
+double ContactConstraint::getMaxErrorReductionVelocity()
+{
+  return mMaxErrorReductionVelocity;
+}
+
+//==============================================================================
+void ContactConstraint::setConstraintForceMixing(double _cfm)
+{
+  // Clamp constraint force mixing parameter if it is out of the range
+  if (_cfm < 1e-9)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+    mConstraintForceMixing = 1e-9;
+  }
+  if (_cfm > 1.0)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+    mConstraintForceMixing = 1.0;
+  }
+
+  mConstraintForceMixing = _cfm;
+}
+
+//==============================================================================
+double ContactConstraint::getConstraintForceMixing()
+{
+  return mConstraintForceMixing;
+}
+
+//==============================================================================
+void ContactConstraint::setFrictionDirection(
     const Eigen::Vector3d& _dir)
 {
   mFirstFrictionalDirection = _dir.normalized();
 }
 
 //==============================================================================
-const Eigen::Vector3d& ContactConstraint::getFirstFrictionlDir() const
+const Eigen::Vector3d& ContactConstraint::getFrictionDirection1() const
 {
   return mFirstFrictionalDirection;
 }
@@ -317,8 +414,7 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       // Bouncing
       //------------------------------------------------------------------------
       // A. Penetration correction
-      double bouncingVelocity = mContacts[i].penetrationDepth
-                                - DART_DEFAULT_CONTACT_ERROR_ALLOWANCE;
+      double bouncingVelocity = mContacts[i].penetrationDepth - mErrorAllowance;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -326,8 +422,8 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       else
       {
         bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
-        if (bouncingVelocity > DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY)
-          bouncingVelocity = DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY;
+        if (bouncingVelocity > mMaxErrorReductionVelocity)
+          bouncingVelocity = mMaxErrorReductionVelocity;
       }
 
       // B. Restitution
@@ -342,9 +438,9 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
           {
             bouncingVelocity = restitutionVel;
 
-            if (bouncingVelocity > DART_MAXIMUM_BOUNCING_VELOCITY)
+            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
             {
-              bouncingVelocity = DART_MAXIMUM_BOUNCING_VELOCITY;
+              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
             }
           }
         }
@@ -386,7 +482,7 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       //------------------------------------------------------------------------
       // A. Penetration correction
       double bouncingVelocity = mContacts[i].penetrationDepth
-                                - DART_DEFAULT_CONTACT_ERROR_ALLOWANCE;
+                                - DART_ERROR_ALLOWANCE;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -394,8 +490,8 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
       else
       {
         bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
-        if (bouncingVelocity > DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY)
-          bouncingVelocity = DART_DEFALUT_MAXIMUM_ERROR_REDUCTION_VELOCITY;
+        if (bouncingVelocity > DART_MAX_ERV)
+          bouncingVelocity = DART_MAX_ERV;
       }
 
       // B. Restitution
@@ -410,9 +506,9 @@ void ContactConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
           {
             bouncingVelocity = restitutionVel;
 
-            if (bouncingVelocity > DART_MAXIMUM_BOUNCING_VELOCITY)
+            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
             {
-              bouncingVelocity = DART_MAXIMUM_BOUNCING_VELOCITY;
+              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
             }
           }
         }
@@ -514,7 +610,7 @@ void ContactConstraint::getVelocityChange(double* _delVel, int _idx,
   if (_withCfm)
   {
     _delVel[_idx + mAppliedImpulseIndex]
-        += _delVel[_idx + mAppliedImpulseIndex] * mCfm;
+        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 }
 
@@ -629,7 +725,7 @@ void ContactConstraint::getRelVelocity(double* _relVel, int _idx)
 }
 
 //==============================================================================
-bool ContactConstraint::isActive()
+bool ContactConstraint::isActive() const
 {
   return mActive;
 }
@@ -681,7 +777,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
   // If they're too close, pick another tangent (use X-axis as arbitrary vector)
-  if (tangent.norm() < DART_CONTACT_CONSTRAIN_EPSILON)
+  if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
     tangent = Eigen::Vector3d::UnitX().cross(_n);
 
   tangent.normalize();

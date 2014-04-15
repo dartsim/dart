@@ -35,11 +35,11 @@
  */
 
 #ifndef SOFT_DYNAMICS_SOFTBODYNODE_H_
-#define SOFT_DYNAMICS_SOFTBODYNODE_H_
+#define DART_DYNAMICS_SOFTBODYNODE_H_
 
-#define SOFT_DEFAULT_VERTEX_STIFFNESS (1.0)
-#define SOFT_DEFAULT_EDGE_STIFNESS    (1.0)
-#define SOFT_DEFAULT_DAMPING_COEFF    (0.01)
+#define DART_DEFAULT_VERTEX_STIFFNESS (1.0)
+#define DART_DEFAULT_EDGE_STIFNESS    (1.0)
+#define DART_DEFAULT_DAMPING_COEFF    (0.01)
 
 #include <string>
 #include <vector>
@@ -258,9 +258,9 @@ public:
   static void setSingle(
       SoftBodyNode*          _softBodyNode,
       double                 _totalMass,
-      double                 _vertexStiffness = SOFT_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = SOFT_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = SOFT_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -269,9 +269,9 @@ public:
       const Eigen::Vector3d&   _size,
       const Eigen::Isometry3d& _localTransfom,
       double                   _totalMass,
-      double                   _vertexStiffness = SOFT_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = SOFT_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = SOFT_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -281,18 +281,18 @@ public:
       const Eigen::Isometry3d& _localTransfom,
       const Eigen::Vector3i&   _frags,
       double                   _totalMass,
-      double                   _vertexStiffness = SOFT_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = SOFT_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = SOFT_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
   static void setSinglePointMass(
       SoftBodyNode*          _softBodyNode,
       double                 _totalMass,
-      double                 _vertexStiffness = SOFT_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = SOFT_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = SOFT_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -302,9 +302,9 @@ public:
       int                    _nSlices,
       int                    _nStacks,
       double                 _totalMass,
-      double                 _vertexStiffness = SOFT_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = SOFT_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = SOFT_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 };
 
 }  // namespace dynamics

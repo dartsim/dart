@@ -65,28 +65,28 @@ public:
                       const Eigen::Vector3d& _offset1,
                       const Eigen::Vector3d& _offset2);
 
-  /// Default destructor
+  /// Destructor
   ~BallJointConstraint();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void update();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyUnitImpulse(int _localIndex);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void excite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void unexcite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
 
   // Documentation inherited

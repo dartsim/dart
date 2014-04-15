@@ -38,20 +38,31 @@
 
 #include <iostream>
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE 0.0
-#define DART_DEFAUT_JOINT_POSITION_ERP 0.0
+#define DART_ERROR_ALLOWANCE 0.0
+#define DART_ERP     0.01
+#define DART_MAX_ERV 1e+1
+#define DART_CFM     1e-9
 
 namespace dart {
 namespace constraint {
 
+double JointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
+double JointLimitConstraint::mErrorReductionParameter   = DART_ERP;
+double JointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
+double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
+
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
-  : Constraint(CT_DYNAMIC), mJoint(_joint), mBodyNode(NULL)
+  : Constraint(CT_DYNAMIC),
+    mJoint(_joint),
+    mBodyNode(NULL),
+    mAppliedImpulseIndex(0)
 {
   assert(_joint);
 
@@ -84,6 +95,100 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
 JointLimitConstraint::~JointLimitConstraint()
 {
 
+}
+
+//==============================================================================
+void JointLimitConstraint::setErrorAllowance(double _allowance)
+{
+  // Clamp error reduction parameter if it is out of the range
+  if (_allowance < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _allowance
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorAllowance = 0.0;
+  }
+
+  mErrorAllowance = _allowance;
+}
+
+//==============================================================================
+double JointLimitConstraint::getErrorAllowance()
+{
+  return mErrorAllowance;
+}
+
+//==============================================================================
+void JointLimitConstraint::setErrorReductionParameter(double _erp)
+{
+  // Clamp error reduction parameter if it is out of the range [0, 1]
+  if (_erp < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorReductionParameter = 0.0;
+  }
+  if (_erp > 1.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
+    mErrorReductionParameter = 1.0;
+  }
+
+  mErrorReductionParameter = _erp;
+}
+
+//==============================================================================
+double JointLimitConstraint::getErrorReductionParameter()
+{
+  return mErrorReductionParameter;
+}
+
+//==============================================================================
+void JointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
+{
+  // Clamp maximum error reduction velocity if it is out of the range
+  if (_erv < 0.0)
+  {
+    dtwarn << "Maximum error reduction velocity[" << _erv
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mMaxErrorReductionVelocity = 0.0;
+  }
+
+  mMaxErrorReductionVelocity = _erv;
+}
+
+//==============================================================================
+double JointLimitConstraint::getMaxErrorReductionVelocity()
+{
+  return mMaxErrorReductionVelocity;
+}
+
+//==============================================================================
+void JointLimitConstraint::setConstraintForceMixing(double _cfm)
+{
+  // Clamp constraint force mixing parameter if it is out of the range
+  if (_cfm < 1e-9)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+    mConstraintForceMixing = 1e-9;
+  }
+  if (_cfm > 1.0)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+    mConstraintForceMixing = 1.0;
+  }
+
+  mConstraintForceMixing = _cfm;
+}
+
+//==============================================================================
+double JointLimitConstraint::getConstraintForceMixing()
+{
+  return mConstraintForceMixing;
 }
 
 //==============================================================================
@@ -167,11 +272,14 @@ void JointLimitConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
     double bouncingVel = -mViolation[i];
 
     if (bouncingVel > 0.0)
-      bouncingVel = -DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE;
+      bouncingVel = -mErrorAllowance;
     else
-      bouncingVel = +DART_DEFAULT_JOINT_POSITION_ERROR_ALLOWANCE;
+      bouncingVel = +mErrorAllowance;
 
-    bouncingVel *= _lcp->invTimestep * DART_DEFAUT_JOINT_POSITION_ERP;
+    bouncingVel *= _lcp->invTimestep * mErrorReductionParameter;
+
+    if (bouncingVel > mMaxErrorReductionVelocity)
+      bouncingVel = mMaxErrorReductionVelocity;
 
     _lcp->b[_idx + localIndex] = mNegativeVel[i] + bouncingVel;
 
@@ -223,11 +331,13 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
 
     ++localIndex;
   }
+
+  mAppliedImpulseIndex = _localIndex;
 }
 
 //==============================================================================
 void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
-                                             bool /*_withCfm*/)
+                                             bool _withCfm)
 {
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
@@ -244,6 +354,14 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
       _delVel[_idx + localIndex] = 0.0;
 
     ++localIndex;
+  }
+
+  // Add small values to diagnal to keep it away from singular, similar to cfm
+  // varaible in ODE
+  if (_withCfm)
+  {
+    _delVel[_idx + mAppliedImpulseIndex]
+        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 
   assert(localIndex == mDim);
@@ -300,7 +418,7 @@ dynamics::Skeleton* JointLimitConstraint::getRootSkeleton() const
 }
 
 //==============================================================================
-bool JointLimitConstraint::isActive()
+bool JointLimitConstraint::isActive() const
 {
   for (size_t i = 0; i < 6; ++i)
   {

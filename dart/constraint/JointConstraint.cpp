@@ -39,8 +39,20 @@
 #include <cassert>
 #include <iostream>
 
+#include "dart/common/Console.h"
+
+#define DART_ERROR_ALLOWANCE 0.0
+#define DART_ERP     0.01
+#define DART_MAX_ERV 1e+1
+#define DART_CFM     1e-9
+
 namespace dart {
 namespace constraint {
+
+double JointConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
+double JointConstraint::mErrorReductionParameter   = DART_ERP;
+double JointConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
+double JointConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 JointConstraint::JointConstraint(dynamics::BodyNode* _body)
@@ -65,6 +77,100 @@ JointConstraint::JointConstraint(dynamics::BodyNode* _body1,
 //==============================================================================
 JointConstraint::~JointConstraint()
 {
+}
+
+//==============================================================================
+void JointConstraint::setErrorAllowance(double _allowance)
+{
+  // Clamp error reduction parameter if it is out of the range
+  if (_allowance < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _allowance
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorAllowance = 0.0;
+  }
+
+  mErrorAllowance = _allowance;
+}
+
+//==============================================================================
+double JointConstraint::getErrorAllowance()
+{
+  return mErrorAllowance;
+}
+
+//==============================================================================
+void JointConstraint::setErrorReductionParameter(double _erp)
+{
+  // Clamp error reduction parameter if it is out of the range [0, 1]
+  if (_erp < 0.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mErrorReductionParameter = 0.0;
+  }
+  if (_erp > 1.0)
+  {
+    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
+           << "It is set to 1.0." << std::endl;
+    mErrorReductionParameter = 1.0;
+  }
+
+  mErrorReductionParameter = _erp;
+}
+
+//==============================================================================
+double JointConstraint::getErrorReductionParameter()
+{
+  return mErrorReductionParameter;
+}
+
+//==============================================================================
+void JointConstraint::setMaxErrorReductionVelocity(double _erv)
+{
+  // Clamp maximum error reduction velocity if it is out of the range
+  if (_erv < 0.0)
+  {
+    dtwarn << "Maximum error reduction velocity[" << _erv
+           << "] is lower than 0.0. "
+           << "It is set to 0.0." << std::endl;
+    mMaxErrorReductionVelocity = 0.0;
+  }
+
+  mMaxErrorReductionVelocity = _erv;
+}
+
+//==============================================================================
+double JointConstraint::getMaxErrorReductionVelocity()
+{
+  return mMaxErrorReductionVelocity;
+}
+
+//==============================================================================
+void JointConstraint::setConstraintForceMixing(double _cfm)
+{
+  // Clamp constraint force mixing parameter if it is out of the range
+  if (_cfm < 1e-9)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
+    mConstraintForceMixing = 1e-9;
+  }
+  if (_cfm > 1.0)
+  {
+    dtwarn << "Constraint force mixing parameter[" << _cfm
+           << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
+    mConstraintForceMixing = 1.0;
+  }
+
+  mConstraintForceMixing = _cfm;
+}
+
+//==============================================================================
+double JointConstraint::getConstraintForceMixing()
+{
+  return mConstraintForceMixing;
 }
 
 }  // namespace constraint

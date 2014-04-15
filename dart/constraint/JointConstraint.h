@@ -60,6 +60,34 @@ public:
   /// Destructor
   virtual ~JointConstraint();
 
+  //----------------------------------------------------------------------------
+  // Property settings
+  //----------------------------------------------------------------------------
+
+  /// Set global error reduction parameter
+  static void setErrorAllowance(double _allowance);
+
+  /// Get global error reduction parameter
+  static double getErrorAllowance();
+
+  /// Set global error reduction parameter
+  static void setErrorReductionParameter(double _erp);
+
+  /// Get global error reduction parameter
+  static double getErrorReductionParameter();
+
+  /// Set global error reduction parameter
+  static void setMaxErrorReductionVelocity(double _erv);
+
+  /// Get global error reduction parameter
+  static double getMaxErrorReductionVelocity();
+
+  /// Set global constraint force mixing parameter
+  static void setConstraintForceMixing(double _cfm);
+
+  /// Get global constraint force mixing parameter
+  static double getConstraintForceMixing();
+
 protected:
   ///
   dynamics::BodyNode* mBodyNode1;
@@ -67,6 +95,20 @@ protected:
   ///
   dynamics::BodyNode* mBodyNode2;
 
+  /// Global constraint error allowance
+  static double mErrorAllowance;
+
+  /// Global constraint error redection parameter in the range of [0, 1]. The
+  /// default is 0.01.
+  static double mErrorReductionParameter;
+
+  /// Maximum error reduction velocity
+  static double mMaxErrorReductionVelocity;
+
+  /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
+  /// default is 1e-5
+  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  static double mConstraintForceMixing;
 };
 
 } // namespace constraint

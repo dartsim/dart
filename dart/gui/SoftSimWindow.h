@@ -41,7 +41,7 @@
  */
 
 #ifndef SOFT_GUI_SOFTSIMWINDOW_H_
-#define SOFT_GUI_SOFTSIMWINDOW_H_
+#define DART_GUI_SOFTSIMWINDOW_H_
 
 #include "dart/gui/SimWindow.h"
 

@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_UTILS_SDF_SOFTSDFPARSER_H_
-#define SOFT_UTILS_SDF_SOFTSDFPARSER_H_
+#define DART_UTILS_SDF_SOFTSDFPARSER_H_
 
 #include <map>
 #include <string>

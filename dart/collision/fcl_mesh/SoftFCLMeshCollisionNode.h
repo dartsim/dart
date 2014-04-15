@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
-#define SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
+#define DART_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
 
 #include <assimp/mesh.h>
 #include "dart/collision/fcl_mesh/FCLMeshCollisionNode.h"

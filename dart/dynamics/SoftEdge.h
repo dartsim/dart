@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_DYNAMICS_SOFTEDGE_H_
-#define SOFT_DYNAMICS_SOFTEDGE_H_
+#define DART_DYNAMICS_SOFTEDGE_H_
 
 #include <string>
 

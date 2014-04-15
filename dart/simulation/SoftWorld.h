@@ -41,7 +41,7 @@
  */
 
 #ifndef SOFT_SIMULATION_SOFTWORLD_H_
-#define SOFT_SIMULATION_SOFTWORLD_H_
+#define DART_SIMULATION_SOFTWORLD_H_
 
 #include "dart/simulation/World.h"
 

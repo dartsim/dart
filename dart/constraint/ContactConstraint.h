@@ -42,13 +42,6 @@
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
-// Note: ODE's dSolve uses fixed number of friction cone bases as 4
-//#define DART_MIN_NUM_FRICTION_CONE_BASES 4
-//#define DART_MAX_NUM_FRICTION_CONE_BASES 16
-//#define DART_DEFAULT_NUM_FRICTION_CONE_BASES 2
-
-// TODO: Max contact number
-
 namespace dart {
 
 namespace dynamics {
@@ -63,49 +56,69 @@ class ContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  ContactConstraint(const collision::Contact& _contact);
+  explicit ContactConstraint(const collision::Contact& _contact);
 
-  /// Default destructor
+  /// Destructor
   virtual ~ContactConstraint();
 
   //----------------------------------------------------------------------------
-  // Settings
+  // Property settings
   //----------------------------------------------------------------------------
+
+  /// Set global error reduction parameter
+  static void setErrorAllowance(double _allowance);
+
+  /// Get global error reduction parameter
+  static double getErrorAllowance();
+
+  /// Set global error reduction parameter
+  static void setErrorReductionParameter(double _erp);
+
+  /// Get global error reduction parameter
+  static double getErrorReductionParameter();
+
+  /// Set global error reduction parameter
+  static void setMaxErrorReductionVelocity(double _erv);
+
+  /// Get global error reduction parameter
+  static double getMaxErrorReductionVelocity();
+
+  /// Set global constraint force mixing parameter
+  static void setConstraintForceMixing(double _cfm);
+
+  /// Get global constraint force mixing parameter
+  static double getConstraintForceMixing();
+
   /// Set first frictional direction
-  void setFirstFrictionDir(const Eigen::Vector3d& _dir);
+  void setFrictionDirection(const Eigen::Vector3d& _dir);
 
   /// Get first frictional direction
-  const Eigen::Vector3d& getFirstFrictionlDir() const;
+  const Eigen::Vector3d& getFrictionDirection1() const;
 
   //----------------------------------------------------------------------------
-  // Constraint virtual function
+  // Constraint virtual functions
   //----------------------------------------------------------------------------
-  // Documentaion inherited
+
+  // Documentation inherited
   virtual void update();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyUnitImpulse(int _idx);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void excite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void unexcite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
-
-  //----------------------------------------------------------------------------
-  // Solving
-  //----------------------------------------------------------------------------
-  ///
-  bool isActive();
 
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const;
@@ -113,27 +126,8 @@ public:
   // Documentation inherited
   virtual void uniteSkeletons();
 
-protected:
-  /// Fircst body node
-  dynamics::BodyNode* mBodyNode1;
-
-  /// Second body node
-  dynamics::BodyNode* mBodyNode2;
-
-  /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact> mContacts;
-
-  /// First frictional direction
-  Eigen::Vector3d mFirstFrictionalDirection;
-
-  /// Constraint error redection parameter in range of [0, 1]
-  double mErrorReductionParameter;
-
-  /// Coefficient of Friction
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  double mRestitutionCoeff;
+  // Documentation inherited
+  virtual bool isActive() const;
 
 private:
   /// Get change in relative velocity at contact point due to external impulse
@@ -151,6 +145,25 @@ private:
   ///
   Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
+private:
+  /// Fircst body node
+  dynamics::BodyNode* mBodyNode1;
+
+  /// Second body node
+  dynamics::BodyNode* mBodyNode2;
+
+  /// Contacts between mBodyNode1 and mBodyNode2
+  std::vector<collision::Contact> mContacts;
+
+  /// First frictional direction
+  Eigen::Vector3d mFirstFrictionalDirection;
+
+  /// Coefficient of Friction
+  double mFrictionCoeff;
+
+  /// Coefficient of restitution
+  double mRestitutionCoeff;
+
   /// Local body jacobians for mBodyNode1
   std::vector<Eigen::Vector6d> mJacobians1;
 
@@ -160,10 +173,6 @@ private:
   ///
   bool mIsFrictionOn;
 
-  /// Small value to add to diagnal of A matrix of LCP to keep it away
-  /// from singular, similar to cfm varaible in ODE. Default is 0.001.
-  double mCfm;
-
   /// Index of applied impulse
   size_t mAppliedImpulseIndex;
 
@@ -172,6 +181,22 @@ private:
 
   ///
   bool mActive;
+
+private:
+  /// Global constraint error allowance
+  static double mErrorAllowance;
+
+  /// Global constraint error redection parameter in the range of [0, 1]. The
+  /// default is 0.01.
+  static double mErrorReductionParameter;
+
+  /// Maximum error reduction velocity
+  static double mMaxErrorReductionVelocity;
+
+  /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
+  /// default is 1e-5
+  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  static double mConstraintForceMixing;
 };
 
 } // namespace constraint

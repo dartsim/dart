@@ -75,26 +75,33 @@ public:
   /// Destructor
   ~WeldJointConstraint();
 
-  // Documentaion inherited
+  //----------------------------------------------------------------------------
+  // Constraint virtual functions
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
   virtual void update();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyUnitImpulse(int _localIndex);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void excite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void unexcite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
+
+  // Documentation inherited
+  virtual bool isActive() const;
 
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const;
@@ -102,11 +109,7 @@ public:
   // Documentation inherited
   virtual void uniteSkeletons();
 
-  ///
-  bool isActive() const;
-
 protected:
-
   ///
   Eigen::Isometry3d mRelativeTransform;
 

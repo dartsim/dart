@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_UTILS_SOFTPARSER_H_
-#define SOFT_UTILS_SOFTPARSER_H_
+#define DART_UTILS_SOFTPARSER_H_
 
 #include <string>
 #include <vector>

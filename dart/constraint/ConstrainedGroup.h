@@ -64,7 +64,7 @@ public:
   /// Default contructor
   explicit ConstrainedGroup(ConstraintSolver* _solver);
 
-  /// Default destructor
+  /// Destructor
   virtual ~ConstrainedGroup();
 
   //----------------------------------------------------------------------------

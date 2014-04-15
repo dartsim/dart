@@ -40,60 +40,93 @@
 #include "dart/constraint/Constraint.h"
 
 namespace dart {
+
 namespace dynamics {
 class BodyNode;
 class Joint;
 }  // namespace dynamics
-}  // namespace dart
 
-namespace dart {
 namespace constraint {
 
 /// JointLimitConstraint handles joint position or velocity limits
 class JointLimitConstraint : public Constraint
 {
 public:
-  /// Default constructor
+  /// Constructor
   explicit JointLimitConstraint(dynamics::Joint* _joint);
 
-  /// Default destructor
+  /// Destructor
   ~JointLimitConstraint();
 
-  // Documentaion inherited
+  //----------------------------------------------------------------------------
+  // Property settings
+  //----------------------------------------------------------------------------
+
+  /// Set global error reduction parameter
+  static void setErrorAllowance(double _allowance);
+
+  /// Get global error reduction parameter
+  static double getErrorAllowance();
+
+  /// Set global error reduction parameter
+  static void setErrorReductionParameter(double _erp);
+
+  /// Get global error reduction parameter
+  static double getErrorReductionParameter();
+
+  /// Set global error reduction parameter
+  static void setMaxErrorReductionVelocity(double _erv);
+
+  /// Get global error reduction parameter
+  static double getMaxErrorReductionVelocity();
+
+  /// Set global constraint force mixing parameter
+  static void setConstraintForceMixing(double _cfm);
+
+  /// Get global constraint force mixing parameter
+  static double getConstraintForceMixing();
+
+  //----------------------------------------------------------------------------
+  // Constraint virtual functions
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
   virtual void update();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void fillLcpOde(ODELcp* _lcp, int _idx);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyUnitImpulse(int _localIndex);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void excite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void unexcite();
 
-  // Documentaion inherited
+  // Documentation inherited
   virtual void applyConstraintImpulse(double* _lambda, int _idx);
 
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const;
 
-  ///
-  bool isActive();
+  // Documentation inherited
+  virtual bool isActive() const;
 
-protected:
+private:
   ///
   dynamics::Joint* mJoint;
 
   ///
   dynamics::BodyNode* mBodyNode;
 
-private:
+  /// Index of applied impulse
+  size_t mAppliedImpulseIndex;
+
   ///
   size_t mLifeTime[6];
 
@@ -114,6 +147,22 @@ private:
 
   ///
   double mLowerBound[6];
+
+private:
+  /// Global constraint error allowance
+  static double mErrorAllowance;
+
+  /// Global constraint error redection parameter in the range of [0, 1]. The
+  /// default is 0.01.
+  static double mErrorReductionParameter;
+
+  /// Maximum error reduction velocity
+  static double mMaxErrorReductionVelocity;
+
+  /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
+  /// default is 1e-5
+  /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
+  static double mConstraintForceMixing;
 };
 
 }  // namespace constraint

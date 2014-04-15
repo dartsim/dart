@@ -40,8 +40,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_DEFAULT_WELD_JOINT_CONSTRAINT_ERP 0.1
-
 namespace dart {
 namespace constraint {
 
@@ -198,7 +196,7 @@ void WeldJointConstraint::fillLcpOde(ODELcp* _lcp, int _idx)
   if (mBodyNode2)
     negativeVel += math::AdT(mRelativeTransform, mBodyNode2->getBodyVelocity());
 
-  mViolation *= DART_DEFAULT_WELD_JOINT_CONSTRAINT_ERP * _lcp->invTimestep;
+  mViolation *= mErrorReductionParameter * _lcp->invTimestep;
 
   _lcp->b[_idx + 0] = negativeVel[0] + mViolation[0];
   _lcp->b[_idx + 1] = negativeVel[1] + mViolation[1];

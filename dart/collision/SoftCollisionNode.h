@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_COLLISION_SOFTCOLLISIONNODE_H_
-#define SOFT_COLLISION_SOFTCOLLISIONNODE_H_
+#define DART_COLLISION_SOFTCOLLISIONNODE_H_
 
 #include "dart/collision/CollisionNode.h"
 

@@ -55,9 +55,9 @@ namespace dynamics {
 
 SoftBodyNode::SoftBodyNode(const std::string& _name)
   : BodyNode(_name),
-    mKv(SOFT_DEFAULT_VERTEX_STIFFNESS),
-    mKe(SOFT_DEFAULT_EDGE_STIFNESS),
-    mDampCoeff(SOFT_DEFAULT_DAMPING_COEFF),
+    mKv(DART_DEFAULT_VERTEX_STIFFNESS),
+    mKe(DART_DEFAULT_EDGE_STIFNESS),
+    mDampCoeff(DART_DEFAULT_DAMPING_COEFF),
     mSoftVisualShape(NULL),
     mSoftCollShape(NULL)
 {
