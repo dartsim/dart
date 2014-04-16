@@ -63,7 +63,7 @@ World::World()
     mTimeStep(0.001),
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
-    mConstraintSolver(new constraint::ConstraintSolver(mSkeletons, mTimeStep)),
+    mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
     mRecording(new Recording(mSkeletons))
 {
   mIndices.push_back(0);

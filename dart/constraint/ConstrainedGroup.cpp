@@ -61,6 +61,7 @@ void ConstrainedGroup::addConstraint(Constraint* _constraint)
   assert(_constraint != NULL && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == false
          && "Don't try to add same constraint multiple times into Community.");
+  assert(_constraint->isActive());
 
   mConstraints.push_back(_constraint);
 }

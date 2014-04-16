@@ -46,12 +46,8 @@
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
 #include "dart/constraint/ConstrainedGroup.h"
-//#include "dart/constraint/BallJointConstraint.h"
-//#include "dart/constraint/ClosedLoopConstraint.h"
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
-//#include "dart/constraint/RevoluteJointConstraint.h"
-//#include "dart/constraint/WeldJointConstraint.h"
 #include "dart/constraint/DantzigSolver.h"
 
 namespace dart {
@@ -60,16 +56,12 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
-ConstraintSolver::ConstraintSolver(
-    const std::vector<dynamics::Skeleton*>& _skeletons,
-    double _timeStep,
-    bool   _useODE)
+ConstraintSolver::ConstraintSolver(double _timeStep)
   : mTimeStep(_timeStep),
-    mUseODE(_useODE),
     mCollisionDetector(new collision::FCLMeshCollisionDetector()),
     mLCPSolver(new DantzigSolver(mTimeStep))
 {
-  init();
+  assert(_timeStep > 0.0);
 }
 
 //==============================================================================
@@ -88,11 +80,7 @@ void ConstraintSolver::addSkeleton(Skeleton* _skeleton)
   {
     mSkeletons.push_back(_skeleton);
     mCollisionDetector->addSkeleton(_skeleton);
-
-
-
-    // TODO(JS): Dont't initialize this solver but just add _skeleton.
-    init();
+    mConstrainedGroups.reserve(mSkeletons.size());
   }
   else
   {
@@ -126,9 +114,7 @@ void ConstraintSolver::addSkeletons(const std::vector<Skeleton*>& _skeletons)
     }
   }
 
-//  if (numAddedSkeletons > 0)
-  // TODO(JS): Dont't initialize this solver but just add _skeletons.
-  init();
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
@@ -142,9 +128,7 @@ void ConstraintSolver::removeSkeleton(Skeleton* _skeleton)
     mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                      mSkeletons.end());
     mCollisionDetector->removeSkeleton(_skeleton);
-
-    // TODO(JS): Dont't initialize this solver but just remove _skeleton.
-    init();
+    mConstrainedGroups.reserve(mSkeletons.size());
   }
   else
   {
@@ -180,17 +164,14 @@ void ConstraintSolver::removeSkeletons(
     }
   }
 
-//  if (numRemovedSkeletons > 0)
-  // TODO(JS): Dont't initialize this solver but just remove _skeletons.
-  init();
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
-  std::cout << "ConstraintSolver::removeAllSkeletons(): "
-            << "Not implemented yet."
-            << std::endl;
+  mCollisionDetector->removeAllSkeletons();
+  mSkeletons.clear();
 }
 
 //==============================================================================
@@ -205,17 +186,7 @@ void ConstraintSolver::addConstraint(Constraint* _constraint)
     return;
   }
 
-//  if (_constraint->getType())
-  mStaticConstraints.push_back(_constraint);
-}
-
-//==============================================================================
-void ConstraintSolver::addConstraints(
-    const std::vector<Constraint*>& _constraints)
-{
-  std::cout << "ConstraintSolver::addConstraints(): "
-            << "Not implemented yet."
-            << std::endl;
+  mManualConstraints.push_back(_constraint);
 }
 
 //==============================================================================
@@ -230,25 +201,15 @@ void ConstraintSolver::removeConstraint(Constraint* _constraint)
     return;
   }
 
-  mStaticConstraints.erase(remove(mStaticConstraints.begin(),
-                                  mStaticConstraints.end(), _constraint),
-                           mStaticConstraints.end());
-}
-
-//==============================================================================
-void ConstraintSolver::removeConstraints(const std::vector<Constraint*>& _constraints)
-{
-  std::cout << "ConstraintSolver::removeConstraints(): "
-            << "Not implemented yet."
-            << std::endl;
+  mManualConstraints.erase(remove(mManualConstraints.begin(),
+                                  mManualConstraints.end(), _constraint),
+                           mManualConstraints.end());
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllConstraints()
 {
-  std::cout << "ConstraintSolver::removeAllConstraints(): "
-            << "Not implemented yet."
-            << std::endl;
+  mManualConstraints.clear();
 }
 
 //==============================================================================
@@ -287,126 +248,20 @@ void ConstraintSolver::solve()
   for (int i = 0; i < mSkeletons.size(); ++i)
     mSkeletons[i]->clearConstraintImpulses();
 
-  // Update static constraints based on the new states of skeletons
-  updateStaticConstraints();
+  // Update constraints and collect active constraints
+  updateConstraints();
 
-  // Refresh dynamic constraints based on the new states of skeletons
-  updateDynamicConstraints();
-
-  //
+  // Build constrained groups
   buildConstrainedGroups();
 
-  //
+  // Solve constrained groups
   solveConstrainedGroups();
-}
-
-//==============================================================================
-void ConstraintSolver::init()
-{
-  bakeConstraints();
-
-  //----------------------------------------------------------------------------
-  // Static constraints
-  //----------------------------------------------------------------------------
-  mStaticConstraints.clear();
-
-  // Closed loop constraints
-//  for (std::vector<ClosedLoopConstraint*>::const_iterator it
-//       = mBakedClosedLoopConstraints.begin();
-//       it != mBakedClosedLoopConstraints.end(); ++it)
-//  {
-//    mStaticConstraints.push_back(*it);
-//  }
-
-  //----------------------------------------------------------------------------
-  // Dynamic constraints
-  //----------------------------------------------------------------------------
-  mDynamicConstraints.clear();
-
-  int maxNumDynamicConstraints = 0;
-  maxNumDynamicConstraints += mBakedContactConstraints.size();
-  maxNumDynamicConstraints += mBakedJointLimitConstraints.size();
-  maxNumDynamicConstraints += mBakedJointConstraints.size();
-
-  mDynamicConstraints.reserve(maxNumDynamicConstraints);
-
-  //----------------------------------------------------------------------------
-  // Constraint groups
-  //----------------------------------------------------------------------------
-  // TODO(JS): Create one ConstrainedGroup for test
-  mConstrainedGroups.clear();
-  mConstrainedGroups.reserve(mSkeletons.size());
-}
-
-//==============================================================================
-void ConstraintSolver::bakeConstraints()
-{
-  // Contact constraints
-  bakeContactConstraints();
-
-  // Joint limit constraints
-  bakeJointLimitConstraints();
-
-  // closed loop constraints
-  bakeClosedLoopConstraints();
-
-  // Joint constraints
-  bakeJointConstraints();
-}
-
-//==============================================================================
-void ConstraintSolver::bakeContactConstraints()
-{
-//  dtdbg << "ConstraintSolver::__bakeContactConstraints(): "
-//        << "Not implemented yet."
-//        << std::endl;
-
-  // Reset baked contact constraints
-//  for (std::vector<ContactConstraint*>::iterator it
-//           = mBakedContactConstraints.begin();
-//       it != mBakedContactConstraints.end(); ++it)
-//  {
-//    delete *it;
-//  }
-//  mBakedContactConstraints.clear();
-
-  // TODO(JS):
-//  mCollisionDetector->removeAllSkeletons();
-//  for (std::vector<Skeleton*>::iterator it = mSkeletons.begin();
-//       it != mSkeletons.end(); ++it)
-//  {
-//    mCollisionDetector->addSkeleton(*it);
-//  }
-}
-
-//==============================================================================
-void ConstraintSolver::bakeJointLimitConstraints()
-{
-//  std::cout << "ConstraintSolver::__bakeJointLimitConstraints(): "
-//            << "Not implemented yet."
-//            << std::endl;
-}
-
-//==============================================================================
-void ConstraintSolver::bakeClosedLoopConstraints()
-{
-//  std::cout << "ConstraintSolver::__bakeClosedLoopConstraints(): "
-//            << "Not implemented yet."
-//            << std::endl;
-}
-
-//==============================================================================
-void ConstraintSolver::bakeJointConstraints()
-{
-//  std::cout << "ConstraintSolver::__bakeJointConstraints(): "
-//            << "Not implemented yet."
-//            << std::endl;
 }
 
 //==============================================================================
 bool ConstraintSolver::containSkeleton(const Skeleton* _skeleton) const
 {
-  assert(_skeleton != NULL && "Now allowed to insert null pointer skeleton.");
+  assert(_skeleton != NULL && "Not allowed to insert null pointer skeleton.");
 
   for (std::vector<Skeleton*>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -437,9 +292,9 @@ bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
 //==============================================================================
 bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 {
-  if (std::find(mStaticConstraints.begin(), mStaticConstraints.end(),
+  if (std::find(mManualConstraints.begin(), mManualConstraints.end(),
                 _constraint)
-      != mStaticConstraints.end())
+      != mManualConstraints.end())
   {
     return true;
   }
@@ -450,82 +305,80 @@ bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 //==============================================================================
 bool ConstraintSolver::checkAndAddConstraint(Constraint* _constraint)
 {
-  std::cout << "ConstraintSolverTEST::_checkAndAddConstraint(): "
-            << "Not implemented."
-            << std::endl;
-
   if (!containConstraint(_constraint))
   {
-//    mConstraints.push_back(_constraint);
+    mManualConstraints.push_back(_constraint);
+    return true;
   }
   else
   {
-//    dtwarn << "Constraint [" << _constraint->getName()
-//           << "] is already in ConstraintSolver." << std::endl;
-  }
-
-  return false;
-}
-
-//==============================================================================
-void ConstraintSolver::updateStaticConstraints()
-{
-  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
-       it != mStaticConstraints.end(); ++it)
-  {
-    (*it)->update();
+    dtwarn << "Constraint is already in ConstraintSolver." << std::endl;
+    return false;
   }
 }
 
 //==============================================================================
-void ConstraintSolver::updateDynamicConstraints()
+void ConstraintSolver::updateConstraints()
 {
-  mDynamicConstraints.clear();
+  // Clear previous active constraint list
+  mActiveConstraints.clear();
 
   //----------------------------------------------------------------------------
-  // Populate contact constraints
+  // Update manual constraints
+  //----------------------------------------------------------------------------
+  for (std::vector<Constraint*>::iterator it = mManualConstraints.begin();
+       it != mManualConstraints.end(); ++it)
+  {
+    (*it)->update();
+
+    if ((*it)->isActive())
+      mActiveConstraints.push_back(*it);
+  }
+
+  //----------------------------------------------------------------------------
+  // Update automatic constraints: contact constraints
   //----------------------------------------------------------------------------
   mCollisionDetector->clearAllContacts();
   mCollisionDetector->detectCollision(true, true);
 
-  // Clear previous contact constraints
+  // Destroy previous contact constraints
   for (std::vector<ContactConstraint*>::const_iterator it
-       = mBakedContactConstraints.begin();
-       it != mBakedContactConstraints.end(); ++it)
+       = mContactConstraints.begin();
+       it != mContactConstraints.end(); ++it)
   {
     delete *it;
   }
-  mBakedContactConstraints.clear();
+  mContactConstraints.clear();
 
   // Create new contact constraints
   for (int i = 0; i < mCollisionDetector->getNumContacts(); ++i)
   {
     const collision::Contact& ct = mCollisionDetector->getContact(i);
-    mBakedContactConstraints.push_back(new ContactConstraint(ct));
+    mContactConstraints.push_back(new ContactConstraint(ct));
   }
 
   // Add the new contact constraints to dynamic constraint list
   for (std::vector<ContactConstraint*>::const_iterator it
-       = mBakedContactConstraints.begin();
-       it != mBakedContactConstraints.end(); ++it)
+       = mContactConstraints.begin();
+       it != mContactConstraints.end(); ++it)
   {
     (*it)->update();
 
     if ((*it)->isActive())
-      mDynamicConstraints.push_back(*it);
+      mActiveConstraints.push_back(*it);
   }
 
   //----------------------------------------------------------------------------
-  // Inspect joint limit constraints
+  // Update automatic constraints: joint limit constraints
   //----------------------------------------------------------------------------
-  // Clear previous joint limit constraints
+  // Destroy previous joint limit constraints
   for (std::vector<JointLimitConstraint*>::const_iterator it
-       = mBakedJointLimitConstraints.begin();
-       it != mBakedJointLimitConstraints.end(); ++it)
+       = mJointLimitConstraints.begin();
+       it != mJointLimitConstraints.end(); ++it)
   {
     delete *it;
   }
-  mBakedJointLimitConstraints.clear();
+  mJointLimitConstraints.clear();
 
   // Create new joint limit constraints
   for (std::vector<Skeleton*>::iterator it = mSkeletons.begin();
@@ -534,104 +387,56 @@ void ConstraintSolver::updateDynamicConstraints()
     for (size_t i = 0; i < (*it)->getNumBodyNodes(); i++)
     {
       dynamics::Joint* joint = (*it)->getBodyNode(i)->getParentJoint();
-      if (!joint->isPositionLimited())
-        continue;
-
-      mBakedJointLimitConstraints.push_back(new JointLimitConstraint(joint));
+      if (joint->isPositionLimited())
+        mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
     }
   }
 
-  // Joint limit constraints
+  // Add active joint limit
   for (std::vector<JointLimitConstraint*>::const_iterator it
-       = mBakedJointLimitConstraints.begin();
-       it != mBakedJointLimitConstraints.end(); ++it)
+       = mJointLimitConstraints.begin();
+       it != mJointLimitConstraints.end(); ++it)
   {
     (*it)->update();
 
     if ((*it)->isActive())
-      mDynamicConstraints.push_back(*it);
+      mActiveConstraints.push_back(*it);
   }
 }
 
 //==============================================================================
 void ConstraintSolver::buildConstrainedGroups()
 {
+  // Clear constrained groups
   mConstrainedGroups.clear();
 
-  if (mStaticConstraints.empty() && mDynamicConstraints.empty())
+  // Exit if there is no active constraint
+  if (mActiveConstraints.empty())
     return;
 
   //----------------------------------------------------------------------------
-  // Build skeleton unions using constraints
+  // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  // TODO(JS): Warm start
-  // Static constraints
-  for (std::vector<Constraint*>::iterator it = mStaticConstraints.begin();
-       it != mStaticConstraints.end(); ++it)
+  for (std::vector<Constraint*>::iterator it = mActiveConstraints.begin();
+       it != mActiveConstraints.end(); ++it)
   {
     (*it)->uniteSkeletons();
   }
-
-  // Dynamics constraints
-  for (std::vector<Constraint*>::iterator it = mDynamicConstraints.begin();
-       it != mDynamicConstraints.end(); ++it)
-  {
-    (*it)->uniteSkeletons();
-  }
-
-  // DEBUG CODE ////////////////////////////////////////////////////////////////
-//  for (int i = 0; i < mSkeletons.size(); ++i)
-//  {
-//    std::cout << "Skeleton[" << i << "]: "
-//              << mSkeletons[i] << ", "
-//              << mSkeletons[i]->mUnionRootSkeleton << ", "
-//              << mSkeletons[i]->mUnionSize << std::endl;
-//  }
-//  std::cout << std::endl;
 
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  std::vector<dynamics::Skeleton*> possibleSkeletonGroupRoots;
-  possibleSkeletonGroupRoots.reserve(mSkeletons.size());
-
-  for (std::vector<Constraint*>::const_iterator it = mStaticConstraints.begin();
-       it != mStaticConstraints.end(); ++it)
-  {
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
-
-    if (std::find(possibleSkeletonGroupRoots.begin(),
-                  possibleSkeletonGroupRoots.end(), skel)
-        == possibleSkeletonGroupRoots.end())
-    {
-      possibleSkeletonGroupRoots.push_back(skel);
-    }
-  }
-
-  for (std::vector<Constraint*>::const_iterator it = mDynamicConstraints.begin();
-       it != mDynamicConstraints.end(); ++it)
-  {
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
-
-    if (std::find(possibleSkeletonGroupRoots.begin(),
-                  possibleSkeletonGroupRoots.end(), skel)
-        == possibleSkeletonGroupRoots.end())
-    {
-      possibleSkeletonGroupRoots.push_back(skel);
-    }
-  }
-
-  for (std::vector<dynamics::Skeleton*>::const_iterator itSkel
-       = possibleSkeletonGroupRoots.begin();
-       itSkel != possibleSkeletonGroupRoots.end(); ++itSkel)
+  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+       it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
+    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
 
     for (std::vector<ConstrainedGroup>::const_iterator itConstGroup
          = mConstrainedGroups.begin();
          itConstGroup != mConstrainedGroups.end(); ++itConstGroup)
     {
-      if ((*itConstGroup).mRootSkeleton == *itSkel)
+      if ((*itConstGroup).mRootSkeleton == skel)
       {
         found = true;
         break;
@@ -642,32 +447,21 @@ void ConstraintSolver::buildConstrainedGroups()
       continue;
 
     ConstrainedGroup newConstGroup;
-    newConstGroup.mRootSkeleton = *itSkel;
-    (*itSkel)->mUnionIndex = mConstrainedGroups.size();
+    newConstGroup.mRootSkeleton = skel;
+    skel->mUnionIndex = mConstrainedGroups.size();
     mConstrainedGroups.push_back(newConstGroup);
   }
 
-  //----------------------------------------------------------------------------
-  // Add Constraints to constrained groups
-  //----------------------------------------------------------------------------
-  // Static constraints
-  for (std::vector<Constraint*>::const_iterator it = mStaticConstraints.begin();
-       it != mStaticConstraints.end(); ++it)
-  {
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
-    mConstrainedGroups[skel->mUnionIndex].addConstraint(*it);
-  }
-
-  // Dynamics constraints
-  for (std::vector<Constraint*>::const_iterator it = mDynamicConstraints.begin();
-       it != mDynamicConstraints.end(); ++it)
+  // Add active constraints to constrained groups
+  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+       it != mActiveConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();
     mConstrainedGroups[skel->mUnionIndex].addConstraint(*it);
   }
 
   //----------------------------------------------------------------------------
-  // Reset union. We don't need union information anymore.
+  // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -679,7 +473,6 @@ void ConstraintSolver::buildConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
-
   for (std::vector<ConstrainedGroup>::iterator it = mConstrainedGroups.begin();
        it != mConstrainedGroups.end(); ++it)
   {

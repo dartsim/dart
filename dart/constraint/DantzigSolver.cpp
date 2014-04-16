@@ -87,7 +87,7 @@ void DantzigSolver::solve(ConstrainedGroup* _group)
   // Compute offset indices
   size_t* offset = new size_t[n];
   offset[0] = 0;
-  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
+//  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
   for (size_t i = 1; i < numConstraints; ++i)
   {
     Constraint* constraint = _group->getConstraint(i - 1);

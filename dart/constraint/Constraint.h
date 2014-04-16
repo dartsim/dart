@@ -72,13 +72,6 @@ struct ConstraintInfo
   double invTimeStep;
 };
 
-/// Type of the constraint
-enum ConstraintType
-{
-  CT_STATIC,
-  CT_DYNAMIC
-};
-
 /// Constraint is a base class of concrete constraints classes
 class Constraint
 {
@@ -131,7 +124,7 @@ public:
 
 protected:
   /// Default contructor
-  explicit Constraint(ConstraintType _type);
+  Constraint();
 
   /// Destructor
   virtual ~Constraint();
@@ -139,13 +132,10 @@ protected:
 protected:
   /// Dimension of constraint
   size_t mDim;
-
-  /// Constraint type: static or dynamic
-  ConstraintType mConstraintType;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINT_H_TEST
+#endif  // DART_CONSTRAINT_CONSTRAINT_H_
 

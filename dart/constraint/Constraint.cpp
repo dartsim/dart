@@ -47,7 +47,7 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-Constraint::Constraint(ConstraintType _type)
+Constraint::Constraint()
   : mDim(0)
 {
 }

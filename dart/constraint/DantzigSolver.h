@@ -51,7 +51,7 @@ class DantzigSolver : public LCPSolver
 {
 public:
   /// Constructor
-  DantzigSolver(double _timestep);
+  explicit DantzigSolver(double _timestep);
 
   /// Constructor
   virtual ~DantzigSolver();

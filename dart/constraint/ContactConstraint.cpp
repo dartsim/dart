@@ -66,7 +66,7 @@ double ContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(const collision::Contact& _contact)
-  : Constraint(CT_DYNAMIC),
+  : Constraint(),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),

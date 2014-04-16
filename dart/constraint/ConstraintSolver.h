@@ -54,41 +54,21 @@ namespace constraint {
 
 class ConstrainedGroup;
 class Constraint;
-class BallJointContraintTEST;
 class ClosedLoopConstraint;
 class ContactConstraint;
 class JointLimitConstraint;
-class RevoluteJointContraintTEST;
-class WeldJointContraintTEST;
 class JointConstraint;
 class LCPSolver;
 
-//==============================================================================
-/// ConstraintSolver manages all the constraints and solves constraint impulses
-/// for skeletons
-///
-/// -# Warm start
-///   -# Build solid skeleton groups using solid constraints
-///   -# Build constraint groups using solid skeleton groups
-///
-/// -# Solving
-///   -# Update or create blink constraints with new skeleton states
-///   -# Merge solid skeleton groups using blink constraints
-///   -# Merge constraint groups using merged skeleton groups
-//==============================================================================
+/// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
 {
 public:
   /// Constructor
-  ConstraintSolver(const std::vector<dynamics::Skeleton*>& _skeletons,
-      double _timeStep, bool   _useODE = true);
+  explicit ConstraintSolver(double _timeStep);
 
   /// Destructor
   virtual ~ConstraintSolver();
-
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
 
   /// Add single skeleton
   void addSkeleton(dynamics::Skeleton* _skeleton);
@@ -105,44 +85,23 @@ public:
   /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();
 
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-  /// Add single constraint.
+  /// Add a constraint
   void addConstraint(Constraint* _constraint);
 
-  /// Add constraints.
-  void addConstraints(const std::vector<Constraint*>& _constraints);
-
-  ///
+  /// Return the number of constraints
   size_t getNumConstraints() const;
 
-  ///
-  Constraint* getConstraint(size_t _index);
-
-  /// Remove single constraint.
+  /// Remove a constraint
   void removeConstraint(Constraint* _constraint);
 
-  /// Remove constraints.
-  void removeConstraints(const std::vector<Constraint*>& _constraints);
-
-  /// Remove all constraints.
+  /// Remove all constraints
   void removeAllConstraints();
 
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-  /// Set timestep
+  /// Set time step
   void setTimeStep(double _timeStep);
 
-  /// Get timestep
+  /// Get time step
   double getTimeStep() const;
-
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
 
   /// Set collision detector
   void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
@@ -150,78 +109,10 @@ public:
   /// Get collision detector
   collision::CollisionDetector* getCollisionDetector() const;
 
-  //----------------------------------------------------------------------------
-  // Solving
-  //----------------------------------------------------------------------------
-
   /// Solve constraint impulses and apply them to the skeletons
-  virtual void solve();
-
-protected:
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-  ///
-  std::vector<dynamics::Skeleton*> mSkeletons;
-
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-//  ///
-//  std::vector<ConstraintTEST*> mBakedConstraints;
-
-  ///
-  std::vector<ContactConstraint*> mBakedContactConstraints;
-
-  ///
-  std::vector<JointLimitConstraint*> mBakedJointLimitConstraints;
-
-  ///
-  std::vector<ClosedLoopConstraint*> mBakedClosedLoopConstraints;
-
-  ///
-  std::vector<JointConstraint*> mBakedJointConstraints;
-
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-  /// Constraint list that should be satisfied regardless of skeleton's state
-  /// such as dynamic joint constraints
-  std::vector<Constraint*> mStaticConstraints;
-
-  /// Constraint list that should be satisfied depend on skeleton's state such
-  /// as contact constraint and joint limit constraint.
-  std::vector<Constraint*> mDynamicConstraints;
-
-  //----------------------------------------------------------------------------
-  //
-  //----------------------------------------------------------------------------
-
-  /// Constraint group list
-  std::vector<ConstrainedGroup> mConstrainedGroups;
+  void solve();
 
 private:
-  ///
-  void init();
-
-  ///
-  void bakeConstraints();
-
-  ///
-  void bakeContactConstraints();
-
-  ///
-  void bakeJointLimitConstraints();
-
-  ///
-  void bakeClosedLoopConstraints();
-
-  ///
-  void bakeJointConstraints();
-
   /// Check if the skeleton is contained in this solver
   bool containSkeleton(const dynamics::Skeleton* _skeleton) const;
 
@@ -234,11 +125,8 @@ private:
   /// Add constraint if the constraint is not contained in this solver
   bool checkAndAddConstraint(Constraint* _constraint);
 
-  /// Update static constraints
-  void updateStaticConstraints();
-
-  /// Update dynamic constraints
-  void updateDynamicConstraints();
+  /// Update constraints
+  void updateConstraints();
 
   /// Build constrained groups
   void buildConstrainedGroups();
@@ -252,11 +140,26 @@ private:
   /// Time step
   double mTimeStep;
 
-  /// Flag for using ODE
-  bool mUseODE;
-
-  ///
+  /// LCP solver
   LCPSolver* mLCPSolver;
+
+  /// Skeleton list
+  std::vector<dynamics::Skeleton*> mSkeletons;
+
+  /// Contact constraints those are automatically created
+  std::vector<ContactConstraint*> mContactConstraints;
+
+  /// Joint limit constraints those are automatically created
+  std::vector<JointLimitConstraint*> mJointLimitConstraints;
+
+  /// Constraints that manually added
+  std::vector<Constraint*> mManualConstraints;
+
+  /// Active constraints
+  std::vector<Constraint*> mActiveConstraints;
+
+  /// Constraint group list
+  std::vector<ConstrainedGroup> mConstrainedGroups;
 };
 
 }  // namespace constraint

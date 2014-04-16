@@ -59,7 +59,7 @@ double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
-  : Constraint(CT_DYNAMIC),
+  : Constraint(),
     mJoint(_joint),
     mBodyNode(NULL),
     mAppliedImpulseIndex(0)
@@ -94,7 +94,6 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
 //==============================================================================
 JointLimitConstraint::~JointLimitConstraint()
 {
-
 }
 
 //==============================================================================
@@ -200,7 +199,7 @@ void JointLimitConstraint::update()
   dynamics::GenCoord* genCoord;
 
   size_t dof = mJoint->getNumGenCoords();
-  for (size_t i = 0; i < dof ; ++i)
+  for (size_t i = 0; i < dof; ++i)
   {
     genCoord = mJoint->getGenCoord(i);
 
@@ -264,9 +263,6 @@ void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
     if (mActive[i] == false)
       continue;
 
-//    if (_lcp->w[_idx + localIndex] != 0.0)
-//      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
-//                << std::endl;
     assert(_lcp->w[index] == 0.0);
 
     double bouncingVel = -mViolation[i];

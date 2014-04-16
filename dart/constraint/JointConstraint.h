@@ -89,10 +89,10 @@ public:
   static double getConstraintForceMixing();
 
 protected:
-  ///
+  /// First body node
   dynamics::BodyNode* mBodyNode1;
 
-  ///
+  /// Second body node
   dynamics::BodyNode* mBodyNode2;
 
   /// Global constraint error allowance
