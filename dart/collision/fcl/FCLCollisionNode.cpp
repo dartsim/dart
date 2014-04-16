@@ -49,6 +49,7 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
 FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode) {
   for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
@@ -106,17 +107,21 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   }
 }
 
+//==============================================================================
 FCLCollisionNode::~FCLCollisionNode() {
 }
 
+//==============================================================================
 int FCLCollisionNode::getNumCollisionGeometries() const {
   return mCollisionGeometries.size();
 }
 
+//==============================================================================
 fcl::CollisionGeometry*FCLCollisionNode::getCollisionGeometry(int _idx) const {
   return mCollisionGeometries[_idx];
 }
 
+//==============================================================================
 fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
   Eigen::Isometry3d worldTrans = mBodyNode->getWorldTransform()
                                  * mShapes[_idx]->getLocalTransform();
@@ -128,6 +133,7 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
         fcl::Vec3f(worldTrans(0, 3), worldTrans(1, 3), worldTrans(2, 3)));
 }
 
+//==============================================================================
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
                               const aiScene *_mesh) {
@@ -152,6 +158,7 @@ fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
   return model;
 }
 
+//==============================================================================
 template<class BV>
 fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ) {
   float v[59][3] = {

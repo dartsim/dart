@@ -44,7 +44,7 @@
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/utils/Paths.h"
 #include "dart/simulation/World.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/SoftParser.h"
 
@@ -176,12 +176,12 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   using namespace simulation;
   using namespace utils;
 
-  SoftWorld* softWorld
+  World* world
       = SoftSkelParser::readSoftFile(
           DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
-  EXPECT_TRUE(softWorld != NULL);
+  EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = softWorld->getSkeleton("skeleton 1");
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
   SoftSkeleton* softSkel1 = dynamic_cast<SoftSkeleton*>(skel1);
   EXPECT_TRUE(softSkel1 != NULL);
   EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
@@ -191,9 +191,9 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
-  softWorld->step();
+  world->step();
 
-  delete softWorld;
+  delete world;
 }
 
 /******************************************************************************/

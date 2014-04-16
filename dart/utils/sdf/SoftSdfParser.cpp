@@ -60,16 +60,16 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 
-#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/SoftSkeleton.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace utils {
 
-simulation::SoftWorld* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
+simulation::World* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -116,7 +116,7 @@ simulation::SoftWorld* SoftSdfParser::readSoftSdfFile(const std::string& _filena
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  simulation::SoftWorld* newWorld = readSoftWorld(worldElement, skelPath);
+  simulation::World* newWorld = readWorld(worldElement, skelPath);
 
   return newWorld;
 }
@@ -175,13 +175,13 @@ dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
   return newSoftSkeleton;
 }
 
-simulation::SoftWorld* SoftSdfParser::readSoftWorld(
+simulation::World* SoftSdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement, const std::string& _skelPath)
 {
   assert(_worldElement != NULL);
 
   // Create a world
-  simulation::SoftWorld* newSoftWorld = new simulation::SoftWorld;
+  simulation::World* newWorld = new simulation::World;
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -194,7 +194,7 @@ simulation::SoftWorld* SoftSdfParser::readSoftWorld(
   if (hasElement(_worldElement, "physics"))
   {
     tinyxml2::XMLElement* physicsElement = _worldElement->FirstChildElement("physics");
-    readPhysics(physicsElement, newSoftWorld);
+    readPhysics(physicsElement, newWorld);
   }
 
   //--------------------------------------------------------------------------
@@ -205,10 +205,10 @@ simulation::SoftWorld* SoftSdfParser::readSoftWorld(
     dynamics::SoftSkeleton* newSoftSkeleton
         = readSoftSkeleton(skeletonElements.get(), _skelPath);
 
-    newSoftWorld->addSkeleton(newSoftSkeleton);
+    newWorld->addSkeleton(newSoftSkeleton);
   }
 
-  return newSoftWorld;
+  return newWorld;
 }
 
 dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(

@@ -40,7 +40,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/simulation/World.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/SoftParser.h"
@@ -59,7 +59,7 @@ using namespace dart::utils;
 int main(int argc, char* argv[])
 {
   // Create empty soft world
-  SoftWorld* myWorld = new SoftWorld;
+  World* myWorld = new World;
 
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;

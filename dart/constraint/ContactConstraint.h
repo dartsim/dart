@@ -111,13 +111,13 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void getInformation(ConstraintInfo* _lcp);
+  virtual void getInformation(ConstraintInfo* _info);
 
   // Documentation inherited
   virtual void applyUnitImpulse(int _idx);
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _delVel, bool _withCfm);
+  virtual void getVelocityChange(double* _vel, bool _withCfm);
 
   // Documentation inherited
   virtual void excite();

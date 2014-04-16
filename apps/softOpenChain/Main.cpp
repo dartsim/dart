@@ -47,14 +47,14 @@
 #include "dart/utils/Paths.h"
 #include "dart/utils/SoftParser.h"
 #include "dart/dynamics/SoftSkeleton.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "apps/softOpenChain/MyWindow.h"
 
 int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::SoftWorld* myWorld
+  dart::simulation::World* myWorld
       = dart::utils::SoftSkelParser::readSoftFile(
           DART_DATA_PATH"skel/soft_open_chain.skel");
   assert(myWorld != NULL);

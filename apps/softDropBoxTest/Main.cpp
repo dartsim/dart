@@ -44,14 +44,14 @@
 
 #include "dart/utils/Paths.h"
 #include "dart/utils/SoftParser.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "apps/softDropBoxTest/MyWindow.h"
 
 int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::SoftWorld* myWorld
+  dart::simulation::World* myWorld
       = dart::utils::SoftSkelParser::readSoftFile(
           DART_DATA_PATH"skel/test/test_drop_box.skel");
   assert(myWorld != NULL);

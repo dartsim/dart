@@ -83,7 +83,7 @@ public:
   virtual void update() = 0;
 
   /// Fill LCP variables
-  virtual void getInformation(ConstraintInfo* _lcp) = 0;
+  virtual void getInformation(ConstraintInfo* _info) = 0;
 
   /// Apply unit impulse to constraint space
   virtual void applyUnitImpulse(int _index) = 0;

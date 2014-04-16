@@ -48,7 +48,7 @@
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SoftParser.h"
 
@@ -305,7 +305,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::SoftWorld* myWorld = NULL;
+  simulation::World* myWorld = NULL;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity

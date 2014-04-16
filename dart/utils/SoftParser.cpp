@@ -44,7 +44,6 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Console.h"
-#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
@@ -65,13 +64,12 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/SoftSkeleton.h"
 #include "dart/simulation/World.h"
-#include "dart/simulation/SoftWorld.h"
 #include "dart/utils/SkelParser.h"
 
 namespace dart {
 namespace utils {
 
-simulation::SoftWorld* SoftSkelParser::readSoftFile(
+simulation::World* SoftSkelParser::readSoftFile(
     const std::string& _filename)
 {
   //--------------------------------------------------------------------------
@@ -110,7 +108,7 @@ simulation::SoftWorld* SoftSkelParser::readSoftFile(
     return NULL;
   }
 
-  simulation::SoftWorld* newWorld = readSoftWorld(worldElement);
+  simulation::World* newWorld = readWorld(worldElement);
 
   return newWorld;
 }
@@ -163,13 +161,13 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
   return newSoftSkeleton;
 }
 
-simulation::SoftWorld* SoftSkelParser::readSoftWorld(
+simulation::World* SoftSkelParser::readWorld(
     tinyxml2::XMLElement* _worldElement)
 {
   assert(_worldElement != NULL);
 
   // Create a world
-  simulation::SoftWorld* newSoftWorld = new simulation::SoftWorld;
+  simulation::World* newWorld = new simulation::World;
 
   //--------------------------------------------------------------------------
   // Load physics
@@ -184,7 +182,7 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     {
       std::string strTimeStep = timeStepElement->GetText();
       double timeStep = toDouble(strTimeStep);
-      newSoftWorld->setTimeStep(timeStep);
+      newWorld->setTimeStep(timeStep);
     }
 
     // Gravity
@@ -194,7 +192,7 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     {
       std::string strGravity = gravityElement->GetText();
       Eigen::Vector3d gravity = toVector3d(strGravity);
-      newSoftWorld->setGravity(gravity);
+      newWorld->setGravity(gravity);
     }
 
     // Collision detector
@@ -203,17 +201,17 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
       std::string strCD = getValueString(physicsElement, "collision_detector");
       if (strCD == "fcl_mesh")
       {
-        newSoftWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::SoftFCLMeshCollisionDetector());
+        newWorld->getConstraintSolver()->setCollisionDetector(
+              new collision::FCLMeshCollisionDetector());
       }
       else if (strCD == "fcl")
       {
-        newSoftWorld->getConstraintSolver()->setCollisionDetector(
+        newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::FCLCollisionDetector());
       }
       else if (strCD == "dart")
       {
-        newSoftWorld->getConstraintSolver()->setCollisionDetector(
+        newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::DARTCollisionDetector());
       }
       else
@@ -225,8 +223,8 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     }
     else
     {
-      newSoftWorld->getConstraintSolver()->setCollisionDetector(
-            new collision::SoftFCLMeshCollisionDetector());
+      newWorld->getConstraintSolver()->setCollisionDetector(
+            new collision::FCLMeshCollisionDetector());
     }
   }
 
@@ -238,10 +236,10 @@ simulation::SoftWorld* SoftSkelParser::readSoftWorld(
     dynamics::SoftSkeleton* newSoftSkeleton
         = readSoftSkeleton(softSkeletonElements.get());
 
-    newSoftWorld->addSkeleton(newSoftSkeleton);
+    newWorld->addSkeleton(newSoftSkeleton);
   }
 
-  return newSoftWorld;
+  return newWorld;
 }
 
 dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(

@@ -307,6 +307,8 @@ public:
       double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 };
 
+typedef SoftBodyNode SoftBody;
+
 }  // namespace dynamics
 }  // namespace dart
 

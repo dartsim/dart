@@ -373,10 +373,10 @@ void ContactConstraint::update()
 }
 
 //==============================================================================
-void ContactConstraint::getInformation(ConstraintInfo* _lcp)
+void ContactConstraint::getInformation(ConstraintInfo* _info)
 {
   // Fill w, where the LCP form is Ax = b + w (x >= 0, w >= 0, x^T w = 0)
-  getRelVelocity(_lcp->b);
+  getRelVelocity(_info->b);
 
   //----------------------------------------------------------------------------
   // Friction case
@@ -387,24 +387,24 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
     for (int i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
-      assert(_lcp->w[index] == 0.0);
-      assert(_lcp->w[index + 1] == 0.0);
-      assert(_lcp->w[index + 2] == 0.0);
+      assert(_info->w[index] == 0.0);
+      assert(_info->w[index + 1] == 0.0);
+      assert(_info->w[index + 2] == 0.0);
 
       // Upper and lower bounds of normal impulsive force
-      _lcp->lo[index] = 0.0;
-      _lcp->hi[index] = dInfinity;
-      assert(_lcp->findex[index] == -1);
+      _info->lo[index] = 0.0;
+      _info->hi[index] = dInfinity;
+      assert(_info->findex[index] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
-      _lcp->lo[index + 1] = -mFrictionCoeff;
-      _lcp->hi[index + 1] =  mFrictionCoeff;
-      _lcp->findex[index + 1] = index;
+      _info->lo[index + 1] = -mFrictionCoeff;
+      _info->hi[index + 1] =  mFrictionCoeff;
+      _info->findex[index + 1] = index;
 
       // Upper and lower bounds of tangential direction-2 impulsive force
-      _lcp->lo[index + 2] = -mFrictionCoeff;
-      _lcp->hi[index + 2] =  mFrictionCoeff;
-      _lcp->findex[index + 2] = index;
+      _info->lo[index + 2] = -mFrictionCoeff;
+      _info->hi[index + 2] =  mFrictionCoeff;
+      _info->findex[index + 2] = index;
 
 //      std::cout << "_frictionalCoff: " << _frictionalCoff << std::endl;
 
@@ -422,7 +422,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       }
       else
       {
-        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimeStep;
+        bouncingVelocity *= mErrorReductionParameter * _info->invTimeStep;
         if (bouncingVelocity > mMaxErrorReductionVelocity)
           bouncingVelocity = mMaxErrorReductionVelocity;
       }
@@ -430,7 +430,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       // B. Restitution
       if (mIsBounceOn)
       {
-        double& negativeRelativeVel = _lcp->b[index];
+        double& negativeRelativeVel = _info->b[index];
         double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
         if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
@@ -450,14 +450,14 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       //
 //      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
 //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
-      _lcp->b[index] += bouncingVelocity;
+      _info->b[index] += bouncingVelocity;
 //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
 
       // TODO(JS): Initial guess
       // x
-      _lcp->x[index] = 0.0;
-      _lcp->x[index + 1] = 0.0;
-      _lcp->x[index + 2] = 0.0;
+      _info->x[index] = 0.0;
+      _info->x[index + 1] = 0.0;
+      _info->x[index + 2] = 0.0;
 
       // Increase index
       index += 3;
@@ -471,12 +471,12 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
     for (int i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
-      _lcp->w[i] = 0.0;
+      _info->w[i] = 0.0;
 
       // Upper and lower bounds of normal impulsive force
-      _lcp->lo[i] = 0.0;
-      _lcp->hi[i] = dInfinity;
-      assert(_lcp->findex[i] == -1);
+      _info->lo[i] = 0.0;
+      _info->hi[i] = dInfinity;
+      assert(_info->findex[i] == -1);
 
       //------------------------------------------------------------------------
       // Bouncing
@@ -490,7 +490,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       }
       else
       {
-        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimeStep;
+        bouncingVelocity *= mErrorReductionParameter * _info->invTimeStep;
         if (bouncingVelocity > DART_MAX_ERV)
           bouncingVelocity = DART_MAX_ERV;
       }
@@ -498,7 +498,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       // B. Restitution
       if (mIsBounceOn)
       {
-        double& negativeRelativeVel = _lcp->b[i];
+        double& negativeRelativeVel = _info->b[i];
         double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
         if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
@@ -518,12 +518,12 @@ void ContactConstraint::getInformation(ConstraintInfo* _lcp)
       //
 //      _lcp->b[_idx] = _lcp->b[_idx] * 1.1;
 //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
-      _lcp->b[i] += bouncingVelocity;
+      _info->b[i] += bouncingVelocity;
 //      std::cout << "_lcp->b[_idx]: " << _lcp->b[_idx] << std::endl;
 
       // TODO(JS): Initial guess
       // x
-      _lcp->x[i] = 0.0;
+      _info->x[i] = 0.0;
 
       // Increase index
     }
@@ -581,24 +581,24 @@ void ContactConstraint::applyUnitImpulse(int _idx)
 }
 
 //==============================================================================
-void ContactConstraint::getVelocityChange(double* _delVel, bool _withCfm)
+void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_delVel != NULL && "Null pointer is not allowed.");
+  assert(_vel != NULL && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
-    _delVel[i] = 0.0;
+    _vel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()
         && mBodyNode1->isImpulseReponsible())
     {
-      _delVel[i] += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
+      _vel[i] += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
     }
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
         && mBodyNode2->isImpulseReponsible())
     {
-      _delVel[i] += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
+      _vel[i] += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
     }
   }
 
@@ -606,7 +606,7 @@ void ContactConstraint::getVelocityChange(double* _delVel, bool _withCfm)
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
+    _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
                                      * mConstraintForceMixing;
   }
 }

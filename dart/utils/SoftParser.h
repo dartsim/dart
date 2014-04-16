@@ -52,7 +52,7 @@ class SoftBodyNode;
 class SoftSkeleton;
 }  // namespace dynamics
 namespace simulation {
-class SoftWorld;
+class World;
 }  // namespace simulation
 }  // namespace dart
 
@@ -62,15 +62,15 @@ namespace utils {
 class SoftSkelParser : public SkelParser
 {
 public:
-  /// \brief Read SoftWorld from skel file
-  static simulation::SoftWorld* readSoftFile(const std::string& _filename);
+  /// \brief Read World from skel file
+  static simulation::World* readSoftFile(const std::string& _filename);
 
   /// \brief Read SoftSkeleton from skel file
   static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename);
 
 protected:
   /// \brief
-  static simulation::SoftWorld* readSoftWorld(tinyxml2::XMLElement* _worldElement);
+  static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
   /// \brief
   static dynamics::SoftSkeleton* readSoftSkeleton(
