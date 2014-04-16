@@ -75,31 +75,43 @@ CollisionNode*FCLMeshCollisionDetector::createCollisionNode(
 bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
                                                bool _calculateContactPoints)
 {
+  //----------------------------------------------------------------------------
+  // Clear previous contact informations
+  //----------------------------------------------------------------------------
+
   // Release userData for soft body
   for (int i = 0; i < mContacts.size(); ++i)
-  {
-    if (mContacts[i].userData != NULL)
-      delete static_cast<collision::SoftCollisionInfo*>(mContacts[i].userData);
-  }
+    delete static_cast<collision::SoftCollisionInfo*>(mContacts[i].userData);
 
   // Update the positions of vertices on meshs
   for (int i = 0; i < mCollisionNodes.size(); ++i)
+    static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i])->updateShape();
+
+  // Clear previous contacts
+  mContacts.clear();
+
+  // Set the colliding state of body nodes and point masses to false
+  for (int i = 0; i < mCollisionNodes.size(); i++)
   {
-    FCLMeshCollisionNode* node
-        = static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i]);
-    node->updateShape();
+    mCollisionNodes[i]->getBodyNode()->setColliding(false);
+
+    dynamics::SoftBodyNode* sb = dynamic_cast<dynamics::SoftBodyNode*>(
+                                   mCollisionNodes[i]->getBodyNode());
+    if (sb)
+    {
+      for (int j = 0; j < sb->getNumPointMasses(); ++j)
+        sb->getPointMass(j)->setColliding(false);
+    }
   }
 
   //----------------------------------------------------------------------------
+  // Detect collisions
+  //----------------------------------------------------------------------------
 
-  clearAllContacts();
   bool collision = false;
 
   FCLMeshCollisionNode* FCLMeshCollisionNode1 = NULL;
   FCLMeshCollisionNode* FCLMeshCollisionNode2 = NULL;
-
-  for (int i = 0; i < mCollisionNodes.size(); i++)
-    mCollisionNodes[i]->getBodyNode()->setColliding(false);
 
   for (int i = 0; i < mCollisionNodes.size(); i++)
   {
@@ -112,10 +124,11 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
       if (!isCollidable(FCLMeshCollisionNode1, FCLMeshCollisionNode2))
         continue;
 
-      if (FCLMeshCollisionNode1->detectCollision(
-           FCLMeshCollisionNode2,
-           _calculateContactPoints ? &mContacts : NULL,
-           mNumMaxContacts))
+      std::vector<Contact>* contactPoints
+          = _calculateContactPoints ? &mContacts : NULL;
+      if (FCLMeshCollisionNode1->detectCollision(FCLMeshCollisionNode2,
+                                                 contactPoints,
+                                                 mNumMaxContacts))
       {
         collision = true;
         mCollisionNodes[i]->getBodyNode()->setColliding(true);
@@ -128,19 +141,8 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
   }
 
   //----------------------------------------------------------------------------
-
-  // Set all the point masses are not colliding
-  // TODO(JS): Consider more efficient way
-  for (int i = 0; i < mCollisionNodes.size(); i++)
-  {
-    dynamics::SoftBodyNode* sb = dynamic_cast<dynamics::SoftBodyNode*>(
-                                   mCollisionNodes[i]->getBodyNode());
-    if (sb)
-    {
-      for (int j = 0; j < sb->getNumPointMasses(); ++j)
-        sb->getPointMass(j)->setColliding(false);
-    }
-  }
+  // Post processing for soft bodies
+  //----------------------------------------------------------------------------
 
   // Convert face contact to vertex contact
   dynamics::BodyNode* body1 = NULL;
@@ -213,12 +215,6 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
       pm2->setColliding(true);
     }
   }
-
-  // Remove redundant contact points
-  // TODO(JS): Not implemented yet.
-  nContacts = mContacts.size();
-  if (nContacts < 1)
-    return true;
 
   return collision;
 }

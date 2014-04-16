@@ -128,12 +128,14 @@ public:
   /// \brief
   void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-  /// \brief
+  /// Return true if there exists at least one contact
+  /// \param[in] _checkAllCollision True to detect every collisions
+  /// \param[in] _calculateContactPoints True to get contact points
   virtual bool detectCollision(bool _checkAllCollisions,
                                bool _calculateContactPoints) = 0;
 
-  /// \brief Do collision detection using dollicion detection engine, and add
-  ///        all the contacts to mContacts
+  /// Return true if there exists contacts between two bodies
+  /// \param[in] _calculateContactPoints True to get contact points
   bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
                        bool _calculateContactPoints);
 

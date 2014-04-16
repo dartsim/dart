@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONTACTCONSTRAINT_H_
-#define DART_CONSTRAINT_CONTACTCONSTRAINT_H_
+#ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
+#define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
 
 #include "dart/constraint/Constraint.h"
 
@@ -51,15 +51,15 @@ class Skeleton;
 
 namespace constraint {
 
-/// ContactConstraint represents a contact constraint between two bodies
-class ContactConstraint : public Constraint
+/// SoftContactConstraint represents a contact constraint between two bodies
+class SoftContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  explicit ContactConstraint(const collision::Contact& _contact);
+  explicit SoftContactConstraint(const collision::Contact& _contact);
 
   /// Destructor
-  virtual ~ContactConstraint();
+  virtual ~SoftContactConstraint();
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -208,5 +208,5 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONTACTCONSTRAINT_H_
+#endif  // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
 
