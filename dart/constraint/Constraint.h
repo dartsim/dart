@@ -50,33 +50,8 @@ namespace constraint {
 /// ConstraintInfo
 struct ConstraintInfo
 {
-  /// Allocate
-  void allocate(int _n);
-
-  /// Deallocate
-  void deallocate();
-
-  //-------------------------- TEST CODE ---------------------------------------
-  void print();
-
-  void clear();
-
-  bool checkSymmetric();
-
-  bool checkSymmetric2(int _index);
-
-  //----------------------------------------------------------------------------
-  ///
-  double* A;
-
-  ///
-  double* b;
-
-  ///
+  /// Impulse
   double* x;
-
-  ///
-  double* w;
 
   /// Lower bound of x
   double* lo;
@@ -84,16 +59,17 @@ struct ConstraintInfo
   /// Upper bound of x
   double* hi;
 
+  /// Bias term
+  double* b;
+
+  /// Slack variable
+  double* w;
+
   /// Friction index
   int* findex;
 
-  /// Total dimension of contraints
-  int dim;
-
-  ///
-  int nSkip;
-
-  double invTimestep;
+  /// Inverse of time step
+  double invTimeStep;
 };
 
 /// Type of the constraint
@@ -114,13 +90,13 @@ public:
   virtual void update() = 0;
 
   /// Fill LCP variables
-  virtual void getLCPVectors(ConstraintInfo* _lcp) = 0;
+  virtual void getInformation(ConstraintInfo* _lcp) = 0;
 
-  /// Apply unit impulse to constraint space of _idx
-  virtual void applyUnitImpulse(int _idx) = 0;
+  /// Apply unit impulse to constraint space
+  virtual void applyUnitImpulse(int _index) = 0;
 
-  ///
-  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm) = 0;
+  /// Get velocity change due to the uint impulse
+  virtual void getVelocityChange(double* _vel, bool _withCfm) = 0;
 
   /// Excite the constraint
   virtual void excite() = 0;
@@ -129,7 +105,7 @@ public:
   virtual void unexcite() = 0;
 
   /// Apply computed constraint impulse to constrained skeletons
-  virtual void applyConstraintImpulse(double* _lambda) = 0;
+  virtual void applyImpulse(double* _lambda) = 0;
 
   /// Return true if this constraint is active
   virtual bool isActive() const = 0;
@@ -146,6 +122,13 @@ public:
   ///
   static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
 
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
+
 protected:
   /// Default contructor
   explicit Constraint(ConstraintType _type);
@@ -159,13 +142,6 @@ protected:
 
   /// Constraint type: static or dynamic
   ConstraintType mConstraintType;
-
-public:
-  //----------------------------------------------------------------------------
-  // Friendship
-  //----------------------------------------------------------------------------
-  friend class ConstraintSolver;
-  friend class ConstrainedGroup;
 };
 
 } // namespace constraint

@@ -373,7 +373,7 @@ void ContactConstraint::update()
 }
 
 //==============================================================================
-void ContactConstraint::getLCPVectors(ConstraintInfo* _lcp)
+void ContactConstraint::getInformation(ConstraintInfo* _lcp)
 {
   // Fill w, where the LCP form is Ax = b + w (x >= 0, w >= 0, x^T w = 0)
   getRelVelocity(_lcp->b);
@@ -422,7 +422,7 @@ void ContactConstraint::getLCPVectors(ConstraintInfo* _lcp)
       }
       else
       {
-        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
+        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimeStep;
         if (bouncingVelocity > mMaxErrorReductionVelocity)
           bouncingVelocity = mMaxErrorReductionVelocity;
       }
@@ -490,7 +490,7 @@ void ContactConstraint::getLCPVectors(ConstraintInfo* _lcp)
       }
       else
       {
-        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimestep;
+        bouncingVelocity *= mErrorReductionParameter * _lcp->invTimeStep;
         if (bouncingVelocity > DART_MAX_ERV)
           bouncingVelocity = DART_MAX_ERV;
       }
@@ -581,27 +581,24 @@ void ContactConstraint::applyUnitImpulse(int _idx)
 }
 
 //==============================================================================
-void ContactConstraint::getVelocityChange(double* _delVel, int _idx,
-                                          bool _withCfm)
+void ContactConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 {
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
-    _delVel[i + _idx] = 0.0;
+    _delVel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()
         && mBodyNode1->isImpulseReponsible())
     {
-      _delVel[i + _idx]
-          += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
+      _delVel[i] += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
     }
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
         && mBodyNode2->isImpulseReponsible())
     {
-      _delVel[i + _idx]
-          += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
+      _delVel[i] += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
     }
   }
 
@@ -609,8 +606,8 @@ void ContactConstraint::getVelocityChange(double* _delVel, int _idx,
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[_idx + mAppliedImpulseIndex]
-        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
+    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
+                                     * mConstraintForceMixing;
   }
 }
 
@@ -635,7 +632,7 @@ void ContactConstraint::unexcite()
 }
 
 //==============================================================================
-void ContactConstraint::applyConstraintImpulse(double* _lambda)
+void ContactConstraint::applyImpulse(double* _lambda)
 {
   //----------------------------------------------------------------------------
   // Friction case

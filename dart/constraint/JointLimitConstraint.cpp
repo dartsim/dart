@@ -255,7 +255,7 @@ void JointLimitConstraint::update()
 }
 
 //==============================================================================
-void JointLimitConstraint::getLCPVectors(ConstraintInfo* _lcp)
+void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 {
   size_t index = 0;
   size_t dof = mJoint->getNumGenCoords();
@@ -267,7 +267,7 @@ void JointLimitConstraint::getLCPVectors(ConstraintInfo* _lcp)
 //    if (_lcp->w[_idx + localIndex] != 0.0)
 //      std::cout << "_lcp->w[_idx + localIndex]: " << _lcp->w[_idx + localIndex]
 //                << std::endl;
-    assert(_lcp->w[_idx + index] == 0.0);
+    assert(_lcp->w[index] == 0.0);
 
     double bouncingVel = -mViolation[i];
 
@@ -276,7 +276,7 @@ void JointLimitConstraint::getLCPVectors(ConstraintInfo* _lcp)
     else
       bouncingVel = +mErrorAllowance;
 
-    bouncingVel *= _lcp->invTimestep * mErrorReductionParameter;
+    bouncingVel *= _lcp->invTimeStep * mErrorReductionParameter;
 
     if (bouncingVel > mMaxErrorReductionVelocity)
       bouncingVel = mMaxErrorReductionVelocity;
@@ -295,7 +295,7 @@ void JointLimitConstraint::getLCPVectors(ConstraintInfo* _lcp)
       std::cout << "ub: " << _lcp->hi[index] << std::endl;
     }
 
-    assert(_lcp->frictionIndex[index] == -1);
+    assert(_lcp->findex[index] == -1);
 
     if (mLifeTime[i])
       _lcp->x[index] = mOldX[i];
@@ -336,8 +336,7 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
 }
 
 //==============================================================================
-void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
-                                             bool _withCfm)
+void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 {
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
@@ -349,9 +348,9 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
       continue;
 
     if (mJoint->getSkeleton()->isImpulseApplied())
-      _delVel[_idx + localIndex] = mJoint->getGenCoord(i)->getVelChange();
+      _delVel[localIndex] = mJoint->getGenCoord(i)->getVelChange();
     else
-      _delVel[_idx + localIndex] = 0.0;
+      _delVel[localIndex] = 0.0;
 
     ++localIndex;
   }
@@ -360,8 +359,8 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, int _idx,
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[_idx + mAppliedImpulseIndex]
-        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
+    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
+                                     * mConstraintForceMixing;
   }
 
   assert(localIndex == mDim);
@@ -380,7 +379,7 @@ void JointLimitConstraint::unexcite()
 }
 
 //==============================================================================
-void JointLimitConstraint::applyConstraintImpulse(double* _lambda)
+void JointLimitConstraint::applyImpulse(double* _lambda)
 {
   size_t localIndex = 0;
   size_t dof = mJoint->getNumGenCoords();

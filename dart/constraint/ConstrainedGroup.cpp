@@ -74,6 +74,7 @@ size_t ConstrainedGroup::getNumConstraints() const
 //==============================================================================
 Constraint* ConstrainedGroup::getConstraint(size_t _index) const
 {
+  assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 

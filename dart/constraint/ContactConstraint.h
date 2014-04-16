@@ -111,13 +111,13 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void getLCPVectors(ConstraintInfo* _lcp);
+  virtual void getInformation(ConstraintInfo* _lcp);
 
   // Documentation inherited
   virtual void applyUnitImpulse(int _idx);
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
+  virtual void getVelocityChange(double* _delVel, bool _withCfm);
 
   // Documentation inherited
   virtual void excite();
@@ -126,7 +126,7 @@ protected:
   virtual void unexcite();
 
   // Documentation inherited
-  virtual void applyConstraintImpulse(double* _lambda);
+  virtual void applyImpulse(double* _lambda);
 
   // Documentation inherited
   virtual dynamics::Skeleton* getRootSkeleton() const;

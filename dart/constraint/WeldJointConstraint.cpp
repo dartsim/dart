@@ -150,7 +150,7 @@ void WeldJointConstraint::update()
 }
 
 //==============================================================================
-void WeldJointConstraint::getLCPVectors(ConstraintInfo* _lcp)
+void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
   assert(_lcp->w[0] == 0.0);
   assert(_lcp->w[1] == 0.0);
@@ -159,12 +159,12 @@ void WeldJointConstraint::getLCPVectors(ConstraintInfo* _lcp)
   assert(_lcp->w[4] == 0.0);
   assert(_lcp->w[5] == 0.0);
 
-  assert(_lcp->frictionIndex[0] == -1);
-  assert(_lcp->frictionIndex[1] == -1);
-  assert(_lcp->frictionIndex[2] == -1);
-  assert(_lcp->frictionIndex[3] == -1);
-  assert(_lcp->frictionIndex[4] == -1);
-  assert(_lcp->frictionIndex[5] == -1);
+  assert(_lcp->findex[0] == -1);
+  assert(_lcp->findex[1] == -1);
+  assert(_lcp->findex[2] == -1);
+  assert(_lcp->findex[3] == -1);
+  assert(_lcp->findex[4] == -1);
+  assert(_lcp->findex[5] == -1);
 
   _lcp->lo[0] = -dInfinity;
   _lcp->lo[1] = -dInfinity;
@@ -203,7 +203,7 @@ void WeldJointConstraint::getLCPVectors(ConstraintInfo* _lcp)
   if (mBodyNode2)
     negativeVel += math::AdT(mRelativeTransform, mBodyNode2->getBodyVelocity());
 
-  mViolation *= mErrorReductionParameter * _lcp->invTimestep;
+  mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
   _lcp->b[0] = negativeVel[0] - mViolation[0];
   _lcp->b[1] = negativeVel[1] - mViolation[1];
@@ -214,9 +214,9 @@ void WeldJointConstraint::getLCPVectors(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void WeldJointConstraint::applyUnitImpulse(int _localIndex)
+void WeldJointConstraint::applyUnitImpulse(int _index)
 {
-  assert(0 <= _localIndex && _localIndex < mDim && "Invalid Index.");
+  assert(0 <= _index && _index < mDim && "Invalid Index.");
   assert(isActive());
 
   if (mBodyNode2)
@@ -232,14 +232,14 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
       if (mBodyNode1->isImpulseReponsible())
       {
         mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mIdentity6d.col(_localIndex));
+              mBodyNode1, mIdentity6d.col(_index));
       }
 
       if (mBodyNode2->isImpulseReponsible())
       {
         mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, math::dAdT(mRelativeTransform,
-                                     -mIdentity6d.col(_localIndex)));
+                                     -mIdentity6d.col(_index)));
       }
 
       mBodyNode1->getSkeleton()->updateVelocityChange();
@@ -251,7 +251,7 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
       {
         mBodyNode1->getSkeleton()->clearImpulseTest();
         mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mIdentity6d.col(_localIndex));
+              mBodyNode1, mIdentity6d.col(_index));
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
 
@@ -260,7 +260,7 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
         mBodyNode2->getSkeleton()->clearImpulseTest();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, math::dAdT(mRelativeTransform,
-                                     -mIdentity6d.col(_localIndex)));
+                                     -mIdentity6d.col(_index)));
         mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
@@ -271,18 +271,17 @@ void WeldJointConstraint::applyUnitImpulse(int _localIndex)
 
     mBodyNode1->getSkeleton()->clearImpulseTest();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
-          mBodyNode1, mIdentity6d.col(_localIndex));
+          mBodyNode1, mIdentity6d.col(_index));
     mBodyNode1->getSkeleton()->updateVelocityChange();
   }
 
-  mAppliedImpulseIndex = _localIndex;
+  mAppliedImpulseIndex = _index;
 }
 
 //==============================================================================
-void WeldJointConstraint::getVelocityChange(double* _delVel, int _idx,
-                                            bool _withCfm)
+void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_delVel != NULL && "Null pointer is not allowed.");
+  assert(_vel != NULL && "Null pointer is not allowed.");
 
   Eigen::Vector6d velChange = mBodyNode1->getBodyVelocityChange();
   if (mBodyNode2)
@@ -293,12 +292,12 @@ void WeldJointConstraint::getVelocityChange(double* _delVel, int _idx,
 
   for (size_t i = 0; i < mDim; ++i)
   {
-    _delVel[i + _idx] = 0.0;
+    _vel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()
         && mBodyNode1->isImpulseReponsible())
     {
-      _delVel[i + _idx] += velChange[i];
+      _vel[i] += velChange[i];
     }
 
     if (mBodyNode2 == NULL)
@@ -307,7 +306,7 @@ void WeldJointConstraint::getVelocityChange(double* _delVel, int _idx,
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
         && mBodyNode2->isImpulseReponsible())
     {
-      _delVel[i + _idx] += velChange[i];
+      _vel[i] += velChange[i];
     }
   }
 
@@ -315,8 +314,8 @@ void WeldJointConstraint::getVelocityChange(double* _delVel, int _idx,
   // varaible in ODE
   if (_withCfm)
   {
-    _delVel[_idx + mAppliedImpulseIndex]
-        += _delVel[_idx + mAppliedImpulseIndex] * mConstraintForceMixing;
+    _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
+                                     * mConstraintForceMixing;
   }
 }
 
@@ -347,7 +346,7 @@ void WeldJointConstraint::unexcite()
 }
 
 //==============================================================================
-void WeldJointConstraint::applyConstraintImpulse(double* _lambda)
+void WeldJointConstraint::applyImpulse(double* _lambda)
 {
   mOldX[0] = _lambda[0];
   mOldX[1] = _lambda[1];

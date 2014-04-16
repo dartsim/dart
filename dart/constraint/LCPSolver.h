@@ -46,14 +46,25 @@ class ConstrainedGroup;
 class LCPSolver
 {
 public:
+  /// Solve constriant impulses for a constrained group
+  virtual void solve(ConstrainedGroup* _group) = 0;
+
+  /// Set time step
+  void setTimeStep(double _timeStep);
+
+  /// Return time step
+  double getTimeStep() const;
+
+protected:
   /// Constructor
-  LCPSolver();
+  LCPSolver(double _timeStep);
 
   /// Destructor
   virtual ~LCPSolver();
 
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
+protected:
+  /// Simulation time step
+  double mTimeStep;
 };
 
 } // namespace constraint

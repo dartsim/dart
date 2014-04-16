@@ -39,6 +39,7 @@
 
 #include <cstddef>
 
+#include "dart/config.h"
 #include "dart/constraint/LCPSolver.h"
 
 namespace dart {
@@ -50,13 +51,26 @@ class DantzigSolver : public LCPSolver
 {
 public:
   /// Constructor
-  DantzigSolver();
+  DantzigSolver(double _timestep);
 
   /// Constructor
   virtual ~DantzigSolver();
 
   // Documentation inherited
   virtual void solve(ConstrainedGroup* _group);
+
+#ifdef BUILD_TYPE_DEBUG
+private:
+  /// Return true if the matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A);
+
+  /// Return true if the diagonla block of matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A, size_t _begin, size_t _end);
+
+  /// Print debug information
+  void print(size_t _n, double* _A, double* _x, double* _lo, double* _hi,
+             double* _b, double* w, int* _findex);
+#endif
 };
 
 } // namespace constraint

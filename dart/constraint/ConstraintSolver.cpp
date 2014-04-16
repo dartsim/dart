@@ -67,7 +67,7 @@ ConstraintSolver::ConstraintSolver(
   : mTimeStep(_timeStep),
     mUseODE(_useODE),
     mCollisionDetector(new collision::FCLMeshCollisionDetector()),
-    mLCPSolver(new DantzigSolver())
+    mLCPSolver(new DantzigSolver(mTimeStep))
 {
   init();
 }
@@ -256,6 +256,9 @@ void ConstraintSolver::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0 && "Time step should be positive value.");
   mTimeStep = _timeStep;
+
+  if (mLCPSolver)
+    mLCPSolver->setTimeStep(mTimeStep);
 }
 
 //==============================================================================
