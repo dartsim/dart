@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -47,6 +47,7 @@
 namespace dart {
 namespace common {
 
+//==============================================================================
 Timer::Timer(const std::string& _name)
   : mName(_name),
     mCount(0.0),
@@ -60,11 +61,12 @@ Timer::Timer(const std::string& _name)
 #endif
 }
 
+//==============================================================================
 Timer::~Timer()
 {
-  print();
 }
 
+//==============================================================================
 #if WIN32
 double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
 {
@@ -73,6 +75,7 @@ double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
 }
 #endif
 
+//==============================================================================
 void Timer::start()
 {
   mIsStarted = true;
@@ -80,10 +83,12 @@ void Timer::start()
 #if WIN32
   QueryPerformanceCounter(&mTimer.start);
 #else
-  mStartedTime = clock();
+  gettimeofday(&mTimeVal, NULL);
+  mStartedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
 #endif
 }
 
+//==============================================================================
 void Timer::stop()
 {
   mIsStarted = false;
@@ -93,12 +98,14 @@ void Timer::stop()
   time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
-  mStoppedTime = clock();
-  mLastElapsedTime = _subtractTimes(mStoppedTime, mStartedTime);
+  gettimeofday(&mTimeVal, NULL);
+  mStoppedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
+  mLastElapsedTime = mStoppedTime - mStartedTime;
 #endif
   mTotalElapsedTime += mLastElapsedTime;
 }
 
+//==============================================================================
 double Timer::getElapsedTime()
 {
 #if WIN32
@@ -108,27 +115,32 @@ double Timer::getElapsedTime()
   time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
-  double now = clock();
-  mLastElapsedTime = _subtractTimes(now, mStartedTime);
+  gettimeofday(&mTimeVal, NULL);
+  mLastElapsedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6)
+                     - mStartedTime;
 #endif
   return mLastElapsedTime;
 }
 
+//==============================================================================
 double Timer::getLastElapsedTime() const
 {
   return mLastElapsedTime;
 }
 
+//==============================================================================
 double Timer::getTotalElapsedTime() const
 {
   return mTotalElapsedTime;
 }
 
+//==============================================================================
 bool Timer::isStarted() const
 {
   return mIsStarted;
 }
 
+//==============================================================================
 void Timer::print()
 {
   if (mCount > 0)
@@ -139,17 +151,30 @@ void Timer::print()
               << mTotalElapsedTime << "; "
               << "Total count : " << mCount << "; "
               << "Average time : " << mTotalElapsedTime / mCount << " "
-              << "FPS : " << mCount / mTotalElapsedTime << "hz " << std::endl;
+              << "FPS : " << mCount / mTotalElapsedTime << " hz " << std::endl;
   }
   else
   {
-    std::cout << "Timer " << mName << " doesn't have any record." << std::endl;
+    std::cout << "Timer [" << mName << "] doesn't have any record." << std::endl;
   }
 }
 
-double Timer::_subtractTimes(double _endTime, double _startTime)
+//==============================================================================
+double Timer::getWallTime()
 {
-  return (_endTime - _startTime) / CLOCKS_PER_SEC;
+#if WIN32
+  LARGE_INTEGER ticksPerSecond;
+  LARGE_INTEGER ticks;
+  QueryPerformanceFrequency(&ticksPerSecond);
+  QueryPerformanceCounter(&ticks);
+  return static_cast<double>(ticks.QuadPart)
+      / static_cast<double>(ticksPerSecond.QuadPart);
+#else
+  // Initialize the lastUpdateTime with the current time in seconds
+  timeval timeVal;
+  gettimeofday(&timeVal, NULL);
+  return timeVal.tv_sec + timeVal.tv_usec / 1.0e+6;
+#endif
 }
 
 }  // namespace common

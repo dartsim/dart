@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -47,6 +47,8 @@ typedef struct
   LARGE_INTEGER  start;
   LARGE_INTEGER  stop;
 } stopWatch;
+#else
+#include <sys/time.h>
 #endif
 
 namespace dart {
@@ -55,37 +57,40 @@ namespace common {
 /// \brief The implementation of Timer class
 ///
 /// This is a definition of mTimer class.
-/// For measure the time, clock() api is used
+/// For measure the time, gettimeofday() api is used
 class Timer
 {
 public:
-  /// \brief Default constructor.
+  /// \brief Default constructor
   explicit Timer(const std::string& _name = "Noname Timer");
 
-  /// \brief Default destructor.
+  /// \brief Default destructor
   ~Timer();
 
-  /// \brief Start timer.
+  /// \brief Start timer
   void start();
 
-  /// \brief Returns whether the timer is started.
+  /// \brief Returns whether the timer is started
   bool isStarted() const;
 
-  /// \brief Stop the timer.
+  /// \brief Stop the timer
   void stop();
 
-  /// \brief Return elapsed time in seconds since startTimer().
+  /// \brief Return elapsed time in seconds since startTimer()
   /// \see start()
   double getElapsedTime();
 
-  /// \brief
+  /// \brief Return last elapsed time in seconds
   double getLastElapsedTime() const;
 
-  /// \brief
+  /// \brief Return total elapsed time in seconds
   double getTotalElapsedTime() const;
 
-  /// \brief
+  /// \brief Print results
   void print();
+
+  /// \brief Return the current time of the system in seconds
+  static double getWallTime();
 
 private:
   int mCount;
@@ -93,9 +98,11 @@ private:
 #if WIN32
   stopWatch mTimer;
 #else
+  timeval mTimeVal;
   double mStartedTime;
   double mStoppedTime;
 #endif
+
   double mLastElapsedTime;
   double mTotalElapsedTime;
   std::string mName;
@@ -105,8 +112,6 @@ private:
   LARGE_INTEGER  mFrequency;
   double _convLIToSecs(const LARGE_INTEGER& _L);
 #endif
-
-  double _subtractTimes(double _endTime, double _startTime);
 };
 
 }  // namespace common

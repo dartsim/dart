@@ -69,14 +69,10 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
     mKp(i, i) = 0.0;
     mKd(i, i) = 0.0;
   }
-  for (int i = 6; i < 22; i++)
-    mKp(i, i) = 200.0;  // lower body + lower back
-  for (int i = 22; i < nDof; i++)
-    mKp(i, i) = 20.0;
-  for (int i = 6; i < 22; i++)
+  for (int i = 6; i < nDof; i++)
+      mKp(i, i) = 200.0;
+  for (int i = 6; i < nDof; i++)
     mKd(i, i) = 100.0;
-  for (int i = 22; i < nDof; i++)
-    mKd(i, i) = 10.0;
 
   mPreOffset = 0.0;
 }
