@@ -37,6 +37,8 @@ public:
   R* start_rrt;            ///< The rrt for unidirectional search
   R* goal_rrt;              ///< The second rrt if bidirectional search is executed
 
+  int numSamples;
+
 public:
 
   /// The default constructor
@@ -45,7 +47,9 @@ public:
   /// The desired constructor - you should use this one.
   PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
     size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
-    connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
+    connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_),
+    numSamples(0)
+  {
   }
 
   /// The destructor
@@ -158,7 +162,10 @@ bool PathPlanner<R>::planSingleTreeRrt(dynamics::Skeleton* robot, const std::vec
     Eigen::VectorXd target;
     double randomValue = ((double) rand()) / RAND_MAX;
     if(randomValue < goalBias) target = goal;
-    else target = start_rrt->getRandomConfig();
+    else {
+      target = start_rrt->getRandomConfig();
+      numSamples;
+    }
 
     // Based on the method, either attempt to connect to the target directly or take a small step
     if(connect) start_rrt->connect(target);

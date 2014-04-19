@@ -316,7 +316,6 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::strin
   return node;
 }
 
-
 void setMaterial(dynamics::Shape* _shape, const urdf::Visual* _viz) {
   if(_viz->material) {
     _shape->setColor(Eigen::Vector3d(_viz->material->color.r, _viz->material->color.g, _viz->material->color.b));

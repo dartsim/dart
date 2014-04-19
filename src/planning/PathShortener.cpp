@@ -31,14 +31,17 @@ PathShortener::~PathShortener()
 void PathShortener::shortenPath(list<VectorXd> &path)
 {
 	printf("--> Start Brute Force Shortener \n"); 
-	srand(time(NULL));
+	//srand(time(NULL));
 
 	VectorXd savedDofs = robot->getConfig(dofs);
 
-	const int numShortcuts = path.size() * 5;
-	
+	//const int numShortcuts = path.size() * 5;
+	const int numShortcuts = 200;
+
+	clock_t startTime = clock();
+
 	// Number of checks
-	for( int count = 0; count < numShortcuts; count++ ) {
+	for( int count = 0; count < numShortcuts; /*count++*/ ) {
 		if( path.size() < 3 ) { //-- No way we can reduce something leaving out the extremes
 			return;
 		}
@@ -48,12 +51,42 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 		do {
 			node1Index = (int) RAND12(0, path.size());
 			node2Index = (int) RAND12(0, path.size());
+			if(node1Index > node2Index)
+				swap(node1Index, node2Index);
+			if(count % 100 == 0) {
+				double length = 0.0;
+				list<VectorXd>::iterator it = path.begin();
+				list<VectorXd>::iterator next = it;
+				next++;
+				while(next != path.end()) {
+					length += (*it - *next).norm();
+					it = next;
+					next++;
+				}
+				cout << count << "  " << length << "  " << (clock() - startTime) / (double)CLOCKS_PER_SEC << endl;
+			}
+			count++;
 		} while(node2Index <= node1Index + 1);
-		
+
 		list<VectorXd>::iterator node1Iter = path.begin();
 		advance(node1Iter, node1Index);
 		list<VectorXd>::iterator node2Iter = node1Iter;
 		advance(node2Iter, node2Index - node1Index);
+
+		
+			list<VectorXd>::iterator it = node1Iter;
+			it++;
+			VectorXd n = (*node2Iter - *node1Iter).normalized();
+			while(it != node2Iter) {
+				VectorXd v = (*it - *node1Iter);
+				double s = v.dot(n);
+				if(0.0 > s || s > (*node2Iter - *node1Iter).norm() || (v - s * n).norm() > 0.01)
+					break;
+				it++;
+			}
+			if(it == node2Iter)
+				continue;
+		
 
 		list<VectorXd> intermediatePoints;
 		if(localPlanner(intermediatePoints, node1Iter, node2Iter)) {
@@ -63,6 +96,21 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 			path.splice(node2Iter, intermediatePoints);
 		}
 	}
+
+
+	{
+		double length = 0.0;
+		list<VectorXd>::iterator it = path.begin();
+		list<VectorXd>::iterator next = it;
+		next++;
+		while(next != path.end()) {
+			length += (*it - *next).norm();
+			it = next;
+			next++;
+		}
+		cout << numShortcuts << "  " << length << "  " << (clock() - startTime) / (double)CLOCKS_PER_SEC << endl;
+	 }
+
 	robot->setConfig(dofs, savedDofs);
 
 	printf("End Brute Force Shortener \n");
