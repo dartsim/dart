@@ -44,7 +44,6 @@
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/TranslationalJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/WeldJoint.h"

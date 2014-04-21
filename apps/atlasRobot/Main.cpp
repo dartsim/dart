@@ -38,7 +38,6 @@
 #include <iostream>
 
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"

@@ -45,8 +45,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 
-#include "dart/dynamics/Skeleton.h"
-
 MyWindow::MyWindow()
   : SoftSimWindow()
 {
