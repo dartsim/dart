@@ -38,7 +38,7 @@
 #include <iostream>
 
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
@@ -65,10 +65,10 @@ int main(int argc, char* argv[])
   DartLoader urdfLoader;
   Skeleton* ground = urdfLoader.parseSkeleton(
         DART_DATA_PATH"sdf/atlas/ground.urdf");
-//  Skeleton* atlas = SoftSdfParser::readSoftSkeleton(
+//  Skeleton* atlas = SoftSdfParser::readSkeleton(
 //        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
   Skeleton* atlas
-      = SoftSdfParser::readSoftSkeleton(
+      = SoftSdfParser::readSkeleton(
           DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);

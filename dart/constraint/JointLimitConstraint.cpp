@@ -318,7 +318,6 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
 
     if (localIndex == _index)
     {
-
       skeleton->clearImpulseTest();
       mJoint->getGenCoord(i)->setConstraintImpulse(1.0);
       skeleton->updateBiasImpulse(mBodyNode);

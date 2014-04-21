@@ -843,8 +843,6 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-typedef BodyNode RigidBody;
-
 }  // namespace dynamics
 }  // namespace dart
 

@@ -62,7 +62,7 @@
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 
@@ -113,7 +113,7 @@ simulation::World* SoftSkelParser::readSoftFile(
   return newWorld;
 }
 
-dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
+dynamics::Skeleton* SoftSkelParser::readSkeleton(
     const std::string& _filename)
 {
   //--------------------------------------------------------------------------
@@ -153,12 +153,12 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
     return NULL;
   }
 
-  dynamics::SoftSkeleton* newSoftSkeleton = readSoftSkeleton(skeletonElement);
+  dynamics::Skeleton* newSkeleton = readSkeleton(skeletonElement);
 
   // Initialize skeleto to be ready for use
-  newSoftSkeleton->init();
+  newSkeleton->init();
 
-  return newSoftSkeleton;
+  return newSkeleton;
 }
 
 simulation::World* SoftSkelParser::readWorld(
@@ -230,60 +230,60 @@ simulation::World* SoftSkelParser::readWorld(
 
   //--------------------------------------------------------------------------
   // Load soft skeletons
-  ElementEnumerator softSkeletonElements(_worldElement, "skeleton");
-  while (softSkeletonElements.next())
+  ElementEnumerator SkeletonElements(_worldElement, "skeleton");
+  while (SkeletonElements.next())
   {
-    dynamics::SoftSkeleton* newSoftSkeleton
-        = readSoftSkeleton(softSkeletonElements.get());
+    dynamics::Skeleton* newSkeleton
+        = readSkeleton(SkeletonElements.get());
 
-    newWorld->addSkeleton(newSoftSkeleton);
+    newWorld->addSkeleton(newSkeleton);
   }
 
   return newWorld;
 }
 
-dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
-    tinyxml2::XMLElement* _softSkeletonElement)
+dynamics::Skeleton* SoftSkelParser::readSkeleton(
+    tinyxml2::XMLElement* _SkeletonElement)
 {
-  assert(_softSkeletonElement != NULL);
+  assert(_SkeletonElement != NULL);
 
-  dynamics::SoftSkeleton* newSoftSkeleton = new dynamics::SoftSkeleton;
+  dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_softSkeletonElement, "name");
-  newSoftSkeleton->setName(name);
+  std::string name = getAttribute(_SkeletonElement, "name");
+  newSkeleton->setName(name);
 
   //--------------------------------------------------------------------------
   // transformation
-  if (hasElement(_softSkeletonElement, "transformation"))
+  if (hasElement(_SkeletonElement, "transformation"))
   {
     Eigen::Isometry3d W =
-        getValueIsometry3d(_softSkeletonElement, "transformation");
+        getValueIsometry3d(_SkeletonElement, "transformation");
     skeletonFrame = W;
   }
 
   //--------------------------------------------------------------------------
   // immobile attribute
   tinyxml2::XMLElement* mobileElement = NULL;
-  mobileElement = _softSkeletonElement->FirstChildElement("mobile");
+  mobileElement = _SkeletonElement->FirstChildElement("mobile");
   if (mobileElement != NULL) {
     std::string stdMobile = mobileElement->GetText();
     bool mobile = toBool(stdMobile);
-    newSoftSkeleton->setMobile(mobile);
+    newSkeleton->setMobile(mobile);
   }
 
   //--------------------------------------------------------------------------
   // Bodies
-  ElementEnumerator bodies(_softSkeletonElement, "body");
+  ElementEnumerator bodies(_SkeletonElement, "body");
   std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >
       softBodyNodes;
   while (bodies.next())
   {
     SkelBodyNode newSoftBodyNode
         = readSoftBodyNode(bodies.get(),
-                           newSoftSkeleton,
+                           newSkeleton,
                            skeletonFrame);
     assert(newSoftBodyNode.bodyNode);
     softBodyNodes.push_back(newSoftBodyNode);
@@ -291,7 +291,7 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
 
   //--------------------------------------------------------------------------
   // Joints
-  ElementEnumerator joints(_softSkeletonElement, "joint");
+  ElementEnumerator joints(_SkeletonElement, "joint");
   while (joints.next())
     readSoftJoint(joints.get(), softBodyNodes);
 
@@ -320,20 +320,15 @@ dynamics::SoftSkeleton* SoftSkelParser::readSoftSkeleton(
        softBodyNodes.begin();
        it != softBodyNodes.end(); ++it)
   {
-    dynamics::SoftBodyNode* soft
-        = dynamic_cast<dynamics::SoftBodyNode*>((*it).bodyNode);
-    if (soft)
-      newSoftSkeleton->addSoftBodyNode(soft);
-    else
-      newSoftSkeleton->addBodyNode((*it).bodyNode);
+    newSkeleton->addBodyNode((*it).bodyNode);
   }
 
-  return newSoftSkeleton;
+  return newSkeleton;
 }
 
 SkelParser::SkelBodyNode SoftSkelParser::readSoftBodyNode(
     tinyxml2::XMLElement*    _softBodyNodeElement,
-    dynamics::SoftSkeleton*  _softSkeleton,
+    dynamics::Skeleton*  _Skeleton,
     const Eigen::Isometry3d& _skeletonFrame)
 {
   //---------------------------------- Note ------------------------------------
@@ -342,13 +337,13 @@ SkelParser::SkelBodyNode SoftSkelParser::readSoftBodyNode(
 
   //----------------------------------------------------------------------------
   assert(_softBodyNodeElement != NULL);
-  assert(_softSkeleton != NULL);
+  assert(_Skeleton != NULL);
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node
   if (!hasElement(_softBodyNodeElement, "soft_shape"))
   {
     return SkelParser::readBodyNode(_softBodyNodeElement,
-                                    _softSkeleton,
+                                    _Skeleton,
                                     _skeletonFrame);
   }
 

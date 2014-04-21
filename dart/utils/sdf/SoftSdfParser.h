@@ -51,7 +51,7 @@ namespace dart {
 namespace dynamics {
 class Joint;
 class SoftBodyNode;
-class SoftSkeleton;
+class Skeleton;
 }  // namespace dynamics
 namespace simulation {
 class World;
@@ -68,7 +68,7 @@ public:
   static simulation::World* readSoftSdfFile(const std::string& _filename);
 
   /// \brief
-  static dynamics::SoftSkeleton* readSoftSkeleton(
+  static dynamics::Skeleton* readSkeleton(
       const std::string& _fileName);
 
 protected:
@@ -78,14 +78,14 @@ protected:
       const std::string& _skelPath);
 
   /// \brief
-  static dynamics::SoftSkeleton* readSoftSkeleton(
+  static dynamics::Skeleton* readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const std::string& _skelPath);
 
   /// \brief
   static SDFBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::SoftSkeleton* _softSkeleton,
+      dynamics::Skeleton* _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _skelPath);
 

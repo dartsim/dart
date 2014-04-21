@@ -46,6 +46,8 @@
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
@@ -170,6 +172,17 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
     mBodyNodes[i]->updateVelocity();
     mBodyNodes[i]->updateEta();
   }
+
+  // Store generalized coordinates of point masses of all the soft body nodes
+  // in this soft skeleton to mPointMassGenCoords additionaly. All the
+  // generalized coordinates of the joints and the point masses are stored in
+  // mGenCoord.
+  mPointMassGenCoords.clear();
+  for (int i = 0; i < mSoftBodyNodes.size(); i++) {
+    SoftBodyNode* softBodyNode = mSoftBodyNodes[i];
+    softBodyNode->aggregatePointMassGenCoords(&mPointMassGenCoords);
+  }
+
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it) {
     (*it)->updateArticulatedInertia(mTimeStep);
@@ -200,11 +213,24 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
 
 void Skeleton::addBodyNode(BodyNode* _body) {
   assert(_body && _body->getParentJoint());
+
   mBodyNodes.push_back(_body);
+
+  SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_body);
+  if (softBodyNode)
+    mSoftBodyNodes.push_back(softBodyNode);
 }
 
 int Skeleton::getNumBodyNodes() const {
   return static_cast<int>(mBodyNodes.size());
+}
+
+int Skeleton::getNumRigidBodyNodes() const {
+  return mBodyNodes.size() - mSoftBodyNodes.size();
+}
+
+int Skeleton::getNumSoftBodyNodes() const {
+  return mSoftBodyNodes.size();
 }
 
 BodyNode* Skeleton::getRootBodyNode() const {
@@ -216,6 +242,11 @@ BodyNode* Skeleton::getBodyNode(int _idx) const {
   return mBodyNodes[_idx];
 }
 
+SoftBodyNode* Skeleton::getSoftBodyNode(int _idx) const {
+  assert(0 <= _idx && _idx < mSoftBodyNodes.size());
+  return mSoftBodyNodes[_idx];
+}
+
 BodyNode* Skeleton::getBodyNode(const std::string& _name) const {
   assert(!_name.empty());
 
@@ -223,6 +254,18 @@ BodyNode* Skeleton::getBodyNode(const std::string& _name) const {
        itrBody != mBodyNodes.end(); ++itrBody) {
     if ((*itrBody)->getName() == _name)
       return *itrBody;
+  }
+
+  return NULL;
+}
+
+SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const {
+  assert(!_name.empty());
+  for (std::vector<SoftBodyNode*>::const_iterator itrSoftBodyNode =
+       mSoftBodyNodes.begin();
+       itrSoftBodyNode != mSoftBodyNodes.end(); ++itrSoftBodyNode) {
+    if ((*itrSoftBodyNode)->getName() == _name)
+      return *itrSoftBodyNode;
   }
 
   return NULL;
@@ -335,8 +378,15 @@ Eigen::VectorXd Skeleton::getState() const
 //==============================================================================
 void Skeleton::integrateConfigs(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mBodyNodes.size(); ++i) {
     mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
+
+    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
+    if (soft) {
+      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
+        soft->getPointMass(j)->integrateConfigs(_dt);
+    }
+  }
 
   computeForwardKinematics(true, false, false);
 }
@@ -344,8 +394,15 @@ void Skeleton::integrateConfigs(double _dt)
 //==============================================================================
 void Skeleton::integrateGenVels(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mBodyNodes.size(); ++i) {
     mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
+
+    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
+    if (soft) {
+      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
+        soft->getPointMass(j)->integrateGenVels(_dt);
+    }
+  }
 
   computeForwardKinematics(false, true, false);
 }
@@ -729,6 +786,33 @@ void Skeleton::updateExternalForceVector() {
        itr != mBodyNodes.rend(); ++itr)
     (*itr)->aggregateExternalForces(&mFext);
 
+  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
+       it != mSoftBodyNodes.end(); ++it) {
+    double kv = (*it)->getVertexSpringStiffness();
+    double ke = (*it)->getEdgeSpringStiffness();
+
+    for (int i = 0; i < (*it)->getNumPointMasses(); ++i)
+    {
+      PointMass* pm = (*it)->getPointMass(i);
+      int nN = pm->getNumConnectedPointMasses();
+
+      // Vertex restoring force
+      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getConfigs()
+                             - (mTimeStep * (kv + nN*ke)) * pm->getGenVels();
+
+      // Edge restoring force
+      for (int j = 0; j < nN; ++j)
+      {
+        Fext += ke * (pm->getConnectedPointMass(j)->getConfigs()
+                        + mTimeStep * pm->getConnectedPointMass(j)->getGenVels());
+      }
+
+      // Assign
+      int iStart = pm->getGenCoord(0)->getSkeletonIndex();
+      mFext.segment<3>(iStart) = Fext;
+    }
+  }
+
   mIsExternalForceVectorDirty = false;
 }
 
@@ -746,6 +830,15 @@ void Skeleton::updateDampingForceVector() {
     for (int i = 0; i < jointDampingForce.size(); i++) {
       mFd((*itr)->getParentJoint()->getGenCoord(i)->getSkeletonIndex()) =
           jointDampingForce(i);
+    }
+  }
+
+  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
+       it != mSoftBodyNodes.end(); ++it) {
+    for (int i = 0; i < (*it)->getNumPointMasses(); ++i) {
+      PointMass* pm = (*it)->getPointMass(i);
+      int iStart = pm->getGenCoord(0)->getSkeletonIndex();
+      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->getGenVels();
     }
   }
 }
@@ -904,6 +997,14 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 
   // TODO(JS): Do we need to backup and restore the original value?
   _bodyNode->mConstraintImpulse = oldConstraintImpulse;
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
+                                 PointMass* _pointMass,
+                                 const Eigen::Vector3d& _imp)
+{
+
 }
 
 //==============================================================================

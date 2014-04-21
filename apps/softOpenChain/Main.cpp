@@ -46,7 +46,7 @@
 
 #include "dart/utils/Paths.h"
 #include "dart/utils/SoftParser.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "apps/softOpenChain/MyWindow.h"
 

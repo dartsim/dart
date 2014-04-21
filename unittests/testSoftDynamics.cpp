@@ -45,7 +45,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/simulation/World.h"
@@ -172,8 +172,8 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
     }
   }
 
-  dynamics::SoftSkeleton* softSkel
-      = dynamic_cast<dynamics::SoftSkeleton*>(_skel);
+  dynamics::Skeleton* softSkel
+      = dynamic_cast<dynamics::Skeleton*>(_skel);
 
   if (softSkel == NULL)
     return skelM;
@@ -245,8 +245,8 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
     }
   }
 
-  dynamics::SoftSkeleton* softSkel
-      = dynamic_cast<dynamics::SoftSkeleton*>(_skel);
+  dynamics::Skeleton* softSkel
+      = dynamic_cast<dynamics::Skeleton*>(_skel);
 
   if (softSkel != NULL)
   {
@@ -316,8 +316,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   for (int i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
-    dynamics::SoftSkeleton* softSkel
-        = dynamic_cast<dynamics::SoftSkeleton*>(skel);
+    dynamics::Skeleton* softSkel
+        = dynamic_cast<dynamics::Skeleton*>(skel);
 
     int dof            = skel->getNumGenCoords();
 //    int nBodyNodes     = skel->getNumBodyNodes();

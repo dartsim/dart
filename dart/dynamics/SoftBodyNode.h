@@ -54,13 +54,14 @@ namespace dynamics {
 class PointMass;
 class SoftMeshShape;
 
-/// \brief
+/// SoftBodyNode represent a soft body that has one deformable skin
 ///
-/// We assume that only one soft flesh (mesh) is contained in soft body node
+/// This class is implementation of Sumit Jain and C. Karen Liu's paper:
+/// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
 class SoftBodyNode : public BodyNode
 {
 public:
-  friend class SoftSkeleton;
+  friend class Skeleton;
 
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
@@ -70,7 +71,6 @@ public:
 
   /// \brief
   virtual ~SoftBodyNode();
-
 
   /// \brief Get mass.
   double getMass() const;
@@ -306,8 +306,6 @@ public:
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 };
-
-typedef SoftBodyNode SoftBody;
 
 }  // namespace dynamics
 }  // namespace dart

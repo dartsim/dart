@@ -46,7 +46,7 @@
 #include "dart/simulation/World.h"
 
 #include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/PointMass.h"
 
 #define FORCE_ON_RIGIDBODY 500.0;
@@ -65,9 +65,9 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::SoftSkeleton* softSkeleton =
-      static_cast<dart::dynamics::SoftSkeleton*>(mWorld->getSkeleton("skeleton 1"));
-  dart::dynamics::SoftBodyNode* softBodyNode = softSkeleton->getSoftBodyNode(0);
+  dart::dynamics::Skeleton* Skeleton =
+      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton("skeleton 1"));
+  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
   softBodyNode->addExtForce(mForceOnRigidBody);
 
   mWorld->step();

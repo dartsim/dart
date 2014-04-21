@@ -41,7 +41,7 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/utils/Paths.h"
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
@@ -182,7 +182,7 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   EXPECT_TRUE(world != NULL);
 
   Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  SoftSkeleton* softSkel1 = dynamic_cast<SoftSkeleton*>(skel1);
+  Skeleton* softSkel1 = dynamic_cast<Skeleton*>(skel1);
   EXPECT_TRUE(softSkel1 != NULL);
   EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
   EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);

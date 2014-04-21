@@ -57,6 +57,8 @@ namespace dart {
 namespace dynamics {
 
 class BodyNode;
+class SoftBodyNode;
+class PointMass;
 class Joint;
 class Marker;
 
@@ -130,14 +132,26 @@ public:
   /// \brief Get number of body nodes
   int getNumBodyNodes() const;
 
+  /// \brief Get number of rigid body nodes.
+  int getNumRigidBodyNodes() const;
+
+  /// \brief Get number of soft body nodes.
+  int getNumSoftBodyNodes() const;
+
   /// \brief Get root body node
   BodyNode* getRootBodyNode() const;
 
   /// \brief Get body node whose index is _idx
   BodyNode* getBodyNode(int _idx) const;
 
+  /// \brief Get soft body node.
+  SoftBodyNode* getSoftBodyNode(int _idx) const;
+
   /// \brief Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name) const;
+
+  /// \brief Get soft body node.
+  SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   /// \brief Get joint whose index is _idx
   Joint* getJoint(int _idx) const;
@@ -249,6 +263,12 @@ public:
 
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+
+  // TODO(JS): This should be in Skeleton
+  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  void updateBiasImpulse(SoftBodyNode* _softBodyNode,
+                         PointMass* _pointMass,
+                         const Eigen::Vector3d& _imp);
 
   /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
@@ -392,6 +412,12 @@ protected:
 
   /// \brief List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
+
+  /// \brief List of Soft body node list in the skeleton
+  std::vector<SoftBodyNode*> mSoftBodyNodes;
+
+  /// \brief List of generalized coordinates of point masses
+  std::vector<GenCoord*> mPointMassGenCoords;
 
   /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
