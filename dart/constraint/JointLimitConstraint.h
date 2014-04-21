@@ -105,7 +105,7 @@ protected:
   virtual void getInformation(ConstraintInfo* _lcp);
 
   // Documentation inherited
-  virtual void applyUnitImpulse(int _localIndex);
+  virtual void applyUnitImpulse(size_t _index);
 
   // Documentation inherited
   virtual void getVelocityChange(double* _delVel, bool _withCfm);

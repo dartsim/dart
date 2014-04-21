@@ -86,7 +86,7 @@ public:
   virtual void getInformation(ConstraintInfo* _info) = 0;
 
   /// Apply unit impulse to constraint space
-  virtual void applyUnitImpulse(int _index) = 0;
+  virtual void applyUnitImpulse(size_t _index) = 0;
 
   /// Get velocity change due to the uint impulse
   virtual void getVelocityChange(double* _vel, bool _withCfm) = 0;

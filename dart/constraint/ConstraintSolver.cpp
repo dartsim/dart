@@ -38,6 +38,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
@@ -47,6 +48,7 @@
 #endif
 #include "dart/constraint/ConstrainedGroup.h"
 #include "dart/constraint/ContactConstraint.h"
+#include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
 #include "dart/constraint/DantzigSolver.h"
 
@@ -92,7 +94,7 @@ void ConstraintSolver::addSkeleton(Skeleton* _skeleton)
 //==============================================================================
 void ConstraintSolver::addSkeletons(const std::vector<Skeleton*>& _skeletons)
 {
-  int numAddedSkeletons = 0;
+  size_t numAddedSkeletons = 0;
 
   for (std::vector<Skeleton*>::const_iterator it = _skeletons.begin();
        it != _skeletons.end(); ++it)
@@ -141,7 +143,7 @@ void ConstraintSolver::removeSkeleton(Skeleton* _skeleton)
 void ConstraintSolver::removeSkeletons(
     const std::vector<Skeleton*>& _skeletons)
 {
-  int numRemovedSkeletons = 0;
+  size_t numRemovedSkeletons = 0;
 
   for (std::vector<Skeleton*>::const_iterator it = _skeletons.begin();
        it != _skeletons.end(); ++it)
@@ -245,7 +247,7 @@ collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
-  for (int i = 0; i < mSkeletons.size(); ++i)
+  for (size_t i = 0; i < mSkeletons.size(); ++i)
     mSkeletons[i]->clearConstraintImpulses();
 
   // Update constraints and collect active constraints
@@ -350,17 +352,41 @@ void ConstraintSolver::updateConstraints()
   }
   mContactConstraints.clear();
 
+  // Destroy previous soft contact constraints
+  for (std::vector<SoftContactConstraint*>::const_iterator it
+       = mSoftContactConstraints.begin();
+       it != mSoftContactConstraints.end(); ++it)
+  {
+    delete *it;
+  }
+  mSoftContactConstraints.clear();
+
   // Create new contact constraints
-  for (int i = 0; i < mCollisionDetector->getNumContacts(); ++i)
+  for (size_t i = 0; i < mCollisionDetector->getNumContacts(); ++i)
   {
     const collision::Contact& ct = mCollisionDetector->getContact(i);
-    mContactConstraints.push_back(new ContactConstraint(ct));
+
+    if (isSoftContact(ct))
+      mSoftContactConstraints.push_back(new SoftContactConstraint(ct));
+    else
+      mContactConstraints.push_back(new ContactConstraint(ct));
   }
 
   // Add the new contact constraints to dynamic constraint list
   for (std::vector<ContactConstraint*>::const_iterator it
        = mContactConstraints.begin();
        it != mContactConstraints.end(); ++it)
+  {
+    (*it)->update();
+
+    if ((*it)->isActive())
+      mActiveConstraints.push_back(*it);
+  }
+
+  // Add the new soft contact constraints to dynamic constraint list
+  for (std::vector<SoftContactConstraint*>::const_iterator it
+       = mSoftContactConstraints.begin();
+       it != mSoftContactConstraints.end(); ++it)
   {
     (*it)->update();
 
@@ -478,6 +504,18 @@ void ConstraintSolver::solveConstrainedGroups()
   {
     mLCPSolver->solve(&(*it));
   }
+}
+
+//==============================================================================
+bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
+{
+  if (dynamic_cast<dynamics::SoftBodyNode*>(
+        _contact.collisionNode1->getBodyNode())
+      || dynamic_cast<dynamics::SoftBodyNode*>(
+        _contact.collisionNode2->getBodyNode()))
+    return true;
+
+  return false;
 }
 
 }  // namespace constraint

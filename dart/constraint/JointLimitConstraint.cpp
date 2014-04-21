@@ -303,9 +303,9 @@ void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void JointLimitConstraint::applyUnitImpulse(int _localIndex)
+void JointLimitConstraint::applyUnitImpulse(size_t _index)
 {
-  assert(0 <= _localIndex && _localIndex < mDim && "Invalid Index.");
+  assert(_index < mDim && "Invalid Index.");
 
   size_t localIndex = 0;
   dynamics::Skeleton* skeleton = mJoint->getSkeleton();
@@ -316,7 +316,7 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
     if (mActive[i] == false)
       continue;
 
-    if (localIndex == _localIndex)
+    if (localIndex == _index)
     {
 
       skeleton->clearImpulseTest();
@@ -328,7 +328,7 @@ void JointLimitConstraint::applyUnitImpulse(int _localIndex)
     ++localIndex;
   }
 
-  mAppliedImpulseIndex = _localIndex;
+  mAppliedImpulseIndex = _index;
 }
 
 //==============================================================================

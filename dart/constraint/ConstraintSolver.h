@@ -56,9 +56,13 @@ class ConstrainedGroup;
 class Constraint;
 class ClosedLoopConstraint;
 class ContactConstraint;
+class SoftContactConstraint;
 class JointLimitConstraint;
 class JointConstraint;
 class LCPSolver;
+
+// TODO:
+//   - RootSkeleton concept
 
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
@@ -128,11 +132,14 @@ private:
   /// Update constraints
   void updateConstraints();
 
-  /// Build constrained groups
+  /// Build constrained groupsContact
   void buildConstrainedGroups();
 
   /// Solve constrained groups
   void solveConstrainedGroups();
+
+  /// Return true if soft contact
+  bool isSoftContact(const collision::Contact& _contact) const;
 
   /// Collision detector
   collision::CollisionDetector* mCollisionDetector;
@@ -148,6 +155,9 @@ private:
 
   /// Contact constraints those are automatically created
   std::vector<ContactConstraint*> mContactConstraints;
+
+  /// Soft contact constraints those are automatically created
+  std::vector<SoftContactConstraint*> mSoftContactConstraints;
 
   /// Joint limit constraints those are automatically created
   std::vector<JointLimitConstraint*> mJointLimitConstraints;

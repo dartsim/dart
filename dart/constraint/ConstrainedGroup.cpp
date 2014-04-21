@@ -98,7 +98,7 @@ void ConstrainedGroup::removeAllConstraints()
 //         << "Not implemented." << std::endl;
 
   // TODO(JS): Temporary implementation
-//  for (int i = 0; i < mConstraints.size(); ++i)
+//  for (size_t i = 0; i < mConstraints.size(); ++i)
 //  {
 //    delete mConstraints[i];
 //  }
@@ -127,9 +127,9 @@ bool ConstrainedGroup::checkAndAddConstraint(Constraint* _constraint)
 //==============================================================================
 size_t ConstrainedGroup::getTotalDimension() const
 {
-  int totalDim = 0;
+  size_t totalDim = 0;
 
-  for (int i = 0; i < mConstraints.size(); ++i)
+  for (size_t i = 0; i < mConstraints.size(); ++i)
     totalDim += mConstraints[i]->getDimension();
 
   return totalDim;

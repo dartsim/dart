@@ -73,13 +73,13 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void getLCPVectors(ConstraintInfo* _lcp, int _idx);
+  virtual void getLCPVectors(ConstraintInfo* _info);
 
   // Documentation inherited
-  virtual void applyUnitImpulse(int _localIndex);
+  virtual void applyUnitImpulse(size_t _index);
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _delVel, int _idx, bool _withCfm);
+  virtual void getVelocityChange(double* _vel, bool _withCfm);
 
   // Documentation inherited
   virtual void excite();

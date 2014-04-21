@@ -91,20 +91,19 @@ void BallJointConstraint::update()
 }
 
 //==============================================================================
-void BallJointConstraint::getLCPVectors(ConstraintInfo* _lcp, int _idx)
+void BallJointConstraint::getLCPVectors(ConstraintInfo* _info)
 {
 
 }
 
 //==============================================================================
-void BallJointConstraint::applyUnitImpulse(int _localIndex)
+void BallJointConstraint::applyUnitImpulse(size_t _index)
 {
 
 }
 
 //==============================================================================
-void BallJointConstraint::getVelocityChange(double* _delVel, int _idx,
-                                            bool _withCfm)
+void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
 
 }

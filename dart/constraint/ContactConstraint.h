@@ -114,7 +114,7 @@ protected:
   virtual void getInformation(ConstraintInfo* _info);
 
   // Documentation inherited
-  virtual void applyUnitImpulse(int _idx);
+  virtual void applyUnitImpulse(size_t _idx);
 
   // Documentation inherited
   virtual void getVelocityChange(double* _vel, bool _withCfm);
@@ -142,9 +142,6 @@ private:
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
   void getRelVelocity(double* _relVel);
-
-  /// Compute change in velocity due to _idx-th impulse.
-  void updateVelocityChange(int _idx);
 
   ///
   void updateFirstFrictionalDirection();

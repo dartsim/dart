@@ -187,18 +187,6 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[4] = mOldX[4];
   _lcp->x[5] = mOldX[5];
 
-//  Eigen::Vector6d negativeVel;
-
-//  if (mBodyNode2)
-//  {
-//    negativeVel = math::AdT(mRelativeTransform, mBodyNode2->getBodyVelocity())
-//                  - mBodyNode1->getBodyVelocity();
-//  }
-//  else
-//  {
-//    negativeVel = -mBodyNode1->getBodyVelocity();
-//  }
-
   Eigen::Vector6d negativeVel = -mBodyNode1->getBodyVelocity();
   if (mBodyNode2)
     negativeVel += math::AdT(mRelativeTransform, mBodyNode2->getBodyVelocity());
@@ -214,7 +202,7 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void WeldJointConstraint::applyUnitImpulse(int _index)
+void WeldJointConstraint::applyUnitImpulse(size_t _index)
 {
   assert(0 <= _index && _index < mDim && "Invalid Index.");
   assert(isActive());

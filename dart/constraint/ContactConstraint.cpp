@@ -124,7 +124,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
     mJacobians2.resize(mDim);
 
     // Intermediate variables
-    int idx = 0;
+    size_t idx = 0;
 
     Eigen::Vector3d bodyDirection1;
     Eigen::Vector3d bodyDirection2;
@@ -132,7 +132,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       const collision::Contact& ct = mContacts[i];
 
@@ -223,7 +223,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       const collision::Contact& ct = mContacts[i];
 
@@ -384,7 +384,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
   if (mIsFrictionOn)
   {
     size_t index = 0;
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       assert(_info->w[index] == 0.0);
@@ -468,7 +468,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   else
   {
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       _info->w[i] = 0.0;
@@ -531,7 +531,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
 }
 
 //==============================================================================
-void ContactConstraint::applyUnitImpulse(int _idx)
+void ContactConstraint::applyUnitImpulse(size_t _idx)
 {
   assert(0 <= _idx && _idx < mDim && "Invalid Index.");
   assert(isActive());
@@ -641,7 +641,7 @@ void ContactConstraint::applyImpulse(double* _lambda)
   {
     size_t index = 0;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
 //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
 //      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
@@ -690,7 +690,7 @@ void ContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   else
   {
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
@@ -731,18 +731,12 @@ bool ContactConstraint::isActive() const
 //==============================================================================
 dynamics::Skeleton* ContactConstraint::getRootSkeleton() const
 {
+  assert(isActive());
+
   if (mBodyNode1->isImpulseReponsible())
     return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
   else
     return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
-}
-
-//==============================================================================
-void ContactConstraint::updateVelocityChange(int _idx)
-{
-  std::cout << "ContactConstraintTEST::_exciteSystem1And2(): "
-            << "Not implemented."
-            << std::endl;
 }
 
 //==============================================================================
