@@ -81,6 +81,9 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   int* findex = new int[n];
 
   // Set w to 0 and findex to -1
+#ifdef BUILD_TYPE_DEBUG
+  std::memset(A, 0.0, n * nSkip * sizeof(double));
+#endif
   std::memset(w, 0.0, n * sizeof(double));
   std::memset(findex, -1, n * sizeof(int));
 
