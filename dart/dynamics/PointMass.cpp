@@ -65,7 +65,12 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mParentSoftBodyNode(_softBodyNode),
     mFext(Eigen::Vector3d::Zero()),
     mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))),
-    mIsColliding(false)
+    mIsColliding(false),
+    mDelV(Eigen::Vector3d::Zero()),
+    mImpB(Eigen::Vector3d::Zero()),
+    mImpAlpha(Eigen::Vector3d::Zero()),
+    mImpBeta(Eigen::Vector3d::Zero()),
+    mImpF(Eigen::Vector3d::Zero())
 {
   assert(mParentSoftBodyNode != NULL);
 
@@ -172,7 +177,7 @@ void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 }
 
 //==============================================================================
-Eigen::Vector3d PointMass::getConstraintImpulse() const
+Eigen::Vector3d PointMass::getConstraintImpulses() const
 {
   return GenCoordSystem::getConstraintImpulses();
 }
@@ -229,6 +234,12 @@ Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getWorldJacobian()
 {
   return mParentSoftBodyNode->getWorldTransform().linear()
       * getBodyJacobian();
+}
+
+//==============================================================================
+const Eigen::Vector3d& PointMass::getBodyVelocityChange() const
+{
+  return mDelV;
 }
 
 SoftBodyNode* PointMass::getParentSoftBodyNode() const
@@ -384,10 +395,6 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
   }
   assert(!math::isNan(mB));
 
-  // TODO(JS): This will be removed once new constratin solver is done.
-  mB -= GenCoordSystem::getConstraintImpulses();
-  assert(!math::isNan(mB));
-
   // Cache data: alpha
   double kv = mParentSoftBodyNode->getVertexSpringStiffness();
   double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
@@ -421,9 +428,6 @@ void PointMass::update_ddq()
             + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
   setGenAccs(ddq);
   assert(!math::isNan(ddq));
-
-  // Update dv
-  updateAcceleration();
 }
 
 void PointMass::update_F_fs()
@@ -440,6 +444,51 @@ void PointMass::updateMassMatrix()
           + mParentSoftBodyNode->mM_dV.head<3>().cross(mX)
           + mParentSoftBodyNode->mM_dV.tail<3>();
   assert(!math::isNan(mM_dV));
+}
+
+//==============================================================================
+void PointMass::updateImpBiasForce()
+{
+  mImpB = -GenCoordSystem::getConstraintImpulses();
+  assert(!math::isNan(mImpB));
+
+  // Cache data: alpha
+  mImpAlpha = mImpB;
+  assert(!math::isNan(mImpAlpha));
+
+  // Cache data: beta
+  mImpBeta = mImpB;
+  mImpBeta.noalias() += mMass * (mImplicitPsi * mImpAlpha);
+  assert(!math::isNan(mImpBeta));
+}
+
+//==============================================================================
+void PointMass::updateJointVelocityChange()
+{
+  Eigen::Vector3d del_dq
+      = mImplicitPsi
+        * (mImpAlpha - mMass
+           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
+  GenCoordSystem::setVelsChange(del_dq);
+  assert(!math::isNan(del_dq));
+}
+
+//==============================================================================
+void PointMass::updateBodyVelocityChange()
+{
+  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+          + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
+          + GenCoordSystem::getVelsChange();
+  assert(!math::isNan(mDelV));
+}
+
+//==============================================================================
+void PointMass::updateBodyImpForceFwdDyn()
+{
+  mImpF = mImpB;
+  mImpF.noalias() += mMass * mDelV;
+  assert(!math::isNan(mImpF));
 }
 
 void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)

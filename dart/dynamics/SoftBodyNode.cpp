@@ -389,10 +389,6 @@ void SoftBodyNode::updateBiasForce(double _timeStep,
   mB = -math::dad(mV, mI * mV) - mFext - mFgravity;
   assert(!math::isNan(mB));
 
-  // TODO(JS): This will be removed once new constraint solver is done
-  mB -= mConstraintImpulse;
-
-  assert(!math::isNan(mB));
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
@@ -447,6 +443,76 @@ void SoftBodyNode::update_F_fs()
 
   for (int i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->update_F_fs();
+}
+
+//==============================================================================
+void SoftBodyNode::updateImpBiasForce()
+{
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateImpBiasForce();
+
+  // Update impulsive bias force
+  mImpB = -mConstraintImpulse;
+//  assert(mImpFext == Eigen::Vector6d::Zero());
+
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mImpB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                           (*it)->mImpBeta);
+  }
+  // TODO(JS):
+  for (int i = 0; i < mPointMasses.size(); i++)
+  {
+    mImpB.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mImpBeta);
+    mImpB.tail<3>() += mPointMasses[i]->mImpBeta;
+  }
+  assert(!math::isNan(mImpB));
+
+  // Cache data: mImpAlpha
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0)
+  {
+    mImpAlpha = mParentJoint->getConstraintImpulses()
+                - mParentJoint->getLocalJacobian().transpose() * mImpB;
+  }
+  assert(!math::isNan(mImpAlpha));
+
+  // Cache data: mImpBeta
+  if (mParentBodyNode)
+  {
+    mImpBeta = mImpB;
+    if (dof > 0)
+      mImpBeta.noalias() += mAI_S_Psi * mImpAlpha;
+  }
+  assert(!math::isNan(mImpBeta));
+}
+
+//==============================================================================
+void SoftBodyNode::updateJointVelocityChange()
+{
+  BodyNode::updateJointVelocityChange();
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateJointVelocityChange();
+}
+
+//==============================================================================
+void SoftBodyNode::updateBodyVelocityChange()
+{
+  BodyNode::updateBodyVelocityChange();
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateBodyVelocityChange();
+}
+
+//==============================================================================
+void SoftBodyNode::updateBodyImpForceFwdDyn()
+{
+  BodyNode::updateBodyImpForceFwdDyn();
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateBodyImpForceFwdDyn();
 }
 
 void SoftBodyNode::updateMassMatrix()

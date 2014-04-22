@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigSolver.h"
+#include "dart/constraint/DantzigLCPSolver.h"
 
 #ifdef BUILD_TYPE_DEBUG
 #include <iomanip>
@@ -52,17 +52,17 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-DantzigSolver::DantzigSolver(double _timestep) : LCPSolver(_timestep)
+DantzigLCPSolver::DantzigLCPSolver(double _timestep) : LCPSolver(_timestep)
 {
 }
 
 //==============================================================================
-DantzigSolver::~DantzigSolver()
+DantzigLCPSolver::~DantzigLCPSolver()
 {
 }
 
 //==============================================================================
-void DantzigSolver::solve(ConstrainedGroup* _group)
+void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 {
   // If there is no constraint, then just return true.
   size_t numConstraints = _group->getNumConstraints();
@@ -189,7 +189,7 @@ void DantzigSolver::solve(ConstrainedGroup* _group)
 
 //==============================================================================
 #ifdef BUILD_TYPE_DEBUG
-bool DantzigSolver::isSymmetric(size_t _n, double* _A)
+bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A)
 {
   int nSkip = dPAD(_n);
   for (int i = 0; i < _n; ++i)
@@ -219,7 +219,7 @@ bool DantzigSolver::isSymmetric(size_t _n, double* _A)
 }
 
 //==============================================================================
-bool DantzigSolver::isSymmetric(size_t _n, double* _A,
+bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A,
                                 size_t _begin, size_t _end)
 {
   int nSkip = dPAD(_n);
@@ -250,7 +250,7 @@ bool DantzigSolver::isSymmetric(size_t _n, double* _A,
 }
 
 //==============================================================================
-void DantzigSolver::print(size_t _n, double* _A, double* _x,
+void DantzigLCPSolver::print(size_t _n, double* _A, double* _x,
                           double* lo, double* hi, double* b,
                           double* w, int* findex)
 {

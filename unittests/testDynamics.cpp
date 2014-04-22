@@ -907,7 +907,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       // TODO(JS): Just clear what should be
       skel->clearExternalForces();
       skel->clearConstraintImpulses();
-      skel->clearImpulseTest();
 
       // Set random impulses
       VectorXd impulses = VectorXd::Zero(dof);

@@ -208,14 +208,14 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
       contactPair.point            = convertVector3(cp.getPositionWorldOnA());
       contactPair.normal           = convertVector3(cp.m_normalWorldOnB);
       contactPair.penetrationDepth = -cp.m_distance1;
-      contactPair.collisionNode1   = userDataA->btCollNode;
-      contactPair.collisionNode2   = userDataB->btCollNode;
+      contactPair.bodyNode1   = userDataA->btCollNode->getBodyNode();
+      contactPair.bodyNode2   = userDataB->btCollNode->getBodyNode();
 
       mContacts.push_back(contactPair);
 
       // Set these two bodies are in colliding
-      contactPair.collisionNode1->getBodyNode()->setColliding(true);
-      contactPair.collisionNode2->getBodyNode()->setColliding(true);
+      contactPair.bodyNode1->setColliding(true);
+      contactPair.bodyNode2->setColliding(true);
     }
   }
 

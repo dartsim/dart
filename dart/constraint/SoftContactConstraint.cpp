@@ -41,8 +41,10 @@
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Shape.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/lcpsolver/lcp.h"
 
@@ -73,7 +75,9 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
     mIsBounceOn(false),
-    mActive(false)
+    mActive(false),
+    mPointMass1(NULL),
+    mPointMass2(NULL)
 {
   // TODO(JS): Assumed single contact
   mContacts.push_back(_contact);
@@ -83,10 +87,40 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
       = static_cast<collision::SoftCollisionInfo*>(_contact.userData);
 
   // TODO(JS):
-  mBodyNode1 = _contact.collisionNode1->getBodyNode();
-  mBodyNode2 = _contact.collisionNode2->getBodyNode();
+  mBodyNode1 = _contact.bodyNode1;
+  mBodyNode2 = _contact.bodyNode2;
   mSoftBodyNode1 = dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1);
   mSoftBodyNode2 = dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2);
+
+  // Set the colliding state of body nodes and point masses to false
+  if (mSoftBodyNode1)
+  {
+    for (int i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
+      mSoftBodyNode1->getPointMass(i)->setColliding(false);
+  }
+  if (mSoftBodyNode2)
+  {
+    for (int i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
+      mSoftBodyNode2->getPointMass(i)->setColliding(false);
+  }
+
+  // Select colling point mass based on trimesh ID
+  if (mSoftBodyNode1)
+  {
+    if (_contact.shape1->getShapeType() == dynamics::Shape::SOFT_MESH)
+    {
+      mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, _contact.point,
+                                             _contact.triID1);
+    }
+  }
+  if (mSoftBodyNode2)
+  {
+    if (_contact.shape2->getShapeType() == dynamics::Shape::SOFT_MESH)
+    {
+      mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, _contact.point,
+                                             _contact.triID2);
+    }
+  }
 
   //----------------------------------------------------------------------------
   // Bounce
@@ -549,11 +583,14 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
   {
-    mBodyNode1->getSkeleton()->clearImpulseTest();
+    mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
-    if (mSoftBodyNode1)
+    if (mPointMass1)
     {
-      // TODO //////////////////////////////////////////////////////////////////
+      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
+      impulse[_idx] = 1.0;
+      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
+                                                   impulse);
     }
     else
     {
@@ -564,9 +601,12 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
       }
     }
 
-    if (mSoftBodyNode2)
+    if (mPointMass2)
     {
-      // TODO //////////////////////////////////////////////////////////////////
+      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
+      impulse[_idx] = 1.0;
+      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
+                                                   impulse);
     }
     else
     {
@@ -582,30 +622,40 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
   // Colliding two distinct skeletons
   else
   {
-    if (mSoftBodyNode1)
+    if (mPointMass1)
     {
-
+      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
+      impulse[_idx] = 1.0;
+      mBodyNode1->getSkeleton()->clearConstraintImpulses();
+      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
+                                                   impulse);
+      mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     else
     {
       if (mBodyNode1->isImpulseReponsible())
       {
-        mBodyNode1->getSkeleton()->clearImpulseTest();
+        mBodyNode1->getSkeleton()->clearConstraintImpulses();
         mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
                                                      mJacobians1[_idx]);
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
     }
 
-    if (mSoftBodyNode2)
+    if (mPointMass2)
     {
-
+      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
+      impulse[_idx] = 1.0;
+      mBodyNode2->getSkeleton()->clearConstraintImpulses();
+      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
+                                                   impulse);
+      mBodyNode2->getSkeleton()->updateVelocityChange();
     }
     else
     {
       if (mBodyNode2->isImpulseReponsible())
       {
-        mBodyNode2->getSkeleton()->clearImpulseTest();
+        mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
                                                      mJacobians2[_idx]);
         mBodyNode2->getSkeleton()->updateVelocityChange();
@@ -627,9 +677,10 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied())
     {
-      if (mSoftBodyNode1)
+      if (mPointMass1)
       {
-
+        _vel[i] += mJacobians1[i].tail<3>().dot(
+                     mPointMass1->getBodyVelocityChange());
       }
       else
       {
@@ -640,9 +691,10 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied())
     {
-      if (mSoftBodyNode2)
+      if (mPointMass2)
       {
-
+        _vel[i] += mJacobians2[i].tail<3>().dot(
+                     mPointMass2->getBodyVelocityChange());
       }
       else
       {
@@ -744,11 +796,28 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
-      if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[i]);
 
-      if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
+      if (mPointMass1)
+      {
+        mPointMass1->addConstraintImpulse(mJacobians1[i].tail<3>()
+                                          * _lambda[i]);
+      }
+      else
+      {
+        if (mBodyNode1->isImpulseReponsible())
+          mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[i]);
+      }
+
+      if (mPointMass2)
+      {
+        mPointMass2->addConstraintImpulse(mJacobians2[i].tail<3>()
+                                          * _lambda[i]);
+      }
+      else
+      {
+        if (mBodyNode2->isImpulseReponsible())
+          mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
+      }
     }
   }
 }
@@ -772,11 +841,11 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
         _vel[i] -= mJacobians1[i].dot(mBodyNode1->getBodyVelocity());
     }
 
-    if (mSoftBodyNode2 && mSoftCollInfo->isSoft2)
-    {
+//    if (mSoftBodyNode2 && mSoftCollInfo->isSoft2)
+//    {
 
-    }
-    else
+//    }
+//    else
     {
       if (mBodyNode2->isImpulseReponsible())
         _vel[i] -= mJacobians2[i].dot(mBodyNode2->getBodyVelocity());
@@ -874,6 +943,46 @@ void SoftContactConstraint::uniteSkeletons()
     unionId2->mUnionRootSkeleton = unionId1;
     unionId1->mUnionSize += unionId2->mUnionSize;
   }
+}
+
+//==============================================================================
+dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
+    const dynamics::SoftBodyNode* _softBodyNode,
+    const Eigen::Vector3d& _point,
+    int _faceId)
+{
+  dynamics::PointMass* pointMass = NULL;
+
+  const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
+
+  dynamics::PointMass* pm0 = _softBodyNode->getPointMass(face[0]);
+  dynamics::PointMass* pm1 = _softBodyNode->getPointMass(face[1]);
+  dynamics::PointMass* pm2 = _softBodyNode->getPointMass(face[2]);
+
+  const Eigen::Vector3d& pos1 = pm0->getWorldPosition();
+  const Eigen::Vector3d& pos2 = pm1->getWorldPosition();
+  const Eigen::Vector3d& pos3 = pm2->getWorldPosition();
+
+  double dist0 = (pos1 - _point).dot(pos1 - _point);
+  double dist1 = (pos2 - _point).dot(pos2 - _point);
+  double dist2 = (pos3 - _point).dot(pos3 - _point);
+
+  if (dist0 > dist1)
+  {
+    if (dist1 > dist2)
+      pointMass = pm2;
+    else
+      pointMass = pm1;
+  }
+  else
+  {
+    if (dist0 > dist2)
+      pointMass = pm2;
+    else
+      pointMass = pm0;
+  }
+
+  return pointMass;
 }
 
 }  // namespace constraint

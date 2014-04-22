@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGSOLVER_H_
-#define DART_CONSTRAINT_DANTZIGSOLVER_H_
+#ifndef DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
+#define DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
 
 #include <cstddef>
 
@@ -45,16 +45,16 @@
 namespace dart {
 namespace constraint {
 
-/// DantzigSolver is a LCP solver that uses ODE's implementation of Dantzig
+/// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
 /// algorithm
-class DantzigSolver : public LCPSolver
+class DantzigLCPSolver : public LCPSolver
 {
 public:
   /// Constructor
-  explicit DantzigSolver(double _timestep);
+  explicit DantzigLCPSolver(double _timestep);
 
   /// Constructor
-  virtual ~DantzigSolver();
+  virtual ~DantzigLCPSolver();
 
   // Documentation inherited
   virtual void solve(ConstrainedGroup* _group);
@@ -76,5 +76,5 @@ private:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_DANTZIGSOLVER_H_
+#endif  // DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
 

@@ -874,16 +874,6 @@ void Skeleton::clearExternalForces() {
 }
 
 //==============================================================================
-void Skeleton::clearConstraintImpulses()
-{
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->clearConstraintImpulse();
-  }
-}
-
-//==============================================================================
 void Skeleton::computeForwardDynamics()
 {
   // Skip immobile or 0-dof skeleton
@@ -921,22 +911,13 @@ void Skeleton::computeForwardDynamics()
 }
 
 //==============================================================================
-void Skeleton::clearImpulseTest()
+void Skeleton::clearConstraintImpulses()
 {
-  // Clear external impulses
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
-    (*it)->mImpB.setZero();
-    (*it)->mImpAlpha.setZero();
-    (*it)->mImpBeta.setZero();
-    (*it)->mConstraintImpulse.setZero();
-    (*it)->mImpF.setZero();
+    (*it)->clearConstraintImpulse();
   }
-
-  // Clear velocity change
-  setVelsChange(Eigen::VectorXd::Zero(getNumGenCoords()));
-  setConstraintImpulses(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
 //==============================================================================
@@ -973,7 +954,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   assert(_bodyNode != NULL);
   assert(getNumGenCoords() > 0);
 
-  // This skeleton should contains _bodyNode
+  // This skeleton should contain _bodyNode
   assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
          != mBodyNodes.end());
 
@@ -1004,7 +985,34 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
                                  PointMass* _pointMass,
                                  const Eigen::Vector3d& _imp)
 {
+  // Assertions
+  assert(_softBodyNode != NULL);
+  assert(getNumGenCoords() > 0);
 
+  // This skeleton should contain _bodyNode
+  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
+         != mSoftBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (int i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  Eigen::Vector3d oldConstraintImpulse =_pointMass->getConstraintImpulses();
+  _pointMass->setConstraintImpulse(_imp, true);
+
+  // Prepare cache data
+  BodyNode* it = _softBodyNode;
+  while (it != NULL)
+  {
+    it->updateImpBiasForce();
+    it = it->getParentBodyNode();
+  }
+
+  // TODO(JS): Do we need to backup and restore the original value?
+  _pointMass->setConstraintImpulses(oldConstraintImpulse);
 }
 
 //==============================================================================

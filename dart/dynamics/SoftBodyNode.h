@@ -164,6 +164,24 @@ protected:
   // Documentation inherited.
   virtual void update_F_fs();
 
+  //----------------------------------------------------------------------------
+  // Impulse based dynamics
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited.
+  virtual void updateImpBiasForce();
+
+  // Documentation inherited.
+  virtual void updateJointVelocityChange();
+
+  // Documentation inherited.
+  virtual void updateBodyVelocityChange();
+
+  // Documentation inherited.
+  virtual void updateBodyImpForceFwdDyn();
+
+  //----------------------------------------------------------------------------
+
   // Documentation inherited.
   virtual void updateMassMatrix();
 

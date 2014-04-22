@@ -512,24 +512,27 @@ public:
   /// \brief
   virtual void update_F_fs();
 
-  //------------------------ Impluse-based Dynamics ----------------------------
+  //----------------------------------------------------------------------------
+  // Impulse based dynamics
+  //----------------------------------------------------------------------------
+
   /// \brief
   bool isImpulseReponsible() const;
 
   /// \brief Update impulsive bias force for impulse-based forward dynamics
   /// algorithm
-  void updateImpBiasForce();
+  virtual void updateImpBiasForce();
 
   /// \brief Update joint velocity change for impulse-based forward dynamics
   /// algorithm
-  void updateJointVelocityChange();
+  virtual void updateJointVelocityChange();
 
   /// \brief Update body velocity change for impulse-based forward dynamics
   /// algorithm
-  void updateBodyVelocityChange();
+  virtual void updateBodyVelocityChange();
 
   /// \brief
-  void updateBodyImpForceFwdDyn();
+  virtual void updateBodyImpForceFwdDyn();
 
   /// \brief
   virtual void updateMassMatrix();

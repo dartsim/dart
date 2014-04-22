@@ -255,8 +255,13 @@ public:
   //----------------------------------------------------------------------------
   // Impulse-based dynamics
   //----------------------------------------------------------------------------
-  /// \brief Clear velocity change and external impulses
-  virtual void clearImpulseTest();
+  /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
+  /// (b) generalized constraints on Joint
+  virtual void clearConstraintImpulses();
+
+  // TODO(JS): To be deprecated
+  /// \brief Set constraint force vector.
+  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   /// \brief Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
@@ -264,7 +269,6 @@ public:
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
-  // TODO(JS): This should be in Skeleton
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(SoftBodyNode* _softBodyNode,
                          PointMass* _pointMass,
@@ -352,18 +356,6 @@ public:
   /// \brief Clear external forces, which are manually added to the body nodes
   /// by the user.
   void clearExternalForces();
-
-  //----------------------------------------------------------------------------
-  // Constraints
-  //   - Following functions are managed by constraint solver.
-  //----------------------------------------------------------------------------
-  /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
-  /// (b) generalized constraints on Joint
-  virtual void clearConstraintImpulses();
-
-  // TODO(JS): To be deprecated
-  /// \brief Set constraint force vector.
-  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   //----------------------------------------------------------------------------
   /// \brief Get skeleton's COM w.r.t. world frame.

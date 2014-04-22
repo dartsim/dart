@@ -215,7 +215,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
     // Self collision case
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     {
-      mBodyNode1->getSkeleton()->clearImpulseTest();
+      mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
       if (mBodyNode1->isImpulseReponsible())
       {
@@ -237,7 +237,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
     {
       if (mBodyNode1->isImpulseReponsible())
       {
-        mBodyNode1->getSkeleton()->clearImpulseTest();
+        mBodyNode1->getSkeleton()->clearConstraintImpulses();
         mBodyNode1->getSkeleton()->updateBiasImpulse(
               mBodyNode1, mIdentity6d.col(_index));
         mBodyNode1->getSkeleton()->updateVelocityChange();
@@ -245,7 +245,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 
       if (mBodyNode2->isImpulseReponsible())
       {
-        mBodyNode2->getSkeleton()->clearImpulseTest();
+        mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, math::dAdT(mRelativeTransform,
                                      -mIdentity6d.col(_index)));
@@ -257,7 +257,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
   {
     assert(mBodyNode1->isImpulseReponsible());
 
-    mBodyNode1->getSkeleton()->clearImpulseTest();
+    mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
           mBodyNode1, mIdentity6d.col(_index));
     mBodyNode1->getSkeleton()->updateVelocityChange();

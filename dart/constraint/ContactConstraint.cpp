@@ -77,8 +77,8 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   mContacts.push_back(_contact);
 
   // TODO(JS):
-  mBodyNode1 = _contact.collisionNode1->getBodyNode();
-  mBodyNode2 = _contact.collisionNode2->getBodyNode();
+  mBodyNode1 = _contact.bodyNode1;
+  mBodyNode2 = _contact.bodyNode2;
 
   //----------------------------------------------
   // Bounce
@@ -541,7 +541,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
   {
-    mBodyNode1->getSkeleton()->clearImpulseTest();
+    mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
     if (mBodyNode1->isImpulseReponsible())
     {
@@ -562,7 +562,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   {
     if (mBodyNode1->isImpulseReponsible())
     {
-      mBodyNode1->getSkeleton()->clearImpulseTest();
+      mBodyNode1->getSkeleton()->clearConstraintImpulses();
       mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
                                                    mJacobians1[_idx]);
       mBodyNode1->getSkeleton()->updateVelocityChange();
@@ -570,7 +570,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mBodyNode2->isImpulseReponsible())
     {
-      mBodyNode2->getSkeleton()->clearImpulseTest();
+      mBodyNode2->getSkeleton()->clearConstraintImpulses();
       mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
                                                    mJacobians2[_idx]);
       mBodyNode2->getSkeleton()->updateVelocityChange();

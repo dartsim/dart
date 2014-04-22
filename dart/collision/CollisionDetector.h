@@ -49,32 +49,39 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Skeleton;
+class Shape;
 }  // namespace dynamics
 }  // namespace dart
 
 namespace dart {
 namespace collision {
 
-/// \brief
+/// Contact information
 struct Contact {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /// \brief
+  /// Contact point w.r.t. the world frame
   Eigen::Vector3d point;
 
-  /// \brief
+  /// Contact normal vector w.r.t. the world frame
   Eigen::Vector3d normal;
 
-  /// \brief
+  /// Contact force vector w.r.t. the world frame
   Eigen::Vector3d force;
 
-  /// \brief
-  CollisionNode* collisionNode1;
+  /// First colliding body node
+  dynamics::BodyNode* bodyNode1;
 
-  /// \brief
-  CollisionNode* collisionNode2;
+  /// Second colliding body node
+  dynamics::BodyNode* bodyNode2;
 
-  /// \brief
+  /// First colliding shape of the first body node
+  dynamics::Shape* shape1;
+
+  /// Second colliding shape of the first body node
+  dynamics::Shape* shape2;
+
+  /// Penetration depth
   double penetrationDepth;
 
   // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh

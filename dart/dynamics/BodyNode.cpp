@@ -757,10 +757,14 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 //==============================================================================
 void BodyNode::clearConstraintImpulse()
 {
+  mImpB.setZero();
+  mImpAlpha.setZero();
+  mImpBeta.setZero();
   mConstraintImpulse.setZero();
+  mImpF.setZero();
 
   mParentJoint->setConstraintImpulses(
-        Eigen::VectorXd(mParentJoint->getNumGenCoords()));
+        Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords()));
 }
 
 const Eigen::Vector6d& BodyNode::getBodyForce() const {
@@ -931,10 +935,6 @@ void BodyNode::updateBiasForce(double _timeStep,
   mB = -math::dad(mV, mI * mV) - mFext - mFgravity;
   assert(!math::isNan(mB));
 
-  // TODO(JS): This will be remove once new constraint solver is done.
-  mB -= mConstraintImpulse;
-
-  assert(!math::isNan(mB));
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it) {
     mB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),

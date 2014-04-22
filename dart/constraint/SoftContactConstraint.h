@@ -51,6 +51,7 @@ class SoftCollisionInfo;
 namespace dynamics {
 class BodyNode;
 class SoftBodyNode;
+class PointMass;
 class Skeleton;
 }  // namespace dynamics
 
@@ -154,6 +155,13 @@ private:
   ///
   Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
+  /// Find the nearest point mass from _point in a face, of which id is _faceId
+  /// in _softBodyNode
+  dynamics::PointMass* selectCollidingPointMass(
+      const dynamics::SoftBodyNode* _softBodyNode,
+      const Eigen::Vector3d& _point,
+      int _faceId);
+
 private:
   /// Fircst body node
   dynamics::BodyNode* mBodyNode1;
@@ -161,11 +169,17 @@ private:
   /// Second body node
   dynamics::BodyNode* mBodyNode2;
 
-  /// Second body node
+  /// First soft body node
   dynamics::SoftBodyNode* mSoftBodyNode1;
 
-  /// Second body node
+  /// Second soft body node
   dynamics::SoftBodyNode* mSoftBodyNode2;
+
+  /// First point mass
+  dynamics::PointMass* mPointMass1;
+
+  /// Second point mass
+  dynamics::PointMass* mPointMass2;
 
   /// Contacts between mBodyNode1 and mBodyNode2
   std::vector<collision::Contact> mContacts;
@@ -187,6 +201,12 @@ private:
 
   /// Local body jacobians for mBodyNode2
   std::vector<Eigen::Vector6d> mJacobians2;
+
+  /// Contact normal expressed in body frame of the first body node
+  Eigen::Vector3d mBodyDirection1;
+
+  /// Contact normal expressed in body frame of the second body node
+  Eigen::Vector3d mBodyDirection2;
 
   ///
   bool mIsFrictionOn;

@@ -50,7 +50,7 @@
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
-#include "dart/constraint/DantzigSolver.h"
+#include "dart/constraint/DantzigLCPSolver.h"
 
 namespace dart {
 namespace constraint {
@@ -61,7 +61,7 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver(double _timeStep)
   : mTimeStep(_timeStep),
     mCollisionDetector(new collision::FCLMeshCollisionDetector()),
-    mLCPSolver(new DantzigSolver(mTimeStep))
+    mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
   assert(_timeStep > 0.0);
 }
@@ -509,10 +509,8 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
-  if (dynamic_cast<dynamics::SoftBodyNode*>(
-        _contact.collisionNode1->getBodyNode())
-      || dynamic_cast<dynamics::SoftBodyNode*>(
-        _contact.collisionNode2->getBodyNode()))
+  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1)
+      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2))
     return true;
 
   return false;

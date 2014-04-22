@@ -50,22 +50,6 @@ class PointMass;
 namespace collision {
 
 ///
-struct SoftCollisionInfo
-{
-  ///
-  dynamics::PointMass* pm1;
-
-  ///
-  dynamics::PointMass* pm2;
-
-  ///
-  bool isSoft1;
-
-  ///
-  bool isSoft2;
-};
-
-///
 class FCLMeshCollisionDetector : public CollisionDetector
 {
 public:
@@ -88,14 +72,6 @@ public:
 
   ///
   void draw();
-
-private:
-  /// Find the nearest point mass from _point in a face, of which id is _faceId
-  /// in _softBodyNode
-  dynamics::PointMass* selectCollidingPointMass(
-      const dynamics::SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _point,
-      int _faceId);
 };
 
 }  // namespace collision

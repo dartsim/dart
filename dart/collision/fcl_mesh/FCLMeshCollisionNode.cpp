@@ -205,12 +205,14 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
         //            pair1.bd2 = _otherNode->mBodyNode;
         //            pair1.bdID1 = this->mBodyNodeID;
         //            pair1.bdID2 = _otherNode->mBodyNodeID;
-        pair1.collisionNode1 = this;
-        pair1.collisionNode2 = _otherNode;
+        pair1.bodyNode1 = this->getBodyNode();
+        pair1.bodyNode2 = _otherNode->getBodyNode();
         fcl::Vec3f v;
         pair1.triID1 = res.getContact(k).b1;
         pair1.triID2 = res.getContact(k).b2;
         pair1.penetrationDepth = res.getContact(k).penetration_depth;
+        pair1.shape1 = pair1.bodyNode1->getCollisionShape(i);
+        pair1.shape2 = pair1.bodyNode2->getCollisionShape(j);
         pair2 = pair1;
         int contactResult =
             evalContactPosition(res.getContact(k), mMeshes[i],
@@ -237,35 +239,6 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
         v = -res.getContact(k).normal;
         pair1.normal = Eigen::Vector3d(v[0], v[1], v[2]);
         pair2.normal = Eigen::Vector3d(v[0], v[1], v[2]);
-
-        SoftCollisionInfo* sci1 = new SoftCollisionInfo;
-        SoftCollisionInfo* sci2 = new SoftCollisionInfo;
-        if (mBodyNode->getCollisionShape(i)->getShapeType()
-            == dynamics::Shape::SOFT_MESH)
-        {
-          sci1->isSoft1 = true;
-          sci2->isSoft1 = true;
-        }
-        else
-        {
-          sci1->isSoft1 = false;
-          sci2->isSoft1 = false;
-        }
-
-        if (_otherNode->getBodyNode()->getCollisionShape(j)->getShapeType()
-            == dynamics::Shape::SOFT_MESH)
-        {
-          sci1->isSoft2 = true;
-          sci2->isSoft2 = true;
-        }
-        else
-        {
-          sci1->isSoft2 = false;
-          sci2->isSoft2 = false;
-        }
-
-        pair1.userData = sci1;
-        pair2.userData = sci2;
 
         unfilteredContactPoints.push_back(pair1);
         unfilteredContactPoints.push_back(pair2);
