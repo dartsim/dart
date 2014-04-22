@@ -36,6 +36,7 @@
 
 #include "dart/dynamics/GenCoordSystem.h"
 
+#include <iostream>
 #include <string>
 
 namespace dart {

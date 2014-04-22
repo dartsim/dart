@@ -138,7 +138,7 @@ private:
   /// Solve constrained groups
   void solveConstrainedGroups();
 
-  /// Return true if soft contact
+  /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& _contact) const;
 
   /// Collision detector

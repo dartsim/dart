@@ -362,7 +362,7 @@ void ConstraintSolver::updateConstraints()
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
-  for (size_t i = 0; i < mCollisionDetector->getNumContacts(); ++i)
+  for (size_t i = 0; i < mCollisionDetector->getNumContacts() && i < 1; ++i)
   {
     const collision::Contact& ct = mCollisionDetector->getContact(i);
 

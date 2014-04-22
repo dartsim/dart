@@ -605,7 +605,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     {
       Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
       impulse[_idx] = 1.0;
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
+      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
                                                    impulse);
     }
     else
