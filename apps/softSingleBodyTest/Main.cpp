@@ -43,7 +43,7 @@
 #include <iostream>
 
 #include "dart/utils/Paths.h"
-#include "dart/utils/SoftParser.h"
+#include "dart/utils/SkelParser.h"
 #include "dart/simulation/World.h"
 #include "apps/softSingleBodyTest/MyWindow.h"
 
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::World *myWorld
-      = dart::utils::SoftSkelParser::readSoftFile(
+      = dart::utils::SkelParser::readSkelFile(
           DART_DATA_PATH"skel/test/test_single_body.skel");
   assert(myWorld != NULL);
 

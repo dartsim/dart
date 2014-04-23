@@ -45,7 +45,6 @@
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/SoftParser.h"
 
 using namespace dart;
 using namespace math;
@@ -176,7 +175,7 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   using namespace utils;
 
   World* world
-      = SoftSkelParser::readSoftFile(
+      = SkelParser::readSkelFile(
           DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != NULL);
 

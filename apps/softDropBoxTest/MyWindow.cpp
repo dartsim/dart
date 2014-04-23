@@ -65,10 +65,10 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::Skeleton* Skeleton =
-      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
-  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
-  softBodyNode->addExtForce(mForceOnRigidBody);
+//  dart::dynamics::Skeleton* Skeleton =
+//      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
+//  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+//  softBodyNode->addExtForce(mForceOnRigidBody);
 
   mWorld->step();
 
@@ -85,8 +85,8 @@ void MyWindow::timeStepping()
 
 void MyWindow::drawSkels()
 {
-  glEnable(GL_LIGHTING);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//  glEnable(GL_LIGHTING);
+//  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 //  Eigen::Vector4d color;
 //  color << 0.5, 0.8, 0.6, 1.0;
 //  mWorld->getSkeleton(0)->draw(mRI, color, false);

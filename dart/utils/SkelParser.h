@@ -104,6 +104,12 @@ protected:
             const Eigen::Isometry3d& _skeletonFrame);
 
     /// \brief
+    static SkelBodyNode readSoftBodyNode(
+        tinyxml2::XMLElement* _softBodyNodeElement,
+        dynamics::Skeleton* _Skeleton,
+        const Eigen::Isometry3d& _skeletonFrame);
+
+    /// \brief
     static dynamics::Shape* readShape(
             tinyxml2::XMLElement* _shapeElement);
 
@@ -116,6 +122,12 @@ protected:
     static dynamics::Joint* readJoint(
             tinyxml2::XMLElement* _jointElement,
             const std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >& _bodies);
+
+    /// \brief
+    static dynamics::Joint* readSoftJoint(
+        tinyxml2::XMLElement* _jointElement,
+        const std::vector<SkelBodyNode,
+        Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
 
     /// \brief
     static dynamics::PrismaticJoint* readPrismaticJoint(

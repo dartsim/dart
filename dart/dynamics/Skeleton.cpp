@@ -173,16 +173,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
     mBodyNodes[i]->updateEta();
   }
 
-  // Store generalized coordinates of point masses of all the soft body nodes
-  // in this soft skeleton to mPointMassGenCoords additionaly. All the
-  // generalized coordinates of the joints and the point masses are stored in
-  // mGenCoord.
-  mPointMassGenCoords.clear();
-  for (int i = 0; i < mSoftBodyNodes.size(); i++) {
-    SoftBodyNode* softBodyNode = mSoftBodyNodes[i];
-    softBodyNode->aggregatePointMassGenCoords(&mPointMassGenCoords);
-  }
-
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it) {
     (*it)->updateArticulatedInertia(mTimeStep);

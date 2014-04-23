@@ -42,7 +42,6 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/SoftParser.h"
 #include "dart/utils/sdf/SoftSdfParser.h"
 #include "dart/utils/urdf/DartLoader.h"
 

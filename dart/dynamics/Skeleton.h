@@ -408,9 +408,6 @@ protected:
   /// \brief List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
-  /// \brief List of generalized coordinates of point masses
-  std::vector<GenCoord*> mPointMassGenCoords;
-
   /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
   /// manually changed, the collision results might not be correct.
@@ -540,6 +537,7 @@ protected:
   virtual void updateDampingForceVector();
 
 public:
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

@@ -45,7 +45,7 @@
 #include "dart/math/Helpers.h"
 
 #include "dart/utils/Paths.h"
-#include "dart/utils/SoftParser.h"
+#include "dart/utils/SkelParser.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "apps/softArticulatedBodiesTest/MyWindow.h"
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::World* myWorld
-      = dart::utils::SoftSkelParser::readSoftFile(
+      = dart::utils::SkelParser::readSkelFile(
           DART_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != NULL);
 
