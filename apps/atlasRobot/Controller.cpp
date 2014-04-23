@@ -43,9 +43,8 @@
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Joint.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
-//#include "dart/constraint/OldBallJointConstraint.h"
-//#include "dart/constraint/OldRevoluteJointConstraint.h"
+#include "dart/constraint/ConstraintSolver.h"
+#include "dart/constraint/WeldJointConstraint.h"
 #include "dart/collision/CollisionDetector.h"
 
 #include "apps/atlasRobot/State.h"
@@ -62,19 +61,16 @@ using namespace dynamics;
 
 //==============================================================================
 Controller::Controller(Skeleton* _atlasRobot,
-                       OldConstraintDynamics* _collisionHandle)
+                       ConstraintSolver* _collisionSolver)
   : mAtlasRobot(_atlasRobot),
-    mConstratinSolver(_collisionHandle),
+    mConstratinSolver(_collisionSolver),
     mCurrentStateMachine(NULL),
     mPelvisHarnessOn(false),
     mLeftFootHarnessOn(false),
     mRightFootHarnessOn(false),
-    mBallJointConstraintPelvis(NULL),
-    mRevoluteJointConstraintPelvis(NULL),
-    mBallJointConstraintLeftFoot(NULL),
-    mRevoluteJointConstraintLeftFoot(NULL),
-    mBallJointConstraintRightFoot(NULL),
-    mRevoluteJointConstraintRightFoot(NULL)
+    mWeldJointConstraintPelvis(NULL),
+    mWeldJointConstraintLeftFoot(NULL),
+    mWeldJointConstraintRightFoot(NULL)
 {
   _buildStateMachines();
   _setJointDamping();
@@ -242,16 +238,8 @@ void Controller::harnessPelvis()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("pelvis");
-  Eigen::Vector3d offset(0.0, 0.0, 0.0);
-  Eigen::Vector3d target = bd->getWorldTransform() * offset;
-//  mBallJointConstraintPelvis = new OldBallJointConstraint(bd, offset, target);
-//  mConstratinSolver->addConstraint(mBallJointConstraintPelvis);
-
-  Eigen::Vector3d axis1(0.0, 0.0, 1.0);
-  Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-//  mRevoluteJointConstraintPelvis = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-//  mConstratinSolver->addConstraint(mRevoluteJointConstraintPelvis);
-
+  mWeldJointConstraintPelvis = new WeldJointConstraint(bd);
+  mConstratinSolver->addConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = true;
 
   dtmsg << "Pelvis is harnessed." << std::endl;
@@ -263,9 +251,7 @@ void Controller::unharnessPelvis()
   if (!mPelvisHarnessOn)
     return;
 
-//  mConstratinSolver->deleteConstraint(mBallJointConstraintPelvis);
-//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintPelvis);
-
+  mConstratinSolver->removeConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = false;
 
   dtmsg << "Pelvis is unharnessed." << std::endl;
@@ -278,16 +264,7 @@ void Controller::harnessLeftFoot()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("l_foot");
-  Eigen::Vector3d offset(0.0, 0.0, 0.0);
-  Eigen::Vector3d target = bd->getWorldTransform() * offset;
-//  mBallJointConstraintLeftFoot = new OldBallJointConstraint(bd, offset, target);
-//  mConstratinSolver->addConstraint(mBallJointConstraintLeftFoot);
-
-  Eigen::Vector3d axis1(0.0, 0.0, 1.0);
-  Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-//  mRevoluteJointConstraintLeftFoot = new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-//  mConstratinSolver->addConstraint(mRevoluteJointConstraintLeftFoot);
-
+  mWeldJointConstraintLeftFoot = new WeldJointConstraint(bd);
   mLeftFootHarnessOn = true;
 
   dtmsg << "Left foot is harnessed." << std::endl;
@@ -299,9 +276,7 @@ void Controller::unharnessLeftFoot()
   if (!mLeftFootHarnessOn)
     return;
 
-//  mConstratinSolver->deleteConstraint(mBallJointConstraintLeftFoot);
-//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintLeftFoot);
-
+  mConstratinSolver->removeConstraint(mWeldJointConstraintLeftFoot);
   mLeftFootHarnessOn = false;
 
   dtmsg << "Left foot is unharnessed." << std::endl;
@@ -314,16 +289,7 @@ void Controller::harnessRightFoot()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("r_foot");
-  Eigen::Vector3d offset(0.0, 0.0, 0.0);
-  Eigen::Vector3d target = bd->getWorldTransform() * offset;
-//  mBallJointConstraintRightFoot = new OldBallJointConstraint(bd, offset, target);
-//  mConstratinSolver->addConstraint(mBallJointConstraintRightFoot);
-
-  Eigen::Vector3d axis1(0.0, 0.0, 1.0);
-  Eigen::Vector3d globalAxis1 = bd->getWorldTransform() * axis1 - target;
-//  mRevoluteJointConstraintRightFoot= new OldRevoluteJointConstraint(bd, axis1, globalAxis1);
-//  mConstratinSolver->addConstraint(mRevoluteJointConstraintRightFoot);
-
+  mWeldJointConstraintRightFoot = new WeldJointConstraint(bd);
   mRightFootHarnessOn = true;
 
   dtmsg << "Right foot is harnessed." << std::endl;
@@ -335,9 +301,7 @@ void Controller::unharnessRightFoot()
   if (!mRightFootHarnessOn)
     return;
 
-//  mConstratinSolver->deleteConstraint(mBallJointConstraintRightFoot);
-//  mConstratinSolver->deleteConstraint(mRevoluteJointConstraintRightFoot);
-
+  mConstratinSolver->removeConstraint(mWeldJointConstraintRightFoot);
   mRightFootHarnessOn = false;
 
   dtmsg << "Right foot is unharnessed." << std::endl;

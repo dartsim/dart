@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
   myWorld->setGravity(Vector3d(0.0, -9.81, 0.0));
 
   // Create a window and link it to the world
-//  MyWindow window(new Controller(atlas, myWorld->getConstraintHandler()));
-//  window.setWorld(myWorld);
+  MyWindow window(new Controller(atlas, myWorld->getConstraintSolver()));
+  window.setWorld(myWorld);
 
   // Print manual
   cout << "space bar: simulation on/off" << endl;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 
   // Run glut loop
   glutInit(&argc, argv);
-//  window.initWindow(640, 480, "Atlas Robot");
+  window.initWindow(640, 480, "Atlas Robot");
   glutMainLoop();
 
   return 0;
