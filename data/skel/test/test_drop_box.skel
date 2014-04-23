@@ -38,7 +38,7 @@
         <skeleton name="skeleton 1">
             <body name="link 1">
                 <gravity>1</gravity>
-                <transformation>0.1 0.10 0 1 2 3</transformation>
+                <transformation>0.1 0.10 0 0 0 0</transformation>
                 <inertia>
                     <mass>0.5</mass>
                     <offset>0 0 0</offset>

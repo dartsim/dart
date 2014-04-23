@@ -53,7 +53,8 @@ public:
   virtual ~EllipsoidShape();
 
   /// \brief Set size of this box.
-  void setDim(const Eigen::Vector3d& _size) DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) void setDim(const Eigen::Vector3d& _size);
 
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);

@@ -77,49 +77,57 @@ public:
   void setPos(double _pos);
 
   /// \brief Set configuration
-  void setConfig(double _config) DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) void setConfig(double _config);
 
   /// \brief Get position
   double getPos() const;
 
   /// \brief Get configuration
-  double getConfig() const DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) double getConfig() const;
 
   /// \brief Set lower bound for configuration
   void setPosMin(double _posMin);
 
   /// \brief Set lower bound for configuration
-  void setConfigMin(double _configMin) DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) void setConfigMin(double _configMin);
 
   /// \brief Get lower bound for configuration
   double getPosMin() const;
 
   /// \brief Get lower bound for configuration
-  double getConfigMin() const DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) double getConfigMin() const;
 
   /// \brief Set upper bound for configuration
   void setPosMax(double _posMax);
 
   /// \brief Set upper bound for configuration
-  void setConfigMax(double _configMax) DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) void setConfigMax(double _configMax);
 
   /// \brief Get upper bound for configuration
   double getPosMax() const;
 
   /// \brief Get upper bound for configuration
-  double getConfigMax() const DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) double getConfigMax() const;
 
   /// \brief Set derivative w.r.t. arbitrary scalar value
   void setPosDeriv(double _posDeriv);
 
   /// \brief Set derivative w.r.t. arbitrary scalar value
-  void setConfigDeriv(double _configDeriv) DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) void setConfigDeriv(double _configDeriv);
 
   /// \brief Get derivative w.r.t. arbitrary scalar value
   double getPosDeriv() const;
 
   /// \brief Get derivative w.r.t. arbitrary scalar value
-  double getConfigDeriv() const DEPRECATED(4.0);
+  /// \warning Don't use me any more
+  DEPRECATED(4.0) double getConfigDeriv() const;
 
   //----------------------------------------------------------------------------
   // Velocity

@@ -164,8 +164,10 @@ void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 {
   if (_isLocal)
   {
-    GenCoordSystem::setConstraintImpulses(
-          GenCoordSystem::getConstraintImpulses() + _constImp);
+    std::cout << GenCoordSystem::getConstraintImpulses() << std::endl;
+    std::cout << _constImp << std::endl;
+//    GenCoordSystem::setConstraintImpulses(
+//          GenCoordSystem::getConstraintImpulses() + _constImp);
   }
   else
   {

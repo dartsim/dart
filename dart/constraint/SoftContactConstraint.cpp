@@ -587,10 +587,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass1)
     {
-      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
-      impulse[_idx] = 1.0;
       mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   impulse);
+                                                   mJacobians1[_idx].tail<3>());
     }
     else
     {
@@ -603,10 +601,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass2)
     {
-      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
-      impulse[_idx] = 1.0;
       mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   impulse);
+                                                   mJacobians2[_idx].tail<3>());
     }
     else
     {
@@ -624,11 +620,9 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
   {
     if (mPointMass1)
     {
-      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
-      impulse[_idx] = 1.0;
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
       mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   impulse);
+                                                   mJacobians1[_idx].tail<3>());
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     else
@@ -644,11 +638,9 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass2)
     {
-      Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
-      impulse[_idx] = 1.0;
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
       mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   impulse);
+                                                   mJacobians2[_idx].tail<3>());
       mBodyNode2->getSkeleton()->updateVelocityChange();
     }
     else
@@ -800,7 +792,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       if (mPointMass1)
       {
         mPointMass1->addConstraintImpulse(mJacobians1[i].tail<3>()
-                                          * _lambda[i]);
+                                          * _lambda[i], true);
       }
       else
       {
@@ -811,7 +803,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       if (mPointMass2)
       {
         mPointMass2->addConstraintImpulse(mJacobians2[i].tail<3>()
-                                          * _lambda[i]);
+                                          * _lambda[i], true);
       }
       else
       {
@@ -831,9 +823,9 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
   {
     _vel[i] = 0.0;
 
-    if (mSoftBodyNode1)
+    if (mPointMass1)
     {
-
+      _vel[i] -= mJacobians1[i].tail<3>().dot(mPointMass1->getBodyVelocity());
     }
     else
     {
@@ -841,11 +833,11 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
         _vel[i] -= mJacobians1[i].dot(mBodyNode1->getBodyVelocity());
     }
 
-//    if (mSoftBodyNode2 && mSoftCollInfo->isSoft2)
-//    {
-
-//    }
-//    else
+    if (mPointMass2)
+    {
+      _vel[i] -= mJacobians2[i].tail<3>().dot(mPointMass2->getBodyVelocity());
+    }
+    else
     {
       if (mBodyNode2->isImpulseReponsible())
         _vel[i] -= mJacobians2[i].dot(mBodyNode2->getBodyVelocity());
