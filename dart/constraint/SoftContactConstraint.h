@@ -181,6 +181,7 @@ private:
   /// Second point mass
   dynamics::PointMass* mPointMass2;
 
+  // TODO(JS): For now, there is only one contact per contact constraint
   /// Contacts between mBodyNode1 and mBodyNode2
   std::vector<collision::Contact> mContacts;
 

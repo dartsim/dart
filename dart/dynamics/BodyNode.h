@@ -506,7 +506,7 @@ public:
   virtual void updateBiasForce(double _timeStep,
                                const Eigen::Vector3d& _gravity);
 
-  /// \brief
+  /// \brief Update acceleration for forward dynamics
   virtual void update_ddq();
 
   /// \brief

@@ -285,7 +285,6 @@ void World::step()
     if ((*it)->isImpulseApplied())
     {
       (*it)->computeImpulseForwardDynamics();
-//      (*it)->updateForwardKinematicsWithVelocityChanges();
       (*it)->setImpulseApplied(false);
     }
   }

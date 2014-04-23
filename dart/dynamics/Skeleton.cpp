@@ -378,14 +378,13 @@ Eigen::VectorXd Skeleton::getState() const
 //==============================================================================
 void Skeleton::integrateConfigs(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i) {
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
 
-    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
-    if (soft) {
-      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
-        soft->getPointMass(j)->integrateConfigs(_dt);
-    }
+  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  {
+    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+      mSoftBodyNodes[i]->getPointMass(j)->integrateConfigs(_dt);
   }
 
   computeForwardKinematics(true, false, false);
@@ -394,14 +393,13 @@ void Skeleton::integrateConfigs(double _dt)
 //==============================================================================
 void Skeleton::integrateGenVels(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i) {
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
 
-    SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNodes[i]);
-    if (soft) {
-      for (size_t j = 0; j < soft->getNumPointMasses(); ++j)
-        soft->getPointMass(j)->integrateGenVels(_dt);
-    }
+  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  {
+    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+      mSoftBodyNodes[i]->getPointMass(j)->integrateGenVels(_dt);
   }
 
   computeForwardKinematics(false, true, false);
@@ -1022,7 +1020,6 @@ void Skeleton::updateVelocityChange()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->updateJointVelocityChange();
-    (*it)->updateBodyVelocityChange();
   }
 }
 

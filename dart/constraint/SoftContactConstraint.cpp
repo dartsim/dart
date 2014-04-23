@@ -728,6 +728,8 @@ void SoftContactConstraint::unexcite()
 //==============================================================================
 void SoftContactConstraint::applyImpulse(double* _lambda)
 {
+  // TODO(JS): Need to optimize code
+
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
@@ -749,10 +751,27 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      if (mPointMass1)
+      {
+        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode1->isImpulseReponsible())
+          mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
+      }
+
+      if (mPointMass2)
+      {
+        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode2->isImpulseReponsible())
+          mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
@@ -760,10 +779,27 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       // Tangential direction-1 impulsive force
 //      mContacts[i]->lambda[1] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      if (mPointMass1)
+      {
+        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode1->isImpulseReponsible())
+          mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
+      }
+
+      if (mPointMass2)
+      {
+        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode2->isImpulseReponsible())
+          mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
 
@@ -771,10 +807,27 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       // Tangential direction-2 impulsive force
 //      mContacts[i]->lambda[2] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
-        mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
-        mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      if (mPointMass1)
+      {
+        mPointMass1->addConstraintImpulse(mJacobians1[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode1->isImpulseReponsible())
+          mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
+      }
+
+      if (mPointMass2)
+      {
+        mPointMass2->addConstraintImpulse(mJacobians2[index].tail<3>()
+                                          * _lambda[index], true);
+      }
+      else
+      {
+        if (mBodyNode2->isImpulseReponsible())
+          mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
+      }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
     }

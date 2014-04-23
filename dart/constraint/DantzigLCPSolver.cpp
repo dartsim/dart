@@ -159,17 +159,17 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   assert(isSymmetric(n, A));
 
   // Print LCP formulation
-  dtdbg << "Before solve:" << std::endl;
-  print(n, A, x, lo, hi, b, w, findex);
-  std::cout << std::endl;
+//  dtdbg << "Before solve:" << std::endl;
+//  print(n, A, x, lo, hi, b, w, findex);
+//  std::cout << std::endl;
 
   // Solve LCP using ODE's Dantzig algorithm
   dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
 
   // Print LCP formulation
-  dtdbg << "After solve:" << std::endl;
-  print(n, A, x, lo, hi, b, w, findex);
-  std::cout << std::endl;
+//  dtdbg << "After solve:" << std::endl;
+//  print(n, A, x, lo, hi, b, w, findex);
+//  std::cout << std::endl;
 
   // Apply constraint impulses
   for (int i = 0; i < numConstraints; ++i)

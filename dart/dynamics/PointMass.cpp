@@ -164,10 +164,10 @@ void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 {
   if (_isLocal)
   {
-    std::cout << GenCoordSystem::getConstraintImpulses() << std::endl;
-    std::cout << _constImp << std::endl;
-//    GenCoordSystem::setConstraintImpulses(
-//          GenCoordSystem::getConstraintImpulses() + _constImp);
+//    std::cout << GenCoordSystem::getConstraintImpulses() << std::endl;
+//    std::cout << _constImp << std::endl;
+    GenCoordSystem::setConstraintImpulses(
+          GenCoordSystem::getConstraintImpulses() + _constImp);
   }
   else
   {
@@ -189,6 +189,11 @@ void PointMass::clearConstraintImpulse()
 {
   assert(GenCoordSystem::getNumGenCoords() == 3);
   GenCoordSystem::setConstraintImpulses(Eigen::Vector3d::Zero());
+  mDelV.setZero();
+  mImpB.setZero();
+  mImpAlpha.setZero();
+  mImpBeta.setZero();
+  mImpF.setZero();
 }
 
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
@@ -348,10 +353,6 @@ void PointMass::updateBodyForce(const Eigen::Vector3d& _gravity,
                    * _gravity);
   }
   assert(!math::isNan(mF));
-
-  // TODO(JS): This will be removed once new constratin solver is done.
-  mF -= GenCoordSystem::getConstraintImpulses();
-  assert(!math::isNan(mF));
 }
 
 void PointMass::updateArticulatedInertia(double _dt)
@@ -430,6 +431,12 @@ void PointMass::update_ddq()
             + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
   setGenAccs(ddq);
   assert(!math::isNan(ddq));
+
+  // dv = dw(parent) x mX + dv(parent) + eata + ddq
+  mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
+        mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
+        mEta + getGenAccs();
+  assert(!math::isNan(mdV));
 }
 
 void PointMass::update_F_fs()
@@ -455,25 +462,37 @@ void PointMass::updateImpBiasForce()
   assert(!math::isNan(mImpB));
 
   // Cache data: alpha
-  mImpAlpha = mImpB;
+  mImpAlpha = -mImpB;
   assert(!math::isNan(mImpAlpha));
 
   // Cache data: beta
-  mImpBeta = mImpB;
-  mImpBeta.noalias() += mMass * (mImplicitPsi * mImpAlpha);
+  mImpBeta.setZero();
   assert(!math::isNan(mImpBeta));
 }
 
 //==============================================================================
 void PointMass::updateJointVelocityChange()
 {
+//  Eigen::Vector3d del_dq
+//      = mPsi
+//        * (mImpAlpha - mMass
+//           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+//              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
+
   Eigen::Vector3d del_dq
-      = mImplicitPsi
-        * (mImpAlpha - mMass
-           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
-              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
+      = mPsi * mImpAlpha
+        - mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+        - mParentSoftBodyNode->getBodyVelocityChange().tail<3>();
+
+//  del_dq = Eigen::Vector3d::Zero();
+
   GenCoordSystem::setVelsChange(del_dq);
   assert(!math::isNan(del_dq));
+
+  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+          + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
+          + GenCoordSystem::getVelsChange();
+  assert(!math::isNan(mDelV));
 }
 
 //==============================================================================

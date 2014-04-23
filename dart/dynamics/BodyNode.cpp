@@ -52,8 +52,8 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 0.0
-#define DART_DEFAULT_RESTITUTION_COEFF 0.5
+#define DART_DEFAULT_FRICTION_COEFF 0.4
+#define DART_DEFAULT_RESTITUTION_COEFF 0.2
 
 namespace dart {
 namespace dynamics {
@@ -983,7 +983,16 @@ void BodyNode::update_ddq() {
   mParentJoint->GenCoordSystem::setGenAccs(ddq);
   assert(!math::isNan(ddq));
 
-  updateAcceleration();
+  if (mParentJoint->getNumGenCoords() > 0) {
+    mdV = mEta;
+    mdV.noalias() += mParentJoint->getLocalJacobian() * mParentJoint->getGenAccs();
+    if (mParentBodyNode) {
+      mdV += math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->getBodyAcceleration());
+    }
+  }
+
+  assert(!math::isNan(mdV));
 }
 
 void BodyNode::update_F_fs() {
@@ -1058,6 +1067,19 @@ void BodyNode::updateJointVelocityChange()
 
   mParentJoint->setVelsChange(del_dq);
   assert(!math::isNan(del_dq));
+
+  if (mParentJoint->getNumGenCoords() > 0)
+    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+  else
+    mDelV.setZero();
+
+  if (mParentBodyNode)
+  {
+    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->mDelV);
+  }
+
+  assert(!math::isNan(mDelV));
 }
 
 //==============================================================================
