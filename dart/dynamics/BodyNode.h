@@ -529,7 +529,7 @@ public:
 
   /// \brief Update body velocity change for impulse-based forward dynamics
   /// algorithm
-  virtual void updateBodyVelocityChange();
+//  virtual void updateBodyVelocityChange();
 
   /// \brief
   virtual void updateBodyImpForceFwdDyn();

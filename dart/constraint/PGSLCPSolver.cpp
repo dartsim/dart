@@ -195,7 +195,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
 //==============================================================================
 #ifdef BUILD_TYPE_DEBUG
-bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A)
+bool PGSLCPSolver::isSymmetric(size_t _n, double* _A)
 {
   int nSkip = dPAD(_n);
   for (int i = 0; i < _n; ++i)
@@ -225,7 +225,7 @@ bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A)
 }
 
 //==============================================================================
-bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A,
+bool PGSLCPSolver::isSymmetric(size_t _n, double* _A,
                                    size_t _begin, size_t _end)
 {
   int nSkip = dPAD(_n);
@@ -256,7 +256,7 @@ bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A,
 }
 
 //==============================================================================
-void DantzigLCPSolver::print(size_t _n, double* _A, double* _x,
+void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
                              double* lo, double* hi, double* b,
                              double* w, int* findex)
 {

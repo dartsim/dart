@@ -757,6 +757,7 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 //==============================================================================
 void BodyNode::clearConstraintImpulse()
 {
+  mDelV.setZero();
   mImpB.setZero();
   mImpAlpha.setZero();
   mImpBeta.setZero();
@@ -764,6 +765,8 @@ void BodyNode::clearConstraintImpulse()
   mImpF.setZero();
 
   mParentJoint->setConstraintImpulses(
+        Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords()));
+  mParentJoint->setVelsChange(
         Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords()));
 }
 
@@ -1054,24 +1057,25 @@ void BodyNode::updateImpBiasForce()
 //==============================================================================
 void BodyNode::updateJointVelocityChange()
 {
-  if (mParentJoint->getNumGenCoords() == 0)
-    return;
-
-  Eigen::VectorXd del_dq = mPsi * mImpAlpha;
-  if (mParentBodyNode)
-  {
-    del_dq -= mAI_S_Psi.transpose()
-              * math::AdInvT(mParentJoint->getLocalTransform(),
-                             mParentBodyNode->mDelV);
-  }
-
-  mParentJoint->setVelsChange(del_dq);
-  assert(!math::isNan(del_dq));
-
   if (mParentJoint->getNumGenCoords() > 0)
+  {
+    Eigen::VectorXd del_dq = mPsi * mImpAlpha;
+    if (mParentBodyNode)
+    {
+      del_dq -= mAI_S_Psi.transpose()
+                * math::AdInvT(mParentJoint->getLocalTransform(),
+                               mParentBodyNode->mDelV);
+    }
+
+    mParentJoint->setVelsChange(del_dq);
+    assert(!math::isNan(del_dq));
+
     mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+  }
   else
+  {
     mDelV.setZero();
+  }
 
   if (mParentBodyNode)
   {
@@ -1083,21 +1087,21 @@ void BodyNode::updateJointVelocityChange()
 }
 
 //==============================================================================
-void BodyNode::updateBodyVelocityChange()
-{
-  if (mParentJoint->getNumGenCoords() > 0)
-    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
-  else
-    mDelV.setZero();
+//void BodyNode::updateBodyVelocityChange()
+//{
+//  if (mParentJoint->getNumGenCoords() > 0)
+//    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+//  else
+//    mDelV.setZero();
 
-  if (mParentBodyNode)
-  {
-    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
-                          mParentBodyNode->mDelV);
-  }
+//  if (mParentBodyNode)
+//  {
+//    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
+//                          mParentBodyNode->mDelV);
+//  }
 
-  assert(!math::isNan(mDelV));
-}
+//  assert(!math::isNan(mDelV));
+//}
 
 //==============================================================================
 void BodyNode::updateBodyImpForceFwdDyn()

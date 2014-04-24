@@ -175,7 +175,7 @@ protected:
   virtual void updateJointVelocityChange();
 
   // Documentation inherited.
-  virtual void updateBodyVelocityChange();
+//  virtual void updateBodyVelocityChange();
 
   // Documentation inherited.
   virtual void updateBodyImpForceFwdDyn();

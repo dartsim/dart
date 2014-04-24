@@ -498,13 +498,13 @@ void SoftBodyNode::updateJointVelocityChange()
 }
 
 //==============================================================================
-void SoftBodyNode::updateBodyVelocityChange()
-{
-  BodyNode::updateBodyVelocityChange();
+//void SoftBodyNode::updateBodyVelocityChange()
+//{
+//  BodyNode::updateBodyVelocityChange();
 
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateBodyVelocityChange();
-}
+//  for (int i = 0; i < mPointMasses.size(); ++i)
+//    mPointMasses.at(i)->updateBodyVelocityChange();
+//}
 
 //==============================================================================
 void SoftBodyNode::updateBodyImpForceFwdDyn()

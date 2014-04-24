@@ -953,7 +953,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 #endif
 
   // Set impulse to _bodyNode
-  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
+//  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
 
   // Prepare cache data
@@ -965,7 +965,8 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
-  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
+//  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
+  _bodyNode->mConstraintImpulse.setZero();
 }
 
 //==============================================================================
@@ -1058,7 +1059,7 @@ void Skeleton::computeImpulseForwardDynamics()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->updateJointVelocityChange();
-    (*it)->updateBodyVelocityChange();
+//    (*it)->updateBodyVelocityChange();
     (*it)->updateBodyImpForceFwdDyn();
   }
 
@@ -1078,6 +1079,30 @@ void Skeleton::computeImpulseForwardDynamics()
 
 //  dtdbg << "GenCoordSystem::getVelsChange(): "
 //        << GenCoordSystem::getVelsChange().transpose() << std::endl;
+
+//  Eigen::VectorXd vel = GenCoordSystem::getGenVels();
+//  Eigen::VectorXd velChange = GenCoordSystem::getVelsChange();
+
+//  for (int i = 0;  i < getNumGenCoords(); ++i)
+//  {
+//    if (math::isNan(vel[i]))
+//    {
+//      dtdbg << "GenCoordSystem::getGenVels(): "
+//            << GenCoordSystem::getGenVels().transpose() << std::endl;
+
+//      dtdbg << "GenCoordSystem::getVelsChange(): "
+//            << GenCoordSystem::getVelsChange().transpose() << std::endl;
+//    }
+
+//    if (math::isNan(velChange[i]))
+//    {
+//      dtdbg << "GenCoordSystem::getGenVels(): "
+//            << GenCoordSystem::getGenVels().transpose() << std::endl;
+
+//      dtdbg << "GenCoordSystem::getVelsChange(): "
+//            << GenCoordSystem::getVelsChange().transpose() << std::endl;
+//    }
+//  }
 
   GenCoordSystem::setGenVels(GenCoordSystem::getGenVels()
                              + GenCoordSystem::getVelsChange());
