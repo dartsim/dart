@@ -328,7 +328,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double tol = 1e-3;
 
   simulation::World* myWorld
-      = utils::SkelParser::readSkelFile(
+      = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != NULL);
 

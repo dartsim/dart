@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readSkelFile(
+      = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"skel/soft_open_chain.skel");
   assert(myWorld != NULL);
 

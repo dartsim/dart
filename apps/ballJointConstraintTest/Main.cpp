@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     // load a skeleton file
     // create and initialize the world
     dart::simulation::World* myWorld
-            = utils::SkelParser::readSkelFile(DART_DATA_PATH"/skel/freeChain.skel");
+            = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/freeChain.skel");
     assert(myWorld != NULL);
     
     // create and initialize the world

@@ -51,7 +51,7 @@ using namespace dart::utils;
 int main(int argc, char* argv[])
 {
   World* myWorld
-      = SkelParser::readSkelFile(DART_DATA_PATH"skel/fullbody1.skel");
+      = SkelParser::readWorld(DART_DATA_PATH"skel/fullbody1.skel");
   assert(myWorld != NULL);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

@@ -110,7 +110,7 @@ TEST(SKEL_PARSER, DATA_STRUCTUER)
 
 TEST(SKEL_PARSER, EMPTY)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/empty.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -128,7 +128,7 @@ TEST(SKEL_PARSER, EMPTY)
 
 TEST(SKEL_PARSER, PENDULUM)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/single_pendulum.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/single_pendulum.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -148,7 +148,7 @@ TEST(SKEL_PARSER, PENDULUM)
 
 TEST(SKEL_PARSER, SERIAL_CAHIN)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -175,7 +175,7 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   using namespace utils;
 
   World* world
-      = SkelParser::readSkelFile(
+      = SkelParser::readWorld(
           DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != NULL);
 

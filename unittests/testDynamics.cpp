@@ -230,7 +230,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  World* world = SkelParser::readSkelFile(_fileName);
+  World* world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
 
@@ -350,7 +350,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
   double timeStep = 1.0e-6;
 
   // load skeleton
-  World* world = SkelParser::readSkelFile(_fileName);
+  World* world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -547,7 +547,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readSkelFile(_fileName);
+  myWorld = utils::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != NULL);
 
   for (int i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -750,7 +750,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readSkelFile(_fileName);
+  myWorld = utils::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != NULL);
 
   for (int i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -865,7 +865,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readSkelFile(_fileName);
+  myWorld = utils::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != NULL);
 
   for (int i = 0; i < myWorld->getNumSkeletons(); ++i)

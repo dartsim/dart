@@ -47,7 +47,7 @@
 int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readSkelFile(DART_DATA_PATH"/skel/joint_limit.skel");
+      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/joint_limit.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

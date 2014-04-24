@@ -78,6 +78,11 @@ namespace utils {
 
 simulation::World* SkelParser::readSkelFile(const std::string& _filename)
 {
+  return SkelParser::readWorld(_filename);
+}
+
+simulation::World* SkelParser::readWorld(const std::string& _filename)
+{
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
@@ -440,8 +445,8 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
 }
 
 SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
-    tinyxml2::XMLElement*    _softBodyNodeElement,
-    dynamics::Skeleton*  _Skeleton,
+    tinyxml2::XMLElement* _softBodyNodeElement,
+    dynamics::Skeleton* _Skeleton,
     const Eigen::Isometry3d& _skeletonFrame)
 {
   //---------------------------------- Note ------------------------------------
@@ -454,11 +459,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node
   if (!hasElement(_softBodyNodeElement, "soft_shape"))
-  {
-    return SkelParser::readBodyNode(_softBodyNodeElement,
-                                    _Skeleton,
-                                    _skeletonFrame);
-  }
+    return readBodyNode(_softBodyNodeElement, _Skeleton, _skeletonFrame);
 
   dynamics::SoftBodyNode* newSoftBodyNode = new dynamics::SoftBodyNode;
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
