@@ -46,6 +46,7 @@ namespace gui {
 /// \brief
 class Trackball {
 public:
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// \brief Default constructor

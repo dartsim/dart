@@ -51,7 +51,7 @@
                             <num_stacks>12</num_stacks>
                         </ellipsoid>
                     </geometry>
-		<kv>1000.0</kv>
+		<kv>10000.0</kv>
 		<ke>100.0</ke>
 		<damp>50.0</damp>
                 </soft_shape>

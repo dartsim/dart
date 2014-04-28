@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,62 +34,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_UTILS_SOFTPARSER_H_
-#define SOFT_UTILS_SOFTPARSER_H_
+#ifndef DART_CONSTRAINT_PGSLCPSOLVER_H_
+#define DART_CONSTRAINT_PGSLCPSOLVER_H_
 
-#include <string>
-#include <vector>
+#include <cstddef>
 
-#include <Eigen/Dense>
-#include <tinyxml2.h>
-
-#include <dart/utils/SkelParser.h>
+#include "dart/config.h"
+#include "dart/constraint/LCPSolver.h"
 
 namespace dart {
-namespace dynamics {
-class Joint;
-class SoftBodyNode;
-class SoftSkeleton;
-}  // namespace dynamics
-namespace simulation {
-class SoftWorld;
-}  // namespace simulation
-}  // namespace dart
+namespace constraint {
 
-namespace dart {
-namespace utils {
-
-class SoftSkelParser : public SkelParser
+/// PGSLCPSolver
+class PGSLCPSolver : public LCPSolver
 {
 public:
-  /// \brief Read SoftWorld from skel file
-  static simulation::SoftWorld* readSoftFile(const std::string& _filename);
+  /// Constructor
+  explicit PGSLCPSolver(double _timestep);
 
-  /// \brief Read SoftSkeleton from skel file
-  static dynamics::SoftSkeleton* readSoftSkeleton(const std::string& _filename);
+  /// Constructor
+  virtual ~PGSLCPSolver();
 
-protected:
-  /// \brief
-  static simulation::SoftWorld* readSoftWorld(tinyxml2::XMLElement* _worldElement);
+  // Documentation inherited
+  virtual void solve(ConstrainedGroup* _group);
 
-  /// \brief
-  static dynamics::SoftSkeleton* readSoftSkeleton(
-      tinyxml2::XMLElement* _softSkeletonElement);
+#ifdef BUILD_TYPE_DEBUG
+private:
+  /// Return true if the matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A);
 
-  /// \brief
-  static SkelBodyNode readSoftBodyNode(
-      tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::SoftSkeleton* _softSkeleton,
-      const Eigen::Isometry3d& _skeletonFrame);
+  /// Return true if the diagonla block of matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A, size_t _begin, size_t _end);
 
-  /// \brief
-  static dynamics::Joint* readSoftJoint(
-      tinyxml2::XMLElement* _jointElement,
-      const std::vector<SkelBodyNode,
-      Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
+  /// Print debug information
+  void print(size_t _n, double* _A, double* _x, double* _lo, double* _hi,
+             double* _b, double* w, int* _findex);
+#endif
 };
 
-}  // namespace utils
-}  // namespace dart
+struct PGSOption
+{
+  int itermax;
+  double sor_w;
+  double eps_ea;
+  double eps_res;
+  double eps_div;
 
-#endif  // SOFT_UTILS_SOFTPARSER_H_
+  void setDefault();
+};
+
+bool solvePGS(int n, int nskip, int /*nub*/, double* A,
+                            double* x, double * b,
+                            double * lo, double * hi, int * findex,
+                            PGSOption * option);
+
+
+} // namespace constraint
+} // namespace dart
+
+#endif  // DART_CONSTRAINT_PGSLCPSOLVER_H_
+

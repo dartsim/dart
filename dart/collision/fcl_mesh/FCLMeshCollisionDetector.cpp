@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>
+ * Author(s): Chen Tang <ctang40@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -44,6 +45,8 @@
 #include "dart/renderer/LoadOpengl.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/PointMass.h"
 #include "dart/collision/CollisionNode.h"
 #include "dart/collision/fcl_mesh/CollisionShapes.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionNode.h"
@@ -51,40 +54,64 @@
 namespace dart {
 namespace collision {
 
-FCLMeshCollisionDetector::FCLMeshCollisionDetector() {
+//==============================================================================
+FCLMeshCollisionDetector::FCLMeshCollisionDetector()
+{
 }
 
-FCLMeshCollisionDetector::~FCLMeshCollisionDetector() {
+//==============================================================================
+FCLMeshCollisionDetector::~FCLMeshCollisionDetector()
+{
 }
 
+//==============================================================================
 CollisionNode*FCLMeshCollisionDetector::createCollisionNode(
-    dynamics::BodyNode* _bodyNode) {
+    dynamics::BodyNode* _bodyNode)
+{
   return new FCLMeshCollisionNode(_bodyNode);
 }
 
+//==============================================================================
 bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
-                                               bool _calculateContactPoints) {
-  clearAllContacts();
+                                               bool _calculateContactPoints)
+{
+  //----------------------------------------------------------------------------
+  // Clear previous contact informations
+  //----------------------------------------------------------------------------
+
+  // Update the positions of vertices on meshs
+  for (int i = 0; i < mCollisionNodes.size(); ++i)
+    static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i])->updateShape();
+
+  // Clear previous contacts
+  mContacts.clear();
+
+  //----------------------------------------------------------------------------
+  // Detect collisions
+  //----------------------------------------------------------------------------
+
   bool collision = false;
 
   FCLMeshCollisionNode* FCLMeshCollisionNode1 = NULL;
   FCLMeshCollisionNode* FCLMeshCollisionNode2 = NULL;
 
   for (int i = 0; i < mCollisionNodes.size(); i++)
-    mCollisionNodes[i]->getBodyNode()->setColliding(false);
-
-  for (int i = 0; i < mCollisionNodes.size(); i++) {
-    FCLMeshCollisionNode1 =
-        static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i]);
-    for (int j = i + 1; j < mCollisionNodes.size(); j++) {
-      FCLMeshCollisionNode2 =
-          static_cast<FCLMeshCollisionNode*>(mCollisionNodes[j]);
+  {
+    FCLMeshCollisionNode1
+        = static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i]);
+    for (int j = i + 1; j < mCollisionNodes.size(); j++)
+    {
+      FCLMeshCollisionNode2
+          = static_cast<FCLMeshCollisionNode*>(mCollisionNodes[j]);
       if (!isCollidable(FCLMeshCollisionNode1, FCLMeshCollisionNode2))
         continue;
-      if (FCLMeshCollisionNode1->detectCollision(
-           FCLMeshCollisionNode2,
-           _calculateContactPoints ? &mContacts : NULL,
-           mNumMaxContacts)) {
+
+      std::vector<Contact>* contactPoints
+          = _calculateContactPoints ? &mContacts : NULL;
+      if (FCLMeshCollisionNode1->detectCollision(FCLMeshCollisionNode2,
+                                                 contactPoints,
+                                                 mNumMaxContacts))
+      {
         collision = true;
         mCollisionNodes[i]->getBodyNode()->setColliding(true);
         mCollisionNodes[j]->getBodyNode()->setColliding(true);
@@ -98,9 +125,11 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
   return collision;
 }
 
+//==============================================================================
 bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
                                                CollisionNode* _node2,
-                                               bool _calculateContactPoints) {
+                                               bool _calculateContactPoints)
+{
   FCLMeshCollisionNode* collisionNode1 =
       static_cast<FCLMeshCollisionNode*>(_node1);
   FCLMeshCollisionNode* collisionNode2 =
@@ -111,7 +140,9 @@ bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
         mNumMaxContacts);
 }
 
-void FCLMeshCollisionDetector::draw() {
+//==============================================================================
+void FCLMeshCollisionDetector::draw()
+{
   for (int i = 0; i < mCollisionNodes.size(); i++)
     static_cast<FCLMeshCollisionNode*>(
         mCollisionNodes[i])->drawCollisionSkeletonNode();

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,37 +34,76 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
-#define DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
+#ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_H_
+#define DART_CONSTRAINT_BALLJOINTCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/JointConstraint.h"
+
+#include <Eigen/Dense>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-}
-
 namespace constraint {
 
-class BallJointConstraint : public Constraint {
+class BallJointConstraint : public JointConstraint
+{
 public:
-    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _offset1, Eigen::Vector3d _offset2);
-    BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _jointPosition);
-    BallJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
-    virtual ~BallJointConstraint();
-    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
-    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+  /// Constructor
+  /// \param[in] _body
+  /// \param[in] _offset Offset from _body's origin to ball joint position
+  ///                    expressed in _body's frame
+  BallJointConstraint(dynamics::BodyNode *_body,
+                      const Eigen::Vector3d& _offset);
 
-private:
-    virtual void getJacobian();
-    Eigen::Vector3d mOffset1;
-    Eigen::Vector3d mOffset2;
+  /// Constructor
+  /// \param[in] _body1
+  /// \param[in] _body2
+  /// \param[in] _offset1 Offset from _body1's origin to ball joint position
+  ///                     expressed in _body1's frame
+  /// \param[in] _offset2 Offset from _body2's origin to ball joint position
+  ///                     expressed in _body2's frame
+  BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2,
+                      const Eigen::Vector3d& _offset1,
+                      const Eigen::Vector3d& _offset2);
+
+  /// Destructor
+  ~BallJointConstraint();
+
+protected:
+  // Documentation inherited
+  virtual void update();
+
+  // Documentation inherited
+  virtual void getLCPVectors(ConstraintInfo* _info);
+
+  // Documentation inherited
+  virtual void applyUnitImpulse(size_t _index);
+
+  // Documentation inherited
+  virtual void getVelocityChange(double* _vel, bool _withCfm);
+
+  // Documentation inherited
+  virtual void excite();
+
+  // Documentation inherited
+  virtual void unexcite();
+
+  // Documentation inherited
+  virtual void applyConstraintImpulse(double* _lambda);
+
+  // Documentation inherited
+  virtual dynamics::Skeleton* getRootSkeleton() const {}
+
+protected:
+  ///
+  Eigen::Vector3d mOffset1;
+
+  ///
+  Eigen::Vector3d mOffset2;
+
 };
 
-} // namespace constraint
-} // namespace dart
+}  // namespace constraint
+}  // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_BALLJOINTCONSTRAINT_H
+#endif  // DART_CONSTRAINT_BALLJOINTCONSTRAINT_H_
 

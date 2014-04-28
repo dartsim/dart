@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,41 +34,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
-#define SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_
+#ifndef DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
+#define DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
 
-#include <assimp/mesh.h>
-#include <dart/collision/fcl_mesh/FCLMeshCollisionNode.h>
+#include <cstddef>
+
+#include "dart/config.h"
+#include "dart/constraint/LCPSolver.h"
 
 namespace dart {
-namespace collision {
+namespace constraint {
 
-/// \brief
-class SoftFCLMeshCollisionNode : public FCLMeshCollisionNode
+/// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
+/// algorithm
+class DantzigLCPSolver : public LCPSolver
 {
 public:
-  /// \brief
-  explicit SoftFCLMeshCollisionNode(dynamics::BodyNode* _bodyNode);
+  /// Constructor
+  explicit DantzigLCPSolver(double _timestep);
 
-  /// \brief
-  virtual ~SoftFCLMeshCollisionNode();
+  /// Constructor
+  virtual ~DantzigLCPSolver();
 
-  // Documentation inherited.
-  virtual bool detectCollision(FCLMeshCollisionNode* _otherNode,
-                               std::vector<Contact>* _contactPoints,
-                               int _num_max_contact);
+  // Documentation inherited
+  virtual void solve(ConstrainedGroup* _group);
 
-  /// \brief
-  void updateShape();
+#ifdef BUILD_TYPE_DEBUG
+private:
+  /// Return true if the matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A);
 
-protected:
+  /// Return true if the diagonla block of matrix is symmetric
+  bool isSymmetric(size_t _n, double* _A, size_t _begin, size_t _end);
+
+  /// Print debug information
+  void print(size_t _n, double* _A, double* _x, double* _lo, double* _hi,
+             double* _b, double* w, int* _findex);
+#endif
 };
 
-template<class BV>
-fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh,
-                                  const fcl::Transform3f& _transform);
+} // namespace constraint
+} // namespace dart
 
-}  // namespace collision
-}  // namespace dart
+#endif  // DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
 
-#endif  // SOFT_COLLISION_FCL_MESH_SOFTFCLMESHCOLLISIONNODE_H_

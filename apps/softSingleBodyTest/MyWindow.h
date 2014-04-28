@@ -43,8 +43,8 @@
 #ifndef APPS_TESTSINGLEBODY_MYWINDOW_H_
 #define APPS_TESTSINGLEBODY_MYWINDOW_H_
 
-#include <dart/math/MathTypes.h>
-#include <dart/gui/Win3D.h>
+#include "dart/math/MathTypes.h"
+#include "dart/gui/Win3D.h"
 
 #include "dart/gui/SoftSimWindow.h"
 

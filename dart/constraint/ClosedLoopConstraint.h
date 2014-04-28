@@ -4,7 +4,7 @@
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,49 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
-#define SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
+#ifndef DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
+#define DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
 
-#include <vector>
-
-#include <dart/constraint/ConstraintDynamics.h>
-
-namespace dart {
-namespace dynamics {
-class PointMass;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/constraint/WeldJointConstraint.h"
 
 namespace dart {
 namespace constraint {
 
-class SoftConstraintDynamics : public ConstraintDynamics
-{
-public:
-  /// \brief Constructor
-  SoftConstraintDynamics(const std::vector<dynamics::Skeleton*>& _skels,
-                         double _dt,
-                         double _mu = 1.0,
-                         int _d = 4,
-                         bool _useODE = true,
-                         collision::CollisionDetector* _collisionDetector
-                         = new collision::FCLMeshCollisionDetector());
+//class ClosedLoopConstraint : public WeldJointConstraint
+//{
+//public:
+//  ClosedLoopConstraint();
 
-  /// \brief Destructor
-  virtual ~SoftConstraintDynamics();
-
-protected:
-  // Documentation inherited.
-  virtual void applySolutionODE();
-
-  // Documentation inherited.
-  virtual void updateNBMatricesODE();
-
-  // Ignore p because always the contact point is on the point mass.
-  virtual Eigen::MatrixXd getJacobian(dynamics::PointMass* pointMass);
-};
+//  ~ClosedLoopConstraint();
+//};
 
 }  // namespace constraint
 }  // namespace dart
 
-#endif  // SOFT_CONSTRAINT_SOFTCONSTRAINTDYNAMICS_H_
+#endif  // DART_CONSTRAINT_CLOSEDLOOPCONSTRAINT_H_
+

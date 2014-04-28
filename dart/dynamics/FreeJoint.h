@@ -39,6 +39,8 @@
 
 #include <string>
 
+#include <Eigen/Dense>
+
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 

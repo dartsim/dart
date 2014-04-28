@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,33 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftEdge.h"
-
-#include <string>
-
-#include <dart/renderer/RenderInterface.h>
+#ifndef DART_CONSTRAINT_LCPSOLVER_H_
+#define DART_CONSTRAINT_LCPSOLVER_H_
 
 namespace dart {
-namespace dynamics {
+namespace constraint {
 
-Edge::Edge(const std::string& _name) : mName(_name)
+class ConstrainedGroup;
+
+/// LCPSolver
+class LCPSolver
 {
-}
+public:
+  /// Solve constriant impulses for a constrained group
+  virtual void solve(ConstrainedGroup* _group) = 0;
 
-Edge::~Edge()
-{
-}
+  /// Set time step
+  void setTimeStep(double _timeStep);
 
-void Edge::setLeftPointMass(PointMass* _pointMass)
-{
-  mLeftPointMass = _pointMass;
-}
+  /// Return time step
+  double getTimeStep() const;
 
-void Edge::setRightPointMass(PointMass* _pointMass)
-{
-  mRightPointMass = _pointMass;
-}
+protected:
+  /// Constructor
+  LCPSolver(double _timeStep);
 
-}  // namespace dynamics
-}  // namespace dart
+  /// Destructor
+  virtual ~LCPSolver();
+
+protected:
+  /// Simulation time step
+  double mTimeStep;
+};
+
+} // namespace constraint
+} // namespace dart
+
+#endif  // DART_CONSTRAINT_LCPSOLVER_H_
 

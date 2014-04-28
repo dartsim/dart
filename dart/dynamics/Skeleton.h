@@ -57,6 +57,8 @@ namespace dart {
 namespace dynamics {
 
 class BodyNode;
+class SoftBodyNode;
+class PointMass;
 class Joint;
 class Marker;
 
@@ -64,14 +66,18 @@ class Marker;
 class Skeleton : public GenCoordSystem
 {
 public:
-  //---------------------- Constructor and Destructor --------------------------
+  //----------------------------------------------------------------------------
+  // Constructor and Destructor
+  //----------------------------------------------------------------------------
   /// \brief Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
   /// \brief Destructor
   virtual ~Skeleton();
 
-  //------------------------------ Properties ----------------------------------
+  //----------------------------------------------------------------------------
+  // Properties
+  //----------------------------------------------------------------------------
   /// \brief Set name.
   void setName(const std::string& _name);
 
@@ -117,12 +123,20 @@ public:
   /// init().
   double getMass() const;
 
-  //----------------------- Structueral Properties -----------------------------
+  //----------------------------------------------------------------------------
+  // Structueral Properties
+  //----------------------------------------------------------------------------
   /// \brief Add a body node
   void addBodyNode(BodyNode* _body);
 
   /// \brief Get number of body nodes
   int getNumBodyNodes() const;
+
+  /// \brief Get number of rigid body nodes.
+  int getNumRigidBodyNodes() const;
+
+  /// \brief Get number of soft body nodes.
+  int getNumSoftBodyNodes() const;
 
   /// \brief Get root body node
   BodyNode* getRootBodyNode() const;
@@ -130,8 +144,14 @@ public:
   /// \brief Get body node whose index is _idx
   BodyNode* getBodyNode(int _idx) const;
 
+  /// \brief Get soft body node.
+  SoftBodyNode* getSoftBodyNode(int _idx) const;
+
   /// \brief Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name) const;
+
+  /// \brief Get soft body node.
+  SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   /// \brief Get joint whose index is _idx
   Joint* getJoint(int _idx) const;
@@ -142,12 +162,17 @@ public:
   /// \brief Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
-  //--------------------------- Initialization ---------------------------------
+  //----------------------------------------------------------------------------
+  // Initialization
+  //----------------------------------------------------------------------------
   /// \brief Initialize this skeleton for kinematics and dynamics
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
-  //--------------- Interfaces for generalized coordinates ---------------------
+
+  //----------------------------------------------------------------------------
+  // Interfaces for generalized coordinates
+  //----------------------------------------------------------------------------
   /// \brief Set configurations defined in terms of generalized coordinates
   /// and update Cartesian terms of body nodes using following parameters.
   /// \param[in] _updateTransforms True to update transformations of body nodes
@@ -197,20 +222,26 @@ public:
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
 
-  //------------------------------ Integration ---------------------------------
+  //----------------------------------------------------------------------------
+  // Integration
+  //----------------------------------------------------------------------------
   // Documentation inherited
   virtual void integrateConfigs(double _dt);
 
   // Documentation inherited
   virtual void integrateGenVels(double _dt);
 
-  //----------------------- Kinematics algorithms ------------------------------
+  //----------------------------------------------------------------------------
+  // Kinematics algorithms
+  //----------------------------------------------------------------------------
   /// \brief Compute forward kinematics
   void computeForwardKinematics(bool _updateTransforms = true,
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
 
-  //------------------------ Dynamics algorithms -------------------------------
+  //----------------------------------------------------------------------------
+  // Dynamics algorithms
+  //----------------------------------------------------------------------------
   /// \brief Compute forward dynamics
   void computeForwardDynamics();
 
@@ -221,7 +252,52 @@ public:
   /// \brief Compute hybrid dynamics
   void computeHybridDynamics();
 
-  //------------------------- Equations of Motion ------------------------------
+  //----------------------------------------------------------------------------
+  // Impulse-based dynamics
+  //----------------------------------------------------------------------------
+  /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
+  /// (b) generalized constraints on Joint
+  virtual void clearConstraintImpulses();
+
+  // TODO(JS): To be deprecated
+  /// \brief Set constraint force vector.
+  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
+
+  /// \brief Update bias impulses
+  void updateBiasImpulse(BodyNode* _bodyNode);
+
+  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+
+  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  void updateBiasImpulse(SoftBodyNode* _softBodyNode,
+                         PointMass* _pointMass,
+                         const Eigen::Vector3d& _imp);
+
+  /// \brief Update velocity changes in body nodes and joints due to applied
+  /// impulse
+  void updateVelocityChange();
+
+  // TODO(JS): Better naming
+  /// \brief Set whether this skeleton is constrained. ConstraintSolver will
+  ///  mark this.
+  void setImpulseApplied(bool _val);
+
+  /// \brief Get whether this skeleton is constrained
+  bool isImpulseApplied() const;
+
+  /// \brief Compute impulse-based forward dynamics
+  void computeImpulseForwardDynamics();
+
+  /// \brief Compute impulse-based inverse dynamics
+  void computeImpulseInverseDynamics() {}
+
+  /// \brief Compute impulse-based hybrid dynamics
+  void computeImpulseHybridDynamics() {}
+
+  //----------------------------------------------------------------------------
+  // Equations of Motion
+  //----------------------------------------------------------------------------
   /// \brief Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 
@@ -281,15 +357,7 @@ public:
   /// by the user.
   void clearExternalForces();
 
-  /// \brief Clear contact forces of the body nodes in this skeleton.
-  /// This function called by constraint solver before computing constraint
-  /// forces. Don't call this function after simulation step so that the user
-  /// can access the contact information.
-  void clearContactForces();
-
-  /// \brief Set constraint force vector.
-  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
-
+  //----------------------------------------------------------------------------
   /// \brief Get skeleton's COM w.r.t. world frame.
   Eigen::Vector3d getWorldCOM();
 
@@ -311,7 +379,9 @@ public:
   /// \brief Get potential energy of this skeleton.
   virtual double getPotentialEnergy() const;
 
-  //--------------------------- Rendering --------------------------------------
+  //----------------------------------------------------------------------------
+  // Rendering
+  //----------------------------------------------------------------------------
   /// \brief Draw this skeleton
   void draw(renderer::RenderInterface* _ri = NULL,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -334,6 +404,9 @@ protected:
 
   /// \brief List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
+
+  /// \brief List of Soft body node list in the skeleton
+  std::vector<SoftBodyNode*> mSoftBodyNodes;
 
   /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
@@ -410,6 +483,31 @@ protected:
   /// \brief Dirty flag for the damping force vector.
   bool mIsDampingForceVectorDirty;
 
+  // TODO(JS): Better naming
+  /// \brief Flag for status of impulse testing.
+  bool mIsImpulseApplied;
+
+  //----------------------------------------------------------------------------
+  // Union finding
+  //----------------------------------------------------------------------------
+public:
+
+  /// \brief
+  void resetUnion()
+  {
+    mUnionRootSkeleton = this;
+    mUnionSize = 1;
+  }
+
+  /// \brief
+  Skeleton* mUnionRootSkeleton;
+
+  /// \brief
+  size_t mUnionSize;
+
+  /// \brief
+  size_t mUnionIndex;
+
 protected:
   /// \brief Update mass matrix of the skeleton.
   virtual void updateMassMatrix();
@@ -439,6 +537,7 @@ protected:
   virtual void updateDampingForceVector();
 
 public:
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

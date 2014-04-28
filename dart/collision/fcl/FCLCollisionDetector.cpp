@@ -64,6 +64,10 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
   // TODO(JS): _checkAllCollisions
   clearAllContacts();
 
+  // Set all the body nodes are not in colliding
+  for (int i = 0; i < mCollisionNodes.size(); i++)
+    mCollisionNodes[i]->getBodyNode()->setColliding(false);
+
   fcl::CollisionResult result;
 
   // only evaluate contact points if data structure for returning the contact
@@ -107,10 +111,10 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
             contactPair.normal(0) = contact.normal[0];
             contactPair.normal(1) = contact.normal[1];
             contactPair.normal(2) = contact.normal[2];
-            contactPair.collisionNode1 = findCollisionNode(contact.o1);
-            contactPair.collisionNode2 = findCollisionNode(contact.o2);
-            assert(contactPair.collisionNode1 != NULL);
-            assert(contactPair.collisionNode2 != NULL);
+            contactPair.bodyNode1 = findCollisionNode(contact.o1)->getBodyNode();
+            contactPair.bodyNode2 = findCollisionNode(contact.o2)->getBodyNode();
+            assert(contactPair.bodyNode1 != NULL);
+            assert(contactPair.bodyNode2 != NULL);
 //            contactPair.bdID1 =
 //                collisionNodePair.collisionNode1->getBodyNodeID();
 //            contactPair.bdID2 =
@@ -140,6 +144,14 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
       }
     }
   }
+
+  for (size_t i = 0; i < mContacts.size(); ++i)
+  {
+    // Set these two bodies are in colliding
+    mContacts[i].bodyNode1->setColliding(true);
+    mContacts[i].bodyNode2->setColliding(true);
+  }
+
   return !mContacts.empty();
 }
 

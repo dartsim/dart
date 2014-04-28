@@ -39,8 +39,6 @@
 
 #include <string>
 
-#include <Eigen/Dense>
-
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 
@@ -85,7 +83,7 @@ protected:
   AxisOrder mAxisOrder;
 
 public:
-  //
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

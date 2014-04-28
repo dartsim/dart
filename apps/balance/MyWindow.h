@@ -58,7 +58,7 @@ public:
 
 private:
   Eigen::Vector3d mForce;
-  Controller *mController;
+  Controller* mController;
   int mImpulseDuration;
 };
 

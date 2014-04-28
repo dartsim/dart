@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Chen Tang <ctang40@gatech.edu>,
@@ -50,6 +50,7 @@
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/SoftMeshShape.h"
 #include "dart/renderer/LoadOpengl.h"
 #include "dart/collision/fcl_mesh/CollisionShapes.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
@@ -57,43 +58,54 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
 FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
-  : CollisionNode(_bodyNode) {
+  : CollisionNode(_bodyNode)
+{
   // using-declaration
   using dart::dynamics::Shape;
   using dart::dynamics::BoxShape;
   using dart::dynamics::EllipsoidShape;
   using dart::dynamics::CylinderShape;
   using dart::dynamics::MeshShape;
+  using dart::dynamics::SoftMeshShape;
 
   // Create meshes according to types of the shapes
-  for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
+  for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  {
     Shape* shape = _bodyNode->getCollisionShape(i);
     fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
-    switch (shape->getShapeType()) {
-      case Shape::ELLIPSOID: {
+    switch (shape->getShapeType())
+    {
+      case Shape::ELLIPSOID:
+      {
         EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape);
         // Sphere
-        if (ellipsoid->isSphere()) {
+        if (ellipsoid->isSphere())
+        {
           fcl::BVHModel<fcl::OBBRSS>* mesh = new fcl::BVHModel<fcl::OBBRSS>;
           fcl::generateBVHModel<fcl::OBBRSS>(
               *mesh, fcl::Sphere(ellipsoid->getSize()[0]*0.5), shapeT, 10, 10);
           mMeshes.push_back(mesh);
         // Ellipsoid
-        } else {
+        }
+        else
+        {
           mMeshes.push_back(createEllipsoid<fcl::OBBRSS>(
               ellipsoid->getSize()[0], ellipsoid->getSize()[1],
               ellipsoid->getSize()[2], shapeT));
         }
         break;
       }
-      case dynamics::Shape::BOX: {
+      case dynamics::Shape::BOX:
+      {
         BoxShape* box = static_cast<BoxShape*>(shape);
         mMeshes.push_back(createCube<fcl::OBBRSS>(
             box->getSize()[0], box->getSize()[1], box->getSize()[2], shapeT));
         break;
       }
-      case dynamics::Shape::CYLINDER: {
+      case dynamics::Shape::CYLINDER:
+      {
         CylinderShape* cylinder = static_cast<CylinderShape*>(shape);
         double radius = cylinder->getRadius();
         double height = cylinder->getHeight();
@@ -101,7 +113,8 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
                             radius, radius, height, 16, 16, shapeT));
         break;
       }
-      case dynamics::Shape::MESH: {
+      case dynamics::Shape::MESH:
+      {
         MeshShape* shapeMesh = static_cast<MeshShape*>(shape);
         mMeshes.push_back(createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
                                                   shapeMesh->getScale()[1],
@@ -110,29 +123,53 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
                                                   shapeT));
         break;
       }
-      default: {
+      default:
+      {
         std::cout << "ERROR: Collision checking does not support "
                   << _bodyNode->getName() << "'s Shape type\n";
         break;
       }
     }
   }
+
+  for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  {
+    Shape* shape = _bodyNode->getCollisionShape(i);
+    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+
+    switch (shape->getShapeType())
+    {
+      case dynamics::Shape::SOFT_MESH:
+      {
+        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
+        mMeshes.push_back(createSoftMesh<fcl::OBBRSS>(
+                            softMeshShape->getAssimpMesh(), shapeT));
+        break;
+      }
+    }
+  }
 }
 
-FCLMeshCollisionNode::~FCLMeshCollisionNode() {
+//==============================================================================
+FCLMeshCollisionNode::~FCLMeshCollisionNode()
+{
   for (int i = 0; i < mMeshes.size(); i++)
     delete mMeshes[i];
 }
 
+//==============================================================================
 bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
                                            std::vector<Contact>* _contactPoints,
-                                           int _num_max_contact) {
+                                           int _num_max_contact)
+{
   evalRT();
   _otherNode->evalRT();
   bool collision = false;
 
-  for (int i = 0; i < mMeshes.size(); i++) {
-    for (int j = 0; j < _otherNode->mMeshes.size(); j++) {
+  for (int i = 0; i < mMeshes.size(); i++)
+  {
+    for (int j = 0; j < _otherNode->mMeshes.size(); j++)
+    {
       fcl::CollisionResult res;
       fcl::CollisionRequest req;
 
@@ -146,12 +183,12 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
                    _otherNode->mFclWorldTrans,
                    req, res);
 
-      if (res.isCollision()) {
+      if (res.isCollision())
         collision = true;
-      }
-      if (!_contactPoints) {
+
+      if (!_contactPoints)
         return collision;
-      }
+
 
       int numCoplanarContacts = 0;
       int numNoContacts = 0;
@@ -160,36 +197,45 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
       std::vector<Contact> unfilteredContactPoints;
       unfilteredContactPoints.reserve(res.numContacts());
 
-      for (int k = 0; k < res.numContacts(); k++) {
+      for (int k = 0; k < res.numContacts(); k++)
+      {
         // for each pair of intersecting triangles, we create two contact points
         Contact pair1, pair2;
         //            pair1.bd1 = mBodyNode;
         //            pair1.bd2 = _otherNode->mBodyNode;
         //            pair1.bdID1 = this->mBodyNodeID;
         //            pair1.bdID2 = _otherNode->mBodyNodeID;
-        pair1.collisionNode1 = this;
-        pair1.collisionNode2 = _otherNode;
+        pair1.bodyNode1 = this->getBodyNode();
+        pair1.bodyNode2 = _otherNode->getBodyNode();
         fcl::Vec3f v;
         pair1.triID1 = res.getContact(k).b1;
         pair1.triID2 = res.getContact(k).b2;
         pair1.penetrationDepth = res.getContact(k).penetration_depth;
+        pair1.shape1 = pair1.bodyNode1->getCollisionShape(i);
+        pair1.shape2 = pair1.bodyNode2->getCollisionShape(j);
         pair2 = pair1;
         int contactResult =
             evalContactPosition(res.getContact(k), mMeshes[i],
                                 _otherNode->mMeshes[j],
                                 mFclWorldTrans, _otherNode->mFclWorldTrans,
                                 &pair1.point, &pair2.point);
-        if (contactResult == COPLANAR_CONTACT) {
+        if (contactResult == COPLANAR_CONTACT)
+        {
           numCoplanarContacts++;
           //                if (numContacts != 0 || numCoplanarContacts > 1)
           if (numContacts > 2)
             continue;
-        } else if (contactResult == NO_CONTACT) {
+        }
+        else if (contactResult == NO_CONTACT)
+        {
           numNoContacts++;
           continue;
-        } else {
+        }
+        else
+        {
           numContacts++;
         }
+
         v = -res.getContact(k).normal;
         pair1.normal = Eigen::Vector3d(v[0], v[1], v[2]);
         pair2.normal = Eigen::Vector3d(v[0], v[1], v[2]);
@@ -204,11 +250,14 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
       std::vector<bool> markForDeletion(unfilteredContactPoints.size(), false);
 
       // mark all the repeated points
-      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
-        for (unsigned int l = k + 1; l < unfilteredContactPoints.size(); l++) {
+      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++)
+      {
+        for (unsigned int l = k + 1; l < unfilteredContactPoints.size(); l++)
+        {
           Eigen::Vector3d diff = unfilteredContactPoints[k].point
                                  - unfilteredContactPoints[l].point;
-          if (diff.dot(diff) < 3 * ZERO2) {
+          if (diff.dot(diff) < 3 * ZERO2)
+          {
             markForDeletion[k] = true;
             break;
           }
@@ -216,15 +265,18 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
       }
 
       // remove all the co-linear contact points
-      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
+      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++)
+      {
         if (markForDeletion[k])
           continue;
-        for (unsigned int l = 0; l < unfilteredContactPoints.size(); l++) {
+        for (unsigned int l = 0; l < unfilteredContactPoints.size(); l++)
+        {
           if (l == k || markForDeletion[l])
             continue;
           if (markForDeletion[k])
             break;
-          for (int m = l + 1; m < unfilteredContactPoints.size(); m++) {
+          for (int m = l + 1; m < unfilteredContactPoints.size(); m++)
+          {
             if (k == m)
               continue;
             Eigen::Vector3d  v =
@@ -244,29 +296,79 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
         }
       }
 
-      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++) {
-        if (!markForDeletion[k]) {
+      for (unsigned int k = 0; k < unfilteredContactPoints.size(); k++)
+      {
+        if (!markForDeletion[k])
           _contactPoints->push_back(unfilteredContactPoints[k]);
-        }
       }
     }
   }
   return collision;
 }
 
-void FCLMeshCollisionNode::evalRT() {
+//==============================================================================
+void FCLMeshCollisionNode::updateShape()
+{
+  // using-declaration
+  using dart::dynamics::Shape;
+  using dart::dynamics::SoftMeshShape;
+
+  for (int i = 0; i < mBodyNode->getNumCollisionShapes(); i++)
+  {
+    Shape* shape = mBodyNode->getCollisionShape(i);
+    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+    switch (shape->getShapeType())
+    {
+      case dynamics::Shape::SOFT_MESH:
+      {
+        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
+        const aiMesh* mesh = softMeshShape->getAssimpMesh();
+        softMeshShape->update();
+
+        mMeshes[i]->beginUpdateModel();
+
+        for (unsigned int j = 0; j < mesh->mNumFaces; j++)
+        {
+          fcl::Vec3f vertices[3];
+          for (unsigned int k = 0; k < 3; k++)
+          {
+            const aiVector3D& vertex
+                = mesh->mVertices[mesh->mFaces[j].mIndices[k]];
+            vertices[k] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
+            vertices[k] = shapeT.transform(vertices[k]);
+          }
+          mMeshes[i]->updateTriangle(vertices[0], vertices[1], vertices[2]);
+        }
+
+        mMeshes[i]->endUpdateModel();
+        break;
+      }
+      default:
+      {
+        break;
+      }
+    }
+  }
+}
+
+//==============================================================================
+void FCLMeshCollisionNode::evalRT()
+{
   mWorldTrans = mBodyNode->getWorldTransform();
   mFclWorldTrans = getFclTransform(mWorldTrans);
 }
 
+//==============================================================================
 fcl::Transform3f FCLMeshCollisionNode::getFclTransform(
-    const Eigen::Isometry3d& _m) {
+    const Eigen::Isometry3d& _m)
+{
   return fcl::Transform3f(fcl::Matrix3f(_m(0, 0), _m(0, 1), _m(0, 2),
                                         _m(1, 0), _m(1, 1), _m(1, 2),
                                         _m(2, 0), _m(2, 1), _m(2, 2)),
                           fcl::Vec3f(_m(0, 3), _m(1, 3), _m(2, 3)));
 }
 
+//==============================================================================
 int FCLMeshCollisionNode::evalContactPosition(
     const fcl::Contact& _fclContact,
     fcl::BVHModel<fcl::OBBRSS>* _mesh1,
@@ -274,7 +376,8 @@ int FCLMeshCollisionNode::evalContactPosition(
     const fcl::Transform3f& _transform1,
     const fcl::Transform3f& _transform2,
     Eigen::Vector3d* _contactPosition1,
-    Eigen::Vector3d* _contactPosition2) {
+    Eigen::Vector3d* _contactPosition2)
+{
   int id1 = _fclContact.b1;
   int id2 = _fclContact.b2;
   fcl::Triangle tri1 = _mesh1->tri_indices[id1];
@@ -298,7 +401,8 @@ int FCLMeshCollisionNode::evalContactPosition(
   p3 = _transform2.transform(p3);
   int testRes = FFtest(v1, v2, v3, p1, p2, p3, &contact1, &contact2);
 
-  if (testRes == COPLANAR_CONTACT) {
+  if (testRes == COPLANAR_CONTACT)
+  {
     double area1 = triArea(v1, v2, v3);
     double area2 = triArea(p1, p2, p3);
 //    std::cout << "this node = " << this->mBodynodeID << " other node = "
@@ -319,7 +423,9 @@ int FCLMeshCollisionNode::evalContactPosition(
   return testRes;
 }
 
-void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
+//==============================================================================
+void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans)
+{
   evalRT();
   double M[16];
   for (int i = 0; i < 4; i++)
@@ -331,8 +437,10 @@ void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
     glMultMatrixd(M);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLES);
-  for (int i = 0; i < mMeshes.size(); i++) {
-    for (int j = 0; j < mMeshes[i]->num_tris; j++) {
+  for (int i = 0; i < mMeshes.size(); i++)
+  {
+    for (int j = 0; j < mMeshes[i]->num_tris; j++)
+    {
       fcl::Triangle tri = mMeshes[i]->tri_indices[j];
       glVertex3f(mMeshes[i]->vertices[tri[0]][0],
                  mMeshes[i]->vertices[tri[0]][1],
@@ -348,6 +456,32 @@ void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans) {
   glEnd();
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glPopMatrix();
+}
+
+//==============================================================================
+template<class BV>
+fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh,
+                                  const fcl::Transform3f& _transform)
+{
+  assert(_mesh);
+  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+  model->beginModel();
+
+  for (unsigned int i = 0; i < _mesh->mNumFaces; i++)
+  {
+    fcl::Vec3f vertices[3];
+    for (unsigned int j = 0; j < 3; j++)
+    {
+      const aiVector3D& vertex
+          = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
+      vertices[j] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
+      vertices[j] = _transform.transform(vertices[j]);
+    }
+    model->addTriangle(vertices[0], vertices[1], vertices[2]);
+  }
+
+  model->endModel();
+  return model;
 }
 
 }  // namespace collision

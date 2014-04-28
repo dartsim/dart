@@ -49,7 +49,7 @@ class BodyNode;
 class Joint;
 }  // namespace dynamics
 namespace constraint {
-class ConstraintDynamics;
+class OldConstraintDynamics;
 }  // namespace constraint
 }  // namespace dart
 

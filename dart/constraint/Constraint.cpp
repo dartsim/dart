@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -37,10 +36,54 @@
 
 #include "dart/constraint/Constraint.h"
 
-#include <vector>
+#include <cmath>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace constraint {
+
+//==============================================================================
+Constraint::Constraint()
+  : mDim(0)
+{
+}
+
+//==============================================================================
+Constraint::~Constraint()
+{
+}
+
+//==============================================================================
+size_t Constraint::getDimension() const
+{
+  return mDim;
+}
+
+//==============================================================================
+dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+  {
+    _skeleton->mUnionRootSkeleton
+        = _skeleton->mUnionRootSkeleton->mUnionRootSkeleton;
+    _skeleton = _skeleton->mUnionRootSkeleton;
+  }
+
+  return _skeleton;
+}
+
+//==============================================================================
+dynamics::Skeleton*Constraint::getRootSkeleton(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+    _skeleton = _skeleton->mUnionRootSkeleton;
+
+  return _skeleton;
+}
 
 }  // namespace constraint
 }  // namespace dart

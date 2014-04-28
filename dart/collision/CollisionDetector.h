@@ -48,32 +48,41 @@
 namespace dart {
 namespace dynamics {
 class BodyNode;
+class Skeleton;
+class Shape;
 }  // namespace dynamics
 }  // namespace dart
 
 namespace dart {
 namespace collision {
 
-/// \brief
+/// Contact information
 struct Contact {
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /// \brief
+  /// Contact point w.r.t. the world frame
   Eigen::Vector3d point;
 
-  /// \brief
+  /// Contact normal vector w.r.t. the world frame
   Eigen::Vector3d normal;
 
-  /// \brief
+  /// Contact force vector w.r.t. the world frame
   Eigen::Vector3d force;
 
-  /// \brief
-  CollisionNode* collisionNode1;
+  /// First colliding body node
+  dynamics::BodyNode* bodyNode1;
 
-  /// \brief
-  CollisionNode* collisionNode2;
+  /// Second colliding body node
+  dynamics::BodyNode* bodyNode2;
 
-  /// \brief
+  /// First colliding shape of the first body node
+  dynamics::Shape* shape1;
+
+  /// Second colliding shape of the first body node
+  dynamics::Shape* shape2;
+
+  /// Penetration depth
   double penetrationDepth;
 
   // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
@@ -89,19 +98,31 @@ struct Contact {
   void* userData;
 };
 
-/// \brief
-class CollisionDetector {
+/// \brief class CollisionDetector
+class CollisionDetector
+{
 public:
-  /// \brief
+  /// \brief Constructor
   CollisionDetector();
 
-  /// \brief
+  /// \brief Destructor
   virtual ~CollisionDetector();
 
+  /// \brief Add skeleton
+  virtual void addSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// \brief Remove skeleton
+  virtual void removeSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// \brief Remove all skeletons
+  virtual void removeAllSkeletons();
+
+  // TODO(JS): Change accessibility to private
   /// \brief
   virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                         bool _isRecursive = false);
 
+  // TODO(JS): Change accessibility to private
   /// \brief
   virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                            bool _isRecursive = false);
@@ -115,12 +136,14 @@ public:
   /// \brief
   void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
 
-  /// \brief
+  /// Return true if there exists at least one contact
+  /// \param[in] _checkAllCollision True to detect every collisions
+  /// \param[in] _calculateContactPoints True to get contact points
   virtual bool detectCollision(bool _checkAllCollisions,
                                bool _calculateContactPoints) = 0;
 
-  /// \brief Do collision detection using dollicion detection engine, and add
-  ///        all the contacts to mContacts
+  /// Return true if there exists contacts between two bodies
+  /// \param[in] _calculateContactPoints True to get contact points
   bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
                        bool _calculateContactPoints);
 
@@ -156,7 +179,13 @@ protected:
   /// \brief
   int mNumMaxContacts;
 
+  /// \brief Skeleton array
+  std::vector<dynamics::Skeleton*> mSkeletons;
+
 private:
+  /// \brief Return true if _skeleton is contained
+  bool containSkeleton(const dynamics::Skeleton* _skeleton);
+
   /// \brief
   std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1,
                                                  const CollisionNode* _node2);

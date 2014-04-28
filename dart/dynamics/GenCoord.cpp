@@ -46,24 +46,27 @@ namespace dynamics {
 
 //==============================================================================
 GenCoord::GenCoord()
-  : mConfig(0.0),
+  : mPos(0.0),
     mVel(0.0),
     mAcc(0.0),
     mForce(0.0),
-    mConfigMin(-DART_DBL_INF),
+    mPosMin(-DART_DBL_INF),
     mVelMin(-DART_DBL_INF),
     mAccMin(-DART_DBL_INF),
     mForceMin(-DART_DBL_INF),
-    mConfigMax(DART_DBL_INF),
+    mPosMax(DART_DBL_INF),
     mVelMax(DART_DBL_INF),
     mAccMax(DART_DBL_INF),
     mForceMax(DART_DBL_INF),
-    mConfigDeriv(0.0),
+    mPosDeriv(0.0),
     mVelDeriv(0.0),
     mAccDeriv(0.0),
     mForceDeriv(0.0),
     mSkelIndex(0u),
-    mName("dof")
+    mName("dof"),
+    mVelChange(0.0),
+//    mImpulse(0.0),
+    mConstraintImpulse(0.0)
 {
 }
 
@@ -91,9 +94,59 @@ size_t GenCoord::getSkeletonIndex() const
 }
 
 //==============================================================================
+void GenCoord::setPos(double _pos)
+{
+  assert(!math::isNan(_pos));
+  mPos = _pos;
+}
+
+//==============================================================================
+double GenCoord::getPos() const
+{
+  return mPos;
+}
+
+//==============================================================================
+void GenCoord::setPosMin(double _posMin)
+{
+  mPosMin = _posMin;
+}
+
+//==============================================================================
+double GenCoord::getPosMin() const
+{
+  return mPosMin;
+}
+
+//==============================================================================
+void GenCoord::setPosMax(double _posMax)
+{
+  mPosMax = _posMax;
+}
+
+//==============================================================================
+double GenCoord::getPosMax() const
+{
+  return mPosMax;
+}
+
+//==============================================================================
+void GenCoord::setPosDeriv(double _posDeriv)
+{
+  assert(!math::isNan(_posDeriv));
+  mPosDeriv = _posDeriv;
+}
+
+//==============================================================================
+double GenCoord::getPosDeriv() const
+{
+  return mPosDeriv;
+}
+
+//==============================================================================
 double GenCoord::getConfig() const
 {
-  return mConfig;
+  return getPos();
 }
 
 //==============================================================================
@@ -117,7 +170,7 @@ double GenCoord::getForce() const
 //==============================================================================
 double GenCoord::getConfigMin() const
 {
-  return mConfigMin;
+  return getPosMin();
 }
 
 //==============================================================================
@@ -141,20 +194,19 @@ double GenCoord::getForceMin() const
 //==============================================================================
 double GenCoord::getConfigMax() const
 {
-  return mConfigMax;
+  return getPosMax();
 }
 
 //==============================================================================
 void GenCoord::setConfigDeriv(double _configDeriv)
 {
-  assert(!math::isNan(_configDeriv));
-  mConfigDeriv = _configDeriv;
+  setPosDeriv(_configDeriv);
 }
 
 //==============================================================================
 double GenCoord::getConfigDeriv() const
 {
-  return mConfigDeriv;
+  return getPosDeriv();
 }
 
 //==============================================================================
@@ -215,9 +267,48 @@ double GenCoord::getForceDeriv() const
 }
 
 //==============================================================================
+void GenCoord::setConstraintImpulse(double _constraintImpulse)
+{
+  assert(!math::isNan(_constraintImpulse));
+  mConstraintImpulse = _constraintImpulse;
+}
+
+//==============================================================================
+double GenCoord::getConstraintImpulse() const
+{
+  return mConstraintImpulse;
+}
+
+//==============================================================================
+void GenCoord::setVelChange(double _velChange)
+{
+  assert(!math::isNan(_velChange));
+  mVelChange = _velChange;
+}
+
+//==============================================================================
+double GenCoord::getVelChange() const
+{
+  return mVelChange;
+}
+
+////==============================================================================
+//void GenCoord::setImpulse(double _impulse)
+//{
+//  assert(!math::isNan(_impulse));
+//  mImpulse = _impulse;
+//}
+
+////==============================================================================
+//double GenCoord::getImpulse() const
+//{
+//  return mImpulse;
+//}
+
+//==============================================================================
 void GenCoord::integrateConfig(double _dt)
 {
-  mConfig += mVel * _dt;
+  mPos += mVel * _dt;
 }
 
 //==============================================================================
@@ -229,8 +320,7 @@ void GenCoord::integrateVel(double _dt)
 //==============================================================================
 void GenCoord::setConfig(double _config)
 {
-  assert(!math::isNan(_config));
-  mConfig = _config;
+  setPos(_config);
 }
 
 //==============================================================================
@@ -257,7 +347,7 @@ void GenCoord::setForce(double _force)
 //==============================================================================
 void GenCoord::setConfigMin(double _configMin)
 {
-  mConfigMin = _configMin;
+  setPosMin(_configMin);
 }
 
 //==============================================================================
@@ -281,7 +371,7 @@ void GenCoord::setForceMin(double _forceMin)
 //==============================================================================
 void GenCoord::setConfigMax(double _configMax)
 {
-  mConfigMax = _configMax;
+  setPosMax(_configMax);
 }
 
 //==============================================================================

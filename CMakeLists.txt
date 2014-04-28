@@ -144,7 +144,7 @@ if(NOT BUILD_CORE_ONLY)
   find_package(FLANN REQUIRED)
   find_package(TinyXML REQUIRED)
   find_package(TinyXML2 REQUIRED)
-  
+
   # urdfdom
   find_package(urdfdom REQUIRED)
   if(MSVC)

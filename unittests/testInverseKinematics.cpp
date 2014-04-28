@@ -42,6 +42,7 @@
 #include "TestHelpers.h"
 
 using namespace Eigen;
+using namespace dart;
 using namespace dart::dynamics;
 
 Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
@@ -166,8 +167,8 @@ TEST(InverseKinematics, FittingTransformation)
   for (size_t i = 0; i < numRandomTests; ++i)
   {
     // Set joint limit
-    joint2->getGenCoord(0)->setConfigMin(DART_RADIAN *  0.0);
-    joint2->getGenCoord(0)->setConfigMax(DART_RADIAN * 15.0);
+    joint2->getGenCoord(0)->setPosMin(DART_RADIAN *  0.0);
+    joint2->getGenCoord(0)->setPosMax(DART_RADIAN * 15.0);
 
     // Store the original transformation and joint angle
     Isometry3d oldT2 = body2->getWorldTransform();
@@ -175,7 +176,7 @@ TEST(InverseKinematics, FittingTransformation)
 
     // Get desiredT2 by rotating the revolute joint with random angle out of
     // the joint limit range
-    joint2->getGenCoord(0)->setConfig(math::random(DART_RADIAN * 15.5, DART_PI));
+    joint2->getGenCoord(0)->setPos(math::random(DART_RADIAN * 15.5, DART_PI));
     robot->setConfigs(robot->getConfigs(), true, false, false);
     Isometry3d desiredT2 = body2->getWorldTransform();
 
@@ -198,7 +199,7 @@ TEST(InverseKinematics, FittingTransformation)
     body2->fitWorldTransform(desiredT2, BodyNode::IKP_PARENT_JOINT, true);
 
     // Check if the optimal joint anlge is in the range
-    double newQ2 = joint2->getGenCoord(0)->getConfig();
+    double newQ2 = joint2->getGenCoord(0)->getPos();
     EXPECT_GE(newQ2, DART_RADIAN *  0.0);
     EXPECT_LE(newQ2, DART_RADIAN * 15.0);
   }

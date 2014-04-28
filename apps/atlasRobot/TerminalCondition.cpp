@@ -44,7 +44,7 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/constraint/ConstraintDynamics.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 
 #include "apps/atlasRobot/State.h"
@@ -118,13 +118,13 @@ bool BodyContactCondition::isSatisfied()
     for (int i = 0; i < soft->getNumPointMasses(); ++i)
     {
       PointMass* pm = soft->getPointMass(i);
-      if (pm->getNumContacts() > 0)
+      if (pm->isColliding() > 0)
         return true;
     }
   }
 
   // TODO(JS): Need more elegant condition check method
-  if (mBodyNode->getNumContacts() > 0)
+  if (mBodyNode->isColliding() > 0)
   {
 //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
 //          << std::endl;

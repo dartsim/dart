@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,38 +35,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/SoftCollisionNode.h"
+#include <iostream>
 
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "dart/constraint/ConstraintSolver.h"
+#include "apps/jointLimitTest/MyWindow.h"
 
-namespace dart {
-namespace collision {
+int main(int argc, char* argv[]) {
+  // create and initialize the world
+  dart::simulation::World* myWorld
+      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/joint_limit.skel");
+  assert(myWorld != NULL);
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
 
-SoftCollisionNode::SoftCollisionNode(dynamics::SoftBodyNode* _bodyNode)
-  : CollisionNode(_bodyNode)
-{
+  myWorld->getSkeleton(1)->enableSelfCollision(true);
+
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
+
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  std::cout << "'q': spawn a random cube" << std::endl;
+  std::cout << "'w': delete a spawned cube" << std::endl;
+
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Boxes");
+  glutMainLoop();
+
+  return 0;
 }
-
-SoftCollisionNode::~SoftCollisionNode()
-{
-}
-
-dynamics::SoftBodyNode* SoftCollisionNode::getSoftBodyNode()
-{
-  return static_cast<dynamics::SoftBodyNode*>(mBodyNode);
-}
-
-void SoftCollisionNode::setCollidingPointMassIndex(int _idx)
-{
-  assert(0 <= _idx && _idx < getSoftBodyNode()->getNumPointMasses());
-
-  mCollidingPointMassIdx = _idx;
-}
-
-int SoftCollisionNode::getCollidingPointMassIndex() const
-{
-  return mCollidingPointMassIdx;
-}
-
-}  // namespace collision
-}  // namespace dart

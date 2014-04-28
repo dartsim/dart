@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>
+ * Author(s): Chen Tang <ctang40@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -40,18 +41,25 @@
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
+
+namespace dynamics {
+class SoftBodyNode;
+class PointMass;
+}  // namespace dynamics
+
 namespace collision {
 
-/// \brief
-class FCLMeshCollisionDetector : public CollisionDetector {
+///
+class FCLMeshCollisionDetector : public CollisionDetector
+{
 public:
-  /// \brief
+  /// Constructor
   FCLMeshCollisionDetector();
 
-  /// \brief
+  /// Destructor
   virtual ~FCLMeshCollisionDetector();
 
-  /// \brief
+  // Documentation inherited
   virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
   // Documentation inherited
@@ -62,7 +70,7 @@ public:
   virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
                                bool _calculateContactPoints);
 
-  /// \brief
+  ///
   void draw();
 };
 

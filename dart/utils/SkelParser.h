@@ -43,6 +43,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
+#include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 
 namespace dart {
@@ -78,80 +79,96 @@ class SkelParser
 {
 public:
   /// \brief Read World from skel file
-  static simulation::World* readSkelFile(const std::string& _filename);
+  DEPRECATED(4.0) static simulation::World* readSkelFile(
+      const std::string& _filename);
+
+  /// \brief Read World from skel file
+  static simulation::World* readWorld(const std::string& _filename);
 
   /// \brief Read Skeleton from skel file
   static dynamics::Skeleton* readSkeleton(const std::string& _filename);
 
 protected:
-    struct SkelBodyNode
-    {
-        dynamics::BodyNode* bodyNode;
-        Eigen::Isometry3d initTransform;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+  struct SkelBodyNode
+  {
+    dynamics::BodyNode* bodyNode;
+    Eigen::Isometry3d initTransform;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
 
-    /// \brief
-    static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
+  /// \brief
+  static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
-    /// \brief
-    static dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement);
+  /// \brief
+  static dynamics::Skeleton* readSkeleton(tinyxml2::XMLElement* _skeletonElement);
 
-    /// \brief
-    static SkelBodyNode readBodyNode(
-            tinyxml2::XMLElement* _bodyElement,
-            dynamics::Skeleton* _skeleton,
-            const Eigen::Isometry3d& _skeletonFrame);
+  /// \brief
+  static SkelBodyNode readBodyNode(
+      tinyxml2::XMLElement* _bodyElement,
+      dynamics::Skeleton* _skeleton,
+      const Eigen::Isometry3d& _skeletonFrame);
 
-    /// \brief
-    static dynamics::Shape* readShape(
-            tinyxml2::XMLElement* _shapeElement);
+  /// \brief
+  static SkelBodyNode readSoftBodyNode(
+      tinyxml2::XMLElement* _softBodyNodeElement,
+      dynamics::Skeleton* _Skeleton,
+      const Eigen::Isometry3d& _skeletonFrame);
 
-    /// \brief Read marker
-    static dart::dynamics::Marker* readMarker(
-            tinyxml2::XMLElement* _markerElement,
-            dynamics::BodyNode* _bodyNode);
+  /// \brief
+  static dynamics::Shape* readShape(tinyxml2::XMLElement* _shapeElement);
 
-    /// \brief
-    static dynamics::Joint* readJoint(
-            tinyxml2::XMLElement* _jointElement,
-            const std::vector<SkelBodyNode, Eigen::aligned_allocator<SkelBodyNode> >& _bodies);
+  /// \brief Read marker
+  static dart::dynamics::Marker* readMarker(
+      tinyxml2::XMLElement* _markerElement,
+      dynamics::BodyNode* _bodyNode);
 
-    /// \brief
-    static dynamics::PrismaticJoint* readPrismaticJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::Joint* readJoint(
+      tinyxml2::XMLElement* _jointElement,
+      const std::vector<SkelBodyNode,
+      Eigen::aligned_allocator<SkelBodyNode> >& _bodies);
 
-    /// \brief
-    static dynamics::RevoluteJoint* readRevoluteJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::Joint* readSoftJoint(
+      tinyxml2::XMLElement* _jointElement,
+      const std::vector<SkelBodyNode,
+      Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
 
-    /// \brief
-    static dynamics::ScrewJoint* readScrewJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::PrismaticJoint* readPrismaticJoint(
+      tinyxml2::XMLElement* _jointElement);
 
-    /// \brief
-    static dynamics::UniversalJoint* readUniversalJoint(
-            tinyxml2::XMLElement* _universalJointElement);
+  /// \brief
+  static dynamics::RevoluteJoint* readRevoluteJoint(
+      tinyxml2::XMLElement* _jointElement);
 
-    /// \brief
-    static dynamics::BallJoint* readBallJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::ScrewJoint* readScrewJoint(
+      tinyxml2::XMLElement* _jointElement);
 
-    /// \brief
-    static dart::dynamics::EulerJoint *readEulerJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::UniversalJoint* readUniversalJoint(
+      tinyxml2::XMLElement* _universalJointElement);
 
-    /// \brief
-    static dynamics::TranslationalJoint* readTranslationalJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::BallJoint* readBallJoint(
+      tinyxml2::XMLElement* _jointElement);
 
-    /// \brief
-    static dynamics::FreeJoint* readFreeJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dart::dynamics::EulerJoint *readEulerJoint(
+      tinyxml2::XMLElement* _jointElement);
 
-    /// \brief
-    static dart::dynamics::WeldJoint* readWeldJoint(
-            tinyxml2::XMLElement* _jointElement);
+  /// \brief
+  static dynamics::TranslationalJoint* readTranslationalJoint(
+      tinyxml2::XMLElement* _jointElement);
+
+  /// \brief
+  static dynamics::FreeJoint* readFreeJoint(
+      tinyxml2::XMLElement* _jointElement);
+
+  /// \brief
+  static dart::dynamics::WeldJoint* readWeldJoint(
+      tinyxml2::XMLElement* _jointElement);
 };
 
 } // namespace utils

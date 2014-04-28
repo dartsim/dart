@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -19,12 +20,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,27 +35,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_SIMULATION_SOFTWORLD_H_
-#define SOFT_SIMULATION_SOFTWORLD_H_
+#include <iostream>
 
-#include <dart/simulation/World.h>
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "dart/constraint/ConstraintSolver.h"
+#include "apps/cubes/MyWindow.h"
 
-namespace dart {
-namespace simulation {
+int main(int argc, char* argv[]) {
+  // create and initialize the world
+  dart::simulation::World *myWorld
+      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/cube.skel");
+//      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/sphere.skel");
+//      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/two_cubes.skel");
+  assert(myWorld != NULL);
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
 
-/// \class World
-/// \brief
-class SoftWorld : public World
-{
-public:
-  /// \brief Constructor.
-  SoftWorld();
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
 
-  /// \brief Destructor.
-  virtual ~SoftWorld();
-};
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  std::cout << "'q': spawn a random cube" << std::endl;
+  std::cout << "'w': delete a spawned cube" << std::endl;
 
-}  // namespace simulation
-}  // namespace dart
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Boxes");
+  glutMainLoop();
 
-#endif  // SOFT_SIMULATION_SOFTWORLD_H_
+  return 0;
+}

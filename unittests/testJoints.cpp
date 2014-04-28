@@ -44,7 +44,6 @@
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/TranslationalJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/WeldJoint.h"
@@ -57,6 +56,7 @@
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
+using namespace dart;
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -328,7 +328,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double tol = 1e-3;
 
   simulation::World* myWorld
-      = utils::SkelParser::readSkelFile(
+      = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != NULL);
 
@@ -347,12 +347,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit1 = DART_PI / 6.0;
 
   joint0->setPositionLimited(true);
-  joint0->getGenCoord(0)->setConfigMin(-limit0);
-  joint0->getGenCoord(0)->setConfigMax(limit0);
+  joint0->getGenCoord(0)->setPosMin(-limit0);
+  joint0->getGenCoord(0)->setPosMax(limit0);
 
   joint1->setPositionLimited(true);
-  joint1->getGenCoord(0)->setConfigMin(-limit1);
-  joint1->getGenCoord(0)->setConfigMax(limit1);
+  joint1->getGenCoord(0)->setPosMin(-limit1);
+  joint1->getGenCoord(0)->setPosMax(limit1);
 
   double simTime = 2.0;
   double timeStep = myWorld->getTimeStep();
@@ -365,8 +365,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->setForce(0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getConfig();
-    double jointPos1 = joint1->getGenCoord(0)->getConfig();
+    double jointPos0 = joint0->getGenCoord(0)->getPos();
+    double jointPos1 = joint1->getGenCoord(0)->getPos();
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);
@@ -382,8 +382,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
     joint1->getGenCoord(0)->setForce(-0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getConfig();
-    double jointPos1 = joint1->getGenCoord(0)->getConfig();
+    double jointPos0 = joint0->getGenCoord(0)->getPos();
+    double jointPos1 = joint1->getGenCoord(0)->getPos();
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);

@@ -42,7 +42,7 @@
 namespace dart {
 
 namespace constraint {
-    class Constraint;
+    class OldConstraint;
 }
 }
 
@@ -63,11 +63,11 @@ public:
 
 private:
     Eigen::VectorXd computeDamping();
-    dart::constraint::Constraint* addHeadConstraint();
-    dart::constraint::Constraint* addTailConstraint();
+    dart::constraint::OldConstraint* addHeadConstraint();
+    dart::constraint::OldConstraint* addTailConstraint();
 
-    dart::constraint::Constraint* mHeadConstraint;
-    dart::constraint::Constraint* mTailConstraint;
+    dart::constraint::OldConstraint* mHeadConstraint;
+    dart::constraint::OldConstraint* mTailConstraint;
 };
 
 #endif  // APPS_BALLJOINTCONSTRAINT_MYWINDOW_H_

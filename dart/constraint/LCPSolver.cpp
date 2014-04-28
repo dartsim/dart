@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,36 +34,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
-#define DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
+#include "dart/constraint/LCPSolver.h"
 
-#include "dart/constraint/Constraint.h"
+#include <cassert>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-}
-
 namespace constraint {
 
-class RevoluteJointConstraint : public Constraint {
-public:
-    RevoluteJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2, Eigen::Vector3d _axis1, Eigen::Vector3d _axis2);
-    RevoluteJointConstraint(dynamics::BodyNode *_body1, Eigen::Vector3d _offset1, Eigen::Vector3d _target);
-    virtual ~RevoluteJointConstraint();
-    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
-    virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex);
+//==============================================================================
+void LCPSolver::setTimeStep(double _timeStep)
+{
+  assert(_timeStep > 0.0);
+  mTimeStep = _timeStep;
+}
 
-private:
-    virtual void getJacobian();
-    Eigen::Vector3d mAxis1;
-    Eigen::Vector3d mAxis2;
-};
+//==============================================================================
+double LCPSolver::getTimeStep() const
+{
+  return mTimeStep;
+}
 
-} // namespace constraint
-} // namespace dart
+//==============================================================================
+LCPSolver::LCPSolver(double _timeStep) : mTimeStep(_timeStep)
+{
+}
 
-#endif // #ifndef DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_H
+//==============================================================================
+LCPSolver::~LCPSolver()
+{
+}
 
+}  // namespace constraint
+}  // namespace dart

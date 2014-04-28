@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -36,6 +36,12 @@
 
 #ifndef DART_COMMON_DEPRECATED_H_
 #define DART_COMMON_DEPRECATED_H_
+
+//==============================================================================
+// Deprecated is used for backward compatibility between different minor
+// versions of DART. Every deprecated function should be removed for every major
+// version up.
+//==============================================================================
 
 #ifdef __GNUC__
   #define DEPRECATED(version) __attribute__ ((deprecated))

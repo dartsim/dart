@@ -43,7 +43,7 @@
 #ifndef APPS_TESTDOUBLEPENDULUM_MYWINDOW_H_
 #define APPS_TESTDOUBLEPENDULUM_MYWINDOW_H_
 
-#include <dart/gui/Win3D.h>
+#include "dart/gui/Win3D.h"
 
 #include "dart/gui/SoftSimWindow.h"
 

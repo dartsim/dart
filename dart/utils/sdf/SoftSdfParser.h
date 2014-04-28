@@ -35,7 +35,7 @@
  */
 
 #ifndef SOFT_UTILS_SDF_SOFTSDFPARSER_H_
-#define SOFT_UTILS_SDF_SOFTSDFPARSER_H_
+#define DART_UTILS_SDF_SOFTSDFPARSER_H_
 
 #include <map>
 #include <string>
@@ -45,16 +45,16 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include <dart/utils/sdf/SdfParser.h>
+#include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
 namespace dynamics {
 class Joint;
 class SoftBodyNode;
-class SoftSkeleton;
+class Skeleton;
 }  // namespace dynamics
 namespace simulation {
-class SoftWorld;
+class World;
 }  // namespace simulation
 }  // namespace dart
 
@@ -65,27 +65,27 @@ class SoftSdfParser : public SdfParser
 {
 public:
   /// \brief
-  static simulation::SoftWorld* readSoftSdfFile(const std::string& _filename);
+  static simulation::World* readSoftSdfFile(const std::string& _filename);
 
   /// \brief
-  static dynamics::SoftSkeleton* readSoftSkeleton(
+  static dynamics::Skeleton* readSkeleton(
       const std::string& _fileName);
 
 protected:
   /// \brief
-  static simulation::SoftWorld* readSoftWorld(
+  static simulation::World* readWorld(
       tinyxml2::XMLElement* _worldElement,
       const std::string& _skelPath);
 
   /// \brief
-  static dynamics::SoftSkeleton* readSoftSkeleton(
+  static dynamics::Skeleton* readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const std::string& _skelPath);
 
   /// \brief
   static SDFBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::SoftSkeleton* _softSkeleton,
+      dynamics::Skeleton* _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _skelPath);
 

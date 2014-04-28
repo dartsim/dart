@@ -41,12 +41,10 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftSkeleton.h"
 #include "dart/utils/Paths.h"
 #include "dart/simulation/World.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/SoftParser.h"
 
 using namespace dart;
 using namespace math;
@@ -112,7 +110,7 @@ TEST(SKEL_PARSER, DATA_STRUCTUER)
 
 TEST(SKEL_PARSER, EMPTY)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/empty.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -130,7 +128,7 @@ TEST(SKEL_PARSER, EMPTY)
 
 TEST(SKEL_PARSER, PENDULUM)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/single_pendulum.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/single_pendulum.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -150,7 +148,7 @@ TEST(SKEL_PARSER, PENDULUM)
 
 TEST(SKEL_PARSER, SERIAL_CAHIN)
 {
-    World* world = SkelParser::readSkelFile(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
     EXPECT_TRUE(world != NULL);
     EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -176,13 +174,13 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   using namespace simulation;
   using namespace utils;
 
-  SoftWorld* softWorld
-      = SoftSkelParser::readSoftFile(
+  World* world
+      = SkelParser::readWorld(
           DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
-  EXPECT_TRUE(softWorld != NULL);
+  EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = softWorld->getSkeleton("skeleton 1");
-  SoftSkeleton* softSkel1 = dynamic_cast<SoftSkeleton*>(skel1);
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  Skeleton* softSkel1 = dynamic_cast<Skeleton*>(skel1);
   EXPECT_TRUE(softSkel1 != NULL);
   EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
   EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);
@@ -191,9 +189,9 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
-  softWorld->step();
+  world->step();
 
-  delete softWorld;
+  delete world;
 }
 
 /******************************************************************************/

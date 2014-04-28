@@ -37,8 +37,6 @@
 #ifndef DART_DYNAMICS_BALLJOINT_H_
 #define DART_DYNAMICS_BALLJOINT_H_
 
-#include <string>
-
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"

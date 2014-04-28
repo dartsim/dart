@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,47 +35,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_DYNAMICS_SOFTEDGE_H_
-#define SOFT_DYNAMICS_SOFTEDGE_H_
+#ifndef APPS_CUBES_MYWINDOW_H_
+#define APPS_CUBES_MYWINDOW_H_
 
-#include <string>
-
-namespace dart {
-namespace dynamics {
-
-class PointMass;
+#include "dart/gui/SimWindow.h"
 
 /// \brief
-class Edge
-{
+class MyWindow : public dart::gui::SimWindow {
 public:
-  //--------------------------------------------------------------------------
-  // Constructor and Desctructor
-  //--------------------------------------------------------------------------
   /// \brief
-  explicit Edge(const std::string& _name = "Unnamed PointMass");
+  MyWindow();
 
   /// \brief
-  virtual ~Edge();
+  virtual ~MyWindow();
 
   /// \brief
-  void setLeftPointMass(PointMass* _pointMass);
+  virtual void timeStepping();
 
   /// \brief
-  void setRightPointMass(PointMass* _pointMass);
-
-protected:
-  /// \brief
-  std::string mName;
+  virtual void drawSkels();
 
   /// \brief
-  PointMass* mLeftPointMass;
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  PointMass* mRightPointMass;
+  void spawnCube(
+      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
+      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 1.0);
+
+private:
+  /// \brief
+  Eigen::Vector3d mForce;
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
 };
 
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // SOFT_DYNAMICS_SOFTEDGE_H_
+#endif  // APPS_CUBES_MYWINDOW_H_

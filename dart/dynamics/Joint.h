@@ -177,6 +177,9 @@ public:
                           bool _updateAccs);
 
   //----------------------------------------------------------------------------
+//  void updateVel
+
+  //----------------------------------------------------------------------------
   /// \brief Get potential energy.
   double getPotentialEnergy() const;
 

@@ -7,16 +7,18 @@ foreach(APPDIR
     balance
     ballJointConstraintTest
     closedLoop
+    cube
     cubes
     doublePendulumWithBase
     forwardSim
-    #hanging
+    hanging
     hardcodedDesign
     harnessTest
     #hingeJointConstraintTest
     #holding
     #hybrid
     #ik
+    jointLimitTest
     meshCollision
     #motionAnalysis
     #pdController
@@ -33,6 +35,7 @@ foreach(APPDIR
     softSinglePendulumTest
     vehicle
     #viewer
+    #inverseDyn
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

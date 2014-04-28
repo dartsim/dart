@@ -103,7 +103,8 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
-class BodyNode {
+class BodyNode
+{
 public:
   friend class Skeleton;
 
@@ -183,6 +184,18 @@ public:
   /// \brief
   Eigen::Matrix6d getInertia() const;
 
+  /// \brief Set coefficient of friction in range of [0, ~]
+  void setFrictionCoeff(double _coeff);
+
+  /// \brief Get frictional coefficient.
+  double getFrictionCoeff() const;
+
+  /// \brief Set coefficient of restitution in range of [0, 1]
+  void setRestitutionCoeff(double _coeff);
+
+  /// \brief Get coefficient of restitution
+  double getRestitutionCoeff() const;
+
   //--------------------------------------------------------------------------
   // Structueral Properties
   //--------------------------------------------------------------------------
@@ -254,7 +267,9 @@ public:
   ///        (< getNumDependentDofs).
   int getDependentGenCoordIndex(int _arrayIndex) const;
 
-  //------------------------ Inverse Kinematics --------------------------------
+  //----------------------------------------------------------------------------
+  // Inverse kinematics
+  //----------------------------------------------------------------------------
   /// \brief Try to find optimal configurations to fit the world transform
   ///        of this body node to the target transformation.
   /// This problem is solved by optimization. The objective is to minimize the
@@ -337,7 +352,11 @@ public:
       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
       bool _isOffsetLocal            = false);
 
-  /// \brief Set whether this body node is colliding with others.
+  /// \brief
+  const Eigen::Vector6d& getBodyVelocityChange() const;
+
+  /// \brief Set whether this body node is colliding with others. This is
+  /// called by collision detector.
   /// \param[in] True if this body node is colliding.
   void setColliding(bool _isColliding);
 
@@ -354,14 +373,14 @@ public:
   /// When conversion is needed, make sure the transformations are avaialble.
   void addExtForce(const Eigen::Vector3d& _force,
                    const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-                   bool _isOffsetLocal = true,
-                   bool _isForceLocal = false);
+                   bool _isForceLocal = false,
+                   bool _isOffsetLocal = true);
 
   /// \brief Set Applying linear Cartesian forces to this node.
   void setExtForce(const Eigen::Vector3d& _force,
                    const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-                   bool _isOffsetLocal = true,
-                   bool _isForceLocal = false);
+                   bool _isForceLocal = false,
+                   bool _isOffsetLocal = true);
 
   /// \brief Add applying Cartesian torque to the node.
   ///
@@ -374,25 +393,10 @@ public:
   void setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal = false);
 
   /// \brief Clean up structures that store external forces: mContacts, mFext,
-  ///        mExtForceBody and mExtTorqueBody.
+  /// mExtForceBody and mExtTorqueBody.
   ///
-  /// Called from @Skeleton::clearExternalForces.
+  /// Called by Skeleton::clearExternalForces.
   virtual void clearExternalForces();
-
-  /// \brief
-  void addContactForce(const Eigen::Vector3d& _force,
-                       const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
-                       bool _isOffsetLocal = true,
-                       bool _isForceLocal = false);
-
-  /// \brief Get number of contacts on this body node
-  int getNumContacts() const;
-
-  /// \brief
-  const Eigen::Vector6d& getContactForce(int _idx);
-
-  /// \brief Clear contact forces added by constraint solver
-  virtual void clearContactForces();
 
   /// \brief
   const Eigen::Vector6d& getExternalForceLocal() const;
@@ -403,6 +407,34 @@ public:
   /// \brief
   const Eigen::Vector6d& getBodyForce() const;
 
+  //----------------------------------------------------------------------------
+  // Constraints
+  //   - Following functions are managed by constraint solver.
+  //----------------------------------------------------------------------------
+  /// \brief Set constraint impulse
+  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  void setConstraintImpulse(const Eigen::Vector6d& _constImp);
+
+  /// \brief Add constraint impulse
+  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  void addConstraintImpulse(const Eigen::Vector6d& _constImp);
+
+  /// \brief Add constraint impulse
+  void addConstraintImpulse(
+      const Eigen::Vector3d& _constImp,
+      const Eigen::Vector3d& _offset,
+      bool _isImpulseLocal = false,
+      bool _isOffsetLocal = true);
+
+  /// \brief Clear constraint impulse
+  virtual void clearConstraintImpulse();
+
+  /// \brief Get constraint impulse
+  const Eigen::Vector6d& getConstraintImpulse() const;
+
+  //----------------------------------------------------------------------------
+  // Energies
+  //----------------------------------------------------------------------------
   /// \brief Get kinetic energy.
   virtual double getKineticEnergy() const;
 
@@ -474,11 +506,33 @@ public:
   virtual void updateBiasForce(double _timeStep,
                                const Eigen::Vector3d& _gravity);
 
-  /// \brief
+  /// \brief Update acceleration for forward dynamics
   virtual void update_ddq();
 
   /// \brief
   virtual void update_F_fs();
+
+  //----------------------------------------------------------------------------
+  // Impulse based dynamics
+  //----------------------------------------------------------------------------
+
+  /// \brief
+  bool isImpulseReponsible() const;
+
+  /// \brief Update impulsive bias force for impulse-based forward dynamics
+  /// algorithm
+  virtual void updateImpBiasForce();
+
+  /// \brief Update joint velocity change for impulse-based forward dynamics
+  /// algorithm
+  virtual void updateJointVelocityChange();
+
+  /// \brief Update body velocity change for impulse-based forward dynamics
+  /// algorithm
+//  virtual void updateBodyVelocityChange();
+
+  /// \brief
+  virtual void updateBodyImpForceFwdDyn();
 
   /// \brief
   virtual void updateMassMatrix();
@@ -614,6 +668,12 @@ public:
   double mIyz;
   double mMass;
 
+  /// \brief Coefficient of friction
+  double mFrictionCoeff;
+
+  /// \brief Coefficient of friction
+  double mRestitutionCoeff;
+
   /// \brief
   std::vector<Shape*> mVizShapes;
 
@@ -738,10 +798,6 @@ public:
   /// \brief Cache data for external force vector of the system.
   Eigen::Vector6d mFext_F;
 
-  /// \brief Contact forces which are calculated by constraint solver
-  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> >
-  mContactForces;
-
   /// \brief Cache data for mass matrix of the system.
   Eigen::Vector6d mM_dV;
   Eigen::Vector6d mM_F;
@@ -752,6 +808,27 @@ public:
   Eigen::Vector6d mInvM_c;
   Eigen::VectorXd mInvM_MInvVec;
   Eigen::Vector6d mInvM_U;
+
+  //------------------------- Impulse-based Dyanmics ---------------------------
+  /// \brief Velocity change due to to external impulsive force exerted on
+  ///        bodies of the parent skeleton.
+  Eigen::Vector6d mDelV;
+
+  /// \brief Impulsive bias force due to external impulsive force exerted on
+  ///        bodies of the parent skeleton.
+  Eigen::Vector6d mImpB;
+
+  /// \brief Cache data for mImpB
+  Eigen::VectorXd mImpAlpha;
+
+  /// \brief Cache data for mImpB
+  Eigen::Vector6d mImpBeta;
+
+  /// \brief Constraint impulse: contact impulse, dynamic joint impulse
+  Eigen::Vector6d mConstraintImpulse;
+
+  /// \brief Generalized impulsive body force w.r.t. body frame.
+  Eigen::Vector6d mImpF;
 
   /// \brief Update body Jacobian. getBodyJacobian() calls this function if
   ///        mIsBodyJacobianDirty is true.
@@ -766,6 +843,7 @@ private:
   void _updateGeralizedInertia();
 
 public:
+  // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 

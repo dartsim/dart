@@ -9,12 +9,12 @@
 
         <skeleton name="grount skeleton">
             <body name="ground">
-                <transformation>0 0 -0.5 0 0 0</transformation>
+                <transformation>0 0 -0.55 0 0 0</transformation>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>10.0 10.0 0.001</size>
+                            <size>10.0 10.0 0.1</size>
                         </box>
                     </geometry>
                 </visualization_shape>
@@ -22,7 +22,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>10.0 10.0 0.001</size>
+                            <size>10.0 10.0 0.1</size>
                         </box>
                     </geometry>
                 </collision_shape>                                

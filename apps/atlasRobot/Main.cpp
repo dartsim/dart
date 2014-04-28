@@ -38,12 +38,10 @@
 #include <iostream>
 
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftSkeleton.h"
 #include "dart/simulation/World.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/SoftParser.h"
 #include "dart/utils/sdf/SoftSdfParser.h"
 #include "dart/utils/urdf/DartLoader.h"
 
@@ -59,16 +57,16 @@ using namespace dart::utils;
 int main(int argc, char* argv[])
 {
   // Create empty soft world
-  SoftWorld* myWorld = new SoftWorld;
+  World* myWorld = new World;
 
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
   Skeleton* ground = urdfLoader.parseSkeleton(
         DART_DATA_PATH"sdf/atlas/ground.urdf");
-//  Skeleton* atlas = SoftSdfParser::readSoftSkeleton(
+//  Skeleton* atlas = SoftSdfParser::readSkeleton(
 //        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
   Skeleton* atlas
-      = SoftSdfParser::readSoftSkeleton(
+      = SoftSdfParser::readSkeleton(
           DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);
@@ -82,7 +80,7 @@ int main(int argc, char* argv[])
   myWorld->setGravity(Vector3d(0.0, -9.81, 0.0));
 
   // Create a window and link it to the world
-  MyWindow window(new Controller(atlas, myWorld->getConstraintHandler()));
+  MyWindow window(new Controller(atlas, myWorld->getConstraintSolver()));
   window.setWorld(myWorld);
 
   // Print manual

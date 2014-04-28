@@ -42,12 +42,10 @@
 
 #include "apps/softSingleBodyTest/MyWindow.h"
 
-#include <dart/dynamics/Skeleton.h>
-#include <dart/simulation/World.h>
-
 #include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/SoftSkeleton.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/PointMass.h"
+#include "dart/simulation/World.h"
 
 #define FORCE_ON_RIGIDBODY 2.2;
 #define FORCE_ON_VERTEX 2.2;
@@ -65,8 +63,8 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::SoftSkeleton* skel
-      = static_cast<dart::dynamics::SoftSkeleton*>(mWorld->getSkeleton(0));
+  dart::dynamics::Skeleton* skel
+      = static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(0));
   dart::dynamics::SoftBodyNode* body = skel->getSoftBodyNode(0);
   body->setExtForce(mForceOnRigidBody);
   body->getPointMass(0)->clearExtForce();

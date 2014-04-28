@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   using namespace utils;
 
   // create and initialize the world
-  World* myWorld = SkelParser::readSkelFile(DART_DATA_PATH"/skel/vehicle.skel");
+  World* myWorld = SkelParser::readWorld(DART_DATA_PATH"/skel/vehicle.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

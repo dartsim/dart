@@ -39,6 +39,9 @@
 #include <vector>
 
 #include "dart/utils/Paths.h"
+#include "dart/dynamics/GenCoord.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
@@ -47,7 +50,7 @@
 int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readSkelFile(
+      = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"skel/fullbody1.skel");
   assert(myWorld != NULL);
 
@@ -67,16 +70,26 @@ int main(int argc, char* argv[]) {
   initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   myWorld->getSkeleton(1)->setConfigSegs(genCoordIds, initConfig,
                                          true, true, false);
+  dart::dynamics::Skeleton* skeleton = myWorld->getSkeleton(1);
+  for (int i = 1; i < skeleton->getNumBodyNodes(); ++i)
+  {
+    dart::dynamics::Joint* joint = skeleton->getBodyNode(i)->getParentJoint();
+    for (int j = 0; j < joint->getNumGenCoords(); ++j)
+    {
+      joint->getGenCoord(j)->setPosMin(-0.1);
+      joint->getGenCoord(j)->setPosMax(0.1);
+    }
+  }
 
   // create controller
-  Controller* myController = new Controller(myWorld->getSkeleton(1),
-                                            myWorld->getConstraintHandler(),
-                                            myWorld->getTimeStep());
+//  Controller* myController = new Controller(myWorld->getSkeleton(1),
+//                                            myWorld->getConstraintHandler(),
+//                                            myWorld->getTimeStep());
 
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
-  window.setController(myController);
+//  window.setController(myController);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;

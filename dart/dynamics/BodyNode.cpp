@@ -52,11 +52,15 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
+#define DART_DEFAULT_FRICTION_COEFF 0.4
+#define DART_DEFAULT_RESTITUTION_COEFF 0.2
+
 namespace dart {
 namespace dynamics {
 
 int BodyNode::msBodyNodeCount = 0;
 
+//==============================================================================
 BodyNode::BodyNode(const std::string& _name)
   : mSkelIndex(-1),
     mName(_name),
@@ -75,6 +79,8 @@ BodyNode::BodyNode(const std::string& _name)
     mIxy(0.0),
     mIxz(0.0),
     mIyz(0.0),
+    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
+    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
     mI(Eigen::Matrix6d::Identity()),
     mW(Eigen::Isometry3d::Identity()),
     mV(Eigen::Vector6d::Zero()),
@@ -88,7 +94,13 @@ BodyNode::BodyNode(const std::string& _name)
     mBeta(Eigen::Vector6d::Zero()),
     mID(BodyNode::msBodyNodeCount++),
     mIsBodyJacobianDirty(true),
-    mIsBodyJacobianTimeDerivDirty(true) {
+    mIsBodyJacobianTimeDerivDirty(true),
+    mDelV(Eigen::Vector6d::Zero()),
+    mImpB(Eigen::Vector6d::Zero()),
+    mImpBeta(Eigen::Vector6d::Zero()),
+    mConstraintImpulse(Eigen::Vector6d::Zero()),
+    mImpF(Eigen::Vector6d::Zero())
+{
 }
 
 BodyNode::~BodyNode() {
@@ -141,6 +153,34 @@ void BodyNode::setMass(double _mass) {
 
 double BodyNode::getMass() const {
   return mMass;
+}
+
+//==============================================================================
+void BodyNode::setFrictionCoeff(double _coeff)
+{
+  assert(0.0 <= _coeff
+         && "Coefficient of friction should be non-negative value.");
+  mFrictionCoeff = _coeff;
+}
+
+//==============================================================================
+double BodyNode::getFrictionCoeff() const
+{
+  return mFrictionCoeff;
+}
+
+//==============================================================================
+void BodyNode::setRestitutionCoeff(double _coeff)
+{
+  assert(0.0 <= _coeff && _coeff <= 1.0
+         && "Coefficient of restitution should be in range of [0, 1].");
+  mRestitutionCoeff = _coeff;
+}
+
+//==============================================================================
+double BodyNode::getRestitutionCoeff() const
+{
+  return mRestitutionCoeff;
 }
 
 BodyNode* BodyNode::getParentBodyNode() const {
@@ -351,6 +391,12 @@ math::Jacobian BodyNode::getWorldJacobianTimeDeriv(
   return math::AdTJac(T, bodyJacobianTimeDeriv);
 }
 
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
+{
+  return mDelV;
+}
+
 void BodyNode::setColliding(bool _isColliding) {
   mIsColliding = _isColliding;
 }
@@ -410,6 +456,8 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
   mPsi.setZero(dof, dof);
   mImplicitPsi.setZero(dof, dof);
   mAlpha.setZero(dof);
+
+  mImpAlpha.setZero(dof);
 }
 
 void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords) {
@@ -613,9 +661,12 @@ Joint* BodyNode::getParentJoint() const {
   return mParentJoint;
 }
 
+//==============================================================================
 void BodyNode::addExtForce(const Eigen::Vector3d& _force,
                            const Eigen::Vector3d& _offset,
-                           bool _isOffsetLocal, bool _isForceLocal) {
+                           bool _isForceLocal,
+                           bool _isOffsetLocal)
+{
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
@@ -632,9 +683,11 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
   mFext += math::dAdInvT(T, F);
 }
 
+//==============================================================================
 void BodyNode::setExtForce(const Eigen::Vector3d& _force,
                            const Eigen::Vector3d& _offset,
-                           bool _isOffsetLocal, bool _isForceLocal) {
+                           bool _isForceLocal, bool _isOffsetLocal)
+{
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
@@ -651,14 +704,18 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
   mFext = math::dAdInvT(T, F);
 }
 
-void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal) {
+//==============================================================================
+void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+{
   if (_isLocal)
     mFext.head<3>() += _torque;
   else
     mFext.head<3>() += mW.linear().transpose() * _torque;
 }
 
-void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal) {
+//==============================================================================
+void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+{
   if (_isLocal)
     mFext.head<3>() = _torque;
   else
@@ -673,9 +730,14 @@ Eigen::Vector6d BodyNode::getExternalForceGlobal() const {
   return math::dAdInvT(mW, mFext);
 }
 
-void BodyNode::addContactForce(const Eigen::Vector3d& _force,
-                               const Eigen::Vector3d& _offset,
-                               bool _isOffsetLocal, bool _isForceLocal) {
+//==============================================================================
+void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
+                                    const Eigen::Vector3d& _offset,
+                                    bool _isImpulseLocal,
+                                    bool _isOffsetLocal)
+{
+  // TODO(JS): Add contact sensor data here (DART 4.1)
+
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
 
@@ -684,29 +746,52 @@ void BodyNode::addContactForce(const Eigen::Vector3d& _force,
   else
     T.translation() = getWorldTransform().inverse() * _offset;
 
-  if (_isForceLocal)
-    F.tail<3>() = _force;
+  if (_isImpulseLocal)
+    F.tail<3>() = _constImp;
   else
-    F.tail<3>() = mW.linear().transpose() * _force;
+    F.tail<3>() = mW.linear().transpose() * _constImp;
 
-  mContactForces.push_back(math::dAdInvT(T, F));
+  mConstraintImpulse += math::dAdInvT(T, F);
 }
 
-int BodyNode::getNumContacts() const {
-  return mContactForces.size();
-}
+//==============================================================================
+void BodyNode::clearConstraintImpulse()
+{
+  mDelV.setZero();
+  mImpB.setZero();
+  mImpAlpha.setZero();
+  mImpBeta.setZero();
+  mConstraintImpulse.setZero();
+  mImpF.setZero();
 
-const Eigen::Vector6d& BodyNode::getContactForce(int _idx) {
-  assert(0 <= _idx && _idx < mContactForces.size());
-  return mContactForces[_idx];
-}
-
-void BodyNode::clearContactForces() {
-  mContactForces.clear();
+  mParentJoint->setConstraintImpulses(
+        Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords()));
+  mParentJoint->setVelsChange(
+        Eigen::VectorXd::Zero(mParentJoint->getNumGenCoords()));
 }
 
 const Eigen::Vector6d& BodyNode::getBodyForce() const {
   return mF;
+}
+
+//==============================================================================
+void BodyNode::setConstraintImpulse(const Eigen::Vector6d& _constImp)
+{
+  assert(!math::isNan(_constImp));
+  mConstraintImpulse = _constImp;
+}
+
+//==============================================================================
+void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
+{
+  assert(!math::isNan(_constImp));
+  mConstraintImpulse += _constImp;
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
+{
+  return mConstraintImpulse;
 }
 
 double BodyNode::getKineticEnergy() const {
@@ -738,8 +823,10 @@ void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
   mF.noalias() = mI * mdV;       // Inertial force
   if (_withExternalForces)
     mF -= mFext;                 // External force
-  for (int i = 0; i < mContactForces.size(); ++i)
-    mF -= mContactForces[i];
+
+  // TODO(JS): This will be removed once new constraint solver is done.
+//  mF -= mConstraintImpulse * 1000.0;
+
   assert(!math::isNan(mF));
   mF -= mFgravity;               // Gravity force
   mF -= math::dad(mV, mI * mV);  // Coriolis force
@@ -850,9 +937,7 @@ void BodyNode::updateBiasForce(double _timeStep,
     mFgravity.setZero();
   mB = -math::dad(mV, mI * mV) - mFext - mFgravity;
   assert(!math::isNan(mB));
-  for (int i = 0; i < mContactForces.size(); ++i)
-    mB -= mContactForces[i];
-  assert(!math::isNan(mB));
+
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it) {
     mB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
@@ -901,7 +986,16 @@ void BodyNode::update_ddq() {
   mParentJoint->GenCoordSystem::setGenAccs(ddq);
   assert(!math::isNan(ddq));
 
-  updateAcceleration();
+  if (mParentJoint->getNumGenCoords() > 0) {
+    mdV = mEta;
+    mdV.noalias() += mParentJoint->getLocalJacobian() * mParentJoint->getGenAccs();
+    if (mParentBodyNode) {
+      mdV += math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->getBodyAcceleration());
+    }
+  }
+
+  assert(!math::isNan(mdV));
 }
 
 void BodyNode::update_F_fs() {
@@ -912,6 +1006,109 @@ void BodyNode::update_F_fs() {
   mParentJoint->mWrench = mF;
 
   assert(!math::isNan(mF));
+}
+
+//==============================================================================
+bool BodyNode::isImpulseReponsible() const
+{
+  // Should be called at BodyNode::init()
+  // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
+  //           type of parent joint.
+  if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+void BodyNode::updateImpBiasForce()
+{
+  // Update impulsive bias force
+  mImpB = -mConstraintImpulse;
+//  assert(mImpFext == Eigen::Vector6d::Zero());
+
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mImpB += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+                           (*it)->mImpBeta);
+  }
+  assert(!math::isNan(mImpB));
+
+  // Cache data: mImpAlpha
+  int dof = mParentJoint->getNumGenCoords();
+  if (dof > 0)
+  {
+    mImpAlpha = mParentJoint->getConstraintImpulses()
+                - mParentJoint->getLocalJacobian().transpose() * mImpB;
+  }
+  assert(!math::isNan(mImpAlpha));
+
+  // Cache data: mImpBeta
+  if (mParentBodyNode)
+  {
+    mImpBeta = mImpB;
+    if (dof > 0)
+      mImpBeta.noalias() += mAI_S_Psi * mImpAlpha;
+  }
+  assert(!math::isNan(mImpBeta));
+}
+
+//==============================================================================
+void BodyNode::updateJointVelocityChange()
+{
+  if (mParentJoint->getNumGenCoords() > 0)
+  {
+    Eigen::VectorXd del_dq = mPsi * mImpAlpha;
+    if (mParentBodyNode)
+    {
+      del_dq -= mAI_S_Psi.transpose()
+                * math::AdInvT(mParentJoint->getLocalTransform(),
+                               mParentBodyNode->mDelV);
+    }
+
+    mParentJoint->setVelsChange(del_dq);
+    assert(!math::isNan(del_dq));
+
+    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+  }
+  else
+  {
+    mDelV.setZero();
+  }
+
+  if (mParentBodyNode)
+  {
+    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->mDelV);
+  }
+
+  assert(!math::isNan(mDelV));
+}
+
+//==============================================================================
+//void BodyNode::updateBodyVelocityChange()
+//{
+//  if (mParentJoint->getNumGenCoords() > 0)
+//    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
+//  else
+//    mDelV.setZero();
+
+//  if (mParentBodyNode)
+//  {
+//    mDelV += math::AdInvT(mParentJoint->getLocalTransform(),
+//                          mParentBodyNode->mDelV);
+//  }
+
+//  assert(!math::isNan(mDelV));
+//}
+
+//==============================================================================
+void BodyNode::updateBodyImpForceFwdDyn()
+{
+  mImpF = mImpB;
+  mImpF.noalias() += mAI * mDelV;
+  assert(!math::isNan(mImpF));
 }
 
 void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C) {

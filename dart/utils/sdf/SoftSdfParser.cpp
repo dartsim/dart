@@ -40,36 +40,36 @@
 #include <iostream>
 #include <fstream>
 
-#include <dart/common/Console.h>
-#include <dart/collision/dart/DARTCollisionDetector.h>
-#include <dart/collision/fcl/FCLCollisionDetector.h>
-#include <dart/constraint/ConstraintDynamics.h>
-// #include <dart/collision/fcl_mesh/FCLMeshCollisionDetector.h>
-#include <dart/dynamics/Shape.h>
-#include <dart/dynamics/BoxShape.h>
-#include <dart/dynamics/CylinderShape.h>
-#include <dart/dynamics/EllipsoidShape.h>
-#include <dart/dynamics/WeldJoint.h>
-#include <dart/dynamics/RevoluteJoint.h>
-#include <dart/dynamics/PrismaticJoint.h>
-#include <dart/dynamics/TranslationalJoint.h>
-#include <dart/dynamics/BallJoint.h>
-#include <dart/dynamics/FreeJoint.h>
-#include <dart/dynamics/ScrewJoint.h>
-#include <dart/dynamics/UniversalJoint.h>
-#include <dart/simulation/World.h>
-#include <dart/utils/SkelParser.h>
+#include "dart/common/Console.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
+// #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/SkelParser.h"
 
-#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/SoftSkeleton.h"
-#include "dart/simulation/SoftWorld.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace utils {
 
-simulation::SoftWorld* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
+simulation::World* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -116,12 +116,12 @@ simulation::SoftWorld* SoftSdfParser::readSoftSdfFile(const std::string& _filena
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  simulation::SoftWorld* newWorld = readSoftWorld(worldElement, skelPath);
+  simulation::World* newWorld = readWorld(worldElement, skelPath);
 
   return newWorld;
 }
 
-dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
+dynamics::Skeleton* SoftSdfParser::readSkeleton(
     const std::string& _filename)
 {
   //--------------------------------------------------------------------------
@@ -169,19 +169,19 @@ dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  dynamics::SoftSkeleton* newSoftSkeleton = readSoftSkeleton(softSkelElement,
+  dynamics::Skeleton* newSkeleton = readSkeleton(softSkelElement,
                                                              skelPath);
 
-  return newSoftSkeleton;
+  return newSkeleton;
 }
 
-simulation::SoftWorld* SoftSdfParser::readSoftWorld(
+simulation::World* SoftSdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement, const std::string& _skelPath)
 {
   assert(_worldElement != NULL);
 
   // Create a world
-  simulation::SoftWorld* newSoftWorld = new simulation::SoftWorld;
+  simulation::World* newWorld = new simulation::World;
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -194,7 +194,7 @@ simulation::SoftWorld* SoftSdfParser::readSoftWorld(
   if (hasElement(_worldElement, "physics"))
   {
     tinyxml2::XMLElement* physicsElement = _worldElement->FirstChildElement("physics");
-    readPhysics(physicsElement, newSoftWorld);
+    readPhysics(physicsElement, newWorld);
   }
 
   //--------------------------------------------------------------------------
@@ -202,34 +202,34 @@ simulation::SoftWorld* SoftSdfParser::readSoftWorld(
   ElementEnumerator skeletonElements(_worldElement, "model");
   while (skeletonElements.next())
   {
-    dynamics::SoftSkeleton* newSoftSkeleton
-        = readSoftSkeleton(skeletonElements.get(), _skelPath);
+    dynamics::Skeleton* newSkeleton
+        = readSkeleton(skeletonElements.get(), _skelPath);
 
-    newSoftWorld->addSkeleton(newSoftSkeleton);
+    newWorld->addSkeleton(newSkeleton);
   }
 
-  return newSoftWorld;
+  return newWorld;
 }
 
-dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
+dynamics::Skeleton* SoftSdfParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement, const std::string& _skelPath)
 {
   assert(_skeletonElement != NULL);
 
-  dynamics::SoftSkeleton* newSoftSkeleton = new dynamics::SoftSkeleton;
+  dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------
   // Name attribute
   std::string name = getAttribute(_skeletonElement, "name");
-  newSoftSkeleton->setName(name);
+  newSkeleton->setName(name);
 
   //--------------------------------------------------------------------------
   // immobile attribute
   if (hasElement(_skeletonElement, "static"))
   {
     bool isStatic= getValueBool(_skeletonElement, "static");
-    newSoftSkeleton->setMobile(!isStatic);
+    newSkeleton->setMobile(!isStatic);
   }
 
   //--------------------------------------------------------------------------
@@ -247,7 +247,7 @@ dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
   while (bodies.next())
   {
     SDFBodyNode newSDFBodyNode
-        = readSoftBodyNode(bodies.get(), newSoftSkeleton, skeletonFrame,
+        = readSoftBodyNode(bodies.get(), newSkeleton, skeletonFrame,
                            _skelPath);
     assert(newSDFBodyNode.bodyNode);
     sdfBodyNodes.push_back(newSDFBodyNode);
@@ -286,20 +286,15 @@ dynamics::SoftSkeleton* SoftSdfParser::readSoftSkeleton(
        = sdfBodyNodes.begin();
        it != sdfBodyNodes.end(); ++it)
   {
-    dynamics::SoftBodyNode* soft
-        = dynamic_cast<dynamics::SoftBodyNode*>((*it).bodyNode);
-    if (soft)
-      newSoftSkeleton->addSoftBodyNode(soft);
-    else
-      newSoftSkeleton->addBodyNode((*it).bodyNode);
+    newSkeleton->addBodyNode((*it).bodyNode);
   }
 
-  return newSoftSkeleton;
+  return newSkeleton;
 }
 
 SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    dynamics::SoftSkeleton* _softSkeleton,
+    dynamics::Skeleton* _Skeleton,
     const Eigen::Isometry3d& _skeletonFrame,
     const std::string& _skelPath)
 {
@@ -309,13 +304,13 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
   //----------------------------------------------------------------------------
   assert(_softBodyNodeElement != NULL);
-  assert(_softSkeleton != NULL);
+  assert(_Skeleton != NULL);
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node
   if (!hasElement(_softBodyNodeElement, "soft_shape"))
   {
     return SdfParser::readBodyNode(_softBodyNodeElement,
-                                   _softSkeleton,
+                                   _Skeleton,
                                    _skeletonFrame,
                                    _skelPath);
   }

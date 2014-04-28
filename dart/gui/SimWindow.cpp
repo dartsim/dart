@@ -47,7 +47,8 @@
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintDynamics.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
+#include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/utils/FileInfoWorld.h"
@@ -131,7 +132,7 @@ void SimWindow::draw() {
   } else {
     if (mShowMarkers) {
       collision::CollisionDetector* cd =
-          mWorld->getConstraintHandler()->getCollisionDetector();
+          mWorld->getConstraintSolver()->getCollisionDetector();
       for (int k = 0; k < cd->getNumContacts(); k++) {
         Eigen::Vector3d v = cd->getContact(k).point;
         Eigen::Vector3d f = cd->getContact(k).force / 10.0;

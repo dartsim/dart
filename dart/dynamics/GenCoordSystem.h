@@ -137,6 +137,25 @@ public:
   /// \brief Get uppoer bounds for generalized forces
   virtual Eigen::VectorXd getGenForcesMax() const;
 
+  //------------------------------- Impulse ------------------------------------
+  /// \brief Set velocity change
+  virtual void setVelsChange(const Eigen::VectorXd& _velsChange);
+
+  /// \brief Get velocity change
+  virtual Eigen::VectorXd getVelsChange() const;
+
+//  /// \brief Set impulses
+//  virtual void setImpulses(const Eigen::VectorXd& _impulses);
+
+//  /// \brief Get impulses
+//  virtual Eigen::VectorXd getImpulses() const;
+
+  /// \brief Set generalized constraint impulses
+  void setConstraintImpulses(const Eigen::VectorXd& _constImps);
+
+  /// \brief Get generalized constraint impulses
+  Eigen::VectorXd getConstraintImpulses() const;
+
   //----------------------------- Integration ----------------------------------
   /// \brief Integrate configurations with timestep _dt
   virtual void integrateConfigs(double _dt);

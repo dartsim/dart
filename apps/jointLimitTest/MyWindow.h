@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -19,12 +20,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,30 +35,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/SoftWorld.h"
+#ifndef APPS_CUBES_MYWINDOW_H_
+#define APPS_CUBES_MYWINDOW_H_
 
-#include "dart/constraint/SoftConstraintDynamics.h"
-#include "dart/collision/fcl_mesh/SoftFCLMeshCollisionDetector.h"
+#include "dart/gui/SimWindow.h"
 
-namespace dart {
-namespace simulation {
+/// \brief
+class MyWindow : public dart::gui::SimWindow {
+public:
+  /// \brief
+  MyWindow();
 
-SoftWorld::SoftWorld()
-  : World()
-{
-  // TODO(JS): Temporary code
-  delete mConstraintHandler;
+  /// \brief
+  virtual ~MyWindow();
 
-  mConstraintHandler = new constraint::SoftConstraintDynamics(mSkeletons,
-                                                              mTimeStep);
+  /// \brief
+  virtual void timeStepping();
 
-  mConstraintHandler->setCollisionDetector(
-        new collision::SoftFCLMeshCollisionDetector());
-}
+  /// \brief
+  virtual void drawSkels();
 
-SoftWorld::~SoftWorld()
-{
-}
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-}  // namespace simulation
-}  // namespace dart
+  /// \brief
+  void spawnCube(
+      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
+      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 1.0);
+
+private:
+  /// \brief
+  Eigen::Vector3d mForce;
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
+};
+
+#endif  // APPS_CUBES_MYWINDOW_H_

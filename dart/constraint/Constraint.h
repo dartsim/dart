@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu
- * Date:
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,46 +34,108 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H
-#define DART_CONSTRAINT_CONSTRAINT_H
+#ifndef DART_CONSTRAINT_CONSTRAINT_H_
+#define DART_CONSTRAINT_CONSTRAINT_H_
 
-#include <vector>
-#include <Eigen/Dense>
+#include <cstddef>
 
 namespace dart {
 
 namespace dynamics {
-class BodyNode;
-}
+class Skeleton;
+}  // namespace dynamics
 
 namespace constraint {
 
-class Constraint {
-public:
-  Constraint() {}
-  virtual ~Constraint() {}
+/// ConstraintInfo
+struct ConstraintInfo
+{
+  /// Impulse
+  double* x;
 
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  virtual void updateDynamics(Eigen::MatrixXd & _J1, Eigen::MatrixXd & _J2, Eigen::VectorXd & _C, Eigen::VectorXd & _CDot, int _rowIndex) {}
-  inline int getNumRows() const { return mNumRows; }
-  inline Eigen::VectorXd getLagrangeMultipliers() const { return mLagrangeMultipliers; }
-  inline void setLagrangeMultipliers(const Eigen::VectorXd& _lambda) { mLagrangeMultipliers = _lambda; }
-  inline dynamics::BodyNode* getBodyNode1() { return mBodyNode1; }
-  inline dynamics::BodyNode* getBodyNode2() { return mBodyNode2; }
+  /// Lower bound of x
+  double* lo;
+
+  /// Upper bound of x
+  double* hi;
+
+  /// Bias term
+  double* b;
+
+  /// Slack variable
+  double* w;
+
+  /// Friction index
+  int* findex;
+
+  /// Inverse of time step
+  double invTimeStep;
+};
+
+/// Constraint is a base class of concrete constraints classes
+class Constraint
+{
+public:
+  /// Return dimesion of this constranit
+  size_t getDimension() const;
+
+  /// Update constraint using updated Skeleton's states
+  virtual void update() = 0;
+
+  /// Fill LCP variables
+  virtual void getInformation(ConstraintInfo* _info) = 0;
+
+  /// Apply unit impulse to constraint space
+  virtual void applyUnitImpulse(size_t _index) = 0;
+
+  /// Get velocity change due to the uint impulse
+  virtual void getVelocityChange(double* _vel, bool _withCfm) = 0;
+
+  /// Excite the constraint
+  virtual void excite() = 0;
+
+  /// Unexcite the constraint
+  virtual void unexcite() = 0;
+
+  /// Apply computed constraint impulse to constrained skeletons
+  virtual void applyImpulse(double* _lambda) = 0;
+
+  /// Return true if this constraint is active
+  virtual bool isActive() const = 0;
+
+  ///
+  virtual dynamics::Skeleton* getRootSkeleton() const {}
+
+  ///
+  virtual void uniteSkeletons() {}
+
+  ///
+  static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
+
+  ///
+  static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
+
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class ConstraintSolver;
+  friend class ConstrainedGroup;
 
 protected:
-  virtual void getJacobian() {}
-  int mNumRows;
-  Eigen::VectorXd mLagrangeMultipliers;
+  /// Default contructor
+  Constraint();
 
-  dynamics::BodyNode* mBodyNode1;
-  dynamics::BodyNode* mBodyNode2;
-  Eigen::MatrixXd mJ1;
-  Eigen::MatrixXd mJ2;
+  /// Destructor
+  virtual ~Constraint();
+
+protected:
+  /// Dimension of constraint
+  size_t mDim;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif // #ifndef DART_CONSTRAINT_CONSTRAINT_H
+#endif  // DART_CONSTRAINT_CONSTRAINT_H_
 

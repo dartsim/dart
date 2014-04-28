@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
   using dart::utils::SkelParser;
 
   // Create and initialize the world
-  World* myWorld = dart::utils::SkelParser::readSkelFile(
+  World* myWorld = dart::utils::SkelParser::readWorld(
                      DART_DATA_PATH"/skel/mesh_collision.skel");
 
   // Create a skeleton

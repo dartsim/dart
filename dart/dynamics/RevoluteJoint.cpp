@@ -74,7 +74,7 @@ const Eigen::Vector3d&RevoluteJoint::getAxis() const {
 
 void RevoluteJoint::updateTransform() {
   mT = mT_ParentBodyToJoint
-       * math::expAngular(mAxis * mCoordinate.getConfig())
+       * math::expAngular(mAxis * mCoordinate.getPos())
        * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));

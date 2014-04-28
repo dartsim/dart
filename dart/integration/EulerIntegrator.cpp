@@ -58,5 +58,17 @@ void EulerIntegrator::integrate(IntegrableSystem* _system, double _dt)
   _system->integrateGenVels(_system->evalGenAccs(), _dt);
 }
 
+//==============================================================================
+void EulerIntegrator::integratePos(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateConfigs(_system->getGenVels(), _dt);
+}
+
+//==============================================================================
+void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
+{
+  _system->integrateGenVels(_system->evalGenAccs(), _dt);
+}
+
 }  // namespace integration
 }  // namespace dart

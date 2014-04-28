@@ -37,7 +37,7 @@
 #include <iostream>
 
 #include "dart/collision/bullet/BulletCollisionDetector.h"
-#include "dart/constraint/ConstraintDynamics.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
@@ -46,7 +46,7 @@
 int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
+      = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/bullet_collision.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

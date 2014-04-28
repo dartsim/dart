@@ -43,7 +43,7 @@
 int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readSkelFile(
+      = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/double_pendulum_with_base.skel");
   assert(myWorld != NULL);
 

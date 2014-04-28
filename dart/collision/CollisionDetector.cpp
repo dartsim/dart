@@ -41,6 +41,7 @@
 #include <iostream>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionNode.h"
@@ -55,6 +56,54 @@ CollisionDetector::CollisionDetector()
 CollisionDetector::~CollisionDetector() {
   for (int i = 0; i < mCollisionNodes.size(); i++)
     delete mCollisionNodes[i];
+}
+
+//==============================================================================
+void CollisionDetector::addSkeleton(dynamics::Skeleton* _skeleton)
+{
+  assert(_skeleton != NULL
+      && "Null pointer skeleton is not allowed to add to CollisionDetector.");
+
+  if (containSkeleton(_skeleton) == false)
+  {
+    mSkeletons.push_back(_skeleton);
+    for (int i = 0; i < _skeleton->getNumBodyNodes(); ++i)
+      addCollisionSkeletonNode(_skeleton->getBodyNode(i));
+  }
+  else
+  {
+    dtwarn << "Skeleton [" << _skeleton->getName()
+           << "] is already in CollisionDetector." << std::endl;
+  }
+}
+
+//==============================================================================
+void CollisionDetector::removeSkeleton(dynamics::Skeleton* _skeleton)
+{
+  assert(_skeleton != NULL
+      && "Null pointer skeleton is not allowed to add to CollisionDetector.");
+
+  if (containSkeleton(_skeleton))
+  {
+    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+                     mSkeletons.end());
+    for (int i = 0; i < _skeleton->getNumBodyNodes(); ++i)
+      removeCollisionSkeletonNode(_skeleton->getBodyNode(i));
+  }
+  else
+  {
+    dtwarn << "Skeleton [" << _skeleton->getName()
+           << "] is not in CollisionDetector." << std::endl;
+  }
+}
+
+//==============================================================================
+void CollisionDetector::removeAllSkeletons()
+{
+  for (size_t i = 0; i < mSkeletons.size(); ++i)
+    removeSkeleton(mSkeletons[i]);
+
+  mSkeletons.clear();
 }
 
 void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
@@ -177,6 +226,7 @@ void CollisionDetector::disablePair(dynamics::BodyNode* _node1,
     getPairCollidable(collisionNode1, collisionNode2) = false;
 }
 
+//==============================================================================
 bool CollisionDetector::isCollidable(const CollisionNode* _node1,
                                      const CollisionNode* _node2)
 {
@@ -206,6 +256,19 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
   }
 
   return true;
+}
+
+//==============================================================================
+bool CollisionDetector::containSkeleton(const dynamics::Skeleton* _skeleton)
+{
+  for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    if ((*it) == _skeleton)
+      return true;
+  }
+
+  return false;
 }
 
 std::vector<bool>::reference CollisionDetector::getPairCollidable(

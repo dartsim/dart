@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -53,18 +53,20 @@
 #include "dart/simulation/Recording.h"
 
 namespace dart {
+
 namespace integration {
 class Integrator;
 }  // namespace integration
+
 namespace dynamics {
 class Skeleton;
 }  // namespace dynamics
-namespace constraint {
-class ConstraintDynamics;
-}  // namespace constraint
-}  // namespace dart
 
-namespace dart {
+namespace constraint {
+class OldConstraintDynamics;
+class ConstraintSolver;
+}  // namespace constraint
+
 namespace simulation {
 
 /// \brief class World
@@ -81,7 +83,7 @@ public:
   virtual ~World();
 
   //--------------------------------------------------------------------------
-  // Virtual functions
+  // Virtual functions for integration::IntegrableSystem
   //--------------------------------------------------------------------------
   // Documentation inherited
   virtual void setConfigs(const Eigen::VectorXd& _configs);
@@ -170,8 +172,8 @@ public:
   //--------------------------------------------------------------------------
   // Constraint
   //--------------------------------------------------------------------------
-  /// \brief Get the constraint handler
-  constraint::ConstraintDynamics* getConstraintHandler() const;
+  /// \brief Get the constraint solver
+  constraint::ConstraintSolver* getConstraintSolver() const;
 
   /// \brief Bake simulated current state and store it into mRecording
   void bake();
@@ -204,8 +206,8 @@ protected:
   /// \brief The integrator
   integration::Integrator* mIntegrator;
 
-  /// \brief The constraint handler
-  constraint::ConstraintDynamics* mConstraintHandler;
+  /// \brief Constraint solver
+  constraint::ConstraintSolver* mConstraintSolver;
 
   /// \brief
   Recording* mRecording;

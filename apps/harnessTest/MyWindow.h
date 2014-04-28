@@ -44,38 +44,40 @@
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/constraint/WeldJointConstraint.h"
 #include "dart/gui/SimWindow.h"
 
 class MyWindow : public dart::gui::SimWindow
 {
 public:
-    MyWindow(): SimWindow()
-    {
-        mForce = Eigen::Vector3d::Zero();
-        mController = NULL;
-        mImpulseDuration = 0;
-        mHarnessOn = false;
+  MyWindow(): SimWindow()
+  {
+    mForce = Eigen::Vector3d::Zero();
+    mController = NULL;
+    mImpulseDuration = 0;
+    mHarnessOn = false;
 
-    }
-    virtual ~MyWindow() {}
-    
-    virtual void timeStepping();
-    virtual void drawSkels();
-    //  virtual void displayTimer(int _val);
-    //  virtual void draw();
-    virtual void keyboard(unsigned char key, int x, int y);
-    
-    void setController(Controller *_controller)
-    {
-        mController = _controller;
-    }
+  }
+  virtual ~MyWindow() {}
+
+  virtual void timeStepping();
+  virtual void drawSkels();
+  //  virtual void displayTimer(int _val);
+  //  virtual void draw();
+  virtual void keyboard(unsigned char key, int x, int y);
+
+  void setController(Controller *_controller)
+  {
+    mController = _controller;
+  }
 
 private:
-    Eigen::Vector3d mForce;
-    Controller *mController;
-    int mImpulseDuration;
-    void addWeldConstraint();
-    bool mHarnessOn;
+  Eigen::Vector3d mForce;
+  Controller* mController;
+  dart::constraint::WeldJointConstraint* mWeldJoint;
+  int mImpulseDuration;
+  void addWeldConstraint();
+  bool mHarnessOn;
 
 };
 
@@ -97,7 +99,7 @@ public:
         mBackground[1] = 1.0;
         mBackground[2] = 1.0;
         mBackground[3] = 1.0;
-		
+
         mSim = false;
         mPlay = false;
         mSimFrame = 0;
@@ -108,7 +110,7 @@ public:
 
         mPersp = 45.f;
         mTrans[1] = 300.f;
-    
+
         mGravity = Eigen::Vector3d(0.0, -9.8, 0.0);
         mTimeStep = 1.0/1000.0;
         mForce = Eigen::Vector3d::Zero();
@@ -144,7 +146,7 @@ public:
     // Needed for integration
     virtual Eigen::VectorXd getState();
     virtual Eigen::VectorXd evalDeriv();
-    virtual void setState(const Eigen::VectorXd &state);	
+    virtual void setState(const Eigen::VectorXd &state);
 
  protected:
     int mSimFrame;
