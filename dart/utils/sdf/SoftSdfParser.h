@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_UTILS_SDF_SOFTSDFPARSER_H_
+#ifndef DART_UTILS_SDF_SOFTSDFPARSER_H_
 #define DART_UTILS_SDF_SOFTSDFPARSER_H_
 
 #include <map>
@@ -100,4 +100,4 @@ protected:
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef SOFT_UTILS_SDF_SOFTSDFPARSER_H_
+#endif // #ifndef DART_UTILS_SDF_SOFTSDFPARSER_H_

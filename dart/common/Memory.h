@@ -45,4 +45,4 @@
   #define DART_ALIGNED(v)
 #endif
 
-#endif  // SOFT_COMMON_MEMORY_H_
+#endif  // DART_COMMON_MEMORY_H_
