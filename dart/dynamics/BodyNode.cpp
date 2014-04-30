@@ -52,8 +52,8 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 0.4
-#define DART_DEFAULT_RESTITUTION_COEFF 0.2
+#define DART_DEFAULT_FRICTION_COEFF 1.0
+#define DART_DEFAULT_RESTITUTION_COEFF 0.0
 
 namespace dart {
 namespace dynamics {
