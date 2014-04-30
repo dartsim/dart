@@ -45,6 +45,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 PlanarJoint::PlanarJoint(const std::string& _name)
   : Joint(_name)
 {
@@ -59,144 +60,143 @@ PlanarJoint::PlanarJoint(const std::string& _name)
   mDampingCoefficient.resize(3, 0.0);
   mRestPosition.resize(3, 0.0);
 
-  setPlaneType(PT_XY);
+  setXYPlane();
 }
 
+//==============================================================================
 PlanarJoint::~PlanarJoint()
 {
 }
 
+//==============================================================================
+void PlanarJoint::setXYPlane()
+{
+  mPlaneType = PT_XY;
+  mRotAxis   = Eigen::Vector3d::UnitZ();
+  mTransAxis1 = Eigen::Vector3d::UnitX();
+  mTransAxis2 = Eigen::Vector3d::UnitY();
+}
+
+//==============================================================================
+void PlanarJoint::setYZPlane()
+{
+  mPlaneType = PT_YZ;
+  mRotAxis   = Eigen::Vector3d::UnitX();
+  mTransAxis1 = Eigen::Vector3d::UnitY();
+  mTransAxis2 = Eigen::Vector3d::UnitZ();
+}
+
+//==============================================================================
+void PlanarJoint::setZXPlane()
+{
+  mPlaneType = PT_ZX;
+  mRotAxis   = Eigen::Vector3d::UnitY();
+  mTransAxis1 = Eigen::Vector3d::UnitZ();
+  mTransAxis2 = Eigen::Vector3d::UnitX();
+}
+
+//==============================================================================
+void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
+                                    const Eigen::Vector3d& _transAxis2)
+{
+  // Set plane type as arbitrary plane
+  mPlaneType = PT_ARBITRARY;
+
+  // First translational axis
+  mTransAxis1 = _transAxis1.normalized();
+
+  // Second translational axis
+  mTransAxis2 = _transAxis2.normalized();
+
+  // Orthogonalize translational axese
+  double dotProduct = mTransAxis1.dot(mTransAxis2);
+  assert(std::fabs(dotProduct) < 1.0 - 1e-6);
+  if (std::fabs(dotProduct) > 1e-6)
+    mTransAxis2 = (mTransAxis2 - dotProduct * mTransAxis1).normalized();
+
+  // Rotational axis
+  mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();
+}
+
+//==============================================================================
 void PlanarJoint::updateTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTranAxis1 * mCoordinate[1].getPos())
-       * Eigen::Translation3d(mTranAxis2 * mCoordinate[2].getPos())
-       * math::expAngular    (mRotAxis   * mCoordinate[0].getPos())
+       * Eigen::Translation3d(mTransAxis1 * mCoordinate[0].getPos())
+       * Eigen::Translation3d(mTransAxis2 * mCoordinate[1].getPos())
+       * math::expAngular    (mRotAxis    * mCoordinate[2].getPos())
        * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
 
+//==============================================================================
 void PlanarJoint::updateJacobian()
 {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
-  J.block<3, 1>(0, 0) = mRotAxis;
-  J.block<3, 1>(3, 1) = mTranAxis1;
-  J.block<3, 1>(3, 2) = mTranAxis2;
+  J.block<3, 1>(3, 0) = mTransAxis1;
+  J.block<3, 1>(3, 1) = mTransAxis2;
+  J.block<3, 1>(0, 2) = mRotAxis;
 
-  mS.col(0)     = math::AdTJac(mT_ChildBodyToJoint, J.col(0));
-  mS.rightCols<2>()
+  mS.leftCols<2>()
       = math::AdTJac(mT_ChildBodyToJoint
-                     * math::expAngular(mRotAxis * -mCoordinate[0].getPos()),
-                     J.rightCols<2>());
+                     * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
+                     J.leftCols<2>());
+  mS.col(2)     = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
 
   assert(!math::isNan(mS));
 }
 
+//==============================================================================
 void PlanarJoint::updateJacobianTimeDeriv()
 {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
-  J.block<3, 1>(0, 0) = mRotAxis;
-  J.block<3, 1>(3, 1) = mTranAxis1;
-  J.block<3, 1>(3, 2) = mTranAxis2;
+  J.block<3, 1>(3, 0) = mTransAxis1;
+  J.block<3, 1>(3, 1) = mTransAxis2;
+  J.block<3, 1>(0, 2) = mRotAxis;
+
+  mdS.col(0)
+      = -math::ad(mS.col(2)*mCoordinate[2].getVel(),
+                  math::AdT(mT_ChildBodyToJoint
+                            * math::expAngular(mRotAxis
+                                               * -mCoordinate[2].getPos()),
+                            J.col(0)));
 
   mdS.col(1)
-      = -math::ad(mS.col(0)*mCoordinate[0].getVel(),
+      = -math::ad(mS.col(2)*mCoordinate[2].getVel(),
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mCoordinate[0].getPos()),
+                                               * -mCoordinate[2].getPos()),
                             J.col(1)));
 
-  mdS.col(2)
-      = -math::ad(mS.col(0)*mCoordinate[0].getVel(),
-                  math::AdT(mT_ChildBodyToJoint
-                            * math::expAngular(mRotAxis
-                                               * -mCoordinate[0].getPos()),
-                            J.col(2)));
-
-  assert(mdS.col(0) == Eigen::Vector6d::Zero());
+  assert(mdS.col(2) == Eigen::Vector6d::Zero());
+  assert(!math::isNan(mdS.col(0)));
   assert(!math::isNan(mdS.col(1)));
-  assert(!math::isNan(mdS.col(2)));
 }
 
-void PlanarJoint::setPlaneType(PlaneType _planeType)
-{
-  switch (_planeType)
-  {
-    case PT_XY:
-    {
-      mPlaneType = _planeType;
-      mRotAxis   = Eigen::Vector3d::UnitZ();
-      mTranAxis1 = Eigen::Vector3d::UnitX();
-      mTranAxis2 = Eigen::Vector3d::UnitY();
-      break;
-    }
-    case PT_YZ:
-    {
-      mPlaneType = _planeType;
-      mRotAxis   = Eigen::Vector3d::UnitX();
-      mTranAxis1 = Eigen::Vector3d::UnitY();
-      mTranAxis2 = Eigen::Vector3d::UnitZ();
-      break;
-    }
-    case PT_ZX:
-    {
-      mPlaneType = _planeType;
-      mRotAxis   = Eigen::Vector3d::UnitY();
-      mTranAxis1 = Eigen::Vector3d::UnitZ();
-      mTranAxis2 = Eigen::Vector3d::UnitX();
-      break;
-    }
-    case PT_ARBITRARY:
-    {
-      dterr << "PlaneJoint::setPlaneType(): PT_ARBITRARY can be set here."
-            << "Instead please use use setPlane() for arbitrary plane."
-            << std::endl;
-      break;
-    }
-    default:
-      dterr << "PlaneJoint::setPlaneType(): Unsupported plane type."
-            << std::endl;
-      break;
-  }
-}
-
-PlanarJoint::PlaneType PlanarJoint::getPlaneType() const
+//==============================================================================
+PlaneType PlanarJoint::getPlaneType() const
 {
   return mPlaneType;
 }
 
-void PlanarJoint::setPlane(const Eigen::Vector3d& _rotAxis,
-                            const Eigen::Vector3d& _tranAxis1)
-{
-  mPlaneType = PT_ARBITRARY;
-
-  // Rotational axis
-  mRotAxis = _rotAxis.normalized();
-
-  // Translational axes
-  assert(_rotAxis == _tranAxis1);
-  Eigen::Vector3d unitTA1 = _tranAxis1.normalized();
-  mTranAxis1 = (unitTA1 - unitTA1.dot(mRotAxis) * mRotAxis).normalized();
-
-  mTranAxis2 = (mRotAxis.cross(mTranAxis1)).normalized();
-}
-
-const Eigen::Vector3d&PlanarJoint::getRotationalAxis() const
+//==============================================================================
+const Eigen::Vector3d& PlanarJoint::getRotationalAxis() const
 {
   return mRotAxis;
 }
 
-const Eigen::Vector3d&PlanarJoint::getTranslationalAxis1() const
+//==============================================================================
+const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
 {
-  return mTranAxis1;
+  return mTransAxis1;
 }
 
-const Eigen::Vector3d&PlanarJoint::getTranslationalAxis2() const
+//==============================================================================
+const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
-  return mTranAxis2;
+  return mTransAxis2;
 }
-
 
 }  // namespace dynamics
 }  // namespace dart
