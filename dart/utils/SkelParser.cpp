@@ -67,6 +67,7 @@
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
@@ -300,7 +301,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
   // Joints
   ElementEnumerator joints(_skeletonElement, "joint");
   while (joints.next())
-    readSoftJoint(joints.get(), softBodyNodes);
+    readJoint(joints.get(), softBodyNodes);
 
   //--------------------------------------------------------------------------
   // Add FreeJoint to the body node that doesn't have parent joint
@@ -823,126 +824,6 @@ dynamics::Marker* SkelParser::readMarker(tinyxml2::XMLElement* _markerElement,
 dynamics::Joint* SkelParser::readJoint(
     tinyxml2::XMLElement* _jointElement,
     const std::vector<SkelBodyNode,
-        Eigen::aligned_allocator<SkelBodyNode> >& _skelBodyNodes) {
-  assert(_jointElement != NULL);
-
-  dynamics::Joint* newJoint = NULL;
-
-  //--------------------------------------------------------------------------
-  // Type attribute
-  std::string type = getAttribute(_jointElement, "type");
-  assert(!type.empty());
-  if (type == std::string("weld"))
-    newJoint = readWeldJoint(_jointElement);
-  if (type == std::string("prismatic"))
-    newJoint = readPrismaticJoint(_jointElement);
-  if (type == std::string("revolute"))
-    newJoint = readRevoluteJoint(_jointElement);
-  if (type == std::string("universal"))
-    newJoint = readUniversalJoint(_jointElement);
-  if (type == std::string("ball"))
-    newJoint = readBallJoint(_jointElement);
-  if (type == std::string("euler"))
-    newJoint = readEulerJoint(_jointElement);
-  if (type == std::string("translational"))
-    newJoint = readTranslationalJoint(_jointElement);
-  if (type == std::string("free"))
-    newJoint = readFreeJoint(_jointElement);
-  assert(newJoint != NULL);
-
-  //--------------------------------------------------------------------------
-  // Name attribute
-  std::string name = getAttribute(_jointElement, "name");
-  newJoint->setName(name);
-
-  //--------------------------------------------------------------------------
-  // parent
-  SkelBodyNode skelParentBodyNode;
-  skelParentBodyNode.bodyNode = NULL;
-  skelParentBodyNode.initTransform = Eigen::Isometry3d::Identity();
-
-  if (hasElement(_jointElement, "parent")) {
-    std::string strParent = getValueString(_jointElement, "parent");
-
-    if (strParent != std::string("world")) {
-      for (std::vector<SkelBodyNode,
-           Eigen::aligned_allocator<SkelBodyNode> >::const_iterator it =
-           _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it)
-        if ((*it).bodyNode->getName() == strParent) {
-          skelParentBodyNode = (*it);
-          break;
-        }
-
-      if (skelParentBodyNode.bodyNode == NULL) {
-        dterr << "Can't find the parent body ["
-              << strParent
-              << "] of the joint ["
-              << newJoint->getName()
-              << "]. " << std::endl;
-        assert(0);
-      }
-    }
-  } else {
-    dterr << "No parent body.\n";
-    assert(0);
-  }
-
-  //--------------------------------------------------------------------------
-  // child
-  SkelBodyNode skelChildBodyNode;
-  skelChildBodyNode.bodyNode = NULL;
-  skelChildBodyNode.initTransform = Eigen::Isometry3d::Identity();
-
-  if (hasElement(_jointElement, "child")) {
-    std::string strChild = getValueString(_jointElement, "child");
-
-    for (std::vector<SkelBodyNode,
-         Eigen::aligned_allocator<SkelBodyNode> >::const_iterator it =
-         _skelBodyNodes.begin(); it != _skelBodyNodes.end(); ++it) {
-      if ((*it).bodyNode->getName() == strChild) {
-        skelChildBodyNode = (*it);
-        break;
-      }
-    }
-
-    if (skelChildBodyNode.bodyNode == NULL) {
-      dterr << "Can't find the child body ["
-            << strChild
-            << "] of the joint ["
-            << newJoint->getName()
-            << "]. " << std::endl;
-      assert(0);
-    }
-  } else {
-    dterr << "Set child body node for " << newJoint->getName() << "."
-          << std::endl;
-    assert(0);
-  }
-
-  skelChildBodyNode.bodyNode->setParentJoint(newJoint);
-
-  if (skelParentBodyNode.bodyNode)
-    skelParentBodyNode.bodyNode->addChildBodyNode(skelChildBodyNode.bodyNode);
-
-  //--------------------------------------------------------------------------
-  // transformation
-  Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childWorld = skelChildBodyNode.initTransform;
-  if (skelParentBodyNode.bodyNode)
-    parentWorld = skelParentBodyNode.initTransform;
-  if (hasElement(_jointElement, "transformation"))
-    childToJoint = getValueIsometry3d(_jointElement, "transformation");
-  Eigen::Isometry3d parentToJoint =
-      parentWorld.inverse()*childWorld*childToJoint;
-  newJoint->setTransformFromChildBodyNode(childToJoint);
-  newJoint->setTransformFromParentBodyNode(parentToJoint);
-
-  return newJoint;
-}
-dynamics::Joint* SkelParser::readSoftJoint(
-    tinyxml2::XMLElement* _jointElement,
-    const std::vector<SkelBodyNode,
     Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes)
 {
   assert(_jointElement != NULL);
@@ -967,6 +848,8 @@ dynamics::Joint* SkelParser::readSoftJoint(
     newJoint = readEulerJoint(_jointElement);
   if (type == std::string("translational"))
     newJoint = readTranslationalJoint(_jointElement);
+  if (type == std::string("planar"))
+    newJoint = readPlanarJoint(_jointElement);
   if (type == std::string("free"))
     newJoint = readFreeJoint(_jointElement);
   assert(newJoint != NULL);
@@ -1552,6 +1435,187 @@ dynamics::TranslationalJoint* SkelParser::readTranslationalJoint(
   }
 
   return newTranslationalJoint;
+}
+
+//==============================================================================
+dynamics::PlanarJoint* SkelParser::readPlanarJoint(
+    tinyxml2::XMLElement* _jointElement)
+{
+  assert(_jointElement != NULL);
+
+  dynamics::PlanarJoint* newPlanarJoint = new dynamics::PlanarJoint;
+
+  //--------------------------------------------------------------------------
+  // Plane
+  if (hasElement(_jointElement, "plane"))
+  {
+    tinyxml2::XMLElement* planeElement = getElement(_jointElement, "plane");
+
+    // Type attribute
+    std::string type = getAttribute(planeElement, "type");
+
+    if (type == "xy")
+    {
+      newPlanarJoint->setXYPlane();
+    }
+    else if (type == "yz")
+    {
+      newPlanarJoint->setYZPlane();
+    }
+    else if (type == "zx")
+    {
+      newPlanarJoint->setZXPlane();
+    }
+    else if (type == "arbitrary")
+    {
+      tinyxml2::XMLElement* transAxis1Element
+          = getElement(planeElement, "translation_axis1");
+
+      Eigen::Vector3d transAxis1 = getValueVector3d(transAxis1Element, "xyz");
+
+      tinyxml2::XMLElement* transAxis2Element
+          = getElement(planeElement, "translation_axis2");
+
+      Eigen::Vector3d transAxis2 = getValueVector3d(transAxis2Element, "xyz");
+
+      newPlanarJoint->setArbitraryPlane(transAxis1, transAxis2);
+    }
+    else
+    {
+      newPlanarJoint->setXYPlane();
+      dterr << "Undefined plane type. XY-plane is set as default.\n";
+    }
+  }
+  else
+  {
+    newPlanarJoint->setXYPlane();
+    dterr << "Plane type is not specified. XY-plane is set as default.\n";
+  }
+
+  //--------------------------------------------------------------------------
+  // axis
+  if (hasElement(_jointElement, "axis"))
+  {
+    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
+
+    // damping
+    if (hasElement(axisElement, "damping"))
+    {
+      double damping = getValueDouble(axisElement, "damping");
+      newPlanarJoint->setDampingCoefficient(0, damping);
+    }
+
+    // limit
+    if (hasElement(axisElement, "limit"))
+    {
+      tinyxml2::XMLElement* limitElement
+          = getElement(axisElement, "limit");
+
+      // lower
+      if (hasElement(limitElement, "lower"))
+      {
+        double lower = getValueDouble(limitElement, "lower");
+        newPlanarJoint->getGenCoord(0)->setPosMin(lower);
+      }
+
+      // upper
+      if (hasElement(limitElement, "upper"))
+      {
+        double upper = getValueDouble(limitElement, "upper");
+        newPlanarJoint->getGenCoord(0)->setPosMax(upper);
+      }
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // axis2
+  if (hasElement(_jointElement, "axis2"))
+  {
+    tinyxml2::XMLElement* axis2Element
+        = getElement(_jointElement, "axis2");
+
+    // damping
+    if (hasElement(axis2Element, "damping"))
+    {
+      double damping = getValueDouble(axis2Element, "damping");
+      newPlanarJoint->setDampingCoefficient(1, damping);
+    }
+
+    // limit
+    if (hasElement(axis2Element, "limit"))
+    {
+      tinyxml2::XMLElement* limitElement
+          = getElement(axis2Element, "limit");
+
+      // lower
+      if (hasElement(limitElement, "lower"))
+      {
+        double lower = getValueDouble(limitElement, "lower");
+        newPlanarJoint->getGenCoord(1)->setPosMin(lower);
+      }
+
+      // upper
+      if (hasElement(limitElement, "upper"))
+      {
+        double upper = getValueDouble(limitElement, "upper");
+        newPlanarJoint->getGenCoord(1)->setPosMax(upper);
+      }
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // axis3
+  if (hasElement(_jointElement, "axis3"))
+  {
+    tinyxml2::XMLElement* axis3Element
+        = getElement(_jointElement, "axis3");
+
+    // damping
+    if (hasElement(axis3Element, "damping"))
+    {
+      double damping = getValueDouble(axis3Element, "damping");
+      newPlanarJoint->setDampingCoefficient(2, damping);
+    }
+
+    // limit
+    if (hasElement(axis3Element, "limit"))
+    {
+      tinyxml2::XMLElement* limitElement
+          = getElement(axis3Element, "limit");
+
+      // lower
+      if (hasElement(limitElement, "lower"))
+      {
+        double lower = getValueDouble(limitElement, "lower");
+        newPlanarJoint->getGenCoord(2)->setPosMin(lower);
+      }
+
+      // upper
+      if (hasElement(limitElement, "upper"))
+      {
+        double upper = getValueDouble(limitElement, "upper");
+        newPlanarJoint->getGenCoord(2)->setPosMax(upper);
+      }
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // init_pos
+  if (hasElement(_jointElement, "init_pos"))
+  {
+    Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
+    newPlanarJoint->setConfigs(init_pos, false, false, false);
+  }
+
+  //--------------------------------------------------------------------------
+  // init_vel
+  if (hasElement(_jointElement, "init_vel"))
+  {
+    Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
+    newPlanarJoint->setGenVels(init_vel, false, false);
+  }
+
+  return newPlanarJoint;
 }
 
 dynamics::FreeJoint* SkelParser::readFreeJoint(

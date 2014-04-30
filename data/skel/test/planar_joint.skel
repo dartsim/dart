@@ -1,0 +1,143 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+            <collision_detector>fcl_mesh</collision_detector>
+        </physics>
+        <skeleton name="skeleton1">
+            <body name="link1">
+                <transformation>0.1 0 0 0 0 0</transformation>
+            </body>
+            <body name="link2">
+                <transformation>0.1 0 0 0 0 0</transformation>
+            </body>
+            <body name="link3">
+                <transformation>0.1 0 0 0 0 0</transformation>
+            </body>
+            <body name="link4">
+                <transformation>0.1 0 0 0 0 0</transformation>
+            </body>
+            <joint type="planar" name="joint1">
+                <parent>world</parent>
+                <child>link1</child>
+		<plane type="xy"/>
+                <axis>
+		    <damping>1</damping>
+                    <limit>
+                        <lower>-1</lower>
+                        <upper>+1</upper>
+                    </limit>
+                </axis>
+                <axis2>
+		    <damping>2</damping>
+                    <limit>
+                        <lower>-2</lower>
+                        <upper>+2</upper>
+                    </limit>
+                </axis2>
+                <axis3>
+		    <damping>3</damping>
+                    <limit>
+                        <lower>-3</lower>
+                        <upper>+3</upper>
+                    </limit>
+                </axis3>
+                <init_pos>1 2 3</init_pos>
+                <init_vel>4 5 6</init_vel>
+            </joint>
+            <joint type="planar" name="joint2">
+                <parent>link1</parent>
+                <child>link2</child>
+		<plane type="yz"/>
+                <axis>
+		    <damping>1</damping>
+                    <limit>
+                        <lower>-1</lower>
+                        <upper>+1</upper>
+                    </limit>
+                </axis>
+                <axis2>
+		    <damping>2</damping>
+                    <limit>
+                        <lower>-2</lower>
+                        <upper>+2</upper>
+                    </limit>
+                </axis2>
+                <axis3>
+		    <damping>3</damping>
+                    <limit>
+                        <lower>-3</lower>
+                        <upper>+3</upper>
+                    </limit>
+                </axis3>
+                <init_pos>1 2 3</init_pos>
+                <init_vel>4 5 6</init_vel>
+            </joint>
+            <joint type="planar" name="joint3">
+                <parent>link2</parent>
+                <child>link3</child>
+		<plane type="zx"/>
+                <axis>
+		    <damping>1</damping>
+                    <limit>
+                        <lower>-1</lower>
+                        <upper>+1</upper>
+                    </limit>
+                </axis>
+                <axis2>
+		    <damping>2</damping>
+                    <limit>
+                        <lower>-2</lower>
+                        <upper>+2</upper>
+                    </limit>
+                </axis2>
+                <axis3>
+		    <damping>3</damping>
+                    <limit>
+                        <lower>-3</lower>
+                        <upper>+3</upper>
+                    </limit>
+                </axis3>
+                <init_pos>1 2 3</init_pos>
+                <init_vel>4 5 6</init_vel>
+            </joint>
+            <joint type="planar" name="joint4">
+                <parent>link3</parent>
+                <child>link4</child>
+		<plane type="arbitrary">
+		    <translation_axis1>
+                        <xyz>1 0 0</xyz>
+                    </translation_axis1>
+                    <translation_axis2>
+                        <xyz>0 1 0</xyz>
+                    </translation_axis2>
+		</plane>
+                <axis>
+		    <damping>1</damping>
+                    <limit>
+                        <lower>-1</lower>
+                        <upper>+1</upper>
+                    </limit>
+                </axis>
+                <axis2>
+		    <damping>2</damping>
+                    <limit>
+                        <lower>-2</lower>
+                        <upper>+2</upper>
+                    </limit>
+                </axis2>
+                <axis3>
+		    <damping>3</damping>
+                    <limit>
+                        <lower>-3</lower>
+                        <upper>+3</upper>
+                    </limit>
+                </axis3>
+                <init_pos>1 2 3</init_pos>
+                <init_vel>4 5 6</init_vel>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>
