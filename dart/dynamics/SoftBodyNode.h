@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SOFT_DYNAMICS_SOFTBODYNODE_H_
+#ifndef DART_DYNAMICS_SOFTBODYNODE_H_
 #define DART_DYNAMICS_SOFTBODYNODE_H_
 
 #define DART_DEFAULT_VERTEX_STIFFNESS (1.0)
@@ -328,4 +328,4 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // SOFT_DYNAMICS_SOFTBODYNODE_H_
+#endif  // DART_DYNAMICS_SOFTBODYNODE_H_

@@ -40,6 +40,7 @@
 
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/utils/Paths.h"
 #include "dart/simulation/World.h"
@@ -188,6 +189,124 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
 
   SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
+
+  world->step();
+
+  delete world;
+}
+
+//==============================================================================
+TEST(SKEL_PARSER, PLANAR_JOINT)
+{
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"skel/test/planar_joint.skel");
+  EXPECT_TRUE(world != NULL);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton1");
+  EXPECT_TRUE(skel1 != NULL);
+
+  BodyNode* body1 = skel1->getBodyNode("link1");
+  BodyNode* body2 = skel1->getBodyNode("link2");
+  BodyNode* body3 = skel1->getBodyNode("link3");
+  BodyNode* body4 = skel1->getBodyNode("link4");
+  EXPECT_TRUE(body1 != NULL);
+  EXPECT_TRUE(body2 != NULL);
+  EXPECT_TRUE(body3 != NULL);
+  EXPECT_TRUE(body4 != NULL);
+
+  PlanarJoint* planarJoint1
+      = dynamic_cast<PlanarJoint*>(body1->getParentJoint());
+  PlanarJoint* planarJoint2
+      = dynamic_cast<PlanarJoint*>(body2->getParentJoint());
+  PlanarJoint* planarJoint3
+      = dynamic_cast<PlanarJoint*>(body3->getParentJoint());
+  PlanarJoint* planarJoint4
+      = dynamic_cast<PlanarJoint*>(body4->getParentJoint());
+  EXPECT_TRUE(planarJoint1 != NULL);
+  EXPECT_TRUE(planarJoint2 != NULL);
+  EXPECT_TRUE(planarJoint3 != NULL);
+  EXPECT_TRUE(planarJoint4 != NULL);
+
+  EXPECT_EQ(planarJoint1->getPlaneType(), PT_XY);
+  EXPECT_EQ(planarJoint2->getPlaneType(), PT_YZ);
+  EXPECT_EQ(planarJoint3->getPlaneType(), PT_ZX);
+  EXPECT_EQ(planarJoint4->getPlaneType(), PT_ARBITRARY);
+
+  EXPECT_EQ(planarJoint1->getTranslationalAxis1(), Eigen::Vector3d::UnitX());
+  EXPECT_EQ(planarJoint2->getTranslationalAxis1(), Eigen::Vector3d::UnitY());
+  EXPECT_EQ(planarJoint3->getTranslationalAxis1(), Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(planarJoint4->getTranslationalAxis1(), Eigen::Vector3d::UnitX());
+
+  EXPECT_EQ(planarJoint1->getTranslationalAxis2(), Eigen::Vector3d::UnitY());
+  EXPECT_EQ(planarJoint2->getTranslationalAxis2(), Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(planarJoint3->getTranslationalAxis2(), Eigen::Vector3d::UnitX());
+  EXPECT_EQ(planarJoint4->getTranslationalAxis2(), Eigen::Vector3d::UnitY());
+
+  EXPECT_EQ(planarJoint1->getRotationalAxis(), Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(planarJoint2->getRotationalAxis(), Eigen::Vector3d::UnitX());
+  EXPECT_EQ(planarJoint3->getRotationalAxis(), Eigen::Vector3d::UnitY());
+  EXPECT_EQ(planarJoint4->getRotationalAxis(), Eigen::Vector3d::UnitZ());
+
+  EXPECT_EQ(planarJoint1->getConfigs(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint2->getConfigs(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint3->getConfigs(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint4->getConfigs(), Eigen::Vector3d(1, 2, 3));
+
+  EXPECT_EQ(planarJoint1->getGenVels(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint2->getGenVels(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint3->getGenVels(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint4->getGenVels(), Eigen::Vector3d(4, 5, 6));
+
+  EXPECT_EQ(planarJoint1->getDampingCoefficient(0), 1);
+  EXPECT_EQ(planarJoint2->getDampingCoefficient(0), 1);
+  EXPECT_EQ(planarJoint3->getDampingCoefficient(0), 1);
+  EXPECT_EQ(planarJoint4->getDampingCoefficient(0), 1);
+
+  EXPECT_EQ(planarJoint1->getDampingCoefficient(1), 2);
+  EXPECT_EQ(planarJoint2->getDampingCoefficient(1), 2);
+  EXPECT_EQ(planarJoint3->getDampingCoefficient(1), 2);
+  EXPECT_EQ(planarJoint4->getDampingCoefficient(1), 2);
+
+  EXPECT_EQ(planarJoint1->getDampingCoefficient(2), 3);
+  EXPECT_EQ(planarJoint2->getDampingCoefficient(2), 3);
+  EXPECT_EQ(planarJoint3->getDampingCoefficient(2), 3);
+  EXPECT_EQ(planarJoint4->getDampingCoefficient(2), 3);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(0)->getPosMin(), -1.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(0)->getPosMin(), -1.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(0)->getPosMin(), -1.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(0)->getPosMin(), -1.0);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(0)->getPosMax(), +1.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(0)->getPosMax(), +1.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(0)->getPosMax(), +1.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(0)->getPosMax(), +1.0);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(1)->getPosMin(), -2.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(1)->getPosMin(), -2.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(1)->getPosMin(), -2.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(1)->getPosMin(), -2.0);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(1)->getPosMax(), +2.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(1)->getPosMax(), +2.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(1)->getPosMax(), +2.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(1)->getPosMax(), +2.0);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(2)->getPosMin(), -3.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(2)->getPosMin(), -3.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(2)->getPosMin(), -3.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(2)->getPosMin(), -3.0);
+
+  EXPECT_EQ(planarJoint1->getGenCoord(2)->getPosMax(), +3.0);
+  EXPECT_EQ(planarJoint2->getGenCoord(2)->getPosMax(), +3.0);
+  EXPECT_EQ(planarJoint3->getGenCoord(2)->getPosMax(), +3.0);
+  EXPECT_EQ(planarJoint4->getGenCoord(2)->getPosMax(), +3.0);
 
   world->step();
 

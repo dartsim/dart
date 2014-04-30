@@ -45,67 +45,81 @@
 namespace dart {
 namespace dynamics {
 
+/// Plane type
+enum PlaneType
+{
+  PT_XY,
+  PT_YZ,
+  PT_ZX,
+  PT_ARBITRARY
+};
+
+/// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
+/// axes and one rotational axis.
+///
+/// First and second coordiantes represent translation along first and second
+/// translational axese, respectively. Third coordinate represents rotation
+/// along rotational axis.
 class PlanarJoint : public Joint
 {
 public:
-  enum PlaneType
-  {
-    PT_XY,
-    PT_YZ,
-    PT_ZX,
-    PT_ARBITRARY
-  };
+  /// Constructor
+  explicit PlanarJoint(const std::string& _name = "PlanarJoint");
 
-  /// \brief Constructor.
-  explicit PlanarJoint(
-      const std::string& _name = "Noname PlanarJoint");
-
-  /// \brief Destructor.
+  /// Destructor
   virtual ~PlanarJoint();
 
-  // Documentation inherited.
-  virtual void updateTransform();
+  /// Set plane type as XY-plane
+  void setXYPlane();
 
-  // Documentation inherited.
-  virtual void updateJacobian();
+  /// Set plane type as XY-plane
+  void setYZPlane();
 
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  /// Set plane type as ZX-plane
+  void setZXPlane();
 
-  /// \brief
-  void setPlaneType(PlaneType _planeType);
+  /// Set plane type as arbitrary plane with two orthogonal translational axes
+  void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
+                         const Eigen::Vector3d& _transAxis2);
 
-  /// \brief
+  /// Return plane type
   PlaneType getPlaneType() const;
 
-  /// \brief
-  void setPlane(const Eigen::Vector3d& _rotAxis,
-                const Eigen::Vector3d& _tranAxis1);
-
-  /// \brief
+  /// Return rotational axis
   const Eigen::Vector3d& getRotationalAxis() const;
 
-  /// \brief
+  /// Return first translational axis
   const Eigen::Vector3d& getTranslationalAxis1() const;
 
-  /// \brief
+  /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
 protected:
-  /// \brief
+  // Documentation inherited
+  virtual void updateTransform();
+
+  // Documentation inherited
+  virtual void updateJacobian();
+
+  // Documentation inherited
+  virtual void updateJacobianTimeDeriv();
+
+  /// Generalized coordinates. First and second coordiantes represent
+  /// translation along first and second translational axes, respectively. Third
+  /// coordinate represents rotation along rotational axis.
   GenCoord mCoordinate[3];
 
-  /// \brief
+  /// Plane type
   PlaneType mPlaneType;
 
-  /// \brief
+  /// Rotational axis
   Eigen::Vector3d mRotAxis;
 
-  /// \brief
-  Eigen::Vector3d mTranAxis1;
+  /// First translational axis
+  Eigen::Vector3d mTransAxis1;
 
-  /// \brief
-  Eigen::Vector3d mTranAxis2;
+  /// Second translational axis
+  Eigen::Vector3d mTransAxis2;
 
 public:
   // To get byte-aligned Eigen vectors
