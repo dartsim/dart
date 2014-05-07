@@ -51,6 +51,8 @@
 using namespace std;
 using namespace Eigen;
 
+bool krangRightArm = false;
+
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj *quadObj;
 
@@ -253,6 +255,8 @@ namespace renderer {
         f[1] = c->g;
         f[2] = c->b;
         f[3] = c->a;
+				if(krangRightArm) f[3] = 0.6;
+				cout << "hi: " << f[3] << ", krangRightArm: " << krangRightArm << endl;
     }
 
     void set_float4(float f[4], float a, float b, float c, float d)
@@ -321,7 +325,9 @@ namespace renderer {
         else
             fill_mode = GL_FILL;
         glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
-				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+				//can 
+//				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
         max = 1;
         if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
@@ -404,6 +410,15 @@ namespace renderer {
     		return;
 
     	for(int i=0; i < _skel->getNumNodes(); i++) {
+				const char* name = _skel->getNode(i)->getName();
+				cout << "skel: " << _skel->getName() << ", name: " << name << endl;
+				if((strcmp(_skel->getName().c_str(), "Krang") == 0) 
+					&& (name[0] == 'R' || name[0] == 'r') && (name[1] != 'W')) {
+					krangRightArm = true;
+					cout << "setting true!" << endl;
+				}
+				else
+					krangRightArm = false;
     		compileList(_skel->getNode(i));
     	}
     }
@@ -452,8 +467,10 @@ namespace renderer {
     	GLuint index = glGenLists(1);
     	// Compile list
     	glNewList(index, GL_COMPILE);
+			cout << "compile list" << endl;
     	drawMesh(Vector3d::Ones(), _mesh);
     	glEndList();
+			cout << "compile list done" << endl;
 
     	return index;
     }
@@ -462,6 +479,7 @@ namespace renderer {
     	if(_skel == 0)
     		return;
 
+//			cout << "drawing skeleton: '" << _skel->getName() << "'" << endl;
     	for(int i=0; i < _skel->getNumNodes(); i++) {
     		draw(_skel->getNode(i), _vizCol, _colMesh);
     	}
