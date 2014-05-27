@@ -50,6 +50,11 @@ EulerJoint::EulerJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mAxisOrder(AO_XYZ)
 {
+  // TODO(JS): Deprecated
+  mS = mJacobian;
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 //==============================================================================

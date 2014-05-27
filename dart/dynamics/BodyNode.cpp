@@ -539,14 +539,14 @@ void BodyNode::updateTransform()
 
   // Verification
   assert(math::verifyTransform(mW));
+
+  // Update parent joint's local Jacobian
+  mParentJoint->updateLocalJacobian();
 }
 
 //==============================================================================
 void BodyNode::updateVelocity()
 {
-  // Update parent joint's local Jacobian
-  mParentJoint->updateLocalJacobian();
-
   // Transmit velocity of parent body to this body
   if (mParentBodyNode)
     mV = math::AdInvT(mParentJoint->mT, mParentBodyNode->mV);

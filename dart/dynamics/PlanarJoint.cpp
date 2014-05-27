@@ -49,6 +49,12 @@ namespace dynamics {
 PlanarJoint::PlanarJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
+  // TODO(JS): Deprecated
+  mS = mJacobian;
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
+
   setXYPlane();
 }
 
