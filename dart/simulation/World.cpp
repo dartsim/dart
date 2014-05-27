@@ -267,7 +267,19 @@ double World::getTimeStep() const
 void World::step()
 {
   // Integrate velocity unconstrained skeletons
-  mIntegrator->integrateVel(this, mTimeStep);
+//  mIntegrator->integrateVel(this, mTimeStep);
+
+  //
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    if (!(*it)->isMobile())
+      continue;
+
+    (*it)->computeForwardDynamicsRecursionPartB();
+    (*it)->integrateGenVels(mTimeStep);
+//    (*it)->integrateConfigs(mTimeStep);
+  }
 
   // Detect active constraints and compute constraint impulses
   mConstraintSolver->solve();
@@ -282,14 +294,24 @@ void World::step()
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
-    if ((*it)->isImpulseApplied())
+    if ((*it)->isImpulseApplied() && (*it)->isMobile())
     {
       (*it)->computeImpulseForwardDynamics();
       (*it)->setImpulseApplied(false);
     }
   }
 
-  mIntegrator->integratePos(this, mTimeStep);
+//  mIntegrator->integratePos(this, mTimeStep);
+
+  //
+  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+       it != mSkeletons.end(); ++it)
+  {
+    if (!(*it)->isMobile())
+      continue;
+
+    (*it)->integrateConfigs(mTimeStep);
+  }
 
 //  dtdbg << "GenCoordSystem::getConfigs(): "
 //        << getConfigs().transpose() << std::endl;
@@ -297,7 +319,10 @@ void World::step()
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
-    (*it)->computeForwardKinematics(true, true, false);
+    if (!(*it)->isMobile())
+      continue;
+
+    (*it)->computeForwardDynamicsRecursionPartA();
     (*it)->clearInternalForces();
     (*it)->clearExternalForces();
     (*it)->clearConstraintImpulses();
