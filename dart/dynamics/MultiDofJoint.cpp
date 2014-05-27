@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,60 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BALLJOINT_H_
-#define DART_DYNAMICS_BALLJOINT_H_
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-/// class BallJoint
-class BallJoint : public MultiDofJoint<3>
-{
-public:
-  /// Constructor
-  explicit BallJoint(const std::string& _name = "BallJoint");
-
-  /// Destructor
-  virtual ~BallJoint();
-
-  // Documentation inherited
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
-
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    mWrench - mJacobian * GenCoordSystem::getGenForces();
-  }
-
-protected:
-  // Documentation inherited
-  virtual void integrateConfigs(double _dt);
-
-  // Documentation inherited
-  virtual void updateLocalTransform();
-
-  // Documentation inherited
-  virtual void updateLocalJacobian();
-
-  // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
-
-protected:
-  /// Rotation matrix
-  Eigen::Isometry3d mR;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
 }  // namespace dynamics
 }  // namespace dart
-
-#endif  // DART_DYNAMICS_BALLJOINT_H_
-

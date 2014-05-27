@@ -44,26 +44,163 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 WeldJoint::WeldJoint(const std::string& _name)
   : Joint(_name)
 {
-  mS = math::Jacobian::Zero(6, 0);
-  mdS = math::Jacobian::Zero(6, 0);
 }
 
-WeldJoint::~WeldJoint() {
+//==============================================================================
+WeldJoint::~WeldJoint()
+{
 }
 
-void WeldJoint::updateTransform() {
-  // T
+//==============================================================================
+void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+{
+  Joint::setTransformFromParentBodyNode(_T);
+
   mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
 }
 
-void WeldJoint::updateJacobian() {
+//==============================================================================
+void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+{
+  Joint::setTransformFromChildBodyNode(_T);
+
+  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+}
+
+//==============================================================================
+void WeldJoint::updateLocalTransform()
+{
   // Do nothing
 }
 
-void WeldJoint::updateJacobianTimeDeriv() {
+//==============================================================================
+void WeldJoint::updateLocalJacobian()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::addVelocityTo(Eigen::Vector6d& /*_vel*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::addVelocityChangeTo(Eigen::Vector6d& /*_velocityChange*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::setPartialAccelerationTo(
+    Eigen::Vector6d& _partialAcceleration,
+    const Eigen::Vector6d& /*_childVelocity*/)
+{
+  _partialAcceleration.setZero();
+}
+
+//==============================================================================
+void WeldJoint::updateLocalJacobianTimeDeriv()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::addAccelerationTo(Eigen::Vector6d& /*_acc*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
+                                     const Eigen::Matrix6d& _childArtInertia)
+{
+  // Add child body's articulated inertia to parent body's articulated inertia.
+  // Note that mT should be updated.
+  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+}
+
+//==============================================================================
+void WeldJoint::addChildArtInertiaImplicitTo(
+    Eigen::Matrix6d& _parentArtInertia,
+    const Eigen::Matrix6d& _childArtInertia)
+{
+  // Add child body's articulated inertia to parent body's articulated inertia.
+  // Note that mT should be updated.
+  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+}
+
+//==============================================================================
+void WeldJoint::updateInvProjArtInertia(const Eigen::Matrix6d& /*_artInertia*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::updateInvProjArtInertiaImplicit(
+    const Eigen::Matrix6d& /*_artInertia*/,
+    double /*_timeStep*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
+                                    const Eigen::Matrix6d& _childArtInertia,
+                                    const Eigen::Vector6d& _childBiasForce,
+                                    const Eigen::Vector6d& _childPartialAcc)
+{
+  // Add child body's bias force to parent body's bias force. Note that mT
+  // should be updated.
+  _parentBiasForce += math::dAdInvT(mT, _childBiasForce
+                                    + _childArtInertia * _childPartialAcc);
+}
+
+//==============================================================================
+void WeldJoint::addChildBiasImpulseTo(
+    Eigen::Vector6d& _parentBiasImpulse,
+    const Eigen::Matrix6d& /*_childArtInertia*/,
+    const Eigen::Vector6d& _childBiasImpulse)
+{
+  // Add child body's bias force to parent body's bias impulse. Note that mT
+  // should be updated.
+  _parentBiasImpulse += math::dAdInvT(mT, _childBiasImpulse);
+}
+
+//==============================================================================
+void WeldJoint::updateTotalForce(const Eigen::Vector6d& /*_bodyForce*/,
+                                 double /*_timeStep*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::updateTotalImpulse(const Eigen::Vector6d& /*_bodyImpulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::updateAcceleration(const Eigen::Matrix6d& /*_artInertia*/,
+                                   const Eigen::Vector6d& /*_spatialAcc*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::updateVelocityChange(const Eigen::Matrix6d& /*_artInertia*/,
+                                     const Eigen::Vector6d& /*_velocityChange*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WeldJoint::clearConstraintImpulse()
+{
   // Do nothing
 }
 

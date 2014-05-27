@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -42,47 +42,53 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-class UniversalJoint : public Joint {
+/// class UniversalJoint
+class UniversalJoint : public MultiDofJoint<2>
+{
 public:
-  /// \brief Constructor.
-  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d(0.0, 1.0, 0.0),
+  /// Constructor
+  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d::UnitX(),
+                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitY(),
                  const std::string& _name = "Universal joint");
 
-  /// \brief Destructor.
+  /// Destructor
   virtual ~UniversalJoint();
 
-  /// \brief
+  ///
   void setAxis1(const Eigen::Vector3d& _axis);
 
-  /// \brief
+  ///
   void setAxis2(const Eigen::Vector3d& _axis);
 
-  /// \brief
+  ///
   const Eigen::Vector3d& getAxis1() const;
 
-  /// \brief
+  ///
   const Eigen::Vector3d& getAxis2() const;
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[2];
+  // Documentation inherited
+  virtual void updateLocalTransform();
 
-  /// \brief Rotational axis.
+  // Documentation inherited
+  virtual void updateLocalJacobian();
+
+  // Documentation inherited
+  virtual void updateLocalJacobianTimeDeriv();
+
+protected:
+  /// Rotational axis.
   Eigen::Vector3d mAxis[2];
 
 public:

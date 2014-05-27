@@ -46,48 +46,60 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
                              const std::string& _name)
-  : Joint(_name),
+  : SingleDofJoint(_name),
     mAxis(axis.normalized())
 {
-  mGenCoords.push_back(&mCoordinate);
-
-  mS = Eigen::Matrix<double, 6, 1>::Zero();
-  mdS = Eigen::Matrix<double, 6, 1>::Zero();
-
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
 }
 
-RevoluteJoint::~RevoluteJoint() {
+//==============================================================================
+RevoluteJoint::~RevoluteJoint()
+{
 }
 
-void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis) {
+//==============================================================================
+void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
+{
   mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&RevoluteJoint::getAxis() const {
+//==============================================================================
+const Eigen::Vector3d& RevoluteJoint::getAxis() const
+{
   return mAxis;
 }
 
-void RevoluteJoint::updateTransform() {
+//==============================================================================
+void RevoluteJoint::updateLocalTransform()
+{
   mT = mT_ParentBodyToJoint
        * math::expAngular(mAxis * mCoordinate.getPos())
        * mT_ChildBodyToJoint.inverse();
 
+  // Verification
   assert(math::verifyTransform(mT));
 }
 
-void RevoluteJoint::updateJacobian() {
-  mS = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
-  assert(!math::isNan(mS));
+//==============================================================================
+void RevoluteJoint::updateLocalJacobian()
+{
+  // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
+  mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+
+  // Verification
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void RevoluteJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 1));
+//==============================================================================
+void RevoluteJoint::updateLocalJacobianTimeDeriv()
+{
+  // Time derivative of revolute joint is always zero
+  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
 }  // namespace dynamics

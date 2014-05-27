@@ -276,7 +276,7 @@ void World::step()
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->computeForwardDynamicsRecursionPartB();
+//    (*it)->computeForwardDynamicsRecursionPartB();
     (*it)->integrateGenVels(mTimeStep);
 //    (*it)->integrateConfigs(mTimeStep);
   }
@@ -322,7 +322,7 @@ void World::step()
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->computeForwardDynamicsRecursionPartA();
+//    (*it)->computeForwardDynamicsRecursionPartA();
     (*it)->clearInternalForces();
     (*it)->clearExternalForces();
     (*it)->clearConstraintImpulses();

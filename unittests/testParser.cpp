@@ -233,10 +233,10 @@ TEST(SKEL_PARSER, PLANAR_JOINT)
   EXPECT_TRUE(planarJoint3 != NULL);
   EXPECT_TRUE(planarJoint4 != NULL);
 
-  EXPECT_EQ(planarJoint1->getPlaneType(), PT_XY);
-  EXPECT_EQ(planarJoint2->getPlaneType(), PT_YZ);
-  EXPECT_EQ(planarJoint3->getPlaneType(), PT_ZX);
-  EXPECT_EQ(planarJoint4->getPlaneType(), PT_ARBITRARY);
+  EXPECT_EQ(planarJoint1->getPlaneType(), PlanarJoint::PT_XY);
+  EXPECT_EQ(planarJoint2->getPlaneType(), PlanarJoint::PT_YZ);
+  EXPECT_EQ(planarJoint3->getPlaneType(), PlanarJoint::PT_ZX);
+  EXPECT_EQ(planarJoint4->getPlaneType(), PlanarJoint::PT_ARBITRARY);
 
   EXPECT_EQ(planarJoint1->getTranslationalAxis1(), Eigen::Vector3d::UnitX());
   EXPECT_EQ(planarJoint2->getTranslationalAxis1(), Eigen::Vector3d::UnitY());

@@ -42,42 +42,45 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-/// \brief class FreeJoint
-class FreeJoint : public Joint
+/// class FreeJoint
+class FreeJoint : public MultiDofJoint<6>
 {
 public:
-  /// \brief Constructor
+  /// Constructor
   explicit FreeJoint(const std::string& _name = "FreeJoint");
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~FreeJoint();
 
   // Documentation inherited
   virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
   // Documentation inherited
   virtual void integrateConfigs(double _dt);
 
   // Documentation inherited
-  virtual void updateTransform();
+  virtual void updateLocalTransform();
 
   // Documentation inherited
-  virtual void updateJacobian();
+  virtual void updateLocalJacobian();
 
   // Documentation inherited
-  virtual void updateJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv();
 
 protected:
-  /// \brief Generalized coordinates
-  GenCoord mCoordinate[6];
-
-  /// \brief Transformation matrix dependant on generalized coordinates
+  /// Transformation matrix dependant on generalized coordinates
   Eigen::Isometry3d mQ;
 
 public:

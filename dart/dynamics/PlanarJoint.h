@@ -40,19 +40,10 @@
 #include <string>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
-
-/// Plane type
-enum PlaneType
-{
-  PT_XY,
-  PT_YZ,
-  PT_ZX,
-  PT_ARBITRARY
-};
 
 /// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
 /// axes and one rotational axis.
@@ -60,9 +51,18 @@ enum PlaneType
 /// First and second coordiantes represent translation along first and second
 /// translational axese, respectively. Third coordinate represents rotation
 /// along rotational axis.
-class PlanarJoint : public Joint
+class PlanarJoint : public MultiDofJoint<3>
 {
 public:
+  /// Plane type
+  enum PlaneType
+  {
+    PT_XY,
+    PT_YZ,
+    PT_ZX,
+    PT_ARBITRARY
+  };
+
   /// Constructor
   explicit PlanarJoint(const std::string& _name = "PlanarJoint");
 
@@ -72,7 +72,7 @@ public:
   /// Set plane type as XY-plane
   void setXYPlane();
 
-  /// Set plane type as XY-plane
+  /// Set plane type as YZ-plane
   void setYZPlane();
 
   /// Set plane type as ZX-plane
@@ -94,21 +94,23 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
+
 protected:
   // Documentation inherited
-  virtual void updateTransform();
+  virtual void updateLocalTransform();
 
   // Documentation inherited
-  virtual void updateJacobian();
+  virtual void updateLocalJacobian();
 
   // Documentation inherited
-  virtual void updateJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv();
 
-  /// Generalized coordinates. First and second coordiantes represent
-  /// translation along first and second translational axes, respectively. Third
-  /// coordinate represents rotation along rotational axis.
-  GenCoord mCoordinate[3];
-
+protected:
   /// Plane type
   PlaneType mPlaneType;
 

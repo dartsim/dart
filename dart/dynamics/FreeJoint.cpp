@@ -46,30 +46,26 @@ namespace dynamics {
 
 //==============================================================================
 FreeJoint::FreeJoint(const std::string& _name)
-  : Joint(_name)
+  : MultiDofJoint(_name),
+    mQ(Eigen::Isometry3d::Identity())
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
-  mGenCoords.push_back(&mCoordinate[3]);
-  mGenCoords.push_back(&mCoordinate[4]);
-  mGenCoords.push_back(&mCoordinate[5]);
-
-  mS = Eigen::Matrix<double, 6, 6>::Zero();
+  // Jacobian
   Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
-  mS.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
-  mS.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
-  mS.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
-  assert(!math::isNan(mS));
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+  mJacobian.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
+  mJacobian.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
+  mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
+  assert(!math::isNan(mJacobian));
 
-  mdS = Eigen::Matrix<double, 6, 6>::Zero();
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 
-  mSpringStiffness.resize(6, 0.0);
-  mDampingCoefficient.resize(6, 0.0);
-  mRestPosition.resize(6, 0.0);
+  // Time derivative of Jacobian is always zero
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -84,14 +80,17 @@ void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 
   Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
 
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
-  mS.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
-  mS.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
-  mS.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+  mJacobian.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
+  mJacobian.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
+  mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
 
-  assert(!math::isNan(mS));
+  // TODO(JS): Deprecated
+  mS = mJacobian;
+
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
@@ -103,7 +102,7 @@ void FreeJoint::integrateConfigs(double _dt)
 }
 
 //==============================================================================
-void FreeJoint::updateTransform()
+void FreeJoint::updateLocalTransform()
 {
   mQ = math::expMap(getConfigs());
 
@@ -113,16 +112,16 @@ void FreeJoint::updateTransform()
 }
 
 //==============================================================================
-void FreeJoint::updateJacobian()
+void FreeJoint::updateLocalJacobian()
 {
-  // Jacobian is constant
+  // Do nothing since Jacobian is constant
 }
 
 //==============================================================================
-void FreeJoint::updateJacobianTimeDeriv()
+void FreeJoint::updateLocalJacobianTimeDeriv()
 {
   // Time derivative of Jacobian is constant
-  assert(mdS == Eigen::Matrix6d::Zero());
+  assert(mJacobianDeriv == (Eigen::Matrix6d::Zero()));
 }
 
 }  // namespace dynamics

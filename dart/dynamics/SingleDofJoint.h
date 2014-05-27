@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,63 +34,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_WELDJOINT_H_
-#define DART_DYNAMICS_WELDJOINT_H_
+#ifndef DART_DYNAMICS_SINGLEDOFJOINT_H_
+#define DART_DYNAMICS_SINGLEDOFJOINT_H_
 
 #include <string>
 
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace dynamics {
 
-/// class WeldJoint
-class WeldJoint : public Joint
+class BodyNode;
+class Skeleton;
+
+/// class SingleDofJoint
+class SingleDofJoint : public Joint
 {
 public:
   /// Constructor
-  explicit WeldJoint(const std::string& _name = "WeldJoint");
+  SingleDofJoint(const std::string& _name);
 
   /// Destructor
-  virtual ~WeldJoint();
-
-  // Documentation inherited
-  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
-
-  // Documentation inherited
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
-
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-//    mWrench - mJacobian * GenCoordSystem::getGenForces();
-  }
+  ~SingleDofJoint();
 
 protected:
-  // Documentation inherited
-  virtual void updateLocalTransform();
-
-  // Documentation inherited
-  virtual void updateLocalJacobian();
+  //----------------------------------------------------------------------------
+  // Recursive dynamics algorithms
+  //----------------------------------------------------------------------------
 
   // Documentation inherited
   virtual void addVelocityTo(Eigen::Vector6d& _vel);
-
-  // Documentation inherited
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange);
 
   // Documentation inherited
   virtual void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
                                         const Eigen::Vector6d& _childVelocity);
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
+  virtual void addAccelerationTo(Eigen::Vector6d& _acc);
 
   // Documentation inherited
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc);
+  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange);
 
   // Documentation inherited
   virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
@@ -106,7 +89,8 @@ protected:
 
   // Documentation inherited
   virtual void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia, double _timeStep);
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep);
 
   // Documentation inherited
   virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
@@ -137,13 +121,52 @@ protected:
   // Documentation inherited
   virtual void clearConstraintImpulse();
 
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //----------------------------------------------------------------------------
+  // Recursive algorithms for equations of motion
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                       const size_t _col,
+                                       const Eigen::Matrix6d& _artInertia,
+                                       const Eigen::Vector6d& _spatialAcc);
+
+  // Documentation inherited
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
+
+protected:
+  /// Generalized coordinate
+  GenCoord mCoordinate;
+
+  /// Rotational axis
+  Eigen::Vector3d mAxis;
+
+  /// Spatial Jacobian
+  Eigen::Vector6d mJacobian;
+
+  /// Time derivative of spatial Jacobian
+  Eigen::Vector6d mJacobianDeriv;
+
+  /// Inverse of projected articulated inertia
+  double mInvProjArtInertia;
+
+  /// Inverse of projected articulated inertia for implicit joint damping and
+  /// spring forces
+  double mInvProjArtInertiaImplicit;
+
+  /// Total force projected on joint space
+  double mTotalForce;
+
+  /// Total impluse projected on joint space
+  double mTotalImpulse;
+
+  ///
+  double mInvMassMatrixSegment;
+
+private:
 };
 
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_WELDJOINT_H_
-
+#endif  // DART_DYNAMICS_SINGLEDOFJOINT_H_

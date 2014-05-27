@@ -47,19 +47,8 @@ namespace dynamics {
 
 //==============================================================================
 PlanarJoint::PlanarJoint(const std::string& _name)
-  : Joint(_name)
+  : MultiDofJoint(_name)
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
-
-  mS = Eigen::Matrix<double, 6, 3>::Zero();
-  mdS = Eigen::Matrix<double, 6, 3>::Zero();
-
-  mSpringStiffness.resize(3, 0.0);
-  mDampingCoefficient.resize(3, 0.0);
-  mRestPosition.resize(3, 0.0);
-
   setXYPlane();
 }
 
@@ -119,63 +108,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 }
 
 //==============================================================================
-void PlanarJoint::updateTransform()
-{
-  mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTransAxis1 * mCoordinate[0].getPos())
-       * Eigen::Translation3d(mTransAxis2 * mCoordinate[1].getPos())
-       * math::expAngular    (mRotAxis    * mCoordinate[2].getPos())
-       * mT_ChildBodyToJoint.inverse();
-
-  assert(math::verifyTransform(mT));
-}
-
-//==============================================================================
-void PlanarJoint::updateJacobian()
-{
-  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
-  J.block<3, 1>(3, 0) = mTransAxis1;
-  J.block<3, 1>(3, 1) = mTransAxis2;
-  J.block<3, 1>(0, 2) = mRotAxis;
-
-  mS.leftCols<2>()
-      = math::AdTJac(mT_ChildBodyToJoint
-                     * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
-                     J.leftCols<2>());
-  mS.col(2)     = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
-
-  assert(!math::isNan(mS));
-}
-
-//==============================================================================
-void PlanarJoint::updateJacobianTimeDeriv()
-{
-  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
-  J.block<3, 1>(3, 0) = mTransAxis1;
-  J.block<3, 1>(3, 1) = mTransAxis2;
-  J.block<3, 1>(0, 2) = mRotAxis;
-
-  mdS.col(0)
-      = -math::ad(mS.col(2)*mCoordinate[2].getVel(),
-                  math::AdT(mT_ChildBodyToJoint
-                            * math::expAngular(mRotAxis
-                                               * -mCoordinate[2].getPos()),
-                            J.col(0)));
-
-  mdS.col(1)
-      = -math::ad(mS.col(2)*mCoordinate[2].getVel(),
-                  math::AdT(mT_ChildBodyToJoint
-                            * math::expAngular(mRotAxis
-                                               * -mCoordinate[2].getPos()),
-                            J.col(1)));
-
-  assert(mdS.col(2) == Eigen::Vector6d::Zero());
-  assert(!math::isNan(mdS.col(0)));
-  assert(!math::isNan(mdS.col(1)));
-}
-
-//==============================================================================
-PlaneType PlanarJoint::getPlaneType() const
+PlanarJoint::PlaneType PlanarJoint::getPlaneType() const
 {
   return mPlaneType;
 }
@@ -196,6 +129,70 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
   return mTransAxis2;
+}
+
+//==============================================================================
+void PlanarJoint::updateLocalTransform()
+{
+  mT = mT_ParentBodyToJoint
+       * Eigen::Translation3d(mTransAxis1 * mCoordinate[0].getPos())
+       * Eigen::Translation3d(mTransAxis2 * mCoordinate[1].getPos())
+       * math::expAngular    (mRotAxis    * mCoordinate[2].getPos())
+       * mT_ChildBodyToJoint.inverse();
+
+  // Verification
+  assert(math::verifyTransform(mT));
+}
+
+//==============================================================================
+void PlanarJoint::updateLocalJacobian()
+{
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
+  J.block<3, 1>(3, 0) = mTransAxis1;
+  J.block<3, 1>(3, 1) = mTransAxis2;
+  J.block<3, 1>(0, 2) = mRotAxis;
+
+  mJacobian.leftCols<2>()
+      = math::AdTJac(mT_ChildBodyToJoint
+                     * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
+                     J.leftCols<2>());
+  mJacobian.col(2)     = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
+
+  // Verification
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
+}
+
+//==============================================================================
+void PlanarJoint::updateLocalJacobianTimeDeriv()
+{
+  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  J.block<3, 1>(3, 0) = mTransAxis1;
+  J.block<3, 1>(3, 1) = mTransAxis2;
+  J.block<3, 1>(0, 2) = mRotAxis;
+
+  mJacobianDeriv.col(0)
+      = -math::ad(mJacobian.col(2)*mCoordinate[2].getVel(),
+                  math::AdT(mT_ChildBodyToJoint
+                            * math::expAngular(mRotAxis
+                                               * -mCoordinate[2].getPos()),
+                            J.col(0)));
+
+  mJacobianDeriv.col(1)
+      = -math::ad(mJacobian.col(2)*mCoordinate[2].getVel(),
+                  math::AdT(mT_ChildBodyToJoint
+                            * math::expAngular(mRotAxis
+                                               * -mCoordinate[2].getPos()),
+                            J.col(1)));
+
+  assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
+  assert(!math::isNan(mJacobianDeriv.col(0)));
+  assert(!math::isNan(mJacobianDeriv.col(1)));
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

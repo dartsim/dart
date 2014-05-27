@@ -45,43 +45,48 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
-  : Joint(_name),
+  : SingleDofJoint(_name),
     mAxis(axis.normalized()),
     mPitch(_pitch)
 {
-  mGenCoords.push_back(&mCoordinate);
-
-  mS = Eigen::Matrix<double, 6, 1>::Zero();
-  mdS = Eigen::Matrix<double, 6, 1>::Zero();
-
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
 }
 
-ScrewJoint::~ScrewJoint() {
+//==============================================================================
+ScrewJoint::~ScrewJoint()
+{
 }
 
-void ScrewJoint::setAxis(const Eigen::Vector3d& _axis) {
+//==============================================================================
+void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
+{
   mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d& ScrewJoint::getAxis() const {
+//==============================================================================
+const Eigen::Vector3d& ScrewJoint::getAxis() const
+{
   return mAxis;
 }
 
-void ScrewJoint::setPitch(double _pitch) {
+//==============================================================================
+void ScrewJoint::setPitch(double _pitch)
+{
   mPitch = _pitch;
 }
 
-double ScrewJoint::getPitch() const {
+//==============================================================================
+double ScrewJoint::getPitch() const
+{
   return mPitch;
 }
 
-void ScrewJoint::updateTransform() {
+//==============================================================================
+void ScrewJoint::updateLocalTransform()
+{
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = mAxis;
   S.tail<3>() = mAxis*mPitch/DART_2PI;
@@ -91,17 +96,24 @@ void ScrewJoint::updateTransform() {
   assert(math::verifyTransform(mT));
 }
 
-void ScrewJoint::updateJacobian() {
+//==============================================================================
+void ScrewJoint::updateLocalJacobian()
+{
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = mAxis;
   S.tail<3>() = mAxis*mPitch/DART_2PI;
-  mS = math::AdT(mT_ChildBodyToJoint, S);
-  assert(!math::isNan(mS));
+  mJacobian = math::AdT(mT_ChildBodyToJoint, S);
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void ScrewJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 1));
+//==============================================================================
+void ScrewJoint::updateLocalJacobianTimeDeriv()
+{
+  // Time derivative of screw joint is always zero
+  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
 }  // namespace dynamics

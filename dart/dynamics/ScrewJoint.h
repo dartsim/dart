@@ -42,50 +42,56 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/SingleDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-class ScrewJoint : public Joint {
+/// class ScrewJoint
+class ScrewJoint : public SingleDofJoint
+{
 public:
-  /// \brief Constructor.
+  /// Constructor
   ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
              double _pitch = 0.1,
-             const std::string& _name = "Noname ScrewJoint");
+             const std::string& _name = "ScrewJoint");
 
-  /// \brief Destructor.
+  /// Destructor
   virtual ~ScrewJoint();
 
-  /// \brief
+  ///
   void setAxis(const Eigen::Vector3d& _axis);
 
-  /// \brief
+  ///
   const Eigen::Vector3d& getAxis() const;
 
-  /// \brief
+  ///
   void setPitch(double _pitch);
 
-  /// \brief
+  ///
   double getPitch() const;
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
-  /// \brief
-  GenCoord mCoordinate;
+  // Documentation inherited
+  virtual void updateLocalTransform();
 
-  /// \brief Rotational axis.
+  // Documentation inherited
+  virtual void updateLocalJacobian();
+
+  // Documentation inherited
+  virtual void updateLocalJacobianTimeDeriv();
+
+protected:
+  /// Rotational axis
   Eigen::Vector3d mAxis;
 
-  /// \brief
+  ///
   double mPitch;
 
 public:

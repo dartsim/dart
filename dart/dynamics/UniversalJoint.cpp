@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -44,17 +44,12 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const Eigen::Vector3d& _axis1,
                                const std::string& _name)
-  : Joint(_name)
+  : MultiDofJoint(_name)
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-
-  mS = Eigen::Matrix<double, 6, 2>::Zero();
-  mdS = Eigen::Matrix<double, 6, 2>::Zero();
-
   mSpringStiffness.resize(2, 0.0);
   mDampingCoefficient.resize(2, 0.0);
   mRestPosition.resize(2, 0.0);
@@ -63,26 +58,38 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
   mAxis[1] = _axis1.normalized();
 }
 
-UniversalJoint::~UniversalJoint() {
+//==============================================================================
+UniversalJoint::~UniversalJoint()
+{
 }
 
-void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis) {
+//==============================================================================
+void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
+{
   mAxis[0] = _axis.normalized();
 }
 
-void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis) {
+//==============================================================================
+void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
+{
   mAxis[1] = _axis.normalized();
 }
 
-const Eigen::Vector3d& UniversalJoint::getAxis1() const {
+//==============================================================================
+const Eigen::Vector3d& UniversalJoint::getAxis1() const
+{
   return mAxis[0];
 }
 
-const Eigen::Vector3d& UniversalJoint::getAxis2() const {
+//==============================================================================
+const Eigen::Vector3d& UniversalJoint::getAxis2() const
+{
   return mAxis[1];
 }
 
-void UniversalJoint::updateTransform() {
+//==============================================================================
+void UniversalJoint::updateLocalTransform()
+{
   mT = mT_ParentBodyToJoint
        * Eigen::AngleAxisd(mCoordinate[0].getPos(), mAxis[0])
        * Eigen::AngleAxisd(mCoordinate[1].getPos(), mAxis[1])
@@ -90,22 +97,39 @@ void UniversalJoint::updateTransform() {
   assert(math::verifyTransform(mT));
 }
 
-void UniversalJoint::updateJacobian() {
-  mS.col(0) =  math::AdTAngular(mT_ChildBodyToJoint
-                                * math::expAngular(
-                                  -mAxis[1]*mCoordinate[1].getPos()), mAxis[0]);
-  mS.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
-  assert(!math::isNan(mS));
+//==============================================================================
+void UniversalJoint::updateLocalJacobian()
+{
+  mJacobian.col(0) = math::AdTAngular(
+                       mT_ChildBodyToJoint
+                       * math::expAngular(-mAxis[1]*mCoordinate[1].getPos()),
+                                          mAxis[0]);
+  mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void UniversalJoint::updateJacobianTimeDeriv() {
-  mdS.col(0) = -math::ad(mS.col(1)*mCoordinate[1].getVel(),
-                         math::AdTAngular(mT_ChildBodyToJoint
-                         * math::expAngular(-mAxis[1]*mCoordinate[1].getPos()),
-                                            mAxis[0]));
-  // mdS.col(1) = setZero();
-  assert(!math::isNan(mdS.col(0)));
-  assert(mdS.col(1) == Eigen::Vector6d::Zero());
+//==============================================================================
+void UniversalJoint::updateLocalJacobianTimeDeriv()
+{
+  Eigen::Vector6d tmpV1
+      = mJacobian.col(1) * mCoordinate[1].getVel();
+
+  Eigen::Isometry3d tmpT
+      = math::expAngular(-mAxis[1] * mCoordinate[1].getPos());
+
+  Eigen::Vector6d tmpV2
+      = math::AdTAngular(mT_ChildBodyToJoint * tmpT, mAxis[0]);
+
+  mJacobianDeriv.col(0) = -math::ad(tmpV1, tmpV2);
+
+  assert(!math::isNan(mJacobianDeriv.col(0)));
+  assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

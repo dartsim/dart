@@ -56,85 +56,77 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 
-/// \brief Joint
+/// Joint
 class Joint : public GenCoordSystem
 {
 public:
-  /// \brief Friend class declaration
-  friend class BodyNode;
-
-  /// \brief Friend class declaration
-  friend class Skeleton;
-
-public:
-  /// \brief Constructor
+  /// Constructor
   explicit Joint(const std::string& _name = "Noname Joint");
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~Joint();
 
   //------------------------------ Properties ----------------------------------
-  /// \brief Set joint name
+  /// Set joint name
   void setName(const std::string& _name);
 
-  /// \brief Get joint name
+  /// Get joint name
   const std::string& getName() const;
 
-  /// \brief Get skeleton that this joint belongs to. The skeleton set by
-  /// init().
+  /// Get skeleton that this joint belongs to. The skeleton set by init().
   Skeleton* getSkeleton() const;
 
-  /// \brief Get index of this joint in the skeleton that this joint belongs to
+  /// Get index of this joint in the skeleton that this joint belongs to
   int getSkeletonIndex() const;
 
-  /// \brief Set transformation from parent body node to this joint
+  /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
-  /// \brief Set transformation from child body node to this joint
+  /// Set transformation from child body node to this joint
   virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
-  /// \brief Get transformation from parent body node to this joint
+  /// Get transformation from parent body node to this joint
   const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
 
-  /// \brief Get transformation from child body node to this joint
+  /// Get transformation from child body node to this joint
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  /// \brief Set to enforce joint position limit
+  /// Set to enforce joint position limit
   void setPositionLimited(bool _isPositionLimited);
 
-  /// \brief Get whether enforcing joint position limit
+  /// Get whether enforcing joint position limit
   bool isPositionLimited() const;
 
-  /// \brief Set spring stiffness for spring force.
-  /// \param[in] _idx Index of joint axis.
-  /// \param[in] _k Spring stiffness.
+  /// Set spring stiffness for spring force
+  /// \param[in] _idx Index of joint axis
+  /// \param[in] _k Spring stiffness
   void setSpringStiffness(int _idx, double _k);
 
-  /// \brief Get spring stiffnes for spring force.
-  /// \param[in] _idx Index of joint axis.
+  /// Get spring stiffnes for spring force
+  /// \param[in] _idx Index of joint axis
   double getSpringStiffness(int _idx) const;
 
-  /// \brief Set rest position for spring force.
-  /// \param[in] _idx Index of joint axis.
-  /// \param[in] _q0 Rest position.
+  /// Set rest position for spring force
+  /// \param[in] _idx Index of joint axis
+  /// \param[in] _q0 Rest position
   void setRestPosition(int _idx, double _q0);
 
-  /// \brief Get rest position for spring force.
-  /// \param[in] _idx Index of joint axis.
-  /// \return Rest position.
+  /// Get rest position for spring force
+  /// \param[in] _idx Index of joint axis
+  /// \return Rest position
   double getRestPosition(int _idx) const;
 
-  /// \brief Set damping coefficient for viscous force.
-  /// \param[in] _idx Index of joint axis.
-  /// \param[in] _d Damping coefficient.
+  /// Set damping coefficient for viscous force
+  /// \param[in] _idx Index of joint axis
+  /// \param[in] _d Damping coefficient
   void setDampingCoefficient(int _idx, double _d);
 
-  /// \brief Get damping coefficient for viscous force.
-  /// \param[in] _idx Index of joint axis.
+  /// Get damping coefficient for viscous force
+  /// \param[in] _idx Index of joint axis
   double getDampingCoefficient(int _idx) const;
 
   //----------------- Interface for generalized coordinates --------------------
-  /// \brief Set single configuration in terms of generalized coordinates
+  /// Set single configuration in terms of generalized coordinates
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
@@ -143,7 +135,7 @@ public:
                          bool _updateVels = false,
                          bool _updateAccs = false);
 
-  /// \brief Set configurations in terms of generalized coordinates
+  /// Set configurations in terms of generalized coordinates
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
@@ -152,61 +144,77 @@ public:
                           bool _updateVels = false,
                           bool _updateAccs = false);
 
-  /// \brief Set single generalized velocity
+  /// Set single generalized velocity
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVel(size_t _idx, double _genVel,
                          bool _updateVels = true,
                          bool _updateAccs = false);
 
-  /// \brief Set generalized velocities
+  /// Set generalized velocities
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenVels(const Eigen::VectorXd& _genVels,
                           bool _updateVels = true,
                           bool _updateAccs = false);
 
-  /// \brief Set single generalized acceleration
+  /// Set single generalized acceleration
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAcc(size_t _idx, double _genAcc,
                          bool _updateAccs );
 
-  /// \brief Set generalized accelerations
+  /// Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
   virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
                           bool _updateAccs);
 
-  //----------------------------------------------------------------------------
-//  void updateVel
+  /// TODO(JS): Implementation
+  virtual void setPosition(size_t _index, double _position) {}
+
+  /// TODO(JS): Implementation
+  virtual void setVelocity(size_t _index, double _velocity) {}
+
+  /// TODO(JS): Implementation
+  virtual void setAcceleration(size_t _index, double _acceleration) {}
+
+  /// TODO(JS): Implementation
+  virtual double getPosition(size_t _index) const {}
+
+  /// TODO(JS): Implementation
+  virtual double getVelocity(size_t _index) const {}
+
+  /// TODO(JS): Implementation
+  virtual double getAcceleration(size_t _index) const {}
 
   //----------------------------------------------------------------------------
-  /// \brief Get potential energy.
+
+  /// Get potential energy
   double getPotentialEnergy() const;
 
-  /// \brief Get transformation from parent body node to child body node
+  /// Get transformation from parent body node to child body node
   const Eigen::Isometry3d& getLocalTransform() const;
 
-  /// \brief Get generalized Jacobian from parent body node to child body node
+  /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
-  const math::Jacobian& getLocalJacobian() const;
+  DEPRECATED(4.0) virtual const math::Jacobian& getLocalJacobian() const;
 
-  /// \brief Get time derivative of generalized Jacobian from parent body node
+  /// Get time derivative of generalized Jacobian from parent body node
   /// to child body node w.r.t. local generalized coordinate
-  const math::Jacobian& getLocalJacobianTimeDeriv() const;
+  DEPRECATED(4.0) virtual const math::Jacobian& getLocalJacobianTimeDeriv() const;
 
-  /// \brief Get whether this joint contains _genCoord.
-  /// \param[in] Generalized coordinate to see.
-  /// \return True if this joint contains _genCoord.
+  /// Get whether this joint contains _genCoord
+  /// \param[in] Generalized coordinate to see
+  /// \return True if this joint contains _genCoord
   bool contains(const GenCoord* _genCoord) const;
 
-  /// \brief Get local index of the dof at this joint; if the dof is not
-  /// presented at this joint, return -1.
+  /// Get local index of the dof at this joint; if the dof is not presented at
+  /// this joint, return -1
   int getGenCoordLocalIndex(int _dofSkelIndex) const;
 
-  /// \brief Get constraint wrench expressed in body node frame
-  Eigen::Vector6d getBodyConstraintWrench() const;
+  /// Get constraint wrench expressed in body node frame
+  virtual Eigen::Vector6d getBodyConstraintWrench() const = 0;
 
-  /// \brief Get spring force.
+  /// Get spring force
   ///
   /// We apply spring force in implicit manner. The spring force is
   /// F = -(springStiffness * q(k+1)), where q(k+1) is approximated as
@@ -221,7 +229,7 @@ public:
   /// \param[in] _timeStep Time step used for approximating q(k+1).
   Eigen::VectorXd getSpringForces(double _timeStep) const;
 
-  /// \brief Get damping force.
+  /// Get damping force
   ///
   /// We apply the damping force in implicit manner. The damping force is
   /// F = -(dampingCoefficient * dq(k+1)), where dq(k+1) is approximated as
@@ -233,67 +241,160 @@ public:
   /// \sa BodyNode::updateArticulatedInertia(double).
   Eigen::VectorXd getDampingForces() const;
 
-  //----------------------------- Rendering ------------------------------------
-  /// \brief
+  //----------------------------------------------------------------------------
+  // Rendering
+  //----------------------------------------------------------------------------
+
+  ///
   void applyGLTransform(renderer::RenderInterface* _ri);
 
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class BodyNode;
+  friend class SoftBodyNode;
+  friend class Skeleton;
+
 protected:
-  /// \brief Initialize this joint. This function is called by BodyNode::init()
+  /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel, int _skelIdx);
 
-  /// \brief Update transformation from parent body node to child body node
-  virtual void updateTransform() = 0;
+  //----------------------------------------------------------------------------
+  // Recursive algorithms
+  //----------------------------------------------------------------------------
 
-  /// \brief Update generalized Jacobian from parent body node to child body
-  ///  node w.r.t. local generalized coordinate
-  virtual void updateJacobian() = 0;
+  /// Update transformation from parent body node to child body node
+  virtual void updateLocalTransform() = 0;
 
-  /// \brief Update time derivative of generalized Jacobian from parent body
-  /// node to child body node w.r.t. local generalized coordinate
-  virtual void updateJacobianTimeDeriv() = 0;
+  /// Update generalized Jacobian from parent body node to child body node
+  /// w.r.t. local generalized coordinate
+  virtual void updateLocalJacobian() = 0;
+
+  /// Update time derivative of generalized Jacobian from parent body node to
+  /// child body node w.r.t. local generalized coordinate
+  virtual void updateLocalJacobianTimeDeriv() = 0;
+
+  ///
+  virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
+
+  /// Set partial
+  virtual void setPartialAccelerationTo(
+      Eigen::Vector6d& _partialAcceleration,
+      const Eigen::Vector6d& _childVelocity) = 0;
+
+  ///
+  virtual void addAccelerationTo(Eigen::Vector6d& _acc) = 0;
+
+  ///
+  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) = 0;
+
+  /// Add child's articulated inertia to parent's one
+  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
+                                    const Eigen::Matrix6d& _childArtInertia) = 0;
+
+  /// Add child's articulated inertia to parent's one
+  virtual void addChildArtInertiaImplicitTo(
+      Eigen::Matrix6d& _parentArtInertiaImplicit,
+      const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
+
+  /// Update inverse of projected articulated body inertia
+  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) = 0;
+
+  /// Update inverse of projected articulated body inertia with implicit damping
+  /// and spring forces
+  virtual void updateInvProjArtInertiaImplicit(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep) = 0;
+
+  /// Add child's bias force to parent's one
+  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
+                                   const Eigen::Matrix6d& _childArtInertia,
+                                   const Eigen::Vector6d& _childBiasForce,
+                                   const Eigen::Vector6d& _childPartialAcc) = 0;
+
+  /// Add child's bias impulse to parent's one
+  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
+                                     const Eigen::Matrix6d& _childArtInertia,
+                                     const Eigen::Vector6d& _childBiasImpulse)
+  = 0;
+
+  ///
+  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
+                                double _timeStep) = 0;
+
+  ///
+  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  ///
+  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
+                                  const Eigen::Vector6d& _spatialAcc) = 0;
+
+  ///
+  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
+                                    const Eigen::Vector6d& _velocityChange) = 0;
+
+  ///
+  virtual void clearConstraintImpulse() = 0;
+
+  //----------------------------------------------------------------------------
+  // Recursive algorithms for equations of motion
+  //----------------------------------------------------------------------------
+
+  ///
+  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                       const size_t _col,
+                                       const Eigen::Matrix6d& _artInertia,
+                                       const Eigen::Vector6d& _spatialAcc) {}
+
+  ///
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) {}
 
 protected:
-  /// \brief Joint name
+  /// Joint name
   std::string mName;
 
-  /// \brief Skeleton pointer that this joint belongs to
+  /// Skeleton pointer that this joint belongs to
   Skeleton* mSkeleton;
 
-  /// \brief Unique dof id in skeleton
+  /// Unique dof id in skeleton
   int mSkelIndex;
 
-  /// \brief Transformation from parent body node to this joint
+  /// Transformation from parent body node to this joint
   Eigen::Isometry3d mT_ParentBodyToJoint;
 
-  /// \brief Transformation from child body node to this joint
+  /// Transformation from child body node to this joint
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
-  /// \brief Local transformation.
+  /// Local transformation
   Eigen::Isometry3d mT;
 
-  /// \brief Local Jacobian.
-  math::Jacobian mS;
+  /// Relative spatial velocity from parent body to child body where the
+  /// velocity is expressed in child body frame
+  Eigen::Vector6d mSpatialVelocity;
 
-  /// \brief Time derivative of local Jacobian.
-  math::Jacobian mdS;
+  /// Time derivative of local Jacobian
+  DEPRECATED(4.0) math::Jacobian mS;
+
+  /// Time derivative of local Jacobian
+  DEPRECATED(4.0) math::Jacobian mdS;
 
   // TODO(JS): Temporary code
 public:
-  /// \brief Transmitting wrench from parent body to child body expressed in
-  /// child body
+  /// Transmitting wrench from parent body to child body expressed in child body
   Eigen::Vector6d mWrench;
 
 protected:
-  /// \brief True if the joint limits are enforced in dynamic simulation.
+  /// True if the joint limits are enforced in dynamic simulation
   bool mIsPositionLimited;
 
-  /// \brief Joint spring stiffness
+  /// Joint spring stiffness
   std::vector<double> mSpringStiffness;
 
-  /// \brief Rest joint position for joint spring
+  /// Rest joint position for joint spring
   std::vector<double> mRestPosition;
 
-  /// \brief Joint damping coefficient
+  /// Joint damping coefficient
   std::vector<double> mDampingCoefficient;
 };
 

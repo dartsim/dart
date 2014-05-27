@@ -57,6 +57,10 @@ Joint::Joint(const std::string& _name)
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity())
+//    mBodyNode1(NULL),
+//    mBodyNode2(NULL),
+//    mParentBodyNode(NULL),
+//    mChildBodyNode(NULL)
 {
 }
 
@@ -80,11 +84,15 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const {
   return mT;
 }
 
-const math::Jacobian& Joint::getLocalJacobian() const {
+//==============================================================================
+const math::Jacobian& Joint::getLocalJacobian() const
+{
   return mS;
 }
 
-const math::Jacobian& Joint::getLocalJacobianTimeDeriv() const {
+//==============================================================================
+const math::Jacobian& Joint::getLocalJacobianTimeDeriv() const
+{
   return mdS;
 }
 
@@ -98,12 +106,6 @@ int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const {
     if (mGenCoords[i]->getSkeletonIndex() == _dofSkelIndex)
       return i;
   return -1;
-}
-
-//==============================================================================
-Eigen::Vector6d Joint::getBodyConstraintWrench() const
-{
-  return mWrench - mS * GenCoordSystem::getGenForces();
 }
 
 void Joint::setPositionLimited(bool _isPositionLimited) {
