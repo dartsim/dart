@@ -334,7 +334,6 @@ protected:
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce)
   {
-    std::cout << "??? ";
     // Compute beta
     Eigen::Vector6d beta = _childBiasForce;
     beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertia
@@ -354,7 +353,6 @@ protected:
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce)
   {
-    std::cout << "??? ";
     // Compute beta
     Eigen::Vector6d beta = _childBiasForce;
     beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertiaImplicit

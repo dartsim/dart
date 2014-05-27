@@ -298,7 +298,6 @@ void SingleDofJoint::addChildBiasForceForInvMassMatrix(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce)
 {
-  std::cout << "!! " << std::endl;
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
   beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertia
@@ -318,7 +317,6 @@ void SingleDofJoint::addChildBiasForceForInvAugMassMatrix(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce)
 {
-  std::cout << "aa " << std::endl;
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
   beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertiaImplicit

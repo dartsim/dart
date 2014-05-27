@@ -99,25 +99,25 @@ protected:
 //==============================================================================
 void DynamicsTest::SetUp()
 {
-//  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
+  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
   list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-//  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
+  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
+  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
+  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
 }
 
 //==============================================================================
@@ -934,29 +934,29 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   delete myWorld;
 }
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareVelocities)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareVelocities(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareVelocities)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareVelocities(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, compareAccelerations)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    compareAccelerations(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, compareAccelerations)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    compareAccelerations(getList()[i]);
+  }
+}
 
 //==============================================================================
 TEST_F(DynamicsTest, compareEquationsOfMotion)

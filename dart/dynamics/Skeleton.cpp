@@ -426,6 +426,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
          it != mBodyNodes.end(); ++it)
     {
       (*it)->updateVelocity();
+      (*it)->updatePartialAcceleration();
     }
   }
 
@@ -434,7 +435,6 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
     {
-      (*it)->updatePartialAcceleration();
       (*it)->updateAcceleration();
     }
   }
@@ -727,31 +727,40 @@ void Skeleton::updateInvAugMassMatrix() {
   mIsInvAugMassMatrixDirty = false;
 }
 
-void Skeleton::updateCoriolisForceVector() {
+//==============================================================================
+void Skeleton::updateCoriolisForceVector()
+{
   assert(mCvec.size() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
 
   mCvec.setZero();
+
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->updateCombinedVector();
   }
+
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
+       it != mBodyNodes.rend(); ++it)
+  {
     (*it)->aggregateCoriolisForceVector(&mCvec);
   }
 
   mIsCoriolisVectorDirty = false;
 }
 
-void Skeleton::updateGravityForceVector() {
+//==============================================================================
+void Skeleton::updateGravityForceVector()
+{
   assert(mG.size() == getNumGenCoords());
   assert(getNumGenCoords() > 0);
 
   // Calcualtion mass matrix, M
   mG.setZero();
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
+       it != mBodyNodes.rend(); ++it)
+  {
     (*it)->aggregateGravityForceVector(&mG, mGravity);
   }
 
@@ -936,7 +945,7 @@ void Skeleton::computeInverseDynamicsRecursionA()
   {
     (*it)->updateTransform();
     (*it)->updateVelocity();
-//    (*it)->updateEta();
+    (*it)->updatePartialAcceleration();
     (*it)->updateAcceleration();
   }
 

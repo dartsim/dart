@@ -1082,7 +1082,9 @@ void BodyNode::updateBodyImpForceFwdDyn()
   assert(!math::isNan(mImpF));
 }
 
-void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C) {
+//==============================================================================
+void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
+{
   aggregateCombinedVector(_C, Eigen::Vector3d::Zero());
 }
 
@@ -1107,19 +1109,24 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   }
 }
 
-void BodyNode::updateCombinedVector() {
-  if (mParentJoint->getNumGenCoords() > 0) {
-    if (mParentBodyNode) {
-//      mCg_dV = math::AdInvT(mParentJoint->getLocalTransform(),
-//                            mParentBodyNode->mCg_dV) + mEta;
-    } else {
-//      mCg_dV = mEta;
-    }
+//==============================================================================
+void BodyNode::updateCombinedVector()
+{
+  if (mParentBodyNode)
+  {
+    mCg_dV = math::AdInvT(mParentJoint->getLocalTransform(),
+                          mParentBodyNode->mCg_dV) + mPartialAcceleration;
+  }
+  else
+  {
+    mCg_dV = mPartialAcceleration;
   }
 }
 
+//==============================================================================
 void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
-                                       const Eigen::Vector3d& _gravity) {
+                                       const Eigen::Vector3d& _gravity)
+{
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
   if (mGravityMode == true)
@@ -1132,15 +1139,16 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   mCg_F -= math::dad(mV, mI * mV);
 
   for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it) {
-    mCg_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                           (*it)->mCg_F);
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
   int nGenCoords = mParentJoint->getNumGenCoords();
-  if (nGenCoords > 0) {
-    Eigen::VectorXd Cg =
-        mParentJoint->getLocalJacobian().transpose() * mCg_F;
+  if (nGenCoords > 0)
+  {
+    Eigen::VectorXd Cg
+        = mParentJoint->getLocalJacobian().transpose() * mCg_F;
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
     _Cg->segment(iStart, nGenCoords) = Cg;
   }
