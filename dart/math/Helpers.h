@@ -2,7 +2,8 @@
  * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -38,14 +39,15 @@
 #define DART_MATH_HELPERS_H_
 
 // Standard Libraries
-#include <vector>
-#include <cfloat>
-#include <cmath>
-#include <ctime>
-#include <climits>
 #include <cassert>
-#include <iostream>
+#include <cfloat>
+#include <climits>
+#include <cmath>
 #include <cstdlib>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
 // External Libraries
 #include <Eigen/Dense>
@@ -171,6 +173,34 @@ inline bool isInf(const Eigen::MatrixXd& _m) {
         return true;
 
   return false;
+}
+
+/// \brief Returns whether _m is symmetric or not
+inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6) {
+  size_t rows = _m.rows();
+  size_t cols = _m.cols();
+
+  if (rows != cols)
+    return false;
+
+  for (int i = 0; i < rows; ++i) {
+    for (int j = i + 1; j < cols; ++j) {
+      if (std::fabs(_m(i, j) - _m(j, i)) > _tol) {
+        std::cout << "A: " << std::endl;
+        for (int k = 0; k < rows; ++k) {
+          for (int l = 0; l < cols; ++l)
+            std::cout << std::setprecision(4) << _m(k, l) << " ";
+          std::cout << std::endl;
+        }
+
+        std::cout << "A(" << i << ", " << j << "): " << _m(i, j) << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << _m(i, j) << std::endl;
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 inline unsigned seedRand() {
