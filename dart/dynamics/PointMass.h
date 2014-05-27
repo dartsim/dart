@@ -268,7 +268,7 @@ protected:
 
   //----------------- Cache Data for Mass Inverse Matrix -----------------------
   /// \brief
-  Eigen::Vector3d mInvM_beta;
+  Eigen::Vector3d mBiasForceForInvMeta;
 
   //---------------- Cache Data for Gravity Force Vector -----------------------
   /// \brief

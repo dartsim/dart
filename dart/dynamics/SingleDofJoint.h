@@ -125,11 +125,33 @@ protected:
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------
 
+  /// Add child's bias force to parent's one
+  virtual void addChildBiasForceForInvMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce);
+
+  /// Add child's bias force to parent's one
+  virtual void addChildBiasForceForInvAugMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce);
+
+  ///
+  virtual void updateTotalForceForInvMassMatrix(
+      const Eigen::Vector6d& _bodyForce);
+
   // Documentation inherited
   virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                        const size_t _col,
                                        const Eigen::Matrix6d& _artInertia,
                                        const Eigen::Vector6d& _spatialAcc);
+
+  // Documentation inherited
+  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                          const size_t _col,
+                                          const Eigen::Matrix6d& _artInertia,
+                                          const Eigen::Vector6d& _spatialAcc);
 
   // Documentation inherited
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
@@ -140,6 +162,10 @@ protected:
 
   /// Rotational axis
   Eigen::Vector3d mAxis;
+
+  //----------------------------------------------------------------------------
+  // For recursive dynamics algorithms
+  //----------------------------------------------------------------------------
 
   /// Spatial Jacobian
   Eigen::Vector6d mJacobian;
@@ -159,6 +185,13 @@ protected:
 
   /// Total impluse projected on joint space
   double mTotalImpulse;
+
+  //----------------------------------------------------------------------------
+  // For equations of motion
+  //----------------------------------------------------------------------------
+
+  ///
+  double mInvM_a;
 
   ///
   double mInvMassMatrixSegment;

@@ -293,6 +293,54 @@ void SingleDofJoint::clearConstraintImpulse()
 }
 
 //==============================================================================
+void SingleDofJoint::addChildBiasForceForInvMassMatrix(
+    Eigen::Vector6d& _parentBiasForce,
+    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Vector6d& _childBiasForce)
+{
+  std::cout << "!! " << std::endl;
+  // Compute beta
+  Eigen::Vector6d beta = _childBiasForce;
+  beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertia
+                    * mInvM_a;
+
+  // Verification
+  assert(!math::isNan(beta));
+
+  // Add child body's bias force to parent body's bias force. Note that mT
+  // should be updated.
+  _parentBiasForce += math::dAdInvT(mT, beta);
+}
+
+//==============================================================================
+void SingleDofJoint::addChildBiasForceForInvAugMassMatrix(
+    Eigen::Vector6d& _parentBiasForce,
+    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Vector6d& _childBiasForce)
+{
+  std::cout << "aa " << std::endl;
+  // Compute beta
+  Eigen::Vector6d beta = _childBiasForce;
+  beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertiaImplicit
+                    * mInvM_a;
+
+  // Verification
+  assert(!math::isNan(beta));
+
+  // Add child body's bias force to parent body's bias force. Note that mT
+  // should be updated.
+  _parentBiasForce += math::dAdInvT(mT, beta);
+}
+
+//==============================================================================
+void SingleDofJoint::updateTotalForceForInvMassMatrix(
+    const Eigen::Vector6d& _bodyForce)
+{
+  // Compute alpha
+  mInvM_a = mCoordinate.getForce() - mJacobian.dot(_bodyForce);
+}
+
+//==============================================================================
 void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                              const size_t _col,
                                              const Eigen::Matrix6d& _artInertia,
@@ -301,8 +349,31 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   //
   mInvMassMatrixSegment
       = mInvProjArtInertia
-        * (mTotalForce - mJacobian.transpose()
-                         * _artInertia * math::AdInvT(mT, _spatialAcc));
+        * (mInvM_a
+           - mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc)));
+
+  // Verification
+  assert(!math::isNan(mInvMassMatrixSegment));
+
+  // Index
+  size_t iStart = mCoordinate.getSkeletonIndex();
+
+  // Assign
+  _invMassMat(iStart, _col) = mInvMassMatrixSegment;
+}
+
+//==============================================================================
+void SingleDofJoint::getInvAugMassMatrixSegment(
+    Eigen::MatrixXd& _invMassMat,
+    const size_t _col,
+    const Eigen::Matrix6d& _artInertia,
+    const Eigen::Vector6d& _spatialAcc)
+{
+  //
+  mInvMassMatrixSegment
+      = mInvProjArtInertiaImplicit
+        * (mInvM_a
+           - mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc)));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));

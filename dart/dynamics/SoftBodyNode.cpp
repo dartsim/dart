@@ -600,14 +600,14 @@ void SoftBodyNode::updateInvMassMatrix()
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                             (*it)->mInvM_b);
+//    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//                             (*it)->mBiasForceForInvM);
   }
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mInvM_beta);
-    mInvM_c.tail<3>() += (*it)->mInvM_beta;
+    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
   }
   assert(!math::isNan(mInvM_c));
 
@@ -615,19 +615,19 @@ void SoftBodyNode::updateInvMassMatrix()
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0)
   {
-    mInvM_a = mParentJoint->getGenForces();
-    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
-    assert(!math::isNan(mInvM_a));
+//    mInvM_a = mParentJoint->getGenForces();
+//    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
+//    assert(!math::isNan(mInvM_a));
   }
 
   // Cache data: mInvM2_b
   if (mParentBodyNode)
   {
-    mInvM_b = mInvM_c;
+//    mBiasForceForInvM = mInvM_c;
 //    if (dof > 0)
-//      mInvM_b.noalias() += mAI_S_Psi * mInvM_a;
+//      mBiasForceForInvM.noalias() += mAI_S_Psi * mInvM_a;
   }
-  assert(!math::isNan(mInvM_b));
+//  assert(!math::isNan(mBiasForceForInvM));
 }
 
 void SoftBodyNode::updateInvAugMassMatrix()
@@ -641,14 +641,14 @@ void SoftBodyNode::updateInvAugMassMatrix()
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                             (*it)->mInvM_b);
+//    mInvM_c += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//                             (*it)->mBiasForceForInvM);
   }
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mInvM_beta);
-    mInvM_c.tail<3>() += (*it)->mInvM_beta;
+    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
   }
   assert(!math::isNan(mInvM_c));
 
@@ -656,19 +656,19 @@ void SoftBodyNode::updateInvAugMassMatrix()
   int dof = mParentJoint->getNumGenCoords();
   if (dof > 0)
   {
-    mInvM_a = mParentJoint->getGenForces();
-    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
-    assert(!math::isNan(mInvM_a));
+//    mInvM_a = mParentJoint->getGenForces();
+//    mInvM_a.noalias() -= mParentJoint->getLocalJacobian().transpose() * mInvM_c;
+//    assert(!math::isNan(mInvM_a));
   }
 
   // Cache data: mInvM2_b
   if (mParentBodyNode)
   {
-    mInvM_b = mInvM_c;
+//    mBiasForceForInvM = mInvM_c;
 //    if (dof > 0)
-//      mInvM_b.noalias() += mImplicitAI_S_ImplicitPsi * mInvM_a;
+//      mBiasForceForInvM.noalias() += mImplicitAI_S_ImplicitPsi * mInvM_a;
   }
-  assert(!math::isNan(mInvM_b));
+//  assert(!math::isNan(mBiasForceForInvM));
 }
 
 void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)

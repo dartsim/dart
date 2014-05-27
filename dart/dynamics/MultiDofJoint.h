@@ -92,7 +92,7 @@ protected:
   }
 
   // Documentation inherited
-  void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
+  virtual void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
                                 const Eigen::Vector6d& _childVelocity)
   {
     // ad(V, S * dq)
@@ -114,7 +114,7 @@ protected:
   }
 
   // Documentation inherited
-  void addAccelerationTo(Eigen::Vector6d& _acc)
+  virtual void addAccelerationTo(Eigen::Vector6d& _acc)
   {
     // Add joint acceleration to _acc
     for (size_t i = 0; i < DOF; ++i)
@@ -125,7 +125,7 @@ protected:
   }
 
   // Documentation inherited
-  void addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
+  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
   {
     // Add joint velocity change to _velocityChange
     for (size_t i = 0; i < DOF; ++i)
@@ -139,7 +139,7 @@ protected:
   }
 
   // Documentation inherited
-  void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
+  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
                             const Eigen::Matrix6d& _childArtInertia)
   {
     // Child body's articulated inertia
@@ -154,7 +154,7 @@ protected:
   }
 
   // Documentation inherited
-  void addChildArtInertiaImplicitTo(
+  virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia)
   {
@@ -170,7 +170,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia)
+  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia)
   {
     // Projected articulated inertia
     Eigen::Matrix<double, DOF, DOF> projAI
@@ -186,7 +186,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateInvProjArtInertiaImplicit(
+  virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia, double _timeStep)
   {
     // Projected articulated inertia
@@ -209,7 +209,7 @@ protected:
   }
 
   // Documentation inherited
-  void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
+  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
                            const Eigen::Matrix6d& _childArtInertia,
                            const Eigen::Vector6d& _childBiasForce,
                            const Eigen::Vector6d& _childPartialAcc)
@@ -235,7 +235,7 @@ protected:
   }
 
   // Documentation inherited
-  void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
+  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
                              const Eigen::Matrix6d& _childArtInertia,
                              const Eigen::Vector6d& _childBiasImpulse)
   {
@@ -253,7 +253,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateTotalForce(const Eigen::Vector6d& _bodyForce,
+  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
                         double _timeStep)
   {
     // Spring and damping forces
@@ -275,7 +275,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
+  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
   {
     //
     mTotalImpulse = GenCoordSystem::getConstraintImpulses();
@@ -283,7 +283,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateAcceleration(const Eigen::Matrix6d& _artInertia,
+  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
                           const Eigen::Vector6d& _spatialAcc)
   {
     //
@@ -301,7 +301,7 @@ protected:
   }
 
   // Documentation inherited
-  void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
+  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
                             const Eigen::Vector6d& _velocityChange)
   {
     //
@@ -319,7 +319,7 @@ protected:
   }
 
   // Documentation inherited
-  void clearConstraintImpulse()
+  virtual void clearConstraintImpulse()
   {
     mTotalImpulse.setZero();
   }
@@ -329,7 +329,56 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+  virtual void addChildBiasForceForInvMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce)
+  {
+    std::cout << "??? ";
+    // Compute beta
+    Eigen::Vector6d beta = _childBiasForce;
+    beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertia
+                      * mInvM_a;
+
+    // Verification
+    assert(!math::isNan(beta));
+
+    // Add child body's bias force to parent body's bias force. Note that mT
+    // should be updated.
+    _parentBiasForce += math::dAdInvT(mT, beta);
+  }
+
+  // Documentation inherited
+  virtual void addChildBiasForceForInvAugMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce)
+  {
+    std::cout << "??? ";
+    // Compute beta
+    Eigen::Vector6d beta = _childBiasForce;
+    beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertiaImplicit
+                      * mInvM_a;
+
+    // Verification
+    assert(!math::isNan(beta));
+
+    // Add child body's bias force to parent body's bias force. Note that mT
+    // should be updated.
+    _parentBiasForce += math::dAdInvT(mT, beta);
+  }
+
+  // Documentation inherited
+  virtual void updateTotalForceForInvMassMatrix(
+      const Eigen::Vector6d& _bodyForce)
+  {
+    // Compute alpha
+    mInvM_a = GenCoordSystem::getGenForces()
+              - mJacobian.transpose() * _bodyForce;
+  }
+
+  // Documentation inherited
+  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                const size_t _col,
                                const Eigen::Matrix6d& _artInertia,
                                const Eigen::Vector6d& _spatialAcc)
@@ -337,8 +386,8 @@ protected:
     //
     mInvMassMatrixSegment
         = mInvProjArtInertia
-          * (mTotalForce - mJacobian.transpose()
-                           * _artInertia * math::AdInvT(mT, _spatialAcc));
+          * (mInvM_a - mJacobian.transpose()
+                       * _artInertia * math::AdInvT(mT, _spatialAcc));
 
     // Verification
     assert(!math::isNan(mInvMassMatrixSegment));
@@ -351,7 +400,29 @@ protected:
   }
 
   // Documentation inherited
-  void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
+  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                          const size_t _col,
+                                          const Eigen::Matrix6d& _artInertia,
+                                          const Eigen::Vector6d& _spatialAcc)
+  {
+    //
+    mInvMassMatrixSegment
+        = mInvProjArtInertiaImplicit
+          * (mInvM_a - mJacobian.transpose()
+                       * _artInertia * math::AdInvT(mT, _spatialAcc));
+
+    // Verification
+    assert(!math::isNan(mInvMassMatrixSegment));
+
+    // Index
+    size_t iStart = mCoordinate[0].getSkeletonIndex();
+
+    // Assign
+    _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;
+  }
+
+  // Documentation inherited
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
   {
     //
     _acc += mJacobian * mInvMassMatrixSegment;
@@ -360,6 +431,10 @@ protected:
 protected:
   /// Generalized coordinates
   GenCoord mCoordinate[DOF];
+
+  //----------------------------------------------------------------------------
+  // For recursive dynamics algorithms
+  //----------------------------------------------------------------------------
 
   /// Spatial Jacobian
   Eigen::Matrix<double, 6, DOF> mJacobian;
@@ -379,6 +454,13 @@ protected:
 
   /// Total impluse projected on joint space
   Eigen::Matrix<double, DOF, 1> mTotalImpulse;
+
+  //----------------------------------------------------------------------------
+  // For equations of motion
+  //----------------------------------------------------------------------------
+
+  ///
+  Eigen::Matrix<double, DOF, 1> mInvM_a;
 
   ///
   Eigen::Matrix<double, DOF, 1> mInvMassMatrixSegment;

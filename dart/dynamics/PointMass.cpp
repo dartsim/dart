@@ -537,12 +537,12 @@ void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
 
 void PointMass::updateInvMassMatrix()
 {
-  mInvM_beta = getGenForces();
+  mBiasForceForInvMeta = getGenForces();
 }
 
 void PointMass::updateInvAugMassMatrix()
 {
-  mInvM_beta = mMass * mImplicitPsi * getGenForces();
+  mBiasForceForInvMeta = mMass * mImplicitPsi * getGenForces();
 }
 
 void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)

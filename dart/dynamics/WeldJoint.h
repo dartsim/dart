@@ -70,6 +70,10 @@ public:
   }
 
 protected:
+  //----------------------------------------------------------------------------
+  // Recursive algorithms
+  //----------------------------------------------------------------------------
+
   // Documentation inherited
   virtual void updateLocalTransform();
 
@@ -136,6 +140,41 @@ protected:
 
   // Documentation inherited
   virtual void clearConstraintImpulse();
+
+  //----------------------------------------------------------------------------
+  // Recursive algorithms for equations of motion
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void addChildBiasForceForInvMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce);
+
+  // Documentation inherited
+  virtual void addChildBiasForceForInvAugMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce);
+
+  // Documentation inherited
+  virtual void updateTotalForceForInvMassMatrix(
+      const Eigen::Vector6d& _bodyForce);
+
+  // Documentation inherited
+  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                       const size_t _col,
+                                       const Eigen::Matrix6d& _artInertia,
+                                       const Eigen::Vector6d& _spatialAcc);
+
+  // Documentation inherited
+  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                       const size_t _col,
+                                       const Eigen::Matrix6d& _artInertia,
+                                       const Eigen::Vector6d& _spatialAcc);
+
+  // Documentation inherited
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
 public:
   // To get byte-aligned Eigen vectors

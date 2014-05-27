@@ -204,5 +204,35 @@ void WeldJoint::clearConstraintImpulse()
   // Do nothing
 }
 
+void WeldJoint::addChildBiasForceForInvMassMatrix(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce)
+{
+
+}
+
+void WeldJoint::addChildBiasForceForInvAugMassMatrix(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce)
+{
+
+}
+
+void WeldJoint::updateTotalForceForInvMassMatrix(const Eigen::Vector6d& _bodyForce)
+{
+
+}
+
+void WeldJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat, const size_t _col, const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+{
+
+}
+
+void WeldJoint::getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat, const size_t _col, const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+{
+
+}
+
+void WeldJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
+{
+
+}
+
 }  // namespace dynamics
 }  // namespace dart

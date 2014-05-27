@@ -779,10 +779,7 @@ public:
   Eigen::Vector6d mM_F;
 
   /// \brief Cache data for inverse mass matrix of the system.
-  DEPRECATED(4.0) Eigen::VectorXd mInvM_a;
-  Eigen::Vector6d mInvM_b;
   Eigen::Vector6d mInvM_c;
-  DEPRECATED(4.0) Eigen::VectorXd mInvM_MInvVec;
   Eigen::Vector6d mInvM_U;
 
   //------------------------- Impulse-based Dyanmics ---------------------------

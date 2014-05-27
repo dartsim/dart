@@ -341,14 +341,36 @@ protected:
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------
 
+  /// Add child's bias force to parent's one
+  virtual void addChildBiasForceForInvMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce) = 0;
+
+  /// Add child's bias force to parent's one
+  virtual void addChildBiasForceForInvAugMassMatrix(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce) = 0;
+
+  ///
+  virtual void updateTotalForceForInvMassMatrix(
+      const Eigen::Vector6d& _bodyForce) = 0;
+
   ///
   virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                        const size_t _col,
                                        const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc) {}
+                                       const Eigen::Vector6d& _spatialAcc) = 0;
 
   ///
-  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) {}
+  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                       const size_t _col,
+                                       const Eigen::Matrix6d& _artInertia,
+                                       const Eigen::Vector6d& _spatialAcc) = 0;
+
+  ///
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) = 0;
 
 protected:
   /// Joint name
