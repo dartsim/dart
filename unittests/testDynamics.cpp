@@ -985,29 +985,29 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
   }
 }
 
-////==============================================================================
-//TEST_F(DynamicsTest, testCenterOfMass)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    centerOfMass(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, testCenterOfMass)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    centerOfMass(getList()[i]);
+  }
+}
 
-////==============================================================================
-//TEST_F(DynamicsTest, testImpulseBasedDynamics)
-//{
-//  for (int i = 0; i < getList().size(); ++i)
-//  {
-//#ifndef NDEBUG
-//    dtdbg << getList()[i] << std::endl;
-//#endif
-//    testImpulseBasedDynamics(getList()[i]);
-//  }
-//}
+//==============================================================================
+TEST_F(DynamicsTest, testImpulseBasedDynamics)
+{
+  for (int i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    testImpulseBasedDynamics(getList()[i]);
+  }
+}
 
 //==============================================================================
 int main(int argc, char* argv[])
