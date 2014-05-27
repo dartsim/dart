@@ -197,10 +197,10 @@ protected:
   void updateBiasForce(double _dt, const Eigen::Vector3d& _gravity);
 
   /// \brief
-  void update_ddq();
+  void updateJointAndBodyAcceleration();
 
   /// \brief
-  void update_F_fs();
+  void updateTransmittedForce();
 
   /// \brief
   void updateMassMatrix();
@@ -209,7 +209,7 @@ protected:
 
   /// \brief Update impulsive bias force for impulse-based forward dynamics
   /// algorithm
-  void updateImpBiasForce();
+  void updateBiasImpulse();
 
   /// \brief Update joint velocity change for impulse-based forward dynamics
   /// algorithm

@@ -78,6 +78,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/optimizer/Function.h"
 
@@ -106,8 +107,6 @@ class Marker;
 class BodyNode
 {
 public:
-  friend class Skeleton;
-
   /// \brief Inverse kinematics policy
   /// IKP_PARENT_JOINT   : search optimal configuration for the parent joint of
   ///                      the target body node
@@ -461,9 +460,17 @@ public:
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
 
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class Skeleton;
+  friend class Joint;
+  friend class SoftBodyNode;
+
 // TODO(JS): Temporary change for soft body dynamics
-// protected:
-public:
+protected:
+//public:
   /// \brief Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton, int _skeletonIndex);
 
@@ -474,54 +481,54 @@ public:
   virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
   //--------------------------------------------------------------------------
-  // Sub-functions for Recursive Kinematics Algorithms
+  // Recursive algorithms
   //--------------------------------------------------------------------------
-  /// \brief Update local transformations and world transformations.
+
+  /// Update transformation
   virtual void updateTransform();
 
-  /// \brief
+  /// Update spatial velocity
   virtual void updateVelocity();
 
-  /// \brief
-  /// parentJoint.dS --> dJ
-  virtual void updateEta();
+  /// Update partial spatial acceleration due to parent joint's velocity
+  virtual void updatePartialAcceleration();
 
-  /// \brief
-  /// parentJoint.V, parentJoint.dV, parentBody.dV, V --> dV
+  /// Update spatial acceleration with the partial spatial acceleration
   virtual void updateAcceleration();
 
-  /// \brief
-  /// childBodies.F, V, dV --> F, Fgravity
+  // TODO(JS): Need revise
+  ///
   virtual void updateBodyForce(const Eigen::Vector3d& _gravity,
                                bool _withExternalForces = false);
 
-  /// \brief
-  /// parentJoint.S, F --> tau
+  // TODO(JS): Need revise
+  ///
   virtual void updateGeneralizedForce(bool _withDampingForces = false);
 
-  /// \brief
-  virtual void updateArticulatedInertia(double _timeStep);
+  /// Update articulated body inertia with implicit joint damping and spring
+  /// forces
+  virtual void updateArtInertia(double _timeStep);
 
-  /// \brief
-  virtual void updateBiasForce(double _timeStep,
-                               const Eigen::Vector3d& _gravity);
+  /// Update bias force with implicit joint damping and spring forces
+  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
+                               double _timeStep);
 
-  /// \brief Update acceleration for forward dynamics
-  virtual void update_ddq();
+  /// Update joint acceleration and body acceleration for forward dynamics
+  virtual void updateJointAndBodyAcceleration();
 
-  /// \brief
-  virtual void update_F_fs();
+  /// Update transmitted force from parent joint
+  virtual void updateTransmittedForce();
 
   //----------------------------------------------------------------------------
   // Impulse based dynamics
   //----------------------------------------------------------------------------
-
+public:
   /// \brief
   bool isImpulseReponsible() const;
 
   /// \brief Update impulsive bias force for impulse-based forward dynamics
   /// algorithm
-  virtual void updateImpBiasForce();
+  virtual void updateBiasImpulse();
 
   /// \brief Update joint velocity change for impulse-based forward dynamics
   /// algorithm
@@ -534,6 +541,7 @@ public:
   /// \brief
   virtual void updateBodyImpForceFwdDyn();
 
+protected:
   /// \brief
   virtual void updateMassMatrix();
   virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
@@ -710,80 +718,48 @@ public:
   //--------------------------------------------------------------------------
   // Dynamical Properties
   //--------------------------------------------------------------------------
-  /// \brief World transformation.
+
+  /// World transformation
   Eigen::Isometry3d mW;
 
-  /// \brief Body Jacobian.
+  /// Body Jacobian
   math::Jacobian mBodyJacobian;
 
-  /// \brief Dirty flag for body Jacobian.
+  /// Dirty flag for body Jacobian.
   bool mIsBodyJacobianDirty;
 
-  /// \brief Time derivative of body Jacobian.
+  /// Time derivative of body Jacobian.
   math::Jacobian mBodyJacobianTimeDeriv;
 
-  /// \brief Dirty flag for time derivative of body Jacobian.
+  /// Dirty flag for time derivative of body Jacobian.
   bool mIsBodyJacobianTimeDerivDirty;
 
-  /// \brief Generalized body velocity w.r.t. body frame.
+  /// Spatial body velocity w.r.t. body frame
   Eigen::Vector6d mV;
 
-  /// \brief
-  Eigen::Vector6d mEta;
+  /// Partial spatial body acceleration due to parent joint's velocity
+  Eigen::Vector6d mPartialAcceleration;
 
-  /// \brief Generalized body acceleration w.r.t. body frame.
-  Eigen::Vector6d mdV;
+  /// Spatial body acceleration w.r.t. body frame
+  Eigen::Vector6d mA;
 
-  /// \brief Generalized body force w.r.t. body frame.
+  /// Transmitted spatial body force by parent joint w.r.t. body frame
   Eigen::Vector6d mF;
 
-  /// \brief
+  /// External spatial force
   Eigen::Vector6d mFext;
 
-  /// \brief
+  /// Spatial gravity force
   Eigen::Vector6d mFgravity;
 
-  /// \brief Articulated inertia
-  math::Inertia mAI;
+  /// Articulated body inertia
+  math::Inertia mArtInertia;
 
-  /// \brief Articulated inertia
-  math::Inertia mImplicitAI;
+  /// Articulated body inertia for implicit joing damping and spring forces
+  math::Inertia mArtInertiaImplicit;
 
-  /// \brief Bias force
-  Eigen::Vector6d mB;
-
-  /// \brief
-  math::Jacobian mAI_S;
-
-  /// \brief
-  math::Jacobian mImplicitAI_S;
-
-  /// \brief
-  math::Jacobian mAI_S_Psi;
-
-  /// \brief
-  math::Jacobian mImplicitAI_S_ImplicitPsi;
-
-  /// \brief
-  Eigen::MatrixXd mPsi;
-
-  /// \brief
-  Eigen::MatrixXd mImplicitPsi;
-
-public:  // TODO(JS): This will be removed once Node class is implemented.
-  /// \brief
-  math::Inertia mPi;
-
-  /// \brief
-  math::Inertia mImplicitPi;
-
-protected:  // TODO(JS):
-  /// \brief
-  Eigen::VectorXd mAlpha;
-
-public:  // TODO(JS): This will be removed once Node class is implemented.
-  /// \brief
-  Eigen::Vector6d mBeta;
+  /// Bias force
+  Eigen::Vector6d mBiasForce;
 
 // TODO(JS): Temporary code for soft body dynamics
 // protected:
@@ -803,10 +779,10 @@ public:
   Eigen::Vector6d mM_F;
 
   /// \brief Cache data for inverse mass matrix of the system.
-  Eigen::VectorXd mInvM_a;
+  DEPRECATED(4.0) Eigen::VectorXd mInvM_a;
   Eigen::Vector6d mInvM_b;
   Eigen::Vector6d mInvM_c;
-  Eigen::VectorXd mInvM_MInvVec;
+  DEPRECATED(4.0) Eigen::VectorXd mInvM_MInvVec;
   Eigen::Vector6d mInvM_U;
 
   //------------------------- Impulse-based Dyanmics ---------------------------
@@ -816,13 +792,13 @@ public:
 
   /// \brief Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.
-  Eigen::Vector6d mImpB;
+  Eigen::Vector6d mBiasImpulse;
 
   /// \brief Cache data for mImpB
-  Eigen::VectorXd mImpAlpha;
+  //DEPRECATED(4.0) Eigen::VectorXd mImpAlpha;
 
   /// \brief Cache data for mImpB
-  Eigen::Vector6d mImpBeta;
+  //DEPRECATED(4.0) Eigen::Vector6d mImpBeta;
 
   /// \brief Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;

@@ -146,7 +146,9 @@ double Skeleton::getMass() const {
   return mTotalMass;
 }
 
-void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
+//==============================================================================
+void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
+{
   // Set timestep and gravity
   setTimeStep(_timeStep);
   setGravity(_gravity);
@@ -155,7 +157,8 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
   std::queue<BodyNode*> queue;
   queue.push(mBodyNodes[0]);
   mBodyNodes.clear();
-  while (!queue.empty())   {
+  while (!queue.empty())
+  {
     BodyNode* itBodyNode = queue.front();
     queue.pop();
     mBodyNodes.push_back(itBodyNode);
@@ -165,18 +168,14 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
 
   // Initialize body nodes and generalized coordinates
   mGenCoords.clear();
-  for (int i = 0; i < getNumBodyNodes(); ++i) {
+  for (int i = 0; i < getNumBodyNodes(); ++i)
+  {
     mBodyNodes[i]->aggregateGenCoords(&mGenCoords);
     mBodyNodes[i]->init(this, i);
-    mBodyNodes[i]->updateTransform();
-    mBodyNodes[i]->updateVelocity();
-    mBodyNodes[i]->updateEta();
   }
 
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it) {
-    (*it)->updateArticulatedInertia(mTimeStep);
-  }
+  // Compute transformations, velocities, and partial accelerations
+  computeForwardDynamicsRecursionPartA();
 
   // Set dimension of dynamics quantities
   int dof = getNumGenCoords();
@@ -201,7 +200,9 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity) {
     mTotalMass += getBodyNode(i)->getMass();
 }
 
-void Skeleton::addBodyNode(BodyNode* _body) {
+//==============================================================================
+void Skeleton::addBodyNode(BodyNode* _body)
+{
   assert(_body && _body->getParentJoint());
 
   mBodyNodes.push_back(_body);
@@ -377,7 +378,12 @@ void Skeleton::integrateConfigs(double _dt)
       mSoftBodyNodes[i]->getPointMass(j)->integrateConfigs(_dt);
   }
 
-  computeForwardKinematics(true, false, false);
+//  computeForwardKinematics(true, false, false);
+//  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+//       it != mBodyNodes.end(); ++it)
+//  {
+//    (*it)->updateTransform();
+//  }
 }
 
 //==============================================================================
@@ -392,7 +398,12 @@ void Skeleton::integrateGenVels(double _dt)
       mSoftBodyNodes[i]->getPointMass(j)->integrateGenVels(_dt);
   }
 
-  computeForwardKinematics(false, true, false);
+//  computeForwardKinematics(false, true, false);
+//  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+//       it != mBodyNodes.end(); ++it)
+//  {
+//    (*it)->updateVelocity();
+//  }
 }
 
 //==============================================================================
@@ -415,7 +426,6 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
          it != mBodyNodes.end(); ++it)
     {
       (*it)->updateVelocity();
-      (*it)->updateEta();
     }
   }
 
@@ -424,6 +434,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
     {
+      (*it)->updatePartialAcceleration();
       (*it)->updateAcceleration();
     }
   }
@@ -627,7 +638,7 @@ void Skeleton::updateInvMassMatrix() {
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateArticulatedInertia(mTimeStep);
+      (*it)->updateArtInertia(mTimeStep);
     }
 
     mIsArticulatedInertiaDirty = false;
@@ -832,8 +843,125 @@ void Skeleton::updateDampingForceVector() {
 }
 
 //==============================================================================
+void Skeleton::computeForwardDynamics()
+{
+  //
+  computeForwardDynamicsRecursionPartA();
+
+  //
+  computeForwardDynamicsRecursionPartB();
+}
+
+//==============================================================================
+void Skeleton::computeForwardDynamicsRecursionPartA()
+{
+  // Update body transformations, velocities, and partial acceleration due to
+  // parent joint's velocity
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateTransform();
+    (*it)->updateVelocity();
+    (*it)->updatePartialAcceleration();
+  }
+
+  mIsArticulatedInertiaDirty = true;
+  mIsMassMatrixDirty = true;
+  mIsAugMassMatrixDirty = true;
+  mIsInvMassMatrixDirty = true;
+  mIsInvAugMassMatrixDirty = true;
+  mIsCoriolisVectorDirty = true;
+  mIsGravityForceVectorDirty = true;
+  mIsCombinedVectorDirty = true;
+  mIsExternalForceVectorDirty = true;
+//  mIsDampingForceVectorDirty = true;
+
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+  }
+}
+
+//==============================================================================
+void Skeleton::computeForwardDynamicsRecursionPartB()
+{
+  // Backward recursion
+//  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArtInertia(mTimeStep);
+      (*it)->updateBiasForce(mGravity, mTimeStep);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+//  else
+//  {
+//    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+//         it != mBodyNodes.rend(); ++it)
+//    {
+//      (*it)->updateBiasForce(mGravity, mTimeStep);
+//    }
+//  }
+
+  // Forward recursion
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateJointAndBodyAcceleration();
+//    (*it)->updateTransmittedForce();
+  }
+}
+
+//==============================================================================
 void Skeleton::computeInverseDynamics(bool _withExternalForces,
                                       bool _withDampingForces)
+{
+  //
+  computeInverseDynamicsRecursionA();
+
+  //
+  computeInverseDynamicsRecursionB(_withExternalForces, _withDampingForces);
+}
+
+//==============================================================================
+void Skeleton::computeInverseDynamicsRecursionA()
+{
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateTransform();
+    (*it)->updateVelocity();
+//    (*it)->updateEta();
+    (*it)->updateAcceleration();
+  }
+
+  mIsArticulatedInertiaDirty = true;
+  mIsMassMatrixDirty = true;
+  mIsAugMassMatrixDirty = true;
+  mIsInvMassMatrixDirty = true;
+  mIsInvAugMassMatrixDirty = true;
+  mIsCoriolisVectorDirty = true;
+  mIsGravityForceVectorDirty = true;
+  mIsCombinedVectorDirty = true;
+  mIsExternalForceVectorDirty = true;
+//  mIsDampingForceVectorDirty = true;
+
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+  }
+}
+
+//==============================================================================
+void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
+                                                bool _withDampingForces)
 {
   // Skip immobile or 0-dof skeleton
   if (getNumGenCoords() == 0)
@@ -854,47 +982,22 @@ void Skeleton::computeHybridDynamics()
   dterr << "Not implemented yet.\n";
 }
 
+//==============================================================================
+void Skeleton::computeHybridDynamicsRecursionA()
+{
+  dterr << "Not implemented yet.\n";
+}
+
+//==============================================================================
+void Skeleton::computeHybridDynamicsRecursionB()
+{
+  dterr << "Not implemented yet.\n";
+}
+
 void Skeleton::clearExternalForces() {
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it) {
     (*it)->clearExternalForces();
-  }
-}
-
-//==============================================================================
-void Skeleton::computeForwardDynamics()
-{
-  // Skip immobile or 0-dof skeleton
-  if (!isMobile() || getNumGenCoords() == 0)
-    return;
-
-  // Backward recursion
-  if (mIsArticulatedInertiaDirty)
-  {
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
-    {
-      (*it)->updateArticulatedInertia(mTimeStep);
-      (*it)->updateBiasForce(mTimeStep, mGravity);
-    }
-
-    mIsArticulatedInertiaDirty = false;
-  }
-  else
-  {
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
-    {
-      (*it)->updateBiasForce(mTimeStep, mGravity);
-    }
-  }
-
-  // Forward recursion
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->update_ddq();
-    (*it)->update_F_fs();
   }
 }
 
@@ -929,7 +1032,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   BodyNode* it = _bodyNode;
   while (it != NULL)
   {
-    it->updateImpBiasForce();
+    it->updateBiasImpulse();
     it = it->getParentBodyNode();
   }
 }
@@ -960,7 +1063,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   BodyNode* it = _bodyNode;
   while (it != NULL)
   {
-    it->updateImpBiasForce();
+    it->updateBiasImpulse();
     it = it->getParentBodyNode();
   }
 
@@ -996,7 +1099,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
   BodyNode* it = _softBodyNode;
   while (it != NULL)
   {
-    it->updateImpBiasForce();
+    it->updateBiasImpulse();
     it = it->getParentBodyNode();
   }
 
@@ -1039,8 +1142,8 @@ void Skeleton::computeImpulseForwardDynamics()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateArticulatedInertia(mTimeStep);
-      (*it)->updateImpBiasForce();
+      (*it)->updateArtInertia(mTimeStep);
+      (*it)->updateBiasImpulse();
     }
 
     mIsArticulatedInertiaDirty = false;
@@ -1050,7 +1153,7 @@ void Skeleton::computeImpulseForwardDynamics()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateImpBiasForce();
+      (*it)->updateBiasImpulse();
     }
   }
 

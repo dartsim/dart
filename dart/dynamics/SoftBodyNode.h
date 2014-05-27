@@ -140,7 +140,7 @@ protected:
   virtual void updateVelocity();
 
   // Documentation inherited.
-  virtual void updateEta();
+  virtual void updatePartialAcceleration();
 
   // Documentation inherited.
   virtual void updateAcceleration();
@@ -153,23 +153,23 @@ protected:
   virtual void updateGeneralizedForce(bool _withDampingForces = false);
 
   // Documentation inherited.
-  virtual void updateArticulatedInertia(double _timeStep);
+  virtual void updateArtInertia(double _timeStep);
 
   // Documentation inherited.
   virtual void updateBiasForce(double _timeStep, const Eigen::Vector3d& _gravity);
 
   // Documentation inherited.
-  virtual void update_ddq();
+  virtual void updateJointAndBodyAcceleration();
 
   // Documentation inherited.
-  virtual void update_F_fs();
+  virtual void updateTransmittedForce();
 
   //----------------------------------------------------------------------------
   // Impulse based dynamics
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateImpBiasForce();
+  virtual void updateBiasImpulse();
 
   // Documentation inherited.
   virtual void updateJointVelocityChange();
