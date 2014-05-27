@@ -1185,44 +1185,71 @@ void BodyNode::updateMassMatrix() {
   assert(!math::isNan(mM_dV));
 }
 
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col) {
+//==============================================================================
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
+{
+  //
   mM_F.noalias() = mI * mM_dV;
+
+  // Verification
   assert(!math::isNan(mM_F));
+
+  //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it) {
+       it != mChildBodyNodes.end(); ++it)
+  {
     mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
                           (*it)->mM_F);
   }
+
+  // Verification
   assert(!math::isNan(mM_F));
 
+  //
   int dof = mParentJoint->getNumGenCoords();
-  if (dof > 0) {
+  if (dof > 0)
+  {
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
     _MCol->block(iStart, _col, dof, 1).noalias() =
         mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
 }
 
+//==============================================================================
 void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
-                                      double _timeStep) {
+                                      double _timeStep)
+{
+  //
   mM_F.noalias() = mI * mM_dV;
+
+  // Verification
   assert(!math::isNan(mM_F));
+
+  //
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it) {
+       it != mChildBodyNodes.end(); ++it)
+  {
     mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
                           (*it)->mM_F);
   }
+
+  // Verification
   assert(!math::isNan(mM_F));
 
+  //
   int dof = mParentJoint->getNumGenCoords();
-  if (dof > 0) {
+  if (dof > 0)
+  {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (int i = 0; i < dof; ++i) {
+    for (int i = 0; i < dof; ++i)
+    {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
+
     int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getGenAccs())

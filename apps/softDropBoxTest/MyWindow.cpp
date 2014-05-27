@@ -85,11 +85,11 @@ void MyWindow::timeStepping()
 
 void MyWindow::drawSkels()
 {
-//  glEnable(GL_LIGHTING);
-//  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//  Eigen::Vector4d color;
-//  color << 0.5, 0.8, 0.6, 1.0;
-//  mWorld->getSkeleton(0)->draw(mRI, color, false);
+  glEnable(GL_LIGHTING);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  Eigen::Vector4d color;
+  color << 0.5, 0.8, 0.6, 1.0;
+  mWorld->getSkeleton(0)->draw(mRI, color, false);
 
   // draw arrow
   if (mImpulseDuration > 0)

@@ -323,7 +323,7 @@ void PointMass::updateVelocity()
   assert(!math::isNan(mV));
 }
 
-void PointMass::updateEta()
+void PointMass::updatePartialAcceleration()
 {
   // eta = w(parent) x dq
   Eigen::Vector3d dq = getGenVels();

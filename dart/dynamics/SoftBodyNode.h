@@ -153,10 +153,11 @@ protected:
   virtual void updateGeneralizedForce(bool _withDampingForces = false);
 
   // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep);
+  virtual void updateArtInertia(double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateBiasForce(double _timeStep, const Eigen::Vector3d& _gravity);
+  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
+                               double _timeStep) override;
 
   // Documentation inherited.
   virtual void updateJointAndBodyAcceleration();

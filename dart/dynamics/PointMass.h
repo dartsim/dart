@@ -178,7 +178,7 @@ protected:
   void updateVelocity();
 
   /// \brief
-  void updateEta();
+  void updatePartialAcceleration();
 
   /// \brief
   void updateAcceleration();
