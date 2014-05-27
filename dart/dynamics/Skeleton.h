@@ -69,6 +69,7 @@ public:
   //----------------------------------------------------------------------------
   // Constructor and Destructor
   //----------------------------------------------------------------------------
+
   /// \brief Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
@@ -78,6 +79,7 @@ public:
   //----------------------------------------------------------------------------
   // Properties
   //----------------------------------------------------------------------------
+
   /// \brief Set name.
   void setName(const std::string& _name);
 
@@ -126,6 +128,7 @@ public:
   //----------------------------------------------------------------------------
   // Structueral Properties
   //----------------------------------------------------------------------------
+
   /// \brief Add a body node
   void addBodyNode(BodyNode* _body);
 
@@ -168,7 +171,6 @@ public:
   /// \brief Initialize this skeleton for kinematics and dynamics
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
-
 
   //----------------------------------------------------------------------------
   // Interfaces for generalized coordinates
@@ -225,6 +227,7 @@ public:
   //----------------------------------------------------------------------------
   // Integration
   //----------------------------------------------------------------------------
+
   // Documentation inherited
   virtual void integrateConfigs(double _dt);
 
@@ -234,7 +237,8 @@ public:
   //----------------------------------------------------------------------------
   // Kinematics algorithms
   //----------------------------------------------------------------------------
-  /// \brief Compute forward kinematics
+
+  /// Compute forward kinematics
   void computeForwardKinematics(bool _updateTransforms = true,
                                 bool _updateVels = true,
                                 bool _updateAccs = true);
@@ -242,19 +246,21 @@ public:
   //----------------------------------------------------------------------------
   // Dynamics algorithms
   //----------------------------------------------------------------------------
-  /// \brief Compute forward dynamics
+
+  /// Compute forward dynamics
   void computeForwardDynamics();
 
-  /// \brief Compute inverse dynamics
+  /// Compute inverse dynamics
   void computeInverseDynamics(bool _withExternalForces = false,
                               bool _withDampingForces = false);
 
-  /// \brief Compute hybrid dynamics
+  /// Compute hybrid dynamics
   void computeHybridDynamics();
 
   //----------------------------------------------------------------------------
-  // Impulse-based dynamics
+  // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
+
   /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
   virtual void clearConstraintImpulses();
@@ -298,6 +304,7 @@ public:
   //----------------------------------------------------------------------------
   // Equations of Motion
   //----------------------------------------------------------------------------
+
   /// \brief Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 
@@ -358,6 +365,7 @@ public:
   void clearExternalForces();
 
   //----------------------------------------------------------------------------
+
   /// \brief Get skeleton's COM w.r.t. world frame.
   Eigen::Vector3d getWorldCOM();
 
@@ -382,6 +390,7 @@ public:
   //----------------------------------------------------------------------------
   // Rendering
   //----------------------------------------------------------------------------
+
   /// \brief Draw this skeleton
   void draw(renderer::RenderInterface* _ri = NULL,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -391,6 +400,60 @@ public:
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+
+  friend class World;
+
+public:
+  /// Compute recursion part A of forward dynamics
+  void computeForwardDynamicsRecursionPartA();
+
+  /// Compute recursion part B of forward dynamics
+  void computeForwardDynamicsRecursionPartB();
+
+  /// Compute recursion part A of inverse dynamics
+  void computeInverseDynamicsRecursionA();
+
+  /// Compute recursion part B of inverse dynamics
+  void computeInverseDynamicsRecursionB(bool _withExternalForces = false,
+                                        bool _withDampingForces = false);
+
+  /// Compute recursion part A of hybrid dynamics
+  void computeHybridDynamicsRecursionA();
+
+  /// Compute recursion part B of hybrid dynamics
+  void computeHybridDynamicsRecursionB();
+
+protected:
+  /// \brief Update mass matrix of the skeleton.
+  virtual void updateMassMatrix();
+
+  /// \brief Update augmented mass matrix of the skeleton.
+  virtual void updateAugMassMatrix();
+
+  /// \brief Update inverse of mass matrix of the skeleton.
+  virtual void updateInvMassMatrix();
+
+  /// \brief Update inverse of augmented mass matrix of the skeleton.
+  virtual void updateInvAugMassMatrix();
+
+  /// \brief Update Coriolis force vector of the skeleton.
+  virtual void updateCoriolisForceVector();
+
+  /// \brief Update gravity force vector of the skeleton.
+  virtual void updateGravityForceVector();
+
+  /// \brief Update combined vector of the skeletong.
+  virtual void updateCombinedVector();
+
+  /// \brief update external force vector to generalized torques.
+  virtual void updateExternalForceVector();
+
+  /// \brief Update damping force vector.
+  virtual void updateDampingForceVector();
 
 protected:
   /// \brief Name
@@ -507,34 +570,6 @@ public:
 
   /// \brief
   size_t mUnionIndex;
-
-protected:
-  /// \brief Update mass matrix of the skeleton.
-  virtual void updateMassMatrix();
-
-  /// \brief Update augmented mass matrix of the skeleton.
-  virtual void updateAugMassMatrix();
-
-  /// \brief Update inverse of mass matrix of the skeleton.
-  virtual void updateInvMassMatrix();
-
-  /// \brief Update inverse of augmented mass matrix of the skeleton.
-  virtual void updateInvAugMassMatrix();
-
-  /// \brief Update Coriolis force vector of the skeleton.
-  virtual void updateCoriolisForceVector();
-
-  /// \brief Update gravity force vector of the skeleton.
-  virtual void updateGravityForceVector();
-
-  /// \brief Update combined vector of the skeletong.
-  virtual void updateCombinedVector();
-
-  /// \brief update external force vector to generalized torques.
-  virtual void updateExternalForceVector();
-
-  /// \brief Update damping force vector.
-  virtual void updateDampingForceVector();
 
 public:
   // To get byte-aligned Eigen vectors

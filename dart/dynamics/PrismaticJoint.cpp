@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -45,47 +45,60 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
                                const std::string& _name)
-  : Joint(_name),
+  : SingleDofJoint(_name),
     mAxis(axis.normalized())
 {
-  mGenCoords.push_back(&mCoordinate);
-
-  mS = Eigen::Matrix<double, 6, 1>::Zero();
-  mdS = Eigen::Matrix<double, 6, 1>::Zero();
-
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
 }
 
-PrismaticJoint::~PrismaticJoint() {
+//==============================================================================
+PrismaticJoint::~PrismaticJoint()
+{
 }
 
-void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis) {
+//==============================================================================
+void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
+{
   mAxis = _axis.normalized();
 }
 
-const Eigen::Vector3d&PrismaticJoint::getAxis() const {
+//==============================================================================
+const Eigen::Vector3d& PrismaticJoint::getAxis() const
+{
   return mAxis;
 }
 
-void PrismaticJoint::updateTransform() {
+//==============================================================================
+void PrismaticJoint::updateLocalTransform()
+{
   mT = mT_ParentBodyToJoint
        * Eigen::Translation3d(mAxis * mCoordinate.getPos())
        * mT_ChildBodyToJoint.inverse();
+
+  // Verification
   assert(math::verifyTransform(mT));
 }
 
-void PrismaticJoint::updateJacobian() {
-  mS = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
-  assert(!math::isNan(mS));
+//==============================================================================
+void PrismaticJoint::updateLocalJacobian()
+{
+  // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
+  mJacobian = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+
+  // Verification
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void PrismaticJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 1));
+//==============================================================================
+void PrismaticJoint::updateLocalJacobianTimeDeriv()
+{
+  // Time derivative of prismatic joint is always zero
+  assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
 }  // namespace dynamics

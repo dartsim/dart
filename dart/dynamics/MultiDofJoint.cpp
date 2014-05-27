@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,38 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
-#define  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
-
-#include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-/// \brief
-class DARTCollisionDetector : public CollisionDetector {
-public:
-  /// \brief Default constructor
-  DARTCollisionDetector();
-
-  /// \brief Default destructor
-  virtual ~DARTCollisionDetector();
-
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
-
-  // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
-
-protected:
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _collNode1,
-                               CollisionNode* _collNode2,
-                               bool _calculateContactPoints);
-};
-
-}  // namespace collision
+}  // namespace dynamics
 }  // namespace dart
-
-#endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_

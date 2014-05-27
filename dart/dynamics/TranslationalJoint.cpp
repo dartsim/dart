@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -44,32 +44,33 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 TranslationalJoint::TranslationalJoint(const std::string& _name)
-  : Joint(_name)
+  : MultiDofJoint(_name)
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
-
-  mS = Eigen::Matrix<double, 6, 3>::Zero();
-  mdS = Eigen::Matrix<double, 6, 3>::Zero();
-
-  mSpringStiffness.resize(3, 0.0);
-  mDampingCoefficient.resize(3, 0.0);
-  mRestPosition.resize(3, 0.0);
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
-TranslationalJoint::~TranslationalJoint() {
+//==============================================================================
+TranslationalJoint::~TranslationalJoint()
+{
 }
 
-void TranslationalJoint::updateTransform() {
+//==============================================================================
+void TranslationalJoint::updateLocalTransform()
+{
   mT = mT_ParentBodyToJoint
        * Eigen::Translation3d(getConfigs())
        * mT_ChildBodyToJoint.inverse();
+
+  // Verification
   assert(math::verifyTransform(mT));
 }
 
-void TranslationalJoint::updateJacobian() {
+//==============================================================================
+void TranslationalJoint::updateLocalJacobian()
+{
   Eigen::Vector6d J0;
   Eigen::Vector6d J1;
   Eigen::Vector6d J2;
@@ -78,16 +79,22 @@ void TranslationalJoint::updateJacobian() {
   J1 << 0, 0, 0, 0, 1, 0;
   J2 << 0, 0, 0, 0, 0, 1;
 
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-  assert(!math::isNan(mS));
+  // Verification
+  assert(!math::isNan(mJacobian));
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void TranslationalJoint::updateJacobianTimeDeriv() {
-  // mdS.setZero();
-  assert(mdS == math::Jacobian::Zero(6, 3));
+//==============================================================================
+void TranslationalJoint::updateLocalJacobianTimeDeriv()
+{
+  // Time derivative of translational joint is always zero
+  assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));
 }
 
 }  // namespace dynamics

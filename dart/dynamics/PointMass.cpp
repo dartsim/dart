@@ -323,7 +323,7 @@ void PointMass::updateVelocity()
   assert(!math::isNan(mV));
 }
 
-void PointMass::updateEta()
+void PointMass::updatePartialAcceleration()
 {
   // eta = w(parent) x dq
   Eigen::Vector3d dq = getGenVels();
@@ -421,7 +421,7 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
   assert(!math::isNan(mBeta));
 }
 
-void PointMass::update_ddq()
+void PointMass::updateJointAndBodyAcceleration()
 {
   // ddq = imp_psi*(alpha - m*(dw(parent) x mX + dv(parent))
   Eigen::Vector3d ddq =
@@ -439,7 +439,7 @@ void PointMass::update_ddq()
   assert(!math::isNan(mdV));
 }
 
-void PointMass::update_F_fs()
+void PointMass::updateTransmittedForce()
 {
   // f = m*dv + B
   mF = mB;
@@ -456,7 +456,7 @@ void PointMass::updateMassMatrix()
 }
 
 //==============================================================================
-void PointMass::updateImpBiasForce()
+void PointMass::updateBiasImpulse()
 {
   mImpB = -GenCoordSystem::getConstraintImpulses();
   assert(!math::isNan(mImpB));
@@ -537,12 +537,12 @@ void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
 
 void PointMass::updateInvMassMatrix()
 {
-  mInvM_beta = getGenForces();
+  mBiasForceForInvMeta = getGenForces();
 }
 
 void PointMass::updateInvAugMassMatrix()
 {
-  mInvM_beta = mMass * mImplicitPsi * getGenForces();
+  mBiasForceForInvMeta = mMass * mImplicitPsi * getGenForces();
 }
 
 void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)

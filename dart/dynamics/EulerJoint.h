@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -40,46 +40,54 @@
 #include <string>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-class EulerJoint : public Joint {
+/// class EulerJoint
+class EulerJoint : public MultiDofJoint<3>
+{
 public:
-  enum AxisOrder {
+  /// Axis order
+  enum AxisOrder
+  {
     AO_ZYX = 0,
     AO_ZYZ = 1,
     AO_XYZ = 2,
     AO_ZXY = 3
   };
 
-  /// \brief Constructor.
-  explicit EulerJoint(const std::string& _name = "Noname EulerJoint");
+  /// Constructor
+  explicit EulerJoint(const std::string& _name = "EulerJoint");
 
-  /// \brief Destructor.
+  /// Destructor
   virtual ~EulerJoint();
 
-  /// \brief
+  ///
   void setAxisOrder(AxisOrder _order);
 
-  /// \brief
+  ///
   AxisOrder getAxisOrder() const;
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
-  /// \brief Euler angles X, Y, Z
-  GenCoord mCoordinate[3];
+  // Documentation inherited
+  virtual void updateLocalTransform();
 
-  /// \brief
+  // Documentation inherited
+  virtual void updateLocalJacobian();
+
+  // Documentation inherited
+  virtual void updateLocalJacobianTimeDeriv();
+
+protected:
+  /// Euler angle order
   AxisOrder mAxisOrder;
 
 public:

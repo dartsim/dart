@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -40,32 +40,36 @@
 #include <string>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-class TranslationalJoint : public Joint {
+/// class TranslationalJoint
+class TranslationalJoint : public MultiDofJoint<3>
+{
 public:
-  /// \brief Constructor.
-  explicit TranslationalJoint(
-      const std::string& _name = "Noname TranslationalJoint");
+  /// Constructor
+  explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
 
-  /// \brief Destructor.
+  /// Destructor
   virtual ~TranslationalJoint();
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
-  /// \brief
-  GenCoord mCoordinate[3];
+  // Documentation inherited
+  virtual void updateLocalTransform();
+
+  // Documentation inherited
+  virtual void updateLocalJacobian();
+
+  // Documentation inherited
+  virtual void updateLocalJacobianTimeDeriv();
 
 public:
   // To get byte-aligned Eigen vectors

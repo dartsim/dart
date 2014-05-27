@@ -46,30 +46,24 @@ namespace dynamics {
 
 //==============================================================================
 BallJoint::BallJoint(const std::string& _name)
-  : Joint(_name),
+  : MultiDofJoint(_name),
     mR(Eigen::Isometry3d::Identity())
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
+  // Jacobian
+  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  J.topRows<3>() = Eigen::Matrix3d::Identity();
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+  assert(!math::isNan(mJacobian));
 
-  mS = Eigen::Matrix<double, 6, 3>::Zero();
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
-  J0[0] = 1.0;
-  J1[1] = 1.0;
-  J2[2] = 1.0;
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-  assert(!math::isNan(mS));
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 
-  mdS = Eigen::Matrix<double, 6, 3>::Zero();
+  // Time derivative of Jacobian is always zero
 
-  mSpringStiffness.resize(3, 0.0);
-  mDampingCoefficient.resize(3, 0.0);
-  mRestPosition.resize(3, 0.0);
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -89,11 +83,14 @@ void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
   J1[1] = 1.0;
   J2[2] = 1.0;
 
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-  assert(!math::isNan(mS));
+  // TODO(JS): Deprecated
+  mS = mJacobian;
+
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
@@ -105,7 +102,7 @@ void BallJoint::integrateConfigs(double _dt)
 }
 
 //==============================================================================
-void BallJoint::updateTransform()
+void BallJoint::updateLocalTransform()
 {
   mR.linear() = math::expMapRot(getConfigs());
 
@@ -115,16 +112,16 @@ void BallJoint::updateTransform()
 }
 
 //==============================================================================
-void BallJoint::updateJacobian()
+void BallJoint::updateLocalJacobian()
 {
-  // Jacobian is constant
+  // Do nothing since the Jacobian is constant
 }
 
 //==============================================================================
-void BallJoint::updateJacobianTimeDeriv()
+void BallJoint::updateLocalJacobianTimeDeriv()
 {
-  // Time derivative of Jacobian is constant
-  assert(mdS == Eigen::MatrixXd::Zero(6, 3));
+  // Time derivative of ball joint is always zero
+  assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));
 }
 
 }  // namespace dynamics

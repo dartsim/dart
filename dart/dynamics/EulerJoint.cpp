@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -45,35 +45,40 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 EulerJoint::EulerJoint(const std::string& _name)
-  : Joint(_name),
+  : MultiDofJoint(_name),
     mAxisOrder(AO_XYZ)
 {
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 
-  mS = Eigen::Matrix<double, 6, 3>::Zero();
-  mdS = Eigen::Matrix<double, 6, 3>::Zero();
-
-  mSpringStiffness.resize(3, 0.0);
-  mDampingCoefficient.resize(3, 0.0);
-  mRestPosition.resize(3, 0.0);
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
-EulerJoint::~EulerJoint() {
+//==============================================================================
+EulerJoint::~EulerJoint()
+{
 }
 
-void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order) {
+//==============================================================================
+void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order)
+{
   mAxisOrder = _order;
 }
 
-EulerJoint::AxisOrder EulerJoint::getAxisOrder() const {
+//==============================================================================
+EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
+{
   return mAxisOrder;
 }
 
-void EulerJoint::updateTransform() {
-  switch (mAxisOrder) {
+//==============================================================================
+void EulerJoint::updateLocalTransform()
+{
+  switch (mAxisOrder)
+  {
     case AO_XYZ:
     {
       mT = mT_ParentBodyToJoint *
@@ -98,7 +103,9 @@ void EulerJoint::updateTransform() {
   assert(math::verifyTransform(mT));
 }
 
-void EulerJoint::updateJacobian() {
+//==============================================================================
+void EulerJoint::updateLocalJacobian()
+{
   double q0 = mCoordinate[0].getPos();
   double q1 = mCoordinate[1].getPos();
   double q2 = mCoordinate[2].getPos();
@@ -115,7 +122,8 @@ void EulerJoint::updateJacobian() {
   Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
-  switch (mAxisOrder) {
+  switch (mAxisOrder)
+  {
     case AO_XYZ:
     {
       //------------------------------------------------------------------------
@@ -175,18 +183,19 @@ void EulerJoint::updateJacobian() {
     }
   }
 
-  mS.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mS.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mS.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-  assert(!math::isNan(mS));
+  assert(!math::isNan(mJacobian));
 
 #ifndef NDEBUG
-  Eigen::MatrixXd JTJ = mS.transpose() * mS;
+  Eigen::MatrixXd JTJ = mJacobian.transpose() * mJacobian;
   Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
   //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
   double det = luJTJ.determinant();
-  if (det < 1e-5) {
+  if (det < 1e-5)
+  {
     std::cout << "ill-conditioned Jacobian in joint [" << mName << "]."
               << " The determinant of the Jacobian is (" << det << ")."
               << std::endl;
@@ -195,9 +204,14 @@ void EulerJoint::updateJacobian() {
     //        std::cout << "mS: \n" << mS << std::endl;
   }
 #endif
+
+  // TODO(JS): Deprecated
+  mS = mJacobian;
 }
 
-void EulerJoint::updateJacobianTimeDeriv() {
+//==============================================================================
+void EulerJoint::updateLocalJacobianTimeDeriv()
+{
   double q0 = mCoordinate[0].getPos();
   double q1 = mCoordinate[1].getPos();
   double q2 = mCoordinate[2].getPos();
@@ -218,7 +232,8 @@ void EulerJoint::updateJacobianTimeDeriv() {
   Eigen::Vector6d dJ1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
 
-  switch (mAxisOrder) {
+  switch (mAxisOrder)
+  {
     case AO_XYZ:
     {
       //------------------------------------------------------------------------
@@ -260,11 +275,14 @@ void EulerJoint::updateJacobianTimeDeriv() {
     }
   }
 
-  mdS.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
-  mdS.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
-  mdS.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+  mJacobianDeriv.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
+  mJacobianDeriv.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
+  mJacobianDeriv.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
-  assert(!math::isNan(mdS));
+  assert(!math::isNan(mJacobianDeriv));
+
+  // TODO(JS): Deprecated
+  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

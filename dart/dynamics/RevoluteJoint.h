@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -42,40 +42,46 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/SingleDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
-class RevoluteJoint : public Joint {
+/// class RevoluteJoint
+class RevoluteJoint : public SingleDofJoint
+{
 public:
-  /// \brief Constructor.
+  /// Constructor
   RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                 const std::string& _name = "Noname RevoluteJoint");
 
-  /// \brief Destructor.
+  /// Destructor
   virtual ~RevoluteJoint();
 
-  /// \brief
+  ///
   void setAxis(const Eigen::Vector3d& _axis);
 
-  /// \brief
+  ///
   const Eigen::Vector3d& getAxis() const;
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateJacobian();
-
-  // Documentation inherited.
-  virtual void updateJacobianTimeDeriv();
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const
+  {
+    mWrench - mJacobian * GenCoordSystem::getGenForces();
+  }
 
 protected:
-  /// \brief
-  GenCoord mCoordinate;
+  // Documentation inherited
+  virtual void updateLocalTransform();
 
-  /// \brief Rotational axis.
+  // Documentation inherited
+  virtual void updateLocalJacobian();
+
+  // Documentation inherited
+  virtual void updateLocalJacobianTimeDeriv();
+
+protected:
+  /// Rotational axis
   Eigen::Vector3d mAxis;
 
 public:
