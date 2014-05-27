@@ -324,6 +324,37 @@ protected:
     mTotalImpulse.setZero();
   }
 
+  // Documentation inherited
+  virtual void updateVelocityWithVelocityChange()
+  {
+    for (size_t i = 0; i < DOF; ++i)
+    {
+      mCoordinate[i].setVel(mCoordinate[i].getVel()
+                            + mCoordinate[i].getVelChange());
+    }
+  }
+
+  // Documentation inherited
+  virtual void updateAccelerationWithVelocityChange(double _timeStep)
+  {
+    for (size_t i = 0; i < DOF; ++i)
+    {
+      mCoordinate[i].setAcc(mCoordinate[i].getAcc()
+                            + mCoordinate[i].getVelChange() / _timeStep);
+    }
+  }
+
+  // Documentation inherited
+  virtual void updateForceWithImpulse(double _timeStep)
+  {
+    for (size_t i = 0; i < DOF; ++i)
+    {
+      mCoordinate[i].setForce(
+            mCoordinate[i].getForce()
+            + mCoordinate[i].getConstraintImpulse() / _timeStep);
+    }
+  }
+
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------

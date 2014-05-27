@@ -124,7 +124,7 @@ public:
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
   /// \brief
-  explicit BodyNode(const std::string& _name = "Noname BodyNode");
+  explicit BodyNode(const std::string& _name = "BodyNode");
 
   /// \brief
   virtual ~BodyNode();
@@ -541,6 +541,12 @@ public:
   /// \brief
   virtual void updateBodyImpForceFwdDyn();
 
+  ///
+  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+
+  ///
+  virtual void updateConstrainedTransmittedForce(double _timeStep);
+
 protected:
   /// \brief
   virtual void updateMassMatrix();
@@ -790,12 +796,6 @@ public:
   /// \brief Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mBiasImpulse;
-
-  /// \brief Cache data for mImpB
-  //DEPRECATED(4.0) Eigen::VectorXd mImpAlpha;
-
-  /// \brief Cache data for mImpB
-  //DEPRECATED(4.0) Eigen::Vector6d mImpBeta;
 
   /// \brief Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;

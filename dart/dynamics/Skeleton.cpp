@@ -377,13 +377,6 @@ void Skeleton::integrateConfigs(double _dt)
     for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
       mSoftBodyNodes[i]->getPointMass(j)->integrateConfigs(_dt);
   }
-
-//  computeForwardKinematics(true, false, false);
-//  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-//       it != mBodyNodes.end(); ++it)
-//  {
-//    (*it)->updateTransform();
-//  }
 }
 
 //==============================================================================
@@ -397,13 +390,6 @@ void Skeleton::integrateGenVels(double _dt)
     for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
       mSoftBodyNodes[i]->getPointMass(j)->integrateGenVels(_dt);
   }
-
-//  computeForwardKinematics(false, true, false);
-//  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-//       it != mBodyNodes.end(); ++it)
-//  {
-//    (*it)->updateVelocity();
-//  }
 }
 
 //==============================================================================
@@ -922,7 +908,7 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->updateJointAndBodyAcceleration();
-//    (*it)->updateTransmittedForce();
+    (*it)->updateTransmittedForce();
   }
 }
 
@@ -1175,67 +1161,17 @@ void Skeleton::computeImpulseForwardDynamics()
     (*it)->updateBodyImpForceFwdDyn();
   }
 
-  //DEBUG_CODE//////////////////////////////////////////////////////////////////
-//  dtdbg << "Velocity change: " << getVelsChange().transpose() << std::endl;
-  //////////////////////////////////////////////////////////////////////////////
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    // 1. dq = dq + del_dq
+    // 2. ddq = ddq + del_dq / dt
+    // 3. tau = tau + imp / dt
+    (*it)->updateConstrainedJointAndBodyAcceleration(mTimeStep);
 
-
-  // 1. dq = dq + del_dq
-  // 2. ddq = ddq + del_dq / dt
-  // 3. tau = tau + imp / dt
-
-
-
-//  dtdbg << "GenCoordSystem::getGenVels(): "
-//        << GenCoordSystem::getGenVels().transpose() << std::endl;
-
-//  dtdbg << "GenCoordSystem::getVelsChange(): "
-//        << GenCoordSystem::getVelsChange().transpose() << std::endl;
-
-//  Eigen::VectorXd vel = GenCoordSystem::getGenVels();
-//  Eigen::VectorXd velChange = GenCoordSystem::getVelsChange();
-
-//  for (int i = 0;  i < getNumGenCoords(); ++i)
-//  {
-//    if (math::isNan(vel[i]))
-//    {
-//      dtdbg << "GenCoordSystem::getGenVels(): "
-//            << GenCoordSystem::getGenVels().transpose() << std::endl;
-
-//      dtdbg << "GenCoordSystem::getVelsChange(): "
-//            << GenCoordSystem::getVelsChange().transpose() << std::endl;
-//    }
-
-//    if (math::isNan(velChange[i]))
-//    {
-//      dtdbg << "GenCoordSystem::getGenVels(): "
-//            << GenCoordSystem::getGenVels().transpose() << std::endl;
-
-//      dtdbg << "GenCoordSystem::getVelsChange(): "
-//            << GenCoordSystem::getVelsChange().transpose() << std::endl;
-//    }
-//  }
-
-  GenCoordSystem::setGenVels(GenCoordSystem::getGenVels()
-                             + GenCoordSystem::getVelsChange());
-
-//  dtdbg << "GenCoordSystem::getGenVels(): "
-//        << GenCoordSystem::getGenVels().transpose() << std::endl;
-
-//  dtdbg << "getGenVelsgetGenVels: " << getGenVels().transpose() << std::endl;
-
-//  GenCoordSystem::setGenAccs(GenCoordSystem::getGenAccs()
-//                             + GenCoordSystem::getVelsChange() / mTimeStep);
-
-//  GenCoordSystem::setGenForces(
-//        GenCoordSystem::getGenForces()
-//        + GenCoordSystem::getConstraintImpulses() / mTimeStep);
-
-  // 4. F = F + impF / dt
-
-  // Integration
-//  integrateConfigs(mTimeStep);
-//  computeForwardKinematics(false, true, false);
+    // 4. F(+) = F(-) + ImpF / dt
+    (*it)->updateConstrainedTransmittedForce(mTimeStep);
+  }
 }
 
 void Skeleton::setInternalForceVector(const Eigen::VectorXd& _forces) {

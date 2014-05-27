@@ -141,6 +141,15 @@ protected:
   // Documentation inherited
   virtual void clearConstraintImpulse();
 
+  // Documentation inherited
+  virtual void updateVelocityWithVelocityChange();
+
+  // Documentation inherited
+  virtual void updateAccelerationWithVelocityChange(double _timeStep);
+
+  // Documentation inherited
+  virtual void updateForceWithImpulse(double _timeStep);
+
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------

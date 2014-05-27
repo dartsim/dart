@@ -337,6 +337,15 @@ protected:
   ///
   virtual void clearConstraintImpulse() = 0;
 
+  ///
+  virtual void updateVelocityWithVelocityChange() = 0;
+
+  ///
+  virtual void updateAccelerationWithVelocityChange(double _timeStep) = 0;
+
+  ///
+  virtual void updateForceWithImpulse(double _timeStep) = 0;
+
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------

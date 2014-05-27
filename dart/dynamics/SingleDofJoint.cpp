@@ -293,6 +293,26 @@ void SingleDofJoint::clearConstraintImpulse()
 }
 
 //==============================================================================
+void SingleDofJoint::updateVelocityWithVelocityChange()
+{
+  mCoordinate.setVel(mCoordinate.getVel() + mCoordinate.getVelChange());
+}
+
+//==============================================================================
+void SingleDofJoint::updateAccelerationWithVelocityChange(double _timeStep)
+{
+  mCoordinate.setAcc(mCoordinate.getAcc()
+                     + mCoordinate.getVelChange() / _timeStep);
+}
+
+//==============================================================================
+void SingleDofJoint::updateForceWithImpulse(double _timeStep)
+{
+  mCoordinate.setForce(mCoordinate.getForce()
+                       + mCoordinate.getConstraintImpulse() / _timeStep);
+}
+
+//==============================================================================
 void SingleDofJoint::addChildBiasForceForInvMassMatrix(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,

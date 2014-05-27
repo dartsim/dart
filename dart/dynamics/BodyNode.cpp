@@ -1083,6 +1083,29 @@ void BodyNode::updateBodyImpForceFwdDyn()
 }
 
 //==============================================================================
+void BodyNode::updateConstrainedJointAndBodyAcceleration(double _timeStep)
+{
+  // 1. dq = dq + del_dq
+  mParentJoint->updateVelocityWithVelocityChange();
+
+  // 2. ddq = ddq + del_dq / dt
+  mParentJoint->updateAccelerationWithVelocityChange(_timeStep);
+
+  // 3. tau = tau + imp / dt
+  mParentJoint->updateForceWithImpulse(_timeStep);
+}
+
+//==============================================================================
+void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
+{
+  ///
+  mA += mDelV / _timeStep;
+
+  ///
+  mF += _timeStep * mImpF;
+}
+
+//==============================================================================
 void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
 {
   aggregateCombinedVector(_C, Eigen::Vector3d::Zero());

@@ -204,34 +204,73 @@ void WeldJoint::clearConstraintImpulse()
   // Do nothing
 }
 
-void WeldJoint::addChildBiasForceForInvMassMatrix(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce)
+//==============================================================================
+void WeldJoint::updateVelocityWithVelocityChange()
 {
-
+  // Do nothing
 }
 
-void WeldJoint::addChildBiasForceForInvAugMassMatrix(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce)
+//==============================================================================
+void WeldJoint::updateAccelerationWithVelocityChange(double _timeStep)
 {
-
+  // Do nothing
 }
 
-void WeldJoint::updateTotalForceForInvMassMatrix(const Eigen::Vector6d& _bodyForce)
+//==============================================================================
+void WeldJoint::updateForceWithImpulse(double _timeStep)
 {
-
+  // Do nothing
 }
 
-void WeldJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat, const size_t _col, const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+//==============================================================================
+void WeldJoint::addChildBiasForceForInvMassMatrix(
+    Eigen::Vector6d& _parentBiasForce,
+    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Vector6d& _childBiasForce)
 {
-
+  // TODO(JS)
 }
 
-void WeldJoint::getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat, const size_t _col, const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+//==============================================================================
+void WeldJoint::addChildBiasForceForInvAugMassMatrix(
+    Eigen::Vector6d& _parentBiasForce,
+    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Vector6d& _childBiasForce)
 {
-
+  // TODO(JS)
 }
 
+//==============================================================================
+void WeldJoint::updateTotalForceForInvMassMatrix(
+    const Eigen::Vector6d& _bodyForce)
+{
+  // TODO(JS)
+}
+
+//==============================================================================
+void WeldJoint::getInvMassMatrixSegment(
+    Eigen::MatrixXd& _invMassMat,
+    const size_t _col,
+    const Eigen::Matrix6d& _artInertia,
+    const Eigen::Vector6d& _spatialAcc)
+{
+  // TODO(JS)
+}
+
+//==============================================================================
+void WeldJoint::getInvAugMassMatrixSegment(
+    Eigen::MatrixXd& _invMassMat,
+    const size_t _col,
+    const Eigen::Matrix6d& _artInertia,
+    const Eigen::Vector6d& _spatialAcc)
+{
+  // TODO(JS)
+}
+
+//==============================================================================
 void WeldJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
 {
-
+  // TODO(JS)
 }
 
 }  // namespace dynamics
