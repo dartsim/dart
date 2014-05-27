@@ -69,22 +69,24 @@ class ConstraintSolver;
 
 namespace simulation {
 
-/// \brief class World
+/// class World
 class World : public integration::IntegrableSystem
 {
 public:
   //--------------------------------------------------------------------------
   // Constructor and Destructor
   //--------------------------------------------------------------------------
-  /// \brief Constructor
+
+  /// Constructor
   World();
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~World();
 
   //--------------------------------------------------------------------------
   // Virtual functions for integration::IntegrableSystem
   //--------------------------------------------------------------------------
+
   // Documentation inherited
   virtual void setConfigs(const Eigen::VectorXd& _configs);
 
@@ -109,107 +111,112 @@ public:
   //--------------------------------------------------------------------------
   // Simulation
   //--------------------------------------------------------------------------
-  /// \brief Calculate the dynamics and integrate the world for one step
+
+  /// Calculate the dynamics and integrate the world for one step
   void step();
 
-  /// \brief Set current time
+  /// Set current time
   void setTime(double _time);
 
-  /// \brief Get current time
+  /// Get current time
   double getTime() const;
 
-  /// \brief Get the number of simulated frames
+  /// Get the number of simulated frames
   int getSimFrames() const;
 
   //--------------------------------------------------------------------------
   // Properties
   //--------------------------------------------------------------------------
-  /// \brief Set gravity
+
+  /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
 
-  /// \brief Get gravity
+  /// Get gravity
   const Eigen::Vector3d& getGravity() const;
 
-  /// \brief Set time step
+  /// Set time step
   void setTimeStep(double _timeStep);
 
-  /// \brief Get time step
+  /// Get time step
   double getTimeStep() const;
 
   //--------------------------------------------------------------------------
   // Structueral Properties
   //--------------------------------------------------------------------------
-  /// \brief Get the indexed skeleton
+
+  /// Get the indexed skeleton
   dynamics::Skeleton* getSkeleton(int _index) const;
 
-  /// \brief Find body node by name
+  /// Find body node by name
   /// \param[in] The name of body node looking for.
   /// \return Searched body node. If the skeleton does not have a body
   /// node with _name, then return NULL.
   dynamics::Skeleton* getSkeleton(const std::string& _name) const;
 
-  /// \brief Get the number of skeletons
+  /// Get the number of skeletons
   int getNumSkeletons() const;
 
-  /// \brief Add a skeleton to this world
+  /// Add a skeleton to this world
   void addSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// \brief Remove a skeleton in this world
+  /// Remove a skeleton in this world
   void removeSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// \brief Remove all the skeletons in this world
+  /// Remove all the skeletons in this world
   void removeAllSkeletons();
 
-  /// \brief Get the dof index for the indexed skeleton
+  /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
 
   //--------------------------------------------------------------------------
   // Kinematics
   //--------------------------------------------------------------------------
-  /// \brief Return whether there is any collision between bodies
+
+  /// Return whether there is any collision between bodies
   bool checkCollision(bool _checkAllCollisions = false);
 
   //--------------------------------------------------------------------------
   // Constraint
   //--------------------------------------------------------------------------
-  /// \brief Get the constraint solver
+
+  /// Get the constraint solver
   constraint::ConstraintSolver* getConstraintSolver() const;
 
-  /// \brief Bake simulated current state and store it into mRecording
+  /// Bake simulated current state and store it into mRecording
   void bake();
 
-  /// \brief Get recording
+  /// Get recording
   Recording* getRecording();
 
 protected:
-  /// \brief Skeletones in this world
+  /// Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
 
-  /// \brief The first indeices of each skeleton's dof in mDofs
+  /// The first indeices of each skeleton's dof in mDofs
   ///
   /// For example, if this world has three skeletons and their dof are
   /// 6, 1 and 2 then the mIndices goes like this: [0 6 7].
   std::vector<int> mIndices;
 
-  /// \brief Gravity
+  /// Gravity
   Eigen::Vector3d mGravity;
 
-  /// \brief Simulation time step
+  /// Simulation time step
   double mTimeStep;
 
-  /// \brief Current simulation time
+  /// Current simulation time
   double mTime;
 
-  /// \brief Current simulation frame number
+  /// Current simulation frame number
   int mFrame;
 
-  /// \brief The integrator
+  /// The integrator
   integration::Integrator* mIntegrator;
 
-  /// \brief Constraint solver
+  /// Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;
 
-  /// \brief
+  ///
   Recording* mRecording;
 };
 
