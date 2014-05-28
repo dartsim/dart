@@ -1165,10 +1165,10 @@ TEST(MATH, UTILS) {
 Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
-//  res.topRows<3>().noalias() = T.linear() * J.topRows<3>();
+//  res.topRows<3>().noalias() = _T.linear() * _J.topRows<3>();
 //  res.bottomRows<3>().noalias()
-//      = -res.topRows<3>().colwise().cross(T.translation())
-//        + T.linear() * J.bottomRows<3>();
+//      = -res.topRows<3>().colwise().cross(_T.translation())
+//        + _T.linear() * _J.bottomRows<3>();
   for (int i = 0; i < _J.cols(); ++i)
     res.col(i) = AdT(_T, _J.col(i));
   return res;
@@ -1192,12 +1192,31 @@ typename Derived::PlainObject AdTJac2(const Eigen::Isometry3d& _T,
 }
 
 //==============================================================================
+template<typename Derived>
+typename Derived::PlainObject AdTJac3(const Eigen::Isometry3d& _T,
+                                      const Eigen::MatrixBase<Derived>& _J)
+{
+//  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() = _T.linear() * _J.template topRows<3>();
+  ret.template bottomRows<3>().noalias()
+      = -ret.template topRows<3>().colwise().cross(_T.translation())
+        + _T.linear() * _J.template bottomRows<3>();
+
+  return ret;
+}
+
+//==============================================================================
 TEST(MATH, PerformanceComparisonOfAdTJac)
 {
 #ifndef NDEBUG
   int testCount = 1e+2;
 #else
-  int testCount = 1e+5;
+  int testCount = 1e+6;
 #endif
   int m = 3;
 
@@ -1216,7 +1235,7 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   }
 
   // Test2: performance
-  Timer t1("AdTJac");
+  Timer t1("AdTJac1");
   t1.start();
   for (int i = 0; i < testCount; ++i)
   {
@@ -1232,8 +1251,17 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   }
   t2.stop();
 
+  Timer t3("AdTJac3");
+  t3.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ3 = AdTJac3(T, dynamicJ);
+  }
+  t3.stop();
+
   t1.print();
   t2.print();
+  t3.print();
 }
 
 //==============================================================================
