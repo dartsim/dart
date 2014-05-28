@@ -36,7 +36,7 @@
 
 #include "dart/constraint/DantzigLCPSolver.h"
 
-#ifdef BUILD_TYPE_DEBUG
+#ifndef NDEBUG
 #include <iomanip>
 #include <iostream>
 #endif
@@ -81,7 +81,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   int* findex = new int[n];
 
   // Set w to 0 and findex to -1
-#ifdef BUILD_TYPE_DEBUG
+#ifndef NDEBUG
   std::memset(A, 0.0, n * nSkip * sizeof(double));
 #endif
   std::memset(w, 0.0, n * sizeof(double));
@@ -191,7 +191,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 }
 
 //==============================================================================
-#ifdef BUILD_TYPE_DEBUG
+#ifndef NDEBUG
 bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A)
 {
   int nSkip = dPAD(_n);
