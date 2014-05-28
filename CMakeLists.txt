@@ -93,7 +93,16 @@ find_package(Eigen REQUIRED)
 find_package(FCL REQUIRED)
 find_package(Assimp REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(NLOPT REQUIRED)
+
+# NLOPT
+find_package(NLOPT)
+if(NLOPT_FOUND)
+  message(STATUS "Looking for NLOPT - found")
+  set(HAVE_NLOPT TRUE)
+else(NLOPT_FOUND)
+  message(WARNING "NLOPT not found")
+  set(HAVE_NLOPT FALSE)
+endif()
 
 # IPOPT
 find_package(IPOPT)
@@ -101,7 +110,7 @@ if(IPOPT_FOUND)
   message(STATUS "Looking for IPOPT - found")
   set(HAVE_IPOPT TRUE)
 else(IPOPT_FOUND)
-  message(WARNING "IPOPT not found, for ipopt optimization option, please install coinor-libipopt-dev.")
+  message(WARNING "IPOPT not found")
   set(HAVE_IPOPT FALSE)
 endif()
 
@@ -169,10 +178,6 @@ include_directories(${Assimp_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
-include_directories(${NLOPT_INCLUDE_DIRS})
-if(HAVE_IPOPT)
-  include_directories(${IPOPT_INCLUDE_DIRS})
-endif()
 if(HAVE_BULLET_COLLISION)
   include_directories(${BULLET_INCLUDE_DIRS})
   add_definitions(${BULLET_CFLAGS})
@@ -183,6 +188,12 @@ if(NOT BUILD_CORE_ONLY)
   include_directories(${urdfdom_INCLUDE_DIRS})
   include_directories(${TinyXML_INCLUDE_DIRS})
   include_directories(${TinyXML2_INCLUDE_DIRS})
+  if(HAVE_NLOPT)
+    include_directories(${NLOPT_INCLUDE_DIRS})
+  endif()
+  if(HAVE_IPOPT)
+    include_directories(${IPOPT_INCLUDE_DIRS})
+  endif()
 endif()
 
 include_directories("${CMAKE_BINARY_DIR}")
@@ -198,11 +209,8 @@ set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
-                           ${GLUT_LIBRARY}
-                           ${NLOPT_LIBRARIES})
-if(HAVE_IPOPT)
-  set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${IPOPT_LIBRARIES})
-endif()
+                           ${GLUT_LIBRARY})
+
 if(HAVE_BULLET_COLLISION)
   set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${BULLET_LIBRARIES})
 endif()
@@ -211,6 +219,12 @@ if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
                         ${TinyXML2_LIBRARIES})
+  if(HAVE_NLOPT)
+    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${NLOPT_LIBRARIES})
+  endif()
+  if(HAVE_IPOPT)
+    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${IPOPT_LIBRARIES})
+  endif()
 endif()
 
 ###############
@@ -316,12 +330,15 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS
     "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
      fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev,
      libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
-     urdfdom, libnlopt-dev")
-if(HAVE_IPOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
-endif()
+     urdfdom")
 if(HAVE_BULLET_COLLISION)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libbullet-dev (>=2.8.0)")
+endif()
+if(HAVE_NLOPT)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libnlopt-dev")
+endif()
+if(HAVE_IPOPT)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
 endif()
 
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")

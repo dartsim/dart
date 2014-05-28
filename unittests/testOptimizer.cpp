@@ -42,7 +42,9 @@
 #include "dart/common/Console.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
-#include "dart/optimizer/nlopt/NloptSolver.h"
+#ifdef HAVE_NLOPT
+  #include "dart/optimizer/nlopt/NloptSolver.h"
+#endif
 #ifdef HAVE_IPOPT
   #include "dart/optimizer/ipopt/IpoptSolver.h"
 #endif
@@ -113,6 +115,7 @@ private:
 };
 
 //==============================================================================
+#ifdef HAVE_NLOPT
 TEST(Optimizer, BasicNlopt)
 {
   // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
@@ -141,6 +144,7 @@ TEST(Optimizer, BasicNlopt)
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
+#endif
 
 //==============================================================================
 #ifdef HAVE_IPOPT
