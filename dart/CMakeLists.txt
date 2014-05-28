@@ -2,7 +2,7 @@
 # We do this here and not in the root folder since the example apps
 # do not have enough source files to benefit from this.
 if(MSVC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 
 set(CORE_SUBDIRS common math dynamics renderer lcpsolver constraint integration simulation)
@@ -10,26 +10,11 @@ set(NONCORE_SUBDIRS gui planning utils)
 # optimizer is also a NONCORE_SUBDIR, but it will be handled separately
 
 # Search all header and source files
+#-- Core
 foreach(SUBDIR ${CORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(core_srcs ${core_srcs} ${subdir_srcs})
 endforeach()
-
-file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-file(GLOB_RECURSE subdir_srcs optimizer/nlopt/*.cpp optimizer/nlopt/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-if(HAVE_IPOPT)
-  file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
-  set(core_srcs ${core_srcs} ${subdir_srcs})
-endif()
-
-if(HAVE_SNOPT)
-  file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
-  set(core_srcs ${core_srcs} ${subdir_srcs})
-endif()
 
 file(GLOB subdir_srcs collision/*.cpp collision/*.h)
 set(core_srcs ${core_srcs} ${subdir_srcs})
@@ -48,10 +33,29 @@ if(HAVE_BULLET_COLLISION)
   set(core_srcs ${core_srcs} ${subdir_srcs})
 endif()
 
+#-- Noncore
 foreach(SUBDIR ${NONCORE_SUBDIRS})
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
 endforeach()
+
+file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
+set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+
+if(HAVE_NLOPT)
+  file(GLOB_RECURSE subdir_srcs optimizer/nlopt/*.cpp optimizer/nlopt/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+endif()
+
+if(HAVE_IPOPT)
+  file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+endif()
+
+if(HAVE_SNOPT)
+  file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
+  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
+endif()
 
 # Setup directory structure for Visual Studio
 foreach(SUBDIR ${CORE_SUBDIRS} ${NONCORE_SUBDIRS})
@@ -79,11 +83,11 @@ endif()
 
 
 if(MSVC)
-    set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
 install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
-    install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
+  install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()

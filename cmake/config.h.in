@@ -8,6 +8,7 @@
 #define DART_VERSION "@DART_VERSION@"
 #define DART_DESCRIPTION "@PKG_DESC@"
 
+#cmakedefine HAVE_NLOPT 1
 #cmakedefine HAVE_IPOPT 1
 #cmakedefine HAVE_SNOPT 1
 #cmakedefine HAVE_BULLET_COLLISION 1

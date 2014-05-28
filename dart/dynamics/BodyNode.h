@@ -78,6 +78,7 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include "dart/config.h"
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/optimizer/Function.h"
@@ -107,19 +108,6 @@ class Marker;
 class BodyNode
 {
 public:
-  /// Inverse kinematics policy
-  /// IKP_PARENT_JOINT   : search optimal configuration for the parent joint of
-  ///                      the target body node
-  /// IKP_ANCESTOR_JOINTS: search optimal configurations for the ancestor joints
-  ///                      of the target body node
-  /// IKP_ALL_JOINTS     : search optimal configurations for the all joints in
-  ///                      the skeleton.
-  enum InverseKinematicsPolicy {
-    IKP_PARENT_JOINT,
-    IKP_ANCESTOR_JOINTS,
-    IKP_ALL_JOINTS
-  };
-
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
@@ -268,31 +256,6 @@ public:
   /// Return a generalized coordinate index from the array index
   ///        (< getNumDependentDofs).
   int getDependentGenCoordIndex(int _arrayIndex) const;
-
-  //----------------------------------------------------------------------------
-  // Inverse kinematics
-  //----------------------------------------------------------------------------
-
-  /// Try to find optimal configurations to fit the world transform
-  ///        of this body node to the target transformation.
-  /// This problem is solved by optimization. The objective is to minimize the
-  /// geometric distance between the target transformation and the world
-  /// transformation of this body.
-  void fitWorldTransform(const Eigen::Isometry3d& _target,
-                         InverseKinematicsPolicy _policy = IKP_PARENT_JOINT,
-                         bool _jointLimit = true);
-
-  /// Try to find optimal joint velocities to fit the linear velocity of
-  ///        this body node to the target linear velocity.
-  void fitWorldLinearVel(const Eigen::Vector3d& _targetLinVel,
-                         InverseKinematicsPolicy _policy = IKP_PARENT_JOINT,
-                         bool _jointVelLimit = true);
-
-  /// Try to find optimal joint velocities to fit the linear velocity of
-  ///        this body node to the target linear velocity.
-  void fitWorldAngularVel(const Eigen::Vector3d& _targetAngVel,
-                          InverseKinematicsPolicy _policy = IKP_PARENT_JOINT,
-                          bool _jointVelLimit = true);
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -584,79 +547,6 @@ protected:
   /// Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
   virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
-
-  /// class TransformObjFunc
-  class TransformObjFunc : public optimizer::Function
-  {
-  public:
-    /// Constructor
-    TransformObjFunc(BodyNode* _body, const Eigen::Isometry3d& _T,
-                       Skeleton* _skeleton);
-
-    /// Destructor
-    virtual ~TransformObjFunc();
-
-    /// \copydoc Function::eval
-    virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);
-
-  protected:
-    /// Target body node
-    BodyNode* mBodyNode;
-
-    /// Target transform
-    Eigen::Isometry3d mT;
-
-    /// Skeleton
-    Skeleton* mSkeleton;
-  };
-
-  /// class VelocityObjFunc
-  class VelocityObjFunc : public optimizer::Function
-  {
-  public:
-    /// Velocity type
-    enum VelocityType
-    {
-      VT_LINEAR,
-      VT_ANGULAR
-    };
-
-    /// Constructor
-    VelocityObjFunc(BodyNode* _body, const Eigen::Vector3d& _vel,
-                    VelocityType _velType, Skeleton* _skeleton);
-
-    /// Destructor
-    virtual ~VelocityObjFunc();
-
-    /// \copydoc Function::eval
-    virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);
-
-  protected:
-    /// Target body node
-    BodyNode* mBodyNode;
-
-    /// Target transform
-    Eigen::Vector6d mVelocity;
-
-    /// Skeleton
-    Skeleton* mSkeleton;
-
-    /// Velocity type [ linear | angular ]
-    VelocityType mVelocityType;
-  };
-
-  /// Implementation for fitWorldTransform with IKP_PARENT_JOINT policy
-  void fitWorldTransformParentJointImpl(const Eigen::Isometry3d& _target,
-                                        bool _jointLimit = true);
-
-  /// Implementation for fitWorldTransform with IKP_ANCESTOR_JOINTS
-  ///        policy
-  void fitWorldTransformAncestorJointsImpl(const Eigen::Isometry3d& _target,
-                                           bool _jointLimit = true);
-
-  /// Implementation for fitWorldTransform with IKP_ALL_JOINTS policy
-  void fitWorldTransformAllJointsImpl(const Eigen::Isometry3d& _target,
-                                      bool _jointLimit = true);
 
   //--------------------------------------------------------------------------
   // General properties
