@@ -153,16 +153,17 @@ void PlanarJoint::updateLocalTransform()
 //==============================================================================
 void PlanarJoint::updateLocalJacobian()
 {
-  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 3);
+  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mTransAxis1;
   J.block<3, 1>(3, 1) = mTransAxis2;
   J.block<3, 1>(0, 2) = mRotAxis;
 
   mJacobian.leftCols<2>()
-      = math::AdTJac(mT_ChildBodyToJoint
-                     * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
-                     J.leftCols<2>());
-  mJacobian.col(2)     = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
+      = math::AdTJacFixed(
+          mT_ChildBodyToJoint
+          * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
+          J.leftCols<2>());
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(mJacobian));

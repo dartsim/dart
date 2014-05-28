@@ -1161,7 +1161,145 @@ TEST(MATH, UTILS) {
     << "result = " << result << " expected = " << expected;
 }
 
-/******************************************************************************/
+//==============================================================================
+Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
+{
+  Jacobian res = Jacobian::Zero(6, _J.cols());
+
+  for (int i = 0; i < _J.cols(); ++i)
+    res.col(i) = AdT(_T, _J.col(i));
+  return res;
+}
+
+//==============================================================================
+template<typename Derived>
+typename Derived::PlainObject AdTJac2(const Eigen::Isometry3d& _T,
+                                      const Eigen::MatrixBase<Derived>& _J)
+{
+//  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  for (int i = 0; i < _J.cols(); ++i)
+    ret.col(i) = AdT(_T, _J.col(i));
+
+  return ret;
+}
+
+//==============================================================================
+template<typename Derived>
+typename Derived::PlainObject AdTJac3(const Eigen::Isometry3d& _T,
+                                      const Eigen::MatrixBase<Derived>& _J)
+{
+//  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() = _T.linear() * _J.template topRows<3>();
+  ret.template bottomRows<3>().noalias()
+      = -ret.template topRows<3>().colwise().cross(_T.translation())
+        + _T.linear() * _J.template bottomRows<3>();
+
+  return ret;
+}
+
+//==============================================================================
+TEST(MATH, PerformanceComparisonOfAdTJac)
+{
+#ifndef NDEBUG
+  int testCount = 1e+2;
+#else
+  int testCount = 1e+6;
+#endif
+  int m = 3;
+
+  Vector6d t = Vector6d::Random();
+  Isometry3d T = expMap(t);
+  Jacobian dynamicJ = Jacobian::Random(6, m);
+  Matrix<double, 6, 3> fixedJ = dynamicJ;//Matrix<double, 6, 3>::Random();
+
+  // Test1: verify the results
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, dynamicJ);
+    Jacobian resJ2 = AdTJac2(T, dynamicJ);
+    Jacobian resJ3 = AdTJac3(T, fixedJ);
+
+    EXPECT_TRUE(equals(resJ1, resJ2));
+    EXPECT_TRUE(equals(resJ2, resJ3));
+
+    Jacobian resJ4 = AdInvTJac(T, dynamicJ);
+    Jacobian resJ5 = AdInvTJacFixed(T, fixedJ);
+
+    EXPECT_TRUE(equals(resJ4, resJ5));
+  }
+
+  // Test2: performance
+  Timer t1dyn("AdTJac1 - dynamic");
+  t1dyn.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, dynamicJ);
+  }
+  t1dyn.stop();
+
+  Timer t1fix("AdTJac1 - fixed");
+  t1fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, fixedJ);
+  }
+  t1fix.stop();
+
+  Timer t2dyn("AdTJac2 - dynamic");
+  t2dyn.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ2 = AdTJac2(T, dynamicJ);
+  }
+  t2dyn.stop();
+
+  Timer t2fix("AdTJac2 - fixed");
+  t2fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ2 = AdTJac2(T, fixedJ);
+  }
+  t2fix.stop();
+
+  Timer t3dyn("AdTJac3 - dynamic");
+  t3dyn.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ3 = AdTJac3(T, dynamicJ);
+  }
+  t3dyn.stop();
+
+  Timer t3fix("AdTJac3 - fixed");
+  t3fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ3 = AdTJac3(T, fixedJ);
+  }
+  t3fix.stop();
+
+  t1dyn.print();
+  t2dyn.print();
+  t3dyn.print();
+
+  t1fix.print();
+  t2fix.print();
+  t3fix.print();
+
+  // Note: The best function for dynamic size Jacobian is AdTJac2, and the best
+  //       function for fixed size Jacobian is AdTJac3
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
