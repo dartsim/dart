@@ -1165,10 +1165,7 @@ TEST(MATH, UTILS) {
 Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
-//  res.topRows<3>().noalias() = _T.linear() * _J.topRows<3>();
-//  res.bottomRows<3>().noalias()
-//      = -res.topRows<3>().colwise().cross(_T.translation())
-//        + _T.linear() * _J.bottomRows<3>();
+
   for (int i = 0; i < _J.cols(); ++i)
     res.col(i) = AdT(_T, _J.col(i));
   return res;
@@ -1223,45 +1220,83 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   Vector6d t = Vector6d::Random();
   Isometry3d T = expMap(t);
   Jacobian dynamicJ = Jacobian::Random(6, m);
-  Matrix<double, 6, 3> fixedJ = Matrix<double, 6, 3>::Random();
+  Matrix<double, 6, 3> fixedJ = dynamicJ;//Matrix<double, 6, 3>::Random();
 
   // Test1: verify the results
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ1 = AdTJac1(T, dynamicJ);
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
+    Jacobian resJ3 = AdTJac3(T, fixedJ);
 
     EXPECT_TRUE(equals(resJ1, resJ2));
+    EXPECT_TRUE(equals(resJ2, resJ3));
+
+    Jacobian resJ4 = AdInvTJac(T, dynamicJ);
+    Jacobian resJ5 = AdInvTJacFixed(T, fixedJ);
+
+    EXPECT_TRUE(equals(resJ4, resJ5));
   }
 
   // Test2: performance
-  Timer t1("AdTJac1");
-  t1.start();
+  Timer t1dyn("AdTJac1 - dynamic");
+  t1dyn.start();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ1 = AdTJac1(T, dynamicJ);
   }
-  t1.stop();
+  t1dyn.stop();
 
-  Timer t2("AdTJac2");
-  t2.start();
+  Timer t1fix("AdTJac1 - fixed");
+  t1fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, fixedJ);
+  }
+  t1fix.stop();
+
+  Timer t2dyn("AdTJac2 - dynamic");
+  t2dyn.start();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ2 = AdTJac2(T, dynamicJ);
   }
-  t2.stop();
+  t2dyn.stop();
 
-  Timer t3("AdTJac3");
-  t3.start();
+  Timer t2fix("AdTJac2 - fixed");
+  t2fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ2 = AdTJac2(T, fixedJ);
+  }
+  t2fix.stop();
+
+  Timer t3dyn("AdTJac3 - dynamic");
+  t3dyn.start();
   for (int i = 0; i < testCount; ++i)
   {
     Jacobian resJ3 = AdTJac3(T, dynamicJ);
   }
-  t3.stop();
+  t3dyn.stop();
 
-  t1.print();
-  t2.print();
-  t3.print();
+  Timer t3fix("AdTJac3 - fixed");
+  t3fix.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ3 = AdTJac3(T, fixedJ);
+  }
+  t3fix.stop();
+
+  t1dyn.print();
+  t2dyn.print();
+  t3dyn.print();
+
+  t1fix.print();
+  t2fix.print();
+  t3fix.print();
+
+  // Note: The best function for dynamic size Jacobian is AdTJac2, and the best
+  //       function for fixed size Jacobian is AdTJac3
 }
 
 //==============================================================================

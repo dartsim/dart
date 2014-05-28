@@ -199,10 +199,10 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T);
 /// where @f$T=(R,p)@in SE(3), @quad V=(w,v)@in se(3) @f$.
 Eigen::Vector6d AdT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 
-/// Adjoint mapping for Jacobian
+/// Adjoint mapping for dynamic size Jacobian
 template<typename Derived>
-Jacobian AdTJac(const Eigen::Isometry3d& _T,
-                const Eigen::MatrixBase<Derived>& _J)
+typename Derived::PlainObject AdTJac(const Eigen::Isometry3d& _T,
+                                     const Eigen::MatrixBase<Derived>& _J)
 {
   // Check the number of rows is 6 at compile time
   EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
@@ -213,6 +213,29 @@ Jacobian AdTJac(const Eigen::Isometry3d& _T,
   // Compute AdT column by column
   for (int i = 0; i < _J.cols(); ++i)
     ret.col(i) = AdT(_T, _J.col(i));
+
+  return ret;
+}
+
+/// Adjoint mapping for fixed size Jacobian
+template<typename Derived>
+typename Derived::PlainObject AdTJacFixed(const Eigen::Isometry3d& _T,
+                                          const Eigen::MatrixBase<Derived>& _J)
+{
+  // Check if _J is fixed size Jacobian
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+
+  // Check the number of rows is 6 at compile time
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  // Compute AdT
+  ret.template topRows<3>().noalias() = _T.linear() * _J.template topRows<3>();
+  ret.template bottomRows<3>().noalias()
+      = -ret.template topRows<3>().colwise().cross(_T.translation())
+        + _T.linear() * _J.template bottomRows<3>();
 
   return ret;
 }
@@ -238,10 +261,10 @@ Eigen::Vector6d AdTLinear(const Eigen::Isometry3d& _T,
 /// \brief fast version of Ad(Inv(T), V)
 Eigen::Vector6d AdInvT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
 
-///
+/// Adjoint mapping for dynamic size Jacobian
 template<typename Derived>
-Jacobian AdInvTJac(const Eigen::Isometry3d& _T,
-                   const Eigen::MatrixBase<Derived>& _J)
+typename Derived::PlainObject AdInvTJac(const Eigen::Isometry3d& _T,
+                                        const Eigen::MatrixBase<Derived>& _J)
 {
   // Check the number of rows is 6 at compile time
   EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
@@ -252,6 +275,32 @@ Jacobian AdInvTJac(const Eigen::Isometry3d& _T,
   // Compute AdInvT column by column
   for (int i = 0; i < _J.cols(); ++i)
     ret.col(i) = AdInvT(_T, _J.col(i));
+
+  return ret;
+}
+
+/// Adjoint mapping for fixed size Jacobian
+template<typename Derived>
+typename Derived::PlainObject AdInvTJacFixed(
+    const Eigen::Isometry3d& _T,
+    const Eigen::MatrixBase<Derived>& _J)
+{
+  // Check if _J is fixed size Jacobian
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+
+  // Check the number of rows is 6 at compile time
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  // Compute AdInvT
+  ret.template topRows<3>().noalias()
+      = _T.linear().transpose() * _J.template topRows<3>();
+  ret.template bottomRows<3>().noalias()
+      = _T.linear().transpose()
+        * (_J.template bottomRows<3>()
+           + _J.template topRows<3>().colwise().cross(_T.translation()));
 
   return ret;
 }
@@ -280,24 +329,6 @@ Eigen::Vector6d dAdT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
 
 /// \brief fast version of dAd(Inv(T), F)
 Eigen::Vector6d dAdInvT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
-
-///
-template<typename Derived>
-Jacobian dAdInvTJac(const Eigen::Isometry3d& _T,
-                    const Eigen::MatrixBase<Derived>& _J)
-{
-  // Check the number of rows is 6 at compile time
-  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
-                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
-
-  typename Derived::PlainObject ret(_J.rows(), _J.cols());
-
-  // Compute AdInvT column by column
-  for (int i = 0; i < _J.cols(); ++i)
-    ret.col(i) = dAdInvT(_T, _J.col(i));
-
-  return ret;
-}
 
 /// \brief fast version of dAd(Inv([R 0; 0 1]), F)
 Eigen::Vector6d dAdInvR(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _F);
