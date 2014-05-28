@@ -1161,7 +1161,82 @@ TEST(MATH, UTILS) {
     << "result = " << result << " expected = " << expected;
 }
 
-/******************************************************************************/
+//==============================================================================
+Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
+{
+  Jacobian res = Jacobian::Zero(6, _J.cols());
+//  res.topRows<3>().noalias() = T.linear() * J.topRows<3>();
+//  res.bottomRows<3>().noalias()
+//      = -res.topRows<3>().colwise().cross(T.translation())
+//        + T.linear() * J.bottomRows<3>();
+  for (int i = 0; i < _J.cols(); ++i)
+    res.col(i) = AdT(_T, _J.col(i));
+  return res;
+}
+
+//==============================================================================
+template<typename Derived>
+typename Derived::PlainObject AdTJac2(const Eigen::Isometry3d& _T,
+                                      const Eigen::MatrixBase<Derived>& _J)
+{
+//  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  for (int i = 0; i < _J.cols(); ++i)
+    ret.col(i) = AdT(_T, _J.col(i));
+
+  return ret;
+}
+
+//==============================================================================
+TEST(MATH, PerformanceComparisonOfAdTJac)
+{
+#ifndef NDEBUG
+  int testCount = 1e+2;
+#else
+  int testCount = 1e+5;
+#endif
+  int m = 3;
+
+  Vector6d t = Vector6d::Random();
+  Isometry3d T = expMap(t);
+  Jacobian dynamicJ = Jacobian::Random(6, m);
+  Matrix<double, 6, 3> fixedJ = Matrix<double, 6, 3>::Random();
+
+  // Test1: verify the results
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, dynamicJ);
+    Jacobian resJ2 = AdTJac2(T, dynamicJ);
+
+    EXPECT_TRUE(equals(resJ1, resJ2));
+  }
+
+  // Test2: performance
+  Timer t1("AdTJac");
+  t1.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ1 = AdTJac1(T, dynamicJ);
+  }
+  t1.stop();
+
+  Timer t2("AdTJac2");
+  t2.start();
+  for (int i = 0; i < testCount; ++i)
+  {
+    Jacobian resJ2 = AdTJac2(T, dynamicJ);
+  }
+  t2.stop();
+
+  t1.print();
+  t2.print();
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);

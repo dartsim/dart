@@ -677,17 +677,6 @@ Eigen::Vector6d AdTLinear(const Eigen::Isometry3d& _T,
   return res;
 }
 
-Jacobian AdTJac(const Eigen::Isometry3d& _T, const Jacobian& _J) {
-  Jacobian res = Jacobian::Zero(6, _J.cols());
-//  res.topRows<3>().noalias() = T.linear() * J.topRows<3>();
-//  res.bottomRows<3>().noalias()
-//      = -res.topRows<3>().colwise().cross(T.translation())
-//        + T.linear() * J.bottomRows<3>();
-  for (int i = 0; i < _J.cols(); ++i)
-    res.col(i) = AdT(_T, _J.col(i));
-  return res;
-}
-
 // se3 AdP(const Vec3& p, const se3& s)
 // {
 //  //--------------------------------------------------------------------------
@@ -724,17 +713,6 @@ Eigen::Vector6d AdInvT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V) {
   res.tail<3>().noalias() =
       _T.linear().transpose()
       * (_V.tail<3>() + _V.head<3>().cross(_T.translation()));
-  return res;
-}
-
-Jacobian AdInvTJac(const Eigen::Isometry3d& _T, const Jacobian& _J) {
-  Jacobian res = Jacobian::Zero(6, _J.cols());
-//  res.topRows<3>().noalias()    = T.linear().transpose() * J.topRows<3>();
-//  res.bottomRows<3>().noalias()
-//      = T.linear().transpose()
-//      * (J.bottomRows<3>() + J.topRows<3>().colwise().cross(T.translation()));
-  for (int i = 0; i < _J.cols(); ++i)
-    res.col(i) = AdInvT(_T, _J.col(i));
   return res;
 }
 
@@ -805,18 +783,6 @@ Eigen::Vector6d dAdInvT(const Eigen::Isometry3d& _T,
   res.tail<3>().noalias() = _T.linear() * _F.tail<3>();
   res.head<3>().noalias() = _T.linear() * _F.head<3>();
   res.head<3>() += _T.translation().cross(res.tail<3>());
-  return res;
-}
-
-Jacobian dAdInvTJac(const Eigen::Isometry3d& _T, const Jacobian& _J) {
-  math::Jacobian res = math::Jacobian::Zero(6, _J.cols());
-//  res.bottomRows<3>().noalias() = T.linear() * J.bottomRows<3>();
-//  res.topRows<3>().noalias()    = T.linear() * J.topRows<3>();
-//  res.topRows<3>() -= res.bottomRows<3>().colwise().cross(T.translation());
-
-  for (int i = 0; i < _J.cols(); ++i)
-    res.col(i) = dAdInvT(_T, _J.col(i));
-
   return res;
 }
 
