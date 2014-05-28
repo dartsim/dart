@@ -94,7 +94,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 TEST(InverseKinematics, FittingTransformation)
 {
   const double TOLERANCE = 1e-6;
-#ifdef BUILD_TYPE_RELEASE
+#ifdef NDEBUG
   const size_t numRandomTests = 100;
 #else
   const size_t numRandomTests = 10;
@@ -209,7 +209,7 @@ TEST(InverseKinematics, FittingTransformation)
 TEST(InverseKinematics, FittingVelocity)
 {
   const double TOLERANCE = 1e-4;
-#ifdef BUILD_TYPE_RELEASE
+#ifdef NDEBUG
   const size_t numRandomTests = 100;
 #else
   const size_t numRandomTests = 10;

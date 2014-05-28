@@ -59,7 +59,7 @@ public:
   // Documentation inherited
   virtual void solve(ConstrainedGroup* _group);
 
-#ifdef BUILD_TYPE_DEBUG
+#ifndef NDEBUG
 private:
   /// Return true if the matrix is symmetric
   bool isSymmetric(size_t _n, double* _A);
