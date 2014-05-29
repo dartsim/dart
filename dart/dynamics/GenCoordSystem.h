@@ -53,7 +53,7 @@ class GenCoordSystem
 {
 public:
   /// \brief Get number of generalized coordinates
-  size_t getNumGenCoords() const;
+  size_t getDof() const;
 
   /// \brief Get generalized coordinate whose index is _idx
   GenCoord* getGenCoord(size_t _idx) const;
@@ -63,7 +63,7 @@ public:
 
   //--------------------------- Configurations ---------------------------------
   /// \brief Set configurations defined in terms of generalized coordinates
-  virtual void setConfigs(const Eigen::VectorXd& _configs);
+  virtual void setPositions(const Eigen::VectorXd& _configs);
 
   /// \brief Get configurations defined in terms of generalized coordinates
   virtual Eigen::VectorXd getConfigs() const;
@@ -82,7 +82,7 @@ public:
 
   //----------------------------- Velocities -----------------------------------
   /// \brief Set generalized velocities
-  virtual void setGenVels(const Eigen::VectorXd& _vels);
+  virtual void setVelocities(const Eigen::VectorXd& _vels);
 
   /// \brief Get generalized velocities
   virtual Eigen::VectorXd getGenVels() const;
@@ -101,7 +101,7 @@ public:
 
   //---------------------------- Accelerations ---------------------------------
   /// \brief Set generalized accelerations
-  virtual void setGenAccs(const Eigen::VectorXd& _accs);
+  virtual void setAccelerations(const Eigen::VectorXd& _accs);
 
   /// \brief Get generalized accelerations
   virtual Eigen::VectorXd getGenAccs() const;

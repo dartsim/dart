@@ -88,7 +88,7 @@ const std::string& GenCoord::getName() const
 }
 
 //==============================================================================
-size_t GenCoord::getSkeletonIndex() const
+size_t GenCoord::getIndexInSkeleton() const
 {
   return mSkelIndex;
 }

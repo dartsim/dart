@@ -997,13 +997,13 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newRevoluteJoint->getGenCoord(0)->setPosMin(lower);
+        newRevoluteJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newRevoluteJoint->getGenCoord(0)->setPosMax(upper);
+        newRevoluteJoint->setPositionUpperLimit(0, upper);
       }
     }
   } else {
@@ -1016,7 +1016,7 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newRevoluteJoint->setConfigs(ipos, false, false, false);
+    newRevoluteJoint->setPositions(ipos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
@@ -1025,7 +1025,7 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newRevoluteJoint->setGenVels(ivel, false, false);
+    newRevoluteJoint->setVelocities(ivel, false, false);
   }
 
   return newRevoluteJoint;
@@ -1061,13 +1061,13 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newPrismaticJoint->getGenCoord(0)->setPosMin(lower);
+        newPrismaticJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newPrismaticJoint->getGenCoord(0)->setPosMax(upper);
+        newPrismaticJoint->setPositionUpperLimit(0, upper);
       }
     }
   } else {
@@ -1080,7 +1080,7 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newPrismaticJoint->setConfigs(ipos, false, false, false);
+    newPrismaticJoint->setPositions(ipos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
@@ -1089,7 +1089,7 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newPrismaticJoint->setGenVels(ivel, false, false);
+    newPrismaticJoint->setVelocities(ivel, false, false);
   }
 
   return newPrismaticJoint;
@@ -1131,13 +1131,13 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newScrewJoint->getGenCoord(0)->setPosMin(lower);
+        newScrewJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newScrewJoint->getGenCoord(0)->setPosMax(upper);
+        newScrewJoint->setPositionUpperLimit(0, upper);
       }
     }
   } else {
@@ -1150,7 +1150,7 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newScrewJoint->setConfigs(ipos, false, false, false);
+    newScrewJoint->setPositions(ipos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
@@ -1159,7 +1159,7 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newScrewJoint->setGenVels(ivel, false, false);
+    newScrewJoint->setVelocities(ivel, false, false);
   }
 
   return newScrewJoint;
@@ -1195,13 +1195,13 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->getGenCoord(0)->setPosMin(lower);
+        newUniversalJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->getGenCoord(0)->setPosMax(upper);
+        newUniversalJoint->setPositionUpperLimit(0, upper);
       }
     }
   } else {
@@ -1232,13 +1232,13 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->getGenCoord(1)->setPosMin(lower);
+        newUniversalJoint->setPositionLowerLimit(1, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->getGenCoord(1)->setPosMax(upper);
+        newUniversalJoint->setPositionUpperLimit(1, upper);
       }
     }
   } else {
@@ -1249,14 +1249,14 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
-    newUniversalJoint->setConfigs(init_pos, false, false, false);
+    newUniversalJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
-    newUniversalJoint->setGenVels(init_vel, false, false);
+    newUniversalJoint->setVelocities(init_vel, false, false);
   }
 
   return newUniversalJoint;
@@ -1272,14 +1272,14 @@ dynamics::BallJoint* SkelParser::readBallJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newBallJoint->setConfigs(init_pos, false, false, false);
+    newBallJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newBallJoint->setGenVels(init_vel, false, false);
+    newBallJoint->setVelocities(init_vel, false, false);
   }
 
   return newBallJoint;
@@ -1323,13 +1323,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(0)->setPosMin(lower);
+        newEulerJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(0)->setPosMax(upper);
+        newEulerJoint->setPositionUpperLimit(0, upper);
       }
     }
   }
@@ -1354,13 +1354,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(1)->setPosMin(lower);
+        newEulerJoint->setPositionLowerLimit(1, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(1)->setPosMax(upper);
+        newEulerJoint->setPositionUpperLimit(1, upper);
       }
     }
   }
@@ -1385,13 +1385,13 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
       // lower
       if (hasElement(limitElement, "lower")) {
         double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->getGenCoord(2)->setPosMin(lower);
+        newEulerJoint->setPositionLowerLimit(2, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper")) {
         double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->getGenCoord(2)->setPosMax(upper);
+        newEulerJoint->setPositionUpperLimit(2, upper);
       }
     }
   }
@@ -1400,14 +1400,14 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newEulerJoint->setConfigs(init_pos, false, false, false);
+    newEulerJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newEulerJoint->setGenVels(init_vel, false, false);
+    newEulerJoint->setVelocities(init_vel, false, false);
   }
 
   return newEulerJoint;
@@ -1424,14 +1424,14 @@ dynamics::TranslationalJoint* SkelParser::readTranslationalJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newTranslationalJoint->setConfigs(init_pos, false, false, false);
+    newTranslationalJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newTranslationalJoint->setGenVels(init_vel, false, false);
+    newTranslationalJoint->setVelocities(init_vel, false, false);
   }
 
   return newTranslationalJoint;
@@ -1515,14 +1515,14 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
       if (hasElement(limitElement, "lower"))
       {
         double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->getGenCoord(0)->setPosMin(lower);
+        newPlanarJoint->setPositionLowerLimit(0, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper"))
       {
         double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->getGenCoord(0)->setPosMax(upper);
+        newPlanarJoint->setPositionUpperLimit(0, upper);
       }
     }
   }
@@ -1551,14 +1551,14 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
       if (hasElement(limitElement, "lower"))
       {
         double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->getGenCoord(1)->setPosMin(lower);
+        newPlanarJoint->setPositionLowerLimit(1, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper"))
       {
         double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->getGenCoord(1)->setPosMax(upper);
+        newPlanarJoint->setPositionUpperLimit(1, upper);
       }
     }
   }
@@ -1587,14 +1587,14 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
       if (hasElement(limitElement, "lower"))
       {
         double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->getGenCoord(2)->setPosMin(lower);
+        newPlanarJoint->setPositionLowerLimit(2, lower);
       }
 
       // upper
       if (hasElement(limitElement, "upper"))
       {
         double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->getGenCoord(2)->setPosMax(upper);
+        newPlanarJoint->setPositionUpperLimit(2, upper);
       }
     }
   }
@@ -1604,7 +1604,7 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
   if (hasElement(_jointElement, "init_pos"))
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newPlanarJoint->setConfigs(init_pos, false, false, false);
+    newPlanarJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
@@ -1612,7 +1612,7 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
   if (hasElement(_jointElement, "init_vel"))
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newPlanarJoint->setGenVels(init_vel, false, false);
+    newPlanarJoint->setVelocities(init_vel, false, false);
   }
 
   return newPlanarJoint;
@@ -1628,14 +1628,14 @@ dynamics::FreeJoint* SkelParser::readFreeJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
-    newFreeJoint->setConfigs(init_pos, false, false, false);
+    newFreeJoint->setPositions(init_pos, false, false, false);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
-    newFreeJoint->setConfigs(init_vel, false, false, false);
+    newFreeJoint->setPositions(init_vel, false, false, false);
   }
 
   return newFreeJoint;

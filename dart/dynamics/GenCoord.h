@@ -67,7 +67,7 @@ public:
   void setSkeletonIndex(size_t _idx);
 
   /// \brief Get skeleton index
-  size_t getSkeletonIndex() const;
+  size_t getIndexInSkeleton() const;
 
   //----------------------------------------------------------------------------
   // Position

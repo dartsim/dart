@@ -89,7 +89,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
   skeleton.addBodyNode(bodyNode);
   skeleton.init();
 
-  int dof = _joint->getNumGenCoords();
+  int dof = _joint->getDof();
 
   //--------------------------------------------------------------------------
   //
@@ -111,9 +111,9 @@ void JOINTS::kinematicsTest(Joint* _joint)
     state.head(dof) = q;
     state.tail(dof) = dq;
     skeleton.setState(state, true, true, false);
-    skeleton.setConfigs(q, true, false, false);
+    skeleton.setPositions(q, true, false, false);
 
-    if (_joint->getNumGenCoords() == 0)
+    if (_joint->getDof() == 0)
       return;
 
     Eigen::Isometry3d T = _joint->getLocalTransform();
@@ -134,13 +134,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setConfigs(q_a, true, false, false);
+      _joint->setPositions(q_a, true, false, false);
       Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setConfigs(q_b, true, false, false);
+      _joint->setPositions(q_b, true, false, false);
       Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
       //
@@ -186,13 +186,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setConfigs(q_a, true, false, false);
+      _joint->setPositions(q_a, true, false, false);
       Jacobian J_a = _joint->getLocalJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setConfigs(q_b, true, false, false);
+      _joint->setPositions(q_b, true, false, false);
       Jacobian J_b = _joint->getLocalJacobian();
 
       //
@@ -226,9 +226,9 @@ void JOINTS::kinematicsTest(Joint* _joint)
     for (int i = 0; i < dof; ++i)
       q(i) = random(posMin, posMax);
 
-    skeleton.setConfigs(q, true, false, false);
+    skeleton.setPositions(q, true, false, false);
 
-    if (_joint->getNumGenCoords() == 0)
+    if (_joint->getDof() == 0)
       return;
 
     Eigen::Isometry3d T = _joint->getLocalTransform();
@@ -347,12 +347,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit1 = DART_PI / 6.0;
 
   joint0->setPositionLimited(true);
-  joint0->getGenCoord(0)->setPosMin(-limit0);
-  joint0->getGenCoord(0)->setPosMax(limit0);
+  joint0->setPositionLowerLimit(0, -limit0);
+  joint0->setPositionUpperLimit(0, limit0);
 
   joint1->setPositionLimited(true);
-  joint1->getGenCoord(0)->setPosMin(-limit1);
-  joint1->getGenCoord(0)->setPosMax(limit1);
+  joint1->setPositionLowerLimit(0, -limit1);
+  joint1->setPositionUpperLimit(0, limit1);
 
   double simTime = 2.0;
   double timeStep = myWorld->getTimeStep();
@@ -361,12 +361,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
   // Two seconds with positive control forces
   for (int i = 0; i < nSteps; i++)
   {
-    joint0->getGenCoord(0)->setForce(0.1);
-    joint1->getGenCoord(0)->setForce(0.1);
+    joint0->setForce(0, 0.1);
+    joint1->setForce(0, 0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getPos();
-    double jointPos1 = joint1->getGenCoord(0)->getPos();
+    double jointPos0 = joint0->getPosition(0);
+    double jointPos1 = joint1->getPosition(0);
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);
@@ -378,12 +378,12 @@ TEST_F(JOINTS, POSITION_LIMIT)
   // Two more seconds with negative control forces
   for (int i = 0; i < nSteps; i++)
   {
-    joint0->getGenCoord(0)->setForce(-0.1);
-    joint1->getGenCoord(0)->setForce(-0.1);
+    joint0->setForce(0, -0.1);
+    joint1->setForce(0, -0.1);
     myWorld->step();
 
-    double jointPos0 = joint0->getGenCoord(0)->getPos();
-    double jointPos1 = joint1->getGenCoord(0)->getPos();
+    double jointPos0 = joint0->getPosition(0);
+    double jointPos1 = joint1->getPosition(0);
 
     EXPECT_GE(jointPos0, -limit0 - tol);
     EXPECT_GE(jointPos1, -limit1 - tol);

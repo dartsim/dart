@@ -253,15 +253,15 @@ TEST(SKEL_PARSER, PLANAR_JOINT)
   EXPECT_EQ(planarJoint3->getRotationalAxis(), Eigen::Vector3d::UnitY());
   EXPECT_EQ(planarJoint4->getRotationalAxis(), Eigen::Vector3d::UnitZ());
 
-  EXPECT_EQ(planarJoint1->getConfigs(), Eigen::Vector3d(1, 2, 3));
-  EXPECT_EQ(planarJoint2->getConfigs(), Eigen::Vector3d(1, 2, 3));
-  EXPECT_EQ(planarJoint3->getConfigs(), Eigen::Vector3d(1, 2, 3));
-  EXPECT_EQ(planarJoint4->getConfigs(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint1->getPositions(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint2->getPositions(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint3->getPositions(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(planarJoint4->getPositions(), Eigen::Vector3d(1, 2, 3));
 
-  EXPECT_EQ(planarJoint1->getGenVels(), Eigen::Vector3d(4, 5, 6));
-  EXPECT_EQ(planarJoint2->getGenVels(), Eigen::Vector3d(4, 5, 6));
-  EXPECT_EQ(planarJoint3->getGenVels(), Eigen::Vector3d(4, 5, 6));
-  EXPECT_EQ(planarJoint4->getGenVels(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint1->getVelocities(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint2->getVelocities(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint3->getVelocities(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(planarJoint4->getVelocities(), Eigen::Vector3d(4, 5, 6));
 
   EXPECT_EQ(planarJoint1->getDampingCoefficient(0), 1);
   EXPECT_EQ(planarJoint2->getDampingCoefficient(0), 1);
@@ -278,35 +278,35 @@ TEST(SKEL_PARSER, PLANAR_JOINT)
   EXPECT_EQ(planarJoint3->getDampingCoefficient(2), 3);
   EXPECT_EQ(planarJoint4->getDampingCoefficient(2), 3);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(0)->getPosMin(), -1.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(0)->getPosMin(), -1.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(0)->getPosMin(), -1.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(0)->getPosMin(), -1.0);
+  EXPECT_EQ(planarJoint1->getPositionLowerLimit(0), -1.0);
+  EXPECT_EQ(planarJoint2->getPositionLowerLimit(0), -1.0);
+  EXPECT_EQ(planarJoint3->getPositionLowerLimit(0), -1.0);
+  EXPECT_EQ(planarJoint4->getPositionLowerLimit(0), -1.0);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(0)->getPosMax(), +1.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(0)->getPosMax(), +1.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(0)->getPosMax(), +1.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(0)->getPosMax(), +1.0);
+  EXPECT_EQ(planarJoint1->getPositionUpperLimit(0), +1.0);
+  EXPECT_EQ(planarJoint2->getPositionUpperLimit(0), +1.0);
+  EXPECT_EQ(planarJoint3->getPositionUpperLimit(0), +1.0);
+  EXPECT_EQ(planarJoint4->getPositionUpperLimit(0), +1.0);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(1)->getPosMin(), -2.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(1)->getPosMin(), -2.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(1)->getPosMin(), -2.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(1)->getPosMin(), -2.0);
+  EXPECT_EQ(planarJoint1->getPositionLowerLimit(1), -2.0);
+  EXPECT_EQ(planarJoint2->getPositionLowerLimit(1), -2.0);
+  EXPECT_EQ(planarJoint3->getPositionLowerLimit(1), -2.0);
+  EXPECT_EQ(planarJoint4->getPositionLowerLimit(1), -2.0);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(1)->getPosMax(), +2.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(1)->getPosMax(), +2.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(1)->getPosMax(), +2.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(1)->getPosMax(), +2.0);
+  EXPECT_EQ(planarJoint1->getPositionUpperLimit(1), +2.0);
+  EXPECT_EQ(planarJoint2->getPositionUpperLimit(1), +2.0);
+  EXPECT_EQ(planarJoint3->getPositionUpperLimit(1), +2.0);
+  EXPECT_EQ(planarJoint4->getPositionUpperLimit(1), +2.0);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(2)->getPosMin(), -3.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(2)->getPosMin(), -3.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(2)->getPosMin(), -3.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(2)->getPosMin(), -3.0);
+  EXPECT_EQ(planarJoint1->getPositionLowerLimit(2), -3.0);
+  EXPECT_EQ(planarJoint2->getPositionLowerLimit(2), -3.0);
+  EXPECT_EQ(planarJoint3->getPositionLowerLimit(2), -3.0);
+  EXPECT_EQ(planarJoint4->getPositionLowerLimit(2), -3.0);
 
-  EXPECT_EQ(planarJoint1->getGenCoord(2)->getPosMax(), +3.0);
-  EXPECT_EQ(planarJoint2->getGenCoord(2)->getPosMax(), +3.0);
-  EXPECT_EQ(planarJoint3->getGenCoord(2)->getPosMax(), +3.0);
-  EXPECT_EQ(planarJoint4->getGenCoord(2)->getPosMax(), +3.0);
+  EXPECT_EQ(planarJoint1->getPositionUpperLimit(2), +3.0);
+  EXPECT_EQ(planarJoint2->getPositionUpperLimit(2), +3.0);
+  EXPECT_EQ(planarJoint3->getPositionUpperLimit(2), +3.0);
+  EXPECT_EQ(planarJoint4->getPositionUpperLimit(2), +3.0);
 
   world->step();
 

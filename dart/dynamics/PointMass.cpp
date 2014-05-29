@@ -187,7 +187,7 @@ Eigen::Vector3d PointMass::getConstraintImpulses() const
 //==============================================================================
 void PointMass::clearConstraintImpulse()
 {
-  assert(GenCoordSystem::getNumGenCoords() == 3);
+  assert(GenCoordSystem::getDof() == 3);
   GenCoordSystem::setConstraintImpulses(Eigen::Vector3d::Zero());
   mDelV.setZero();
   mImpB.setZero();
@@ -297,9 +297,9 @@ void PointMass::init()
             = mParentSoftBodyNode->getDependentGenCoordIndex(i);
   }
 
-  mDependentGenCoordIndices[parentDof]     = mCoordinate[0].getSkeletonIndex();
-  mDependentGenCoordIndices[parentDof + 1] = mCoordinate[1].getSkeletonIndex();
-  mDependentGenCoordIndices[parentDof + 2] = mCoordinate[2].getSkeletonIndex();
+  mDependentGenCoordIndices[parentDof]     = mCoordinate[0].getIndexInSkeleton();
+  mDependentGenCoordIndices[parentDof + 1] = mCoordinate[1].getIndexInSkeleton();
+  mDependentGenCoordIndices[parentDof + 2] = mCoordinate[2].getIndexInSkeleton();
 }
 
 void PointMass::updateTransform()
@@ -429,7 +429,7 @@ void PointMass::updateJointAndBodyAcceleration()
       * (mAlpha - mMass
          * (mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX)
             + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
-  setGenAccs(ddq);
+  setAccelerations(ddq);
   assert(!math::isNan(ddq));
 
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
@@ -516,7 +516,7 @@ void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   mM_F.noalias() = mMass * mM_dV;
   _MCol->block<3, 1>(iStart, _col).noalias() = mM_F;
 }
@@ -526,7 +526,7 @@ void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   mM_F.noalias() = mMass * mM_dV;
 
   double d = mParentSoftBodyNode->getDampingCoefficient();
@@ -549,7 +549,7 @@ void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   _MInvCol->block<3, 1>(iStart, _col)
       = mPsi * getGenForces()
         - mParentSoftBodyNode->mInvM_U.head<3>().cross(mX)
@@ -561,7 +561,7 @@ void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   _MInvCol->block<3, 1>(iStart, _col)
       = mImplicitPsi
         * (getGenForces()
@@ -577,7 +577,7 @@ void PointMass::aggregateGravityForceVector(Eigen::VectorXd* _g,
 
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   _g->segment<3>(iStart) = mG_F;
 }
 
@@ -599,13 +599,13 @@ void PointMass::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   _Cg->segment<3>(iStart) = mCg_F;
 }
 
 void PointMass::aggregateExternalForces(Eigen::VectorXd* _Fext)
 {
-  int iStart = getGenCoord(0)->getSkeletonIndex();
+  int iStart = getGenCoord(0)->getIndexInSkeleton();
   _Fext->segment<3>(iStart) = mFext;
 }
 

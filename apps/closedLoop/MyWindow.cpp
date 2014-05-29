@@ -48,7 +48,7 @@ void MyWindow::timeStepping()
 
 Eigen::VectorXd MyWindow::computeDamping()
 {
-    int nDof = mWorld->getSkeleton(0)->getNumGenCoords();
+    int nDof = mWorld->getSkeleton(0)->getDof();
     Eigen::VectorXd damping = Eigen::VectorXd::Zero(nDof);
     // add damping to each joint; twist-dof has smaller damping
     damping = -0.01 * mWorld->getSkeleton(0)->getGenVels();

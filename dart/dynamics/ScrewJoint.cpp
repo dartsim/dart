@@ -91,7 +91,7 @@ void ScrewJoint::updateLocalTransform()
   S.head<3>() = mAxis;
   S.tail<3>() = mAxis*mPitch/DART_2PI;
   mT = mT_ParentBodyToJoint
-       * math::expMap(S*mCoordinate.getPos())
+       * math::expMap(S * mPosition)
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }

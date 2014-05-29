@@ -61,7 +61,7 @@ TranslationalJoint::~TranslationalJoint()
 void TranslationalJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(getConfigs())
+       * Eigen::Translation3d(mPositions)
        * mT_ChildBodyToJoint.inverse();
 
   // Verification

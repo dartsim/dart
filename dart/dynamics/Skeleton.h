@@ -180,7 +180,7 @@ public:
   /// \param[in] _updateTransforms True to update transformations of body nodes
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setConfigs(const Eigen::VectorXd& _configs,
+  virtual void setPositions(const Eigen::VectorXd& _configs,
                           bool _updateTransforms = true,
                           bool _updateVels = false,
                           bool _updateAccs = false);
@@ -188,13 +188,13 @@ public:
   /// \brief Set generalized velocities
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setGenVels(const Eigen::VectorXd& _genVels,
+  virtual void setVelocities(const Eigen::VectorXd& _genVels,
                           bool _updateVels = true,
                           bool _updateAccs = false);
 
   /// \brief Set generalized accelerations
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setGenAccs(const Eigen::VectorXd& _genAccs,
+  virtual void setAccelerations(const Eigen::VectorXd& _genAccs,
                           bool _updateAccs);
 
   /// \brief Set the configuration of this skeleton described in generalized
@@ -223,6 +223,75 @@ public:
 
   /// \brief Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
+
+  //----------------------------------------------------------------------------
+
+  /// Set generalized position
+  // TODO(JS): Not implemented
+  void setGenPosition(size_t _index,
+                      double _position,
+                      bool _updateTransforms = true,
+                      bool _updateVels = false,
+                      bool _updateAccs = false) {}
+
+  /// Set generalized velocity
+  // TODO(JS): Not implemented
+  void setGenVelocity(size_t _index,
+                      double _velocity,
+                      bool _updateVels = true,
+                      bool _updateAccs = false) {}
+
+  /// Set generalized acceleration
+  // TODO(JS): Not implemented
+  void setGenAcceleration(size_t _index,
+                          double _acceleration,
+                          bool _updateAccs = true) {}
+
+  /// Set generalized force
+  // TODO(JS): Not implemented
+  void setGenForce(size_t _index, double _force) {}
+
+  // TODO(JS): Not implemented
+  double getGenPosition_(size_t _index) const {}
+
+  // TODO(JS): Not implemented
+  double getGenVelocity_(size_t _index) const {}
+
+  // TODO(JS): Not implemented
+  double getGenAcceleration_(size_t _index) const {}
+
+  // TODO(JS): Not implemented
+  double getGenForce_(size_t _index) const {}
+
+  // TODO(JS): Not implemented
+  void setGenPositions_(const Eigen::VectorXd& _positions,
+                        bool _updateTransforms = true,
+                        bool _updateVels = false,
+                        bool _updateAccs = false) {}
+
+  // TODO(JS): Not implemented
+  void setGenVelocities_(const Eigen::VectorXd& _velocities,
+                         bool _updateVels = true,
+                         bool _updateAccs = false) {}
+
+  // TODO(JS): Not implemented
+  void setGenAccelerations_(const Eigen::VectorXd& _accelerations,
+                            bool _updateAccs = true) {}
+
+  // TODO(JS): Not implemented
+  void setGenForces_(const Eigen::VectorXd& _forces) {}
+
+  // TODO(JS): Not implemented
+  Eigen::VectorXd getGenPositions_() const {}
+
+  // TODO(JS): Not implemented
+  Eigen::VectorXd getGenVelocities_() const {}
+
+  // TODO(JS): Not implemented
+  Eigen::VectorXd getGenAccelerations_() const {}
+
+  // TODO(JS): Not implemented
+  Eigen::VectorXd getGenForces_() const {}
 
   //----------------------------------------------------------------------------
   // Integration
@@ -337,7 +406,7 @@ public:
   Eigen::VectorXd getInternalForceVector() const;
 
   /// \brief Get damping force of the skeleton.
-  const Eigen::VectorXd& getDampingForceVector();
+//  const Eigen::VectorXd& getDampingForceVector();
 
   /// \brief Get constraint force vector.
   const Eigen::VectorXd& getConstraintForceVector();
@@ -452,8 +521,8 @@ protected:
   /// \brief update external force vector to generalized torques.
   virtual void updateExternalForceVector();
 
-  /// \brief Update damping force vector.
-  virtual void updateDampingForceVector();
+//  /// \brief Update damping force vector.
+//  virtual void updateDampingForceVector();
 
 protected:
   /// \brief Name

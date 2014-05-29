@@ -85,7 +85,7 @@ public:
   Eigen::Vector3d getWorldPosition() const;
 
   /// \brief
-  int getSkeletonIndex() const;
+  int getIndexInSkeleton() const;
 
   /// \brief
   void setSkeletonIndex(int _idx);

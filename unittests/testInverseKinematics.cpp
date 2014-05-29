@@ -108,8 +108,8 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //                      Vector3d(0.3, 0.3, l1),
 //                      Vector3d(0.3, 0.3, l2), DOF_ROLL);
 //  robot->init();
-//  size_t dof = robot->getNumGenCoords();
-//  VectorXd oldConfig = robot->getConfigs();
+//  size_t dof = robot->getDof();
+//  VectorXd oldConfig = robot->getPositions();
 
 //  BodyNode* body1 = robot->getBodyNode(0);
 //  BodyNode* body2 = robot->getBodyNode(1);
@@ -142,7 +142,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  {
 //    // Store the original transformation and joint angle
 //    Isometry3d oldT2 = body2->getWorldTransform();
-//    VectorXd oldQ2 = joint2->getConfigs();
+//    VectorXd oldQ2 = joint2->getPositions();
 
 //    // Get desiredT2 by rotating the revolute joint with random angle
 //    joint2->setConfigs(VectorXd::Random(1), true, false, false);
@@ -168,17 +168,17 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  for (size_t i = 0; i < numRandomTests; ++i)
 //  {
 //    // Set joint limit
-//    joint2->getGenCoord(0)->setPosMin(DART_RADIAN *  0.0);
-//    joint2->getGenCoord(0)->setPosMax(DART_RADIAN * 15.0);
+//    joint2->setPositionLowerLimit(0, DART_RADIAN *  0.0);
+//    joint2->setPositionUpperLimit(0, DART_RADIAN * 15.0);
 
 //    // Store the original transformation and joint angle
 //    Isometry3d oldT2 = body2->getWorldTransform();
-//    VectorXd oldQ2 = joint2->getConfigs();
+//    VectorXd oldQ2 = joint2->getPositions();
 
 //    // Get desiredT2 by rotating the revolute joint with random angle out of
 //    // the joint limit range
-//    joint2->getGenCoord(0)->setPos(math::random(DART_RADIAN * 15.5, DART_PI));
-//    robot->setConfigs(robot->getConfigs(), true, false, false);
+//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5, DART_PI));
+//    robot->setConfigs(robot->getPositions(), true, false, false);
 //    Isometry3d desiredT2 = body2->getWorldTransform();
 
 //    // Transform body2 to the original transofrmation and check if it is done
@@ -200,7 +200,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //    body2->fitWorldTransform(desiredT2, BodyNode::IKP_PARENT_JOINT, true);
 
 //    // Check if the optimal joint anlge is in the range
-//    double newQ2 = joint2->getGenCoord(0)->getPos();
+//    double newQ2 = joint2->getPosition(0);
 //    EXPECT_GE(newQ2, DART_RADIAN *  0.0);
 //    EXPECT_LE(newQ2, DART_RADIAN * 15.0);
 //  }

@@ -89,12 +89,12 @@ void World::setConfigs(const Eigen::VectorXd& _configs)
   for (int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
+    int size  = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
 
-    getSkeleton(i)->setConfigs(_configs.segment(start, size),
+    getSkeleton(i)->setPositions(_configs.segment(start, size),
                                false, false, false);
   }
 }
@@ -105,12 +105,12 @@ void World::setGenVels(const Eigen::VectorXd& _genVels)
   for (int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
+    int size  = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
 
-    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
+    getSkeleton(i)->setVelocities(_genVels.segment(start, size), false, false);
   }
 }
 
@@ -122,7 +122,7 @@ Eigen::VectorXd World::getConfigs() const
   for (unsigned int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
+    int size = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
@@ -141,7 +141,7 @@ Eigen::VectorXd World::getGenVels() const
   for (unsigned int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
+    int size = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
@@ -175,7 +175,7 @@ Eigen::VectorXd World::evalGenAccs()
 //  for (int i = 0; i < getNumSkeletons(); i++)
 //  {
 //    // skip immobile objects in forward simulation
-//    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
+//    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getDof() == 0)
 //      continue;
 
 //    mSkeletons[i]->setConstraintForceVector(
@@ -195,11 +195,11 @@ Eigen::VectorXd World::evalGenAccs()
   for (unsigned int i = 0; i < getNumSkeletons(); i++)
   {
     // skip immobile objects in forward simulation
-    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
+    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getDof() == 0)
       continue;
 
     int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
+    int size = getSkeleton(i)->getDof();
 
     // set accelerations
     genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
@@ -214,14 +214,14 @@ void World::integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
   for (int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
+    int size  = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
 
     // TODO(JS)
 //    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
-    getSkeleton(i)->setGenVels(_genVels.segment(start, size), true, false);
+    getSkeleton(i)->setVelocities(_genVels.segment(start, size), true, false);
     getSkeleton(i)->integrateConfigs(_dt);
   }
 }
@@ -232,12 +232,12 @@ void World::integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
   for (int i = 0; i < getNumSkeletons(); i++)
   {
     int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
+    int size  = getSkeleton(i)->getDof();
 
     if (size == 0 || !mSkeletons[i]->isMobile())
       continue;
 
-    getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
+    getSkeleton(i)->setAccelerations(_genAccs.segment(start, size), false);
     getSkeleton(i)->integrateGenVels(_dt);
   }
 }
@@ -407,7 +407,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
-  mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
+  mIndices.push_back(mIndices.back() + _skeleton->getDof());
   mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
@@ -438,7 +438,7 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
 
   // Update mIndices.
   for (++i; i < mSkeletons.size() - 1; ++i)
-    mIndices[i] = mIndices[i+1] - _skeleton->getNumGenCoords();
+    mIndices[i] = mIndices[i+1] - _skeleton->getDof();
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
@@ -491,7 +491,7 @@ void World::bake()
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
   for (unsigned int i = 0; i < getNumSkeletons(); i++)
   {
-    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords())
+    state.segment(getIndex(i), getSkeleton(i)->getDof())
         = getSkeleton(i)->getConfigs();
   }
   for (int i = 0; i < nContacts; i++)

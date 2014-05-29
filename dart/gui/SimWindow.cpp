@@ -107,8 +107,8 @@ void SimWindow::draw() {
       int nSkels = mWorld->getNumSkeletons();
       for (unsigned int i = 0; i < nSkels; i++) {
         int start = mWorld->getIndex(i);
-        int size = mWorld->getSkeleton(i)->getNumGenCoords();
-        mWorld->getSkeleton(i)->setConfigs(mWorld->getRecording()->getConfig(mPlayFrame, i), true, false, false);
+        int size = mWorld->getSkeleton(i)->getDof();
+        mWorld->getSkeleton(i)->setPositions(mWorld->getRecording()->getConfig(mPlayFrame, i), true, false, false);
       }
       if (mShowMarkers) {
         int sumDofs = mWorld->getIndex(nSkels);

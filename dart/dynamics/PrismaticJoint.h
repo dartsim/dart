@@ -67,7 +67,7 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {
-    mWrench - mJacobian * GenCoordSystem::getGenForces();
+    return mWrench - mJacobian * mForce;
   }
 
 protected:

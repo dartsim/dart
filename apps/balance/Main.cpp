@@ -74,10 +74,10 @@ int main(int argc, char* argv[]) {
   for (int i = 1; i < skeleton->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skeleton->getBodyNode(i)->getParentJoint();
-    for (int j = 0; j < joint->getNumGenCoords(); ++j)
+    for (int j = 0; j < joint->getDof(); ++j)
     {
-      joint->getGenCoord(j)->setPosMin(-0.1);
-      joint->getGenCoord(j)->setPosMax(0.1);
+      joint->setPositionLowerLimit(j, -0.1);
+      joint->setPositionUpperLimit(j, 0.1);
     }
   }
 

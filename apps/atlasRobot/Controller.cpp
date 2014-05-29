@@ -209,7 +209,7 @@ void Controller::printDebugInfo() const
 {
   std::cout << "[ATLAS Robot]"  << std::endl
             << " NUM NODES : " << mAtlasRobot->getNumBodyNodes() << std::endl
-            << " NUM DOF   : " << mAtlasRobot->getNumGenCoords() << std::endl
+            << " NUM DOF   : " << mAtlasRobot->getDof() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
   for(int i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
@@ -220,7 +220,7 @@ void Controller::printDebugInfo() const
 
     std::cout << "  Joint [" << i << "]: "
               << joint->getName()
-              << " (" << joint->getNumGenCoords() << ")"
+              << " (" << joint->getDof() << ")"
               << std::endl;
     if (parentBody != NULL)
     {
@@ -310,7 +310,7 @@ void Controller::unharnessRightFoot()
 //==============================================================================
 void Controller::resetRobot()
 {
-  int dof = mAtlasRobot->getNumGenCoords();
+  int dof = mAtlasRobot->getDof();
   mAtlasRobot->setState(mInitialState, true, true, false);
 
   dtmsg << "Robot is reset." << std::endl;
@@ -818,9 +818,9 @@ void Controller::_setJointDamping()
   for (int i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
   {
     Joint* joint = mAtlasRobot->getJoint(i);
-    if (joint->getNumGenCoords() > 0)
+    if (joint->getDof() > 0)
     {
-      for (int j = 0; j < joint->getNumGenCoords(); ++j)
+      for (int j = 0; j < joint->getDof(); ++j)
         joint->setDampingCoefficient(j, 80.0);
     }
   }

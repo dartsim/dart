@@ -108,11 +108,11 @@ void SoftBodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
-{
-  BodyNode::aggregateGenCoords(_genCoords);
-  aggregatePointMassGenCoords(_genCoords);
-}
+//void SoftBodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
+//{
+//  BodyNode::aggregateGenCoords(_genCoords);
+//  aggregatePointMassGenCoords(_genCoords);
+//}
 
 //==============================================================================
 void SoftBodyNode::aggregatePointMassGenCoords(
@@ -121,7 +121,7 @@ void SoftBodyNode::aggregatePointMassGenCoords(
   for (int i = 0; i < getNumPointMasses(); ++i)
   {
     PointMass* pointMass = getPointMass(i);
-    for (int j = 0; j < pointMass->getNumGenCoords(); ++j)
+    for (int j = 0; j < pointMass->getDof(); ++j)
     {
       GenCoord* genCoord = pointMass->getGenCoord(j);
       genCoord->setSkeletonIndex(_genCoords->size());
@@ -542,10 +542,10 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getNumGenCoords();
+  int dof = mParentJoint->getDof();
   if (dof > 0)
   {
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
@@ -555,6 +555,8 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
                                           double _timeStep)
 {
+  // TODO(JS): Need to be reimplemented
+
   //------------------------ PointMass Part ------------------------------------
   for (int i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
@@ -577,7 +579,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   }
   assert(!math::isNan(mM_F));
 
-  int dof = mParentJoint->getNumGenCoords();
+  int dof = mParentJoint->getDof();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
@@ -587,11 +589,13 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
+
+    // TODO(JS): Not recommended to use Joint::getAccelerations
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getGenAccs())
-          + K * (_timeStep * _timeStep * mParentJoint->getGenAccs());
+          + D * (_timeStep * mParentJoint->getAccelerations())
+          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
   }
 }
 
@@ -759,11 +763,11 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
     mG_F.tail<3>() += (*it)->mG_F;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _g->segment(iStart, nGenCoords) = g;
   }
 }
@@ -811,11 +815,11 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
     mCg_F.tail<3>() += (*it)->mCg_F;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _Cg->segment(iStart, nGenCoords) = Cg;
   }
 }
@@ -844,12 +848,12 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
     mFext_F.tail<3>() += (*it)->mFext;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext
         = mParentJoint->getLocalJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _Fext->segment(iStart, nGenCoords) = Fext;
   }
 }

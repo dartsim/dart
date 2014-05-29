@@ -42,13 +42,13 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/GenCoord.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/ZeroDofJoint.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class WeldJoint
-class WeldJoint : public Joint
+class WeldJoint : public ZeroDofJoint
 {
 public:
   /// Constructor
@@ -66,7 +66,7 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {
-//    mWrench - mJacobian * GenCoordSystem::getGenForces();
+    return mWrench;
   }
 
 protected:
@@ -81,109 +81,7 @@ protected:
   virtual void updateLocalJacobian();
 
   // Documentation inherited
-  virtual void addVelocityTo(Eigen::Vector6d& _vel);
-
-  // Documentation inherited
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange);
-
-  // Documentation inherited
-  virtual void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
-                                        const Eigen::Vector6d& _childVelocity);
-
-  // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv();
-
-  // Documentation inherited
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc);
-
-  // Documentation inherited
-  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                    const Eigen::Matrix6d& _childArtInertia);
-
-  // Documentation inherited
-  virtual void addChildArtInertiaImplicitTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia);
-
-  // Documentation inherited
-  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia);
-
-  // Documentation inherited
-  virtual void updateInvProjArtInertiaImplicit(
-      const Eigen::Matrix6d& _artInertia, double _timeStep);
-
-  // Documentation inherited
-  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
-                                   const Eigen::Matrix6d& _childArtInertia,
-                                   const Eigen::Vector6d& _childBiasForce,
-                                   const Eigen::Vector6d& _childPartialAcc);
-
-  // Documentation inherited
-  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasImpulse);
-
-  // Documentation inherited
-  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                double _timeStep);
-
-  // Documentation inherited
-  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse);
-
-  // Documentation inherited
-  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc);
-
-  // Documentation inherited
-  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange);
-
-  // Documentation inherited
-  virtual void clearConstraintImpulse();
-
-  // Documentation inherited
-  virtual void updateVelocityWithVelocityChange();
-
-  // Documentation inherited
-  virtual void updateAccelerationWithVelocityChange(double _timeStep);
-
-  // Documentation inherited
-  virtual void updateForceWithImpulse(double _timeStep);
-
-  //----------------------------------------------------------------------------
-  // Recursive algorithms for equations of motion
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  virtual void addChildBiasForceForInvMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce);
-
-  // Documentation inherited
-  virtual void addChildBiasForceForInvAugMassMatrix(
-      Eigen::Vector6d& _parentBiasForce,
-      const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce);
-
-  // Documentation inherited
-  virtual void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce);
-
-  // Documentation inherited
-  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const size_t _col,
-                                       const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc);
-
-  // Documentation inherited
-  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const size_t _col,
-                                       const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc);
-
-  // Documentation inherited
-  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
 public:
   // To get byte-aligned Eigen vectors

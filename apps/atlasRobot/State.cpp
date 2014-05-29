@@ -74,7 +74,7 @@ State::State(Skeleton* _skeleton, const std::string& _name)
     mDesiredGlobalPelvisAngleOnSagital(0.0),
     mDesiredGlobalPelvisAngleOnCoronal(0.0)
 {
-  int dof = mSkeleton->getNumGenCoords();
+  int dof = mSkeleton->getDof();
 
   mDesiredJointPositions        = Eigen::VectorXd::Zero(dof);
   mDesiredJointPositionsBalance = Eigen::VectorXd::Zero(dof);
@@ -154,7 +154,7 @@ void State::computeControlForce(double _timestep)
 {
   assert(mNextState != NULL && "Next state should be set.");
 
-  int dof = mSkeleton->getNumGenCoords();
+  int dof = mSkeleton->getDof();
   VectorXd q = mSkeleton->getConfigs();
   VectorXd dq = mSkeleton->getGenVels();
 

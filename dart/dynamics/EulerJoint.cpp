@@ -81,16 +81,16 @@ void EulerJoint::updateLocalTransform()
   {
     case AO_XYZ:
     {
-      mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerXYZToMatrix(getConfigs())) *
-           mT_ChildBodyToJoint.inverse();
+      mT = mT_ParentBodyToJoint
+           * Eigen::Isometry3d(math::eulerXYZToMatrix(mPositions))
+           * mT_ChildBodyToJoint.inverse();
       break;
     }
     case AO_ZYX:
     {
-      mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerZYXToMatrix(getConfigs())) *
-           mT_ChildBodyToJoint.inverse();
+      mT = mT_ParentBodyToJoint
+           * Eigen::Isometry3d(math::eulerZYXToMatrix(mPositions))
+           * mT_ChildBodyToJoint.inverse();
       break;
     }
     default:
@@ -106,9 +106,9 @@ void EulerJoint::updateLocalTransform()
 //==============================================================================
 void EulerJoint::updateLocalJacobian()
 {
-  double q0 = mCoordinate[0].getPos();
-  double q1 = mCoordinate[1].getPos();
-  double q2 = mCoordinate[2].getPos();
+  double q0 = mPositions[0];
+  double q1 = mPositions[1];
+  double q2 = mPositions[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);
@@ -212,13 +212,13 @@ void EulerJoint::updateLocalJacobian()
 //==============================================================================
 void EulerJoint::updateLocalJacobianTimeDeriv()
 {
-  double q0 = mCoordinate[0].getPos();
-  double q1 = mCoordinate[1].getPos();
-  double q2 = mCoordinate[2].getPos();
+  // double q0 = mPositions[0];
+  double q1 = mPositions[1];
+  double q2 = mPositions[2];
 
-  // double dq0 = mCoordinate[0].get_dq();
-  double dq1 = mCoordinate[1].getVel();
-  double dq2 = mCoordinate[2].getVel();
+  // double dq0 = mVelocities[0];
+  double dq1 = mVelocities[1];
+  double dq2 = mVelocities[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);

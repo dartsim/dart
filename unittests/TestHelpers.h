@@ -147,9 +147,9 @@ Joint* create1DOFJoint(double val, double min, double max, int type)
     else if(type == DOF_ROLL)
         newJoint = new RevoluteJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
     // Add the transformation to the joint, set the min/max values and set it to the skeleton
-    newJoint->getGenCoord(0)->setPos(val);
-    newJoint->getGenCoord(0)->setPosMin(min);
-    newJoint->getGenCoord(0)->setPosMax(max);
+    newJoint->setPosition(0, val);
+    newJoint->setPositionLowerLimit(0, min);
+    newJoint->setPositionUpperLimit(0, max);
 
     return newJoint;
 }
@@ -375,7 +375,7 @@ Skeleton* createSphere(
     T.translation() = _position;
 
     FreeJoint* joint = new FreeJoint("joint1");
-    joint->setConfigs(logMap(T));
+    joint->setPositions(logMap(T));
 
     EllipsoidShape* ellipShape = new EllipsoidShape(Vector3d(_radius * 2.0,
                                                              _radius * 2.0,
@@ -407,7 +407,7 @@ Skeleton* createBox(
     T.linear() = eulerXYZToMatrix(_orientation);
 
     FreeJoint* joint = new FreeJoint("joint1");
-    joint->setConfigs(logMap(T));
+    joint->setPositions(logMap(T));
 
     Shape* shape = new BoxShape(_size);
 

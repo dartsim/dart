@@ -94,17 +94,17 @@ void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void BallJoint::integrateConfigs(double _dt)
+void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear() * math::expMapRot(getGenVels() * _dt);
+  mR.linear() = mR.linear() * math::expMapRot(mVelocities * _dt);
 
-  GenCoordSystem::setConfigs(math::logMap(mR.linear()));
+  mPositions = math::logMap(mR.linear());
 }
 
 //==============================================================================
 void BallJoint::updateLocalTransform()
 {
-  mR.linear() = math::expMapRot(getConfigs());
+  mR.linear() = math::expMapRot(mPositions);
 
   mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
 

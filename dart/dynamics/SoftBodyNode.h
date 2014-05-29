@@ -128,7 +128,7 @@ protected:
   virtual void init(Skeleton* _skeleton, int _skeletonIndex);
 
   // Documentation inherited.
-  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
+//  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
   // Documentation inherited.
   virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
