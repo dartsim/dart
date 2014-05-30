@@ -326,7 +326,7 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 
   mSkeleton = _skeleton;
   mSkelIndex = _skeletonIndex;
-  mParentJoint->init(_skeleton, _skeletonIndex);
+  mParentJoint->init(_skeleton);
 
   //--------------------------------------------------------------------------
   // Fill the list of generalized coordinates this node depends on, and sort

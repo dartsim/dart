@@ -107,16 +107,41 @@ public:
     return DOF;
   }
 
+  //============================================================================
+  // Documentation inherited
+  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+  {
+    if (_index >= getDof())
+    {
+      dterr << "setIndexInSkeleton index[" << _index << "] out of range"
+            << std::endl;
+      return;
+    }
+
+    mIndexInSkeleton[_index] = _indexInSkeleton;
+  }
+
+  //============================================================================
+  // Documentation inherited
+  virtual size_t getIndexInSkeleton(size_t _index) const
+  {
+    if (_index >= getDof())
+    {
+      dterr << "getIndexInSkeleton index[" << _index << "] out of range"
+            << std::endl;
+      return 0;
+    }
+
+    return mIndexInSkeleton[_index];
+  }
+
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
   //============================================================================
   // Documentation inherited
-  virtual void setPosition(size_t _index, double _position,
-                           bool _updateTransforms = true,
-                           bool _updateVels = false,
-                           bool _updateAccs = false)
+  virtual void setPosition(size_t _index, double _position)
   {
     if (_index >= getDof())
     {
@@ -125,13 +150,6 @@ public:
     }
 
     mPositions[_index] = _position;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                          _updateAccs);
-    }
   }
 
   //============================================================================
@@ -149,10 +167,7 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void setPositions(const Eigen::VectorXd& _positions,
-                            bool _updateTransforms = true,
-                            bool _updateVels = false,
-                            bool _updateAccs = false)
+  virtual void setPositions(const Eigen::VectorXd& _positions)
   {
     if (_positions.size() != getDof())
     {
@@ -162,13 +177,6 @@ public:
     }
 
     mPositions = _positions;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                          _updateAccs);
-    }
   }
 
   //============================================================================
@@ -180,18 +188,9 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void resetPositions(bool _updateTransforms = true,
-                              bool _updateVels = false,
-                              bool _updateAccs = false)
+  virtual void resetPositions()
   {
     mPositions.setZero();
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                          _updateAccs);
-    }
   }
 
   //============================================================================
@@ -256,9 +255,7 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void setVelocity(size_t _index, double _velocity,
-                           bool _updateVels = true,
-                           bool _updateAccs = false)
+  virtual void setVelocity(size_t _index, double _velocity)
   {
     if (_index >= getDof())
     {
@@ -267,12 +264,6 @@ public:
     }
 
     mVelocities[_index] = _velocity;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-    }
   }
 
   //============================================================================
@@ -290,9 +281,7 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void setVelocities(const Eigen::VectorXd& _velocities,
-                             bool _updateVels = true,
-                             bool _updateAccs = false)
+  virtual void setVelocities(const Eigen::VectorXd& _velocities)
   {
     if (_velocities.size() != getDof())
     {
@@ -302,12 +291,6 @@ public:
     }
 
     mVelocities = _velocities;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-    }
   }
 
   //============================================================================
@@ -319,16 +302,9 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void resetVelocities(bool _updateVels = true,
-                               bool _updateAccs = false)
+  virtual void resetVelocities()
   {
     mVelocities.setZero();
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-    }
   }
 
   //============================================================================
@@ -393,8 +369,7 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void setAcceleration(size_t _index, double _acceleration,
-                               bool _updateAccs)
+  virtual void setAcceleration(size_t _index, double _acceleration)
   {
     if (_index >= getDof())
     {
@@ -404,12 +379,6 @@ public:
     }
 
     mAccelerations[_index] = _acceleration;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-    }
   }
 
   //============================================================================
@@ -428,8 +397,7 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations,
-                                bool _updateAccs = true)
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations)
   {
     if (_accelerations.size() != getDof())
     {
@@ -439,12 +407,6 @@ public:
     }
 
     mAccelerations = _accelerations;
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-    }
   }
 
   //============================================================================
@@ -456,15 +418,9 @@ public:
 
   //============================================================================
   // Documentation inherited
-  virtual void resetAccelerations(bool _updateAccs = true)
+  virtual void resetAccelerations()
   {
     mAccelerations.setZero();
-
-    if (mSkeleton)
-    {
-      // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-      mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-    }
   }
 
   //============================================================================

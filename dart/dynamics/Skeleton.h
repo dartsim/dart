@@ -62,7 +62,14 @@ class PointMass;
 class Joint;
 class Marker;
 
-/// \brief class Skeleton
+/// struct GenCoordInfo
+struct GenCoordInfo
+{
+  Joint* joint;
+  size_t localIndex;
+};
+
+/// class Skeleton
 class Skeleton : public GenCoordSystem
 {
 public:
@@ -70,58 +77,58 @@ public:
   // Constructor and Destructor
   //----------------------------------------------------------------------------
 
-  /// \brief Constructor
+  /// Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~Skeleton();
 
   //----------------------------------------------------------------------------
   // Properties
   //----------------------------------------------------------------------------
 
-  /// \brief Set name.
+  /// Set name.
   void setName(const std::string& _name);
 
-  /// \brief Get name.
+  /// Get name.
   const std::string& getName() const;
 
-  /// \brief Enable self collision check
+  /// Enable self collision check
   void enableSelfCollision(bool _enableAdjecentBodies = false);
 
-  /// \brief Disable self collision check
+  /// Disable self collision check
   void disableSelfCollision();
 
-  /// \brief Return true if self collision check is enabled
+  /// Return true if self collision check is enabled
   bool isEnabledSelfCollisionCheck() const;
 
-  /// \brief Return true if self collision check is enabled including adjacent
+  /// Return true if self collision check is enabled including adjacent
   /// bodies
   bool isEnabledAdjacentBodyCheck() const;
 
-  /// \brief Set whether this skeleton will be updated by forward dynamics.
+  /// Set whether this skeleton will be updated by forward dynamics.
   /// \param[in] _isMobile True if this skeleton is mobile.
   void setMobile(bool _isMobile);
 
-  /// \brief Get whether this skeleton will be updated by forward dynamics.
+  /// Get whether this skeleton will be updated by forward dynamics.
   /// \return True if this skeleton is mobile.
   bool isMobile() const;
 
-  /// \brief Set time step. This timestep is used for implicit joint damping
+  /// Set time step. This timestep is used for implicit joint damping
   /// force.
   void setTimeStep(double _timeStep);
 
-  /// \brief Get time step.
+  /// Get time step.
   double getTimeStep() const;
 
-  /// \brief Set 3-dim gravitational acceleration. The gravity is used for
+  /// Set 3-dim gravitational acceleration. The gravity is used for
   /// calculating gravity force vector of the skeleton.
   void setGravity(const Eigen::Vector3d& _gravity);
 
-  /// \brief Get 3-dim gravitational acceleration.
+  /// Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
 
-  /// \brief Get total mass of the skeleton. The total mass is calculated at
+  /// Get total mass of the skeleton. The total mass is calculated at
   /// init().
   double getMass() const;
 
@@ -129,179 +136,248 @@ public:
   // Structueral Properties
   //----------------------------------------------------------------------------
 
-  /// \brief Add a body node
+  /// Add a body node
   void addBodyNode(BodyNode* _body);
 
-  /// \brief Get number of body nodes
+  /// Get number of body nodes
   int getNumBodyNodes() const;
 
-  /// \brief Get number of rigid body nodes.
+  /// Get number of rigid body nodes.
   int getNumRigidBodyNodes() const;
 
-  /// \brief Get number of soft body nodes.
+  /// Get number of soft body nodes.
   int getNumSoftBodyNodes() const;
 
-  /// \brief Get root body node
+  /// Get root body node
   BodyNode* getRootBodyNode() const;
 
-  /// \brief Get body node whose index is _idx
+  /// Get body node whose index is _idx
   BodyNode* getBodyNode(int _idx) const;
 
-  /// \brief Get soft body node.
+  /// Get soft body node.
   SoftBodyNode* getSoftBodyNode(int _idx) const;
 
-  /// \brief Get body node whose name is _name
+  /// Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name) const;
 
-  /// \brief Get soft body node.
+  /// Get soft body node.
   SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
-  /// \brief Get joint whose index is _idx
+  /// Get joint whose index is _idx
   Joint* getJoint(int _idx) const;
 
-  /// \brief Get joint whose name is _name
+  /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name) const;
 
-  /// \brief Get marker whose name is _name
+  /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
   //----------------------------------------------------------------------------
   // Initialization
   //----------------------------------------------------------------------------
-  /// \brief Initialize this skeleton for kinematics and dynamics
+  /// Initialize this skeleton for kinematics and dynamics
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
   //----------------------------------------------------------------------------
-  // Interfaces for generalized coordinates
+  // Generalized coordinate system
   //----------------------------------------------------------------------------
-  /// \brief Set configurations defined in terms of generalized coordinates
-  /// and update Cartesian terms of body nodes using following parameters.
-  /// \param[in] _updateTransforms True to update transformations of body nodes
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setPositions(const Eigen::VectorXd& _configs,
-                          bool _updateTransforms = true,
-                          bool _updateVels = false,
-                          bool _updateAccs = false);
 
-  /// \brief Set generalized velocities
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setVelocities(const Eigen::VectorXd& _genVels,
-                          bool _updateVels = true,
-                          bool _updateAccs = false);
+  ///
+  GenCoordInfo getGenCoordInfo(size_t _index) const;
 
-  /// \brief Set generalized accelerations
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setAccelerations(const Eigen::VectorXd& _genAccs,
-                          bool _updateAccs);
+  // Documentation inherited
+  virtual size_t getDof() const;
 
-  /// \brief Set the configuration of this skeleton described in generalized
+  //----------------------------------------------------------------------------
+  // Position
+  //----------------------------------------------------------------------------
+
+  /// Set a single position
+  virtual void setPosition(size_t _index, double _position) {}
+
+  /// Get a single position
+  virtual double getPosition(size_t _index) const {}
+
+  /// Set configurations defined in terms of generalized coordinates and update
+  /// Cartesian terms of body nodes using following parameters.
+  virtual void setPositions(const Eigen::VectorXd& _positions);
+
+  /// Get positions
+  virtual Eigen::VectorXd getPositions() const;
+
+  /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
-  /// \param[in] _updateTransforms True to update transformations of body nodes
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  void setConfigSegs(const std::vector<int>& _id,
-                     const Eigen::VectorXd& _configs,
-                     bool _updateTransforms = true,
-                     bool _updateVels = false,
-                     bool _updateAccs = false);
+  virtual void setPositionSegment(const std::vector<size_t>& _id,
+                                  const Eigen::VectorXd& _positions);
 
-  /// \brief Get the configuration of this skeleton described in generalized
+  /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
-  Eigen::VectorXd getConfigSegs(const std::vector<int>& _id) const;
+  virtual Eigen::VectorXd getPositionSegment(
+      const std::vector<size_t>& _id) const;
 
-  /// \brief Set the state of this skeleton described in generalized coordinates
-  /// \param[in] _updateTransforms True to update transformations of body nodes
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  void setState(const Eigen::VectorXd& _state,
-                bool _updateTransforms = true,
-                bool _updateVels = true,
-                bool _updateAccs = false);
+  /// Set zero all the positions
+  virtual void resetPositions() {}
 
-  /// \brief Get the state of this skeleton described in generalized coordinates
-  Eigen::VectorXd getState() const;
+  /// Set lower limit of position
+  virtual void setPositionLowerLimit(size_t _index, double _position) {}
+
+  /// Get lower limit for position
+  virtual double getPositionLowerLimit(size_t _index) {}
+
+  /// Set upper limit for position
+  virtual void setPositionUpperLimit(size_t _index, double _position) {}
+
+  /// Get upper limit for position
+  virtual double getPositionUpperLimit(size_t _index) {}
 
   //----------------------------------------------------------------------------
+  // Velocity
+  //----------------------------------------------------------------------------
 
-  /// Set generalized position
-  // TODO(JS): Not implemented
-  void setGenPosition(size_t _index,
-                      double _position,
-                      bool _updateTransforms = true,
-                      bool _updateVels = false,
-                      bool _updateAccs = false) {}
+  /// Set a single velocity
+  virtual void setVelocity(size_t _index, double _velocity) {}
 
-  /// Set generalized velocity
-  // TODO(JS): Not implemented
-  void setGenVelocity(size_t _index,
-                      double _velocity,
-                      bool _updateVels = true,
-                      bool _updateAccs = false) {}
+  /// Get a single velocity
+  virtual double getVelocity(size_t _index) const {}
 
-  /// Set generalized acceleration
-  // TODO(JS): Not implemented
-  void setGenAcceleration(size_t _index,
-                          double _acceleration,
-                          bool _updateAccs = true) {}
+  /// Set generalized velocities
+  /// \param[in] _updateVels True to update spacial velocities of body nodes
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setVelocities(const Eigen::VectorXd& _genVels);
 
-  /// Set generalized force
-  // TODO(JS): Not implemented
-  void setGenForce(size_t _index, double _force) {}
+  /// Get velocities
+  virtual Eigen::VectorXd getVelocities() const;
 
-  // TODO(JS): Not implemented
-  double getGenPosition_(size_t _index) const {}
+  /// Set zero all the velocities
+  virtual void resetVelocities() {}
 
-  // TODO(JS): Not implemented
-  double getGenVelocity_(size_t _index) const {}
+  /// Set lower limit of velocity
+  virtual void setVelocityLowerLimit(size_t _index, double _velocity) {}
 
-  // TODO(JS): Not implemented
-  double getGenAcceleration_(size_t _index) const {}
+  /// Get lower limit of velocity
+  virtual double getVelocityLowerLimit(size_t _index) {}
 
-  // TODO(JS): Not implemented
-  double getGenForce_(size_t _index) const {}
+  /// Set upper limit of velocity
+  virtual void setVelocityUpperLimit(size_t _index, double _velocity) {}
 
-  // TODO(JS): Not implemented
-  void setGenPositions_(const Eigen::VectorXd& _positions,
-                        bool _updateTransforms = true,
-                        bool _updateVels = false,
-                        bool _updateAccs = false) {}
+  /// Get upper limit of velocity
+  virtual double getVelocityUpperLimit(size_t _index) {}
 
-  // TODO(JS): Not implemented
-  void setGenVelocities_(const Eigen::VectorXd& _velocities,
-                         bool _updateVels = true,
-                         bool _updateAccs = false) {}
+  //----------------------------------------------------------------------------
+  // Acceleration
+  //----------------------------------------------------------------------------
 
-  // TODO(JS): Not implemented
-  void setGenAccelerations_(const Eigen::VectorXd& _accelerations,
-                            bool _updateAccs = true) {}
+  /// Set a single acceleration
+  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
+  virtual void setAcceleration(size_t _index, double _acceleration) {}
 
-  // TODO(JS): Not implemented
-  void setGenForces_(const Eigen::VectorXd& _forces) {}
+  /// Get a single acceleration
+  virtual double getAcceleration(size_t _index) const {}
 
-  // TODO(JS): Not implemented
-  Eigen::VectorXd getGenPositions_() const {}
+  /// Set generalized accelerations
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
 
-  // TODO(JS): Not implemented
-  Eigen::VectorXd getGenVelocities_() const {}
+  /// Get accelerations
+  virtual Eigen::VectorXd getAccelerations() const {}
 
-  // TODO(JS): Not implemented
-  Eigen::VectorXd getGenAccelerations_() const {}
+  /// Set zero all the accelerations
+  virtual void resetAccelerations() {}
 
-  // TODO(JS): Not implemented
-  Eigen::VectorXd getGenForces_() const {}
+  /// Set lower limit of acceleration
+  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) {}
+
+  /// Get lower limit of acceleration
+  virtual double getAccelerationLowerLimit(size_t _index) {}
+
+  /// Set upper limit of acceleration
+  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) {}
+
+  /// Get upper limit of acceleration
+  virtual double getAccelerationUpperLimit(size_t _index) {}
+
+  //----------------------------------------------------------------------------
+  // Force
+  //----------------------------------------------------------------------------
+
+  /// Set a single force
+  virtual void setForce(size_t _index, double _force) {}
+
+  /// Get a single force
+  virtual double getForce(size_t _index) {}
+
+  /// Set forces
+  virtual void setForces(const Eigen::VectorXd& _forces) {}
+
+  /// Get forces
+  virtual Eigen::VectorXd getForces() const {}
+
+  /// Set zero all the forces
+  virtual void resetForces() {}
+
+  /// Set lower limit of force
+  virtual void setForceLowerLimit(size_t _index, double _force) {}
+
+  /// Get lower limit of force
+  virtual double getForceLowerLimit(size_t _index) {}
+
+  /// Set upper limit of position
+  virtual void setForceUpperLimit(size_t _index, double _force) {}
+
+  /// Get upper limit of position
+  virtual double getForceUpperLimit(size_t _index) {}
+
+  //----------------------------------------------------------------------------
+  // Velocity change
+  //----------------------------------------------------------------------------
+
+  /// Set a single velocity change
+  virtual void setVelocityChange(size_t _index, double _velocityChange) {}
+
+  /// Get a single velocity change
+  virtual double getVelocityChange(size_t _index) {}
+
+  ///
+  virtual Eigen::VectorXd getVelocityChanges() const {}
+
+  /// Set zero all the velocity change
+  virtual void resetVelocityChanges() {}
+
+  //----------------------------------------------------------------------------
+  // Constraint impulse
+  //----------------------------------------------------------------------------
+
+  /// Set a single constraint impulse
+  virtual void setConstraintImpulse(size_t _index, double _impulse) {}
+
+  /// Get a single constraint impulse
+  virtual double getConstraintImpulse(size_t _index) {}
+
+  ///
+  virtual void setConstraintImpulses(const Eigen::VectorXd& _impulses) {}
+
+  /// Set zero all the constraint impulses
+  virtual void resetConstraintImpulses() {}
 
   //----------------------------------------------------------------------------
   // Integration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integrateConfigs(double _dt);
+  virtual void integratePositions(double _dt);
 
   // Documentation inherited
-  virtual void integrateGenVels(double _dt);
+  virtual void integrateVelocities(double _dt);
+
+  //----------------------------------------------------------------------------
+  // State
+  //----------------------------------------------------------------------------
+
+  /// Set the state of this skeleton described in generalized coordinates
+  void setState(const Eigen::VectorXd& _state);
+
+  /// Get the state of this skeleton described in generalized coordinates
+  Eigen::VectorXd getState() const;
 
   //----------------------------------------------------------------------------
   // Kinematics algorithms
@@ -330,142 +406,126 @@ public:
   // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
 
-  /// \brief Clear constraint impulses: (a) spatial constraints on BodyNode and
+  /// Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
   virtual void clearConstraintImpulses();
 
   // TODO(JS): To be deprecated
-  /// \brief Set constraint force vector.
+  /// Set constraint force vector.
   void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
-  /// \brief Update bias impulses
+  /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
 
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(SoftBodyNode* _softBodyNode,
                          PointMass* _pointMass,
                          const Eigen::Vector3d& _imp);
 
-  /// \brief Update velocity changes in body nodes and joints due to applied
+  /// Update velocity changes in body nodes and joints due to applied
   /// impulse
   void updateVelocityChange();
 
   // TODO(JS): Better naming
-  /// \brief Set whether this skeleton is constrained. ConstraintSolver will
+  /// Set whether this skeleton is constrained. ConstraintSolver will
   ///  mark this.
   void setImpulseApplied(bool _val);
 
-  /// \brief Get whether this skeleton is constrained
+  /// Get whether this skeleton is constrained
   bool isImpulseApplied() const;
 
-  /// \brief Compute impulse-based forward dynamics
+  /// Compute impulse-based forward dynamics
   void computeImpulseForwardDynamics();
 
-  /// \brief Compute impulse-based inverse dynamics
+  /// Compute impulse-based inverse dynamics
   void computeImpulseInverseDynamics() {}
 
-  /// \brief Compute impulse-based hybrid dynamics
+  /// Compute impulse-based hybrid dynamics
   void computeImpulseHybridDynamics() {}
 
   //----------------------------------------------------------------------------
   // Equations of Motion
   //----------------------------------------------------------------------------
 
-  /// \brief Get mass matrix of the skeleton.
+  /// Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
 
-  /// \brief Get augmented mass matrix of the skeleton. This matrix is used
+  /// Get augmented mass matrix of the skeleton. This matrix is used
   /// in ConstraintDynamics to compute constraint forces. The matrix is
   /// M + h*D + h*h*K where D is diagonal joint damping coefficient matrix, K is
   /// diagonal joint stiffness matrix, and h is simulation time step.
   const Eigen::MatrixXd& getAugMassMatrix();
 
-  /// \brief Get inverse of mass matrix of the skeleton.
+  /// Get inverse of mass matrix of the skeleton.
   const Eigen::MatrixXd& getInvMassMatrix();
 
-  /// \brief Get inverse of augmented mass matrix of the skeleton.
+  /// Get inverse of augmented mass matrix of the skeleton.
   const Eigen::MatrixXd& getInvAugMassMatrix();
 
-  /// \brief Get Coriolis force vector of the skeleton.
+  /// Get Coriolis force vector of the skeleton.
   const Eigen::VectorXd& getCoriolisForceVector();
 
-  /// \brief Get gravity force vector of the skeleton.
+  /// Get gravity force vector of the skeleton.
   const Eigen::VectorXd& getGravityForceVector();
 
-  /// \brief Get combined vector of Coriolis force and gravity force of the
-  ///        skeleton.
+  /// Get combined vector of Coriolis force and gravity force of the skeleton.
   const Eigen::VectorXd& getCombinedVector();
 
-  /// \brief Get external force vector of the skeleton.
+  /// Get external force vector of the skeleton.
   const Eigen::VectorXd& getExternalForceVector();
 
-  /// \brief Get internal force vector of the skeleton.
-  Eigen::VectorXd getInternalForceVector() const;
-
-  /// \brief Get damping force of the skeleton.
+  /// Get damping force of the skeleton.
 //  const Eigen::VectorXd& getDampingForceVector();
 
-  /// \brief Get constraint force vector.
+  /// Get constraint force vector.
   const Eigen::VectorXd& getConstraintForceVector();
 
-  /// \brief Set internal force vector.
-  void setInternalForceVector(const Eigen::VectorXd& _forces);
+  /// Set internal force vector.
+//  void setInternalForceVector(const Eigen::VectorXd& _forces);
 
-  /// \brief Set upper limit of the internal force vector.
-  void setMinInternalForceVector(const Eigen::VectorXd& _minForces);
+  /// Clear internal forces.
+//  void clearInternalForces();
 
-  /// \brief Get lower limit of the internal force vector.
-  Eigen::VectorXd getMinInternalForces() const;
-
-  /// \brief Set upper limit of the internal force vector.
-  void setMaxInternalForceVector(const Eigen::VectorXd& _maxForces);
-
-  /// \brief Get upper limit of the internal force vector.
-  Eigen::VectorXd getMaxInternalForceVector() const;
-
-  /// \brief Clear internal forces.
-  void clearInternalForces();
-
-  /// \brief Clear external forces, which are manually added to the body nodes
+  /// Clear external forces, which are manually added to the body nodes
   /// by the user.
   void clearExternalForces();
 
   //----------------------------------------------------------------------------
 
-  /// \brief Get skeleton's COM w.r.t. world frame.
+  /// Get skeleton's COM w.r.t. world frame.
   Eigen::Vector3d getWorldCOM();
 
-  /// \brief Get skeleton's COM velocity w.r.t. world frame.
+  /// Get skeleton's COM velocity w.r.t. world frame.
   Eigen::Vector3d getWorldCOMVelocity();
 
-  /// \brief Get skeleton's COM acceleration w.r.t. world frame.
+  /// Get skeleton's COM acceleration w.r.t. world frame.
   Eigen::Vector3d getWorldCOMAcceleration();
 
-  /// \brief Get skeleton's COM Jacobian w.r.t. world frame.
+  /// Get skeleton's COM Jacobian w.r.t. world frame.
   Eigen::MatrixXd getWorldCOMJacobian();
 
-  /// \brief Get skeleton's COM Jacobian time derivative w.r.t. world frame.
+  /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
-  /// \brief Get kinetic energy of this skeleton.
+  /// Get kinetic energy of this skeleton.
   virtual double getKineticEnergy() const;
 
-  /// \brief Get potential energy of this skeleton.
+  /// Get potential energy of this skeleton.
   virtual double getPotentialEnergy() const;
 
   //----------------------------------------------------------------------------
   // Rendering
   //----------------------------------------------------------------------------
 
-  /// \brief Draw this skeleton
+  /// Draw this skeleton
   void draw(renderer::RenderInterface* _ri = NULL,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
             bool _useDefaultColor = true) const;
 
-  /// \brief Draw markers in this skeleton
+  /// Draw markers in this skeleton
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
@@ -497,126 +557,132 @@ public:
   void computeHybridDynamicsRecursionB();
 
 protected:
-  /// \brief Update mass matrix of the skeleton.
+  /// Update mass matrix of the skeleton.
   virtual void updateMassMatrix();
 
-  /// \brief Update augmented mass matrix of the skeleton.
+  /// Update augmented mass matrix of the skeleton.
   virtual void updateAugMassMatrix();
 
-  /// \brief Update inverse of mass matrix of the skeleton.
+  /// Update inverse of mass matrix of the skeleton.
   virtual void updateInvMassMatrix();
 
-  /// \brief Update inverse of augmented mass matrix of the skeleton.
+  /// Update inverse of augmented mass matrix of the skeleton.
   virtual void updateInvAugMassMatrix();
 
-  /// \brief Update Coriolis force vector of the skeleton.
+  /// Update Coriolis force vector of the skeleton.
   virtual void updateCoriolisForceVector();
 
-  /// \brief Update gravity force vector of the skeleton.
+  /// Update gravity force vector of the skeleton.
   virtual void updateGravityForceVector();
 
-  /// \brief Update combined vector of the skeletong.
+  /// Update combined vector of the skeletong.
   virtual void updateCombinedVector();
 
-  /// \brief update external force vector to generalized torques.
+  /// update external force vector to generalized torques.
   virtual void updateExternalForceVector();
 
-//  /// \brief Update damping force vector.
+//  /// Update damping force vector.
 //  virtual void updateDampingForceVector();
 
 protected:
-  /// \brief Name
+  /// Name
   std::string mName;
 
-  /// \brief True if self collision check is enabled
+  /// Degrees of freedom
+  size_t mDof;
+
+  ///
+  std::vector<GenCoordInfo> mGenCoordInfos;
+
+  /// True if self collision check is enabled
   bool mEnabledSelfCollisionCheck;
 
-  /// \brief True if self collision check is enabled including adjacent bodies
+  /// True if self collision check is enabled including adjacent bodies
   bool mEnabledAdjacentBodyCheck;
 
-  /// \brief List of body nodes in the skeleton.
+  /// List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
 
-  /// \brief List of Soft body node list in the skeleton
+  /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
-  /// \brief If the skeleton is not mobile, its dynamic effect is equivalent
+  /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
   /// manually changed, the collision results might not be correct.
   bool mIsMobile;
 
-  /// \brief Time step for implicit joint damping force.
+  /// Time step for implicit joint damping force.
   double mTimeStep;
 
-  /// \brief Gravity vector.
+  /// Gravity vector.
   Eigen::Vector3d mGravity;
 
-  /// \brief Total mass.
+  /// Total mass.
   double mTotalMass;
 
-  /// \brief Dirty flag for articulated body inertia
+  /// Dirty flag for articulated body inertia
   bool mIsArticulatedInertiaDirty;
 
-  /// \brief Mass matrix for the skeleton.
+  /// Mass matrix for the skeleton.
   Eigen::MatrixXd mM;
 
-  /// \brief Dirty flag for the mass matrix.
+  /// Dirty flag for the mass matrix.
   bool mIsMassMatrixDirty;
 
-  /// \brief Mass matrix for the skeleton.
+  /// Mass matrix for the skeleton.
   Eigen::MatrixXd mAugM;
 
-  /// \brief Dirty flag for the mass matrix.
+  /// Dirty flag for the mass matrix.
   bool mIsAugMassMatrixDirty;
 
-  /// \brief Inverse of mass matrix for the skeleton.
+  /// Inverse of mass matrix for the skeleton.
   Eigen::MatrixXd mInvM;
 
-  /// \brief Dirty flag for the inverse of mass matrix.
+  /// Dirty flag for the inverse of mass matrix.
   bool mIsInvMassMatrixDirty;
 
-  /// \brief Inverse of augmented mass matrix for the skeleton.
+  /// Inverse of augmented mass matrix for the skeleton.
   Eigen::MatrixXd mInvAugM;
 
-  /// \brief Dirty flag for the inverse of augmented mass matrix.
+  /// Dirty flag for the inverse of augmented mass matrix.
   bool mIsInvAugMassMatrixDirty;
 
-  /// \brief Coriolis vector for the skeleton which is C(q,dq)*dq.
+  /// Coriolis vector for the skeleton which is C(q,dq)*dq.
   Eigen::VectorXd mCvec;
 
-  /// \brief Dirty flag for the Coriolis force vector.
+  /// Dirty flag for the Coriolis force vector.
   bool mIsCoriolisVectorDirty;
 
-  /// \brief Gravity vector for the skeleton; computed in nonrecursive
+  /// Gravity vector for the skeleton; computed in nonrecursive
   /// dynamics only.
   Eigen::VectorXd mG;
 
-  /// \brief Dirty flag for the gravity force vector.
+  /// Dirty flag for the gravity force vector.
   bool mIsGravityForceVectorDirty;
 
-  /// \brief Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
+  /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
   Eigen::VectorXd mCg;
 
-  /// \brief Dirty flag for the combined vector of Coriolis and gravity.
+  /// Dirty flag for the combined vector of Coriolis and gravity.
   bool mIsCombinedVectorDirty;
 
-  /// \brief External force vector for the skeleton.
+  /// External force vector for the skeleton.
   Eigen::VectorXd mFext;
 
-  /// \brief Dirty flag for the external force vector.
+  /// Dirty flag for the external force vector.
   bool mIsExternalForceVectorDirty;
 
-  /// \brief Constraint force vector.
+  /// Constraint force vector.
   Eigen::VectorXd mFc;
 
-  /// \brief Damping force vector.
+  /// Damping force vector.
   Eigen::VectorXd mFd;
 
-  /// \brief Dirty flag for the damping force vector.
+  /// Dirty flag for the damping force vector.
   bool mIsDampingForceVectorDirty;
 
   // TODO(JS): Better naming
-  /// \brief Flag for status of impulse testing.
+  /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
 
   //----------------------------------------------------------------------------
@@ -624,20 +690,20 @@ protected:
   //----------------------------------------------------------------------------
 public:
 
-  /// \brief
+  ///
   void resetUnion()
   {
     mUnionRootSkeleton = this;
     mUnionSize = 1;
   }
 
-  /// \brief
+  ///
   Skeleton* mUnionRootSkeleton;
 
-  /// \brief
+  ///
   size_t mUnionSize;
 
-  /// \brief
+  ///
   size_t mUnionIndex;
 
 public:

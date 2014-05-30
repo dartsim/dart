@@ -62,11 +62,22 @@ size_t ZeroDofJoint::getDof() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setPosition(size_t _index,
-                               double _position,
-                               bool _updateTransforms,
-                               bool _updateVels,
-                               bool _updateAccs)
+void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+{
+  dterr << "setIndexInSkeleton index[" << _index << "] out of range"
+        << std::endl;
+}
+
+//==============================================================================
+size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
+{
+  dterr << "getIndexInSkeleton index[" << _index << "] out of range"
+        << std::endl;
+  return 0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setPosition(size_t _index, double _position)
 {
   // Do nothing
 }
@@ -78,10 +89,7 @@ double ZeroDofJoint::getPosition(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setPositions(const Eigen::VectorXd& _positions,
-                                bool _updateTransforms,
-                                bool _updateVels,
-                                bool _updateAccs)
+void ZeroDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
   // Do nothing
 }
@@ -93,9 +101,7 @@ Eigen::VectorXd ZeroDofJoint::getPositions() const
 }
 
 //==============================================================================
-void ZeroDofJoint::resetPositions(bool _updateTransforms,
-                                  bool _updateVels,
-                                  bool _updateAccs)
+void ZeroDofJoint::resetPositions()
 {
   // Do nothing
 }
@@ -126,9 +132,7 @@ double ZeroDofJoint::getPositionUpperLimit(size_t _index)
 
 //==============================================================================
 void ZeroDofJoint::setVelocity(size_t _index,
-                               double _velocity,
-                               bool _updateVels,
-                               bool _updateAccs)
+                               double _velocity)
 {
   // Do nothing
 }
@@ -140,9 +144,7 @@ double ZeroDofJoint::getVelocity(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setVelocities(const Eigen::VectorXd& _velocities,
-                                 bool _updateVels,
-                                 bool _updateAccs)
+void ZeroDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
   // Do nothing
 }
@@ -154,7 +156,7 @@ Eigen::VectorXd ZeroDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void ZeroDofJoint::resetVelocities(bool _updateVels, bool _updateAccs)
+void ZeroDofJoint::resetVelocities()
 {
   // Do nothing
 }
@@ -185,8 +187,7 @@ double ZeroDofJoint::getVelocityUpperLimit(size_t _index)
 
 //==============================================================================
 void ZeroDofJoint::setAcceleration(size_t _index,
-                                   double _genAcc,
-                                   bool _updateAccs)
+                                   double _acceleration)
 {
   // Do nothing
 }
@@ -198,8 +199,7 @@ double ZeroDofJoint::getAcceleration(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setAccelerations(const Eigen::VectorXd& _genAccs,
-                                    bool _updateAccs)
+void ZeroDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
   // Do nothing
 }
@@ -211,7 +211,7 @@ Eigen::VectorXd ZeroDofJoint::getAccelerations() const
 }
 
 //==============================================================================
-void ZeroDofJoint::resetAccelerations(bool _updateAccs)
+void ZeroDofJoint::resetAccelerations()
 {
   // Do nothing
 }

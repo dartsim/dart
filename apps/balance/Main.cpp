@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  std::vector<int> genCoordIds;
+  std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);
   genCoordIds.push_back(6);   // left hip
   genCoordIds.push_back(14);   // left knee
@@ -68,8 +68,8 @@ int main(int argc, char* argv[]) {
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
   initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
-  myWorld->getSkeleton(1)->setConfigSegs(genCoordIds, initConfig,
-                                         true, true, false);
+  myWorld->getSkeleton(1)->setPositionSegment(genCoordIds, initConfig);
+  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
   dart::dynamics::Skeleton* skeleton = myWorld->getSkeleton(1);
   for (int i = 1; i < skeleton->getNumBodyNodes(); ++i)
   {

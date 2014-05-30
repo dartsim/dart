@@ -59,7 +59,7 @@ void MyWindow::timeStepping() {
 //  assert(vehicle != 0);
 
 //  Eigen::VectorXd q   = vehicle->getPositions();
-//  Eigen::VectorXd dq  = vehicle->getGenVels();
+//  Eigen::VectorXd dq  = vehicle->getVelocities();
 //  Eigen::VectorXd tau = vehicle->getGenForces();
 //  tau.setZero();
 

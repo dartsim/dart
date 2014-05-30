@@ -1016,7 +1016,7 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newRevoluteJoint->setPositions(ipos, false, false, false);
+    newRevoluteJoint->setPositions(ipos);
   }
 
   //--------------------------------------------------------------------------
@@ -1025,7 +1025,7 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newRevoluteJoint->setVelocities(ivel, false, false);
+    newRevoluteJoint->setVelocities(ivel);
   }
 
   return newRevoluteJoint;
@@ -1080,7 +1080,7 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newPrismaticJoint->setPositions(ipos, false, false, false);
+    newPrismaticJoint->setPositions(ipos);
   }
 
   //--------------------------------------------------------------------------
@@ -1089,7 +1089,7 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newPrismaticJoint->setVelocities(ivel, false, false);
+    newPrismaticJoint->setVelocities(ivel);
   }
 
   return newPrismaticJoint;
@@ -1150,7 +1150,7 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
-    newScrewJoint->setPositions(ipos, false, false, false);
+    newScrewJoint->setPositions(ipos);
   }
 
   //--------------------------------------------------------------------------
@@ -1159,7 +1159,7 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
-    newScrewJoint->setVelocities(ivel, false, false);
+    newScrewJoint->setVelocities(ivel);
   }
 
   return newScrewJoint;
@@ -1249,14 +1249,14 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
-    newUniversalJoint->setPositions(init_pos, false, false, false);
+    newUniversalJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
-    newUniversalJoint->setVelocities(init_vel, false, false);
+    newUniversalJoint->setVelocities(init_vel);
   }
 
   return newUniversalJoint;
@@ -1272,14 +1272,14 @@ dynamics::BallJoint* SkelParser::readBallJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newBallJoint->setPositions(init_pos, false, false, false);
+    newBallJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newBallJoint->setVelocities(init_vel, false, false);
+    newBallJoint->setVelocities(init_vel);
   }
 
   return newBallJoint;
@@ -1400,14 +1400,14 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newEulerJoint->setPositions(init_pos, false, false, false);
+    newEulerJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newEulerJoint->setVelocities(init_vel, false, false);
+    newEulerJoint->setVelocities(init_vel);
   }
 
   return newEulerJoint;
@@ -1424,14 +1424,14 @@ dynamics::TranslationalJoint* SkelParser::readTranslationalJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newTranslationalJoint->setPositions(init_pos, false, false, false);
+    newTranslationalJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newTranslationalJoint->setVelocities(init_vel, false, false);
+    newTranslationalJoint->setVelocities(init_vel);
   }
 
   return newTranslationalJoint;
@@ -1604,7 +1604,7 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
   if (hasElement(_jointElement, "init_pos"))
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
-    newPlanarJoint->setPositions(init_pos, false, false, false);
+    newPlanarJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
@@ -1612,7 +1612,7 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
   if (hasElement(_jointElement, "init_vel"))
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
-    newPlanarJoint->setVelocities(init_vel, false, false);
+    newPlanarJoint->setVelocities(init_vel);
   }
 
   return newPlanarJoint;
@@ -1628,14 +1628,14 @@ dynamics::FreeJoint* SkelParser::readFreeJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     Eigen::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
-    newFreeJoint->setPositions(init_pos, false, false, false);
+    newFreeJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
-    newFreeJoint->setPositions(init_vel, false, false, false);
+    newFreeJoint->setPositions(init_vel);
   }
 
   return newFreeJoint;

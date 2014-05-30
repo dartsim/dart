@@ -310,8 +310,8 @@ void Controller::unharnessRightFoot()
 //==============================================================================
 void Controller::resetRobot()
 {
-  int dof = mAtlasRobot->getDof();
-  mAtlasRobot->setState(mInitialState, true, true, false);
+  mAtlasRobot->setState(mInitialState);
+  mAtlasRobot->computeForwardKinematics(true, true, false);
 
   dtmsg << "Robot is reset." << std::endl;
 }

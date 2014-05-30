@@ -60,6 +60,12 @@ public:
   // Documentation inherited
   virtual size_t getDof() const;
 
+  // Documentation inherited
+  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+
+  // Documentation inherited
+  virtual size_t getIndexInSkeleton(size_t _index) const;
+
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
@@ -67,27 +73,19 @@ public:
   // TODO(JS): Not to use Eigen::VectorXd
 
   // Documentation inherited
-  virtual void setPosition(size_t _index, double _position,
-                           bool _updateTransforms = true,
-                           bool _updateVels = false,
-                           bool _updateAccs = false);
+  virtual void setPosition(size_t _index, double _position);
 
   // Documentation inherited
   virtual double getPosition(size_t _index) const;
 
   // Documentation inherited
-  virtual void setPositions(const Eigen::VectorXd& _positions,
-                            bool _updateTransforms = true,
-                            bool _updateVels = false,
-                            bool _updateAccs = false);
+  virtual void setPositions(const Eigen::VectorXd& _positions);
 
   // Documentation inherited
   virtual Eigen::VectorXd getPositions() const;
 
   // Documentation inherited
-  virtual void resetPositions(bool _updateTransforms = true,
-                              bool _updateVels = false,
-                              bool _updateAccs = false);
+  virtual void resetPositions();
 
   // Documentation inherited
   virtual void setPositionLowerLimit(size_t _index, double _position);
@@ -106,24 +104,19 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocity(size_t _index, double _velocity,
-                           bool _updateVels = true,
-                           bool _updateAccs = false);
+  virtual void setVelocity(size_t _index, double _velocity);
 
   // Documentation inherited
   virtual double getVelocity(size_t _index) const;
 
   // Documentation inherited
-  virtual void setVelocities(const Eigen::VectorXd& _velocities,
-                             bool _updateVels = true,
-                             bool _updateAccs = false);
+  virtual void setVelocities(const Eigen::VectorXd& _velocities);
 
   // Documentation inherited
   virtual Eigen::VectorXd getVelocities() const;
 
   // Documentation inherited
-  virtual void resetVelocities(bool _updateVels = true,
-                               bool _updateAccs = false);
+  virtual void resetVelocities();
 
   // Documentation inherited
   virtual void setVelocityLowerLimit(size_t _index, double _velocity);
@@ -142,21 +135,19 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setAcceleration(size_t _index, double _acceleration,
-                               bool _updateAccs);
+  virtual void setAcceleration(size_t _index, double _acceleration);
 
   // Documentation inherited
   virtual double getAcceleration(size_t _index) const;
 
   // Documentation inherited
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations,
-                                bool _updateAccs = true);
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
 
   // Documentation inherited
   virtual Eigen::VectorXd getAccelerations() const;
 
   // Documentation inherited
-  virtual void resetAccelerations(bool _updateAccs = true);
+  virtual void resetAccelerations();
 
   // Documentation inherited
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);

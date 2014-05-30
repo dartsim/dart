@@ -107,11 +107,9 @@ void JOINTS::kinematicsTest(Joint* _joint)
       dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
     }
 
-    Eigen::VectorXd state = Eigen::VectorXd::Zero(2*dof);
-    state.head(dof) = q;
-    state.tail(dof) = dq;
-    skeleton.setState(state, true, true, false);
-    skeleton.setPositions(q, true, false, false);
+    skeleton.setPositions(q);
+    skeleton.setVelocities(dq);
+    skeleton.computeForwardKinematics(true, true, false);
 
     if (_joint->getDof() == 0)
       return;
@@ -134,13 +132,15 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setPositions(q_a, true, false, false);
+      _joint->setPositions(q_a);
+      skeleton.computeForwardKinematics(true, false, false);
       Eigen::Isometry3d T_a = _joint->getLocalTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setPositions(q_b, true, false, false);
+      _joint->setPositions(q_b);
+      skeleton.computeForwardKinematics(true, false, false);
       Eigen::Isometry3d T_b = _joint->getLocalTransform();
 
       //
@@ -186,13 +186,15 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setPositions(q_a, true, false, false);
+      _joint->setPositions(q_a);
+      skeleton.computeForwardKinematics(true, false, false);
       Jacobian J_a = _joint->getLocalJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setPositions(q_b, true, false, false);
+      _joint->setPositions(q_b);
+      skeleton.computeForwardKinematics(true, false, false);
       Jacobian J_b = _joint->getLocalJacobian();
 
       //
@@ -226,7 +228,8 @@ void JOINTS::kinematicsTest(Joint* _joint)
     for (int i = 0; i < dof; ++i)
       q(i) = random(posMin, posMax);
 
-    skeleton.setPositions(q, true, false, false);
+    skeleton.setPositions(q);
+    skeleton.computeForwardKinematics(true, false, false);
 
     if (_joint->getDof() == 0)
       return;

@@ -73,10 +73,6 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mImpF(Eigen::Vector3d::Zero())
 {
   assert(mParentSoftBodyNode != NULL);
-
-  mGenCoords.push_back(&mCoordinate[0]);
-  mGenCoords.push_back(&mCoordinate[1]);
-  mGenCoords.push_back(&mCoordinate[2]);
 }
 
 PointMass::~PointMass()
@@ -124,6 +120,248 @@ bool PointMass::isColliding()
   return mIsColliding;
 }
 
+//==============================================================================
+size_t PointMass::getDof() const
+{
+  return 3;
+}
+
+//==============================================================================
+void PointMass::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+{
+  assert(_index < getDof());
+
+  mIndexInSkeleton[_index] = _indexInSkeleton;
+}
+
+//==============================================================================
+size_t PointMass::getIndexInSkeleton(size_t _index) const
+{
+  assert(_index < getDof());
+
+  return mIndexInSkeleton[_index];
+}
+
+void PointMass::setPosition(size_t _index, double _position)
+{
+
+}
+
+double PointMass::getPosition(size_t _index) const
+{
+
+}
+
+void PointMass::setPositions(const VectorXd& _positions)
+{
+
+}
+
+VectorXd PointMass::getPositions() const
+{
+
+}
+
+void PointMass::resetPositions()
+{
+
+}
+
+void PointMass::setPositionLowerLimit(size_t _index, double _position)
+{
+
+}
+
+double PointMass::getPositionLowerLimit(size_t _index)
+{
+
+}
+
+void PointMass::setPositionUpperLimit(size_t _index, double _position)
+{
+
+}
+
+double PointMass::getPositionUpperLimit(size_t _index)
+{
+
+}
+
+void PointMass::setVelocity(size_t _index, double _velocity)
+{
+
+}
+
+double PointMass::getVelocity(size_t _index) const
+{
+
+}
+
+void PointMass::setVelocities(const VectorXd& _velocities)
+{
+
+}
+
+VectorXd PointMass::getVelocities() const
+{
+
+}
+
+void PointMass::resetVelocities()
+{
+
+}
+
+void PointMass::setVelocityLowerLimit(size_t _index, double _velocity)
+{
+
+}
+
+double PointMass::getVelocityLowerLimit(size_t _index)
+{
+
+}
+
+void PointMass::setVelocityUpperLimit(size_t _index, double _velocity)
+{
+
+}
+
+double PointMass::getVelocityUpperLimit(size_t _index)
+{
+
+}
+
+void PointMass::setAcceleration(size_t _index, double _acceleration)
+{
+
+}
+
+double PointMass::getAcceleration(size_t _index) const
+{
+
+}
+
+void PointMass::setAccelerations(const Eigen::VectorXd& _accelerations)
+{
+
+}
+
+VectorXd PointMass::getAccelerations() const
+{
+
+}
+
+void PointMass::resetAccelerations()
+{
+
+}
+
+void PointMass::setAccelerationLowerLimit(size_t _index, double _acceleration)
+{
+
+}
+
+double PointMass::getAccelerationLowerLimit(size_t _index)
+{
+
+}
+
+void PointMass::setAccelerationUpperLimit(size_t _index, double _acceleration)
+{
+
+}
+
+double PointMass::getAccelerationUpperLimit(size_t _index)
+{
+
+}
+
+void PointMass::setForce(size_t _index, double _force)
+{
+
+}
+
+double PointMass::getForce(size_t _index)
+{
+
+}
+
+void PointMass::setForces(const VectorXd& _forces)
+{
+
+}
+
+VectorXd PointMass::getForces() const
+{
+
+}
+
+void PointMass::resetForces()
+{
+
+}
+
+void PointMass::setForceLowerLimit(size_t _index, double _force)
+{
+
+}
+
+double PointMass::getForceLowerLimit(size_t _index)
+{
+
+}
+
+void PointMass::setForceUpperLimit(size_t _index, double _force)
+{
+
+}
+
+double PointMass::getForceUpperLimit(size_t _index)
+{
+
+}
+
+void PointMass::setVelocityChange(size_t _index, double _velocityChange)
+{
+
+}
+
+double PointMass::getVelocityChange(size_t _index)
+{
+
+}
+
+void PointMass::resetVelocityChanges()
+{
+
+}
+
+void PointMass::setConstraintImpulse(size_t _index, double _impulse)
+{
+
+}
+
+double PointMass::getConstraintImpulse(size_t _index)
+{
+
+}
+
+void PointMass::resetConstraintImpulses()
+{
+
+}
+
+void PointMass::integratePositions(double _dt)
+{
+
+}
+
+void PointMass::integrateVelocities(double _dt)
+{
+
+}
+
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
   if (_isForceLocal)
@@ -148,13 +386,13 @@ void PointMass::setConstraintImpulse(const Eigen::Vector3d& _constImp,
 {
   if (_isLocal)
   {
-    GenCoordSystem::setConstraintImpulses(_constImp);
+    mConstraintImpulses = _constImp;
   }
   else
   {
     const Matrix3d Rt
         = mParentSoftBodyNode->getWorldTransform().linear().transpose();
-    GenCoordSystem::setConstraintImpulses(Rt * _constImp);
+    mConstraintImpulses = Rt * _constImp;
   }
 }
 
@@ -164,31 +402,27 @@ void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 {
   if (_isLocal)
   {
-//    std::cout << GenCoordSystem::getConstraintImpulses() << std::endl;
-//    std::cout << _constImp << std::endl;
-    GenCoordSystem::setConstraintImpulses(
-          GenCoordSystem::getConstraintImpulses() + _constImp);
+    mConstraintImpulses += _constImp;
   }
   else
   {
     const Matrix3d Rt
         = mParentSoftBodyNode->getWorldTransform().linear().transpose();
-    GenCoordSystem::setConstraintImpulses(
-          GenCoordSystem::getConstraintImpulses() + Rt * _constImp);
+    mConstraintImpulses.noalias() += Rt * _constImp;
   }
 }
 
 //==============================================================================
 Eigen::Vector3d PointMass::getConstraintImpulses() const
 {
-  return GenCoordSystem::getConstraintImpulses();
+  return mConstraintImpulses;
 }
 
 //==============================================================================
 void PointMass::clearConstraintImpulse()
 {
-  assert(GenCoordSystem::getDof() == 3);
-  GenCoordSystem::setConstraintImpulses(Eigen::Vector3d::Zero());
+  assert(getDof() == 3);
+  mConstraintImpulses.setZero();
   mDelV.setZero();
   mImpB.setZero();
   mImpAlpha.setZero();
@@ -305,7 +539,7 @@ void PointMass::init()
 void PointMass::updateTransform()
 {
   // Local transpose
-  mX = getConfigs() + mX0;
+  mX = mPositions + mX0;
   assert(!math::isNan(mX));
 
   // World transpose
@@ -319,14 +553,14 @@ void PointMass::updateVelocity()
   // v = w(parent) x mX + v(parent) + dq
   mV = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mX)
        + mParentSoftBodyNode->getBodyVelocity().tail<3>()
-       + getGenVels();
+       + mVelocities;
   assert(!math::isNan(mV));
 }
 
 void PointMass::updatePartialAcceleration()
 {
   // eta = w(parent) x dq
-  Eigen::Vector3d dq = getGenVels();
+  Eigen::Vector3d dq = mVelocities;
   mEta = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(dq);
   assert(!math::isNan(mEta));
 }
@@ -336,7 +570,7 @@ void PointMass::updateAcceleration()
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
   mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        mEta + getGenAccs();
+        mEta + mAccelerations;
   assert(!math::isNan(mdV));
 }
 
@@ -381,7 +615,7 @@ void PointMass::updateArticulatedInertia(double _dt)
 void PointMass::updateGeneralizedForce(bool _withDampingForces)
 {
   // tau = f
-  setGenForces(mF);
+  mForces = mF;
 }
 
 void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
@@ -403,15 +637,15 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
   double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
   double kd = mParentSoftBodyNode->getDampingCoefficient();
   int nN = mConnectedPointMasses.size();
-  mAlpha = getGenForces()
-           - (kv + nN * ke) * getConfigs()
-           - (_dt * (kv + nN * ke) + kd) * getGenVels()
+  mAlpha = mForces
+           - (kv + nN * ke) * mPositions
+           - (_dt * (kv + nN * ke) + kd) * mVelocities
            - mMass * mEta
            - mB;
   for (int i = 0; i < mConnectedPointMasses.size(); ++i)
   {
-    mAlpha += ke * (mConnectedPointMasses[i]->getConfigs()
-                    + _dt * mConnectedPointMasses[i]->getGenVels());
+    mAlpha += ke * (mConnectedPointMasses[i]->mPositions
+                    + _dt * mConnectedPointMasses[i]->mVelocities);
   }
   assert(!math::isNan(mAlpha));
 
@@ -435,7 +669,7 @@ void PointMass::updateJointAndBodyAcceleration()
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
   mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        mEta + getGenAccs();
+        mEta + mAccelerations;
   assert(!math::isNan(mdV));
 }
 
@@ -449,7 +683,7 @@ void PointMass::updateTransmittedForce()
 
 void PointMass::updateMassMatrix()
 {
-  mM_dV = getGenAccs()
+  mM_dV = mAccelerations
           + mParentSoftBodyNode->mM_dV.head<3>().cross(mX)
           + mParentSoftBodyNode->mM_dV.tail<3>();
   assert(!math::isNan(mM_dV));
@@ -458,7 +692,7 @@ void PointMass::updateMassMatrix()
 //==============================================================================
 void PointMass::updateBiasImpulse()
 {
-  mImpB = -GenCoordSystem::getConstraintImpulses();
+  mImpB = -mConstraintImpulses;
   assert(!math::isNan(mImpB));
 
   // Cache data: alpha
@@ -486,12 +720,12 @@ void PointMass::updateJointVelocityChange()
 
 //  del_dq = Eigen::Vector3d::Zero();
 
-  GenCoordSystem::setVelsChange(del_dq);
+  mVelocityChanges = del_dq;
   assert(!math::isNan(del_dq));
 
   mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
           + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
-          + GenCoordSystem::getVelsChange();
+          + mVelocityChanges;
   assert(!math::isNan(mDelV));
 }
 
@@ -500,7 +734,7 @@ void PointMass::updateBodyVelocityChange()
 {
   mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
           + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
-          + GenCoordSystem::getVelsChange();
+          + mVelocityChanges;
   assert(!math::isNan(mDelV));
 }
 
@@ -516,7 +750,7 @@ void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   mM_F.noalias() = mMass * mM_dV;
   _MCol->block<3, 1>(iStart, _col).noalias() = mM_F;
 }
@@ -526,32 +760,32 @@ void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   mM_F.noalias() = mMass * mM_dV;
 
   double d = mParentSoftBodyNode->getDampingCoefficient();
   double kv = mParentSoftBodyNode->getVertexSpringStiffness();
   _MCol->block<3, 1>(iStart, _col).noalias()
-      = mM_F + (_timeStep * _timeStep * kv + _timeStep * d) * getGenAccs();
+      = mM_F + (_timeStep * _timeStep * kv + _timeStep * d) * mAccelerations;
 }
 
 void PointMass::updateInvMassMatrix()
 {
-  mBiasForceForInvMeta = getGenForces();
+  mBiasForceForInvMeta = mForces;
 }
 
 void PointMass::updateInvAugMassMatrix()
 {
-  mBiasForceForInvMeta = mMass * mImplicitPsi * getGenForces();
+  mBiasForceForInvMeta = mMass * mImplicitPsi * mForces;
 }
 
 void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   _MInvCol->block<3, 1>(iStart, _col)
-      = mPsi * getGenForces()
+      = mPsi * mForces
         - mParentSoftBodyNode->mInvM_U.head<3>().cross(mX)
         - mParentSoftBodyNode->mInvM_U.tail<3>();
 }
@@ -561,10 +795,10 @@ void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
 {
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   _MInvCol->block<3, 1>(iStart, _col)
       = mImplicitPsi
-        * (getGenForces()
+        * (mForces
            - mMass * (mParentSoftBodyNode->mInvM_U.head<3>().cross(mX)
                       + mParentSoftBodyNode->mInvM_U.tail<3>()));
 }
@@ -577,7 +811,7 @@ void PointMass::aggregateGravityForceVector(Eigen::VectorXd* _g,
 
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   _g->segment<3>(iStart) = mG_F;
 }
 
@@ -599,13 +833,13 @@ void PointMass::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 
   // Assign
   // We assume that the three generalized coordinates are in a row.
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   _Cg->segment<3>(iStart) = mCg_F;
 }
 
 void PointMass::aggregateExternalForces(Eigen::VectorXd* _Fext)
 {
-  int iStart = getGenCoord(0)->getIndexInSkeleton();
+  int iStart = mIndexInSkeleton[0];
   _Fext->segment<3>(iStart) = mFext;
 }
 

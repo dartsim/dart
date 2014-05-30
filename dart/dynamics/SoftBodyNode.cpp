@@ -115,20 +115,20 @@ void SoftBodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 //}
 
 //==============================================================================
-void SoftBodyNode::aggregatePointMassGenCoords(
-    std::vector<GenCoord*>* _genCoords)
-{
-  for (int i = 0; i < getNumPointMasses(); ++i)
-  {
-    PointMass* pointMass = getPointMass(i);
-    for (int j = 0; j < pointMass->getDof(); ++j)
-    {
-      GenCoord* genCoord = pointMass->getGenCoord(j);
-      genCoord->setSkeletonIndex(_genCoords->size());
-      _genCoords->push_back(genCoord);
-    }
-  }
-}
+//void SoftBodyNode::aggregatePointMassGenCoords(
+//    std::vector<GenCoord*>* _genCoords)
+//{
+//  for (int i = 0; i < getNumPointMasses(); ++i)
+//  {
+//    PointMass* pointMass = getPointMass(i);
+//    for (int j = 0; j < pointMass->getDof(); ++j)
+//    {
+//      GenCoord* genCoord = pointMass->getGenCoord(j);
+//      genCoord->setSkeletonIndex(_genCoords->size());
+//      _genCoords->push_back(genCoord);
+//    }
+//  }
+//}
 
 //==============================================================================
 double SoftBodyNode::getMass() const

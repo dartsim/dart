@@ -48,130 +48,178 @@
 namespace dart {
 namespace dynamics {
 
-/// \brief Base class for generalized coordinate systems
+/// Base class for generalized coordinate systems
 class GenCoordSystem
 {
 public:
-  /// \brief Get number of generalized coordinates
-  size_t getDof() const;
+  /// Get number of generalized coordinates
+  virtual size_t getDof() const = 0;
 
-  /// \brief Get generalized coordinate whose index is _idx
-  GenCoord* getGenCoord(size_t _idx) const;
+//----------------------------------------------------------------------------
+  // Position
+  //----------------------------------------------------------------------------
 
-  /// \brief Get gneralized coordinate whose name is _name
-  GenCoord* getGenCoord(const std::string& _name) const;
+  /// Set a single position
+  virtual void setPosition(size_t _index, double _position) = 0;
 
-  //--------------------------- Configurations ---------------------------------
-  /// \brief Set configurations defined in terms of generalized coordinates
-  virtual void setPositions(const Eigen::VectorXd& _configs);
+  /// Get a single position
+  virtual double getPosition(size_t _index) const = 0;
 
-  /// \brief Get configurations defined in terms of generalized coordinates
-  virtual Eigen::VectorXd getConfigs() const;
+  /// Set positions
+  virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
 
-  /// \brief Set lower bounds for configurations
-  virtual void setConfigsMin(const Eigen::VectorXd& _configsMin);
+  /// Get positions
+  virtual Eigen::VectorXd getPositions() const = 0;
 
-  /// \brief Get lower bounds for configurations
-  virtual Eigen::VectorXd getConfigsMin() const;
+  /// Set zero all the positions
+  virtual void resetPositions() = 0;
 
-  /// \brief Set upper bounds for configurations
-  virtual void setConfigsMax(const Eigen::VectorXd& _configsMax);
+  /// Set lower limit of position
+  virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
-  /// \brief Get uppoer bounds for configurations
-  virtual Eigen::VectorXd getConfigsMax() const;
+  /// Get lower limit for position
+  virtual double getPositionLowerLimit(size_t _index) = 0;
 
-  //----------------------------- Velocities -----------------------------------
-  /// \brief Set generalized velocities
-  virtual void setVelocities(const Eigen::VectorXd& _vels);
+  /// Set upper limit for position
+  virtual void setPositionUpperLimit(size_t _index, double _position) = 0;
 
-  /// \brief Get generalized velocities
-  virtual Eigen::VectorXd getGenVels() const;
+  /// Get upper limit for position
+  virtual double getPositionUpperLimit(size_t _index) = 0;
 
-  /// \brief Set lower bounds for generalized velocities
-  virtual void setGenVelsMin(const Eigen::VectorXd& _velsMin);
+  //----------------------------------------------------------------------------
+  // Velocity
+  //----------------------------------------------------------------------------
 
-  /// \brief Get lower bounds for generalized velocities
-  virtual Eigen::VectorXd getGenVelsMin() const;
+  /// Set a single velocity
+  virtual void setVelocity(size_t _index, double _velocity) = 0;
 
-  /// \brief Set upper bounds for generalized velocities
-  virtual void setGenVelsMax(const Eigen::VectorXd& _velsMax);
+  /// Get a single velocity
+  virtual double getVelocity(size_t _index) const = 0;
 
-  /// \brief Get uppoer bounds for generalized velocities
-  virtual Eigen::VectorXd getGenVelsMax() const;
+  /// Set velocities
+  virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
 
-  //---------------------------- Accelerations ---------------------------------
-  /// \brief Set generalized accelerations
-  virtual void setAccelerations(const Eigen::VectorXd& _accs);
+  /// Get velocities
+  virtual Eigen::VectorXd getVelocities() const = 0;
 
-  /// \brief Get generalized accelerations
-  virtual Eigen::VectorXd getGenAccs() const;
+  /// Set zero all the velocities
+  virtual void resetVelocities() = 0;
 
-  /// \brief Set lower bounds for generalized accelerations
-  virtual void setGenAccsMin(const Eigen::VectorXd& _accsMin);
+  /// Set lower limit of velocity
+  virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
-  /// \brief Get lower bounds for generalized accelerations
-  virtual Eigen::VectorXd getGenAccsMin() const;
+  /// Get lower limit of velocity
+  virtual double getVelocityLowerLimit(size_t _index) = 0;
 
-  /// \brief Set upper bounds for generalized accelerations
-  virtual void setGenAccsMax(const Eigen::VectorXd& _accsMax);
+  /// Set upper limit of velocity
+  virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
 
-  /// \brief Get uppoer bounds for generalized accelerations
-  virtual Eigen::VectorXd getGenAccsMax() const;
+  /// Get upper limit of velocity
+  virtual double getVelocityUpperLimit(size_t _index) = 0;
 
-  //------------------------------- Forces -------------------------------------
-  /// \brief Set generalized forces
-  virtual void setGenForces(const Eigen::VectorXd& _forces);
+  //----------------------------------------------------------------------------
+  // Acceleration
+  //----------------------------------------------------------------------------
 
-  /// \brief Get generalized forces
-  virtual Eigen::VectorXd getGenForces() const;
+  /// Set a single acceleration
+  virtual void setAcceleration(size_t _index, double _acceleration) = 0;
 
-  /// \brief Set lower bounds for generalized forces
-  virtual void setGenForcesMin(const Eigen::VectorXd& _forcesMin);
+  /// Get a single acceleration
+  virtual double getAcceleration(size_t _index) const = 0;
 
-  /// \brief Get lower bounds for generalized forces
-  virtual Eigen::VectorXd getGenForcesMin() const;
+  /// Set accelerations
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
 
-  /// \brief Set upper bounds for generalized forces
-  virtual void setGenForcesMax(const Eigen::VectorXd& _forcesMax);
+  /// Get accelerations
+  virtual Eigen::VectorXd getAccelerations() const = 0;
 
-  /// \brief Get uppoer bounds for generalized forces
-  virtual Eigen::VectorXd getGenForcesMax() const;
+  /// Set zero all the accelerations
+  virtual void resetAccelerations() = 0;
 
-  //------------------------------- Impulse ------------------------------------
-  /// \brief Set velocity change
-  virtual void setVelsChange(const Eigen::VectorXd& _velsChange);
+  /// Set lower limit of acceleration
+  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
 
-  /// \brief Get velocity change
-  virtual Eigen::VectorXd getVelsChange() const;
+  /// Get lower limit of acceleration
+  virtual double getAccelerationLowerLimit(size_t _index) = 0;
 
-//  /// \brief Set impulses
-//  virtual void setImpulses(const Eigen::VectorXd& _impulses);
+  /// Set upper limit of acceleration
+  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
 
-//  /// \brief Get impulses
-//  virtual Eigen::VectorXd getImpulses() const;
+  /// Get upper limit of acceleration
+  virtual double getAccelerationUpperLimit(size_t _index) = 0;
 
-  /// \brief Set generalized constraint impulses
-  void setConstraintImpulses(const Eigen::VectorXd& _constImps);
+  //----------------------------------------------------------------------------
+  // Force
+  //----------------------------------------------------------------------------
 
-  /// \brief Get generalized constraint impulses
-  Eigen::VectorXd getConstraintImpulses() const;
+  /// Set a single force
+  virtual void setForce(size_t _index, double _force) = 0;
 
-  //----------------------------- Integration ----------------------------------
-  /// \brief Integrate configurations with timestep _dt
-  virtual void integrateConfigs(double _dt);
+  /// Get a single force
+  virtual double getForce(size_t _index) = 0;
 
-  /// \brief Integrate generalized velocities with timespte _dt
-  virtual void integrateGenVels(double _dt);
+  /// Set forces
+  virtual void setForces(const Eigen::VectorXd& _forces) = 0;
+
+  /// Get forces
+  virtual Eigen::VectorXd getForces() const = 0;
+
+  /// Set zero all the forces
+  virtual void resetForces() = 0;
+
+  /// Set lower limit of force
+  virtual void setForceLowerLimit(size_t _index, double _force) = 0;
+
+  /// Get lower limit of force
+  virtual double getForceLowerLimit(size_t _index) = 0;
+
+  /// Set upper limit of position
+  virtual void setForceUpperLimit(size_t _index, double _force) = 0;
+
+  /// Get upper limit of position
+  virtual double getForceUpperLimit(size_t _index) = 0;
+
+  //----------------------------------------------------------------------------
+  // Velocity change
+  //----------------------------------------------------------------------------
+
+  /// Set a single velocity change
+  virtual void setVelocityChange(size_t _index, double _velocityChange) = 0;
+
+  /// Get a single velocity change
+  virtual double getVelocityChange(size_t _index) = 0;
+
+  /// Set zero all the velocity change
+  virtual void resetVelocityChanges() = 0;
+
+  //----------------------------------------------------------------------------
+  // Constraint impulse
+  //----------------------------------------------------------------------------
+
+  /// Set a single constraint impulse
+  virtual void setConstraintImpulse(size_t _index, double _impulse) = 0;
+
+  /// Get a single constraint impulse
+  virtual double getConstraintImpulse(size_t _index) = 0;
+
+  /// Set zero all the constraint impulses
+  virtual void resetConstraintImpulses() = 0;
+
+  //----------------------------------------------------------------------------
+  // Integration
+  //----------------------------------------------------------------------------
+
+  /// Integrate positions using Euler method
+  virtual void integratePositions(double _dt) = 0;
+
+  /// Integrate velocities using Euler method
+  virtual void integrateVelocities(double _dt) = 0;
 
 protected:
-  /// \brief Array of pointers to generalized coordinates
-  std::vector<GenCoord*> mGenCoords;
-
-protected:
-  /// \brief Constructor
+  /// Constructor
   GenCoordSystem();
 
-  /// \brief Destructor
+  /// Destructor
   virtual ~GenCoordSystem();
 };
 

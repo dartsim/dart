@@ -93,11 +93,33 @@ size_t SingleDofJoint::getDof() const
 }
 
 //==============================================================================
-void SingleDofJoint::setPosition(size_t _index,
-                                 double _position,
-                                 bool _updateTransforms,
-                                 bool _updateVels,
-                                 bool _updateAccs)
+void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+{
+  if (_index != 0)
+  {
+    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mIndexInSkeleton = _indexInSkeleton;
+}
+
+//==============================================================================
+size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
+          << std::endl;
+    return 0;
+  }
+
+  return mIndexInSkeleton;
+}
+
+//==============================================================================
+void SingleDofJoint::setPosition(size_t _index, double _position)
 {
   if (_index != 0)
   {
@@ -106,13 +128,6 @@ void SingleDofJoint::setPosition(size_t _index,
   }
 
   mPosition = _position;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                        _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -128,10 +143,7 @@ double SingleDofJoint::getPosition(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions,
-                                  bool _updateTransforms,
-                                  bool _updateVels,
-                                  bool _updateAccs)
+void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
   if (_positions.size() != getDof())
   {
@@ -141,13 +153,6 @@ void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions,
   }
 
   mPosition = _positions[0];
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                        _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -157,18 +162,9 @@ Eigen::VectorXd SingleDofJoint::getPositions() const
 }
 
 //==============================================================================
-void SingleDofJoint::resetPositions(bool _updateTransforms,
-                                    bool _updateVels,
-                                    bool _updateAccs)
+void SingleDofJoint::resetPositions()
 {
   mPosition = 0.0;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(_updateTransforms, _updateVels,
-                                        _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -224,10 +220,7 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index)
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocity(size_t _index,
-                                 double _velocity,
-                                 bool _updateVels,
-                                 bool _updateAccs)
+void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 {
   if (_index != 0)
   {
@@ -236,12 +229,6 @@ void SingleDofJoint::setVelocity(size_t _index,
   }
 
   mVelocity = _velocity;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -257,9 +244,7 @@ double SingleDofJoint::getVelocity(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities,
-                                   bool _updateVels,
-                                   bool _updateAccs)
+void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
   if (_velocities.size() != getDof())
   {
@@ -269,12 +254,6 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities,
   }
 
   mVelocity = _velocities[0];
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -284,15 +263,9 @@ Eigen::VectorXd SingleDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void SingleDofJoint::resetVelocities(bool _updateVels, bool _updateAccs)
+void SingleDofJoint::resetVelocities()
 {
   mVelocity = 0.0;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, _updateVels, _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -348,9 +321,7 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index)
 }
 
 //==============================================================================
-void SingleDofJoint::setAcceleration(size_t _index,
-                                     double _acceleration,
-                                     bool _updateAccs)
+void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 {
   if (_index != 0)
   {
@@ -360,12 +331,6 @@ void SingleDofJoint::setAcceleration(size_t _index,
   }
 
   mAcceleration = _acceleration;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -382,8 +347,7 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations,
-                                      bool _updateAccs)
+void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
   if (_accelerations.size() != getDof())
   {
@@ -393,12 +357,6 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations,
   }
 
   mAcceleration = _accelerations[0];
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-  }
 }
 
 //==============================================================================
@@ -408,15 +366,9 @@ Eigen::VectorXd SingleDofJoint::getAccelerations() const
 }
 
 //==============================================================================
-void SingleDofJoint::resetAccelerations(bool _updateAccs)
+void SingleDofJoint::resetAccelerations()
 {
   mAcceleration = 0.0;
-
-  if (mSkeleton)
-  {
-    // TODO(JS): It would be good if we know whether the skeleton is initialzed.
-    mSkeleton->computeForwardKinematics(false, false, _updateAccs);
-  }
 }
 
 //==============================================================================

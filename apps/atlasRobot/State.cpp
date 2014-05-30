@@ -155,8 +155,8 @@ void State::computeControlForce(double _timestep)
   assert(mNextState != NULL && "Next state should be set.");
 
   int dof = mSkeleton->getDof();
-  VectorXd q = mSkeleton->getConfigs();
-  VectorXd dq = mSkeleton->getGenVels();
+  VectorXd q = mSkeleton->getPositions();
+  VectorXd dq = mSkeleton->getVelocities();
 
   // Compute relative joint angles from desired global angles of the pelvis and
   // the swing leg
@@ -207,7 +207,7 @@ void State::computeControlForce(double _timestep)
   _updateTorqueForStanceLeg();
 
   // Apply control torque to the skeleton
-  mSkeleton->setInternalForceVector(mTorque);
+  mSkeleton->setForces(mTorque);
 
   mElapsedTime += _timestep;
   mFrame++;

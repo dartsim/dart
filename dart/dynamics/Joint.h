@@ -43,6 +43,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
+#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer {
@@ -57,7 +58,7 @@ class BodyNode;
 class Skeleton;
 
 /// class Joint
-class Joint
+class Joint : public GenCoordSystem
 {
 public:
   /// Constructor
@@ -74,9 +75,6 @@ public:
 
   /// Get skeleton that this joint belongs to. The skeleton set by init().
   Skeleton* getSkeleton() const;
-
-  /// Get index of this joint in the skeleton that this joint belongs to
-  int getIndexInSkeleton() const;
 
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
@@ -97,6 +95,12 @@ public:
   // TODO(JS):
   /// Get whether enforcing joint position limit
   bool isPositionLimited() const;
+
+  /// Set an unique index in skeleton of a generalized coordinate in this joint
+  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) = 0;
+
+  /// Get an unique index in skeleton of a generalized coordinate in this joint
+  virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
   //----------------------------------------------------------------------------
   // Spring and damper
@@ -129,217 +133,6 @@ public:
   /// Get damping coefficient for viscous force
   /// \param[in] _index Index of joint axis
   virtual double getDampingCoefficient(size_t _index) const = 0;
-
-  //----------------------------------------------------------------------------
-
-  /// Get number of generalized coordinates
-  virtual size_t getDof() const = 0;
-
-  // TODO(JS): Not implemented
-  // TODO(JS): Need?
-  /// Set an unique index in skeleton of a generalized coordinate in this joint
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) {}
-
-  // TODO(JS): Not implemented
-  // TODO(JS): Need?
-  /// Get an unique index in skeleton of a generalized coordinate in this joint
-  virtual int getIndexInSkeleton(size_t _index) const {}
-
-  //----------------------------------------------------------------------------
-  // Position
-  //----------------------------------------------------------------------------
-
-  /// Set a single position
-  /// \param[in] _updateTransforms True to update transformations of body nodes
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setPosition(size_t _index, double _position,
-                           bool _updateTransforms = true,
-                           bool _updateVels = false,
-                           bool _updateAccs = false) = 0;
-
-  /// Get a single position
-  virtual double getPosition(size_t _index) const = 0;
-
-  // TODO(JS): Need?
-  /// Set positions
-  /// \param[in] _updateTransforms True to update transformations of body nodes
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setPositions(const Eigen::VectorXd& _positions,
-                            bool _updateTransforms = true,
-                            bool _updateVels = false,
-                            bool _updateAccs = false) = 0;
-
-  // TODO(JS): Need?
-  /// Get positions
-  virtual Eigen::VectorXd getPositions() const = 0;
-
-  /// Set zero all the positions
-  virtual void resetPositions(bool _updateTransforms = true,
-                              bool _updateVels = false,
-                              bool _updateAccs = false) = 0;
-
-  /// Set lower limit of position
-  virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
-
-  /// Get lower limit for position
-  virtual double getPositionLowerLimit(size_t _index) = 0;
-
-  /// Set upper limit for position
-  virtual void setPositionUpperLimit(size_t _index, double _position) = 0;
-
-  /// Get upper limit for position
-  virtual double getPositionUpperLimit(size_t _index) = 0;
-
-  //----------------------------------------------------------------------------
-  // Velocity
-  //----------------------------------------------------------------------------
-
-  /// Set a single velocity
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setVelocity(size_t _index, double _velocity,
-                           bool _updateVels = true,
-                           bool _updateAccs = false) = 0;
-
-  /// Get a single velocity
-  virtual double getVelocity(size_t _index) const = 0;
-
-  // TODO(JS): Need?
-  /// Set velocities
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setVelocities(const Eigen::VectorXd& _velocities,
-                             bool _updateVels = true,
-                             bool _updateAccs = false) = 0;
-
-  // TODO(JS): Need?
-  /// Get velocities
-  virtual Eigen::VectorXd getVelocities() const = 0;
-
-  /// Set zero all the velocities
-  virtual void resetVelocities(bool _updateVels = true,
-                               bool _updateAccs = false) = 0;
-
-  /// Set lower limit of velocity
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
-
-  /// Get lower limit of velocity
-  virtual double getVelocityLowerLimit(size_t _index) = 0;
-
-  /// Set upper limit of velocity
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
-
-  /// Get upper limit of velocity
-  virtual double getVelocityUpperLimit(size_t _index) = 0;
-
-  //----------------------------------------------------------------------------
-  // Acceleration
-  //----------------------------------------------------------------------------
-
-  /// Set a single acceleration
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setAcceleration(size_t _index, double _acceleration,
-                               bool _updateAccs) = 0;
-
-  /// Get a single acceleration
-  virtual double getAcceleration(size_t _index) const = 0;
-
-  // TODO(JS): Need?
-  /// Set accelerations
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations,
-                                bool _updateAccs = true) = 0;
-
-  // TODO(JS): Need?
-  /// Get accelerations
-  virtual Eigen::VectorXd getAccelerations() const = 0;
-
-  /// Set zero all the accelerations
-  virtual void resetAccelerations(bool _updateAccs = true) = 0;
-
-  /// Set lower limit of acceleration
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
-
-  /// Get lower limit of acceleration
-  virtual double getAccelerationLowerLimit(size_t _index) = 0;
-
-  /// Set upper limit of acceleration
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
-
-  /// Get upper limit of acceleration
-  virtual double getAccelerationUpperLimit(size_t _index) = 0;
-
-  //----------------------------------------------------------------------------
-  // Force
-  //----------------------------------------------------------------------------
-
-  /// Set a single force
-  virtual void setForce(size_t _index, double _force) = 0;
-
-  /// Get a single force
-  virtual double getForce(size_t _index) = 0;
-
-  // TODO(JS): Need?
-  /// Set forces
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setForces(const Eigen::VectorXd& _forces) = 0;
-
-  // TODO(JS): Need?
-  /// Get forces
-  virtual Eigen::VectorXd getForces() const = 0;
-
-  /// Set zero all the forces
-  virtual void resetForces() = 0;
-
-  /// Set lower limit of force
-  virtual void setForceLowerLimit(size_t _index, double _force) = 0;
-
-  /// Get lower limit of force
-  virtual double getForceLowerLimit(size_t _index) = 0;
-
-  /// Set upper limit of position
-  virtual void setForceUpperLimit(size_t _index, double _force) = 0;
-
-  /// Get upper limit of position
-  virtual double getForceUpperLimit(size_t _index) = 0;
-
-  //----------------------------------------------------------------------------
-  // Velocity change
-  //----------------------------------------------------------------------------
-
-  /// Set a single velocity change
-  virtual void setVelocityChange(size_t _index, double _velocityChange) = 0;
-
-  /// Get a single velocity change
-  virtual double getVelocityChange(size_t _index) = 0;
-
-  /// Set zero all the velocity change
-  virtual void resetVelocityChanges() = 0;
-
-  //----------------------------------------------------------------------------
-  // Constraint impulse
-  //----------------------------------------------------------------------------
-
-  /// Set a single constraint impulse
-  virtual void setConstraintImpulse(size_t _index, double _impulse) = 0;
-
-  /// Get a single constraint impulse
-  virtual double getConstraintImpulse(size_t _index) = 0;
-
-  /// Set zero all the constraint impulses
-  virtual void resetConstraintImpulses() = 0;
-
-  //----------------------------------------------------------------------------
-  // Integration
-  //----------------------------------------------------------------------------
-
-  /// Integrate positions using Euler method
-  virtual void integratePositions(double _dt) = 0;
-
-  /// Integrate velocities using Euler method
-  virtual void integrateVelocities(double _dt) = 0;
 
   //----------------------------------------------------------------------------
 
@@ -415,7 +208,7 @@ public:
 
 protected:
   /// Initialize this joint. This function is called by BodyNode::init()
-  virtual void init(Skeleton* _skel, int _skelIdx);
+  virtual void init(Skeleton* _skel);
 
   //----------------------------------------------------------------------------
   // Recursive algorithms
@@ -544,9 +337,6 @@ protected:
 
   /// Skeleton pointer that this joint belongs to
   Skeleton* mSkeleton;
-
-  /// Unique dof id in skeleton
-  int mSkelIndex;
 
   /// Transformation from parent body node to this joint
   Eigen::Isometry3d mT_ParentBodyToJoint;

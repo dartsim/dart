@@ -83,7 +83,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
           Eigen::Vector6d coordinates;
           coordinates << math::logMap(transform.linear()), transform.translation();
-          rootJoint->setPositions(coordinates, false, false, false);
+          rootJoint->setPositions(coordinates);
       }
       else {
           rootJoint->setTransformFromParentBodyNode(transform);

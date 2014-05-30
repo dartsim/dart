@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
@@ -127,7 +128,11 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
   outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getDof() << std::endl;
 
   for (int i = 0; i < mSkel->getDof(); i++)
-    outFile << mSkel->getGenCoord(i)->getName() << ' ';
+  {
+    dynamics::GenCoordInfo info = mSkel->getGenCoordInfo(i);
+    outFile << info.joint->getName() << "." << info.localIndex << ' ';
+  }
+
   outFile << std::endl;
 
   for (int i = first; i <= last; i++)

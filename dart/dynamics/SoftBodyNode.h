@@ -131,7 +131,7 @@ protected:
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
   // Documentation inherited.
-  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
+//  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
 
   // Documentation inherited.
   virtual void updateTransform();

@@ -57,7 +57,7 @@ namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, Skeleton* robot, const std::vector<int> &dofs, const VectorXd &root, double stepSize) :
+RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -71,7 +71,7 @@ RRT::RRT(World* world, Skeleton* robot, const std::vector<int> &dofs, const Vect
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, dynamics::Skeleton* robot, const std::vector<int> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(World* world, dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -198,7 +198,7 @@ VectorXd RRT::getRandomConfig() {
 	// configuration vectors (and returns ref to it)
 	VectorXd config(ndim);
 	for (int i = 0; i < ndim; ++i) {
-        config[i] = randomInRange(robot->getGenCoord(dofs[i])->getPosMin(), robot->getGenCoord(dofs[i])->getPosMax());
+    config[i] = randomInRange(robot->getPositionLowerLimit(dofs[i]), robot->getPositionUpperLimit(dofs[i]));
 	}
 	return config;
 }
@@ -222,8 +222,8 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-  // TODO(JS): What kinematic values should be updated here?
-  robot->setConfigSegs(dofs, c, true, true, true);
+  robot->setPositionSegment(dofs, c);
+  robot->computeForwardKinematics(true, false, false);
 	return world->checkCollision();
 }
 

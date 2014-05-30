@@ -49,7 +49,6 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Timer.h"
-#include "dart/integration/Integrator.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
@@ -70,7 +69,7 @@ class ConstraintSolver;
 namespace simulation {
 
 /// class World
-class World : public integration::IntegrableSystem
+class World
 {
 public:
   //--------------------------------------------------------------------------
@@ -82,47 +81,6 @@ public:
 
   /// Destructor
   virtual ~World();
-
-  //--------------------------------------------------------------------------
-  // Virtual functions for integration::IntegrableSystem
-  //--------------------------------------------------------------------------
-
-  // Documentation inherited
-  virtual void setConfigs(const Eigen::VectorXd& _configs);
-
-  // Documentation inherited
-  virtual void setGenVels(const Eigen::VectorXd& _genVels);
-
-  // Documentation inherited
-  virtual Eigen::VectorXd getConfigs() const;
-
-  // Documentation inherited
-  virtual Eigen::VectorXd getGenVels() const;
-
-  // Documentation inherited
-  virtual Eigen::VectorXd evalGenAccs();
-
-  // Documentation inherited
-  virtual void integrateConfigs(const Eigen::VectorXd& _genVels, double _dt);
-
-  // Documentation inherited
-  virtual void integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt);
-
-  //--------------------------------------------------------------------------
-  // Simulation
-  //--------------------------------------------------------------------------
-
-  /// Calculate the dynamics and integrate the world for one step
-  void step();
-
-  /// Set current time
-  void setTime(double _time);
-
-  /// Get current time
-  double getTime() const;
-
-  /// Get the number of simulated frames
-  int getSimFrames() const;
 
   //--------------------------------------------------------------------------
   // Properties
@@ -174,6 +132,22 @@ public:
 
   /// Return whether there is any collision between bodies
   bool checkCollision(bool _checkAllCollisions = false);
+
+  //--------------------------------------------------------------------------
+  // Simulation
+  //--------------------------------------------------------------------------
+
+  /// Calculate the dynamics and integrate the world for one step
+  void step();
+
+  /// Set current time
+  void setTime(double _time);
+
+  /// Get current time
+  double getTime() const;
+
+  /// Get the number of simulated frames
+  int getSimFrames() const;
 
   //--------------------------------------------------------------------------
   // Constraint

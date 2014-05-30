@@ -61,7 +61,7 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
   mDesiredDofs.resize(nDof);
   for (int i = 0; i < nDof; i++) {
     mTorques[i] = 0.0;
-    mDesiredDofs[i] = mSkel->getGenCoord(i)->getPos();
+    mDesiredDofs[i] = mSkel->getPosition(i);
   }
 
   // using SPD results in simple Kp coefficients

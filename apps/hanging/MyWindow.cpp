@@ -69,11 +69,11 @@ MyWindow::MyWindow(dart::simulation::World* _world)
   mWorld->setGravity(gravity);
 
   //
-  std::vector<int> genCoordIds0;
+  std::vector<size_t> genCoordIds0;
   genCoordIds0.push_back(4);
 
   // default standing pose
-  std::vector<int> genCoordIds1;
+  std::vector<size_t> genCoordIds1;
   genCoordIds1.push_back(1);
   genCoordIds1.push_back(6); // left hip
   genCoordIds1.push_back(9); // left knee
@@ -90,8 +90,8 @@ MyWindow::MyWindow(dart::simulation::World* _world)
   Eigen::VectorXd initConfig1(10);
   initConfig1 << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1, 0.5, -0.5;
 
-  mWorld->getSkeleton(0)->setConfigSegs(genCoordIds0, initConfig0);
-  mWorld->getSkeleton(1)->setConfigSegs(genCoordIds1, initConfig1);
+  mWorld->getSkeleton(0)->setPositionSegment(genCoordIds0, initConfig0);
+  mWorld->getSkeleton(1)->setPositionSegment(genCoordIds1, initConfig1);
 
   // create controller
   mController = new Controller(mWorld->getSkeleton(1),
@@ -99,7 +99,7 @@ MyWindow::MyWindow(dart::simulation::World* _world)
                                mWorld->getTimeStep());
 
   for (int i = 0; i < mWorld->getSkeleton(1)->getDof(); i++)
-    mController->setDesiredDof(i, mController->getSkeleton()->getGenCoord(i)->getPos());
+    mController->setDesiredDof(i, mController->getSkeleton()->getPosition(i));
 
   // initialize constraint on the hand
   BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_hand_left");

@@ -50,9 +50,9 @@ namespace dynamics {
 
 //==============================================================================
 Joint::Joint(const std::string& _name)
-  : mName(_name),
+  : GenCoordSystem(),
+    mName(_name),
     mSkeleton(NULL),
-    mSkelIndex(-1),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
@@ -119,10 +119,6 @@ bool Joint::isPositionLimited() const {
   return mIsPositionLimited;
 }
 
-int Joint::getIndexInSkeleton() const {
-  return mSkelIndex;
-}
-
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
@@ -145,10 +141,9 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
   _ri->transform(mT);
 }
 
-void Joint::init(Skeleton* _skel, int _skelIdx)
+void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;
-  mSkelIndex = _skelIdx;
 }
 
 //==============================================================================
