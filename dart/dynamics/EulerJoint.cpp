@@ -139,12 +139,12 @@ void EulerJoint::updateLocalJacobian()
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].getPos()) == DART_PI * 0.5)
+      if (fabs(mPositions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].getPos() << ", "
-                  << mCoordinate[1].getPos() << ", "
-                  << mCoordinate[2].getPos() << ")"
+                  << mPositions[0] << ", "
+                  << mPositions[1] << ", "
+                  << mPositions[2] << ")"
                   << std::endl;
 #endif
 
@@ -165,12 +165,12 @@ void EulerJoint::updateLocalJacobian()
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].getPos()) == DART_PI * 0.5)
+      if (fabs(mPositions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].getPos() << ", "
-                  << mCoordinate[1].getPos() << ", "
-                  << mCoordinate[2].getPos() << ")"
+                  << mPositions[0] << ", "
+                  << mPositions[1] << ", "
+                  << mPositions[2] << ")"
                   << std::endl;
 #endif
 
