@@ -936,9 +936,6 @@ protected:
     mInvProjArtInertiaImplicit = projAI.inverse();
   //  mInvProjArtInertiaImplicit = projAI.ldlt().solve(Eigen::Matrix3d::Identity());
 
-    // TODO(JS): Debug code
-    std::cout << mInvProjArtInertiaImplicit << std::endl;
-
     // Verification
     assert(!math::isNan(mInvProjArtInertiaImplicit));
   }
