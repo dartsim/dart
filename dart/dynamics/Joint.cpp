@@ -50,17 +50,12 @@ namespace dynamics {
 
 //==============================================================================
 Joint::Joint(const std::string& _name)
-  : GenCoordSystem(),
-    mName(_name),
+  : mName(_name),
     mSkeleton(NULL),
     mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity())
-//    mBodyNode1(NULL),
-//    mBodyNode2(NULL),
-//    mParentBodyNode(NULL),
-//    mChildBodyNode(NULL)
 {
 }
 

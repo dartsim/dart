@@ -378,9 +378,11 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 //        dq[k]  = 0.0;
 //        ddq[k] = 0.0;
       }
+
       skeleton->setPositions(q);
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
+      skeleton->computeForwardKinematics(true, true, true);
 
       // Integrate state
       skeleton->integratePositions(timeStep);
@@ -417,8 +419,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         MatrixXd dJWorld1 = bn->getWorldJacobianTimeDeriv();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->setPositions(q);
-        skeleton->setVelocities(dq);
+        skeleton->setPositions(qNext);
+        skeleton->setVelocities(dqNext);
         skeleton->setAccelerations(ddq);
         skeleton->computeForwardKinematics(true, true, true);
 
@@ -585,8 +587,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getPositionLowerLimit(j);
-          double ubRP = joint->getPositionUpperLimit(j);
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)

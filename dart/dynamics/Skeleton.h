@@ -45,7 +45,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
-#include "dart/dynamics/GenCoordSystem.h"
+//#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer {
@@ -70,7 +70,7 @@ struct GenCoordInfo
 };
 
 /// class Skeleton
-class Skeleton : public GenCoordSystem
+class Skeleton// : public GenCoordSystem
 {
 public:
   //----------------------------------------------------------------------------
@@ -183,41 +183,41 @@ public:
   // Generalized coordinate system
   //----------------------------------------------------------------------------
 
+  /// Return degrees of freedom of this skeleton
+  virtual size_t getDof() const;
+
   ///
   GenCoordInfo getGenCoordInfo(size_t _index) const;
-
-  // Documentation inherited
-  virtual size_t getDof() const;
 
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
   /// Set a single position
-  virtual void setPosition(size_t _index, double _position) {}
+  void setPosition(size_t _index, double _position);
 
   /// Get a single position
-  virtual double getPosition(size_t _index) const {}
+  double getPosition(size_t _index) const;
 
   /// Set configurations defined in terms of generalized coordinates and update
   /// Cartesian terms of body nodes using following parameters.
-  virtual void setPositions(const Eigen::VectorXd& _positions);
+  void setPositions(const Eigen::VectorXd& _positions);
 
   /// Get positions
-  virtual Eigen::VectorXd getPositions() const;
+  Eigen::VectorXd getPositions() const;
 
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
-  virtual void setPositionSegment(const std::vector<size_t>& _id,
+  void setPositionSegment(const std::vector<size_t>& _id,
                                   const Eigen::VectorXd& _positions);
 
   /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
-  virtual Eigen::VectorXd getPositionSegment(
+  Eigen::VectorXd getPositionSegment(
       const std::vector<size_t>& _id) const;
 
   /// Set zero all the positions
-  virtual void resetPositions() {}
+  virtual void resetPositions();
 
   /// Set lower limit of position
   virtual void setPositionLowerLimit(size_t _index, double _position) {}
@@ -236,33 +236,33 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set a single velocity
-  virtual void setVelocity(size_t _index, double _velocity) {}
+  void setVelocity(size_t _index, double _velocity);
 
   /// Get a single velocity
-  virtual double getVelocity(size_t _index) const {}
+  double getVelocity(size_t _index) const;
 
   /// Set generalized velocities
   /// \param[in] _updateVels True to update spacial velocities of body nodes
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setVelocities(const Eigen::VectorXd& _genVels);
+  void setVelocities(const Eigen::VectorXd& _genVels);
 
   /// Get velocities
-  virtual Eigen::VectorXd getVelocities() const;
+  Eigen::VectorXd getVelocities() const;
 
   /// Set zero all the velocities
-  virtual void resetVelocities() {}
+  void resetVelocities();
 
   /// Set lower limit of velocity
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity) {}
+  void setVelocityLowerLimit(size_t _index, double _velocity) {}
 
   /// Get lower limit of velocity
-  virtual double getVelocityLowerLimit(size_t _index) {}
+  double getVelocityLowerLimit(size_t _index) {}
 
   /// Set upper limit of velocity
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity) {}
+  void setVelocityUpperLimit(size_t _index, double _velocity) {}
 
   /// Get upper limit of velocity
-  virtual double getVelocityUpperLimit(size_t _index) {}
+  double getVelocityUpperLimit(size_t _index) {}
 
   //----------------------------------------------------------------------------
   // Acceleration
@@ -270,50 +270,38 @@ public:
 
   /// Set a single acceleration
   /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  virtual void setAcceleration(size_t _index, double _acceleration) {}
+  virtual void setAcceleration(size_t _index, double _acceleration);
 
   /// Get a single acceleration
-  virtual double getAcceleration(size_t _index) const {}
+  virtual double getAcceleration(size_t _index) const;
 
   /// Set generalized accelerations
   virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
 
   /// Get accelerations
-  virtual Eigen::VectorXd getAccelerations() const {}
+  virtual Eigen::VectorXd getAccelerations() const;
 
   /// Set zero all the accelerations
-  virtual void resetAccelerations() {}
-
-  /// Set lower limit of acceleration
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) {}
-
-  /// Get lower limit of acceleration
-  virtual double getAccelerationLowerLimit(size_t _index) {}
-
-  /// Set upper limit of acceleration
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) {}
-
-  /// Get upper limit of acceleration
-  virtual double getAccelerationUpperLimit(size_t _index) {}
+  virtual void resetAccelerations();
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   /// Set a single force
-  virtual void setForce(size_t _index, double _force) {}
+  virtual void setForce(size_t _index, double _force);
 
   /// Get a single force
-  virtual double getForce(size_t _index) {}
+  virtual double getForce(size_t _index);
 
   /// Set forces
-  virtual void setForces(const Eigen::VectorXd& _forces) {}
+  virtual void setForces(const Eigen::VectorXd& _forces);
 
   /// Get forces
-  virtual Eigen::VectorXd getForces() const {}
+  virtual Eigen::VectorXd getForces() const;
 
   /// Set zero all the forces
-  virtual void resetForces() {}
+  virtual void resetForces();
 
   /// Set lower limit of force
   virtual void setForceLowerLimit(size_t _index, double _force) {}
@@ -331,33 +319,15 @@ public:
   // Velocity change
   //----------------------------------------------------------------------------
 
-  /// Set a single velocity change
-  virtual void setVelocityChange(size_t _index, double _velocityChange) {}
-
-  /// Get a single velocity change
-  virtual double getVelocityChange(size_t _index) {}
-
   ///
-  virtual Eigen::VectorXd getVelocityChanges() const {}
-
-  /// Set zero all the velocity change
-  virtual void resetVelocityChanges() {}
+  virtual Eigen::VectorXd getVelocityChanges() const;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
-  /// Set a single constraint impulse
-  virtual void setConstraintImpulse(size_t _index, double _impulse) {}
-
-  /// Get a single constraint impulse
-  virtual double getConstraintImpulse(size_t _index) {}
-
   ///
-  virtual void setConstraintImpulses(const Eigen::VectorXd& _impulses) {}
-
-  /// Set zero all the constraint impulses
-  virtual void resetConstraintImpulses() {}
+  virtual void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   //----------------------------------------------------------------------------
   // Integration

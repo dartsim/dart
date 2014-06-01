@@ -158,7 +158,7 @@ void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getPositions() const
 {
-  return Eigen::Matrix<double, 1, 1>(mPosition);
+  return Eigen::Matrix<double, 1, 1>::Constant(mPosition);
 }
 
 //==============================================================================
@@ -259,7 +259,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getVelocities() const
 {
-  return Eigen::Matrix<double, 1, 1>(mVelocity);
+  return Eigen::Matrix<double, 1, 1>::Constant(mVelocity);
 }
 
 //==============================================================================
@@ -362,7 +362,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getAccelerations() const
 {
-  return Eigen::Matrix<double, 1, 1>(mAcceleration);
+  return Eigen::Matrix<double, 1, 1>::Constant(mAcceleration);
 }
 
 //==============================================================================
@@ -465,7 +465,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getForces() const
 {
-  return Eigen::Matrix<double, 1, 1>(mForce);
+  return Eigen::Matrix<double, 1, 1>::Constant(mForce);
 }
 
 //==============================================================================
