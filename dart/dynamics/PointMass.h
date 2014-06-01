@@ -95,11 +95,11 @@ public:
   // Documentation inherited
   size_t getDof() const;
 
-  // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+//  // Documentation inherited
+//  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
 
-  // Documentation inherited
-  size_t getIndexInSkeleton(size_t _index) const;
+//  // Documentation inherited
+//  size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Position
@@ -215,10 +215,13 @@ public:
 
   //----------------------------------------------------------------------------
 
+  ///
   void updateVelocityWithVelocityChange();
 
+  ///
   void updateAccelerationWithVelocityChange(double _timeStep);
 
+  ///
   void updateForceWithImpulse(double _timeStep);
 
   //----------------------------------------------------------------------------
@@ -276,11 +279,11 @@ public:
 
   /// The number of the generalized coordinates by which this node is
   ///        affected.
-  int getNumDependentGenCoords() const;
+//  int getNumDependentGenCoords() const;
 
   /// Return a generalized coordinate index from the array index
   ///        (< getNumDependentDofs).
-  int getDependentGenCoord(int _arrayIndex) const;
+//  int getDependentGenCoord(int _arrayIndex) const;
 
   /// Get the generalized velocity at the position of this point mass
   ///        where the velocity is expressed in the parent soft body node frame.
@@ -428,7 +431,7 @@ protected:
 protected:
   // TODO(JS): Need?
   ///
-  Eigen::Matrix<size_t, 3, 1> mIndexInSkeleton;
+//  Eigen::Matrix<size_t, 3, 1> mIndexInSkeleton;
 
   //----------------------------------------------------------------------------
   // Configuration

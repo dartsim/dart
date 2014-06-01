@@ -689,6 +689,15 @@ void Skeleton::resetForces()
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->resetForces();
+
+  // TODO(JS): Find better place
+  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  {
+    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+    {
+      mSoftBodyNodes[i]->getPointMass(j)->resetForces();
+    }
+  }
 }
 
 //==============================================================================
@@ -1106,7 +1115,9 @@ void Skeleton::updateInvMassMatrix() {
   mIsInvMassMatrixDirty = false;
 }
 
-void Skeleton::updateInvAugMassMatrix() {
+//==============================================================================
+void Skeleton::updateInvAugMassMatrix()
+{
   if (getDof() == 0)
     return;
 
@@ -1121,23 +1132,27 @@ void Skeleton::updateInvAugMassMatrix() {
 
   int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j) {
+  for (int j = 0; j < dof; ++j)
+  {
     e[j] = 1.0;
     setForces(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it) {
+         it != mBodyNodes.rend(); ++it)
+    {
       (*it)->updateInvAugMassMatrix();
     }
 
     // Inverse of mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = 0; i < mBodyNodes.size(); ++i) {
+    for (int i = 0; i < mBodyNodes.size(); ++i)
+    {
       mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getDof();
-      if (localDof > 0) {
+      if (localDof > 0)
+      {
         int iStart =
             mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
         if (iStart + localDof > j)
@@ -1231,36 +1246,38 @@ void Skeleton::updateExternalForceVector()
 
   for (std::vector<BodyNode*>::reverse_iterator itr = mBodyNodes.rbegin();
        itr != mBodyNodes.rend(); ++itr)
-    (*itr)->aggregateExternalForces(&mFext);
-
-  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
-       it != mSoftBodyNodes.end(); ++it)
   {
-    double kv = (*it)->getVertexSpringStiffness();
-    double ke = (*it)->getEdgeSpringStiffness();
-
-    for (int i = 0; i < (*it)->getNumPointMasses(); ++i)
-    {
-      PointMass* pm = (*it)->getPointMass(i);
-      int nN = pm->getNumConnectedPointMasses();
-
-      // Vertex restoring force
-      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getPositions()
-                             - (mTimeStep * (kv + nN*ke)) * pm->getVelocities();
-
-      // Edge restoring force
-      for (int j = 0; j < nN; ++j)
-      {
-        Fext += ke * (pm->getConnectedPointMass(j)->getPositions()
-                      + mTimeStep
-                        * pm->getConnectedPointMass(j)->getVelocities());
-      }
-
-      // Assign
-      int iStart = pm->getIndexInSkeleton(0);
-      mFext.segment<3>(iStart) = Fext;
-    }
+    (*itr)->aggregateExternalForces(&mFext);
   }
+
+//  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
+//       it != mSoftBodyNodes.end(); ++it)
+//  {
+//    double kv = (*it)->getVertexSpringStiffness();
+//    double ke = (*it)->getEdgeSpringStiffness();
+
+//    for (int i = 0; i < (*it)->getNumPointMasses(); ++i)
+//    {
+//      PointMass* pm = (*it)->getPointMass(i);
+//      int nN = pm->getNumConnectedPointMasses();
+
+//      // Vertex restoring force
+//      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getPositions()
+//                             - (mTimeStep * (kv + nN*ke)) * pm->getVelocities();
+
+//      // Edge restoring force
+//      for (int j = 0; j < nN; ++j)
+//      {
+//        Fext += ke * (pm->getConnectedPointMass(j)->getPositions()
+//                      + mTimeStep
+//                        * pm->getConnectedPointMass(j)->getVelocities());
+//      }
+
+//      // Assign
+//      int iStart = pm->getIndexInSkeleton(0);
+//      mFext.segment<3>(iStart) = Fext;
+//    }
+//  }
 
   mIsExternalForceVectorDirty = false;
 }

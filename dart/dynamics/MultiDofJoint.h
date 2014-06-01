@@ -933,8 +933,9 @@ protected:
     }
 
     // Inversion of projected articulated inertia
-    mInvProjArtInertiaImplicit = projAI.inverse();
-  //  mInvProjArtInertiaImplicit = projAI.ldlt().solve(Eigen::Matrix3d::Identity());
+//    mInvProjArtInertiaImplicit = projAI.inverse();
+    mInvProjArtInertiaImplicit
+        = projAI.ldlt().solve(Eigen::Matrix<double, DOF, DOF>::Identity());
 
     // Verification
     assert(!math::isNan(mInvProjArtInertiaImplicit));

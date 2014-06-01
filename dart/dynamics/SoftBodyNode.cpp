@@ -312,11 +312,11 @@ void SoftBodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         (*iChildBody)->getBodyForce());
   }
-  for (int i = 0; i < mPointMasses.size(); i++)
-  {
-    mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
-    mF.tail<3>() += mPointMasses[i]->mF;
-  }
+//  for (int i = 0; i < mPointMasses.size(); i++)
+//  {
+//    mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
+//    mF.tail<3>() += mPointMasses[i]->mF;
+//  }
 
   // TODO(JS): mWrench and mF are duplicated. Remove one of them.
   mParentJoint->mWrench = mF;
@@ -651,35 +651,37 @@ void SoftBodyNode::updateInvMassMatrix()
 //==============================================================================
 void SoftBodyNode::updateInvAugMassMatrix()
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateInvAugMassMatrix();
+  BodyNode::updateInvAugMassMatrix();
 
-  //----------------------- SoftBodyNode Part ----------------------------------
-  //
-  mInvM_c.setZero();
+//  //------------------------ PointMass Part ------------------------------------
+////  for (int i = 0; i < mPointMasses.size(); ++i)
+////    mPointMasses.at(i)->updateInvAugMassMatrix();
 
-  //
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
-          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
-  }
+//  //----------------------- SoftBodyNode Part ----------------------------------
+//  //
+//  mInvM_c.setZero();
 
-  //
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
-    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
-  }
+//  //
+//  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+//       it != mChildBodyNodes.end(); ++it)
+//  {
+//    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
+//          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
+//  }
 
-  // Verification
-  assert(!math::isNan(mInvM_c));
+//  //
+////  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+////       it != mPointMasses.end(); ++it)
+////  {
+////    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+////    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
+////  }
 
-  // Update parent joint's total force for inverse mass matrix
-  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
+//  // Verification
+//  assert(!math::isNan(mInvM_c));
+
+//  // Update parent joint's total force for inverse mass matrix
+//  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
 }
 
 //==============================================================================
@@ -717,31 +719,33 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
                                              int _col,
                                              double _timeStep)
 {
-  if (mParentBodyNode)
-  {
-    //
-    mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
+  BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 
-    //
-    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
-  }
-  else
-  {
-    //
-    mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
+//  if (mParentBodyNode)
+//  {
+//    //
+//    mParentJoint->getInvAugMassMatrixSegment(
+//          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
 
-    //
-    mInvM_U.setZero();
-  }
+//    //
+//    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
+//  }
+//  else
+//  {
+//    //
+//    mParentJoint->getInvAugMassMatrixSegment(
+//          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
 
-  //
-  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
+//    //
+//    mInvM_U.setZero();
+//  }
 
-  //
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
+//  //
+//  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
+
+//  //
+////  for (int i = 0; i < mPointMasses.size(); ++i)
+////    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 }
 
 //==============================================================================
