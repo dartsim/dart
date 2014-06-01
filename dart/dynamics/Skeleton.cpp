@@ -425,6 +425,42 @@ void Skeleton::resetPositions()
 }
 
 //==============================================================================
+void Skeleton::setPositionLowerLimit(size_t _index, double _position)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setPositionLowerLimit(
+        mGenCoordInfos[_index].localIndex, _position);
+}
+
+//==============================================================================
+double Skeleton::getPositionLowerLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getPositionLowerLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setPositionUpperLimit(size_t _index, double _position)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setPositionUpperLimit(
+        mGenCoordInfos[_index].localIndex, _position);
+}
+
+//==============================================================================
+double Skeleton::getPositionUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getPositionUpperLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
 void Skeleton::setVelocity(size_t _index, double _velocity)
 {
   assert(_index < getDof());
@@ -487,6 +523,42 @@ void Skeleton::resetVelocities()
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->resetVelocities();
+}
+
+//==============================================================================
+void Skeleton::setVelocityLowerLimit(size_t _index, double _velocity)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setVelocityLowerLimit(
+        mGenCoordInfos[_index].localIndex, _velocity);
+}
+
+//==============================================================================
+double Skeleton::getVelocityLowerLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getVelocityLowerLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setVelocityUpperLimit(size_t _index, double _velocity)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setVelocityUpperLimit(
+        mGenCoordInfos[_index].localIndex, _velocity);
+}
+
+//==============================================================================
+double Skeleton::getVelocityUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getVelocityUpperLimit(
+        mGenCoordInfos[_index].localIndex);
 }
 
 //==============================================================================
@@ -617,6 +689,42 @@ void Skeleton::resetForces()
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->resetForces();
+}
+
+//==============================================================================
+void Skeleton::setForceLowerLimit(size_t _index, double _force)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setForceLowerLimit(
+        mGenCoordInfos[_index].localIndex, _force);
+}
+
+//==============================================================================
+double Skeleton::getForceLowerLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getForceLowerLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setForceUpperLimit(size_t _index, double _force)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setForceUpperLimit(
+        mGenCoordInfos[_index].localIndex, _force);
+}
+
+//==============================================================================
+double Skeleton::getForceUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getForceUpperLimit(
+        mGenCoordInfos[_index].localIndex);
 }
 
 //==============================================================================
@@ -839,8 +947,10 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 //==============================================================================
 void Skeleton::updateMassMatrix()
 {
+  if (getDof() == 0)
+    return;
+
   assert(mM.cols() == getDof() && mM.rows() == getDof());
-  assert(getDof() > 0);
 
   mM.setZero();
 
@@ -883,9 +993,13 @@ void Skeleton::updateMassMatrix()
   mIsMassMatrixDirty = false;
 }
 
-void Skeleton::updateAugMassMatrix() {
+//==============================================================================
+void Skeleton::updateAugMassMatrix()
+{
+  if (getDof() == 0)
+    return;
+
   assert(mAugM.cols() == getDof() && mAugM.rows() == getDof());
-  assert(getDof() > 0);
 
   mAugM.setZero();
 
@@ -929,9 +1043,11 @@ void Skeleton::updateAugMassMatrix() {
 }
 
 void Skeleton::updateInvMassMatrix() {
+  if (getDof() == 0)
+    return;
+
   assert(mInvM.cols() == getDof() &&
          mInvM.rows() == getDof());
-  assert(getDof() > 0);
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -987,9 +1103,11 @@ void Skeleton::updateInvMassMatrix() {
 }
 
 void Skeleton::updateInvAugMassMatrix() {
+  if (getDof() == 0)
+    return;
+
   assert(mInvAugM.cols() == getDof() &&
          mInvAugM.rows() == getDof());
-  assert(getDof() > 0);
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -1036,8 +1154,10 @@ void Skeleton::updateInvAugMassMatrix() {
 //==============================================================================
 void Skeleton::updateCoriolisForceVector()
 {
+  if (getDof() == 0)
+    return;
+
   assert(mCvec.size() == getDof());
-  assert(getDof() > 0);
 
   mCvec.setZero();
 
@@ -1059,8 +1179,10 @@ void Skeleton::updateCoriolisForceVector()
 //==============================================================================
 void Skeleton::updateGravityForceVector()
 {
+  if (getDof() == 0)
+    return;
+
   assert(mG.size() == getDof());
-  assert(getDof() > 0);
 
   // Calcualtion mass matrix, M
   mG.setZero();
@@ -1074,8 +1196,10 @@ void Skeleton::updateGravityForceVector()
 }
 
 void Skeleton::updateCombinedVector() {
+  if (getDof() == 0)
+    return;
+
   assert(mCg.size() == getDof());
-  assert(getDof() > 0);
 
   mCg.setZero();
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1091,8 +1215,10 @@ void Skeleton::updateCombinedVector() {
 }
 
 void Skeleton::updateExternalForceVector() {
+  if (getDof() == 0)
+    return;
+
   assert(mFext.size() == getDof());
-  assert(getDof() > 0);
 
   // Clear external force.
   mFext.setZero();
