@@ -39,7 +39,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer {
@@ -54,7 +53,7 @@ class EllipsoidShape;
 class SoftBodyNode;
 
 ///
-class PointMass : public GenCoordSystem
+class PointMass
 {
 public:
   friend class SoftBodyNode;
@@ -94,173 +93,125 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual size_t getDof() const;
+  size_t getDof() const;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
+  size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setPosition(size_t _index, double _position);
+  void setPosition(size_t _index, double _position);
 
   // Documentation inherited
-  virtual double getPosition(size_t _index) const;
+  double getPosition(size_t _index) const;
 
   // Documentation inherited
-  virtual void setPositions(const Eigen::VectorXd& _positions);
+  void setPositions(const Eigen::Vector3d& _positions);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getPositions() const;
+  const Eigen::Vector3d& getPositions() const;
 
   // Documentation inherited
-  virtual void resetPositions();
-
-  // Documentation inherited
-  virtual void setPositionLowerLimit(size_t _index, double _position);
-
-  // Documentation inherited
-  virtual double getPositionLowerLimit(size_t _index);
-
-  // Documentation inherited
-  virtual void setPositionUpperLimit(size_t _index, double _position);
-
-  // Documentation inherited
-  virtual double getPositionUpperLimit(size_t _index);
+  void resetPositions();
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocity(size_t _index, double _velocity);
+  void setVelocity(size_t _index, double _velocity);
 
   // Documentation inherited
-  virtual double getVelocity(size_t _index) const;
+  double getVelocity(size_t _index) const;
 
   // Documentation inherited
-  virtual void setVelocities(const Eigen::VectorXd& _velocities);
+  void setVelocities(const Eigen::Vector3d& _velocities);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getVelocities() const;
+  const Eigen::Vector3d& getVelocities() const;
 
   // Documentation inherited
-  virtual void resetVelocities();
-
-  // Documentation inherited
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity);
-
-  // Documentation inherited
-  virtual double getVelocityLowerLimit(size_t _index);
-
-  // Documentation inherited
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity);
-
-  // Documentation inherited
-  virtual double getVelocityUpperLimit(size_t _index);
+  void resetVelocities();
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setAcceleration(size_t _index, double _acceleration);
+  void setAcceleration(size_t _index, double _acceleration);
 
   // Documentation inherited
-  virtual double getAcceleration(size_t _index) const;
+  double getAcceleration(size_t _index) const;
 
   // Documentation inherited
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
+  void setAccelerations(const Eigen::Vector3d& _accelerations);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getAccelerations() const;
+  const Eigen::Vector3d& getAccelerations() const;
 
   // Documentation inherited
-  virtual void resetAccelerations();
-
-  // Documentation inherited
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);
-
-  // Documentation inherited
-  virtual double getAccelerationLowerLimit(size_t _index);
-
-  // Documentation inherited
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration);
-
-  // Documentation inherited
-  virtual double getAccelerationUpperLimit(size_t _index);
+  void resetAccelerations();
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setForce(size_t _index, double _force);
+  void setForce(size_t _index, double _force);
 
   // Documentation inherited
-  virtual double getForce(size_t _index);
+  double getForce(size_t _index);
 
   // Documentation inherited
-  virtual void setForces(const Eigen::VectorXd& _forces);
+  void setForces(const Eigen::Vector3d& _forces);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getForces() const;
+  const Eigen::Vector3d& getForces() const;
 
   // Documentation inherited
-  virtual void resetForces();
-
-  // Documentation inherited
-  virtual void setForceLowerLimit(size_t _index, double _force);
-
-  // Documentation inherited
-  virtual double getForceLowerLimit(size_t _index);
-
-  // Documentation inherited
-  virtual void setForceUpperLimit(size_t _index, double _force);
-
-  // Documentation inherited
-  virtual double getForceUpperLimit(size_t _index);
+  void resetForces();
 
   //----------------------------------------------------------------------------
   // Velocity change
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange);
+  void setVelocityChange(size_t _index, double _velocityChange);
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index);
+  double getVelocityChange(size_t _index);
 
   // Documentation inherited
-  virtual void resetVelocityChanges();
+  void resetVelocityChanges();
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse);
+  void setConstraintImpulse(size_t _index, double _impulse);
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index);
+  double getConstraintImpulse(size_t _index);
 
   // Documentation inherited
-  virtual void resetConstraintImpulses();
+  void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
   // Integration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt);
+  void integratePositions(double _dt);
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt);
+  void integrateVelocities(double _dt);
 
   //----------------------------------------------------------------------------
 
@@ -461,12 +412,9 @@ protected:
                     bool _useDefaultColor = true) const;
 
 protected:
-  ///
-  GenCoord mCoordinate[3];
-
   // TODO(JS): Need?
   ///
-  Eigen::Vector3d mIndexInSkeleton;
+  Eigen::Matrix<size_t, 3, 1> mIndexInSkeleton;
 
   //----------------------------------------------------------------------------
   // Configuration

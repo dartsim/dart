@@ -959,25 +959,29 @@ void Skeleton::updateMassMatrix()
 
   int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j) {
+  for (int j = 0; j < dof; ++j)
+  {
     e[j] = 1.0;
     setAccelerations(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it) {
+         it != mBodyNodes.end(); ++it)
+    {
       (*it)->updateMassMatrix();
     }
 
     // Mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = mBodyNodes.size() - 1; i > -1 ; --i) {
+    for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
+    {
       mBodyNodes[i]->aggregateMassMatrix(&mM, j);
       int localDof = mBodyNodes[i]->mParentJoint->getDof();
-      if (localDof > 0) {
-        size_t iStart =
-            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+      if (localDof > 0)
+      {
+        size_t iStart = mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+
         if (iStart + localDof < j)
           break;
       }
@@ -1214,7 +1218,9 @@ void Skeleton::updateCombinedVector() {
   mIsCombinedVectorDirty = false;
 }
 
-void Skeleton::updateExternalForceVector() {
+//==============================================================================
+void Skeleton::updateExternalForceVector()
+{
   if (getDof() == 0)
     return;
 
@@ -1222,12 +1228,14 @@ void Skeleton::updateExternalForceVector() {
 
   // Clear external force.
   mFext.setZero();
+
   for (std::vector<BodyNode*>::reverse_iterator itr = mBodyNodes.rbegin();
        itr != mBodyNodes.rend(); ++itr)
     (*itr)->aggregateExternalForces(&mFext);
 
   for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
-       it != mSoftBodyNodes.end(); ++it) {
+       it != mSoftBodyNodes.end(); ++it)
+  {
     double kv = (*it)->getVertexSpringStiffness();
     double ke = (*it)->getEdgeSpringStiffness();
 

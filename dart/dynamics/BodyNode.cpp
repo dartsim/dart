@@ -334,12 +334,13 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
   //--------------------------------------------------------------------------
   if (mParentBodyNode)
     mDependentGenCoordIndices = mParentBodyNode->mDependentGenCoordIndices;
-
   else
     mDependentGenCoordIndices.clear();
+
   for (int i = 0; i < mParentJoint->getDof(); i++)
-    mDependentGenCoordIndices.push_back(
-          mParentJoint->getIndexInSkeleton(i));
+    mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
+
+  // Sort
   std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
 
 #ifndef NDEBUG
@@ -380,7 +381,8 @@ void BodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 //    mParentJoint->mParentBodyNode = NULL;
 }
 
-//void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords) {
+//void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
+//{
 //  assert(mParentJoint);
 //  for (int i = 0; i < mParentJoint->getDof(); ++i) {
 //    mParentJoint->setIndexInSkeleton(i, _genCoords->size());
@@ -1033,7 +1035,8 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   }
 
   int nGenCoords = mParentJoint->getDof();
-  if (nGenCoords > 0) {
+  if (nGenCoords > 0)
+  {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
     int iStart = mParentJoint->getIndexInSkeleton(0);
     _g->segment(iStart, nGenCoords) = g;
@@ -1102,7 +1105,9 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext) {
   }
 }
 
-void BodyNode::updateMassMatrix() {
+//==============================================================================
+void BodyNode::updateMassMatrix()
+{
   mM_dV.setZero();
   int dof = mParentJoint->getDof();
   if (dof > 0)

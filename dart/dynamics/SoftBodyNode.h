@@ -260,13 +260,25 @@ protected:
   /// \brief Soft mesh shape for collision.
   SoftMeshShape* mSoftCollShape;
 
+  /// Generalized inertia with point masses
+  math::Inertia mI2;
+
+  ///
+  math::Inertia mArtInertia2;
+
+  ///
+  math::Inertia mArtInertiaImplicit2;
+
 private:
   /// \brief
-  void _addPiToArticulatedInertia(const Eigen::Vector3d& _p, double _Pi);
+  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi);
 
   /// \brief
-  void _addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
-                                          double _ImplicitPi);
+  void _addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
+                                  double _ImplicitPi);
+
+  ///
+  void updateInertiaWithPointMass();
 };
 
 class SoftBodyNodeHelper

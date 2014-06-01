@@ -346,6 +346,10 @@ void SoftBodyNode::updateArtInertia(double _timeStep)
   mArtInertia = mI;
   mArtInertiaImplicit = mI;
 
+  // TODO(JS): Debug code
+  std::cout << mArtInertia << std::endl;
+  std::cout << mArtInertiaImplicit << std::endl;
+
   // and add child articulated body inertia
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
@@ -356,12 +360,20 @@ void SoftBodyNode::updateArtInertia(double _timeStep)
           mArtInertiaImplicit, (*it)->mArtInertiaImplicit);
   }
 
+  // TODO(JS): Debug code
+  std::cout << mArtInertia << std::endl;
+  std::cout << mArtInertiaImplicit << std::endl;
+
   //
   for (int i = 0; i < mPointMasses.size(); i++)
   {
-    _addPiToArticulatedInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
-    _addImplicitPiToImplicitAI(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
+    _addPiToArtInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
+    _addPiToArtInertiaImplicit(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
   }
+
+  // TODO(JS): Debug code
+  std::cout << mArtInertia << std::endl;
+  std::cout << mArtInertiaImplicit << std::endl;
 
   // Verification
   assert(!math::isNan(mArtInertia));
@@ -942,8 +954,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-void SoftBodyNode::_addPiToArticulatedInertia(const Eigen::Vector3d& _p,
-                                              double _Pi)
+void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi)
 {
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
@@ -957,9 +968,12 @@ void SoftBodyNode::_addPiToArticulatedInertia(const Eigen::Vector3d& _p,
 }
 
 //==============================================================================
-void SoftBodyNode::_addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
+void SoftBodyNode::_addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
                                               double _ImplicitPi)
 {
+  // TODO(JS): Debug code
+  std::cout << _p.transpose() << std::endl;
+
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
   mArtInertiaImplicit.topLeftCorner<3, 3>()    -= _ImplicitPi * tmp * tmp;
@@ -969,6 +983,19 @@ void SoftBodyNode::_addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
   mArtInertiaImplicit(3, 3) += _ImplicitPi;
   mArtInertiaImplicit(4, 4) += _ImplicitPi;
   mArtInertiaImplicit(5, 5) += _ImplicitPi;
+}
+
+//==============================================================================
+void SoftBodyNode::updateInertiaWithPointMass()
+{
+  // TODO(JS): Not implemented
+
+  mI2 = mI;
+
+  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  {
+
+  }
 }
 
 //==============================================================================

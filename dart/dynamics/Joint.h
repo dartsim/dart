@@ -43,7 +43,6 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
-//#include "dart/dynamics/GenCoordSystem.h"
 
 namespace dart {
 namespace renderer {
@@ -58,7 +57,7 @@ class BodyNode;
 class Skeleton;
 
 /// class Joint
-class Joint// : public GenCoordSystem
+class Joint
 {
 public:
   /// Constructor

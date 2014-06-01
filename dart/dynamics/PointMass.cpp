@@ -50,7 +50,26 @@ namespace dart {
 namespace dynamics {
 
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
-  : GenCoordSystem(),
+  : mPositions(Eigen::Vector3d::Zero()),
+    mVelocities(Eigen::Vector3d::Zero()),
+    mAccelerations(Eigen::Vector3d::Zero()),
+    mForces(Eigen::Vector3d::Zero()),
+    mPositionLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mVelocityLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mAccelerationLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mForceLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mPositionUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
+    mVelocityUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
+    mAccelerationUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
+    mForceUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
+    mPositionDeriv(Eigen::Vector3d::Zero()),
+    mVelocitiesDeriv(Eigen::Vector3d::Zero()),
+    mAccelerationsDeriv(Eigen::Vector3d::Zero()),
+    mForcesDeriv(Eigen::Vector3d::Zero()),
+    mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
+    mVelocityChanges(Eigen::Vector3d::Zero()),
+    // mImpulse(Eigen::Vector3d::Zero()),
+    mConstraintImpulses(Eigen::Vector3d::Zero()),
     mMass(0.0005),
     mW(Eigen::Vector3d::Zero()),
     mX(Eigen::Vector3d::Zero()),
@@ -129,7 +148,7 @@ size_t PointMass::getDof() const
 //==============================================================================
 void PointMass::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
 {
-  assert(_index < getDof());
+  assert(_index < 3);
 
   mIndexInSkeleton[_index] = _indexInSkeleton;
 }
@@ -137,231 +156,204 @@ void PointMass::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
 //==============================================================================
 size_t PointMass::getIndexInSkeleton(size_t _index) const
 {
-  assert(_index < getDof());
+  assert(_index < 3);
 
   return mIndexInSkeleton[_index];
 }
 
+//==============================================================================
 void PointMass::setPosition(size_t _index, double _position)
 {
+  assert(_index < 3);
 
+  mPositions[_index] = _position;
 }
 
+//==============================================================================
 double PointMass::getPosition(size_t _index) const
 {
+  assert(_index < 3);
 
+  return mPositions[_index];
 }
 
-void PointMass::setPositions(const VectorXd& _positions)
+//==============================================================================
+void PointMass::setPositions(const Vector3d& _positions)
 {
-
+  mPositions = _positions;
 }
 
-VectorXd PointMass::getPositions() const
+//==============================================================================
+const Vector3d& PointMass::getPositions() const
 {
-
+  return mPositions;
 }
 
+//==============================================================================
 void PointMass::resetPositions()
 {
-
+  mPositions.setZero();
 }
 
-void PointMass::setPositionLowerLimit(size_t _index, double _position)
-{
-
-}
-
-double PointMass::getPositionLowerLimit(size_t _index)
-{
-
-}
-
-void PointMass::setPositionUpperLimit(size_t _index, double _position)
-{
-
-}
-
-double PointMass::getPositionUpperLimit(size_t _index)
-{
-
-}
-
+//==============================================================================
 void PointMass::setVelocity(size_t _index, double _velocity)
 {
+  assert(_index < 3);
 
+  mVelocities[_index] = _velocity;
 }
 
+//==============================================================================
 double PointMass::getVelocity(size_t _index) const
 {
+  assert(_index < 3);
 
+  return mVelocities[_index];
 }
 
-void PointMass::setVelocities(const VectorXd& _velocities)
+//==============================================================================
+void PointMass::setVelocities(const Vector3d& _velocities)
 {
-
+  mVelocities = _velocities;
 }
 
-VectorXd PointMass::getVelocities() const
+//==============================================================================
+const Vector3d& PointMass::getVelocities() const
 {
-
+  return mVelocities;
 }
 
+//==============================================================================
 void PointMass::resetVelocities()
 {
-
+  mVelocities.setZero();
 }
 
-void PointMass::setVelocityLowerLimit(size_t _index, double _velocity)
-{
-
-}
-
-double PointMass::getVelocityLowerLimit(size_t _index)
-{
-
-}
-
-void PointMass::setVelocityUpperLimit(size_t _index, double _velocity)
-{
-
-}
-
-double PointMass::getVelocityUpperLimit(size_t _index)
-{
-
-}
-
+//==============================================================================
 void PointMass::setAcceleration(size_t _index, double _acceleration)
 {
+  assert(_index < 3);
 
+  mAccelerations[_index] = _acceleration;
 }
 
+//==============================================================================
 double PointMass::getAcceleration(size_t _index) const
 {
+ assert(_index < 3);
 
+ return mAccelerations[_index];
 }
 
-void PointMass::setAccelerations(const Eigen::VectorXd& _accelerations)
+//==============================================================================
+void PointMass::setAccelerations(const Eigen::Vector3d& _accelerations)
 {
-
+  mAccelerations = _accelerations;
 }
 
-VectorXd PointMass::getAccelerations() const
+//==============================================================================
+const Vector3d& PointMass::getAccelerations() const
 {
-
+  return mAccelerations;
 }
 
+//==============================================================================
 void PointMass::resetAccelerations()
 {
-
+  mAccelerations.setZero();
 }
 
-void PointMass::setAccelerationLowerLimit(size_t _index, double _acceleration)
-{
-
-}
-
-double PointMass::getAccelerationLowerLimit(size_t _index)
-{
-
-}
-
-void PointMass::setAccelerationUpperLimit(size_t _index, double _acceleration)
-{
-
-}
-
-double PointMass::getAccelerationUpperLimit(size_t _index)
-{
-
-}
-
+//==============================================================================
 void PointMass::setForce(size_t _index, double _force)
 {
+  assert(_index < 3);
 
+  mForces[_index] = _force;
 }
 
+//==============================================================================
 double PointMass::getForce(size_t _index)
 {
+  assert(_index < 3);
 
+  return mForces[_index];
 }
 
-void PointMass::setForces(const VectorXd& _forces)
+//==============================================================================
+void PointMass::setForces(const Vector3d& _forces)
 {
-
+  mForces = _forces;
 }
 
-VectorXd PointMass::getForces() const
+//==============================================================================
+const Vector3d& PointMass::getForces() const
 {
-
+  return mForces;
 }
 
+//==============================================================================
 void PointMass::resetForces()
 {
-
+  mForces.setZero();
 }
 
-void PointMass::setForceLowerLimit(size_t _index, double _force)
-{
-
-}
-
-double PointMass::getForceLowerLimit(size_t _index)
-{
-
-}
-
-void PointMass::setForceUpperLimit(size_t _index, double _force)
-{
-
-}
-
-double PointMass::getForceUpperLimit(size_t _index)
-{
-
-}
-
+//==============================================================================
 void PointMass::setVelocityChange(size_t _index, double _velocityChange)
 {
+  assert(_index < 3);
 
+  mVelocityChanges[_index] = _velocityChange;
 }
 
+//==============================================================================
 double PointMass::getVelocityChange(size_t _index)
 {
+  assert(_index < 3);
 
+  return mVelocityChanges[_index];
 }
 
+//==============================================================================
 void PointMass::resetVelocityChanges()
 {
-
+  mVelocityChanges.setZero();
 }
 
+//==============================================================================
 void PointMass::setConstraintImpulse(size_t _index, double _impulse)
 {
+  assert(_index < 3);
 
+  mConstraintImpulses[_index] = _impulse;
 }
 
+//==============================================================================
 double PointMass::getConstraintImpulse(size_t _index)
 {
+  assert(_index < 3);
 
+  return mConstraintImpulses[_index];
 }
 
+//==============================================================================
 void PointMass::resetConstraintImpulses()
 {
-
+  mConstraintImpulses.setZero();
 }
 
+//==============================================================================
 void PointMass::integratePositions(double _dt)
 {
-
+  mPositions += mVelocities * _dt;
 }
 
+//==============================================================================
 void PointMass::integrateVelocities(double _dt)
 {
-
+  mVelocities += mAccelerations * _dt;
 }
 
+//==============================================================================
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
   if (_isForceLocal)
@@ -375,6 +367,7 @@ void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
   }
 }
 
+//==============================================================================
 void PointMass::clearExtForce()
 {
   mFext.setZero();
@@ -528,12 +521,12 @@ void PointMass::init()
   for (int i = 0; i < parentDof; ++i)
   {
     mDependentGenCoordIndices[i]
-            = mParentSoftBodyNode->getDependentGenCoordIndex(i);
+        = mParentSoftBodyNode->getDependentGenCoordIndex(i);
   }
 
-  mDependentGenCoordIndices[parentDof]     = mCoordinate[0].getIndexInSkeleton();
-  mDependentGenCoordIndices[parentDof + 1] = mCoordinate[1].getIndexInSkeleton();
-  mDependentGenCoordIndices[parentDof + 2] = mCoordinate[2].getIndexInSkeleton();
+  mDependentGenCoordIndices[parentDof]     = mIndexInSkeleton[0];
+  mDependentGenCoordIndices[parentDof + 1] = mIndexInSkeleton[1];
+  mDependentGenCoordIndices[parentDof + 2] = mIndexInSkeleton[2];
 }
 
 void PointMass::updateTransform()
@@ -707,18 +700,18 @@ void PointMass::updateBiasImpulse()
 //==============================================================================
 void PointMass::updateJointVelocityChange()
 {
-//  Eigen::Vector3d del_dq
-//      = mPsi
-//        * (mImpAlpha - mMass
-//           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
-//              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
+  //  Eigen::Vector3d del_dq
+  //      = mPsi
+  //        * (mImpAlpha - mMass
+  //           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+  //              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
 
   Eigen::Vector3d del_dq
       = mPsi * mImpAlpha
         - mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
         - mParentSoftBodyNode->getBodyVelocityChange().tail<3>();
 
-//  del_dq = Eigen::Vector3d::Zero();
+  //  del_dq = Eigen::Vector3d::Zero();
 
   mVelocityChanges = del_dq;
   assert(!math::isNan(del_dq));
@@ -853,7 +846,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   _ri->pushMatrix();
 
   // render the self geometry
-//  mParentJoint->applyGLTransform(_ri);
+  //  mParentJoint->applyGLTransform(_ri);
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   T.translation() = mX;
   _ri->transform(T);
@@ -862,7 +855,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   mShape->draw(_ri, color1, false);
   _ri->popMatrix();
 
-//  _ri->pushName((unsigned)mID);
+  //  _ri->pushName((unsigned)mID);
   _ri->pushMatrix();
   T.translation() = mX0;
   _ri->transform(T);
@@ -870,7 +863,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   color2 << 0.3, 0.8, 0.3, 1.0;
   mShape->draw(_ri, color2, false);
   _ri->popMatrix();
-//  _ri->popName();
+  //  _ri->popName();
 
 }
 
