@@ -44,7 +44,6 @@
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/constraint/WeldJointConstraint.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"

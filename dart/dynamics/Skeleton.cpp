@@ -48,7 +48,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
 

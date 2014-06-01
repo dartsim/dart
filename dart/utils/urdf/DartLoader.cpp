@@ -18,7 +18,6 @@
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"

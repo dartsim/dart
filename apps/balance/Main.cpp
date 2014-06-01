@@ -39,7 +39,6 @@
 #include <vector>
 
 #include "dart/utils/Paths.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"

@@ -39,7 +39,6 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"

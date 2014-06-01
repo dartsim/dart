@@ -48,7 +48,6 @@
 
 #include "dart/common/Console.h"
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintSolver.h"
 
