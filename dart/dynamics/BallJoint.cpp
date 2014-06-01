@@ -57,13 +57,7 @@ BallJoint::BallJoint(const std::string& _name)
   mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
   assert(!math::isNan(mJacobian));
 
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
   // Time derivative of Jacobian is always zero
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -86,9 +80,6 @@ void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
   mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
   mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
   mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 
   assert(!math::isNan(mJacobian));
 }

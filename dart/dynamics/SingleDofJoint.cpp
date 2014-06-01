@@ -77,8 +77,6 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mTotalForce(0.0),
     mTotalImpulse(0.0)
 {
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -696,6 +694,18 @@ double SingleDofJoint::getPotentialEnergy() const
        * (mPosition - mRestPosition);
 
   return pe;
+}
+
+//==============================================================================
+const math::Jacobian SingleDofJoint::getLocalJacobian() const
+{
+  return mJacobian;
+}
+
+//==============================================================================
+const math::Jacobian SingleDofJoint::getLocalJacobianTimeDeriv() const
+{
+  return mJacobianDeriv;
 }
 
 //==============================================================================

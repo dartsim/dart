@@ -80,18 +80,6 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const {
 }
 
 //==============================================================================
-const math::Jacobian& Joint::getLocalJacobian() const
-{
-  return mS;
-}
-
-//==============================================================================
-const math::Jacobian& Joint::getLocalJacobianTimeDeriv() const
-{
-  return mdS;
-}
-
-//==============================================================================
 //bool Joint::contains(const GenCoord* _genCoord) const {
 //  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
 //      mGenCoords.end() ? true : false;

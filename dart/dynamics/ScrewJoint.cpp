@@ -104,9 +104,6 @@ void ScrewJoint::updateLocalJacobian()
   S.tail<3>() = mAxis*mPitch/DART_2PI;
   mJacobian = math::AdT(mT_ChildBodyToJoint, S);
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================

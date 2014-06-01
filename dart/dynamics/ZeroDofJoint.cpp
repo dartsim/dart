@@ -387,6 +387,18 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+const math::Jacobian ZeroDofJoint::getLocalJacobian() const
+{
+  return Eigen::Matrix<double, 6, 0>();
+}
+
+//==============================================================================
+const math::Jacobian ZeroDofJoint::getLocalJacobianTimeDeriv() const
+{
+  return Eigen::Matrix<double, 6, 0>();
+}
+
+//==============================================================================
 void ZeroDofJoint::addVelocityTo(Eigen::Vector6d& /*_vel*/)
 {
   // Do nothing

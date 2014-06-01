@@ -50,12 +50,6 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const std::string& _name)
   : MultiDofJoint(_name)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
-
   mAxis[0] = _axis0.normalized();
   mAxis[1] = _axis1.normalized();
 }
@@ -108,9 +102,6 @@ void UniversalJoint::updateLocalJacobian()
                                           mAxis[0]);
   mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
@@ -127,9 +118,6 @@ void UniversalJoint::updateLocalJacobianTimeDeriv()
 
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

@@ -309,11 +309,11 @@ public:
 
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
-  DEPRECATED(4.0) virtual const math::Jacobian& getLocalJacobian() const;
+  virtual const math::Jacobian getLocalJacobian() const = 0;
 
   /// Get time derivative of generalized Jacobian from parent body node
   /// to child body node w.r.t. local generalized coordinate
-  DEPRECATED(4.0) virtual const math::Jacobian& getLocalJacobianTimeDeriv() const;
+  virtual const math::Jacobian getLocalJacobianTimeDeriv() const = 0;
 
   /// Get whether this joint contains _genCoord
   /// \param[in] Generalized coordinate to see
@@ -513,12 +513,6 @@ protected:
   /// Relative spatial velocity from parent body to child body where the
   /// velocity is expressed in child body frame
   Eigen::Vector6d mSpatialVelocity;
-
-  /// Time derivative of local Jacobian
-  DEPRECATED(4.0) math::Jacobian mS;
-
-  /// Time derivative of local Jacobian
-  DEPRECATED(4.0) math::Jacobian mdS;
 
   // TODO(JS): Temporary code
 public:

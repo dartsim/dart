@@ -50,11 +50,6 @@ EulerJoint::EulerJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mAxisOrder(AO_XYZ)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -204,9 +199,6 @@ void EulerJoint::updateLocalJacobian()
     //        std::cout << "mS: \n" << mS << std::endl;
   }
 #endif
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
@@ -280,9 +272,6 @@ void EulerJoint::updateLocalJacobianTimeDeriv()
   mJacobianDeriv.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
   assert(!math::isNan(mJacobianDeriv));
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

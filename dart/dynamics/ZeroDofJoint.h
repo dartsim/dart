@@ -263,6 +263,12 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
+  virtual const math::Jacobian getLocalJacobian() const;
+
+  // Documentation inherited
+  virtual const math::Jacobian getLocalJacobianTimeDeriv() const;
+
+  // Documentation inherited
   virtual void addVelocityTo(Eigen::Vector6d& _vel);
 
   // Documentation inherited

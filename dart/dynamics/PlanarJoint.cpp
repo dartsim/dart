@@ -49,12 +49,6 @@ namespace dynamics {
 PlanarJoint::PlanarJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
-
   setXYPlane();
 }
 
@@ -166,9 +160,6 @@ void PlanarJoint::updateLocalJacobian()
 
   // Verification
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
@@ -196,9 +187,6 @@ void PlanarJoint::updateLocalJacobianTimeDeriv()
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(!math::isNan(mJacobianDeriv.col(1)));
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics
