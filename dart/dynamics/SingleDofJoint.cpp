@@ -584,7 +584,7 @@ double SingleDofJoint::getConstraintImpulse(size_t _index)
 //==============================================================================
 void SingleDofJoint::resetConstraintImpulses()
 {
-  mTotalImpulse = 0.0;
+  mConstraintImpulse = 0.0;
 }
 
 //==============================================================================
