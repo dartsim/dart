@@ -215,6 +215,14 @@ public:
 
   //----------------------------------------------------------------------------
 
+  void updateVelocityWithVelocityChange();
+
+  void updateAccelerationWithVelocityChange(double _timeStep);
+
+  void updateForceWithImpulse(double _timeStep);
+
+  //----------------------------------------------------------------------------
+
   /// Add linear Cartesian force to this node.
   /// \param[in] _force External force.
   /// \param[in] _isForceLocal True if _force's reference frame is of the parent
@@ -345,6 +353,12 @@ protected:
 
   ///
   void updateBodyImpForceFwdDyn();
+
+  ///
+  void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+
+  ///
+  void updateConstrainedTransmittedForce(double _timeStep);
 
   //----------------------------------------------------------------------------
 
@@ -520,7 +534,7 @@ protected:
   Eigen::Vector3d mBeta;
 
   /// Current acceleration viewed in parent body node frame.
-  Eigen::Vector3d mdV;
+  Eigen::Vector3d mA;
 
   ///
   Eigen::Vector3d mF;

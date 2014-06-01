@@ -382,7 +382,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Check mass matrix
       EXPECT_TRUE(equals(M, M2, 1e-6));
-      if (!equals(M, M2, 1e-6))
+//      if (!equals(M, M2, 1e-6))
       {
         cout << "M :" << endl << M  << endl << endl;
         cout << "M2:" << endl << M2 << endl << endl;

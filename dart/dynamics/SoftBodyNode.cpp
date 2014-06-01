@@ -500,6 +500,21 @@ void SoftBodyNode::updateBodyImpForceFwdDyn()
 }
 
 //==============================================================================
+void SoftBodyNode::updateConstrainedJointAndBodyAcceleration(double _timeStep)
+{
+  BodyNode::updateConstrainedJointAndBodyAcceleration(_timeStep);
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateConstrainedJointAndBodyAcceleration(_timeStep);
+}
+
+//==============================================================================
+void SoftBodyNode::updateConstrainedTransmittedForce(double _timeStep)
+{
+  BodyNode::updateConstrainedTransmittedForce(_timeStep);
+}
+
+//==============================================================================
 void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();

@@ -78,7 +78,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mEta(Eigen::Vector3d::Zero()),
     mAlpha(Eigen::Vector3d::Zero()),
     mBeta(Eigen::Vector3d::Zero()),
-    mdV(Eigen::Vector3d::Zero()),
+    mA(Eigen::Vector3d::Zero()),
     mF(Eigen::Vector3d::Zero()),
     mB(Eigen::Vector3d::Zero()),
     mParentSoftBodyNode(_softBodyNode),
@@ -354,6 +354,25 @@ void PointMass::integrateVelocities(double _dt)
 }
 
 //==============================================================================
+void PointMass::updateVelocityWithVelocityChange()
+{
+  mVelocities += mVelocityChanges;
+}
+
+//==============================================================================
+void PointMass::updateAccelerationWithVelocityChange(double _timeStep)
+{
+  mAccelerations.noalias() += mVelocityChanges / _timeStep;
+}
+
+//==============================================================================
+void PointMass::updateForceWithImpulse(double _timeStep)
+{
+  // TODO(JS): Need to debug
+//  mForces.noalias() += mConstraintImpulses / _timeStep;
+}
+
+//==============================================================================
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
   if (_isForceLocal)
@@ -504,12 +523,12 @@ Eigen::Vector3d PointMass::getWorldVelocity() const
 
 const Eigen::Vector3d& PointMass::getBodyAcceleration() const
 {
-  return mdV;
+  return mA;
 }
 
 Eigen::Vector3d PointMass::getWorldAcceleration() const
 {
-  return mParentSoftBodyNode->getWorldTransform().linear() * mdV;
+  return mParentSoftBodyNode->getWorldTransform().linear() * mA;
 }
 
 void PointMass::init()
@@ -561,17 +580,17 @@ void PointMass::updatePartialAcceleration()
 void PointMass::updateAcceleration()
 {
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
+  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
         mEta + mAccelerations;
-  assert(!math::isNan(mdV));
+  assert(!math::isNan(mA));
 }
 
 void PointMass::updateBodyForce(const Eigen::Vector3d& _gravity,
                                 bool _withExternalForces)
 {
   // f = m*dv + w(parent) x m*v - fext
-  mF.noalias() = mMass * mdV;
+  mF.noalias() = mMass * mA;
   mF += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mMass * mV)
         - mFext;
   if (mParentSoftBodyNode->getGravityMode() == true)
@@ -660,17 +679,17 @@ void PointMass::updateJointAndBodyAcceleration()
   assert(!math::isNan(ddq));
 
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mdV = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
+  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
         mEta + mAccelerations;
-  assert(!math::isNan(mdV));
+  assert(!math::isNan(mA));
 }
 
 void PointMass::updateTransmittedForce()
 {
   // f = m*dv + B
   mF = mB;
-  mF.noalias() += mMass * mdV;
+  mF.noalias() += mMass * mA;
   assert(!math::isNan(mF));
 }
 
@@ -737,6 +756,29 @@ void PointMass::updateBodyImpForceFwdDyn()
   mImpF = mImpB;
   mImpF.noalias() += mMass * mDelV;
   assert(!math::isNan(mImpF));
+}
+
+//==============================================================================
+void PointMass::updateConstrainedJointAndBodyAcceleration(double _timeStep)
+{
+  // 1. dq = dq + del_dq
+  updateVelocityWithVelocityChange();
+
+  // 2. ddq = ddq + del_dq / dt
+  updateAccelerationWithVelocityChange(_timeStep);
+
+  // 3. tau = tau + imp / dt
+  updateForceWithImpulse(_timeStep);
+}
+
+//==============================================================================
+void PointMass::updateConstrainedTransmittedForce(double _timeStep)
+{
+  ///
+  mA += mDelV / _timeStep;
+
+  ///
+  mF += _timeStep * mImpF;
 }
 
 void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)

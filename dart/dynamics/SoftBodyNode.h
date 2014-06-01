@@ -181,6 +181,12 @@ protected:
   // Documentation inherited.
   virtual void updateBodyImpForceFwdDyn();
 
+  // Documentation inherited.
+  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+
+  // Documentation inherited.
+  virtual void updateConstrainedTransmittedForce(double _timeStep);
+
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
