@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  std::vector<int> genCoordIds;
+  std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);   // global orientation y
   genCoordIds.push_back(4);   // global position y
   genCoordIds.push_back(6);   // left hip
@@ -70,8 +70,8 @@ int main(int argc, char* argv[])
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(9);
   initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
-  myWorld->getSkeleton(1)->setConfigSegs(genCoordIds, initConfig,
-                                         true, true, false);
+  myWorld->getSkeleton(1)->setPositionSegment(genCoordIds, initConfig);
+  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
   // create controller
   Controller* myController = new Controller(myWorld->getSkeleton(1),

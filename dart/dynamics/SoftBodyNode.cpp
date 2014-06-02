@@ -108,27 +108,27 @@ void SoftBodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
-{
-  BodyNode::aggregateGenCoords(_genCoords);
-  aggregatePointMassGenCoords(_genCoords);
-}
+//void SoftBodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
+//{
+//  BodyNode::aggregateGenCoords(_genCoords);
+//  aggregatePointMassGenCoords(_genCoords);
+//}
 
 //==============================================================================
-void SoftBodyNode::aggregatePointMassGenCoords(
-    std::vector<GenCoord*>* _genCoords)
-{
-  for (int i = 0; i < getNumPointMasses(); ++i)
-  {
-    PointMass* pointMass = getPointMass(i);
-    for (int j = 0; j < pointMass->getNumGenCoords(); ++j)
-    {
-      GenCoord* genCoord = pointMass->getGenCoord(j);
-      genCoord->setSkeletonIndex(_genCoords->size());
-      _genCoords->push_back(genCoord);
-    }
-  }
-}
+//void SoftBodyNode::aggregatePointMassGenCoords(
+//    std::vector<GenCoord*>* _genCoords)
+//{
+//  for (int i = 0; i < getNumPointMasses(); ++i)
+//  {
+//    PointMass* pointMass = getPointMass(i);
+//    for (int j = 0; j < pointMass->getDof(); ++j)
+//    {
+//      GenCoord* genCoord = pointMass->getGenCoord(j);
+//      genCoord->setSkeletonIndex(_genCoords->size());
+//      _genCoords->push_back(genCoord);
+//    }
+//  }
+//}
 
 //==============================================================================
 double SoftBodyNode::getMass() const
@@ -312,11 +312,11 @@ void SoftBodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         (*iChildBody)->getBodyForce());
   }
-  for (int i = 0; i < mPointMasses.size(); i++)
-  {
-    mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
-    mF.tail<3>() += mPointMasses[i]->mF;
-  }
+//  for (int i = 0; i < mPointMasses.size(); i++)
+//  {
+//    mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
+//    mF.tail<3>() += mPointMasses[i]->mF;
+//  }
 
   // TODO(JS): mWrench and mF are duplicated. Remove one of them.
   mParentJoint->mWrench = mF;
@@ -359,8 +359,8 @@ void SoftBodyNode::updateArtInertia(double _timeStep)
   //
   for (int i = 0; i < mPointMasses.size(); i++)
   {
-    _addPiToArticulatedInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
-    _addImplicitPiToImplicitAI(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
+    _addPiToArtInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
+    _addPiToArtInertiaImplicit(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
   }
 
   // Verification
@@ -500,6 +500,21 @@ void SoftBodyNode::updateBodyImpForceFwdDyn()
 }
 
 //==============================================================================
+void SoftBodyNode::updateConstrainedJointAndBodyAcceleration(double _timeStep)
+{
+  BodyNode::updateConstrainedJointAndBodyAcceleration(_timeStep);
+
+  for (int i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateConstrainedJointAndBodyAcceleration(_timeStep);
+}
+
+//==============================================================================
+void SoftBodyNode::updateConstrainedTransmittedForce(double _timeStep)
+{
+  BodyNode::updateConstrainedTransmittedForce(_timeStep);
+}
+
+//==============================================================================
 void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();
@@ -542,10 +557,10 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getNumGenCoords();
+  int dof = mParentJoint->getDof();
   if (dof > 0)
   {
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
@@ -555,6 +570,8 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
                                           double _timeStep)
 {
+  // TODO(JS): Need to be reimplemented
+
   //------------------------ PointMass Part ------------------------------------
   for (int i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
@@ -577,7 +594,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   }
   assert(!math::isNan(mM_F));
 
-  int dof = mParentJoint->getNumGenCoords();
+  int dof = mParentJoint->getDof();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
@@ -587,11 +604,13 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
+
+    // TODO(JS): Not recommended to use Joint::getAccelerations
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getGenAccs())
-          + K * (_timeStep * _timeStep * mParentJoint->getGenAccs());
+          + D * (_timeStep * mParentJoint->getAccelerations())
+          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
   }
 }
 
@@ -632,35 +651,37 @@ void SoftBodyNode::updateInvMassMatrix()
 //==============================================================================
 void SoftBodyNode::updateInvAugMassMatrix()
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateInvAugMassMatrix();
+  BodyNode::updateInvAugMassMatrix();
 
-  //----------------------- SoftBodyNode Part ----------------------------------
-  //
-  mInvM_c.setZero();
+//  //------------------------ PointMass Part ------------------------------------
+////  for (int i = 0; i < mPointMasses.size(); ++i)
+////    mPointMasses.at(i)->updateInvAugMassMatrix();
 
-  //
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
-          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
-  }
+//  //----------------------- SoftBodyNode Part ----------------------------------
+//  //
+//  mInvM_c.setZero();
 
-  //
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
-    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
-  }
+//  //
+//  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+//       it != mChildBodyNodes.end(); ++it)
+//  {
+//    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
+//          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
+//  }
 
-  // Verification
-  assert(!math::isNan(mInvM_c));
+//  //
+////  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+////       it != mPointMasses.end(); ++it)
+////  {
+////    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+////    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
+////  }
 
-  // Update parent joint's total force for inverse mass matrix
-  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
+//  // Verification
+//  assert(!math::isNan(mInvM_c));
+
+//  // Update parent joint's total force for inverse mass matrix
+//  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
 }
 
 //==============================================================================
@@ -698,31 +719,33 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
                                              int _col,
                                              double _timeStep)
 {
-  if (mParentBodyNode)
-  {
-    //
-    mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
+  BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 
-    //
-    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
-  }
-  else
-  {
-    //
-    mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
+//  if (mParentBodyNode)
+//  {
+//    //
+//    mParentJoint->getInvAugMassMatrixSegment(
+//          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
 
-    //
-    mInvM_U.setZero();
-  }
+//    //
+//    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
+//  }
+//  else
+//  {
+//    //
+//    mParentJoint->getInvAugMassMatrixSegment(
+//          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
 
-  //
-  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
+//    //
+//    mInvM_U.setZero();
+//  }
 
-  //
-  for (int i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
+//  //
+//  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
+
+//  //
+////  for (int i = 0; i < mPointMasses.size(); ++i)
+////    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 }
 
 //==============================================================================
@@ -759,11 +782,11 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
     mG_F.tail<3>() += (*it)->mG_F;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _g->segment(iStart, nGenCoords) = g;
   }
 }
@@ -811,11 +834,11 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
     mCg_F.tail<3>() += (*it)->mCg_F;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _Cg->segment(iStart, nGenCoords) = Cg;
   }
 }
@@ -844,12 +867,12 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
     mFext_F.tail<3>() += (*it)->mFext;
   }
 
-  int nGenCoords = mParentJoint->getNumGenCoords();
+  int nGenCoords = mParentJoint->getDof();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext
         = mParentJoint->getLocalJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getGenCoord(0)->getSkeletonIndex();
+    int iStart = mParentJoint->getIndexInSkeleton(0);
     _Fext->segment(iStart, nGenCoords) = Fext;
   }
 }
@@ -938,8 +961,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-void SoftBodyNode::_addPiToArticulatedInertia(const Eigen::Vector3d& _p,
-                                              double _Pi)
+void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi)
 {
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
@@ -953,7 +975,7 @@ void SoftBodyNode::_addPiToArticulatedInertia(const Eigen::Vector3d& _p,
 }
 
 //==============================================================================
-void SoftBodyNode::_addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
+void SoftBodyNode::_addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
                                               double _ImplicitPi)
 {
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
@@ -965,6 +987,19 @@ void SoftBodyNode::_addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
   mArtInertiaImplicit(3, 3) += _ImplicitPi;
   mArtInertiaImplicit(4, 4) += _ImplicitPi;
   mArtInertiaImplicit(5, 5) += _ImplicitPi;
+}
+
+//==============================================================================
+void SoftBodyNode::updateInertiaWithPointMass()
+{
+  // TODO(JS): Not implemented
+
+  mI2 = mI;
+
+  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  {
+
+  }
 }
 
 //==============================================================================

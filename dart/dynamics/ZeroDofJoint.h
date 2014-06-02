@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SINGLEDOFJOINT_H_
-#define DART_DYNAMICS_SINGLEDOFJOINT_H_
+#ifndef DART_DYNAMICS_ZERODOFJOINT_H_
+#define DART_DYNAMICS_ZERODOFJOINT_H_
 
 #include <string>
 
@@ -47,17 +47,21 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 
-/// class SingleDofJoint
-class SingleDofJoint : public Joint
+/// class ZeroDofJoint
+class ZeroDofJoint : public Joint
 {
 public:
   /// Constructor
-  SingleDofJoint(const std::string& _name);
+  ZeroDofJoint(const std::string& _name);
 
   /// Destructor
-  ~SingleDofJoint();
+  ~ZeroDofJoint();
 
-  // Documentation inherited
+  //----------------------------------------------------------------------------
+  // Interface for generalized coordinates
+  //----------------------------------------------------------------------------
+
+  /// Get number of generalized coordinates
   virtual size_t getDof() const;
 
   // Documentation inherited
@@ -69,8 +73,6 @@ public:
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
-
-  // TODO(JS): Not to use Eigen::VectorXd
 
   // Documentation inherited
   virtual void setPosition(size_t _index, double _position);
@@ -369,138 +371,10 @@ protected:
   // Documentation inherited
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
-protected:
-  // TODO(JS): Need?
-  ///
-  size_t mIndexInSkeleton;
-
-  //----------------------------------------------------------------------------
-  // Configuration
-  //----------------------------------------------------------------------------
-
-  /// Position
-  double mPosition;
-
-  /// Lower limit of position
-  double mPositionLowerLimit;
-
-  /// Upper limit of position
-  double mPositionUpperLimit;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mPositionDeriv;
-
-  //----------------------------------------------------------------------------
-  // Velocity
-  //----------------------------------------------------------------------------
-
-  /// Generalized velocity
-  double mVelocity;
-
-  /// Min value allowed.
-  double mVelocityLowerLimit;
-
-  /// Max value allowed.
-  double mVelocityUpperLimit;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mVelocityDeriv;
-
-  //----------------------------------------------------------------------------
-  // Acceleration
-  //----------------------------------------------------------------------------
-
-  /// Generalized acceleration
-  double mAcceleration;
-
-  /// Min value allowed.
-  double mAccelerationLowerLimit;
-
-  /// upper limit of generalized acceleration
-  double mAccelerationUpperLimit;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mAccelerationDeriv;
-
-  //----------------------------------------------------------------------------
-  // Force
-  //----------------------------------------------------------------------------
-
-  /// Generalized force
-  double mForce;
-
-  /// Min value allowed.
-  double mForceLowerLimit;
-
-  /// Max value allowed.
-  double mForceUpperLimit;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mForceDeriv;
-
-  //----------------------------------------------------------------------------
-  // Impulse
-  //----------------------------------------------------------------------------
-
-  /// Change of generalized velocity
-  double mVelocityChange;
-
-//  /// Generalized impulse
-//  double mImpulse;
-
-  /// Generalized constraint impulse
-  double mConstraintImpulse;
-
-  //----------------------------------------------------------------------------
-  // Spring and damper
-  //----------------------------------------------------------------------------
-
-  /// Joint spring stiffness
-  double mSpringStiffness;
-
-  /// Rest joint position for joint spring
-  double mRestPosition;
-
-  /// Joint damping coefficient
-  double mDampingCoefficient;
-
-  //----------------------------------------------------------------------------
-  // For recursive dynamics algorithms
-  //----------------------------------------------------------------------------
-
-  /// Spatial Jacobian
-  Eigen::Vector6d mJacobian;
-
-  /// Time derivative of spatial Jacobian
-  Eigen::Vector6d mJacobianDeriv;
-
-  /// Inverse of projected articulated inertia
-  double mInvProjArtInertia;
-
-  /// Inverse of projected articulated inertia for implicit joint damping and
-  /// spring forces
-  double mInvProjArtInertiaImplicit;
-
-  /// Total force projected on joint space
-  double mTotalForce;
-
-  /// Total impluse projected on joint space
-  double mTotalImpulse;
-
-  //----------------------------------------------------------------------------
-  // For equations of motion
-  //----------------------------------------------------------------------------
-
-  ///
-  double mInvM_a;
-
-  ///
-  double mInvMassMatrixSegment;
-
 private:
 };
 
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_SINGLEDOFJOINT_H_
+#endif  // DART_DYNAMICS_ZERODOFJOINT_H_

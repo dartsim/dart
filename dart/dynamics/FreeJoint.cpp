@@ -59,13 +59,7 @@ FreeJoint::FreeJoint(const std::string& _name)
   mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
   assert(!math::isNan(mJacobian));
 
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
   // Time derivative of Jacobian is always zero
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -87,24 +81,21 @@ void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
   mJacobian.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
   mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
 
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
   assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
-void FreeJoint::integrateConfigs(double _dt)
+void FreeJoint::integratePositions(double _dt)
 {
-  mQ = mQ * math::expMap(getGenVels() * _dt);
+  mQ = mQ * math::expMap(mVelocities * _dt);
 
-  GenCoordSystem::setConfigs(math::logMap(mQ));
+  mPositions = math::logMap(mQ);
 }
 
 //==============================================================================
 void FreeJoint::updateLocalTransform()
 {
-  mQ = math::expMap(getConfigs());
+  mQ = math::expMap(mPositions);
 
   mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
 

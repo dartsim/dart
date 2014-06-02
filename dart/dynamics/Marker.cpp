@@ -102,7 +102,7 @@ Eigen::Vector3d Marker::getWorldPosition() const {
   return mBodyNode->getWorldTransform() * mOffset;
 }
 
-int Marker::getSkeletonIndex() const {
+int Marker::getIndexInSkeleton() const {
   return mSkelIndex;
 }
 

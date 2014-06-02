@@ -59,8 +59,8 @@ void MyWindow::timeStepping() {
 
 //  mController->setConstrForces(
 //        mWorld->getConstraintHandler()->getTotalConstraintForce(1));
-//  mController->computeTorques(mWorld->getSkeleton(1)->getConfigs(),
-//                              mWorld->getSkeleton(1)->getGenVels());
+//  mController->computeTorques(mWorld->getSkeleton(1)->getPositions(),
+//                              mWorld->getSkeleton(1)->getVelocities());
 //  mWorld->getSkeleton(1)->setInternalForceVector(mController->getTorques());
 
   mWorld->step();

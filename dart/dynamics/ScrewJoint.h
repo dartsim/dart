@@ -41,7 +41,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/SingleDofJoint.h"
 
 namespace dart {
@@ -74,7 +73,7 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {
-    mWrench - mJacobian * GenCoordSystem::getGenForces();
+    return mWrench - mJacobian * mForce;
   }
 
 protected:

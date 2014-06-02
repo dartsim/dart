@@ -48,7 +48,6 @@
 
 #include "dart/common/Console.h"
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintSolver.h"
 
@@ -57,8 +56,7 @@ namespace simulation {
 
 //==============================================================================
 World::World()
-  : integration::IntegrableSystem(),
-    mGravity(0.0, 0.0, -9.81),
+  : mGravity(0.0, 0.0, -9.81),
     mTime(0.0),
     mTimeStep(0.001),
     mFrame(0),
@@ -80,165 +78,6 @@ World::~World()
        it != mSkeletons.end(); ++it)
   {
     delete (*it);
-  }
-}
-
-//==============================================================================
-void World::setConfigs(const Eigen::VectorXd& _configs)
-{
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    getSkeleton(i)->setConfigs(_configs.segment(start, size),
-                               false, false, false);
-  }
-}
-
-//==============================================================================
-void World::setGenVels(const Eigen::VectorXd& _genVels)
-{
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
-  }
-}
-
-//==============================================================================
-Eigen::VectorXd World::getConfigs() const
-{
-  Eigen::VectorXd config(mIndices.back());
-
-  for (unsigned int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    config.segment(start, size) = getSkeleton(i)->getConfigs();
-  }
-
-  return config;
-}
-
-//==============================================================================
-Eigen::VectorXd World::getGenVels() const
-{
-  Eigen::VectorXd genVels(mIndices.back());
-
-  for (unsigned int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    genVels.segment(start, size) = getSkeleton(i)->getGenVels();
-  }
-
-  return genVels;
-}
-
-//==============================================================================
-Eigen::VectorXd World::evalGenAccs()
-{
-  // Compute unconstrained acceleration.
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    // Transmitted body force doesn't need to be computed here since it will be
-    // computed at below.
-    (*it)->computeForwardDynamics();
-
-    // TODO(JS): Just do Euler integration for test
-//    (*it)->integrateConfigs(mTimeStep);
-//    (*it)->integrateGenVels(mTimeStep);
-  }
-
-//  // compute constraint (contact/contact, joint limit) forces
-//  mConstraintHandler->computeConstraintForces();
-
-//  // set constraint force
-//  for (int i = 0; i < getNumSkeletons(); i++)
-//  {
-//    // skip immobile objects in forward simulation
-//    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
-//      continue;
-
-//    mSkeletons[i]->setConstraintForceVector(
-//          mConstraintHandler->getTotalConstraintForce(i) -
-//          mConstraintHandler->getContactForce(i));
-//  }
-
-//  // compute forward dynamics
-//  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-//       it != mSkeletons.end(); ++it)
-//  {
-//    (*it)->computeForwardDynamics();
-//  }
-
-  // compute derivatives for integration
-  Eigen::VectorXd genAccs = Eigen::VectorXd::Zero(mIndices.back());
-  for (unsigned int i = 0; i < getNumSkeletons(); i++)
-  {
-    // skip immobile objects in forward simulation
-    if (!mSkeletons[i]->isMobile() || mSkeletons[i]->getNumGenCoords() == 0)
-      continue;
-
-    int start = mIndices[i];
-    int size = getSkeleton(i)->getNumGenCoords();
-
-    // set accelerations
-    genAccs.segment(start, size) = getSkeleton(i)->getGenAccs();
-  }
-
-  return genAccs;
-}
-
-//==============================================================================
-void World::integrateConfigs(const Eigen::VectorXd& _genVels, double _dt)
-{
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    // TODO(JS)
-//    getSkeleton(i)->setGenVels(_genVels.segment(start, size), false, false);
-    getSkeleton(i)->setGenVels(_genVels.segment(start, size), true, false);
-    getSkeleton(i)->integrateConfigs(_dt);
-  }
-}
-
-//==============================================================================
-void World::integrateGenVels(const Eigen::VectorXd& _genAccs, double _dt)
-{
-  for (int i = 0; i < getNumSkeletons(); i++)
-  {
-    int start = mIndices[i];
-    int size  = getSkeleton(i)->getNumGenCoords();
-
-    if (size == 0 || !mSkeletons[i]->isMobile())
-      continue;
-
-    getSkeleton(i)->setGenAccs(_genAccs.segment(start, size), false);
-    getSkeleton(i)->integrateGenVels(_dt);
   }
 }
 
@@ -267,9 +106,6 @@ double World::getTimeStep() const
 void World::step()
 {
   // Integrate velocity unconstrained skeletons
-//  mIntegrator->integrateVel(this, mTimeStep);
-
-  //
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
@@ -277,18 +113,12 @@ void World::step()
       continue;
 
     (*it)->computeForwardDynamicsRecursionPartB();
-    (*it)->integrateGenVels(mTimeStep);
-//    (*it)->integrateConfigs(mTimeStep);
+    (*it)->integrateVelocities(mTimeStep);
+    (*it)->computeForwardKinematics(false, true, false);
   }
 
   // Detect active constraints and compute constraint impulses
   mConstraintSolver->solve();
-
-  // Integrate skeletons with constraint impulses
-//  mIntegrator->integrate(this, mTimeStep);
-
-//  dtdbg << "GenCoordSystem::getConfigs(): "
-//        << getConfigs().transpose() << std::endl;
 
   // Compute velocity changes given constraint impulses
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
@@ -301,8 +131,6 @@ void World::step()
     }
   }
 
-//  mIntegrator->integratePos(this, mTimeStep);
-
   //
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -310,11 +138,8 @@ void World::step()
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->integrateConfigs(mTimeStep);
+    (*it)->integratePositions(mTimeStep);
   }
-
-//  dtdbg << "GenCoordSystem::getConfigs(): "
-//        << getConfigs().transpose() << std::endl;
 
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -323,7 +148,7 @@ void World::step()
       continue;
 
     (*it)->computeForwardDynamicsRecursionPartA();
-    (*it)->clearInternalForces();
+    (*it)->resetForces();
     (*it)->clearExternalForces();
     (*it)->clearConstraintImpulses();
   }
@@ -407,7 +232,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
-  mIndices.push_back(mIndices.back() + _skeleton->getNumGenCoords());
+  mIndices.push_back(mIndices.back() + _skeleton->getDof());
   mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
@@ -438,7 +263,7 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
 
   // Update mIndices.
   for (++i; i < mSkeletons.size() - 1; ++i)
-    mIndices[i] = mIndices[i+1] - _skeleton->getNumGenCoords();
+    mIndices[i] = mIndices[i+1] - _skeleton->getDof();
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
@@ -491,8 +316,8 @@ void World::bake()
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
   for (unsigned int i = 0; i < getNumSkeletons(); i++)
   {
-    state.segment(getIndex(i), getSkeleton(i)->getNumGenCoords())
-        = getSkeleton(i)->getConfigs();
+    state.segment(getIndex(i), getSkeleton(i)->getDof())
+        = getSkeleton(i)->getPositions();
   }
   for (int i = 0; i < nContacts; i++)
   {

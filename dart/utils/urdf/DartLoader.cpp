@@ -18,7 +18,6 @@
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -83,7 +82,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
       if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
           Eigen::Vector6d coordinates;
           coordinates << math::logMap(transform.linear()), transform.translation();
-          rootJoint->setConfigs(coordinates, false, false, false);
+          rootJoint->setPositions(coordinates);
       }
       else {
           rootJoint->setTransformFromParentBodyNode(transform);
@@ -240,8 +239,8 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   switch(_jt->type) {
   case urdf::Joint::REVOLUTE:
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
-      joint->getGenCoord(0)->setPosMin(_jt->limits->lower);
-      joint->getGenCoord(0)->setPosMax(_jt->limits->upper);
+      joint->setPositionLowerLimit(0, _jt->limits->lower);
+      joint->setPositionUpperLimit(0, _jt->limits->upper);
       joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::CONTINUOUS:
@@ -250,8 +249,8 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
       break;
   case urdf::Joint::PRISMATIC:
       joint = new dynamics::PrismaticJoint(toEigen(_jt->axis));
-      joint->getGenCoord(0)->setPosMin(_jt->limits->lower);
-      joint->getGenCoord(0)->setPosMax(_jt->limits->upper);
+      joint->setPositionLowerLimit(0, _jt->limits->lower);
+      joint->setPositionUpperLimit(0, _jt->limits->upper);
       joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::FIXED:
@@ -272,11 +271,11 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   joint->setName(_jt->name);
   joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
   joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-  if(joint->getNumGenCoords() == 1 && _jt->limits) {
-    joint->getGenCoord(0)->setVelMin(-_jt->limits->velocity);
-    joint->getGenCoord(0)->setVelMax(_jt->limits->velocity);
-    joint->getGenCoord(0)->setForceMin(-_jt->limits->effort);
-    joint->getGenCoord(0)->setForceMax(_jt->limits->effort);
+  if(joint->getDof() == 1 && _jt->limits) {
+    joint->setVelocityLowerLimit(0, -_jt->limits->velocity);
+    joint->setVelocityUpperLimit(0, _jt->limits->velocity);
+    joint->setForceLowerLimit(0, -_jt->limits->effort);
+    joint->setForceUpperLimit(0, _jt->limits->effort);
   }
   return joint;
 }

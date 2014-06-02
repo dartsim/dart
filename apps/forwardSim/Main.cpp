@@ -53,11 +53,12 @@ int main(int argc, char* argv[]) {
   myWorld->setGravity(gravity);
   myWorld->setTimeStep(1.0/2000);
 
-  int dof =  myWorld->getSkeleton(0)->getNumGenCoords();
+  int dof =  myWorld->getSkeleton(0)->getDof();
   Eigen::VectorXd initPose(dof);
   for (int i = 0; i < dof; i++)
     initPose[i] = dart::math::random(-0.5, 0.5);
-  myWorld->getSkeleton(0)->setConfigs(initPose, true, true, false);
+  myWorld->getSkeleton(0)->setPositions(initPose);
+  myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
 
   // create a window and link it to the world
   MyWindow window;

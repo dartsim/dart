@@ -47,6 +47,29 @@ namespace dynamics {
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
+    mPosition(0.0),
+    mVelocity(0.0),
+    mAcceleration(0.0),
+    mForce(0.0),
+    mPositionLowerLimit(-DART_DBL_INF),
+    mVelocityLowerLimit(-DART_DBL_INF),
+    mAccelerationLowerLimit(-DART_DBL_INF),
+    mForceLowerLimit(-DART_DBL_INF),
+    mPositionUpperLimit(DART_DBL_INF),
+    mVelocityUpperLimit(DART_DBL_INF),
+    mAccelerationUpperLimit(DART_DBL_INF),
+    mForceUpperLimit(DART_DBL_INF),
+    mPositionDeriv(0.0),
+    mVelocityDeriv(0.0),
+    mAccelerationDeriv(0.0),
+    mForceDeriv(0.0),
+    mIndexInSkeleton(0u),
+    mVelocityChange(0.0),
+    // mImpulse(0.0),
+    mConstraintImpulse(0.0),
+    mSpringStiffness(0.0),
+    mDampingCoefficient(0.0),
+    mRestPosition(0.0),
     mJacobian(Eigen::Vector6d::Zero()),
     mJacobianDeriv(Eigen::Vector6d::Zero()),
     mInvProjArtInertia(0.0),
@@ -54,14 +77,6 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mTotalForce(0.0),
     mTotalImpulse(0.0)
 {
-  mGenCoords.push_back(&mCoordinate);
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
-
-  mSpringStiffness.resize(1, 0.0);
-  mDampingCoefficient.resize(1, 0.0);
-  mRestPosition.resize(1, 0.0);
 }
 
 //==============================================================================
@@ -70,10 +85,634 @@ SingleDofJoint::~SingleDofJoint()
 }
 
 //==============================================================================
+size_t SingleDofJoint::getDof() const
+{
+  return 1;
+}
+
+//==============================================================================
+void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+{
+  if (_index != 0)
+  {
+    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mIndexInSkeleton = _indexInSkeleton;
+}
+
+//==============================================================================
+size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
+          << std::endl;
+    return 0;
+  }
+
+  return mIndexInSkeleton;
+}
+
+//==============================================================================
+void SingleDofJoint::setPosition(size_t _index, double _position)
+{
+  if (_index != 0)
+  {
+    dterr << "setPosition index[" << _index << "] out of range" << std::endl;
+    return;
+  }
+
+  mPosition = _position;
+}
+
+//==============================================================================
+double SingleDofJoint::getPosition(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getPosition index[" << _index << "] out of range" << std::endl;
+    return 0.0;
+  }
+
+  return mPosition;
+}
+
+//==============================================================================
+void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
+{
+  if (_positions.size() != getDof())
+  {
+    dterr << "setPositions positions's size[" << _positions.size()
+          << "] is different with the dof [" << getDof() << "]" << std::endl;
+    return;
+  }
+
+  mPosition = _positions[0];
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getPositions() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mPosition);
+}
+
+//==============================================================================
+void SingleDofJoint::resetPositions()
+{
+  mPosition = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
+{
+  if (_index != 0)
+  {
+    dterr << "setPositionLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mPositionLowerLimit = _position;
+}
+
+//==============================================================================
+double SingleDofJoint::getPositionLowerLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getPositionLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mPositionLowerLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
+{
+  if (_index != 0)
+  {
+    dterr << "setPositionUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mPositionUpperLimit = _position;
+}
+
+//==============================================================================
+double SingleDofJoint::getPositionUpperLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getPositionUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mPositionUpperLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setVelocity(size_t _index, double _velocity)
+{
+  if (_index != 0)
+  {
+    dterr << "setVelocity index[" << _index << "] out of range" << std::endl;
+    return;
+  }
+
+  mVelocity = _velocity;
+}
+
+//==============================================================================
+double SingleDofJoint::getVelocity(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getVelocity index[" << _index << "] out of range" << std::endl;
+    return 0.0;
+  }
+
+  return mVelocity;
+}
+
+//==============================================================================
+void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
+{
+  if (_velocities.size() != getDof())
+  {
+    dterr << "setVelocities velocities's size[" << _velocities.size()
+          << "] is different with the dof [" << getDof() << "]" << std::endl;
+    return;
+  }
+
+  mVelocity = _velocities[0];
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getVelocities() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mVelocity);
+}
+
+//==============================================================================
+void SingleDofJoint::resetVelocities()
+{
+  mVelocity = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
+{
+  if (_index != 0)
+  {
+    dterr << "setVelocityLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mVelocityLowerLimit = _velocity;
+}
+
+//==============================================================================
+double SingleDofJoint::getVelocityLowerLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getVelocityLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mVelocityLowerLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
+{
+  if (_index != 0)
+  {
+    dterr << "setVelocityUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mVelocityUpperLimit = _velocity;
+}
+
+//==============================================================================
+double SingleDofJoint::getVelocityUpperLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getVelocityUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mVelocityUpperLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
+{
+  if (_index != 0)
+  {
+    dterr << "setAcceleration index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mAcceleration = _acceleration;
+}
+
+//==============================================================================
+double SingleDofJoint::getAcceleration(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getAcceleration index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mAcceleration;
+}
+
+//==============================================================================
+void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
+{
+  if (_accelerations.size() != getDof())
+  {
+    dterr << "setAccelerations accelerations's size[" << _accelerations.size()
+          << "] is different with the dof [" << getDof() << "]" << std::endl;
+    return;
+  }
+
+  mAcceleration = _accelerations[0];
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getAccelerations() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mAcceleration);
+}
+
+//==============================================================================
+void SingleDofJoint::resetAccelerations()
+{
+  mAcceleration = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
+                                               double _acceleration)
+{
+  if (_index != 0)
+  {
+    dterr << "setAccelerationLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mAccelerationLowerLimit = _acceleration;
+}
+
+//==============================================================================
+double SingleDofJoint::getAccelerationLowerLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getAccelerationLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mAccelerationLowerLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
+                                               double _acceleration)
+{
+  if (_index != 0)
+  {
+    dterr << "setAccelerationUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mAccelerationUpperLimit = _acceleration;
+}
+
+//==============================================================================
+double SingleDofJoint::getAccelerationUpperLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getAccelerationUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mAccelerationUpperLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setForce(size_t _index, double _force)
+{
+  if (_index != 0)
+  {
+    dterr << "setForce index[" << _index << "] out of range" << std::endl;
+    return;
+  }
+
+  mForce = _force;
+}
+
+//==============================================================================
+double SingleDofJoint::getForce(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getForce index[" << _index << "] out of range" << std::endl;
+    return 0.0;
+  }
+
+  return mForce;
+}
+
+//==============================================================================
+void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
+{
+  if (_forces.size() != getDof())
+  {
+    dterr << "setForces forces's size[" << _forces.size()
+          << "] is different with the dof [" << getDof() << "]" << std::endl;
+    return;
+  }
+
+  mForce = _forces[0];
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getForces() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mForce);
+}
+
+//==============================================================================
+void SingleDofJoint::resetForces()
+{
+  mForce = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
+{
+  if (_index != 0)
+  {
+    dterr << "setForceLowerLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mForceLowerLimit = _force;
+}
+
+//==============================================================================
+double SingleDofJoint::getForceLowerLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getForceMin index[" << _index << "] out of range" << std::endl;
+    return 0.0;
+  }
+
+  return mForceLowerLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
+{
+  if (_index != 0)
+  {
+    dterr << "setForceUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mForceUpperLimit = _force;
+}
+
+//==============================================================================
+double SingleDofJoint::getForceUpperLimit(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getForceUpperLimit index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mForceUpperLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::setVelocityChange(size_t _index, double _velocityChange)
+{
+  if (_index != 0)
+  {
+    dterr << "setVelocityChange index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mVelocityChange = _velocityChange;
+}
+
+//==============================================================================
+double SingleDofJoint::getVelocityChange(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getVelocityChange index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mVelocityChange;
+}
+
+//==============================================================================
+void SingleDofJoint::resetVelocityChanges()
+{
+  mVelocityChange = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::setConstraintImpulse(size_t _index, double _impulse)
+{
+  if (_index != 0)
+  {
+    dterr << "setConstraintImpulse index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mConstraintImpulse = _impulse;
+}
+
+//==============================================================================
+double SingleDofJoint::getConstraintImpulse(size_t _index)
+{
+  if (_index != 0)
+  {
+    dterr << "getConstraintImpulse index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mConstraintImpulse;
+}
+
+//==============================================================================
+void SingleDofJoint::resetConstraintImpulses()
+{
+  mConstraintImpulse = 0.0;
+}
+
+//==============================================================================
+void SingleDofJoint::integratePositions(double _dt)
+{
+  mPosition += mVelocity * _dt;
+}
+
+//==============================================================================
+void SingleDofJoint::integrateVelocities(double _dt)
+{
+  mVelocity += mAcceleration * _dt;
+}
+
+//==============================================================================
+void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
+{
+  if (_index != 0)
+  {
+    dterr << "setSpringStiffness index[" << _index << "] out of range\n";
+    return;
+  }
+
+  assert(_k >= 0.0);
+
+  mSpringStiffness = _k;
+}
+
+//==============================================================================
+double SingleDofJoint::getSpringStiffness(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getSpringStiffness index[" << _index << "] out of range\n";
+    return 0.0;
+  }
+
+  return mSpringStiffness;
+}
+
+//==============================================================================
+void SingleDofJoint::setRestPosition(size_t _index, double _q0)
+{
+  if (_index != 0)
+  {
+    dterr << "setRestPosition index[" << _index << "] out of range\n";
+    return;
+  }
+
+  if (mPositionLowerLimit > _q0 || mPositionUpperLimit < _q0)
+  {
+    dterr << "Rest position of joint[" << getName() << "], " << _q0
+          << ", is out of the limit range["
+          << mPositionLowerLimit << ", "
+          << mPositionUpperLimit << "] in index[" << _index
+          << "].\n";
+    return;
+  }
+
+  mRestPosition = _q0;
+}
+
+//==============================================================================
+double SingleDofJoint::getRestPosition(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getRestPosition index[" << _index << "] out of range\n";
+    return 0.0;
+  }
+
+  return mRestPosition;
+}
+
+//==============================================================================
+void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
+{
+  if (_index != 0)
+  {
+    dterr << "setDampingCoefficient index[" << _index << "] out of range\n";
+    return;
+  }
+
+  assert(_d >= 0.0);
+
+  mDampingCoefficient = _d;
+}
+
+//==============================================================================
+double SingleDofJoint::getDampingCoefficient(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "getDampingCoefficient index[" << _index << "] out of range\n";
+    return 0.0;
+  }
+
+  return mDampingCoefficient;
+}
+
+//==============================================================================
+double SingleDofJoint::getPotentialEnergy() const
+{
+  // Spring energy
+  double pe = 0.5 * mSpringStiffness
+       * (mPosition - mRestPosition)
+       * (mPosition - mRestPosition);
+
+  return pe;
+}
+
+//==============================================================================
+const math::Jacobian SingleDofJoint::getLocalJacobian() const
+{
+  return mJacobian;
+}
+
+//==============================================================================
+const math::Jacobian SingleDofJoint::getLocalJacobianTimeDeriv() const
+{
+  return mJacobianDeriv;
+}
+
+//==============================================================================
 void SingleDofJoint::addVelocityTo(Eigen::Vector6d& _vel)
 {
   // Add joint velocity to _vel
-  _vel += mJacobian * mCoordinate.getVel();
+  _vel.noalias() += mJacobian * mVelocity;
 
   // Verification
   assert(!math::isNan(_vel));
@@ -85,14 +724,13 @@ void SingleDofJoint::setPartialAccelerationTo(
     const Eigen::Vector6d& _childVelocity)
 {
   // ad(V, S * dq)
-  _partialAcceleration
-      = math::ad(_childVelocity, mJacobian * mCoordinate.getVel());
+  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocity);
 
   // Verification
   assert(!math::isNan(_partialAcceleration));
 
   // Add joint acceleration
-  _partialAcceleration.noalias() += mJacobianDeriv * mCoordinate.getVel();
+  _partialAcceleration.noalias() += mJacobianDeriv * mVelocity;
 
   // Verification
   assert(!math::isNan(_partialAcceleration));
@@ -103,14 +741,14 @@ void SingleDofJoint::setPartialAccelerationTo(
 void SingleDofJoint::addAccelerationTo(Eigen::Vector6d& _acc)
 {
   //
-  _acc += mJacobian * mCoordinate.getAcc();
+  _acc += mJacobian * mAcceleration;
 }
 
 //==============================================================================
 void SingleDofJoint::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 {
   //
-  _velocityChange += mJacobian * mCoordinate.getVelChange();
+  _velocityChange += mJacobian * mVelocityChange;
 }
 
 //==============================================================================
@@ -166,8 +804,8 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
   double projAI = mJacobian.dot(_artInertia * mJacobian);
 
   // Add additional inertia for implicit damping and spring force
-  projAI += _timeStep * mDampingCoefficient[0]
-            + _timeStep * _timeStep * mSpringStiffness[0];
+  projAI += _timeStep * mDampingCoefficient
+            + _timeStep * _timeStep * mSpringStiffness;
 
   // Inversion of the projected articulated inertia for implicit damping and
   // spring force
@@ -230,26 +868,28 @@ void SingleDofJoint::updateTotalForce(
 {
   // Spring force
   double springForce
-      = -mSpringStiffness[0] * (mCoordinate.getPos()
-                                + mCoordinate.getVel() * _timeStep
-                                - mRestPosition[0]);
+      = -mSpringStiffness * (mPosition
+                                + mVelocity * _timeStep
+                                - mRestPosition);
 
   // Damping force
-  double dampingForce = -mDampingCoefficient[0] * mCoordinate.getVel();
+  double dampingForce = -mDampingCoefficient * mVelocity;
 
   // Compute alpha
-  mTotalForce = mCoordinate.getForce()
-                + springForce
-                + dampingForce
-                - mJacobian.dot(_bodyForce);
+  mTotalForce = mForce + springForce + dampingForce - mJacobian.dot(_bodyForce);
 }
 
 //==============================================================================
 void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 {
   //
-  mTotalImpulse = mCoordinate.getConstraintImpulse()
-                  - mJacobian.dot(_bodyImpulse);
+  mTotalImpulse = mConstraintImpulse - mJacobian.dot(_bodyImpulse);
+}
+
+//==============================================================================
+void SingleDofJoint::resetTotalImpulses()
+{
+  mTotalImpulse = 0.0;
 }
 
 //==============================================================================
@@ -257,16 +897,13 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
                                        const Eigen::Vector6d& _spatialAcc)
 {
   //
-  double acc
+  mAcceleration
       = mInvProjArtInertiaImplicit
         * (mTotalForce
            - mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc)));
 
   // Verification
-  assert(!math::isNan(acc));
-
-  //
-  mCoordinate.setAcc(acc);
+  assert(!math::isNan(mAcceleration));
 }
 
 //==============================================================================
@@ -274,42 +911,31 @@ void SingleDofJoint::updateVelocityChange(const Eigen::Matrix6d& _artInertia,
                                          const Eigen::Vector6d& _velocityChange)
 {
   //
-  double delVel
+  mVelocityChange
       = mInvProjArtInertia
         * (mTotalImpulse
            - mJacobian.dot(_artInertia * math::AdInvT(mT, _velocityChange)));
 
   // Verification
-  assert(!math::isNan(delVel));
-
-  //
-  mCoordinate.setVelChange(delVel);
-}
-
-//==============================================================================
-void SingleDofJoint::clearConstraintImpulse()
-{
-  mTotalImpulse = 0.0;
+  assert(!math::isNan(mVelocityChange));
 }
 
 //==============================================================================
 void SingleDofJoint::updateVelocityWithVelocityChange()
 {
-  mCoordinate.setVel(mCoordinate.getVel() + mCoordinate.getVelChange());
+  mVelocity += mVelocityChange;
 }
 
 //==============================================================================
 void SingleDofJoint::updateAccelerationWithVelocityChange(double _timeStep)
 {
-  mCoordinate.setAcc(mCoordinate.getAcc()
-                     + mCoordinate.getVelChange() / _timeStep);
+  mAcceleration += mVelocityChange / _timeStep;
 }
 
 //==============================================================================
 void SingleDofJoint::updateForceWithImpulse(double _timeStep)
 {
-  mCoordinate.setForce(mCoordinate.getForce()
-                       + mCoordinate.getConstraintImpulse() / _timeStep);
+  mForce += mConstraintImpulse / _timeStep;
 }
 
 //==============================================================================
@@ -355,7 +981,7 @@ void SingleDofJoint::updateTotalForceForInvMassMatrix(
     const Eigen::Vector6d& _bodyForce)
 {
   // Compute alpha
-  mInvM_a = mCoordinate.getForce() - mJacobian.dot(_bodyForce);
+  mInvM_a = mForce - mJacobian.dot(_bodyForce);
 }
 
 //==============================================================================
@@ -374,7 +1000,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mCoordinate.getSkeletonIndex();
+  size_t iStart = mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -397,7 +1023,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mCoordinate.getSkeletonIndex();
+  size_t iStart = mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;

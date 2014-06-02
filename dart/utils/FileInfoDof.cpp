@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
@@ -78,7 +79,7 @@ bool FileInfoDof::loadFile(const char* _fName)
   inFile >> buffer;
   inFile >> nDof;
 
-  if (mSkel == NULL || mSkel->getNumGenCoords() != nDof)
+  if (mSkel == NULL || mSkel->getDof() != nDof)
     return false;
 
   mDofs.resize(mNumFrames);
@@ -124,15 +125,19 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
   int last = _end < mNumFrames ? _end : mNumFrames - 1;
 
   outFile.precision(20);
-  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumGenCoords() << std::endl;
+  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getDof() << std::endl;
 
-  for (int i = 0; i < mSkel->getNumGenCoords(); i++)
-    outFile << mSkel->getGenCoord(i)->getName() << ' ';
+  for (int i = 0; i < mSkel->getDof(); i++)
+  {
+    dynamics::GenCoordInfo info = mSkel->getGenCoordInfo(i);
+    outFile << info.joint->getName() << "." << info.localIndex << ' ';
+  }
+
   outFile << std::endl;
 
   for (int i = first; i <= last; i++)
   {
-    for (int j = 0; j < mSkel->getNumGenCoords(); j++)
+    for (int j = 0; j < mSkel->getDof(); j++)
       outFile << mDofs[i][j] << ' ';
     outFile << std::endl;
   }

@@ -74,7 +74,7 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 void PrismaticJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mAxis * mCoordinate.getPos())
+       * Eigen::Translation3d(mAxis * mPosition)
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -89,9 +89,6 @@ void PrismaticJoint::updateLocalJacobian()
 
   // Verification
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================

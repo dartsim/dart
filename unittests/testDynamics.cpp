@@ -129,7 +129,7 @@ const std::vector<std::string>& DynamicsTest::getList()
 //==============================================================================
 MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 {
-  int skelDof = _skel->getNumGenCoords();
+  int skelDof = _skel->getDof();
 
   MatrixXd skelM = MatrixXd::Zero(skelDof, skelDof);  // Mass matrix of skeleton
   MatrixXd M;  // Body mass
@@ -170,7 +170,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 //==============================================================================
 MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
 {
-  int    dof = _skel->getNumGenCoords();
+  int    dof = _skel->getDof();
   double dt  = _skel->getTimeStep();
 
   MatrixXd M = getMassMatrix(_skel);
@@ -187,11 +187,11 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
     EXPECT_TRUE(body  != NULL);
     EXPECT_TRUE(joint != NULL);
 
-    int dof = joint->getNumGenCoords();
+    int dof = joint->getDof();
 
     for (int j = 0; j < dof; ++j)
     {
-      int idx = joint->getGenCoord(j)->getSkeletonIndex();
+      int idx = joint->getIndexInSkeleton(j);
 
       D(idx, idx) = joint->getDampingCoefficient(j);
       K(idx, idx) = joint->getSpringStiffness(j);
@@ -239,7 +239,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
   {
     Skeleton* skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
-    int dof = skeleton->getNumGenCoords();
+    int dof = skeleton->getDof();
 
     for (int j = 0; j < nRandomItr; ++j)
     {
@@ -253,10 +253,10 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
         dq[k]  = math::random(dqLB,  dqUB);
         ddq[k] = math::random(ddqLB, ddqUB);
       }
-      VectorXd state = VectorXd::Zero(dof * 2);
-      state << q, dq;
-      skeleton->setState(state, true, true, true);
-      skeleton->setGenAccs(ddq, true);
+      skeleton->setPositions(q);
+      skeleton->setVelocities(dq);
+      skeleton->setAccelerations(ddq);
+      skeleton->computeForwardKinematics(true, true, true);
       skeleton->computeInverseDynamics(false, false);
 
       // For each body node
@@ -360,7 +360,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
   {
     Skeleton* skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
-    int dof = skeleton->getNumGenCoords();
+    int dof = skeleton->getDof();
 
     for (int j = 0; j < nRandomItr; ++j)
     {
@@ -378,18 +378,21 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 //        dq[k]  = 0.0;
 //        ddq[k] = 0.0;
       }
-      VectorXd x = VectorXd::Zero(dof * 2);
-      x << q, dq;
-      skeleton->setState(x, true, true, false);
-      skeleton->setGenAccs(ddq, true);
+
+      skeleton->setPositions(q);
+      skeleton->setVelocities(dq);
+      skeleton->setAccelerations(ddq);
+      skeleton->computeForwardKinematics(true, true, true);
 
       // Integrate state
-      skeleton->integrateConfigs(timeStep);
-      skeleton->integrateGenVels(timeStep);
-      VectorXd qNext  = skeleton->getConfigs();
-      VectorXd dqNext = skeleton->getGenVels();
-      VectorXd xNext  = VectorXd::Zero(dof * 2);
-      xNext << qNext, dqNext;
+      skeleton->integratePositions(timeStep);
+      skeleton->integrateVelocities(timeStep);
+
+      // Compute forward kinematics
+      skeleton->computeForwardKinematics(true, true, true);
+
+      VectorXd qNext  = skeleton->getPositions();
+      VectorXd dqNext = skeleton->getVelocities();
 
       // For each body node
       for (int k = 0; k < skeleton->getNumBodyNodes(); ++k)
@@ -398,8 +401,11 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         int nDepGenCoord = bn->getNumDependentGenCoords();
 
         // Calculation of velocities and Jacobian at k-th time step
-        skeleton->setState(x, true, true, false);
-        skeleton->setGenAccs(ddq, true);
+        skeleton->setPositions(q);
+        skeleton->setVelocities(dq);
+        skeleton->setAccelerations(ddq);
+        skeleton->computeForwardKinematics(true, true, true);
+
         Vector6d vBody1  = bn->getBodyVelocity();
         Vector6d vWorld1 = bn->getWorldVelocity();
         MatrixXd JBody1  = bn->getBodyJacobian();
@@ -413,8 +419,11 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         MatrixXd dJWorld1 = bn->getWorldJacobianTimeDeriv();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->setState(xNext, true, true, false);
-        skeleton->setGenAccs(ddq, true);
+        skeleton->setPositions(qNext);
+        skeleton->setVelocities(dqNext);
+        skeleton->setAccelerations(ddq);
+        skeleton->computeForwardKinematics(true, true, true);
+
         Vector6d vBody2  = bn->getBodyVelocity();
         Vector6d vWorld2 = bn->getWorldVelocity();
         MatrixXd JBody2  = bn->getBodyJacobian();
@@ -554,7 +563,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getNumGenCoords();
+    int dof            = skel->getDof();
 //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0)
@@ -571,15 +580,15 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getNumGenCoords();
+        int       localDof = joint->getDof();
 
         for (int l = 0; l < localDof; ++l)
         {
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getGenCoord(l)->getPosMin();
-          double ubRP = joint->getGenCoord(l)->getPosMax();
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)
@@ -592,7 +601,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x, true, true, false);
+      skel->setState(x);
+      skel->computeForwardKinematics(true, true, true);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
@@ -662,27 +672,27 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Get C2, Coriolis force vector using inverse dynamics algorithm
       Vector3d oldGravity = skel->getGravity();
-      VectorXd oldTau     = skel->getInternalForceVector();
-      VectorXd oldDdq     = skel->getGenAccs();
+      VectorXd oldTau     = skel->getForces();
+      VectorXd oldDdq     = skel->getAccelerations();
       // TODO(JS): Save external forces of body nodes
 
-      skel->clearInternalForces();
+      skel->resetForces();
       skel->clearExternalForces();
-      skel->setGenAccs(VectorXd::Zero(dof), true);
+      skel->setAccelerations(VectorXd::Zero(dof));
 
-      EXPECT_TRUE(skel->getInternalForceVector() == VectorXd::Zero(dof));
+      EXPECT_TRUE(skel->getForces() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
-      EXPECT_TRUE(skel->getGenAccs()                == VectorXd::Zero(dof));
+      EXPECT_TRUE(skel->getAccelerations() == VectorXd::Zero(dof));
 
       skel->setGravity(Vector3d::Zero());
       EXPECT_TRUE(skel->getGravity() == Vector3d::Zero());
       skel->computeInverseDynamics(false, false);
-      VectorXd C2 = skel->getGenForces();
+      VectorXd C2 = skel->getForces();
 
       skel->setGravity(oldGravity);
       EXPECT_TRUE(skel->getGravity() == oldGravity);
       skel->computeInverseDynamics(false, false);
-      VectorXd Cg2 = skel->getGenForces();
+      VectorXd Cg2 = skel->getForces();
 
       EXPECT_TRUE(equals(C, C2, 1e-6));
       if (!equals(C, C2, 1e-6))
@@ -698,8 +708,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         cout << "Cg2:" << Cg2.transpose() << endl;
       }
 
-      skel->setGenForces(oldTau);
-      skel->setGenAccs(oldDdq, false);
+      skel->setForces(oldTau);
+      skel->setAccelerations(oldDdq);
       // TODO(JS): Restore external forces of body nodes
 
       //------------------- Combined Force Vector Test -----------------------
@@ -757,7 +767,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getNumGenCoords();
+    int dof            = skel->getDof();
 //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0)
@@ -774,15 +784,15 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getNumGenCoords();
+        int       localDof = joint->getDof();
 
         for (int l = 0; l < localDof; ++l)
         {
           joint->setDampingCoefficient(l, random(lbD,  ubD));
           joint->setSpringStiffness   (l, random(lbK,  ubK));
 
-          double lbRP = joint->getGenCoord(l)->getPosMin();
-          double ubRP = joint->getGenCoord(l)->getPosMax();
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)
@@ -795,18 +805,19 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd x = skel->getState();
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
-      skel->setState(x, true, true, false);
+      skel->setState(x);
+      skel->computeForwardKinematics(true, true, true);
 
-      VectorXd tau = skel->getGenForces();
+      VectorXd tau = skel->getForces();
       for (int k = 0; k < tau.size(); ++k)
         tau[k] = random(lb, ub);
-      skel->setGenForces(tau);
+      skel->setForces(tau);
 
       skel->computeForwardDynamics();
 
-      VectorXd q  = skel->getConfigs();
-      VectorXd dq = skel->getGenVels();
-      VectorXd ddq = skel->getGenAccs();
+      VectorXd q  = skel->getPositions();
+      VectorXd dq = skel->getVelocities();
+      VectorXd ddq = skel->getAccelerations();
 
       VectorXd com   = skel->getWorldCOM();
       VectorXd dcom  = skel->getWorldCOMVelocity();
@@ -872,7 +883,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getNumGenCoords();
+    int dof            = skel->getDof();
 //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile())
@@ -889,20 +900,20 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getNumGenCoords();
+        int       localDof = joint->getDof();
 
         for (int l = 0; l < localDof; ++l)
         {
-          double lbRP = joint->getGenCoord(l)->getPosMin();
-          double ubRP = joint->getGenCoord(l)->getPosMax();
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
           if (lbRP < -DART_PI)
             lbRP = -DART_PI;
           if (ubRP > DART_PI)
             ubRP = DART_PI;
-          joint->setConfig(l, random(lbRP, ubRP), true, false, false);
+          joint->setPosition(l, random(lbRP, ubRP));
         }
       }
-      skel->setConfigs(VectorXd::Zero(dof));
+//      skel->setPositions(VectorXd::Zero(dof));
 
       // TODO(JS): Just clear what should be
       skel->clearExternalForces();
@@ -918,7 +929,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       skel->computeImpulseForwardDynamics();
 
       // Compare resultant velocity change and invM * impulses
-      VectorXd deltaVel1 = skel->getVelsChange();
+      VectorXd deltaVel1 = skel->getVelocityChanges();
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 

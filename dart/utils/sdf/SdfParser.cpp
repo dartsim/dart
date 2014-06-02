@@ -642,14 +642,14 @@ dynamics::RevoluteJoint* SdfParser::readRevoluteJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newRevoluteJoint->getGenCoord(0)->setPosMin(lower);
+                newRevoluteJoint->setPositionLowerLimit(0, lower);
             }
 
             // upper
             if (hasElement(limitElement, "upper"))
             {
                 double upper = getValueDouble(limitElement, "upper");
-                newRevoluteJoint->getGenCoord(0)->setPosMax(upper);
+                newRevoluteJoint->setPositionUpperLimit(0, upper);
             }
         }
     }
@@ -703,14 +703,14 @@ dynamics::PrismaticJoint* SdfParser::readPrismaticJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newPrismaticJoint->getGenCoord(0)->setPosMin(lower);
+                newPrismaticJoint->setPositionLowerLimit(0, lower);
             }
 
             // upper
             if (hasElement(limitElement, "upper"))
             {
                 double upper = getValueDouble(limitElement, "upper");
-                newPrismaticJoint->getGenCoord(0)->setPosMax(upper);
+                newPrismaticJoint->setPositionUpperLimit(0, upper);
             }
         }
     }
@@ -764,14 +764,14 @@ dynamics::ScrewJoint* SdfParser::readScrewJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newScrewJoint->getGenCoord(0)->setPosMin(lower);
+                newScrewJoint->setPositionLowerLimit(0, lower);
             }
 
             // upper
             if (hasElement(limitElement, "upper"))
             {
                 double upper = getValueDouble(limitElement, "upper");
-                newScrewJoint->getGenCoord(0)->setPosMax(upper);
+                newScrewJoint->setPositionUpperLimit(0, upper);
             }
         }
     }
@@ -832,14 +832,14 @@ dynamics::UniversalJoint* SdfParser::readUniversalJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newUniversalJoint->getGenCoord(0)->setPosMin(lower);
+                newUniversalJoint->setPositionLowerLimit(0, lower);
             }
 
             // upper
             if (hasElement(limitElement, "upper"))
             {
                 double upper = getValueDouble(limitElement, "upper");
-                newUniversalJoint->getGenCoord(0)->setPosMax(upper);
+                newUniversalJoint->setPositionUpperLimit(0, upper);
             }
         }
     }
@@ -883,14 +883,14 @@ dynamics::UniversalJoint* SdfParser::readUniversalJoint(
             if (hasElement(limitElement, "lower"))
             {
                 double lower = getValueDouble(limitElement, "lower");
-                newUniversalJoint->getGenCoord(0)->setPosMin(lower);
+                newUniversalJoint->setPositionLowerLimit(1, lower);
             }
 
             // upper
             if (hasElement(limitElement, "upper"))
             {
                 double upper = getValueDouble(limitElement, "upper");
-                newUniversalJoint->getGenCoord(1)->setPosMax(upper);
+                newUniversalJoint->setPositionUpperLimit(1, upper);
             }
         }
     }

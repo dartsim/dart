@@ -96,7 +96,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   // Sift through the possible start configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleStart;
   for(unsigned int i = 0; i < start.size(); i++) {
-    robot->setConfigs(dofs, start[i]);
+    robot->setPositions(dofs, start[i]);
     if(!world->checkCollision()) feasibleStart.push_back(start[i]);
   }
 
@@ -109,7 +109,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   // Sift through the possible goal configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleGoal;
   for(unsigned int i = 0; i < goal.size(); i++) {
-    robot->setConfigs(dofs, goal[i]);
+    robot->setPositions(dofs, goal[i]);
     if(!world->checkCollision()) feasibleGoal.push_back(goal[i]);
   }
 
@@ -132,7 +132,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   }
 
   // Restore previous robot configuration
-  robot->setConfigs(dofs, savedConfiguration);
+  robot->setPositions(dofs, savedConfiguration);
 
   return result;
 }

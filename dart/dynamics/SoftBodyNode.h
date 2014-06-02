@@ -128,10 +128,10 @@ protected:
   virtual void init(Skeleton* _skeleton, int _skeletonIndex);
 
   // Documentation inherited.
-  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
+//  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
   // Documentation inherited.
-  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
+//  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
 
   // Documentation inherited.
   virtual void updateTransform();
@@ -180,6 +180,12 @@ protected:
 
   // Documentation inherited.
   virtual void updateBodyImpForceFwdDyn();
+
+  // Documentation inherited.
+  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+
+  // Documentation inherited.
+  virtual void updateConstrainedTransmittedForce(double _timeStep);
 
   //----------------------------------------------------------------------------
 
@@ -260,13 +266,25 @@ protected:
   /// \brief Soft mesh shape for collision.
   SoftMeshShape* mSoftCollShape;
 
+  /// Generalized inertia with point masses
+  math::Inertia mI2;
+
+  ///
+  math::Inertia mArtInertia2;
+
+  ///
+  math::Inertia mArtInertiaImplicit2;
+
 private:
   /// \brief
-  void _addPiToArticulatedInertia(const Eigen::Vector3d& _p, double _Pi);
+  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi);
 
   /// \brief
-  void _addImplicitPiToImplicitAI(const Eigen::Vector3d& _p,
-                                          double _ImplicitPi);
+  void _addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
+                                  double _ImplicitPi);
+
+  ///
+  void updateInertiaWithPointMass();
 };
 
 class SoftBodyNodeHelper

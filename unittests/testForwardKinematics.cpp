@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-std::vector<int> twoLinkIndices;
+std::vector<size_t> twoLinkIndices;
 
 //==============================================================================
 TEST(FORWARD_KINEMATICS, YAW_ROLL)
@@ -68,7 +68,8 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setConfigSegs(twoLinkIndices, joints[i], true, false, false);
+    robot->setPositionSegment(twoLinkIndices, joints[i]);
+    robot->computeForwardKinematics(true, false, false);
     Vector3d actual
         = robot->getBodyNode("ee")->getWorldTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
@@ -110,7 +111,8 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setConfigSegs(twoLinkIndices, joints[i], true, false, false);
+    robot->setPositionSegment(twoLinkIndices, joints[i]);
+    robot->computeForwardKinematics(true, false, false);
     Vector3d actual
         = robot->getBodyNode("ee")->getWorldTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);

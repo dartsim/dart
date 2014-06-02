@@ -41,7 +41,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
@@ -74,7 +73,7 @@ State::State(Skeleton* _skeleton, const std::string& _name)
     mDesiredGlobalPelvisAngleOnSagital(0.0),
     mDesiredGlobalPelvisAngleOnCoronal(0.0)
 {
-  int dof = mSkeleton->getNumGenCoords();
+  int dof = mSkeleton->getDof();
 
   mDesiredJointPositions        = Eigen::VectorXd::Zero(dof);
   mDesiredJointPositionsBalance = Eigen::VectorXd::Zero(dof);
@@ -154,9 +153,9 @@ void State::computeControlForce(double _timestep)
 {
   assert(mNextState != NULL && "Next state should be set.");
 
-  int dof = mSkeleton->getNumGenCoords();
-  VectorXd q = mSkeleton->getConfigs();
-  VectorXd dq = mSkeleton->getGenVels();
+  int dof = mSkeleton->getDof();
+  VectorXd q = mSkeleton->getPositions();
+  VectorXd dq = mSkeleton->getVelocities();
 
   // Compute relative joint angles from desired global angles of the pelvis and
   // the swing leg
@@ -207,7 +206,7 @@ void State::computeControlForce(double _timestep)
   _updateTorqueForStanceLeg();
 
   // Apply control torque to the skeleton
-  mSkeleton->setInternalForceVector(mTorque);
+  mSkeleton->setForces(mTorque);
 
   mElapsedTime += _timestep;
   mFrame++;

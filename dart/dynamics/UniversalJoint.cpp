@@ -50,12 +50,6 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
                                const std::string& _name)
   : MultiDofJoint(_name)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
-
   mAxis[0] = _axis0.normalized();
   mAxis[1] = _axis1.normalized();
 }
@@ -93,8 +87,8 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 void UniversalJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(mCoordinate[0].getPos(), mAxis[0])
-       * Eigen::AngleAxisd(mCoordinate[1].getPos(), mAxis[1])
+       * Eigen::AngleAxisd(mPositions[0], mAxis[0])
+       * Eigen::AngleAxisd(mPositions[1], mAxis[1])
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -104,23 +98,18 @@ void UniversalJoint::updateLocalJacobian()
 {
   mJacobian.col(0) = math::AdTAngular(
                        mT_ChildBodyToJoint
-                       * math::expAngular(-mAxis[1]*mCoordinate[1].getPos()),
+                       * math::expAngular(-mAxis[1] * mPositions[1]),
                                           mAxis[0]);
   mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
 void UniversalJoint::updateLocalJacobianTimeDeriv()
 {
-  Eigen::Vector6d tmpV1
-      = mJacobian.col(1) * mCoordinate[1].getVel();
+  Eigen::Vector6d tmpV1 = mJacobian.col(1) * mVelocities[1];
 
-  Eigen::Isometry3d tmpT
-      = math::expAngular(-mAxis[1] * mCoordinate[1].getPos());
+  Eigen::Isometry3d tmpT = math::expAngular(-mAxis[1] * mPositions[1]);
 
   Eigen::Vector6d tmpV2
       = math::AdTAngular(mT_ChildBodyToJoint * tmpT, mAxis[0]);
@@ -129,9 +118,6 @@ void UniversalJoint::updateLocalJacobianTimeDeriv()
 
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

@@ -196,18 +196,14 @@ void JointLimitConstraint::update()
   // Reset dimention
   mDim = 0;
 
-  dynamics::GenCoord* genCoord;
-
-  size_t dof = mJoint->getNumGenCoords();
+  size_t dof = mJoint->getDof();
   for (size_t i = 0; i < dof; ++i)
   {
-    genCoord = mJoint->getGenCoord(i);
-
     // Lower bound check
-    mViolation[i] = genCoord->getPos() - genCoord->getPosMin();
+    mViolation[i] = mJoint->getPosition(i) - mJoint->getPositionLowerLimit(i);
     if (mViolation[i] <= 0.0)
     {
-      mNegativeVel[i] = -genCoord->getVel();
+      mNegativeVel[i] = -mJoint->getVelocity(i);
 
       mLowerBound[i] = 0.0;
       mUpperBound[i] = dInfinity;
@@ -227,10 +223,10 @@ void JointLimitConstraint::update()
     }
 
     // Upper bound check
-    mViolation[i] = genCoord->getPos() - genCoord->getPosMax();
+    mViolation[i] = mJoint->getPosition(i) - mJoint->getPositionUpperLimit(i);
     if (mViolation[i] >= 0.0)
     {
-      mNegativeVel[i] = -genCoord->getVel();
+      mNegativeVel[i] = -mJoint->getVelocity(i);
 
       mLowerBound[i] = -dInfinity;
       mUpperBound[i] = 0.0;
@@ -257,7 +253,7 @@ void JointLimitConstraint::update()
 void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 {
   size_t index = 0;
-  size_t dof = mJoint->getNumGenCoords();
+  size_t dof = mJoint->getDof();
   for (size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
@@ -310,7 +306,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
   size_t localIndex = 0;
   dynamics::Skeleton* skeleton = mJoint->getSkeleton();
 
-  size_t dof = mJoint->getNumGenCoords();
+  size_t dof = mJoint->getDof();
   for (size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
@@ -319,7 +315,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
     if (localIndex == _index)
     {
       skeleton->clearConstraintImpulses();
-      mJoint->getGenCoord(i)->setConstraintImpulse(1.0);
+      mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
       skeleton->updateVelocityChange();
     }
@@ -336,14 +332,14 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
   size_t localIndex = 0;
-  size_t dof = mJoint->getNumGenCoords();
+  size_t dof = mJoint->getDof();
   for (size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
 
     if (mJoint->getSkeleton()->isImpulseApplied())
-      _delVel[localIndex] = mJoint->getGenCoord(i)->getVelChange();
+      _delVel[localIndex] = mJoint->getVelocityChange(i);
     else
       _delVel[localIndex] = 0.0;
 
@@ -377,7 +373,7 @@ void JointLimitConstraint::unexcite()
 void JointLimitConstraint::applyImpulse(double* _lambda)
 {
   size_t localIndex = 0;
-  size_t dof = mJoint->getNumGenCoords();
+  size_t dof = mJoint->getDof();
   for (size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
@@ -390,7 +386,7 @@ void JointLimitConstraint::applyImpulse(double* _lambda)
 //              << mJoint->getGenCoord(i)->getConstraintImpulse()
 //              << std::endl;
 
-    mJoint->getGenCoord(i)->setConstraintImpulse(
+    mJoint->setConstraintImpulse(i,
 //          mJoint->getGenCoord(i)->getConstraintImpulse()
 //          +
           _lambda[localIndex]);

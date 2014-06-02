@@ -50,11 +50,6 @@ EulerJoint::EulerJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mAxisOrder(AO_XYZ)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -81,16 +76,16 @@ void EulerJoint::updateLocalTransform()
   {
     case AO_XYZ:
     {
-      mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerXYZToMatrix(getConfigs())) *
-           mT_ChildBodyToJoint.inverse();
+      mT = mT_ParentBodyToJoint
+           * Eigen::Isometry3d(math::eulerXYZToMatrix(mPositions))
+           * mT_ChildBodyToJoint.inverse();
       break;
     }
     case AO_ZYX:
     {
-      mT = mT_ParentBodyToJoint *
-           Eigen::Isometry3d(math::eulerZYXToMatrix(getConfigs())) *
-           mT_ChildBodyToJoint.inverse();
+      mT = mT_ParentBodyToJoint
+           * Eigen::Isometry3d(math::eulerZYXToMatrix(mPositions))
+           * mT_ChildBodyToJoint.inverse();
       break;
     }
     default:
@@ -106,9 +101,9 @@ void EulerJoint::updateLocalTransform()
 //==============================================================================
 void EulerJoint::updateLocalJacobian()
 {
-  double q0 = mCoordinate[0].getPos();
-  double q1 = mCoordinate[1].getPos();
-  double q2 = mCoordinate[2].getPos();
+  double q0 = mPositions[0];
+  double q1 = mPositions[1];
+  double q2 = mPositions[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);
@@ -139,12 +134,12 @@ void EulerJoint::updateLocalJacobian()
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].getPos()) == DART_PI * 0.5)
+      if (fabs(mPositions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].getPos() << ", "
-                  << mCoordinate[1].getPos() << ", "
-                  << mCoordinate[2].getPos() << ")"
+                  << mPositions[0] << ", "
+                  << mPositions[1] << ", "
+                  << mPositions[2] << ")"
                   << std::endl;
 #endif
 
@@ -165,12 +160,12 @@ void EulerJoint::updateLocalJacobian()
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mCoordinate[1].getPos()) == DART_PI * 0.5)
+      if (fabs(mPositions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mCoordinate[0].getPos() << ", "
-                  << mCoordinate[1].getPos() << ", "
-                  << mCoordinate[2].getPos() << ")"
+                  << mPositions[0] << ", "
+                  << mPositions[1] << ", "
+                  << mPositions[2] << ")"
                   << std::endl;
 #endif
 
@@ -204,21 +199,18 @@ void EulerJoint::updateLocalJacobian()
     //        std::cout << "mS: \n" << mS << std::endl;
   }
 #endif
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
 void EulerJoint::updateLocalJacobianTimeDeriv()
 {
-  double q0 = mCoordinate[0].getPos();
-  double q1 = mCoordinate[1].getPos();
-  double q2 = mCoordinate[2].getPos();
+  // double q0 = mPositions[0];
+  double q1 = mPositions[1];
+  double q2 = mPositions[2];
 
-  // double dq0 = mCoordinate[0].get_dq();
-  double dq1 = mCoordinate[1].getVel();
-  double dq2 = mCoordinate[2].getVel();
+  // double dq0 = mVelocities[0];
+  double dq1 = mVelocities[1];
+  double dq2 = mVelocities[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);
@@ -280,9 +272,6 @@ void EulerJoint::updateLocalJacobianTimeDeriv()
   mJacobianDeriv.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
 
   assert(!math::isNan(mJacobianDeriv));
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics

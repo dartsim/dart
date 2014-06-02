@@ -190,7 +190,7 @@ public:
   //--------------------------------------------------------------------------
 
   ///
-  int getSkeletonIndex() const;
+  int getIndexInSkeleton() const;
 
   ///
   void addVisualizationShape(Shape *_p);
@@ -449,7 +449,7 @@ protected:
   //           and GenCoordSystem classes.
   /// Aggregate generalized coordinates of this body node to
   ///        generalized of the system.
-  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
+//  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
 
   //--------------------------------------------------------------------------
   // Recursive algorithms

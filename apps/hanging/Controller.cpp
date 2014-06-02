@@ -39,7 +39,6 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
@@ -58,7 +57,7 @@ Controller::Controller(dynamics::Skeleton* _skel,
   mConstraintSolver = _constraintSolver;
   mTimestep = _t;
   mFrame = 0;
-  int nDof = mSkel->getNumGenCoords();
+  int nDof = mSkel->getDof();
   mKp = MatrixXd::Identity(nDof, nDof);
   mKd = MatrixXd::Identity(nDof, nDof);
   mConstrForces = VectorXd::Zero(nDof);
@@ -67,7 +66,7 @@ Controller::Controller(dynamics::Skeleton* _skel,
   mDesiredDofs.resize(nDof);
   for (int i = 0; i < nDof; i++){
     mTorques[i] = 0.0;
-    mDesiredDofs[i] = mSkel->getGenCoord(i)->getPos();
+    mDesiredDofs[i] = mSkel->getPosition(i);
   }
 
   // using SPD results in simple Kp coefficients
@@ -89,7 +88,7 @@ Controller::Controller(dynamics::Skeleton* _skel,
 
 void Controller::computeTorques(const VectorXd& _dof, const VectorXd& _dofVel) {
   // SPD tracking
-  int nDof = mSkel->getNumGenCoords();
+  int nDof = mSkel->getDof();
   MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   VectorXd d = -mKd * _dofVel;

@@ -41,7 +41,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
@@ -63,12 +62,12 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {
-    mWrench - mJacobian * GenCoordSystem::getGenForces();
+    return mWrench - mJacobian * mForces;
   }
 
 protected:
   // Documentation inherited
-  virtual void integrateConfigs(double _dt);
+  virtual void integratePositions(double _dt);
 
   // Documentation inherited
   virtual void updateLocalTransform();

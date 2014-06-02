@@ -48,8 +48,6 @@ namespace dynamics {
 TranslationalJoint::TranslationalJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 //==============================================================================
@@ -61,7 +59,7 @@ TranslationalJoint::~TranslationalJoint()
 void TranslationalJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(getConfigs())
+       * Eigen::Translation3d(mPositions)
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -85,9 +83,6 @@ void TranslationalJoint::updateLocalJacobian()
 
   // Verification
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================

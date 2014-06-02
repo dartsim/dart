@@ -48,7 +48,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
 
@@ -57,8 +56,8 @@ namespace dynamics {
 
 //==============================================================================
 Skeleton::Skeleton(const std::string& _name)
-  : GenCoordSystem(),
-    mName(_name),
+  : mName(_name),
+    mDof(0),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
     mTimeStep(0.001),
@@ -144,60 +143,6 @@ const Eigen::Vector3d& Skeleton::getGravity() const {
 
 double Skeleton::getMass() const {
   return mTotalMass;
-}
-
-//==============================================================================
-void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
-{
-  // Set timestep and gravity
-  setTimeStep(_timeStep);
-  setGravity(_gravity);
-
-  // Rearrange the list of body nodes with BFS (Breadth First Search)
-  std::queue<BodyNode*> queue;
-  queue.push(mBodyNodes[0]);
-  mBodyNodes.clear();
-  while (!queue.empty())
-  {
-    BodyNode* itBodyNode = queue.front();
-    queue.pop();
-    mBodyNodes.push_back(itBodyNode);
-    for (int i = 0; i < itBodyNode->getNumChildBodyNodes(); ++i)
-      queue.push(itBodyNode->getChildBodyNode(i));
-  }
-
-  // Initialize body nodes and generalized coordinates
-  mGenCoords.clear();
-  for (int i = 0; i < getNumBodyNodes(); ++i)
-  {
-    mBodyNodes[i]->aggregateGenCoords(&mGenCoords);
-    mBodyNodes[i]->init(this, i);
-  }
-
-  // Compute transformations, velocities, and partial accelerations
-  computeForwardDynamicsRecursionPartA();
-
-  // Set dimension of dynamics quantities
-  int dof = getNumGenCoords();
-  mM    = Eigen::MatrixXd::Zero(dof, dof);
-  mAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mCvec = Eigen::VectorXd::Zero(dof);
-  mG    = Eigen::VectorXd::Zero(dof);
-  mCg   = Eigen::VectorXd::Zero(dof);
-  mFext = Eigen::VectorXd::Zero(dof);
-  mFc   = Eigen::VectorXd::Zero(dof);
-  mFd   = Eigen::VectorXd::Zero(dof);
-
-  // Clear external/internal force
-  clearExternalForces();
-  clearInternalForces();
-
-  // Calculate mass
-  mTotalMass = 0.0;
-  for (int i = 0; i < getNumBodyNodes(); i++)
-    mTotalMass += getBodyNode(i)->getMass();
 }
 
 //==============================================================================
@@ -293,102 +238,595 @@ Marker* Skeleton::getMarker(const std::string& _name) const {
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getConfigSegs(const std::vector<int>& _id) const
+void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
+{
+  // Set timestep and gravity
+  setTimeStep(_timeStep);
+  setGravity(_gravity);
+
+  // Rearrange the list of body nodes with BFS (Breadth First Search)
+  std::queue<BodyNode*> queue;
+  queue.push(mBodyNodes[0]);
+  mBodyNodes.clear();
+  while (!queue.empty())
+  {
+    BodyNode* itBodyNode = queue.front();
+    queue.pop();
+    mBodyNodes.push_back(itBodyNode);
+    for (int i = 0; i < itBodyNode->getNumChildBodyNodes(); ++i)
+      queue.push(itBodyNode->getChildBodyNode(i));
+  }
+
+  // Initialize body nodes and generalized coordinates
+  mGenCoordInfos.clear();
+//  mGenCoords.clear();
+  mDof = 0;
+  for (int i = 0; i < getNumBodyNodes(); ++i)
+  {
+//    mBodyNodes[i]->aggregateGenCoords(&mGenCoords);
+
+    Joint* joint = mBodyNodes[i]->getParentJoint();
+
+    for (int j = 0; j < joint->getDof(); ++j)
+    {
+      GenCoordInfo genCoord;
+      genCoord.joint = joint;
+      genCoord.localIndex = j;
+
+      mGenCoordInfos.push_back(genCoord);
+
+      joint->setIndexInSkeleton(j, mGenCoordInfos.size() - 1);
+    }
+
+    mBodyNodes[i]->init(this, i);
+    mDof += mBodyNodes[i]->getParentJoint()->getDof();
+  }
+
+  // Compute transformations, velocities, and partial accelerations
+  computeForwardDynamicsRecursionPartA();
+
+  // Set dimension of dynamics quantities
+  int dof = getDof();
+  mM    = Eigen::MatrixXd::Zero(dof, dof);
+  mAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mCvec = Eigen::VectorXd::Zero(dof);
+  mG    = Eigen::VectorXd::Zero(dof);
+  mCg   = Eigen::VectorXd::Zero(dof);
+  mFext = Eigen::VectorXd::Zero(dof);
+  mFc   = Eigen::VectorXd::Zero(dof);
+  mFd   = Eigen::VectorXd::Zero(dof);
+
+  // Clear external/internal force
+  clearExternalForces();
+  resetForces();
+
+  // Calculate mass
+  mTotalMass = 0.0;
+  for (int i = 0; i < getNumBodyNodes(); i++)
+    mTotalMass += getBodyNode(i)->getMass();
+}
+
+//==============================================================================
+size_t Skeleton::getDof() const
+{
+  return mDof;
+}
+
+//==============================================================================
+GenCoordInfo Skeleton::getGenCoordInfo(size_t _index) const
+{
+  assert(_index < getDof());
+
+  return mGenCoordInfos[_index];
+}
+
+//==============================================================================
+void Skeleton::setPosition(size_t _index, double _position)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setPosition(mGenCoordInfos[_index].localIndex,
+                                            _position);
+}
+
+//==============================================================================
+double Skeleton::getPosition(size_t _index) const
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getPosition(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setPositions(const Eigen::VectorXd& _configs)
+{
+  size_t index = 0;
+  size_t dof = 0;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getDof();
+
+    if (dof)
+    {
+      joint->setPositions(_configs.segment(index, dof));
+
+      index += dof;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getPositions() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd pos(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    pos[index++]
+        = mGenCoordInfos[i].joint->getPosition(mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return pos;
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getPositionSegment(
+    const std::vector<size_t>& _id) const
 {
   Eigen::VectorXd q(_id.size());
 
-  for (unsigned int i = 0; i < _id.size(); i++)
-    q[i] = mGenCoords[_id[i]]->getPos();
+  Joint* joint;
+  size_t localIndex;
+
+  for (size_t i = 0; i < _id.size(); ++i)
+  {
+    joint = mGenCoordInfos[_id[i]].joint;
+    localIndex = mGenCoordInfos[_id[i]].localIndex;
+
+    q[i] = joint->getPosition(localIndex);
+  }
 
   return q;
 }
 
 //==============================================================================
-void Skeleton::setConfigSegs(const std::vector<int>& _id,
-                             const Eigen::VectorXd& _configs,
-                             bool _updateTransforms,
-                             bool _updateVels,
-                             bool _updateAccs)
+void Skeleton::setPositionSegment(const std::vector<size_t>& _id,
+                                  const Eigen::VectorXd& _positions)
 {
-  for ( unsigned int i = 0; i < _id.size(); i++ )
-    mGenCoords[_id[i]]->setPos(_configs(i));
+  Joint* joint;
+  size_t localIndex;
 
-  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
+  for (size_t i = 0; i < _id.size(); ++i)
+  {
+    joint = mGenCoordInfos[_id[i]].joint;
+    localIndex = mGenCoordInfos[_id[i]].localIndex;
+
+    joint->setPosition(localIndex, _positions[i]);
+  }
 }
 
 //==============================================================================
-void Skeleton::setConfigs(const Eigen::VectorXd& _configs,
-                          bool _updateTransforms,
-                          bool _updateVels,
-                          bool _updateAccs)
+void Skeleton::resetPositions()
 {
-  GenCoordSystem::setConfigs(_configs);
-
-  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->resetPositions();
 }
 
 //==============================================================================
-void Skeleton::setGenVels(const Eigen::VectorXd& _genVels,
-                          bool _updateVels,
-                          bool _updateAccs)
+void Skeleton::setPositionLowerLimit(size_t _index, double _position)
 {
-  GenCoordSystem::setGenVels(_genVels);
+  assert(_index < getDof());
 
-  computeForwardKinematics(false, _updateVels, _updateAccs);
+  mGenCoordInfos[_index].joint->setPositionLowerLimit(
+        mGenCoordInfos[_index].localIndex, _position);
 }
 
 //==============================================================================
-void Skeleton::setGenAccs(const Eigen::VectorXd& _genAccs, bool _updateAccs)
+double Skeleton::getPositionLowerLimit(size_t _index)
 {
-  GenCoordSystem::setGenAccs(_genAccs);
+  assert(_index <getDof());
 
-  computeForwardKinematics(false, false, _updateAccs);
+  return mGenCoordInfos[_index].joint->getPositionLowerLimit(
+        mGenCoordInfos[_index].localIndex);
 }
 
 //==============================================================================
-void Skeleton::setState(const Eigen::VectorXd& _state,
-                        bool _updateTransforms,
-                        bool _updateVels,
-                        bool _updateAccs)
+void Skeleton::setPositionUpperLimit(size_t _index, double _position)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setPositionUpperLimit(
+        mGenCoordInfos[_index].localIndex, _position);
+}
+
+//==============================================================================
+double Skeleton::getPositionUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getPositionUpperLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setVelocity(size_t _index, double _velocity)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setVelocity(mGenCoordInfos[_index].localIndex,
+                                            _velocity);
+}
+
+//==============================================================================
+double Skeleton::getVelocity(size_t _index) const
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getVelocity(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setVelocities(const Eigen::VectorXd& _genVels)
+{
+  size_t index = 0;
+  size_t dof = 0;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getDof();
+
+    if (dof)
+    {
+      joint->setVelocities(_genVels.segment(index, dof));
+
+      index += dof;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getVelocities() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd vel(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    vel[index++]
+        = mGenCoordInfos[i].joint->getVelocity(mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return vel;
+}
+
+//==============================================================================
+void Skeleton::resetVelocities()
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->resetVelocities();
+}
+
+//==============================================================================
+void Skeleton::setVelocityLowerLimit(size_t _index, double _velocity)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setVelocityLowerLimit(
+        mGenCoordInfos[_index].localIndex, _velocity);
+}
+
+//==============================================================================
+double Skeleton::getVelocityLowerLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getVelocityLowerLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setVelocityUpperLimit(size_t _index, double _velocity)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setVelocityUpperLimit(
+        mGenCoordInfos[_index].localIndex, _velocity);
+}
+
+//==============================================================================
+double Skeleton::getVelocityUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getVelocityUpperLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setAcceleration(size_t _index, double _acceleration)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setAcceleration(
+        mGenCoordInfos[_index].localIndex, _acceleration);
+}
+
+//==============================================================================
+double Skeleton::getAcceleration(size_t _index) const
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getAcceleration(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
+{
+  size_t index = 0;
+  size_t dof = 0;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getDof();
+
+    if (dof)
+    {
+      joint->setAccelerations(_accelerations.segment(index, dof));
+
+      index += dof;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getAccelerations() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd acc(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    acc[index++]
+        = mGenCoordInfos[i].joint->getAcceleration(mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return acc;
+}
+
+//==============================================================================
+void Skeleton::resetAccelerations()
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->resetAccelerations();
+}
+
+//==============================================================================
+void Skeleton::setForce(size_t _index, double _force)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setForce(
+        mGenCoordInfos[_index].localIndex, _force);
+}
+
+//==============================================================================
+double Skeleton::getForce(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getForce(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setForces(const Eigen::VectorXd& _forces)
+{
+  size_t index = 0;
+  size_t dof = 0;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getDof();
+
+    if (dof)
+    {
+      joint->setForces(_forces.segment(index, dof));
+
+      index += dof;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getForces() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd force(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    force[index++]
+        = mGenCoordInfos[i].joint->getForce(mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return force;
+}
+
+//==============================================================================
+void Skeleton::resetForces()
+{
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    mBodyNodes[i]->getParentJoint()->resetForces();
+
+  // TODO(JS): Find better place
+  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  {
+    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+    {
+      mSoftBodyNodes[i]->getPointMass(j)->resetForces();
+    }
+  }
+}
+
+//==============================================================================
+void Skeleton::setForceLowerLimit(size_t _index, double _force)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setForceLowerLimit(
+        mGenCoordInfos[_index].localIndex, _force);
+}
+
+//==============================================================================
+double Skeleton::getForceLowerLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getForceLowerLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setForceUpperLimit(size_t _index, double _force)
+{
+  assert(_index < getDof());
+
+  mGenCoordInfos[_index].joint->setForceUpperLimit(
+        mGenCoordInfos[_index].localIndex, _force);
+}
+
+//==============================================================================
+double Skeleton::getForceUpperLimit(size_t _index)
+{
+  assert(_index <getDof());
+
+  return mGenCoordInfos[_index].joint->getForceUpperLimit(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getVelocityChanges() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd velChange(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    velChange[index++] = mGenCoordInfos[i].joint->getVelocityChange(
+                           mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return velChange;
+}
+
+//==============================================================================
+void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
+{
+  size_t index = 0;
+  size_t dof = getDof();
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    mGenCoordInfos[i].joint->setConstraintImpulse(
+          mGenCoordInfos[i].localIndex, _impulses[index++]);
+  }
+
+  assert(index == getDof());
+}
+
+//==============================================================================
+void Skeleton::setState(const Eigen::VectorXd& _state)
 {
   assert(_state.size() % 2 == 0);
-  GenCoordSystem::setConfigs(_state.head(_state.size() / 2));
-  GenCoordSystem::setGenVels(_state.tail(_state.size() / 2));
 
-  computeForwardKinematics(_updateTransforms, _updateVels, _updateAccs);
+  size_t index = 0;
+  size_t dof = 0;
+  size_t halfSize = _state.size() / 2;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getDof();
+
+    if (dof)
+    {
+      joint->setPositions(_state.segment(index, dof));
+      joint->setVelocities(_state.segment(index + halfSize, dof));
+
+      index += dof;
+    }
+  }
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getState() const
 {
-  Eigen::VectorXd state(2 * mGenCoords.size());
-  state << getConfigs(), getGenVels();
+  Eigen::VectorXd state(2 * getDof());
+
+  state << getPositions(), getVelocities();
+
   return state;
 }
 
 //==============================================================================
-void Skeleton::integrateConfigs(double _dt)
+void Skeleton::integratePositions(double _dt)
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->integrateConfigs(_dt);
+    mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
 
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
     for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integrateConfigs(_dt);
+      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
   }
 }
 
 //==============================================================================
-void Skeleton::integrateGenVels(double _dt)
+void Skeleton::integrateVelocities(double _dt)
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->integrateGenVels(_dt);
+    mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
 
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
     for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integrateGenVels(_dt);
+      mSoftBodyNodes[i]->getPointMass(j)->integrateVelocities(_dt);
   }
 }
 
@@ -492,15 +930,11 @@ const Eigen::VectorXd& Skeleton::getExternalForceVector() {
   return mFext;
 }
 
-Eigen::VectorXd Skeleton::getInternalForceVector() const {
-  return getGenForces();
-}
-
-const Eigen::VectorXd& Skeleton::getDampingForceVector() {
-  if (mIsDampingForceVectorDirty)
-    updateDampingForceVector();
-  return mFd;
-}
+//const Eigen::VectorXd& Skeleton::getDampingForceVector() {
+//  if (mIsDampingForceVectorDirty)
+//    updateDampingForceVector();
+//  return mFd;
+//}
 
 const Eigen::VectorXd& Skeleton::getConstraintForceVector() {
   return mFc;
@@ -518,36 +952,44 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
   getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
 }
 
-void Skeleton::updateMassMatrix() {
-  assert(mM.cols() == getNumGenCoords() && mM.rows() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+//==============================================================================
+void Skeleton::updateMassMatrix()
+{
+  if (getDof() == 0)
+    return;
+
+  assert(mM.cols() == getDof() && mM.rows() == getDof());
 
   mM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = getGenAccs();
+  Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
-  int dof = getNumGenCoords();
+  int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j) {
+  for (int j = 0; j < dof; ++j)
+  {
     e[j] = 1.0;
-    GenCoordSystem::setGenAccs(e);
+    setAccelerations(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it) {
+         it != mBodyNodes.end(); ++it)
+    {
       (*it)->updateMassMatrix();
     }
 
     // Mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = mBodyNodes.size() - 1; i > -1 ; --i) {
+    for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
+    {
       mBodyNodes[i]->aggregateMassMatrix(&mM, j);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
-      if (localDof > 0) {
-        int iStart =
-            mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+      int localDof = mBodyNodes[i]->mParentJoint->getDof();
+      if (localDof > 0)
+      {
+        size_t iStart = mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+
         if (iStart + localDof < j)
           break;
       }
@@ -558,25 +1000,29 @@ void Skeleton::updateMassMatrix() {
   mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
   // Restore the origianl generalized accelerations
-  setGenAccs(originalGenAcceleration, false);
+  setAccelerations(originalGenAcceleration);
 
   mIsMassMatrixDirty = false;
 }
 
-void Skeleton::updateAugMassMatrix() {
-  assert(mAugM.cols() == getNumGenCoords() && mAugM.rows() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+//==============================================================================
+void Skeleton::updateAugMassMatrix()
+{
+  if (getDof() == 0)
+    return;
+
+  assert(mAugM.cols() == getDof() && mAugM.rows() == getDof());
 
   mAugM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = getGenAccs();
+  Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
-  int dof = getNumGenCoords();
+  int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    GenCoordSystem::setGenAccs(e);
+    setAccelerations(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -589,10 +1035,10 @@ void Skeleton::updateAugMassMatrix() {
     //         it != mBodyNodes.end(); ++it)
     for (int i = mBodyNodes.size() - 1; i > -1 ; --i) {
       mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mTimeStep);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
+      int localDof = mBodyNodes[i]->mParentJoint->getDof();
       if (localDof > 0) {
         int iStart =
-            mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
         if (iStart + localDof < j)
           break;
       }
@@ -603,21 +1049,23 @@ void Skeleton::updateAugMassMatrix() {
   mAugM.triangularView<Eigen::StrictlyUpper>() = mAugM.transpose();
 
   // Restore the origianl internal force
-  GenCoordSystem::setGenAccs(originalGenAcceleration);
+  setAccelerations(originalGenAcceleration);
 
   mIsAugMassMatrixDirty = false;
 }
 
 void Skeleton::updateInvMassMatrix() {
-  assert(mInvM.cols() == getNumGenCoords() &&
-         mInvM.rows() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+  if (getDof() == 0)
+    return;
+
+  assert(mInvM.cols() == getDof() &&
+         mInvM.rows() == getDof());
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = getGenForces();
+  Eigen::VectorXd originalInternalForce = getForces();
 
   if (mIsArticulatedInertiaDirty)
   {
@@ -630,11 +1078,11 @@ void Skeleton::updateInvMassMatrix() {
     mIsArticulatedInertiaDirty = false;
   }
 
-  int dof = getNumGenCoords();
+  int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
   for (int j = 0; j < dof; ++j) {
     e[j] = 1.0;
-    setGenForces(e);
+    setForces(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
@@ -647,10 +1095,10 @@ void Skeleton::updateInvMassMatrix() {
     //         it != mBodyNodes.end(); ++it)
     for (int i = 0; i < mBodyNodes.size(); ++i) {
       mBodyNodes[i]->aggregateInvMassMatrix(&mInvM, j);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
+      int localDof = mBodyNodes[i]->mParentJoint->getDof();
       if (localDof > 0) {
         int iStart =
-            mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
         if (iStart + localDof > j)
           break;
       }
@@ -661,43 +1109,51 @@ void Skeleton::updateInvMassMatrix() {
   mInvM.triangularView<Eigen::StrictlyLower>() = mInvM.transpose();
 
   // Restore the origianl internal force
-  setGenForces(originalInternalForce);
+  setForces(originalInternalForce);
 
   mIsInvMassMatrixDirty = false;
 }
 
-void Skeleton::updateInvAugMassMatrix() {
-  assert(mInvAugM.cols() == getNumGenCoords() &&
-         mInvAugM.rows() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+//==============================================================================
+void Skeleton::updateInvAugMassMatrix()
+{
+  if (getDof() == 0)
+    return;
+
+  assert(mInvAugM.cols() == getDof() &&
+         mInvAugM.rows() == getDof());
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
 
   // Backup the origianl internal force
-  Eigen::VectorXd originalInternalForce = getGenForces();
+  Eigen::VectorXd originalInternalForce = getForces();
 
-  int dof = getNumGenCoords();
+  int dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j) {
+  for (int j = 0; j < dof; ++j)
+  {
     e[j] = 1.0;
-    setGenForces(e);
+    setForces(e);
 
     // Prepare cache data
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it) {
+         it != mBodyNodes.rend(); ++it)
+    {
       (*it)->updateInvAugMassMatrix();
     }
 
     // Inverse of mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = 0; i < mBodyNodes.size(); ++i) {
+    for (int i = 0; i < mBodyNodes.size(); ++i)
+    {
       mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mTimeStep);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumGenCoords();
-      if (localDof > 0) {
+      int localDof = mBodyNodes[i]->mParentJoint->getDof();
+      if (localDof > 0)
+      {
         int iStart =
-            mBodyNodes[i]->mParentJoint->getGenCoord(0)->getSkeletonIndex();
+            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
         if (iStart + localDof > j)
           break;
       }
@@ -708,7 +1164,7 @@ void Skeleton::updateInvAugMassMatrix() {
   mInvAugM.triangularView<Eigen::StrictlyLower>() = mInvAugM.transpose();
 
   // Restore the origianl internal force
-  setGenForces(originalInternalForce);
+  setForces(originalInternalForce);
 
   mIsInvAugMassMatrixDirty = false;
 }
@@ -716,8 +1172,10 @@ void Skeleton::updateInvAugMassMatrix() {
 //==============================================================================
 void Skeleton::updateCoriolisForceVector()
 {
-  assert(mCvec.size() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+  if (getDof() == 0)
+    return;
+
+  assert(mCvec.size() == getDof());
 
   mCvec.setZero();
 
@@ -739,8 +1197,10 @@ void Skeleton::updateCoriolisForceVector()
 //==============================================================================
 void Skeleton::updateGravityForceVector()
 {
-  assert(mG.size() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+  if (getDof() == 0)
+    return;
+
+  assert(mG.size() == getDof());
 
   // Calcualtion mass matrix, M
   mG.setZero();
@@ -754,8 +1214,10 @@ void Skeleton::updateGravityForceVector()
 }
 
 void Skeleton::updateCombinedVector() {
-  assert(mCg.size() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+  if (getDof() == 0)
+    return;
+
+  assert(mCg.size() == getDof());
 
   mCg.setZero();
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -770,72 +1232,81 @@ void Skeleton::updateCombinedVector() {
   mIsCombinedVectorDirty = false;
 }
 
-void Skeleton::updateExternalForceVector() {
-  assert(mFext.size() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+//==============================================================================
+void Skeleton::updateExternalForceVector()
+{
+  if (getDof() == 0)
+    return;
+
+  assert(mFext.size() == getDof());
 
   // Clear external force.
   mFext.setZero();
+
   for (std::vector<BodyNode*>::reverse_iterator itr = mBodyNodes.rbegin();
        itr != mBodyNodes.rend(); ++itr)
+  {
     (*itr)->aggregateExternalForces(&mFext);
-
-  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
-       it != mSoftBodyNodes.end(); ++it) {
-    double kv = (*it)->getVertexSpringStiffness();
-    double ke = (*it)->getEdgeSpringStiffness();
-
-    for (int i = 0; i < (*it)->getNumPointMasses(); ++i)
-    {
-      PointMass* pm = (*it)->getPointMass(i);
-      int nN = pm->getNumConnectedPointMasses();
-
-      // Vertex restoring force
-      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getConfigs()
-                             - (mTimeStep * (kv + nN*ke)) * pm->getGenVels();
-
-      // Edge restoring force
-      for (int j = 0; j < nN; ++j)
-      {
-        Fext += ke * (pm->getConnectedPointMass(j)->getConfigs()
-                        + mTimeStep * pm->getConnectedPointMass(j)->getGenVels());
-      }
-
-      // Assign
-      int iStart = pm->getGenCoord(0)->getSkeletonIndex();
-      mFext.segment<3>(iStart) = Fext;
-    }
   }
+
+//  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
+//       it != mSoftBodyNodes.end(); ++it)
+//  {
+//    double kv = (*it)->getVertexSpringStiffness();
+//    double ke = (*it)->getEdgeSpringStiffness();
+
+//    for (int i = 0; i < (*it)->getNumPointMasses(); ++i)
+//    {
+//      PointMass* pm = (*it)->getPointMass(i);
+//      int nN = pm->getNumConnectedPointMasses();
+
+//      // Vertex restoring force
+//      Eigen::Vector3d Fext = -(kv + nN * ke) * pm->getPositions()
+//                             - (mTimeStep * (kv + nN*ke)) * pm->getVelocities();
+
+//      // Edge restoring force
+//      for (int j = 0; j < nN; ++j)
+//      {
+//        Fext += ke * (pm->getConnectedPointMass(j)->getPositions()
+//                      + mTimeStep
+//                        * pm->getConnectedPointMass(j)->getVelocities());
+//      }
+
+//      // Assign
+//      int iStart = pm->getIndexInSkeleton(0);
+//      mFext.segment<3>(iStart) = Fext;
+//    }
+//  }
 
   mIsExternalForceVectorDirty = false;
 }
 
-void Skeleton::updateDampingForceVector() {
-  assert(mFd.size() == getNumGenCoords());
-  assert(getNumGenCoords() > 0);
+//void Skeleton::updateDampingForceVector() {
+//  assert(mFd.size() == getDof());
+//  assert(getDof() > 0);
 
-  // Clear external force.
-  mFd.setZero();
+//  // Clear external force.
+//  mFd.setZero();
 
-  for (std::vector<BodyNode*>::iterator itr = mBodyNodes.begin();
-       itr != mBodyNodes.end(); ++itr) {
-    Eigen::VectorXd jointDampingForce =
-        (*itr)->getParentJoint()->getDampingForces();
-    for (int i = 0; i < jointDampingForce.size(); i++) {
-      mFd((*itr)->getParentJoint()->getGenCoord(i)->getSkeletonIndex()) =
-          jointDampingForce(i);
-    }
-  }
+//  for (std::vector<BodyNode*>::iterator itr = mBodyNodes.begin();
+//       itr != mBodyNodes.end(); ++itr) {
+//    Eigen::VectorXd jointDampingForce =
+//        (*itr)->getParentJoint()->getDampingForces();
+//    for (int i = 0; i < jointDampingForce.size(); i++) {
+//      mFd((*itr)->getParentJoint()->getIndexInSkeleton(0)) =
+//          jointDampingForce(i);
+//    }
+//  }
 
-  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
-       it != mSoftBodyNodes.end(); ++it) {
-    for (int i = 0; i < (*it)->getNumPointMasses(); ++i) {
-      PointMass* pm = (*it)->getPointMass(i);
-      int iStart = pm->getGenCoord(0)->getSkeletonIndex();
-      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->getGenVels();
-    }
-  }
-}
+//  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
+//       it != mSoftBodyNodes.end(); ++it) {
+//    for (int i = 0; i < (*it)->getNumPointMasses(); ++i) {
+//      PointMass* pm = (*it)->getPointMass(i);
+//      int iStart = pm->getGenCoord(0)->getIndexInSkeleton();
+//      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->getVelocities();
+//    }
+//  }
+//}
 
 //==============================================================================
 void Skeleton::computeForwardDynamics()
@@ -959,7 +1430,7 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
                                                 bool _withDampingForces)
 {
   // Skip immobile or 0-dof skeleton
-  if (getNumGenCoords() == 0)
+  if (getDof() == 0)
     return;
 
   // Backward recursion
@@ -989,9 +1460,12 @@ void Skeleton::computeHybridDynamicsRecursionB()
   dterr << "Not implemented yet.\n";
 }
 
-void Skeleton::clearExternalForces() {
+//==============================================================================
+void Skeleton::clearExternalForces()
+{
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it) {
+       it != mBodyNodes.end(); ++it)
+  {
     (*it)->clearExternalForces();
   }
 }
@@ -1011,7 +1485,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   // Assertions
   assert(_bodyNode != NULL);
-  assert(getNumGenCoords() > 0);
+  assert(getDof() > 0);
 
   // This skeleton should contains _bodyNode
   assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
@@ -1038,7 +1512,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 {
   // Assertions
   assert(_bodyNode != NULL);
-  assert(getNumGenCoords() > 0);
+  assert(getDof() > 0);
 
   // This skeleton should contain _bodyNode
   assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
@@ -1074,7 +1548,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 {
   // Assertions
   assert(_softBodyNode != NULL);
-  assert(getNumGenCoords() > 0);
+  assert(getDof() > 0);
 
   // This skeleton should contain _bodyNode
   assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
@@ -1099,7 +1573,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
-  _pointMass->setConstraintImpulses(oldConstraintImpulse);
+  _pointMass->setConstraintImpulse(oldConstraintImpulse);
 }
 
 //==============================================================================
@@ -1128,7 +1602,7 @@ bool Skeleton::isImpulseApplied() const
 void Skeleton::computeImpulseForwardDynamics()
 {
   // Skip immobile or 0-dof skeleton
-  if (!isMobile() || getNumGenCoords() == 0)
+  if (!isMobile() || getDof() == 0)
     return;
 
   // Backward recursion
@@ -1172,30 +1646,6 @@ void Skeleton::computeImpulseForwardDynamics()
     // 4. F(+) = F(-) + ImpF / dt
     (*it)->updateConstrainedTransmittedForce(mTimeStep);
   }
-}
-
-void Skeleton::setInternalForceVector(const Eigen::VectorXd& _forces) {
-  setGenForces(_forces);
-}
-
-void Skeleton::setMinInternalForceVector(const Eigen::VectorXd& _minForces) {
-  setGenForcesMin(_minForces);
-}
-
-Eigen::VectorXd Skeleton::getMinInternalForces() const {
-  return getGenForcesMin();
-}
-
-void Skeleton::setMaxInternalForceVector(const Eigen::VectorXd& _maxForces) {
-  setGenForcesMax(_maxForces);
-}
-
-Eigen::VectorXd Skeleton::getMaxInternalForceVector() const {
-  return getGenForcesMax();
-}
-
-void Skeleton::clearInternalForces() {
-  setGenForces(Eigen::VectorXd::Zero(getNumGenCoords()));
 }
 
 void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc) {
@@ -1252,7 +1702,7 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration() {
 
 Eigen::MatrixXd Skeleton::getWorldCOMJacobian() {
   // Jacobian of COM
-  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, getNumGenCoords());
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, getDof());
 
   // Compute sum of each body's Jacobian of COM accelerations multiplied by
   // body's mass
@@ -1281,7 +1731,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian() {
 
 Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv() {
   // Jacobian time derivative of COM
-  Eigen::MatrixXd dJ = Eigen::MatrixXd::Zero(3, getNumGenCoords());
+  Eigen::MatrixXd dJ = Eigen::MatrixXd::Zero(3, getDof());
 
   // Compute sum of each body's Jacobian time derivative of COM accelerations
   // multiplied by body's mass

@@ -49,12 +49,6 @@ namespace dynamics {
 PlanarJoint::PlanarJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
-  // TODO(JS): Deprecated
-  mS = mJacobian;
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
-
   setXYPlane();
 }
 
@@ -141,9 +135,9 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 void PlanarJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTransAxis1 * mCoordinate[0].getPos())
-       * Eigen::Translation3d(mTransAxis2 * mCoordinate[1].getPos())
-       * math::expAngular    (mRotAxis    * mCoordinate[2].getPos())
+       * Eigen::Translation3d(mTransAxis1 * mPositions[0])
+       * Eigen::Translation3d(mTransAxis2 * mPositions[1])
+       * math::expAngular    (mRotAxis    * mPositions[2])
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -159,17 +153,13 @@ void PlanarJoint::updateLocalJacobian()
   J.block<3, 1>(0, 2) = mRotAxis;
 
   mJacobian.leftCols<2>()
-      = math::AdTJacFixed(
-          mT_ChildBodyToJoint
-          * math::expAngular(mRotAxis * -mCoordinate[2].getPos()),
-          J.leftCols<2>());
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
+      = math::AdTJacFixed(mT_ChildBodyToJoint
+                          * math::expAngular(mRotAxis * -mPositions[2]),
+                          J.leftCols<2>());
+  mJacobian.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(mJacobian));
-
-  // TODO(JS): Deprecated
-  mS = mJacobian;
 }
 
 //==============================================================================
@@ -181,25 +171,22 @@ void PlanarJoint::updateLocalJacobianTimeDeriv()
   J.block<3, 1>(0, 2) = mRotAxis;
 
   mJacobianDeriv.col(0)
-      = -math::ad(mJacobian.col(2)*mCoordinate[2].getVel(),
+      = -math::ad(mJacobian.col(2) * mVelocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mCoordinate[2].getPos()),
+                                               * -mPositions[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
-      = -math::ad(mJacobian.col(2)*mCoordinate[2].getVel(),
+      = -math::ad(mJacobian.col(2) * mVelocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mCoordinate[2].getPos()),
+                                               * -mPositions[2]),
                             J.col(1)));
 
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
   assert(!math::isNan(mJacobianDeriv.col(0)));
   assert(!math::isNan(mJacobianDeriv.col(1)));
-
-  // TODO(JS): Deprecated
-  mdS = mJacobianDeriv;
 }
 
 }  // namespace dynamics
