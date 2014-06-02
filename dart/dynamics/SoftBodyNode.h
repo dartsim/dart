@@ -125,7 +125,7 @@ protected:
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(Skeleton* _skeleton, int _skeletonIndex);
+  virtual void init(Skeleton* _skeleton);
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);

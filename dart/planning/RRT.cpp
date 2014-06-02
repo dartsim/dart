@@ -43,7 +43,6 @@
 
 #include "RRT.h"
 #include "dart/simulation/World.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include <flann/flann.hpp>
 

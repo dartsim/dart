@@ -51,7 +51,6 @@
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"

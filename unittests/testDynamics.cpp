@@ -141,7 +141,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
     dynamics::BodyNode* body = _skel->getBodyNode(i);
 
     int dof = body->getNumDependentGenCoords();
-    I = body->getInertia();
+    I = body->getSpatialInertia();
     J = body->getBodyJacobian();
 
     EXPECT_EQ(I.rows(), 6);
@@ -265,55 +265,101 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
         BodyNode* bn = skeleton->getBodyNode(k);
 
         // Calculation of velocities using recursive method
-        Vector6d vBody  = bn->getBodyVelocity();
-        Vector6d vWorld = bn->getWorldVelocity();
-        Vector6d aBody  = bn->getBodyAcceleration();
-        Vector6d aWorld = bn->getWorldAcceleration();
+        Vector3d BodyLinVel = bn->getBodyLinearVelocity();
+        Vector3d BodyAngVel = bn->getBodyAngularVelocity();
+        Vector3d WorldLinVel = bn->getWorldLinearVelocity();
+        Vector3d WorldAngVel = bn->getWorldAngularVelocity();
+        Vector3d BodyLinAcc = bn->getBodyLinearAcceleration();
+        Vector3d BodyAngAcc = bn->getBodyAngularAcceleration();
+        Vector3d WorldLinAcc = bn->getWorldLinearAcceleration();
+        Vector3d WorldAngAcc = bn->getWorldAngularAcceleration();
 
         // Calculation of velocities using Jacobian and dq
-        MatrixXd JBody   = bn->getBodyJacobian();
-        MatrixXd JWorld  = bn->getWorldJacobian();
-        MatrixXd dJBody  = bn->getBodyJacobianTimeDeriv();
-        MatrixXd dJWorld = bn->getWorldJacobianTimeDeriv();
-        Vector6d vBody2  = Vector6d::Zero();
-        Vector6d vWorld2 = Vector6d::Zero();
-        Vector6d aBody2  = Vector6d::Zero();
-        Vector6d aWorld2 = Vector6d::Zero();
+        MatrixXd BodyLinJac = bn->getBodyLinearJacobian();
+        MatrixXd BodyAngJac = bn->getBodyAngularJacobian();
+        MatrixXd WorldLinJac = bn->getWorldLinearJacobian();
+        MatrixXd WorldAngJac = bn->getWorldAngularJacobian();
+        MatrixXd BodyLinJacDeriv = bn->getBodyLinearJacobianDeriv();
+        MatrixXd BodyAngJacDeriv = bn->getBodyAngularJacobianDeriv();
+        MatrixXd WorldLinJacDeriv = bn->getWorldLinearJacobianDeriv();
+        MatrixXd WorldAngJacDeriv = bn->getWorldAngularJacobianDeriv();
+        Vector3d BodyLinVel2 = Vector3d::Zero();
+        Vector3d BodyAngVel2 = Vector3d::Zero();
+        Vector3d WorldLinVel2 = Vector3d::Zero();
+        Vector3d WorldAngVel2 = Vector3d::Zero();
+        Vector3d BodyLinAcc2 = Vector3d::Zero();
+        Vector3d BodyAngAcc2 = Vector3d::Zero();
+        Vector3d WorldLinAcc2 = Vector3d::Zero();
+        Vector3d WorldAngAcc2 = Vector3d::Zero();
+
         for (int l = 0; l < bn->getNumDependentGenCoords(); ++l)
         {
           int idx = bn->getDependentGenCoordIndex(l);
-          vBody2  += JBody.col(l)  * dq[idx];
-          vWorld2 += JWorld.col(l) * dq[idx];
-          aBody2  += dJBody.col(l) * dq[idx] + JBody.col(l) * ddq[idx];
-          aWorld2 += dJWorld.col(l) * dq[idx] + JWorld.col(l) * ddq[idx];
+
+          BodyLinVel2 += BodyLinJac.col(l) * dq[idx];
+          BodyAngVel2 += BodyAngJac.col(l) * dq[idx];
+          WorldLinVel2 += WorldLinJac.col(l) * dq[idx];
+          WorldAngVel2 += WorldAngJac.col(l) * dq[idx];
+          BodyLinAcc2 += BodyLinJacDeriv.col(l) * dq[idx]
+                         + BodyLinJac.col(l) * ddq[idx];
+          BodyAngAcc2 += BodyAngJacDeriv.col(l) * dq[idx]
+                         + BodyAngJac.col(l) * ddq[idx];
+          WorldLinAcc2 += WorldLinJacDeriv.col(l) * dq[idx]
+                         + WorldLinJac.col(l) * ddq[idx];
+          WorldAngAcc2 += WorldAngJacDeriv.col(l) * dq[idx]
+                         + WorldAngJac.col(l) * ddq[idx];
         }
 
         // Comparing two velocities
-        EXPECT_TRUE(equals(vBody,  vBody2,  TOLERANCE));
-        EXPECT_TRUE(equals(vWorld, vWorld2, TOLERANCE));
-        EXPECT_TRUE(equals(aBody, aBody2, TOLERANCE));
-        EXPECT_TRUE(equals(aWorld, aWorld2, TOLERANCE));
+        EXPECT_TRUE(equals(BodyLinVel,  BodyLinVel2,  TOLERANCE));
+        EXPECT_TRUE(equals(BodyAngVel,  BodyAngVel2,  TOLERANCE));
+        EXPECT_TRUE(equals(WorldLinVel, WorldLinVel2, TOLERANCE));
+        EXPECT_TRUE(equals(WorldAngVel, WorldAngVel2, TOLERANCE));
+        EXPECT_TRUE(equals(BodyLinAcc, BodyLinAcc2, TOLERANCE));
+        EXPECT_TRUE(equals(BodyAngAcc, BodyAngAcc2, TOLERANCE));
+        EXPECT_TRUE(equals(WorldLinAcc, WorldLinAcc2, TOLERANCE));
+        EXPECT_TRUE(equals(WorldAngAcc, WorldAngAcc2, TOLERANCE));
 
         // Debugging code
-        if (!equals(vBody, vBody2, TOLERANCE))
+        if (!equals(BodyLinVel, BodyLinVel2, TOLERANCE))
         {
-          cout << "vBody : " << vBody.transpose()  << endl;
-          cout << "vBody2: " << vBody2.transpose() << endl;
+          cout << "BodyLinVel : " << BodyLinVel.transpose()  << endl;
+          cout << "BodyLinVel2: " << BodyLinVel2.transpose() << endl;
         }
-        if (!equals(vWorld, vWorld2, TOLERANCE))
+        if (!equals(BodyAngVel, BodyAngVel2, TOLERANCE))
         {
-          cout << "vWorld : " << vWorld.transpose()  << endl;
-          cout << "vWorld2: " << vWorld2.transpose() << endl;
+          cout << "vBody : " << BodyAngVel.transpose()  << endl;
+          cout << "BodyAngVel2: " << BodyAngVel2.transpose() << endl;
         }
-        if (!equals(aBody, aBody2, TOLERANCE))
+        if (!equals(WorldLinVel, WorldLinVel2, TOLERANCE))
         {
-          cout << "aBody : "  << aBody.transpose()  << endl;
-          cout << "aBody2: "  << aBody2.transpose() << endl;
+          cout << "WorldLinVel : " << WorldLinVel.transpose()  << endl;
+          cout << "WorldLinVel2: " << WorldLinVel2.transpose() << endl;
         }
-        if (!equals(aWorld, aWorld2, TOLERANCE))
+        if (!equals(WorldAngVel, WorldAngVel2, TOLERANCE))
         {
-          cout << "aWorld : " << aWorld.transpose()  << endl;
-          cout << "aWorld2: " << aWorld2.transpose() << endl;
+          cout << "WorldAngVel : " << WorldAngVel.transpose()  << endl;
+          cout << "WorldAngVel2: " << WorldAngVel2.transpose() << endl;
+        }
+        if (!equals(BodyLinAcc, BodyLinAcc2, TOLERANCE))
+        {
+          cout << "BodyLinAcc : "  << BodyLinAcc.transpose()  << endl;
+          cout << "BodyLinAcc2: "  << BodyLinAcc2.transpose() << endl;
+        }
+        if (!equals(BodyAngAcc, BodyAngAcc, TOLERANCE))
+        {
+          cout << "BodyAngAcc : "  << BodyAngAcc.transpose()  << endl;
+          cout << "BodyAngAcc2: "  << BodyAngAcc2.transpose() << endl;
+        }
+        if (!equals(WorldLinAcc, WorldLinAcc, TOLERANCE))
+        {
+          cout << "WorldLinAcc : " << WorldLinAcc.transpose()  << endl;
+          cout << "WorldLinAcc2: " << WorldLinAcc2.transpose() << endl;
+        }
+        if (!equals(WorldAngAcc, WorldAngAcc2, TOLERANCE))
+        {
+          cout << "WorldAngAcc : " << WorldAngAcc.transpose()  << endl;
+          cout << "WorldAngAcc2: " << WorldAngAcc2.transpose() << endl;
         }
       }
     }
@@ -406,17 +452,25 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         skeleton->setAccelerations(ddq);
         skeleton->computeForwardKinematics(true, true, true);
 
-        Vector6d vBody1  = bn->getBodyVelocity();
-        Vector6d vWorld1 = bn->getWorldVelocity();
-        MatrixXd JBody1  = bn->getBodyJacobian();
-        MatrixXd JWorld1 = bn->getWorldJacobian();
-        Isometry3d T1    = bn->getWorldTransform();
+        Vector3d BodyLinVel1 = bn->getBodyLinearVelocity();
+        Vector3d BodyAngVel1 = bn->getBodyAngularVelocity();
+        Vector3d WorldLinVel1 = bn->getWorldLinearVelocity();
+        Vector3d WorldAngVel1 = bn->getWorldAngularVelocity();
+        MatrixXd BodyLinJac1 = bn->getBodyLinearJacobian();
+        MatrixXd BodyAngJac1 = bn->getBodyAngularJacobian();
+        MatrixXd WorldLinJac1 = bn->getWorldLinearJacobian();
+        MatrixXd WorldAngJac1 = bn->getWorldAngularJacobian();
+        Isometry3d T1    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector6d aBody1   = bn->getBodyAcceleration();
-        Vector6d aWorld1  = bn->getWorldAcceleration();
-        MatrixXd dJBody1  = bn->getBodyJacobianTimeDeriv();
-        MatrixXd dJWorld1 = bn->getWorldJacobianTimeDeriv();
+        Vector3d BodyLinAcc1 = bn->getBodyLinearAcceleration();
+        Vector3d BodyAngAcc1 = bn->getBodyAngularAcceleration();
+        Vector3d WorldLinAcc1 = bn->getWorldLinearAcceleration();
+        Vector3d WorldAngAcc1 = bn->getWorldAngularAcceleration();
+        MatrixXd BodyLinJacDeriv1 = bn->getBodyLinearJacobianDeriv();
+        MatrixXd BodyAngJacDeriv1 = bn->getBodyAngularJacobianDeriv();
+        MatrixXd WorldLinJacDeriv1 = bn->getWorldLinearJacobianDeriv();
+        MatrixXd WorldAngJacDeriv1 = bn->getWorldAngularJacobianDeriv();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
         skeleton->setPositions(qNext);
@@ -424,22 +478,32 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         skeleton->setAccelerations(ddq);
         skeleton->computeForwardKinematics(true, true, true);
 
-        Vector6d vBody2  = bn->getBodyVelocity();
-        Vector6d vWorld2 = bn->getWorldVelocity();
-        MatrixXd JBody2  = bn->getBodyJacobian();
-        MatrixXd JWorld2 = bn->getWorldJacobian();
-        Isometry3d T2    = bn->getWorldTransform();
+        Vector3d BodyLinVel2 = bn->getBodyLinearVelocity();
+        Vector3d BodyAngVel2 = bn->getBodyAngularVelocity();
+        Vector3d WorldLinVel2 = bn->getWorldLinearVelocity();
+        Vector3d WorldAngVel2 = bn->getWorldAngularVelocity();
+        MatrixXd BodyLinJac2 = bn->getBodyLinearJacobian();
+        MatrixXd BodyAngJac2 = bn->getBodyAngularJacobian();
+        MatrixXd WorldLinJac2 = bn->getWorldLinearJacobian();
+        MatrixXd WorldAngJac2 = bn->getWorldAngularJacobian();
+        Isometry3d T2    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector6d aBody2   = bn->getBodyAcceleration();
-        Vector6d aWorld2  = bn->getWorldAcceleration();
-        MatrixXd dJBody2  = bn->getBodyJacobianTimeDeriv();
-        MatrixXd dJWorld2 = bn->getWorldJacobianTimeDeriv();
+        Vector3d BodyLinAcc2 = bn->getBodyLinearAcceleration();
+        Vector3d BodyAngAcc2 = bn->getBodyAngularAcceleration();
+        Vector3d WorldLinAcc2 = bn->getWorldLinearAcceleration();
+        Vector3d WorldAngAcc2 = bn->getWorldAngularAcceleration();
+        MatrixXd BodyLinJacDeriv2 = bn->getBodyLinearJacobianDeriv();
+        MatrixXd BodyAngJacDeriv2 = bn->getBodyAngularJacobianDeriv();
+        MatrixXd WorldLinJacDeriv2 = bn->getWorldLinearJacobianDeriv();
+        MatrixXd WorldAngJacDeriv2 = bn->getWorldAngularJacobianDeriv();
 
         // Calculation of approximated accelerations and time derivatives of
         // Jacobians
-        Vector6d aBodyApprox   = (vBody2  - vBody1)  / timeStep;
-        Vector6d aWorldApprox  = (vWorld2 - vWorld1) / timeStep;
+        Vector3d BodyLinAccApprox   = (BodyLinVel2  - BodyLinVel1)  / timeStep;
+        Vector3d BodyAngAccApprox   = (BodyAngVel2  - BodyAngVel1)  / timeStep;
+        Vector3d WorldLinAccApprox  = (WorldLinVel2 - WorldLinVel1) / timeStep;
+        Vector3d WorldAngAccApprox  = (WorldAngVel2 - WorldAngVel1) / timeStep;
 
         // TODO(JS): Finite difference of Jacobian test is not implemented yet.
 //        MatrixXd dJBodyApprox  = (JBody2  - JBody1)  / timeStep;
@@ -464,35 +528,59 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 //        }
 
         // Comparing two velocities
-        EXPECT_TRUE(equals(aBody1,   aBodyApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(aBody2,   aBodyApprox,   TOLERANCE));
-        EXPECT_TRUE(equals(aWorld1,  aWorldApprox,  TOLERANCE));
-        EXPECT_TRUE(equals(aWorld2,  aWorldApprox,  TOLERANCE));
+        EXPECT_TRUE(equals(BodyLinAcc1,   BodyLinAccApprox,   TOLERANCE));
+        EXPECT_TRUE(equals(BodyAngAcc1,   BodyAngAccApprox,   TOLERANCE));
+        EXPECT_TRUE(equals(BodyLinAcc2,   BodyLinAccApprox,   TOLERANCE));
+        EXPECT_TRUE(equals(BodyAngAcc2,   BodyAngAccApprox,   TOLERANCE));
+        EXPECT_TRUE(equals(WorldLinAcc1,  WorldLinAccApprox,  TOLERANCE));
+        EXPECT_TRUE(equals(WorldAngAcc1,  WorldAngAccApprox,  TOLERANCE));
+        EXPECT_TRUE(equals(WorldLinAcc2,  WorldLinAccApprox,  TOLERANCE));
+        EXPECT_TRUE(equals(WorldAngAcc2,  WorldAngAccApprox,  TOLERANCE));
 //        EXPECT_TRUE(equals(dJBody1,  dJBodyApprox,  TOLERANCE));
 //        EXPECT_TRUE(equals(dJBody2,  dJBodyApprox,  TOLERANCE));
 //        EXPECT_TRUE(equals(dJWorld1, dJWorldApprox, TOLERANCE));
 //        EXPECT_TRUE(equals(dJWorld2, dJWorldApprox, TOLERANCE));
 
         // Debugging code
-        if (!equals(aBody1, aBodyApprox, TOLERANCE))
+        if (!equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
         {
-          cout << "aBody1     :" << aBody1.transpose()      << endl;
-          cout << "aBodyApprox:" << aBodyApprox.transpose() << endl;
+          cout << "BodyLinAcc1     :" << BodyLinAcc1.transpose()      << endl;
+          cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
         }
-        if (!equals(aBody2, aBodyApprox, TOLERANCE))
+        if (!equals(BodyAngAcc1, BodyAngAccApprox, TOLERANCE))
         {
-          cout << "aBody2     :" << aBody2.transpose()      << endl;
-          cout << "aBodyApprox:" << aBodyApprox.transpose() << endl;
+          cout << "BodyAngAcc1     :" << BodyAngAcc1.transpose()      << endl;
+          cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
         }
-        if (!equals(aWorld1, aWorldApprox, TOLERANCE))
+        if (!equals(BodyLinAcc2, BodyLinAccApprox, TOLERANCE))
         {
-          cout << "aWorld1     :" << aWorld1.transpose()      << endl;
-          cout << "aWorldApprox:" << aWorldApprox.transpose() << endl;
+          cout << "BodyLinAcc2     :" << BodyLinAcc2.transpose()      << endl;
+          cout << "BodyLinAccApprox:" << BodyLinAccApprox.transpose() << endl;
         }
-        if (!equals(aWorld2, aWorldApprox, TOLERANCE))
+        if (!equals(BodyAngAcc2, BodyAngAccApprox, TOLERANCE))
         {
-          cout << "aWorld2     :" << aWorld2.transpose()      << endl;
-          cout << "aWorldApprox:" << aWorldApprox.transpose() << endl;
+          cout << "BodyAngAcc2     :" << BodyAngAcc2.transpose()      << endl;
+          cout << "BodyAngAccApprox:" << BodyAngAccApprox.transpose() << endl;
+        }
+        if (!equals(WorldLinAcc1, WorldLinAccApprox, TOLERANCE))
+        {
+          cout << "WorldLinAcc1     :" << WorldLinAcc1.transpose()      << endl;
+          cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
+        }
+        if (!equals(WorldAngAcc1, WorldAngAccApprox, TOLERANCE))
+        {
+          cout << "WorldAngAcc1     :" << WorldAngAcc1.transpose()      << endl;
+          cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
+        }
+        if (!equals(WorldLinAcc2, WorldLinAccApprox, TOLERANCE))
+        {
+          cout << "WorldLinAcc2     :" << WorldLinAcc2.transpose()      << endl;
+          cout << "WorldLinAccApprox:" << WorldLinAccApprox.transpose() << endl;
+        }
+        if (!equals(WorldAngAcc2, WorldAngAccApprox, TOLERANCE))
+        {
+          cout << "WorldAngAcc2     :" << WorldAngAcc2.transpose()      << endl;
+          cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
         }
 //        if (!equals(dJBody1, dJBodyApprox, TOLERANCE))
 //        {

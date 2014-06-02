@@ -41,7 +41,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/ZeroDofJoint.h"
 
 namespace dart {

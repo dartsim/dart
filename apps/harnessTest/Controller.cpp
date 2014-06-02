@@ -39,7 +39,6 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
@@ -101,7 +100,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
 
   // ankle strategy for sagital plane
   Eigen::Vector3d com = mSkel->getWorldCOM();
-  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getWorldTransform()
+  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
   if (diff[0] < 0.1)

@@ -48,7 +48,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
 
@@ -279,7 +278,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
       joint->setIndexInSkeleton(j, mGenCoordInfos.size() - 1);
     }
 
-    mBodyNodes[i]->init(this, i);
+    mBodyNodes[i]->init(this);
     mDof += mBodyNodes[i]->getParentJoint()->getDof();
   }
 
@@ -879,7 +878,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
   }
 }
 
@@ -1347,7 +1346,7 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
   }
 }
 
@@ -1422,7 +1421,7 @@ void Skeleton::computeInverseDynamicsRecursionA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianTimeDerivDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
   }
 }
 
@@ -1715,8 +1714,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian() {
     // Compute weighted Jacobian
     Eigen::MatrixXd localJ
         = bodyNode->getMass()
-          * bodyNode->getWorldJacobian(
-              bodyNode->getLocalCOM(), true).bottomRows<3>();
+          * bodyNode->getWorldLinearJacobian(bodyNode->getLocalCOM());
 
     // Assign the weighted Jacobian to total Jacobian
     for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {
@@ -1744,7 +1742,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv() {
     // Compute weighted Jacobian time derivative
     Eigen::MatrixXd localJ
         = bodyNode->getMass()
-          * bodyNode->getWorldJacobianTimeDeriv(bodyNode->getLocalCOM(), true).bottomRows<3>();
+          * bodyNode->getWorldLinearJacobianDeriv(bodyNode->getLocalCOM());
 
     // Assign the weighted Jacobian to total Jacobian time derivative
     for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j) {

@@ -313,7 +313,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
       dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
 
       newFreeJoint->setTransformFromParentBodyNode(
-            bodyNode->getWorldTransform());
+            bodyNode->getTransform());
       newFreeJoint->setTransformFromChildBodyNode(
             Eigen::Isometry3d::Identity());
 
@@ -413,13 +413,13 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
       double ixz = getValueDouble(moiElement, "ixz");
       double iyz = getValueDouble(moiElement, "iyz");
 
-      newBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
+      newBodyNode->setMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
     } else if (newBodyNode->getVisualizationShape(0) != 0) {
       Eigen::Matrix3d Ic =
           newBodyNode->getVisualizationShape(0)->computeInertia(mass);
 
-      newBodyNode->setInertia(Ic(0, 0), Ic(1, 1), Ic(2, 2),
-                              Ic(0, 1), Ic(0, 2), Ic(1, 2));
+      newBodyNode->setMomentOfInertia(Ic(0, 0), Ic(1, 1), Ic(2, 2),
+                                      Ic(0, 1), Ic(0, 2), Ic(1, 2));
     }
 
     // offset
@@ -632,15 +632,15 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
       double ixz = getValueDouble(moiElement, "ixz");
       double iyz = getValueDouble(moiElement, "iyz");
 
-      newSoftBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
+      newSoftBodyNode->setMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
     }
     else if (newSoftBodyNode->getVisualizationShape(0) != 0)
     {
       Eigen::Matrix3d Ic =
           newSoftBodyNode->getVisualizationShape(0)->computeInertia(mass);
 
-      newSoftBodyNode->setInertia(Ic(0, 0), Ic(1, 1), Ic(2, 2),
-                                  Ic(0, 1), Ic(0, 2), Ic(1, 2));
+      newSoftBodyNode->setMomentOfInertia(Ic(0, 0), Ic(1, 1), Ic(2, 2),
+                                          Ic(0, 1), Ic(0, 2), Ic(1, 2));
     }
 
     // offset

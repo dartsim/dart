@@ -44,7 +44,6 @@
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/constraint/WeldJointConstraint.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"
@@ -151,7 +150,7 @@ void MyWindow::drawSkels()
 
   // draw arrow
   if (mImpulseDuration > 0) {
-    Vector3d poa = mWorld->getSkeleton(1)->getBodyNode("fullbody1_root")->getWorldTransform() * Vector3d(0.0, 0.0, 0.0);
+    Vector3d poa = mWorld->getSkeleton(1)->getBodyNode("fullbody1_root")->getTransform() * Vector3d(0.0, 0.0, 0.0);
     Vector3d start = poa - mForce / 10.0;
     double len = mForce.norm() / 10.0;
     drawArrow3D(start, mForce, len, 0.05, 0.1);

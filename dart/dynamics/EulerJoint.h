@@ -39,7 +39,6 @@
 
 #include <string>
 
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {

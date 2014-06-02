@@ -18,7 +18,6 @@
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/GenCoord.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -298,7 +297,7 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::strin
   if(_lk->inertial) {
       node->setLocalCOM(toEigen(_lk->inertial->origin.position));
       node->setMass(_lk->inertial->mass);
-      node->setInertia(_lk->inertial->ixx, _lk->inertial->iyy, _lk->inertial->izz,
+      node->setMomentOfInertia(_lk->inertial->ixx, _lk->inertial->iyy, _lk->inertial->izz,
                                _lk->inertial->ixy, _lk->inertial->ixz, _lk->inertial->iyz);
   }
 

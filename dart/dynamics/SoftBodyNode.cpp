@@ -85,9 +85,9 @@ PointMass* SoftBodyNode::getPointMass(int _idx) const
 }
 
 //==============================================================================
-void SoftBodyNode::init(Skeleton* _skeleton, int _skeletonIndex)
+void SoftBodyNode::init(Skeleton* _skeleton)
 {
-  BodyNode::init(_skeleton, _skeletonIndex);
+  BodyNode::init(_skeleton);
 
   for (int i = 0; i < mPointMasses.size(); ++i)
     mPointMasses[i]->init();

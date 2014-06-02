@@ -474,7 +474,7 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _
 
     // Get world transform
     Eigen::Isometry3d pose;
-    pose = _node->getWorldTransform();
+    pose = _node->getTransform();
 
     // GL calls
     if(_vizCol && _node->isColliding()) {

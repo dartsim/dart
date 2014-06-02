@@ -71,7 +71,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
     robot->setPositionSegment(twoLinkIndices, joints[i]);
     robot->computeForwardKinematics(true, false, false);
     Vector3d actual
-        = robot->getBodyNode("ee")->getWorldTransform().translation();
+        = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
     if(!equality)
@@ -114,7 +114,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
     robot->setPositionSegment(twoLinkIndices, joints[i]);
     robot->computeForwardKinematics(true, false, false);
     Vector3d actual
-        = robot->getBodyNode("ee")->getWorldTransform().translation();
+        = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
     EXPECT_TRUE(equality);
     if(!equality)

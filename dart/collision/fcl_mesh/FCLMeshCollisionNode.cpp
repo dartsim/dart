@@ -354,7 +354,7 @@ void FCLMeshCollisionNode::updateShape()
 //==============================================================================
 void FCLMeshCollisionNode::evalRT()
 {
-  mWorldTrans = mBodyNode->getWorldTransform();
+  mWorldTrans = mBodyNode->getTransform();
   mFclWorldTrans = getFclTransform(mWorldTrans);
 }
 
