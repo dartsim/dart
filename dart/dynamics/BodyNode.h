@@ -377,16 +377,16 @@ public:
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
 
-  /// Set whether this body node is colliding with others. This is
-  /// called by collision detector.
+  /// Set whether this body node is colliding with others. This is called by
+  /// collision detector.
   /// \param[in] True if this body node is colliding.
   void setColliding(bool _isColliding);
 
-  /// Return whether this body node is colliding with others.
+  /// Return whether this body node is colliding with others
   /// \return True if this body node is colliding.
   bool isColliding();
 
-  /// Add applying linear Cartesian forces to this node.
+  /// Add applying linear Cartesian forces to this node
   ///
   /// A force is defined by a point of application and a force vector. The
   /// last two parameters specify frames of the first two parameters.
@@ -446,11 +446,10 @@ public:
   void addConstraintImpulse(const Eigen::Vector6d& _constImp);
 
   /// Add constraint impulse
-  void addConstraintImpulse(
-      const Eigen::Vector3d& _constImp,
-      const Eigen::Vector3d& _offset,
-      bool _isImpulseLocal = false,
-      bool _isOffsetLocal = true);
+  void addConstraintImpulse(const Eigen::Vector3d& _constImp,
+                            const Eigen::Vector3d& _offset,
+                            bool _isImpulseLocal = false,
+                            bool _isOffsetLocal = true);
 
   /// Clear constraint impulse
   virtual void clearConstraintImpulse();
@@ -502,12 +501,6 @@ protected:
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 
-  // TODO(JS): This function will be deprecated when we stop using GenCoord
-  //           and GenCoordSystem classes.
-  /// Aggregate generalized coordinates of this body node to
-  ///        generalized of the system.
-//  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
-
   //--------------------------------------------------------------------------
   // Recursive algorithms
   //--------------------------------------------------------------------------
@@ -526,8 +519,8 @@ protected:
 
   // TODO(JS): Need revise
   ///
-  virtual void updateBodyForce(const Eigen::Vector3d& _gravity,
-                               bool _withExternalForces = false);
+  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
+                                bool _withExternalForces = false);
 
   // TODO(JS): Need revise
   ///
@@ -545,7 +538,7 @@ protected:
   virtual void updateJointAndBodyAcceleration();
 
   /// Update transmitted force from parent joint
-  virtual void updateTransmittedForce();
+  virtual void updateTransmittedWrench();
 
   //----------------------------------------------------------------------------
   // Impulse based dynamics
@@ -699,7 +692,8 @@ protected:
   /// Spatial body acceleration w.r.t. body frame
   Eigen::Vector6d mA;
 
-  /// Transmitted spatial body force by parent joint w.r.t. body frame
+  /// Transmitted wrench from parent to the bodynode expressed in body-fixed
+  /// frame
   Eigen::Vector6d mF;
 
   /// External spatial force

@@ -676,10 +676,74 @@ void BodyNode::setColliding(bool _isColliding)
   mIsColliding = _isColliding;
 }
 
-bool BodyNode::isColliding() {
+//==============================================================================
+bool BodyNode::isColliding()
+{
   return mIsColliding;
 }
 
+//==============================================================================
+void BodyNode::addExtForce(const Eigen::Vector3d& _force,
+                           const Eigen::Vector3d& _offset,
+                           bool _isForceLocal,
+                           bool _isOffsetLocal)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+
+  if (_isOffsetLocal)
+    T.translation() = _offset;
+  else
+    T.translation() = getTransform().inverse() * _offset;
+
+  if (_isForceLocal)
+    F.tail<3>() = _force;
+  else
+    F.tail<3>() = mW.linear().transpose() * _force;
+
+  mFext += math::dAdInvT(T, F);
+}
+
+//==============================================================================
+void BodyNode::setExtForce(const Eigen::Vector3d& _force,
+                           const Eigen::Vector3d& _offset,
+                           bool _isForceLocal, bool _isOffsetLocal)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d F = Eigen::Vector6d::Zero();
+
+  if (_isOffsetLocal)
+    T.translation() = _offset;
+  else
+    T.translation() = getTransform().inverse() * _offset;
+
+  if (_isForceLocal)
+    F.tail<3>() = _force;
+  else
+    F.tail<3>() = mW.linear().transpose() * _force;
+
+  mFext = math::dAdInvT(T, F);
+}
+
+//==============================================================================
+void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+{
+  if (_isLocal)
+    mFext.head<3>() += _torque;
+  else
+    mFext.head<3>() += mW.linear().transpose() * _torque;
+}
+
+//==============================================================================
+void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
+{
+  if (_isLocal)
+    mFext.head<3>() = _torque;
+  else
+    mFext.head<3>() = mW.linear().transpose() * _torque;
+}
+
+//==============================================================================
 void BodyNode::init(Skeleton* _skeleton)
 {
   assert(_skeleton);
@@ -722,37 +786,14 @@ void BodyNode::init(Skeleton* _skeleton)
   int numDepGenCoords = getNumDependentGenCoords();
   mBodyJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianDeriv.setZero(6, numDepGenCoords);
-
-  //--------------------------------------------------------------------------
-  // Set dimensions of cache data for recursive algorithms
-  //--------------------------------------------------------------------------
-  int dof = mParentJoint->getDof();
-//  mAI_S.setZero(6, dof);
-//  mPsi.setZero(dof, dof);
-//  mImplicitPsi.setZero(dof, dof);
-//  mAlpha.setZero(dof);
-
-  // TODO(JS): Temporary code
-//  mParentJoint->mChildBodyNode = this;
-//  if (mParentBodyNode)
-//    mParentJoint->mParentBodyNode = this;
-//  else
-//    mParentJoint->mParentBodyNode = NULL;
 }
 
-//void BodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
-//{
-//  assert(mParentJoint);
-//  for (int i = 0; i < mParentJoint->getDof(); ++i) {
-//    mParentJoint->setIndexInSkeleton(i, _genCoords->size());
-//    _genCoords->push_back(mParentJoint->getGenCoord(i));
-//  }
-//}
-
+//==============================================================================
 void BodyNode::draw(renderer::RenderInterface* _ri,
                     const Eigen::Vector4d& _color,
                     bool _useDefaultColor,
-                    int _depth) const {
+                    int _depth) const
+{
   if (_ri == NULL)
     return;
 
@@ -762,7 +803,8 @@ void BodyNode::draw(renderer::RenderInterface* _ri,
   mParentJoint->applyGLTransform(_ri);
 
   _ri->pushName((unsigned)mID);
-  for (int i = 0; i < mVizShapes.size(); i++) {
+  for (int i = 0; i < mVizShapes.size(); i++)
+  {
     _ri->pushMatrix();
     mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
@@ -770,16 +812,18 @@ void BodyNode::draw(renderer::RenderInterface* _ri,
   _ri->popName();
 
   // render the subtree
-  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++) {
+  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
     mChildBodyNodes[i]->draw(_ri, _color, _useDefaultColor);
-  }
+
 
   _ri->popMatrix();
 }
 
+//==============================================================================
 void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
-                           bool _useDefaultColor) const {
+                           bool _useDefaultColor) const
+{
   if (!_ri)
     return;
 
@@ -864,8 +908,8 @@ void BodyNode::updateAcceleration()
 }
 
 //==============================================================================
-void BodyNode::updateBodyForce(const Eigen::Vector3d& _gravity,
-                               bool _withExternalForces)
+void BodyNode::updateBodyWrench(const Eigen::Vector3d& _gravity,
+                                bool _withExternalForces)
 {
   // Gravity force
   if (mGravityMode == true)
@@ -1022,7 +1066,7 @@ void BodyNode::updateJointAndBodyAcceleration()
 }
 
 //==============================================================================
-void BodyNode::updateTransmittedForce()
+void BodyNode::updateTransmittedWrench()
 {
   mF = mBiasForce;
   mF.noalias() += mArtInertiaImplicit * mA;
@@ -1034,71 +1078,14 @@ void BodyNode::updateTransmittedForce()
 }
 
 //==============================================================================
-void BodyNode::addExtForce(const Eigen::Vector3d& _force,
-                           const Eigen::Vector3d& _offset,
-                           bool _isForceLocal,
-                           bool _isOffsetLocal)
+const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d F = Eigen::Vector6d::Zero();
-
-  if (_isOffsetLocal)
-    T.translation() = _offset;
-  else
-    T.translation() = getTransform().inverse() * _offset;
-
-  if (_isForceLocal)
-    F.tail<3>() = _force;
-  else
-    F.tail<3>() = mW.linear().transpose() * _force;
-
-  mFext += math::dAdInvT(T, F);
-}
-
-//==============================================================================
-void BodyNode::setExtForce(const Eigen::Vector3d& _force,
-                           const Eigen::Vector3d& _offset,
-                           bool _isForceLocal, bool _isOffsetLocal)
-{
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d F = Eigen::Vector6d::Zero();
-
-  if (_isOffsetLocal)
-    T.translation() = _offset;
-  else
-    T.translation() = getTransform().inverse() * _offset;
-
-  if (_isForceLocal)
-    F.tail<3>() = _force;
-  else
-    F.tail<3>() = mW.linear().transpose() * _force;
-
-  mFext = math::dAdInvT(T, F);
-}
-
-//==============================================================================
-void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
-{
-  if (_isLocal)
-    mFext.head<3>() += _torque;
-  else
-    mFext.head<3>() += mW.linear().transpose() * _torque;
-}
-
-//==============================================================================
-void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
-{
-  if (_isLocal)
-    mFext.head<3>() = _torque;
-  else
-    mFext.head<3>() = mW.linear().transpose() * _torque;
-}
-
-const Eigen::Vector6d& BodyNode::getExternalForceLocal() const {
   return mFext;
 }
 
-Eigen::Vector6d BodyNode::getExternalForceGlobal() const {
+//==============================================================================
+Eigen::Vector6d BodyNode::getExternalForceGlobal() const
+{
   return math::dAdInvT(mW, mFext);
 }
 
@@ -1139,7 +1126,9 @@ void BodyNode::clearConstraintImpulse()
   mParentJoint->resetVelocityChanges();
 }
 
-const Eigen::Vector6d& BodyNode::getBodyForce() const {
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getBodyForce() const
+{
   return mF;
 }
 
@@ -1163,20 +1152,27 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
   return mConstraintImpulse;
 }
 
-double BodyNode::getKineticEnergy() const {
+//==============================================================================
+double BodyNode::getKineticEnergy() const
+{
   return 0.5 * mV.dot(mI * mV);
 }
 
-double BodyNode::getPotentialEnergy(
-    const Eigen::Vector3d& _gravity) const {
+//==============================================================================
+double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
+{
   return -mMass * mW.translation().dot(_gravity);
 }
 
-Eigen::Vector3d BodyNode::getLinearMomentum() const {
+//==============================================================================
+Eigen::Vector3d BodyNode::getLinearMomentum() const
+{
   return (mI * mV).tail<3>();
 }
 
-Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot) {
+//==============================================================================
+Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
+{
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   T.translation() = _pivot;
   return math::dAdT(T, mI * mV).head<3>();
@@ -1298,15 +1294,18 @@ void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
   aggregateCombinedVector(_C, Eigen::Vector3d::Zero());
 }
 
+//==============================================================================
 void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
-                                           const Eigen::Vector3d& _gravity) {
+                                           const Eigen::Vector3d& _gravity)
+{
   if (mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(mW, _gravity);
   else
     mG_F.setZero();
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it) {
+       it != mChildBodyNodes.end(); ++it)
+  {
     mG_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
                           (*it)->mG_F);
   }
@@ -1365,17 +1364,21 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   }
 }
 
-void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext) {
+//==============================================================================
+void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
+{
   mFext_F = mFext;
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it) {
+       it != mChildBodyNodes.end(); ++it)
+  {
     mFext_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
                              (*it)->mFext_F);
   }
 
   int nGenCoords = mParentJoint->getDof();
-  if (nGenCoords > 0) {
+  if (nGenCoords > 0)
+  {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
     int iStart = mParentJoint->getIndexInSkeleton(0);
     _Fext->segment(iStart, nGenCoords) = Fext;
@@ -1604,6 +1607,7 @@ void BodyNode::_updateBodyJacobian()
   mIsBodyJacobianDirty = false;
 }
 
+//==============================================================================
 void BodyNode::_updateBodyJacobianDeriv()
 {
   //--------------------------------------------------------------------------
@@ -1623,7 +1627,8 @@ void BodyNode::_updateBodyJacobianDeriv()
   math::Jacobian J = getBodyJacobian();
 
   // Parent Jacobian
-  if (mParentBodyNode) {
+  if (mParentBodyNode)
+  {
     assert(mParentBodyNode->mBodyJacobianDeriv.cols()
            + mParentJoint->getDof() == mBodyJacobianDeriv.cols());
 
@@ -1636,8 +1641,8 @@ void BodyNode::_updateBodyJacobianDeriv()
   }
 
   // Local Jacobian
-  mBodyJacobianDeriv.rightCols(numLocalDOFs) =
-      mParentJoint->getLocalJacobianTimeDeriv();
+  mBodyJacobianDeriv.rightCols(numLocalDOFs)
+      = mParentJoint->getLocalJacobianTimeDeriv();
 
   mIsBodyJacobianDerivDirty = false;
 }
@@ -1691,7 +1696,9 @@ void BodyNode::_updateSpatialInertia()
   mI.triangularView<Eigen::StrictlyLower>() = mI.transpose();
 }
 
-void BodyNode::clearExternalForces() {
+//==============================================================================
+void BodyNode::clearExternalForces()
+{
   mFext.setZero();
 }
 
