@@ -99,7 +99,7 @@ void Marker::setLocalPosition(const Eigen::Vector3d& _offset) {
 }
 
 Eigen::Vector3d Marker::getWorldPosition() const {
-  return mBodyNode->getWorldTransform() * mOffset;
+  return mBodyNode->getTransform() * mOffset;
 }
 
 int Marker::getIndexInSkeleton() const {

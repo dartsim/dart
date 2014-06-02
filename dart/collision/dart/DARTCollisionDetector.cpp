@@ -83,10 +83,10 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
 
           contacts.clear();
           collide(BodyNode1->getCollisionShape(k),
-                  BodyNode1->getWorldTransform()
+                  BodyNode1->getTransform()
                   * BodyNode1->getCollisionShape(k)->getLocalTransform(),
                   BodyNode2->getCollisionShape(l),
-                  BodyNode2->getWorldTransform()
+                  BodyNode2->getTransform()
                   * BodyNode2->getCollisionShape(l)->getLocalTransform(),
                   &contacts);
 
@@ -145,10 +145,10 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
   for (int i = 0; i < BodyNode1->getNumCollisionShapes(); i++) {
     for (int j = 0; j < BodyNode2->getNumCollisionShapes(); j++) {
       collide(BodyNode1->getCollisionShape(i),
-              BodyNode1->getWorldTransform()
+              BodyNode1->getTransform()
               * BodyNode1->getCollisionShape(i)->getLocalTransform(),
               BodyNode2->getCollisionShape(j),
-              BodyNode2->getWorldTransform()
+              BodyNode2->getTransform()
               * BodyNode2->getCollisionShape(j)->getLocalTransform(),
               &contacts);
     }

@@ -89,6 +89,8 @@ namespace dart {
 namespace math {
 
 typedef Eigen::Matrix6d Inertia;
+typedef Eigen::Matrix<double, 3, Eigen::Dynamic> LinearJacobian;
+typedef Eigen::Matrix<double, 3, Eigen::Dynamic> AngularJacobian;
 typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian;
 
 }  // namespace math

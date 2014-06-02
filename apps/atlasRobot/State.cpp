@@ -247,8 +247,8 @@ Eigen::Isometry3d State::getCOMFrame() const
   Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
 
   // X-axis
-  Eigen::Vector3d xAxis = mPelvis->getWorldTransform().linear().col(0);
-  Eigen::Vector3d pelvisXAxis = mPelvis->getWorldTransform().linear().col(0);
+  Eigen::Vector3d xAxis = mPelvis->getTransform().linear().col(0);
+  Eigen::Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
   double mag = yAxis.dot(pelvisXAxis);
   pelvisXAxis -= mag * yAxis;
   xAxis = pelvisXAxis.normalized();
@@ -328,7 +328,7 @@ double State::getSagitalPelvisAngle() const
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
 
-  Vector3d pelvisZ = mPelvis->getWorldTransform().linear().col(2);
+  Vector3d pelvisZ = mPelvis->getTransform().linear().col(2);
   Vector3d projPelvisZ = (comR.transpose() * pelvisZ);
   projPelvisZ[2] = 0.0;
   projPelvisZ.normalize();
@@ -347,7 +347,7 @@ double State::getCoronalPelvisAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
-  Vector3d pelvisZ = mPelvis->getWorldTransform().linear().col(2);
+  Vector3d pelvisZ = mPelvis->getTransform().linear().col(2);
   Vector3d projPelvisZ = (comR.transpose() * pelvisZ);
   projPelvisZ[0] = 0.0;
   projPelvisZ.normalize();
@@ -366,7 +366,7 @@ double State::getSagitalLeftLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
-  Vector3d thighAxisZ = mLeftThigh->getWorldTransform().linear().col(2);
+  Vector3d thighAxisZ = mLeftThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[2] = 0.0;
   projThighAZ.normalize();
@@ -385,7 +385,7 @@ double State::getSagitalRightLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
-  Vector3d thighAxisZ = mRightThigh->getWorldTransform().linear().col(2);
+  Vector3d thighAxisZ = mRightThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[2] = 0.0;
   projThighAZ.normalize();
@@ -404,7 +404,7 @@ double State::getCoronalLeftLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
-  Vector3d thighAxisZ = mLeftThigh->getWorldTransform().linear().col(2);
+  Vector3d thighAxisZ = mLeftThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[0] = 0.0;
   projThighAZ.normalize();
@@ -423,7 +423,7 @@ double State::getCoronalRightLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
   Vector3d comY = comR.col(1);
-  Vector3d thighAxisZ = mRightThigh->getWorldTransform().linear().col(2);
+  Vector3d thighAxisZ = mRightThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[0] = 0.0;
   projThighAZ.normalize();
@@ -452,7 +452,7 @@ Eigen::Vector3d State::_getJointPosition(BodyNode* _bodyNode) const
   Joint* parentJoint = _bodyNode->getParentJoint();
   Eigen::Vector3d localJointPosition
       = parentJoint->getTransformFromChildBodyNode().translation();
-  return _bodyNode->getWorldTransform() * localJointPosition;
+  return _bodyNode->getTransform() * localJointPosition;
 }
 
 

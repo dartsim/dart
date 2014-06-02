@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
 
   node->addVisualizationShape(Shape0);
   node->addCollisionShape(Shape0);
-  node->setInertia(0.000416667, 0.000416667, 0.000416667);
+  node->setMomentOfInertia(0.000416667, 0.000416667, 0.000416667);
   node->setMass(1.0);  // 1 Kg according to cube1.skel
 
   // Add node to Skel

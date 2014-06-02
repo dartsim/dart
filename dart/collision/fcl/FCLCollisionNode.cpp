@@ -123,7 +123,7 @@ fcl::CollisionGeometry*FCLCollisionNode::getCollisionGeometry(int _idx) const {
 
 //==============================================================================
 fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
-  Eigen::Isometry3d worldTrans = mBodyNode->getWorldTransform()
+  Eigen::Isometry3d worldTrans = mBodyNode->getTransform()
                                  * mShapes[_idx]->getLocalTransform();
 
   return fcl::Transform3f(

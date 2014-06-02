@@ -238,8 +238,8 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //    // Test for linear velocity
 //    Vector3d desiredVel = Vector3d::Random();
 //    body1->fitWorldLinearVel(desiredVel);
-//    Vector3d fittedLinVel = body1->getWorldVelocity().tail<3>();
-//    Vector3d fittedAngVel = body1->getWorldVelocity().head<3>();
+//    Vector3d fittedLinVel = body1->getWorldLinearVelocity();
+//    Vector3d fittedAngVel = body1->getWorldAngularVelocity();
 //    Vector3d diff = fittedLinVel - desiredVel;
 //    EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);
 //    EXPECT_NEAR(fittedAngVel.dot(fittedAngVel), 0.0, TOLERANCE);
@@ -249,8 +249,8 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //    // Test for angular velocity
 //    desiredVel = Vector3d::Random();
 //    body1->fitWorldAngularVel(desiredVel);
-//    fittedLinVel = body1->getWorldVelocity().tail<3>();
-//    fittedAngVel = body1->getWorldVelocity().head<3>();
+//    fittedLinVel = body1->getWorldLinearVelocity();
+//    fittedAngVel = body1->getWorldAngularVelocity();
 //    diff = fittedAngVel - desiredVel;
 //    EXPECT_NEAR(fittedLinVel.dot(fittedLinVel), 0.0, TOLERANCE);
 //    EXPECT_NEAR(diff.dot(diff), 0.0, TOLERANCE);

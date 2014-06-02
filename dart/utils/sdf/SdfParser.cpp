@@ -256,7 +256,7 @@ dynamics::Skeleton* SdfParser::readSkeleton(
             dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
 
             newFreeJoint->setTransformFromParentBodyNode(
-                        bodyNode->getWorldTransform());
+                        bodyNode->getTransform());
             newFreeJoint->setTransformFromChildBodyNode(
                         Eigen::Isometry3d::Identity());
 
@@ -371,7 +371,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
             double ixz = getValueDouble(moiElement, "ixz");
             double iyz = getValueDouble(moiElement, "iyz");
 
-            newBodyNode->setInertia(ixx, iyy, izz, ixy, ixz, iyz);
+            newBodyNode->setMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
         }
         else if (newBodyNode->getVisualizationShape(0) != NULL)
         {
@@ -379,7 +379,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
                     newBodyNode->getVisualizationShape(0)->computeInertia(
                         newBodyNode->getMass());
 
-            newBodyNode->setInertia(Ic(0,0), Ic(1,1), Ic(2,2),
+            newBodyNode->setMomentOfInertia(Ic(0,0), Ic(1,1), Ic(2,2),
                                     Ic(0,1), Ic(0,2), Ic(1,2));
         }
     }
