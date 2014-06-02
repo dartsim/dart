@@ -1,4 +1,4 @@
-dart (4.0.0-ppa1~trusty) trusty; urgency=low
+dart (4.0.0) unstable; urgency=low
 
   * Added implicit joint spring force and damping force
   * Added planar joint
@@ -13,7 +13,7 @@ dart (4.0.0-ppa1~trusty) trusty; urgency=low
   * Fixed self collision bug
   * Fixed incorrect integration of BallJoint and FreeJoint
 
-  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 2 Jun 2014 10:00:00 -0500
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 02 Jun 2014 10:00:00 -0500
 
 dart (3.0.0) unstable; urgency=low
 
@@ -30,4 +30,4 @@ dart (3.0.0) unstable; urgency=low
   * Add "common" namespace
 
  -- Tobias Kunz <tobias@gatech.edu>  Fri, 11 Oct 2013 22:00:00 -0400
-
+ 
