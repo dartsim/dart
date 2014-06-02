@@ -1309,7 +1309,6 @@ protected:
   ///
   Eigen::Matrix<double, DOF, 1> mInvMassMatrixSegment;
 
-private:
 };
 
 }  // namespace dynamics
