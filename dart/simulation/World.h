@@ -62,7 +62,6 @@ class Skeleton;
 }  // namespace dynamics
 
 namespace constraint {
-class OldConstraintDynamics;
 class ConstraintSolver;
 }  // namespace constraint
 

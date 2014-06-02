@@ -56,7 +56,8 @@ namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const VectorXd &root, double stepSize) :
+RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs,
+  const VectorXd &root, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),
@@ -70,7 +71,7 @@ RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const V
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
 	world(world),
 	robot(robot),
 	dofs(dofs),

@@ -81,10 +81,6 @@ class SkelParser
 {
 public:
   /// Read World from skel file
-  DEPRECATED(4.0) static simulation::World* readSkelFile(
-      const std::string& _filename);
-
-  /// Read World from skel file
   static simulation::World* readWorld(const std::string& _filename);
 
   /// Read Skeleton from skel file

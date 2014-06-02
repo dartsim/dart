@@ -499,12 +499,6 @@ public:
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
 
-  //----------------------------------------------------------------------------
-  // Friendship
-  //----------------------------------------------------------------------------
-
-  friend class World;
-
 public:
   /// Compute recursion part A of forward dynamics
   void computeForwardDynamicsRecursionPartA();

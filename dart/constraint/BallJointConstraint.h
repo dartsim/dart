@@ -91,7 +91,7 @@ protected:
   virtual void applyConstraintImpulse(double* _lambda);
 
   // Documentation inherited
-  virtual dynamics::Skeleton* getRootSkeleton() const {}
+  virtual dynamics::Skeleton* getRootSkeleton() const {return NULL;}
 
 protected:
   ///

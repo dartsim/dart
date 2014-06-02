@@ -169,10 +169,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  std::vector<Eigen::Vector6d> mJacobians1;
+  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  std::vector<Eigen::Vector6d> mJacobians2;
+  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians2;
 
   ///
   bool mIsFrictionOn;

@@ -73,6 +73,7 @@ size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 {
   dterr << "getIndexInSkeleton index[" << _index << "] out of range"
         << std::endl;
+
   return 0;
 }
 
@@ -85,7 +86,10 @@ void ZeroDofJoint::setPosition(size_t _index, double _position)
 //==============================================================================
 double ZeroDofJoint::getPosition(size_t _index) const
 {
-  // Do nothing
+  dterr << "getPosition index[" << _index << "] out of range"
+    << std::endl;
+
+  return 0.0;
 }
 
 //==============================================================================
