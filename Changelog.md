@@ -1,19 +1,23 @@
 ## DART 4.0
 
-### Version 4.0.0 (2014-0X-XX)
+### Version 4.0.0 (2014-06-02)
 
-1. Improved collision handling using Featherstone algorithm
-  * [Issue #85](https://github.com/dartsim/dart/issues/87)
 1. Added implicit joint spring force and damping force
 1. Added planar joint
-1. Added initial implementation of soft body dynamics
-1. Added useful kinematical properties pertain to COM of skeleton
-1. Added initial implementation of inverse kinematics functions
-  * [Pull request #154](https://github.com/dartsim/dart/pull/154)
-1. Added optional collision detector: BulletCollision.
+1. Added soft body dynamics
+1. Added computation of velocity and acceleration of COM
+1. Added bullet collision detector
   * [Pull request #156](https://github.com/dartsim/dart/pull/156)
-1. Improved kinematics API for skeleton and joint
+1. Improved performance of forward dynamics algorithm
+  * [Pull request #188](https://github.com/dartsim/dart/pull/188)
+1. Improved dynamics API for Skeleton and Joint
   * [Pull request #161](https://github.com/dartsim/dart/pull/161)
+  * [Pull request #192](https://github.com/dartsim/dart/pull/192)
+  * [Pull request #193](https://github.com/dartsim/dart/pull/193)
+1. Improved constraint dynamics solver
+  * [Pull request #184](https://github.com/dartsim/dart/pull/184)
+1. Improved calculation of equations of motion using Featherstone algorithm
+  * [Issue #85](https://github.com/dartsim/dart/issues/87)
 1. Improved optimizer interface and added nlopt solver
   * [Pull request #152](https://github.com/dartsim/dart/pull/152)
 1. Fixed self collision bug

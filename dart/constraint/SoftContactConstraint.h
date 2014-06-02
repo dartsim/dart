@@ -198,10 +198,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  std::vector<Eigen::Vector6d> mJacobians1;
+  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  std::vector<Eigen::Vector6d> mJacobians2;
+  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians2;
 
   /// Contact normal expressed in body frame of the first body node
   Eigen::Vector3d mBodyDirection1;
@@ -235,6 +235,10 @@ private:
   /// default is 1e-5
   /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace constraint

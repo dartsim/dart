@@ -77,11 +77,6 @@
 namespace dart {
 namespace utils {
 
-simulation::World* SkelParser::readSkelFile(const std::string& _filename)
-{
-  return SkelParser::readWorld(_filename);
-}
-
 simulation::World* SkelParser::readWorld(const std::string& _filename)
 {
   //--------------------------------------------------------------------------

@@ -104,7 +104,7 @@ public:
   virtual bool isActive() const = 0;
 
   ///
-  virtual dynamics::Skeleton* getRootSkeleton() const {}
+  virtual dynamics::Skeleton* getRootSkeleton() const = 0;
 
   ///
   virtual void uniteSkeletons() {}

@@ -150,7 +150,7 @@ void World::step()
     (*it)->computeForwardDynamicsRecursionPartA();
     (*it)->resetForces();
     (*it)->clearExternalForces();
-    (*it)->clearConstraintImpulses();
+//    (*it)->clearConstraintImpulses();
   }
 
   mTime += mTimeStep;

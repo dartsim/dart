@@ -45,10 +45,10 @@
 #include "dart/collision/CollisionDetector.h"
 
 Controller::Controller(dart::dynamics::Skeleton* _skel,
-                       dart::constraint::OldConstraintDynamics* _collisionHandle,
+                       dart::constraint::ConstraintSolver* _constraintSolver,
                        double _t) {
   mSkel = _skel;
-  mCollisionHandle = _collisionHandle;
+  mConstraintSolver = _constraintSolver;
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getDof();
@@ -100,6 +100,9 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::VectorXd d = -mKd * _dofVel;
   Eigen::VectorXd qddot =
       invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
+
+  std::cout << mSkel->getConstraintImpulses().transpose() << std::endl;
+
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane

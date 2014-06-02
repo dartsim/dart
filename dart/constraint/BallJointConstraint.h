@@ -91,7 +91,7 @@ protected:
   virtual void applyConstraintImpulse(double* _lambda);
 
   // Documentation inherited
-  virtual dynamics::Skeleton* getRootSkeleton() const {}
+  virtual dynamics::Skeleton* getRootSkeleton() const {return NULL;}
 
 protected:
   ///
@@ -99,6 +99,10 @@ protected:
 
   ///
   Eigen::Vector3d mOffset2;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 

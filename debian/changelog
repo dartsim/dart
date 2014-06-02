@@ -1,3 +1,20 @@
+dart (4.0.0) unstable; urgency=low
+
+  * Added implicit joint spring force and damping force
+  * Added planar joint
+  * Added soft body dynamics
+  * Added computation of velocity and acceleration of COM
+  * Added bullet collision detector
+  * Improved performance of forward dynamics algorithm
+  * Improved dynamics API for Skeleton and Joint
+  * Improved constraint dynamics solver
+  * Improved calculation of equations of motion using Featherstone algorithm
+  * Improved optimizer interface and added nlopt solver
+  * Fixed self collision bug
+  * Fixed incorrect integration of BallJoint and FreeJoint
+
+  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 2 Jun 2014 10:00:00 -0500
+
 dart (3.0.0) unstable; urgency=low
 
   * Remove Transformation classes. Their functionality is now included in joint

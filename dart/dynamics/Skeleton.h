@@ -328,6 +328,9 @@ public:
   ///
   void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
+  ///
+  Eigen::VectorXd getConstraintImpulses() const;
+
   //----------------------------------------------------------------------------
   // Integration
   //----------------------------------------------------------------------------
@@ -498,12 +501,6 @@ public:
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
-
-  //----------------------------------------------------------------------------
-  // Friendship
-  //----------------------------------------------------------------------------
-
-  friend class World;
 
 public:
   /// Compute recursion part A of forward dynamics
