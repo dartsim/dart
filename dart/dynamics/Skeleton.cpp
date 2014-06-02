@@ -822,6 +822,25 @@ void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 }
 
 //==============================================================================
+Eigen::VectorXd Skeleton::getConstraintImpulses() const
+{
+  size_t index = 0;
+  size_t dof = getDof();
+  Eigen::VectorXd impulse(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    impulse[index++]
+        = mGenCoordInfos[i].joint->getConstraintImpulse(
+            mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return impulse;
+}
+
+//==============================================================================
 void Skeleton::setState(const Eigen::VectorXd& _state)
 {
   assert(_state.size() % 2 == 0);

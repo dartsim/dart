@@ -328,6 +328,9 @@ public:
   ///
   void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
+  ///
+  Eigen::VectorXd getConstraintImpulses() const;
+
   //----------------------------------------------------------------------------
   // Integration
   //----------------------------------------------------------------------------
