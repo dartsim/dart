@@ -13,7 +13,7 @@ dart (4.0.0) unstable; urgency=low
   * Fixed self collision bug
   * Fixed incorrect integration of BallJoint and FreeJoint
 
- -- Jeongseok Lee <jslee02@gmail.com>  Mon, 2 Jun 2014 10:00:00 -0400
+  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 2 Jun 2014 10:00:00 -0500
 
 dart (3.0.0) unstable; urgency=low
 
