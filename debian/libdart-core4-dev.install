@@ -1,3 +1,4 @@
+usr/include/dart/config.h
 usr/include/dart/collision/*
 usr/include/dart/common/*
 usr/include/dart/constraint/*
