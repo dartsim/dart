@@ -194,7 +194,7 @@ void BulletCollisionNode::updateBulletCollisionObjects()
     BulletUserData* userData =
         static_cast<BulletUserData*>(mbtCollsionObjects[i]->getUserPointer());
     dynamics::Shape* shape = userData->shape;
-    btTransform T = convertTransform(mBodyNode->getWorldTransform() *
+    btTransform T = convertTransform(mBodyNode->getTransform() *
                                      shape->getLocalTransform());
     mbtCollsionObjects[i]->setWorldTransform(T);
   }

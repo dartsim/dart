@@ -149,7 +149,7 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
     dynamics::BodyNode* body = _skel->getBodyNode(i);
 
     int dof = body->getNumDependentGenCoords();
-    I = body->getInertia();
+    I = body->getSpatialInertia();
     J = body->getBodyJacobian();
 
     EXPECT_EQ(I.rows(), 6);

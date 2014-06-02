@@ -369,7 +369,7 @@ public:
                               bool _withDampingForces = false);
 
   /// Compute hybrid dynamics
-  void computeHybridDynamics();
+//  void computeHybridDynamics();
 
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
@@ -410,10 +410,10 @@ public:
   void computeImpulseForwardDynamics();
 
   /// Compute impulse-based inverse dynamics
-  void computeImpulseInverseDynamics() {}
+//  void computeImpulseInverseDynamics() {}
 
   /// Compute impulse-based hybrid dynamics
-  void computeImpulseHybridDynamics() {}
+//  void computeImpulseHybridDynamics() {}
 
   //----------------------------------------------------------------------------
   // Equations of Motion
@@ -520,10 +520,10 @@ public:
                                         bool _withDampingForces = false);
 
   /// Compute recursion part A of hybrid dynamics
-  void computeHybridDynamicsRecursionA();
+//  void computeHybridDynamicsRecursionA();
 
   /// Compute recursion part B of hybrid dynamics
-  void computeHybridDynamicsRecursionB();
+//  void computeHybridDynamicsRecursionB();
 
 protected:
   /// Update mass matrix of the skeleton.

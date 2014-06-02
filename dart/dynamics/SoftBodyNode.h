@@ -125,7 +125,7 @@ protected:
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(Skeleton* _skeleton, int _skeletonIndex);
+  virtual void init(Skeleton* _skeleton);
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
@@ -146,7 +146,7 @@ protected:
   virtual void updateAcceleration();
 
   // Documentation inherited.
-  virtual void updateBodyForce(const Eigen::Vector3d& _gravity,
+  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
                                bool _withExternalForces = false);
 
   // Documentation inherited.
@@ -163,7 +163,7 @@ protected:
   virtual void updateJointAndBodyAcceleration();
 
   // Documentation inherited.
-  virtual void updateTransmittedForce();
+  virtual void updateTransmittedWrench();
 
   //----------------------------------------------------------------------------
   // Impulse based dynamics

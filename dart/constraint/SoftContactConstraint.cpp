@@ -191,14 +191,14 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
       // Jacobian for normal contact
       bodyDirection1.noalias()
-          = mBodyNode1->getWorldTransform().linear().transpose() * ct.normal;
+          = mBodyNode1->getTransform().linear().transpose() * ct.normal;
       bodyDirection2.noalias()
-          = mBodyNode2->getWorldTransform().linear().transpose() * -ct.normal;
+          = mBodyNode2->getTransform().linear().transpose() * -ct.normal;
 
       bodyPoint1.noalias()
-          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+          = mBodyNode1->getTransform().inverse() * ct.point;
       bodyPoint2.noalias()
-          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+          = mBodyNode2->getTransform().inverse() * ct.point;
 
       mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
@@ -210,9 +210,9 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
       // Jacobian for directional friction 1
       bodyDirection1.noalias()
-          = mBodyNode1->getWorldTransform().linear().transpose() * D.col(0);
+          = mBodyNode1->getTransform().linear().transpose() * D.col(0);
       bodyDirection2.noalias()
-          = mBodyNode2->getWorldTransform().linear().transpose() * -D.col(0);
+          = mBodyNode2->getTransform().linear().transpose() * -D.col(0);
 
 //      bodyPoint1.noalias()
 //          = mBodyNode1->getWorldTransform().inverse() * ct.point;
@@ -231,9 +231,9 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
       // Jacobian for directional friction 2
       bodyDirection1.noalias()
-          = mBodyNode1->getWorldTransform().linear().transpose() * D.col(1);
+          = mBodyNode1->getTransform().linear().transpose() * D.col(1);
       bodyDirection2.noalias()
-          = mBodyNode2->getWorldTransform().linear().transpose() * -D.col(1);
+          = mBodyNode2->getTransform().linear().transpose() * -D.col(1);
 
 //      bodyPoint1.noalias()
 //          = mBodyNode1->getWorldTransform().inverse() * ct.point;
@@ -270,14 +270,14 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
       const collision::Contact& ct = mContacts[i];
 
       bodyDirection1.noalias()
-          = mBodyNode1->getWorldTransform().linear().transpose() * ct.normal;
+          = mBodyNode1->getTransform().linear().transpose() * ct.normal;
       bodyDirection2.noalias()
-          = mBodyNode2->getWorldTransform().linear().transpose() * -ct.normal;
+          = mBodyNode2->getTransform().linear().transpose() * -ct.normal;
 
       bodyPoint1.noalias()
-          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+          = mBodyNode1->getTransform().inverse() * ct.point;
       bodyPoint2.noalias()
-          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+          = mBodyNode2->getTransform().inverse() * ct.point;
 
       mJacobians1[i].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[i].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);

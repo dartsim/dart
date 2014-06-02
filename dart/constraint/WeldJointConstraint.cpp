@@ -48,7 +48,7 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
   : JointConstraint(_body),
     mIdentity6d(Eigen::Matrix6d::Identity()),
     mAppliedImpulseIndex(0),
-    mRelativeTransform(_body->getWorldTransform()),
+    mRelativeTransform(_body->getTransform()),
     mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
@@ -86,8 +86,8 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
   : JointConstraint(_body1, _body2),
     mIdentity6d(Eigen::Matrix6d::Identity()),
     mAppliedImpulseIndex(0),
-    mRelativeTransform(_body1->getWorldTransform().inverse()
-                       * _body2->getWorldTransform()),
+    mRelativeTransform(_body1->getTransform().inverse()
+                       * _body2->getTransform()),
     mViolation(Eigen::Vector6d::Zero())
 {
   mDim = 6;
@@ -135,15 +135,15 @@ void WeldJointConstraint::update()
   {
     const Eigen::Isometry3d& violationT
         = mRelativeTransform.inverse()
-          * mBodyNode2->getWorldTransform().inverse()
-          * mBodyNode1->getWorldTransform();
+          * mBodyNode2->getTransform().inverse()
+          * mBodyNode1->getTransform();
 
     mViolation = math::logMap(violationT);
   }
   else
   {
     const Eigen::Isometry3d& violationT
-        = mRelativeTransform.inverse() * mBodyNode1->getWorldTransform();
+        = mRelativeTransform.inverse() * mBodyNode1->getTransform();
 
     mViolation = math::logMap(violationT);
   }

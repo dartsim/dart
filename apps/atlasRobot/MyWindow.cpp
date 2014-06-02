@@ -96,7 +96,7 @@ void MyWindow::drawSkels()
   {
     Eigen::Vector3d poa
         =  mWorld->getSkeleton("drc_skeleton")->getBodyNode(
-             "pelvis")->getWorldTransform()
+             "pelvis")->getTransform()
            * Eigen::Vector3d(0.0, 0.0, 0.0);
     Eigen::Vector3d start = poa - mForce / 500.0;
     double len = mForce.norm() / 500.0;

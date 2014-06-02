@@ -100,7 +100,7 @@ void MyWindow::drawSkels()
         = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);
     Eigen::Vector3d poa
-        = softBodyNode->getWorldTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
+        = softBodyNode->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
     Eigen::Vector3d start = poa - mForceOnRigidBody / 25.0;
     double len = mForceOnRigidBody.norm() / 25.0;
     dart::gui::drawArrow3D(start, mForceOnRigidBody, len, 0.025, 0.05);

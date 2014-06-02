@@ -169,7 +169,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   for (int i = 0; i < maxSteps; ++i)
   {
 //    Vector3d pos1 = sphere->getWorldTransform().translation();
-//    Vector3d vel1 = sphere->getWorldVelocity(pos1, true).tail<3>();
+//    Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
 //    std::cout << "pos1:" << pos1.transpose() << std::endl;
 //    std::cout << "vel1:" << vel1.transpose() << std::endl;
@@ -184,8 +184,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
     for (int j = 0; j < cd->getNumContacts(); ++j)
     {
       Contact contact = cd->getContact(j);
-      Vector3d pos1 = sphere->getWorldTransform().inverse() * contact.point;
-      Vector3d vel1 = sphere->getWorldVelocity(pos1, true).tail<3>();
+      Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
+      Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
 //      std::cout << "pos1:" << pos1.transpose() << std::endl;
 //      std::cout << "vel1:" << vel1.transpose() << std::endl;
@@ -196,8 +196,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
     for (int j = 0; j < cd->getNumContacts(); ++j)
     {
       Contact contact = cd->getContact(j);
-      Vector3d pos1 = sphere->getWorldTransform().inverse() * contact.point;
-      Vector3d vel1 = sphere->getWorldVelocity(pos1, true).tail<3>();
+      Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
+      Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
 //      std::cout << "pos1:" << pos1.transpose() << std::endl;
 
