@@ -14,14 +14,8 @@ foreach(APPDIR
     hanging
     hardcodedDesign
     harnessTest
-    #hingeJointConstraintTest
-    #holding
-    #hybrid
-    #ik
     jointLimitTest
     meshCollision
-    #motionAnalysis
-    #pdController
     sdfLoader
     softArticulatedBodiesTest
     softCubes
@@ -34,8 +28,6 @@ foreach(APPDIR
     softSingleBodyTest
     softSinglePendulumTest
     vehicle
-    #viewer
-    #inverseDyn
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
