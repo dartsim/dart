@@ -236,6 +236,15 @@ void ConstraintSolver::setCollisionDetector(
     collision::CollisionDetector* _collisionDetector)
 {
   assert(_collisionDetector && "Invalid collision detector.");
+
+  // Add skeletons in the constraint solver to new collision detector
+  for (size_t i = 0; i < mSkeletons.size(); ++i)
+    _collisionDetector->addSkeleton(mSkeletons[i]);
+
+  // Release the old collision detector
+  delete mCollisionDetector;
+
+  // Change the collision detector of the constraint solver to new one
   mCollisionDetector = _collisionDetector;
 }
 
