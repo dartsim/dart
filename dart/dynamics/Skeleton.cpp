@@ -297,27 +297,36 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   setTimeStep(_timeStep);
   setGravity(_gravity);
 
+  // Get root bodynodes that don't have parent bodynode
+  std::vector<BodyNode*> rootBodyNodes;
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    if (mBodyNodes[i]->getParentBodyNode() == NULL)
+      rootBodyNodes.push_back(mBodyNodes[i]);
+  }
+
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
-  queue.push(mBodyNodes[0]);
   mBodyNodes.clear();
-  while (!queue.empty())
+  for (size_t i = 0; i < rootBodyNodes.size(); ++i)
   {
-    BodyNode* itBodyNode = queue.front();
-    queue.pop();
-    mBodyNodes.push_back(itBodyNode);
-    for (int i = 0; i < itBodyNode->getNumChildBodyNodes(); ++i)
-      queue.push(itBodyNode->getChildBodyNode(i));
+    queue.push(rootBodyNodes[i]);
+
+    while (!queue.empty())
+    {
+      BodyNode* itBodyNode = queue.front();
+      queue.pop();
+      mBodyNodes.push_back(itBodyNode);
+      for (size_t j = 0; j < itBodyNode->getNumChildBodyNodes(); ++j)
+        queue.push(itBodyNode->getChildBodyNode(j));
+    }
   }
 
   // Initialize body nodes and generalized coordinates
   mGenCoordInfos.clear();
-//  mGenCoords.clear();
   mDof = 0;
   for (int i = 0; i < getNumBodyNodes(); ++i)
   {
-//    mBodyNodes[i]->aggregateGenCoords(&mGenCoords);
-
     Joint* joint = mBodyNodes[i]->getParentJoint();
 
     for (int j = 0; j < joint->getDof(); ++j)
