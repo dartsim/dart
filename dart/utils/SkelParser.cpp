@@ -218,6 +218,11 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
         newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::DARTCollisionDetector());
       }
+      else if (strCD == "bullet")
+      {
+        newWorld->getConstraintSolver()->setCollisionDetector(
+              new collision::BulletCollisionDetector());
+      }
       else
       {
         dtwarn << "Unknown collision detector[" << strCD << "]. "
