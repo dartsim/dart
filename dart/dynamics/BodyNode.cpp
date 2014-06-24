@@ -1285,7 +1285,7 @@ void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
   mA += mDelV / _timeStep;
 
   ///
-  mF += _timeStep * mImpF;
+  mF += mImpF / _timeStep;
 }
 
 //==============================================================================
