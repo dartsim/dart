@@ -492,8 +492,8 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
       else
       {
         bouncingVelocity *= mErrorReductionParameter * _info->invTimeStep;
-        if (bouncingVelocity > DART_MAX_ERV)
-          bouncingVelocity = DART_MAX_ERV;
+        if (bouncingVelocity > mMaxErrorReductionVelocity)
+          bouncingVelocity = mMaxErrorReductionVelocity;
       }
 
       // B. Restitution
