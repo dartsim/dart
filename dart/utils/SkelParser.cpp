@@ -356,13 +356,6 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   }
 
   //--------------------------------------------------------------------------
-  // friction coefficient
-  if (hasElement(_bodyNodeElement, "friction_coefficient")) {
-    double frictionCoeff = getValueDouble(_bodyNodeElement, "friction_coefficient");
-    newBodyNode->setFrictionCoeff(frictionCoeff);
-  }
-
-  //--------------------------------------------------------------------------
   // self_collide
   //    if (hasElement(_bodyElement, "self_collide"))
   //    {

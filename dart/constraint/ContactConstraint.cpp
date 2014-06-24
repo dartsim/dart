@@ -52,8 +52,8 @@
 
 #define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
 #define DART_FRICTION_COEFF_THRESHOLD    1e-3
-#define DART_BOUNCING_VELOCITY_THRESHOLD 1e-3
-#define DART_MAX_BOUNCING_VELOCITY       1e+3
+#define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
+#define DART_MAX_BOUNCING_VELOCITY       1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
 
 namespace dart {
@@ -85,7 +85,6 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
   //----------------------------------------------
   mRestitutionCoeff = mBodyNode1->getRestitutionCoeff()
                       * mBodyNode2->getRestitutionCoeff();
-
   if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
     mIsBounceOn = true;
   else

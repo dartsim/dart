@@ -20,7 +20,6 @@ foreach(APPDIR
     #ik
     jointLimitTest
     meshCollision
-    newtonsCradle
     #motionAnalysis
     #pdController
     sdfLoader
