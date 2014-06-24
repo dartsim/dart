@@ -46,7 +46,7 @@
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP     0.01
-#define DART_MAX_ERV 1e+1
+#define DART_MAX_ERV 1e-3
 #define DART_CFM     1e-5
 // #define DART_MAX_NUMBER_OF_CONTACTS 32
 
