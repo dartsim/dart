@@ -24,6 +24,7 @@ Package: libdart-core4-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: multiarch-support
+Conflicts: libdart-core3-dev
 Depends: ${misc:Depends},
          libdart-core4.0 (= ${binary:Version}),
          libeigen3-dev,
