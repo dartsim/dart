@@ -81,7 +81,6 @@ Runge-Kutta and fourth-order Runge Kutta.
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
-#include "dart/optimizer/Function.h"
 
 namespace dart {
 namespace renderer {
