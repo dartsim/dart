@@ -70,6 +70,12 @@ if(NOT WIN32)
   set_target_properties (gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
+# VC11 contains std::tuple with variadic templates emulation macro.
+# _VARIADIC_MAX defaulted to 5 but gtest requires 10.
+if (MSVC_VERSION EQUAL 1700)
+  add_definitions(/D_VARIADIC_MAX=10)
+endif()
+
 # Compile each test file
 file(GLOB tests "test*.cpp")
 foreach(test ${tests})
