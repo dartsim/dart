@@ -103,7 +103,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
   Constraint* constraint;
-  for (int i = 0; i < numConstraints; ++i)
+  for (size_t i = 0; i < numConstraints; ++i)
   {
     constraint = _group->getConstraint(i);
 
@@ -119,7 +119,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
     // Fill a matrix by impulse tests: A
     constraint->excite();
-    for (int j = 0; j < constraint->getDimension(); ++j)
+    for (size_t j = 0; j < constraint->getDimension(); ++j)
     {
       // Adjust findex for global index
       if (findex[offset[i] + j] >= 0)
@@ -131,16 +131,16 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
       // Fill upper triangle blocks of A matrix
       int index = nSkip * (offset[i] + j) + offset[i];
       constraint->getVelocityChange(A + index, true);
-      for (int k = i + 1; k < numConstraints; ++k)
+      for (size_t k = i + 1; k < numConstraints; ++k)
       {
         index = nSkip * (offset[i] + j) + offset[k];
         _group->getConstraint(k)->getVelocityChange(A + index, false);
       }
 
       // Filling symmetric part of A matrix
-      for (int k = 0; k < i; ++k)
+      for (size_t k = 0; k < i; ++k)
       {
-        for (int l = 0; l < _group->getConstraint(k)->getDimension(); ++l)
+        for (size_t l = 0; l < _group->getConstraint(k)->getDimension(); ++l)
         {
           int index1 = nSkip * (offset[i] + j) + offset[k] + l;
           int index2 = nSkip * (offset[k] + l) + offset[i] + j;
@@ -175,7 +175,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  for (int i = 0; i < numConstraints; ++i)
+  for (size_t i = 0; i < numConstraints; ++i)
   {
     constraint = _group->getConstraint(i);
     constraint->applyImpulse(x + offset[i]);

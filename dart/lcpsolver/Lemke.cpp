@@ -100,7 +100,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 
   *_z = Eigen::VectorXd::Zero(2 * n);
   int iter = 0;
-  double theta = 0;
+  // double theta = 0;
   double ratio = 0;
   int leaving  = 0;
   Eigen::VectorXd Be = Eigen::VectorXd::Constant(n, 1);
@@ -120,7 +120,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 
   Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
-  for (int i = 0; i < bas.size(); ++i) {
+  for (size_t i = 0; i < bas.size(); ++i) {
     B.col(bas[i]) = _M.col(bas[i]);
   }
 

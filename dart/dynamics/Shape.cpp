@@ -43,12 +43,13 @@ namespace dart {
 namespace dynamics {
 
 Shape::Shape(ShapeType _type)
-  : mType(_type),
-    mBoundingBoxDim(0, 0, 0),
-    mVolume(0),
+  : mBoundingBoxDim(0, 0, 0),
+    mVolume(0.0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()) {
+    mTransform(Eigen::Isometry3d::Identity()),
+    mType(_type)
+{
 }
 
 Shape::~Shape() {

@@ -1021,7 +1021,7 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         lcp.pN_plusequals_s_times_qN (w, s, delta_w);
         w[i] += s * delta_w[i];
 
-        void *tmpbuf;
+        // void *tmpbuf;
         // switch indexes between sets if necessary
         switch (cmd) {
         case 1:		// done

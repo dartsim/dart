@@ -100,7 +100,7 @@ public:
   void addPointMass(PointMass* _pointMass);
 
   /// \brief
-  int getNumPointMasses() const;
+  size_t getNumPointMasses() const;
 
   /// \brief
   PointMass* getPointMass(int _idx) const;
@@ -115,7 +115,7 @@ public:
   const Eigen::Vector3i& getFace(int _idx) const;
 
   /// \brief
-  int getNumFaces();
+  size_t getNumFaces();
 
   // Documentation inherited.
   virtual void clearConstraintImpulse();
@@ -333,11 +333,10 @@ public:
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
-  static void setEllipsoid(
-      SoftBodyNode*          _softBodyNode,
+  static void setEllipsoid(SoftBodyNode*          _softBodyNode,
       const Eigen::Vector3d& _size,
-      int                    _nSlices,
-      int                    _nStacks,
+      size_t _nSlices,
+      size_t _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,

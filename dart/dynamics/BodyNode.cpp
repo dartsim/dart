@@ -59,25 +59,26 @@ int BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
 BodyNode::BodyNode(const std::string& _name)
-  : mName(_name),
-    mIsCollidable(true),
-    mIsColliding(false),
-    mSkeleton(NULL),
-    mParentJoint(NULL),
-    mParentBodyNode(NULL),
-    mChildBodyNodes(std::vector<BodyNode*>(0)),
+  : mID(BodyNode::msBodyNodeCount++),
+    mName(_name),
     mGravityMode(true),
+    mI(Eigen::Matrix6d::Identity()),
     mCenterOfMass(Eigen::Vector3d::Zero()),
-    mMass(1.0),
     mIxx(1.0),
     mIyy(1.0),
     mIzz(1.0),
     mIxy(0.0),
     mIxz(0.0),
     mIyz(0.0),
+    mMass(1.0),
     mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
     mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
-    mI(Eigen::Matrix6d::Identity()),
+    mIsCollidable(true),
+    mIsColliding(false),
+    mSkeleton(NULL),
+    mParentJoint(NULL),
+    mParentBodyNode(NULL),
+    mChildBodyNodes(std::vector<BodyNode*>(0)),
     mW(Eigen::Isometry3d::Identity()),
     mV(Eigen::Vector6d::Zero()),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
@@ -87,10 +88,9 @@ BodyNode::BodyNode(const std::string& _name)
     mFgravity(Eigen::Vector6d::Zero()),
     mArtInertia(Eigen::Matrix6d::Identity()),
     mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
-    mBiasForce(Eigen::Vector6d::Zero()),
-    mID(BodyNode::msBodyNodeCount++),
     mIsBodyJacobianDirty(true),
     mIsBodyJacobianDerivDirty(true),
+    mBiasForce(Eigen::Vector6d::Zero()),
     mDelV(Eigen::Vector6d::Zero()),
     mBiasImpulse(Eigen::Vector6d::Zero()),
     mConstraintImpulse(Eigen::Vector6d::Zero()),
@@ -358,7 +358,7 @@ BodyNode* BodyNode::getChildBodyNode(int _index) const
 }
 
 //==============================================================================
-int BodyNode::getNumChildBodyNodes() const
+size_t BodyNode::getNumChildBodyNodes() const
 {
   return mChildBodyNodes.size();
 }
@@ -370,7 +370,7 @@ void BodyNode::addMarker(Marker* _marker)
 }
 
 //==============================================================================
-int BodyNode::getNumMarkers() const
+size_t BodyNode::getNumMarkers() const
 {
   return mMarkers.size();
 }
@@ -390,13 +390,13 @@ bool BodyNode::dependsOn(int _genCoordIndex) const
 }
 
 //==============================================================================
-int BodyNode::getNumDependentGenCoords() const
+size_t BodyNode::getNumDependentGenCoords() const
 {
   return mDependentGenCoordIndices.size();
 }
 
 //==============================================================================
-int BodyNode::getDependentGenCoordIndex(int _arrayIndex) const
+size_t BodyNode::getDependentGenCoordIndex(int _arrayIndex) const
 {
   assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
 
@@ -760,7 +760,7 @@ void BodyNode::init(Skeleton* _skeleton)
   else
     mDependentGenCoordIndices.clear();
 
-  for (int i = 0; i < mParentJoint->getDof(); i++)
+  for (size_t i = 0; i < mParentJoint->getDof(); i++)
     mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
 
   // Sort
@@ -803,7 +803,7 @@ void BodyNode::draw(renderer::RenderInterface* _ri,
   mParentJoint->applyGLTransform(_ri);
 
   _ri->pushName((unsigned)mID);
-  for (int i = 0; i < mVizShapes.size(); i++)
+  for (size_t i = 0; i < mVizShapes.size(); i++)
   {
     _ri->pushMatrix();
     mVizShapes[i]->draw(_ri, _color, _useDefaultColor);

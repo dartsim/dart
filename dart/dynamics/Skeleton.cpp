@@ -60,10 +60,10 @@ Skeleton::Skeleton(const std::string& _name)
     mDof(0),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
+    mIsMobile(true),
     mTimeStep(0.001),
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
-    mIsMobile(true),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
     mIsAugMassMatrixDirty(true),
@@ -280,7 +280,7 @@ Marker* Skeleton::getMarker(const std::string& _name) const
   for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
-    for (int i = 0; i < (*it)->getNumMarkers(); ++i)
+    for (size_t i = 0; i < (*it)->getNumMarkers(); ++i)
     {
       if ((*it)->getMarker(i)->getName() == _name)
         return (*it)->getMarker(i);
@@ -329,7 +329,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   {
     Joint* joint = mBodyNodes[i]->getParentJoint();
 
-    for (int j = 0; j < joint->getDof(); ++j)
+    for (size_t j = 0; j < joint->getDof(); ++j)
     {
       GenCoordInfo genCoord;
       genCoord.joint = joint;
@@ -1075,9 +1075,9 @@ void Skeleton::updateMassMatrix()
   // Backup the origianl internal force
   Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
-  int dof = getDof();
+  size_t dof = getDof();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j)
+  for (size_t j = 0; j < dof; ++j)
   {
     e[j] = 1.0;
     setAccelerations(e);
@@ -1090,15 +1090,14 @@ void Skeleton::updateMassMatrix()
     }
 
     // Mass matrix
-    //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-    //         it != mBodyNodes.end(); ++it)
-    for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
     {
-      mBodyNodes[i]->aggregateMassMatrix(&mM, j);
-      int localDof = mBodyNodes[i]->mParentJoint->getDof();
+      (*it)->aggregateMassMatrix(&mM, j);
+      size_t localDof = (*it)->mParentJoint->getDof();
       if (localDof > 0)
       {
-        size_t iStart = mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+        size_t iStart = (*it)->mParentJoint->getIndexInSkeleton(0);
 
         if (iStart + localDof < j)
           break;
@@ -1210,7 +1209,7 @@ void Skeleton::updateInvMassMatrix()
     // Inverse of mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = 0; i < mBodyNodes.size(); ++i)
+    for (size_t i = 0; i < mBodyNodes.size(); ++i)
     {
       mBodyNodes[i]->aggregateInvMassMatrix(&mInvM, j);
       int localDof = mBodyNodes[i]->mParentJoint->getDof();
@@ -1265,7 +1264,7 @@ void Skeleton::updateInvAugMassMatrix()
     // Inverse of mass matrix
     //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
     //         it != mBodyNodes.end(); ++it)
-    for (int i = 0; i < mBodyNodes.size(); ++i)
+    for (size_t i = 0; i < mBodyNodes.size(); ++i)
     {
       mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getDof();
@@ -1855,7 +1854,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian()
           * bodyNode->getWorldLinearJacobian(bodyNode->getLocalCOM());
 
     // Assign the weighted Jacobian to total Jacobian
-    for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
+    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
     {
       int idx = bodyNode->getDependentGenCoordIndex(j);
       J.col(idx) += localJ.col(j);
@@ -1887,7 +1886,7 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv()
           * bodyNode->getWorldLinearJacobianDeriv(bodyNode->getLocalCOM());
 
     // Assign the weighted Jacobian to total Jacobian time derivative
-    for (int j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
+    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
     {
       int idx = bodyNode->getDependentGenCoordIndex(j);
       dJ.col(idx) += localJ.col(j);
