@@ -1,3 +1,14 @@
+dart (4.1.0) unstable; urgency=low
+
+  * Fixed bug in switching collision detectors
+  * Fixed kinematics and dynamics when a skelton has multiple parent-less bodies
+  * Fixed issue on installing DART 4 alongside and DART 3 issues on Linux
+  * Fixed warnings on gcc
+  * Renamed getDof() to getNumDofs()
+  * Added cylinder shape for soft body
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Wed, 02 Jul 2014 20:00:00 -0500
+
 dart (4.0.0) unstable; urgency=low
 
   * Added implicit joint spring force and damping force
