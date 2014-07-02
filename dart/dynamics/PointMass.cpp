@@ -144,7 +144,7 @@ bool PointMass::isColliding()
 }
 
 //==============================================================================
-size_t PointMass::getDof() const
+size_t PointMass::getNumDofs() const
 {
   return 3;
 }
@@ -436,7 +436,7 @@ Eigen::Vector3d PointMass::getConstraintImpulses() const
 //==============================================================================
 void PointMass::clearConstraintImpulse()
 {
-  assert(getDof() == 3);
+  assert(getNumDofs() == 3);
   mConstraintImpulses.setZero();
   mDelV.setZero();
   mImpB.setZero();

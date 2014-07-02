@@ -58,6 +58,12 @@ ZeroDofJoint::~ZeroDofJoint()
 //==============================================================================
 size_t ZeroDofJoint::getDof() const
 {
+  return getNumDofs();
+}
+
+//==============================================================================
+size_t ZeroDofJoint::getNumDofs() const
+{
   return 0;
 }
 

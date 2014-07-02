@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 1; i < skeleton->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skeleton->getBodyNode(i)->getParentJoint();
-    for (size_t j = 0; j < joint->getDof(); ++j)
+    for (size_t j = 0; j < joint->getNumDofs(); ++j)
     {
 //      joint->setPositionLowerLimit(j, -0.1);
 //      joint->setPositionUpperLimit(j, 0.1);

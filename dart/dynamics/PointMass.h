@@ -93,7 +93,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  size_t getDof() const;
+  size_t getNumDofs() const;
 
 //  // Documentation inherited
 //  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);

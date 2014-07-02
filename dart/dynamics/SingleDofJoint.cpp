@@ -87,6 +87,12 @@ SingleDofJoint::~SingleDofJoint()
 //==============================================================================
 size_t SingleDofJoint::getDof() const
 {
+  return getNumDofs();
+}
+
+//==============================================================================
+size_t SingleDofJoint::getNumDofs() const
+{
   return 1;
 }
 
@@ -143,10 +149,10 @@ double SingleDofJoint::getPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (_positions.size() != math::castUIntToInt(getDof()))
+  if (_positions.size() != math::castUIntToInt(getNumDofs()))
   {
     dterr << "setPositions positions's size[" << _positions.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -244,10 +250,10 @@ double SingleDofJoint::getVelocity(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (_velocities.size() != math::castUIntToInt(getDof()))
+  if (_velocities.size() != math::castUIntToInt(getNumDofs()))
   {
     dterr << "setVelocities velocities's size[" << _velocities.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -347,10 +353,10 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (_accelerations.size() != math::castUIntToInt(getDof()))
+  if (_accelerations.size() != math::castUIntToInt(getNumDofs()))
   {
     dterr << "setAccelerations accelerations's size[" << _accelerations.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -450,10 +456,10 @@ double SingleDofJoint::getForce(size_t _index)
 //==============================================================================
 void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 {
-  if (_forces.size() != math::castUIntToInt(getDof()))
+  if (_forces.size() != math::castUIntToInt(getNumDofs()))
   {
     dterr << "setForces forces's size[" << _forces.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 

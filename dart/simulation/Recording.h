@@ -76,7 +76,7 @@ public:
 
   /// \brief Get number of generalized coordinates of skeleton whoes index is
   /// _skelIdx
-  int getDof(int _skelIdx) const;
+  int getNumDofs(int _skelIdx) const;
 
   /// \brief Get number of contacts at frame number _frameIdx
   int getNumContacts(int _frameIdx) const;

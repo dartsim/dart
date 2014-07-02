@@ -232,7 +232,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
-  mIndices.push_back(mIndices.back() + _skeleton->getDof());
+  mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
@@ -263,7 +263,7 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
 
   // Update mIndices.
   for (++i; i < mSkeletons.size() - 1; ++i)
-    mIndices[i] = mIndices[i+1] - _skeleton->getDof();
+    mIndices[i] = mIndices[i+1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
@@ -316,7 +316,7 @@ void World::bake()
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
   for (size_t i = 0; i < getNumSkeletons(); i++)
   {
-    state.segment(getIndex(i), getSkeleton(i)->getDof())
+    state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
         = getSkeleton(i)->getPositions();
   }
   for (int i = 0; i < nContacts; i++)
