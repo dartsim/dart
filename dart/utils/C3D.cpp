@@ -47,14 +47,17 @@ namespace dart {
 namespace utils {
 
 float ConvertDecToFloat(char _bytes[4]) {
-    char p[4];
-    p[0] = _bytes[2];
-    p[1] = _bytes[3];
-    p[2] = _bytes[0];
-    p[3] = _bytes[1];
-    if (p[0] || p[1] || p[2] || p[3])
-        --p[3];          // adjust exponent
-    return *(float*)p;
+    union {
+        char theChars[4];
+        float theFloat;
+    } p;
+    p.theChars[0] = _bytes[2];
+    p.theChars[1] = _bytes[3];
+    p.theChars[2] = _bytes[0];
+    p.theChars[3] = _bytes[1];
+    if (p.theChars[0] || p.theChars[1] || p.theChars[2] || p.theChars[3])
+        --p.theChars[3];          // adjust exponent
+    return p.theFloat;
 }
 
 

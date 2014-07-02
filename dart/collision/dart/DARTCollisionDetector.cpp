@@ -62,13 +62,13 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
   clearAllContacts();
 
   // Set all the body nodes are not in colliding
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
     mCollisionNodes[i]->getBodyNode()->setColliding(false);
 
   std::vector<Contact> contacts;
 
-  for (int i = 0; i < mCollisionNodes.size(); i++) {
-    for (int j = i + 1; j < mCollisionNodes.size(); j++) {
+  for (size_t i = 0; i < mCollisionNodes.size(); i++) {
+    for (size_t j = i + 1; j < mCollisionNodes.size(); j++) {
       CollisionNode* collNode1 = mCollisionNodes[i];
       CollisionNode* collNode2 = mCollisionNodes[j];
       dynamics::BodyNode* BodyNode1 = collNode1->getBodyNode();
@@ -77,8 +77,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
       if (!isCollidable(collNode1, collNode2))
         continue;
 
-      for (int k = 0; k < BodyNode1->getNumCollisionShapes(); k++) {
-        for (int l = 0; l < BodyNode2->getNumCollisionShapes(); l++) {
+      for (size_t k = 0; k < BodyNode1->getNumCollisionShapes(); k++) {
+        for (size_t l = 0; l < BodyNode2->getNumCollisionShapes(); l++) {
           int currContactNum = mContacts.size();
 
           contacts.clear();
@@ -90,7 +90,7 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
                   * BodyNode2->getCollisionShape(l)->getLocalTransform(),
                   &contacts);
 
-          unsigned int numContacts = contacts.size();
+          size_t numContacts = contacts.size();
 
           for (unsigned int m = 0; m < numContacts; ++m) {
             Contact contactPair;
@@ -104,8 +104,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
           }
 
           std::vector<bool> markForDeletion(numContacts, false);
-          for (int m = 0; m < numContacts; m++) {
-            for (int n = m + 1; n < numContacts; n++) {
+          for (size_t m = 0; m < numContacts; m++) {
+            for (size_t n = m + 1; n < numContacts; n++) {
               Eigen::Vector3d diff =
                   mContacts[currContactNum + m].point -
                   mContacts[currContactNum + n].point;
@@ -115,10 +115,11 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
               }
             }
           }
-          for (int m = numContacts - 1; m >= 0; m--) {
-            if (markForDeletion[m]) {
+
+          for (int m = numContacts - 1; m >= 0; m--)
+          {
+            if (markForDeletion[m])
               mContacts.erase(mContacts.begin() + currContactNum + m);
-            }
           }
         }
       }
@@ -142,8 +143,8 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
   dynamics::BodyNode* BodyNode1 = _collNode1->getBodyNode();
   dynamics::BodyNode* BodyNode2 = _collNode2->getBodyNode();
 
-  for (int i = 0; i < BodyNode1->getNumCollisionShapes(); i++) {
-    for (int j = 0; j < BodyNode2->getNumCollisionShapes(); j++) {
+  for (size_t i = 0; i < BodyNode1->getNumCollisionShapes(); i++) {
+    for (size_t j = 0; j < BodyNode2->getNumCollisionShapes(); j++) {
       collide(BodyNode1->getCollisionShape(i),
               BodyNode1->getTransform()
               * BodyNode1->getCollisionShape(i)->getLocalTransform(),

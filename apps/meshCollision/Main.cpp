@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
   myWorld->addSkeleton(MeshSkel);
 
   // Verify that our skeleton has something inside :)
-  std::printf("Our skeleton has %d nodes \n", MeshSkel->getNumBodyNodes());
+  std::printf("Our skeleton has %zu nodes \n", MeshSkel->getNumBodyNodes());
   // std::printf("Our skeleton has %d joints \n", MeshSkel->getNumJoints());
   std::printf("Our skeleton has %zu DOFs \n", MeshSkel->getDof());
 

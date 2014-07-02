@@ -80,7 +80,7 @@ public:
   int getNumConnectedPointMasses() const;
 
   ///
-  PointMass* getConnectedPointMass(int _idx) const;
+  PointMass* getConnectedPointMass(size_t _idx) const;
 
   /// Set whether this point mass is colliding with others.
   /// \param[in] True if this point mass is colliding.

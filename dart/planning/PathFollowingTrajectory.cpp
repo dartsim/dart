@@ -50,9 +50,9 @@ namespace planning {
 const double PathFollowingTrajectory::timeStep = 0.001;
 const double PathFollowingTrajectory::eps = 0.000001;
 
-static double squared(double d) {
-	return d * d;
-}
+// static double squared(double d) {
+// 	return d * d;
+// }
 
 PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorXd &maxVelocity, const VectorXd &maxAcceleration) :
 	path(path),
@@ -126,7 +126,7 @@ bool PathFollowingTrajectory::getNextSwitchingPoint(double pathPos, TrajectorySt
 	bool accelerationReachedEnd;
 	do {
 		accelerationReachedEnd = getNextAccelerationSwitchingPoint(accelerationSwitchingPoint.pathPos, accelerationSwitchingPoint, accelerationBeforeAcceleration, accelerationAfterAcceleration);
-		double test = getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos);
+    // double test = getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos);
 	} while(!accelerationReachedEnd && accelerationSwitchingPoint.pathVel > getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos));
 	
 	TrajectoryStep velocitySwitchingPoint(pathPos, 0.0);
@@ -245,7 +245,7 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 	while(true)
 	{
 		if(pathPos > 1.304) {
-			int test = 48;
+      // int test = 48;
 		}
 
         while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
@@ -276,8 +276,8 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
 			return true;
 		}
 
-		double test1 = getMinMaxPhaseSlope(oldPathPos, getVelocityMaxPathVelocity(oldPathPos), false);
-		double test2 = getVelocityMaxPathVelocityDeriv(oldPathPos);
+    // double test1 = getMinMaxPhaseSlope(oldPathPos, getVelocityMaxPathVelocity(oldPathPos), false);
+    // double test2 = getVelocityMaxPathVelocityDeriv(oldPathPos);
 
 		if(pathVel > getVelocityMaxPathVelocity(pathPos)
 			&& getMinMaxPhaseSlope(oldPathPos, getVelocityMaxPathVelocity(oldPathPos), false) <= getVelocityMaxPathVelocityDeriv(oldPathPos))
@@ -521,7 +521,7 @@ double PathFollowingTrajectory::getAccelerationMaxPathVelocityDeriv(double pathP
 double PathFollowingTrajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
 	const VectorXd tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
-	unsigned int activeConstraint;
+  unsigned int activeConstraint = 0;
 	for(unsigned int i = 0; i < n; i++) {
 		const double thisMaxPathVelocity = maxVelocity[i] / abs(tangent[i]);
 		if(thisMaxPathVelocity < maxPathVelocity) {

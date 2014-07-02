@@ -37,6 +37,7 @@
 #include <iostream>
 #include <assimp/cimport.h>
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
@@ -404,7 +405,7 @@ void OpenGLRenderInterface::compileList(dynamics::Skeleton *_skel) {
     if(_skel == 0)
         return;
 
-    for (int i=0; i < _skel->getNumBodyNodes(); i++) {
+    for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
         compileList(_skel->getBodyNode(i));
     }
 }
@@ -413,9 +414,9 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode *_node) {
     if(_node == 0)
         return;
 
-    for (int i = 0; i < _node->getNumVisualizationShapes(); i++)
+    for (size_t i = 0; i < _node->getNumVisualizationShapes(); i++)
         compileList(_node->getVisualizationShape(i));
-    for (int i = 0; i < _node->getNumCollisionShapes(); i++)
+    for (size_t i = 0; i < _node->getNumCollisionShapes(); i++)
         compileList(_node->getCollisionShape(i));
 }
 
@@ -430,6 +431,12 @@ void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
         case dynamics::Shape::CYLINDER:
             break;
         case dynamics::Shape::ELLIPSOID:
+            break;
+        case dynamics::Shape::PLANE:
+            dterr << "PLANE is not supported yet." << std::endl;
+            break;
+        case dynamics::Shape::SOFT_MESH:
+            // Do nothing
             break;
         case dynamics::Shape::MESH:
             //FIXME: Separate these calls once BodyNode is refactored to contain
@@ -463,7 +470,7 @@ void OpenGLRenderInterface::draw(dynamics::Skeleton *_skel, bool _vizCol, bool _
     if(_skel == 0)
         return;
 
-    for (int i=0; i < _skel->getNumBodyNodes(); i++) {
+    for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
         draw(_skel->getBodyNode(i), _vizCol, _colMesh);
     }
 }
@@ -487,11 +494,11 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _
     glMultMatrixd(pose.data());
 
     if(_colMesh) {
-        for (int i = 0; i < _node->getNumCollisionShapes(); i++)
+        for (size_t i = 0; i < _node->getNumCollisionShapes(); i++)
             draw(_node->getCollisionShape(i));
     }
     else {
-        for (int i = 0; i < _node->getNumVisualizationShapes(); i++)
+        for (size_t i = 0; i < _node->getNumVisualizationShapes(); i++)
             draw(_node->getVisualizationShape(i));
     }
 
@@ -537,6 +544,10 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
             drawEllipsoid(ellipsoid->getSize());
             break;
         }
+        case dynamics::Shape::PLANE: {
+            dterr << "PLANE shape is not supported yet." << std::endl;
+            break;
+        }
         case dynamics::Shape::MESH: {
             glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
@@ -549,6 +560,10 @@ void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
             else
                 drawMesh(mesh->getScale(), mesh->getMesh());
 
+            break;
+        }
+        case dynamics::Shape::SOFT_MESH: {
+            // Do nothing
             break;
         }
     }

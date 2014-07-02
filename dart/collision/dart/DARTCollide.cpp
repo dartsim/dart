@@ -421,7 +421,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
             std::vector<Contact>& result)
 {
   const double fudge_factor = 1.05;
-  dVector3 p,pp,normalC;
+  dVector3 p,pp,normalC = {0.0, 0.0, 0.0, 0.0};
   const double *normalR = 0;
   double A[3],B[3],R11,R12,R13,R21,R22,R23,R31,R32,R33,Q11,Q12,Q13,Q21,Q22,Q23,Q31,Q32,Q33,s,s2,l;
   int i,j,invert_normal,code;

@@ -81,7 +81,7 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
   mActive[5] = false;
 
   // TODO(JS): We need to be able to access child body node from joint
-  for (int i = 0; i < mJoint->getSkeleton()->getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < mJoint->getSkeleton()->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* bodyNode = mJoint->getSkeleton()->getBodyNode(i);
     if (bodyNode->getParentJoint() == mJoint)

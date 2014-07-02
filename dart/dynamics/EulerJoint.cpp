@@ -101,7 +101,7 @@ void EulerJoint::updateLocalTransform()
 //==============================================================================
 void EulerJoint::updateLocalJacobian()
 {
-  double q0 = mPositions[0];
+  // double q0 = mPositions[0];
   double q1 = mPositions[1];
   double q2 = mPositions[2];
 

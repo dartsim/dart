@@ -65,7 +65,7 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
   clearAllContacts();
 
   // Set all the body nodes are not in colliding
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
     mCollisionNodes[i]->getBodyNode()->setColliding(false);
 
   fcl::CollisionResult result;
@@ -79,8 +79,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
   //    request.num_max_cost_sources;
   //    request.use_approximate_cost;
 
-  for (int i = 0; i < mCollisionNodes.size(); i++) {
-    for (int j = i + 1; j < mCollisionNodes.size(); j++) {
+  for (size_t i = 0; i < mCollisionNodes.size(); i++) {
+    for (size_t j = i + 1; j < mCollisionNodes.size(); j++) {
       result.clear();
       FCLCollisionNode* collNode1 =
           static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
@@ -125,8 +125,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
           }
 
           std::vector<bool>markForDeletion(numContacts, false);
-          for (int m = 0; m < numContacts; m++) {
-            for (int n = m + 1; n < numContacts; n++) {
+          for (size_t m = 0; m < numContacts; m++) {
+            for (size_t n = m + 1; n < numContacts; n++) {
               Eigen::Vector3d diff =
                   mContacts[currContactNum + m].point -
                   mContacts[currContactNum + n].point;
