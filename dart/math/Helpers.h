@@ -52,6 +52,7 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
+#include "dart/common/Console.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -183,12 +184,12 @@ inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6) {
   if (rows != cols)
     return false;
 
-  for (int i = 0; i < rows; ++i) {
-    for (int j = i + 1; j < cols; ++j) {
+  for (size_t i = 0; i < rows; ++i) {
+    for (size_t j = i + 1; j < cols; ++j) {
       if (std::fabs(_m(i, j) - _m(j, i)) > _tol) {
         std::cout << "A: " << std::endl;
-        for (int k = 0; k < rows; ++k) {
-          for (int l = 0; l < cols; ++l)
+        for (size_t k = 0; k < rows; ++k) {
+          for (size_t l = 0; l < cols; ++l)
             std::cout << std::setprecision(4) << _m(k, l) << " ";
           std::cout << std::endl;
         }
@@ -219,6 +220,19 @@ inline unsigned seedRand() {
 inline double random(double _min, double _max) {
   return _min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
                 * (_max - _min));
+}
+
+inline int castUIntToInt(size_t _x)
+{
+  if (_x <= INT_MAX)
+    return static_cast<int>(_x);
+
+  if (_x >= INT_MIN)
+    return static_cast<int>(_x - INT_MIN) + INT_MIN;
+
+  dterr << "x is out of range." << std::endl;
+
+  throw _x; // Or whatever else you like
 }
 
 }  // namespace math

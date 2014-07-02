@@ -139,22 +139,22 @@ public:
   void addBodyNode(BodyNode* _body);
 
   /// Get number of body nodes
-  int getNumBodyNodes() const;
+  size_t getNumBodyNodes() const;
 
   /// Get number of rigid body nodes.
-  int getNumRigidBodyNodes() const;
+  size_t getNumRigidBodyNodes() const;
 
   /// Get number of soft body nodes.
-  int getNumSoftBodyNodes() const;
+  size_t getNumSoftBodyNodes() const;
 
   /// Get root body node
   BodyNode* getRootBodyNode() const;
 
   /// Get body node whose index is _idx
-  BodyNode* getBodyNode(int _idx) const;
+  BodyNode* getBodyNode(size_t _idx) const;
 
   /// Get soft body node.
-  SoftBodyNode* getSoftBodyNode(int _idx) const;
+  SoftBodyNode* getSoftBodyNode(size_t _idx) const;
 
   /// Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name) const;
@@ -163,7 +163,7 @@ public:
   SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   /// Get joint whose index is _idx
-  Joint* getJoint(int _idx) const;
+  Joint* getJoint(size_t _idx) const;
 
   /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name) const;
@@ -208,7 +208,7 @@ public:
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
   void setPositionSegment(const std::vector<size_t>& _id,
-                                  const Eigen::VectorXd& _positions);
+                          const Eigen::VectorXd& _positions);
 
   /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.

@@ -70,10 +70,10 @@ int main(int argc, char* argv[]) {
   myWorld->getSkeleton(1)->setPositionSegment(genCoordIds, initConfig);
   myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
   dart::dynamics::Skeleton* skeleton = myWorld->getSkeleton(1);
-  for (int i = 1; i < skeleton->getNumBodyNodes(); ++i)
+  for (size_t i = 1; i < skeleton->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skeleton->getBodyNode(i)->getParentJoint();
-    for (int j = 0; j < joint->getDof(); ++j)
+    for (size_t j = 0; j < joint->getDof(); ++j)
     {
 //      joint->setPositionLowerLimit(j, -0.1);
 //      joint->setPositionUpperLimit(j, 0.1);

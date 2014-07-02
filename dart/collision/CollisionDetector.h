@@ -148,7 +148,7 @@ public:
                        bool _calculateContactPoints);
 
   /// \brief
-  unsigned int getNumContacts();
+  size_t getNumContacts();
 
   /// \brief
   Contact& getContact(int _idx);

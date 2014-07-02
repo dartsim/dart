@@ -52,10 +52,12 @@ namespace dynamics {
 Joint::Joint(const std::string& _name)
   : mName(_name),
     mSkeleton(NULL),
-    mIsPositionLimited(true),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-    mT(Eigen::Isometry3d::Identity())
+    mT(Eigen::Isometry3d::Identity()),
+    mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mWrench(Eigen::Vector6d::Zero()),
+    mIsPositionLimited(true)
 {
 }
 

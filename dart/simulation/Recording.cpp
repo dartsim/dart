@@ -52,14 +52,14 @@ namespace simulation {
 //==============================================================================
 Recording::Recording(const std::vector<dynamics::Skeleton*>& _skeletons)
 {
-  for (int i = 0; i < _skeletons.size(); i++)
+  for (size_t i = 0; i < _skeletons.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getDof());
 }
 
 //==============================================================================
 Recording::Recording(const std::vector<int>& _skelDofs)
 {
-  for (int i = 0; i < _skelDofs.size(); i++)
+  for (size_t i = 0; i < _skelDofs.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skelDofs[i]);
 }
 
@@ -90,7 +90,7 @@ int Recording::getDof(int _skelIdx) const
 int Recording::getNumContacts(int _frameIdx) const
 {
   int totalDofs = 0;
-  for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return (mBakedStates[_frameIdx].size() - totalDofs) / 6;
 }
@@ -117,7 +117,7 @@ double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
 Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
-  for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6, 3);
 }
@@ -126,7 +126,7 @@ Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
-  for (int i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6 + 3, 3);
 }
@@ -142,7 +142,7 @@ void Recording::updateNumGenCoords(
     const std::vector<dynamics::Skeleton*>& _skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
-  for (int i = 0; i < _skeletons.size(); ++i)
+  for (size_t i = 0; i < _skeletons.size(); ++i)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getDof());
 }
 

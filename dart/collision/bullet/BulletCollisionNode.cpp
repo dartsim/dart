@@ -55,7 +55,7 @@ namespace collision {
 BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode)
 {
-  for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
   {
     dynamics::Shape* shape = _bodyNode->getCollisionShape(i);
     switch (shape->getShapeType())
@@ -189,7 +189,7 @@ BulletCollisionNode::~BulletCollisionNode()
 //==============================================================================
 void BulletCollisionNode::updateBulletCollisionObjects()
 {
-  for (int i = 0; i < mbtCollsionObjects.size(); ++i)
+  for (size_t i = 0; i < mbtCollsionObjects.size(); ++i)
   {
     BulletUserData* userData =
         static_cast<BulletUserData*>(mbtCollsionObjects[i]->getUserPointer());

@@ -52,9 +52,10 @@ namespace dynamics {
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   : Shape(MESH),
-    mScale(_scale),
     mMesh(_mesh),
-    mDisplayList(0) {
+    mDisplayList(0),
+    mScale(_scale)
+{
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);

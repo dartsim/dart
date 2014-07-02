@@ -73,10 +73,10 @@ int main(int argc, char* argv[])
     myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
     
     // Add damping to every joint
-    for (int i = 0; i < myWorld->getSkeleton(0)->getNumBodyNodes(); i++) {
+    for (size_t i = 0; i < myWorld->getSkeleton(0)->getNumBodyNodes(); i++) {
         BodyNode *bd = myWorld->getSkeleton(0)->getBodyNode(i);
         Joint *jt = bd->getParentJoint();
-        for (int j = 0; j < jt->getDof(); j++)
+        for (size_t j = 0; j < jt->getDof(); j++)
             jt->setDampingCoefficient(j, 0.02);
     }
 
