@@ -1692,18 +1692,42 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
 
   // a) longitudinal
   // -- top
-//  for (size_t i = 0; i < _nSlices; i++)
-//    _softBodyNode->connectPointMasses(0, i + 1);
+  for (size_t i = 0; i < _nSlices; i++)
+    _softBodyNode->connectPointMasses(0, i + 1);
+  for (size_t i = 0; i < _nRings - 1; i++)
+  {
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            _nSlices + 1 + (i + 0) * _nSlices + j,
+            _nSlices + 1 + (i + 1) * _nSlices + j);
+    }
+  }
   // -- middle
   for (size_t i = 0; i < _nStacks - 1; i++)
+  {
     for (size_t j = 0; j < _nSlices; j++)
+    {
       _softBodyNode->connectPointMasses(
             nTopPointMasses + (i + 0) * _nSlices + j,
             nTopPointMasses + (i + 1) * _nSlices + j);
+    }
+  }
   // -- bottom
-//  for (size_t i = 0; i < _nSlices; i++)
-//    _softBodyNode->connectPointMasses((_nStacks-1)*_nSlices + 1,
-//                                      (_nStacks-2)*_nSlices + i + 1);
+  for (size_t i = 0; i < _nRings - 1; i++)
+  {
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + (nDrumPointMasses - _nSlices)
+            + (i + 0) * _nSlices + j,
+            nTopPointMasses + (nDrumPointMasses - _nSlices)
+            + (i + 1) * _nSlices + j);
+    }
+  }
+  for (size_t i = 0; i < _nSlices; i++)
+    _softBodyNode->connectPointMasses(nTotalMasses - 1 - i,
+                                      nTotalMasses - 1);
 
   // b) latitudinal
   for (size_t i = 0; i < _nStacks; i++)
@@ -1719,8 +1743,11 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
           nTopPointMasses + (i + 0) * _nSlices + _nSlices - 1,
           nTopPointMasses + (i + 0) * _nSlices);
   }
+  // -- disk parts
+  // TODO(JS): No latitudinal connections for top and bottom disks
 
   // c) cross (shear)
+  // -- drum part
   for (size_t i = 0; i < _nStacks - 2; i++)
   {
     for (size_t j = 0; j < _nSlices - 1; j++)
@@ -1740,6 +1767,8 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
           nTopPointMasses + (i + 0) * _nSlices,
           nTopPointMasses + (i + 1) * _nSlices + _nSlices - 1);
   }
+  // -- disk parts
+  // TODO(JS): No cross connections for top and bottom disks
 
   //----------------------------------------------------------------------------
   // Faces
