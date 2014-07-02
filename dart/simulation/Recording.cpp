@@ -53,7 +53,7 @@ namespace simulation {
 Recording::Recording(const std::vector<dynamics::Skeleton*>& _skeletons)
 {
   for (size_t i = 0; i < _skeletons.size(); i++)
-    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getDof());
+    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 
 //==============================================================================
@@ -81,7 +81,7 @@ int Recording::getNumSkeletons() const
 }
 
 //==============================================================================
-int Recording::getDof(int _skelIdx) const
+int Recording::getNumDofs(int _skelIdx) const
 {
   return mNumGenCoordsForSkeletons[_skelIdx];
 }
@@ -101,7 +101,7 @@ Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
   int index = 0;
   for (int i = 0; i < _skelIdx; i++)
     index += mNumGenCoordsForSkeletons[i];
-  return mBakedStates[_frameIdx].segment(index, getDof(_skelIdx));
+  return mBakedStates[_frameIdx].segment(index, getNumDofs(_skelIdx));
 }
 
 //==============================================================================
@@ -143,7 +143,7 @@ void Recording::updateNumGenCoords(
 {
   mNumGenCoordsForSkeletons.clear();
   for (size_t i = 0; i < _skeletons.size(); ++i)
-    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getDof());
+    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 
 }  // namespace simulation

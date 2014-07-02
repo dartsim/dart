@@ -119,7 +119,7 @@ TEST(BUILDING, BASIC)
     //EXPECT_TRUE(body3.getChildBodyNode(0) == NULL);
 
     EXPECT_TRUE(skel1->getNumBodyNodes() == 3);
-    EXPECT_TRUE(skel1->getDof() == 3);
+    EXPECT_TRUE(skel1->getNumDofs() == 3);
 
     EXPECT_TRUE(world->getNumSkeletons() == 1);
 

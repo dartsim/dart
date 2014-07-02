@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
     myWorld->setGravity(gravity);
     myWorld->setTimeStep(1.0/2000);
 
-    int dof =  myWorld->getSkeleton(0)->getDof();
+    int dof =  myWorld->getSkeleton(0)->getNumDofs();
 
     Eigen::VectorXd initPose(dof);
     initPose.setZero();

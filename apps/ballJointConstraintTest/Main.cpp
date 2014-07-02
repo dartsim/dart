@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
     myWorld->setGravity(gravity);
     myWorld->setTimeStep(1.0/2000);
 
-    int dof =  myWorld->getSkeleton(0)->getDof();
+    int dof =  myWorld->getSkeleton(0)->getNumDofs();
     Eigen::VectorXd initPose(dof);
     for (int i = 0; i < dof; i++)
         initPose[i] = random(-0.5, 0.5);
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     for (size_t i = 0; i < myWorld->getSkeleton(0)->getNumBodyNodes(); i++) {
         BodyNode *bd = myWorld->getSkeleton(0)->getBodyNode(i);
         Joint *jt = bd->getParentJoint();
-        for (size_t j = 0; j < jt->getDof(); j++)
+        for (size_t j = 0; j < jt->getNumDofs(); j++)
             jt->setDampingCoefficient(j, 0.02);
     }
 
