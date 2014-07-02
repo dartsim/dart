@@ -37,6 +37,7 @@
 #include "dart/optimizer/ipopt/IpoptSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
 
@@ -137,9 +138,9 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
 {
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
-  assert(n == mProblem->getDimension());
-  assert(m == mProblem->getNumEqConstraints()
-              + mProblem->getNumIneqConstraints());
+  assert(n == math::castUIntToInt(mProblem->getDimension()));
+  assert(m == math::castUIntToInt(mProblem->getNumEqConstraints()
+              + mProblem->getNumIneqConstraints()));
 
   // lower and upper bounds
   for (Ipopt::Index i = 0; i < n; i++)
@@ -183,7 +184,7 @@ bool DartTNLP::get_starting_point(Ipopt::Index n,
   // If init_x is true, this method must provide an initial value for x.
   if (init_x)
   {
-    for (size_t i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i)
       x[i] = mProblem->getInitialGuess()[i];
   }
 
@@ -248,8 +249,8 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
                       Ipopt::Index _m,
                       Ipopt::Number* _g)
 {
-  assert(_m == mProblem->getNumEqConstraints()
-               + mProblem->getNumIneqConstraints());
+  assert(_m == math::castUIntToInt(mProblem->getNumEqConstraints()
+                                   + mProblem->getNumIneqConstraints()));
 
   // TODO(JS):
   if (_new_x)
@@ -296,9 +297,9 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
 
     // Assume the gradient is dense
     size_t idx = 0;
-    for (size_t i = 0; i < _m; ++i)
+    for (int i = 0; i < _m; ++i)
     {
-      for (size_t j = 0; j < _n; ++j)
+      for (int j = 0; j < _n; ++j)
       {
         _iRow[idx] = i;
         _jCol[idx] = j;
@@ -367,7 +368,7 @@ void DartTNLP::finalize_solution(Ipopt::SolverReturn _status,
   // Store optimal and optimum values
   mProblem->setOptimumValue(_obj_value);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(_n);
-  for (size_t i = 0; i < _n; ++i)
+  for (int i = 0; i < _n; ++i)
     x[i] = _x[i];
   mProblem->setOptimalSolution(x);
 }

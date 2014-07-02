@@ -1021,7 +1021,7 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         lcp.pN_plusequals_s_times_qN (w, s, delta_w);
         w[i] += s * delta_w[i];
 
-        void *tmpbuf;
+        // void *tmpbuf;
         // switch indexes between sets if necessary
         switch (cmd) {
         case 1:		// done
@@ -1110,19 +1110,19 @@ size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 //***************************************************************************
 // accuracy and timing test
 
-static size_t EstimateTestSolveLCPMemoryReq(int n)
-{
-  const int nskip = dPAD(n);
+//static size_t EstimateTestSolveLCPMemoryReq(int n)
+//{
+//  const int nskip = dPAD(n);
 
-  size_t res = 0;
+//  size_t res = 0;
 
-  res += 2 * (sizeof(dReal) * (n * nskip)); // for A, A2
-  res += 10 * (sizeof(dReal) * n); // for x, b, w, lo, hi, b2, lo2, hi2, tmp1, tmp2
+//  res += 2 * (sizeof(dReal) * (n * nskip)); // for A, A2
+//  res += 10 * (sizeof(dReal) * n); // for x, b, w, lo, hi, b2, lo2, hi2, tmp1, tmp2
 
-  res += dEstimateSolveLCPMemoryReq(n, true);
+//  res += dEstimateSolveLCPMemoryReq(n, true);
 
-  return res;
-}
+//  return res;
+//}
 
 extern "C" ODE_API int dTestSolveLCP()
 {
@@ -1160,7 +1160,7 @@ extern "C" ODE_API int dTestSolveLCP()
   dReal *tmp1 = new dReal[n];
   dReal *tmp2 = new dReal[n];
 
-  double total_time = 0;
+  // double total_time = 0;
   for (int count=0; count < 1000; count++) {
 
       // form (A,b) = a random positive definite LCP problem

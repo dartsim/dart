@@ -82,7 +82,7 @@ public:
   void changeStateMachine(const std::string& _name, double _currentTime);
 
   /// \brief Change state machine to a state machine whose index is _idx
-  void changeStateMachine(int _idx, double _currentTime);
+  void changeStateMachine(size_t _idx, double _currentTime);
 
   /// \brief Keyboard control
   void keyboard(unsigned char _key, int _x, int _y, double _currentTime);

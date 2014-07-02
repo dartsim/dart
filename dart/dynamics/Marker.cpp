@@ -48,7 +48,12 @@ int Marker::msMarkerCount = 0;
 
 Marker::Marker(const std::string& _name, const Eigen::Vector3d& _offset,
                BodyNode* _bodyNode, ConstraintType _type)
-  : mName(_name), mOffset(_offset), mBodyNode(_bodyNode), mType(_type) {
+  : mBodyNode(_bodyNode),
+    mOffset(_offset),
+    mName(_name),
+    mSkelIndex(0),
+    mType(_type)
+{
   mID = Marker::msMarkerCount++;
 }
 

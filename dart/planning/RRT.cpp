@@ -58,12 +58,12 @@ namespace planning {
 /* ********************************************************************************************* */
 RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs,
   const VectorXd &root, double stepSize) :
+  ndim(dofs.size()),
+  stepSize(stepSize),
 	world(world),
 	robot(robot),
 	dofs(dofs),
-	ndim(dofs.size()),
-	stepSize(stepSize),
-	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
+  index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configuration to the flann structure
 	srand(time(NULL));
@@ -72,16 +72,16 @@ RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs,
 
 /* ********************************************************************************************* */
 RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
+  ndim(dofs.size()),
+  stepSize(stepSize),
 	world(world),
 	robot(robot),
 	dofs(dofs),
-	ndim(dofs.size()),
-	stepSize(stepSize),
 	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configurations to the flann structure
 	srand(time(NULL));
-	for(int i = 0; i < roots.size(); i++) {
+  for(size_t i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}
 }

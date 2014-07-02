@@ -47,29 +47,29 @@ namespace dynamics {
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
-    mPosition(0.0),
-    mVelocity(0.0),
-    mAcceleration(0.0),
-    mForce(0.0),
-    mPositionLowerLimit(-DART_DBL_INF),
-    mVelocityLowerLimit(-DART_DBL_INF),
-    mAccelerationLowerLimit(-DART_DBL_INF),
-    mForceLowerLimit(-DART_DBL_INF),
-    mPositionUpperLimit(DART_DBL_INF),
-    mVelocityUpperLimit(DART_DBL_INF),
-    mAccelerationUpperLimit(DART_DBL_INF),
-    mForceUpperLimit(DART_DBL_INF),
-    mPositionDeriv(0.0),
-    mVelocityDeriv(0.0),
-    mAccelerationDeriv(0.0),
-    mForceDeriv(0.0),
     mIndexInSkeleton(0u),
+    mPosition(0.0),
+    mPositionLowerLimit(-DART_DBL_INF),
+    mPositionUpperLimit(DART_DBL_INF),
+    mPositionDeriv(0.0),
+    mVelocity(0.0),
+    mVelocityLowerLimit(-DART_DBL_INF),
+    mVelocityUpperLimit(DART_DBL_INF),
+    mVelocityDeriv(0.0),
+    mAcceleration(0.0),
+    mAccelerationLowerLimit(-DART_DBL_INF),
+    mAccelerationUpperLimit(DART_DBL_INF),
+    mAccelerationDeriv(0.0),
+    mForce(0.0),
+    mForceLowerLimit(-DART_DBL_INF),
+    mForceUpperLimit(DART_DBL_INF),
+    mForceDeriv(0.0),
     mVelocityChange(0.0),
     // mImpulse(0.0),
     mConstraintImpulse(0.0),
     mSpringStiffness(0.0),
-    mDampingCoefficient(0.0),
     mRestPosition(0.0),
+    mDampingCoefficient(0.0),
     mJacobian(Eigen::Vector6d::Zero()),
     mJacobianDeriv(Eigen::Vector6d::Zero()),
     mInvProjArtInertia(0.0),
@@ -143,7 +143,7 @@ double SingleDofJoint::getPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (_positions.size() != getDof())
+  if (_positions.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setPositions positions's size[" << _positions.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -244,7 +244,7 @@ double SingleDofJoint::getVelocity(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (_velocities.size() != getDof())
+  if (_velocities.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setVelocities velocities's size[" << _velocities.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -347,7 +347,7 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (_accelerations.size() != getDof())
+  if (_accelerations.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setAccelerations accelerations's size[" << _accelerations.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -450,7 +450,7 @@ double SingleDofJoint::getForce(size_t _index)
 //==============================================================================
 void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 {
-  if (_forces.size() != getDof())
+  if (_forces.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setForces forces's size[" << _forces.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;

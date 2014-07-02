@@ -71,36 +71,31 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
   : Constraint(),
+    mBodyNode1(_contact.bodyNode1),
+    mBodyNode2(_contact.bodyNode2),
+    mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
+    mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
+    mPointMass1(NULL),
+    mPointMass2(NULL),
+    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
     mIsBounceOn(false),
-    mActive(false),
-    mPointMass1(NULL),
-    mPointMass2(NULL)
+    mActive(false)
 {
   // TODO(JS): Assumed single contact
   mContacts.push_back(_contact);
 
-  //
-  mSoftCollInfo
-      = static_cast<collision::SoftCollisionInfo*>(_contact.userData);
-
-  // TODO(JS):
-  mBodyNode1 = _contact.bodyNode1;
-  mBodyNode2 = _contact.bodyNode2;
-  mSoftBodyNode1 = dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1);
-  mSoftBodyNode2 = dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2);
-
   // Set the colliding state of body nodes and point masses to false
   if (mSoftBodyNode1)
   {
-    for (int i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
+    for (size_t i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
       mSoftBodyNode1->getPointMass(i)->setColliding(false);
   }
   if (mSoftBodyNode2)
   {
-    for (int i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
+    for (size_t i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
       mSoftBodyNode2->getPointMass(i)->setColliding(false);
   }
 
@@ -174,7 +169,7 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       const collision::Contact& ct = mContacts[i];
 
@@ -265,7 +260,7 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       const collision::Contact& ct = mContacts[i];
 
@@ -426,7 +421,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   if (mIsFrictionOn)
   {
     size_t index = 0;
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       assert(_info->w[index] == 0.0);
@@ -510,7 +505,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   else
   {
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       _info->w[i] = 0.0;
@@ -737,7 +732,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   {
     size_t index = 0;
 
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
 //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
 //      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
@@ -837,7 +832,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   else
   {
-    for (int i = 0; i < mContacts.size(); ++i)
+    for (size_t i = 0; i < mContacts.size(); ++i)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];

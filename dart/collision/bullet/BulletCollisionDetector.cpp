@@ -162,7 +162,7 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
                                               bool _calculateContactPoints)
 {
   // Update all the transformations of the collision nodes
-  for (int i = 0; i < mCollisionNodes.size(); ++i)
+  for (size_t i = 0; i < mCollisionNodes.size(); ++i)
     static_cast<BulletCollisionNode*>(
         mCollisionNodes[i])->updateBulletCollisionObjects();
 
@@ -181,7 +181,7 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
   clearAllContacts();
 
   // Set all the body nodes are not in colliding
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
     mCollisionNodes[i]->getBodyNode()->setColliding(false);
 
   // Add all the contacts to mContacts

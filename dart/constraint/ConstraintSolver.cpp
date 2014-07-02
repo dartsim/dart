@@ -60,8 +60,8 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double _timeStep)
-  : mTimeStep(_timeStep),
-    mCollisionDetector(new collision::FCLMeshCollisionDetector()),
+  : mCollisionDetector(new collision::FCLMeshCollisionDetector()),
+    mTimeStep(_timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
   assert(_timeStep > 0.0);
