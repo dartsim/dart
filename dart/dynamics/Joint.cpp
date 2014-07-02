@@ -134,7 +134,7 @@ void Joint::init(Skeleton* _skel)
 //==============================================================================
 //Eigen::VectorXd Joint::getDampingForces() const
 //{
-//  int numDofs = getDof();
+//  int numDofs = getNumDofs();
 //  Eigen::VectorXd dampingForce(numDofs);
 
 //  for (int i = 0; i < numDofs; ++i)
@@ -146,7 +146,7 @@ void Joint::init(Skeleton* _skel)
 //==============================================================================
 //Eigen::VectorXd Joint::getSpringForces(double _timeStep) const
 //{
-//  int dof = getDof();
+//  int dof = getNumDofs();
 //  Eigen::VectorXd springForce(dof);
 //  for (int i = 0; i < dof; ++i)
 //  {

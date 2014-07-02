@@ -55,7 +55,7 @@ Controller::Controller(dynamics::Skeleton* _skel,
   mCollisionHandle = _collisionSolver;
   mTimestep = _t;
   mFrame = 0;
-  int nDof = mSkel->getDof();
+  int nDof = mSkel->getNumDofs();
   mKp = Eigen::MatrixXd::Identity(nDof, nDof);
   mKd = Eigen::MatrixXd::Identity(nDof, nDof);
   mConstrForces = Eigen::VectorXd::Zero(nDof);
@@ -90,7 +90,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
                                 const Eigen::VectorXd& _dofVel)
 {
   // SPD tracking
-  // size_t nDof = mSkel->getDof();
+  // size_t nDof = mSkel->getNumDofs();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;

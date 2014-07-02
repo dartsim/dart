@@ -97,7 +97,7 @@ MyWindow::MyWindow(dart::simulation::World* _world)
                                mWorld->getConstraintSolver(),
                                mWorld->getTimeStep());
 
-  for (size_t i = 0; i < mWorld->getSkeleton(1)->getDof(); i++)
+  for (size_t i = 0; i < mWorld->getSkeleton(1)->getNumDofs(); i++)
     mController->setDesiredDof(i, mController->getSkeleton()->getPosition(i));
 
   // initialize constraint on the hand
