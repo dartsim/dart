@@ -80,6 +80,8 @@ BodyNode::BodyNode(const std::string& _name)
     mParentBodyNode(NULL),
     mChildBodyNodes(std::vector<BodyNode*>(0)),
     mW(Eigen::Isometry3d::Identity()),
+    mIsBodyJacobianDirty(true),
+    mIsBodyJacobianDerivDirty(true),
     mV(Eigen::Vector6d::Zero()),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mA(Eigen::Vector6d::Zero()),
@@ -88,8 +90,6 @@ BodyNode::BodyNode(const std::string& _name)
     mFgravity(Eigen::Vector6d::Zero()),
     mArtInertia(Eigen::Matrix6d::Identity()),
     mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
-    mIsBodyJacobianDirty(true),
-    mIsBodyJacobianDerivDirty(true),
     mBiasForce(Eigen::Vector6d::Zero()),
     mDelV(Eigen::Vector6d::Zero()),
     mBiasImpulse(Eigen::Vector6d::Zero()),
@@ -289,7 +289,7 @@ void BodyNode::addVisualizationShape(Shape* _p)
 }
 
 //==============================================================================
-int BodyNode::getNumVisualizationShapes() const
+size_t BodyNode::getNumVisualizationShapes() const
 {
   return mVizShapes.size();
 }
@@ -307,7 +307,7 @@ void BodyNode::addCollisionShape(Shape* _p)
 }
 
 //==============================================================================
-int BodyNode::getNumCollisionShapes() const
+size_t BodyNode::getNumCollisionShapes() const
 {
   return mColShapes.size();
 }
@@ -351,7 +351,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
-BodyNode* BodyNode::getChildBodyNode(int _index) const
+BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 {
   assert(0 <= _index && _index < mChildBodyNodes.size());
   return mChildBodyNodes[_index];
@@ -396,7 +396,7 @@ size_t BodyNode::getNumDependentGenCoords() const
 }
 
 //==============================================================================
-size_t BodyNode::getDependentGenCoordIndex(int _arrayIndex) const
+size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 {
   assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
 
@@ -1592,8 +1592,9 @@ void BodyNode::_updateBodyJacobian()
   // Parent Jacobian
   if (mParentBodyNode)
   {
-    assert(mParentBodyNode->getBodyJacobian().cols() +
-           mParentJoint->getDof() == mBodyJacobian.cols());
+    assert(mParentBodyNode->getBodyJacobian().cols()
+           + math::castUIntToInt(mParentJoint->getDof())
+           == mBodyJacobian.cols());
 
     assert(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) =
@@ -1630,7 +1631,8 @@ void BodyNode::_updateBodyJacobianDeriv()
   if (mParentBodyNode)
   {
     assert(mParentBodyNode->mBodyJacobianDeriv.cols()
-           + mParentJoint->getDof() == mBodyJacobianDeriv.cols());
+           + math::castUIntToInt(mParentJoint->getDof())
+           == mBodyJacobianDeriv.cols());
 
     assert(mParentJoint);
     mBodyJacobianDeriv.leftCols(numParentDOFs)

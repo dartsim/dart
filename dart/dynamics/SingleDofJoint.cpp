@@ -143,7 +143,7 @@ double SingleDofJoint::getPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (static_cast<size_t>(_positions.size()) != getDof())
+  if (_positions.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setPositions positions's size[" << _positions.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -244,7 +244,7 @@ double SingleDofJoint::getVelocity(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (static_cast<size_t>(_velocities.size()) != getDof())
+  if (_velocities.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setVelocities velocities's size[" << _velocities.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -347,7 +347,7 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (static_cast<size_t>(_accelerations.size()) != getDof())
+  if (_accelerations.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setAccelerations accelerations's size[" << _accelerations.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;
@@ -450,7 +450,7 @@ double SingleDofJoint::getForce(size_t _index)
 //==============================================================================
 void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 {
-  if (static_cast<size_t>(_forces.size()) != getDof())
+  if (_forces.size() != math::castUIntToInt(getDof()))
   {
     dterr << "setForces forces's size[" << _forces.size()
           << "] is different with the dof [" << getDof() << "]" << std::endl;

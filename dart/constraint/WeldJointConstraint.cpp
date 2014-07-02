@@ -46,10 +46,10 @@ namespace constraint {
 //==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
   : JointConstraint(_body),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0),
     mRelativeTransform(_body->getTransform()),
-    mViolation(Eigen::Vector6d::Zero())
+    mViolation(Eigen::Vector6d::Zero()),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0)
 {
   mDim = 6;
 
@@ -65,10 +65,10 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
                                          const Eigen::Isometry3d& _targetT)
   : JointConstraint(_body),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0),
     mRelativeTransform(_targetT),
-    mViolation(Eigen::Vector6d::Zero())
+    mViolation(Eigen::Vector6d::Zero()),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0)
 {
   mDim = 6;
 
@@ -84,11 +84,11 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2)
   : JointConstraint(_body1, _body2),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0),
     mRelativeTransform(_body1->getTransform().inverse()
                        * _body2->getTransform()),
-    mViolation(Eigen::Vector6d::Zero())
+    mViolation(Eigen::Vector6d::Zero()),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0)
 {
   mDim = 6;
 
@@ -105,10 +105,10 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2,
                                          const Eigen::Isometry3d& _T1to2)
   : JointConstraint(_body1, _body2),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0),
     mRelativeTransform(_T1to2),
-    mViolation(Eigen::Vector6d::Zero())
+    mViolation(Eigen::Vector6d::Zero()),
+    mIdentity6d(Eigen::Matrix6d::Identity()),
+    mAppliedImpulseIndex(0)
 {
   mDim = 6;
 
@@ -366,11 +366,19 @@ dynamics::Skeleton* WeldJointConstraint::getRootSkeleton() const
   if (mBodyNode2)
   {
     if (mBodyNode2->isImpulseReponsible())
+    {
       return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
+    }
+    else
+    {
+      assert(0);
+      return NULL;
+    }
   }
   else
   {
     assert(0);
+    return NULL;
   }
 }
 
@@ -417,6 +425,8 @@ bool WeldJointConstraint::isActive() const
   {
     if (mBodyNode2->isImpulseReponsible())
       return true;
+    else
+      return false;
   }
   else
   {

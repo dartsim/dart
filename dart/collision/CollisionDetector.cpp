@@ -54,7 +54,7 @@ CollisionDetector::CollisionDetector()
 }
 
 CollisionDetector::~CollisionDetector() {
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
     delete mCollisionNodes[i];
 }
 
@@ -67,7 +67,7 @@ void CollisionDetector::addSkeleton(dynamics::Skeleton* _skeleton)
   if (containSkeleton(_skeleton) == false)
   {
     mSkeletons.push_back(_skeleton);
-    for (int i = 0; i < _skeleton->getNumBodyNodes(); ++i)
+    for (size_t i = 0; i < _skeleton->getNumBodyNodes(); ++i)
       addCollisionSkeletonNode(_skeleton->getBodyNode(i));
   }
   else
@@ -87,7 +87,7 @@ void CollisionDetector::removeSkeleton(dynamics::Skeleton* _skeleton)
   {
     mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                      mSkeletons.end());
-    for (int i = 0; i < _skeleton->getNumBodyNodes(); ++i)
+    for (size_t i = 0; i < _skeleton->getNumBodyNodes(); ++i)
       removeCollisionSkeletonNode(_skeleton->getBodyNode(i));
   }
   else
@@ -133,7 +133,7 @@ void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
         std::vector<bool>(mCollisionNodes.size() - 1, true));
 
   if (_isRecursive) {
-    for (int i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
+    for (size_t i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
       addCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
   }
 }
@@ -152,8 +152,8 @@ void CollisionDetector::removeCollisionSkeletonNode(
   }
 
   // Update index of collision nodes.
-  int iCollNode = collNode->getIndex();
-  for (int i = iCollNode + 1; i < mCollisionNodes.size(); ++i)
+  size_t iCollNode = collNode->getIndex();
+  for (size_t i = iCollNode + 1; i < mCollisionNodes.size(); ++i)
     mCollisionNodes[i]->setIndex(mCollisionNodes[i]->getIndex() - 1);
 
   // Remove collNode from mCollisionNodes
@@ -168,16 +168,16 @@ void CollisionDetector::removeCollisionSkeletonNode(
   delete collNode;
 
   // Update mCollidablePairs
-  for (int i = iCollNode + 1; i < mCollidablePairs.size(); ++i) {
-    for (int j = 0; j < iCollNode; ++j)
+  for (size_t i = iCollNode + 1; i < mCollidablePairs.size(); ++i) {
+    for (size_t j = 0; j < iCollNode; ++j)
       mCollidablePairs[i-1][j] = mCollidablePairs[i][j];
-    for (int j = iCollNode + 1; j < mCollidablePairs[i].size(); ++j)
+    for (size_t j = iCollNode + 1; j < mCollidablePairs[i].size(); ++j)
       mCollidablePairs[i-1][j-1] = mCollidablePairs[i][j];
   }
   mCollidablePairs.pop_back();
 
   if (_isRecursive) {
-    for (int i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
+    for (size_t i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
       removeCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
   }
 }
@@ -190,7 +190,7 @@ bool CollisionDetector::detectCollision(dynamics::BodyNode* _node1,
                          _calculateContactPoints);
 }
 
-unsigned int CollisionDetector::getNumContacts() {
+size_t CollisionDetector::getNumContacts() {
   return mContacts.size();
 }
 

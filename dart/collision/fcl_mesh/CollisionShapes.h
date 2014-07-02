@@ -281,14 +281,14 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ,
 template<class BV>
 fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ,
                               const fcl::Transform3f& _transform) {
-  float n[6][3] = {
-    {-1.0, 0.0, 0.0},
-    {0.0, 1.0, 0.0},
-    {1.0, 0.0, 0.0},
-    {0.0, -1.0, 0.0},
-    {0.0, 0.0, 1.0},
-    {0.0, 0.0, -1.0}
-  };
+//  float n[6][3] = {
+//    {-1.0, 0.0, 0.0},
+//    {0.0, 1.0, 0.0},
+//    {1.0, 0.0, 0.0},
+//    {0.0, -1.0, 0.0},
+//    {0.0, 0.0, 1.0},
+//    {0.0, 0.0, -1.0}
+//  };
   int faces[6][4] = {
     {0, 1, 2, 3},
     {3, 2, 6, 7},

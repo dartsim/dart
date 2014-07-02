@@ -184,19 +184,19 @@ void Skeleton::addBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
-int Skeleton::getNumBodyNodes() const
+size_t Skeleton::getNumBodyNodes() const
 {
-  return static_cast<int>(mBodyNodes.size());
+  return mBodyNodes.size();
 }
 
 //==============================================================================
-int Skeleton::getNumRigidBodyNodes() const
+size_t Skeleton::getNumRigidBodyNodes() const
 {
   return mBodyNodes.size() - mSoftBodyNodes.size();
 }
 
 //==============================================================================
-int Skeleton::getNumSoftBodyNodes() const
+size_t Skeleton::getNumSoftBodyNodes() const
 {
   return mSoftBodyNodes.size();
 }
@@ -209,13 +209,13 @@ BodyNode* Skeleton::getRootBodyNode() const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(int _idx) const
+BodyNode* Skeleton::getBodyNode(size_t _idx) const
 {
   return mBodyNodes[_idx];
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(int _idx) const
+SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
 {
   assert(0 <= _idx && _idx < mSoftBodyNodes.size());
   return mSoftBodyNodes[_idx];
@@ -252,7 +252,7 @@ SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(int _idx) const
+Joint* Skeleton::getJoint(size_t _idx) const
 {
   return mBodyNodes[_idx]->getParentJoint();
 }
@@ -325,7 +325,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   // Initialize body nodes and generalized coordinates
   mGenCoordInfos.clear();
   mDof = 0;
-  for (int i = 0; i < getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < getNumBodyNodes(); ++i)
   {
     Joint* joint = mBodyNodes[i]->getParentJoint();
 
@@ -366,7 +366,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   // Calculate mass
   mTotalMass = 0.0;
-  for (int i = 0; i < getNumBodyNodes(); i++)
+  for (size_t i = 0; i < getNumBodyNodes(); i++)
     mTotalMass += getBodyNode(i)->getMass();
 }
 
@@ -1068,7 +1068,8 @@ void Skeleton::updateMassMatrix()
   if (getDof() == 0)
     return;
 
-  assert(mM.cols() == getDof() && mM.rows() == getDof());
+  assert(mM.cols() == math::castUIntToInt(getDof())
+         && mM.rows() == math::castUIntToInt(getDof()));
 
   mM.setZero();
 
@@ -1120,7 +1121,8 @@ void Skeleton::updateAugMassMatrix()
   if (getDof() == 0)
     return;
 
-  assert(mAugM.cols() == getDof() && mAugM.rows() == getDof());
+  assert(mAugM.cols() == math::castUIntToInt(getDof())
+         && mAugM.rows() == math::castUIntToInt(getDof()));
 
   mAugM.setZero();
 
@@ -1173,7 +1175,8 @@ void Skeleton::updateInvMassMatrix()
   if (getDof() == 0)
     return;
 
-  assert(mInvM.cols() == getDof() && mInvM.rows() == getDof());
+  assert(mInvM.cols() == math::castUIntToInt(getDof())
+         && mInvM.rows() == math::castUIntToInt(getDof()));
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -1238,8 +1241,8 @@ void Skeleton::updateInvAugMassMatrix()
   if (getDof() == 0)
     return;
 
-  assert(mInvAugM.cols() == getDof() &&
-         mInvAugM.rows() == getDof());
+  assert(mInvAugM.cols() == math::castUIntToInt(getDof())
+         && mInvAugM.rows() == math::castUIntToInt(getDof()));
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -1293,7 +1296,7 @@ void Skeleton::updateCoriolisForceVector()
   if (getDof() == 0)
     return;
 
-  assert(mCvec.size() == getDof());
+  assert(mCvec.size() == math::castUIntToInt(getDof()));
 
   mCvec.setZero();
 
@@ -1318,7 +1321,7 @@ void Skeleton::updateGravityForceVector()
   if (getDof() == 0)
     return;
 
-  assert(mG.size() == getDof());
+  assert(mG.size() == math::castUIntToInt(getDof()));
 
   // Calcualtion mass matrix, M
   mG.setZero();
@@ -1337,7 +1340,7 @@ void Skeleton::updateCombinedVector()
   if (getDof() == 0)
     return;
 
-  assert(mCg.size() == getDof());
+  assert(mCg.size() == math::castUIntToInt(getDof()));
 
   mCg.setZero();
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1361,7 +1364,7 @@ void Skeleton::updateExternalForceVector()
   if (getDof() == 0)
     return;
 
-  assert(mFext.size() == getDof());
+  assert(mFext.size() == math::castUIntToInt(getDof()));
 
   // Clear external force.
   mFext.setZero();
@@ -1617,7 +1620,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (int i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
     assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 
@@ -1644,7 +1647,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (int i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
     assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 
@@ -1680,7 +1683,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (int i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
     assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 

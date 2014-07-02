@@ -52,6 +52,7 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
+#include "dart/common/Console.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -219,6 +220,19 @@ inline unsigned seedRand() {
 inline double random(double _min, double _max) {
   return _min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
                 * (_max - _min));
+}
+
+inline int castUIntToInt(size_t _x)
+{
+  if (_x <= INT_MAX)
+    return static_cast<int>(_x);
+
+  if (_x >= INT_MIN)
+    return static_cast<int>(_x - INT_MIN) + INT_MIN;
+
+  dterr << "x is out of range." << std::endl;
+
+  throw _x; // Or whatever else you like
 }
 
 }  // namespace math

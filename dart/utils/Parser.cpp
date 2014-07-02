@@ -41,6 +41,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 
 namespace dart {
@@ -119,10 +120,12 @@ bool toBool(const std::string& _str)
         return false;
     else
     {
-        std::cerr << "value ["
-                  << _str
-                  << "] is not a valid boolean type."
-                  << std::endl;
+        dterr << "value ["
+              << _str
+              << "] is not a valid boolean type. "
+              << "Retuning false."
+              << std::endl;
+        return false;
         assert(0);
     }
 }
@@ -161,7 +164,7 @@ Eigen::Vector2d toVector2d(const std::string& _str)
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 2);
 
-    for (int i = 0; i < pieces.size(); ++i)
+    for (size_t i = 0; i < pieces.size(); ++i)
     {
         if (pieces[i] != "")
         {
@@ -192,7 +195,7 @@ Eigen::Vector3d toVector3d(const std::string& _str)
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 3);
 
-    for (int i = 0; i < pieces.size(); ++i)
+    for (size_t i = 0; i < pieces.size(); ++i)
     {
         if (pieces[i] != "")
         {
@@ -224,7 +227,7 @@ Eigen::Vector3i toVector3i(const std::string& _str)
   boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
   assert(pieces.size() == 3);
 
-  for (int i = 0; i < pieces.size(); ++i)
+  for (size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -256,7 +259,7 @@ Eigen::Vector6d toVector6d(const std::string& _str)
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 6);
 
-    for (int i = 0; i < pieces.size(); ++i)
+    for (size_t i = 0; i < pieces.size(); ++i)
     {
         if (pieces[i] != "")
         {
@@ -288,7 +291,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
     boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
     assert(pieces.size() == 6);
 
-    for (int i = 0; i < pieces.size(); ++i)
+    for (size_t i = 0; i < pieces.size(); ++i)
     {
         if (pieces[i] != "")
         {
@@ -338,9 +341,11 @@ bool getValueBool(tinyxml2::XMLElement* _parentElement, const std::string& _name
     {
         std::cerr << "value ["
                   << str
-                  << "] is not a valid boolean type."
+                  << "] is not a valid boolean type. "
+                  << "Returning false."
                   << std::endl;
         assert(0);
+        return false;
     }
 }
 

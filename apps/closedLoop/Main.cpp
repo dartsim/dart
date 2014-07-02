@@ -77,12 +77,12 @@ int main(int argc, char* argv[])
     myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
 
     // create a ball joint constraint
-    BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
-    BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-    Eigen::Vector3d offset1 = bd1->getParentJoint()->getTransformFromChildBodyNode().translation();
-    Eigen::Vector3d offset2(0.0, -0.025, 0.0);
-//    OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
-//    myWorld->getConstraintHandler()->addConstraint(cl);
+    // BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
+    // BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
+    // Eigen::Vector3d offset1 = bd1->getParentJoint()->getTransformFromChildBodyNode().translation();
+    // Eigen::Vector3d offset2(0.0, -0.025, 0.0);
+    // OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
+    // myWorld->getConstraintHandler()->addConstraint(cl);
 
     // create a window and link it to the world
     MyWindow window;

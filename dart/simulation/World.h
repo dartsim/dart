@@ -111,7 +111,7 @@ public:
   dynamics::Skeleton* getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
-  int getNumSkeletons() const;
+  size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
   void addSkeleton(dynamics::Skeleton* _skeleton);

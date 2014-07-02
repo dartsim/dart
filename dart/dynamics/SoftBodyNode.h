@@ -103,16 +103,16 @@ public:
   size_t getNumPointMasses() const;
 
   /// \brief
-  PointMass* getPointMass(int _idx) const;
+  PointMass* getPointMass(size_t _idx) const;
 
   /// \brief
-  void connectPointMasses(int _idx1, int _idx2);
+  void connectPointMasses(size_t _idx1, size_t _idx2);
 
   /// \brief
   void addFace(const Eigen::Vector3i& _face);
 
   /// \brief
-  const Eigen::Vector3i& getFace(int _idx) const;
+  const Eigen::Vector3i& getFace(size_t _idx) const;
 
   /// \brief
   size_t getNumFaces();

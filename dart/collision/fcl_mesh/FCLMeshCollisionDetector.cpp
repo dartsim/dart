@@ -80,7 +80,7 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
   //----------------------------------------------------------------------------
 
   // Update the positions of vertices on meshs
-  for (int i = 0; i < mCollisionNodes.size(); ++i)
+  for (size_t i = 0; i < mCollisionNodes.size(); ++i)
     static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i])->updateShape();
 
   // Clear previous contacts
@@ -95,11 +95,11 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
   FCLMeshCollisionNode* FCLMeshCollisionNode1 = NULL;
   FCLMeshCollisionNode* FCLMeshCollisionNode2 = NULL;
 
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
   {
     FCLMeshCollisionNode1
         = static_cast<FCLMeshCollisionNode*>(mCollisionNodes[i]);
-    for (int j = i + 1; j < mCollisionNodes.size(); j++)
+    for (size_t j = i + 1; j < mCollisionNodes.size(); j++)
     {
       FCLMeshCollisionNode2
           = static_cast<FCLMeshCollisionNode*>(mCollisionNodes[j]);
@@ -143,9 +143,11 @@ bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
 //==============================================================================
 void FCLMeshCollisionDetector::draw()
 {
-  for (int i = 0; i < mCollisionNodes.size(); i++)
+  for (size_t i = 0; i < mCollisionNodes.size(); i++)
+  {
     static_cast<FCLMeshCollisionNode*>(
         mCollisionNodes[i])->drawCollisionSkeletonNode();
+  }
 }
 
 }  // namespace collision

@@ -78,7 +78,7 @@ size_t SoftBodyNode::getNumPointMasses() const
 }
 
 //==============================================================================
-PointMass* SoftBodyNode::getPointMass(int _idx) const
+PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 {
   assert(0 <= _idx && _idx < mPointMasses.size());
   return mPointMasses[_idx];
@@ -194,7 +194,7 @@ void SoftBodyNode::addPointMass(PointMass* _pointMass)
 }
 
 //==============================================================================
-void SoftBodyNode::connectPointMasses(int _idx1, int _idx2)
+void SoftBodyNode::connectPointMasses(size_t _idx1, size_t _idx2)
 {
   assert(_idx1 != _idx2);
   assert(0 <= _idx1 && _idx1 < mPointMasses.size());
@@ -209,14 +209,14 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
   assert(_face[0] != _face[1]);
   assert(_face[1] != _face[2]);
   assert(_face[2] != _face[0]);
-  assert(0 <= _face[0] && _face[0] < mPointMasses.size());
-  assert(0 <= _face[1] && _face[1] < mPointMasses.size());
-  assert(0 <= _face[2] && _face[2] < mPointMasses.size());
+  assert(0 <= _face[0] && _face[0] < math::castUIntToInt(mPointMasses.size()));
+  assert(0 <= _face[1] && _face[1] < math::castUIntToInt(mPointMasses.size()));
+  assert(0 <= _face[2] && _face[2] < math::castUIntToInt(mPointMasses.size()));
   mFaces.push_back(_face);
 }
 
 //==============================================================================
-const Eigen::Vector3i& SoftBodyNode::getFace(int _idx) const
+const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 {
   assert(0 <= _idx && _idx < mFaces.size());
   return mFaces[_idx];

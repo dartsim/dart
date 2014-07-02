@@ -144,7 +144,7 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
   MatrixXd I;  // Body inertia
   MatrixXd J;  // Body Jacobian
 
-  for (int i = 0; i < _skel->getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < _skel->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* body = _skel->getBodyNode(i);
 
@@ -226,7 +226,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
   MatrixXd AugM;
 
   // Compute diagonal matrices of joint damping and joint stiffness
-  for (int i = 0; i < _skel->getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < _skel->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* body  = _skel->getBodyNode(i);
     dynamics::Joint*    joint = body->getParentJoint();
@@ -290,9 +290,9 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 1;
+  size_t nRandomItr = 1;
 #else
-  int nRandomItr = 1;
+  size_t nRandomItr = 1;
 #endif
 
   // Lower and upper bound of configuration for system
@@ -313,7 +313,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   myWorld = utils::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != NULL);
 
-  for (int i = 0; i < myWorld->getNumSkeletons(); ++i)
+  for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
     dynamics::Skeleton* softSkel
@@ -332,10 +332,10 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       continue;
     }
 
-    for (int j = 0; j < nRandomItr; ++j)
+    for (size_t j = 0; j < nRandomItr; ++j)
     {
       // Random joint stiffness and damping coefficient
-      for (int k = 0; k < skel->getNumBodyNodes(); ++k)
+      for (size_t k = 0; k < skel->getNumBodyNodes(); ++k)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();

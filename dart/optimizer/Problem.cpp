@@ -41,6 +41,7 @@
 #include <iostream>
 #include <limits>
 
+#include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 
 namespace dart {
@@ -70,7 +71,8 @@ size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  assert(_initGuess.size() == mDimension && "Invalid size.");
+  assert(_initGuess.size() == math::castUIntToInt(mDimension)
+         && "Invalid size.");
   mInitialGuess = _initGuess;
 }
 
@@ -83,7 +85,7 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  assert(_lb.size() == mDimension && "Invalid size.");
+  assert(_lb.size() == math::castUIntToInt(mDimension) && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -96,7 +98,7 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  assert(_ub.size() == mDimension && "Invalid size.");
+  assert(_ub.size() == math::castUIntToInt(mDimension) && "Invalid size.");
   mUpperBounds = _ub;
 }
 
@@ -208,7 +210,8 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  assert(_optParam.size() == mDimension && "Invalid size.");
+  assert(_optParam.size() == math::castUIntToInt(mDimension)
+         && "Invalid size.");
   mOptimalSolution = _optParam;
 }
 

@@ -187,7 +187,7 @@ public:
   void addVisualizationShape(Shape *_p);
 
   /// Return the number of visualization shapes
-  int getNumVisualizationShapes() const;
+  size_t getNumVisualizationShapes() const;
 
   /// Return _index-th visualization shape
   Shape* getVisualizationShape(int _index) const;
@@ -196,7 +196,7 @@ public:
   void addCollisionShape(Shape *_p);
 
   /// Return the number of collision shapes
-  int getNumCollisionShapes() const;
+  size_t getNumCollisionShapes() const;
 
   /// Return _index-th collision shape
   Shape* getCollisionShape(int _index) const;
@@ -217,7 +217,7 @@ public:
   void addChildBodyNode(BodyNode* _body);
 
   /// Return _index-th child bodynode of the bodynode
-  BodyNode* getChildBodyNode(int _index) const;
+  BodyNode* getChildBodyNode(size_t _index) const;
 
   /// Return the number of child bodynodes
   size_t getNumChildBodyNodes() const;
@@ -239,7 +239,7 @@ public:
 
   /// Return a generalized coordinate index from the array index
   /// (< getNumDependentDofs)
-  size_t getDependentGenCoordIndex(int _arrayIndex) const;
+  size_t getDependentGenCoordIndex(size_t _arrayIndex) const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)

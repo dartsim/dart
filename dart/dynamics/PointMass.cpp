@@ -126,7 +126,7 @@ int PointMass::getNumConnectedPointMasses() const
   return mConnectedPointMasses.size();
 }
 
-PointMass*PointMass::getConnectedPointMass(int _idx) const
+PointMass* PointMass::getConnectedPointMass(size_t _idx) const
 {
   assert(0 <= _idx && _idx < mConnectedPointMasses.size());
 
