@@ -1568,6 +1568,356 @@ void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
   _softBodyNode->addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 }
 
+//==============================================================================
+void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
+                                     double _radius,
+                                     double _height,
+                                     size_t _nSlices,
+                                     size_t _nStacks,
+                                     size_t _nRings,
+                                     double _totalMass,
+                                     double _vertexStiffness,
+                                     double _edgeStiffness,
+                                     double _dampingCoeff)
+{
+  assert(_softBodyNode != NULL);
+
+  //----------------------------------------------------------------------------
+  // Misc
+  //----------------------------------------------------------------------------
+  _softBodyNode->setVertexSpringStiffness(_vertexStiffness);
+  _softBodyNode->setEdgeSpringStiffness(_edgeStiffness);
+  _softBodyNode->setDampingCoefficient(_dampingCoeff);
+
+  //----------------------------------------------------------------------------
+  // Point masses
+  //----------------------------------------------------------------------------
+  // Number of point masses
+  size_t nTopPointMasses = _nSlices * (_nRings - 1) + 1;
+  size_t nDrumPointMasses = (_nStacks + 1) * _nSlices;
+  size_t nTotalMasses = nDrumPointMasses + 2 * nTopPointMasses;
+
+  // Mass per vertices
+  double mass = _totalMass / nTotalMasses;
+
+  // Point mass pointer
+  PointMass* newPointMass = NULL;
+
+  // Resting positions for each point mass
+  float dradius = _radius / static_cast<float>(_nRings);
+  float dtheta = DART_2PI / static_cast<float>(_nSlices);
+
+  // -- top
+  newPointMass = new dynamics::PointMass(_softBodyNode);
+  newPointMass->setMass(mass);
+  newPointMass->setRestingPosition(Eigen::Vector3d(0.0, 0.0, 0.5 * _height));
+  _softBodyNode->addPointMass(newPointMass);
+  for (size_t i = 1; i < _nRings; ++i)
+  {
+    float z = 0.5;
+    float radius = i * dradius;
+
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
+      float stheta = (-sin(theta));
+      float ctheta = (cos(theta));
+
+      float x = stheta;
+      float y = ctheta;
+
+      newPointMass = new dynamics::PointMass(_softBodyNode);
+      newPointMass->setMass(mass);
+      newPointMass->setRestingPosition(
+            Eigen::Vector3d(x * radius, y * radius, z * _height));
+      _softBodyNode->addPointMass(newPointMass);
+    }
+  }
+
+  // -- middle
+  float dz     = -1.0 / static_cast<float>(_nStacks);
+  for (size_t i = 0; i < _nStacks + 1; i++)
+  {
+    float z = 0.5 + i * dz;
+
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
+      float stheta = (-sin(theta));
+      float ctheta = (cos(theta));
+
+      float x = stheta;
+      float y = ctheta;
+
+      newPointMass = new dynamics::PointMass(_softBodyNode);
+      newPointMass->setMass(mass);
+      newPointMass->setRestingPosition(
+            Eigen::Vector3d(x * _radius, y * _radius, z * _height));
+      _softBodyNode->addPointMass(newPointMass);
+    }
+  }
+
+  // -- bottom
+  for (size_t i = 1; i < _nRings; ++i)
+  {
+    float z = -0.5;
+    float radius = _radius - i * dradius;
+
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      float theta = (j == _nSlices) ? 0.0f : j * dtheta;
+      float stheta = (-sin(theta));
+      float ctheta = (cos(theta));
+
+      float x = stheta;
+      float y = ctheta;
+
+      newPointMass = new dynamics::PointMass(_softBodyNode);
+      newPointMass->setMass(mass);
+      newPointMass->setRestingPosition(
+            Eigen::Vector3d(x * radius, y * radius, z * _height));
+      _softBodyNode->addPointMass(newPointMass);
+    }
+  }
+  newPointMass = new dynamics::PointMass(_softBodyNode);
+  newPointMass->setMass(mass);
+  newPointMass->setRestingPosition(
+        Eigen::Vector3d(0.0, 0.0, -0.5 * _height));
+  _softBodyNode->addPointMass(newPointMass);
+
+  //----------------------------------------------------------------------------
+  // Edges
+  //----------------------------------------------------------------------------
+  // A. Drum part
+
+  // a) longitudinal
+  // -- top
+  for (size_t i = 0; i < _nSlices; i++)
+    _softBodyNode->connectPointMasses(0, i + 1);
+  for (size_t i = 0; i < _nRings - 1; i++)
+  {
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            _nSlices + 1 + (i + 0) * _nSlices + j,
+            _nSlices + 1 + (i + 1) * _nSlices + j);
+    }
+  }
+  // -- middle
+  for (size_t i = 0; i < _nStacks - 1; i++)
+  {
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + (i + 0) * _nSlices + j,
+            nTopPointMasses + (i + 1) * _nSlices + j);
+    }
+  }
+  // -- bottom
+  for (size_t i = 0; i < _nRings - 1; i++)
+  {
+    for (size_t j = 0; j < _nSlices; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + (nDrumPointMasses - _nSlices)
+            + (i + 0) * _nSlices + j,
+            nTopPointMasses + (nDrumPointMasses - _nSlices)
+            + (i + 1) * _nSlices + j);
+    }
+  }
+  for (size_t i = 0; i < _nSlices; i++)
+    _softBodyNode->connectPointMasses(nTotalMasses - 1 - i,
+                                      nTotalMasses - 1);
+
+  // b) latitudinal
+  for (size_t i = 0; i < _nStacks; i++)
+  {
+    for (size_t j = 0; j < _nSlices - 1; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + i * _nSlices + j + 0,
+            nTopPointMasses + i * _nSlices + j + 1);
+    }
+
+    _softBodyNode->connectPointMasses(
+          nTopPointMasses + (i + 0) * _nSlices + _nSlices - 1,
+          nTopPointMasses + (i + 0) * _nSlices);
+  }
+  // -- disk parts
+  // TODO(JS): No latitudinal connections for top and bottom disks
+
+  // c) cross (shear)
+  // -- drum part
+  for (size_t i = 0; i < _nStacks - 2; i++)
+  {
+    for (size_t j = 0; j < _nSlices - 1; j++)
+    {
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + (i + 0) * _nSlices + j + 0,
+            nTopPointMasses + (i + 1) * _nSlices + j + 1);
+      _softBodyNode->connectPointMasses(
+            nTopPointMasses + (i + 0) * _nSlices + j + 1,
+            nTopPointMasses + (i + 1) * _nSlices + j + 0);
+    }
+
+    _softBodyNode->connectPointMasses(
+          nTopPointMasses + (i + 0) * _nSlices + _nSlices - 1,
+          nTopPointMasses + (i + 1) * _nSlices);
+    _softBodyNode->connectPointMasses(
+          nTopPointMasses + (i + 0) * _nSlices,
+          nTopPointMasses + (i + 1) * _nSlices + _nSlices - 1);
+  }
+  // -- disk parts
+  // TODO(JS): No cross connections for top and bottom disks
+
+  //----------------------------------------------------------------------------
+  // Faces
+  //----------------------------------------------------------------------------
+  int meshIdx1 = 0;
+  int meshIdx2 = 0;
+  int meshIdx3 = 0;
+
+  // top
+  size_t nConePointMass = 1;
+  meshIdx1 = 0;
+  for (size_t i = 0; i < _nSlices - 1; i++)
+  {
+    meshIdx2 = i + 1;
+    meshIdx3 = i + 2;
+    _softBodyNode->addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+  }
+  meshIdx2 = _nSlices;
+  meshIdx3 = 1;
+  _softBodyNode->addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
+  for (size_t i = 0; i < _nRings - 1; ++i)
+  {
+    for (size_t j = 0; j < _nSlices - 1; ++j)
+    {
+      meshIdx1 = (i + 0) * _nSlices + j;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 0) * _nSlices + j + 1;
+      _softBodyNode->addFace(Eigen::Vector3i(nConePointMass + meshIdx1,
+                                             nConePointMass + meshIdx2,
+                                             nConePointMass + meshIdx3));
+
+      meshIdx1 = (i + 0) * _nSlices + j + 1;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 1) * _nSlices + j + 1;
+      _softBodyNode->addFace(Eigen::Vector3i(nConePointMass + meshIdx1,
+                                             nConePointMass + meshIdx2,
+                                             nConePointMass + meshIdx3));
+    }
+
+    meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
+    meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 0) * _nSlices + 0;
+    _softBodyNode->addFace(Eigen::Vector3i(nConePointMass + meshIdx1,
+                                           nConePointMass + meshIdx2,
+                                           nConePointMass + meshIdx3));
+
+    meshIdx1 = (i + 0) * _nSlices + 0;
+    meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 1) * _nSlices + 0;
+    _softBodyNode->addFace(Eigen::Vector3i(nConePointMass + meshIdx1,
+                                           nConePointMass + meshIdx2,
+                                           nConePointMass + meshIdx3));
+  }
+
+  // middle
+  for (size_t i = 0; i < _nStacks; i++)
+  {
+    for (size_t j = 0; j < _nSlices - 1; j++)
+    {
+      meshIdx1 = (i + 0) * _nSlices + j;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 0) * _nSlices + j + 1;
+      _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
+                                             nTopPointMasses + meshIdx2,
+                                             nTopPointMasses + meshIdx3));
+
+      meshIdx1 = (i + 0) * _nSlices + j + 1;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 1) * _nSlices + j + 1;
+      _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
+                                             nTopPointMasses + meshIdx2,
+                                             nTopPointMasses + meshIdx3));
+    }
+
+    meshIdx1 = (i + 0) * _nSlices;
+    meshIdx2 = (i + 1) * _nSlices;
+    meshIdx3 = (i + 0) * _nSlices + _nSlices - 1;
+    _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
+                                           nTopPointMasses + meshIdx2,
+                                           nTopPointMasses + meshIdx3));
+
+    meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
+    meshIdx2 = (i + 1) * _nSlices + 0;
+    meshIdx3 = (i + 1) * _nSlices + _nSlices - 1;
+    _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
+                                           nTopPointMasses + meshIdx2,
+                                           nTopPointMasses + meshIdx3));
+  }
+
+  // bottom
+  for (size_t i = 0; i < _nRings - 1; ++i)
+  {
+    for (size_t j = 0; j < _nSlices - 1; ++j)
+    {
+      meshIdx1 = (i + 0) * _nSlices + j;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 0) * _nSlices + j + 1;
+      _softBodyNode->addFace(
+            Eigen::Vector3i(
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+
+      meshIdx1 = (i + 0) * _nSlices + j + 1;
+      meshIdx2 = (i + 1) * _nSlices + j;
+      meshIdx3 = (i + 1) * _nSlices + j + 1;
+      _softBodyNode->addFace(
+            Eigen::Vector3i(
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+              nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+    }
+
+    meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
+    meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 0) * _nSlices + 0;
+    _softBodyNode->addFace(
+          Eigen::Vector3i(
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+
+    meshIdx1 = (i + 0) * _nSlices + 0;
+    meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 1) * _nSlices + 0;
+    _softBodyNode->addFace(
+          Eigen::Vector3i(
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx1,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx2,
+            nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
+  }
+  meshIdx1 = 1;
+  for (size_t i = 0; i < _nSlices - 1; i++)
+  {
+    meshIdx2 = i + 2;
+    meshIdx3 = i + 3;
+    _softBodyNode->addFace(Eigen::Vector3i(
+                             nTotalMasses - meshIdx1,
+                             nTotalMasses - meshIdx2,
+                             nTotalMasses - meshIdx3));
+  }
+  meshIdx2 = _nSlices + 1;
+  meshIdx3 = 2;
+  _softBodyNode->addFace(Eigen::Vector3i(
+                           nTotalMasses - meshIdx1,
+                           nTotalMasses - meshIdx2,
+                           nTotalMasses - meshIdx3));
+}
+
 }  // namespace dynamics
 }  // namespace dart
 

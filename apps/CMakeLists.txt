@@ -24,6 +24,7 @@ foreach(APPDIR
     #pdController
     sdfLoader
     softArticulatedBodiesTest
+    softBodies
     softCubes
     softDoublePendulumTest
     softDropBoxTest

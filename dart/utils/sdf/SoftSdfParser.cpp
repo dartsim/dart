@@ -474,6 +474,30 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
       newSoftBodyNode->addCollisionShape(
             new dynamics::SoftMeshShape(newSoftBodyNode));
     }
+    else if (hasElement(geometryEle, "cylinder"))
+    {
+      tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "cylinder");
+      double radius  = getValueDouble(ellipsoidEle, "radius");
+      double height  = getValueDouble(ellipsoidEle, "height");
+      double nSlices = getValueDouble(ellipsoidEle, "num_slices");
+      double nStacks = getValueDouble(ellipsoidEle, "num_stacks");
+      double nRings = getValueDouble(ellipsoidEle, "num_rings");
+      dynamics::SoftBodyNodeHelper::setCylinder(newSoftBodyNode,
+                                                radius,
+                                                height,
+                                                nSlices,
+                                                nStacks,
+                                                nRings,
+                                                totalMass);
+
+      // Visualization shape
+      newSoftBodyNode->addVisualizationShape(
+            new dynamics::SoftMeshShape(newSoftBodyNode));
+
+      // Collision shape
+      newSoftBodyNode->addCollisionShape(
+            new dynamics::SoftMeshShape(newSoftBodyNode));
+    }
     else
     {
       dterr << "Unknown soft shape.\n";
