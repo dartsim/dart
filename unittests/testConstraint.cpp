@@ -154,7 +154,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   // BodyNode* ground = groundSkel->getBodyNode(0);
   world->addSkeleton(groundSkel);
   EXPECT_EQ(groundSkel->getGravity(), world->getGravity());
-  assert(ground);
+  // assert(ground);
 
   EXPECT_EQ(world->getNumSkeletons(), 2);
 
