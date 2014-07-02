@@ -271,7 +271,7 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   joint->setName(_jt->name);
   joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
   joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-  if(joint->getDof() == 1 && _jt->limits) {
+  if(joint->getNumDofs() == 1 && _jt->limits) {
     joint->setVelocityLowerLimit(0, -_jt->limits->velocity);
     joint->setVelocityUpperLimit(0, _jt->limits->velocity);
     joint->setForceLowerLimit(0, -_jt->limits->effort);

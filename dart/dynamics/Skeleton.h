@@ -183,7 +183,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Return degrees of freedom of this skeleton
-  size_t getDof() const;
+  DEPRECATED(4.1) size_t getDof() const;
+
+  /// Return degrees of freedom of this skeleton
+  size_t getNumDofs() const;
 
   ///
   GenCoordInfo getGenCoordInfo(size_t _index) const;

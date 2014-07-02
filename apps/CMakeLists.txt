@@ -18,6 +18,7 @@ foreach(APPDIR
     meshCollision
     sdfLoader
     softArticulatedBodiesTest
+    softBodies
     softCubes
     softDoublePendulumTest
     softDropBoxTest

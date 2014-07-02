@@ -108,7 +108,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //                      Vector3d(0.3, 0.3, l1),
 //                      Vector3d(0.3, 0.3, l2), DOF_ROLL);
 //  robot->init();
-//  size_t dof = robot->getDof();
+//  size_t dof = robot->getNumDofs();
 //  VectorXd oldConfig = robot->getPositions();
 
 //  BodyNode* body1 = robot->getBodyNode(0);

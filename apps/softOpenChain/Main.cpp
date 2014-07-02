@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
           DART_DATA_PATH"skel/soft_open_chain.skel");
   assert(myWorld != NULL);
 
-  int dof = myWorld->getSkeleton("skeleton 1")->getDof();
+  int dof = myWorld->getSkeleton("skeleton 1")->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
   for (int i = 0; i < 3; i++)
     initPose[i] = dart::math::random(-0.5, 0.5);

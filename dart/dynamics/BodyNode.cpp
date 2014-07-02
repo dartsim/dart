@@ -760,7 +760,7 @@ void BodyNode::init(Skeleton* _skeleton)
   else
     mDependentGenCoordIndices.clear();
 
-  for (size_t i = 0; i < mParentJoint->getDof(); i++)
+  for (size_t i = 0; i < mParentJoint->getNumDofs(); i++)
     mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
 
   // Sort
@@ -956,7 +956,7 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 {
   assert(mParentJoint != NULL);
 
-  size_t dof = mParentJoint->getDof();
+  size_t dof = mParentJoint->getNumDofs();
 
   if (dof > 0)
   {
@@ -1243,7 +1243,7 @@ void BodyNode::updateJointVelocityChange()
 //==============================================================================
 //void BodyNode::updateBodyVelocityChange()
 //{
-//  if (mParentJoint->getDof() > 0)
+//  if (mParentJoint->getNumDofs() > 0)
 //    mDelV = mParentJoint->getLocalJacobian() * mParentJoint->getVelsChange();
 //  else
 //    mDelV.setZero();
@@ -1310,7 +1310,7 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                           (*it)->mG_F);
   }
 
-  int nGenCoords = mParentJoint->getDof();
+  int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
@@ -1354,7 +1354,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
     mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
-  int nGenCoords = mParentJoint->getDof();
+  int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg
@@ -1376,7 +1376,7 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
                              (*it)->mFext_F);
   }
 
-  int nGenCoords = mParentJoint->getDof();
+  int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
@@ -1389,7 +1389,7 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
 void BodyNode::updateMassMatrix()
 {
   mM_dV.setZero();
-  int dof = mParentJoint->getDof();
+  int dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     mM_dV.noalias() += mParentJoint->getLocalJacobian()
@@ -1423,7 +1423,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getDof();
+  int dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     int iStart = mParentJoint->getIndexInSkeleton(0);
@@ -1456,7 +1456,7 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getDof();
+  int dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
@@ -1586,14 +1586,14 @@ void BodyNode::_updateBodyJacobian()
   //          n: number of dependent coordinates
   //--------------------------------------------------------------------------
 
-  const int localDof     = mParentJoint->getDof();
+  const int localDof     = mParentJoint->getNumDofs();
   const int ascendantDof = getNumDependentGenCoords() - localDof;
 
   // Parent Jacobian
   if (mParentBodyNode)
   {
     assert(mParentBodyNode->getBodyJacobian().cols()
-           + math::castUIntToInt(mParentJoint->getDof())
+           + math::castUIntToInt(mParentJoint->getNumDofs())
            == mBodyJacobian.cols());
 
     assert(mParentJoint);
@@ -1623,7 +1623,7 @@ void BodyNode::_updateBodyJacobianDeriv()
   //          n: number of dependent coordinates
   //--------------------------------------------------------------------------
 
-  const int numLocalDOFs = mParentJoint->getDof();
+  const int numLocalDOFs = mParentJoint->getNumDofs();
   const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
   math::Jacobian J = getBodyJacobian();
 
@@ -1631,7 +1631,7 @@ void BodyNode::_updateBodyJacobianDeriv()
   if (mParentBodyNode)
   {
     assert(mParentBodyNode->mBodyJacobianDeriv.cols()
-           + math::castUIntToInt(mParentJoint->getDof())
+           + math::castUIntToInt(mParentJoint->getNumDofs())
            == mBodyJacobianDeriv.cols());
 
     assert(mParentJoint);

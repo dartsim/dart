@@ -129,7 +129,7 @@ const std::vector<std::string>& DynamicsTest::getList()
 //==============================================================================
 MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 {
-  int skelDof = _skel->getDof();
+  int skelDof = _skel->getNumDofs();
 
   MatrixXd skelM = MatrixXd::Zero(skelDof, skelDof);  // Mass matrix of skeleton
   MatrixXd M;  // Body mass
@@ -170,7 +170,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 //==============================================================================
 MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
 {
-  int    dof = _skel->getDof();
+  int    dof = _skel->getNumDofs();
   double dt  = _skel->getTimeStep();
 
   MatrixXd M = getMassMatrix(_skel);
@@ -187,7 +187,7 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
     EXPECT_TRUE(body  != NULL);
     EXPECT_TRUE(joint != NULL);
 
-    int dof = joint->getDof();
+    int dof = joint->getNumDofs();
 
     for (int j = 0; j < dof; ++j)
     {
@@ -239,7 +239,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
   {
     Skeleton* skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
-    int dof = skeleton->getDof();
+    int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
     {
@@ -406,7 +406,7 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
   {
     Skeleton* skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
-    int dof = skeleton->getDof();
+    int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
     {
@@ -651,7 +651,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    size_t dof = skel->getDof();
+    size_t dof = skel->getNumDofs();
 //    int nBodyNodes = skel->getNumBodyNodes();
 
     if (dof == 0)
@@ -668,7 +668,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        size_t    localDof = joint->getDof();
+        size_t    localDof = joint->getNumDofs();
 
         for (size_t l = 0; l < localDof; ++l)
         {
@@ -855,7 +855,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getDof();
+    int dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0)
@@ -872,7 +872,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getDof();
+        int       localDof = joint->getNumDofs();
 
         for (int l = 0; l < localDof; ++l)
         {
@@ -971,7 +971,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getDof();
+    int dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
 
     if (dof == 0 || !skel->isMobile())
@@ -988,7 +988,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getDof();
+        int       localDof = joint->getNumDofs();
 
         for (int l = 0; l < localDof; ++l)
         {

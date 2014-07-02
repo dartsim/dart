@@ -137,7 +137,7 @@ const std::vector<std::string>& SoftDynamicsTest::getList()
 //==============================================================================
 MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 {
-  int skelDof = _skel->getDof();
+  int skelDof = _skel->getNumDofs();
 
   MatrixXd skelM = MatrixXd::Zero(skelDof, skelDof);  // Mass matrix of skeleton
   MatrixXd M;  // Body mass
@@ -217,7 +217,7 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 //==============================================================================
 MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
 {
-  int    dof = _skel->getDof();
+  int    dof = _skel->getNumDofs();
   double dt  = _skel->getTimeStep();
 
   MatrixXd M = getMassMatrix(_skel);
@@ -234,7 +234,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
     EXPECT_TRUE(body  != NULL);
     EXPECT_TRUE(joint != NULL);
 
-    int dof = joint->getDof();
+    int dof = joint->getNumDofs();
 
     for (int j = 0; j < dof; ++j)
     {
@@ -319,7 +319,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
     dynamics::Skeleton* softSkel
         = dynamic_cast<dynamics::Skeleton*>(skel);
 
-    int dof            = skel->getDof();
+    int dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
     int nSoftBodyNodes = 0;
     if (softSkel != NULL)
@@ -339,7 +339,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         BodyNode* body     = skel->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
-        int       localDof = joint->getDof();
+        int       localDof = joint->getNumDofs();
 
         for (int l = 0; l < localDof; ++l)
         {
