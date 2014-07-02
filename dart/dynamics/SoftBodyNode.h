@@ -341,6 +341,19 @@ public:
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
+  ///
+  /// This should be called before SoftBodyNode::init() is called
+  static void setCylinder(SoftBodyNode*          _softBodyNode,
+      double _radius,
+      double _height,
+      size_t _nSlices,
+      size_t _nStacks,
+      size_t _nRings,
+      double                 _totalMass,
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 };
 
 }  // namespace dynamics
