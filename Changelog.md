@@ -5,7 +5,7 @@
     * [Pull request #195](https://github.com/dartsim/dart/pull/195)
 1. Fixed kinematics and dynamics when a skelton has multiple parent-less bodies
     * [Pull request #196](https://github.com/dartsim/dart/pull/196)
-1. Fixed issue on installing DART 4 alongside and DART 3 issues on Linux
+1. Fixed issue on installing DART 4 alongside DART 3 on Linux
     * [Issue #122](https://github.com/dartsim/dart/issues/122)
     * [Pull request #203](https://github.com/dartsim/dart/pull/203)
 1. Fixed warnings on gcc
