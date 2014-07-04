@@ -9,4 +9,5 @@ usr/include/dart/math/*
 usr/include/dart/renderer/*
 usr/include/dart/simulation/*
 usr/share/dartcore/DARTCoreConfig.cmake
+usr/share/dartcore/DARTCoreConfigVersion.cmake
 usr/share/dartcore/DARTCoreTargets*.cmake
