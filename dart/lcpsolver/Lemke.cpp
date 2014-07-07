@@ -35,6 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/math/Helpers.h"
 #include "dart/lcpsolver/Lemke.h"
 
 #include <cmath>
@@ -100,7 +101,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 
   *_z = Eigen::VectorXd::Zero(2 * n);
   int iter = 0;
-  double theta = 0;
+  // double theta = 0;
   double ratio = 0;
   int leaving  = 0;
   Eigen::VectorXd Be = Eigen::VectorXd::Constant(n, 1);
@@ -120,7 +121,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 
   Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
-  for (int i = 0; i < bas.size(); ++i) {
+  for (size_t i = 0; i < bas.size(); ++i) {
     B.col(bas[i]) = _M.col(bas[i]);
   }
 
@@ -166,7 +167,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
       break;
     }
 
-    int jSize = static_cast<int>(j.size());
+    int jSize = math::castUIntToInt(j.size());
     Eigen::VectorXd minRatio(jSize);
     for (int i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
@@ -193,7 +194,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 //    }
 
     j = tmpJ;
-    jSize = static_cast<int>(j.size());
+    jSize = math::castUIntToInt(j.size());
     if (jSize == 0) {
       err = 4;
       break;

@@ -89,7 +89,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
   skeleton.addBodyNode(bodyNode);
   skeleton.init();
 
-  int dof = _joint->getDof();
+  int dof = _joint->getNumDofs();
 
   //--------------------------------------------------------------------------
   //
@@ -111,7 +111,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
     skeleton.setVelocities(dq);
     skeleton.computeForwardKinematics(true, true, false);
 
-    if (_joint->getDof() == 0)
+    if (_joint->getNumDofs() == 0)
       return;
 
     Eigen::Isometry3d T = _joint->getLocalTransform();
@@ -231,7 +231,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
     skeleton.setPositions(q);
     skeleton.computeForwardKinematics(true, false, false);
 
-    if (_joint->getDof() == 0)
+    if (_joint->getNumDofs() == 0)
       return;
 
     Eigen::Isometry3d T = _joint->getLocalTransform();

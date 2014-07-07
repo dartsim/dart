@@ -51,11 +51,11 @@ dynamics::BodyNode*CollisionNode::getBodyNode() const {
   return mBodyNode;
 }
 
-void CollisionNode::setIndex(int _idx) {
+void CollisionNode::setIndex(size_t _idx) {
   mIndex = _idx;
 }
 
-int CollisionNode::getIndex() const {
+size_t CollisionNode::getIndex() const {
   return mIndex;
 }
 

@@ -38,6 +38,8 @@
 #ifndef DART_COLLISION_COLLISIONNODE_H_
 #define DART_COLLISION_COLLISIONNODE_H_
 
+#include <cstddef>
+
 namespace dart {
 namespace dynamics {
 class BodyNode;
@@ -60,17 +62,17 @@ public:
   dynamics::BodyNode* getBodyNode() const;
 
   /// \brief
-  void setIndex(int _idx);
+  void setIndex(size_t _idx);
 
   /// \brief
-  int getIndex() const;
+  size_t getIndex() const;
 
 protected:
   /// \brief
   dynamics::BodyNode* mBodyNode;
 
   /// \brief
-  int mIndex;
+  size_t mIndex;
 };
 
 }  // namespace collision

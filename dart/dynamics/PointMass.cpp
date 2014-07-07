@@ -50,23 +50,23 @@ namespace dart {
 namespace dynamics {
 
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
-  : mPositions(Eigen::Vector3d::Zero()),
-    mVelocities(Eigen::Vector3d::Zero()),
-    mAccelerations(Eigen::Vector3d::Zero()),
-    mForces(Eigen::Vector3d::Zero()),
+  : // mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
+    mPositions(Eigen::Vector3d::Zero()),
     mPositionLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
-    mVelocityLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
-    mAccelerationLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
-    mForceLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
     mPositionUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
-    mVelocityUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
-    mAccelerationUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
-    mForceUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
     mPositionDeriv(Eigen::Vector3d::Zero()),
+    mVelocities(Eigen::Vector3d::Zero()),
+    mVelocityLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mVelocityUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
     mVelocitiesDeriv(Eigen::Vector3d::Zero()),
+    mAccelerations(Eigen::Vector3d::Zero()),
+    mAccelerationLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mAccelerationUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
     mAccelerationsDeriv(Eigen::Vector3d::Zero()),
+    mForces(Eigen::Vector3d::Zero()),
+    mForceLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
+    mForceUpperLimits(Eigen::Vector3d::Constant(DART_DBL_INF)),
     mForcesDeriv(Eigen::Vector3d::Zero()),
-//    mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
     mVelocityChanges(Eigen::Vector3d::Zero()),
     // mImpulse(Eigen::Vector3d::Zero()),
     mConstraintImpulses(Eigen::Vector3d::Zero()),
@@ -80,16 +80,20 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mBeta(Eigen::Vector3d::Zero()),
     mA(Eigen::Vector3d::Zero()),
     mF(Eigen::Vector3d::Zero()),
+    mPsi(0.0),
+    mImplicitPsi(0.0),
+    mPi(0.0),
+    mImplicitPi(0.0),
     mB(Eigen::Vector3d::Zero()),
     mParentSoftBodyNode(_softBodyNode),
     mFext(Eigen::Vector3d::Zero()),
-    mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))),
     mIsColliding(false),
     mDelV(Eigen::Vector3d::Zero()),
     mImpB(Eigen::Vector3d::Zero()),
     mImpAlpha(Eigen::Vector3d::Zero()),
     mImpBeta(Eigen::Vector3d::Zero()),
-    mImpF(Eigen::Vector3d::Zero())
+    mImpF(Eigen::Vector3d::Zero()),
+    mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01)))
 {
   assert(mParentSoftBodyNode != NULL);
 }
@@ -122,7 +126,7 @@ int PointMass::getNumConnectedPointMasses() const
   return mConnectedPointMasses.size();
 }
 
-PointMass*PointMass::getConnectedPointMass(int _idx) const
+PointMass* PointMass::getConnectedPointMass(size_t _idx) const
 {
   assert(0 <= _idx && _idx < mConnectedPointMasses.size());
 
@@ -140,7 +144,7 @@ bool PointMass::isColliding()
 }
 
 //==============================================================================
-size_t PointMass::getDof() const
+size_t PointMass::getNumDofs() const
 {
   return 3;
 }
@@ -432,7 +436,7 @@ Eigen::Vector3d PointMass::getConstraintImpulses() const
 //==============================================================================
 void PointMass::clearConstraintImpulse()
 {
-  assert(getDof() == 3);
+  assert(getNumDofs() == 3);
   mConstraintImpulses.setZero();
   mDelV.setZero();
   mImpB.setZero();
@@ -653,7 +657,7 @@ void PointMass::updateBiasForce(double _dt, const Eigen::Vector3d& _gravity)
            - (_dt * (kv + nN * ke) + kd) * mVelocities
            - mMass * mEta
            - mB;
-  for (int i = 0; i < mConnectedPointMasses.size(); ++i)
+  for (size_t i = 0; i < mConnectedPointMasses.size(); ++i)
   {
     mAlpha += ke * (mConnectedPointMasses[i]->mPositions
                     + _dt * mConnectedPointMasses[i]->mVelocities);

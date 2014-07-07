@@ -57,8 +57,8 @@ namespace simulation {
 //==============================================================================
 World::World()
   : mGravity(0.0, 0.0, -9.81),
-    mTime(0.0),
     mTimeStep(0.001),
+    mTime(0.0),
     mFrame(0),
     mIntegrator(new integration::SemiImplicitEulerIntegrator()),
     mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
@@ -212,7 +212,7 @@ dynamics::Skeleton* World::getSkeleton(const std::string& _name) const
 }
 
 //==============================================================================
-int World::getNumSkeletons() const
+size_t World::getNumSkeletons() const
 {
   return mSkeletons.size();
 }
@@ -232,7 +232,7 @@ void World::addSkeleton(dynamics::Skeleton* _skeleton)
 
   mSkeletons.push_back(_skeleton);
   _skeleton->init(mTimeStep, mGravity);
-  mIndices.push_back(mIndices.back() + _skeleton->getDof());
+  mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
@@ -245,7 +245,7 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
   assert(_skeleton != NULL && "Invalid skeleton.");
 
   // Find index of _skeleton in mSkeleton.
-  int i = 0;
+  size_t i = 0;
   for (; i < mSkeletons.size(); ++i)
   {
     if (mSkeletons[i] == _skeleton)
@@ -263,7 +263,7 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
 
   // Update mIndices.
   for (++i; i < mSkeletons.size() - 1; ++i)
-    mIndices[i] = mIndices[i+1] - _skeleton->getDof();
+    mIndices[i] = mIndices[i+1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
@@ -314,9 +314,9 @@ void World::bake()
   int nContacts = cd->getNumContacts();
   int nSkeletons = getNumSkeletons();
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
-  for (unsigned int i = 0; i < getNumSkeletons(); i++)
+  for (size_t i = 0; i < getNumSkeletons(); i++)
   {
-    state.segment(getIndex(i), getSkeleton(i)->getDof())
+    state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
         = getSkeleton(i)->getPositions();
   }
   for (int i = 0; i < nContacts; i++)

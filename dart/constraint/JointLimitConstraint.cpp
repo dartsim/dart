@@ -81,7 +81,7 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
   mActive[5] = false;
 
   // TODO(JS): We need to be able to access child body node from joint
-  for (int i = 0; i < mJoint->getSkeleton()->getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < mJoint->getSkeleton()->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* bodyNode = mJoint->getSkeleton()->getBodyNode(i);
     if (bodyNode->getParentJoint() == mJoint)
@@ -196,7 +196,7 @@ void JointLimitConstraint::update()
   // Reset dimention
   mDim = 0;
 
-  size_t dof = mJoint->getDof();
+  size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)
   {
     // Lower bound check
@@ -253,7 +253,7 @@ void JointLimitConstraint::update()
 void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 {
   size_t index = 0;
-  size_t dof = mJoint->getDof();
+  size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
@@ -306,7 +306,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
   size_t localIndex = 0;
   dynamics::Skeleton* skeleton = mJoint->getSkeleton();
 
-  size_t dof = mJoint->getDof();
+  size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
@@ -332,7 +332,7 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
   size_t localIndex = 0;
-  size_t dof = mJoint->getDof();
+  size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
@@ -373,7 +373,7 @@ void JointLimitConstraint::unexcite()
 void JointLimitConstraint::applyImpulse(double* _lambda)
 {
   size_t localIndex = 0;
-  size_t dof = mJoint->getDof();
+  size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)

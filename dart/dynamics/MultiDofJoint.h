@@ -67,7 +67,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual size_t getDof() const;
+  DEPRECATED(4.1) virtual size_t getDof() const;
+
+  // Documentation inherited
+  virtual size_t getNumDofs() const;
 
   // Documentation inherited
   virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
@@ -509,33 +512,29 @@ protected:
 template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
   : Joint(_name),
-    mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocities(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositionLowerLimits(
-      Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mVelocityLowerLimits(
-      Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mAccelerationLowerLimits(
-      Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mForceLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mPositionUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
-    mVelocityUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
-    mAccelerationUpperLimits(
-      Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
-    mForceUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
-    mPositionDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocitiesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mIndexInSkeleton(Eigen::Matrix<size_t, DOF, 1>::Constant(0u)),
+    mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mPositionLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
+    mPositionUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
+    mPositionDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mVelocities(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mVelocityLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
+    mVelocityUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
+    mVelocitiesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mAccelerationLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
+    mAccelerationUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
+    mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mForceLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
+    mForceUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
+    mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mVelocityChanges(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     // mImpulse(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mConstraintImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mSpringStiffness(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mDampingCoefficient(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mRestPosition(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mDampingCoefficient(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
     mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
     mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
@@ -555,6 +554,13 @@ MultiDofJoint<DOF>::~MultiDofJoint()
 template <size_t DOF>
 size_t MultiDofJoint<DOF>::getDof() const
 {
+  return getNumDofs();
+}
+
+//==============================================================================
+template <size_t DOF>
+size_t MultiDofJoint<DOF>::getNumDofs() const
+{
   return DOF;
 }
 
@@ -563,7 +569,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
                                             size_t _indexInSkeleton)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setIndexInSkeleton index[" << _index << "] out of range"
           << std::endl;
@@ -577,7 +583,7 @@ void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
 template <size_t DOF>
 size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getIndexInSkeleton index[" << _index << "] out of range"
           << std::endl;
@@ -591,7 +597,7 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setPosition index[" << _index << "] out of range" << std::endl;
     return;
@@ -604,7 +610,7 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getPosition(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setPosition index[" << _index << "] out of range" << std::endl;
     return 0.0;
@@ -617,10 +623,10 @@ double MultiDofJoint<DOF>::getPosition(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (_positions.size() != getDof())
+  if (_positions.size() != getNumDofs())
   {
     dterr << "setPositions positions's size[" << _positions.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -645,7 +651,7 @@ void MultiDofJoint<DOF>::resetPositions()
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setPositionLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -659,7 +665,7 @@ void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getPositionLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -673,7 +679,7 @@ double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setPositionUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -687,7 +693,7 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getPositionUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -701,7 +707,7 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setVelocity index[" << _index << "] out of range" << std::endl;
     return;
@@ -714,7 +720,7 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getVelocity(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getVelocity index[" << _index << "] out of range" << std::endl;
     return 0.0;
@@ -727,10 +733,10 @@ double MultiDofJoint<DOF>::getVelocity(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (_velocities.size() != getDof())
+  if (_velocities.size() != getNumDofs())
   {
     dterr << "setVelocities velocities's size[" << _velocities.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -755,7 +761,7 @@ void MultiDofJoint<DOF>::resetVelocities()
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setVelocityLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -769,7 +775,7 @@ void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getVelocityLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -783,7 +789,7 @@ double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setVelocityUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -797,7 +803,7 @@ void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getVelocityUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -811,7 +817,7 @@ double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setAcceleration index[" << _index << "] out of range"
           << std::endl;
@@ -825,7 +831,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getAcceleration index[" << _index << "] out of range"
           << std::endl;
@@ -839,10 +845,10 @@ double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (_accelerations.size() != getDof())
+  if (_accelerations.size() != getNumDofs())
   {
     dterr << "setAccelerations accelerations's size[" << _accelerations.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -868,7 +874,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
                                                    double _acceleration)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setAccelerationLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -882,7 +888,7 @@ void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
 template <size_t DOF>
 double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getAccelerationLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -897,7 +903,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
                                                    double _acceleration)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setAccelerationUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -911,7 +917,7 @@ void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
 template <size_t DOF>
 double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getAccelerationUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -925,7 +931,7 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setForce index[" << _index << "] out of range" << std::endl;
     return;
@@ -938,7 +944,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getForce(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getForce index[" << _index << "] out of range" << std::endl;
     return 0.0;
@@ -951,10 +957,10 @@ double MultiDofJoint<DOF>::getForce(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 {
-  if (_forces.size() != getDof())
+  if (_forces.size() != getNumDofs())
   {
     dterr << "setForces forces's size[" << _forces.size()
-          << "] is different with the dof [" << getDof() << "]" << std::endl;
+          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
     return;
   }
 
@@ -979,7 +985,7 @@ void MultiDofJoint<DOF>::resetForces()
 template <size_t DOF>
 void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setForceLowerLimit index[" << _index << "] out of range"
           << std::endl;
@@ -993,7 +999,7 @@ void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getForceMin index[" << _index << "] out of range" << std::endl;
     return 0.0;
@@ -1006,7 +1012,7 @@ double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setForceUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -1020,7 +1026,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getForceUpperLimit index[" << _index << "] out of range"
           << std::endl;
@@ -1035,7 +1041,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocityChange(size_t _index,
                                            double _velocityChange)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setVelocityChange index[" << _index << "] out of range"
           << std::endl;
@@ -1049,7 +1055,7 @@ void MultiDofJoint<DOF>::setVelocityChange(size_t _index,
 template <size_t DOF>
 double MultiDofJoint<DOF>::getVelocityChange(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getVelocityChange index[" << _index << "] out of range"
           << std::endl;
@@ -1070,7 +1076,7 @@ void MultiDofJoint<DOF>::resetVelocityChanges()
 template <size_t DOF>
 void MultiDofJoint<DOF>::setConstraintImpulse(size_t _index, double _impulse)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setConstraintImpulse index[" << _index << "] out of range"
           << std::endl;
@@ -1084,7 +1090,7 @@ void MultiDofJoint<DOF>::setConstraintImpulse(size_t _index, double _impulse)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getConstraintImpulse(size_t _index)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getConstraintImpulse index[" << _index << "] out of range"
           << std::endl;
@@ -1119,7 +1125,7 @@ void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setSpringStiffness index[" << _index << "] out of range\n";
     return;
@@ -1134,7 +1140,7 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getSpringStiffness index[" << _index << "] out of range\n";
     return 0.0;
@@ -1147,7 +1153,7 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setRestPosition index[" << _index << "] out of range\n";
     return;
@@ -1170,7 +1176,7 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getRestPosition index[" << _index << "] out of range\n";
     return 0.0;
@@ -1183,7 +1189,7 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "setDampingCoefficient index[" << _index << "] out of range\n";
     return;
@@ -1199,7 +1205,7 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 template <size_t DOF>
 double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
 {
-  if (_index >= getDof())
+  if (_index >= getNumDofs())
   {
     dterr << "getDampingCoefficient index[" << _index << "] out of range\n";
     return 0.0;

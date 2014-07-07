@@ -164,8 +164,8 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterf
     }
 
     dynamics::Skeleton* skeleton = new dynamics::Skeleton(_model->getName());
-    dynamics::BodyNode* rootNode;
-    dynamics::Joint* rootJoint;
+    dynamics::BodyNode* rootNode = NULL;
+    dynamics::Joint* rootJoint = NULL;
 
     const urdf::Link* root = _model->getRoot().get();
     if(root->name == "world") {
@@ -191,7 +191,7 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterf
     rootNode->setParentJoint(rootJoint);
     skeleton->addBodyNode(rootNode);
 
-    for(unsigned int i = 0; i < root->child_links.size(); i++) {
+    for(size_t i = 0; i < root->child_links.size(); i++) {
         createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode, _rootToSkelPath);
     }
 
@@ -271,7 +271,7 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
   joint->setName(_jt->name);
   joint->setTransformFromParentBodyNode(toEigen(_jt->parent_to_joint_origin_transform));
   joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-  if(joint->getDof() == 1 && _jt->limits) {
+  if(joint->getNumDofs() == 1 && _jt->limits) {
     joint->setVelocityLowerLimit(0, -_jt->limits->velocity);
     joint->setVelocityUpperLimit(0, _jt->limits->velocity);
     joint->setForceLowerLimit(0, -_jt->limits->effort);
@@ -288,8 +288,8 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::strin
   dynamics::BodyNode* node = new dynamics::BodyNode(_lk->name);
   
   // Mesh Loading
-  //FIXME: Shouldn't mass and inertia default to 0?
-  double mass = 0.1;
+  // FIXME: Shouldn't mass and inertia default to 0?
+  // double mass = 0.1;
   Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
   inertia *= 0.1;
   

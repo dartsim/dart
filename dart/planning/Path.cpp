@@ -53,9 +53,9 @@ class LinearPathSegment : public PathSegment
 {
 public:
 	LinearPathSegment(const Eigen::VectorXd &start, const Eigen::VectorXd &end) :
+    PathSegment((end-start).norm()),
 		start(start),
-		end(end),
-		PathSegment((end-start).norm())
+    end(end)
 	{
 	}
 
@@ -112,8 +112,8 @@ public:
 			return;
 		}
 
-		const double startDistance = (start - intersection).norm();
-		const double endDistance = (end - intersection).norm();
+    // const double startDistance = (start - intersection).norm();
+    // const double endDistance = (end - intersection).norm();
 
 		double distance = std::min((start - intersection).norm(), (end - intersection).norm());
 		const double angle = acos(startDirection.dot(endDirection));

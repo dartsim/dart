@@ -3469,7 +3469,10 @@ static unsigned get_color_profile(ColorProfile* profile,
   {
     for (i = 0; i < numpixels; i++)
     {
-      unsigned char r, g, b, a;
+      unsigned char r = 0;
+      unsigned char g = 0;
+      unsigned char b = 0;
+      unsigned char a = 0;
       error = getPixelColorRGBA8(&r, &g, &b, &a, in, i, mode);
       if(error) break;
 

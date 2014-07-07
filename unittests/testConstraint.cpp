@@ -117,9 +117,9 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   //----------------------------------------------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  int testCount = 1;
+  // size_t testCount = 1;
 #else
-  int testCount = 1;
+  // size_t testCount = 1;
 #endif
 
   World* world = new World;
@@ -151,10 +151,10 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   Skeleton* groundSkel = createGround(Vector3d(10000.0, 0.1, 10000.0),
                                       Vector3d(0.0, -0.05, 0.0));
   groundSkel->setMobile(false);
-  BodyNode* ground = groundSkel->getBodyNode(0);
+  // BodyNode* ground = groundSkel->getBodyNode(0);
   world->addSkeleton(groundSkel);
   EXPECT_EQ(groundSkel->getGravity(), world->getGravity());
-  assert(ground);
+  // assert(ground);
 
   EXPECT_EQ(world->getNumSkeletons(), 2);
 
@@ -162,8 +162,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   CollisionDetector* cd = cs->getCollisionDetector();
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  // double lb = -1.5 * DART_PI;
+  // double ub =  1.5 * DART_PI;
 
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i)
@@ -181,19 +181,19 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
       continue;
     }
 
-    for (int j = 0; j < cd->getNumContacts(); ++j)
-    {
-      Contact contact = cd->getContact(j);
-      Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
-      Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
+    // for (size_t j = 0; j < cd->getNumContacts(); ++j)
+    // {
+      // Contact contact = cd->getContact(j);
+      // Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
+      // Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
 
-//      std::cout << "pos1:" << pos1.transpose() << std::endl;
-//      std::cout << "vel1:" << vel1.transpose() << std::endl;
-    }
+      // std::cout << "pos1:" << pos1.transpose() << std::endl;
+      // std::cout << "vel1:" << vel1.transpose() << std::endl;
+    // }
 
     world->step();
 
-    for (int j = 0; j < cd->getNumContacts(); ++j)
+    for (size_t j = 0; j < cd->getNumContacts(); ++j)
     {
       Contact contact = cd->getContact(j);
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;

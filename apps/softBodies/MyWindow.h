@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -20,6 +19,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -35,38 +40,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/Paths.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "apps/forwardSim/MyWindow.h"
+#ifndef APPS_SOFTBODIES_MYWINDOW_H_
+#define APPS_SOFTBODIES_MYWINDOW_H_
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
-  assert(myWorld != NULL);
+#include "dart/math/MathTypes.h"
+#include "dart/gui/Win3D.h"
 
-  // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
-  myWorld->setTimeStep(1.0/2000);
+#include "dart/gui/SoftSimWindow.h"
 
-  int dof =  myWorld->getSkeleton(0)->getNumDofs();
-  Eigen::VectorXd initPose(dof);
-  for (int i = 0; i < dof; i++)
-    initPose[i] = dart::math::random(-0.5, 0.5);
-  myWorld->getSkeleton(0)->setPositions(initPose);
-  myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
+/// \brief
+class MyWindow : public dart::gui::SoftSimWindow
+{
+public:
+  /// \brief
+  MyWindow();
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+  /// \brief
+  virtual ~MyWindow();
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Forward Simulation");
-  glutMainLoop();
+  /// \brief
+  virtual void timeStepping();
 
-  return 0;
-}
+  /// \brief
+  virtual void keyboard(unsigned char key, int x, int y);
+
+  /// \brief
+  virtual void drawSkels();
+
+private:
+  /// \brief
+  Eigen::Vector3d mForceOnRigidBody;
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
+
+  /// \brief
+  Eigen::Vector3d mForceOnVertex;
+};
+
+#endif  // APPS_SOFTBODIES_MYWINDOW_H_

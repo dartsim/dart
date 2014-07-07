@@ -147,7 +147,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 }
 
 //==============================================================================
-void Controller::changeStateMachine(int _idx, double _currentTime)
+void Controller::changeStateMachine(size_t _idx, double _currentTime)
 {
   assert(0 <= _idx && _idx <= mStateMachines.size()
          && "Invalid index of StateMachine.");
@@ -208,10 +208,10 @@ void Controller::printDebugInfo() const
 {
   std::cout << "[ATLAS Robot]"  << std::endl
             << " NUM NODES : " << mAtlasRobot->getNumBodyNodes() << std::endl
-            << " NUM DOF   : " << mAtlasRobot->getDof() << std::endl
+            << " NUM DOF   : " << mAtlasRobot->getNumDofs() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
-  for(int i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
+  for(size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
   {
     Joint* joint = mAtlasRobot->getJoint(i);
     BodyNode* body = mAtlasRobot->getBodyNode(i);
@@ -219,7 +219,7 @@ void Controller::printDebugInfo() const
 
     std::cout << "  Joint [" << i << "]: "
               << joint->getName()
-              << " (" << joint->getDof() << ")"
+              << " (" << joint->getNumDofs() << ")"
               << std::endl;
     if (parentBody != NULL)
     {
@@ -814,12 +814,12 @@ StateMachine* Controller::_createRunningStateMachine()
 //==============================================================================
 void Controller::_setJointDamping()
 {
-  for (int i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
+  for (size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
   {
     Joint* joint = mAtlasRobot->getJoint(i);
-    if (joint->getDof() > 0)
+    if (joint->getNumDofs() > 0)
     {
-      for (int j = 0; j < joint->getDof(); ++j)
+      for (size_t j = 0; j < joint->getNumDofs(); ++j)
         joint->setDampingCoefficient(j, 80.0);
     }
   }

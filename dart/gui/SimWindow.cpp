@@ -79,7 +79,7 @@ void SimWindow::timeStepping() {
 }
 
 void SimWindow::drawSkels() {
-  for (int i = 0; i < mWorld->getNumSkeletons(); i++)
+  for (size_t i = 0; i < mWorld->getNumSkeletons(); i++)
     mWorld->getSkeleton(i)->draw(mRI);
 }
 
@@ -104,15 +104,15 @@ void SimWindow::draw() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   if (!mSimulating) {
       if (mPlayFrame < mWorld->getRecording()->getNumFrames()) {
-      int nSkels = mWorld->getNumSkeletons();
-      for (unsigned int i = 0; i < nSkels; i++) {
-        int start = mWorld->getIndex(i);
-        int size = mWorld->getSkeleton(i)->getDof();
+      size_t nSkels = mWorld->getNumSkeletons();
+      for (size_t i = 0; i < nSkels; i++) {
+        // size_t start = mWorld->getIndex(i);
+        // size_t size = mWorld->getSkeleton(i)->getNumDofs();
         mWorld->getSkeleton(i)->setPositions(mWorld->getRecording()->getConfig(mPlayFrame, i));
         mWorld->getSkeleton(i)->computeForwardKinematics(true, false, false);
       }
       if (mShowMarkers) {
-        int sumDofs = mWorld->getIndex(nSkels);
+        // size_t sumDofs = mWorld->getIndex(nSkels);
         int nContact = mWorld->getRecording()->getNumContacts(mPlayFrame);
         for (int i = 0; i < nContact; i++) {
             Eigen::Vector3d v = mWorld->getRecording()->getContactPoint(mPlayFrame, i);
@@ -134,7 +134,7 @@ void SimWindow::draw() {
     if (mShowMarkers) {
       collision::CollisionDetector* cd =
           mWorld->getConstraintSolver()->getCollisionDetector();
-      for (int k = 0; k < cd->getNumContacts(); k++) {
+      for (size_t k = 0; k < cd->getNumContacts(); k++) {
         Eigen::Vector3d v = cd->getContact(k).point;
         Eigen::Vector3d f = cd->getContact(k).force / 10.0;
         glBegin(GL_LINES);

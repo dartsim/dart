@@ -52,7 +52,7 @@ namespace collision {
 //==============================================================================
 FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode) {
-  for (int i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
+  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
     dynamics::Shape* shape = _bodyNode->getCollisionShape(i);
     mShapes.push_back(shape);
     switch (shape->getShapeType()) {

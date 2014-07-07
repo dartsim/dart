@@ -67,7 +67,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 
   inFile.precision(20);
   char buffer[256];
-  int nDof;
+  size_t nDof;
 
   // nFrames =
   inFile >> buffer;
@@ -79,18 +79,18 @@ bool FileInfoDof::loadFile(const char* _fName)
   inFile >> buffer;
   inFile >> nDof;
 
-  if (mSkel == NULL || mSkel->getDof() != nDof)
+  if (mSkel == NULL || mSkel->getNumDofs() != nDof)
     return false;
 
   mDofs.resize(mNumFrames);
 
   // dof names
-  for (int i = 0; i < nDof; i++)
+  for (size_t i = 0; i < nDof; i++)
     inFile >> buffer;
-  for (int j = 0; j < mNumFrames; j++)
+  for (size_t j = 0; j < mNumFrames; j++)
   {
     mDofs[j].resize(nDof);
-    for (int i = 0; i < nDof; i++)
+    for (size_t i = 0; i < nDof; i++)
     {
       double val;
       inFile >> val;
@@ -113,7 +113,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 }
 
 //==============================================================================
-bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
+bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
                            double _sampleRate )
 {
   if (_end < _start) return false;
@@ -121,13 +121,13 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
   std::ofstream outFile(_fName, std::ios::out);
   if (outFile.fail()) return false;
 
-  int first = _start < mNumFrames ? _start : mNumFrames - 1;
-  int last = _end < mNumFrames ? _end : mNumFrames - 1;
+  size_t first = _start < mNumFrames ? _start : mNumFrames - 1;
+  size_t last = _end < mNumFrames ? _end : mNumFrames - 1;
 
   outFile.precision(20);
-  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getDof() << std::endl;
+  outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumDofs() << std::endl;
 
-  for (int i = 0; i < mSkel->getDof(); i++)
+  for (size_t i = 0; i < mSkel->getNumDofs(); i++)
   {
     dynamics::GenCoordInfo info = mSkel->getGenCoordInfo(i);
     outFile << info.joint->getName() << "." << info.localIndex << ' ';
@@ -135,9 +135,9 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
 
   outFile << std::endl;
 
-  for (int i = first; i <= last; i++)
+  for (size_t i = first; i <= last; i++)
   {
-    for (int j = 0; j < mSkel->getDof(); j++)
+    for (size_t j = 0; j < mSkel->getNumDofs(); j++)
       outFile << mDofs[i][j] << ' ';
     outFile << std::endl;
   }
@@ -147,8 +147,8 @@ bool FileInfoDof::saveFile(const char* _fName, int _start, int _end,
   outFile.close();
 
   std::string text = _fName;
-  int lastSlash = text.find_last_of("/");
-  text = text.substr(lastSlash+1);
+  size_t lastSlash = text.find_last_of("/");
+  text = text.substr(lastSlash + 1);
   std::strcpy(mFileName, text.c_str());
   return true;
 }
@@ -160,7 +160,7 @@ void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
 }
 
 //==============================================================================
-double FileInfoDof::getDofAt(int _frame, int _id) const
+double FileInfoDof::getDofAt(size_t _frame, size_t _id) const
 {
   assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id];
 }

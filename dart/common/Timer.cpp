@@ -49,9 +49,10 @@ namespace common {
 
 //==============================================================================
 Timer::Timer(const std::string& _name)
-  : mName(_name),
-    mCount(0.0),
+  : mCount(0),
+    mLastElapsedTime(0.0),
     mTotalElapsedTime(0.0),
+    mName(_name),
     mIsStarted(false)
 {
 #if WIN32

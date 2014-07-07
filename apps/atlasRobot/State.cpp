@@ -61,8 +61,8 @@ using namespace dart::constraint;
 
 //==============================================================================
 State::State(Skeleton* _skeleton, const std::string& _name)
-  : mSkeleton(_skeleton),
-    mName(_name),
+  : mName(_name),
+    mSkeleton(_skeleton),
     mNextState(this),
     mBeginTime(0.0),
     mEndTime(0.0),
@@ -73,7 +73,7 @@ State::State(Skeleton* _skeleton, const std::string& _name)
     mDesiredGlobalPelvisAngleOnSagital(0.0),
     mDesiredGlobalPelvisAngleOnCoronal(0.0)
 {
-  int dof = mSkeleton->getDof();
+  int dof = mSkeleton->getNumDofs();
 
   mDesiredJointPositions        = Eigen::VectorXd::Zero(dof);
   mDesiredJointPositionsBalance = Eigen::VectorXd::Zero(dof);
@@ -153,7 +153,7 @@ void State::computeControlForce(double _timestep)
 {
   assert(mNextState != NULL && "Next state should be set.");
 
-  int dof = mSkeleton->getDof();
+  int dof = mSkeleton->getNumDofs();
   VectorXd q = mSkeleton->getPositions();
   VectorXd dq = mSkeleton->getVelocities();
 
@@ -442,7 +442,7 @@ void State::_buildJointMap()
 {
   mJointMap.clear();
 
-  for (int i = 0; i < mSkeleton->getNumBodyNodes(); ++i)
+  for (size_t i = 0; i < mSkeleton->getNumBodyNodes(); ++i)
     mJointMap[mSkeleton->getJoint(i)->getName()] = i;
 }
 

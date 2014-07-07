@@ -103,7 +103,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
   Constraint* constraint;
-  for (int i = 0; i < numConstraints; ++i)
+  for (size_t i = 0; i < numConstraints; ++i)
   {
     constraint = _group->getConstraint(i);
 
@@ -119,7 +119,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 
     // Fill a matrix by impulse tests: A
     constraint->excite();
-    for (int j = 0; j < constraint->getDimension(); ++j)
+    for (size_t j = 0; j < constraint->getDimension(); ++j)
     {
       // Adjust findex for global index
       if (findex[offset[i] + j] >= 0)
@@ -131,16 +131,16 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
       // Fill upper triangle blocks of A matrix
       int index = nSkip * (offset[i] + j) + offset[i];
       constraint->getVelocityChange(A + index, true);
-      for (int k = i + 1; k < numConstraints; ++k)
+      for (size_t k = i + 1; k < numConstraints; ++k)
       {
         index = nSkip * (offset[i] + j) + offset[k];
         _group->getConstraint(k)->getVelocityChange(A + index, false);
       }
 
       // Filling symmetric part of A matrix
-      for (int k = 0; k < i; ++k)
+      for (size_t k = 0; k < i; ++k)
       {
-        for (int l = 0; l < _group->getConstraint(k)->getDimension(); ++l)
+        for (size_t l = 0; l < _group->getConstraint(k)->getDimension(); ++l)
         {
           int index1 = nSkip * (offset[i] + j) + offset[k] + l;
           int index2 = nSkip * (offset[k] + l) + offset[i] + j;
@@ -175,7 +175,7 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  for (int i = 0; i < numConstraints; ++i)
+  for (size_t i = 0; i < numConstraints; ++i)
   {
     constraint = _group->getConstraint(i);
     constraint->applyImpulse(x + offset[i]);
@@ -197,17 +197,17 @@ void PGSLCPSolver::solve(ConstrainedGroup* _group)
 #ifndef NDEBUG
 bool PGSLCPSolver::isSymmetric(size_t _n, double* _A)
 {
-  int nSkip = dPAD(_n);
-  for (int i = 0; i < _n; ++i)
+  size_t nSkip = dPAD(_n);
+  for (size_t i = 0; i < _n; ++i)
   {
-    for (int j = 0; j < _n; ++j)
+    for (size_t j = 0; j < _n; ++j)
     {
       if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
-        for (int k = 0; k < _n; ++k)
+        for (size_t k = 0; k < _n; ++k)
         {
-          for (int l = 0; l < nSkip; ++l)
+          for (size_t l = 0; l < nSkip; ++l)
           {
             std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
           }
@@ -228,17 +228,17 @@ bool PGSLCPSolver::isSymmetric(size_t _n, double* _A)
 bool PGSLCPSolver::isSymmetric(size_t _n, double* _A,
                                    size_t _begin, size_t _end)
 {
-  int nSkip = dPAD(_n);
-  for (int i = _begin; i <= _end; ++i)
+  size_t nSkip = dPAD(_n);
+  for (size_t i = _begin; i <= _end; ++i)
   {
-    for (int j = _begin; j <= _end; ++j)
+    for (size_t j = _begin; j <= _end; ++j)
     {
       if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
-        for (int k = 0; k < _n; ++k)
+        for (size_t k = 0; k < _n; ++k)
         {
-          for (int l = 0; l < nSkip; ++l)
+          for (size_t l = 0; l < nSkip; ++l)
           {
             std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
           }
@@ -260,11 +260,11 @@ void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
                              double* lo, double* hi, double* b,
                              double* w, int* findex)
 {
-  int nSkip = dPAD(_n);
+  size_t nSkip = dPAD(_n);
   std::cout << "A: " << std::endl;
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
-    for (int j = 0; j < nSkip; ++j)
+    for (size_t j = 0; j < nSkip; ++j)
     {
       std::cout << std::setprecision(4) << _A[i * nSkip + j] << " ";
     }
@@ -272,21 +272,21 @@ void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
   }
 
   std::cout << "b: ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << std::setprecision(4) << b[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "w: ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << w[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "x: ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << _x[i] << " ";
   }
@@ -307,7 +307,7 @@ void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
   //  std::cout << std::endl;
 
   std::cout << "frictionIndex: ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << findex[i] << " ";
   }
@@ -315,28 +315,28 @@ void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
 
   double* Ax  = new double[_n];
 
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     Ax[i] = 0.0;
   }
 
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
-    for (int j = 0; j < _n; ++j)
+    for (size_t j = 0; j < _n; ++j)
     {
       Ax[i] += _A[i * nSkip + j] * _x[j];
     }
   }
 
   std::cout << "Ax   : ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << Ax[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "b + w: ";
-  for (int i = 0; i < _n; ++i)
+  for (size_t i = 0; i < _n; ++i)
   {
     std::cout << b[i] + w[i] << " ";
   }

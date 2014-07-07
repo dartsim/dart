@@ -710,7 +710,7 @@ TEST(MATH, ADJOINT_MAPPING)
     Matrix<double,6,1> a3, a4;
     a3 << 1, 2, 3, 4, 5, 6;
 
-    Affine3d A3 = Translation3d(0.1, 0.2, 0.3) * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
+    // Affine3d A3 = Translation3d(0.1, 0.2, 0.3) * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
     Matrix<double,6,1> a5, a6;
     a5 << 1, 2, 3, 4, 5, 6;
 

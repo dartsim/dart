@@ -80,7 +80,7 @@ public:
   int getNumConnectedPointMasses() const;
 
   ///
-  PointMass* getConnectedPointMass(int _idx) const;
+  PointMass* getConnectedPointMass(size_t _idx) const;
 
   /// Set whether this point mass is colliding with others.
   /// \param[in] True if this point mass is colliding.
@@ -93,7 +93,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  size_t getDof() const;
+  size_t getNumDofs() const;
 
 //  // Documentation inherited
 //  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);

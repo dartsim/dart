@@ -89,7 +89,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
   {
     for (int j = 0; j < numSkeletons; j++)
     {
-      for (int k = 0; k < mRecord->getDof(j); k++)
+      for (int k = 0; k < mRecord->getNumDofs(j); k++)
       {
         inFile >> doubleVal;
         tempState.push_back(doubleVal);
@@ -112,7 +112,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
     }
 
     state.resize(tempState.size());
-    for (int j = 0; j < tempState.size(); j++)
+    for (size_t j = 0; j < tempState.size(); j++)
       state[j] = tempState[j];
     mRecord->addState(state);
     tempState.clear();
@@ -137,13 +137,13 @@ bool FileInfoWorld::saveFile(const char* _fName, simulation::Recording* _record)
   outFile << "numFrames " << _record->getNumFrames() << std::endl;
   outFile << "numSkeletons " << _record->getNumSkeletons() << std::endl;
   for (int i = 0; i < _record->getNumSkeletons(); i++)
-    outFile << "Skeleton" << i << " " << _record->getDof(i) << " ";
+    outFile << "Skeleton" << i << " " << _record->getNumDofs(i) << " ";
   outFile << std::endl;
   for (int i = 0; i < _record->getNumFrames(); i++)
   {
     for (int j = 0; j < _record->getNumSkeletons(); j++)
     {
-      for (int k = 0; k < _record->getDof(j); k++)
+      for (int k = 0; k < _record->getNumDofs(j); k++)
         outFile << _record->getGenCoord(i, j, k) << " ";
       outFile << std::endl;
     }

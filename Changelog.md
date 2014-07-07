@@ -1,4 +1,19 @@
-## DART 4.0
+### Version 4.1.0 (2014-07-02)
+
+1. Fixed bug in switching collision detectors
+    * [Issue #127](https://github.com/dartsim/dart/issues/127)
+    * [Pull request #195](https://github.com/dartsim/dart/pull/195)
+1. Fixed kinematics and dynamics when a skeleton has multiple parent-less bodies
+    * [Pull request #196](https://github.com/dartsim/dart/pull/196)
+1. Fixed issue on installing DART 4 alongside DART 3 on Linux
+    * [Issue #122](https://github.com/dartsim/dart/issues/122)
+    * [Pull request #203](https://github.com/dartsim/dart/pull/203)
+1. Fixed warnings on gcc
+    * [Pull request #206](https://github.com/dartsim/dart/pull/206)
+1. Renamed getDof() to getNumDofs()
+    * [Pull request #209](https://github.com/dartsim/dart/pull/209)
+1. Added cylinder shape for soft body
+    * [Pull request #210](https://github.com/dartsim/dart/pull/210)
 
 ### Version 4.0.0 (2014-06-02)
 

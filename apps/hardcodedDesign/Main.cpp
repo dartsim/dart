@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
   inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   double mass = 1.0;
 
-  // ***** BodyNode 1: Left Hip Yaw (LHY) ***** *
+  // BodyNode 1: Left Hip Yaw (LHY)
   dart::dynamics::BodyNode* node = new dart::dynamics::BodyNode("LHY");
   dart::dynamics::Joint* joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_YAW);
   joint->setName("LHY");
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   node->setParentJoint(joint);
   LeftLegSkel.addBodyNode(node);
 
-  // ***** BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY *****\
+  // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
 
   dart::dynamics::BodyNode* parent_node = LeftLegSkel.getBodyNode("LHY");
   node = new dart::dynamics::BodyNode("LHR");
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
   parent_node->addChildBodyNode(node);
   LeftLegSkel.addBodyNode(node);
 
-  // ***** BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR *****
+  // BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR
   parent_node = LeftLegSkel.getBodyNode("LHR");
   node = new dart::dynamics::BodyNode("LHP");
   joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_ROLL);
