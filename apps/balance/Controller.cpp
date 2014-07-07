@@ -101,8 +101,6 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::VectorXd qddot =
       invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
 
-  std::cout << mSkel->getConstraintImpulses().transpose() << std::endl;
-
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane

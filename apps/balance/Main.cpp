@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
   genCoordIds.push_back(19);  // right ankle
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
-  initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
+  initConfig << -0.1, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, 0.0;
   myWorld->getSkeleton(1)->setPositionSegment(genCoordIds, initConfig);
   myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
   dart::dynamics::Skeleton* skeleton = myWorld->getSkeleton(1);

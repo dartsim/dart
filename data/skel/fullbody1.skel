@@ -384,7 +384,7 @@
             </body>
 
             <body name="h_bicep_left">
-                <transformation>0.0 0.397146 -0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 0.397146 -0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>1.6219</mass>
                     <offset>0.0 -0.1308 0.0</offset>
@@ -410,7 +410,7 @@
             </body>
 
             <body name="h_forearm_left">
-                <transformation>0.0 0.135546 -0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 0.135546 -0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.6909</mass>
                     <offset>0.0 -0.1012 0.0</offset>
@@ -436,7 +436,7 @@
             </body>
 
             <body name="h_hand_left">
-                <transformation>0.0 -0.066854 -0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 -0.066854 -0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.2940</mass>
                     <offset>0.0 -0.06595 0.0</offset>
@@ -490,7 +490,7 @@
             </body>
 
             <body name="h_bicep_right">
-                <transformation>0.0 0.397146 0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 0.397146 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>1.6219</mass>
                     <offset>0.0 -0.1308 0.0</offset>
@@ -516,7 +516,7 @@
             </body>
 
             <body name="h_forearm_right">
-                <transformation>0.0 0.135546 0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 0.135546 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.6909</mass>
                     <offset>0.0 0 0.0</offset>
@@ -542,7 +542,7 @@
             </body>
 
             <body name="h_hand_right">
-                <transformation>0.0 -0.066854 0.169809 0.0 0.0 0.16</transformation>
+                <transformation>0.0 -0.066854 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.2940</mass>
                     <offset>0.0 -0.06595 0.0</offset>
@@ -716,7 +716,7 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                 </axis>
-                <init_pos>-0.14</init_pos>
+                <init_pos>0.0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 
@@ -736,7 +736,7 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                 </axis>
-                <init_pos>0.7</init_pos>
+                <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 
@@ -759,7 +759,7 @@
                 <axis>
                     <xyz>1.0 0.0 0.0</xyz>
                 </axis>
-                <init_pos>0.14</init_pos>
+                <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 
@@ -779,7 +779,7 @@
                 <axis>
                     <xyz>0.0 0.0 1.0</xyz>
                 </axis>
-                <init_pos>0.7</init_pos>
+                <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 
