@@ -69,7 +69,8 @@ double SoftContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
-SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
+SoftContactConstraint::SoftContactConstraint(
+    const collision::Contact& _contact)
   : Constraint(),
     mBodyNode1(_contact.bodyNode1),
     mBodyNode2(_contact.bodyNode2),
@@ -84,8 +85,30 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
     mIsBounceOn(false),
     mActive(false)
 {
+  dterr << "This constructor is deprecated. Please don't use me anymore."
+        << std::endl;
+}
+
+//==============================================================================
+SoftContactConstraint::SoftContactConstraint(
+    collision::Contact& _contact, double _timeStep)
+  : Constraint(),
+    mTimeStep(_timeStep),
+    mBodyNode1(_contact.bodyNode1),
+    mBodyNode2(_contact.bodyNode2),
+    mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
+    mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
+    mPointMass1(NULL),
+    mPointMass2(NULL),
+    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
+    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
+    mIsFrictionOn(true),
+    mAppliedImpulseIndex(-1),
+    mIsBounceOn(false),
+    mActive(false)
+{
   // TODO(JS): Assumed single contact
-  mContacts.push_back(_contact);
+  mContacts.push_back(&_contact);
 
   // Set the colliding state of body nodes and point masses to false
   if (mSoftBodyNode1)
@@ -171,13 +194,13 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
     for (size_t i = 0; i < mContacts.size(); ++i)
     {
-      const collision::Contact& ct = mContacts[i];
+      collision::Contact* ct = mContacts[i];
 
       // TODO(JS): Assumed that the number of tangent basis is 2.
-      Eigen::MatrixXd D = getTangentBasisMatrixODE(ct.normal);
+      Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::fabs(ct.normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::fabs(ct.normal.dot(D.col(1))) < DART_EPSILON);
+      assert(std::fabs(ct->normal.dot(D.col(0))) < DART_EPSILON);
+      assert(std::fabs(ct->normal.dot(D.col(1))) < DART_EPSILON);
 //      if (D.col(0).dot(D.col(1)) > 0.0)
 //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
       assert(fabs(D.col(0).dot(D.col(1))) < DART_EPSILON);
@@ -186,14 +209,14 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
       // Jacobian for normal contact
       bodyDirection1.noalias()
-          = mBodyNode1->getTransform().linear().transpose() * ct.normal;
+          = mBodyNode1->getTransform().linear().transpose() * ct->normal;
       bodyDirection2.noalias()
-          = mBodyNode2->getTransform().linear().transpose() * -ct.normal;
+          = mBodyNode2->getTransform().linear().transpose() * -ct->normal;
 
       bodyPoint1.noalias()
-          = mBodyNode1->getTransform().inverse() * ct.point;
+          = mBodyNode1->getTransform().inverse() * ct->point;
       bodyPoint2.noalias()
-          = mBodyNode2->getTransform().inverse() * ct.point;
+          = mBodyNode2->getTransform().inverse() * ct->point;
 
       mJacobians1[idx].head<3>() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[idx].head<3>() = bodyPoint2.cross(bodyDirection2);
@@ -210,9 +233,9 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
           = mBodyNode2->getTransform().linear().transpose() * -D.col(0);
 
 //      bodyPoint1.noalias()
-//          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+//          = mBodyNode1->getWorldTransform().inverse() * ct->point;
 //      bodyPoint2.noalias()
-//          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+//          = mBodyNode2->getWorldTransform().inverse() * ct->point;
 
 //      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
 
@@ -231,9 +254,9 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
           = mBodyNode2->getTransform().linear().transpose() * -D.col(1);
 
 //      bodyPoint1.noalias()
-//          = mBodyNode1->getWorldTransform().inverse() * ct.point;
+//          = mBodyNode1->getWorldTransform().inverse() * ct->point;
 //      bodyPoint2.noalias()
-//          = mBodyNode2->getWorldTransform().inverse() * ct.point;
+//          = mBodyNode2->getWorldTransform().inverse() * ct->point;
 
 //      std::cout << "bodyDirection2: " << std::endl << bodyDirection2 << std::endl;
 
@@ -262,17 +285,17 @@ SoftContactConstraint::SoftContactConstraint(const collision::Contact& _contact)
 
     for (size_t i = 0; i < mContacts.size(); ++i)
     {
-      const collision::Contact& ct = mContacts[i];
+      collision::Contact* ct = mContacts[i];
 
       bodyDirection1.noalias()
-          = mBodyNode1->getTransform().linear().transpose() * ct.normal;
+          = mBodyNode1->getTransform().linear().transpose() * ct->normal;
       bodyDirection2.noalias()
-          = mBodyNode2->getTransform().linear().transpose() * -ct.normal;
+          = mBodyNode2->getTransform().linear().transpose() * -ct->normal;
 
       bodyPoint1.noalias()
-          = mBodyNode1->getTransform().inverse() * ct.point;
+          = mBodyNode1->getTransform().inverse() * ct->point;
       bodyPoint2.noalias()
-          = mBodyNode2->getTransform().inverse() * ct.point;
+          = mBodyNode2->getTransform().inverse() * ct->point;
 
       mJacobians1[i].head<3>().noalias() = bodyPoint1.cross(bodyDirection1);
       mJacobians2[i].head<3>().noalias() = bodyPoint2.cross(bodyDirection2);
@@ -452,7 +475,8 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       // Bouncing
       //------------------------------------------------------------------------
       // A. Penetration correction
-      double bouncingVelocity = mContacts[i].penetrationDepth - mErrorAllowance;
+      double bouncingVelocity = mContacts[i]->penetrationDepth
+                                - mErrorAllowance;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -519,7 +543,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       // Bouncing
       //------------------------------------------------------------------------
       // A. Penetration correction
-      double bouncingVelocity = mContacts[i].penetrationDepth
+      double bouncingVelocity = mContacts[i]->penetrationDepth
                                 - DART_ERROR_ALLOWANCE;
       if (bouncingVelocity < 0.0)
       {
@@ -744,6 +768,9 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       assert(!math::isNan(_lambda[index]));
 
+      // Store contact impulse (force) toward the normal w.r.t. world frame
+      mContacts[i]->force = mContacts[i]->normal * _lambda[index] / mTimeStep;
+
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
       if (mPointMass1)
@@ -772,6 +799,10 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 
       assert(!math::isNan(_lambda[index]));
 
+      // Add contact impulse (force) toward the tangential w.r.t. world frame
+      Eigen::MatrixXd D = getTangentBasisMatrixODE(mContacts[i]->normal);
+      mContacts[i]->force += D.col(0) * _lambda[index] / mTimeStep;
+
       // Tangential direction-1 impulsive force
 //      mContacts[i]->lambda[1] = _lambda[_idx];
       if (mPointMass1)
@@ -799,6 +830,9 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       index++;
 
       assert(!math::isNan(_lambda[index]));
+
+      // Add contact impulse (force) toward the tangential w.r.t. world frame
+      mContacts[i]->force += D.col(1) * _lambda[index] / mTimeStep;
 
       // Tangential direction-2 impulsive force
 //      mContacts[i]->lambda[2] = _lambda[_idx];
@@ -858,6 +892,9 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
         if (mBodyNode2->isImpulseReponsible())
           mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
       }
+
+      // Store contact impulse (force) toward the normal w.r.t. world frame
+      mContacts[i]->force = mContacts[i]->normal * _lambda[i] / mTimeStep;
     }
   }
 }
