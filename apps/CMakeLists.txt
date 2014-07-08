@@ -4,7 +4,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 # List of all the subdirectories to include
 foreach(APPDIR
     atlasRobot
-#    balance
+    balance
     ballJointConstraintTest
     closedLoop
     cube
@@ -29,9 +29,6 @@ foreach(APPDIR
     softSingleBodyTest
     softSinglePendulumTest
     vehicle
-  #  inverseDyn
- #   cmaOptimization
-#    balance_cma
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
