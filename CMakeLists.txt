@@ -21,7 +21,7 @@ option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(MSVC)
   set(RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-elseif()
+else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 
