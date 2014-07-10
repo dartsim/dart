@@ -18,6 +18,7 @@ script:
   - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
   # - cd tools/
   # - ./code_check.sh
+  - 'tools/abi_check 4.1.0'
 after_failure:
   - cat Testing/Temporary/LastTest.log
   - cat Testing/Temporary/LastTestsFailed.log
