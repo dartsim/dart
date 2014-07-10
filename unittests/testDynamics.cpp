@@ -85,6 +85,9 @@ public:
   // Test skeleton's COM and its related quantities.
   void centerOfMass(const std::string& _fileName);
 
+  //
+  void testConstraintImpulse(const std::string& _fileName);
+
   // Test impulse based dynamics
   void testImpulseBasedDynamics(const std::string& _fileName);
 
@@ -937,6 +940,102 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
 }
 
 //==============================================================================
+void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeletons
+#ifndef NDEBUG  // Debug mode
+  size_t nRandomItr = 1;
+#else
+  size_t nRandomItr = 1;
+#endif
+
+  // Lower and upper bound of configuration for system
+//  double lb = -1.5 * DART_PI;
+//  double ub =  1.5 * DART_PI;
+
+  simulation::World* myWorld = NULL;
+
+  //----------------------------- Tests ----------------------------------------
+  // Check whether multiplication of mass matrix and its inverse is identity
+  // matrix.
+  myWorld = utils::SkelParser::readWorld(_fileName);
+  EXPECT_TRUE(myWorld != NULL);
+
+  for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
+  {
+    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+
+    size_t dof            = skel->getNumDofs();
+//    int nBodyNodes     = skel->getNumBodyNodes();
+
+    if (dof == 0 || !skel->isMobile())
+    {
+      dtdbg << "Skeleton [" << skel->getName() << "] is skipped since it has "
+            << "0 DOF or is immobile." << endl;
+      continue;
+    }
+
+    for (size_t j = 0; j < nRandomItr; ++j)
+    {
+      // Set random configurations
+      for (size_t k = 0; k < skel->getNumBodyNodes(); ++k)
+      {
+        BodyNode* body     = skel->getBodyNode(k);
+        Joint*    joint    = body->getParentJoint();
+        int       localDof = joint->getNumDofs();
+
+        for (int l = 0; l < localDof; ++l)
+        {
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
+          if (lbRP < -DART_PI)
+            lbRP = -DART_PI;
+          if (ubRP > DART_PI)
+            ubRP = DART_PI;
+          joint->setPosition(l, random(lbRP, ubRP));
+        }
+
+        // Set constraint impulse on each body
+        skel->clearConstraintImpulses();
+        Eigen::Vector6d impulseOnBody = Eigen::Vector6d::Random();
+        body->setConstraintImpulse(impulseOnBody);
+
+        // Get constraint force vector
+        Eigen::VectorXd constraintVector1 = skel->getConstraintForceVector();
+
+        // Get constraint force vector by using Jacobian of skeleon
+        Eigen::MatrixXd bodyJacobian = body->getBodyJacobian();
+        Eigen::VectorXd constraintVector2 = bodyJacobian.transpose()
+                                            * impulseOnBody
+                                            / skel->getTimeStep();
+
+        size_t index = 0;
+        for (size_t l = 0; l < dof; ++l)
+        {
+          if (constraintVector1(l) == 0.0)
+            continue;
+
+          EXPECT_NEAR(constraintVector1(l), constraintVector2(index), 1e-6);
+          index++;
+        }
+        assert(bodyJacobian.cols() == math::castUIntToInt(index));
+      }
+    }
+  }
+
+  delete myWorld;
+}
+
+//==============================================================================
 void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 {
   using namespace std;
@@ -1093,6 +1192,18 @@ TEST_F(DynamicsTest, testCenterOfMass)
     dtdbg << getList()[i] << std::endl;
 #endif
     centerOfMass(getList()[i]);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, testConstraintImpulse)
+{
+  for (size_t i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    testConstraintImpulse(getList()[i]);
   }
 }
 

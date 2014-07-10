@@ -1049,6 +1049,28 @@ const Eigen::VectorXd& Skeleton::getExternalForceVector()
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getConstraintForceVector()
 {
+  size_t dof = getNumDofs();
+  mFc = Eigen::VectorXd::Zero(dof);
+
+  // Body constraint impulses
+  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+       it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->aggregateSpatialToGeneralized(&mFc, (*it)->getConstraintImpulse());
+  }
+
+  // Joint constraint impulses
+  size_t index = 0;
+  for (size_t i = 0; i < dof; ++i)
+  {
+    mFc[index++] += mGenCoordInfos[i].joint->getConstraintImpulse(
+                      mGenCoordInfos[i].localIndex);
+  }
+  assert(index == dof);
+
+  // Get force by devide impulse by time step
+  mFc = mFc / mTimeStep;
+
   return mFc;
 }
 

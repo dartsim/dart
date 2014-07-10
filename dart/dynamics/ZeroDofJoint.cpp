@@ -592,5 +592,12 @@ void ZeroDofJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
   // TODO(JS)
 }
 
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getSpatialToGeneralized(
+    const Eigen::Vector6d& /*_spatial*/)
+{
+  // Do nothing
+}
+
 }  // namespace dynamics
 }  // namespace dart
