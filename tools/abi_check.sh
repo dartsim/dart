@@ -34,9 +34,8 @@ case "$VERSION_NUMBER" in
         4.1.0)
             BRANCH_NAME="tags/v4.1.0"
             break;;
-    #    4.1.1)break;;
         *)
-            echo "Invalid version number: ${OLD_VER}"
+            echo "Invalid version number: ${VERSION_NUMBER}"
             print_valid_version_numbers
             break;;
     esac
