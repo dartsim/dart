@@ -137,7 +137,7 @@ else
 fi
 
 # Install ABI checker
-#sudo apt-get --yes --force-yes install abi-compliance-checker
+sudo apt-get --yes --force-yes install abi-compliance-checker
 
 # Checkk ABI
 cd $BASEDIR
