@@ -3,26 +3,17 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-    atlasSimbicon
-#    balance
-    ballJointConstraintTest
-    closedLoop
-    cubes
-    forwardSim
-    hardcodedDesign
-    harnessTest
-    jointLimitTest
-    sdfLoader
-    softArticulatedBodiesTest
-    softBodies
-    softCubes
-    softDropBoxCOMOffsetTest
-    softOpenChain
-    vehicle
     addDeleteSkels
-  #  inverseDyn
- #   cmaOptimization
-#    balance_cma
+    atlasSimbicon
+    bipedStand
+    rigidLoop
+    rigidCubes
+    rigidChain
+    hardcodedDesign
+    jointConstraints
+    mixedChain
+    softBodies
+    vehicle
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
