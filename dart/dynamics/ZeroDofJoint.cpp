@@ -597,7 +597,7 @@ Eigen::VectorXd ZeroDofJoint::getSpatialToGeneralized(
     const Eigen::Vector6d& /*_spatial*/)
 {
   // Return zero size vector
-//  return Eigen::VectorXd::Zero(0);
+  return Eigen::VectorXd::Zero(0);
 }
 
 }  // namespace dynamics
