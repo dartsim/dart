@@ -596,7 +596,8 @@ void ZeroDofJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
 Eigen::VectorXd ZeroDofJoint::getSpatialToGeneralized(
     const Eigen::Vector6d& /*_spatial*/)
 {
-  // Do nothing
+  // Return zero size vector
+//  return Eigen::VectorXd::Zero(0);
 }
 
 }  // namespace dynamics
