@@ -824,6 +824,12 @@ Eigen::VectorXd Skeleton::getVelocityChanges() const
 //==============================================================================
 void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 {
+  setJointConstraintImpulses(_impulses);
+}
+
+//==============================================================================
+void Skeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
+{
   size_t index = 0;
   size_t dof = getNumDofs();
 
@@ -838,6 +844,12 @@ void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getConstraintImpulses() const
+{
+  return getJointConstraintImpulses();
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getJointConstraintImpulses() const
 {
   size_t index = 0;
   size_t dof = getNumDofs();

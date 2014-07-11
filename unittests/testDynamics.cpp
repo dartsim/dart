@@ -1110,7 +1110,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       VectorXd impulses = VectorXd::Zero(dof);
       for (int k = 0; k < impulses.size(); ++k)
         impulses[k] = random(lb, ub);
-      skel->setConstraintImpulses(impulses);
+      skel->setJointConstraintImpulses(impulses);
 
       // Compute impulse-based forward dynamics
       skel->computeImpulseForwardDynamics();

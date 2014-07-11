@@ -329,10 +329,16 @@ public:
   //----------------------------------------------------------------------------
 
   ///
-  void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+  DEPRECATED(4.2) void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+
+  /// Set constraint impulses applying to joint
+  void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   ///
-  Eigen::VectorXd getConstraintImpulses() const;
+  DEPRECATED(4.2) Eigen::VectorXd getConstraintImpulses() const;
+
+  /// Return constraint impulses applied to joint
+  Eigen::VectorXd getJointConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
   // Integration
