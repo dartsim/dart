@@ -48,7 +48,7 @@
 #include "dart/gui/GLFuncs.h"
 #include "dart/simulation/World.h"
 
-#define FORCE_ON_RIGIDBODY 10.0;
+#define FORCE_ON_RIGIDBODY 25.0;
 #define FORCE_ON_VERTEX 1.00;
 
 MyWindow::MyWindow()
@@ -65,10 +65,10 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-//  dart::dynamics::Skeleton* Skeleton =
-//      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
-//  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
-//  softBodyNode->addExtForce(mForceOnRigidBody);
+  dart::dynamics::Skeleton* Skeleton =
+      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
+  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+  softBodyNode->addExtForce(mForceOnRigidBody);
 
   mWorld->step();
 
@@ -155,27 +155,27 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'm':
       mShowMeshs = !mShowMeshs;
       break;
-    case 'q':  // upper right force
+    case '1':  // upper right force
       mForceOnRigidBody[0] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case 'w':  // upper right force
+    case '2':  // upper right force
       mForceOnRigidBody[0] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case 'e':  // upper right force
+    case '3':  // upper right force
       mForceOnRigidBody[1] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case 'r':  // upper right force
+    case '4':  // upper right force
       mForceOnRigidBody[1] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case 't':  // upper right force
+    case '5':  // upper right force
       mForceOnRigidBody[2] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case 'y':  // upper right force
+    case '6':  // upper right force
       mForceOnRigidBody[2] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;

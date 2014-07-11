@@ -112,50 +112,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
     case '4':  // upper right force
       mForce[2] = 500;
       break;
-    case 'q':  // Spawn a cube
-    case 'Q': {  // Spawn a cube
-      Eigen::Vector3d position = Eigen::Vector3d(dart::math::random(-1.0, 1.0),
-                                                 dart::math::random( 0.5, 1.0),
-                                                 dart::math::random(-1.0, 1.0));
-      Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.01, 0.2),
-                                             dart::math::random(0.01, 0.2),
-                                             dart::math::random(0.01, 0.2));
-      spawnCube(position, size);
-      break;
-    }
-    case 'w':    // Spawn a cube
-    case 'W': {  // Spawn a cube
-      if (mWorld->getNumSkeletons() > 4)
-        mWorld->removeSkeleton(mWorld->getSkeleton(4));
-      break;
-    }
     default:
       Win3D::keyboard(_key, _x, _y);
   }
   glutPostRedisplay();
-}
-
-void MyWindow::spawnCube(const Eigen::Vector3d& _position,
-                         const Eigen::Vector3d& _size,
-                         double _mass) {
-  dart::dynamics::Skeleton*  newCubeSkeleton =
-      new dart::dynamics::Skeleton();
-  dart::dynamics::BodyNode*  newBodyNode     =
-      new dart::dynamics::BodyNode("cube_link");
-  dart::dynamics::FreeJoint* newFreeJoint    =
-      new dart::dynamics::FreeJoint("cube_joint");
-  dart::dynamics::BoxShape*  newBoxShape     =
-      new dart::dynamics::BoxShape(_size);
-
-  newBodyNode->addVisualizationShape(newBoxShape);
-  newBodyNode->addCollisionShape(newBoxShape);
-  newBodyNode->setMass(_mass);
-  newBodyNode->setParentJoint(newFreeJoint);
-  newFreeJoint->setTransformFromParentBodyNode(
-        Eigen::Isometry3d(Eigen::Translation3d(_position)));
-  newBoxShape->setColor(Eigen::Vector3d(dart::math::random(0.0, 1.0),
-                                        dart::math::random(0.0, 1.0),
-                                        dart::math::random(0.0, 1.0)));
-  newCubeSkeleton->addBodyNode(newBodyNode);
-  mWorld->addSkeleton(newCubeSkeleton);
 }

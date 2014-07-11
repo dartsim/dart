@@ -35,41 +35,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_CUBES_MYWINDOW_H_
-#define APPS_CUBES_MYWINDOW_H_
+#include <iostream>
 
-#include "dart/gui/SimWindow.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/Paths.h"
+#include "dart/utils/SkelParser.h"
+#include "MyWindow.h"
 
-/// \brief
-class MyWindow : public dart::gui::SimWindow {
-public:
-  /// \brief
-  MyWindow();
+int main(int argc, char* argv[]) {
+  // create and initialize the world
+  dart::simulation::World *myWorld
+      = dart::utils::SkelParser::readWorld(
+          DART_DATA_PATH"/skel/ground.skel");
+  assert(myWorld != NULL);
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
 
-  /// \brief
-  virtual ~MyWindow();
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
 
-  /// \brief
-  virtual void timeStepping();
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'q': spawn a random cube" << std::endl;
+  std::cout << "'w': delete a spawned cube" << std::endl;
 
-  /// \brief
-  virtual void drawSkels();
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Add/Delete Boxes");
+  glutMainLoop();
 
-  /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
-
-  /// \brief
-  void spawnCube(
-      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
-      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
-      double _mass = 1.0);
-
-private:
-  /// \brief
-  Eigen::Vector3d mForce;
-
-  /// \brief Number of frames for applying external force
-  int mImpulseDuration;
-};
-
-#endif  // APPS_CUBES_MYWINDOW_H_
+  return 0;
+}

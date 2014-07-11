@@ -7,7 +7,7 @@ foreach(APPDIR
 #    balance
     ballJointConstraintTest
     closedLoop
-    cube
+#    cube
     cubes
     doublePendulumWithBase
     forwardSim
@@ -29,6 +29,7 @@ foreach(APPDIR
     softSingleBodyTest
     softSinglePendulumTest
     vehicle
+    addDeleteSkels
   #  inverseDyn
  #   cmaOptimization
 #    balance_cma

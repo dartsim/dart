@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/cubes/MyWindow.h"
+#include "MyWindow.h"
 
 #include "dart/math/Helpers.h"
 #include "dart/simulation/World.h"
@@ -46,17 +46,11 @@
 
 MyWindow::MyWindow()
   : SimWindow() {
-  mForce = Eigen::Vector3d::Zero();
 }
 
 MyWindow::~MyWindow() {
 }
 
-void MyWindow::timeStepping() {
-  mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(mForce);
-  mWorld->step();
-  mForce /= 2.0;
-}
 
 void MyWindow::drawSkels() {
   glEnable(GL_LIGHTING);
@@ -74,59 +68,21 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
         glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
       }
       break;
-    case 'p':  // playBack
-      mPlay = !mPlay;
-      if (mPlay) {
-        mSimulating = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
-      break;
-    case '[':  // step backward
-      if (!mSimulating) {
-        mPlayFrame--;
-        if (mPlayFrame < 0)
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case ']':  // step forwardward
-      if (!mSimulating) {
-        mPlayFrame++;
-        if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case 'v':  // show or hide markers
-      mShowMarkers = !mShowMarkers;
-      break;
-    case '1':  // upper right force
-      mForce[0] = -500;
-      break;
-    case '2':  // upper right force
-      mForce[0] = 500;
-      break;
-    case '3':  // upper right force
-      mForce[2] = -500;
-      break;
-    case '4':  // upper right force
-      mForce[2] = 500;
-      break;
     case 'q':  // Spawn a cube
     case 'Q': {  // Spawn a cube
       Eigen::Vector3d position = Eigen::Vector3d(dart::math::random(-1.0, 1.0),
-                                                 dart::math::random(-1.0, 1.0),
-                                                 dart::math::random(0.5, 1.0));
-      Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.01, 0.2),
-                                             dart::math::random(0.01, 0.2),
-                                             dart::math::random(0.01, 0.2));
+                                                 dart::math::random( 0.5, 1.0),
+                                                 dart::math::random(-1.0, 1.0));
+      Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.1, 0.5),
+                                             dart::math::random(0.1, 0.5),
+                                             dart::math::random(0.1, 0.5));
       spawnCube(position, size);
       break;
     }
     case 'w':    // Spawn a cube
     case 'W': {  // Spawn a cube
-      if (mWorld->getNumSkeletons() > 4)
-        mWorld->removeSkeleton(mWorld->getSkeleton(4));
+      if (mWorld->getNumSkeletons() > 1)
+        mWorld->removeSkeleton(mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
       break;
     }
     default:

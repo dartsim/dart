@@ -35,39 +35,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef APPS_ADDDELETESKELS_MYWINDOW_H_
+#define APPS_ADDDELETESKELS_MYWINDOW_H_
 
-#include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "apps/cubes/MyWindow.h"
+#include "dart/gui/SimWindow.h"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::World *myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/cube.skel");
-//      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/sphere.skel");
-//      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/two_cubes.skel");
-  assert(myWorld != NULL);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+/// \brief
+class MyWindow : public dart::gui::SimWindow {
+public:
+  /// \brief
+  MyWindow();
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+  /// \brief
+  virtual ~MyWindow();
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-  std::cout << "'q': spawn a random cube" << std::endl;
-  std::cout << "'w': delete a spawned cube" << std::endl;
+  /// \brief
+  virtual void drawSkels();
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Boxes");
-  glutMainLoop();
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  return 0;
-}
+  /// \brief
+  void spawnCube(
+      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
+      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 0.1);
+
+
+  /// \brief Number of frames for applying external force
+  int mImpulseDuration;
+};
+
+#endif  // APPS_ADDDELETESKELS_MYWINDOW_H_

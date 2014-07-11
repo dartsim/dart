@@ -58,12 +58,6 @@ public:
   /// \brief
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  /// \brief
-  void spawnCube(
-      const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
-      const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
-      double _mass = 0.1);
-
 private:
   /// \brief
   Eigen::Vector3d mForce;

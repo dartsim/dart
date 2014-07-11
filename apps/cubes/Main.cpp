@@ -60,8 +60,6 @@ int main(int argc, char* argv[]) {
   std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
   std::cout << "'v': visualization on/off" << std::endl;
   std::cout << "'1'--'4': programmed interaction" << std::endl;
-  std::cout << "'q': spawn a random cube" << std::endl;
-  std::cout << "'w': delete a spawned cube" << std::endl;
 
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Boxes");
