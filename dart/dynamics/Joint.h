@@ -496,6 +496,10 @@ protected:
   ///
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) = 0;
 
+  ///
+  virtual Eigen::VectorXd getSpatialToGeneralized(
+      const Eigen::Vector6d& _spatial) = 0;
+
 protected:
   /// Joint name
   std::string mName;

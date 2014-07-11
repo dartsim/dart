@@ -1386,6 +1386,27 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
 }
 
 //==============================================================================
+void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+                                             const Eigen::Vector6d& _spatial)
+{
+  //
+  mArbitrarySpatial = _spatial;
+
+  //
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mArbitrarySpatial += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+                                       (*it)->mArbitrarySpatial);
+  }
+
+  // Project the spatial quantity to generalized coordinates
+  size_t iStart = mParentJoint->getIndexInSkeleton(0);
+  _generalized->segment(iStart, mParentJoint->getNumDofs())
+      = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
+}
+
+//==============================================================================
 void BodyNode::updateMassMatrix()
 {
   mM_dV.setZero();

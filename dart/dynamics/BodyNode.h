@@ -589,9 +589,13 @@ protected:
   virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
                                        const Eigen::Vector3d& _gravity);
 
-  /// Aggregate the external forces mFext in the generalized
-  ///        coordinates recursively.
+  /// Aggregate the external forces mFext in the generalized coordinates
+  /// recursively
   virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+
+  ///
+  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+                                             const Eigen::Vector6d& _spatial);
 
   //--------------------------------------------------------------------------
   // General properties
@@ -727,6 +731,9 @@ protected:
   /// Cache data for inverse mass matrix of the system.
   Eigen::Vector6d mInvM_c;
   Eigen::Vector6d mInvM_U;
+
+  /// Cache data for arbitrary spatial value
+  Eigen::Vector6d mArbitrarySpatial;
 
   //------------------------- Impulse-based Dyanmics ---------------------------
   /// Velocity change due to to external impulsive force exerted on

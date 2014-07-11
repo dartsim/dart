@@ -374,6 +374,10 @@ protected:
   // Documentation inherited
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
+  // Documentation inherited
+  virtual Eigen::VectorXd getSpatialToGeneralized(
+      const Eigen::Vector6d& _spatial);
+
 private:
 };
 
