@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/atlasRobot/StateMachine.h"
+#include "apps/atlasSimbicon/StateMachine.h"
 
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
@@ -44,7 +44,7 @@
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 
-#include "apps/atlasRobot/State.h"
+#include "apps/atlasSimbicon/State.h"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION) std::cout << #FUNCTION\

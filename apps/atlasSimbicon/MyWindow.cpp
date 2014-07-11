@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/atlasRobot/MyWindow.h"
+#include "apps/atlasSimbicon/MyWindow.h"
 
 #include "dart/math/Helpers.h"
 #include "dart/simulation/World.h"

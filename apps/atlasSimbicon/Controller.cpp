@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/atlasRobot/Controller.h"
+#include "apps/atlasSimbicon/Controller.h"
 
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
@@ -46,9 +46,9 @@
 #include "dart/constraint/WeldJointConstraint.h"
 #include "dart/collision/CollisionDetector.h"
 
-#include "apps/atlasRobot/State.h"
-#include "apps/atlasRobot/StateMachine.h"
-#include "apps/atlasRobot/TerminalCondition.h"
+#include "apps/atlasSimbicon/State.h"
+#include "apps/atlasSimbicon/StateMachine.h"
+#include "apps/atlasSimbicon/TerminalCondition.h"
 
 using namespace std;
 

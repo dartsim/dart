@@ -3,31 +3,21 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-    atlasRobot
+    atlasSimbicon
 #    balance
     ballJointConstraintTest
     closedLoop
-#    cube
     cubes
-    doublePendulumWithBase
     forwardSim
-    hanging
     hardcodedDesign
     harnessTest
     jointLimitTest
-    meshCollision
     sdfLoader
     softArticulatedBodiesTest
     softBodies
     softCubes
-    softDoublePendulumTest
-    softDropBoxTest
     softDropBoxCOMOffsetTest
-    softDropBoxLowStiffnessTest
-    softDropSphereTest
     softOpenChain
-    softSingleBodyTest
-    softSinglePendulumTest
     vehicle
     addDeleteSkels
   #  inverseDyn

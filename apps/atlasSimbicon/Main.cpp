@@ -45,8 +45,8 @@
 #include "dart/utils/sdf/SoftSdfParser.h"
 #include "dart/utils/urdf/DartLoader.h"
 
-#include "apps/atlasRobot/MyWindow.h"
-#include "apps/atlasRobot/Controller.h"
+#include "apps/atlasSimbicon/MyWindow.h"
+#include "apps/atlasSimbicon/Controller.h"
 
 using namespace std;
 using namespace Eigen;

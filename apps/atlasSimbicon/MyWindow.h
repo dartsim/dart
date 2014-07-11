@@ -39,7 +39,7 @@
 #define APPS_ATLASROBOT_MYWINDOW_H_
 
 #include "dart/gui/SimWindow.h"
-#include "apps/atlasRobot/Controller.h"
+#include "apps/atlasSimbicon/Controller.h"
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::SimWindow
