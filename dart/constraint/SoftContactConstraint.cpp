@@ -596,8 +596,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 {
   assert(0 <= _idx && _idx < mDim && "Invalid Index.");
   assert(isActive());
-  assert(mBodyNode1->isImpulseReponsible()
-         || mBodyNode2->isImpulseReponsible());
+  assert(mBodyNode1->isReactive()
+         || mBodyNode2->isReactive());
 
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
@@ -611,7 +611,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     }
     else
     {
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
                                                      mJacobians1[_idx]);
@@ -625,7 +625,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     }
     else
     {
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
                                                      mJacobians2[_idx]);
@@ -646,7 +646,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     }
     else
     {
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
         mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
@@ -664,7 +664,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     }
     else
     {
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
@@ -695,7 +695,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
       }
       else
       {
-        if (mBodyNode1->isImpulseReponsible())
+        if (mBodyNode1->isReactive())
           _vel[i] += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
       }
     }
@@ -709,7 +709,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
       }
       else
       {
-        if (mBodyNode2->isImpulseReponsible())
+        if (mBodyNode2->isReactive())
           _vel[i] += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
       }
     }
@@ -727,20 +727,20 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 //==============================================================================
 void SoftContactConstraint::excite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
 void SoftContactConstraint::unexcite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
 }
 
@@ -780,7 +780,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode1->isImpulseReponsible())
+        if (mBodyNode1->isReactive())
           mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       }
 
@@ -791,7 +791,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode2->isImpulseReponsible())
+        if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
@@ -812,7 +812,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode1->isImpulseReponsible())
+        if (mBodyNode1->isReactive())
           mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       }
 
@@ -823,7 +823,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode2->isImpulseReponsible())
+        if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
@@ -843,7 +843,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode1->isImpulseReponsible())
+        if (mBodyNode1->isReactive())
           mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
       }
 
@@ -854,7 +854,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode2->isImpulseReponsible())
+        if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
       }
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
@@ -878,7 +878,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode1->isImpulseReponsible())
+        if (mBodyNode1->isReactive())
           mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[i]);
       }
 
@@ -889,7 +889,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
       }
       else
       {
-        if (mBodyNode2->isImpulseReponsible())
+        if (mBodyNode2->isReactive())
           mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
       }
 
@@ -914,7 +914,7 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     }
     else
     {
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
         _vel[i] -= mJacobians1[i].dot(mBodyNode1->getBodyVelocity());
     }
 
@@ -924,7 +924,7 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     }
     else
     {
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
         _vel[i] -= mJacobians2[i].dot(mBodyNode2->getBodyVelocity());
     }
 
@@ -941,7 +941,7 @@ bool SoftContactConstraint::isActive() const
 //==============================================================================
 dynamics::Skeleton* SoftContactConstraint::getRootSkeleton() const
 {
-  if (mSoftBodyNode1 || mBodyNode1->isImpulseReponsible())
+  if (mSoftBodyNode1 || mBodyNode1->isReactive())
     return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
   else
     return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
@@ -994,7 +994,7 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
 //==============================================================================
 void SoftContactConstraint::uniteSkeletons()
 {
-  if (!mBodyNode1->isImpulseReponsible() || !mBodyNode2->isImpulseReponsible())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
     return;
 
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())

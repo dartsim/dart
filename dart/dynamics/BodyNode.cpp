@@ -1181,7 +1181,12 @@ Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 //==============================================================================
 bool BodyNode::isImpulseReponsible() const
 {
-  // Should be called at BodyNode::init()
+  return isReactive();
+}
+
+//==============================================================================
+bool BodyNode::isReactive() const
+{
   // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
   //           type of parent joint.
   if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)

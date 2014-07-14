@@ -209,21 +209,21 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 
   if (mBodyNode2)
   {
-    assert(mBodyNode1->isImpulseReponsible()
-           || mBodyNode2->isImpulseReponsible());
+    assert(mBodyNode1->isReactive()
+           || mBodyNode2->isReactive());
 
     // Self collision case
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->updateBiasImpulse(
               mBodyNode1, mIdentity6d.col(_index));
       }
 
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, math::dAdT(mRelativeTransform,
@@ -235,7 +235,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
     // Colliding two distinct skeletons
     else
     {
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
         mBodyNode1->getSkeleton()->updateBiasImpulse(
@@ -243,7 +243,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
         mBodyNode1->getSkeleton()->updateVelocityChange();
       }
 
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
@@ -255,7 +255,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
   }
   else
   {
-    assert(mBodyNode1->isImpulseReponsible());
+    assert(mBodyNode1->isReactive());
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
@@ -283,7 +283,7 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
     _vel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()
-        && mBodyNode1->isImpulseReponsible())
+        && mBodyNode1->isReactive())
     {
       _vel[i] += velChange[i];
     }
@@ -292,7 +292,7 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
       continue;
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
-        && mBodyNode2->isImpulseReponsible())
+        && mBodyNode2->isReactive())
     {
       _vel[i] += velChange[i];
     }
@@ -310,26 +310,26 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 //==============================================================================
 void WeldJointConstraint::excite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
 
   if (mBodyNode2 == NULL)
     return;
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
 void WeldJointConstraint::unexcite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
 
   if (mBodyNode2 == NULL)
     return;
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
 }
 
@@ -360,12 +360,12 @@ void WeldJointConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 dynamics::Skeleton* WeldJointConstraint::getRootSkeleton() const
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
 
   if (mBodyNode2)
   {
-    if (mBodyNode2->isImpulseReponsible())
+    if (mBodyNode2->isReactive())
     {
       return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
     }
@@ -388,7 +388,7 @@ void WeldJointConstraint::uniteSkeletons()
   if (mBodyNode2 == NULL)
     return;
 
-  if (!mBodyNode1->isImpulseReponsible() || !mBodyNode2->isImpulseReponsible())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
     return;
 
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
@@ -418,12 +418,12 @@ void WeldJointConstraint::uniteSkeletons()
 
 bool WeldJointConstraint::isActive() const
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     return true;
 
   if (mBodyNode2)
   {
-    if (mBodyNode2->isImpulseReponsible())
+    if (mBodyNode2->isReactive())
       return true;
     else
       return false;
