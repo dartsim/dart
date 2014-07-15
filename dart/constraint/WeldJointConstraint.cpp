@@ -209,8 +209,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 
   if (mBodyNode2)
   {
-    assert(mBodyNode1->isReactive()
-           || mBodyNode2->isReactive());
+    assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
     // Self collision case
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())

@@ -596,8 +596,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 {
   assert(0 <= _idx && _idx < mDim && "Invalid Index.");
   assert(isActive());
-  assert(mBodyNode1->isReactive()
-         || mBodyNode2->isReactive());
+  assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
