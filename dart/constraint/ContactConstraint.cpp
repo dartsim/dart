@@ -381,7 +381,7 @@ const Eigen::Vector3d& ContactConstraint::getFrictionDirection1() const
 //==============================================================================
 void ContactConstraint::update()
 {
-  if (mBodyNode1->isImpulseReponsible() || mBodyNode2->isImpulseReponsible())
+  if (mBodyNode1->isReactive() || mBodyNode2->isReactive())
     mActive = true;
   else
     mActive = false;
@@ -551,21 +551,20 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
 {
   assert(0 <= _idx && _idx < mDim && "Invalid Index.");
   assert(isActive());
-  assert(mBodyNode1->isImpulseReponsible()
-         || mBodyNode2->isImpulseReponsible());
+  assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
   // Self collision case
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
   {
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
-    if (mBodyNode1->isImpulseReponsible())
+    if (mBodyNode1->isReactive())
     {
       mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
                                                    mJacobians1[_idx]);
     }
 
-    if (mBodyNode2->isImpulseReponsible())
+    if (mBodyNode2->isReactive())
     {
       mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
                                                    mJacobians2[_idx]);
@@ -576,7 +575,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   // Colliding two distinct skeletons
   else
   {
-    if (mBodyNode1->isImpulseReponsible())
+    if (mBodyNode1->isReactive())
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
       mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
@@ -584,7 +583,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
 
-    if (mBodyNode2->isImpulseReponsible())
+    if (mBodyNode2->isReactive())
     {
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
       mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
@@ -606,13 +605,13 @@ void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
     _vel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()
-        && mBodyNode1->isImpulseReponsible())
+        && mBodyNode1->isReactive())
     {
       _vel[i] += mJacobians1[i].dot(mBodyNode1->getBodyVelocityChange());
     }
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
-        && mBodyNode2->isImpulseReponsible())
+        && mBodyNode2->isReactive())
     {
       _vel[i] += mJacobians2[i].dot(mBodyNode2->getBodyVelocityChange());
     }
@@ -630,20 +629,20 @@ void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 //==============================================================================
 void ContactConstraint::excite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
 void ContactConstraint::unexcite()
 {
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
 
-  if (mBodyNode2->isImpulseReponsible())
+  if (mBodyNode2->isReactive())
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
 }
 
@@ -674,9 +673,9 @@ void ContactConstraint::applyImpulse(double* _lambda)
 
       // Normal impulsive force
 //      mContacts[i]->lambda[0] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
         mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
         mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
@@ -689,9 +688,9 @@ void ContactConstraint::applyImpulse(double* _lambda)
 
       // Tangential direction-1 impulsive force
 //      mContacts[i]->lambda[1] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
         mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
         mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
@@ -703,9 +702,9 @@ void ContactConstraint::applyImpulse(double* _lambda)
 
       // Tangential direction-2 impulsive force
 //      mContacts[i]->lambda[2] = _lambda[_idx];
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
         mBodyNode1->addConstraintImpulse(mJacobians1[index] * _lambda[index]);
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
         mBodyNode2->addConstraintImpulse(mJacobians2[index] * _lambda[index]);
 //      std::cout << "_lambda: " << _lambda[_idx] << std::endl;
       index++;
@@ -720,10 +719,10 @@ void ContactConstraint::applyImpulse(double* _lambda)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
-      if (mBodyNode1->isImpulseReponsible())
+      if (mBodyNode1->isReactive())
         mBodyNode1->addConstraintImpulse(mJacobians1[i] * _lambda[i]);
 
-      if (mBodyNode2->isImpulseReponsible())
+      if (mBodyNode2->isReactive())
         mBodyNode2->addConstraintImpulse(mJacobians2[i] * _lambda[i]);
 
       // Store contact impulse (force) toward the normal w.r.t. world frame
@@ -741,10 +740,10 @@ void ContactConstraint::getRelVelocity(double* _relVel)
   {
     _relVel[i] = 0.0;
 
-    if (mBodyNode1->isImpulseReponsible())
+    if (mBodyNode1->isReactive())
       _relVel[i] -= mJacobians1[i].dot(mBodyNode1->getBodyVelocity());
 
-    if (mBodyNode2->isImpulseReponsible())
+    if (mBodyNode2->isReactive())
       _relVel[i] -= mJacobians2[i].dot(mBodyNode2->getBodyVelocity());
 
 //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
@@ -762,7 +761,7 @@ dynamics::Skeleton* ContactConstraint::getRootSkeleton() const
 {
   assert(isActive());
 
-  if (mBodyNode1->isImpulseReponsible())
+  if (mBodyNode1->isReactive())
     return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
   else
     return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
@@ -815,7 +814,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
 //==============================================================================
 void ContactConstraint::uniteSkeletons()
 {
-  if (!mBodyNode1->isImpulseReponsible() || !mBodyNode2->isImpulseReponsible())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
     return;
 
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
