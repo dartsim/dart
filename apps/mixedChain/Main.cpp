@@ -42,10 +42,13 @@
 
 #include <iostream>
 
+#include "dart/math/Helpers.h"
+
 #include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
-#include "apps/softBodies/MyWindow.h"
+#include "apps/mixedChain/MyWindow.h"
 
 int main(int argc, char* argv[])
 {
@@ -53,8 +56,15 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::World* myWorld
       = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/softBodies.skel");
+          DART_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != NULL);
+
+  int dof = myWorld->getSkeleton(1)->getNumDofs();
+  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
+  for (int i = 0; i < 3; i++)
+    initPose[i] = dart::math::random(-0.5, 0.5);
+  myWorld->getSkeleton(1)->setPositions(initPose);
+  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
   // create a window and link it to the world
   MyWindow window;
@@ -64,11 +74,12 @@ int main(int argc, char* argv[])
   std::cout << "'p': playback/stop" << std::endl;
   std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
   std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'6': programmed interaction" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
 
   glutInit(&argc, argv);
-  window.initWindow(640, 480, "Soft Bodies");
+  window.initWindow(640, 480, "Articulated Rigid and Soft Bodies");
   glutMainLoop();
 
   return 0;
 }
+

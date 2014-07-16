@@ -374,12 +374,17 @@ void ConstraintSolver::updateConstraints()
   // Create new contact constraints
   for (size_t i = 0; i < mCollisionDetector->getNumContacts(); ++i)
   {
-    const collision::Contact& ct = mCollisionDetector->getContact(i);
+    collision::Contact& ct = mCollisionDetector->getContact(i);
 
     if (isSoftContact(ct))
-      mSoftContactConstraints.push_back(new SoftContactConstraint(ct));
+    {
+      mSoftContactConstraints.push_back(
+            new SoftContactConstraint(ct, mTimeStep));
+    }
     else
-      mContactConstraints.push_back(new ContactConstraint(ct));
+    {
+      mContactConstraints.push_back(new ContactConstraint(ct, mTimeStep));
+    }
   }
 
   // Add the new contact constraints to dynamic constraint list

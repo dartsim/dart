@@ -39,6 +39,7 @@
 
 #include "dart/constraint/Constraint.h"
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -62,7 +63,11 @@ class SoftContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  explicit SoftContactConstraint(const collision::Contact& _contact);
+  DEPRECATED(4.2) explicit SoftContactConstraint(
+      const collision::Contact& _contact);
+
+  /// Constructor
+  SoftContactConstraint(collision::Contact& _contact, double _timeStep);
 
   /// Destructor
   virtual ~SoftContactConstraint();
@@ -163,6 +168,9 @@ private:
       int _faceId);
 
 private:
+  /// Time step
+  double mTimeStep;
+
   /// Fircst body node
   dynamics::BodyNode* mBodyNode1;
 
@@ -183,7 +191,7 @@ private:
 
   // TODO(JS): For now, there is only one contact per contact constraint
   /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact> mContacts;
+  std::vector<collision::Contact*> mContacts;
 
   /// Soft collision information
   collision::SoftCollisionInfo* mSoftCollInfo;

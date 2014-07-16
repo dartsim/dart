@@ -433,8 +433,15 @@ public:
   //   - Following functions are managed by constraint solver.
   //----------------------------------------------------------------------------
 
+  /// Deprecated in 4.2. Please use isReactive().
+  DEPRECATED(4.2) bool isImpulseReponsible() const;
+
+  /// Return true if the body can react on force or constraint impulse.
   ///
-  bool isImpulseReponsible() const;
+  /// A body node can be called reactive if the parent skeleton is mobile and
+  /// the number of dependent generalized coordinates is non zero. The body
+  /// should be initialized first by calling BodyNode::init().
+  bool isReactive() const;
 
   /// Set constraint impulse
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame

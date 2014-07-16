@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -19,12 +20,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,35 +35,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef APPS_BALANCE_MYWINDOW_H_
+#define APPS_BALANCE_MYWINDOW_H_
 
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/simulation/World.h"
-#include "apps/softBodies/MyWindow.h"
+#include <cstdarg>
 
-int main(int argc, char* argv[])
-{
-  // load a skeleton file
-  // create and initialize the world
-  dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/softBodies.skel");
-  assert(myWorld != NULL);
+#include <Eigen/Dense>
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+#include "dart/gui/SimWindow.h"
+#include "apps/bipedStand/Controller.h"
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'6': programmed interaction" << std::endl;
+class MyWindow : public dart::gui::SimWindow {
+public:
+  MyWindow();
+  virtual ~MyWindow();
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Soft Bodies");
-  glutMainLoop();
+  virtual void timeStepping();
+  virtual void drawSkels();
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  return 0;
-}
+  void setController(Controller *_controller);
+
+private:
+  Eigen::Vector3d mForce;
+  Controller* mController;
+  int mImpulseDuration;
+};
+
+#endif  // APPS_BALANCE_MYWINDOW_H_

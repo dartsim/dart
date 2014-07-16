@@ -40,7 +40,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/softBodies/MyWindow.h"
+#include "apps/mixedChain/MyWindow.h"
 
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Skeleton.h"
@@ -48,7 +48,7 @@
 #include "dart/gui/GLFuncs.h"
 #include "dart/simulation/World.h"
 
-#define FORCE_ON_RIGIDBODY 25.0;
+#define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;
 
 MyWindow::MyWindow()
@@ -65,10 +65,10 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::Skeleton* Skeleton =
-      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
-  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
-  softBodyNode->addExtForce(mForceOnRigidBody);
+//  dart::dynamics::Skeleton* Skeleton =
+//      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(0));
+//  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+//  softBodyNode->addExtForce(mForceOnRigidBody);
 
   mWorld->step();
 
@@ -87,16 +87,17 @@ void MyWindow::drawSkels()
 {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  Eigen::Vector4d color;
-  color << 0.5, 0.8, 0.6, 1.0;
-  mWorld->getSkeleton(0)->draw(mRI, color, false);
+//  Eigen::Vector4d color;
+//  color << 0.5, 0.8, 0.6, 1.0;
+//  mWorld->getSkeleton(0)->draw(mRI, color, false);
 
   // draw arrow
   if (mImpulseDuration > 0)
   {
-    dart::dynamics::Skeleton* Skeleton =
-        static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
-    dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+    dart::dynamics::Skeleton* Skeleton
+        = static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
+    dart::dynamics::SoftBodyNode* softBodyNode
+        = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);
     Eigen::Vector3d poa
         = softBodyNode->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);
@@ -155,27 +156,27 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'm':
       mShowMeshs = !mShowMeshs;
       break;
-    case '1':  // upper right force
+    case 'q':  // upper right force
       mForceOnRigidBody[0] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case '2':  // upper right force
+    case 'w':  // upper right force
       mForceOnRigidBody[0] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case '3':  // upper right force
+    case 'e':  // upper right force
       mForceOnRigidBody[1] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case '4':  // upper right force
+    case 'r':  // upper right force
       mForceOnRigidBody[1] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case '5':  // upper right force
+    case 't':  // upper right force
       mForceOnRigidBody[2] = -FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
-    case '6':  // upper right force
+    case 'y':  // upper right force
       mForceOnRigidBody[2] = FORCE_ON_RIGIDBODY;
       mImpulseDuration = 100;
       break;
