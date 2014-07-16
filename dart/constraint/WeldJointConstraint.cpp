@@ -155,6 +155,8 @@ void WeldJointConstraint::update()
 //==============================================================================
 void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 {
+  assert(isActive());
+
   assert(_lcp->w[0] == 0.0);
   assert(_lcp->w[1] == 0.0);
   assert(_lcp->w[2] == 0.0);
@@ -218,32 +220,45 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
   {
     assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
-    // Closed loop
-    // TODO(JS): Closed loop does not work because Skeleton::updateBiasImpulse()
-    //           does not care this case yet. To solve this issue, the function
-    //           needs to be split into add (or set) constraint impulse and
-    //           update bias impulse.
+    // Weld joint between two bodies in one skeleton
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
 
       if (mBodyNode1->isReactive())
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mIdentity6d.col(_index));
+        if (mBodyNode2->isReactive())
+        {
+          Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                                  * mBodyNode2->getTransform();
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
+                mBodyNode1, mIdentity6d.col(_index),
+                mBodyNode2, math::dAdT(T12, -mIdentity6d.col(_index)));
+        }
+        else
+        {
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
+                mBodyNode1, mIdentity6d.col(_index));
+        }
       }
-
-      if (mBodyNode2->isReactive())
+      else
       {
-        Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
-                                * mBodyNode2->getTransform();
-        mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, math::dAdT(T12, -mIdentity6d.col(_index)));
+        if (mBodyNode2->isReactive())
+        {
+          Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                                  * mBodyNode2->getTransform();
+          mBodyNode2->getSkeleton()->updateBiasImpulse(
+                mBodyNode2, math::dAdT(T12, -mIdentity6d.col(_index)));
+        }
+        else
+        {
+          assert(0);
+        }
       }
 
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
-    // Weld two distinct skeletons
+    // Weld joint between two bodies in different skeletons
     else
     {
       if (mBodyNode1->isReactive())
@@ -281,9 +296,8 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 //==============================================================================
 void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  // TODO(JS): We assume that at least one body is reactive here. We need to
-  //           make sure it when weld join is created or update.
   assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(isActive());
 
   Eigen::Vector6d velChange = Eigen::Vector6d::Zero();
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
@@ -428,6 +442,7 @@ void WeldJointConstraint::uniteSkeletons()
   }
 }
 
+//==============================================================================
 bool WeldJointConstraint::isActive() const
 {
   if (mBodyNode1->isReactive())

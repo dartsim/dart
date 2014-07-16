@@ -1692,7 +1692,6 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 #endif
 
   // Set impulse to _bodyNode
-//  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
 
   // Prepare cache data
@@ -1703,9 +1702,55 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
     it = it->getParentBodyNode();
   }
 
-  // TODO(JS): Do we need to backup and restore the original value?
-//  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
   _bodyNode->mConstraintImpulse.setZero();
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulse(
+    BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
+    BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2)
+{
+  // Assertions
+  assert(_bodyNode1 != NULL);
+  assert(_bodyNode2 != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode1)
+         != mBodyNodes.end());
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode2)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  _bodyNode1->mConstraintImpulse = _imp1;
+  _bodyNode2->mConstraintImpulse = _imp2;
+
+  // Find which body is placed later in the list of body nodes in this skeleton
+  std::vector<BodyNode*>::reverse_iterator it1
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode1);
+  std::vector<BodyNode*>::reverse_iterator it2
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
+
+  std::vector<BodyNode*>::reverse_iterator it;
+  if (it1 < it2)
+    it = it1;
+  else
+    it = it2;
+
+  // Prepare cache data
+  for (; it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateBiasImpulse();
+  }
+
+  _bodyNode1->mConstraintImpulse.setZero();
+  _bodyNode2->mConstraintImpulse.setZero();
 }
 
 //==============================================================================
