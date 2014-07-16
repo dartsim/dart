@@ -80,7 +80,7 @@ public:
   explicit Skeleton(const std::string& _name = "Skeleton");
 
   /// Destructor
-  virtual ~Skeleton();
+  ~Skeleton();
 
   //----------------------------------------------------------------------------
   // Properties
@@ -389,7 +389,7 @@ public:
 
   /// Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
-  virtual void clearConstraintImpulses();
+  void clearConstraintImpulses();
 
   // TODO(JS): To be deprecated
   /// Set constraint force vector.
@@ -517,10 +517,10 @@ public:
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
   /// Get kinetic energy of this skeleton.
-  virtual double getKineticEnergy() const;
+  double getKineticEnergy() const;
 
   /// Get potential energy of this skeleton.
-  virtual double getPotentialEnergy() const;
+  double getPotentialEnergy() const;
 
   //----------------------------------------------------------------------------
   // Rendering
@@ -558,41 +558,41 @@ public:
 
 protected:
   /// Update mass matrix of the skeleton.
-  virtual void updateMassMatrix();
+  void updateMassMatrix();
 
   /// Update augmented mass matrix of the skeleton.
-  virtual void updateAugMassMatrix();
+  void updateAugMassMatrix();
 
   /// Update inverse of mass matrix of the skeleton.
-  virtual void updateInvMassMatrix();
+  void updateInvMassMatrix();
 
   /// Update inverse of augmented mass matrix of the skeleton.
-  virtual void updateInvAugMassMatrix();
+  void updateInvAugMassMatrix();
 
   /// Update Coriolis force vector of the skeleton.
   DEPRECATED(4.2) virtual void updateCoriolisForceVector();
 
   /// Update Coriolis force vector of the skeleton.
-  virtual void updateCoriolisForces();
+  void updateCoriolisForces();
 
   /// Update gravity force vector of the skeleton.
   DEPRECATED(4.2) virtual void updateGravityForceVector();
 
   /// Update gravity force vector of the skeleton.
-  virtual void updateGravityForces();
+  void updateGravityForces();
 
   /// Update combined vector of the skeletong.
   DEPRECATED(4.2) virtual void updateCombinedVector();
 
   /// Update combined vector of the skeletong.
-  virtual void updateCoriolisAndGravityForces();
+  void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized torques.
   DEPRECATED(4.2) virtual void updateExternalForceVector();
 
   // TODO(JS): Not implemented yet
   /// update external force vector to generalized torques.
-  virtual void updateExternalForces();
+  void updateExternalForces();
 
 //  /// Update damping force vector.
 //  virtual void updateDampingForceVector();

@@ -73,7 +73,7 @@ Skeleton::Skeleton(const std::string& _name)
     mIsGravityForcesDirty(true),
     mIsCoriolisAndGravityForcesDirty(true),
     mIsExternalForcesDirty(true),
-    mIsDampingForceVectorDirty(true),
+    mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
     mUnionRootSkeleton(this),
     mUnionSize(1)
