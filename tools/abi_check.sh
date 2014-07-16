@@ -7,7 +7,7 @@
 # Print usage
 usage()
 {
-    echo "usage: ./abi_check.sh <old_version_number> <new_version_number" 
+    echo "usage: ./abi_check.sh <old_version_number> <new_version_number>" 
     echo ""
     echo "The most commonly used commands are:"
     echo "  ./abi_check.sh 4.0.0 4.1.0  ABI check of 4.0.0 and 4.1.0"
