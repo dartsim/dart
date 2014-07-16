@@ -35,12 +35,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/bipedStand/Controller.h"
+#include "Controller.h"
 
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
+//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/collision/CollisionDetector.h"
 
 Controller::Controller(dart::dynamics::Skeleton* _skel,
@@ -78,6 +79,51 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
 Controller::~Controller() {
 }
 
+void Controller::update(double _currentTime) {
+  // SPD tracking
+  int nDof = mSkel->getNumDofs();
+  Eigen::VectorXd q    = mSkel->getPositions();
+  Eigen::VectorXd dq   = mSkel->getVelocities();
+  Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
+  Eigen::VectorXd p = -mKp * (q + dq * mTimestep - mDesiredDofs);
+  Eigen::VectorXd d = -mKd * dq;
+  Eigen::VectorXd qddot =
+      invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
+
+  mTorques = p + d - mKd * qddot * mTimestep;
+
+  // ankle strategy for sagital plane
+  Eigen::Vector3d com = mSkel->getWorldCOM();
+  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
+                        * Eigen::Vector3d(0.05, 0, 0);
+  Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
+  if (fabs(diff[0]) < 0.1) {
+    double offset = com[0] - cop[0];
+    double k1 = mParams(0);
+    double k2 = mParams(1);
+    double kd = mParams(2);
+    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mPreOffset = offset;
+  }
+
+  // Just to make sure no illegal torque is used
+  for (int i = 0; i < 6; i++) {
+    mTorques[i] = 0.0;
+  }
+    
+  mSkel->setForces(mTorques);
+}
+
+double Controller::evaluate() {
+  Eigen::Vector3d COM = mSkel->getWorldCOM();
+  std::cout << "COM = " << COM.transpose() << std::endl;
+
+  return (COM - mTargetCOM).squaredNorm();
+}
+
 Eigen::VectorXd Controller::getTorques() {
   return mTorques;
 }
@@ -93,7 +139,7 @@ void Controller::setDesiredDof(int _index, double _val) {
 void Controller::computeTorques(const Eigen::VectorXd& _dof,
                                 const Eigen::VectorXd& _dofVel) {
   // SPD tracking
-  //size_t nDof = mSkel->getNumDofs();
+  int nDof = mSkel->getNumDofs();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;
@@ -107,11 +153,11 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (fabs(diff[0]) < 0.1) {
+  if (diff[0] < 0.1) {
     double offset = com[0] - cop[0];
-    double k1 = 350.0;
-    double k2 = 254.0;
-    double kd = 415.0;
+    double k1 = 20.0;
+    double k2 = 10.0;
+    double kd = 100.0;
     mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
     mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
