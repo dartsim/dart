@@ -41,6 +41,8 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/ConstraintSolver.h"
 
 #include "apps/rigidLoop/MyWindow.h"
 
@@ -52,43 +54,44 @@ using namespace constraint;
 
 int main(int argc, char* argv[])
 {
-    // load a skeleton file
-    // create and initialize the world
-    dart::simulation::World* myWorld
-            = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
-    assert(myWorld != NULL);
+  // load a skeleton file
+  // create and initialize the world
+  dart::simulation::World* myWorld
+    = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
+  assert(myWorld != NULL);
     
-    // create and initialize the world
-    Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-    myWorld->setGravity(gravity);
-    myWorld->setTimeStep(1.0/2000);
+  // create and initialize the world
+  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
+  myWorld->setGravity(gravity);
+  myWorld->setTimeStep(1.0/2000);
 
-    int dof =  myWorld->getSkeleton(0)->getNumDofs();
+  int dof =  myWorld->getSkeleton(0)->getNumDofs();
 
-    Eigen::VectorXd initPose(dof);
-    initPose.setZero();
-    initPose[20] = 3.14159 * 0.4;
-    initPose[23] = 3.14159 * 0.4;
-    initPose[26] = 3.14159 * 0.4;
-    initPose[29] = 3.14159 * 0.4;
-    myWorld->getSkeleton(0)->setPositions(initPose);
-    myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
+  Eigen::VectorXd initPose(dof);
+  initPose.setZero();
+  initPose[5] = 3.14159 * 0.1;
+  initPose[20] = 3.14159 * 0.4;
+  initPose[23] = 3.14159 * 0.4;
+  initPose[26] = 3.14159 * 0.4;
+  initPose[29] = 3.14159 * 0.4;
+  myWorld->getSkeleton(0)->setPositions(initPose);
+  myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
 
-    // create a ball joint constraint
-    // BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
-    // BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-    // Eigen::Vector3d offset1 = bd1->getParentJoint()->getTransformFromChildBodyNode().translation();
-    // Eigen::Vector3d offset2(0.0, -0.025, 0.0);
-    // OldBallJointConstraint *cl = new OldBallJointConstraint(bd1, bd2, offset1, offset2);
-    // myWorld->getConstraintHandler()->addConstraint(cl);
+  // create a ball joint constraint
+  BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
+  BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
+  Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+  BallJointConstraint *cl = new BallJointConstraint(bd1, bd2, jointPos);
+  myWorld->getConstraintSolver()->addConstraint(cl);
 
-    // create a window and link it to the world
-    MyWindow window;
-    window.setWorld(myWorld);
+  // create a window and link it to the world
+  MyWindow window;
+  window.setWorld(myWorld);
   
-    glutInit(&argc, argv);
-    window.initWindow(640, 480, "Closed Loop");
-    glutMainLoop();
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Closed Loop");
+  glutMainLoop();
 
-    return 0;
+  return 0;
 }
