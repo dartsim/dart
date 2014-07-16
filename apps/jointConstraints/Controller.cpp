@@ -93,8 +93,9 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;
-  Eigen::VectorXd qddot = invM * (-mSkel->getCombinedVector() + p + d
-                                  + mConstrForces);
+  Eigen::VectorXd qddot
+      = invM * (-mSkel->getCoriolisAndGravityForces() + p + d
+                + mConstrForces);
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane
