@@ -42,6 +42,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/WeldJointConstraint.h"
 #include "dart/constraint/ConstraintSolver.h"
 
 #include "apps/rigidLoop/MyWindow.h"
@@ -80,9 +81,10 @@ int main(int argc, char* argv[])
   // create a ball joint constraint
   BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
   BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-  Eigen::Vector3d offset(0.0, 0.025, 0.0);
-  Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  BallJointConstraint *cl = new BallJointConstraint(bd1, bd2, jointPos);
+  //Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  //Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+  //BallJointConstraint *cl = new BallJointConstraint(bd1, bd2, jointPos);
+  WeldJointConstraint *cl = new WeldJointConstraint(bd1, bd2);
   myWorld->getConstraintSolver()->addConstraint(cl);
 
   // create a window and link it to the world
