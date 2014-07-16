@@ -62,25 +62,6 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
 }
 
 //==============================================================================
-WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
-                                         const Eigen::Isometry3d& _targetT)
-  : JointConstraint(_body),
-    mRelativeTransform(_targetT),
-    mViolation(Eigen::Vector6d::Zero()),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0)
-{
-  mDim = 6;
-
-  mOldX[0] = 0.0;
-  mOldX[1] = 0.0;
-  mOldX[2] = 0.0;
-  mOldX[3] = 0.0;
-  mOldX[4] = 0.0;
-  mOldX[5] = 0.0;
-}
-
-//==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2)
   : JointConstraint(_body1, _body2),
@@ -93,26 +74,6 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
   // The bodies should be different bodies.
   assert(_body1 != _body2);
 
-  mDim = 6;
-
-  mOldX[0] = 0.0;
-  mOldX[1] = 0.0;
-  mOldX[2] = 0.0;
-  mOldX[3] = 0.0;
-  mOldX[4] = 0.0;
-  mOldX[5] = 0.0;
-}
-
-//==============================================================================
-WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
-                                         dynamics::BodyNode* _body2,
-                                         const Eigen::Isometry3d& _T1to2)
-  : JointConstraint(_body1, _body2),
-    mRelativeTransform(_T1to2),
-    mViolation(Eigen::Vector6d::Zero()),
-    mIdentity6d(Eigen::Matrix6d::Identity()),
-    mAppliedImpulseIndex(0)
-{
   mDim = 6;
 
   mOldX[0] = 0.0;
