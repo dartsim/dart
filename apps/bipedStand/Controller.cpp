@@ -107,7 +107,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (diff[0] < 0.1) {
+  if (fabs(diff[0]) < 0.1) {
     double offset = com[0] - cop[0];
     double k1 = 20.0;
     double k2 = 10.0;
