@@ -1042,14 +1042,5 @@ void SingleDofJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
   _acc += mJacobian * mInvMassMatrixSegment;
 }
 
-//==============================================================================
-Eigen::VectorXd SingleDofJoint::getSpatialToGeneralized(
-    const Eigen::Vector6d& _spatial)
-{
-  Eigen::VectorXd generalized = Eigen::VectorXd::Zero(1);
-  generalized[0] = mJacobian.dot(_spatial);
-  return generalized;
-}
-
 }  // namespace dynamics
 }  // namespace dart

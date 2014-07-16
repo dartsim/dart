@@ -824,12 +824,6 @@ Eigen::VectorXd Skeleton::getVelocityChanges() const
 //==============================================================================
 void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 {
-  setJointConstraintImpulses(_impulses);
-}
-
-//==============================================================================
-void Skeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
-{
   size_t index = 0;
   size_t dof = getNumDofs();
 
@@ -844,12 +838,6 @@ void Skeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getConstraintImpulses() const
-{
-  return getJointConstraintImpulses();
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getJointConstraintImpulses() const
 {
   size_t index = 0;
   size_t dof = getNumDofs();
@@ -1061,28 +1049,6 @@ const Eigen::VectorXd& Skeleton::getExternalForceVector()
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getConstraintForceVector()
 {
-  size_t dof = getNumDofs();
-  mFc = Eigen::VectorXd::Zero(dof);
-
-  // Body constraint impulses
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->aggregateSpatialToGeneralized(&mFc, (*it)->getConstraintImpulse());
-  }
-
-  // Joint constraint impulses
-  size_t index = 0;
-  for (size_t i = 0; i < dof; ++i)
-  {
-    mFc[index++] += mGenCoordInfos[i].joint->getConstraintImpulse(
-                      mGenCoordInfos[i].localIndex);
-  }
-  assert(index == dof);
-
-  // Get force by devide impulse by time step
-  mFc = mFc / mTimeStep;
-
   return mFc;
 }
 
@@ -1692,6 +1658,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 #endif
 
   // Set impulse to _bodyNode
+//  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
 
   // Prepare cache data
@@ -1702,55 +1669,9 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
     it = it->getParentBodyNode();
   }
 
+  // TODO(JS): Do we need to backup and restore the original value?
+//  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
   _bodyNode->mConstraintImpulse.setZero();
-}
-
-//==============================================================================
-void Skeleton::updateBiasImpulse(
-    BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
-    BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2)
-{
-  // Assertions
-  assert(_bodyNode1 != NULL);
-  assert(_bodyNode2 != NULL);
-  assert(getNumDofs() > 0);
-
-  // This skeleton should contain _bodyNode
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode1)
-         != mBodyNodes.end());
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode2)
-         != mBodyNodes.end());
-
-#ifndef NDEBUG
-  // All the constraint impulse should be zero
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
-#endif
-
-  // Set impulse to _bodyNode
-  _bodyNode1->mConstraintImpulse = _imp1;
-  _bodyNode2->mConstraintImpulse = _imp2;
-
-  // Find which body is placed later in the list of body nodes in this skeleton
-  std::vector<BodyNode*>::reverse_iterator it1
-      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode1);
-  std::vector<BodyNode*>::reverse_iterator it2
-      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
-
-  std::vector<BodyNode*>::reverse_iterator it;
-  if (it1 < it2)
-    it = it1;
-  else
-    it = it2;
-
-  // Prepare cache data
-  for (; it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateBiasImpulse();
-  }
-
-  _bodyNode1->mConstraintImpulse.setZero();
-  _bodyNode2->mConstraintImpulse.setZero();
 }
 
 //==============================================================================

@@ -378,10 +378,6 @@ protected:
   // Documentation inherited
   virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
-  // Documentation inherited
-  virtual Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial);
-
 protected:
   // TODO(JS): Need?
   ///
@@ -1612,14 +1608,6 @@ void MultiDofJoint<DOF>::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
 {
   //
   _acc += mJacobian * mInvMassMatrixSegment;
-}
-
-//==============================================================================
-template <size_t DOF>
-Eigen::VectorXd MultiDofJoint<DOF>::getSpatialToGeneralized(
-    const Eigen::Vector6d& _spatial)
-{
-  return mJacobian.transpose() * _spatial;
 }
 
 }  // namespace dynamics

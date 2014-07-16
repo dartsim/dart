@@ -39,7 +39,6 @@
 
 #include "dart/constraint/Constraint.h"
 
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -57,14 +56,7 @@ class ContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  ///
-  /// Do not use me anymore. This constructor is not possible to store contact
-  /// force in _contact
-  DEPRECATED(4.2) explicit ContactConstraint(
-      const collision::Contact& _contact);
-
-  /// Constructor
-  ContactConstraint(collision::Contact& _contact, double _timeStep);
+  explicit ContactConstraint(const collision::Contact& _contact);
 
   /// Destructor
   virtual ~ContactConstraint();
@@ -158,9 +150,6 @@ private:
   Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
 private:
-  /// Time step
-  double mTimeStep;
-
   /// Fircst body node
   dynamics::BodyNode* mBodyNode1;
 
@@ -168,7 +157,7 @@ private:
   dynamics::BodyNode* mBodyNode2;
 
   /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact*> mContacts;
+  std::vector<collision::Contact> mContacts;
 
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;

@@ -100,18 +100,6 @@ else(IPOPT_FOUND)
   set(HAVE_IPOPT FALSE)
 endif()
 
-# Shark
-find_package(Shark)
-if(SHARK_FOUND)
-  message(STATUS "Looking for SHARK - found")
-  message(STATUS "SHARK_INCLUDE_DIRS: ${SHARK_INCLUDE_DIRS}")
-  message(STATUS "SHARK_LIBRARIES: ${SHARK_LIBRARIES}")
-  set(HAVE_SHARK TRUE)
-else(SHARK_FOUND)
-  message(WARNING "SHARK not found")
-  set(HAVE_SHARK FALSE)
-endif()
-
 # BulletCollision
 if(UNIX)
   pkg_check_modules(BULLET bullet>=2.82)
