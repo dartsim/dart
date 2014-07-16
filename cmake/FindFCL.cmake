@@ -15,7 +15,7 @@ find_path(FCL_INCLUDE_DIR fcl/collision.h
 set(FCL_INCLUDE_DIRS ${FCL_INCLUDE_DIR})
 
 if(MSVC)
-    set(FCL_LIBRARIES optimized fcl debug fcld ccd)
+    set(FCL_LIBRARIES optimized fcl optimized ccd debug fcld debug ccdd)
 else()
     find_library(FCL_LIBRARY fcl)
     find_library(CCD_LIBRARY ccd)
