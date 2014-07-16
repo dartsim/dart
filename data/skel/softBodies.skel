@@ -37,40 +37,39 @@
         <skeleton name="skeleton 1">
             <body name="link 1">
                 <gravity>1</gravity>
-                <transformation>-0.25 0.10 0.0 1 2 3</transformation>
+                <transformation>0 -0.10 0 0 0 0</transformation>
                 <inertia>
                     <mass>0.5</mass>
                     <offset>0 0 0</offset>
                 </inertia>
                 <soft_shape>
                     <total_mass>0.5</total_mass>
-                    <transformation>0.0 0.0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.15 0.25 0.35</size>
+                            <size>0.5 0.25 0.5</size>
                             <frags>2 2 2</frags>
                         </box>
                     </geometry>
-		<kv>100.0</kv>
-		<ke>10.0</ke>
-		<damp>1.0</damp>
+		<kv>500.0</kv>
+		<ke>0.0</ke>
+		<damp>5.0</damp>
                 </soft_shape>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.1 0.2 0.3</size>
+                            <size>0.4 0.2 0.4</size>
                         </box>
                     </geometry>
                 </visualization_shape>
-                <collision_shape>
+                <!--collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.1 0.2 0.3</size>
+                            <size>0.1 0.025 0.025</size>
                         </box>
                     </geometry>
-                </collision_shape>              
+                </collision_shape-->                                
             </body>
             <joint type="free" name="joint 1">
                 <parent>world</parent>
@@ -86,7 +85,7 @@
         <skeleton name="skeleton 2">
             <body name="link 1">
                 <gravity>1</gravity>
-                <transformation>0.25 0.15 0.0 1 2 3</transformation>
+                <transformation>0.0 0.25 0.0 0 0 0</transformation>
                 <inertia>
                     <mass>1.0</mass>
                     <offset>0 0 0</offset>
@@ -222,6 +221,54 @@
                         </cylinder>
                     </geometry>
                 </collision_shape>
+            </body>
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>link 1</child>
+                <!--transformation>-0.1 0 0 0 0 0</transformation-->
+                <!--transformation>0 -0.1 0 0 0 0</transformation-->
+                <axis>
+                    <xyz>0 1 0</xyz>
+                </axis>
+            </joint>
+        </skeleton>	
+        <skeleton name="skeleton 5">
+            <body name="link 1">
+                <gravity>1</gravity>
+                <transformation>0.3 0.4 0 1 2 3</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <soft_shape>
+                    <total_mass>0.5</total_mass>
+                    <transformation>0.1 0.10 0 1 2 3</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.25 0.25 0.25</size>
+                            <frags>2 2 2</frags>
+                        </box>
+                    </geometry>
+		<kv>100.0</kv>
+		<ke>10.0</ke>
+		<damp>1.0</damp>
+                </soft_shape>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 0.2</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>0.2 0.2 0.2</size>
+                        </box>
+                    </geometry>
+                </collision_shape>                                
             </body>
             <joint type="free" name="joint 1">
                 <parent>world</parent>

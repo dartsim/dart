@@ -329,10 +329,16 @@ public:
   //----------------------------------------------------------------------------
 
   ///
-  void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+  DEPRECATED(4.2) void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+
+  /// Set constraint impulses applying to joint
+  void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   ///
-  Eigen::VectorXd getConstraintImpulses() const;
+  DEPRECATED(4.2) Eigen::VectorXd getConstraintImpulses() const;
+
+  /// Return constraint impulses applied to joint
+  Eigen::VectorXd getJointConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
   // Integration
@@ -393,7 +399,17 @@ public:
   void updateBiasImpulse(BodyNode* _bodyNode);
 
   /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// \param _bodyNode Body node contraint impulse, _imp, is applied
+  /// \param _imp Constraint impulse expressed in body frame of _bodyNode
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+
+  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
+  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
+  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
+  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
+  void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
+                         BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
 
   /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(SoftBodyNode* _softBodyNode,

@@ -1181,7 +1181,12 @@ Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 //==============================================================================
 bool BodyNode::isImpulseReponsible() const
 {
-  // Should be called at BodyNode::init()
+  return isReactive();
+}
+
+//==============================================================================
+bool BodyNode::isReactive() const
+{
   // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
   //           type of parent joint.
   if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
@@ -1383,6 +1388,27 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
     int iStart = mParentJoint->getIndexInSkeleton(0);
     _Fext->segment(iStart, nGenCoords) = Fext;
   }
+}
+
+//==============================================================================
+void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+                                             const Eigen::Vector6d& _spatial)
+{
+  //
+  mArbitrarySpatial = _spatial;
+
+  //
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end(); ++it)
+  {
+    mArbitrarySpatial += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+                                       (*it)->mArbitrarySpatial);
+  }
+
+  // Project the spatial quantity to generalized coordinates
+  size_t iStart = mParentJoint->getIndexInSkeleton(0);
+  _generalized->segment(iStart, mParentJoint->getNumDofs())
+      = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
 }
 
 //==============================================================================
