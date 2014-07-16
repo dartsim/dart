@@ -18,7 +18,7 @@ script:
   - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
   - cd tools/
   # - ./code_check.sh
-  - ./abi_check.sh 4.1.0  # Check with DART 4.1.0
+  # - ./abi_check.sh 4.1.0  # Check with DART 4.1.0
 after_failure:
   - cat Testing/Temporary/LastTest.log
   - cat Testing/Temporary/LastTestsFailed.log
