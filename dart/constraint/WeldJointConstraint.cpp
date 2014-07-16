@@ -84,12 +84,15 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body,
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2)
   : JointConstraint(_body1, _body2),
-    mRelativeTransform(_body1->getTransform().inverse()
-                       * _body2->getTransform()),
+    mRelativeTransform(_body2->getTransform().inverse()
+                       * _body1->getTransform()),
     mViolation(Eigen::Vector6d::Zero()),
     mIdentity6d(Eigen::Matrix6d::Identity()),
     mAppliedImpulseIndex(0)
 {
+  // The bodies should be different bodies.
+  assert(_body1 != _body2);
+
   mDim = 6;
 
   mOldX[0] = 0.0;
@@ -189,7 +192,11 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 
   Eigen::Vector6d negativeVel = -mBodyNode1->getBodyVelocity();
   if (mBodyNode2)
-    negativeVel += math::AdT(mRelativeTransform, mBodyNode2->getBodyVelocity());
+  {
+    Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                            * mBodyNode2->getTransform();
+    negativeVel += math::AdT(T12, mBodyNode2->getBodyVelocity());
+  }
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
@@ -211,7 +218,11 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
   {
     assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
-    // Self collision case
+    // Closed loop
+    // TODO(JS): Closed loop does not work because Skeleton::updateBiasImpulse()
+    //           does not care this case yet. To solve this issue, the function
+    //           needs to be split into add (or set) constraint impulse and
+    //           update bias impulse.
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
@@ -224,14 +235,15 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 
       if (mBodyNode2->isReactive())
       {
+        Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                                * mBodyNode2->getTransform();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, math::dAdT(mRelativeTransform,
-                                     -mIdentity6d.col(_index)));
+              mBodyNode2, math::dAdT(T12, -mIdentity6d.col(_index)));
       }
 
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
-    // Colliding two distinct skeletons
+    // Weld two distinct skeletons
     else
     {
       if (mBodyNode1->isReactive())
@@ -244,10 +256,11 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 
       if (mBodyNode2->isReactive())
       {
+        Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                                * mBodyNode2->getTransform();
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, math::dAdT(mRelativeTransform,
-                                     -mIdentity6d.col(_index)));
+              mBodyNode2, math::dAdT(T12, -mIdentity6d.col(_index)));
         mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
@@ -268,41 +281,37 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 //==============================================================================
 void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
+  // TODO(JS): We assume that at least one body is reactive here. We need to
+  //           make sure it when weld join is created or update.
   assert(_vel != NULL && "Null pointer is not allowed.");
 
-  Eigen::Vector6d velChange = mBodyNode1->getBodyVelocityChange();
-  if (mBodyNode2)
+  Eigen::Vector6d velChange = Eigen::Vector6d::Zero();
+  if (mBodyNode1->getSkeleton()->isImpulseApplied()
+      && mBodyNode1->isReactive())
   {
-    velChange -= math::AdT(mRelativeTransform,
-                           mBodyNode2->getBodyVelocityChange());
+    velChange += mBodyNode1->getBodyVelocityChange();
   }
 
-  for (size_t i = 0; i < mDim; ++i)
+  if (mBodyNode2)
   {
-    _vel[i] = 0.0;
-
-    if (mBodyNode1->getSkeleton()->isImpulseApplied()
-        && mBodyNode1->isReactive())
-    {
-      _vel[i] += velChange[i];
-    }
-
-    if (mBodyNode2 == NULL)
-      continue;
-
     if (mBodyNode2->getSkeleton()->isImpulseApplied()
         && mBodyNode2->isReactive())
     {
-      _vel[i] += velChange[i];
+      Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                              * mBodyNode2->getTransform();
+      velChange -= math::AdT(T12, mBodyNode2->getBodyVelocityChange());
     }
   }
+
+  for (size_t i = 0; i < mDim; ++i)
+    _vel[i] = velChange[i];
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
   if (_withCfm)
   {
     _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+                                  * mConstraintForceMixing;
   }
 }
 
@@ -353,7 +362,11 @@ void WeldJointConstraint::applyImpulse(double* _lambda)
   mBodyNode1->addConstraintImpulse(imp);
 
   if (mBodyNode2)
-    mBodyNode2->addConstraintImpulse(math::dAdT(mRelativeTransform, -imp));
+  {
+    Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                            * mBodyNode2->getTransform();
+    mBodyNode2->addConstraintImpulse(math::dAdT(T12, -imp));
+  }
 }
 
 //==============================================================================
