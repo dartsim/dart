@@ -123,42 +123,17 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
                                                   shapeT));
         break;
       }
-      default:
-      {
-        std::cout << "ERROR: Collision checking does not support "
-                  << _bodyNode->getName() << "'s Shape type\n";
-        break;
-      }
-    }
-  }
-
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
-  {
-    Shape* shape = _bodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
-
-    switch (shape->getShapeType())
-    {
-      case dynamics::Shape::BOX:
-        // Do nothing here
-        break;
-      case dynamics::Shape::ELLIPSOID:
-        // Do nothing here
-        break;
-      case dynamics::Shape::CYLINDER:
-        // Do nothing here
-        break;
-      case dynamics::Shape::PLANE:
-        // Do nothing here
-        break;
-      case dynamics::Shape::MESH:
-        // Do nothing here
-        break;
       case dynamics::Shape::SOFT_MESH:
       {
         SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
         mMeshes.push_back(createSoftMesh<fcl::OBBRSS>(
                             softMeshShape->getAssimpMesh(), shapeT));
+        break;
+      }
+      default:
+      {
+        std::cout << "ERROR: Collision checking does not support "
+                  << _bodyNode->getName() << "'s Shape type\n";
         break;
       }
     }
