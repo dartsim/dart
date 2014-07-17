@@ -57,7 +57,7 @@ public:
   WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2);
 
   /// Destructor
-  ~WeldJointConstraint();
+  virtual ~WeldJointConstraint();
 
 protected:
   //----------------------------------------------------------------------------

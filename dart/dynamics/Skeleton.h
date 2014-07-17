@@ -80,7 +80,7 @@ public:
   explicit Skeleton(const std::string& _name = "Skeleton");
 
   /// Destructor
-  ~Skeleton();
+  virtual ~Skeleton();
 
   //----------------------------------------------------------------------------
   // Properties

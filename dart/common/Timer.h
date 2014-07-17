@@ -65,7 +65,7 @@ public:
   explicit Timer(const std::string& _name = "Noname Timer");
 
   /// \brief Default destructor
-  ~Timer();
+  virtual ~Timer();
 
   /// \brief Start timer
   void start();

@@ -100,7 +100,7 @@ public:
     ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string& _name);
 
     /// \brief
-    ~ElementEnumerator();
+    virtual ~ElementEnumerator();
 
     /// \brief
     bool valid() const;

@@ -60,7 +60,7 @@ public:
   MultiDofJoint(const std::string& _name);
 
   /// Destructor
-  ~MultiDofJoint();
+  virtual ~MultiDofJoint();
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
