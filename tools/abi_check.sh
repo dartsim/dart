@@ -101,6 +101,9 @@ echo Current DART directory: $CURRENT_DART_DIR
 echo ABI check working directory: $BASEDIR
 
 # Create directories
+if [ ! -d "$BASEDIR" ]; then
+    mkdir $BASEDIR;
+fi
 if [ ! -d "$BASEDIR/source" ]; then
     mkdir $BASEDIR/source; 
 fi
