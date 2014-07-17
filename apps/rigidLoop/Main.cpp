@@ -70,7 +70,6 @@ int main(int argc, char* argv[])
 
   Eigen::VectorXd initPose(dof);
   initPose.setZero();
-  initPose[5] = 3.14159 * 0.1;
   initPose[20] = 3.14159 * 0.4;
   initPose[23] = 3.14159 * 0.4;
   initPose[26] = 3.14159 * 0.4;
@@ -81,10 +80,10 @@ int main(int argc, char* argv[])
   // create a ball joint constraint
   BodyNode *bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
   BodyNode *bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-  //Eigen::Vector3d offset(0.0, 0.025, 0.0);
-  //Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  //BallJointConstraint *cl = new BallJointConstraint(bd1, bd2, jointPos);
-  WeldJointConstraint *cl = new WeldJointConstraint(bd1, bd2);
+  Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+  BallJointConstraint *cl = new BallJointConstraint( bd1, bd2, jointPos);
+  //WeldJointConstraint *cl = new WeldJointConstraint(bd1, bd2);
   myWorld->getConstraintSolver()->addConstraint(cl);
 
   // create a window and link it to the world
