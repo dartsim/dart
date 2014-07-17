@@ -80,7 +80,7 @@ public:
   explicit Skeleton(const std::string& _name = "Skeleton");
 
   /// Destructor
-  virtual ~Skeleton();
+  ~Skeleton();
 
   //----------------------------------------------------------------------------
   // Properties
@@ -389,11 +389,11 @@ public:
 
   /// Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
-  virtual void clearConstraintImpulses();
+  void clearConstraintImpulses();
 
   // TODO(JS): To be deprecated
   /// Set constraint force vector.
-  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
+  DEPRECATED(4.2) void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
@@ -457,22 +457,37 @@ public:
   const Eigen::MatrixXd& getInvAugMassMatrix();
 
   /// Get Coriolis force vector of the skeleton.
-  const Eigen::VectorXd& getCoriolisForceVector();
+  DEPRECATED(4.2) const Eigen::VectorXd& getCoriolisForceVector();
+
+  /// Get Coriolis force vector of the skeleton.
+  const Eigen::VectorXd& getCoriolisForces();
 
   /// Get gravity force vector of the skeleton.
-  const Eigen::VectorXd& getGravityForceVector();
+  DEPRECATED(4.2) const Eigen::VectorXd& getGravityForceVector();
+
+  /// Get gravity force vector of the skeleton.
+  const Eigen::VectorXd& getGravityForces();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
-  const Eigen::VectorXd& getCombinedVector();
+  DEPRECATED(4.2) const Eigen::VectorXd& getCombinedVector();
+
+  /// Get combined vector of Coriolis force and gravity force of the skeleton.
+  const Eigen::VectorXd& getCoriolisAndGravityForces();
 
   /// Get external force vector of the skeleton.
-  const Eigen::VectorXd& getExternalForceVector();
+  DEPRECATED(4.2) const Eigen::VectorXd& getExternalForceVector();
+
+  /// Get external force vector of the skeleton.
+  const Eigen::VectorXd& getExternalForces();
 
   /// Get damping force of the skeleton.
 //  const Eigen::VectorXd& getDampingForceVector();
 
   /// Get constraint force vector.
-  const Eigen::VectorXd& getConstraintForceVector();
+  DEPRECATED(4.2) const Eigen::VectorXd& getConstraintForceVector();
+
+  /// Get constraint force vector.
+  const Eigen::VectorXd& getConstraintForces();
 
   /// Set internal force vector.
 //  void setInternalForceVector(const Eigen::VectorXd& _forces);
@@ -502,10 +517,10 @@ public:
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
   /// Get kinetic energy of this skeleton.
-  virtual double getKineticEnergy() const;
+  double getKineticEnergy() const;
 
   /// Get potential energy of this skeleton.
-  virtual double getPotentialEnergy() const;
+  double getPotentialEnergy() const;
 
   //----------------------------------------------------------------------------
   // Rendering
@@ -543,28 +558,41 @@ public:
 
 protected:
   /// Update mass matrix of the skeleton.
-  virtual void updateMassMatrix();
+  void updateMassMatrix();
 
   /// Update augmented mass matrix of the skeleton.
-  virtual void updateAugMassMatrix();
+  void updateAugMassMatrix();
 
   /// Update inverse of mass matrix of the skeleton.
-  virtual void updateInvMassMatrix();
+  void updateInvMassMatrix();
 
   /// Update inverse of augmented mass matrix of the skeleton.
-  virtual void updateInvAugMassMatrix();
+  void updateInvAugMassMatrix();
 
   /// Update Coriolis force vector of the skeleton.
-  virtual void updateCoriolisForceVector();
+  DEPRECATED(4.2) virtual void updateCoriolisForceVector();
+
+  /// Update Coriolis force vector of the skeleton.
+  void updateCoriolisForces();
 
   /// Update gravity force vector of the skeleton.
-  virtual void updateGravityForceVector();
+  DEPRECATED(4.2) virtual void updateGravityForceVector();
+
+  /// Update gravity force vector of the skeleton.
+  void updateGravityForces();
 
   /// Update combined vector of the skeletong.
-  virtual void updateCombinedVector();
+  DEPRECATED(4.2) virtual void updateCombinedVector();
+
+  /// Update combined vector of the skeletong.
+  void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized torques.
-  virtual void updateExternalForceVector();
+  DEPRECATED(4.2) virtual void updateExternalForceVector();
+
+  // TODO(JS): Not implemented yet
+  /// update external force vector to generalized torques.
+  void updateExternalForces();
 
 //  /// Update damping force vector.
 //  virtual void updateDampingForceVector();
@@ -636,26 +664,26 @@ protected:
   Eigen::VectorXd mCvec;
 
   /// Dirty flag for the Coriolis force vector.
-  bool mIsCoriolisVectorDirty;
+  bool mIsCoriolisForcesDirty;
 
   /// Gravity vector for the skeleton; computed in nonrecursive
   /// dynamics only.
   Eigen::VectorXd mG;
 
   /// Dirty flag for the gravity force vector.
-  bool mIsGravityForceVectorDirty;
+  bool mIsGravityForcesDirty;
 
   /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
   Eigen::VectorXd mCg;
 
   /// Dirty flag for the combined vector of Coriolis and gravity.
-  bool mIsCombinedVectorDirty;
+  bool mIsCoriolisAndGravityForcesDirty;
 
   /// External force vector for the skeleton.
   Eigen::VectorXd mFext;
 
   /// Dirty flag for the external force vector.
-  bool mIsExternalForceVectorDirty;
+  bool mIsExternalForcesDirty;
 
   /// Constraint force vector.
   Eigen::VectorXd mFc;
@@ -664,7 +692,7 @@ protected:
   Eigen::VectorXd mFd;
 
   /// Dirty flag for the damping force vector.
-  bool mIsDampingForceVectorDirty;
+  bool mIsDampingForcesDirty;
 
   // TODO(JS): Better naming
   /// Flag for status of impulse testing.
