@@ -164,8 +164,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
 
   if (mBodyNode2)
   {
-    assert(mBodyNode1->isReactive()
-           || mBodyNode2->isReactive());
+    assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
     // Self collision case
     if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
@@ -174,16 +173,31 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
 
       if (mBodyNode1->isReactive())
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mJacobian1.row(_index));
+        if (mBodyNode2->isReactive())
+        {
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
+                 mBodyNode1, mJacobian1.row(_index), 
+                 mBodyNode2, mJacobian2.row(_index));
+        }
+        else
+        {
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
+                 mBodyNode1, mJacobian1.row(_index));
+        }
       }
-
-      if (mBodyNode2->isReactive())
+      else
       {
-        mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, mJacobian2.row(_index));
-      }
+        if (mBodyNode2->isReactive())
+        {
+          mBodyNode2->getSkeleton()->updateBiasImpulse(
+                 mBodyNode2, mJacobian2.row(_index));
 
+        }
+        else
+        {
+          assert(0);
+        }
+      }
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     // Colliding two distinct skeletons
@@ -212,7 +226,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
-                               mBodyNode1, mJacobian1.transpose().col(_index));
+         mBodyNode1, mJacobian1.transpose().col(_index));
     mBodyNode1->getSkeleton()->updateVelocityChange();
   }
 
