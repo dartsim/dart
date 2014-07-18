@@ -1425,5 +1425,34 @@ Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v) {
   return result;
 }
 
+//==============================================================================
+Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
+                                      const Eigen::Vector3d& _axisZ)
+{
+  Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
+
+  // Compute orientation
+  const Eigen::Vector3d& axisZ = _axisZ.normalized();
+  Eigen::Vector3d axisY = axisZ.cross(Eigen::Vector3d::UnitX());
+  if (axisY.norm() < 1e-6)
+    axisY = axisZ.cross(Eigen::Vector3d::UnitY());
+  axisY.normalize();
+
+  const Eigen::Vector3d& axisX = (axisY.cross(axisZ)).normalized();
+
+  // Assign orientation
+  result.linear().col(0) = axisX;
+  result.linear().col(1) = axisY;
+  result.linear().col(2) = axisZ;
+
+  // Assign translation
+  result.translation() = _origin;
+
+  // Verification
+  assert(verifyTransform(result));
+
+  return result;
+}
+
 }  // namespace math
 }  // namespace dart

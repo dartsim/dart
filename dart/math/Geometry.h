@@ -355,6 +355,10 @@ Eigen::Vector6d dad(const Eigen::Vector6d& _s, const Eigen::Vector6d& _t);
 /// \brief
 Inertia transformInertia(const Eigen::Isometry3d& _T, const Inertia& _AI);
 
+/// Generate frame given origin and z-axis
+Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
+                                      const Eigen::Vector3d& _axisZ);
+
 /// \brief Check if determinant of _R is equat to 1 and all the elements are not
 /// NaN values.
 bool verifyRotation(const Eigen::Matrix3d& _R);
