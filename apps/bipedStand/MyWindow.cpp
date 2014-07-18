@@ -122,12 +122,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case '1':
-      mForce[0] = 40;
+      mForce[0] = 50;
       mImpulseDuration = 100.0;
       std::cout << "push forward" << std::endl;
       break;
     case '2':
-      mForce[0] = -40;
+      mForce[0] = -50;
       mImpulseDuration = 100.0;
       std::cout << "push backward" << std::endl;
       break;

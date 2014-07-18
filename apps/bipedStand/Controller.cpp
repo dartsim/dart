@@ -68,9 +68,9 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
     mKd(i, i) = 0.0;
   }
   for (int i = 6; i < nDof; i++)
-      mKp(i, i) = 200.0;
+    mKp(i, i) = 400.0;
   for (int i = 6; i < nDof; i++)
-    mKd(i, i) = 100.0;
+    mKd(i, i) = 40.0;
 
   mPreOffset = 0.0;
 }
@@ -107,10 +107,19 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (fabs(diff[0]) < 0.1) {
-    double offset = com[0] - cop[0];
-    double k1 = 20.0;
-    double k2 = 10.0;
+  double offset = com[0] - cop[0];
+  if (offset < 0.1 && offset > 0.0) {
+    double k1 = 200.0;
+    double k2 = 100.0;
+    double kd = 10.0;
+    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mPreOffset = offset;
+  } else if (offset > -0.2 && offset < -0.05) {
+    double k1 = 2000.0;
+    double k2 = 100.0;
     double kd = 100.0;
     mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
