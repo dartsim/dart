@@ -102,7 +102,10 @@ private:
   Eigen::Vector6d mViolation;
 
   ///
-  const Eigen::Matrix6d mIdentity6d;
+  const Eigen::Matrix6d mJacobian1;
+
+  ///
+  Eigen::Matrix6d mJacobian2;
 
   ///
   double mOldX[6];
