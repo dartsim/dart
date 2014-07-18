@@ -43,28 +43,41 @@ struct MyFunc : public SingleObjectiveFunction {
 
   void proposeStartingPoint(SearchPointType &x) const {
     x.resize(numberOfVariables());
-
-    for (unsigned int i = 0; i < x.size(); i++) {
-      x(i) = Rng::uni(0.0, 500.0);
-    }
+    x(0) = 10.0;
+    x(1) = 10.0;
+    x(2) = 10.0;
+    // for (unsigned int i = 0; i < x.size(); i++) {
+    //   x(i) = Rng::uni(0.0, 500.0);
+    //}
   }
 
   bool isFeasible( const SearchPointType & input) const {
     int n = numberOfVariables();
     SIZE_CHECK(input.size() == n);
-    for(int i = 0; i < n; ++i) {
-      if (input(i) < 0.0 || input(i) > 500.0)
-        return false;
-    }
+    if (input(0) < 0.0 || input(0) > 500.0)
+      return false;
+    if (input(1) < 0.0 || input(1) > 500.0)
+      return false;
+    if (input(2) < 0.0 || input(2) > 50)
+      return false;
+
+    // for(int i = 0; i < n; ++i) {
+    //   if (input(i) < 0.0 || input(i) > 500.0)
+    //     return false;
+    // }
     return true;
   }
 
   void closestFeasible( SearchPointType & input ) const {
     int n = numberOfVariables();
     SIZE_CHECK(input.size() == n);
-    for(int i = 0; i < n; ++i) {
-      input(i) = std::max(0.0,std::min(500.0,input(i)));
-    }
+    input(0) = std::max(0.0,std::min(500.0,input(0)));
+    input(1) = std::max(0.0,std::min(500.0,input(1)));
+    input(2) = std::max(0.0,std::min(50.0,input(2)));
+
+    // for(int i = 0; i < n; ++i) {
+    //   input(i) = std::max(0.0,std::min(500.0,input(i)));
+    // }
   }
 
   double eval(const SearchPointType &p) const {
@@ -111,7 +124,7 @@ void worker(MyWindow* window)
   RealVector start;
   func.proposeStartingPoint(start);
   // cma.init( func, start, 20, 10, 1.0 );
-  cma.init( func, start, 8, 4, 0.5 );
+  cma.init( func, start, 8, 4, 20.0 );
 
   // // Iterate the optimizer until a solution of sufficient quality is found.
   // do {
@@ -122,7 +135,7 @@ void worker(MyWindow* window)
 
   // for(;;)
 
-  while(cma.solution().value > 0.005)
+  while(cma.solution().value > 0.01)
   {
 
     cma.step( func );

@@ -66,7 +66,7 @@ private:
   Eigen::Vector3d mForce;
   Controller* mController;
   int mImpulseDuration;
-  int mSimulationEpisodeCount;
+  int mSimulationStepCount;
 
 };
 

@@ -60,6 +60,7 @@ private:
   Eigen::Vector3d mForce;
   Controller* mController;
   int mImpulseDuration;
+  int mSimulationStepCount;
 };
 
 #endif  // APPS_BALANCE_MYWINDOW_H_

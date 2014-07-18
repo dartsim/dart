@@ -57,15 +57,15 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  int NDOFS = myWorld->getSkeleton(1)->getDof();
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(NDOFS);
-  q[1] = -0.1;
-  q[6] = 0.2;
-  q[14] = -0.5;
-  q[17] = 0.3;
-  q[9] = 0.2;
-  q[15] = -0.5;
-  q[19] = 0.3;
+  int nDofs = myWorld->getSkeleton(1)->getNumDofs();
+  Eigen::VectorXd q = Eigen::VectorXd::Zero(nDofs);
+  q[1] = -0.2;
+  q[6] = 0.15;
+  q[14] = -0.4;
+  q[17] = 0.25;
+  q[9] = 0.15;
+  q[15] = -0.4;
+  q[19] = 0.25;
   myWorld->getSkeleton(1)->setPositions(q);
   myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
@@ -78,8 +78,7 @@ int main(int argc, char* argv[]) {
   std::cout << "initial parameters = " << initParam.transpose() << std::endl;
   myController->setParams( initParam );
 
-  Eigen::Vector3d COM = myWorld->getSkeleton(1)->getWorldCOM();
-  myController->setTargetCOM( COM - Eigen::Vector3d(0.0, 0.05, 0.0 ) );
+  myController->setTargetCOM(Eigen::Vector3d(0.006, -0.048, 0.001));
   std::cout << "Target COM = " << myController->getTargetCOM().transpose() << std::endl;
 
   // create a window and link it to the world
@@ -87,6 +86,7 @@ int main(int argc, char* argv[]) {
   window.setWorld(myWorld);
   window.setController(myController);
 
+  std::cout << "'o': optimize" << std::endl;
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
   std::cout << "'[' and ']': play one frame backward and forward" << std::endl;

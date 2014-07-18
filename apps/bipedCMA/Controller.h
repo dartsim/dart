@@ -68,8 +68,6 @@ public:
   Eigen::VectorXd getTorques();
   double getTorque(int _index);
   void setDesiredDof(int _index, double _val);
-  void computeTorques(const Eigen::VectorXd& _dof,
-                      const Eigen::VectorXd& _dofVel);
   dart::dynamics::Skeleton* getSkel();
   Eigen::VectorXd getDesiredDofs();
   Eigen::MatrixXd getKp();

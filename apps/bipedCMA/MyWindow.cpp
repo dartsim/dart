@@ -49,7 +49,7 @@ MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
 //  mController = NULL;
   mImpulseDuration = 0;
-  mSimulationEpisodeCount = 0;
+  mSimulationStepCount = 0;
 }
 
 MyWindow::~MyWindow() {
@@ -67,6 +67,13 @@ void MyWindow::timeStepping() {
   }
 
   // External force
+  if (mSimulationStepCount == 1000 || mSimulationStepCount == 2000) {
+    mForce[0] = 100;
+    mImpulseDuration = 100.0;
+    std::cout << "PUSH!" << std::endl;
+  }
+
+
   mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
   // Internal force
@@ -84,30 +91,31 @@ void MyWindow::timeStepping() {
     mForce.setZero();
   }
 
-  mSimulationEpisodeCount++;
+  mSimulationStepCount++;
 }
 
 void MyWindow::reset() {
-  mSimulationEpisodeCount = 0;
+  mSimulationStepCount = 0;
 
   int NDOFS = mWorld->getSkeleton(1)->getDof();
   Eigen::VectorXd q = Eigen::VectorXd::Zero(NDOFS);
-  q[1] = -0.1;
-  q[6] = 0.2;
-  q[14] = -0.5;
-  q[17] = 0.3;
-  q[9] = 0.2;
-  q[15] = -0.5;
-  q[19] = 0.3;
+  q[1] = -0.2;
+  q[6] = 0.15;
+  q[14] = -0.4;
+  q[17] = 0.25;
+  q[9] = 0.15;
+  q[15] = -0.4;
+  q[19] = 0.25;
   mWorld->getSkeleton(1)->setPositions(q);
   mWorld->getSkeleton(1)->resetVelocities();
   mWorld->getSkeleton(1)->computeForwardKinematics(true, true, true);
+  mWorld->setTime(0.0);
 }
 
 
 bool MyWindow::isSimulationEnd() {
   // return (mWorld->getTime() > 1.0);
-  return (mSimulationEpisodeCount >= 5000);
+  return (mSimulationStepCount >= 3000);
 }
 
 
@@ -169,12 +177,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case '1':
-      mForce[0] = 40;
+      mForce[0] = 80;
       mImpulseDuration = 100.0;
       std::cout << "push forward" << std::endl;
       break;
     case '2':
-      mForce[0] = -40;
+      mForce[0] = -80;
       mImpulseDuration = 100.0;
       std::cout << "push backward" << std::endl;
       break;

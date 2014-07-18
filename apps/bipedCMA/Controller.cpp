@@ -69,9 +69,9 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
     mKd(i, i) = 0.0;
   }
   for (int i = 6; i < nDof; i++)
-      mKp(i, i) = 200.0;
+      mKp(i, i) = 400.0;
   for (int i = 6; i < nDof; i++)
-    mKd(i, i) = 100.0;
+    mKd(i, i) = 40.0;
 
   mPreOffset = 0.0;
 }
@@ -81,7 +81,6 @@ Controller::~Controller() {
 
 void Controller::update(double _currentTime) {
   // SPD tracking
-  int nDof = mSkel->getNumDofs();
   Eigen::VectorXd q    = mSkel->getPositions();
   Eigen::VectorXd dq   = mSkel->getVelocities();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
@@ -97,11 +96,20 @@ void Controller::update(double _currentTime) {
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (fabs(diff[0]) < 0.1) {
-    double offset = com[0] - cop[0];
-    double k1 = mParams(0);
-    double k2 = mParams(1);
-    double kd = mParams(2);
+  double offset = com[0] - cop[0];
+  if (offset < 0.1 && offset > 0.0) {
+    double k1 = mParams[0];
+    double k2 = mParams[1];
+    double kd = mParams[2];
+    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mPreOffset = offset;
+  } else if (offset > -0.2 && offset < -0.05) {
+    double k1 = 2000.0;
+    double k2 = 100.0;
+    double kd = 100.0;
     mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
     mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
@@ -120,8 +128,9 @@ void Controller::update(double _currentTime) {
 double Controller::evaluate() {
   Eigen::Vector3d COM = mSkel->getWorldCOM();
   std::cout << "COM = " << COM.transpose() << std::endl;
+  double diff = COM[1] - mTargetCOM[1];
 
-  return (COM - mTargetCOM).squaredNorm();
+  return fabs(diff);
 }
 
 Eigen::VectorXd Controller::getTorques() {
@@ -134,42 +143,6 @@ double Controller::getTorque(int _index) {
 
 void Controller::setDesiredDof(int _index, double _val) {
   mDesiredDofs[_index] = _val;
-}
-
-void Controller::computeTorques(const Eigen::VectorXd& _dof,
-                                const Eigen::VectorXd& _dofVel) {
-  // SPD tracking
-  int nDof = mSkel->getNumDofs();
-  Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
-  Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
-  Eigen::VectorXd d = -mKd * _dofVel;
-  Eigen::VectorXd qddot =
-      invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
-
-  mTorques = p + d - mKd * qddot * mTimestep;
-
-  // ankle strategy for sagital plane
-  Eigen::Vector3d com = mSkel->getWorldCOM();
-  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
-                        * Eigen::Vector3d(0.05, 0, 0);
-  Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (diff[0] < 0.1) {
-    double offset = com[0] - cop[0];
-    double k1 = 20.0;
-    double k2 = 10.0;
-    double kd = 100.0;
-    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
-    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
-    mPreOffset = offset;
-  }
-
-  // Just to make sure no illegal torque is used
-  for (int i = 0; i < 6; i++) {
-    mTorques[i] = 0.0;
-  }
-  mFrame++;
 }
 
 dart::dynamics::Skeleton*Controller::getSkel() {

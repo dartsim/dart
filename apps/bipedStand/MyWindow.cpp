@@ -48,12 +48,18 @@ MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
 //  mController = NULL;
   mImpulseDuration = 0;
+  mSimulationStepCount = 0;
 }
 
 MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
+  if (mSimulationStepCount == 1000 || mSimulationStepCount == 2000) {
+    mForce[0] = 100;
+    mImpulseDuration = 100.0;
+  }
+
   mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
   mController->setConstrForces(mWorld->getSkeleton(1)->getConstraintForceVector());
@@ -69,6 +75,7 @@ void MyWindow::timeStepping() {
     mImpulseDuration = 0;
     mForce.setZero();
   }
+  mSimulationStepCount++;
 }
 
 void MyWindow::drawSkels() {
@@ -122,12 +129,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case '1':
-      mForce[0] = 40;
+      mForce[0] = 100;
       mImpulseDuration = 100.0;
       std::cout << "push forward" << std::endl;
       break;
     case '2':
-      mForce[0] = -40;
+      mForce[0] = -100;
       mImpulseDuration = 100.0;
       std::cout << "push backward" << std::endl;
       break;
