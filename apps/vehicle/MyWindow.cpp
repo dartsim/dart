@@ -48,36 +48,30 @@ MyWindow::MyWindow()
   mBackWheelVelocity = 0.0;
   mSteeringWheelAngle = 0.0;
   mK = 0.01;
-  mD = 0.0025;
+  mD = 0.005;
 }
 
 MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-//  dart::dynamics::Skeleton* vehicle = mWorld->getSkeleton("car_skeleton");
-//  assert(vehicle != 0);
+  dart::dynamics::Skeleton* vehicle = mWorld->getSkeleton("car_skeleton");
+  assert(vehicle != 0);
 
-//  Eigen::VectorXd q   = vehicle->getPositions();
-//  Eigen::VectorXd dq  = vehicle->getVelocities();
-//  Eigen::VectorXd tau = vehicle->getGenForces();
-//  tau.setZero();
+  size_t dof = vehicle->getNumDofs();
 
-//  if (true)
-//  {
-//    tau[6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
-//    tau[8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
-//    tau[10] = -mD * (dq[10] - mBackWheelVelocity);
-//    tau[11] = -mD * (dq[11] - mBackWheelVelocity);
-//  }
-//  else
-//  {
-//    tau[0] = -mK * (q[0] - mSteeringWheelAngle) - mD * dq[0];
-//    tau[2] = -mK * (q[2] - mSteeringWheelAngle) - mD * dq[2];
-//    tau[4] = -mD * (dq[4] - mBackWheelVelocity);
-//    tau[5] = -mD * (dq[5] - mBackWheelVelocity);
-//  }
-//  vehicle->setInternalForceVector(tau);
+  Eigen::VectorXd q   = vehicle->getPositions();
+  Eigen::VectorXd dq  = vehicle->getVelocities();
+  Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
+
+  tau[ 6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
+  tau[ 8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
+  tau[ 7] = -mD * (dq[ 7] - mBackWheelVelocity);
+  tau[ 9] = -mD * (dq[ 9] - mBackWheelVelocity);
+  tau[10] = -mD * (dq[10] - mBackWheelVelocity);
+  tau[11] = -mD * (dq[11] - mBackWheelVelocity);
+
+  vehicle->setForces(tau);
 
   mWorld->step();
 }
@@ -125,19 +119,23 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case 'w':  // move forward
-      mBackWheelVelocity = DART_RADIAN * -60.0;
+      mBackWheelVelocity = DART_RADIAN * -420.0;
       break;
     case 's':  // stop
       mBackWheelVelocity = DART_RADIAN * 0.0;
       break;
     case 'x':  // move backward
-      mBackWheelVelocity = DART_RADIAN * +60.0;
+      mBackWheelVelocity = DART_RADIAN * +420.0;
       break;
     case 'a':  // rotate steering wheels to left
       mSteeringWheelAngle += DART_RADIAN * +10;
+      if (mSteeringWheelAngle > DART_RADIAN * 30.0)
+        mSteeringWheelAngle = DART_RADIAN * 30.0;
       break;
     case 'd':  // rotate steering wheels to right
       mSteeringWheelAngle += DART_RADIAN * -10;
+      if (mSteeringWheelAngle < DART_RADIAN * -30.0)
+        mSteeringWheelAngle = DART_RADIAN * -30.0;
       break;
     default:
       Win3D::keyboard(_key, _x, _y);
