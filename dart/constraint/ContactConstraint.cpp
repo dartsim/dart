@@ -560,14 +560,34 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mBodyNode1->isReactive())
     {
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                   mJacobians1[_idx]);
+      // Both bodies are reactive
+      if (mBodyNode2->isReactive())
+      {
+        mBodyNode1->getSkeleton()->updateBiasImpulse(
+              mBodyNode1, mJacobians1[_idx],
+              mBodyNode2, mJacobians2[_idx]);
+      }
+      // Only body1 is reactive
+      else
+      {
+        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
+                                                     mJacobians1[_idx]);
+      }
     }
-
-    if (mBodyNode2->isReactive())
+    else
     {
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                   mJacobians2[_idx]);
+      // Only body2 is reactive
+      if (mBodyNode2->isReactive())
+      {
+        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
+                                                     mJacobians2[_idx]);
+      }
+      // Both bodies are not reactive
+      else
+      {
+        // This case should not be happed
+        assert(0);
+      }
     }
 
     mBodyNode1->getSkeleton()->updateVelocityChange();

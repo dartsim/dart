@@ -62,7 +62,7 @@ public:
 
 
   /// Destructor
-  ~BallJointConstraint();
+  virtual ~BallJointConstraint();
 
 protected:
   //----------------------------------------------------------------------------

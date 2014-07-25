@@ -49,7 +49,7 @@ public:
   }
 
   /// The destructor
-  ~PathPlanner() {}
+  virtual ~PathPlanner() {}
 
   /// Plan a path from a single start configuration to a single goal
   bool planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs, const Eigen::VectorXd &start,
