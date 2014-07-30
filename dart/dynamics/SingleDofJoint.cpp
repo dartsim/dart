@@ -868,18 +868,15 @@ void SingleDofJoint::addChildBiasImpulseTo(
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalForce(
-    const Eigen::Vector6d& _bodyForce,
-    double _timeStep)
+void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
+                                      double _timeStep)
 {
   // Spring force
-  double springForce
-      = -mSpringStiffness * (mPosition
-                                + mVelocity * _timeStep
-                                - mRestPosition);
+  const double& springForce
+      = -mSpringStiffness * (mPosition + mVelocity * _timeStep - mRestPosition);
 
   // Damping force
-  double dampingForce = -mDampingCoefficient * mVelocity;
+  const double& dampingForce = -mDampingCoefficient * mVelocity;
 
   // Compute alpha
   mTotalForce = mForce + springForce + dampingForce - mJacobian.dot(_bodyForce);
