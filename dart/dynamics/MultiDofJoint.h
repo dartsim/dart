@@ -1355,7 +1355,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
   for (size_t i = 0; i < DOF; ++i)
   {
     projAI(i, i) += _timeStep * mDampingCoefficient[i]
-        + _timeStep * _timeStep * mSpringStiffness[i];
+                    + _timeStep * _timeStep * mSpringStiffness[i];
   }
 
   // Inversion of projected articulated inertia
