@@ -72,7 +72,6 @@ int main(int argc, char* argv[]) {
 
   // create controller
   Controller* myController = new Controller(myWorld->getSkeleton(1),
-                                            myWorld->getConstraintSolver(),
                                             myWorld->getTimeStep());
 
   // create a window and link it to the world

@@ -41,19 +41,15 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionDetector.h"
 
 Controller::Controller(dart::dynamics::Skeleton* _skel,
-                       dart::constraint::ConstraintSolver* _constraintSolver,
                        double _t) {
   mSkel = _skel;
-  mConstraintSolver = _constraintSolver;
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
   mKp = Eigen::MatrixXd::Identity(nDof, nDof);
   mKd = Eigen::MatrixXd::Identity(nDof, nDof);
-  mConstrForces = Eigen::VectorXd::Zero(nDof);
 
   mTorques.resize(nDof);
   mDesiredDofs.resize(nDof);
@@ -92,13 +88,15 @@ void Controller::setDesiredDof(int _index, double _val) {
 
 void Controller::computeTorques(const Eigen::VectorXd& _dof,
                                 const Eigen::VectorXd& _dofVel) {
+  Eigen::VectorXd constrForces = mSkel->getConstraintForces();
+
   // SPD tracking
   //size_t nDof = mSkel->getNumDofs();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;
   Eigen::VectorXd qddot =
-      invM * (-mSkel->getCoriolisAndGravityForces() + p + d + mConstrForces);
+      invM * (-mSkel->getCoriolisAndGravityForces() + p + d + constrForces);
 
   mTorques = p + d - mKd * qddot * mTimestep;
 
@@ -149,9 +147,5 @@ Eigen::MatrixXd Controller::getKp() {
 
 Eigen::MatrixXd Controller::getKd() {
   return mKd;
-}
-
-void Controller::setConstrForces(const Eigen::VectorXd& _constrForce) {
-  mConstrForces = _constrForce;
 }
 
