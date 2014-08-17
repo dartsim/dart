@@ -46,7 +46,7 @@
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
-//  mController = NULL;
+  mController = NULL;
   mImpulseDuration = 0;
 }
 
@@ -56,9 +56,7 @@ MyWindow::~MyWindow() {
 void MyWindow::timeStepping() {
   mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
-  // TODO(JS): Restore this part
-//  mController->setConstrForces(
-//        mWorld->getConstraintSolver()->getTotalConstraintForce(1));
+  //  mController->setConstrForces(mWorld->getSkeleton(1)->getConstraintForces());
   mController->computeTorques(mWorld->getSkeleton(1)->getPositions(),
                               mWorld->getSkeleton(1)->getVelocities());
   mWorld->getSkeleton(1)->setForces(mController->getTorques());
@@ -124,12 +122,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case '1':
-      mForce[0] = 40;
+      mForce[0] = 50;
       mImpulseDuration = 100.0;
       std::cout << "push forward" << std::endl;
       break;
     case '2':
-      mForce[0] = -40;
+      mForce[0] = -50;
       mImpulseDuration = 100.0;
       std::cout << "push backward" << std::endl;
       break;

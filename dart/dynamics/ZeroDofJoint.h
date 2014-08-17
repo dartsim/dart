@@ -55,7 +55,7 @@ public:
   ZeroDofJoint(const std::string& _name);
 
   /// Destructor
-  ~ZeroDofJoint();
+  virtual ~ZeroDofJoint();
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates

@@ -55,7 +55,7 @@ public:
   SingleDofJoint(const std::string& _name);
 
   /// Destructor
-  ~SingleDofJoint();
+  virtual ~SingleDofJoint();
 
   // Documentation inherited
   DEPRECATED(4.1) virtual size_t getDof() const;

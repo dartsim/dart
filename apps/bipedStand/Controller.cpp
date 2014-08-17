@@ -41,19 +41,15 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionDetector.h"
 
 Controller::Controller(dart::dynamics::Skeleton* _skel,
-                       dart::constraint::ConstraintSolver* _constraintSolver,
                        double _t) {
   mSkel = _skel;
-  mConstraintSolver = _constraintSolver;
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
   mKp = Eigen::MatrixXd::Identity(nDof, nDof);
   mKd = Eigen::MatrixXd::Identity(nDof, nDof);
-  mConstrForces = Eigen::VectorXd::Zero(nDof);
 
   mTorques.resize(nDof);
   mDesiredDofs.resize(nDof);
@@ -68,9 +64,9 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
     mKd(i, i) = 0.0;
   }
   for (int i = 6; i < nDof; i++)
-      mKp(i, i) = 200.0;
+    mKp(i, i) = 400.0;
   for (int i = 6; i < nDof; i++)
-    mKd(i, i) = 100.0;
+    mKd(i, i) = 40.0;
 
   mPreOffset = 0.0;
 }
@@ -92,13 +88,15 @@ void Controller::setDesiredDof(int _index, double _val) {
 
 void Controller::computeTorques(const Eigen::VectorXd& _dof,
                                 const Eigen::VectorXd& _dofVel) {
+  Eigen::VectorXd constrForces = mSkel->getConstraintForces();
+
   // SPD tracking
   //size_t nDof = mSkel->getNumDofs();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;
   Eigen::VectorXd qddot =
-      invM * (-mSkel->getCombinedVector() + p + d + mConstrForces);
+      invM * (-mSkel->getCoriolisAndGravityForces() + p + d + constrForces);
 
   mTorques = p + d - mKd * qddot * mTimestep;
 
@@ -107,10 +105,19 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
-  if (diff[0] < 0.1) {
-    double offset = com[0] - cop[0];
-    double k1 = 20.0;
-    double k2 = 10.0;
+  double offset = com[0] - cop[0];
+  if (offset < 0.1 && offset > 0.0) {
+    double k1 = 200.0;
+    double k2 = 100.0;
+    double kd = 10.0;
+    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mPreOffset = offset;
+  } else if (offset > -0.2 && offset < -0.05) {
+    double k1 = 2000.0;
+    double k2 = 100.0;
     double kd = 100.0;
     mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
     mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
@@ -140,9 +147,5 @@ Eigen::MatrixXd Controller::getKp() {
 
 Eigen::MatrixXd Controller::getKd() {
   return mKd;
-}
-
-void Controller::setConstrForces(const Eigen::VectorXd& _constrForce) {
-  mConstrForces = _constrForce;
 }
 

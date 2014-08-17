@@ -53,21 +53,11 @@ public:
   /// Constructor that takes one body
   explicit WeldJointConstraint(dynamics::BodyNode* _body);
 
-  /// Constructor that takes one body and its target transform expressed in
-  /// world frame
-  WeldJointConstraint(dynamics::BodyNode* _body,
-                      const Eigen::Isometry3d& _targetT);
-
   /// Constructor that takes two bodies
   WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2);
 
-  /// Constructor that takes two bodies and their relative transform from body1
-  /// to body2
-  WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2,
-                      const Eigen::Isometry3d& _T1to2);
-
   /// Destructor
-  ~WeldJointConstraint();
+  virtual ~WeldJointConstraint();
 
 protected:
   //----------------------------------------------------------------------------

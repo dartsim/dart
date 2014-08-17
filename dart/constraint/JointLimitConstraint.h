@@ -56,7 +56,7 @@ public:
   explicit JointLimitConstraint(dynamics::Joint* _joint);
 
   /// Destructor
-  ~JointLimitConstraint();
+  virtual ~JointLimitConstraint();
 
   //----------------------------------------------------------------------------
   // Property settings

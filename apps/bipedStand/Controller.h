@@ -47,15 +47,11 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 }  // namespace dynamics
-namespace constraint {
-class ConstraintSolver;
-}  // namespace constraint
 }  // namespace dart
 
 class Controller {
 public:
   Controller(dart::dynamics::Skeleton*_skel,
-             dart::constraint::ConstraintSolver* _collisionHandle,
              double _t);
   virtual ~Controller();
 
@@ -68,16 +64,9 @@ public:
   Eigen::VectorXd getDesiredDofs();
   Eigen::MatrixXd getKp();
   Eigen::MatrixXd getKd();
-  void setConstrForces(const Eigen::VectorXd& _constrForce);
 
 protected:
-  bool computeCoP(dart::dynamics::BodyNode *_node, Eigen::Vector3d *_cop);
-  Eigen::Vector3d evalLinMomentum(const Eigen::VectorXd& _dofVel);
-  Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
-  Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum,
-                                    Eigen::VectorXd _controlledAxis);
   dart::dynamics::Skeleton* mSkel;
-  dart::constraint::ConstraintSolver* mConstraintSolver;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;
@@ -86,7 +75,6 @@ protected:
   double mTimestep;
   double mPreOffset;
   /// \brief SPD utilizes the current info about contact forces
-  Eigen::VectorXd mConstrForces;
 };
 
 #endif  // APPS_BALANCE_CONTROLLER_H_

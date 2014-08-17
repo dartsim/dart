@@ -758,8 +758,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       //------- Coriolis Force Vector and Combined Force Vector Tests --------
       // Get C1, Coriolis force vector using recursive method
-      VectorXd C = skel->getCoriolisForceVector();
-      VectorXd Cg = skel->getCombinedVector();
+      VectorXd C = skel->getCoriolisForces();
+      VectorXd Cg = skel->getCoriolisAndGravityForces();
 
       // Get C2, Coriolis force vector using inverse dynamics algorithm
       Vector3d oldGravity = skel->getGravity();
@@ -772,7 +772,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       skel->setAccelerations(VectorXd::Zero(dof));
 
       EXPECT_TRUE(skel->getForces() == VectorXd::Zero(dof));
-      EXPECT_TRUE(skel->getExternalForceVector() == VectorXd::Zero(dof));
+      EXPECT_TRUE(skel->getExternalForces() == VectorXd::Zero(dof));
       EXPECT_TRUE(skel->getAccelerations() == VectorXd::Zero(dof));
 
       skel->setGravity(Vector3d::Zero());
@@ -1010,7 +1010,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
         body->setConstraintImpulse(impulseOnBody);
 
         // Get constraint force vector
-        Eigen::VectorXd constraintVector1 = skel->getConstraintForceVector();
+        Eigen::VectorXd constraintVector1 = skel->getConstraintForces();
 
         // Get constraint force vector by using Jacobian of skeleon
         Eigen::MatrixXd bodyJacobian = body->getBodyJacobian();

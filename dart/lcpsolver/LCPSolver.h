@@ -49,7 +49,7 @@ public:
   LCPSolver();
 
   /// \brief
-  ~LCPSolver();
+  virtual ~LCPSolver();
 
   /// \brief
   bool Solve(const Eigen::MatrixXd& _A,

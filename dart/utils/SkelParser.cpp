@@ -1661,7 +1661,7 @@ dynamics::FreeJoint* SkelParser::readFreeJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
-    newFreeJoint->setPositions(init_vel);
+    newFreeJoint->setVelocities(init_vel);
   }
 
   return newFreeJoint;

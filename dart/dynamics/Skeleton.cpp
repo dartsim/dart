@@ -69,11 +69,11 @@ Skeleton::Skeleton(const std::string& _name)
     mIsAugMassMatrixDirty(true),
     mIsInvMassMatrixDirty(true),
     mIsInvAugMassMatrixDirty(true),
-    mIsCoriolisVectorDirty(true),
-    mIsGravityForceVectorDirty(true),
-    mIsCombinedVectorDirty(true),
-    mIsExternalForceVectorDirty(true),
-    mIsDampingForceVectorDirty(true),
+    mIsCoriolisForcesDirty(true),
+    mIsGravityForcesDirty(true),
+    mIsCoriolisAndGravityForcesDirty(true),
+    mIsExternalForcesDirty(true),
+    mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
     mUnionRootSkeleton(this),
     mUnionSize(1)
@@ -967,10 +967,10 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
   mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
+  mIsCoriolisForcesDirty = true;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
+  mIsExternalForcesDirty = true;
 //  mIsDampingForceVectorDirty = true;
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1017,49 +1017,43 @@ const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForceVector()
+const Eigen::VectorXd& Skeleton::getCoriolisForces()
 {
-  if (mIsCoriolisVectorDirty)
-    updateCoriolisForceVector();
+  if (mIsCoriolisForcesDirty)
+    updateCoriolisForces();
 
   return mCvec;
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForceVector()
+const Eigen::VectorXd& Skeleton::getGravityForces()
 {
-  if (mIsGravityForceVectorDirty)
-    updateGravityForceVector();
+  if (mIsGravityForcesDirty)
+    updateGravityForces();
 
   return mG;
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCombinedVector()
+const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces()
 {
-  if (mIsCombinedVectorDirty)
-    updateCombinedVector();
+  if (mIsCoriolisAndGravityForcesDirty)
+    updateCoriolisAndGravityForces();
 
   return mCg;
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForceVector()
+const Eigen::VectorXd& Skeleton::getExternalForces()
 {
-  if (mIsExternalForceVectorDirty)
-    updateExternalForceVector();
+  if (mIsExternalForcesDirty)
+    updateExternalForces();
+
   return mFext;
 }
 
 //==============================================================================
-//const Eigen::VectorXd& Skeleton::getDampingForceVector() {
-//  if (mIsDampingForceVectorDirty)
-//    updateDampingForceVector();
-//  return mFd;
-//}
-
-//==============================================================================
-const Eigen::VectorXd& Skeleton::getConstraintForceVector()
+const Eigen::VectorXd& Skeleton::getConstraintForces()
 {
   size_t dof = getNumDofs();
   mFc = Eigen::VectorXd::Zero(dof);
@@ -1084,6 +1078,43 @@ const Eigen::VectorXd& Skeleton::getConstraintForceVector()
   mFc = mFc / mTimeStep;
 
   return mFc;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getCoriolisForceVector()
+{
+  return getCoriolisForces();
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getGravityForceVector()
+{
+  return getGravityForces();
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getCombinedVector()
+{
+  return getCoriolisAndGravityForces();
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getExternalForceVector()
+{
+  return getExternalForces();
+}
+
+//==============================================================================
+//const Eigen::VectorXd& Skeleton::getDampingForceVector() {
+//  if (mIsDampingForceVectorDirty)
+//    updateDampingForceVector();
+//  return mFd;
+//}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getConstraintForceVector()
+{
+  return getConstraintForces();
 }
 
 //==============================================================================
@@ -1333,6 +1364,12 @@ void Skeleton::updateInvAugMassMatrix()
 //==============================================================================
 void Skeleton::updateCoriolisForceVector()
 {
+  updateCoriolisForces();
+}
+
+//==============================================================================
+void Skeleton::updateCoriolisForces()
+{
   if (getNumDofs() == 0)
     return;
 
@@ -1352,11 +1389,17 @@ void Skeleton::updateCoriolisForceVector()
     (*it)->aggregateCoriolisForceVector(&mCvec);
   }
 
-  mIsCoriolisVectorDirty = false;
+  mIsCoriolisForcesDirty = false;
 }
 
 //==============================================================================
 void Skeleton::updateGravityForceVector()
+{
+  updateGravityForces();
+}
+
+//==============================================================================
+void Skeleton::updateGravityForces()
 {
   if (getNumDofs() == 0)
     return;
@@ -1371,11 +1414,17 @@ void Skeleton::updateGravityForceVector()
     (*it)->aggregateGravityForceVector(&mG, mGravity);
   }
 
-  mIsGravityForceVectorDirty = false;
+  mIsGravityForcesDirty = false;
 }
 
 //==============================================================================
 void Skeleton::updateCombinedVector()
+{
+  updateCoriolisAndGravityForces();
+}
+
+//==============================================================================
+void Skeleton::updateCoriolisAndGravityForces()
 {
   if (getNumDofs() == 0)
     return;
@@ -1395,11 +1444,17 @@ void Skeleton::updateCombinedVector()
     (*it)->aggregateCombinedVector(&mCg, mGravity);
   }
 
-  mIsCombinedVectorDirty = false;
+  mIsCoriolisAndGravityForcesDirty = false;
 }
 
 //==============================================================================
 void Skeleton::updateExternalForceVector()
+{
+  updateExternalForces();
+}
+
+//==============================================================================
+void Skeleton::updateExternalForces()
 {
   if (getNumDofs() == 0)
     return;
@@ -1415,6 +1470,7 @@ void Skeleton::updateExternalForceVector()
     (*itr)->aggregateExternalForces(&mFext);
   }
 
+  // TODO(JS): Not implemented yet
 //  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
 //       it != mSoftBodyNodes.end(); ++it)
 //  {
@@ -1444,7 +1500,7 @@ void Skeleton::updateExternalForceVector()
 //    }
 //  }
 
-  mIsExternalForceVectorDirty = false;
+  mIsExternalForcesDirty = false;
 }
 
 //==============================================================================
@@ -1503,10 +1559,10 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
   mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
+  mIsCoriolisForcesDirty = true;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
+  mIsExternalForcesDirty = true;
 //  mIsDampingForceVectorDirty = true;
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1578,10 +1634,10 @@ void Skeleton::computeInverseDynamicsRecursionA()
   mIsAugMassMatrixDirty = true;
   mIsInvMassMatrixDirty = true;
   mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisVectorDirty = true;
-  mIsGravityForceVectorDirty = true;
-  mIsCombinedVectorDirty = true;
-  mIsExternalForceVectorDirty = true;
+  mIsCoriolisForcesDirty = true;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
+  mIsExternalForcesDirty = true;
 //  mIsDampingForceVectorDirty = true;
 
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1692,7 +1748,6 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 #endif
 
   // Set impulse to _bodyNode
-//  Eigen::Vector6d oldConstraintImpulse =_bodyNode->mConstraintImpulse;
   _bodyNode->mConstraintImpulse = _imp;
 
   // Prepare cache data
@@ -1703,9 +1758,55 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
     it = it->getParentBodyNode();
   }
 
-  // TODO(JS): Do we need to backup and restore the original value?
-//  _bodyNode->mConstraintImpulse = oldConstraintImpulse;
   _bodyNode->mConstraintImpulse.setZero();
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulse(
+    BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
+    BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2)
+{
+  // Assertions
+  assert(_bodyNode1 != NULL);
+  assert(_bodyNode2 != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode1)
+         != mBodyNodes.end());
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode2)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  _bodyNode1->mConstraintImpulse = _imp1;
+  _bodyNode2->mConstraintImpulse = _imp2;
+
+  // Find which body is placed later in the list of body nodes in this skeleton
+  std::vector<BodyNode*>::reverse_iterator it1
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode1);
+  std::vector<BodyNode*>::reverse_iterator it2
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
+
+  std::vector<BodyNode*>::reverse_iterator it;
+  if (it1 < it2)
+    it = it1;
+  else
+    it = it2;
+
+  // Prepare cache data
+  for (; it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateBiasImpulse();
+  }
+
+  _bodyNode1->mConstraintImpulse.setZero();
+  _bodyNode2->mConstraintImpulse.setZero();
 }
 
 //==============================================================================
