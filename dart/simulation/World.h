@@ -136,6 +136,9 @@ public:
   // Simulation
   //--------------------------------------------------------------------------
 
+  /// Reset the time, frame counter and recorded histories
+  void reset();
+
   /// Calculate the dynamics and integrate the world for one step
   void step();
 

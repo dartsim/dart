@@ -102,7 +102,16 @@ double World::getTimeStep() const
   return mTimeStep;
 }
 
+
 //==============================================================================
+
+void World::reset() {
+  mTime = 0.0;
+  mFrame = 0;
+  mRecording->clear();    
+}
+
+
 void World::step()
 {
   // Integrate velocity unconstrained skeletons
