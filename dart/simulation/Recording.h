@@ -97,6 +97,9 @@ public:
   /// _frameIdx
   Eigen::Vector3d getContactForce(int _frameIdx, int _contactIdx) const;
 
+  /// \brief Clear the saved histories
+  void clear();  
+
   /// \brief Add state
   void addState(const Eigen::VectorXd& _state);
 

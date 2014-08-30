@@ -132,6 +132,11 @@ Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 }
 
 //==============================================================================
+void Recording::clear() {
+  mBakedStates.clear();
+}
+
+//==============================================================================
 void Recording::addState(const Eigen::VectorXd& _state)
 {
   mBakedStates.push_back(_state);
