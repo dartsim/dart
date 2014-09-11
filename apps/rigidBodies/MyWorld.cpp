@@ -59,6 +59,7 @@ MyWorld::MyWorld() {
     VectorXd pose = mBlade->getState();
     pose[4] = -4.0;
     mBlade->setState(pose);
+    mBlade->computeForwardKinematics(true, true, false);
     mCollisionDetector->addSkeleton(mBlade); // Put blade in collision detector
 }
 
