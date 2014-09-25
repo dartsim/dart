@@ -162,13 +162,13 @@ public:
   /// \brief
   void setNumMaxContacs(int _num);
 
+  /// \brief
+  bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
+
 protected:
   /// \brief
   virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
                                bool _calculateContactPoints) = 0;
-
-  /// \brief
-  bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
 
   /// \brief
   std::vector<Contact> mContacts;
@@ -187,8 +187,13 @@ private:
   bool containSkeleton(const dynamics::Skeleton* _skeleton);
 
   /// \brief
-  std::vector<bool>::reference getPairCollidable(const CollisionNode* _node1,
-                                                 const CollisionNode* _node2);
+  bool getPairCollidable(const CollisionNode* _node1,
+                         const CollisionNode* _node2);
+
+  /// \brief
+  void setPairCollidable(const CollisionNode* _node1,
+                         const CollisionNode* _node2,
+                         bool _val);
 
   /// \brief Return true if _bodyNode1 and _bodyNode2 are adjacent bodies
   bool isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
