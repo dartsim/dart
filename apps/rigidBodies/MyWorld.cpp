@@ -97,6 +97,7 @@ void MyWorld::simulate() {
         pose[1] = 0.0;
     }
     mBlade->setState(pose);
+    mBlade->computeForwardKinematics(true, true, false);
 }
 
 void MyWorld::collisionHandling() {
