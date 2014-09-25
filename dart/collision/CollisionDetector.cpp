@@ -288,7 +288,7 @@ bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
   // false in that case.
   if (index1 > mCollidablePairs.size() - 1
       || index2 > mCollidablePairs.size() - 1)
-    return false;
+    return true;
 
   return mCollidablePairs[index1][index2];
 }
