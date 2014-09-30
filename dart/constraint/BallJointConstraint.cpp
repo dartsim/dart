@@ -45,8 +45,9 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-  BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
-                  Eigen::Vector3d _jointPos) : JointConstraint(_body),
+BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
+                                         const Eigen::Vector3d& _jointPos)
+  : JointConstraint(_body),
     mOffset1(_body->getTransform().inverse() * _jointPos),
     mOffset2(_jointPos),
     mViolation(Eigen::Vector3d::Zero()),
@@ -58,18 +59,16 @@ namespace constraint {
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  mJacobian1.resize(3, 6);
-  mJacobian2.resize(3, 6);
   Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  mJacobian1.block<3, 3>(0, 0) = ssm1;
-  mJacobian1.block<3, 3>(0, 3) = Eigen::MatrixXd::Identity(3, 3);
+  mJacobian1.leftCols<3>()  = ssm1;
+  mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
 }
 
 //==============================================================================
 BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
                                          dynamics::BodyNode* _body2,
-                                         Eigen::Vector3d _jointPos)
-    : JointConstraint(_body1, _body2),
+                                         const Eigen::Vector3d& _jointPos)
+  : JointConstraint(_body1, _body2),
     mOffset1(_body1->getTransform().inverse() * _jointPos),
     mOffset2(_body2->getTransform().inverse() * _jointPos),
     mViolation(Eigen::Vector3d::Zero()),
@@ -81,14 +80,12 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  mJacobian1.resize(3, 6);
-  mJacobian2.resize(3, 6);
   Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  Eigen::Matrix3d ssm2 = dart::math::makeSkewSymmetric(mBodyNode1->getTransform().inverse() * mBodyNode2->getTransform() * mOffset2);
-  mJacobian1.block<3, 3>(0, 0) = ssm1;
-  mJacobian1.block<3, 3>(0, 3) = Eigen::MatrixXd::Identity(3, 3);
-  mJacobian2.block<3, 3>(0, 0) = ssm2;
-  mJacobian2.block<3, 3>(0, 3) = Eigen::MatrixXd::Identity(3, 3);
+  Eigen::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
+  mJacobian1.leftCols<3>()  = ssm1;
+  mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
+  mJacobian2.leftCols<3>()  = ssm2;
+  mJacobian2.rightCols<3>() = Eigen::Matrix3d::Identity();
 }
 
 //==============================================================================
@@ -102,11 +99,25 @@ void BallJointConstraint::update()
   // mBodyNode1 should not be null pointer ever
   assert(mBodyNode1);
 
+  // Update Jacobian for body2
   if (mBodyNode2)
   {
-    Eigen::Vector3d p2 = mBodyNode2->getTransform() * mOffset2;
+    Eigen::Isometry3d T12 = mBodyNode1->getTransform().inverse()
+                            * mBodyNode2->getTransform();
+    Eigen::Vector3d p2 = T12.inverse() * mOffset1;
 
-    mViolation = mOffset1 - mBodyNode1->getTransform().inverse() * mBodyNode2->getTransform() * mOffset2;
+    Eigen::Matrix<double, 3, 6> J2;
+    J2.leftCols<3>()  = math::makeSkewSymmetric(-p2);
+    J2.rightCols<3>() = Eigen::Matrix3d::Identity();
+
+    mJacobian2 = T12.linear() * J2;
+  }
+
+  // Update position constraint error
+  if (mBodyNode2)
+  {
+    mViolation = mOffset1 - mBodyNode1->getTransform().inverse()
+                            * mBodyNode2->getTransform() * mOffset2;
   }
   else
   {
@@ -139,20 +150,16 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[1] = mOldX[1];
   _lcp->x[2] = mOldX[2];
 
-  Eigen::Vector3d negativeVel = -mBodyNode1->getBodyLinearVelocity(mOffset1);
+  Eigen::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getBodyVelocity();
   if (mBodyNode2)
-    negativeVel += mBodyNode1->getTransform().inverse() 
-                   * mBodyNode2->getTransform() 
-                   * mBodyNode2->getBodyLinearVelocity(mOffset2);
+    negativeVel += mJacobian2 * mBodyNode2->getBodyVelocity();
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
-  // _lcp->b[0] = -mViolation[0];
-  // _lcp->b[1] = -mViolation[1];
-  // _lcp->b[2] = - mViolation[2];
   _lcp->b[0] = negativeVel[0] - mViolation[0];
   _lcp->b[1] = negativeVel[1] - mViolation[1];
   _lcp->b[2] = negativeVel[2] - mViolation[2];
+
   //  std::cout << "b: " << _lcp->b[0] << " " << _lcp->b[1] << " " << _lcp->b[2] << " " << std::endl;
 }
 
@@ -177,7 +184,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
         {
           mBodyNode1->getSkeleton()->updateBiasImpulse(
                  mBodyNode1, mJacobian1.row(_index), 
-                 mBodyNode2, mJacobian2.row(_index));
+                 mBodyNode2, -mJacobian2.row(_index));
         }
         else
         {
@@ -190,8 +197,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
         if (mBodyNode2->isReactive())
         {
           mBodyNode2->getSkeleton()->updateBiasImpulse(
-                 mBodyNode2, mJacobian2.row(_index));
-
+                 mBodyNode2, -mJacobian2.row(_index));
         }
         else
         {
@@ -215,7 +221,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
         mBodyNode2->getSkeleton()->updateBiasImpulse(
-              mBodyNode2, mJacobian2.row(_index));
+              mBodyNode2, -mJacobian2.row(_index));
         mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
@@ -226,7 +232,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
     mBodyNode1->getSkeleton()->updateBiasImpulse(
-         mBodyNode1, mJacobian1.transpose().col(_index));
+         mBodyNode1, mJacobian1.row(_index));
     mBodyNode1->getSkeleton()->updateVelocityChange();
   }
 
@@ -242,7 +248,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
    _vel[i] = 0.0;
 
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
-        && mBodyNode1->isReactive())
+      && mBodyNode1->isReactive())
   {
     Eigen::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
     // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() << std::endl;
@@ -251,13 +257,14 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
       _vel[i] += v1[i];
   }
 
-  if (mBodyNode2 && mBodyNode2->getSkeleton()->isImpulseApplied()
-        && mBodyNode2->isReactive())
+  if (mBodyNode2
+      && mBodyNode2->getSkeleton()->isImpulseApplied()
+      && mBodyNode2->isReactive())
   {
     Eigen::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
     // std::cout << "v2: " << v2 << std::endl;
     for (size_t i = 0; i < mDim; ++i)
-      _vel[i] += v2[i];
+      _vel[i] -= v2[i];
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
@@ -265,7 +272,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   if (_withCfm)
   {
     _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]
-                                     * mConstraintForceMixing;
+                                  * mConstraintForceMixing;
   }
 }
 
@@ -302,16 +309,14 @@ void BallJointConstraint::applyImpulse(double* _lambda)
   mOldX[1] = _lambda[1];
   mOldX[2] = _lambda[2];
 
-  Eigen::Vector3d imp;
-  imp << _lambda[0], _lambda[1], _lambda[2];
+  Eigen::Vector3d imp(_lambda[0], _lambda[1], _lambda[2]);
 
   // std::cout << "lambda: " << _lambda[0] << " " << _lambda[1] << " " << _lambda[2] << std::endl;
 
   mBodyNode1->addConstraintImpulse(mJacobian1.transpose() * imp);
 
   if (mBodyNode2)
-    mBodyNode2->addConstraintImpulse(mJacobian2.transpose() * imp);
-
+    mBodyNode2->addConstraintImpulse(-mJacobian2.transpose() * imp);
 }
 
 //==============================================================================
@@ -373,6 +378,7 @@ void BallJointConstraint::uniteSkeletons()
   }
 }
 
+//==============================================================================
 bool BallJointConstraint::isActive() const
 {
   if (mBodyNode1->isReactive())
