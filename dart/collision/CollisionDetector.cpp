@@ -215,7 +215,7 @@ void CollisionDetector::enablePair(dynamics::BodyNode* _node1,
   CollisionNode* collisionNode1 = getCollisionNode(_node1);
   CollisionNode* collisionNode2 = getCollisionNode(_node2);
   if (collisionNode1 && collisionNode2)
-    getPairCollidable(collisionNode1, collisionNode2) = true;
+    setPairCollidable(collisionNode1, collisionNode2, true);
 }
 
 void CollisionDetector::disablePair(dynamics::BodyNode* _node1,
@@ -223,7 +223,7 @@ void CollisionDetector::disablePair(dynamics::BodyNode* _node1,
   CollisionNode* collisionNode1 = getCollisionNode(_node1);
   CollisionNode* collisionNode2 = getCollisionNode(_node2);
   if (collisionNode1 && collisionNode2)
-    getPairCollidable(collisionNode1, collisionNode2) = false;
+    setPairCollidable(collisionNode1, collisionNode2, false);
 }
 
 //==============================================================================
@@ -271,14 +271,49 @@ bool CollisionDetector::containSkeleton(const dynamics::Skeleton* _skeleton)
   return false;
 }
 
-std::vector<bool>::reference CollisionDetector::getPairCollidable(
-    const CollisionNode* _node1, const CollisionNode* _node2) {
+bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
+                                          const CollisionNode* _node2)
+{
   assert(_node1 != _node2);
-  int index1 = _node1->getIndex();
-  int index2 = _node2->getIndex();
+
+  size_t index1 = _node1->getIndex();
+  size_t index2 = _node2->getIndex();
+
   if (index1 < index2)
     std::swap(index1, index2);
+
+  // TODO(JS): Workaround
+  // If this fuction is called before all the body nodes in the world are not
+  // added to the collision detector than it cause seg fault. We just return
+  // false in that case.
+  if (index1 > mCollidablePairs.size() - 1
+      || index2 > mCollidablePairs.size() - 1)
+    return true;
+
   return mCollidablePairs[index1][index2];
+}
+
+void CollisionDetector::setPairCollidable(const CollisionNode* _node1,
+                                          const CollisionNode* _node2,
+                                          bool _val)
+{
+  assert(_node1 != _node2);
+
+  size_t index1 = _node1->getIndex();
+  size_t index2 = _node2->getIndex();
+
+  if (index1 < index2)
+    std::swap(index1, index2);
+
+  // TODO(JS): Workaround
+  // If this fuction is called before all the body nodes in the world are not
+  // added to the collision detector than it cause seg fault. We just return in
+  // that case.
+  if (index1 > mCollidablePairs.size() - 1
+      || index2 > mCollidablePairs.size() - 1)
+    return;
+
+  mCollidablePairs[index1][index2] = _val;
 }
 
 bool CollisionDetector::isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,

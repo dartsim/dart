@@ -78,35 +78,28 @@ struct CollisionFilter : public btOverlapFilterCallback
     collide = collide && (_proxy1->m_collisionFilterGroup &
                           _proxy0->m_collisionFilterMask);
 
-    btCollisionObject* collObj0 =
-        static_cast<btCollisionObject*>(_proxy0->m_clientObject);
-    btCollisionObject* collObj1 =
-        static_cast<btCollisionObject*>(_proxy1->m_clientObject);
+    if (collide)
+    {
+      btCollisionObject* collObj0 =
+          static_cast<btCollisionObject*>(_proxy0->m_clientObject);
+      btCollisionObject* collObj1 =
+          static_cast<btCollisionObject*>(_proxy1->m_clientObject);
 
-    BulletUserData* userData0 =
-        static_cast<BulletUserData*>(collObj0->getUserPointer());
-    BulletUserData* userData1 =
-        static_cast<BulletUserData*>(collObj1->getUserPointer());
+      BulletUserData* userData0 =
+          static_cast<BulletUserData*>(collObj0->getUserPointer());
+      BulletUserData* userData1 =
+          static_cast<BulletUserData*>(collObj1->getUserPointer());
 
-//    if (!userData0->btCollDet->isCollidable(userData0->btCollNode,
-//                                            userData1->btCollNode)) {
-//      std::cout<< "false.\n";
-//      return false;
-//    }
+      // Assume single collision detector
+      assert(userData0->btCollDet == userData1->btCollDet);
 
-    if (userData0->bodyNode == userData1->bodyNode)
-      return false;
+      CollisionDetector* cd = userData0->btCollDet;
 
-    if (!userData0->bodyNode->isCollidable())
-      return false;
+      CollisionNode* cn1 = userData0->btCollNode;
+      CollisionNode* cn2 = userData1->btCollNode;
 
-    if (!userData1->bodyNode->isCollidable())
-      return false;
-
-    if (userData0->bodyNode->getSkeleton() ==
-        userData1->bodyNode->getSkeleton())
-      if (!userData0->bodyNode->getSkeleton()->isEnabledSelfCollisionCheck())
-        return false;
+      collide = cd->isCollidable(cn1, cn2);
+    }
 
     return collide;
   }
