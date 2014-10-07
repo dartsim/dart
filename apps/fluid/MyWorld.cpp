@@ -116,7 +116,7 @@ void MyWorld::linearSolve(double *_x, double *_x0, double _a, double _c) {
     for (int k = 0; k < 20; k++) {
         for (int i = 1; i <= mNumCells; i++) {
             for (int j = 1; j <= mNumCells; j++) {
-                _x[IX(i, j)] = (_x0[IX(i, j)] + _a * (_x[IX(i-1, j)] + _x[IX(i+1, j)] + _x[IX(i, j-1)] + _x[IX(i, j+1)])) / _c;
+              _x[IX(i, j)] = (_x0[IX(i, j)] + _a * (_x[IX(i-1, j)] + _x[IX(i+1, j)] + _x[IX(i, j-1)] + _x[IX(i, j+1)])) / _c; // _x0 stores the value of b (in Ax = b) 
             }
         }
     }
