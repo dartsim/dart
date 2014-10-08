@@ -457,24 +457,28 @@ public:
   const Eigen::MatrixXd& getInvAugMassMatrix();
 
   /// Get Coriolis force vector of the skeleton.
+  /// \remarks Please use getCoriolisForces() instead.
   DEPRECATED(4.2) const Eigen::VectorXd& getCoriolisForceVector();
 
   /// Get Coriolis force vector of the skeleton.
   const Eigen::VectorXd& getCoriolisForces();
 
   /// Get gravity force vector of the skeleton.
+  /// \remarks Please use getGravityForces() instead.
   DEPRECATED(4.2) const Eigen::VectorXd& getGravityForceVector();
 
   /// Get gravity force vector of the skeleton.
   const Eigen::VectorXd& getGravityForces();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
+  /// \remarks Please use getCoriolisAndGravityForces() instead.
   DEPRECATED(4.2) const Eigen::VectorXd& getCombinedVector();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   const Eigen::VectorXd& getCoriolisAndGravityForces();
 
   /// Get external force vector of the skeleton.
+  /// \remarks Please use getExternalForces() instead.
   DEPRECATED(4.2) const Eigen::VectorXd& getExternalForceVector();
 
   /// Get external force vector of the skeleton.
@@ -484,6 +488,7 @@ public:
 //  const Eigen::VectorXd& getDampingForceVector();
 
   /// Get constraint force vector.
+  /// \remarks Please use getConstraintForces() instead.
   DEPRECATED(4.2) const Eigen::VectorXd& getConstraintForceVector();
 
   /// Get constraint force vector.
@@ -570,24 +575,28 @@ protected:
   void updateInvAugMassMatrix();
 
   /// Update Coriolis force vector of the skeleton.
+  /// \remarks Please use updateCoriolisForces() instead.
   DEPRECATED(4.2) virtual void updateCoriolisForceVector();
 
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces();
 
   /// Update gravity force vector of the skeleton.
+  /// \remarks Please use updateGravityForces() instead.
   DEPRECATED(4.2) virtual void updateGravityForceVector();
 
   /// Update gravity force vector of the skeleton.
   void updateGravityForces();
 
   /// Update combined vector of the skeletong.
+  /// \remarks Please use updateCoriolisAndGravityForces() instead.
   DEPRECATED(4.2) virtual void updateCombinedVector();
 
   /// Update combined vector of the skeletong.
   void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized torques.
+  /// \remarks Please use updateExternalForces() instead.
   DEPRECATED(4.2) virtual void updateExternalForceVector();
 
   // TODO(JS): Not implemented yet
