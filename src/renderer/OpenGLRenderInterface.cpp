@@ -255,8 +255,8 @@ namespace renderer {
         f[1] = c->g;
         f[2] = c->b;
         f[3] = c->a;
-				if(krangRightArm) f[3] = 0.6;
-				cout << "hi: " << f[3] << ", krangRightArm: " << krangRightArm << endl;
+				// if(krangRightArm) f[3] = 0.6;
+				// cout << "hi: " << f[3] << ", krangRightArm: " << krangRightArm << endl;
     }
 
     void set_float4(float f[4], float a, float b, float c, float d)
@@ -411,11 +411,11 @@ namespace renderer {
 
     	for(int i=0; i < _skel->getNumNodes(); i++) {
 				const char* name = _skel->getNode(i)->getName();
-				cout << "skel: " << _skel->getName() << ", name: " << name << endl;
+				// cout << "skel: " << _skel->getName() << ", name: " << name << endl;
 				if((strcmp(_skel->getName().c_str(), "Krang") == 0) 
 					&& (name[0] == 'R' || name[0] == 'r') && (name[1] != 'W')) {
 					krangRightArm = true;
-					cout << "setting true!" << endl;
+					// cout << "setting true!" << endl;
 				}
 				else
 					krangRightArm = false;
@@ -467,10 +467,10 @@ namespace renderer {
     	GLuint index = glGenLists(1);
     	// Compile list
     	glNewList(index, GL_COMPILE);
-			cout << "compile list" << endl;
+			// cout << "compile list" << endl;
     	drawMesh(Vector3d::Ones(), _mesh);
     	glEndList();
-			cout << "compile list done" << endl;
+			// cout << "compile list done" << endl;
 
     	return index;
     }
