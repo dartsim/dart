@@ -171,6 +171,9 @@ public:
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name) const;
 
+  /// Get marker whose id is _id
+  Marker* getMarker(const int _id) const;
+
   //----------------------------------------------------------------------------
   // Initialization
   //----------------------------------------------------------------------------
