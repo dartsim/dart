@@ -3,10 +3,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-        twister
-        rigidBodies_grey
-        colorFluid
-        fluid
+        monkeybars
     )
     add_subdirectory(${APPDIR})
     if(WIN32)

@@ -88,6 +88,7 @@ public:
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
+  dynamics::BodyNode* getBodyNode1();
 protected:
   /// First body node
   dynamics::BodyNode* mBodyNode1;

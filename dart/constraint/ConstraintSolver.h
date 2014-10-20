@@ -93,7 +93,7 @@ public:
   void addConstraint(Constraint* _constraint);
 
   /// Return the number of constraints
-  size_t getNumConstraints() const;
+  size_t getNumManualConstraints() const;
 
   /// Remove a constraint
   void removeConstraint(Constraint* _constraint);

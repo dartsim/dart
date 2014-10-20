@@ -531,5 +531,11 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
   return false;
 }
 
+//==============================================================================
+  size_t ConstraintSolver::getNumManualConstraints() const
+{
+  return mManualConstraints.size();
+}
+
 }  // namespace constraint
 }  // namespace dart

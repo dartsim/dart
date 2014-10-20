@@ -2087,5 +2087,18 @@ double Skeleton::getPotentialEnergy() const
   return PE;
 }
 
+Eigen::MatrixXd Skeleton::getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset)
+{
+  Eigen::MatrixXd J(3, getNumDofs());
+  J.setZero();
+  dart::math::LinearJacobian localJac = _bd->getWorldLinearJacobian(_localOffset);
+  for(int i = 0; i < _bd->getNumDependentGenCoords(); i++) {
+    int dofindex = _bd->getDependentGenCoordIndex(i);
+    J.col(dofindex) = localJac.col(i);
+  }
+
+  return J;
+}
+
 }  // namespace dynamics
 }  // namespace dart

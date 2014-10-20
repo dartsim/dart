@@ -525,6 +525,8 @@ public:
   /// Get potential energy of this skeleton.
   double getPotentialEnergy() const;
 
+  Eigen::MatrixXd getJacobian(BodyNode* _bd, Eigen::Vector3d& _localOffset);
+
   //----------------------------------------------------------------------------
   // Rendering
   //----------------------------------------------------------------------------
