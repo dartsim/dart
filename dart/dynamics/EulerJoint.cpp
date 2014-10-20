@@ -70,6 +70,88 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 }
 
 //==============================================================================
+Eigen::Isometry3d EulerJoint::getTransform(size_t _index) const
+{
+  assert(_index < 3);
+
+  Eigen::Vector3d q = Eigen::Vector3d::Zero();
+  q[_index] = mPositions[_index];
+
+  switch (mAxisOrder)
+  {
+    case AO_XYZ:
+    {
+      return Eigen::Isometry3d(math::eulerXYZToMatrix(q));
+      break;
+    }
+    case AO_ZYX:
+    {
+      return Eigen::Isometry3d(math::eulerZYXToMatrix(q));
+      break;
+    }
+    default:
+    {
+      dterr << "Undefined Euler axis order\n";
+      return Eigen::Isometry3d::Identity();
+      break;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::Matrix4d EulerJoint::getTransformDerivative(size_t _index) const
+{
+  assert(_index < 3);
+
+  const double q0 = mPositions[0];
+  const double q1 = mPositions[1];
+  const double q2 = mPositions[2];
+
+  Eigen::Matrix4d ret = Eigen::Matrix4d::Zero();
+
+  switch (mAxisOrder)
+  {
+    case AO_XYZ:
+      switch (_index)
+      {
+        case 0:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixXDeriv(q0);
+          break;
+        case 1:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixYDeriv(q1);
+          break;
+        case 2:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixZDeriv(q2);
+          break;
+        default:
+          break;
+      }
+      break;
+    case AO_ZYX:
+      switch (_index)
+      {
+        case 0:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixZDeriv(q0);
+          break;
+        case 1:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixYDeriv(q1);
+          break;
+        case 2:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixXDeriv(q2);
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      dterr << "Undefined Euler axis order\n";
+      break;
+  }
+
+  return ret;
+}
+
+//==============================================================================
 void EulerJoint::updateLocalTransform()
 {
   switch (mAxisOrder)
@@ -237,7 +319,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv()
       //                                0,         0,  0 ];
       //------------------------------------------------------------------------
       dJ0 << -(dq1*c2*s1) - dq2*c1*s2, -(dq2*c1*c2) + dq1*s1*s2, dq1*c1,
-             0, 0, 0;
+          0, 0, 0;
       dJ1 << dq2*c2,                -(dq2*s2),    0.0, 0.0, 0.0, 0.0;
       dJ2.setConstant(0.0);
 
@@ -254,9 +336,9 @@ void EulerJoint::updateLocalJacobianTimeDeriv()
       //                            0,        0,   0 ];
       //------------------------------------------------------------------------
       dJ0 << -c1*dq1, c2*c1*dq2 - s2*s1*dq1, -s1*c2*dq1 - c1*s2*dq2,
-             0.0, 0.0, 0.0;
+          0.0, 0.0, 0.0;
       dJ1 <<     0.0,               -s2*dq2,                -c2*dq2,
-             0.0, 0.0, 0.0;
+          0.0, 0.0, 0.0;
       dJ2.setConstant(0.0);
       break;
     }

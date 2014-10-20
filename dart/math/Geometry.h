@@ -112,6 +112,24 @@ Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& _angle);
 /// singularity : angle[1] = 0, PI
 Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& _angle);
 
+/// @brief Get rotation matrix from Euler angle of axis-x
+Eigen::Matrix3d eulerToMatrixX(double x);
+
+/// @brief Get rotation matrix from Euler angle of axis-y
+Eigen::Matrix3d eulerToMatrixY(double y);
+
+/// @brief Get rotation matrix from Euler angle of axis-z
+Eigen::Matrix3d eulerToMatrixZ(double z);
+
+/// @brief Get derivative of rotation matrix from Euler angle of axis-x
+Eigen::Matrix3d eulerToMatrixXDeriv(double x);
+
+/// @brief Get derivative of rotation matrix from Euler angle of axis-y
+Eigen::Matrix3d eulerToMatrixYDeriv(double y);
+
+/// @brief Get derivative of rotation matrix from Euler angle of axis-z
+Eigen::Matrix3d eulerToMatrixZDeriv(double z);
+
 //------------------------------------------------------------------------------
 /// \brief get the Euler XYX angle from R
 Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& _R);

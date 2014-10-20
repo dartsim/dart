@@ -82,6 +82,18 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const {
 }
 
 //==============================================================================
+Eigen::Isometry3d Joint::getTransform(size_t _index) const
+{
+  return Eigen::Isometry3d::Identity();
+}
+
+//==============================================================================
+Eigen::Matrix4d Joint::getTransformDerivative(size_t _index) const
+{
+  return Eigen::Matrix4d::Zero();
+}
+
+//==============================================================================
 //bool Joint::contains(const GenCoord* _genCoord) const {
 //  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
 //      mGenCoords.end() ? true : false;
