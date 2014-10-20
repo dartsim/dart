@@ -56,6 +56,28 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
+Eigen::Isometry3d TranslationalJoint::getTransform(size_t _index) const
+{
+  assert(_index < 3);
+
+  Eigen::Vector3d q = Eigen::Vector3d::Zero();
+  q[_index] = mPositions[_index];
+
+  return Eigen::Isometry3d(Eigen::Translation3d(q));
+}
+
+//==============================================================================
+Eigen::Matrix4d TranslationalJoint::getTransformDerivative(size_t _index) const
+{
+  assert(_index < 3);
+
+  Eigen::Matrix4d ret = Eigen::Matrix4d::Zero();
+  ret(_index, 3) = 1.0;
+
+  return ret;
+}
+
+//==============================================================================
 void TranslationalJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint

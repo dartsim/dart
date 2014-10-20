@@ -69,6 +69,12 @@ public:
   ///
   AxisOrder getAxisOrder() const;
 
+  // Documentation inherited.
+  virtual Eigen::Isometry3d getTransform(size_t _index) const;
+
+  // Documentation inherited.
+  virtual Eigen::Matrix4d getTransformDerivative(size_t _index) const;
+
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {

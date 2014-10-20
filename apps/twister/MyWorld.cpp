@@ -54,12 +54,12 @@ VectorXd MyWorld::updateGradients() {
     Matrix4d R = joint->getTransform(1).matrix();
     Matrix4d jointToChild =joint->getTransformFromChildBodyNode().inverse().matrix();
     Vector4d jCol = worldToParent * parentToJoint * dR * R * jointToChild * offset;
-    int colIndex = joint->getGenCoord(0)->getSkeletonIndex();
+    int colIndex = joint->getIndexInSkeleton(0);
     mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of J
     dR = joint->getTransformDerivative(1);
     R = joint->getTransform(0).matrix();
     jCol = worldToParent * parentToJoint * R * dR * jointToChild * offset;
-    colIndex = joint->getGenCoord(1)->getSkeletonIndex();
+    colIndex = joint->getIndexInSkeleton(1);
     mJ.col(colIndex) = jCol.head(3);
     
     // compute gradients
