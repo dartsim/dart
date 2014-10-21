@@ -13,7 +13,6 @@ MyWorld::MyWorld() {
     // Load a skeleton from file
     mSkel = dart::utils::SkelParser::readSkeleton(DART_DATA_PATH"skel/human.skel");
     // Assume that there is only one constraint
-    std::cout << "here" << std::endl;
     mJ = MatrixXd::Zero(3, mSkel->getNumDofs());
     mConstrainedMarker = -1;
 }

@@ -439,24 +439,24 @@
                 <transformation>0.0 -0.066854 -0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.2940</mass>
-                    <offset>0.0 -0.06595 0.0</offset>
+                    <offset>0.0 -0.05595 0.0</offset>
                 </inertia>
                 <visualization_shape>
-                    <transformation>0.0 -0.06595 0.0 0.0 0.0 0.0</transformation>
+                    <transformation>0.0 -0.05595 0.0 0.0 0.0 0.0</transformation>
                     <geometry>
                         <box>
                             <!--size>0.2500*0.1319 1.0000*0.1319 0.2500*0.1319</size-->
-                            <size>0.032975 0.1319 0.032975</size>
+                            <size>0.032975 0.1019 0.032975</size>
                         </box>
                     </geometry>
                     <color>1.0 0.5 0.0</color>
                 </visualization_shape>
                 <collision_shape>
-                    <transformation>0.0 -0.06595 0.0 0.0 0.0 0.0</transformation>
+                    <transformation>0.0 -0.05595 0.0 0.0 0.0 0.0</transformation>
                     <geometry>
                         <box>
                             <!--size>0.2500*0.1319 1.0000*0.1319 0.2500*0.1319</size-->
-                            <size>0.032975 0.1319 0.032975</size>
+                            <size>0.032975 0.1019 0.032975</size>
                         </box>
                     </geometry>
                 </collision_shape>                                
@@ -545,24 +545,24 @@
                 <transformation>0.0 -0.066854 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.2940</mass>
-                    <offset>0.0 -0.06595 0.0</offset>
+                    <offset>0.0 -0.05595 0.0</offset>
                 </inertia>
                 <visualization_shape>
-                    <transformation>0.0 -0.06595 0.0 0.0 0.0 0.0</transformation>
+                    <transformation>0.0 -0.05595 0.0 0.0 0.0 0.0</transformation>
                     <geometry>
                         <box>
                             <!--size>0.2500*0.1319 1.0000*0.1319 0.2500*0.1319</size-->
-                            <size>0.032975 0.1319 0.032975</size>
+                            <size>0.032975 0.1019 0.032975</size>
                         </box>
                     </geometry>
                     <color>1.0 0.5 0.0</color>
                 </visualization_shape>
                 <collision_shape>
-                    <transformation>0.0 -0.06595 0.0 0.0 0.0 0.0</transformation>
+                    <transformation>0.0 -0.05595 0.0 0.0 0.0 0.0</transformation>
                     <geometry>
                         <box>
                             <!--size>0.2500*0.1319 1.0000*0.1319 0.2500*0.1319</size-->
-                            <size>0.032975 0.1319 0.032975</size>
+                            <size>0.032975 0.1019 0.032975</size>
                         </box>
                     </geometry>
                 </collision_shape>                                
@@ -740,15 +740,18 @@
                 <init_vel>0</init_vel>
             </joint>
 
-            <joint type="revolute" name="j_hand_left">
+            <joint type="universal" name="j_hand_left">
                 <transformation>0.0 0.0 0.0 0.0 0.0 0.0</transformation>
                 <parent>h_forearm_left</parent>
                 <child>h_hand_left</child>
                 <axis>
-                    <xyz>1.0 0.0 0.0</xyz>
+                    <xyz>0.0 0.0 1.0</xyz>
                 </axis>
-                <init_pos>0</init_pos>
-                <init_vel>0</init_vel>
+                <axis2>
+                    <xyz>1.0 0.0 0.0</xyz>
+                </axis2>
+                <init_pos>0 0</init_pos>
+                <init_vel>0 0</init_vel>
             </joint>
 
             <!-- JOINT: Right Arm -->
@@ -783,13 +786,16 @@
                 <init_vel>0</init_vel>
             </joint>
 
-            <joint type="revolute" name="j_hand_right">
+            <joint type="universal" name="j_hand_right">
                 <transformation>0.0 0.0 0.0 0.0 0.0 0.0</transformation>
                 <parent>h_forearm_right</parent>
                 <child>h_hand_right</child>
                 <axis>
-                    <xyz>1.0 0.0 0.0</xyz>
+                    <xyz>0.0 0.0 1.0</xyz>
                 </axis>
+                <axis2>
+                    <xyz>1.0 0.0 0.0</xyz>
+                </axis2>
                 <init_pos>0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
