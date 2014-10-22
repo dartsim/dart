@@ -7,7 +7,7 @@
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
         
-        <skeleton name="grount skeleton">
+        <skeleton name="ground skeleton">
             <mobile>false</mobile>
             <body name="ground">
                 <transformation>0 -0.92 0 0 0 0</transformation>
@@ -519,7 +519,7 @@
                 <transformation>0.0 0.135546 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.6909</mass>
-                    <offset>0.0 0 0.0</offset>
+                    <offset>0.0 -0.1012 0.0</offset>
                 </inertia>
                 <visualization_shape>
                     <transformation>0.0 -0.1012 0.0 0.0 0.0 0.0</transformation>
@@ -804,7 +804,7 @@
        <skeleton name="bar1">
             <mobile>false</mobile>
             <body name="box">
-                <transformation>0.4 1.0 0 0 0 0</transformation>
+                <transformation>0.3 1.1 0 0 0 0</transformation>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
@@ -831,7 +831,7 @@
        <skeleton name="bar2">
             <mobile>false</mobile>
             <body name="box">
-                <transformation>0.8 1.0 0 0 0 0</transformation>
+                <transformation>0.7 1.1 0 0 0 0</transformation>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
@@ -858,7 +858,7 @@
        <skeleton name="bar3">
             <mobile>false</mobile>
             <body name="box">
-                <transformation>1.2 1.0 0 0 0 0</transformation>
+                <transformation>1.1 1.1 0 0 0 0</transformation>
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>

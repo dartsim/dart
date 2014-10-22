@@ -519,7 +519,7 @@
                 <transformation>0.0 0.135546 0.169809 0.0 0.0 0.0</transformation>
                 <inertia>
                     <mass>0.6909</mass>
-                    <offset>0.0 0 0.0</offset>
+                    <offset>0.0 -0.1012 0.0</offset>
                 </inertia>
                 <visualization_shape>
                     <transformation>0.0 -0.1012 0.0 0.0 0.0 0.0</transformation>

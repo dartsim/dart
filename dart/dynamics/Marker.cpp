@@ -85,7 +85,7 @@ void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
     _ri->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
     _ri->popMatrix();
   } else {
-    _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
+    _ri->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
   }
 
   _ri->popName();
