@@ -64,10 +64,13 @@ struct Contact {
   /// Contact point w.r.t. the world frame
   Eigen::Vector3d point;
 
-  /// Contact normal vector w.r.t. the world frame
+  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
   Eigen::Vector3d normal;
 
-  /// Contact force vector w.r.t. the world frame
+  /// Contact force acting on bodyNode1 w.r.t. the world frame
+  ///
+  /// The contact force acting on bodyNode2 is -force, which is the opposite
+  /// direction of the force.
   Eigen::Vector3d force;
 
   /// First colliding body node
