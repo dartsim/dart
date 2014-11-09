@@ -46,7 +46,7 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
             if(mask == GLUT_ACTIVE_SHIFT) {
                 mZooming = true;
             } else if (mask == GLUT_ACTIVE_ALT) {
-                mActiveMarker = coordsToMarker(_x, _y);                
+                mActiveMarker = coordsToMarker(_x, _y);
                 if (mActiveMarker != -1) {
                     mWorld->createConstraint(mActiveMarker);
                     glutTimerFunc(mDisplayTimeout, refreshTimer, 0);

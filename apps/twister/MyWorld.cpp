@@ -42,7 +42,7 @@ VectorXd MyWorld::updateGradients() {
     // compute c(q)
     mC = mSkel->getMarker(mConstrainedMarker)->getWorldPosition() - mTarget;
 
-    // compute J(q)
+    // // compute J(q)
     Vector4d offset;
     offset << mSkel->getMarker(mConstrainedMarker)->getLocalPosition(), 1; // Create a vector in homogeneous coordinates
     // w.r.t ankle
@@ -61,7 +61,34 @@ VectorXd MyWorld::updateGradients() {
     jCol = worldToParent * parentToJoint * R * dR * jointToChild * offset;
     colIndex = joint->getIndexInSkeleton(1);
     mJ.col(colIndex) = jCol.head(3);
+
+    // compute J(q)
+    // Vector4d offset;
+    // offset << mSkel->getMarker(mConstrainedMarker)->getLocalPosition(), 1; // Create a vector in homogeneous coordinates
+    // BodyNode *node = mSkel->getMarker(mConstrainedMarker)->getBodyNode();
+    // Joint *joint = node->getParentJoint();
+    // Matrix4d dR = joint->getTransformDerivative(0); // Doesn't need .matrix() because it returns a Matrix4d instead of Isometry3d
+    // Matrix4d R1 = joint->getTransform(1).matrix();
+    // Matrix4d R2 = joint->getTransform(2).matrix();
+    // Matrix4d jointToChild = joint->getTransformFromChildBodyNode().inverse().matrix();
+    // Vector4d jCol = dR * R1 * R2 * jointToChild * offset;
+    // int colIndex = joint->getIndexInSkeleton(0);
+    // mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of J
     
+    // R1 = joint->getTransform(0).matrix();
+    // dR = joint->getTransformDerivative(1);
+    // R2 = joint->getTransform(2).matrix();
+    // jCol = R1 * dR * R2 * jointToChild * offset;
+    // colIndex = joint->getIndexInSkeleton(1);
+    // mJ.col(colIndex) = jCol.head(3);
+    
+    // R1 = joint->getTransform(0).matrix();
+    // R2 = joint->getTransform(1).matrix();
+    // dR = joint->getTransformDerivative(2);
+    // jCol = R1 * R2 * dR * jointToChild * offset;
+    // colIndex = joint->getIndexInSkeleton(2);
+    // mJ.col(colIndex) = jCol.head(3);
+
     // compute gradients
     VectorXd gradients = 2 * mJ.transpose() * mC;
     return gradients;
