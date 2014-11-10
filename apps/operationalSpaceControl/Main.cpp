@@ -47,8 +47,9 @@ int main(int argc, char* argv[])
 {
   // create and initialize the world
   dart::simulation::World* world = new dart::simulation::World;
+  assert(world != NULL);
 
-  //
+  // load skeletons
   dart::utils::DartLoader dl;
   dart::dynamics::Skeleton* ground
           = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
@@ -57,19 +58,10 @@ int main(int argc, char* argv[])
   world->addSkeleton(ground);
   world->addSkeleton(robot);
 
-  assert(world != NULL);
-
   // create and initialize the world
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   world->setGravity(gravity);
   world->setTimeStep(1.0/1000);
-
-//  int dof =  world->getSkeleton(0)->getNumDofs();
-//  Eigen::VectorXd initPose(dof);
-//  for (int i = 0; i < dof; i++)
-//    initPose[i] = dart::math::random(-0.5, 0.5);
-//  world->getSkeleton(0)->setPositions(initPose);
-//  world->getSkeleton(0)->computeForwardKinematics(true, true, false);
 
   // create a window and link it to the world
   MyWindow window(new Controller(robot, robot->getBodyNode("palm")));

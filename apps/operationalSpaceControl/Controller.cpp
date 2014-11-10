@@ -126,11 +126,5 @@ dart::dynamics::BodyNode* Controller::getEndEffector() const
 //==============================================================================
 void Controller::keyboard(unsigned char _key, int _x, int _y)
 {
-  switch (_key)
-  {
-    case 'i':  // print debug information
-      //    mController->printDebugInfo();
-      break;
-  }
 }
 
