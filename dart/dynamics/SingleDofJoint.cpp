@@ -185,7 +185,7 @@ void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double SingleDofJoint::getPositionLowerLimit(size_t _index)
+double SingleDofJoint::getPositionLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -211,7 +211,7 @@ void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double SingleDofJoint::getPositionUpperLimit(size_t _index)
+double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -286,7 +286,7 @@ void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityLowerLimit(size_t _index)
+double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -312,7 +312,7 @@ void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityUpperLimit(size_t _index)
+double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -390,7 +390,7 @@ void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
 }
 
 //==============================================================================
-double SingleDofJoint::getAccelerationLowerLimit(size_t _index)
+double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -417,7 +417,7 @@ void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
 }
 
 //==============================================================================
-double SingleDofJoint::getAccelerationUpperLimit(size_t _index)
+double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -492,7 +492,7 @@ void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double SingleDofJoint::getForceLowerLimit(size_t _index)
+double SingleDofJoint::getForceLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -517,7 +517,7 @@ void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double SingleDofJoint::getForceUpperLimit(size_t _index)
+double SingleDofJoint::getForceUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
@@ -543,7 +543,7 @@ void SingleDofJoint::setVelocityChange(size_t _index, double _velocityChange)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityChange(size_t _index)
+double SingleDofJoint::getVelocityChange(size_t _index) const
 {
   if (_index != 0)
   {
@@ -575,7 +575,7 @@ void SingleDofJoint::setConstraintImpulse(size_t _index, double _impulse)
 }
 
 //==============================================================================
-double SingleDofJoint::getConstraintImpulse(size_t _index)
+double SingleDofJoint::getConstraintImpulse(size_t _index) const
 {
   if (_index != 0)
   {

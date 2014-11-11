@@ -101,13 +101,13 @@ public:
   virtual void setPositionLowerLimit(size_t _index, double _position);
 
   // Documentation inherited
-  virtual double getPositionLowerLimit(size_t _index);
+  virtual double getPositionLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setPositionUpperLimit(size_t _index, double _position);
 
   // Documentation inherited
-  virtual double getPositionUpperLimit(size_t _index);
+  virtual double getPositionUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -132,13 +132,13 @@ public:
   virtual void setVelocityLowerLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  virtual double getVelocityLowerLimit(size_t _index);
+  virtual double getVelocityLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setVelocityUpperLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  virtual double getVelocityUpperLimit(size_t _index);
+  virtual double getVelocityUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Acceleration
@@ -163,13 +163,13 @@ public:
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  virtual double getAccelerationLowerLimit(size_t _index);
+  virtual double getAccelerationLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  virtual double getAccelerationUpperLimit(size_t _index);
+  virtual double getAccelerationUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Force
@@ -194,13 +194,13 @@ public:
   virtual void setForceLowerLimit(size_t _index, double _force);
 
   // Documentation inherited
-  virtual double getForceLowerLimit(size_t _index);
+  virtual double getForceLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setForceUpperLimit(size_t _index, double _force);
 
   // Documentation inherited
-  virtual double getForceUpperLimit(size_t _index);
+  virtual double getForceUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity change
@@ -210,7 +210,7 @@ public:
   virtual void setVelocityChange(size_t _index, double _velocityChange);
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index);
+  virtual double getVelocityChange(size_t _index) const;
 
   // Documentation inherited
   virtual void resetVelocityChanges();
@@ -223,7 +223,7 @@ public:
   virtual void setConstraintImpulse(size_t _index, double _impulse);
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index);
+  virtual double getConstraintImpulse(size_t _index) const;
 
   // Documentation inherited
   virtual void resetConstraintImpulses();
@@ -667,7 +667,7 @@ void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index)
+double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -695,7 +695,7 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index)
+double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -777,7 +777,7 @@ void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index)
+double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -805,7 +805,7 @@ void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index)
+double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -890,7 +890,7 @@ void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index)
+double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -919,7 +919,7 @@ void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index)
+double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -1001,7 +1001,7 @@ void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index)
+double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -1028,7 +1028,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index)
+double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -1057,7 +1057,7 @@ void MultiDofJoint<DOF>::setVelocityChange(size_t _index,
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityChange(size_t _index)
+double MultiDofJoint<DOF>::getVelocityChange(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
@@ -1092,7 +1092,7 @@ void MultiDofJoint<DOF>::setConstraintImpulse(size_t _index, double _impulse)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getConstraintImpulse(size_t _index)
+double MultiDofJoint<DOF>::getConstraintImpulse(size_t _index) const
 {
   if (_index >= getNumDofs())
   {

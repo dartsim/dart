@@ -130,13 +130,13 @@ public:
   virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
   /// Get lower limit for position
-  virtual double getPositionLowerLimit(size_t _index) = 0;
+  virtual double getPositionLowerLimit(size_t _index) const = 0;
 
   /// Set upper limit for position
   virtual void setPositionUpperLimit(size_t _index, double _position) = 0;
 
   /// Get upper limit for position
-  virtual double getPositionUpperLimit(size_t _index) = 0;
+  virtual double getPositionUpperLimit(size_t _index) const = 0;
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -161,13 +161,13 @@ public:
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
   /// Get lower limit of velocity
-  virtual double getVelocityLowerLimit(size_t _index) = 0;
+  virtual double getVelocityLowerLimit(size_t _index) const = 0;
 
   /// Set upper limit of velocity
   virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
 
   /// Get upper limit of velocity
-  virtual double getVelocityUpperLimit(size_t _index) = 0;
+  virtual double getVelocityUpperLimit(size_t _index) const = 0;
 
   //----------------------------------------------------------------------------
   // Acceleration
@@ -192,13 +192,13 @@ public:
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
 
   /// Get lower limit of acceleration
-  virtual double getAccelerationLowerLimit(size_t _index) = 0;
+  virtual double getAccelerationLowerLimit(size_t _index) const = 0;
 
   /// Set upper limit of acceleration
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
 
   /// Get upper limit of acceleration
-  virtual double getAccelerationUpperLimit(size_t _index) = 0;
+  virtual double getAccelerationUpperLimit(size_t _index) const = 0;
 
   //----------------------------------------------------------------------------
   // Force
@@ -223,13 +223,13 @@ public:
   virtual void setForceLowerLimit(size_t _index, double _force) = 0;
 
   /// Get lower limit of force
-  virtual double getForceLowerLimit(size_t _index) = 0;
+  virtual double getForceLowerLimit(size_t _index) const = 0;
 
   /// Set upper limit of position
   virtual void setForceUpperLimit(size_t _index, double _force) = 0;
 
   /// Get upper limit of position
-  virtual double getForceUpperLimit(size_t _index) = 0;
+  virtual double getForceUpperLimit(size_t _index) const = 0;
 
   //----------------------------------------------------------------------------
   // Velocity change
@@ -239,7 +239,7 @@ public:
   virtual void setVelocityChange(size_t _index, double _velocityChange) = 0;
 
   /// Get a single velocity change
-  virtual double getVelocityChange(size_t _index) = 0;
+  virtual double getVelocityChange(size_t _index) const = 0;
 
   /// Set zero all the velocity change
   virtual void resetVelocityChanges() = 0;
@@ -252,7 +252,7 @@ public:
   virtual void setConstraintImpulse(size_t _index, double _impulse) = 0;
 
   /// Get a single constraint impulse
-  virtual double getConstraintImpulse(size_t _index) = 0;
+  virtual double getConstraintImpulse(size_t _index) const = 0;
 
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;

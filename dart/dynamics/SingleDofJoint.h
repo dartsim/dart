@@ -94,13 +94,13 @@ public:
   virtual void setPositionLowerLimit(size_t _index, double _position);
 
   // Documentation inherited
-  virtual double getPositionLowerLimit(size_t _index);
+  virtual double getPositionLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setPositionUpperLimit(size_t _index, double _position);
 
   // Documentation inherited
-  virtual double getPositionUpperLimit(size_t _index);
+  virtual double getPositionUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -125,13 +125,13 @@ public:
   virtual void setVelocityLowerLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  virtual double getVelocityLowerLimit(size_t _index);
+  virtual double getVelocityLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setVelocityUpperLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  virtual double getVelocityUpperLimit(size_t _index);
+  virtual double getVelocityUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Acceleration
@@ -156,13 +156,13 @@ public:
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  virtual double getAccelerationLowerLimit(size_t _index);
+  virtual double getAccelerationLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  virtual double getAccelerationUpperLimit(size_t _index);
+  virtual double getAccelerationUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Force
@@ -187,13 +187,13 @@ public:
   virtual void setForceLowerLimit(size_t _index, double _force);
 
   // Documentation inherited
-  virtual double getForceLowerLimit(size_t _index);
+  virtual double getForceLowerLimit(size_t _index) const;
 
   // Documentation inherited
   virtual void setForceUpperLimit(size_t _index, double _force);
 
   // Documentation inherited
-  virtual double getForceUpperLimit(size_t _index);
+  virtual double getForceUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity change
@@ -203,7 +203,7 @@ public:
   virtual void setVelocityChange(size_t _index, double _velocityChange);
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index);
+  virtual double getVelocityChange(size_t _index) const;
 
   // Documentation inherited
   virtual void resetVelocityChanges();
@@ -216,7 +216,7 @@ public:
   virtual void setConstraintImpulse(size_t _index, double _impulse);
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index);
+  virtual double getConstraintImpulse(size_t _index) const;
 
   // Documentation inherited
   virtual void resetConstraintImpulses();

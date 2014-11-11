@@ -123,7 +123,7 @@ void ZeroDofJoint::setPositionLowerLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double ZeroDofJoint::getPositionLowerLimit(size_t _index)
+double ZeroDofJoint::getPositionLowerLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -135,7 +135,7 @@ void ZeroDofJoint::setPositionUpperLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double ZeroDofJoint::getPositionUpperLimit(size_t _index)
+double ZeroDofJoint::getPositionUpperLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -178,7 +178,7 @@ void ZeroDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityLowerLimit(size_t _index)
+double ZeroDofJoint::getVelocityLowerLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -190,14 +190,13 @@ void ZeroDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityUpperLimit(size_t _index)
+double ZeroDofJoint::getVelocityUpperLimit(size_t _index) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setAcceleration(size_t _index,
-                                   double _acceleration)
+void ZeroDofJoint::setAcceleration(size_t _index, double _acceleration)
 {
   // Do nothing
 }
@@ -234,7 +233,7 @@ void ZeroDofJoint::setAccelerationLowerLimit(size_t _index,
 }
 
 //==============================================================================
-double ZeroDofJoint::getAccelerationLowerLimit(size_t _index)
+double ZeroDofJoint::getAccelerationLowerLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -247,7 +246,7 @@ void ZeroDofJoint::setAccelerationUpperLimit(size_t _index,
 }
 
 //==============================================================================
-double ZeroDofJoint::getAccelerationUpperLimit(size_t _index)
+double ZeroDofJoint::getAccelerationUpperLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -289,7 +288,7 @@ void ZeroDofJoint::setForceLowerLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double ZeroDofJoint::getForceLowerLimit(size_t _index)
+double ZeroDofJoint::getForceLowerLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -301,7 +300,7 @@ void ZeroDofJoint::setForceUpperLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double ZeroDofJoint::getForceUpperLimit(size_t _index)
+double ZeroDofJoint::getForceUpperLimit(size_t _index) const
 {
   return 0.0;
 }
@@ -313,7 +312,7 @@ void ZeroDofJoint::setVelocityChange(size_t _index, double _velocityChange)
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityChange(size_t _index)
+double ZeroDofJoint::getVelocityChange(size_t _index) const
 {
   return 0.0;
 }
@@ -331,7 +330,7 @@ void ZeroDofJoint::setConstraintImpulse(size_t _index, double _impulse)
 }
 
 //==============================================================================
-double ZeroDofJoint::getConstraintImpulse(size_t _index)
+double ZeroDofJoint::getConstraintImpulse(size_t _index) const
 {
   return 0.0;
 }
