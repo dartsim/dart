@@ -241,17 +241,20 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
       joint->setPositionLowerLimit(0, _jt->limits->lower);
       joint->setPositionUpperLimit(0, _jt->limits->upper);
-      joint->setDampingCoefficient(0, _jt->dynamics->damping);
+      if (_jt->dynamics)
+          joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::CONTINUOUS:
       joint = new dynamics::RevoluteJoint(toEigen(_jt->axis));
-      joint->setDampingCoefficient(0, _jt->dynamics->damping);
+      if (_jt->dynamics)
+          joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::PRISMATIC:
       joint = new dynamics::PrismaticJoint(toEigen(_jt->axis));
       joint->setPositionLowerLimit(0, _jt->limits->lower);
       joint->setPositionUpperLimit(0, _jt->limits->upper);
-      joint->setDampingCoefficient(0, _jt->dynamics->damping);
+      if (_jt->dynamics)
+          joint->setDampingCoefficient(0, _jt->dynamics->damping);
       break;
   case urdf::Joint::FIXED:
       joint = new dynamics::WeldJoint();
