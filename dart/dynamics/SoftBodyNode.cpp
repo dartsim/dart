@@ -1725,7 +1725,7 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
             + (i + 1) * _nSlices + j);
     }
   }
-  for (size_t i = 0; i < _nSlices; i++)
+  for (size_t i = 1; i < _nSlices; i++)
     _softBodyNode->connectPointMasses(nTotalMasses - 1 - i,
                                       nTotalMasses - 1);
 
