@@ -162,10 +162,16 @@ private:
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
   /// in _softBodyNode
+
   dynamics::PointMass* selectCollidingPointMass(
+      dynamics::SoftBodyNode* _softBodyNode,
+      const Eigen::Vector3d& _point,
+      int _faceId) const;
+
+  const dynamics::PointMass* selectCollidingPointMass(
       const dynamics::SoftBodyNode* _softBodyNode,
       const Eigen::Vector3d& _point,
-      int _faceId);
+      int _faceId) const;
 
 private:
   /// Time step

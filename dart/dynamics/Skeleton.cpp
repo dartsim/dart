@@ -274,13 +274,19 @@ size_t Skeleton::getNumSoftBodyNodes() const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getRootBodyNode() const
+BodyNode* Skeleton::getRootBodyNode()
 {
   if(mBodyNodes.size()==0)
     return NULL;
 
   // We assume that the first element of body nodes is root.
   return mBodyNodes[0];
+}
+
+//==============================================================================
+const BodyNode* Skeleton::getRootBodyNode() const
+{
+  return const_cast<Skeleton*>(this)->getRootBodyNode();
 }
 
 //==============================================================================
@@ -308,43 +314,77 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(size_t _idx) const
+BodyNode* Skeleton::getBodyNode(size_t _idx)
 {
   return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
+const BodyNode* Skeleton::getBodyNode(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+}
+
+//==============================================================================
+SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx)
 {
   return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(const std::string& _name) const
+const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
+}
+
+//==============================================================================
+BodyNode* Skeleton::getBodyNode(const std::string &_name)
 {
   return getNameMapObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
+const BodyNode* Skeleton::getBodyNode(const std::string& _name) const
+{
+  return getNameMapObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
+}
+
+//==============================================================================
+SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
 {
   return getNameMapObjectIfAvailable<SoftBodyNode*>(_name, mNameToSoftBodyNodeMap);
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(size_t _idx) const
+Joint* Skeleton::getJoint(size_t _idx)
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes)->getParentJoint();
+  BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+  if(bn)
+    return bn->getParentJoint();
+
+  return NULL;
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& _name) const
+const Joint* Skeleton::getJoint(size_t _idx) const
+{
+  return const_cast<Skeleton*>(this)->getJoint(_idx);
+}
+
+//==============================================================================
+Joint* Skeleton::getJoint(const std::string &_name)
 {
   return getNameMapObjectIfAvailable<Joint*>(_name, mNameToJointMap);
 }
 
 //==============================================================================
-Marker* Skeleton::getMarker(const std::string& _name) const
+const Joint* Skeleton::getJoint(const std::string& _name) const
+{
+  return getNameMapObjectIfAvailable<Joint*>(_name, mNameToJointMap);
+}
+
+//==============================================================================
+Marker* Skeleton::getMarker(const std::string& _name)
 {
   assert(!_name.empty());
 
@@ -359,6 +399,12 @@ Marker* Skeleton::getMarker(const std::string& _name) const
   }
 
   return NULL;
+}
+
+//==============================================================================
+const Marker* Skeleton::getMarker(const std::string &_name) const
+{
+  return const_cast<Skeleton*>(this)->getMarker(_name);
 }
 
 //==============================================================================

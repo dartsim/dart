@@ -190,7 +190,9 @@ public:
   size_t getNumVisualizationShapes() const;
 
   /// Return _index-th visualization shape
-  Shape* getVisualizationShape(int _index) const;
+  Shape* getVisualizationShape(int _index);
+  /// Return (const) _index-th visualization shape
+  const Shape* getVisualizationShape(int _index) const;
 
   /// Add a collision shape into the bodynode
   void addCollisionShape(Shape *_p);
@@ -198,26 +200,35 @@ public:
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
 
-  /// Return _index-th collision shape
-  Shape* getCollisionShape(int _index) const;
+  Shape* getCollisionShape(int _index);
+  /// Return (const) _index-th collision shape
+  const Shape* getCollisionShape(int _index) const;
 
-  /// Return the skeleton the bodynode belongs to
-  Skeleton* getSkeleton() const;
+  /// Return the Skeleton this BodyNode belongs to
+  Skeleton* getSkeleton();
+  /// Return the (const) Skeleton this BodyNode belongs to
+  const Skeleton* getSkeleton() const;
 
   /// Set _joint as the parent joint of the bodynode
   void setParentJoint(Joint* _joint);
 
-  /// Return the parent joint of the bodynode
-  Joint* getParentJoint() const;
+  /// Return the parent Joint of this BodyNode
+  Joint* getParentJoint();
+  /// Return the (const) parent Joint of this BodyNode
+  const Joint* getParentJoint() const;
 
-  /// Return the parent bodynode of the bodynode
-  BodyNode* getParentBodyNode() const;
+  /// Return the parent BodyNdoe of this BodyNode
+  BodyNode* getParentBodyNode();
+  /// Return the (const) parent BodyNode of this BodyNode
+  const BodyNode* getParentBodyNode() const;
 
   /// Add a child bodynode into the bodynode
   void addChildBodyNode(BodyNode* _body);
 
-  /// Return _index-th child bodynode of the bodynode
-  BodyNode* getChildBodyNode(size_t _index) const;
+  /// Return the _index-th child BodyNode of this BodyNode
+  BodyNode* getChildBodyNode(size_t _index);
+  /// Return the (const) _index-th child BodyNode of this BodyNode
+  const BodyNode* getChildBodyNode(size_t _index) const;
 
   /// Return the number of child bodynodes
   size_t getNumChildBodyNodes() const;
@@ -228,8 +239,9 @@ public:
   /// Return the number of markers of the bodynode
   size_t getNumMarkers() const;
 
+  Marker* getMarker(size_t _index);
   /// Return _index-th marker of the bodynode
-  Marker* getMarker(int _index) const;
+  const Marker* getMarker(size_t _index) const;
 
   /// Return true if _genCoordIndex-th generalized coordinate
   bool dependsOn(int _genCoordIndex) const;

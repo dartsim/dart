@@ -126,11 +126,16 @@ int PointMass::getNumConnectedPointMasses() const
   return mConnectedPointMasses.size();
 }
 
-PointMass* PointMass::getConnectedPointMass(size_t _idx) const
+PointMass* PointMass::getConnectedPointMass(size_t _idx)
 {
   assert(0 <= _idx && _idx < mConnectedPointMasses.size());
 
   return mConnectedPointMasses[_idx];
+}
+
+const PointMass* PointMass::getConnectedPointMass(size_t _idx) const
+{
+  return const_cast<PointMass*>(this)->getConnectedPointMass(_idx);
 }
 
 void PointMass::setColliding(bool _isColliding)
@@ -498,7 +503,12 @@ const Eigen::Vector3d& PointMass::getBodyVelocityChange() const
   return mDelV;
 }
 
-SoftBodyNode* PointMass::getParentSoftBodyNode() const
+SoftBodyNode* PointMass::getParentSoftBodyNode()
+{
+  return mParentSoftBodyNode;
+}
+
+const SoftBodyNode* PointMass::getParentSoftBodyNode() const
 {
   return mParentSoftBodyNode;
 }

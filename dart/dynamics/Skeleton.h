@@ -156,29 +156,46 @@ public:
   /// Get number of soft body nodes.
   size_t getNumSoftBodyNodes() const;
 
-  /// Get root body node
-  BodyNode* getRootBodyNode() const;
+  /// Get root BodyNode
+  BodyNode* getRootBodyNode();
+  /// Get const root BodyNode
+  const BodyNode* getRootBodyNode() const;
 
   /// Get body node whose index is _idx
-  BodyNode* getBodyNode(size_t _idx) const;
+  BodyNode* getBodyNode(size_t _idx);
+  /// Get const body node whose index is _idx
+  const BodyNode* getBodyNode(size_t _idx) const;
 
-  /// Get soft body node.
-  SoftBodyNode* getSoftBodyNode(size_t _idx) const;
+  /// Get soft body node whose index is _idx
+  SoftBodyNode* getSoftBodyNode(size_t _idx);
+  /// Get const soft body node whose index is _idx
+  const SoftBodyNode* getSoftBodyNode(size_t _idx) const;
 
   /// Get body node whose name is _name
-  BodyNode* getBodyNode(const std::string& _name) const;
+  BodyNode* getBodyNode(const std::string &_name);
+  /// Get const body node whose name is _name
+  const BodyNode* getBodyNode(const std::string& _name) const;
 
-  /// Get soft body node.
-  SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
+
+  /// Get soft body node whose name is _name
+  SoftBodyNode* getSoftBodyNode(const std::string& _name);
+  /// Get const soft body node whose name is _name
+  const SoftBodyNode* getSoftBodyNode(const std::string &_name) const;
 
   /// Get joint whose index is _idx
-  Joint* getJoint(size_t _idx) const;
+  Joint* getJoint(size_t _idx);
+  /// Get const joint whose index is _idx
+  const Joint* getJoint(size_t _idx) const;
 
   /// Get joint whose name is _name
-  Joint* getJoint(const std::string& _name) const;
+  Joint* getJoint(const std::string &_name);
+  /// Get const joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
 
   /// Get marker whose name is _name
-  Marker* getMarker(const std::string& _name) const;
+  Marker* getMarker(const std::string& _name);
+  /// Get const marker whose name is _name
+  const Marker* getMarker(const std::string &_name) const;
 
   //----------------------------------------------------------------------------
   // Initialization

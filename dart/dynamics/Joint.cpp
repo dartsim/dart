@@ -51,6 +51,7 @@ namespace dynamics {
 //==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    mChildBodyNode(NULL),
     mSkeleton(NULL),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
@@ -85,7 +86,35 @@ const std::string& Joint::getName() const {
   return mName;
 }
 
-Skeleton* Joint::getSkeleton() const
+BodyNode* Joint::getChildBodyNode()
+{
+  return mChildBodyNode;
+}
+
+const BodyNode* Joint::getChildBodyNode() const
+{
+  return mChildBodyNode;
+}
+
+BodyNode* Joint::getParentBodyNode()
+{
+  if(mChildBodyNode)
+    return mChildBodyNode->getParentBodyNode();
+
+  return NULL;
+}
+
+const BodyNode* Joint::getParentBodyNode() const
+{
+  return const_cast<Joint*>(this)->getParentBodyNode();
+}
+
+Skeleton* Joint::getSkeleton()
+{
+  return mSkeleton;
+}
+
+const Skeleton* Joint::getSkeleton() const
 {
   return mSkeleton;
 }
