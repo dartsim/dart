@@ -283,8 +283,9 @@ BodyNode* Skeleton::getRootBodyNode() const
   return mBodyNodes[0];
 }
 
+//==============================================================================
 template<typename T>
-static T getObjectIfAvailable(const std::string& _name, const std::map<std::string,T>& _map)
+static T getNameMapObjectIfAvailable(const std::string& _name, const std::map<std::string,T>& _map)
 {
   assert(!_name.empty());
 
@@ -296,40 +297,49 @@ static T getObjectIfAvailable(const std::string& _name, const std::map<std::stri
 }
 
 //==============================================================================
+template<typename T>
+static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
+{
+  if(_idx < _vec.size())
+    return _vec[_idx];
+
+  return NULL;
+}
+
+//==============================================================================
 BodyNode* Skeleton::getBodyNode(size_t _idx) const
 {
-  return mBodyNodes[_idx];
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
 }
 
 //==============================================================================
 SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
 {
-  assert(0 <= _idx && _idx < mSoftBodyNodes.size());
-  return mSoftBodyNodes[_idx];
+  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
 }
 
 //==============================================================================
 BodyNode* Skeleton::getBodyNode(const std::string& _name) const
 {
-  return getObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
+  return getNameMapObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
 }
 
 //==============================================================================
 SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
-  return getObjectIfAvailable<SoftBodyNode*>(_name, mNameToSoftBodyNodeMap);
+  return getNameMapObjectIfAvailable<SoftBodyNode*>(_name, mNameToSoftBodyNodeMap);
 }
 
 //==============================================================================
 Joint* Skeleton::getJoint(size_t _idx) const
 {
-  return mBodyNodes[_idx]->getParentJoint();
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes)->getParentJoint();
 }
 
 //==============================================================================
 Joint* Skeleton::getJoint(const std::string& _name) const
 {
-  return getObjectIfAvailable<Joint*>(_name, mNameToJointMap);
+  return getNameMapObjectIfAvailable<Joint*>(_name, mNameToJointMap);
 }
 
 //==============================================================================
