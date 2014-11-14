@@ -349,6 +349,12 @@ Skeleton* BodyNode::getSkeleton() const
 //==============================================================================
 void BodyNode::setParentJoint(Joint* _joint)
 {
+  if(mSkeleton)
+  {
+    mSkeleton->mNameToJointMap.erase(mParentJoint->getName());
+    mSkeleton->addEntryInNameToJointMap(_joint);
+  }
+
   mParentJoint = _joint;
 }
 
