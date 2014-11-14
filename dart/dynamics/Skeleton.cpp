@@ -244,6 +244,8 @@ void Skeleton::addBodyNode(BodyNode* _body)
   mBodyNodes.push_back(_body);
   addEntryInNameToBodyNodeMap(_body);
   addEntryInNameToJointMap(_body->getParentJoint());
+  _body->mSkeleton = this;
+  _body->mParentJoint->mSkeleton = this;
 
   SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_body);
   if (softBodyNode)
