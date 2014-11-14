@@ -531,7 +531,7 @@
             <joint type="translational" name="j_pelvis">
                 <parent>world</parent>
                 <child>h_pelvis</child>
-                <init_pos> 0 0 0</init_pos>
+                <init_pos>0 0 0</init_pos>
                 <init_vel>0 0 0</init_vel>
             </joint>
 
