@@ -136,6 +136,9 @@ BodyNode::~BodyNode()
 //==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
+  if(mName == _name)
+    return mName;
+
   if(mSkeleton)
   {
     mSkeleton->mNameToBodyNodeMap.erase(mName);

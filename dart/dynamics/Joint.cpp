@@ -65,6 +65,10 @@ Joint::~Joint() {
 }
 
 const std::string& Joint::setName(const std::string& _name) {
+
+  if(mName == _name)
+    return mName;
+
   if(mSkeleton)
   {
     mSkeleton->mNameToJointMap.erase(mName);
