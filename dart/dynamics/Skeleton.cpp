@@ -300,6 +300,7 @@ static T getNameMapObjectIfAvailable(const std::string& _name, const std::map<st
 template<typename T>
 static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 {
+  // TODO: Should we have an out-of-bounds assertion or throw here?
   if(_idx < _vec.size())
     return _vec[_idx];
 
