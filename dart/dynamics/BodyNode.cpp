@@ -356,6 +356,8 @@ void BodyNode::setParentJoint(Joint* _joint)
   }
 
   mParentJoint = _joint;
+  // TODO: Shouldn't we delete the original mParentJoint? Seems like the BodyNode
+  // should be responsible for its parent joint
 }
 
 //==============================================================================

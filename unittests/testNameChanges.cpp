@@ -104,6 +104,13 @@ TEST(NAMECHANGES, BASIC)
   EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
+
+  Joint* oldJoint = body3->getParentJoint();
+  std::string oldJointName = oldJoint->getName();
+  Joint* newJoint = new RevoluteJoint(Eigen::Vector3d(1,0,0), "a_new_joint");
+  body3->setParentJoint(newJoint);
+  EXPECT_TRUE(skel->getJoint("a_new_joint") == newJoint);
+  EXPECT_FALSE(skel->getJoint(oldJointName) == oldJoint);
 }
 
 
