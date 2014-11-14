@@ -67,7 +67,7 @@ public:
   virtual ~Joint();
 
   /// Set joint name
-  void setName(const std::string& _name);
+  const std::string& setName(const std::string& _name);
 
   /// Get joint name
   const std::string& getName() const;

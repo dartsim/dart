@@ -48,6 +48,7 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
+#include "dart/dynamics/SoftBodyNode.h"
 
 #define DART_DEFAULT_FRICTION_COEFF 1.0
 #define DART_DEFAULT_RESTITUTION_COEFF 0.0
@@ -133,9 +134,27 @@ BodyNode::~BodyNode()
 }
 
 //==============================================================================
-void BodyNode::setName(const std::string& _name)
+const std::string& BodyNode::setName(const std::string& _name)
 {
-  mName = _name;
+  if(mSkeleton)
+  {
+    mSkeleton->mNameToBodyNodeMap.erase(mName);
+    SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
+    if(softnode)
+      mSkeleton->mNameToSoftBodyNodeMap.erase(mName);
+
+    mName = _name;
+    mSkeleton->addEntryInNameToBodyNodeMap(this);
+
+    if(softnode)
+      mSkeleton->addEntryToNameToSoftBodyNodeMap(softnode);
+  }
+  else
+  {
+    mName = _name;
+  }
+
+  return mName;
 }
 
 //==============================================================================

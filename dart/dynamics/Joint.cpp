@@ -64,8 +64,17 @@ Joint::Joint(const std::string& _name)
 Joint::~Joint() {
 }
 
-void Joint::setName(const std::string& _name) {
-  mName = _name;
+const std::string& Joint::setName(const std::string& _name) {
+  if(mSkeleton)
+  {
+    mSkeleton->mNameToJointMap.erase(mName);
+    mName = _name;
+    mSkeleton->addEntryInNameToJointMap(this);
+  }
+  else
+    mName = _name;
+
+  return mName;
 }
 
 const std::string& Joint::getName() const {

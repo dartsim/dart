@@ -40,6 +40,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include <Eigen/Dense>
 
@@ -91,6 +92,14 @@ public:
 
   /// Get name.
   const std::string& getName() const;
+
+  /// Returns a modified (or unmodified) version of _name which does not
+  /// conflict with any existing BodyNode names
+  std::string resolveNewBodyNodeName(const std::string& _name) const;
+
+  /// Returns a modified (or unmodified) version of _name which does not
+  /// conflict with any existing Joint names
+  std::string resolveNewJointName(const std::string& _name) const;
 
   /// Enable self collision check
   void enableSelfCollision(bool _enableAdjecentBodies = false);
@@ -561,6 +570,12 @@ public:
   /// Compute recursion part B of hybrid dynamics
 //  void computeHybridDynamicsRecursionB();
 
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+  friend class BodyNode;
+  friend class Joint;
+
 protected:
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
@@ -624,9 +639,15 @@ protected:
 
   /// List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
+  const std::string& addEntryInNameToBodyNodeMap(BodyNode* _newNode);
+  std::map<std::string,BodyNode*> mNameToBodyNodeMap;
+  const std::string& addEntryInNameToJointMap(Joint* _newJoint);
+  std::map<std::string,Joint*> mNameToJointMap;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
+  void addEntryToNameToSoftBodyNodeMap(SoftBodyNode* _newNode);
+  std::map<std::string,SoftBodyNode*> mNameToSoftBodyNodeMap;
 
   /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
