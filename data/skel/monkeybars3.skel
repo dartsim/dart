@@ -797,8 +797,8 @@
                 <axis2>
                     <xyz>1.0 0.0 0.0</xyz>
                 </axis2>
-                <init_pos>0</init_pos>
-                <init_vel>0</init_vel>
+                <init_pos>0 0</init_pos>
+                <init_vel>0 0</init_vel>
             </joint>
         </skeleton>	
 
