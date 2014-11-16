@@ -108,6 +108,8 @@ public:
   /// \brief
   void setConstraintType(ConstraintType _type);
 
+  friend class Skeleton;
+
 protected:
   /// \brief BodyNode this marker belongs to
   BodyNode* mBodyNode;

@@ -72,9 +72,9 @@ const std::string& Joint::setName(const std::string& _name) {
 
   if(mSkeleton)
   {
-    mSkeleton->mNameToJointMap.erase(mName);
+    mSkeleton->mNameMgrForJoints.removeName(mName);
     mName = _name;
-    mSkeleton->addEntryInNameToJointMap(this);
+    mSkeleton->addEntryToJointNameMgr(this);
   }
   else
     mName = _name;

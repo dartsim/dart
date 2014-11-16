@@ -46,6 +46,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
+#include "dart/common/NameManager.h"
 
 namespace dart {
 namespace renderer {
@@ -92,14 +93,6 @@ public:
 
   /// Get name.
   const std::string& getName() const;
-
-  /// Returns a modified (or unmodified) version of _name which does not
-  /// conflict with any existing BodyNode names
-  std::string resolveNewBodyNodeName(const std::string& _name) const;
-
-  /// Returns a modified (or unmodified) version of _name which does not
-  /// conflict with any existing Joint names
-  std::string resolveNewJointName(const std::string& _name) const;
 
   /// Enable self collision check
   void enableSelfCollision(bool _enableAdjecentBodies = false);
@@ -656,15 +649,20 @@ protected:
 
   /// List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
-  const std::string& addEntryInNameToBodyNodeMap(BodyNode* _newNode);
-  std::map<std::string,BodyNode*> mNameToBodyNodeMap;
-  const std::string& addEntryInNameToJointMap(Joint* _newJoint);
-  std::map<std::string,Joint*> mNameToJointMap;
+  const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
+  dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
+  const std::string& addEntryToJointNameMgr(Joint* _newJoint);
+  dart::common::NameManager<Joint*> mNameMgrForJoints;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
-  void addEntryToNameToSoftBodyNodeMap(SoftBodyNode* _newNode);
-  std::map<std::string,SoftBodyNode*> mNameToSoftBodyNodeMap;
+  void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
+  dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
+
+  void addMarkersOfBodyNode(BodyNode* _node);
+  void removeMarkersOfBodyNode(BodyNode* _node);
+  const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
+  dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are

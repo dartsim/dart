@@ -113,6 +113,45 @@ TEST(NAMECHANGES, BASIC)
   EXPECT_FALSE(skel->getJoint(oldJointName) == oldJoint);
 }
 
+TEST(NAMECHANGES, SETPATTERN)
+{
+  dart::common::NameManager<BodyNode*> test_mgr;
+
+  BodyNode* bn0 = new BodyNode("name");
+  BodyNode* bn1 = new BodyNode("name");
+  BodyNode* bn2 = new BodyNode("name");
+
+  test_mgr.setPattern("%s(%d)");
+
+  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
+  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
+  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+
+  EXPECT_TRUE( test_mgr.getObject("name") == bn0);
+  EXPECT_TRUE( test_mgr.getObject("name(1)") == bn1);
+  EXPECT_TRUE( test_mgr.getObject("name(2)") == bn2);
+
+  test_mgr.clear();
+
+  bn0->setName("bodynode");
+  bn1->setName("bodynode");
+  bn2->setName("bodynode");
+
+  test_mgr.setPattern("(%d)-%s");
+  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
+  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
+  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+
+  EXPECT_TRUE( test_mgr.getObject("bodynode") == bn0);
+  EXPECT_TRUE( test_mgr.getObject("(1)-bodynode") == bn1 );
+  EXPECT_TRUE( test_mgr.getObject("(2)-bodynode") == bn2 );
+
+  delete bn0;
+  delete bn1;
+  delete bn2;
+
+}
+
 
 int main(int argc, char* argv[])
 {

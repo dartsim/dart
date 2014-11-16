@@ -152,16 +152,16 @@ const std::string& BodyNode::setName(const std::string& _name)
 
   if(mSkeleton)
   {
-    mSkeleton->mNameToBodyNodeMap.erase(mName);
+    mSkeleton->mNameMgrForBodyNodes.removeName(mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      mSkeleton->mNameToSoftBodyNodeMap.erase(mName);
+      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mName);
 
     mName = _name;
-    mSkeleton->addEntryInNameToBodyNodeMap(this);
+    mSkeleton->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
-      mSkeleton->addEntryToNameToSoftBodyNodeMap(softnode);
+      mSkeleton->addEntryToSoftBodyNodeNameMgr(softnode);
   }
   else
   {
@@ -387,11 +387,13 @@ void BodyNode::setParentJoint(Joint* _joint)
 
   if(mSkeleton)
   {
-    mSkeleton->mNameToJointMap.erase(mParentJoint->getName());
-    mSkeleton->addEntryInNameToJointMap(_joint);
+    mSkeleton->mNameMgrForJoints.removeName(mParentJoint->getName());
+    mSkeleton->addEntryToJointNameMgr(_joint);
   }
 
-  mParentJoint->mChildBodyNode = NULL;
+  if(mParentJoint)
+    mParentJoint->mChildBodyNode = NULL;
+
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;
   // TODO: Shouldn't we delete the original mParentJoint? Seems like the BodyNode
@@ -452,6 +454,8 @@ size_t BodyNode::getNumChildBodyNodes() const
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
+  if(mSkeleton)
+    mSkeleton->addEntryToMarkerNameMgr(_marker);
 }
 
 //==============================================================================
