@@ -36,6 +36,7 @@
 
 #include "dart/dynamics/SoftBodyNode.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -519,51 +520,52 @@ void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateMassMatrix();
+//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//    mPointMasses.at(i)->updateMassMatrix();
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
+  BodyNode::aggregateMassMatrix(_MCol, _col);
+//  //------------------------ PointMass Part ------------------------------------
+//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
 
-  //----------------------- SoftBodyNode Part ----------------------------------
-  //
-  mM_F.noalias() = mI * mM_dV;
+//  //----------------------- SoftBodyNode Part ----------------------------------
+//  //
+//  mM_F.noalias() = mI * mM_dV;
 
-  // Verification
-  assert(!math::isNan(mM_F));
+//  // Verification
+//  assert(!math::isNan(mM_F));
 
-  //
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                          (*it)->mM_F);
-  }
+//  //
+//  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+//       it != mChildBodyNodes.end(); ++it)
+//  {
+//    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//                          (*it)->mM_F);
+//  }
 
-  //
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mM_F.head<3>() += (*it)->mX.cross((*it)->mM_F);
-    mM_F.tail<3>() += (*it)->mM_F;
-  }
+//  //
+//  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+//       it != mPointMasses.end(); ++it)
+//  {
+//    mM_F.head<3>() += (*it)->mX.cross((*it)->mM_F);
+//    mM_F.tail<3>() += (*it)->mM_F;
+//  }
 
-  // Verification
-  assert(!math::isNan(mM_F));
+//  // Verification
+//  assert(!math::isNan(mM_F));
 
-  //
-  int dof = mParentJoint->getNumDofs();
-  if (dof > 0)
-  {
-    int iStart = mParentJoint->getIndexInSkeleton(0);
-    _MCol->block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getLocalJacobian().transpose() * mM_F;
-  }
+//  //
+//  int dof = mParentJoint->getNumDofs();
+//  if (dof > 0)
+//  {
+//    int iStart = mParentJoint->getIndexInSkeleton(0);
+//    _MCol->block(iStart, _col, dof, 1).noalias()
+//        = mParentJoint->getLocalJacobian().transpose() * mM_F;
+//  }
 }
 
 //==============================================================================
@@ -796,51 +798,52 @@ void SoftBodyNode::updateCombinedVector()
 {
   BodyNode::updateCombinedVector();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateCombinedVector();
+//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//    mPointMasses.at(i)->updateCombinedVector();
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
                                            const Eigen::Vector3d& _gravity)
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
+  BodyNode::aggregateCombinedVector(_Cg, _gravity);
+//  //------------------------ PointMass Part ------------------------------------
+//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
 
-  //----------------------- SoftBodyNode Part ----------------------------------
-  // H(i) = I(i) * W(i) -
-  //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
-  if (mGravityMode == true)
-    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
-  else
-    mFgravity.setZero();
+//  //----------------------- SoftBodyNode Part ----------------------------------
+//  // H(i) = I(i) * W(i) -
+//  //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
+//  if (mGravityMode == true)
+//    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
+//  else
+//    mFgravity.setZero();
 
-  mCg_F = mI * mCg_dV;
-  mCg_F -= mFgravity;
-  mCg_F -= math::dad(mV, mI * mV);
+//  mCg_F = mI * mCg_dV;
+//  mCg_F -= mFgravity;
+//  mCg_F -= math::dad(mV, mI * mV);
 
-  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    mCg_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                           (*it)->mCg_F);
-  }
+//  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
+//       it != mChildBodyNodes.end(); ++it)
+//  {
+//    mCg_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//                           (*it)->mCg_F);
+//  }
 
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mCg_F.head<3>() += (*it)->mX.cross((*it)->mCg_F);
-    mCg_F.tail<3>() += (*it)->mCg_F;
-  }
+//  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+//       it != mPointMasses.end(); ++it)
+//  {
+//    mCg_F.head<3>() += (*it)->mX.cross((*it)->mCg_F);
+//    mCg_F.tail<3>() += (*it)->mCg_F;
+//  }
 
-  int nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
-    Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    int iStart = mParentJoint->getIndexInSkeleton(0);
-    _Cg->segment(iStart, nGenCoords) = Cg;
-  }
+//  int nGenCoords = mParentJoint->getNumDofs();
+//  if (nGenCoords > 0)
+//  {
+//    Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
+//    int iStart = mParentJoint->getIndexInSkeleton(0);
+//    _Cg->segment(iStart, nGenCoords) = Cg;
+//  }
 }
 
 //==============================================================================
@@ -911,19 +914,19 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 
   // vertex
 //  if (_showPointMasses)
-  {
-    for (size_t i = 0; i < mPointMasses.size(); ++i)
-    {
-      _ri->pushMatrix();
-      mPointMasses[i]->draw(_ri, _color, _useDefaultColor);
-      _ri->popMatrix();
-    }
-  }
+//  {
+//    for (size_t i = 0; i < mPointMasses.size(); ++i)
+//    {
+//      _ri->pushMatrix();
+//      mPointMasses[i]->draw(_ri, _color, _useDefaultColor);
+//      _ri->popMatrix();
+//    }
+//  }
 
   // edges (mesh)
-  Eigen::Vector4d fleshColor = _color;
-  fleshColor[3] = 0.5;
-  _ri->setPenColor(fleshColor);
+//  Eigen::Vector4d fleshColor = _color;
+//  fleshColor[3] = 0.5;
+//  _ri->setPenColor(fleshColor);
 //  if (_showMeshs)
   {
     Eigen::Vector3d pos;
@@ -1110,6 +1113,10 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
                                 double                   _edgeStiffness,
                                 double                   _dampingCoeff)
 {
+  size_t id = 0;
+
+  std::map<PointMass*, size_t> map;
+
   assert(_softBodyNode != NULL);
 
   // Half size
@@ -1127,234 +1134,1058 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   //----------------------------------------------------------------------------
   // Number of point masses
   assert(_frags[0] > 1 && _frags[1] > 1 && _frags[2] > 1);
-  int nVertices = 2 * (_frags[0] * _frags[1])
-                     + 2 * (_frags[1] * _frags[2])
-                     + 2 * (_frags[2] * _frags[0]);
-  Eigen::Vector3d interval(_size[0]/(_frags[0] - 1),
-                           _size[1]/(_frags[1] - 1),
-                           _size[2]/(_frags[2] - 1));
+
+  size_t nCorners = 8;
+  size_t nVerticesAtEdgeX = _frags[0] - 2;
+  size_t nVerticesAtEdgeY = _frags[1] - 2;
+  size_t nVerticesAtEdgeZ = _frags[2] - 2;
+  size_t nVerticesAtSideX = nVerticesAtEdgeY*nVerticesAtEdgeZ;
+  size_t nVerticesAtSideY = nVerticesAtEdgeZ*nVerticesAtEdgeX;
+  size_t nVerticesAtSideZ = nVerticesAtEdgeX*nVerticesAtEdgeY;
+  size_t nVertices
+      = nCorners
+        + 4*(nVerticesAtEdgeX + nVerticesAtEdgeY + nVerticesAtEdgeZ)
+        + 2*(nVerticesAtSideX + nVerticesAtSideY + nVerticesAtSideZ);
 
   // Mass per vertices
   double mass = _totalMass / nVertices;
 
-  // Resting positions for each point mass
-  std::vector<Eigen::Vector3d> restingPos(nVertices,
-                                          Eigen::Vector3d::Zero());
+  Eigen::Vector3d segLength(_size[0]/(_frags[0] - 1),
+                            _size[1]/(_frags[1] - 1),
+                            _size[2]/(_frags[2] - 1));
 
-  int vIdx = 0;
+  std::vector<PointMass*> corners(nCorners);
 
-  // +X side
-  for (int k = 0; k < _frags[2]; ++k)    // z
+  std::vector<std::vector<PointMass*> >
+      edgeX(4, std::vector<PointMass*>(nVerticesAtEdgeX));
+  std::vector<std::vector<PointMass*> >
+      edgeY(4, std::vector<PointMass*>(nVerticesAtEdgeY));
+  std::vector<std::vector<PointMass*> >
+      edgeZ(4, std::vector<PointMass*>(nVerticesAtEdgeZ));
+
+  std::vector<std::vector<PointMass*> >
+      sideXNeg(nVerticesAtEdgeY, std::vector<PointMass*>(nVerticesAtEdgeZ));
+  std::vector<std::vector<PointMass*> >
+      sideXPos(nVerticesAtEdgeY, std::vector<PointMass*>(nVerticesAtEdgeZ));
+
+  std::vector<std::vector<PointMass*> >
+      sideYNeg(nVerticesAtEdgeZ, std::vector<PointMass*>(nVerticesAtEdgeX));
+  std::vector<std::vector<PointMass*> >
+      sideYPos(nVerticesAtEdgeZ, std::vector<PointMass*>(nVerticesAtEdgeX));
+
+  std::vector<std::vector<PointMass*> >
+      sideZNeg(nVerticesAtEdgeX, std::vector<PointMass*>(nVerticesAtEdgeY));
+  std::vector<std::vector<PointMass*> >
+      sideZPos(nVerticesAtEdgeX, std::vector<PointMass*>(nVerticesAtEdgeY));
+
+  Eigen::Vector3d x0y0z0 = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, -1.0)) * 0.5;
+  Eigen::Vector3d x1y0z0 = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, -1.0)) * 0.5;
+  Eigen::Vector3d x1y1z0 = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, -1.0)) * 0.5;
+  Eigen::Vector3d x0y1z0 = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, -1.0)) * 0.5;
+  Eigen::Vector3d x0y0z1 = _size.cwiseProduct(Eigen::Vector3d(-1.0, -1.0, +1.0)) * 0.5;
+  Eigen::Vector3d x1y0z1 = _size.cwiseProduct(Eigen::Vector3d(+1.0, -1.0, +1.0)) * 0.5;
+  Eigen::Vector3d x1y1z1 = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
+  Eigen::Vector3d x0y1z1 = _size.cwiseProduct(Eigen::Vector3d(-1.0, +1.0, +1.0)) * 0.5;
+
+  std::vector<Eigen::Vector3d> beginPts;
+  Eigen::Vector3d restPos;
+
+  // Corners
+  beginPts.resize(nCorners);
+  beginPts[0] = x0y0z0;
+  beginPts[1] = x1y0z0;
+  beginPts[2] = x1y1z0;
+  beginPts[3] = x0y1z0;
+  beginPts[4] = x0y0z1;
+  beginPts[5] = x1y0z1;
+  beginPts[6] = x1y1z1;
+  beginPts[7] = x0y1z1;
+
+  for (size_t i = 0; i < nCorners; ++i)
   {
-    for (int j = 0; j < _frags[1]; ++j)  // y
+    corners[i] = new PointMass(_softBodyNode);
+    corners[i]->setRestingPosition(_localTransfom * beginPts[i]);
+    corners[i]->setMass(mass);
+    _softBodyNode->addPointMass(corners[i]);
+    map[corners[i]] = id++;
+  }
+
+  // Edges (along X-axis)
+  beginPts.resize(4);
+  beginPts[0] = x0y0z0;
+  beginPts[1] = x0y1z0;
+  beginPts[2] = x0y1z1;
+  beginPts[3] = x0y0z1;
+
+  for (size_t i = 0; i < 4; ++i)
+  {
+    restPos = beginPts[i];
+
+    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
     {
-      restingPos[vIdx++] <<  halfSize[0],
-                            -halfSize[1] + j * interval[1],
-                            -halfSize[2] + k * interval[2];
+      restPos[0] += segLength[0];
+
+      edgeX[i][j] = new PointMass(_softBodyNode);
+      edgeX[i][j]->setRestingPosition(_localTransfom * restPos);
+      edgeX[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(edgeX[i][j]);
+
+      map[edgeX[i][j]] = id++;
     }
   }
 
-  // -X side
-  for (int k = 0; k < _frags[2]; ++k)    // z
+  // Edges (along Y-axis)
+  beginPts[0] = x0y0z0;
+  beginPts[1] = x0y0z1;
+  beginPts[2] = x1y0z1;
+  beginPts[3] = x1y0z0;
+
+  for (size_t i = 0; i < 4; ++i)
   {
-    for (int j = 0; j < _frags[1]; ++j)  // y
+    restPos = beginPts[i];
+
+    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
     {
-      restingPos[vIdx++] << -halfSize[0],
-                            -halfSize[1] + j * interval[1],
-                            -halfSize[2] + k * interval[2];
+      restPos[1] += segLength[1];
+
+      edgeY[i][j] = new PointMass(_softBodyNode);
+      edgeY[i][j]->setRestingPosition(_localTransfom * restPos);
+      edgeY[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(edgeY[i][j]);
+
+      map[edgeY[i][j]] = id++;
     }
   }
 
-  // +Y side
-  for (int i = 0; i < _frags[0]; ++i)    // x
+  // Edges (along Z-axis)
+  beginPts[0] = x0y0z0;
+  beginPts[1] = x1y0z0;
+  beginPts[2] = x1y1z0;
+  beginPts[3] = x0y1z0;
+
+  for (size_t i = 0; i < 4; ++i)
   {
-    for (int k = 0; k < _frags[2]; ++k)  // z
+    restPos = beginPts[i];
+
+    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
-      restingPos[vIdx++] << -halfSize[0] + i * interval[0],
-                             halfSize[1],
-                            -halfSize[2] + k * interval[2];
+      restPos[2] += segLength[2];
+
+      edgeZ[i][j] = new PointMass(_softBodyNode);
+      edgeZ[i][j]->setRestingPosition(_localTransfom * restPos);
+      edgeZ[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(edgeZ[i][j]);
+
+      map[edgeZ[i][j]] = id++;
     }
   }
 
-  // +Y side
-  for (int i = 0; i < _frags[0]; ++i)    // x
+  // Negative X side
+  restPos = x0y0z0;
+
+  for (size_t i = 0; i < nVerticesAtEdgeY; ++i)
   {
-    for (int k = 0; k < _frags[2]; ++k)  // z
+    restPos[2] = x0y0z0[2];
+    restPos[1] += segLength[1];
+
+    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
-      restingPos[vIdx++] << -halfSize[0] + i * interval[0],
-                            -halfSize[1],
-                            -halfSize[2] + k * interval[2];
+      restPos[2] += segLength[2];
+
+      sideXNeg[i][j] = new PointMass(_softBodyNode);
+      sideXNeg[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideXNeg[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideXNeg[i][j]);
+
+      map[sideXNeg[i][j]] = id++;
     }
   }
 
-  // +Z side
-  for (int j = 0; j < _frags[2]; ++j)    // y
+  // Positive X side
+  restPos = x1y0z0;
+
+  for (size_t i = 0; i < nVerticesAtEdgeY; ++i)
   {
-    for (int i = 0; i < _frags[1]; ++i)  // x
+    restPos[2] = x1y0z0[2];
+    restPos[1] += segLength[1];
+
+    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
-      restingPos[vIdx++] << -halfSize[0] + i * interval[0],
-                            -halfSize[1] + j * interval[1],
-                             halfSize[2];
+      restPos[2] += segLength[2];
+
+      sideXPos[i][j] = new PointMass(_softBodyNode);
+      sideXPos[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideXPos[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideXPos[i][j]);
+
+      map[sideXPos[i][j]] = id++;
     }
   }
 
-  // -Z side
-  for (int j = 0; j < _frags[2]; ++j)    // y
+  // Negative Y side
+  restPos = x0y0z0;
+
+  for (size_t i = 0; i < nVerticesAtEdgeZ; ++i)
   {
-    for (int i = 0; i < _frags[1]; ++i)  // x
+    restPos[0] = x0y0z0[0];
+    restPos[2] += segLength[2];
+
+    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
     {
-      restingPos[vIdx++] << -halfSize[0] + i * interval[0],
-                            -halfSize[1] + j * interval[1],
-                             halfSize[2];
+      restPos[0] += segLength[0];
+
+      sideYNeg[i][j] = new PointMass(_softBodyNode);
+      sideYNeg[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideYNeg[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideYNeg[i][j]);
+
+      map[sideYNeg[i][j]] = id++;
     }
   }
 
-  // Point masses
-  dynamics::PointMass* newPointMass = NULL;
-  for (int i = 0; i < nVertices; ++i)
+  // Positive Y side
+  restPos = x0y1z0;
+
+  for (size_t i = 0; i < nVerticesAtEdgeZ; ++i)
   {
-    newPointMass = new PointMass(_softBodyNode);
-    newPointMass->setRestingPosition(_localTransfom * restingPos[i]);
-    newPointMass->setMass(mass);
-    _softBodyNode->addPointMass(newPointMass);
+    restPos[0] = x0y1z0[0];
+    restPos[2] += segLength[2];
+
+    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
+    {
+      restPos[0] += segLength[0];
+
+      sideYPos[i][j] = new PointMass(_softBodyNode);
+      sideYPos[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideYPos[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideYPos[i][j]);
+
+      map[sideYPos[i][j]] = id++;
+    }
+  }
+
+  // Negative Z side
+  restPos = x0y0z0;
+
+  for (size_t i = 0; i < nVerticesAtEdgeX; ++i)
+  {
+    restPos[1] = x0y0z0[1];
+    restPos[0] += segLength[0];
+
+    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
+    {
+      restPos[1] += segLength[1];
+
+      sideZNeg[i][j] = new PointMass(_softBodyNode);
+      sideZNeg[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideZNeg[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideZNeg[i][j]);
+
+      map[sideZNeg[i][j]] = id++;
+    }
+  }
+
+  // Positive Z side
+  restPos = x0y0z1;
+
+  for (size_t i = 0; i < nVerticesAtEdgeX; ++i)
+  {
+    restPos[1] = x0y0z1[1];
+    restPos[0] += segLength[0];
+
+    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
+    {
+      restPos[1] += segLength[1];
+
+      sideZPos[i][j] = new PointMass(_softBodyNode);
+      sideZPos[i][j]->setRestingPosition(_localTransfom * restPos);
+      sideZPos[i][j]->setMass(mass);
+
+      _softBodyNode->addPointMass(sideZPos[i][j]);
+
+      map[sideZPos[i][j]] = id++;
+    }
   }
 
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  int nFaces = 4 * ((_frags[0] - 1) * (_frags[1] - 1))
-               + 4 * ((_frags[1] - 1) * (_frags[2] - 1))
-               + 4 * ((_frags[2] - 1) * (_frags[0] - 1));
+  size_t nFacesX = 2*(_frags[1] - 1)*(_frags[2] - 1);
+  size_t nFacesY = 2*(_frags[2] - 1)*(_frags[0] - 1);
+  size_t nFacesZ = 2*(_frags[0] - 1)*(_frags[1] - 1);
+  size_t nFaces  = 2*nFacesX + 2*nFacesY + 2*nFacesZ;
+
   std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());
 
   int fIdx = 0;
-  int baseIdx = 0;
-  Eigen::Vector3i fItr;
 
-  // +X side faces
-  for (int k = 0; k < _frags[2] - 1; ++k)    // z
+  // Corners[0] faces
+  faces[fIdx][0] = map[corners[0]];
+  faces[fIdx][1] = map[edgeZ[0][0]];
+  faces[fIdx][2] = map[edgeY[0][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXNeg[0][0]];
+  faces[fIdx][1] = map[edgeY[0][0]];
+  faces[fIdx][2] = map[edgeZ[0][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[0]];
+  faces[fIdx][1] = map[edgeX[0][0]];
+  faces[fIdx][2] = map[edgeZ[0][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYNeg[0][0]];
+  faces[fIdx][1] = map[edgeZ[0][0]];
+  faces[fIdx][2] = map[edgeX[0][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[0]];
+  faces[fIdx][1] = map[edgeY[0][0]];
+  faces[fIdx][2] = map[edgeX[0][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZNeg[0][0]];
+  faces[fIdx][1] = map[edgeX[0][0]];
+  faces[fIdx][2] = map[edgeY[0][0]];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[0]);
+  _softBodyNode->addFace(faces[1]);
+  _softBodyNode->addFace(faces[2]);
+  _softBodyNode->addFace(faces[3]);
+  _softBodyNode->addFace(faces[4]);
+  _softBodyNode->addFace(faces[5]);
+
+  // Corners[1] faces
+  faces[fIdx][0] = map[corners[1]];
+  faces[fIdx][1] = map[edgeY[3][0]];
+  faces[fIdx][2] = map[edgeZ[1][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXPos[0][0]];
+  faces[fIdx][1] = map[edgeZ[1][0]];
+  faces[fIdx][2] = map[edgeY[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[1]];
+  faces[fIdx][1] = map[edgeZ[1][0]];
+  faces[fIdx][2] = map[edgeX[0].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYNeg[0].back()];
+  faces[fIdx][1] = map[edgeX[0].back()];
+  faces[fIdx][2] = map[edgeZ[1][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[1]];
+  faces[fIdx][1] = map[edgeX[0].back()];
+  faces[fIdx][2] = map[edgeY[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZNeg.back()[0]];
+  faces[fIdx][1] = map[edgeY[3][0]];
+  faces[fIdx][2] = map[edgeX[0].back()];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[6]);
+  _softBodyNode->addFace(faces[7]);
+  _softBodyNode->addFace(faces[8]);
+  _softBodyNode->addFace(faces[9]);
+  _softBodyNode->addFace(faces[10]);
+  _softBodyNode->addFace(faces[11]);
+
+  // Corners[2] faces
+  faces[fIdx][0] = map[corners[2]];
+  faces[fIdx][1] = map[edgeZ[2][0]];
+  faces[fIdx][2] = map[edgeY[3].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXPos.back()[0]];
+  faces[fIdx][1] = map[edgeY[3].back()];
+  faces[fIdx][2] = map[edgeZ[2][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[2]];
+  faces[fIdx][1] = map[edgeX[1].back()];
+  faces[fIdx][2] = map[edgeZ[2][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYPos[0].back()];
+  faces[fIdx][1] = map[edgeZ[2][0]];
+  faces[fIdx][2] = map[edgeX[1].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[2]];
+  faces[fIdx][1] = map[edgeY[3].back()];
+  faces[fIdx][2] = map[edgeX[1].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZNeg.back().back()];
+  faces[fIdx][1] = map[edgeX[1].back()];
+  faces[fIdx][2] = map[edgeY[3].back()];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[12]);
+  _softBodyNode->addFace(faces[13]);
+  _softBodyNode->addFace(faces[14]);
+  _softBodyNode->addFace(faces[15]);
+  _softBodyNode->addFace(faces[16]);
+  _softBodyNode->addFace(faces[17]);
+
+  // Corners[3] faces
+  faces[fIdx][0] = map[corners[3]];
+  faces[fIdx][1] = map[edgeY[0].back()];
+  faces[fIdx][2] = map[edgeZ[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXNeg.back()[0]];
+  faces[fIdx][1] = map[edgeZ[3][0]];
+  faces[fIdx][2] = map[edgeY[0].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[3]];
+  faces[fIdx][1] = map[edgeZ[3][0]];
+  faces[fIdx][2] = map[edgeX[1][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYPos[0][0]];
+  faces[fIdx][1] = map[edgeX[1][0]];
+  faces[fIdx][2] = map[edgeZ[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[3]];
+  faces[fIdx][1] = map[edgeX[1][0]];
+  faces[fIdx][2] = map[edgeY[0].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZNeg[0].back()];
+  faces[fIdx][1] = map[edgeY[0].back()];
+  faces[fIdx][2] = map[edgeX[1][0]];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[18]);
+  _softBodyNode->addFace(faces[19]);
+  _softBodyNode->addFace(faces[20]);
+  _softBodyNode->addFace(faces[21]);
+  _softBodyNode->addFace(faces[22]);
+  _softBodyNode->addFace(faces[23]);
+
+  // Corners[4] faces
+  faces[fIdx][0] = map[corners[4]];
+  faces[fIdx][1] = map[edgeZ[0].back()];
+  faces[fIdx][2] = map[edgeY[1][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXNeg[0].back()];
+  faces[fIdx][1] = map[edgeY[1][0]];
+  faces[fIdx][2] = map[edgeZ[0].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[4]];
+  faces[fIdx][1] = map[edgeX[3][0]];
+  faces[fIdx][2] = map[edgeZ[0].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYNeg.back()[0]];
+  faces[fIdx][1] = map[edgeZ[0].back()];
+  faces[fIdx][2] = map[edgeX[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[4]];
+  faces[fIdx][1] = map[edgeY[1][0]];
+  faces[fIdx][2] = map[edgeX[3][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZPos[0][0]];
+  faces[fIdx][1] = map[edgeX[3][0]];
+  faces[fIdx][2] = map[edgeY[1][0]];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[24]);
+  _softBodyNode->addFace(faces[25]);
+  _softBodyNode->addFace(faces[26]);
+  _softBodyNode->addFace(faces[27]);
+  _softBodyNode->addFace(faces[28]);
+  _softBodyNode->addFace(faces[29]);
+
+  // Corners[5] faces
+  faces[fIdx][0] = map[corners[5]];
+  faces[fIdx][1] = map[edgeZ[1].back()];
+  faces[fIdx][2] = map[edgeY[2][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXPos[0].back()];
+  faces[fIdx][1] = map[edgeY[2][0]];
+  faces[fIdx][2] = map[edgeZ[1].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[5]];
+  faces[fIdx][1] = map[edgeX[3].back()];
+  faces[fIdx][2] = map[edgeZ[1].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYNeg.back().back()];
+  faces[fIdx][1] = map[edgeZ[1].back()];
+  faces[fIdx][2] = map[edgeX[3].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[5]];
+  faces[fIdx][1] = map[edgeY[2][0]];
+  faces[fIdx][2] = map[edgeX[3].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZPos.back()[0]];
+  faces[fIdx][1] = map[edgeX[3].back()];
+  faces[fIdx][2] = map[edgeY[2][0]];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[30]);
+  _softBodyNode->addFace(faces[31]);
+  _softBodyNode->addFace(faces[32]);
+  _softBodyNode->addFace(faces[33]);
+  _softBodyNode->addFace(faces[34]);
+  _softBodyNode->addFace(faces[35]);
+
+  // Corners[6] faces
+  faces[fIdx][0] = map[corners[6]];
+  faces[fIdx][1] = map[edgeY[2].back()];
+  faces[fIdx][2] = map[edgeZ[2].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXPos.back().back()];
+  faces[fIdx][1] = map[edgeZ[2].back()];
+  faces[fIdx][2] = map[edgeY[2].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[6]];
+  faces[fIdx][1] = map[edgeZ[2].back()];
+  faces[fIdx][2] = map[edgeX[2].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYPos.back().back()];
+  faces[fIdx][1] = map[edgeX[2].back()];
+  faces[fIdx][2] = map[edgeZ[2].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[6]];
+  faces[fIdx][1] = map[edgeX[2].back()];
+  faces[fIdx][2] = map[edgeY[2].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZPos.back().back()];
+  faces[fIdx][1] = map[edgeY[2].back()];
+  faces[fIdx][2] = map[edgeX[2].back()];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[36]);
+  _softBodyNode->addFace(faces[37]);
+  _softBodyNode->addFace(faces[38]);
+  _softBodyNode->addFace(faces[39]);
+  _softBodyNode->addFace(faces[40]);
+  _softBodyNode->addFace(faces[41]);
+
+  // Corners[7] faces
+  faces[fIdx][0] = map[corners[7]];
+  faces[fIdx][1] = map[edgeZ[3].back()];
+  faces[fIdx][2] = map[edgeY[1].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideXNeg.back().back()];
+  faces[fIdx][1] = map[edgeY[1].back()];
+  faces[fIdx][2] = map[edgeZ[3].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[7]];
+  faces[fIdx][1] = map[edgeX[2][0]];
+  faces[fIdx][2] = map[edgeZ[3].back()];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideYPos.back()[0]];
+  faces[fIdx][1] = map[edgeZ[3].back()];
+  faces[fIdx][2] = map[edgeX[2][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[corners[7]];
+  faces[fIdx][1] = map[edgeY[1].back()];
+  faces[fIdx][2] = map[edgeX[2][0]];
+  fIdx++;
+
+  faces[fIdx][0] = map[sideZPos[0].back()];
+  faces[fIdx][1] = map[edgeX[2][0]];
+  faces[fIdx][2] = map[edgeY[1].back()];
+  fIdx++;
+
+  _softBodyNode->addFace(faces[42]);
+  _softBodyNode->addFace(faces[43]);
+  _softBodyNode->addFace(faces[44]);
+  _softBodyNode->addFace(faces[45]);
+  _softBodyNode->addFace(faces[46]);
+  _softBodyNode->addFace(faces[47]);
+
+  // EdgeX[0]
+  for (size_t i = 0; i < edgeX[0].size() - 1; ++i)
   {
-    for (int j = 0; j < _frags[1] - 1; ++j)  // y
+    faces[fIdx][0] = map[edgeX[0][i]];
+    faces[fIdx][1] = map[edgeX[0][i + 1]];
+    faces[fIdx][2] = map[sideYNeg[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYNeg[0][i + 1]];
+    faces[fIdx][1] = map[sideYNeg[0][i]];
+    faces[fIdx][2] = map[edgeX[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeX[0][i]];
+    faces[fIdx][1] = map[sideZNeg[i][0]];
+    faces[fIdx][2] = map[edgeX[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZNeg[i + 1][0]];
+    faces[fIdx][1] = map[edgeX[0][i + 1]];
+    faces[fIdx][2] = map[sideZNeg[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // EdgeX[1]
+  for (size_t i = 0; i < edgeX[1].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeX[1][i]];
+    faces[fIdx][1] = map[sideYPos[0][i]];
+    faces[fIdx][2] = map[edgeX[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYPos[0][i + 1]];
+    faces[fIdx][1] = map[edgeX[1][i + 1]];
+    faces[fIdx][2] = map[sideYPos[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeX[1][i]];
+    faces[fIdx][1] = map[edgeX[1][i + 1]];
+    faces[fIdx][2] = map[sideZNeg[i].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZNeg[i + 1].back()];
+    faces[fIdx][1] = map[sideZNeg[i].back()];
+    faces[fIdx][2] = map[edgeX[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // EdgeX[2]
+  for (size_t i = 0; i < edgeX[2].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeX[2][i + 1]];
+    faces[fIdx][1] = map[sideYPos.back()[i + 1]];
+    faces[fIdx][2] = map[edgeX[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYPos.back()[i]];
+    faces[fIdx][1] = map[edgeX[2][i]];
+    faces[fIdx][2] = map[sideYPos.back()[i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeX[2][i + 1]];
+    faces[fIdx][1] = map[edgeX[2][i]];
+    faces[fIdx][2] = map[sideZPos[i + 1].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZPos[i].back()];
+    faces[fIdx][1] = map[sideZPos[i + 1].back()];
+    faces[fIdx][2] = map[edgeX[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // EdgeX[3]
+  for (size_t i = 0; i < edgeX[3].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeX[3][i]];
+    faces[fIdx][1] = map[sideYNeg.back()[i]];
+    faces[fIdx][2] = map[edgeX[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYNeg.back()[i + 1]];
+    faces[fIdx][1] = map[edgeX[3][i + 1]];
+    faces[fIdx][2] = map[sideYNeg.back()[i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeX[3][i]];
+    faces[fIdx][1] = map[edgeX[3][i + 1]];
+    faces[fIdx][2] = map[sideZPos[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZPos[i + 1][0]];
+    faces[fIdx][1] = map[sideZPos[i][0]];
+    faces[fIdx][2] = map[edgeX[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeY[0]
+  for (size_t i = 0; i < edgeY[0].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeY[0][i + 1]];
+    faces[fIdx][1] = map[sideZNeg[0][i + 1]];
+    faces[fIdx][2] = map[edgeY[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZNeg[0][i]];
+    faces[fIdx][1] = map[edgeY[0][i]];
+    faces[fIdx][2] = map[sideZNeg[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeY[0][i]];
+    faces[fIdx][1] = map[sideXNeg[i][0]];
+    faces[fIdx][2] = map[edgeY[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXNeg[i + 1][0]];
+    faces[fIdx][1] = map[edgeY[0][i + 1]];
+    faces[fIdx][2] = map[sideXNeg[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeY[1]
+  for (size_t i = 0; i < edgeY[1].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeY[1][i]];
+    faces[fIdx][1] = map[sideZPos[0][i]];
+    faces[fIdx][2] = map[edgeY[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZPos[0][i + 1]];
+    faces[fIdx][1] = map[edgeY[1][i + 1]];
+    faces[fIdx][2] = map[sideZPos[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeY[1][i]];
+    faces[fIdx][1] = map[edgeY[1][i + 1]];
+    faces[fIdx][2] = map[sideXNeg[i].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXNeg[i + 1].back()];
+    faces[fIdx][1] = map[sideXNeg[i].back()];
+    faces[fIdx][2] = map[edgeY[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeY[2]
+  for (size_t i = 0; i < edgeY[2].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeY[2][i + 1]];
+    faces[fIdx][1] = map[sideZPos.back()[i + 1]];
+    faces[fIdx][2] = map[edgeY[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZPos.back()[i]];
+    faces[fIdx][1] = map[edgeY[2][i]];
+    faces[fIdx][2] = map[sideZPos.back()[i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeY[2][i + 1]];
+    faces[fIdx][1] = map[edgeY[2][i]];
+    faces[fIdx][2] = map[sideXPos[i + 1].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXPos[i].back()];
+    faces[fIdx][1] = map[sideXPos[i + 1].back()];
+    faces[fIdx][2] = map[edgeY[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeY[3]
+  for (size_t i = 0; i < edgeY[3].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeY[3][i]];
+    faces[fIdx][1] = map[sideZNeg.back()[i]];
+    faces[fIdx][2] = map[edgeY[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideZNeg.back()[i + 1]];
+    faces[fIdx][1] = map[edgeY[3][i + 1]];
+    faces[fIdx][2] = map[sideZNeg.back()[i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeY[3][i]];
+    faces[fIdx][1] = map[edgeY[3][i + 1]];
+    faces[fIdx][2] = map[sideXPos[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXPos[i + 1][0]];
+    faces[fIdx][1] = map[sideXPos[i][0]];
+    faces[fIdx][2] = map[edgeY[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeZ[0]
+  for (size_t i = 0; i < edgeZ[0].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeZ[0][i + 1]];
+    faces[fIdx][1] = map[sideXNeg[0][i + 1]];
+    faces[fIdx][2] = map[edgeZ[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXNeg[0][i]];
+    faces[fIdx][1] = map[edgeZ[0][i]];
+    faces[fIdx][2] = map[sideXNeg[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeZ[0][i]];
+    faces[fIdx][1] = map[sideYNeg[i][0]];
+    faces[fIdx][2] = map[edgeZ[0][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYNeg[i + 1][0]];
+    faces[fIdx][1] = map[edgeZ[0][i + 1]];
+    faces[fIdx][2] = map[sideYNeg[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeZ[1]
+  for (size_t i = 0; i < edgeZ[1].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeZ[1][i]];
+    faces[fIdx][1] = map[sideXPos[0][i]];
+    faces[fIdx][2] = map[edgeZ[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXPos[0][i + 1]];
+    faces[fIdx][1] = map[edgeZ[1][i + 1]];
+    faces[fIdx][2] = map[sideXPos[0][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeZ[1][i]];
+    faces[fIdx][1] = map[edgeZ[1][i + 1]];
+    faces[fIdx][2] = map[sideYNeg[i].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYNeg[i + 1].back()];
+    faces[fIdx][1] = map[sideYNeg[i].back()];
+    faces[fIdx][2] = map[edgeZ[1][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeZ[2]
+  for (size_t i = 0; i < edgeZ[2].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeZ[2][i + 1]];
+    faces[fIdx][1] = map[sideXPos.back()[i + 1]];
+    faces[fIdx][2] = map[edgeZ[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXPos.back()[i]];
+    faces[fIdx][1] = map[edgeZ[2][i]];
+    faces[fIdx][2] = map[sideXPos.back()[i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeZ[2][i + 1]];
+    faces[fIdx][1] = map[edgeZ[2][i]];
+    faces[fIdx][2] = map[sideYPos[i + 1].back()];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYPos[i].back()];
+    faces[fIdx][1] = map[sideYPos[i + 1].back()];
+    faces[fIdx][2] = map[edgeZ[2][i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // edgeZ[3]
+  for (size_t i = 0; i < edgeZ[3].size() - 1; ++i)
+  {
+    faces[fIdx][0] = map[edgeZ[3][i]];
+    faces[fIdx][1] = map[sideXNeg.back()[i]];
+    faces[fIdx][2] = map[edgeZ[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideXNeg.back()[i + 1]];
+    faces[fIdx][1] = map[edgeZ[3][i + 1]];
+    faces[fIdx][2] = map[sideXNeg.back()[i]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[edgeZ[3][i]];
+    faces[fIdx][1] = map[edgeZ[3][i + 1]];
+    faces[fIdx][2] = map[sideYPos[i][0]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+
+    faces[fIdx][0] = map[sideYPos[i + 1][0]];
+    faces[fIdx][1] = map[sideYPos[i][0]];
+    faces[fIdx][2] = map[edgeZ[3][i + 1]];
+    _softBodyNode->addFace(faces[fIdx]);
+    fIdx++;
+  }
+
+  // -X side
+  for (size_t i = 0; i < sideXNeg.size() - 1; ++i)
+  {
+    for (size_t j = 0; j < sideXNeg[i].size() - 1; ++j)
     {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[1] * j + k;
-      faces[fIdx][1] = baseIdx + _frags[1] * j + k + 1;
-      faces[fIdx][2] = baseIdx + _frags[1] * (j + 1) + k;
+      faces[fIdx][0] = map[sideXNeg[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideXNeg[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideXNeg[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
       fIdx++;
 
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[1] * (j + 1) + k + 1;
-      faces[fIdx][1] = baseIdx + _frags[1] * (j + 1) + k ;
-      faces[fIdx][2] = baseIdx + _frags[1] * j + k + 1;
+      faces[fIdx][0] = map[sideXNeg[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideXNeg[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideXNeg[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
       fIdx++;
     }
   }
-  baseIdx += _frags[1] * _frags[2];
 
-  // -X side faces
-  for (int k = 0; k < _frags[2] - 1; ++k)    // z
+  // +X side
+  for (size_t i = 0; i < sideXPos.size() - 1; ++i)
   {
-    for (int j = 0; j < _frags[1] - 1; ++j)  // y
+    for (size_t j = 0; j < sideXPos[i].size() - 1; ++j)
     {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[1] * j + k;
-      faces[fIdx][1] = baseIdx + _frags[1] * (j + 1) + k;
-      faces[fIdx][2] = baseIdx + _frags[1] * j + k + 1;
+      faces[fIdx][0] = map[sideXPos[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideXPos[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideXPos[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
       fIdx++;
 
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[1] * (j + 1) + k + 1;
-      faces[fIdx][1] = baseIdx + _frags[1] * j + k + 1;
-      faces[fIdx][2] = baseIdx + _frags[1] * (j + 1) + k ;
-      fIdx++;
-    }
-  }
-  baseIdx += _frags[1] * _frags[2];
-
-  // +Y side faces
-  for (int i = 0; i < _frags[0] - 1; ++i)    // x
-  {
-    for (int k = 0; k < _frags[2] - 1; ++k)  // z
-    {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[2] * k + i;
-      faces[fIdx][1] = baseIdx + _frags[2] * k + i + 1;
-      faces[fIdx][2] = baseIdx + _frags[2] * (k + 1) + i;
-      fIdx++;
-
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[2] * (k + 1) + i + 1;
-      faces[fIdx][1] = baseIdx + _frags[2] * (k + 1) + i ;
-      faces[fIdx][2] = baseIdx + _frags[2] * k + i + 1;
-      fIdx++;
-    }
-  }
-  baseIdx += _frags[2] * _frags[0];
-
-  // -Y side faces
-  for (int i = 0; i < _frags[0] - 1; ++i)    // x
-  {
-    for (int k = 0; k < _frags[2] - 1; ++k)  // z
-    {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[2] * k + i;
-      faces[fIdx][1] = baseIdx + _frags[2] * (k + 1) + i;
-      faces[fIdx][2] = baseIdx + _frags[2] * k + i + 1;
-      fIdx++;
-
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[2] * (k + 1) + i + 1;
-      faces[fIdx][1] = baseIdx + _frags[2] * k + i + 1;
-      faces[fIdx][2] = baseIdx + _frags[2] * (k + 1) + i ;
-      fIdx++;
-    }
-  }
-  baseIdx += _frags[2] * _frags[0];
-
-  // +Z side faces
-  for (int j = 0; j < _frags[1] - 1; ++j)    // y
-  {
-    for (int i = 0; i < _frags[0] - 1; ++i)  // x
-    {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[0] * i + j;
-      faces[fIdx][1] = baseIdx + _frags[0] * i + j + 1;
-      faces[fIdx][2] = baseIdx + _frags[0] * (i + 1) + j;
-      fIdx++;
-
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[0] * (i + 1) + j + 1;
-      faces[fIdx][1] = baseIdx + _frags[0] * (i + 1) + j ;
-      faces[fIdx][2] = baseIdx + _frags[0] * i + j + 1;
-      fIdx++;
-    }
-  }
-  baseIdx += _frags[0] * _frags[1];
-
-  // -Z side faces
-  for (int j = 0; j < _frags[1] - 1; ++j)    // y
-  {
-    for (int i = 0; i < _frags[0] - 1; ++i)  // x
-    {
-      // Lower face
-      faces[fIdx][0] = baseIdx + _frags[0] * i + j;
-      faces[fIdx][1] = baseIdx + _frags[0] * (i + 1) + j;
-      faces[fIdx][2] = baseIdx + _frags[0] * i + j + 1;
-      fIdx++;
-
-      // Upper face
-      faces[fIdx][0] = baseIdx + _frags[0] * (i + 1) + j + 1;
-      faces[fIdx][1] = baseIdx + _frags[0] * i + j + 1;
-      faces[fIdx][2] = baseIdx + _frags[0] * (i + 1) + j ;
+      faces[fIdx][0] = map[sideXPos[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideXPos[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideXPos[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
       fIdx++;
     }
   }
 
-  // Add to the soft body node
-  for (int i = 0; i < nFaces; ++i)
+  // -Y side
+  for (size_t i = 0; i < sideYNeg.size() - 1; ++i)
   {
-    _softBodyNode->addFace(faces[i]);
+    for (size_t j = 0; j < sideYNeg[i].size() - 1; ++j)
+    {
+      faces[fIdx][0] = map[sideYNeg[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideYNeg[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideYNeg[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+
+      faces[fIdx][0] = map[sideYNeg[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideYNeg[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideYNeg[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+    }
   }
+
+  // +Y side
+  for (size_t i = 0; i < sideYPos.size() - 1; ++i)
+  {
+    for (size_t j = 0; j < sideYPos[i].size() - 1; ++j)
+    {
+      faces[fIdx][0] = map[sideYPos[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideYPos[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideYPos[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+
+      faces[fIdx][0] = map[sideYPos[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideYPos[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideYPos[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+    }
+  }
+
+  // -Z side
+  for (size_t i = 0; i < sideZNeg.size() - 1; ++i)
+  {
+    for (size_t j = 0; j < sideZNeg[i].size() - 1; ++j)
+    {
+      faces[fIdx][0] = map[sideZNeg[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideZNeg[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideZNeg[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+
+      faces[fIdx][0] = map[sideZNeg[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideZNeg[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideZNeg[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+    }
+  }
+
+  // +Z side
+  for (size_t i = 0; i < sideZPos.size() - 1; ++i)
+  {
+    for (size_t j = 0; j < sideZPos[i].size() - 1; ++j)
+    {
+      faces[fIdx][0] = map[sideZPos[i + 0][j + 0]];
+      faces[fIdx][1] = map[sideZPos[i + 1][j + 0]];
+      faces[fIdx][2] = map[sideZPos[i + 0][j + 1]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+
+      faces[fIdx][0] = map[sideZPos[i + 1][j + 1]];
+      faces[fIdx][1] = map[sideZPos[i + 0][j + 1]];
+      faces[fIdx][2] = map[sideZPos[i + 1][j + 0]];
+      _softBodyNode->addFace(faces[fIdx]);
+      fIdx++;
+    }
+  }
+
+//  // Add to the soft body node
+//  for (int i = 0; i < nFaces; ++i)
+//  {
+//    _softBodyNode->addFace(faces[i]);
+//  }
 }
 
 //==============================================================================

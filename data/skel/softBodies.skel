@@ -47,7 +47,7 @@
                     <geometry>
                         <box>
                             <size>0.5 0.25 0.5</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
 		<kv>500.0</kv>
@@ -246,7 +246,7 @@
                     <geometry>
                         <box>
                             <size>0.25 0.25 0.25</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
 		<kv>100.0</kv>

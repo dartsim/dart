@@ -93,7 +93,8 @@ protected:
   static dynamics::Joint* readSoftJoint(
       tinyxml2::XMLElement* _jointElement,
       const std::vector<SDFBodyNode,
-      Eigen::aligned_allocator<SDFBodyNode> >& _bodies);
+      Eigen::aligned_allocator<SDFBodyNode> >& _bodies,
+      const Eigen::Isometry3d& _skeletonFrame);
 
 };
 

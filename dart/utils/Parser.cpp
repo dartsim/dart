@@ -316,6 +316,45 @@ Eigen::Isometry3d toIsometry3d(const std::string& _str)
     return T;
 }
 
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(_str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  assert(pieces.size() == 6);
+
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+      if (pieces[i] != "")
+      {
+          try
+          {
+              elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
+          }
+          catch(boost::bad_lexical_cast& e)
+          {
+              std::cerr << "value ["
+                        << pieces[i]
+                        << "] is not a valid double for SE3["
+                        << i
+                        << "]"
+                        << std::endl;
+          }
+      }
+  }
+
+  Eigen::Vector3d reverseEulerAngles(
+      elements.tail<3>()[2],
+      elements.tail<3>()[1],
+      elements.tail<3>()[0]);
+
+  T.linear() = math::eulerZYXToMatrix(reverseEulerAngles);
+  T.translation() = elements.head<3>();
+  return T;
+}
+
 std::string getValueString(tinyxml2::XMLElement* _parentElement, const std::string& _name)
 {
     assert(_parentElement != NULL);
@@ -457,6 +496,16 @@ Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const
     std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
 
     return toIsometry3d(str);
+}
+
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name)
+{
+    assert(_parentElement != NULL);
+    assert(!_name.empty());
+
+    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+
+    return toIsometry3dWithExtrinsicRotation(str);
 }
 
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name)
