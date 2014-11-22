@@ -1,4 +1,20 @@
+### Version 4.2.0 (2014-11-22)
+
+1. Added reset functions for Simulation and Recording class
+    * [Pull request #231](https://github.com/dartsim/dart/pull/231)
+1. Added operational space control example
+    * [Pull request #257](https://github.com/dartsim/dart/pull/257)
+1. Fixed misuse of Bullet collision shapes
+    * [Pull request #228](https://github.com/dartsim/dart/pull/228)
+1. Fixed adjacent body pair check for Bullet collision detector
+    * [Pull request #246](https://github.com/dartsim/dart/pull/246)
+1. Fixed incorrect computation of constraint impulse for BallJointConstraint and WeldJointContraint
+    * [Pull request #247](https://github.com/dartsim/dart/pull/247)
+1. Improved generation of soft box shape for soft body
+    * [Commit ec31f44](https://github.com/dartsim/dart/commit/ec31f44)
+
 ### Version 4.1.1 (2014-07-17)
+
 1. Added ABI check script
     * [Pull request #226](https://github.com/dartsim/dart/pull/226)
     * [Pull request #227](https://github.com/dartsim/dart/pull/227)
