@@ -58,30 +58,6 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
 #===============================================================================
-# Compiler flags
-#===============================================================================
-if(MSVC)
-  message(STATUS "Setup Visual Studio Specific Flags")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-Wall -msse2 -fPIC")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
-  set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "-msse2 -fPIC")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
-  set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-else()
-  message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
-endif()
-
-#===============================================================================
 # Find dependencies
 #===============================================================================
 
@@ -92,7 +68,7 @@ message(STATUS "")
 message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
-find_package(Eigen)
+find_package(Eigen QUIET)
 if(EIGEN_FOUND)
   message(STATUS "Looking for Eigen - found")
 else()
@@ -100,7 +76,7 @@ else()
 endif()
 
 # FCL
-find_package(FCL)
+find_package(FCL QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - found")
 else()
@@ -108,7 +84,7 @@ else()
 endif()
 
 # Assimp
-find_package(Assimp)
+find_package(Assimp QUIET)
 if(ASSIMP_FOUND)
   message(STATUS "Looking for Assimp - found")
 else()
@@ -116,7 +92,7 @@ else()
 endif()
 
 # OpenGL
-find_package(OpenGL)
+find_package(OpenGL QUIET)
 if(OPENGL_FOUND)
   message(STATUS "Looking for OpenGL - found")
 else()
@@ -124,7 +100,7 @@ else()
 endif()
 
 # Boost
-set(DART_MIN_BOOST_VERSION 1.48.0 CACHE INTERNAL "Boost min version requirement" FORCE)
+set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
 if(MSVC OR MSVC90 OR MSVC10)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
@@ -138,7 +114,6 @@ else()
   message(SEND_ERROR "Please install system boost version ${DART_MIN_BOOST_VERSION} or higher.")
 endif()
 
-# GLUT
 if(NOT BUILD_CORE_ONLY)
 
   # GLUT
@@ -146,42 +121,42 @@ if(NOT BUILD_CORE_ONLY)
     set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
     set(GLUT_LIBRARIES glut32)
   else()
-    find_package(GLUT REQUIRED)
+    find_package(GLUT QUIET)
     if(GLUT_FOUND)
       message(STATUS "Looking for GLUT - found")
+      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
     else()
       message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
     endif()
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
   endif()
 
   # FLANN
-  find_package(FLANN REQUIRED)
-  if(GLUT_FOUND)
+  find_package(FLANN QUIET)
+  if(FLANN_FOUND)
     message(STATUS "Looking for FLANN - found")
   else()
     message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
   endif()
 
   # TinyXML
-  find_package(TinyXML REQUIRED)
-  if(GLUT_FOUND)
+  find_package(TinyXML QUIET)
+  if(TINYXML_FOUND)
     message(STATUS "Looking for TinyXML - found")
   else()
     message(SEND_ERROR "Looking for TinyXML - NOT found, please install libtinyxml-dev")
   endif()
 
   # TinyXML2
-  find_package(TinyXML2 REQUIRED)
-  if(GLUT_FOUND)
+  find_package(TinyXML2 QUIET)
+  if(TINYXML2_FOUND)
     message(STATUS "Looking for TinyXML2 - found")
   else()
     message(SEND_ERROR "Looking for TinyXML2 - NOT found, please install libtinyxml2-dev")
   endif()
 
   # urdfdom
-  find_package(urdfdom REQUIRED)
-  if(GLUT_FOUND)
+  find_package(urdfdom QUIET)
+  if(urdfdom_FOUND)
     message(STATUS "Looking for urdfdom - found")
   else()
     message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
@@ -269,7 +244,7 @@ else()
 endif()
 
 # Doxygen
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 if(SHARK_FOUND)
   message(STATUS "Looking for Doxygen - found")
 else()
@@ -281,18 +256,20 @@ endif()
 #===============================================================================
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
-                           ${Boost_LIBRARIES}
-                           ${OPENGL_LIBRARIES})
+                           ${OPENGL_LIBRARIES}
+                           ${GLUT_LIBRARY}
+)
 
 if(HAVE_BULLET_COLLISION)
   set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${BULLET_LIBRARIES})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  set(DART_DEPENDENCIES ${GLUT_LIBRARY}
+  set(DART_DEPENDENCIES ${Boost_LIBRARIES}
                         ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
-                        ${TinyXML2_LIBRARIES})
+                        ${TinyXML2_LIBRARIES}
+  )
   if(HAVE_NLOPT)
     set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${NLOPT_LIBRARIES})
   endif()
@@ -312,14 +289,14 @@ include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
 include_directories(${Assimp_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(${BULLET_INCLUDE_DIRS})
   add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  include_directories(${GLUT_INCLUDE_DIR})
+  include_directories(${Boost_INCLUDE_DIRS})
   include_directories(${FLANN_INCLUDE_DIRS})
   include_directories(${urdfdom_INCLUDE_DIRS})
   include_directories(${TinyXML_INCLUDE_DIRS})
@@ -348,6 +325,30 @@ if(HAVE_BULLET_COLLISION)
 endif()
 
 #===============================================================================
+# Compiler flags
+#===============================================================================
+if(MSVC)
+  message(STATUS "Setup Visual Studio Specific Flags")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "-Wall -msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
+  set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_CXX_FLAGS "-msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
+  set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+else()
+  message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
+endif()
+
+#===============================================================================
 # Print build summary
 #===============================================================================
 message(STATUS "")
@@ -362,10 +363,15 @@ message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
 message(STATUS "Build examples   : ${DART_BUILD_EXAMPLES}")
 message(STATUS "Build unit tests : ${DART_BUILD_UNITTESTS}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
-if(DEFINED CMAKE_CXX_FLAGS)
-  message(STATUS "Custom CFlags    : ${CMAKE_CXX_FLAGS}")
-else()
-  message(STATUS "Custom CFlags    : Used default CFlags")
+message(STATUS "CMAKE_CXX_FLAGS  : ${CMAKE_CXX_FLAGS}")
+if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
+  message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
+  message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
+elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
+  message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
+  message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
 endif()
 message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")

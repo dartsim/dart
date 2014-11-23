@@ -7,7 +7,7 @@
 
 find_package(PkgConfig QUIET)
 
-pkg_check_modules(PC_FCL fcl)
+pkg_check_modules(PC_FCL fcl QUIET)
 find_path(FCL_INCLUDE_DIR fcl/collision.h
     HINTS ${PC_FCL_INCLUDEDIR}
     PATHS "${CMAKE_INSTALL_PREFIX}/include")
