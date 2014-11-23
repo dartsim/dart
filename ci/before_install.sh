@@ -14,17 +14,17 @@ sudo apt-get update
 
 APT_CORE='
 cmake
-freeglut3-dev
 libassimp-dev
 libboost-all-dev
 libccd-dev
 libeigen3-dev
 libfcl-dev
-libxi-dev
-libxmu-dev
 '
 
 APT=$APT_CORE' 
+libxi-dev
+libxmu-dev
+freeglut3-dev
 libflann-dev
 libgtest-dev
 libtinyxml-dev

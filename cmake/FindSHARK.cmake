@@ -1,0 +1,28 @@
+# Find SHARK
+#
+# This sets the following variables:
+# SHARK_FOUND
+# SHARK_INCLUDE_DIRS
+# SHARK_LIBRARIES
+# SHARK_DEFINITIONS
+
+find_package(PkgConfig QUIET)
+pkg_check_modules(PC_SHARK Shark QUIET)
+set(SHARK_DEFINITIONS ${PC_SHARK_CFLAGS_OTHER})
+
+find_path(SHARK_INCLUDE_DIR 
+  shark/Core/Shark.h
+  HINTS ${PC_SHARK_INCLUDEDIR} ${PC_SHARK_INCLUDE_DIRS}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include")
+
+find_library(SHARK_LIBRARY NAMES shark
+  HINTS ${PC_SHARK_LIBDIR} ${PC_SHARK_LIBRARY_DIRS} )
+
+set(SHARK_LIBRARIES ${SHARK_LIBRARY})
+set(SHARK_INCLUDE_DIRS ${SHARK_INCLUDE_DIR})
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SHARK DEFAULT_MSG
+  SHARK_LIBRARY SHARK_INCLUDE_DIR)
+
+mark_as_advanced(SHARK_INCLUDE_DIR SHARK_LIBRARY)
