@@ -7,7 +7,7 @@
 # IPOPT_DEFINITIONS
 
 find_package(PkgConfig QUIET)
-pkg_check_modules(PC_IPOPT ipopt)
+pkg_check_modules(PC_IPOPT ipopt QUIET)
 set(IPOPT_DEFINITIONS ${PC_IPOPT_CFLAGS_OTHER})
 
 find_path(IPOPT_INCLUDE_DIR IpIpoptNLP.hpp

@@ -1,0 +1,37 @@
+/*! \mainpage DART - Dynamic Animation and Robotics Toolkits
+
+\image html "DART logo.png"
+
+\section intro Introduction
+
+DART is an open source library for developing kinematic and dynamic
+applications in robotics and computer animation. DART features two
+main components: a multibody dynamic simulator developed by Georgia
+Tech Graphics Lab and a variety of motion planning algorithms
+developed by Georgia Tech Humanoid Robotics Lab. This document focuses
+only on the dynamic simulator.
+
+The multibody dynamics simulator in DART is designed to aid
+development of motion control algorithms. DART uses generalized
+coordinates to represent articulated rigid body systems and computes
+Lagrange’s equations derived from D’Alembert’s principle to describe
+the dynamics of motion. In contrast to many popular physics engines
+which view the simulator as a black box, DART provides full access to
+internal kinematic and dynamic quantities, such as mass matrix,
+Coriolis and centrifugal force, transformation matrices and their
+derivatives, etc. DART also provides efficient computation of Jacobian
+matrices for arbitrary body points and coordinate frames.
+
+The contact and collision are handled using an implicit time-stepping,
+velocity-based LCP (linear-complementarity problem) to guarantee
+non-penetration, directional friction, and approximated Coulombs
+friction cone conditions. The LCP problem is solved efficiently by
+Lemke's algorithm. For the collision detection, DART directly uses FCL
+package developed by UNC Gamma Lab.
+
+In addition, DART supports various joint types (ball-and-socket,
+universal, hinge, and prismatic joints) and arbitrary meshes. DART
+also provides two explicit integration methods: first-order
+Runge-Kutta and fourth-order Runge Kutta.
+
+*/
