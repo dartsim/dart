@@ -257,6 +257,7 @@ endif()
 #===============================================================================
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
                            ${Assimp_LIBRARIES}
+                           ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
                            ${GLUT_LIBRARY}
 )
@@ -266,8 +267,7 @@ if(HAVE_BULLET_COLLISION)
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  set(DART_DEPENDENCIES ${Boost_LIBRARIES}
-                        ${urdfdom_LIBRARIES}
+  set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TinyXML_LIBRARIES}
                         ${TinyXML2_LIBRARIES}
   )
@@ -289,6 +289,7 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
 include_directories(${Assimp_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
@@ -297,7 +298,6 @@ if(HAVE_BULLET_COLLISION)
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  include_directories(${Boost_INCLUDE_DIRS})
   include_directories(${FLANN_INCLUDE_DIRS})
   include_directories(${urdfdom_INCLUDE_DIRS})
   include_directories(${TinyXML_INCLUDE_DIRS})
