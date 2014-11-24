@@ -458,29 +458,39 @@ add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninsta
 
 #===============================================================================
 # API Document using Doxygen
+# References:
+#   http://mementocodex.wordpress.com/2013/01/19/how-to-generate-code-documentation-with-doxygen-and-cmake-a-slightly-improved-approach/
+#   http://www.cmake.org/pipermail/cmake/2007-February/012796.html
 #===============================================================================
 if(DOXYGEN_FOUND)
-  set(DOXYGEN_INPUT "Doxyfile")
-  set(DOXYGEN_OUTPUT "doc")
 
-  add_custom_command(
-    OUTPUT ${DOXYGEN_OUTPUT}
-    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${DOXYGEN_INPUT}
+  set(DOXYGEN_DOXYFILE_IN  ${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in    )
+  set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
+  set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
+  set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
+  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
+  set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
+
+  configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
+  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
+  add_custom_command(OUTPUT ${DOXYGEN_HTML_INDEX}
+                     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+                     COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+                     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+                     COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+                     DEPENDS ${DOXYGEN_DOXYFILE}
   )
-
-  add_custom_target(docs DEPENDS ${DOXYGEN_OUTPUT})
-  # add_custom_target(apidoc ALL DEPENDS ${DOXYGEN_OUTPUT})
-
+  # add_custom_target(docs ALL DEPENDS ${DOXYGEN_HTML_INDEX})
+  add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(docs_forced
-    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+                    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
+
 endif()
 
 #===============================================================================
