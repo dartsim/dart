@@ -98,7 +98,7 @@ foreach(test ${tests})
 	list_contains(contains ${base} ${dontTest})
 	if(NOT contains)
 		add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
-    message("-- Adding test: " ${base})
+    message(STATUS "-- Adding test: " ${base})
 	endif(NOT contains)
 endforeach(test)
 
