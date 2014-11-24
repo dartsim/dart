@@ -40,8 +40,10 @@ class DartLoader {
 public:
     dynamics::Skeleton* parseSkeleton(std::string _urdfFileName);
     simulation::World* parseWorld(std::string _urdfFileName);
+    void setPackageDirectory(const std::string& _urdfPackageDirectory);
 
 private:
+    std::string getFullFilePath(const std::string& _filename, const std::string& _rootToSkelPath) const;
     void parseWorldToEntityPaths(const std::string &_xml_string);
 
     dynamics::Skeleton* modelInterfaceToSkeleton(const urdf::ModelInterface* _model, std::string _rootToSkelPath = "");
@@ -58,6 +60,8 @@ private:
     std::string readFileToString(std::string _xmlFile);
 
     std::map<std::string, std::string> mWorld_To_Entity_Paths;
+
+    std::string mPackageDirectory;
 };
 
 }

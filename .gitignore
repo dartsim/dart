@@ -22,3 +22,4 @@ TAGS
 *.rsp
 *~
 /nbproject/
+/doxygen/html/

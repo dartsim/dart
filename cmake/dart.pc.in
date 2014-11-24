@@ -5,8 +5,8 @@ libdir=${prefix}/lib
 includedir=${prefix}/include/dart
 
 Name: @PROJECT_NAME@
-Description: @PKG_DESC@
+Description: @DART_PKG_DESC@
 Version: @DART_VERSION@
-Requires: @PKG_EXTERNAL_DEPS@
+Requires: @DART_PKG_EXTERNAL_DEPS@
 Libs: -L${libdir} -ldart
 Cflags: @CMAKE_CXX_FLAGS@

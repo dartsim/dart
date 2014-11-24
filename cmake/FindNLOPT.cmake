@@ -7,7 +7,7 @@
 # NLOPT_DEFINITIONS
 
 find_package(PkgConfig QUIET)
-pkg_check_modules(PC_NLOPT nlopt)
+pkg_check_modules(PC_NLOPT nlopt QUIET)
 set(NLOPT_DEFINITIONS ${PC_NLOPT_CFLAGS_OTHER})
 
 find_path(NLOPT_INCLUDE_DIR nlopt.h
