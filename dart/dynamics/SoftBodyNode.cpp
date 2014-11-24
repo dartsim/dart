@@ -1120,7 +1120,7 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   assert(_softBodyNode != NULL);
 
   // Half size
-  Eigen::Vector3d halfSize = 0.5 * _size;
+  // Eigen::Vector3d halfSize = 0.5 * _size;
 
   //----------------------------------------------------------------------------
   // Misc
