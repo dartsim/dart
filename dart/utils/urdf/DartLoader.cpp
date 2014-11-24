@@ -390,7 +390,6 @@ dynamics::Shape* DartLoader::createShape(const VisualOrCollision* _vizOrCol, std
 
   // Mesh
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
-//    std::string fullPath = _rootToSkelPath + mesh->filename;
     std::string fullPath = getFullFilePath(mesh->filename, _rootToSkelPath);
     const aiScene* model = dynamics::MeshShape::loadMesh( fullPath );
     
