@@ -21,7 +21,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/integration.h
   DESTINATION include/dart/integration
   COMPONENT headers
 )

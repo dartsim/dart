@@ -21,7 +21,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
   DESTINATION include/dart/math
   COMPONENT headers
 )

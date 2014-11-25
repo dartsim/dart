@@ -26,7 +26,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
   DESTINATION include/dart/gui
   COMPONENT headers
 )

@@ -22,7 +22,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.h
   DESTINATION include/dart/utils/urdf
   COMPONENT headers
 )

@@ -37,7 +37,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
   DESTINATION include/dart/utils
   COMPONENT headers
 )

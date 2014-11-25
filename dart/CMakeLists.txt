@@ -9,7 +9,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # Set header and source files
-set(hdrs dart.h dart-core.h)
+set(corehdrs dart-core.h)
+set(hdrs dart.h ${corehdrs})
 set(srcs dart.cpp)
 
 # Add subdirectories
@@ -30,7 +31,7 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 # Library: dart-core
-dart_add_library(dart-core ${hdrs} ${srcs})
+dart_add_library(dart-core ${corehdrs} ${srcs})
 target_link_libraries(
   dart-core
   dart_common
@@ -66,8 +67,10 @@ if(MSVC)
   )
 endif()
 
+install(FILES ${corehdrs} DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
+  install(FILES ${hdrs} DESTINATION include/dart/ COMPONENT headers)
   install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()
 

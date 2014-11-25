@@ -21,7 +21,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/renderer.h
   DESTINATION include/dart/renderer
   COMPONENT headers
 )

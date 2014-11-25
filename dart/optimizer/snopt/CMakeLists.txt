@@ -22,7 +22,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/snopt.h
   DESTINATION include/dart/optimizer/snopt
   COMPONENT headers
 )

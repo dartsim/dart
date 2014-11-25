@@ -22,7 +22,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
 )

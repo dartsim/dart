@@ -51,7 +51,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
   DESTINATION include/dart/collision
   COMPONENT headers
 )

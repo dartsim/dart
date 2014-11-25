@@ -26,7 +26,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )

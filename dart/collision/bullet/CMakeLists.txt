@@ -21,7 +21,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.h
   DESTINATION include/dart/collision/bullet
   COMPONENT headers
 )

@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/config.h"
 #include "dart/collision/collision.h"
 #include "dart/common/common.h"
 #include "dart/constraint/constraint.h"

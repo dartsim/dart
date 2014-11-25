@@ -21,7 +21,7 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs}
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.h
   DESTINATION include/dart/collision/fcl_mesh
   COMPONENT headers
 )
