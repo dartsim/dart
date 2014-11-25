@@ -46,6 +46,7 @@
 #include <assimp/cimport.h>
 
 #include "dart/renderer/RenderInterface.h"
+#include "dart/common/Console.h"
 
 namespace dart {
 namespace dynamics {
@@ -181,6 +182,9 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
                                    aiProcess_SortByPType            |
                                    aiProcess_OptimizeMeshes,
                                    NULL, propertyStore);
+  if(!scene)
+    dtwarn << "[MeshShape] Assimp could not load file: '" << _fileName << "'. "
+           << "This will likely result in a segmentation fault." << std::endl;
   aiReleasePropertyStore(propertyStore);
 
   // Assimp rotates collada files such that the up-axis (specified in the

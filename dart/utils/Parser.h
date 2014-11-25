@@ -68,7 +68,9 @@ Eigen::Vector2d   toVector2d  (const std::string& _str);
 Eigen::Vector3d   toVector3d  (const std::string& _str);
 Eigen::Vector3i   toVector3i  (const std::string& _str);
 Eigen::Vector6d   toVector6d  (const std::string& _str);
+// TODO: The definition of _str is not clear for transform (see: #250)
 Eigen::Isometry3d toIsometry3d(const std::string& _str);
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str);
 
 std::string       getValueString    (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 bool              getValueBool      (tinyxml2::XMLElement* _parentElement, const std::string& _name);
@@ -82,6 +84,7 @@ Eigen::Vector3d   getValueVector3d  (tinyxml2::XMLElement* _parentElement, const
 Eigen::Vector3i   getValueVector3i  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Vector6d   getValueVector6d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
 void openXMLFile(tinyxml2::XMLDocument& doc, const char* const filename);
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
