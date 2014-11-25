@@ -246,7 +246,7 @@ endif()
 
 # Doxygen
 find_package(Doxygen QUIET)
-if(SHARK_FOUND)
+if(DOXYGEN_FOUND)
   message(STATUS "Looking for Doxygen - found")
 else()
   message(STATUS "Looking for Doxygen - NOT found, please install doxygen")
