@@ -7,6 +7,9 @@
  * bidirectional, connect and etc.
  */
 
+#ifndef DART_PLANNING_PATHPLANNER_H_
+#define DART_PLANNING_PATHPLANNER_H_
+
 #include <Eigen/Core>
 #include <iostream>
 #include <limits>
@@ -256,3 +259,4 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 } // namespace planning
 } // namespace dart
 
+#endif  // DART_PLANNING_PATHPLANNER_H_
