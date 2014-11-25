@@ -42,10 +42,7 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/constraint/WeldJointConstraint.h"
-#include "dart/gui/SimWindow.h"
+#include "dart/dart.h"
 
 class MyWindow : public dart::gui::SimWindow
 {

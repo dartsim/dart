@@ -38,12 +38,8 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/utils/Paths.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/dart.h"
+
 #include "apps/bipedStand/MyWindow.h"
 
 int main(int argc, char* argv[]) {

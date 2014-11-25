@@ -37,13 +37,6 @@
 
 #include "apps/bipedStand/MyWindow.h"
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/utils/FileInfoWorld.h"
-
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
   mController = NULL;

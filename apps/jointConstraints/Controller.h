@@ -37,12 +37,11 @@
 #ifndef APPS_HARNESSTEST_CONTROLLER_H_
 #define APPS_HARNESSTEST_CONTROLLER_H_
 
-#include <Eigen/Dense>
 #include <vector>
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
+#include <Eigen/Dense>
+
+#include "dart/dart.h"
 
 class Controller
 {

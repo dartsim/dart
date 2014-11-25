@@ -36,12 +36,6 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionDetector.h"
-
 using namespace dart;
 using namespace dynamics;
 using namespace math;

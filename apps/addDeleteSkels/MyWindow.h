@@ -38,7 +38,7 @@
 #ifndef APPS_ADDDELETESKELS_MYWINDOW_H_
 #define APPS_ADDDELETESKELS_MYWINDOW_H_
 
-#include "dart/gui/SimWindow.h"
+#include "dart/dart.h"
 
 /// \brief
 class MyWindow : public dart::gui::SimWindow {
