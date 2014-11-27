@@ -37,11 +37,6 @@
 
 #include "apps/bipedStand/Controller.h"
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-
 Controller::Controller(dart::dynamics::Skeleton* _skel,
                        double _t) {
   mSkel = _skel;

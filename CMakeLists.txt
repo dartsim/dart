@@ -10,6 +10,8 @@ set(CMAKE_CXX_WARNING_LEVEL 4)
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+include(${CMAKE_MODULE_PATH}/DARTMacros.cmake)
+
 # System install paths on Windows
 if(WIN32)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
@@ -391,18 +393,11 @@ message(STATUS "[ Configured files ]")
 
 # Generate the dart config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/config.h.in)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
 set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
 message(STATUS ${DART_CONFIG_OUT})
 configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
 install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
-
-# Generate the path header file
-set(DART_PATH_HEADER_IN ${CMAKE_SOURCE_DIR}/dart/utils/Paths.h.in)
-set(DART_PATH_HEADER_OUT ${CMAKE_BINARY_DIR}/dart/utils/Paths.h)
-message(STATUS ${DART_PATH_HEADER_OUT})
-configure_file(${DART_PATH_HEADER_IN} ${DART_PATH_HEADER_OUT} @ONLY)
-install(FILES ${DART_PATH_HEADER_OUT} DESTINATION include/dart/utils)
 
 # Generate the DART CMake Config and version files
 include(WriteBasicConfigVersionFile)
@@ -459,6 +454,7 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 # Add an "uninstall" target
+# Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
 configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 

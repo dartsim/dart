@@ -35,11 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/Paths.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/dart.h"
+
 #include "apps/rigidChain/MyWindow.h"
 
 int main(int argc, char* argv[]) {

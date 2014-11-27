@@ -47,27 +47,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/utils/Paths.h"
-#include "dart/common/Timer.h"
-#include "dart/math/Helpers.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/gui/Win3D.h"
-
-namespace dart {
-namespace dynamics {
-class Skeleton;
-class ConstraintDynamics;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/dart.h"
 
 class MyWindow : public dart::gui::Win3D {
 public:

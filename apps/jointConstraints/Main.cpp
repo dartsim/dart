@@ -38,10 +38,7 @@
 
 #include <iostream>
 
-#include "dart/utils/Paths.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/dart.h"
 
 using namespace dart;
 using namespace dynamics;

@@ -5,89 +5,72 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 
-set(CORE_SUBDIRS common math dynamics renderer lcpsolver constraint integration simulation)
-set(NONCORE_SUBDIRS gui planning utils)
-# optimizer is also a NONCORE_SUBDIR, but it will be handled separately
-
-# Search all header and source files
-#-- Core
-foreach(SUBDIR ${CORE_SUBDIRS})
-  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-  set(core_srcs ${core_srcs} ${subdir_srcs})
-endforeach()
-
-file(GLOB subdir_srcs collision/*.cpp collision/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-file(GLOB_RECURSE subdir_srcs collision/fcl_mesh/*.cpp collision/fcl_mesh/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-file(GLOB_RECURSE subdir_srcs collision/fcl/*.cpp collision/fcl/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-file(GLOB_RECURSE subdir_srcs collision/dart/*.cpp collision/dart/*.h)
-set(core_srcs ${core_srcs} ${subdir_srcs})
-
-if(HAVE_BULLET_COLLISION)
-  file(GLOB_RECURSE subdir_srcs collision/bullet/*.cpp collision/bullet/*.h)
-  set(core_srcs ${core_srcs} ${subdir_srcs})
-endif()
-
-#-- Noncore
-foreach(SUBDIR ${NONCORE_SUBDIRS})
-  file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-endforeach()
-
-file(GLOB subdir_srcs optimizer/*.cpp optimizer/*.h)
-set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-
-if(HAVE_NLOPT)
-  file(GLOB_RECURSE subdir_srcs optimizer/nlopt/*.cpp optimizer/nlopt/*.h)
-  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-endif()
-
-if(HAVE_IPOPT)
-  file(GLOB_RECURSE subdir_srcs optimizer/ipopt/*.cpp optimizer/ipopt/*.h)
-  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-endif()
-
-if(HAVE_SNOPT)
-  file(GLOB_RECURSE subdir_srcs optimizer/snopt/*.cpp optimizer/snopt/*.h)
-  set(noncore_srcs ${noncore_srcs} ${subdir_srcs})
-endif()
-
-# Setup directory structure for Visual Studio
-foreach(SUBDIR ${CORE_SUBDIRS} ${NONCORE_SUBDIRS})
-        file(GLOB_RECURSE dir_files ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
-        source_group(${SUBDIR} FILES ${dir_files})
-endforeach()
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-# Library
-add_library(dart-core ${core_srcs})
-target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
-set_target_properties(dart-core PROPERTIES OUTPUT_NAME "dart-core${DART_MAJOR_VERSION}"
-                                           SOVERSION ${DART_MINOR_VERSION}
-                                           VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
+# Set header and source files
+set(corehdrs dart-core.h)
+set(hdrs dart.h ${corehdrs})
+set(srcs dart.cpp)
 
+# Add subdirectories
+add_subdirectory(collision)
+add_subdirectory(common)
+add_subdirectory(constraint)
+add_subdirectory(dynamics)
+add_subdirectory(integration)
+add_subdirectory(lcpsolver)
+add_subdirectory(math)
+add_subdirectory(renderer)
+add_subdirectory(simulation)
 if(NOT BUILD_CORE_ONLY)
-  add_library(dart ${noncore_srcs})
-  target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
-  set_target_properties(dart PROPERTIES OUTPUT_NAME "dart${DART_MAJOR_VERSION}"
-                                        SOVERSION ${DART_MINOR_VERSION}
-                                        VERSION "${DART_MINOR_VERSION}.${DART_PATCH_VERSION}.0")
+  add_subdirectory(gui)
+  add_subdirectory(optimizer)
+  add_subdirectory(planning)
+  add_subdirectory(utils)
 endif()
 
+# Library: dart-core
+dart_add_library(dart-core ${corehdrs} ${srcs})
+target_link_libraries(
+  dart-core
+  dart_common
+  dart_math
+  dart_integration
+  dart_lcpsolver
+  dart_dynamics
+  dart_collision
+  dart_constraint
+  dart_simulation
+  ${DART_CORE_DEPENDENCIES}
+)
+
+# Library: dart
+if(NOT BUILD_CORE_ONLY)
+  dart_add_library(dart ${hdrs} ${srcs})
+  target_link_libraries(
+    dart
+    dart-core
+    dart_gui
+    dart_optimizer
+    dart_planning
+    dart_renderer
+    dart_utils
+    ${DART_DEPENDENCIES}
+  )
+endif()
 
 if(MSVC)
-  set_target_properties(${target} PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  set_target_properties(
+    ${target} PROPERTIES
+    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
+  )
 endif()
 
-install(DIRECTORY ./ DESTINATION include/dart FILES_MATCHING PATTERN "*.h")
+install(FILES ${corehdrs} DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
+  install(FILES ${hdrs} DESTINATION include/dart/ COMPONENT headers)
   install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()
+

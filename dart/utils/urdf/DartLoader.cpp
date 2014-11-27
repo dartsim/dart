@@ -3,14 +3,14 @@
  */
 
 #include "DartLoader.h"
+
 #include <map>
+#include <iostream>
+#include <fstream>
 
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
-#include "urdf_world_parser.h"
 
-#include <iostream>
-#include <fstream>
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
@@ -24,6 +24,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/urdf/urdf_world_parser.h"
 
 namespace dart {
 namespace utils {

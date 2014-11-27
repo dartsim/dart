@@ -36,10 +36,8 @@
 
 #include <iostream>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/dart.h"
+
 #include "apps/vehicle/MyWindow.h"
 
 int main(int argc, char* argv[])

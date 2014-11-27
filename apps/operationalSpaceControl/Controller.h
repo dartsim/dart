@@ -39,8 +39,7 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/gui/SimWindow.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dart.h"
 
 /// \brief Operational space controller for 6-dof manipulator
 class Controller
