@@ -38,7 +38,6 @@ if(HAVE_BULLET_COLLISION)
   set(header_names ${header_names} bullet/bullet.h)
 endif()
 dart_generate_include_header_list(
-  FILENAME
   collision_headers
   "dart/collision/"
   "collision headers"
