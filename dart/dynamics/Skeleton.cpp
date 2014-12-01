@@ -60,6 +60,9 @@ Skeleton::Skeleton(const std::string& _name)
     mDof(0),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
+    mNameMgrForBodyNodes("BodyNode"),
+    mNameMgrForJoints("Joint"),
+    mNameMgrForSoftBodyNodes("BodyNode"),
     mIsMobile(true),
     mTimeStep(0.001),
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
@@ -103,68 +106,47 @@ const std::string& Skeleton::getName() const
 }
 
 //==============================================================================
-static std::string makeRepeatName(const std::string& _name, size_t _count)
+const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode *_newNode)
 {
-  std::stringstream ss;
-  ss << _name << "(" << _count << ")";
-  return ss.str();
-}
-
-//==============================================================================
-template<typename T>
-static std::string resolveNameInMap(const std::string& _name, const std::map<std::string,T>& _map)
-{
-  typename std::map<std::string,T>::const_iterator check = _map.find(_name);
-  if(_map.end() == check)
-    return _name;
-
-  size_t repeat = 1;
-  std::string testName;
-  do
-  {
-    ++repeat;
-    testName = makeRepeatName(_name,repeat);
-    check = _map.find(testName);
-  } while(_map.end() != check);
-
-  return testName;
-}
-
-//==============================================================================
-std::string Skeleton::resolveNewBodyNodeName(const std::string& _name) const
-{
-  return resolveNameInMap<BodyNode*>(_name, mNameToBodyNodeMap);
-}
-
-//==============================================================================
-const std::string& Skeleton::addEntryInNameToBodyNodeMap(BodyNode *_newNode)
-{
-  _newNode->mName = resolveNewBodyNodeName(_newNode->mName);
-  mNameToBodyNodeMap[_newNode->mName] = _newNode;
+  _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(),
+                                                            _newNode);
   return _newNode->mName;
 }
 
 //==============================================================================
-std::string Skeleton::resolveNewJointName(const std::string &_name) const
+const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
 {
-  return resolveNameInMap<Joint*>(_name, mNameToJointMap);
-}
-
-//==============================================================================
-const std::string& Skeleton::addEntryInNameToJointMap(Joint *_newJoint)
-{
-  _newJoint->mName = resolveNewJointName(_newJoint->mName);
-  mNameToJointMap[_newJoint->mName] = _newJoint;
+  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
+                                                          _newJoint);
   return _newJoint->mName;
 }
 
 //==============================================================================
-void Skeleton::addEntryToNameToSoftBodyNodeMap(SoftBodyNode *_newNode)
+void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode *_newNode)
 {
   // Note: This doesn't need the same checks as BodyNode and Joint, because
   // its name has already been resolved against all the BodyNodes, which includes
   // all SoftBodyNodes.
-  mNameToSoftBodyNodeMap[_newNode->mName] = _newNode;
+  mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
+}
+
+void Skeleton::addMarkersOfBodyNode(BodyNode *_node)
+{
+  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+    addEntryToMarkerNameMgr(_node->getMarker(i));
+}
+
+void Skeleton::removeMarkersOfBodyNode(BodyNode *_node)
+{
+  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+    mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
+}
+
+const std::string& Skeleton::addEntryToMarkerNameMgr(Marker *_newMarker)
+{
+  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
+        _newMarker->getName(), _newMarker);
+  return _newMarker->mName;
 }
 
 //==============================================================================
@@ -242,8 +224,9 @@ void Skeleton::addBodyNode(BodyNode* _body)
   assert(_body && _body->getParentJoint());
 
   mBodyNodes.push_back(_body);
-  addEntryInNameToBodyNodeMap(_body);
-  addEntryInNameToJointMap(_body->getParentJoint());
+  addEntryToBodyNodeNameMgr(_body);
+  addEntryToJointNameMgr(_body->getParentJoint());
+  addMarkersOfBodyNode(_body);
   _body->mSkeleton = this;
   _body->mParentJoint->mSkeleton = this;
 
@@ -251,7 +234,7 @@ void Skeleton::addBodyNode(BodyNode* _body)
   if (softBodyNode)
   {
     mSoftBodyNodes.push_back(softBodyNode);
-    addEntryToNameToSoftBodyNodeMap(softBodyNode);
+    addEntryToSoftBodyNodeNameMgr(softBodyNode);
   }
 }
 
@@ -287,19 +270,6 @@ BodyNode* Skeleton::getRootBodyNode()
 const BodyNode* Skeleton::getRootBodyNode() const
 {
   return const_cast<Skeleton*>(this)->getRootBodyNode();
-}
-
-//==============================================================================
-template<typename T>
-static T getNameMapObjectIfAvailable(const std::string& _name, const std::map<std::string,T>& _map)
-{
-  assert(!_name.empty());
-
-  typename std::map<std::string,T>::const_iterator check = _map.find(_name);
-  if(_map.end() == check)
-    return NULL;
-
-  return check->second;
 }
 
 //==============================================================================
@@ -340,19 +310,24 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
 //==============================================================================
 BodyNode* Skeleton::getBodyNode(const std::string &_name)
 {
-  return getNameMapObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
+  return mNameMgrForBodyNodes.getObject(_name);
 }
 
 //==============================================================================
 const BodyNode* Skeleton::getBodyNode(const std::string& _name) const
 {
-  return getNameMapObjectIfAvailable<BodyNode*>(_name, mNameToBodyNodeMap);
+  return mNameMgrForBodyNodes.getObject(_name);
 }
 
 //==============================================================================
 SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
 {
-  return getNameMapObjectIfAvailable<SoftBodyNode*>(_name, mNameToSoftBodyNodeMap);
+  return mNameMgrForSoftBodyNodes.getObject(_name);
+}
+
+const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string &_name) const
+{
+  return mNameMgrForSoftBodyNodes.getObject(_name);
 }
 
 //==============================================================================
@@ -374,31 +349,19 @@ const Joint* Skeleton::getJoint(size_t _idx) const
 //==============================================================================
 Joint* Skeleton::getJoint(const std::string &_name)
 {
-  return getNameMapObjectIfAvailable<Joint*>(_name, mNameToJointMap);
+  return mNameMgrForJoints.getObject(_name);
 }
 
 //==============================================================================
 const Joint* Skeleton::getJoint(const std::string& _name) const
 {
-  return getNameMapObjectIfAvailable<Joint*>(_name, mNameToJointMap);
+  return mNameMgrForJoints.getObject(_name);
 }
 
 //==============================================================================
 Marker* Skeleton::getMarker(const std::string& _name)
 {
-  assert(!_name.empty());
-
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    for (size_t i = 0; i < (*it)->getNumMarkers(); ++i)
-    {
-      if ((*it)->getMarker(i)->getName() == _name)
-        return (*it)->getMarker(i);
-    }
-  }
-
-  return NULL;
+  return mNameMgrForMarkers.getObject(_name);
 }
 
 //==============================================================================
@@ -2188,8 +2151,6 @@ double Skeleton::getPotentialEnergy() const
 
   return PE;
 }
-
-
 
 }  // namespace dynamics
 }  // namespace dart

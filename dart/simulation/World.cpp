@@ -56,7 +56,8 @@ namespace simulation {
 
 //==============================================================================
 World::World()
-  : mGravity(0.0, 0.0, -9.81),
+  : mNameMgrForSkeletons("skeleton"),
+    mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
@@ -202,22 +203,18 @@ const Eigen::Vector3d& World::getGravity() const
 }
 
 //==============================================================================
-dynamics::Skeleton* World::getSkeleton(int _index) const
+dynamics::Skeleton* World::getSkeleton(size_t _index) const
 {
-  return mSkeletons[_index];
+  if(_index < mSkeletons.size())
+    return mSkeletons[_index];
+
+  return NULL;
 }
 
 //==============================================================================
 dynamics::Skeleton* World::getSkeleton(const std::string& _name) const
 {
-  for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if ((*it)->getName() == _name)
-      return *it;
-  }
-
-  return NULL;
+  return mNameMgrForSkeletons.getObject(_name);
 }
 
 //==============================================================================
@@ -227,25 +224,34 @@ size_t World::getNumSkeletons() const
 }
 
 //==============================================================================
-void World::addSkeleton(dynamics::Skeleton* _skeleton)
+std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 {
   assert(_skeleton != NULL && "Invalid skeleton.");
+
+  if(NULL == _skeleton)
+  {
+    dtwarn << "Attempting to add a nullptr Skeleton to the world!\n";
+    return "";
+  }
 
   // If mSkeletons already has _skeleton, then we do nothing.
   if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) != mSkeletons.end())
   {
     std::cout << "Skeleton [" << _skeleton->getName()
               << "] is already in the world." << std::endl;
-    return;
+    return _skeleton->getName();
   }
 
   mSkeletons.push_back(_skeleton);
+  mNameMgrForSkeletons.issueNewNameAndAdd(_skeleton->getName(), _skeleton);
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
+
+  return _skeleton->getName();
 }
 
 //==============================================================================

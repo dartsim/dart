@@ -56,8 +56,8 @@
 namespace dart {
 namespace dynamics {
 
-
-template<typename T>
+//==============================================================================
+template <typename T>
 static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 {
   assert(_index < _vec.size());
@@ -147,27 +147,31 @@ BodyNode::~BodyNode()
 //==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
+  // If it already has the requested name, do nothing
   if(mName == _name)
     return mName;
 
+  // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
   if(mSkeleton)
   {
-    mSkeleton->mNameToBodyNodeMap.erase(mName);
+    mSkeleton->mNameMgrForBodyNodes.removeName(mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      mSkeleton->mNameToSoftBodyNodeMap.erase(mName);
+      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mName);
 
     mName = _name;
-    mSkeleton->addEntryInNameToBodyNodeMap(this);
+    mSkeleton->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
-      mSkeleton->addEntryToNameToSoftBodyNodeMap(softnode);
+      mSkeleton->addEntryToSoftBodyNodeNameMgr(softnode);
   }
   else
   {
     mName = _name;
   }
 
+  // Return the final name (which might have been altered by the Skeleton's
+  // NameManager)
   return mName;
 }
 
@@ -387,11 +391,13 @@ void BodyNode::setParentJoint(Joint* _joint)
 
   if(mSkeleton)
   {
-    mSkeleton->mNameToJointMap.erase(mParentJoint->getName());
-    mSkeleton->addEntryInNameToJointMap(_joint);
+    mSkeleton->mNameMgrForJoints.removeName(mParentJoint->getName());
+    mSkeleton->addEntryToJointNameMgr(_joint);
   }
 
-  mParentJoint->mChildBodyNode = NULL;
+  if(mParentJoint)
+    mParentJoint->mChildBodyNode = NULL;
+
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;
   // TODO: Shouldn't we delete the original mParentJoint? Seems like the BodyNode
@@ -452,6 +458,8 @@ size_t BodyNode::getNumChildBodyNodes() const
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
+  if(mSkeleton)
+    mSkeleton->addEntryToMarkerNameMgr(_marker);
 }
 
 //==============================================================================

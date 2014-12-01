@@ -1022,7 +1022,7 @@ void SoftContactConstraint::uniteSkeletons()
 }
 
 //==============================================================================
-template<typename PointMassT, typename SoftBodyNodeT>
+template <typename PointMassT, typename SoftBodyNodeT>
 static PointMassT selectCollidingPointMassT(
     SoftBodyNodeT _softBodyNode,
     const Eigen::Vector3d& _point,
@@ -1068,7 +1068,8 @@ const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     const Eigen::Vector3d& _point,
     int _faceId) const
 {
-  return selectCollidingPointMassT<const dynamics::PointMass*,const dynamics::SoftBodyNode*>(
+  return selectCollidingPointMassT<const dynamics::PointMass*,
+                                   const dynamics::SoftBodyNode*>(
         _softBodyNode, _point, _faceId);
 }
 
@@ -1078,7 +1079,8 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
     const Eigen::Vector3d &_point,
     int _faceId) const
 {
-  return selectCollidingPointMassT<dynamics::PointMass*,dynamics::SoftBodyNode*>(
+  return selectCollidingPointMassT<dynamics::PointMass*,
+                                   dynamics::SoftBodyNode*>(
         _softBodyNode, _point, _faceId);
 }
 

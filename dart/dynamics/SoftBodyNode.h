@@ -102,9 +102,10 @@ public:
   /// \brief
   size_t getNumPointMasses() const;
 
-
   /// \brief
   PointMass* getPointMass(size_t _idx);
+
+  /// \brief
   const PointMass* getPointMass(size_t _idx) const;
 
   /// \brief
@@ -314,6 +315,10 @@ public:
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
+  /// \param[in] _frags Number of vertices of box mesh. Each component should be
+  ///   equal or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
+  ///   not.
+  // TODO: The component of _frags should allow 2.
   static void setBox(
       SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
