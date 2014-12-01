@@ -62,9 +62,11 @@ Joint::Joint(const std::string& _name)
 {
 }
 
+//==============================================================================
 Joint::~Joint() {
 }
 
+//==============================================================================
 const std::string& Joint::setName(const std::string& _name) {
 
   if(mName == _name)
@@ -82,20 +84,24 @@ const std::string& Joint::setName(const std::string& _name) {
   return mName;
 }
 
+//==============================================================================
 const std::string& Joint::getName() const {
   return mName;
 }
 
+//==============================================================================
 BodyNode* Joint::getChildBodyNode()
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 const BodyNode* Joint::getChildBodyNode() const
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 BodyNode* Joint::getParentBodyNode()
 {
   if(mChildBodyNode)
@@ -104,21 +110,25 @@ BodyNode* Joint::getParentBodyNode()
   return NULL;
 }
 
+//==============================================================================
 const BodyNode* Joint::getParentBodyNode() const
 {
   return const_cast<Joint*>(this)->getParentBodyNode();
 }
 
+//==============================================================================
 Skeleton* Joint::getSkeleton()
 {
   return mSkeleton;
 }
 
+//==============================================================================
 const Skeleton* Joint::getSkeleton() const
 {
   return mSkeleton;
 }
 
+//==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const {
   return mT;
 }
@@ -142,32 +152,39 @@ void Joint::setPositionLimited(bool _isPositionLimited) {
   mIsPositionLimited = _isPositionLimited;
 }
 
+//==============================================================================
 bool Joint::isPositionLimited() const {
   return mIsPositionLimited;
 }
 
+//==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
 }
 
+//==============================================================================
 void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) {
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
 }
 
+//==============================================================================
 const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const {
   return mT_ParentBodyToJoint;
 }
 
+//==============================================================================
 const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const {
   return mT_ChildBodyToJoint;
 }
 
+//==============================================================================
 void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
   _ri->transform(mT);
 }
 
+//==============================================================================
 void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;

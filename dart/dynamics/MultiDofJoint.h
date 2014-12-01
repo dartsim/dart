@@ -402,93 +402,90 @@ protected:
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Matrix<double, DOF, 1> mPositionDeriv;
-  // TODO: Should this^ be deprecated? It never seems to get used and is not accessible.
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   /// Generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocities;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mVelocities;
 
   /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mVelocityLowerLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mVelocityLowerLimits;
 
   /// Max value allowed.
-  Eigen::Matrix<double, DOF, 1> mVelocityUpperLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mVelocityUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Matrix<double, DOF, 1> mVelocitiesDeriv;
-  // TODO: Should this^ be deprecated? It never seems to get used and is not accessible.
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   /// Generalized acceleration
-  Eigen::Matrix<double, DOF, 1> mAccelerations;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mAccelerations;
 
   /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mAccelerationLowerLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mAccelerationLowerLimits;
 
   /// upper limit of generalized acceleration
-  Eigen::Matrix<double, DOF, 1> mAccelerationUpperLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mAccelerationUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Matrix<double, DOF, 1> mAccelerationsDeriv;
-  // TODO: Should this^ be deprecated? It never seems to get used and is not accessible.
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   /// Generalized force
-  Eigen::Matrix<double, DOF, 1> mForces;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mForces;
 
   /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mForceLowerLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mForceLowerLimits;
 
   /// Max value allowed.
-  Eigen::Matrix<double, DOF, 1> mForceUpperLimits;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mForceUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mForcesDeriv;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse
   //----------------------------------------------------------------------------
 
   /// Change of generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocityChanges;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mVelocityChanges;
 
 //  /// Generalized impulse
 //  Eigen::Matrix<double, DOF, 1> mImpulse;
 
   /// Generalized constraint impulse
-  Eigen::Matrix<double, DOF, 1> mConstraintImpulses;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mConstraintImpulses;
 
   //----------------------------------------------------------------------------
   // Spring and damper
   //----------------------------------------------------------------------------
 
   /// Joint spring stiffness
-  Eigen::Matrix<double, DOF, 1> mSpringStiffness;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mSpringStiffness;
 
   /// Rest joint position for joint spring
-  Eigen::Matrix<double, DOF, 1> mRestPosition;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mRestPosition;
 
   /// Joint damping coefficient
-  Eigen::Matrix<double, DOF, 1> mDampingCoefficient;   // move to DoF
+  Eigen::Matrix<double, DOF, 1> mDampingCoefficient;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms
   //----------------------------------------------------------------------------
 
   /// Spatial Jacobian
-  Eigen::Matrix<double, 6, DOF> mJacobian;   // move to DoF
+  Eigen::Matrix<double, 6, DOF> mJacobian;
 
   /// Time derivative of spatial Jacobian
-  Eigen::Matrix<double, 6, DOF> mJacobianDeriv;   // move to DoF
+  Eigen::Matrix<double, 6, DOF> mJacobianDeriv;
 
   /// Inverse of projected articulated inertia
   Eigen::Matrix<double, DOF, DOF> mInvProjArtInertia;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -47,71 +47,202 @@ class Skeleton;
 class Joint;
 class BodyNode;
 
-/// DegreeOfFreedom class represents a single degree of freedom (or generalized coordinate)
-/// of the Skeleton.
-///
-/// DegreeOfFreedom stores properties like position, velocity, and acceleration values and
-/// limits for each DegreeOfFreedom in the Skeleton, and the Skeleton's DegreesOfFreedom
-/// will be accessible by name or by index
+/// DegreeOfFreedom class is a proxy class for accessing single degrees of
+/// freedom (or generalized coordinate) of the Skeleton.
 
-class DegreeOfFreedomProperties
+class DegreeOfFreedom
 {
 public:
 
-  DegreeOfFreedomProperties();
+  friend class dart::dynamics::Joint;
+  friend class dart::dynamics::Skeleton;
 
-  double mPosition;
-  double mPositionLowerLimit;
-  double mPositionUpperLimit;
+  /// Change the name of this DegreeOfFreedom
+  const std::string& setName(const std::string& _name);
 
-  double mVelocity;
-  double mVelocityLowerLimit;
-  double mVelocityUpperLimit;
+  /// Get the name of this DegreeOfFreedom
+  const std::string& getName() const;
 
-  double mAcceleration;
-  double mAccelerationLowerLimit;
-  double mAccelerationUpperLimit;
+  /// Get this DegreeOfFreedom's index within its Skeleton
+  size_t getIndexInSkeleton() const;
 
-  double mEffort;
-  double mEffortLowerLimit;
-  double mEffortUpperLimit;
+  /// Get this DegreeOfFreedom's index within its Joint
+  size_t getIndexInJoint() const;
 
-  double mVelocityChange;
+  // -- Position functions -----------------------------------------------------
 
-  double mConstraintImpulse;
+  /// Set the position of this DegreeOfFreedom
+  void setPosition(double _position);
 
-  double mSpringStiffness;
-  double mRestPosition;
-  double mDampingCoefficient;
-
-  Eigen::Matrix<double, 6, 1> mJacobian;
-  Eigen::Matrix<double, 6, 1> mJacobianDeriv;
-
-
-
-};
-
-class DegreeOfFreedom : protected DegreeOfFreedomProperties
-{
-public:
-
-  DegreeOfFreedom();
-
-  bool setPosition();
+  /// Get the position of this DegreeOfFreedom
   double getPosition() const;
 
-  void setPositionLowerLimit();
+  /// Set the position limits of this DegreeOfFreedom
+  void setPositionLimits(double _lowerLimit, double _upperLimit);
+
+  /// Set the position limits of this DegreeOfFreedom
+  void setPositionLimits(const std::pair<double,double>& _limits);
+
+  /// Get the position limits of this DegreeOfFreedom
+  std::pair<double,double> getPositionLimits() const;
+
+  /// Set the lower position limit of this DegreeOfFreedom
+  void setPositionLowerLimit(double _limit);
+
+  /// Get the lower position limit of this DegreeOfFreedom
   double getPositionLowerLimit() const;
-  void setPositionUpperLimit();
+
+  /// Set the upper position limit of this DegreeOfFreedom
+  void setPositionUpperLimit(double _limit);
+
+  /// Get the upper position limit of this DegreeOfFreedom
   double getPositionUpperLimit() const;
 
-  // TODO: the rest
+  // -- Velocity functions -----------------------------------------------------
+
+  /// Set the velocity of this DegreeOfFreedom
+  void setVelocity(double _velocity);
+
+  /// Get the velocity of this DegreeOfFreedom
+  double getVelocity() const;
+
+  /// Set the velocity limits of this DegreeOfFreedom
+  void setVelocityLimits(double _lowerLimit, double _upperLimit);
+
+  /// Set the velocity limtis of this DegreeOfFreedom
+  void setVelocityLimits(const std::pair<double,double>& _limits);
+
+  /// Get the velocity limits of this DegreeOfFreedom
+  std::pair<double,double> getVelocityLimits() const;
+
+  /// Set the lower velocity limit of this DegreeOfFreedom
+  void setVelocityLowerLimit(double _limit);
+
+  /// Get the lower velocity limit of this DegreeOfFreedom
+  double getVelocityLowerLimit() const;
+
+  /// Set the upper velocity limit of this DegreeOfFreedom
+  void setVelocityUpperLimit(double _limit);
+
+  /// Get the upper Velocity limit of this DegreeOfFreedom
+  double getVelocityUpperLimit() const;
+
+  // -- Acceleration functions -------------------------------------------------
+
+  /// Set the acceleration of this DegreeOfFreedom
+  void setAcceleration(double _acceleration);
+
+  /// Get the acceleration of this DegreeOfFreedom
+  double getAcceleration() const;
+
+  /// Set the acceleration limits of this DegreeOfFreedom
+  void setAccelerationLimits(double _lowerLimit, double _upperLimit);
+
+  /// Set the acceleartion limits of this DegreeOfFreedom
+  void setAccelerationLimits(const std::pair<double,double>& _limits);
+
+  /// Get the acceleration limits of this DegreeOfFreedom
+  std::pair<double,double> getAccelerationLimits() const;
+
+  /// Set the lower acceleration limit of this DegreeOfFreedom
+  void setAccelerationLowerLimit(double _limit);
+
+  /// Get the lower acceleration limit of this DegreeOfFreedom
+  double getAccelerationLowerLimit() const;
+
+  /// Set the upper acceleration limit of this DegreeOfFreedom
+  void setAccelerationUpperLimit(double _limit);
+
+  /// Get the upper acceleration limit of this DegreeOfFreedom
+  double getAccelerationUpperLimit() const;
+
+  // -- Effort/Force functions -------------------------------------------------
+  // Note: In these functions, the word "Effort" is being used instead of
+  // "Force". Currently "Force" is being used throughout DART to refer to the
+  // Generalized Force of a Generalized Coordinate, but I propose we use the
+  // word "Effort" instead. We can change the names of these functions later if
+  // "Effort" is deemed inappropriate or undesirable.
+
+  /// Set the generalized force of this DegreeOfFreedom
+  void setEffort(double _effort);
+
+  /// Get the generalized force of this DegreeOfFreedom
+  double getEffort() const;
+
+  /// Set the generalized force limits of this DegreeOfFreedom
+  void setEffortLimits(double _lowerLimit, double _upperLimit);
+
+  /// Set the generalized force limits of this DegreeOfFreedom
+  void setEffortLimits(const std::pair<double,double>& _limits);
+
+  /// Get the generalized force limits of this DegreeOfFreedom
+  std::pair<double,double> getEffortLimits() const;
+
+  /// Set the lower generalized force limit of this DegreeOfFreedom
+  void setEffortLowerLimit(double _limit);
+
+  /// Get the lower generalized force limit of this DegreeOfFreedom
+  double getEffortLowerLimit() const;
+
+  /// Set the upper generalized force limit of this DegreeOfFreedom
+  void setEffortUpperLimit(double _limit);
+
+  /// Get the upper generalized force limit of this DegreeOfFreedom
+  double getEffortUpperLimit() const;
+
+  // -- Relationships ----------------------------------------------------------
+
+  /// Get the Joint that this DegreeOfFreedom belongs to
+  Joint* getJoint();
+
+  /// Get the Joint that this DegreeOfFreedom belongs to
+  const Joint* getJoint() const;
+
+  /// Get the Skeleton that this DegreeOfFreedom is inside of
+  Skeleton* getSkeleton();
+
+  /// Get the Skeleton that this DegreeOfFreedom is inside of
+  const Skeleton* getSkeleton() const;
+
+  /// Get the BodyNode downstream of this DegreeOfFreedom
+  BodyNode* getChildBodyNode();
+
+  /// Get the BodyNode downstream of this DegreeOfFreedom
+  const BodyNode* getChildBodyNode() const;
+
+  /// Get the BodyNode upstream of this DegreeOfFreedom
+  BodyNode* getParentBodyNode();
+
+  /// Get the BodyNode upstream of this DegreeOfFreedom
+  const BodyNode* getParentBodyNode() const;
+
+protected:
+
+  /// The constructor is protected so that only Joints can create
+  /// DegreeOfFreedom classes
+  DegreeOfFreedom(Joint* _joint,
+                  const std::string& _name,
+                  size_t _indexInJoint,
+                  size_t _indexInSkeleton);
+
+  /// Name of this DegreeOfFreedom
+  std::string mName;
+
+  /// Index of this DegreeOfFreedom within its Joint
+  size_t mIndexInJoint;
+
+  /// Index of this DegreeOfFreedom within its Skeleton
+  size_t mIndexInSkeleton;
+
+  /// The joint that this DegreeOfFreedom belongs to
+  Joint* mJoint;
+  // Note that we do not need to store BodyNode or Skeleton, because we can
+  // access them through this joint pointer. Moreover, we never need to check
+  // whether mJoint is nullptr, because only Joints are allowed to create a
+  // DegreeOfFreedom and DegreesOfFreedom are deleted when their Joint is
+  // destructed.
 
 };
-
-
-
-
 
 } // namespace dynamics
 } // namespace dart

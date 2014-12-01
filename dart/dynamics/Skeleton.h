@@ -61,6 +61,7 @@ class SoftBodyNode;
 class PointMass;
 class Joint;
 class Marker;
+class DegreeOfFreedom;
 
 /// struct GenCoordInfo
 struct GenCoordInfo
@@ -591,6 +592,7 @@ public:
   //----------------------------------------------------------------------------
   friend class BodyNode;
   friend class Joint;
+  friend class DegreeOfFreedom;
 
 protected:
   /// Update mass matrix of the skeleton.
@@ -643,6 +645,9 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint);
 
+  /// Add a DegreeOfFreedom to the Dof NameManager
+  const std::string& addEntryToDofNameMgr(DegreeOfFreedom* _newDof);
+
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
@@ -682,6 +687,9 @@ protected:
 
   /// NameManager for tracking Joints
   dart::common::NameManager<Joint> mNameMgrForJoints;
+
+  /// NameManager for tracking DegreesOfFreedom
+  dart::common::NameManager<DegreeOfFreedom> mNameMgrForDofs;
 
   /// NameManager for tracking SoftBodyNodes
   dart::common::NameManager<SoftBodyNode> mNameMgrForSoftBodyNodes;

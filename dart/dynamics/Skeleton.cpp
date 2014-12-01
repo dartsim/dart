@@ -50,6 +50,7 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -119,6 +120,15 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
   _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
                                                           _newJoint);
   return _newJoint->mName;
+}
+
+//==============================================================================
+const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom *_newDof)
+{
+  _newDof->mName = mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(),
+                                                      _newDof);
+
+  return _newDof->mName;
 }
 
 //==============================================================================
