@@ -2152,7 +2152,5 @@ double Skeleton::getPotentialEnergy() const
   return PE;
 }
 
-
-
 }  // namespace dynamics
 }  // namespace dart
