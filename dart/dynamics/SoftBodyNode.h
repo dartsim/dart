@@ -102,9 +102,10 @@ public:
   /// \brief
   size_t getNumPointMasses() const;
 
-
   /// \brief
   PointMass* getPointMass(size_t _idx);
+
+  /// \brief
   const PointMass* getPointMass(size_t _idx) const;
 
   /// \brief

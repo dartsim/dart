@@ -56,8 +56,8 @@
 namespace dart {
 namespace dynamics {
 
-
-template<typename T>
+//==============================================================================
+template <typename T>
 static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 {
   assert(_index < _vec.size());
@@ -147,9 +147,11 @@ BodyNode::~BodyNode()
 //==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
+  // If it already has the requested name, do nothing
   if(mName == _name)
     return mName;
 
+  // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
   if(mSkeleton)
   {
     mSkeleton->mNameMgrForBodyNodes.removeName(mName);
@@ -168,6 +170,8 @@ const std::string& BodyNode::setName(const std::string& _name)
     mName = _name;
   }
 
+  // Return the final name (which might have been altered by the Skeleton's
+  // NameManager)
   return mName;
 }
 

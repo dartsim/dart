@@ -73,21 +73,21 @@ public:
     mNameBeforeNumber(true),
     mPrefix(""), mInfix("("), mAffix(")") {}
 
-  std::string mDefaultName;
 
   /// Destructor
   virtual ~NameManager() {}
 
   /// Set a new pattern for name generation.
   ///
-  /// Use %s to indicate the base name and use %d to indicate where the number belongs.
-  /// The pattern must contain both a %s and a %d.
+  /// Use %s to indicate the base name and use %d to indicate where the number
+  /// belongs. The pattern must contain both a %s and a %d.
   ///
   /// Examples:
   /// "%s(%d)" : name -> name(1) -> name(2)
   /// "%d-%s" : name -> 1-name -> 2-name
   ///
-  /// returns false if the pattern was invalid (i.e. did not contain both %s and %d)
+  /// returns false if the pattern was invalid (i.e. did not contain b
+  /// oth %s and %d)
   bool setPattern(const std::string& newPattern)
   {
     size_t name_start = newPattern.find("%s");
@@ -129,11 +129,14 @@ public:
       newName = ss.str();
     } while (hasName(newName));
 
+    dtwarn << "The name '" << _name << "' is a duplicate, "
+           << "so it has been renamed to '" << newName << "'\n";
+
     return newName;
   }
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, T _obj)
+  std::string issueNewNameAndAdd(const std::string& _name, T* _obj)
   {
     const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
     const std::string& newName = issueNewName(checkEmpty);
@@ -143,7 +146,7 @@ public:
   }
 
   /// Add an object to the map
-  bool addName(const std::string& _name, const T& _obj)
+  bool addName(const std::string& _name, T* _obj)
   {
     if (_name.empty())
     {
@@ -157,7 +160,7 @@ public:
       return false;
     }
 
-    mMap.insert(std::pair<std::string, T>(_name, _obj));
+    mMap.insert(std::pair<std::string, T*>(_name, _obj));
 
     return true;
   }
@@ -165,7 +168,7 @@ public:
   /// Remove an object from the map based on its name
   bool removeName(const std::string& _name)
   {
-    typename std::map<std::string, T>::iterator it = mMap.find(_name);
+    typename std::map<std::string, T*>::iterator it = mMap.find(_name);
 
     if (it == mMap.end())
       return false;
@@ -187,7 +190,7 @@ public:
     return (mMap.find(_name) != mMap.end());
   }
 
-  /// Get the number of the objects
+  /// Get the number of the objects currently stored by the NameManager
   size_t getCount() const
   {
     return mMap.size();
@@ -198,9 +201,10 @@ public:
   ///   Name of the requested object
   /// \return
   ///   The object if it exists, or NULL if it does not exist
-  T getObject(const std::string& _name) const
+  T* getObject(const std::string& _name) const
   {
-    typename std::map<std::string, T>::const_iterator result = mMap.find(_name);
+    typename std::map<std::string, T*>::const_iterator result =
+        mMap.find(_name);
 
     if (result != mMap.end())
       return result->second;
@@ -208,18 +212,42 @@ public:
       return NULL;
   }
 
+  /// Set the name that will be provided to objects passed in with an empty
+  /// string for a name
+  void setDefaultName(const std::string& _defaultName)
+  {
+    mDefaultName = _defaultName;
+  }
+
+  /// Get the name that will be provided to objects passed in with an empty
+  /// string for a name
+  const std::string& getDefaultName() const
+  {
+    return mDefaultName;
+  }
+
 protected:
+  /// Map of objects that have been added to the NameManager
+  std::map<std::string, T*> mMap;
 
-  /// Name map
-  std::map<std::string, T> mMap;
+  /// String which will be used as a name for any object which is passed in with
+  /// an empty string name
+  std::string mDefaultName;
 
+  /// Internal variable used to arrange the text when resolving duplicate names
   bool mNameBeforeNumber;
+
+  /// The chunk of text that gets prepended to a duplicate name
   std::string mPrefix;
+
+  /// The chunk of text that comes between a duplicate name and its duplication
+  /// number
   std::string mInfix;
+
+  /// The chunk of text that gets appended to a duplicate name
   std::string mAffix;
 
 };
-
 
 } // namespace common
 } // namespace dart

@@ -108,14 +108,16 @@ const std::string& Skeleton::getName() const
 //==============================================================================
 const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode *_newNode)
 {
-  _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
+  _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(),
+                                                            _newNode);
   return _newNode->mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
 {
-  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
+  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
+                                                          _newJoint);
   return _newJoint->mName;
 }
 
@@ -142,7 +144,8 @@ void Skeleton::removeMarkersOfBodyNode(BodyNode *_node)
 
 const std::string& Skeleton::addEntryToMarkerNameMgr(Marker *_newMarker)
 {
-  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(_newMarker->getName(), _newMarker);
+  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
+        _newMarker->getName(), _newMarker);
   return _newMarker->mName;
 }
 

@@ -76,7 +76,8 @@ public:
   /// Destructor
   virtual ~BodyNode();
 
-  /// Set name. If the name is already taken, this will return an altered version which will be used by the Skeleton
+  /// Set name. If the name is already taken, this will return an altered
+  /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name);
 
   /// Return the name of the bodynode

@@ -115,7 +115,7 @@ TEST(NAMECHANGES, BASIC)
 
 TEST(NAMECHANGES, SETPATTERN)
 {
-  dart::common::NameManager<BodyNode*> test_mgr;
+  dart::common::NameManager<BodyNode> test_mgr;
 
   BodyNode* bn0 = new BodyNode("name");
   BodyNode* bn1 = new BodyNode("name");

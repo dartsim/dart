@@ -168,7 +168,9 @@ public:
 protected:
   /// Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
-  dart::common::NameManager<dynamics::Skeleton*> mNameMgrForSkeletons;
+
+  /// NameManager for keeping track of Skeletons
+  dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

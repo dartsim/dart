@@ -228,8 +228,11 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 {
   assert(_skeleton != NULL && "Invalid skeleton.");
 
-  if(NULL)
+  if(NULL == _skeleton)
+  {
+    dtwarn << "Attempting to add a nullptr Skeleton to the world!\n";
     return "";
+  }
 
   // If mSkeletons already has _skeleton, then we do nothing.
   if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) != mSkeletons.end())
