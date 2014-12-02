@@ -44,6 +44,7 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -188,6 +189,13 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
 void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;
+}
+
+//==============================================================================
+DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
+                                         size_t _indexInJoint)
+{
+  return new DegreeOfFreedom(this, _name, _indexInJoint);
 }
 
 //==============================================================================

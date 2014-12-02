@@ -355,11 +355,10 @@ const BodyNode* DegreeOfFreedom::getParentBodyNode() const
 //==============================================================================
 DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
                                  const std::string &_name,
-                                 size_t _indexInJoint,
-                                 size_t _indexInSkeleton) :
+                                 size_t _indexInJoint) :
   mName(_name),
   mIndexInJoint(_indexInJoint),
-  mIndexInSkeleton(_indexInSkeleton),
+  mIndexInSkeleton(0),
   mJoint(_joint)
 {
 

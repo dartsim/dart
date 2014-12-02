@@ -46,6 +46,7 @@ namespace dynamics {
 
 class BodyNode;
 class Skeleton;
+class DegreeOfFreedom;
 
 /// class SingleDofJoint
 class SingleDofJoint : public Joint
@@ -74,6 +75,12 @@ public:
   //----------------------------------------------------------------------------
 
   // TODO(JS): Not to use Eigen::VectorXd
+
+  // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t _index);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t _index) const;
 
   // Documentation inherited
   virtual void setPosition(size_t _index, double _position);
@@ -380,6 +387,8 @@ protected:
   // TODO(JS): Need?
   ///
   size_t mIndexInSkeleton;
+
+  DegreeOfFreedom* mDof;
 
   //----------------------------------------------------------------------------
   // Configuration

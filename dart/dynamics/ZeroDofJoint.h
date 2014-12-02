@@ -65,6 +65,12 @@ public:
   DEPRECATED(4.1) virtual size_t getDof() const;
 
   // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t) const;
+
+  // Documentation inherited
   virtual size_t getNumDofs() const;
 
   // Documentation inherited

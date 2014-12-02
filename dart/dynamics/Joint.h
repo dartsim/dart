@@ -55,6 +55,7 @@ namespace dynamics {
 
 class BodyNode;
 class Skeleton;
+class DegreeOfFreedom;
 
 /// class Joint
 class Joint
@@ -115,6 +116,14 @@ public:
 
   /// Get number of generalized coordinates
   DEPRECATED(4.1) virtual size_t getDof() const = 0;
+
+  /// Get an object to access the _index-th degree of freedom (generalized
+  /// coordinate) of this Joint
+  virtual DegreeOfFreedom* getDof(size_t _index) = 0;
+
+  /// Get an object to access the _index-th degree of freedom (generalized
+  /// coordinate) of this Joint
+  virtual const DegreeOfFreedom* getDof(size_t _index) const = 0;
 
   /// Get number of generalized coordinates
   virtual size_t getNumDofs() const = 0;
@@ -386,6 +395,12 @@ public:
 protected:
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
+
+  /// Create a DegreeOfFreedom pointer (because the DegreeOfFreedom class has a
+  /// protected constructor). You are responsible for memory management of the
+  /// pointer which is returned.
+  DegreeOfFreedom* createDofPointer(const std::string& _name,
+                                    size_t _indexInJoint);
 
   //----------------------------------------------------------------------------
   // Recursive algorithms

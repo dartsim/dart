@@ -40,6 +40,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -77,11 +78,13 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mTotalForce(0.0),
     mTotalImpulse(0.0)
 {
+  mDof = createDofPointer(_name, 0);
 }
 
 //==============================================================================
 SingleDofJoint::~SingleDofJoint()
 {
+  delete mDof;
 }
 
 //==============================================================================
@@ -120,6 +123,22 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
   }
 
   return mIndexInSkeleton;
+}
+
+//==============================================================================
+DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
+{
+  if(0 == _index)
+    return mDof;
+  return NULL;
+}
+
+//==============================================================================
+const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
+{
+  if(0 == _index)
+    return mDof;
+  return NULL;
 }
 
 //==============================================================================

@@ -222,8 +222,7 @@ protected:
   /// DegreeOfFreedom classes
   DegreeOfFreedom(Joint* _joint,
                   const std::string& _name,
-                  size_t _indexInJoint,
-                  size_t _indexInSkeleton);
+                  size_t _indexInJoint);
 
   /// Name of this DegreeOfFreedom
   std::string mName;

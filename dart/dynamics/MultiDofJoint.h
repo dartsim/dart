@@ -70,6 +70,12 @@ public:
   DEPRECATED(4.1) virtual size_t getDof() const;
 
   // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t _index);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t _index) const;
+
+  // Documentation inherited
   virtual size_t getNumDofs() const;
 
   // Documentation inherited
@@ -387,6 +393,9 @@ protected:
   ///
   Eigen::Matrix<size_t, DOF, 1> mIndexInSkeleton;
 
+  // TODO: Replace with std::array when we migrate to C++11
+  DegreeOfFreedom* mDofs[DOF];
+
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
@@ -546,6 +555,10 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
+  // Note: These should be created by the various MultiDofJoint implementations,
+  // because of differences in naming conventions for the degrees of freedom
+  for(size_t i=0; i<DOF; ++i)
+    mDofs[i] = NULL;
 }
 
 //==============================================================================
@@ -559,6 +572,24 @@ template <size_t DOF>
 size_t MultiDofJoint<DOF>::getDof() const
 {
   return getNumDofs();
+}
+
+//==============================================================================
+template <size_t DOF>
+DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
+{
+  if(_index < DOF)
+    return mDofs[_index];
+  return NULL;
+}
+
+//==============================================================================
+template <size_t DOF>
+const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
+{
+  if(_index < DOF)
+    return mDofs[_index];
+  return NULL;
 }
 
 //==============================================================================
