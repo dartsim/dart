@@ -428,20 +428,8 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
 //        ddq[k] = 0.0;
       }
 
-      skeleton->setPositions(q);
-      skeleton->setVelocities(dq);
-      skeleton->setAccelerations(ddq);
-      skeleton->computeForwardKinematics(true, true, true);
-
-      // Integrate state
-      skeleton->integratePositions(timeStep);
-      skeleton->integrateVelocities(timeStep);
-
-      // Compute forward kinematics
-      skeleton->computeForwardKinematics(true, true, true);
-
-      VectorXd qNext  = skeleton->getPositions();
-      VectorXd dqNext = skeleton->getVelocities();
+      VectorXd qNext  =  q +  dq * timeStep;
+      VectorXd dqNext = dq + ddq * timeStep;
 
       // For each body node
       for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)

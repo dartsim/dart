@@ -165,16 +165,10 @@ void JOINTS::kinematicsTest(Joint* _joint)
       numericJ.col(i) = Ji;
     }
 
-    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+    for (int i = 0; i < dof; ++i)
     {
-      // Skip this test for BallJoint and FreeJoint since Jacobian of BallJoint
-      // and FreeJoint is not obtained by the above method.
-    }
-    else
-    {
-      for (int i = 0; i < dof; ++i)
-        for (int j = 0; j < 6; ++j)
-          EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
+      for (int j = 0; j < 6; ++j)
+        EXPECT_NEAR(J.col(i)(j), numericJ.col(i)(j), JOINT_TOL);
     }
 
     //--------------------------------------------------------------------------
@@ -204,18 +198,10 @@ void JOINTS::kinematicsTest(Joint* _joint)
       numeric_dJ += dJ_dq * dq(i);
     }
 
-
-    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+    for (int i = 0; i < dof; ++i)
     {
-      // Skip this test for BallJoint and FreeJoint since time derivative of
-      // Jacobian of BallJoint and FreeJoint is not obtained by the above
-      // method.
-    }
-    else
-    {
-      for (int i = 0; i < dof; ++i)
-        for (int j = 0; j < 6; ++j)
-          EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
+      for (int j = 0; j < 6; ++j)
+        EXPECT_NEAR(dJ.col(i)(j), numeric_dJ.col(i)(j), JOINT_TOL);
     }
   }
 
@@ -402,5 +388,4 @@ int main(int argc, char* argv[])
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
 
