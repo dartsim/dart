@@ -49,17 +49,6 @@ FreeJoint::FreeJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mQ(Eigen::Isometry3d::Identity())
 {
-  // Jacobian
-  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
-  mJacobian.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
-  mJacobian.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
-  mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
-  assert(!math::isNan(mJacobian));
-
-  // Time derivative of Jacobian is always zero
 }
 
 //==============================================================================
@@ -68,26 +57,10 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
-void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
-{
-  Joint::setTransformFromChildBodyNode(_T);
-
-  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
-  mJacobian.col(3) = math::AdT(mT_ChildBodyToJoint, J.col(3));
-  mJacobian.col(4) = math::AdT(mT_ChildBodyToJoint, J.col(4));
-  mJacobian.col(5) = math::AdT(mT_ChildBodyToJoint, J.col(5));
-
-  assert(!math::isNan(mJacobian));
-}
-
-//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  mQ = mQ * math::expMap(mVelocities * _dt);
+  mQ.linear()      = mQ.linear() * math::expMapRot(mVelocities.head<3>() * _dt);
+  mQ.translation() = mVelocities.tail<3>() * _dt;
 
   mPositions = math::logMap(mQ);
 }
@@ -95,7 +68,8 @@ void FreeJoint::integratePositions(double _dt)
 //==============================================================================
 void FreeJoint::updateLocalTransform()
 {
-  mQ = math::expMap(mPositions);
+  mQ.linear()      = math::expMapRot(mPositions.head<3>());
+  mQ.translation() = mPositions.tail<3>();
 
   mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
 
@@ -105,14 +79,44 @@ void FreeJoint::updateLocalTransform()
 //==============================================================================
 void FreeJoint::updateLocalJacobian()
 {
-  // Do nothing since Jacobian is constant
+  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
+  J.topLeftCorner<3,3>() = math::expMapJac(mPositions.head<3>()).transpose();
+
+  mJacobian.leftCols<3>()
+      = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
+  mJacobian.rightCols<3>()
+      = math::AdTJacFixed(mT_ChildBodyToJoint
+                          * math::expAngular(-mPositions.head<3>()),
+                          J.rightCols<3>());
+
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
 void FreeJoint::updateLocalJacobianTimeDeriv()
 {
-  // Time derivative of Jacobian is constant
-  assert(mJacobianDeriv == (Eigen::Matrix6d::Zero()));
+  Eigen::Matrix<double, 6, 3> J;
+  J.topRows<3>()    = Eigen::Matrix3d::Zero();
+  J.bottomRows<3>() = Eigen::Matrix3d::Identity();
+
+  Eigen::Matrix<double, 6, 3> dJ;
+  dJ.topRows<3>()    = math::expMapJacDot(mPositions.head<3>(),
+                                          mVelocities.head<3>()).transpose();
+  dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  const Eigen::Isometry3d T = mT_ChildBodyToJoint
+                              * math::expAngular(-mPositions.head<3>());
+
+  mJacobianDeriv.leftCols<3>() = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
+  mJacobianDeriv.col(3)
+      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+                  math::AdT(T, J.col(0)));
+  mJacobianDeriv.col(4)
+      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+                  math::AdT(T, J.col(1)));
+  mJacobianDeriv.col(5)
+      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+                  math::AdT(T, J.col(2)));
 }
 
 }  // namespace dynamics
