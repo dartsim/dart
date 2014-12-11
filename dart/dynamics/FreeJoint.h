@@ -57,9 +57,6 @@ public:
   virtual ~FreeJoint();
 
   // Documentation inherited
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
-
-  // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const
   {
     return mWrench - mJacobian * mForces;
