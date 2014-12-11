@@ -60,7 +60,7 @@ public:
   /// Constructor that takes two bodies and the joint position in the frame of
   /// _body1
   /// \param[in] _jointPos Joint position expressed in world frame
-  BallJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2,
+  BallJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2,
                       const Eigen::Vector3d& _jointPos);
 
   /// Destructor

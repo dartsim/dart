@@ -106,7 +106,7 @@ const std::string& Skeleton::getName() const
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode *_newNode)
+const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
   _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(),
                                                             _newNode);
@@ -114,7 +114,7 @@ const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode *_newNode)
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
+const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 {
   _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
                                                           _newJoint);
@@ -122,7 +122,7 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
 }
 
 //==============================================================================
-void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode *_newNode)
+void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 {
   // Note: This doesn't need the same checks as BodyNode and Joint, because
   // its name has already been resolved against all the BodyNodes, which includes
@@ -130,22 +130,25 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode *_newNode)
   mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
 }
 
-void Skeleton::addMarkersOfBodyNode(BodyNode *_node)
+//==============================================================================
+void Skeleton::addMarkersOfBodyNode(BodyNode* _node)
 {
   for(size_t i=0; i<_node->getNumMarkers(); ++i)
     addEntryToMarkerNameMgr(_node->getMarker(i));
 }
 
-void Skeleton::removeMarkersOfBodyNode(BodyNode *_node)
+//==============================================================================
+void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
 {
   for(size_t i=0; i<_node->getNumMarkers(); ++i)
     mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
 }
 
-const std::string& Skeleton::addEntryToMarkerNameMgr(Marker *_newMarker)
+//==============================================================================
+const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 {
   _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
-        _newMarker->getName(), _newMarker);
+      _newMarker->getName(), _newMarker);
   return _newMarker->mName;
 }
 
@@ -308,7 +311,7 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(const std::string &_name)
+BodyNode* Skeleton::getBodyNode(const std::string& _name)
 {
   return mNameMgrForBodyNodes.getObject(_name);
 }
@@ -325,7 +328,7 @@ SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
   return mNameMgrForSoftBodyNodes.getObject(_name);
 }
 
-const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string &_name) const
+const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
   return mNameMgrForSoftBodyNodes.getObject(_name);
 }
@@ -347,7 +350,7 @@ const Joint* Skeleton::getJoint(size_t _idx) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string &_name)
+Joint* Skeleton::getJoint(const std::string& _name)
 {
   return mNameMgrForJoints.getObject(_name);
 }
@@ -365,7 +368,7 @@ Marker* Skeleton::getMarker(const std::string& _name)
 }
 
 //==============================================================================
-const Marker* Skeleton::getMarker(const std::string &_name) const
+const Marker* Skeleton::getMarker(const std::string& _name) const
 {
   return const_cast<Skeleton*>(this)->getMarker(_name);
 }

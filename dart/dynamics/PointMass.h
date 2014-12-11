@@ -81,6 +81,7 @@ public:
 
   ///
   PointMass* getConnectedPointMass(size_t _idx);
+
   ///
   const PointMass* getConnectedPointMass(size_t _idx) const;
 
@@ -279,6 +280,7 @@ public:
 
   ///
   SoftBodyNode* getParentSoftBodyNode();
+
   ///
   const SoftBodyNode* getParentSoftBodyNode() const;
 

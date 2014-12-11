@@ -77,7 +77,9 @@ const std::string& Joint::setName(const std::string& _name) {
     mSkeleton->addEntryToJointNameMgr(this);
   }
   else
+  {
     mName = _name;
+  }
 
   return mName;
 }

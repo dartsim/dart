@@ -51,7 +51,7 @@ class Skeleton;
 
 class Controller {
 public:
-  Controller(dart::dynamics::Skeleton*_skel,
+  Controller(dart::dynamics::Skeleton* _skel,
              double _t);
   virtual ~Controller();
 

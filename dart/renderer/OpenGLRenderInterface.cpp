@@ -388,7 +388,7 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
     glPopMatrix();
 }
 
-void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
+void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) {
     if(_mesh) {
         glPushMatrix();
         glScaled(_scale(0), _scale(1), _scale(2));
@@ -401,7 +401,7 @@ void OpenGLRenderInterface::drawList(GLuint index) {
     glCallList(index);
 }
 
-void OpenGLRenderInterface::compileList(dynamics::Skeleton *_skel) {
+void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel) {
     if(_skel == 0)
         return;
 
@@ -410,7 +410,7 @@ void OpenGLRenderInterface::compileList(dynamics::Skeleton *_skel) {
     }
 }
 
-void OpenGLRenderInterface::compileList(dynamics::BodyNode *_node) {
+void OpenGLRenderInterface::compileList(dynamics::BodyNode* _node) {
     if(_node == 0)
         return;
 
@@ -421,7 +421,7 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode *_node) {
 }
 
 //FIXME: Use polymorphism instead of switch statements
-void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
+void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
     if(_shape == 0)
         return;
 
@@ -452,7 +452,7 @@ void OpenGLRenderInterface::compileList(dynamics::Shape *_shape) {
     }
 }
 
-GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh) {
+GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh) {
     if(!_mesh)
         return 0;
 
@@ -466,7 +466,7 @@ GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const a
     return index;
 }
 
-void OpenGLRenderInterface::draw(dynamics::Skeleton *_skel, bool _vizCol, bool _colMesh) {
+void OpenGLRenderInterface::draw(dynamics::Skeleton* _skel, bool _vizCol, bool _colMesh) {
     if(_skel == 0)
         return;
 
@@ -475,7 +475,7 @@ void OpenGLRenderInterface::draw(dynamics::Skeleton *_skel, bool _vizCol, bool _
     }
 }
 
-void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _colMesh) {
+void OpenGLRenderInterface::draw(dynamics::BodyNode* _node, bool _vizCol, bool _colMesh) {
     if(_node == 0)
         return;
 
@@ -509,7 +509,7 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode *_node, bool _vizCol, bool _
 }
 
 //FIXME: Refactor this to use polymorphism.
-void OpenGLRenderInterface::draw(dynamics::Shape *_shape) {
+void OpenGLRenderInterface::draw(dynamics::Shape* _shape) {
     if(_shape == 0)
         return;
 
@@ -580,11 +580,11 @@ void OpenGLRenderInterface::setPenColor(const Eigen::Vector3d& _col) {
     glColor4d(_col[0], _col[1], _col[2], 1.0);
 }
 
-void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels) {
+void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) {
 
 }
 
-void OpenGLRenderInterface::saveToImage(const char *_filename, DecoBufferType _buffType) {
+void OpenGLRenderInterface::saveToImage(const char* _filename, DecoBufferType _buffType) {
 
 }
 

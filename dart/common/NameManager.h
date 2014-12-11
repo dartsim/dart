@@ -57,7 +57,7 @@ namespace common {
 /// std::string name = "Link";
 ///
 /// if (!nameMgr.hasName(name)
-///   nameMgr.addName(name);  // "Link"
+///   nameMgr.addName(name, bodyNode);  // "Link"
 /// else
 ///   name = nameMgr.issueNewNameAndAdd(name, bodyNode);  // "Link1"
 ///
@@ -68,11 +68,10 @@ class NameManager
 {
 public:
   /// Constructor
-  NameManager(const std::string& _defaultName="default") :
-    mDefaultName(_defaultName),
-    mNameBeforeNumber(true),
-    mPrefix(""), mInfix("("), mAffix(")") {}
-
+  NameManager(const std::string& _defaultName = "default")
+    : mDefaultName(_defaultName),
+      mNameBeforeNumber(true),
+      mPrefix(""), mInfix("("), mAffix(")") {}
 
   /// Destructor
   virtual ~NameManager() {}
@@ -88,10 +87,10 @@ public:
   ///
   /// returns false if the pattern was invalid (i.e. did not contain b
   /// oth %s and %d)
-  bool setPattern(const std::string& newPattern)
+  bool setPattern(const std::string& _newPattern)
   {
-    size_t name_start = newPattern.find("%s");
-    size_t number_start = newPattern.find("%d");
+    size_t name_start = _newPattern.find("%s");
+    size_t number_start = _newPattern.find("%d");
 
     if(name_start == std::string::npos || number_start == std::string::npos)
       return false;
@@ -104,9 +103,9 @@ public:
     size_t prefix_end = std::min(name_start, number_start);
     size_t infix_end = std::max(name_start, number_start);
 
-    mPrefix = newPattern.substr(0, prefix_end);
-    mInfix = newPattern.substr(prefix_end+2, infix_end-prefix_end-2);
-    mAffix = newPattern.substr(infix_end+2);
+    mPrefix = _newPattern.substr(0, prefix_end);
+    mInfix = _newPattern.substr(prefix_end+2, infix_end-prefix_end-2);
+    mAffix = _newPattern.substr(infix_end+2);
 
     return true;
   }
@@ -246,7 +245,6 @@ protected:
 
   /// The chunk of text that gets appended to a duplicate name
   std::string mAffix;
-
 };
 
 } // namespace common

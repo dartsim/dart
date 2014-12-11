@@ -72,7 +72,7 @@ void ConvertFloatToDec(float _f, char* _bytes) {
 }
 
 
-bool loadC3DFile(const char *_fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int *_nFrame, int *_nMarker, double *_freq) {
+bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* _nFrame, int* _nMarker, double* _freq) {
     char buf[C3D_REC_SIZE];
     FILE *file;
     Eigen::Vector3d v;
@@ -169,7 +169,7 @@ bool loadC3DFile(const char *_fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int *
     return true;
 }
 
-bool saveC3DFile(const char *_fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int _nFrame, int _nMarker, double _freq) {
+bool saveC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int _nFrame, int _nMarker, double _freq) {
     FILE *file;
     Eigen::Vector3d v;
     c3d_head hdr;

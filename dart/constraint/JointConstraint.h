@@ -52,10 +52,10 @@ class JointConstraint : public Constraint
 {
 public:
   /// Contructor
-  explicit JointConstraint(dynamics::BodyNode *_body);
+  explicit JointConstraint(dynamics::BodyNode* _body);
 
   /// Contructor
-  JointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode *_body2);
+  JointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2);
 
   /// Destructor
   virtual ~JointConstraint();

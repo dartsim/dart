@@ -382,20 +382,20 @@ const Skeleton* BodyNode::getSkeleton() const
 //==============================================================================
 void BodyNode::setParentJoint(Joint* _joint)
 {
-  if(_joint->getChildBodyNode())
+  if (_joint->getChildBodyNode())
   {
     assert(_joint->getChildBodyNode() != this);
     // TODO: How should we handle this scenario? (The Joint that was passed in
     // already has some other child BodyNode!)
   }
 
-  if(mSkeleton)
+  if (mSkeleton)
   {
     mSkeleton->mNameMgrForJoints.removeName(mParentJoint->getName());
     mSkeleton->addEntryToJointNameMgr(_joint);
   }
 
-  if(mParentJoint)
+  if (mParentJoint)
     mParentJoint->mChildBodyNode = NULL;
 
   mParentJoint = _joint;

@@ -63,7 +63,7 @@ void RenderInterface::setDefaultLight()
 {
 }
 
-void RenderInterface::addLight(Light *_light)
+void RenderInterface::addLight(Light* _light)
 {
     mLightList.push_back(_light);
 }
@@ -132,7 +132,7 @@ void RenderInterface::drawEllipsoid(const Eigen::Vector3d& _size)
 {
 }
 
-void RenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh)
+void RenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh)
 {
 }
 
@@ -140,7 +140,7 @@ void RenderInterface::drawList(unsigned int indeX)
 {
 }
 
-unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh)
+unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh)
 {
     return 0;
 }
@@ -162,12 +162,12 @@ void RenderInterface::setPenColor(const Eigen::Vector3d& _col)
 }
 
 
-void RenderInterface::saveToImage(const char *_filename, DecoBufferType _buffType)
+void RenderInterface::saveToImage(const char* _filename, DecoBufferType _buffType)
 {
 
 }
 
-void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels)
+void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels)
 {
 
 }
