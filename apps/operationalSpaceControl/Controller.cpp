@@ -36,11 +36,6 @@
 
 #include "apps/operationalSpaceControl/Controller.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/simulation/World.h"
-
 //==============================================================================
 Controller::Controller(dart::dynamics::Skeleton* _robot,
                        dart::dynamics::BodyNode* _endEffector)

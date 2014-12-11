@@ -7,6 +7,9 @@
  * bidirectional, connect and etc.
  */
 
+#ifndef DART_PLANNING_PATHPLANNER_H_
+#define DART_PLANNING_PATHPLANNER_H_
+
 #include <Eigen/Core>
 #include <iostream>
 #include <limits>
@@ -61,7 +64,7 @@ public:
   }
 
   /// Plan a path from a _set_ of start configurations to a _set_ of goals
-  bool planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs, const std::vector<Eigen::VectorXd> &start,
+  bool planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const std::vector<Eigen::VectorXd> &start,
     const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
 
 private:
@@ -84,11 +87,11 @@ private:
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> &dofs,
+bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
-  Eigen::VectorXd savedConfiguration = robot->getConfigs(dofs);
+  Eigen::VectorXd savedConfiguration = robot->getPositionSegment(dofs);
 
   // ====================================================================
   // Check for collisions in the start and goal configurations
@@ -96,7 +99,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   // Sift through the possible start configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleStart;
   for(unsigned int i = 0; i < start.size(); i++) {
-    robot->setPositions(dofs, start[i]);
+    robot->setPositionSegment(dofs, start[i]);
     if(!world->checkCollision()) feasibleStart.push_back(start[i]);
   }
 
@@ -109,7 +112,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   // Sift through the possible goal configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleGoal;
   for(unsigned int i = 0; i < goal.size(); i++) {
-    robot->setPositions(dofs, goal[i]);
+    robot->setPositionSegment(dofs, goal[i]);
     if(!world->checkCollision()) feasibleGoal.push_back(goal[i]);
   }
 
@@ -132,7 +135,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<int> 
   }
 
   // Restore previous robot configuration
-  robot->setPositions(dofs, savedConfiguration);
+  robot->setPositionSegment(dofs, savedConfiguration);
 
   return result;
 }
@@ -256,3 +259,4 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 } // namespace planning
 } // namespace dart
 
+#endif  // DART_PLANNING_PATHPLANNER_H_

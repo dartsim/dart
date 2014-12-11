@@ -42,12 +42,8 @@
 
 #include <iostream>
 
-#include "dart/math/Helpers.h"
+#include "dart/dart.h"
 
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
 #include "apps/mixedChain/MyWindow.h"
 
 int main(int argc, char* argv[])

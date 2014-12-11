@@ -36,9 +36,6 @@
 
 #include "apps/rigidLoop/MyWindow.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-
 void MyWindow::timeStepping()
 {
     Eigen::VectorXd damping = computeDamping();

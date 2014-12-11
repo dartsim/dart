@@ -42,12 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Skeleton;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/dart.h"
 
 class Controller {
 public:

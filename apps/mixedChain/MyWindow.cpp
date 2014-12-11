@@ -42,12 +42,6 @@
 
 #include "apps/mixedChain/MyWindow.h"
 
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/simulation/World.h"
-
 #define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;
 

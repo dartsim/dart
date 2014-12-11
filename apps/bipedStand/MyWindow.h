@@ -42,7 +42,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/gui/SimWindow.h"
+#include "dart/dart.h"
+
 #include "apps/bipedStand/Controller.h"
 
 class MyWindow : public dart::gui::SimWindow {

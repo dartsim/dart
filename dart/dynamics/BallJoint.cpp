@@ -49,39 +49,11 @@ BallJoint::BallJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mR(Eigen::Isometry3d::Identity())
 {
-  // Jacobian
-  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.topRows<3>() = Eigen::Matrix3d::Identity();
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J.col(0));
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J.col(1));
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J.col(2));
-  assert(!math::isNan(mJacobian));
-
-  // Time derivative of Jacobian is always zero
 }
 
 //==============================================================================
 BallJoint::~BallJoint()
 {
-}
-
-//==============================================================================
-void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
-{
-  Joint::setTransformFromChildBodyNode(_T);
-
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
-  J0[0] = 1.0;
-  J1[1] = 1.0;
-  J2[2] = 1.0;
-
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-
-  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
@@ -105,14 +77,25 @@ void BallJoint::updateLocalTransform()
 //==============================================================================
 void BallJoint::updateLocalJacobian()
 {
-  // Do nothing since the Jacobian is constant
+  Eigen::Matrix<double, 6, 3> J;
+  J.topRows<3>()    = math::expMapJac(mPositions).transpose();
+  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  mJacobian = math::AdTJacFixed(mT_ChildBodyToJoint, J);
+
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
 void BallJoint::updateLocalJacobianTimeDeriv()
 {
-  // Time derivative of ball joint is always zero
-  assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));
+  Eigen::Matrix<double, 6, 3> dJ;
+  dJ.topRows<3>()    = math::expMapJacDot(mPositions, mVelocities).transpose();
+  dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  mJacobianDeriv = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
+
+  assert(!math::isNan(mJacobianDeriv));
 }
 
 }  // namespace dynamics

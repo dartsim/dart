@@ -36,12 +36,6 @@
 
 #include "apps/jointConstraints/MyWindow.h"
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/gui/GLFuncs.h"
-
 using namespace dart;
 using namespace math;
 using namespace dynamics;

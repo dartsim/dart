@@ -475,10 +475,10 @@ protected:
   // For recursive dynamics algorithms
   //----------------------------------------------------------------------------
 
-  /// Spatial Jacobian
+  /// Spatial Jacobian expressed in the child body frame
   Eigen::Vector6d mJacobian;
 
-  /// Time derivative of spatial Jacobian
+  /// Time derivative of spatial Jacobian expressed in the child body frame
   Eigen::Vector6d mJacobianDeriv;
 
   /// Inverse of projected articulated inertia

@@ -306,7 +306,8 @@ void Win3D::capturing() {
     accPerspective(mPersp,
                    static_cast<double>(mWinWidth)
                    / static_cast<double>(mWinHeight),
-                   0.1, 10.0, j4[jitter].x, j4[jitter].y, 0.0, 0.0, 1.0);
+                   0.1, 10.0, Jitter::j4[jitter].x, Jitter::j4[jitter].y,
+                   0.0, 0.0, 1.0);
     gluLookAt(mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, 0.0, 1.0, 0.0);
 
     initGL();
