@@ -97,7 +97,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
 /**
  * @function setPackageDirectory
  */
-void DartLoader::setPackageDirectory(const std::string &_urdfPackageDirectory)
+void DartLoader::setPackageDirectory(const std::string& _urdfPackageDirectory)
 {
   mPackageDirectory = _urdfPackageDirectory;
 }
@@ -105,7 +105,7 @@ void DartLoader::setPackageDirectory(const std::string &_urdfPackageDirectory)
 /**
  * @function getFullFilePath
  */
-std::string DartLoader::getFullFilePath(const std::string &_filename,
+std::string DartLoader::getFullFilePath(const std::string& _filename,
                                         const std::string& _rootToSkelPath) const
 {
   std::string fullpath = _filename;
@@ -132,7 +132,7 @@ std::string DartLoader::getFullFilePath(const std::string &_filename,
 /**
  * @function parseWorldToEntityPaths
  */
-void DartLoader::parseWorldToEntityPaths(const std::string &_xml_string) {
+void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string) {
     
     TiXmlDocument xml_doc;
     xml_doc.Parse(_xml_string.c_str());

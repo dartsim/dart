@@ -72,8 +72,11 @@ public:
             const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
             bool _useDefaultColor = true) const;
 
-  /// \brief Get BodyNode this Marker belongs to
-  BodyNode* getBodyNode() const;
+  /// Get the BodyNode this Marker belongs to
+  BodyNode* getBodyNode();
+
+  /// Get the (const) BodyNode this Marker belongs to
+  const BodyNode* getBodyNode() const;
 
   /// \brief
   const Eigen::Vector3d& getLocalPosition() const;
@@ -105,6 +108,8 @@ public:
 
   /// \brief
   void setConstraintType(ConstraintType _type);
+
+  friend class Skeleton;
 
 protected:
   /// \brief BodyNode this marker belongs to

@@ -83,26 +83,26 @@ public:
     virtual void transform(const Eigen::Isometry3d& _transform); //glMultMatrix
     virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
-    void compileList(dynamics::Skeleton *_skel);
-    void compileList(dynamics::BodyNode *_node);
-    void compileList(dynamics::Shape *_shape);
-    GLuint compileList(const Eigen::Vector3d& _scale, const aiScene *_mesh);
+    void compileList(dynamics::Skeleton* _skel);
+    void compileList(dynamics::BodyNode* _node);
+    void compileList(dynamics::Shape* _shape);
+    GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
-    virtual void draw(dynamics::Skeleton *_skel, bool _vizCol = false, bool _colMesh = false);
-    virtual void draw(dynamics::BodyNode *_node, bool _vizCol = false, bool _colMesh = false);
-    virtual void draw(dynamics::Shape *_shape);
+    virtual void draw(dynamics::Skeleton* _skel, bool _vizCol = false, bool _colMesh = false);
+    virtual void draw(dynamics::BodyNode* _node, bool _vizCol = false, bool _colMesh = false);
+    virtual void draw(dynamics::Shape* _shape);
 
     virtual void drawEllipsoid(const Eigen::Vector3d& _size);
     virtual void drawCube(const Eigen::Vector3d& _size);
     virtual void drawCylinder(double _radius, double _height);
-    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh);
+    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
     virtual void drawList(GLuint index);
 
     virtual void setPenColor(const Eigen::Vector4d& _col);
     virtual void setPenColor(const Eigen::Vector3d& _col);
 
-    virtual void saveToImage(const char *_filename, DecoBufferType _buffType = BT_Back);
-    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels);
+    virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back);
+    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
 
 private:
     void color4_to_float4(const aiColor4D *c, float f[4]);

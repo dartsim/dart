@@ -213,8 +213,8 @@ btCollisionObject*BulletCollisionNode::getBulletCollisionObject(int _i)
 }
 
 //==============================================================================
-btConvexTriangleMeshShape*_createMesh(const Eigen::Vector3d& _scale,
-                                      const aiScene* _mesh)
+btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
+                                       const aiScene* _mesh)
 {
   btTriangleMesh* btMesh = new btTriangleMesh();
 

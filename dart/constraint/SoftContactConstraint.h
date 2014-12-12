@@ -161,11 +161,19 @@ private:
   Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
-  /// in _softBodyNode
+  /// in _softBodyNode.
   dynamics::PointMass* selectCollidingPointMass(
+      dynamics::SoftBodyNode* _softBodyNode,
+      const Eigen::Vector3d& _point,
+      int _faceId) const;
+
+  /// Find the nearest point mass from _point in a face, of which id is _faceId
+  /// in _softBodyNode. Returns a pointer to a const, and is usable with a const
+  /// SoftBodyNode.
+  const dynamics::PointMass* selectCollidingPointMass(
       const dynamics::SoftBodyNode* _softBodyNode,
       const Eigen::Vector3d& _point,
-      int _faceId);
+      int _faceId) const;
 
 private:
   /// Time step

@@ -57,7 +57,7 @@ namespace urdf{
   /**
    * @function parseWorldURDF
    */
-  World* parseWorldURDF(const std::string &_xml_string, std::string _root_to_world_path) {
+  World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world_path) {
     
     World* world = new World();
     TiXmlDocument xml_doc;

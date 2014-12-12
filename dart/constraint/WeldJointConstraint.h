@@ -54,7 +54,7 @@ public:
   explicit WeldJointConstraint(dynamics::BodyNode* _body);
 
   /// Constructor that takes two bodies
-  WeldJointConstraint(dynamics::BodyNode *_body1, dynamics::BodyNode* _body2);
+  WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2);
 
   /// Destructor
   virtual ~WeldJointConstraint();

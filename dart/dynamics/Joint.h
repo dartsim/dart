@@ -67,13 +67,28 @@ public:
   virtual ~Joint();
 
   /// Set joint name
-  void setName(const std::string& _name);
+  const std::string& setName(const std::string& _name);
 
   /// Get joint name
   const std::string& getName() const;
 
-  /// Get skeleton that this joint belongs to. The skeleton set by init().
-  Skeleton* getSkeleton() const;
+  /// Get the child BodyNode of this Joint
+  BodyNode* getChildBodyNode();
+
+  /// Get the (const) child BodyNode of this Joint
+  const BodyNode* getChildBodyNode() const;
+
+  /// Get the parent BodyNode of this Joint
+  BodyNode* getParentBodyNode();
+
+  /// Get the (const) parent BodyNode of this Joint
+  const BodyNode* getParentBodyNode() const;
+
+  /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
+  Skeleton* getSkeleton();
+
+  /// Get the (const) Skeleton that this Joint belongs to.
+  const Skeleton* getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
@@ -503,6 +518,9 @@ protected:
 protected:
   /// Joint name
   std::string mName;
+
+  /// Child BodyNode pointer that this Joint belongs to
+  BodyNode* mChildBodyNode;
 
   /// Skeleton pointer that this joint belongs to
   Skeleton* mSkeleton;

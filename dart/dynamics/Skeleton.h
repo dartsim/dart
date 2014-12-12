@@ -45,6 +45,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
+#include "dart/common/NameManager.h"
 
 namespace dart {
 namespace renderer {
@@ -147,29 +148,53 @@ public:
   /// Get number of soft body nodes.
   size_t getNumSoftBodyNodes() const;
 
-  /// Get root body node
-  BodyNode* getRootBodyNode() const;
+  /// Get root BodyNode
+  BodyNode* getRootBodyNode();
+
+  /// Get const root BodyNode
+  const BodyNode* getRootBodyNode() const;
 
   /// Get body node whose index is _idx
-  BodyNode* getBodyNode(size_t _idx) const;
+  BodyNode* getBodyNode(size_t _idx);
 
-  /// Get soft body node.
-  SoftBodyNode* getSoftBodyNode(size_t _idx) const;
+  /// Get const body node whose index is _idx
+  const BodyNode* getBodyNode(size_t _idx) const;
+
+  /// Get soft body node whose index is _idx
+  SoftBodyNode* getSoftBodyNode(size_t _idx);
+
+  /// Get const soft body node whose index is _idx
+  const SoftBodyNode* getSoftBodyNode(size_t _idx) const;
 
   /// Get body node whose name is _name
-  BodyNode* getBodyNode(const std::string& _name) const;
+  BodyNode* getBodyNode(const std::string& _name);
 
-  /// Get soft body node.
-  SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
+  /// Get const body node whose name is _name
+  const BodyNode* getBodyNode(const std::string& _name) const;
+
+  /// Get soft body node whose name is _name
+  SoftBodyNode* getSoftBodyNode(const std::string& _name);
+
+  /// Get const soft body node whose name is _name
+  const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   /// Get joint whose index is _idx
-  Joint* getJoint(size_t _idx) const;
+  Joint* getJoint(size_t _idx);
+
+  /// Get const joint whose index is _idx
+  const Joint* getJoint(size_t _idx) const;
 
   /// Get joint whose name is _name
-  Joint* getJoint(const std::string& _name) const;
+  Joint* getJoint(const std::string& _name);
+
+  /// Get const joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
 
   /// Get marker whose name is _name
-  Marker* getMarker(const std::string& _name) const;
+  Marker* getMarker(const std::string& _name);
+
+  /// Get const marker whose name is _name
+  const Marker* getMarker(const std::string& _name) const;
 
   //----------------------------------------------------------------------------
   // Initialization
@@ -561,6 +586,12 @@ public:
   /// Compute recursion part B of hybrid dynamics
 //  void computeHybridDynamicsRecursionB();
 
+  //----------------------------------------------------------------------------
+  // Friendship
+  //----------------------------------------------------------------------------
+  friend class BodyNode;
+  friend class Joint;
+
 protected:
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
@@ -606,6 +637,24 @@ protected:
 //  /// Update damping force vector.
 //  virtual void updateDampingForceVector();
 
+  /// Add a BodyNode to the BodyNode NameManager
+  const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
+
+  /// Add a Joint to to the Joint NameManager
+  const std::string& addEntryToJointNameMgr(Joint* _newJoint);
+
+  /// Add a SoftBodyNode to the SoftBodyNode NameManager
+  void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
+
+  /// Add entries for all the Markers belonging to BodyNode _node
+  void addMarkersOfBodyNode(BodyNode* _node);
+
+  /// Remove entries for all the Markers belonging to BodyNode _node
+  void removeMarkersOfBodyNode(BodyNode* _node);
+
+  /// Add a Marker entry
+  const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
+
 protected:
   /// Name
   std::string mName;
@@ -627,6 +676,18 @@ protected:
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
+
+  /// NameManager for tracking BodyNodes
+  dart::common::NameManager<BodyNode> mNameMgrForBodyNodes;
+
+  /// NameManager for tracking Joints
+  dart::common::NameManager<Joint> mNameMgrForJoints;
+
+  /// NameManager for tracking SoftBodyNodes
+  dart::common::NameManager<SoftBodyNode> mNameMgrForSoftBodyNodes;
+
+  /// NameManager for tracking Markers
+  dart::common::NameManager<Marker> mNameMgrForMarkers;
 
   /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are

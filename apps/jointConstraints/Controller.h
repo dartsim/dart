@@ -46,7 +46,7 @@
 class Controller
 {
 public:
-  Controller(dart::dynamics::Skeleton*_skel,
+  Controller(dart::dynamics::Skeleton* _skel,
              dart::constraint::ConstraintSolver* _collisionSolver, double _t);
   virtual ~Controller() {}
 
@@ -63,7 +63,7 @@ public:
   { mConstrForces = _constrForce; }
 
 protected:
-  bool computeCoP(dart::dynamics::BodyNode *_node, Eigen::Vector3d *_cop);
+  bool computeCoP(dart::dynamics::BodyNode* _node, Eigen::Vector3d* _cop);
   Eigen::Vector3d evalLinMomentum(const Eigen::VectorXd& _dofVel);
   Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
   Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum,

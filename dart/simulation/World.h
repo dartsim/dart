@@ -49,6 +49,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Timer.h"
+#include "dart/common/NameManager.h"
 #include "dart/simulation/Recording.h"
 
 namespace dart {
@@ -102,7 +103,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the indexed skeleton
-  dynamics::Skeleton* getSkeleton(int _index) const;
+  dynamics::Skeleton* getSkeleton(size_t _index) const;
 
   /// Find body node by name
   /// \param[in] The name of body node looking for.
@@ -114,7 +115,7 @@ public:
   size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
-  void addSkeleton(dynamics::Skeleton* _skeleton);
+  std::string addSkeleton(dynamics::Skeleton* _skeleton);
 
   /// Remove a skeleton in this world
   void removeSkeleton(dynamics::Skeleton* _skeleton);
@@ -167,6 +168,9 @@ public:
 protected:
   /// Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
+
+  /// NameManager for keeping track of Skeletons
+  dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

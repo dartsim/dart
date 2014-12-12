@@ -1022,18 +1022,19 @@ void SoftContactConstraint::uniteSkeletons()
 }
 
 //==============================================================================
-dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
-    const dynamics::SoftBodyNode* _softBodyNode,
+template <typename PointMassT, typename SoftBodyNodeT>
+static PointMassT selectCollidingPointMassT(
+    SoftBodyNodeT _softBodyNode,
     const Eigen::Vector3d& _point,
     int _faceId)
 {
-  dynamics::PointMass* pointMass = NULL;
+  PointMassT pointMass = NULL;
 
   const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
 
-  dynamics::PointMass* pm0 = _softBodyNode->getPointMass(face[0]);
-  dynamics::PointMass* pm1 = _softBodyNode->getPointMass(face[1]);
-  dynamics::PointMass* pm2 = _softBodyNode->getPointMass(face[2]);
+  PointMassT pm0 = _softBodyNode->getPointMass(face[0]);
+  PointMassT pm1 = _softBodyNode->getPointMass(face[1]);
+  PointMassT pm2 = _softBodyNode->getPointMass(face[2]);
 
   const Eigen::Vector3d& pos1 = pm0->getWorldPosition();
   const Eigen::Vector3d& pos2 = pm1->getWorldPosition();
@@ -1059,6 +1060,28 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
   }
 
   return pointMass;
+}
+
+//==============================================================================
+const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
+    const dynamics::SoftBodyNode* _softBodyNode,
+    const Eigen::Vector3d& _point,
+    int _faceId) const
+{
+  return selectCollidingPointMassT<const dynamics::PointMass*,
+                                   const dynamics::SoftBodyNode*>(
+        _softBodyNode, _point, _faceId);
+}
+
+//==============================================================================
+dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
+    dynamics::SoftBodyNode* _softBodyNode,
+    const Eigen::Vector3d& _point,
+    int _faceId) const
+{
+  return selectCollidingPointMassT<dynamics::PointMass*,
+                                   dynamics::SoftBodyNode*>(
+        _softBodyNode, _point, _faceId);
 }
 
 }  // namespace constraint

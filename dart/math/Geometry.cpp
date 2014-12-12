@@ -437,7 +437,7 @@ Eigen::Vector3d rotatePoint(const Eigen::Quaterniond& _q,
 
 #define EPSILON_EXPMAP_THETA 1.0e-3
 
-Eigen::Matrix3d expMapRot(const Eigen::Vector3d &_q) {
+Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _q) {
   double theta = _q.norm();
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
@@ -454,7 +454,7 @@ Eigen::Matrix3d expMapRot(const Eigen::Vector3d &_q) {
   return R;
 }
 
-Eigen::Matrix3d expMapJac(const Eigen::Vector3d &_q) {
+Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _q) {
   double theta = _q.norm();
 
   Eigen::Matrix3d J = Eigen::Matrix3d::Zero();

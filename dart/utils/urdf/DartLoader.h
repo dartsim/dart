@@ -44,7 +44,7 @@ public:
 
 private:
     std::string getFullFilePath(const std::string& _filename, const std::string& _rootToSkelPath) const;
-    void parseWorldToEntityPaths(const std::string &_xml_string);
+    void parseWorldToEntityPaths(const std::string& _xml_string);
 
     dynamics::Skeleton* modelInterfaceToSkeleton(const urdf::ModelInterface* _model, std::string _rootToSkelPath = "");
     void createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent, std::string _rootToSkelPath);

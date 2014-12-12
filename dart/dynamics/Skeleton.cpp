@@ -60,6 +60,9 @@ Skeleton::Skeleton(const std::string& _name)
     mDof(0),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
+    mNameMgrForBodyNodes("BodyNode"),
+    mNameMgrForJoints("Joint"),
+    mNameMgrForSoftBodyNodes("BodyNode"),
     mIsMobile(true),
     mTimeStep(0.001),
     mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
@@ -100,6 +103,53 @@ void Skeleton::setName(const std::string& _name)
 const std::string& Skeleton::getName() const
 {
   return mName;
+}
+
+//==============================================================================
+const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
+{
+  _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(),
+                                                            _newNode);
+  return _newNode->mName;
+}
+
+//==============================================================================
+const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
+{
+  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
+                                                          _newJoint);
+  return _newJoint->mName;
+}
+
+//==============================================================================
+void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
+{
+  // Note: This doesn't need the same checks as BodyNode and Joint, because
+  // its name has already been resolved against all the BodyNodes, which includes
+  // all SoftBodyNodes.
+  mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
+}
+
+//==============================================================================
+void Skeleton::addMarkersOfBodyNode(BodyNode* _node)
+{
+  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+    addEntryToMarkerNameMgr(_node->getMarker(i));
+}
+
+//==============================================================================
+void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
+{
+  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+    mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
+}
+
+//==============================================================================
+const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
+{
+  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
+      _newMarker->getName(), _newMarker);
+  return _newMarker->mName;
 }
 
 //==============================================================================
@@ -177,10 +227,18 @@ void Skeleton::addBodyNode(BodyNode* _body)
   assert(_body && _body->getParentJoint());
 
   mBodyNodes.push_back(_body);
+  addEntryToBodyNodeNameMgr(_body);
+  addEntryToJointNameMgr(_body->getParentJoint());
+  addMarkersOfBodyNode(_body);
+  _body->mSkeleton = this;
+  _body->mParentJoint->mSkeleton = this;
 
   SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_body);
   if (softBodyNode)
+  {
     mSoftBodyNodes.push_back(softBodyNode);
+    addEntryToSoftBodyNodeNameMgr(softBodyNode);
+  }
 }
 
 //==============================================================================
@@ -202,92 +260,117 @@ size_t Skeleton::getNumSoftBodyNodes() const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getRootBodyNode() const
+BodyNode* Skeleton::getRootBodyNode()
 {
+  if(mBodyNodes.size()==0)
+    return NULL;
+
   // We assume that the first element of body nodes is root.
   return mBodyNodes[0];
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(size_t _idx) const
+const BodyNode* Skeleton::getRootBodyNode() const
 {
-  return mBodyNodes[_idx];
+  return const_cast<Skeleton*>(this)->getRootBodyNode();
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
+template<typename T>
+static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 {
-  assert(0 <= _idx && _idx < mSoftBodyNodes.size());
-  return mSoftBodyNodes[_idx];
-}
-
-//==============================================================================
-BodyNode* Skeleton::getBodyNode(const std::string& _name) const
-{
-  assert(!_name.empty());
-
-  for (std::vector<BodyNode*>::const_iterator itrBody = mBodyNodes.begin();
-       itrBody != mBodyNodes.end(); ++itrBody)
-  {
-    if ((*itrBody)->getName() == _name)
-      return *itrBody;
-  }
+  // TODO: Should we have an out-of-bounds assertion or throw here?
+  if(_idx < _vec.size())
+    return _vec[_idx];
 
   return NULL;
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
+BodyNode* Skeleton::getBodyNode(size_t _idx)
 {
-  assert(!_name.empty());
-  for (std::vector<SoftBodyNode*>::const_iterator itrSoftBodyNode =
-       mSoftBodyNodes.begin();
-       itrSoftBodyNode != mSoftBodyNodes.end(); ++itrSoftBodyNode)
-  {
-    if ((*itrSoftBodyNode)->getName() == _name)
-      return *itrSoftBodyNode;
-  }
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+}
+
+//==============================================================================
+const BodyNode* Skeleton::getBodyNode(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+}
+
+//==============================================================================
+SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx)
+{
+  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
+}
+
+//==============================================================================
+const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
+}
+
+//==============================================================================
+BodyNode* Skeleton::getBodyNode(const std::string& _name)
+{
+  return mNameMgrForBodyNodes.getObject(_name);
+}
+
+//==============================================================================
+const BodyNode* Skeleton::getBodyNode(const std::string& _name) const
+{
+  return mNameMgrForBodyNodes.getObject(_name);
+}
+
+//==============================================================================
+SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
+{
+  return mNameMgrForSoftBodyNodes.getObject(_name);
+}
+
+const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
+{
+  return mNameMgrForSoftBodyNodes.getObject(_name);
+}
+
+//==============================================================================
+Joint* Skeleton::getJoint(size_t _idx)
+{
+  BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+  if(bn)
+    return bn->getParentJoint();
 
   return NULL;
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(size_t _idx) const
+const Joint* Skeleton::getJoint(size_t _idx) const
 {
-  return mBodyNodes[_idx]->getParentJoint();
+  return const_cast<Skeleton*>(this)->getJoint(_idx);
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& _name) const
+Joint* Skeleton::getJoint(const std::string& _name)
 {
-  assert(!_name.empty());
-
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    if ((*it)->getParentJoint()->getName() == _name)
-      return (*it)->getParentJoint();
-  }
-
-  return NULL;
+  return mNameMgrForJoints.getObject(_name);
 }
 
 //==============================================================================
-Marker* Skeleton::getMarker(const std::string& _name) const
+const Joint* Skeleton::getJoint(const std::string& _name) const
 {
-  assert(!_name.empty());
+  return mNameMgrForJoints.getObject(_name);
+}
 
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    for (size_t i = 0; i < (*it)->getNumMarkers(); ++i)
-    {
-      if ((*it)->getMarker(i)->getName() == _name)
-        return (*it)->getMarker(i);
-    }
-  }
+//==============================================================================
+Marker* Skeleton::getMarker(const std::string& _name)
+{
+  return mNameMgrForMarkers.getObject(_name);
+}
 
-  return NULL;
+//==============================================================================
+const Marker* Skeleton::getMarker(const std::string& _name) const
+{
+  return const_cast<Skeleton*>(this)->getMarker(_name);
 }
 
 //==============================================================================

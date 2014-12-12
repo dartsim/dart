@@ -79,10 +79,19 @@ size_t SoftBodyNode::getNumPointMasses() const
 }
 
 //==============================================================================
-PointMass* SoftBodyNode::getPointMass(size_t _idx) const
+PointMass* SoftBodyNode::getPointMass(size_t _idx)
 {
-  assert(0 <= _idx && _idx < mPointMasses.size());
-  return mPointMasses[_idx];
+  assert(_idx < mPointMasses.size());
+  if(_idx < mPointMasses.size())
+    return mPointMasses[_idx];
+
+  return NULL;
+}
+
+//==============================================================================
+const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
+{
+  return const_cast<SoftBodyNode*>(this)->getPointMass(_idx);
 }
 
 //==============================================================================

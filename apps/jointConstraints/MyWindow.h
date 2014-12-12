@@ -63,7 +63,7 @@ public:
   //  virtual void draw();
   virtual void keyboard(unsigned char key, int x, int y);
 
-  void setController(Controller *_controller)
+  void setController(Controller* _controller)
   {
     mController = _controller;
   }

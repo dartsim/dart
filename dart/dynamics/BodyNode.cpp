@@ -48,12 +48,24 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
+#include "dart/dynamics/SoftBodyNode.h"
 
 #define DART_DEFAULT_FRICTION_COEFF 1.0
 #define DART_DEFAULT_RESTITUTION_COEFF 0.0
 
 namespace dart {
 namespace dynamics {
+
+//==============================================================================
+template <typename T>
+static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
+{
+  assert(_index < _vec.size());
+  if(_index < _vec.size())
+    return _vec[_index];
+
+  return NULL;
+}
 
 int BodyNode::msBodyNodeCount = 0;
 
@@ -133,9 +145,34 @@ BodyNode::~BodyNode()
 }
 
 //==============================================================================
-void BodyNode::setName(const std::string& _name)
+const std::string& BodyNode::setName(const std::string& _name)
 {
-  mName = _name;
+  // If it already has the requested name, do nothing
+  if(mName == _name)
+    return mName;
+
+  // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
+  if(mSkeleton)
+  {
+    mSkeleton->mNameMgrForBodyNodes.removeName(mName);
+    SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
+    if(softnode)
+      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mName);
+
+    mName = _name;
+    mSkeleton->addEntryToBodyNodeNameMgr(this);
+
+    if(softnode)
+      mSkeleton->addEntryToSoftBodyNodeNameMgr(softnode);
+  }
+  else
+  {
+    mName = _name;
+  }
+
+  // Return the final name (which might have been altered by the Skeleton's
+  // NameManager)
+  return mName;
 }
 
 //==============================================================================
@@ -295,9 +332,15 @@ size_t BodyNode::getNumVisualizationShapes() const
 }
 
 //==============================================================================
-Shape* BodyNode::getVisualizationShape(int _index) const
+Shape* BodyNode::getVisualizationShape(int _index)
 {
-  return mVizShapes[_index];
+  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
+}
+
+//==============================================================================
+const Shape* BodyNode::getVisualizationShape(int _index) const
+{
+  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
 }
 
 //==============================================================================
@@ -313,13 +356,25 @@ size_t BodyNode::getNumCollisionShapes() const
 }
 
 //==============================================================================
-Shape* BodyNode::getCollisionShape(int _index) const
+Shape* BodyNode::getCollisionShape(int _index)
 {
-  return mColShapes[_index];
+  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
 }
 
 //==============================================================================
-Skeleton* BodyNode::getSkeleton() const
+const Shape* BodyNode::getCollisionShape(int _index) const
+{
+  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
+}
+
+//==============================================================================
+Skeleton* BodyNode::getSkeleton()
+{
+  return mSkeleton;
+}
+
+//==============================================================================
+const Skeleton* BodyNode::getSkeleton() const
 {
   return mSkeleton;
 }
@@ -327,17 +382,48 @@ Skeleton* BodyNode::getSkeleton() const
 //==============================================================================
 void BodyNode::setParentJoint(Joint* _joint)
 {
+  if (_joint->getChildBodyNode())
+  {
+    assert(_joint->getChildBodyNode() != this);
+    // TODO: How should we handle this scenario? (The Joint that was passed in
+    // already has some other child BodyNode!)
+  }
+
+  if (mSkeleton)
+  {
+    mSkeleton->mNameMgrForJoints.removeName(mParentJoint->getName());
+    mSkeleton->addEntryToJointNameMgr(_joint);
+  }
+
+  if (mParentJoint)
+    mParentJoint->mChildBodyNode = NULL;
+
   mParentJoint = _joint;
+  mParentJoint->mChildBodyNode = this;
+  // TODO: Shouldn't we delete the original mParentJoint? Seems like the BodyNode
+  // should be responsible for its parent joint
 }
 
 //==============================================================================
-Joint* BodyNode::getParentJoint() const
+Joint* BodyNode::getParentJoint()
 {
   return mParentJoint;
 }
 
 //==============================================================================
-BodyNode* BodyNode::getParentBodyNode() const
+const Joint* BodyNode::getParentJoint() const
+{
+  return mParentJoint;
+}
+
+//==============================================================================
+BodyNode* BodyNode::getParentBodyNode()
+{
+  return mParentBodyNode;
+}
+
+//==============================================================================
+const BodyNode* BodyNode::getParentBodyNode() const
 {
   return mParentBodyNode;
 }
@@ -351,10 +437,15 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
-BodyNode* BodyNode::getChildBodyNode(size_t _index) const
+BodyNode* BodyNode::getChildBodyNode(size_t _index)
 {
-  assert(0 <= _index && _index < mChildBodyNodes.size());
-  return mChildBodyNodes[_index];
+  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
+}
+
+//==============================================================================
+const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
+{
+  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
@@ -367,6 +458,8 @@ size_t BodyNode::getNumChildBodyNodes() const
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
+  if(mSkeleton)
+    mSkeleton->addEntryToMarkerNameMgr(_marker);
 }
 
 //==============================================================================
@@ -376,9 +469,15 @@ size_t BodyNode::getNumMarkers() const
 }
 
 //==============================================================================
-Marker* BodyNode::getMarker(int _index) const
+Marker* BodyNode::getMarker(size_t _index)
 {
-  return mMarkers[_index];
+  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+}
+
+//==============================================================================
+const Marker* BodyNode::getMarker(size_t _index) const
+{
+  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
 }
 
 //==============================================================================

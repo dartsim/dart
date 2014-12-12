@@ -80,7 +80,11 @@ public:
   int getNumConnectedPointMasses() const;
 
   ///
-  PointMass* getConnectedPointMass(size_t _idx) const;
+  PointMass* getConnectedPointMass(size_t _idx);
+
+  ///
+  const PointMass* getConnectedPointMass(size_t _idx) const;
+
 
   /// Set whether this point mass is colliding with others.
   /// \param[in] True if this point mass is colliding.
@@ -275,7 +279,10 @@ public:
   const Eigen::Vector3d& getBodyVelocityChange() const;
 
   ///
-  SoftBodyNode* getParentSoftBodyNode() const;
+  SoftBodyNode* getParentSoftBodyNode();
+
+  ///
+  const SoftBodyNode* getParentSoftBodyNode() const;
 
   /// The number of the generalized coordinates by which this node is
   ///        affected.
