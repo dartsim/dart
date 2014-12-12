@@ -1,5 +1,5 @@
-#ifndef _ODE_CONFIG_H
-#define _ODE_CONFIG_H
+#ifndef _ODE_CONFIG_H_
+#define _ODE_CONFIG_H_
 
 /* Pull in the standard headers */
 #include <stddef.h>
