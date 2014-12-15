@@ -46,6 +46,8 @@ namespace dynamics {
 class Skeleton;
 class Joint;
 class BodyNode;
+class SingleDofJoint;
+template<size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -55,6 +57,8 @@ class DegreeOfFreedom
 public:
 
   friend class dart::dynamics::Joint;
+  friend class dart::dynamics::SingleDofJoint;
+  template<size_t> friend class dart::dynamics::MultiDofJoint;
   friend class dart::dynamics::Skeleton;
 
   /// Change the name of this DegreeOfFreedom
@@ -217,7 +221,6 @@ public:
   const BodyNode* getParentBodyNode() const;
 
 protected:
-
   /// The constructor is protected so that only Joints can create
   /// DegreeOfFreedom classes
   DegreeOfFreedom(Joint* _joint,

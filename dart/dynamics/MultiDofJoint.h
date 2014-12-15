@@ -608,12 +608,14 @@ void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[MultiDofJoint::setIndexInSkeleton] index[" << _index
+          << "] out of range" << std::endl;
     return;
   }
 
   mIndexInSkeleton[_index] = _indexInSkeleton;
+  // TODO(MXG): I think ^this array is redundant now that we have the mDofs array
+  mDofs[_index]->mIndexInSkeleton = _indexInSkeleton;
 }
 
 //==============================================================================

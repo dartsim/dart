@@ -104,12 +104,14 @@ void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
 {
   if (_index != 0)
   {
-    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[SingleDofJoint::setIndexInSkeleton] index[" << _index
+          << "] out of range" << std::endl;
     return;
   }
 
   mIndexInSkeleton = _indexInSkeleton;
+  // TODO(MXG): I think ^this member variable is redundant now that we have mDof
+  mDof->mIndexInSkeleton = _indexInSkeleton;
 }
 
 //==============================================================================

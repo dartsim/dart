@@ -188,6 +188,18 @@ public:
   /// Get joint whose name is _name
   Joint* getJoint(const std::string &_name);
 
+  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
+  DegreeOfFreedom* getDof(size_t _idx);
+
+  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
+  const DegreeOfFreedom* getDof(size_t _idx) const;
+
+  /// Get degree of freedom (aka generalized coordinate) whose name is _name
+  DegreeOfFreedom* getDof(const std::string& name);
+
+  /// Get degree of freedom (aka generalized coordinate) whose name is _name
+  const DegreeOfFreedom* getDof(const std::string& name) const;
+
   /// Get const joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;
 
@@ -675,6 +687,9 @@ protected:
 
   ///
   std::vector<GenCoordInfo> mGenCoordInfos;
+  // TODO(MXG): Now that we have the DegreeOfFreedom class, this vector is
+  // probably outdated. We can instead have a std::vector<DegreeOfFreedom*>,
+  // because each DegreeOfFreedom has all the information that GenCoordInfo has
 
   /// True if self collision check is enabled
   bool mEnabledSelfCollisionCheck;

@@ -119,6 +119,7 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint *_newJoint)
 {
   _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
                                                           _newJoint);
+  _newJoint->updateDegreeOfFreedomNames();
   return _newJoint->mName;
 }
 
@@ -365,6 +366,40 @@ Joint* Skeleton::getJoint(const std::string &_name)
 const Joint* Skeleton::getJoint(const std::string& _name) const
 {
   return mNameMgrForJoints.getObject(_name);
+}
+
+//==============================================================================
+DegreeOfFreedom* Skeleton::getDof(size_t _idx)
+{
+  assert(_idx < getNumDofs());
+
+  if(_idx >= getNumDofs())
+    return NULL;
+
+  return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
+}
+
+//==============================================================================
+const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
+{
+  assert(_idx < getNumDofs());
+
+  if(_idx >= getNumDofs())
+    return NULL;
+
+  return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
+}
+
+//==============================================================================
+DegreeOfFreedom* Skeleton::getDof(const std::string &name)
+{
+  return mNameMgrForDofs.getObject(name);
+}
+
+//==============================================================================
+const DegreeOfFreedom* Skeleton::getDof(const std::string &name) const
+{
+  return mNameMgrForDofs.getObject(name);
 }
 
 //==============================================================================

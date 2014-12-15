@@ -74,7 +74,7 @@ public:
   virtual size_t getNumDofs() const;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+  virtual void setIndexInSkeleton(size_t _index, size_t);
 
   // Documentation inherited
   virtual size_t getIndexInSkeleton(size_t _index) const;

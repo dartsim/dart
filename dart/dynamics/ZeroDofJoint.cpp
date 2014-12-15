@@ -80,10 +80,10 @@ size_t ZeroDofJoint::getNumDofs() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t)
 {
-  dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-        << std::endl;
+  dterr << "[ZeroDofJoint::setIndexInSkeleton] index[" << _index
+        << "] out of range" << std::endl;
 }
 
 //==============================================================================
