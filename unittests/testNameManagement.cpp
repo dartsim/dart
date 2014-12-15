@@ -9,7 +9,7 @@ using namespace math;
 using namespace dynamics;
 
 
-TEST(NAMECHANGES, BASIC)
+TEST(NAME_MANAGEMENT, BASIC)
 {
   //--------------------------------------------------------------------------
   //
@@ -24,9 +24,23 @@ TEST(NAMECHANGES, BASIC)
   // so he is leaving that for someone else for the time being.
 
   // Joints
-  RevoluteJoint* joint1 = new RevoluteJoint;
-  RevoluteJoint* joint2 = new RevoluteJoint;
-  RevoluteJoint* joint3 = new RevoluteJoint;
+  Joint* joint1 = new RevoluteJoint(Eigen::Vector3d::UnitX(), "joint");
+  Joint* joint2 = new TranslationalJoint("joint");
+  Joint* joint3 = new FreeJoint("joint");
+
+  // Testing whether DegreesOfFreedom get named correctly
+  EXPECT_TRUE(joint1->getDof(0)->getName() == "joint");
+
+  EXPECT_TRUE(joint2->getDof(0)->getName() == "joint_x");
+  EXPECT_TRUE(joint2->getDof(1)->getName() == "joint_y");
+  EXPECT_TRUE(joint2->getDof(2)->getName() == "joint_z");
+
+  EXPECT_TRUE(joint3->getDof(0)->getName() == "joint_rot_x");
+  EXPECT_TRUE(joint3->getDof(1)->getName() == "joint_rot_y");
+  EXPECT_TRUE(joint3->getDof(2)->getName() == "joint_rot_z");
+  EXPECT_TRUE(joint3->getDof(3)->getName() == "joint_pos_x");
+  EXPECT_TRUE(joint3->getDof(4)->getName() == "joint_pos_y");
+  EXPECT_TRUE(joint3->getDof(5)->getName() == "joint_pos_z");
 
   // Skeleton
   Skeleton* skel = new Skeleton;
@@ -44,15 +58,31 @@ TEST(NAMECHANGES, BASIC)
 
   skel->init();
 
+  // Testing whether the repeated names of BodyNodes and Joints get resolved
+  // correctly as BodyNodes get added to the Skeleton
   EXPECT_FALSE(body1->getName() == body2->getName());
   EXPECT_FALSE(body2->getName() == body3->getName());
   EXPECT_FALSE(body3->getName() == body1->getName());
-
 
   EXPECT_FALSE(joint1->getName() == joint2->getName());
   EXPECT_FALSE(joint2->getName() == joint3->getName());
   EXPECT_FALSE(joint3->getName() == joint1->getName());
 
+  EXPECT_TRUE(joint1->getDof(0)->getName() == "joint");
+
+  EXPECT_TRUE(joint2->getDof(0)->getName() == "joint(1)_x");
+  EXPECT_TRUE(joint2->getDof(1)->getName() == "joint(1)_y");
+  EXPECT_TRUE(joint2->getDof(2)->getName() == "joint(1)_z");
+
+  EXPECT_TRUE(joint3->getDof(0)->getName() == "joint(2)_rot_x");
+  EXPECT_TRUE(joint3->getDof(1)->getName() == "joint(2)_rot_y");
+  EXPECT_TRUE(joint3->getDof(2)->getName() == "joint(2)_rot_z");
+  EXPECT_TRUE(joint3->getDof(3)->getName() == "joint(2)_pos_x");
+  EXPECT_TRUE(joint3->getDof(4)->getName() == "joint(2)_pos_y");
+  EXPECT_TRUE(joint3->getDof(5)->getName() == "joint(2)_pos_z");
+
+  // Testing whether the repeated names of BodyNodes get resolved correctly
+  // as they are changed with BodyNode::setName(~)
   std::string newname1 = body1->setName("same_name");
   std::string newname2 = body2->setName("same_name");
   std::string newname3 = body3->setName("same_name");
@@ -69,6 +99,8 @@ TEST(NAMECHANGES, BASIC)
   EXPECT_TRUE(skel->getBodyNode(newname2) == body2);
   EXPECT_TRUE(skel->getBodyNode(newname3) == body3);
 
+  // Testing whether the repeated names of Joints get resolved correctly
+  // as they are changed with Joint::setName(~)
   newname1 = joint1->setName("another_name");
   newname2 = joint2->setName("another_name");
   newname3 = joint3->setName("another_name");
@@ -85,6 +117,7 @@ TEST(NAMECHANGES, BASIC)
   EXPECT_TRUE(skel->getJoint(newname2) == joint2);
   EXPECT_TRUE(skel->getJoint(newname3) == joint3);
 
+  // Testing whether unique names get accidentally changed by the NameManager
   std::string unique_name = body2->setName("a_unique_name");
   EXPECT_TRUE(body2->getName() == "a_unique_name");
   EXPECT_TRUE(skel->getBodyNode("a_unique_name") == body2);
@@ -97,10 +130,47 @@ TEST(NAMECHANGES, BASIC)
   EXPECT_TRUE(joint3->getName() == "a_unique_name");
   EXPECT_TRUE(skel->getJoint("a_unique_name") == joint3);
 
+  // Testing whether the DegreeOfFreedom names get updated correctly upon their
+  // joint's name change
+  EXPECT_TRUE(joint3->getDof(0)->getName() == "a_unique_name_rot_x");
+  EXPECT_TRUE(joint3->getDof(1)->getName() == "a_unique_name_rot_y");
+  EXPECT_TRUE(joint3->getDof(2)->getName() == "a_unique_name_rot_z");
+  EXPECT_TRUE(joint3->getDof(3)->getName() == "a_unique_name_pos_x");
+  EXPECT_TRUE(joint3->getDof(4)->getName() == "a_unique_name_pos_y");
+  EXPECT_TRUE(joint3->getDof(5)->getName() == "a_unique_name_pos_z");
+
+  EXPECT_TRUE(joint3->getDof(0) == skel->getDof("a_unique_name_rot_x"));
+  EXPECT_TRUE(joint3->getDof(3) == skel->getDof("a_unique_name_pos_x"));
+
+  // Note: The following assumes the joint order in the Skeleton is:
+  // RevoluteJoint -> TranslationalJoint -> FreeJoint
+  EXPECT_TRUE(joint1->getDof(0) == skel->getDof(0));
+
+  EXPECT_TRUE(joint2->getDof(0) == skel->getDof(1));
+  EXPECT_TRUE(joint2->getDof(1) == skel->getDof(2));
+  EXPECT_TRUE(joint2->getDof(2) == skel->getDof(3));
+
+  EXPECT_TRUE(joint3->getDof(0) == skel->getDof(4));
+  EXPECT_TRUE(joint3->getDof(1) == skel->getDof(5));
+  EXPECT_TRUE(joint3->getDof(2) == skel->getDof(6));
+  EXPECT_TRUE(joint3->getDof(3) == skel->getDof(7));
+  EXPECT_TRUE(joint3->getDof(4) == skel->getDof(8));
+  EXPECT_TRUE(joint3->getDof(5) == skel->getDof(9));
+
+  // Test that GenCoordInfos agree with the DegreeOfFreedom classes
+  for(size_t i=0; i<skel->getNumDofs(); ++i)
+  {
+    EXPECT_TRUE(skel->getDof(i)->getIndexInSkeleton() == i);
+    EXPECT_TRUE(skel->getDof(i)->getIndexInJoint() ==
+                skel->getGenCoordInfo(i).localIndex);
+  }
+
+  // Test whether all the joint names are still unique
   EXPECT_FALSE(joint1->getName() == joint2->getName());
   EXPECT_FALSE(joint2->getName() == joint3->getName());
   EXPECT_FALSE(joint3->getName() == joint1->getName());
 
+  // Make sure that the Skeleton gives back NULL for non existent names
   EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
@@ -110,10 +180,14 @@ TEST(NAMECHANGES, BASIC)
   Joint* newJoint = new RevoluteJoint(Eigen::Vector3d(1,0,0), "a_new_joint");
   body3->setParentJoint(newJoint);
   EXPECT_TRUE(skel->getJoint("a_new_joint") == newJoint);
+
+  // Make sure that the Skeleton returns NULL on any Joint names that have been
+  // taken away from it
   EXPECT_FALSE(skel->getJoint(oldJointName) == oldJoint);
+  EXPECT_TRUE(skel->getJoint(oldJointName) == NULL);
 }
 
-TEST(NAMECHANGES, SETPATTERN)
+TEST(NAME_MANAGEMENT, SETPATTERN)
 {
   dart::common::NameManager<BodyNode> test_mgr;
 
