@@ -58,6 +58,8 @@ BallJoint::BallJoint(const std::string& _name)
   assert(!math::isNan(mJacobian));
 
   // Time derivative of Jacobian is always zero
+
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -90,6 +92,14 @@ void BallJoint::integratePositions(double _dt)
   mR.linear() = mR.linear() * math::expMapRot(mVelocities * _dt);
 
   mPositions = math::logMap(mR.linear());
+}
+
+//==============================================================================
+void BallJoint::updateDegreeOfFreedomNames()
+{
+  mDofs[0]->setName(mName+"_x");
+  mDofs[1]->setName(mName+"_y");
+  mDofs[2]->setName(mName+"_z");
 }
 
 //==============================================================================

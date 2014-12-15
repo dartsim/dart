@@ -52,6 +52,8 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
 {
   mAxis[0] = _axis0.normalized();
   mAxis[1] = _axis1.normalized();
+
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -81,6 +83,13 @@ const Eigen::Vector3d& UniversalJoint::getAxis1() const
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
   return mAxis[1];
+}
+
+//==============================================================================
+void UniversalJoint::updateDegreeOfFreedomNames()
+{
+  mDofs[0]->setName(mName+"_1");
+  mDofs[1]->setName(mName+"_2");
 }
 
 //==============================================================================

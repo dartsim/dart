@@ -68,10 +68,14 @@ Joint::~Joint() {
 }
 
 //==============================================================================
-const std::string& Joint::setName(const std::string& _name) {
+const std::string& Joint::setName(const std::string& _name, bool _rename_dofs) {
 
   if(mName == _name)
+  {
+    if(_rename_dofs)
+      updateDegreeOfFreedomNames();
     return mName;
+  }
 
   if(mSkeleton)
   {
@@ -81,6 +85,9 @@ const std::string& Joint::setName(const std::string& _name) {
   }
   else
     mName = _name;
+
+  if(_rename_dofs)
+    updateDegreeOfFreedomNames();
 
   return mName;
 }

@@ -722,6 +722,12 @@ double SingleDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+void SingleDofJoint::updateDegreeOfFreedomNames()
+{
+  mDof->setName(mName);
+}
+
+//==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
   return mJacobian;

@@ -68,7 +68,7 @@ public:
   virtual ~Joint();
 
   /// Set joint name
-  const std::string& setName(const std::string& _name);
+  const std::string& setName(const std::string& _name, bool _rename_dofs=true);
 
   /// Get joint name
   const std::string& getName() const;
@@ -401,6 +401,10 @@ protected:
   /// pointer which is returned.
   DegreeOfFreedom* createDofPointer(const std::string& _name,
                                     size_t _indexInJoint);
+
+  /// Update the names of the joint's degrees of freedom. Used when setName() is
+  /// called with _rename_dofs set to true.
+  virtual void updateDegreeOfFreedomNames() = 0;
 
   //----------------------------------------------------------------------------
   // Recursive algorithms

@@ -54,6 +54,9 @@ public:
   UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d::UnitX(),
                  const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitY(),
                  const std::string& _name = "Universal joint");
+  // TODO(MXG): We should be more consistent about indexing starting from 0 or 1
+  // In the constructor arguments, we start with axis0, but in the member
+  // functions we start with axis1.
 
   /// Destructor
   virtual ~UniversalJoint();
@@ -77,6 +80,9 @@ public:
   }
 
 protected:
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

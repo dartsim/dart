@@ -44,6 +44,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -394,6 +395,7 @@ protected:
   Eigen::Matrix<size_t, DOF, 1> mIndexInSkeleton;
 
   // TODO: Replace with std::array when we migrate to C++11
+  /// Array of DegreeOfFreedom objects
   DegreeOfFreedom* mDofs[DOF];
 
   //----------------------------------------------------------------------------
@@ -555,16 +557,16 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
-  // Note: These should be created by the various MultiDofJoint implementations,
-  // because of differences in naming conventions for the degrees of freedom
   for(size_t i=0; i<DOF; ++i)
-    mDofs[i] = NULL;
+    mDofs[i] = createDofPointer(mName, i);
 }
 
 //==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::~MultiDofJoint()
 {
+  for(size_t i=0; i<DOF; ++i)
+    delete mDofs[i];
 }
 
 //==============================================================================

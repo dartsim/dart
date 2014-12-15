@@ -266,6 +266,10 @@ public:
   virtual double getPotentialEnergy() const;
 
 protected:
+
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   //----------------------------------------------------------------------------
   // Recursive dynamics algorithms
   //----------------------------------------------------------------------------

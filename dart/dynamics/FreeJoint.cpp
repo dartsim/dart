@@ -60,6 +60,8 @@ FreeJoint::FreeJoint(const std::string& _name)
   assert(!math::isNan(mJacobian));
 
   // Time derivative of Jacobian is always zero
+
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -90,6 +92,17 @@ void FreeJoint::integratePositions(double _dt)
   mQ = mQ * math::expMap(mVelocities * _dt);
 
   mPositions = math::logMap(mQ);
+}
+
+//==============================================================================
+void FreeJoint::updateDegreeOfFreedomNames()
+{
+  mDofs[0]->setName(mName+"_rot_x");
+  mDofs[1]->setName(mName+"_rot_y");
+  mDofs[2]->setName(mName+"_rot_z");
+  mDofs[3]->setName(mName+"_pos_x");
+  mDofs[4]->setName(mName+"_pos_y");
+  mDofs[5]->setName(mName+"_pos_z");
 }
 
 //==============================================================================

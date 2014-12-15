@@ -235,10 +235,9 @@ void Skeleton::addBodyNode(BodyNode* _body)
 
   mBodyNodes.push_back(_body);
   addEntryToBodyNodeNameMgr(_body);
-  addEntryToJointNameMgr(_body->getParentJoint());
   addMarkersOfBodyNode(_body);
   _body->mSkeleton = this;
-  _body->mParentJoint->mSkeleton = this;
+  registerJoint(_body->getParentJoint());
 
   SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_body);
   if (softBodyNode)
@@ -1221,6 +1220,41 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
                            bool _useDefaultColor) const
 {
   getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
+}
+
+//==============================================================================
+void Skeleton::registerJoint(Joint *_newJoint)
+{
+  if(NULL == _newJoint)
+  {
+    dterr << "[Skeleton::registerJoint] Error: Attempting to add a NULL joint "
+             "to the Skeleton named '" << mName << "'!\n";
+    return;
+  }
+
+  addEntryToJointNameMgr(_newJoint);
+  _newJoint->mSkeleton = this;
+
+  for(size_t i=0; i<_newJoint->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = _newJoint->getDof(i);
+    dof->mName = mNameMgrForDofs.issueNewNameAndAdd(dof->getName(), dof);
+  }
+}
+
+//==============================================================================
+void Skeleton::unregisterJoint(Joint *_oldJoint)
+{
+  if(NULL == _oldJoint)
+    return;
+
+  mNameMgrForJoints.removeName(_oldJoint->getName());
+
+  for(size_t i=0; i<_oldJoint->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = _oldJoint->getDof(i);
+    mNameMgrForDofs.removeName(dof->getName());
+  }
 }
 
 //==============================================================================

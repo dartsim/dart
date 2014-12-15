@@ -48,11 +48,20 @@ namespace dynamics {
 TranslationalJoint::TranslationalJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
 TranslationalJoint::~TranslationalJoint()
 {
+}
+
+//==============================================================================
+void TranslationalJoint::updateDegreeOfFreedomNames()
+{
+  mDofs[0]->setName(mName+"_x");
+  mDofs[1]->setName(mName+"_y");
+  mDofs[2]->setName(mName+"_z");
 }
 
 //==============================================================================

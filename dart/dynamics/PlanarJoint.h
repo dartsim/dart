@@ -69,17 +69,18 @@ public:
   virtual ~PlanarJoint();
 
   /// Set plane type as XY-plane
-  void setXYPlane();
+  void setXYPlane(bool _rename_dofs=true);
 
   /// Set plane type as YZ-plane
-  void setYZPlane();
+  void setYZPlane(bool _rename_dofs=true);
 
   /// Set plane type as ZX-plane
-  void setZXPlane();
+  void setZXPlane(bool _rename_dofs=true);
 
   /// Set plane type as arbitrary plane with two orthogonal translational axes
   void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                         const Eigen::Vector3d& _transAxis2);
+                         const Eigen::Vector3d& _transAxis2,
+                         bool _rename_dofs=true);
 
   /// Return plane type
   PlaneType getPlaneType() const;
@@ -100,6 +101,10 @@ public:
   }
 
 protected:
+  /// Set the names of this joint's DegreesOfFreedom. Used during construction
+  /// and when the Plane type is changed.
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

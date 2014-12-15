@@ -64,7 +64,7 @@ public:
   virtual ~EulerJoint();
 
   ///
-  void setAxisOrder(AxisOrder _order);
+  void setAxisOrder(AxisOrder _order, bool _rename_dofs=true);
 
   ///
   AxisOrder getAxisOrder() const;
@@ -76,6 +76,10 @@ public:
   }
 
 protected:
+  /// Set the names of this joint's DegreesOfFreedom. Used during construction
+  /// and when axis order is changed.
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

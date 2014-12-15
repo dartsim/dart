@@ -408,6 +408,12 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+void ZeroDofJoint::updateDegreeOfFreedomNames()
+{
+  // Do nothing
+}
+
+//==============================================================================
 const math::Jacobian ZeroDofJoint::getLocalJacobian() const
 {
   return Eigen::Matrix<double, 6, 0>();

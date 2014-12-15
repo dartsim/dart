@@ -48,7 +48,7 @@ class Joint;
 class BodyNode;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
-/// freedom (or generalized coordinate) of the Skeleton.
+/// freedom (aka generalized coordinates) of the Skeleton.
 
 class DegreeOfFreedom
 {
@@ -161,7 +161,7 @@ public:
   // "Force". Currently "Force" is being used throughout DART to refer to the
   // Generalized Force of a Generalized Coordinate, but I propose we use the
   // word "Effort" instead. We can change the names of these functions later if
-  // "Effort" is deemed inappropriate or undesirable.
+  // it's decided that "Effort" is not a good word.
 
   /// Set the generalized force of this DegreeOfFreedom
   void setEffort(double _effort);
@@ -238,7 +238,7 @@ protected:
   // Note that we do not need to store BodyNode or Skeleton, because we can
   // access them through this joint pointer. Moreover, we never need to check
   // whether mJoint is nullptr, because only Joints are allowed to create a
-  // DegreeOfFreedom and DegreesOfFreedom are deleted when their Joint is
+  // DegreeOfFreedom and every DegreeOfFreedom is deleted when its Joint is
   // destructed.
 
 };
