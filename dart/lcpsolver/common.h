@@ -22,9 +22,11 @@
 
 #ifndef _ODE_COMMON_H_
 #define _ODE_COMMON_H_
-#include "odeconfig.h"
-#include "error.h"
+
 #include <math.h>
+
+#include "dart/lcpsolver/odeconfig.h"
+#include "dart/lcpsolver/error.h"
 
 #ifdef __cplusplus
 extern "C" {
