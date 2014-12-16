@@ -54,8 +54,8 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 #include <stdio.h>
 #include <assert.h>
 
-#include "odeconfig.h"
-#include "common.h"
+#include "dart/lcpsolver/odeconfig.h"
+#include "dart/lcpsolver/common.h"
 
 void dSolveLCP (int n, dReal *A, dReal *x, dReal *b, dReal *w,
 	int nub, dReal *lo, dReal *hi, int *findex);

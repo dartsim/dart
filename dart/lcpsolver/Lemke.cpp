@@ -35,12 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/Helpers.h"
-#include "dart/lcpsolver/Lemke.h"
-
 #include <cmath>
 #include <iostream>
 #include <vector>
+
+#include "dart/math/Helpers.h"
+#include "dart/lcpsolver/Lemke.h"
 
 #ifndef isnan
 # define isnan(x) \

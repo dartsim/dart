@@ -1,6 +1,6 @@
 /* generated code, do not edit. */
 
-#include "matrix.h"
+#include "dart/lcpsolver/matrix.h"
 
 /* solve L^T * x=b, with b containing 1 right hand side.
  * L is an n*n lower triangular matrix with ones on the diagonal.
