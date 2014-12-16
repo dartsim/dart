@@ -34,17 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/Paths.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/constraint/BallJointConstraint.h"
-#include "dart/constraint/WeldJointConstraint.h"
-#include "dart/constraint/ConstraintSolver.h"
+#include "dart/dart.h"
 
 #include "apps/rigidLoop/MyWindow.h"
 

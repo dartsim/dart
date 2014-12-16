@@ -168,7 +168,7 @@ public:
   const SoftBodyNode* getSoftBodyNode(size_t _idx) const;
 
   /// Get body node whose name is _name
-  BodyNode* getBodyNode(const std::string &_name);
+  BodyNode* getBodyNode(const std::string& _name);
 
   /// Get const body node whose name is _name
   const BodyNode* getBodyNode(const std::string& _name) const;
@@ -177,7 +177,7 @@ public:
   SoftBodyNode* getSoftBodyNode(const std::string& _name);
 
   /// Get const soft body node whose name is _name
-  const SoftBodyNode* getSoftBodyNode(const std::string &_name) const;
+  const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   /// Get joint whose index is _idx
   Joint* getJoint(size_t _idx);
@@ -186,7 +186,7 @@ public:
   const Joint* getJoint(size_t _idx) const;
 
   /// Get joint whose name is _name
-  Joint* getJoint(const std::string &_name);
+  Joint* getJoint(const std::string& _name);
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   DegreeOfFreedom* getDof(size_t _idx);
@@ -207,7 +207,7 @@ public:
   Marker* getMarker(const std::string& _name);
 
   /// Get const marker whose name is _name
-  const Marker* getMarker(const std::string &_name) const;
+  const Marker* getMarker(const std::string& _name) const;
 
   //----------------------------------------------------------------------------
   // Initialization

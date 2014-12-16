@@ -142,7 +142,7 @@ public:
                           Ipopt::Index _m,
                           Ipopt::Index _nele_jac,
                           Ipopt::Index* _iRow,
-                          Ipopt::Index *_jCol,
+                          Ipopt::Index* _jCol,
                           Ipopt::Number* _values);
 
   /// \brief Method to return:

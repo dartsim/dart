@@ -37,9 +37,6 @@
 
 #include "apps/rigidChain/MyWindow.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-
 MyWindow::MyWindow() : SimWindow() {
 }
 

@@ -49,7 +49,7 @@ namespace collision {
 
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
-                              const aiScene *_mesh,
+                              const aiScene* _mesh,
                               const fcl::Transform3f& _transform) {
   assert(_mesh);
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;

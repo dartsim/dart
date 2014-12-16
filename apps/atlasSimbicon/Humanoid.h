@@ -42,16 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
-namespace dynamics {
-class Skeleton;
-class BodyNode;
-class Joint;
-}  // namespace dynamics
-namespace constraint {
-class OldConstraintDynamics;
-}  // namespace constraint
-}  // namespace dart
+#include "dart/dart.h"
 
 class State;
 

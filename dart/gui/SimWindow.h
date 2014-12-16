@@ -82,7 +82,7 @@ public:
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  void setWorld(simulation::World *_world);
+  void setWorld(simulation::World* _world);
 
   /// \brief Save world in 'tempWorld.txt'
   void saveWorld();

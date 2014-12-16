@@ -42,7 +42,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/gui/SimWindow.h"
+#include "dart/dart.h"
+
 #include "apps/bipedStand/Controller.h"
 
 class MyWindow : public dart::gui::SimWindow {
@@ -54,7 +55,7 @@ public:
   virtual void drawSkels();
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  void setController(Controller *_controller);
+  void setController(Controller* _controller);
 
 private:
   Eigen::Vector3d mForce;

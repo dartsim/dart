@@ -42,9 +42,8 @@
 
 #include <iostream>
 
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/simulation/World.h"
+#include "dart/dart.h"
+
 #include "apps/softBodies/MyWindow.h"
 
 int main(int argc, char* argv[])

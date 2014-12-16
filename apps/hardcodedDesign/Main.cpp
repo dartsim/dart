@@ -44,18 +44,9 @@
  * direction.
  */
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "apps/hardcodedDesign/MyWindow.h"
+#include "dart/dart.h"
 
-namespace dart {
-namespace dynamics {
-class Joint;
-class PrismaticJoint;
-class RevoluteJoint;
-}
-}
+#include "apps/hardcodedDesign/MyWindow.h"
 
 /// \brief Function headers
 enum TypeOfDOF {

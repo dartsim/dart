@@ -38,11 +38,6 @@
 
 #include <iostream>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/simulation/World.h"
-#include "dart/gui/GLFuncs.h"
-
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
   : SimWindow(),

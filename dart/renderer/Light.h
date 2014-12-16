@@ -56,9 +56,9 @@ public:
 
     LightType GetType() const;
     void SetPosition(const Eigen::Vector3d& _p);
-    void GetPosition(float *_pos) const;
-    void GetSpecular(float *_specular) const;
-    void GetDiffuse(float *_diffuse) const;
+    void GetPosition(float* _pos) const;
+    void GetSpecular(float* _specular) const;
+    void GetDiffuse(float* _diffuse) const;
     Eigen::Vector3d GetPosition() const;
     Eigen::Vector3d GetSpecular() const;
     Eigen::Vector3d GetDiffuse() const;

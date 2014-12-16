@@ -3,14 +3,14 @@
  */
 
 #include "DartLoader.h"
+
 #include <map>
+#include <iostream>
+#include <fstream>
 
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
-#include "urdf_world_parser.h"
 
-#include <iostream>
-#include <fstream>
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
@@ -24,6 +24,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/urdf/urdf_world_parser.h"
 
 namespace dart {
 namespace utils {
@@ -96,7 +97,7 @@ simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
 /**
  * @function setPackageDirectory
  */
-void DartLoader::setPackageDirectory(const std::string &_urdfPackageDirectory)
+void DartLoader::setPackageDirectory(const std::string& _urdfPackageDirectory)
 {
   mPackageDirectory = _urdfPackageDirectory;
 }
@@ -104,7 +105,7 @@ void DartLoader::setPackageDirectory(const std::string &_urdfPackageDirectory)
 /**
  * @function getFullFilePath
  */
-std::string DartLoader::getFullFilePath(const std::string &_filename,
+std::string DartLoader::getFullFilePath(const std::string& _filename,
                                         const std::string& _rootToSkelPath) const
 {
   std::string fullpath = _filename;
@@ -131,7 +132,7 @@ std::string DartLoader::getFullFilePath(const std::string &_filename,
 /**
  * @function parseWorldToEntityPaths
  */
-void DartLoader::parseWorldToEntityPaths(const std::string &_xml_string) {
+void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string) {
     
     TiXmlDocument xml_doc;
     xml_doc.Parse(_xml_string.c_str());

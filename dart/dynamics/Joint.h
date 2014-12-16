@@ -75,16 +75,19 @@ public:
 
   /// Get the child BodyNode of this Joint
   BodyNode* getChildBodyNode();
+
   /// Get the (const) child BodyNode of this Joint
   const BodyNode* getChildBodyNode() const;
 
   /// Get the parent BodyNode of this Joint
   BodyNode* getParentBodyNode();
+
   /// Get the (const) parent BodyNode of this Joint
   const BodyNode* getParentBodyNode() const;
 
   /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
   Skeleton* getSkeleton();
+
   /// Get the (const) Skeleton that this Joint belongs to.
   const Skeleton* getSkeleton() const;
 

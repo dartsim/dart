@@ -74,6 +74,7 @@ public:
 
   /// Get the BodyNode this Marker belongs to
   BodyNode* getBodyNode();
+
   /// Get the (const) BodyNode this Marker belongs to
   const BodyNode* getBodyNode() const;
 

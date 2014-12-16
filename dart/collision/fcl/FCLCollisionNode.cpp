@@ -136,7 +136,7 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(int _idx) const {
 //==============================================================================
 template<class BV>
 fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
-                              const aiScene *_mesh) {
+                              const aiScene* _mesh) {
   assert(_mesh);
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
   model->beginModel();

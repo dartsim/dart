@@ -84,7 +84,9 @@ const std::string& Joint::setName(const std::string& _name, bool _rename_dofs) {
     mSkeleton->addEntryToJointNameMgr(this);
   }
   else
+  {
     mName = _name;
+  }
 
   if(_rename_dofs)
     updateDegreeOfFreedomNames();

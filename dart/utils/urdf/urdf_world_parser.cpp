@@ -34,16 +34,18 @@
 
 /* Author: A. Huaman */
 
+#include "urdf_world_parser.h"
+
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+
+#include <tinyxml.h>
+
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_model/model.h>
 #include <urdf_world/world.h>
 #include <urdf_model/pose.h>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <tinyxml.h>
-
-#include "urdf_world_parser.h"
 
 const bool debug = false;
 
@@ -55,7 +57,7 @@ namespace urdf{
   /**
    * @function parseWorldURDF
    */
-  World* parseWorldURDF(const std::string &_xml_string, std::string _root_to_world_path) {
+  World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world_path) {
     
     World* world = new World();
     TiXmlDocument xml_doc;

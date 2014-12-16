@@ -82,7 +82,7 @@ public:
     virtual void clear(const Eigen::Vector3d& _color);
 
     virtual void setDefaultLight();
-    virtual void addLight(Light *_light);
+    virtual void addLight(Light* _light);
     virtual void eraseAllLights();
     virtual void turnLightsOff();
     virtual void turnLightsOn();
@@ -104,16 +104,16 @@ public:
     virtual void drawEllipsoid(const Eigen::Vector3d& _size);
     virtual void drawCube(const Eigen::Vector3d& _size);
     virtual void drawCylinder(double _radius, double _height);
-    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene *_mesh);
+    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
     virtual void drawList(unsigned int index);
 
-    virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene *_mesh);
+    virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh);
 
     virtual void setPenColor(const Eigen::Vector4d& _col);
     virtual void setPenColor(const Eigen::Vector3d& _col);
 
-    virtual void saveToImage(const char *_filename, DecoBufferType _buffType = BT_Back);
-    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void *_pixels);
+    virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back);
+    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
 
     virtual Camera* getCamera();
 

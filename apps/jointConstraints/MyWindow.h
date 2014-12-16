@@ -42,10 +42,7 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/constraint/WeldJointConstraint.h"
-#include "dart/gui/SimWindow.h"
+#include "dart/dart.h"
 
 class MyWindow : public dart::gui::SimWindow
 {
@@ -66,7 +63,7 @@ public:
   //  virtual void draw();
   virtual void keyboard(unsigned char key, int x, int y);
 
-  void setController(Controller *_controller)
+  void setController(Controller* _controller)
   {
     mController = _controller;
   }

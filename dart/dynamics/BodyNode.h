@@ -151,7 +151,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Add a visualization shape into the bodynode
-  void addVisualizationShape(Shape *_p);
+  void addVisualizationShape(Shape* _p);
 
   /// Return the number of visualization shapes
   size_t getNumVisualizationShapes() const;
@@ -162,17 +162,20 @@ public:
   const Shape* getVisualizationShape(int _index) const;
 
   /// Add a collision shape into the bodynode
-  void addCollisionShape(Shape *_p);
+  void addCollisionShape(Shape* _p);
 
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
 
+  /// Return _index-th collision shape
   Shape* getCollisionShape(int _index);
+
   /// Return (const) _index-th collision shape
   const Shape* getCollisionShape(int _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
   Skeleton* getSkeleton();
+
   /// Return the (const) Skeleton this BodyNode belongs to
   const Skeleton* getSkeleton() const;
 
@@ -181,11 +184,13 @@ public:
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
+
   /// Return the (const) parent Joint of this BodyNode
   const Joint* getParentJoint() const;
 
   /// Return the parent BodyNdoe of this BodyNode
   BodyNode* getParentBodyNode();
+
   /// Return the (const) parent BodyNode of this BodyNode
   const BodyNode* getParentBodyNode() const;
 
@@ -194,6 +199,7 @@ public:
 
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
+
   /// Return the (const) _index-th child BodyNode of this BodyNode
   const BodyNode* getChildBodyNode(size_t _index) const;
 
@@ -206,8 +212,10 @@ public:
   /// Return the number of markers of the bodynode
   size_t getNumMarkers() const;
 
-  Marker* getMarker(size_t _index);
   /// Return _index-th marker of the bodynode
+  Marker* getMarker(size_t _index);
+
+  /// Return (const) _index-th marker of the bodynode
   const Marker* getMarker(size_t _index) const;
 
   /// Return true if _genCoordIndex-th generalized coordinate

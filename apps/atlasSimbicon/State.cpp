@@ -36,15 +36,6 @@
 
 #include "apps/atlasSimbicon/State.h"
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Shape.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/collision/CollisionDetector.h"
-
 #include "apps/atlasSimbicon/TerminalCondition.h"
 
 // Macro for functions not implemented yet

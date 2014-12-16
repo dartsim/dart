@@ -67,8 +67,8 @@ namespace collision {
 struct CollisionFilter : public btOverlapFilterCallback
 {
   // return true when pairs need collision
-  virtual bool needBroadphaseCollision(btBroadphaseProxy *_proxy0,
-                                       btBroadphaseProxy *_proxy1) const
+  virtual bool needBroadphaseCollision(btBroadphaseProxy* _proxy0,
+                                       btBroadphaseProxy* _proxy1) const
   {
     assert((_proxy0 != NULL && _proxy1 != NULL) &&
            "Bullet broadphase overlapping pair proxies are NULL");

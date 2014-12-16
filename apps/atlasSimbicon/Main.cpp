@@ -37,13 +37,7 @@
 
 #include <iostream>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/utils/sdf/SoftSdfParser.h"
-#include "dart/utils/urdf/DartLoader.h"
+#include "dart/dart.h"
 
 #include "apps/atlasSimbicon/MyWindow.h"
 #include "apps/atlasSimbicon/Controller.h"

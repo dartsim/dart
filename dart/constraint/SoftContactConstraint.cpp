@@ -1075,8 +1075,8 @@ const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
 
 //==============================================================================
 dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
-    dynamics::SoftBodyNode *_softBodyNode,
-    const Eigen::Vector3d &_point,
+    dynamics::SoftBodyNode* _softBodyNode,
+    const Eigen::Vector3d& _point,
     int _faceId) const
 {
   return selectCollidingPointMassT<dynamics::PointMass*,
