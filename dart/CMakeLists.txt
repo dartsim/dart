@@ -69,14 +69,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 # Library
 add_library(dart-core ${core_srcs})
 target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
-set_target_properties(dart-core PROPERTIES SOVERSION "${DART_MAJOR_VERSION}"
-                                           VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}")
+set_target_properties(dart-core PROPERTIES SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
+                                           VERSION "${DART_VERSION}")
 
 if(NOT BUILD_CORE_ONLY)
   add_library(dart ${noncore_srcs})
   target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
-  set_target_properties(dart PROPERTIES SOVERSION "${DART_MAJOR_VERSION}"
-                                        VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}")
+  set_target_properties(dart PROPERTIES SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
+                                        VERSION "${DART_VERSION}")
 endif()
 
 
