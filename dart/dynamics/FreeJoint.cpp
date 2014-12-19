@@ -59,7 +59,8 @@ FreeJoint::~FreeJoint()
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  mQ.linear()      = mQ.linear() * math::expMapRot(mVelocities.head<3>() * _dt);
+  mQ.linear()      = mQ.linear() * math::expMapRot(mJacobian.topRows<3>()
+                                                   * mVelocities * _dt);
   mQ.translation() = mQ.translation() + mVelocities.tail<3>() * _dt;
 
   mPositions.head<3>() = math::logMap(mQ.linear());
