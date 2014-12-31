@@ -243,7 +243,10 @@ protected:
   /// The default name can be renamed by setName() as well.
   std::string mName;
 
-  /// Index of this DegreeOfFreedom within its Joint
+  /// \brief Index of this DegreeOfFreedom within its Joint
+  ///
+  /// The index is determined when this DegreeOfFreedom is created by the Joint
+  /// it belongs to. Note that the index should be unique within the Joint.
   size_t mIndexInJoint;
 
   /// Index of this DegreeOfFreedom within its Skeleton

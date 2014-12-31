@@ -388,10 +388,6 @@ protected:
       const Eigen::Vector6d& _spatial);
 
 protected:
-  // TODO(JS): Need?
-  ///
-  size_t mIndexInSkeleton;
-
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
 

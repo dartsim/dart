@@ -48,7 +48,6 @@ namespace dynamics {
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
-    mIndexInSkeleton(0u),
     mDof(createDofPointer(_name, 0)),
     mPosition(0.0),
     mPositionLowerLimit(-DART_DBL_INF),
@@ -109,8 +108,6 @@ void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
     return;
   }
 
-  mIndexInSkeleton = _indexInSkeleton;
-  // TODO(MXG): I think ^this member variable is redundant now that we have mDof
   mDof->mIndexInSkeleton = _indexInSkeleton;
 }
 
@@ -124,7 +121,7 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
     return 0;
   }
 
-  return mIndexInSkeleton;
+  return mDof->mIndexInSkeleton;
 }
 
 //==============================================================================
@@ -1034,7 +1031,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -1057,7 +1054,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
