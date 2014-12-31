@@ -1,6 +1,6 @@
 /* generated code, do not edit. */
 
-#include "matrix.h"
+#include "dart/lcpsolver/matrix.h"
 
 
 dReal _dDot (const dReal *a, const dReal *b, int n)

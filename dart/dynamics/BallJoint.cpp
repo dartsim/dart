@@ -60,7 +60,8 @@ BallJoint::~BallJoint()
 //==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear() * math::expMapRot(mVelocities * _dt);
+  mR.linear() = mR.linear() * math::expMapRot(mJacobian.topRows<3>()
+                                              * mVelocities * _dt);
 
   mPositions = math::logMap(mR.linear());
 }

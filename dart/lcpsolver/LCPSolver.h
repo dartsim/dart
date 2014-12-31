@@ -37,7 +37,7 @@
 #ifndef DART_LCPSOLVER_LCPSOLVER_H_
 #define DART_LCPSOLVER_LCPSOLVER_H_
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 namespace dart {
 namespace lcpsolver {
