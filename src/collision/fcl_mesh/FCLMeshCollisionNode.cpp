@@ -142,8 +142,12 @@ bool FCLMeshCollisionNode::detectCollision(
         if(res.isCollision()) {
             collision = true;
         }
-        if(!_contactPoints) {
-            return collision;
+
+        if (!_contactPoints) {
+            if (collision)
+                return true;
+            else
+                continue;
         }
 
         int numCoplanarContacts = 0;
