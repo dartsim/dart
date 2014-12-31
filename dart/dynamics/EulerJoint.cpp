@@ -60,10 +60,10 @@ EulerJoint::~EulerJoint()
 }
 
 //==============================================================================
-void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _rename_dofs)
+void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
   mAxisOrder = _order;
-  if(_rename_dofs)
+  if (_renameDofs)
     updateDegreeOfFreedomNames();
 }
 
@@ -77,7 +77,7 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch(mAxisOrder)
+  switch (mAxisOrder)
   {
     case AO_ZYX:
       affixes.push_back("_z");
@@ -104,10 +104,10 @@ void EulerJoint::updateDegreeOfFreedomNames()
             << "' (" << mAxisOrder << ")\n";
   }
 
-  if(affixes.size() == 3)
+  if (affixes.size() == 3)
   {
-    for(size_t i=0; i<3; ++i)
-      mDofs[i]->setName(mName+affixes[i]);
+    for (size_t i = 0; i < 3; ++i)
+      mDofs[i]->setName(mName + affixes[i]);
   }
 }
 

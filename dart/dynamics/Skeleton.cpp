@@ -46,11 +46,11 @@
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Marker.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/SoftBodyNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -124,11 +124,10 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom *_newDof)
+const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom* _newDof)
 {
   _newDof->mName = mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(),
                                                       _newDof);
-
   return _newDof->mName;
 }
 
@@ -144,14 +143,14 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 //==============================================================================
 void Skeleton::addMarkersOfBodyNode(BodyNode* _node)
 {
-  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+  for (size_t i=0; i<_node->getNumMarkers(); ++i)
     addEntryToMarkerNameMgr(_node->getMarker(i));
 }
 
 //==============================================================================
 void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
 {
-  for(size_t i=0; i<_node->getNumMarkers(); ++i)
+  for (size_t i=0; i<_node->getNumMarkers(); ++i)
     mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
 }
 
@@ -272,7 +271,7 @@ size_t Skeleton::getNumSoftBodyNodes() const
 //==============================================================================
 BodyNode* Skeleton::getRootBodyNode()
 {
-  if(mBodyNodes.size()==0)
+  if (mBodyNodes.size()==0)
     return NULL;
 
   // We assume that the first element of body nodes is root.
@@ -290,7 +289,7 @@ template<typename T>
 static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
-  if(_idx < _vec.size())
+  if (_idx < _vec.size())
     return _vec[_idx];
 
   return NULL;
@@ -347,7 +346,7 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 Joint* Skeleton::getJoint(size_t _idx)
 {
   BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
-  if(bn)
+  if (bn)
     return bn->getParentJoint();
 
   return NULL;
@@ -376,7 +375,7 @@ DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
   assert(_idx < getNumDofs());
 
-  if(_idx >= getNumDofs())
+  if (_idx >= getNumDofs())
     return NULL;
 
   return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
@@ -387,22 +386,22 @@ const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
   assert(_idx < getNumDofs());
 
-  if(_idx >= getNumDofs())
+  if (_idx >= getNumDofs())
     return NULL;
 
   return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
 }
 
 //==============================================================================
-DegreeOfFreedom* Skeleton::getDof(const std::string &name)
+DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 {
-  return mNameMgrForDofs.getObject(name);
+  return mNameMgrForDofs.getObject(_name);
 }
 
 //==============================================================================
-const DegreeOfFreedom* Skeleton::getDof(const std::string &name) const
+const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 {
-  return mNameMgrForDofs.getObject(name);
+  return mNameMgrForDofs.getObject(_name);
 }
 
 //==============================================================================
@@ -1261,9 +1260,9 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-void Skeleton::registerJoint(Joint *_newJoint)
+void Skeleton::registerJoint(Joint* _newJoint)
 {
-  if(NULL == _newJoint)
+  if (NULL == _newJoint)
   {
     dterr << "[Skeleton::registerJoint] Error: Attempting to add a NULL joint "
              "to the Skeleton named '" << mName << "'!\n";
@@ -1273,7 +1272,7 @@ void Skeleton::registerJoint(Joint *_newJoint)
   addEntryToJointNameMgr(_newJoint);
   _newJoint->mSkeleton = this;
 
-  for(size_t i=0; i<_newJoint->getNumDofs(); ++i)
+  for (size_t i = 0; i < _newJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _newJoint->getDof(i);
     dof->mName = mNameMgrForDofs.issueNewNameAndAdd(dof->getName(), dof);
@@ -1281,14 +1280,14 @@ void Skeleton::registerJoint(Joint *_newJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterJoint(Joint *_oldJoint)
+void Skeleton::unregisterJoint(Joint* _oldJoint)
 {
-  if(NULL == _oldJoint)
+  if (NULL == _oldJoint)
     return;
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
 
-  for(size_t i=0; i<_oldJoint->getNumDofs(); ++i)
+  for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());

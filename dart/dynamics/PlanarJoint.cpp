@@ -60,45 +60,45 @@ PlanarJoint::~PlanarJoint()
 }
 
 //==============================================================================
-void PlanarJoint::setXYPlane(bool _rename_dofs)
+void PlanarJoint::setXYPlane(bool _renameDofs)
 {
   mPlaneType = PT_XY;
   mRotAxis   = Eigen::Vector3d::UnitZ();
   mTransAxis1 = Eigen::Vector3d::UnitX();
   mTransAxis2 = Eigen::Vector3d::UnitY();
 
-  if(_rename_dofs)
+  if (_renameDofs)
     updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
-void PlanarJoint::setYZPlane(bool _rename_dofs)
+void PlanarJoint::setYZPlane(bool _renameDofs)
 {
   mPlaneType = PT_YZ;
   mRotAxis   = Eigen::Vector3d::UnitX();
   mTransAxis1 = Eigen::Vector3d::UnitY();
   mTransAxis2 = Eigen::Vector3d::UnitZ();
 
-  if(_rename_dofs)
+  if (_renameDofs)
     updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
-void PlanarJoint::setZXPlane(bool _rename_dofs)
+void PlanarJoint::setZXPlane(bool _renameDofs)
 {
   mPlaneType = PT_ZX;
   mRotAxis   = Eigen::Vector3d::UnitY();
   mTransAxis1 = Eigen::Vector3d::UnitZ();
   mTransAxis2 = Eigen::Vector3d::UnitX();
 
-  if(_rename_dofs)
+  if (_renameDofs)
     updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
 void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
                                     const Eigen::Vector3d& _transAxis2,
-                                    bool _rename_dofs)
+                                    bool _renameDofs)
 {
   // Set plane type as arbitrary plane
   mPlaneType = PT_ARBITRARY;
@@ -118,7 +118,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
   // Rotational axis
   mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();
 
-  if(_rename_dofs)
+  if (_renameDofs)
     updateDegreeOfFreedomNames();
 }
 
@@ -150,7 +150,7 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch(mPlaneType)
+  switch (mPlaneType)
   {
     case PT_XY:
       affixes.push_back("_x");
@@ -173,9 +173,9 @@ void PlanarJoint::updateDegreeOfFreedomNames()
             << "' (" << mPlaneType << ")\n";
   }
 
-  if(affixes.size() == 2)
+  if (affixes.size() == 2)
   {
-    for(size_t i=0; i<2; ++i)
+    for (size_t i = 0; i < 2; ++i)
       mDofs[i]->setName(mName+affixes[i]);
   }
 }

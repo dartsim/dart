@@ -63,8 +63,10 @@ public:
   /// Destructor
   virtual ~EulerJoint();
 
-  ///
-  void setAxisOrder(AxisOrder _order, bool _rename_dofs=true);
+  /// \brief Set the axis order
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the axis order.
+  void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
   ///
   AxisOrder getAxisOrder() const;

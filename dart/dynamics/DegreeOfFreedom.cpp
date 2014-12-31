@@ -44,11 +44,11 @@ namespace dynamics {
 //==============================================================================
 const std::string& DegreeOfFreedom::setName(const std::string& _name)
 {
-  if(mName == _name)
+  if (mName == _name)
     return mName;
 
   Skeleton* skel = mJoint->getSkeleton();
-  if(skel)
+  if (skel)
   {
     skel->mNameMgrForDofs.removeName(mName);
     mName = _name;
@@ -355,11 +355,11 @@ const BodyNode* DegreeOfFreedom::getParentBodyNode() const
 //==============================================================================
 DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
                                  const std::string& _name,
-                                 size_t _indexInJoint) :
-  mName(_name),
-  mIndexInJoint(_indexInJoint),
-  mIndexInSkeleton(0),
-  mJoint(_joint)
+                                 size_t _indexInJoint)
+  : mName(_name),
+    mIndexInJoint(_indexInJoint),
+    mIndexInSkeleton(0),
+    mJoint(_joint)
 {
 
 }

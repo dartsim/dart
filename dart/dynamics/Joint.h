@@ -67,8 +67,14 @@ public:
   /// Destructor
   virtual ~Joint();
 
-  /// Set joint name
-  const std::string& setName(const std::string& _name, bool _rename_dofs=true);
+  /// \brief Set joint name and return the name.
+  /// \param[in] _renameDofs If true, the names of the joint's degrees of
+  /// freedom will be updated by calling updateDegreeOfFreedomNames().
+  ///
+  /// If the name is already taken, this will return an altered version which
+  /// will be used by the Skeleton. Otherwise, return _name.
+  const std::string& setName(const std::string& _name,
+                             bool _renameDofs = true);
 
   /// Get joint name
   const std::string& getName() const;
@@ -399,9 +405,14 @@ protected:
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
 
-  /// Create a DegreeOfFreedom pointer (because the DegreeOfFreedom class has a
-  /// protected constructor). You are responsible for memory management of the
-  /// pointer which is returned.
+  /// \brief Create a DegreeOfFreedom pointer.
+  /// \param[in] _name DegreeOfFreedom's name.
+  /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
+  /// that the index should be unique within the joint.
+  ///
+  /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
+  /// class has a protected constructor, and the Joint is responsible for memory
+  /// management of the pointer which is returned.
   DegreeOfFreedom* createDofPointer(const std::string& _name,
                                     size_t _indexInJoint);
 

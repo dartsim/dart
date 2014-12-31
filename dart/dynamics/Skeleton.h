@@ -195,10 +195,10 @@ public:
   const DegreeOfFreedom* getDof(size_t _idx) const;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
-  DegreeOfFreedom* getDof(const std::string& name);
+  DegreeOfFreedom* getDof(const std::string& _name);
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
-  const DegreeOfFreedom* getDof(const std::string& name) const;
+  const DegreeOfFreedom* getDof(const std::string& _name) const;
 
   /// Get const joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;

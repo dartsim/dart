@@ -68,19 +68,28 @@ public:
   /// Destructor
   virtual ~PlanarJoint();
 
-  /// Set plane type as XY-plane
-  void setXYPlane(bool _rename_dofs=true);
+  /// \brief Set plane type as XY-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setXYPlane(bool _renameDofs = true);
 
-  /// Set plane type as YZ-plane
-  void setYZPlane(bool _rename_dofs=true);
+  /// \brief Set plane type as YZ-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setYZPlane(bool _renameDofs = true);
 
-  /// Set plane type as ZX-plane
-  void setZXPlane(bool _rename_dofs=true);
+  /// \brief Set plane type as ZX-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setZXPlane(bool _renameDofs = true);
 
-  /// Set plane type as arbitrary plane with two orthogonal translational axes
+  /// \brief Set plane type as arbitrary plane with two orthogonal translational
+  /// axes
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
   void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
                          const Eigen::Vector3d& _transAxis2,
-                         bool _rename_dofs=true);
+                         bool _renameDofs = true);
 
   /// Return plane type
   PlaneType getPlaneType() const;

@@ -392,6 +392,7 @@ protected:
   ///
   size_t mIndexInSkeleton;
 
+  /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
 
   //----------------------------------------------------------------------------

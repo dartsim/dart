@@ -8,8 +8,8 @@ using namespace dart;
 using namespace math;
 using namespace dynamics;
 
-
-TEST(NAME_MANAGEMENT, BASIC)
+//==============================================================================
+TEST(NameManagement, Basic)
 {
   //--------------------------------------------------------------------------
   //
@@ -158,7 +158,7 @@ TEST(NAME_MANAGEMENT, BASIC)
   EXPECT_TRUE(joint3->getDof(5) == skel->getDof(9));
 
   // Test that GenCoordInfos agree with the DegreeOfFreedom classes
-  for(size_t i=0; i<skel->getNumDofs(); ++i)
+  for (size_t i = 0; i < skel->getNumDofs(); ++i)
   {
     EXPECT_TRUE(skel->getDof(i)->getIndexInSkeleton() == i);
     EXPECT_TRUE(skel->getDof(i)->getIndexInJoint() ==
@@ -187,7 +187,8 @@ TEST(NAME_MANAGEMENT, BASIC)
   EXPECT_TRUE(skel->getJoint(oldJointName) == NULL);
 }
 
-TEST(NAME_MANAGEMENT, SETPATTERN)
+//==============================================================================
+TEST(NameManagement, SetPattern)
 {
   dart::common::NameManager<BodyNode> test_mgr;
 
@@ -223,10 +224,9 @@ TEST(NAME_MANAGEMENT, SETPATTERN)
   delete bn0;
   delete bn1;
   delete bn2;
-
 }
 
-
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

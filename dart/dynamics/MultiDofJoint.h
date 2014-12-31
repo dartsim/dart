@@ -557,7 +557,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
-  for(size_t i=0; i<DOF; ++i)
+  for (size_t i = 0; i < DOF; ++i)
     mDofs[i] = createDofPointer(mName, i);
 }
 
@@ -580,7 +580,7 @@ size_t MultiDofJoint<DOF>::getDof() const
 template <size_t DOF>
 DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
-  if(_index < DOF)
+  if (_index < DOF)
     return mDofs[_index];
   return NULL;
 }
@@ -589,7 +589,7 @@ DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 template <size_t DOF>
 const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
 {
-  if(_index < DOF)
+  if (_index < DOF)
     return mDofs[_index];
   return NULL;
 }

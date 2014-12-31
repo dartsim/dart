@@ -49,6 +49,7 @@ namespace dynamics {
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
     mIndexInSkeleton(0u),
+    mDof(createDofPointer(_name, 0)),
     mPosition(0.0),
     mPositionLowerLimit(-DART_DBL_INF),
     mPositionUpperLimit(DART_DBL_INF),
@@ -78,7 +79,6 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mTotalForce(0.0),
     mTotalImpulse(0.0)
 {
-  mDof = createDofPointer(_name, 0);
 }
 
 //==============================================================================
@@ -130,7 +130,7 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 //==============================================================================
 DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 {
-  if(0 == _index)
+  if (0 == _index)
     return mDof;
   return NULL;
 }
@@ -138,7 +138,7 @@ DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 //==============================================================================
 const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
 {
-  if(0 == _index)
+  if (0 == _index)
     return mDof;
   return NULL;
 }
@@ -726,6 +726,7 @@ double SingleDofJoint::getPotentialEnergy() const
 //==============================================================================
 void SingleDofJoint::updateDegreeOfFreedomNames()
 {
+  // Same name as the joint it belongs to.
   mDof->setName(mName);
 }
 

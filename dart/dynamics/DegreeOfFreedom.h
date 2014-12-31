@@ -51,7 +51,6 @@ template<size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
-
 class DegreeOfFreedom
 {
 public:
@@ -227,7 +226,21 @@ protected:
                   const std::string& _name,
                   size_t _indexInJoint);
 
-  /// Name of this DegreeOfFreedom
+  /// \brief Name of this DegreeOfFreedom
+  ///
+  /// DegreeOfFreedom's name will be automatically given by the joint it belongs
+  /// to. Below is the naming policy:
+  ///   - SingleDofJoint \n
+  ///       Same name as the joint it belongs to.
+  ///   - MultiDofJoint \n
+  ///       "[Joint_name]+[affix]" is used. The affix is determined according
+  ///       to the role they play in the joint. For example, suppose there's a
+  ///       TranslationalJoint named "trans_joint". Then the each dof to be
+  ///       named "trans_joint_x", "trans_joint_y", and "trans_joint_z".
+  ///   - ZeroDofJoint \n
+  ///       ZeroDofJoint doesn't have dof.
+  ///
+  /// The default name can be renamed by setName() as well.
   std::string mName;
 
   /// Index of this DegreeOfFreedom within its Joint
