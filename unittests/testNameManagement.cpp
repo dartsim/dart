@@ -157,13 +157,10 @@ TEST(NameManagement, Basic)
   EXPECT_TRUE(joint3->getDof(4) == skel->getDof(8));
   EXPECT_TRUE(joint3->getDof(5) == skel->getDof(9));
 
-  // Test that GenCoordInfos agree with the DegreeOfFreedom classes
+  // Test whether the return of getIndexInSkeleton() and the index of the
+  // corresponding DegreeOfFreedom in the Skeleton are same
   for (size_t i = 0; i < skel->getNumDofs(); ++i)
-  {
     EXPECT_TRUE(skel->getDof(i)->getIndexInSkeleton() == i);
-    EXPECT_TRUE(skel->getDof(i)->getIndexInJoint() ==
-                skel->getGenCoordInfo(i).localIndex);
-  }
 
   // Test whether all the joint names are still unique
   EXPECT_FALSE(joint1->getName() == joint2->getName());

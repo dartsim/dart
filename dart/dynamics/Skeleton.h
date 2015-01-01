@@ -68,7 +68,7 @@ struct GenCoordInfo
 {
   Joint* joint;
   size_t localIndex;
-};
+} DEPRECATED(4.3);
 
 /// class Skeleton
 class Skeleton
@@ -226,7 +226,12 @@ public:
   /// Return degrees of freedom of this skeleton
   size_t getNumDofs() const;
 
-  ///
+  /// \brief Return _index-th GenCoordInfo
+  /// \warning GenCoordInfo is deprecated so this function is not necessary
+  /// anymore. Please use DegreeOfFreedom by calling getDof(). We will keep this
+  /// function until the next major version up only for backward compatibility
+  /// in minor version ups.
+  DEPRECATED(4.3)
   GenCoordInfo getGenCoordInfo(size_t _index) const;
 
   //----------------------------------------------------------------------------
@@ -239,11 +244,10 @@ public:
   /// Get a single position
   double getPosition(size_t _index) const;
 
-  /// Set configurations defined in terms of generalized coordinates and update
-  /// Cartesian terms of body nodes using following parameters.
+  /// Set generalized positions
   void setPositions(const Eigen::VectorXd& _positions);
 
-  /// Get positions
+  /// Get generalized positions
   Eigen::VectorXd getPositions() const;
 
   /// Set the configuration of this skeleton described in generalized
@@ -282,11 +286,9 @@ public:
   double getVelocity(size_t _index) const;
 
   /// Set generalized velocities
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  void setVelocities(const Eigen::VectorXd& _genVels);
+  void setVelocities(const Eigen::VectorXd& _velocities);
 
-  /// Get velocities
+  /// Get generalized velocities
   Eigen::VectorXd getVelocities() const;
 
   /// Set zero all the velocities
@@ -682,14 +684,17 @@ protected:
   /// Name
   std::string mName;
 
-  /// Degrees of freedom
+  /// Number of degrees of freedom (aka generalized coordinates)
   size_t mDof;
 
-  ///
+  /// \brief Array of GenCoordInfo objects
+  /// \warning GenCoordInfo is deprecated because the functionality is replaced
+  /// by DegreeOfFreedom.
+  DEPRECATED(4.3)
   std::vector<GenCoordInfo> mGenCoordInfos;
-  // TODO(MXG): Now that we have the DegreeOfFreedom class, this vector is
-  // probably outdated. We can instead have a std::vector<DegreeOfFreedom*>,
-  // because each DegreeOfFreedom has all the information that GenCoordInfo has
+
+  /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
+  std::vector<DegreeOfFreedom*> mDofs;
 
   /// True if self collision check is enabled
   bool mEnabledSelfCollisionCheck;

@@ -378,7 +378,7 @@ DegreeOfFreedom* Skeleton::getDof(size_t _idx)
   if (_idx >= getNumDofs())
     return NULL;
 
-  return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
+  return mDofs[_idx];
 }
 
 //==============================================================================
@@ -389,7 +389,7 @@ const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
   if (_idx >= getNumDofs())
     return NULL;
 
-  return mGenCoordInfos[_idx].joint->getDof(mGenCoordInfos[_idx].localIndex);
+  return mDofs[_idx];
 }
 
 //==============================================================================
@@ -449,25 +449,23 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   }
 
   // Initialize body nodes and generalized coordinates
-  mGenCoordInfos.clear();
+  mDofs.clear();
   mDof = 0;
-  for (size_t i = 0; i < getNumBodyNodes(); ++i)
+  const size_t numBodyNodes = getNumBodyNodes();
+  for (size_t i = 0; i < numBodyNodes; ++i)
   {
-    Joint* joint = mBodyNodes[i]->getParentJoint();
+    BodyNode* bodyNode = mBodyNodes[i];
+    Joint*    joint    = bodyNode->getParentJoint();
 
-    for (size_t j = 0; j < joint->getNumDofs(); ++j)
+    const size_t numDofsOfJoint = joint->getNumDofs();
+    for (size_t j = 0; j < numDofsOfJoint; ++j)
     {
-      GenCoordInfo genCoord;
-      genCoord.joint = joint;
-      genCoord.localIndex = j;
-
-      mGenCoordInfos.push_back(genCoord);
-
-      joint->setIndexInSkeleton(j, mGenCoordInfos.size() - 1);
+      mDofs.push_back(joint->getDof(j));
+      joint->setIndexInSkeleton(j, mDof + j);
     }
 
-    mBodyNodes[i]->init(this);
-    mDof += mBodyNodes[i]->getParentJoint()->getNumDofs();
+    bodyNode->init(this);
+    mDof += joint->getNumDofs();
   }
 
   // Compute transformations, velocities, and partial accelerations
@@ -521,8 +519,7 @@ void Skeleton::setPosition(size_t _index, double _position)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setPosition(mGenCoordInfos[_index].localIndex,
-                                            _position);
+  mDofs[_index]->setPosition(_position);
 }
 
 //==============================================================================
@@ -530,28 +527,21 @@ double Skeleton::getPosition(size_t _index) const
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getPosition(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getPosition();
 }
 
 //==============================================================================
-void Skeleton::setPositions(const Eigen::VectorXd& _configs)
+void Skeleton::setPositions(const Eigen::VectorXd& _positions)
 {
-  size_t index = 0;
-  size_t dof = 0;
-  Joint* joint;
-
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    joint = mBodyNodes[i]->getParentJoint();
-
-    dof = joint->getNumDofs();
+    Joint*       joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
-      joint->setPositions(_configs.segment(index, dof));
-
-      index += dof;
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      joint->setPositions(_positions.segment(index, dof));
     }
   }
 }
@@ -559,19 +549,21 @@ void Skeleton::setPositions(const Eigen::VectorXd& _configs)
 //==============================================================================
 Eigen::VectorXd Skeleton::getPositions() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
-  Eigen::VectorXd pos(dof);
+  Eigen::VectorXd q(getNumDofs());
 
-  for (size_t i = 0; i < dof; ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    pos[index++]
-        = mGenCoordInfos[i].joint->getPosition(mGenCoordInfos[i].localIndex);
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
+
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      q.segment(index, dof) = joint->getPositions();
+    }
   }
 
-  assert(index == dof);
-
-  return pos;
+  return q;
 }
 
 //==============================================================================
@@ -580,16 +572,8 @@ Eigen::VectorXd Skeleton::getPositionSegment(
 {
   Eigen::VectorXd q(_id.size());
 
-  Joint* joint;
-  size_t localIndex;
-
   for (size_t i = 0; i < _id.size(); ++i)
-  {
-    joint = mGenCoordInfos[_id[i]].joint;
-    localIndex = mGenCoordInfos[_id[i]].localIndex;
-
-    q[i] = joint->getPosition(localIndex);
-  }
+    q[i] = mDofs[_id[i]]->getPosition();
 
   return q;
 }
@@ -598,16 +582,8 @@ Eigen::VectorXd Skeleton::getPositionSegment(
 void Skeleton::setPositionSegment(const std::vector<size_t>& _id,
                                   const Eigen::VectorXd& _positions)
 {
-  Joint* joint;
-  size_t localIndex;
-
   for (size_t i = 0; i < _id.size(); ++i)
-  {
-    joint = mGenCoordInfos[_id[i]].joint;
-    localIndex = mGenCoordInfos[_id[i]].localIndex;
-
-    joint->setPosition(localIndex, _positions[i]);
-  }
+    mDofs[_id[i]]->setPosition(_positions[i]);
 }
 
 //==============================================================================
@@ -622,8 +598,7 @@ void Skeleton::setPositionLowerLimit(size_t _index, double _position)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setPositionLowerLimit(
-        mGenCoordInfos[_index].localIndex, _position);
+  mDofs[_index]->setPositionLowerLimit(_position);
 }
 
 //==============================================================================
@@ -631,8 +606,7 @@ double Skeleton::getPositionLowerLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getPositionLowerLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getPositionLowerLimit();
 }
 
 //==============================================================================
@@ -640,8 +614,7 @@ void Skeleton::setPositionUpperLimit(size_t _index, double _position)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setPositionUpperLimit(
-        mGenCoordInfos[_index].localIndex, _position);
+  mDofs[_index]->setPositionUpperLimit(_position);
 }
 
 //==============================================================================
@@ -649,8 +622,7 @@ double Skeleton::getPositionUpperLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getPositionUpperLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getPositionUpperLimit();
 }
 
 //==============================================================================
@@ -658,8 +630,7 @@ void Skeleton::setVelocity(size_t _index, double _velocity)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setVelocity(mGenCoordInfos[_index].localIndex,
-                                            _velocity);
+  mDofs[_index]->setVelocity(_velocity);
 }
 
 //==============================================================================
@@ -667,28 +638,21 @@ double Skeleton::getVelocity(size_t _index) const
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getVelocity(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getVelocity();
 }
 
 //==============================================================================
-void Skeleton::setVelocities(const Eigen::VectorXd& _genVels)
+void Skeleton::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  size_t index = 0;
-  size_t dof = 0;
-  Joint* joint;
-
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    joint = mBodyNodes[i]->getParentJoint();
-
-    dof = joint->getNumDofs();
+    Joint*       joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
-      joint->setVelocities(_genVels.segment(index, dof));
-
-      index += dof;
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      joint->setVelocities(_velocities.segment(index, dof));
     }
   }
 }
@@ -696,19 +660,21 @@ void Skeleton::setVelocities(const Eigen::VectorXd& _genVels)
 //==============================================================================
 Eigen::VectorXd Skeleton::getVelocities() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
-  Eigen::VectorXd vel(dof);
+  Eigen::VectorXd dq(getNumDofs());
 
-  for (size_t i = 0; i < dof; ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    vel[index++]
-        = mGenCoordInfos[i].joint->getVelocity(mGenCoordInfos[i].localIndex);
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
+
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      dq.segment(index, dof) = joint->getVelocities();
+    }
   }
 
-  assert(index == dof);
-
-  return vel;
+  return dq;
 }
 
 //==============================================================================
@@ -723,8 +689,7 @@ void Skeleton::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setVelocityLowerLimit(
-        mGenCoordInfos[_index].localIndex, _velocity);
+  mDofs[_index]->setVelocityLowerLimit(_velocity);
 }
 
 //==============================================================================
@@ -732,8 +697,7 @@ double Skeleton::getVelocityLowerLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getVelocityLowerLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getVelocityLowerLimit();
 }
 
 //==============================================================================
@@ -741,8 +705,7 @@ void Skeleton::setVelocityUpperLimit(size_t _index, double _velocity)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setVelocityUpperLimit(
-        mGenCoordInfos[_index].localIndex, _velocity);
+  mDofs[_index]->setVelocityUpperLimit(_velocity);
 }
 
 //==============================================================================
@@ -750,8 +713,7 @@ double Skeleton::getVelocityUpperLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getVelocityUpperLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getVelocityUpperLimit();
 }
 
 //==============================================================================
@@ -759,8 +721,7 @@ void Skeleton::setAcceleration(size_t _index, double _acceleration)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setAcceleration(
-        mGenCoordInfos[_index].localIndex, _acceleration);
+  mDofs[_index]->setAcceleration(_acceleration);
 }
 
 //==============================================================================
@@ -768,28 +729,21 @@ double Skeleton::getAcceleration(size_t _index) const
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getAcceleration(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getAcceleration();
 }
 
 //==============================================================================
 void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  size_t index = 0;
-  size_t dof = 0;
-  Joint* joint;
-
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    joint = mBodyNodes[i]->getParentJoint();
-
-    dof = joint->getNumDofs();
+    Joint*       joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
       joint->setAccelerations(_accelerations.segment(index, dof));
-
-      index += dof;
     }
   }
 }
@@ -797,19 +751,21 @@ void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 //==============================================================================
 Eigen::VectorXd Skeleton::getAccelerations() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
-  Eigen::VectorXd acc(dof);
+  Eigen::VectorXd ddq(getNumDofs());
 
-  for (size_t i = 0; i < dof; ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    acc[index++]
-        = mGenCoordInfos[i].joint->getAcceleration(mGenCoordInfos[i].localIndex);
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
+
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      ddq.segment(index, dof) = joint->getAccelerations();
+    }
   }
 
-  assert(index == dof);
-
-  return acc;
+  return ddq;
 }
 
 //==============================================================================
@@ -824,8 +780,7 @@ void Skeleton::setForce(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setForce(
-        mGenCoordInfos[_index].localIndex, _force);
+  mDofs[_index]->setEffort(_force);
 }
 
 //==============================================================================
@@ -833,28 +788,21 @@ double Skeleton::getForce(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getForce(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getEffort();
 }
 
 //==============================================================================
 void Skeleton::setForces(const Eigen::VectorXd& _forces)
 {
-  size_t index = 0;
-  size_t dof = 0;
-  Joint* joint;
-
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    joint = mBodyNodes[i]->getParentJoint();
-
-    dof = joint->getNumDofs();
+    Joint*       joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
       joint->setForces(_forces.segment(index, dof));
-
-      index += dof;
     }
   }
 }
@@ -862,19 +810,21 @@ void Skeleton::setForces(const Eigen::VectorXd& _forces)
 //==============================================================================
 Eigen::VectorXd Skeleton::getForces() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
-  Eigen::VectorXd force(dof);
+  Eigen::VectorXd forces(getNumDofs());
 
-  for (size_t i = 0; i < dof; ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    force[index++]
-        = mGenCoordInfos[i].joint->getForce(mGenCoordInfos[i].localIndex);
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
+
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      forces.segment(index, dof) = joint->getForces();
+    }
   }
 
-  assert(index == dof);
-
-  return force;
+  return forces;
 }
 
 //==============================================================================
@@ -887,9 +837,7 @@ void Skeleton::resetForces()
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
     for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-    {
       mSoftBodyNodes[i]->getPointMass(j)->resetForces();
-    }
   }
 }
 
@@ -898,8 +846,7 @@ void Skeleton::setForceLowerLimit(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setForceLowerLimit(
-        mGenCoordInfos[_index].localIndex, _force);
+  mDofs[_index]->setEffortLowerLimit(_force);
 }
 
 //==============================================================================
@@ -907,8 +854,7 @@ double Skeleton::getForceLowerLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getForceLowerLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getEffortLowerLimit();
 }
 
 //==============================================================================
@@ -916,8 +862,7 @@ void Skeleton::setForceUpperLimit(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setForceUpperLimit(
-        mGenCoordInfos[_index].localIndex, _force);
+  mDofs[_index]->setEffortUpperLimit(_force);
 }
 
 //==============================================================================
@@ -925,21 +870,22 @@ double Skeleton::getForceUpperLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getForceUpperLimit(
-        mGenCoordInfos[_index].localIndex);
+  return mDofs[_index]->getVelocityUpperLimit();
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getVelocityChanges() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
+  const size_t dof = getNumDofs();
   Eigen::VectorXd velChange(dof);
 
+  size_t index = 0;
   for (size_t i = 0; i < dof; ++i)
   {
-    velChange[index++] = mGenCoordInfos[i].joint->getVelocityChange(
-                           mGenCoordInfos[i].localIndex);
+    Joint* joint      = mDofs[i]->getJoint();
+    size_t localIndex = mDofs[i]->getIndexInJoint();
+
+    velChange[index++] = joint->getVelocityChange(localIndex);
   }
 
   assert(index == dof);
@@ -956,16 +902,18 @@ void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 //==============================================================================
 void Skeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
+  const size_t dof = getNumDofs();
 
+  size_t index = 0;
   for (size_t i = 0; i < dof; ++i)
   {
-    mGenCoordInfos[i].joint->setConstraintImpulse(
-          mGenCoordInfos[i].localIndex, _impulses[index++]);
+    Joint* joint      = mDofs[i]->getJoint();
+    size_t localIndex = mDofs[i]->getIndexInJoint();
+
+    joint->setConstraintImpulse(localIndex, _impulses[index++]);
   }
 
-  assert(index == getNumDofs());
+  assert(index == dof);
 }
 
 //==============================================================================
@@ -977,15 +925,16 @@ Eigen::VectorXd Skeleton::getConstraintImpulses() const
 //==============================================================================
 Eigen::VectorXd Skeleton::getJointConstraintImpulses() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
+  const size_t dof = getNumDofs();
   Eigen::VectorXd impulse(dof);
 
+  size_t index = 0;
   for (size_t i = 0; i < dof; ++i)
   {
-    impulse[index++]
-        = mGenCoordInfos[i].joint->getConstraintImpulse(
-            mGenCoordInfos[i].localIndex);
+    Joint* joint      = mDofs[i]->getJoint();
+    size_t localIndex = mDofs[i]->getIndexInJoint();
+
+    impulse[index++] = joint->getConstraintImpulse(localIndex);
   }
 
   assert(index == dof);
@@ -1181,7 +1130,7 @@ const Eigen::VectorXd& Skeleton::getExternalForces()
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getConstraintForces()
 {
-  size_t dof = getNumDofs();
+  const size_t dof = getNumDofs();
   mFc = Eigen::VectorXd::Zero(dof);
 
   // Body constraint impulses
@@ -1195,8 +1144,10 @@ const Eigen::VectorXd& Skeleton::getConstraintForces()
   size_t index = 0;
   for (size_t i = 0; i < dof; ++i)
   {
-    mFc[index++] += mGenCoordInfos[i].joint->getConstraintImpulse(
-                      mGenCoordInfos[i].localIndex);
+    Joint* joint      = mDofs[i]->getJoint();
+    size_t localIndex = mDofs[i]->getIndexInJoint();
+
+    mFc[index++] += joint->getConstraintImpulse(localIndex);
   }
   assert(index == dof);
 
