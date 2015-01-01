@@ -58,7 +58,7 @@ namespace dynamics {
 //==============================================================================
 Skeleton::Skeleton(const std::string& _name)
   : mName(_name),
-    mDof(0),
+    mNumDofs(0),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
     mNameMgrForBodyNodes("BodyNode"),
@@ -450,7 +450,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   // Initialize body nodes and generalized coordinates
   mDofs.clear();
-  mDof = 0;
+  mNumDofs = 0;
   const size_t numBodyNodes = getNumBodyNodes();
   for (size_t i = 0; i < numBodyNodes; ++i)
   {
@@ -461,11 +461,11 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     for (size_t j = 0; j < numDofsOfJoint; ++j)
     {
       mDofs.push_back(joint->getDof(j));
-      joint->setIndexInSkeleton(j, mDof + j);
+      joint->setIndexInSkeleton(j, mNumDofs + j);
     }
 
     bodyNode->init(this);
-    mDof += joint->getNumDofs();
+    mNumDofs += joint->getNumDofs();
   }
 
   // Compute transformations, velocities, and partial accelerations
@@ -503,7 +503,7 @@ size_t Skeleton::getDof() const
 //==============================================================================
 size_t Skeleton::getNumDofs() const
 {
-  return mDof;
+  return mNumDofs;
 }
 
 //==============================================================================

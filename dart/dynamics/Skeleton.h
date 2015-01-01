@@ -685,7 +685,7 @@ protected:
   std::string mName;
 
   /// Number of degrees of freedom (aka generalized coordinates)
-  size_t mDof;
+  size_t mNumDofs;
 
   /// \brief Array of GenCoordInfo objects
   /// \warning GenCoordInfo is deprecated because the functionality is replaced
