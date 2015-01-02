@@ -610,10 +610,10 @@ public:
 
 protected:
   /// Register a joint with the Skeleton. Internal use only.
-  void registerJoint(dart::dynamics::Joint* _newJoint);
+  void registerJoint(Joint* _newJoint);
 
   /// Remove a joint from the Skeleton. Internal use only.
-  void unregisterJoint(dart::dynamics::Joint* _oldJoint);
+  void unregisterJoint(Joint* _oldJoint);
 
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
