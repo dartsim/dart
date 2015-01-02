@@ -69,9 +69,9 @@ void BallJoint::integratePositions(double _dt)
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
-  mDofs[0]->setName(mName+"_x");
-  mDofs[1]->setName(mName+"_y");
-  mDofs[2]->setName(mName+"_z");
+  mDofs[0]->setName(mName + "_x");
+  mDofs[1]->setName(mName + "_y");
+  mDofs[2]->setName(mName + "_z");
 }
 
 //==============================================================================
