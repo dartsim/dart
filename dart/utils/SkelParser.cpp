@@ -885,6 +885,14 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setName(name);
 
   //--------------------------------------------------------------------------
+  // Degrees of Freedom
+  ElementEnumerator DofElements(_jointElement, "dof");
+  while(DofElements.next())
+  {
+    readDegreeOfFreedom(DofElements.get(), newJoint);
+  }
+
+  //--------------------------------------------------------------------------
   // parent
   SkelBodyNode softParentBodyNode;
   softParentBodyNode.bodyNode = NULL;
@@ -981,6 +989,74 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setTransformFromParentBodyNode(parentToJoint);
 
   return newJoint;
+}
+
+template <void (dart::dynamics::DegreeOfFreedom::*setLimits)(double,double),
+          void (dart::dynamics::DegreeOfFreedom::*setValue)(double)>
+static void setDofAttributes(tinyxml2::XMLElement* xmlElement,
+                             dart::dynamics::DegreeOfFreedom* dof)
+{
+  double defaultMin = -DART_DBL_INF, defaultMax = DART_DBL_INF, defaultVal = 0;
+
+  (dof->*setLimits)(xmlElement->QueryDoubleAttribute("lower", &defaultMin),
+                    xmlElement->QueryDoubleAttribute("upper", &defaultMax));
+
+  (dof->*setValue)(xmlElement->QueryDoubleAttribute("initial", &defaultVal));
+}
+
+void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
+                                     dynamics::Joint* _dartJoint)
+{
+  if(NULL==_dartJoint || NULL==_dofElement)
+    return;
+
+  size_t localIndex = _dofElement->IntAttribute("number");
+
+  if(localIndex >= _dartJoint->getNumDofs())
+  {
+    dtwarn << "[SkelParser::readDegreeOfFreedom] Joint named '"
+           << _dartJoint->getName() << "' contains dof element with invalid "
+           << "number attribute [" << localIndex << "]. It must be less than "
+           << _dartJoint->getNumDofs() << ".\n";
+    return;
+  }
+
+  dart::dynamics::DegreeOfFreedom* dof = _dartJoint->getDof(localIndex);
+  const char* name = _dofElement->Attribute("name");
+  if(name)
+    dof->setName(std::string(name));
+
+  if(hasElement(_dofElement, "position"))
+  {
+    tinyxml2::XMLElement* posElement = getElement(_dofElement, "position");
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setPositionLimits,
+        &dart::dynamics::DegreeOfFreedom::setPosition>(posElement, dof);
+  }
+
+  if(hasElement(_dofElement, "velocity"))
+  {
+    tinyxml2::XMLElement* velElement = getElement(_dofElement, "velocity");
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setVelocityLimits,
+        &dart::dynamics::DegreeOfFreedom::setVelocity>(velElement, dof);
+  }
+
+  if(hasElement(_dofElement, "acceleration"))
+  {
+    tinyxml2::XMLElement* accElement = getElement(_dofElement, "acceleration");
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setAccelerationLimits,
+        &dart::dynamics::DegreeOfFreedom::setAcceleration>(accElement, dof);
+  }
+
+  if(hasElement(_dofElement, "effort"))
+  {
+    tinyxml2::XMLElement* effortElement = getElement(_dofElement, "effort");
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setEffortLimits,
+        &dart::dynamics::DegreeOfFreedom::setEffort>(effortElement, dof);
+  }
 }
 
 dynamics::WeldJoint* SkelParser::readWeldJoint(

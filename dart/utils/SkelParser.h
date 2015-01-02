@@ -129,6 +129,11 @@ protected:
       Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
 
   ///
+  static void readDegreeOfFreedom(
+      tinyxml2::XMLElement* _dofElement,
+      dart::dynamics::Joint* _dartJoint);
+
+  ///
   static dynamics::PrismaticJoint* readPrismaticJoint(
       tinyxml2::XMLElement* _jointElement);
 
