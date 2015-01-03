@@ -188,7 +188,7 @@ void DegreeOfFreedom::setVelocityUpperLimit(double _limit)
 //==============================================================================
 double DegreeOfFreedom::getVelocityUpperLimit() const
 {
-  return mJoint->getVelocityLowerLimit(mIndexInJoint);
+  return mJoint->getVelocityUpperLimit(mIndexInJoint);
 }
 
 //==============================================================================
@@ -289,7 +289,7 @@ void DegreeOfFreedom::setEffortLowerLimit(double _limit)
 //==============================================================================
 double DegreeOfFreedom::getEffortLowerLimit() const
 {
-  return mJoint->getForce(mIndexInJoint);
+  return mJoint->getForceLowerLimit(mIndexInJoint);
 }
 
 //==============================================================================
