@@ -6,7 +6,7 @@
             <gravity>0 -9.81 0</gravity>
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
-        <skeleton name="double_pendulum">
+        <skeleton name="skeleton 1">
             <body name="link 1">
                 <gravity>1</gravity>
                 <transformation>0 0 0 0 0 0</transformation>
@@ -180,24 +180,25 @@
                         <upper>+2</upper>
                     </limit>
                 </axis2>
+                <dof number="0">
+                    <position initial="5" />
+                </dof>
+                <dof number="1">
+                    <position initial="-5" />
+                </dof>
             </joint>
-            <joint type="universal" name="joint4">
+            <joint type="euler" name="joint4">
                 <parent>link 4</parent>
                 <child>link 5</child>
                 <transformation>0 0 0 0 0 0</transformation>
-                <axis>
-                    <xyz>1 0 0</xyz>
-                </axis>
-                <axis2>
-                    <xyz>0 1 0</xyz>
-                </axis>
-                <dof number="0" name="joint4_x">
-                    <position lower="-1" upper="+1">
-                    <velocity lower="-10" upper="+10">
+                <axis_order>xyz</axis_order>
+                <dof number="0" name="joint4_1">
+                    <position lower="-1" upper="+1" />
+                    <velocity lower="-10" upper="+10" />
                 </dof>
-                <dof number="1" name="joint4_y">
-                    <position lower="-2" upper="+2">
-                    <velocity lower="-20" upper="+20">
+                <dof number="2" name="joint4_3">
+                    <position lower="-2" upper="+2" />
+                    <velocity lower="-20" upper="+20" />
                 </dof>
             </joint>
         </skeleton>

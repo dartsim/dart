@@ -331,6 +331,11 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     newSkeleton->addBodyNode((*it).bodyNode);
   }
 
+  // No longer need to preserve the dof names. User can turn this back on if
+  // they desire.
+  for(size_t i=0; i<newSkeleton->getNumDofs(); ++i)
+    newSkeleton->getDof(i)->preserveName(false);
+
   return newSkeleton;
 }
 
@@ -885,14 +890,6 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setName(name);
 
   //--------------------------------------------------------------------------
-  // Degrees of Freedom
-  ElementEnumerator DofElements(_jointElement, "dof");
-  while(DofElements.next())
-  {
-    readDegreeOfFreedom(DofElements.get(), newJoint);
-  }
-
-  //--------------------------------------------------------------------------
   // parent
   SkelBodyNode softParentBodyNode;
   softParentBodyNode.bodyNode = NULL;
@@ -988,20 +985,33 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setTransformFromChildBodyNode(childToJoint);
   newJoint->setTransformFromParentBodyNode(parentToJoint);
 
+  //--------------------------------------------------------------------------
+  // Degrees of Freedom
+  ElementEnumerator DofElements(_jointElement, "dof");
+  while(DofElements.next())
+    readDegreeOfFreedom(DofElements.get(), newJoint);
+
   return newJoint;
 }
 
 template <void (dart::dynamics::DegreeOfFreedom::*setLimits)(double,double),
-          void (dart::dynamics::DegreeOfFreedom::*setValue)(double)>
+ std::pair<double,double> (dart::dynamics::DegreeOfFreedom::*getLimits)() const,
+ void (dart::dynamics::DegreeOfFreedom::*setValue)(double),
+ double (dart::dynamics::DegreeOfFreedom::*getValue)() const>
 static void setDofAttributes(tinyxml2::XMLElement* xmlElement,
                              dart::dynamics::DegreeOfFreedom* dof)
 {
-  double defaultMin = -DART_DBL_INF, defaultMax = DART_DBL_INF, defaultVal = 0;
+  std::pair<double,double> limit_vals = (dof->*getLimits)();
+  double defaultMin = limit_vals.first,
+         defaultMax = limit_vals.second,
+         defaultVal = (dof->*getValue)();
 
-  (dof->*setLimits)(xmlElement->QueryDoubleAttribute("lower", &defaultMin),
-                    xmlElement->QueryDoubleAttribute("upper", &defaultMax));
+  xmlElement->QueryDoubleAttribute("lower", &defaultMin);
+  xmlElement->QueryDoubleAttribute("upper", &defaultMax);
+  xmlElement->QueryDoubleAttribute("initial", &defaultVal);
 
-  (dof->*setValue)(xmlElement->QueryDoubleAttribute("initial", &defaultVal));
+  (dof->*setLimits)(defaultMin, defaultMax);
+  (dof->*setValue)(defaultVal);
 }
 
 void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
@@ -1024,14 +1034,19 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
   dart::dynamics::DegreeOfFreedom* dof = _dartJoint->getDof(localIndex);
   const char* name = _dofElement->Attribute("name");
   if(name)
+  {
     dof->setName(std::string(name));
+    dof->preserveName(true);
+  }
 
   if(hasElement(_dofElement, "position"))
   {
     tinyxml2::XMLElement* posElement = getElement(_dofElement, "position");
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setPositionLimits,
-        &dart::dynamics::DegreeOfFreedom::setPosition>(posElement, dof);
+        &dart::dynamics::DegreeOfFreedom::getPositionLimits,
+        &dart::dynamics::DegreeOfFreedom::setPosition,
+        &dart::dynamics::DegreeOfFreedom::getPosition>(posElement, dof);
   }
 
   if(hasElement(_dofElement, "velocity"))
@@ -1039,7 +1054,9 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
     tinyxml2::XMLElement* velElement = getElement(_dofElement, "velocity");
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setVelocityLimits,
-        &dart::dynamics::DegreeOfFreedom::setVelocity>(velElement, dof);
+        &dart::dynamics::DegreeOfFreedom::getVelocityLimits,
+        &dart::dynamics::DegreeOfFreedom::setVelocity,
+        &dart::dynamics::DegreeOfFreedom::getVelocity>(velElement, dof);
   }
 
   if(hasElement(_dofElement, "acceleration"))
@@ -1047,7 +1064,9 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
     tinyxml2::XMLElement* accElement = getElement(_dofElement, "acceleration");
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setAccelerationLimits,
-        &dart::dynamics::DegreeOfFreedom::setAcceleration>(accElement, dof);
+        &dart::dynamics::DegreeOfFreedom::getAccelerationLimits,
+        &dart::dynamics::DegreeOfFreedom::setAcceleration,
+        &dart::dynamics::DegreeOfFreedom::getAcceleration>(accElement, dof);
   }
 
   if(hasElement(_dofElement, "effort"))
@@ -1055,7 +1074,9 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
     tinyxml2::XMLElement* effortElement = getElement(_dofElement, "effort");
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setEffortLimits,
-        &dart::dynamics::DegreeOfFreedom::setEffort>(effortElement, dof);
+        &dart::dynamics::DegreeOfFreedom::getEffortLimits,
+        &dart::dynamics::DegreeOfFreedom::setEffort,
+        &dart::dynamics::DegreeOfFreedom::getEffort>(effortElement, dof);
   }
 }
 

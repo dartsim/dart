@@ -182,6 +182,7 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
 
   Skeleton* skel1 = world->getSkeleton("skeleton 1");
   Skeleton* softSkel1 = dynamic_cast<Skeleton*>(skel1);
+  // TODO(MXG): ^This cast looks like it's outdated
   EXPECT_TRUE(softSkel1 != NULL);
   EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
   EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);
@@ -311,6 +312,83 @@ TEST(SKEL_PARSER, PLANAR_JOINT)
   world->step();
 
   delete world;
+}
+
+//==============================================================================
+TEST(SKEL_PARSER, DOF_ATTRIBUTES)
+{
+  World* world = SkelParser::readWorld(
+        DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
+  EXPECT_TRUE(world != NULL);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+
+  // Test for no dof elements being specified
+  Joint* joint0 = skel1->getJoint("joint0");
+  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
+
+  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
+
+  EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());
+
+  // Test for only a dof name being changed
+  Joint* joint1 = skel1->getJoint("joint1");
+  EXPECT_EQ(joint1->getDof(0)->getPositionLowerLimit(), -1.57);
+  EXPECT_EQ(joint1->getDof(0)->getPositionUpperLimit(),  1.57);
+  EXPECT_EQ(joint1->getDof(0)->getName(), "customJoint1");
+
+  // Test for when dof attributes (but not a name) are specified
+  Joint* joint2 = skel1->getJoint("joint2");
+  EXPECT_EQ(joint2->getDof(0)->getName(), joint2->getName());
+
+  EXPECT_EQ(joint2->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint2->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint2->getDof(0)->getPosition(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getVelocityLowerLimit(), -2);
+  EXPECT_EQ(joint2->getDof(0)->getVelocityUpperLimit(),  2);
+  EXPECT_EQ(joint2->getDof(0)->getVelocity(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getAccelerationLowerLimit(), -3);
+  EXPECT_EQ(joint2->getDof(0)->getAccelerationUpperLimit(),  3);
+  EXPECT_EQ(joint2->getDof(0)->getAcceleration(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getEffortLowerLimit(), -4);
+  EXPECT_EQ(joint2->getDof(0)->getEffortUpperLimit(),  4);
+  EXPECT_EQ(joint2->getDof(0)->getEffort(), 0);
+
+  // Test for mixture of old method and new method
+  // Note: If there is a conflict, the data given in the dof element will win
+  Joint* joint3 = skel1->getJoint("joint3");
+  EXPECT_EQ(joint3->getDof(0)->getName(), joint3->getName()+"_1");
+  EXPECT_EQ(joint3->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint3->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint3->getDof(0)->getPosition(), 5);
+
+  EXPECT_EQ(joint3->getDof(1)->getName(), joint3->getName()+"_2");
+  EXPECT_EQ(joint3->getDof(1)->getPositionLowerLimit(), -2);
+  EXPECT_EQ(joint3->getDof(1)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint3->getDof(1)->getPosition(), -5);
+
+  // Test for only some of the DOFs being specified
+  Joint* joint4 = skel1->getJoint("joint4");
+  EXPECT_EQ(joint4->getDof(0)->getName(), "joint4_1");
+  EXPECT_EQ(joint4->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint4->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint4->getDof(0)->getVelocityLowerLimit(), -10);
+  EXPECT_EQ(joint4->getDof(0)->getVelocityUpperLimit(),  10);
+
+  EXPECT_EQ(joint4->getDof(1)->getName(), joint4->getName()+"_y");
+
+  EXPECT_EQ(joint4->getDof(2)->getName(), "joint4_3");
+  EXPECT_EQ(joint4->getDof(2)->getPositionLowerLimit(), -2);
+  EXPECT_EQ(joint4->getDof(2)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint4->getDof(2)->getVelocityLowerLimit(), -20);
+  EXPECT_EQ(joint4->getDof(2)->getVelocityUpperLimit(),  20);
 }
 
 /******************************************************************************/
