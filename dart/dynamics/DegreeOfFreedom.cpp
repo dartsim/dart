@@ -42,8 +42,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-const std::string& DegreeOfFreedom::setName(const std::string& _name)
+const std::string& DegreeOfFreedom::setName(const std::string& _name,
+                                            bool _preserveName)
 {
+  preserveName(_preserveName);
+
   if (mName == _name)
     return mName;
 

@@ -725,7 +725,7 @@ void SingleDofJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
   if(!mDof->isNamePreserved())
-    mDof->setName(mName);
+    mDof->setName(mName, false);
 }
 
 //==============================================================================

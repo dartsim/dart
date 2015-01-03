@@ -72,17 +72,17 @@ void FreeJoint::integratePositions(double _dt)
 void FreeJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mName + "_rot_x");
+    mDofs[0]->setName(mName + "_rot_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mName + "_rot_y");
+    mDofs[1]->setName(mName + "_rot_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mName + "_rot_z");
+    mDofs[2]->setName(mName + "_rot_z", false);
   if(!mDofs[3]->isNamePreserved())
-    mDofs[3]->setName(mName + "_pos_x");
+    mDofs[3]->setName(mName + "_pos_x", false);
   if(!mDofs[4]->isNamePreserved())
-    mDofs[4]->setName(mName + "_pos_y");
+    mDofs[4]->setName(mName + "_pos_y", false);
   if(!mDofs[5]->isNamePreserved())
-    mDofs[5]->setName(mName + "_pos_z");
+    mDofs[5]->setName(mName + "_pos_z", false);
 }
 
 //==============================================================================

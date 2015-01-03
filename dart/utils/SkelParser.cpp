@@ -1036,7 +1036,6 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
   if(name)
   {
     dof->setName(std::string(name));
-    dof->preserveName(true);
   }
 
   if(hasElement(_dofElement, "position"))

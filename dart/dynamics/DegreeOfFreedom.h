@@ -61,7 +61,12 @@ public:
   friend class dart::dynamics::Skeleton;
 
   /// Change the name of this DegreeOfFreedom
-  const std::string& setName(const std::string& _name);
+  ///
+  /// The _preserveName argument will be passed to the preserveName(bool)
+  /// function. Set _preserveName to true when customizing the name of the
+  /// DegreeOfFreedom; that way the name will not be overwritten if the Joint
+  /// name changes.
+  const std::string& setName(const std::string& _name, bool _preserveName=true);
 
   /// Get the name of this DegreeOfFreedom
   const std::string& getName() const;

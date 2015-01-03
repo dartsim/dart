@@ -88,9 +88,9 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mName + "_1");
+    mDofs[0]->setName(mName + "_1", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mName + "_2");
+    mDofs[1]->setName(mName + "_2", false);
 }
 
 //==============================================================================
