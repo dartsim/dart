@@ -494,9 +494,9 @@ protected:
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 
-  //--------------------------------------------------------------------------
-  // Recursive algorithms
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  /// \{ \name Recursive dynamics routines
+  //----------------------------------------------------------------------------
 
   /// Update transformation
   virtual void updateTransform();
@@ -510,53 +510,142 @@ protected:
   /// Update spatial acceleration with the partial spatial acceleration
   virtual void updateAcceleration();
 
-  // TODO(JS): Need revise
-  ///
-  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces = false);
+  /// \brief Forward dynamics routine. Update the spatial articulated body
+  /// inertia.
+  virtual void updateArtInertiaFD(double _timeStep);
 
-  // TODO(JS): Need revise
-  ///
-  virtual void updateGeneralizedForce(bool _withDampingForces = false);
+  /// \brief Hybrid dynamics routine. Update the spatial articulated body
+  /// inertia.
+  virtual void updateArtInertiaHD(double _timeStep);
 
-  /// Update articulated body inertia with implicit joint damping and spring
-  /// forces
+  /// \brief Forward dynamics routine. Update the spatial articulated body
+  /// inertia.
+  virtual void updateBiasForceFD(const Eigen::Vector3d& _gravity,
+                                 double _timeStep);
+
+  /// \brief Hybrid dynamics routine. Update the spatial articulated body
+  /// inertia.
+  virtual void updateBiasForceHD(const Eigen::Vector3d& _gravity,
+                                 double _timeStep);
+
+  /// \brief Impulse-based forward dynamics routine. Update impulsive bias
+  /// force.
+  virtual void updateBiasImpulseFD();
+
+  /// \brief Impulse-based hybrid dynamics routine. Update impulsive bias force.
+  virtual void updateBiasImpulseHD();
+
+  /// \brief Forward dynamics routine. Update the spatial body acceleration.
+  virtual void updateBodyAccelerationFD();
+
+  /// \brief Hybrid dynamics routine. Update the spatial body acceleration.
+  virtual void updateBodyAccelerationHD();
+
+  /// \brief Impluse-based forward dynamics routine. Update the spatical body
+  /// velocity change.
+  virtual void updateBodyVelocityChangeFD();
+
+  /// \brief Impluse-based hybrid dynamics routine. Update the spatical body
+  /// velocity change.
+  virtual void updateBodyVelocityChangeHD();
+
+  /// \brief Forward and hybrid dynamics routine. Update the spatial body force
+  /// transmitted to this BodyNode from the parent body through the connecting
+  /// joint. The spatial body force is expressed in this BodyNode's frame.
+  virtual void updateTransmittedBodyForceFHD();
+
+  /// \brief Inverse dynamics routine.
+  /// \param _gravity
+  /// \param _withExternalForces
+  virtual void updateTransmittedBodyForceID(const Eigen::Vector3d& _gravity,
+                                            bool _withExternalForces = false);
+
+  /// \brief Impulse-based forward and hybrid dynamics routine. Update the
+  /// spatial body impulse transmitted to this BodyNode from the parent body
+  /// through the connecting joint. The spatial body impulse is expressed in
+  /// this BodyNode's frame.
+  virtual void updateTransmittedBodyImpulse();
+
+  /// \brief Update the joint force. Inverse dynamics routine.
+  virtual void updateJointForceID();
+
+  /// \brief Update the joint force. Hybrid dynamics routine.
+  virtual void updateJointForceHD();
+
+  /// \brief Update the joint force. Hybrid dynamics routine.
+  virtual void updateJointImpulseHD();
+
+  /// \brief
+  /// 1. dq(+)  = dq + del_dq
+  /// 2. ddq(+) = ddq + del_dq / dt
+  /// 3. tau(+) = tau + imp / dt
+  /// 4. A(+)   = A(-) + del_V / dt
+  /// 5. F(+)   = F(-) + ImpF / dt
+  virtual void updateConstrainedTermsFD(double _timeStep);
+
+  /// \brief
+  virtual void updateConstrainedTermsHD(double _timeStep);
+
+  //- DEPRECATED ---------------------------------------------------------------
+
+  /// \brief Update the spatial articulated body inertia
+  DEPRECATED(4.3)
   virtual void updateArtInertia(double _timeStep);
 
-  /// Update bias force with implicit joint damping and spring forces
+  /// \brief Update the spatial bias force
+  DEPRECATED(4.3)
   virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep);
 
-  /// Update joint acceleration and body acceleration for forward dynamics
-  virtual void updateJointAndBodyAcceleration();
-
-  /// Update transmitted force from parent joint
-  virtual void updateTransmittedWrench();
-
-  //----------------------------------------------------------------------------
-  // Impulse based dynamics
-  //----------------------------------------------------------------------------
-
-  /// Update impulsive bias force for impulse-based forward dynamics
+  /// \brief Update impulsive bias force for impulse-based forward dynamics
   /// algorithm
+  DEPRECATED(4.3)
   virtual void updateBiasImpulse();
 
-  /// Update joint velocity change for impulse-based forward dynamics
+  /// \brief Update the joint acceleration and body acceleration
+  /// \warning Please use updateBodyAccelerationFD().
+  DEPRECATED(4.3)
+  virtual void updateJointAndBodyAcceleration();
+
+  /// \brief Update joint velocity change for impulse-based forward dynamics
   /// algorithm
+  DEPRECATED(4.3)
   virtual void updateJointVelocityChange();
 
-  /// Update body velocity change for impulse-based forward dynamics
-  /// algorithm
-//  virtual void updateBodyVelocityChange();
+  /// \brief Update the spatial body force transmitted to this BodyNode from the
+  /// parent body through the connecting joint. The spatial body force is
+  /// expressed in this BodyNode's frame.
+  /// \warning Please use updateTransmittedBodyForce().
+  DEPRECATED(4.3)
+  virtual void updateTransmittedWrench();
 
-  ///
+  /// \brief
+  DEPRECATED(4.3)
+  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
+                                bool _withExternalForces = false);
+
+  /// \brief
+  DEPRECATED(4.3)
   virtual void updateBodyImpForceFwdDyn();
 
-  ///
+  /// \brief Update the joint force
+  /// \warning Please use updateJointForce_I().
+  DEPRECATED(4.3)
+  virtual void updateGeneralizedForce(bool _withDampingForces = false);
+
+  /// \brief
+  DEPRECATED(4.3)
   virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
 
-  ///
+  /// \brief
+  DEPRECATED(4.3)
   virtual void updateConstrainedTransmittedForce(double _timeStep);
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Equations of motion related routines
+  //----------------------------------------------------------------------------
 
   ///
   virtual void updateMassMatrix();
@@ -590,6 +679,8 @@ protected:
   ///
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
                                              const Eigen::Vector6d& _spatial);
+
+  /// \}
 
   //--------------------------------------------------------------------------
   // General properties
@@ -699,7 +790,7 @@ protected:
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;
 
-  /// Articulated body inertia
+   /// Articulated body inertia
   math::Inertia mArtInertia;
 
   /// Articulated body inertia for implicit joing damping and spring forces
@@ -741,6 +832,7 @@ protected:
   /// Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;
 
+  // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector6d mImpF;
 

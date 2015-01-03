@@ -70,6 +70,25 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
+  // Input/output
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void setInput(size_t _index, double _input);
+
+  // Documentation inherited
+  virtual double getInput(size_t _index) const;
+
+  // Documentation inherited
+  virtual void setInputs(const Eigen::VectorXd& _inputs);
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getInputs() const;
+
+  // Documentation inherited
+  virtual void resetInputs();
+
+  //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
@@ -260,82 +279,278 @@ public:
 
 protected:
   //----------------------------------------------------------------------------
-  // Recursive dynamics algorithms
+  /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual const math::Jacobian getLocalJacobian() const;
+  virtual const math::Jacobian getLocalJacobian() const override;
 
   // Documentation inherited
-  virtual const math::Jacobian getLocalJacobianTimeDeriv() const;
+  virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   // Documentation inherited
-  virtual void addVelocityTo(Eigen::Vector6d& _vel);
+  virtual void addVelocityTo(Eigen::Vector6d& _vel) override;
 
   // Documentation inherited
-  virtual void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
-                                        const Eigen::Vector6d& _childVelocity);
+  virtual void setPartialAccelerationTo(
+      Eigen::Vector6d& _partialAcceleration,
+      const Eigen::Vector6d& _childVelocity) override;
 
   // Documentation inherited
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc);
+  virtual void addAccelerationTo(Eigen::Vector6d& _acc) override;
 
   // Documentation inherited
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange);
+  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                    const Eigen::Matrix6d& _childArtInertia);
+  virtual void addChildArtInertiaFDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  virtual void addChildArtInertiaImplicitTo(
+  virtual void addChildArtInertiaHDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) override;
+
+  /// \brief addChildArtInertiaToHDTorqueType
+  /// \param _parentArtInertia
+  /// \param _childArtInertia
+  void addChildArtInertiaToHDTorqueType(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia);
+
+  /// \brief addChildArtInertiaToHDAccelerationType
+  /// \param _parentArtInertia
+  /// \param _childArtInertia
+  void addChildArtInertiaToHDAccelerationType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   // Documentation inherited
-  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia);
+  virtual void addChildArtInertiaImplicitFDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  virtual void updateInvProjArtInertiaImplicit(
+  virtual void addChildArtInertiaImplicitHDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) override;
+
+  /// \brief addChildArtInertiaImplicitToHDTorqueType
+  /// \param _parentArtInertia
+  /// \param _childArtInertia
+  void addChildArtInertiaImplicitToHDTorqueType(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia);
+
+  /// \brief addChildArtInertiaImplicitToHDAccelerationType
+  /// \param _parentArtInertia
+  /// \param _childArtInertia
+  void addChildArtInertiaImplicitToHDAccelerationType(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia);
+
+  // Documentation inherited
+  virtual void updateInvProjArtInertiaFD(
+      const Eigen::Matrix6d& _artInertia) override;
+
+  // Documentation inherited
+  virtual void updateInvProjArtInertiaHD(
+      const Eigen::Matrix6d& _artInertia) override;
+
+  /// \brief updateInvProjArtInertiaHDTorqueType
+  /// \param _artInertia
+  void updateInvProjArtInertiaHDTorqueType(
+      const Eigen::Matrix6d& _artInertia);
+
+  /// \brief updateInvProjArtInertiaHDAccelerationType
+  /// \param _artInertia
+  void updateInvProjArtInertiaHDAccelerationType(
+      const Eigen::Matrix6d& _artInertia);
+
+  // Documentation inherited
+  virtual void updateInvProjArtInertiaImplicitFD(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep) override;
+
+  // Documentation inherited
+  virtual void updateInvProjArtInertiaImplicitHD(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep) override;
+
+  void updateInvProjArtInertiaImplicitHDTorqueType(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep);
+
+  void updateInvProjArtInertiaImplicitHDAccelerationType(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep);
 
   // Documentation inherited
-  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
-                                   const Eigen::Matrix6d& _childArtInertia,
-                                   const Eigen::Vector6d& _childBiasForce,
-                                   const Eigen::Vector6d& _childPartialAcc);
+  virtual void addChildBiasForceFDTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) override;
+
+  virtual void addChildBiasForceHDTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) override;
+
+  void addChildBiasForceToHDTorqueType(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc);
+
+  void addChildBiasForceToHDAccelerationType(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc);
 
   // Documentation inherited
-  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasImpulse);
+  virtual void addChildBiasImpulseFDTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) override;
 
   // Documentation inherited
-  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                double _timeStep);
+  virtual void addChildBiasImpulseHDTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) override;
+
+  /// \brief
+  void addChildBiasImpulseToHDTorqueType(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse);
+
+  /// \brief
+  void addChildBiasImpulseToHDAccelerationType(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse);
 
   // Documentation inherited
-  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse);
+  virtual void updateTotalForceFD(const Eigen::Vector6d& _bodyForce,
+                                  double _timeStep) override;
 
   // Documentation inherited
-  virtual void resetTotalImpulses();
+  virtual void updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
+                                  double _timeStep) override;
+
+  /// \brief updateTotalForceHDTorqueType
+  /// \param _bodyForce
+  /// \param _timeStep
+  void updateTotalForceHDTorqueType(const Eigen::Vector6d& _bodyForce,
+                                     double _timeStep);
+
+  /// \brief updateTotalForceHDAccelerationType
+  /// \param _bodyForce
+  /// \param _timeStep
+  void updateTotalForceHDAccelerationType(const Eigen::Vector6d& _bodyForce,
+                                           double _timeStep);
 
   // Documentation inherited
-  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc);
+  virtual void updateTotalImpulseFD(
+      const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange);
+  virtual void updateTotalImpulseHD(
+      const Eigen::Vector6d& _bodyImpulse) override;
+
+  /// \brief updateTotalImpulseHDTorqueType
+  /// \param _bodyImpulse
+  void updateTotalImpulseHDTorqueType(
+      const Eigen::Vector6d& _bodyImpulse);
+
+  /// \brief updateTotalImpulseHDAccelerationType
+  /// \param _bodyImpulse
+  void updateTotalImpulseHDAccelerationType(
+      const Eigen::Vector6d& _bodyImpulse);
 
   // Documentation inherited
-  virtual void updateVelocityWithVelocityChange();
+  virtual void resetTotalImpulses() override;
 
   // Documentation inherited
-  virtual void updateAccelerationWithVelocityChange(double _timeStep);
+  virtual void updateAccelerationFD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  virtual void updateForceWithImpulse(double _timeStep);
+  virtual void updateAccelerationHD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc) override;
+
+  /// \brief updateAccelerationHDTorqueType
+  /// \param _artInertia
+  /// \param _spatialAcc
+  void updateAccelerationHDTorqueType(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc);
+
+  /// \brief updateAccelerationHDAccelerationType
+  /// \param _artInertia
+  /// \param _spatialAcc
+  void updateAccelerationHDAccelerationType(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc);
+
+  // Documentation inherited
+  virtual void updateVelocityChangeFD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) override;
+
+  // Documentation inherited
+  virtual void updateVelocityChangeHD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) override;
+
+  /// \brief updateVelocityChangeHDTorqueType
+  /// \param _artInertia
+  /// \param _velocityChange
+  void updateVelocityChangeHDTorqueType(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange);
+
+  /// \brief updateVelocityChangeHDAccelerationType
+  /// \param _artInertia
+  /// \param _velocityChange
+  void updateVelocityChangeHDAccelerationType(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange);
+
+  // Documentation inherited
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce) override;
+
+  // Documentation inherited
+  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce) override;
+
+  // Documentation inherited
+  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
+
+  // Documentation inherited
+  virtual void updateImpulseHD(const Eigen::Vector6d& _bodyImpulse) override;
+
+  // Documentation inherited
+  virtual void updateConstrainedTermsFD(double _timeStep) override;
+
+  // Documentation inherited
+  virtual void updateConstrainedTermsHD(double _timeStep) override;
+
+  /// \brief updateConstrainedTermsHDTorqueType
+  /// \param _timeStep
+  void updateConstrainedTermsHDTorqueType(double _timeStep);
+
+  /// \brief updateConstrainedTermsHDAccelerationType
+  /// \param _timeStep
+  void updateConstrainedTermsHDAccelerationType(double _timeStep);
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion
@@ -380,6 +595,9 @@ protected:
   // TODO(JS): Need?
   ///
   size_t mIndexInSkeleton;
+
+  /// Input
+  double mInput;
 
   //----------------------------------------------------------------------------
   // Configuration
@@ -452,8 +670,8 @@ protected:
   /// Change of generalized velocity
   double mVelocityChange;
 
-//  /// Generalized impulse
-//  double mImpulse;
+  /// Generalized impulse
+  double mImpulse;
 
   /// Generalized constraint impulse
   double mConstraintImpulse;

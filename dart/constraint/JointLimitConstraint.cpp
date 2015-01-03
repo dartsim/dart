@@ -316,7 +316,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
     {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
-      skeleton->updateBiasImpulse(mBodyNode);
+      skeleton->updateBiasImpulseHD(mBodyNode);
       skeleton->updateVelocityChange();
     }
 

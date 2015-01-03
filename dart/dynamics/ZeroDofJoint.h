@@ -74,6 +74,25 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
+  // Input/output
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void setInput(size_t _index, double _input);
+
+  // Documentation inherited
+  virtual double getInput(size_t _index) const;
+
+  // Documentation inherited
+  virtual void setInputs(const Eigen::VectorXd& _inputs);
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getInputs() const;
+
+  // Documentation inherited
+  virtual void resetInputs();
+
+  //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 

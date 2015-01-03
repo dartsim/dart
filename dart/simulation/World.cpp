@@ -112,7 +112,7 @@ void World::reset() {
   mRecording->clear();    
 }
 
-
+//==============================================================================
 void World::step()
 {
   // Integrate velocity unconstrained skeletons
@@ -122,7 +122,8 @@ void World::step()
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->computeForwardDynamicsRecursionPartB();
+//    (*it)->computeForwardDynamicsRecursionPartB();
+    (*it)->computeHybridDynamicsRecursionB();
     (*it)->integrateVelocities(mTimeStep);
     (*it)->computeForwardKinematics(false, true, false);
   }
@@ -136,7 +137,8 @@ void World::step()
   {
     if ((*it)->isImpulseApplied() && (*it)->isMobile())
     {
-      (*it)->computeImpulseForwardDynamics();
+//      (*it)->computeImpulseForwardDynamics();
+      (*it)->computeImpulseHybridDynamics();
       (*it)->setImpulseApplied(false);
     }
   }

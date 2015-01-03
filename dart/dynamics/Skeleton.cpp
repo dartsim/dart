@@ -1343,7 +1343,7 @@ void Skeleton::updateInvMassMatrix()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateArtInertia(mTimeStep);
+      (*it)->updateArtInertiaFD(mTimeStep);
     }
 
     mIsArticulatedInertiaDirty = false;
@@ -1665,8 +1665,8 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
     for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateArtInertia(mTimeStep);
-      (*it)->updateBiasForce(mGravity, mTimeStep);
+      (*it)->updateArtInertiaFD(mTimeStep);
+      (*it)->updateBiasForceFD(mGravity, mTimeStep);
     }
 
     mIsArticulatedInertiaDirty = false;
@@ -1681,11 +1681,10 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
 //  }
 
   // Forward recursion
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (auto& bodyNode : mBodyNodes)
   {
-    (*it)->updateJointAndBodyAcceleration();
-    (*it)->updateTransmittedWrench();
+    bodyNode->updateBodyAccelerationFD();
+    bodyNode->updateTransmittedBodyForceFHD();
   }
 }
 
@@ -1698,6 +1697,13 @@ void Skeleton::computeInverseDynamics(bool _withExternalForces,
 
   //
   computeInverseDynamicsRecursionB(_withExternalForces, _withDampingForces);
+}
+
+//==============================================================================
+void Skeleton::computeHybridDynamics()
+{
+  computeHybridDynamicsRecursionA();
+  computeHybridDynamicsRecursionB();
 }
 
 //==============================================================================
@@ -1733,18 +1739,17 @@ void Skeleton::computeInverseDynamicsRecursionA()
 
 //==============================================================================
 void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
-                                                bool _withDampingForces)
+                                                bool /*_withDampingForces*/)
 {
   // Skip immobile or 0-dof skeleton
   if (getNumDofs() == 0)
     return;
 
   // Backward recursion
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
+  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateBodyWrench(mGravity, _withExternalForces);
-    (*it)->updateGeneralizedForce(_withDampingForces);
+    (*it)->updateTransmittedBodyForceID(mGravity, _withExternalForces);
+    (*it)->updateJointForceID();
   }
 }
 
@@ -1755,39 +1760,55 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
 //}
 
 //==============================================================================
-//void Skeleton::computeHybridDynamicsRecursionA()
-//{
-//  dterr << "Not implemented yet.\n";
-//}
+void Skeleton::computeHybridDynamicsRecursionA()
+{
+  dterr << "Not implemented yet.\n";
+}
 
 //==============================================================================
-//void Skeleton::computeHybridDynamicsRecursionB()
-//{
-//  dterr << "Not implemented yet.\n";
-//}
+void Skeleton::computeHybridDynamicsRecursionB()
+{
+  // Backward recursion
+  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateArtInertiaHD(mTimeStep);
+    (*it)->updateBiasForceHD(mGravity, mTimeStep);
+  }
+  // TODO: Replace with std::make_reverse_iterator when we migrate to C++14
+
+  mIsArticulatedInertiaDirty = false;
+
+  // Forward recursion
+  for (auto& bodyNode : mBodyNodes)
+  {
+    bodyNode->updateBodyAccelerationHD();
+    bodyNode->updateTransmittedBodyForceFHD();
+    bodyNode->updateJointForceHD();
+  }
+}
 
 //==============================================================================
 void Skeleton::clearExternalForces()
 {
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->clearExternalForces();
-  }
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->clearExternalForces();
 }
 
 //==============================================================================
 void Skeleton::clearConstraintImpulses()
 {
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->clearConstraintImpulse();
-  }
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->clearConstraintImpulse();
 }
 
 //==============================================================================
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
+{
+  updateBiasImpulseFD(_bodyNode);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseFD(BodyNode* _bodyNode)
 {
   // Assertions
   assert(_bodyNode != NULL);
@@ -1807,7 +1828,33 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   BodyNode* it = _bodyNode;
   while (it != NULL)
   {
-    it->updateBiasImpulse();
+    it->updateBiasImpulseFD();
+    it = it->getParentBodyNode();
+  }
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseHD(BodyNode* _bodyNode)
+{
+  // Assertions
+  assert(_bodyNode != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contains _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Prepare cache data
+  BodyNode* it = _bodyNode;
+  while (it != NULL)
+  {
+    it->updateBiasImpulseHD();
     it = it->getParentBodyNode();
   }
 }
@@ -1815,6 +1862,13 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 //==============================================================================
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                  const Eigen::Vector6d& _imp)
+{
+  updateBiasImpulseFD(_bodyNode, _imp);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseFD(BodyNode* _bodyNode,
+                                   const Eigen::Vector6d& _imp)
 {
   // Assertions
   assert(_bodyNode != NULL);
@@ -1837,7 +1891,39 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   BodyNode* it = _bodyNode;
   while (it != NULL)
   {
-    it->updateBiasImpulse();
+    it->updateBiasImpulseFD();
+    it = it->getParentBodyNode();
+  }
+
+  _bodyNode->mConstraintImpulse.setZero();
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseHD(BodyNode* _bodyNode,
+                                   const Eigen::Vector6d& _imp)
+{
+  // Assertions
+  assert(_bodyNode != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  _bodyNode->mConstraintImpulse = _imp;
+
+  // Prepare cache data
+  BodyNode* it = _bodyNode;
+  while (it != NULL)
+  {
+    it->updateBiasImpulseHD();
     it = it->getParentBodyNode();
   }
 
@@ -1848,6 +1934,15 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 void Skeleton::updateBiasImpulse(
     BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
     BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2)
+{
+  updateBiasImpulseFD(_bodyNode1, _imp1, _bodyNode2, _imp2);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseFD(BodyNode* _bodyNode1,
+                                   const Eigen::Vector6d& _imp1,
+                                   BodyNode* _bodyNode2,
+                                   const Eigen::Vector6d& _imp2)
 {
   // Assertions
   assert(_bodyNode1 != NULL);
@@ -1876,17 +1971,54 @@ void Skeleton::updateBiasImpulse(
   std::vector<BodyNode*>::reverse_iterator it2
       = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
 
-  std::vector<BodyNode*>::reverse_iterator it;
-  if (it1 < it2)
-    it = it1;
-  else
-    it = it2;
+  std::vector<BodyNode*>::reverse_iterator it = std::min(it1, it2);
 
   // Prepare cache data
   for (; it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateBiasImpulse();
-  }
+    (*it)->updateBiasImpulseFD();
+
+  _bodyNode1->mConstraintImpulse.setZero();
+  _bodyNode2->mConstraintImpulse.setZero();
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseHD(BodyNode* _bodyNode1,
+                                   const Eigen::Vector6d& _imp1,
+                                   BodyNode* _bodyNode2,
+                                   const Eigen::Vector6d& _imp2)
+{
+  // Assertions
+  assert(_bodyNode1 != NULL);
+  assert(_bodyNode2 != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode1)
+         != mBodyNodes.end());
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode2)
+         != mBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  _bodyNode1->mConstraintImpulse = _imp1;
+  _bodyNode2->mConstraintImpulse = _imp2;
+
+  // Find which body is placed later in the list of body nodes in this skeleton
+  std::vector<BodyNode*>::reverse_iterator it1
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode1);
+  std::vector<BodyNode*>::reverse_iterator it2
+      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
+
+  std::vector<BodyNode*>::reverse_iterator it = std::min(it1, it2);
+
+  // Prepare cache data
+  for (; it != mBodyNodes.rend(); ++it)
+    (*it)->updateBiasImpulseHD();
 
   _bodyNode1->mConstraintImpulse.setZero();
   _bodyNode2->mConstraintImpulse.setZero();
@@ -1896,6 +2028,14 @@ void Skeleton::updateBiasImpulse(
 void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
                                  PointMass* _pointMass,
                                  const Eigen::Vector3d& _imp)
+{
+  updateBiasImpulseFD(_softBodyNode, _pointMass, _imp);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseFD(SoftBodyNode* _softBodyNode,
+                                   PointMass* _pointMass,
+                                   const Eigen::Vector3d& _imp)
 {
   // Assertions
   assert(_softBodyNode != NULL);
@@ -1919,7 +2059,42 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
   BodyNode* it = _softBodyNode;
   while (it != NULL)
   {
-    it->updateBiasImpulse();
+    it->updateBiasImpulseFD();
+    it = it->getParentBodyNode();
+  }
+
+  // TODO(JS): Do we need to backup and restore the original value?
+  _pointMass->setConstraintImpulse(oldConstraintImpulse);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulseHD(SoftBodyNode* _softBodyNode,
+                                   PointMass* _pointMass,
+                                   const Eigen::Vector3d& _imp)
+{
+  // Assertions
+  assert(_softBodyNode != NULL);
+  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
+         != mSoftBodyNodes.end());
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse to _bodyNode
+  Eigen::Vector3d oldConstraintImpulse =_pointMass->getConstraintImpulses();
+  _pointMass->setConstraintImpulse(_imp, true);
+
+  // Prepare cache data
+  BodyNode* it = _softBodyNode;
+  while (it != NULL)
+  {
+    it->updateBiasImpulseHD();
     it = it->getParentBodyNode();
   }
 
@@ -1930,11 +2105,21 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 //==============================================================================
 void Skeleton::updateVelocityChange()
 {
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    (*it)->updateJointVelocityChange();
-  }
+  updateVelocityChangeFD();
+}
+
+//==============================================================================
+void Skeleton::updateVelocityChangeFD()
+{
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->updateBodyVelocityChangeFD();
+}
+
+//==============================================================================
+void Skeleton::updateVelocityChangeHD()
+{
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->updateBodyVelocityChangeHD();
 }
 
 //==============================================================================
@@ -1959,43 +2144,62 @@ void Skeleton::computeImpulseForwardDynamics()
   // Backward recursion
   if (mIsArticulatedInertiaDirty)
   {
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateArtInertia(mTimeStep);
-      (*it)->updateBiasImpulse();
+      (*it)->updateArtInertiaFD(mTimeStep);
+      (*it)->updateBiasImpulseFD();
     }
 
     mIsArticulatedInertiaDirty = false;
   }
   else
   {
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
     {
-      (*it)->updateBiasImpulse();
+      (*it)->updateBiasImpulseFD();
     }
   }
 
   // Forward recursion
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (auto& bodyNode : mBodyNodes)
   {
-    (*it)->updateJointVelocityChange();
-//    (*it)->updateBodyVelocityChange();
-    (*it)->updateBodyImpForceFwdDyn();
+    bodyNode->updateBodyAccelerationFD();
+    bodyNode->updateTransmittedBodyImpulse();
+    bodyNode->updateConstrainedTermsFD(mTimeStep);
+  }
+}
+
+//==============================================================================
+void Skeleton::computeImpulseHybridDynamics()
+{
+  // Skip immobile or 0-dof skeleton
+  if (!isMobile() || getNumDofs() == 0)
+    return;
+
+  // Backward recursion
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArtInertiaHD(mTimeStep);
+      (*it)->updateBiasImpulseHD();
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+      (*it)->updateBiasImpulseFD();
   }
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  // Forward recursion
+  for (auto& bodyNode : mBodyNodes)
   {
-    // 1. dq = dq + del_dq
-    // 2. ddq = ddq + del_dq / dt
-    // 3. tau = tau + imp / dt
-    (*it)->updateConstrainedJointAndBodyAcceleration(mTimeStep);
-
-    // 4. F(+) = F(-) + ImpF / dt
-    (*it)->updateConstrainedTransmittedForce(mTimeStep);
+    bodyNode->updateBodyVelocityChangeHD();
+    bodyNode->updateTransmittedBodyImpulse();
+    bodyNode->updateJointImpulseHD();
+    bodyNode->updateConstrainedTermsHD(mTimeStep);
   }
 }
 

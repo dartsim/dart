@@ -51,6 +51,7 @@ namespace dynamics {
 //==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    mActuationType(TORQUE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
@@ -86,6 +87,18 @@ const std::string& Joint::setName(const std::string& _name) {
 
 const std::string& Joint::getName() const {
   return mName;
+}
+
+//==============================================================================
+void Joint::setActuationType(Joint::ActuationType _actuationType)
+{
+  mActuationType = _actuationType;
+}
+
+//==============================================================================
+Joint::ActuationType Joint::getActuationType() const
+{
+  return mActuationType;
 }
 
 BodyNode* Joint::getChildBodyNode()

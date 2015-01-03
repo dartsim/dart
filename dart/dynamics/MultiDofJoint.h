@@ -79,6 +79,25 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
+  // Input/output
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void setInput(size_t _index, double _input);
+
+  // Documentation inherited
+  virtual double getInput(size_t _index) const;
+
+  // Documentation inherited
+  virtual void setInputs(const Eigen::VectorXd& _inputs);
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getInputs() const;
+
+  // Documentation inherited
+  virtual void resetInputs();
+
+  //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
@@ -387,6 +406,9 @@ protected:
   ///
   Eigen::Matrix<size_t, DOF, 1> mIndexInSkeleton;
 
+  /// Input
+  Eigen::Matrix<double, DOF, 1> mInputs;
+
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
@@ -595,6 +617,63 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
   }
 
   return mIndexInSkeleton[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInput(size_t _index, double _position)
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::setInput]: index[" << _index << "] out of range"
+          << std::endl;
+    return;
+  }
+
+  mInputs[_index] = _position;
+}
+
+//==============================================================================
+template <size_t DOF>
+double MultiDofJoint<DOF>::getInput(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::getInput]: index[" << _index << "] out of range"
+          << std::endl;
+    return 0.0;
+  }
+
+  return mInputs[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInputs(const Eigen::VectorXd& _inputs)
+{
+  if (_inputs.size() != getNumDofs())
+  {
+    dterr << "[MultiDofJoint::setInputs]: inputs's size["
+          << _inputs.size() << "] is different with the dof ["
+          << getNumDofs() << "]" << std::endl;
+    return;
+  }
+
+  mInputs = _inputs;
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getInputs() const
+{
+  return mInputs;
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::resetInputs()
+{
+  mInputs.setZero();
 }
 
 //==============================================================================
