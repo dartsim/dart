@@ -331,11 +331,6 @@ dynamics::Skeleton* SkelParser::readSkeleton(
     newSkeleton->addBodyNode((*it).bodyNode);
   }
 
-  // No longer need to preserve the dof names. User can turn this back on if
-  // they desire.
-  for(size_t i=0; i<newSkeleton->getNumDofs(); ++i)
-    newSkeleton->getDof(i)->preserveName(false);
-
   return newSkeleton;
 }
 
