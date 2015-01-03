@@ -10,9 +10,11 @@ add_subdirectory(urdf)
 dart_add_library(dart_utils ${srcs} ${hdrs})
 target_link_libraries(
   dart_utils
-  dart_collision
   dart_utils_sdf
   dart_utils_urdf
+  dart_collision
+  dart_dynamics
+  dart_simulation
   ${DART_DEPENDENCIES}
 )
 
