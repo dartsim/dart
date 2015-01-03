@@ -155,7 +155,7 @@
                 <axis>
                     <xyz>1 0 0</xyz>
                 </axis>
-                <dof number="0">
+                <dof local_index="0">
                     <position lower="-1" upper="1" />
                     <velocity lower="-2" upper="2" />
                     <acceleration lower="-3" upper="3" />
@@ -180,10 +180,10 @@
                         <upper>+2</upper>
                     </limit>
                 </axis2>
-                <dof number="0">
+                <dof local_index="0">
                     <position initial="5" />
                 </dof>
-                <dof number="1">
+                <dof local_index="1">
                     <position initial="-5" />
                 </dof>
             </joint>
@@ -192,11 +192,11 @@
                 <child>link 5</child>
                 <transformation>0 0 0 0 0 0</transformation>
                 <axis_order>xyz</axis_order>
-                <dof number="0" name="joint4_1">
+                <dof local_index="0" name="joint4_1">
                     <position lower="-1" upper="+1" />
                     <velocity lower="-10" upper="+10" />
                 </dof>
-                <dof number="2" name="joint4_3">
+                <dof local_index="2" name="joint4_3">
                     <position lower="-2" upper="+2" />
                     <velocity lower="-20" upper="+20" />
                 </dof>
