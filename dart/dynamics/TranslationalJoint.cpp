@@ -59,9 +59,12 @@ TranslationalJoint::~TranslationalJoint()
 //==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
-  mDofs[0]->setName(mName + "_x");
-  mDofs[1]->setName(mName + "_y");
-  mDofs[2]->setName(mName + "_z");
+  if(!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(mName + "_x");
+  if(!mDofs[1]->isNamePreserved())
+    mDofs[1]->setName(mName + "_y");
+  if(!mDofs[2]->isNamePreserved())
+    mDofs[2]->setName(mName + "_z");
 }
 
 //==============================================================================

@@ -724,7 +724,8 @@ double SingleDofJoint::getPotentialEnergy() const
 void SingleDofJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
-  mDof->setName(mName);
+  if(!mDof->isNamePreserved())
+    mDof->setName(mName);
 }
 
 //==============================================================================

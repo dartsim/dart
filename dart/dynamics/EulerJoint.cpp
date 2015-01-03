@@ -107,7 +107,10 @@ void EulerJoint::updateDegreeOfFreedomNames()
   if (affixes.size() == 3)
   {
     for (size_t i = 0; i < 3; ++i)
-      mDofs[i]->setName(mName + affixes[i]);
+    {
+      if(!mDofs[i]->isNamePreserved())
+        mDofs[i]->setName(mName + affixes[i]);
+    }
   }
 }
 

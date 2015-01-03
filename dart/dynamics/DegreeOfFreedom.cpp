@@ -67,6 +67,18 @@ const std::string& DegreeOfFreedom::getName() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::preserveName(bool _preserve)
+{
+  mNamePreserved = _preserve;
+}
+
+//==============================================================================
+bool DegreeOfFreedom::isNamePreserved() const
+{
+  return mNamePreserved;
+}
+
+//==============================================================================
 size_t DegreeOfFreedom::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
@@ -357,6 +369,7 @@ DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
                                  const std::string& _name,
                                  size_t _indexInJoint)
   : mName(_name),
+    mNamePreserved(false),
     mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
     mJoint(_joint)

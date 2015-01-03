@@ -176,7 +176,10 @@ void PlanarJoint::updateDegreeOfFreedomNames()
   if (affixes.size() == 2)
   {
     for (size_t i = 0; i < 2; ++i)
-      mDofs[i]->setName(mName+affixes[i]);
+    {
+      if (!mDofs[i]->isNamePreserved())
+        mDofs[i]->setName(mName+affixes[i]);
+    }
   }
 }
 

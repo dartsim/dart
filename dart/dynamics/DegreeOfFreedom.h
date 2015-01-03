@@ -66,6 +66,15 @@ public:
   /// Get the name of this DegreeOfFreedom
   const std::string& getName() const;
 
+  /// Prevent Joint::updateDegreeOfFreedomNames() from changing the name of this
+  /// degree of freedom. This is useful if you (the user) have customized the
+  /// name for this DegreeOfFreedom and want to prevent DART from automatically
+  /// updating its name if its parent Joint properties ever change.
+  void preserveName(bool _preserve);
+
+  /// Check whether DegreeOfFreedom::lockName(bool) is activate
+  bool isNamePreserved() const;
+
   /// Get this DegreeOfFreedom's index within its Skeleton
   size_t getIndexInSkeleton() const;
 
@@ -242,6 +251,9 @@ protected:
   ///
   /// The default name can be renamed by setName() as well.
   std::string mName;
+
+  /// True if DegreeOfFreedom::lockName(bool) is active
+  bool mNamePreserved;
 
   /// \brief Index of this DegreeOfFreedom within its Joint
   ///
