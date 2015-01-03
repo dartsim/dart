@@ -219,9 +219,9 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
   assert(_face[0] != _face[1]);
   assert(_face[1] != _face[2]);
   assert(_face[2] != _face[0]);
-  assert(0 <= _face[0] && _face[0] < math::castUIntToInt(mPointMasses.size()));
-  assert(0 <= _face[1] && _face[1] < math::castUIntToInt(mPointMasses.size()));
-  assert(0 <= _face[2] && _face[2] < math::castUIntToInt(mPointMasses.size()));
+  assert(0 <= _face[0] && static_cast<size_t>(_face[0]) < mPointMasses.size());
+  assert(0 <= _face[1] && static_cast<size_t>(_face[1]) < mPointMasses.size());
+  assert(0 <= _face[2] && static_cast<size_t>(_face[2]) < mPointMasses.size());
   mFaces.push_back(_face);
 }
 

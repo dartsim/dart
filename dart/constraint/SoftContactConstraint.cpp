@@ -605,33 +605,33 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass1)
     {
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   mJacobians1[_idx].tail<3>());
+      mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
     }
     else
     {
       if (mBodyNode1->isReactive())
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                     mJacobians1[_idx]);
+        mBodyNode1->getSkeleton()->updateBiasImpulseHD(mBodyNode1,
+                                                       mJacobians1[_idx]);
       }
     }
 
     if (mPointMass2)
     {
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   mJacobians2[_idx].tail<3>());
+      mBodyNode2->getSkeleton()->updateBiasImpulseHD(
+            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
     }
     else
     {
       if (mBodyNode2->isReactive())
       {
-        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                     mJacobians2[_idx]);
+        mBodyNode2->getSkeleton()->updateBiasImpulseHD(mBodyNode2,
+                                                       mJacobians2[_idx]);
       }
     }
 
-    mBodyNode1->getSkeleton()->updateVelocityChange();
+    mBodyNode1->getSkeleton()->updateVelocityChangeHD();
   }
   // Colliding two distinct skeletons
   else
@@ -639,36 +639,36 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     if (mPointMass1)
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   mJacobians1[_idx].tail<3>());
-      mBodyNode1->getSkeleton()->updateVelocityChange();
+      mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
+      mBodyNode1->getSkeleton()->updateVelocityChangeHD();
     }
     else
     {
       if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
-        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                     mJacobians1[_idx]);
-        mBodyNode1->getSkeleton()->updateVelocityChange();
+        mBodyNode1->getSkeleton()->updateBiasImpulseHD(mBodyNode1,
+                                                       mJacobians1[_idx]);
+        mBodyNode1->getSkeleton()->updateVelocityChangeHD();
       }
     }
 
     if (mPointMass2)
     {
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   mJacobians2[_idx].tail<3>());
-      mBodyNode2->getSkeleton()->updateVelocityChange();
+      mBodyNode2->getSkeleton()->updateBiasImpulseHD(
+            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
+      mBodyNode2->getSkeleton()->updateVelocityChangeHD();
     }
     else
     {
       if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
-        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                     mJacobians2[_idx]);
-        mBodyNode2->getSkeleton()->updateVelocityChange();
+        mBodyNode2->getSkeleton()->updateBiasImpulseHD(mBodyNode2,
+                                                       mJacobians2[_idx]);
+        mBodyNode2->getSkeleton()->updateVelocityChangeHD();
       }
     }
   }

@@ -1015,7 +1015,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
           EXPECT_NEAR(constraintVector1(l), constraintVector2(index), 1e-6);
           index++;
         }
-        assert(bodyJacobian.cols() == math::castUIntToInt(index));
+        assert(static_cast<size_t>(bodyJacobian.cols()) == index);
       }
     }
   }

@@ -651,7 +651,7 @@ double MultiDofJoint<DOF>::getInput(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setInputs(const Eigen::VectorXd& _inputs)
 {
-  if (_inputs.size() != getNumDofs())
+  if (static_cast<size_t>(_inputs.size()) != getNumDofs())
   {
     dterr << "[MultiDofJoint::setInputs]: inputs's size["
           << _inputs.size() << "] is different with the dof ["
@@ -706,7 +706,7 @@ double MultiDofJoint<DOF>::getPosition(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (_positions.size() != getNumDofs())
+  if (static_cast<size_t>(_positions.size()) != getNumDofs())
   {
     dterr << "setPositions positions's size[" << _positions.size()
           << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
@@ -816,7 +816,7 @@ double MultiDofJoint<DOF>::getVelocity(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (_velocities.size() != getNumDofs())
+  if (static_cast<size_t>(_velocities.size()) != getNumDofs())
   {
     dterr << "setVelocities velocities's size[" << _velocities.size()
           << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
@@ -928,7 +928,7 @@ double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (_accelerations.size() != getNumDofs())
+  if (static_cast<size_t>(_accelerations.size()) != getNumDofs())
   {
     dterr << "setAccelerations accelerations's size[" << _accelerations.size()
           << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
@@ -1040,7 +1040,7 @@ double MultiDofJoint<DOF>::getForce(size_t _index)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 {
-  if (_forces.size() != getNumDofs())
+  if (static_cast<size_t>(_forces.size()) != getNumDofs())
   {
     dterr << "setForces forces's size[" << _forces.size()
           << "] is different with the dof [" << getNumDofs() << "]" << std::endl;

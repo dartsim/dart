@@ -195,13 +195,13 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
       {
         if (mBodyNode2->isReactive())
         {
-          mBodyNode1->getSkeleton()->updateBiasImpulse(
+          mBodyNode1->getSkeleton()->updateBiasImpulseHD(
                 mBodyNode1, mJacobian1.row(_index),
                 mBodyNode2, -mJacobian2.row(_index));
         }
         else
         {
-          mBodyNode1->getSkeleton()->updateBiasImpulse(
+          mBodyNode1->getSkeleton()->updateBiasImpulseHD(
                 mBodyNode1, mJacobian1.row(_index));
         }
       }
@@ -209,7 +209,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
       {
         if (mBodyNode2->isReactive())
         {
-          mBodyNode2->getSkeleton()->updateBiasImpulse(
+          mBodyNode2->getSkeleton()->updateBiasImpulseHD(
                 mBodyNode2, -mJacobian2.row(_index));
         }
         else
@@ -218,7 +218,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
         }
       }
 
-      mBodyNode1->getSkeleton()->updateVelocityChange();
+      mBodyNode1->getSkeleton()->updateVelocityChangeHD();
     }
     // Weld joint between two bodies in different skeletons
     else
@@ -226,17 +226,17 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
       if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
+        mBodyNode1->getSkeleton()->updateBiasImpulseHD(
               mBodyNode1, mJacobian1.row(_index));
-        mBodyNode1->getSkeleton()->updateVelocityChange();
+        mBodyNode1->getSkeleton()->updateVelocityChangeHD();
       }
 
       if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
-        mBodyNode2->getSkeleton()->updateBiasImpulse(
+        mBodyNode2->getSkeleton()->updateBiasImpulseHD(
               mBodyNode2, -mJacobian2.row(_index));
-        mBodyNode2->getSkeleton()->updateVelocityChange();
+        mBodyNode2->getSkeleton()->updateVelocityChangeHD();
       }
     }
   }
@@ -245,9 +245,9 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
     assert(mBodyNode1->isReactive());
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
-    mBodyNode1->getSkeleton()->updateBiasImpulse(
+    mBodyNode1->getSkeleton()->updateBiasImpulseHD(
           mBodyNode1, mJacobian1.row(_index));
-    mBodyNode1->getSkeleton()->updateVelocityChange();
+    mBodyNode1->getSkeleton()->updateVelocityChangeHD();
   }
 
   mAppliedImpulseIndex = _index;

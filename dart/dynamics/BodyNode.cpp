@@ -1933,9 +1933,9 @@ void BodyNode::_updateBodyJacobian()
   // Parent Jacobian
   if (mParentBodyNode)
   {
-    assert(mParentBodyNode->getBodyJacobian().cols()
-           + math::castUIntToInt(mParentJoint->getNumDofs())
-           == mBodyJacobian.cols());
+    assert(static_cast<size_t>(mParentBodyNode->getBodyJacobian().cols())
+           + mParentJoint->getNumDofs()
+           == static_cast<size_t>(mBodyJacobian.cols()));
 
     assert(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) =
@@ -1971,9 +1971,9 @@ void BodyNode::_updateBodyJacobianDeriv()
   // Parent Jacobian
   if (mParentBodyNode)
   {
-    assert(mParentBodyNode->mBodyJacobianDeriv.cols()
-           + math::castUIntToInt(mParentJoint->getNumDofs())
-           == mBodyJacobianDeriv.cols());
+    assert(static_cast<size_t>(mParentBodyNode->mBodyJacobianDeriv.cols())
+           + mParentJoint->getNumDofs()
+           == static_cast<size_t>(mBodyJacobianDeriv.cols()));
 
     assert(mParentJoint);
     mBodyJacobianDeriv.leftCols(numParentDOFs)

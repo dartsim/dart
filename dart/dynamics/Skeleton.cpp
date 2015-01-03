@@ -1222,8 +1222,8 @@ void Skeleton::updateMassMatrix()
   if (getNumDofs() == 0)
     return;
 
-  assert(mM.cols() == math::castUIntToInt(getNumDofs())
-         && mM.rows() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mM.cols()) == getNumDofs()
+         && static_cast<size_t>(mM.rows()) == getNumDofs());
 
   mM.setZero();
 
@@ -1275,8 +1275,8 @@ void Skeleton::updateAugMassMatrix()
   if (getNumDofs() == 0)
     return;
 
-  assert(mAugM.cols() == math::castUIntToInt(getNumDofs())
-         && mAugM.rows() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mAugM.cols()) == getNumDofs()
+         && static_cast<size_t>(mAugM.rows()) == getNumDofs());
 
   mAugM.setZero();
 
@@ -1329,8 +1329,8 @@ void Skeleton::updateInvMassMatrix()
   if (getNumDofs() == 0)
     return;
 
-  assert(mInvM.cols() == math::castUIntToInt(getNumDofs())
-         && mInvM.rows() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mInvM.cols()) == getNumDofs()
+         && static_cast<size_t>(mInvM.rows()) == getNumDofs());
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -1395,8 +1395,8 @@ void Skeleton::updateInvAugMassMatrix()
   if (getNumDofs() == 0)
     return;
 
-  assert(mInvAugM.cols() == math::castUIntToInt(getNumDofs())
-         && mInvAugM.rows() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mInvAugM.cols()) == getNumDofs()
+         && static_cast<size_t>(mInvAugM.rows()) == getNumDofs());
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -1456,7 +1456,7 @@ void Skeleton::updateCoriolisForces()
   if (getNumDofs() == 0)
     return;
 
-  assert(mCvec.size() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mCvec.size()) == getNumDofs());
 
   mCvec.setZero();
 
@@ -1487,7 +1487,7 @@ void Skeleton::updateGravityForces()
   if (getNumDofs() == 0)
     return;
 
-  assert(mG.size() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mG.size()) == getNumDofs());
 
   // Calcualtion mass matrix, M
   mG.setZero();
@@ -1512,7 +1512,7 @@ void Skeleton::updateCoriolisAndGravityForces()
   if (getNumDofs() == 0)
     return;
 
-  assert(mCg.size() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mCg.size()) == getNumDofs());
 
   mCg.setZero();
   for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
@@ -1542,7 +1542,7 @@ void Skeleton::updateExternalForces()
   if (getNumDofs() == 0)
     return;
 
-  assert(mFext.size() == math::castUIntToInt(getNumDofs()));
+  assert(static_cast<size_t>(mFext.size()) == getNumDofs());
 
   // Clear external force.
   mFext.setZero();
