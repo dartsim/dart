@@ -208,7 +208,8 @@ public:
   //----------------------------------------------------------------------------
 
   /// Return degrees of freedom of this skeleton
-  DEPRECATED(4.1) size_t getDof() const;
+  DEPRECATED(4.1)
+  size_t getDof() const;
 
   /// Return degrees of freedom of this skeleton
   size_t getNumDofs() const;
@@ -354,13 +355,15 @@ public:
   //----------------------------------------------------------------------------
 
   ///
-  DEPRECATED(4.2) void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+  DEPRECATED(4.2)
+  void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   /// Set constraint impulses applying to joint
   void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   ///
-  DEPRECATED(4.2) Eigen::VectorXd getConstraintImpulses() const;
+  DEPRECATED(4.2)
+  Eigen::VectorXd getConstraintImpulses() const;
 
   /// Return constraint impulses applied to joint
   Eigen::VectorXd getJointConstraintImpulses() const;
@@ -539,28 +542,32 @@ public:
 
   /// Get Coriolis force vector of the skeleton.
   /// \remarks Please use getCoriolisForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getCoriolisForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getCoriolisForceVector();
 
   /// Get Coriolis force vector of the skeleton.
   const Eigen::VectorXd& getCoriolisForces();
 
   /// Get gravity force vector of the skeleton.
   /// \remarks Please use getGravityForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getGravityForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getGravityForceVector();
 
   /// Get gravity force vector of the skeleton.
   const Eigen::VectorXd& getGravityForces();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   /// \remarks Please use getCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getCombinedVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getCombinedVector();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   const Eigen::VectorXd& getCoriolisAndGravityForces();
 
   /// Get external force vector of the skeleton.
   /// \remarks Please use getExternalForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getExternalForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getExternalForceVector();
 
   /// Get external force vector of the skeleton.
   const Eigen::VectorXd& getExternalForces();
@@ -570,7 +577,8 @@ public:
 
   /// Get constraint force vector.
   /// \remarks Please use getConstraintForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getConstraintForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getConstraintForceVector();
 
   /// Get constraint force vector.
   const Eigen::VectorXd& getConstraintForces();
@@ -663,28 +671,32 @@ protected:
 
   /// Update Coriolis force vector of the skeleton.
   /// \remarks Please use updateCoriolisForces() instead.
-  DEPRECATED(4.2) virtual void updateCoriolisForceVector();
+  DEPRECATED(4.2)
+  virtual void updateCoriolisForceVector();
 
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces();
 
   /// Update gravity force vector of the skeleton.
   /// \remarks Please use updateGravityForces() instead.
-  DEPRECATED(4.2) virtual void updateGravityForceVector();
+  DEPRECATED(4.2)
+  virtual void updateGravityForceVector();
 
   /// Update gravity force vector of the skeleton.
   void updateGravityForces();
 
   /// Update combined vector of the skeletong.
   /// \remarks Please use updateCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2) virtual void updateCombinedVector();
+  DEPRECATED(4.2)
+  virtual void updateCombinedVector();
 
   /// Update combined vector of the skeletong.
   void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized torques.
   /// \remarks Please use updateExternalForces() instead.
-  DEPRECATED(4.2) virtual void updateExternalForceVector();
+  DEPRECATED(4.2)
+  virtual void updateExternalForceVector();
 
   // TODO(JS): Not implemented yet
   /// update external force vector to generalized torques.

@@ -130,7 +130,8 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
   /// Get number of generalized coordinates
-  DEPRECATED(4.1) virtual size_t getDof() const = 0;
+  DEPRECATED(4.1)
+  virtual size_t getDof() const = 0;
 
   /// Get number of generalized coordinates
   virtual size_t getNumDofs() const = 0;
