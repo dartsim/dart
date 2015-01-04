@@ -40,6 +40,7 @@
 #include <iostream>
 #include <string>
 
+#include "dart/config.h"
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
@@ -1073,6 +1074,12 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   }
 
   mAccelerations[_index] = _acceleration;
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == ACCELERATION)
+    mInputs[_index] = mAccelerations[_index];
+#endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -1101,6 +1108,12 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
   }
 
   mAccelerations = _accelerations;
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == ACCELERATION)
+    mInputs = mAccelerations;
+#endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -1186,6 +1199,12 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
   }
 
   mForces[_index] = _force;
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == TORQUE)
+    mInputs[_index] = mForces[_index];
+#endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -1213,6 +1232,12 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
   }
 
   mForces = _forces;
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == TORQUE)
+    mInputs = mForces;
+#endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -1949,11 +1974,17 @@ void MultiDofJoint<DOF>::updateTotalForceHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
+      mForces.setZero();
+      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      break;
     case TORQUE:
+      mForces = mInputs;
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      mAccelerations = mInputs;
+      updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:
       break;

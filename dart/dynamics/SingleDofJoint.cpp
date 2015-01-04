@@ -387,6 +387,11 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
   }
 
   mAcceleration = _acceleration;
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == ACCELERATION)
+    mInput = mAcceleration;
+#endif
 }
 
 //==============================================================================
@@ -413,6 +418,11 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
   }
 
   mAcceleration = _accelerations[0];
+
+#if DART_MAJOR_VERSION == 4
+  if (mActuatorType == ACCELERATION)
+    mInput = mAcceleration;
+#endif
 }
 
 //==============================================================================
@@ -496,6 +506,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
   if (mActuatorType == TORQUE)
     mInput = mForce;
 #endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -526,6 +537,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
   if (mActuatorType == TORQUE)
     mInput = mForce;
 #endif
+  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -1178,11 +1190,17 @@ void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
+      mForce = 0.0;
+      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      break;
     case TORQUE:
+      mForce = mInput;
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      mAcceleration = mInput;
+      updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:
       break;
