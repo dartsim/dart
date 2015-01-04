@@ -859,6 +859,7 @@ void SingleDofJoint::addChildArtInertiaHDTo(
                                              _childArtInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -911,6 +912,7 @@ void SingleDofJoint::addChildArtInertiaImplicitHDTo(
                                                      _childArtInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -960,6 +962,7 @@ void SingleDofJoint::updateInvProjArtInertiaHD(
       updateInvProjArtInertiaHDAccelerationType(_artInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1008,6 +1011,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitHD(
       updateInvProjArtInertiaImplicitHDAccelerationType(_artInertia, _timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1074,6 +1078,7 @@ void SingleDofJoint::addChildBiasForceHDTo(
                                              _childPartialAcc);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1149,6 +1154,7 @@ void SingleDofJoint::addChildBiasImpulseHDTo(
                                               _childBiasImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1209,6 +1215,7 @@ void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
       updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1254,6 +1261,7 @@ void SingleDofJoint::updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse)
       updateTotalImpulseHDAccelerationType(_bodyImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1299,6 +1307,7 @@ void SingleDofJoint::updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
       updateAccelerationHDAccelerationType(_artInertia, _spatialAcc);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1346,6 +1355,7 @@ void SingleDofJoint::updateVelocityChangeHD(
       updateVelocityChangeHDAccelerationType(_artInertia, _velocityChange);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1413,6 +1423,7 @@ void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce,
                     _withSpringForces);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1436,6 +1447,7 @@ void SingleDofJoint::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
       updateImpulseID(_bodyImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1459,6 +1471,7 @@ void SingleDofJoint::updateConstrainedTermsHD(double _timeStep)
       updateConstrainedTermsHDAccelerationType(_timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }

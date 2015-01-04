@@ -1589,6 +1589,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaHDTo(
                                              _childArtInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1649,6 +1650,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitHDTo(
                                                 _childArtInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1704,6 +1706,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaHD(
       updateInvProjArtInertiaHDAccelerationType(_artInertia);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1759,6 +1762,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitHD(
       updateInvProjArtInertiaImplicitHDAccelerationType(_artInertia, _timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1836,6 +1840,7 @@ void MultiDofJoint<DOF>::addChildBiasForceHDTo(
                                              _childPartialAcc);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1927,6 +1932,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseHDTo(
                                               _childBiasImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -1993,6 +1999,7 @@ void MultiDofJoint<DOF>::updateTotalForceHD(
       updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2049,6 +2056,7 @@ void MultiDofJoint<DOF>::updateTotalImpulseHD(
       updateTotalImpulseHDAccelerationType(_bodyImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2103,6 +2111,7 @@ void MultiDofJoint<DOF>::updateAccelerationHD(
       updateAccelerationHDAccelerationType(_artInertia, _spatialAcc);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2157,6 +2166,7 @@ void MultiDofJoint<DOF>::updateVelocityChangeHD(
       updateVelocityChangeHDAccelerationType(_artInertia, _velocityChange);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2230,6 +2240,7 @@ void MultiDofJoint<DOF>::updateForceHD(const Eigen::Vector6d& _bodyForce,
                     _withSpringForces);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2254,6 +2265,7 @@ void MultiDofJoint<DOF>::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
       updateImpulseID(_bodyImpulse);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
@@ -2279,6 +2291,7 @@ void MultiDofJoint<DOF>::updateConstrainedTermsHD(double _timeStep)
       updateConstrainedTermsHDAccelerationType(_timeStep);
       break;
     default:
+      dterr << "Unsupported actuator type." << std::endl;
       break;
   }
 }
