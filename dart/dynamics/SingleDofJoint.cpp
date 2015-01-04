@@ -48,6 +48,7 @@ namespace dynamics {
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
     mIndexInSkeleton(0u),
+    mInput(0.0),
     mPosition(0.0),
     mPositionLowerLimit(-DART_DBL_INF),
     mPositionUpperLimit(DART_DBL_INF),

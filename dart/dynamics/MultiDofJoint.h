@@ -705,6 +705,7 @@ template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
   : Joint(_name),
     mIndexInSkeleton(Eigen::Matrix<size_t, DOF, 1>::Constant(0u)),
+    mInputs(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositionLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
     mPositionUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
