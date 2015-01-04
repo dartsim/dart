@@ -189,6 +189,22 @@ void Joint::init(Skeleton* _skel)
 }
 
 //==============================================================================
+void Joint::addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
+                                 const Eigen::Matrix6d& _childArtInertia)
+{
+  addChildArtInertiaFDTo(_parentArtInertia, _childArtInertia);
+}
+
+//==============================================================================
+void Joint::addChildArtInertiaImplicitTo(
+    Eigen::Matrix6d& _parentArtInertiaImplicit,
+    const Eigen::Matrix6d& _childArtInertiaImplicit)
+{
+  addChildArtInertiaImplicitFDTo(_parentArtInertiaImplicit,
+                                 _childArtInertiaImplicit);
+}
+
+//==============================================================================
 //Eigen::VectorXd Joint::getDampingForces() const
 //{
 //  int numDofs = getNumDofs();

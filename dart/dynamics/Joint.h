@@ -423,60 +423,54 @@ protected:
   virtual void init(Skeleton* _skel);
 
   //----------------------------------------------------------------------------
-  // Recursive algorithms
+  /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Update transformation from parent body node to child body node
+  /// \brief Update transformation from parent body node to child body node
   virtual void updateLocalTransform() = 0;
 
-  /// Update generalized Jacobian from parent body node to child body node
-  /// w.r.t. local generalized coordinate
+  /// \brief Update generalized Jacobian from parent body node to child body
+  /// node w.r.t. local generalized coordinate
   virtual void updateLocalJacobian() = 0;
 
-  /// Update time derivative of generalized Jacobian from parent body node to
-  /// child body node w.r.t. local generalized coordinate
+  /// \brief Update time derivative of generalized Jacobian from parent body
+  /// node to child body node w.r.t. local generalized coordinate
   virtual void updateLocalJacobianTimeDeriv() = 0;
 
-  ///
+  /// \brief
   virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
 
-  /// Set partial
+  /// \brief Set partial
   virtual void setPartialAccelerationTo(
       Eigen::Vector6d& _partialAcceleration,
       const Eigen::Vector6d& _childVelocity) = 0;
 
-  ///
+  /// \brief
   virtual void addAccelerationTo(Eigen::Vector6d& _acc) = 0;
 
-  ///
+  /// \brief
   virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) = 0;
 
-  /// Add child's articulated inertia to parent's one
+  /// \brief Add child's articulated inertia to parent's one
   DEPRECATED(4.3)
   virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                    const Eigen::Matrix6d& _childArtInertia)
-  {
-    addChildArtInertiaFDTo(_parentArtInertia, _childArtInertia);
-  }
+                                    const Eigen::Matrix6d& _childArtInertia);
 
-  ///
+  /// \brief
   virtual void addChildArtInertiaFDTo(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia) {}
 
+  /// \brief
   virtual void addChildArtInertiaHDTo(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia) {}
 
-  /// Add child's articulated inertia to parent's one
+  /// \brief Add child's articulated inertia to parent's one
   DEPRECATED(4.3)
   virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit)
-  {
-    addChildArtInertiaImplicitFDTo(_parentArtInertiaImplicit,
-                                   _childArtInertiaImplicit);
-  }
+      const Eigen::Matrix6d& _childArtInertiaImplicit);
 
   // TODO(JS): rename to updateAInertiaChildAInertia()
   /// \brief Forward dynamics routine.
@@ -674,6 +668,8 @@ protected:
 
   /// \brief updateConstrainedTermsHD
   virtual void updateConstrainedTermsHD(double _timeStep) {}
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion

@@ -136,60 +136,84 @@ protected:
   // Documentation inherited.
 //  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
 
-  // Documentation inherited.
-  virtual void updateTransform();
-
-  // Documentation inherited.
-  virtual void updateVelocity();
-
-  // Documentation inherited.
-  virtual void updatePartialAcceleration();
-
-  // Documentation inherited.
-  virtual void updateAcceleration();
-
-  // Documentation inherited.
-  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
-                               bool _withExternalForces = false);
-
-  // Documentation inherited.
-  virtual void updateGeneralizedForce(bool _withDampingForces = false);
-
-  // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep);
-
-  // Documentation inherited.
-  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
-                               double _timeStep);
-
-  // Documentation inherited.
-  virtual void updateJointAndBodyAcceleration();
-
-  // Documentation inherited.
-  virtual void updateTransmittedWrench();
-
   //----------------------------------------------------------------------------
-  // Impulse based dynamics
+  /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateBiasImpulse();
+  virtual void updateTransform() override;
 
   // Documentation inherited.
-  virtual void updateJointVelocityChange();
+  virtual void updateVelocity() override;
 
   // Documentation inherited.
-//  virtual void updateBodyVelocityChange();
+  virtual void updatePartialAcceleration() override;
 
   // Documentation inherited.
-  virtual void updateBodyImpForceFwdDyn();
+  virtual void updateArtInertiaFD(double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+  virtual void updateArtInertiaHD(double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateConstrainedTransmittedForce(double _timeStep);
+  virtual void updateBiasForceFD(const Eigen::Vector3d& _gravity,
+                                 double _timeStep) override;
 
+  // Documentation inherited.
+  virtual void updateBiasForceHD(const Eigen::Vector3d& _gravity,
+                                 double _timeStep) override;
+
+  // Documentation inherited.
+  virtual void updateBiasImpulseFD() override;
+
+  // Documentation inherited.
+  virtual void updateBiasImpulseHD() override;
+
+  // Documentation inherited.
+  virtual void updateAccelerationID() override;
+
+  // Documentation inherited.
+  virtual void updateAccelerationFD() override;
+
+  // Documentation inherited.
+  virtual void updateAccelerationHD() override;
+
+  // Documentation inherited.
+  virtual void updateVelocityChangeFD() override;
+
+  // Documentation inherited.
+  virtual void updateVelocityChangeHD() override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedForceID(
+      const Eigen::Vector3d& _gravity,
+      bool _withExternalForces = false) override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedForceFHD() override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedImpulse() override;
+
+  // Documentation inherited.
+  virtual void updateJointForceID() override;
+
+  // Documentation inherited.
+  virtual void updateJointForceHD() override;
+
+  // Documentation inherited.
+  virtual void updateJointImpulseHD() override;
+
+  // Documentation inherited.
+  virtual void updateConstrainedTermsFD(double _timeStep) override;
+
+  // Documentation inherited.
+  virtual void updateConstrainedTermsHD(double _timeStep) override;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Equations of motion related routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
@@ -232,6 +256,8 @@ protected:
 
   // Documentation inherited.
   virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+
+  /// \}
 
   // Documentation inherited.
   virtual void clearExternalForces();

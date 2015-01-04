@@ -1041,7 +1041,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
     for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
     {
-      (*it)->updateAcceleration();
+      (*it)->updateAccelerationID();
     }
   }
 
@@ -1683,8 +1683,8 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
-    bodyNode->updateBodyAccelerationFD();
-    bodyNode->updateTransmittedBodyForceFHD();
+    bodyNode->updateAccelerationFD();
+    bodyNode->updateTransmittedForceFHD();
   }
 }
 
@@ -1715,7 +1715,7 @@ void Skeleton::computeInverseDynamicsRecursionA()
     (*it)->updateTransform();
     (*it)->updateVelocity();
     (*it)->updatePartialAcceleration();
-    (*it)->updateAcceleration();
+    (*it)->updateAccelerationID();
   }
 
   mIsArticulatedInertiaDirty = true;
@@ -1748,7 +1748,7 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
   // Backward recursion
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateTransmittedBodyForceID(mGravity, _withExternalForces);
+    (*it)->updateTransmittedForceID(mGravity, _withExternalForces);
     (*it)->updateJointForceID();
   }
 }
@@ -1781,8 +1781,8 @@ void Skeleton::computeHybridDynamicsRecursionB()
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
-    bodyNode->updateBodyAccelerationHD();
-    bodyNode->updateTransmittedBodyForceFHD();
+    bodyNode->updateAccelerationHD();
+    bodyNode->updateTransmittedForceFHD();
     bodyNode->updateJointForceHD();
   }
 }
@@ -2112,14 +2112,14 @@ void Skeleton::updateVelocityChange()
 void Skeleton::updateVelocityChangeFD()
 {
   for (auto& bodyNode : mBodyNodes)
-    bodyNode->updateBodyVelocityChangeFD();
+    bodyNode->updateVelocityChangeFD();
 }
 
 //==============================================================================
 void Skeleton::updateVelocityChangeHD()
 {
   for (auto& bodyNode : mBodyNodes)
-    bodyNode->updateBodyVelocityChangeHD();
+    bodyNode->updateVelocityChangeHD();
 }
 
 //==============================================================================
@@ -2163,8 +2163,8 @@ void Skeleton::computeImpulseForwardDynamics()
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
-    bodyNode->updateBodyAccelerationFD();
-    bodyNode->updateTransmittedBodyImpulse();
+    bodyNode->updateAccelerationFD();
+    bodyNode->updateTransmittedImpulse();
     bodyNode->updateConstrainedTermsFD(mTimeStep);
   }
 }
@@ -2196,8 +2196,8 @@ void Skeleton::computeImpulseHybridDynamics()
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
-    bodyNode->updateBodyVelocityChangeHD();
-    bodyNode->updateTransmittedBodyImpulse();
+    bodyNode->updateVelocityChangeHD();
+    bodyNode->updateTransmittedImpulse();
     bodyNode->updateJointImpulseHD();
     bodyNode->updateConstrainedTermsHD(mTimeStep);
   }
