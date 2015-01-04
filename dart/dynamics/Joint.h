@@ -75,6 +75,7 @@ public:
   {
     /// Passive type does not take any input, output is joint acceleration.
     PASSIVE,
+    // TODO: Not implemented yet.
 
     /// Input is joint torque (or effort), and output is joint acceleration.
     TORQUE,
@@ -87,6 +88,7 @@ public:
     /// desired velocity, with a limited maximum force.
     /// \sa setForceLowerLimit() and setForceUpperLimit().
     SERVO
+    // TODO: Not implemented yet.
   };
 
   /// Constructor
