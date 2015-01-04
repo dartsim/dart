@@ -408,10 +408,16 @@ protected:
       const Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void updateForceID(const Eigen::Vector6d& _bodyForce) override;
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) override;
 
   // Documentation inherited
-  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce) override;
+  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) override;
 
   // Documentation inherited
   virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;

@@ -351,7 +351,9 @@ protected:
   void updateTransmittedImpulse();
 
   /// \brief Update the joint force. Inverse dynamics routine.
-  void updateJointForceID();
+  void updateJointForceID(double _timeStep,
+                          double _withDampingForces,
+                          double _withSpringForces);
 
   /// \brief Update constrained terms due to the constraint impulses. Foward
   /// dynamics routine.

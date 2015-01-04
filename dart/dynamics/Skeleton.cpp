@@ -1739,7 +1739,8 @@ void Skeleton::computeInverseDynamicsRecursionA()
 
 //==============================================================================
 void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
-                                                bool /*_withDampingForces*/)
+                                                bool _withDampingForces,
+                                                bool _withSpringForces)
 {
   // Skip immobile or 0-dof skeleton
   if (getNumDofs() == 0)
@@ -1749,7 +1750,9 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
   {
     (*it)->updateTransmittedForceID(mGravity, _withExternalForces);
-    (*it)->updateJointForceID();
+    (*it)->updateJointForceID(mTimeStep,
+                              _withDampingForces,
+                              _withSpringForces);
   }
 }
 
@@ -1783,7 +1786,7 @@ void Skeleton::computeHybridDynamicsRecursionB()
   {
     bodyNode->updateAccelerationHD();
     bodyNode->updateTransmittedForceFHD();
-    bodyNode->updateJointForceHD();
+    bodyNode->updateJointForceHD(mTimeStep, true, true);
   }
 }
 

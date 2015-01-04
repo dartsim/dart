@@ -196,10 +196,14 @@ protected:
   virtual void updateTransmittedImpulse() override;
 
   // Documentation inherited.
-  virtual void updateJointForceID() override;
+  virtual void updateJointForceID(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces) override;
 
   // Documentation inherited.
-  virtual void updateJointForceHD() override;
+  virtual void updateJointForceHD(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces) override;
 
   // Documentation inherited.
   virtual void updateJointImpulseHD() override;

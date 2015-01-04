@@ -1021,7 +1021,7 @@ void BodyNode::updateBodyWrench(const Eigen::Vector3d& _gravity,
 
 //==============================================================================
 void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
-                                            bool _withExternalForces)
+                                        bool _withExternalForces)
 {
   // Gravity force
   if (mGravityMode == true)
@@ -1063,9 +1063,9 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 }
 
 //==============================================================================
-void BodyNode::updateGeneralizedForce(bool /*_withDampingForces*/)
+void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 {
-  updateJointForceID();
+  updateJointForceID(0.001, _withDampingForces, false);
 }
 
 //==============================================================================
@@ -1428,17 +1428,23 @@ void BodyNode::updateVelocityChangeHD()
 }
 
 //==============================================================================
-void BodyNode::updateJointForceID()
+void BodyNode::updateJointForceID(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces)
 {
   assert(mParentJoint != NULL);
-  mParentJoint->updateForceID(mF);
+  mParentJoint->updateForceID(mF, _timeStep,
+                              _withDampingForces, _withSpringForces);
 }
 
 //==============================================================================
-void BodyNode::updateJointForceHD()
+void BodyNode::updateJointForceHD(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces)
 {
   assert(mParentJoint != NULL);
-  mParentJoint->updateForceHD(mF);
+  mParentJoint->updateForceHD(mF, _timeStep,
+                              _withDampingForces, _withSpringForces);
 }
 
 //==============================================================================

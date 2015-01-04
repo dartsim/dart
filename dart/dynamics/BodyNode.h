@@ -582,10 +582,14 @@ protected:
   // dynamics is implemented.
 
   /// \brief Update the joint force. Inverse dynamics routine.
-  virtual void updateJointForceID();
+  virtual void updateJointForceID(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces);
 
   /// \brief Update the joint force. Hybrid dynamics routine.
-  virtual void updateJointForceHD();
+  virtual void updateJointForceHD(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces);
 
   /// \brief Update the joint impulse. Hybrid dynamics routine.
   virtual void updateJointImpulseHD();

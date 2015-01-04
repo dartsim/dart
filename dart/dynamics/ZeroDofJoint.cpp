@@ -646,13 +646,19 @@ void ZeroDofJoint::updateVelocityChangeHD(
 }
 
 //==============================================================================
-void ZeroDofJoint::updateForceID(const Eigen::Vector6d& /*_bodyForce*/)
+void ZeroDofJoint::updateForceID(const Eigen::Vector6d& /*_bodyForce*/,
+                                 double /*_timeStep*/,
+                                 bool /*_withDampingForces*/,
+                                 bool /*_withSpringForces*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ZeroDofJoint::updateForceHD(const Eigen::Vector6d& /*_bodyForce*/)
+void ZeroDofJoint::updateForceHD(const Eigen::Vector6d& /*_bodyForce*/,
+                                 double /*_timeStep*/,
+                                 bool /*_withDampingForces*/,
+                                 bool /*_withSpringForces*/)
 {
   // Do nothing
 }

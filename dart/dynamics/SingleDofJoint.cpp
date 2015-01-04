@@ -1346,20 +1346,42 @@ void SingleDofJoint::updateVelocityChangeHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce)
+void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
+                                   double _timeStep,
+                                   bool _withDampingForces,
+                                   bool _withSpringForces)
 {
   mForce = mJacobian.dot(_bodyForce);
+
+  // Damping force
+  if (_withDampingForces)
+  {
+    const double dampingForce = -mDampingCoefficient * mVelocity;
+    mForce -= dampingForce;
+  }
+
+  // Spring force
+  if (_withSpringForces)
+  {
+    const double nextPosition = mPosition + _timeStep*mVelocity;
+    const double springForce = -mSpringStiffness*(nextPosition - mRestPosition);
+    mForce -= springForce;
+  }
 }
 
 //==============================================================================
-void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce)
+void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce,
+                                   double _timeStep,
+                                   bool _withDampingForces,
+                                   bool _withSpringForces)
 {
   switch (mActuationType)
   {
     case TORQUE:
       break;
     case ACCELERATION:
-      updateForceID(_bodyForce);
+      updateForceID(_bodyForce, _timeStep, _withDampingForces,
+                    _withSpringForces);
       break;
     default:
       break;

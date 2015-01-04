@@ -335,18 +335,28 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointForceID()
+void SoftBodyNode::updateJointForceID(double _timeStep,
+                                      double _withDampingForces,
+                                      double _withSpringForces)
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointForceID();
+    mPointMasses.at(i)->updateJointForceID(_timeStep,
+                                           _withDampingForces,
+                                           _withSpringForces);
 
-  BodyNode::updateJointForceID();
+  BodyNode::updateJointForceID(_timeStep,
+                               _withDampingForces,
+                               _withSpringForces);
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointForceHD()
+void SoftBodyNode::updateJointForceHD(double _timeStep,
+                                      double _withDampingForces,
+                                      double _withSpringForces)
 {
-  BodyNode::updateJointForceHD();
+  BodyNode::updateJointForceHD(_timeStep,
+                               _withDampingForces,
+                               _withSpringForces);
 }
 
 //==============================================================================

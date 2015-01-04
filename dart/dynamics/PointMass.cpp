@@ -691,14 +691,17 @@ void PointMass::updateArtInertiaFD(double _timeStep)
 //==============================================================================
 void PointMass::updateGeneralizedForce(bool /*_withDampingForces*/)
 {
-  updateJointForceID();
+  updateJointForceID(false, false, false);
 }
 
 //==============================================================================
-void PointMass::updateJointForceID()
+void PointMass::updateJointForceID(double /*_timeStep*/,
+                                   double /*_withDampingForces*/,
+                                   double /*_withSpringForces*/)
 {
   // tau = f
   mForces = mF;
+  // TODO: need to add spring and damping forces
 }
 
 //==============================================================================

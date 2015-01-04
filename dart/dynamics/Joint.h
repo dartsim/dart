@@ -562,13 +562,19 @@ protected:
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  virtual void updateForceID(const Eigen::Vector6d& _bodyForce) = 0;
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) = 0;
 
   /// \brief Hybrid dynamics routine. Update joint force for hybrid dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
-  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce) = 0;
+  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForcese,
+                             bool _withSpringForces) = 0;
 
   /// \brief updateImpulseID
   /// \param _bodyForce
