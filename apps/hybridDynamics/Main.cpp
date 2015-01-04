@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
   dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(0);
   dart::dynamics::Joint*    joint = skel->getJoint(0);
-  joint->setActuationType(dart::dynamics::Joint::ACCELERATION);
+  joint->setActuatorType(dart::dynamics::Joint::ACCELERATION);
 
   // create a window and link it to the world
   MyWindow window;

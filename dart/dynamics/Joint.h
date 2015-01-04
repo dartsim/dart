@@ -60,11 +60,33 @@ class Skeleton;
 class Joint
 {
 public:
-
-  enum ActuationType
+  /// \brief Actuator type
+  ///
+  /// The input is able to be taken by setInput() or setInputs(), and the
+  /// meaning of input is different depending on the actuator type. The default
+  /// is TORQUE.
+  ///
+  /// Note the presence of joint damping force and joint spring force for all
+  /// the actuator types if the coefficients are not zero. The default
+  /// coefficients are zero.
+  ///
+  /// \sa setSpringStiffness(), setDampingCoefficient()
+  enum ActuatorType
   {
+    /// Passive type does not take any input, output is joint acceleration.
+    PASSIVE,
+
+    /// Input is joint torque (or effort), and output is joint acceleration.
     TORQUE,
-    ACCELERATION
+
+    /// Input is joint acceleration, and output is joint torque (or effort).
+    ACCELERATION,
+
+    /// Input is desired velocity, and output is joint acceleration. The
+    /// constraint solver will trye to force the joint velocity to match the
+    /// desired velocity, with a limited maximum force.
+    /// \sa setForceLowerLimit() and setForceUpperLimit().
+    SERVO
   };
 
   /// Constructor
@@ -79,11 +101,11 @@ public:
   /// Get joint name
   const std::string& getName() const;
 
-  /// \brief Set actuation type
-  void setActuationType(ActuationType _actuationType);
+  /// \brief Set actuator type
+  void setActuatorType(ActuatorType _actuatorType);
 
-  /// \brief Get actuation type
-  ActuationType getActuationType() const;
+  /// \brief Get actuator type
+  ActuatorType getActuatorType() const;
 
   /// Get the child BodyNode of this Joint
   BodyNode* getChildBodyNode();
@@ -549,14 +571,16 @@ protected:
   /// \brief updateVelocityChange
   /// \param _artInertia
   /// \param _velocityChange
-  virtual void updateVelocityChangeFD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange) = 0;
+  virtual void updateVelocityChangeFD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) = 0;
 
   /// \brief updateVelocityChange
   /// \param _artInertia
   /// \param _velocityChange
-  virtual void updateVelocityChangeHD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange) = 0;
+  virtual void updateVelocityChangeHD(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) = 0;
 
   /// \brief Forward dynamics routine. Update joint force for hybrid dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
@@ -705,8 +729,8 @@ protected:
   /// Joint name
   std::string mName;
 
-  /// \brief Actuation type
-  ActuationType mActuationType;
+  /// \brief Actuator type
+  ActuatorType mActuatorType;
 
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;

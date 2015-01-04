@@ -53,7 +53,7 @@ void MyWindow::timeStepping()
   dart::dynamics::Skeleton* skel  = mWorld->getSkeleton(0);
   dart::dynamics::Joint*    joint = skel->getJoint(0);
   joint->setAcceleration(0, -std::sin(mWorld->getTime()));
-//  joint->setActuationType(dart::dynamics::Joint::ACCELERATION);
+//  joint->setActuatorType(dart::dynamics::Joint::ACCELERATION);
 
   mWorld->step();
 }
