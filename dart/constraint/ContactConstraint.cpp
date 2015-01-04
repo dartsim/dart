@@ -552,7 +552,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
   dynamics::Skeleton* skel1 = mBodyNode1->getSkeleton();
-  dynamics::Skeleton* skel2 = mBodyNode1->getSkeleton();
+  dynamics::Skeleton* skel2 = mBodyNode2->getSkeleton();
 
   // Self collision case
   if (skel1 == skel2)
