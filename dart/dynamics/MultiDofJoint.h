@@ -1579,6 +1579,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildArtInertiaHDToTorqueType(_parentArtInertia,
                                        _childArtInertia);
@@ -1638,6 +1639,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
                                                 _childArtInertia);
@@ -1694,6 +1696,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateInvProjArtInertiaHDTorqueType(_artInertia);
       break;
@@ -1748,6 +1751,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateInvProjArtInertiaImplicitHDTorqueType(_artInertia, _timeStep);
       break;
@@ -1818,6 +1822,7 @@ void MultiDofJoint<DOF>::addChildBiasForceHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildBiasForceHDToTorqueType(_parentBiasForce,
                                        _childArtInertia,
@@ -1910,6 +1915,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                         _childArtInertia,
@@ -2035,6 +2041,7 @@ void MultiDofJoint<DOF>::updateTotalImpulseHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateTotalImpulseHDTorqueType(_bodyImpulse);
       break;
@@ -2088,6 +2095,7 @@ void MultiDofJoint<DOF>::updateAccelerationHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateAccelerationHDTorqueType(_artInertia, _spatialAcc);
       break;
@@ -2141,6 +2149,7 @@ void MultiDofJoint<DOF>::updateVelocityChangeHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateVelocityChangeHDTorqueType(_artInertia, _velocityChange);
       break;
@@ -2213,6 +2222,7 @@ void MultiDofJoint<DOF>::updateForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       break;
     case ACCELERATION:
@@ -2237,6 +2247,7 @@ void MultiDofJoint<DOF>::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       break;
     case ACCELERATION:
@@ -2260,6 +2271,7 @@ void MultiDofJoint<DOF>::updateConstrainedTermsHD(double _timeStep)
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateConstrainedTermsHDTorqueType(_timeStep);
       break;

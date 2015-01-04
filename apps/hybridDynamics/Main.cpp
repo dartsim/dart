@@ -52,8 +52,10 @@ int main(int argc, char* argv[])
   myWorld->setGravity(gravity);
 
   dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(0);
-  dart::dynamics::Joint*    joint = skel->getJoint(0);
-  joint->setActuatorType(dart::dynamics::Joint::ACCELERATION);
+  dart::dynamics::Joint*    joint0 = skel->getJoint(0);
+  dart::dynamics::Joint*    joint1 = skel->getJoint(1);
+  joint0->setActuatorType(dart::dynamics::Joint::ACCELERATION);
+  joint1->setActuatorType(dart::dynamics::Joint::PASSIVE);
 
   // create a window and link it to the world
   MyWindow window;

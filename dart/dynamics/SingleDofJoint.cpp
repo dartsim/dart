@@ -849,6 +849,7 @@ void SingleDofJoint::addChildArtInertiaHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildArtInertiaToHDTorqueType(_parentArtInertia,
                                        _childArtInertia);
@@ -900,6 +901,7 @@ void SingleDofJoint::addChildArtInertiaImplicitHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
                                                _childArtInertia);
@@ -950,6 +952,7 @@ void SingleDofJoint::updateInvProjArtInertiaHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateInvProjArtInertiaHDTorqueType(_artInertia);
       break;
@@ -997,6 +1000,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateInvProjArtInertiaImplicitHDTorqueType(_artInertia, _timeStep);
       break;
@@ -1056,6 +1060,7 @@ void SingleDofJoint::addChildBiasForceHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildBiasForceHDToTorqueType(_parentBiasForce,
                                        _childArtInertia,
@@ -1132,6 +1137,7 @@ void SingleDofJoint::addChildBiasImpulseHDTo(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                         _childArtInertia,
@@ -1240,6 +1246,7 @@ void SingleDofJoint::updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateTotalImpulseHDTorqueType(_bodyImpulse);
       break;
@@ -1284,6 +1291,7 @@ void SingleDofJoint::updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateAccelerationHDTorqueType(_artInertia, _spatialAcc);
       break;
@@ -1330,6 +1338,7 @@ void SingleDofJoint::updateVelocityChangeHD(
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateVelocityChangeHDTorqueType(_artInertia, _velocityChange);
       break;
@@ -1395,6 +1404,8 @@ void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
+      break;
     case TORQUE:
       break;
     case ACCELERATION:
@@ -1417,6 +1428,8 @@ void SingleDofJoint::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
+      break;
     case TORQUE:
       break;
     case ACCELERATION:
@@ -1438,6 +1451,7 @@ void SingleDofJoint::updateConstrainedTermsHD(double _timeStep)
 {
   switch (mActuatorType)
   {
+    case PASSIVE:
     case TORQUE:
       updateConstrainedTermsHDTorqueType(_timeStep);
       break;
