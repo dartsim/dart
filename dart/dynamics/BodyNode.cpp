@@ -1118,8 +1118,7 @@ void BodyNode::updateArtInertiaHD(double _timeStep)
   {
     Joint* childJoint = child->getParentJoint();
 
-    childJoint->addChildArtInertiaHDTo(mArtInertia,
-                                       child->mArtInertia);
+    childJoint->addChildArtInertiaHDTo(mArtInertia, child->mArtInertia);
     childJoint->addChildArtInertiaImplicitHDTo(mArtInertiaImplicit,
                                                child->mArtInertiaImplicit);
   }
@@ -1379,7 +1378,7 @@ void BodyNode::updateVelocityChangeFD()
 {
   if (mParentBodyNode)
   {
-    //
+    // Update joint velocity change
     mParentJoint->updateVelocityChangeFD(mArtInertia, mParentBodyNode->mDelV);
 
     // Transmit spatial acceleration of parent body to this body
@@ -1387,7 +1386,7 @@ void BodyNode::updateVelocityChangeFD()
   }
   else
   {
-    //
+    // Update joint velocity change
     mParentJoint->updateVelocityChangeFD(mArtInertia, Eigen::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body
@@ -1406,7 +1405,7 @@ void BodyNode::updateVelocityChangeHD()
 {
   if (mParentBodyNode)
   {
-    //
+    // Update joint velocity change
     mParentJoint->updateVelocityChangeHD(mArtInertia, mParentBodyNode->mDelV);
 
     // Transmit spatial acceleration of parent body to this body
@@ -1414,7 +1413,7 @@ void BodyNode::updateVelocityChangeHD()
   }
   else
   {
-    //
+    // Update joint velocity change
     mParentJoint->updateVelocityChangeHD(mArtInertia, Eigen::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body

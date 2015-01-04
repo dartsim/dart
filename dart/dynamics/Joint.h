@@ -452,19 +452,143 @@ protected:
   virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) = 0;
 
   /// \brief Add child's articulated inertia to parent's one
+  virtual void addChildArtInertiaFDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) = 0;
+
+  /// \brief Add child's articulated inertia to parent's one
+  virtual void addChildArtInertiaHDTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) = 0;
+
+  /// \brief Add child's articulated inertia to parent's one. Forward dynamics
+  /// routine.
+  virtual void addChildArtInertiaImplicitFDTo(
+      Eigen::Matrix6d& _parentArtInertiaImplicit,
+      const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
+  // TODO(JS): rename to updateAInertiaChildAInertia()
+
+  /// \brief Add child's articulated inertia to parent's one. Hybrid dynamics
+  /// routine.
+  virtual void addChildArtInertiaImplicitHDTo(
+      Eigen::Matrix6d& _parentArtInertiaImplicit,
+      const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
+
+  /// \brief Update inverse of projected articulated body inertia
+  virtual void updateInvProjArtInertiaFD(
+      const Eigen::Matrix6d& _artInertia) = 0;
+
+  /// \brief Update inverse of projected articulated body inertia
+  virtual void updateInvProjArtInertiaHD(
+      const Eigen::Matrix6d& _artInertia) = 0;
+
+  /// \brief Forward dynamics routine.
+  virtual void updateInvProjArtInertiaImplicitFD(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep) = 0;
+  // TODO(JS): rename to updateAInertiaPsi()
+
+  /// \brief Hybrid dynamics routine.
+  virtual void updateInvProjArtInertiaImplicitHD(
+      const Eigen::Matrix6d& _artInertia,
+      double _timeStep) = 0;
+
+  /// \brief Add child's bias force to parent's one
+  virtual void addChildBiasForceFDTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) = 0;
+
+  /// \brief Add child's bias force to parent's one
+  virtual void addChildBiasForceHDTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) = 0;
+
+  /// Add child's bias impulse to parent's one
+  virtual void addChildBiasImpulseFDTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) = 0;
+
+  /// Add child's bias impulse to parent's one
+  virtual void addChildBiasImpulseHDTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) = 0;
+
+  /// \brief
+  virtual void updateTotalForceFD(const Eigen::Vector6d& _bodyForce,
+                                  double _timeStep) = 0;
+
+  /// \brief
+  virtual void updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
+                                  double _timeStep) = 0;
+
+  /// \brief
+  virtual void updateTotalImpulseFD(const Eigen::Vector6d& _bodyImpulse) = 0;
+  // TODO: rename
+
+  /// \brief
+  virtual void updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  ///
+  virtual void resetTotalImpulses() = 0;
+
+  /// \brief
+  virtual void updateAccelerationFD(const Eigen::Matrix6d& _artInertia,
+                                    const Eigen::Vector6d& _spatialAcc) = 0;
+
+  /// \brief
+  virtual void updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
+                                    const Eigen::Vector6d& _spatialAcc) = 0;
+
+  /// \brief updateVelocityChange
+  /// \param _artInertia
+  /// \param _velocityChange
+  virtual void updateVelocityChangeFD(const Eigen::Matrix6d& _artInertia,
+                                    const Eigen::Vector6d& _velocityChange) = 0;
+
+  /// \brief updateVelocityChange
+  /// \param _artInertia
+  /// \param _velocityChange
+  virtual void updateVelocityChangeHD(const Eigen::Matrix6d& _artInertia,
+                                    const Eigen::Vector6d& _velocityChange) = 0;
+
+  /// \brief Forward dynamics routine. Update joint force for hybrid dynamics.
+  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// BodyNode to the child BodyNode. The spatial force is expressed in the
+  /// child BodyNode's frame.
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce) = 0;
+
+  /// \brief Hybrid dynamics routine. Update joint force for hybrid dynamics.
+  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// BodyNode to the child BodyNode. The spatial force is expressed in the
+  /// child BodyNode's frame.
+  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce) = 0;
+
+  /// \brief updateImpulseID
+  /// \param _bodyForce
+  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  /// \brief updateForceHD
+  /// \param _bodyForce
+  virtual void updateImpulseHD(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  /// \brief updateConstrainedTermsFD
+  virtual void updateConstrainedTermsFD(double _timeStep) = 0;
+
+  /// \brief updateConstrainedTermsHD
+  virtual void updateConstrainedTermsHD(double _timeStep) = 0;
+
+  //- DEPRECATED ---------------------------------------------------------------
+
+  /// \brief Add child's articulated inertia to parent's one
   DEPRECATED(4.3)
   virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
                                     const Eigen::Matrix6d& _childArtInertia);
-
-  /// \brief
-  virtual void addChildArtInertiaFDTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia) {}
-
-  /// \brief
-  virtual void addChildArtInertiaHDTo(
-      Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia) {}
 
   /// \brief Add child's articulated inertia to parent's one
   DEPRECATED(4.3)
@@ -472,207 +596,65 @@ protected:
       Eigen::Matrix6d& _parentArtInertiaImplicit,
       const Eigen::Matrix6d& _childArtInertiaImplicit);
 
-  // TODO(JS): rename to updateAInertiaChildAInertia()
-  /// \brief Forward dynamics routine.
-  virtual void addChildArtInertiaImplicitFDTo(
-      Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit) {}
-
-  /// \brief Hybrid dynamics routine.
-  virtual void addChildArtInertiaImplicitHDTo(
-      Eigen::Matrix6d& _parentArtInertiaImplicit,
-      const Eigen::Matrix6d& _childArtInertiaImplicit) {}
-
   /// Update inverse of projected articulated body inertia
   DEPRECATED(4.3)
-  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia)
-  {
-    updateInvProjArtInertiaFD(_artInertia);
-  }
-
-  virtual void updateInvProjArtInertiaFD(const Eigen::Matrix6d& _artInertia)
-  {}
-
-  virtual void updateInvProjArtInertiaHD(const Eigen::Matrix6d& _artInertia)
-  {}
+  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia);
 
   /// Update inverse of projected articulated body inertia with implicit damping
   /// and spring forces
   DEPRECATED(4.3)
   virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia,
-      double _timeStep)
-  {
-    updateInvProjArtInertiaImplicitFD(_artInertia, _timeStep);
-  }
-
-  // TODO(JS): rename to updateAInertiaPsi()
-  /// \brief Forward dynamics routine.
-  virtual void updateInvProjArtInertiaImplicitFD(
-      const Eigen::Matrix6d& _artInertia,
-      double _timeStep) {}
-
-  /// \brief Hybrid dynamics routine.
-  virtual void updateInvProjArtInertiaImplicitHD(
-      const Eigen::Matrix6d& _artInertia,
-      double _timeStep) {}
+      double _timeStep);
 
   /// \brief Add child's bias force to parent's one
   DEPRECATED(4.3)
   virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
                                    const Eigen::Matrix6d& _childArtInertia,
                                    const Eigen::Vector6d& _childBiasForce,
-                                   const Eigen::Vector6d& _childPartialAcc)
-  {
-    addChildBiasForceFDTo(_parentBiasForce,
-                          _childArtInertia,
-                          _childBiasForce,
-                          _childPartialAcc);
-  }
-
-  virtual void addChildBiasForceFDTo(Eigen::Vector6d& _parentBiasForce,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasForce,
-                                     const Eigen::Vector6d& _childPartialAcc)
-  {}
-
-  virtual void addChildBiasForceHDTo(Eigen::Vector6d& _parentBiasForce,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasForce,
-                                     const Eigen::Vector6d& _childPartialAcc)
-  {}
+                                   const Eigen::Vector6d& _childPartialAcc);
 
   /// Add child's bias impulse to parent's one
   DEPRECATED(4.3)
   virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
                                      const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasImpulse)
-  {
-    addChildBiasImpulseFDTo(_parentBiasImpulse,
-                            _childArtInertia,
-                            _childBiasImpulse);
-  }
-
-  virtual void addChildBiasImpulseFDTo(Eigen::Vector6d& _parentBiasImpulse,
-                                       const Eigen::Matrix6d& _childArtInertia,
-                                       const Eigen::Vector6d& _childBiasImpulse)
-  {}
-
-  virtual void addChildBiasImpulseHDTo(Eigen::Vector6d& _parentBiasImpulse,
-                                       const Eigen::Matrix6d& _childArtInertia,
-                                       const Eigen::Vector6d& _childBiasImpulse)
-  {}
+                                     const Eigen::Vector6d& _childBiasImpulse);
 
   /// \brief updateTotalForce
-  /// \param _bodyForce
-  /// \param _timeStep
   DEPRECATED(4.3)
   virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                double _timeStep)
-  {
-    updateTotalForceFD(_bodyForce, _timeStep);
-  }
-
-  virtual void updateTotalForceFD(const Eigen::Vector6d& _bodyForce,
-                                  double _timeStep) {}
-
-  virtual void updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
-                                  double _timeStep) {}
+                                double _timeStep);
 
   /// \brief updateTotalImpulse
   DEPRECATED(4.3)
-  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
-  {
-    updateTotalImpulseFD(_bodyImpulse);
-  }
-
-  // TODO: rename
-  // TODO: Pure virtual function
-  virtual void updateTotalImpulseFD(const Eigen::Vector6d& _bodyImpulse) {}
-
-  // TODO: Pure virtual function
-  virtual void updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse) {}
-
-  ///
-  virtual void resetTotalImpulses() = 0;
+  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse);
 
   ///
   DEPRECATED(4.3)
   virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc)
-  {
-    updateAccelerationFD(_artInertia, _spatialAcc);
-  }
+                                  const Eigen::Vector6d& _spatialAcc);
 
   /// \brief
-  virtual void updateAccelerationFD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _spatialAcc) {}
-
-  virtual void updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _spatialAcc) {}
-
-  ///
   DEPRECATED(4.3)
   virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange)
-  {
-    updateVelocityChangeFD(_artInertia, _velocityChange);
-  }
+                                    const Eigen::Vector6d& _velocityChange);
 
-  /// \brief updateVelocityChange
-  /// \param _artInertia
-  /// \param _velocityChange
-  virtual void updateVelocityChangeFD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange) {}
-
-  /// \brief updateVelocityChange
-  /// \param _artInertia
-  /// \param _velocityChange
-  virtual void updateVelocityChangeHD(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange) {}
-
-  /// \brief Forward dynamics routine. Update joint force for hybrid dynamics.
-  /// \param[in] _bodyForce Transmitting spatial body force from the parent
-  /// BodyNode to the child BodyNode. The spatial force is expressed in the
-  /// child BodyNode's frame.
-  virtual void updateForceID(const Eigen::Vector6d& _bodyForce) {}
-
-  /// \brief Hybrid dynamics routine. Update joint force for hybrid dynamics.
-  /// \param[in] _bodyForce Transmitting spatial body force from the parent
-  /// BodyNode to the child BodyNode. The spatial force is expressed in the
-  /// child BodyNode's frame.
-  virtual void updateForceHD(const Eigen::Vector6d& _bodyForce) {}
-
-  /// \brief updateImpulseID
-  /// \param _bodyForce
-  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) {}
-
-  /// \brief updateForceHD
-  /// \param _bodyForce
-  virtual void updateImpulseHD(const Eigen::Vector6d& _bodyImpulse) {}
-
-  ///
+  /// \brief updateVelocityWithVelocityChange
   DEPRECATED(4.3)
   virtual void updateVelocityWithVelocityChange() {}
 
-  ///
+  /// \brief updateAccelerationWithVelocityChange
   DEPRECATED(4.3)
   virtual void updateAccelerationWithVelocityChange(double _timeStep) {}
 
-  ///
+  /// \brief updateForceWithImpulse
   DEPRECATED(4.3)
   virtual void updateForceWithImpulse(double _timeStep) {}
-
-  /// \brief updateConstrainedTermsFD
-  virtual void updateConstrainedTermsFD(double _timeStep) {}
-
-  /// \brief updateConstrainedTermsHD
-  virtual void updateConstrainedTermsHD(double _timeStep) {}
 
   /// \}
 
   //----------------------------------------------------------------------------
-  // Recursive algorithms for equations of motion
+  /// \{ \name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   /// Add child's bias force to parent's one
@@ -709,6 +691,8 @@ protected:
   ///
   virtual Eigen::VectorXd getSpatialToGeneralized(
       const Eigen::Vector6d& _spatial) = 0;
+
+  /// \}
 
 protected:
   /// Joint name

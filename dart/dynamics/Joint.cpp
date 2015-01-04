@@ -205,6 +205,52 @@ void Joint::addChildArtInertiaImplicitTo(
 }
 
 //==============================================================================
+void Joint::updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia)
+{
+  updateInvProjArtInertiaFD(_artInertia);
+}
+
+void Joint::updateInvProjArtInertiaImplicit(const Eigen::Matrix6d& _artInertia, double _timeStep)
+{
+  updateInvProjArtInertiaImplicitFD(_artInertia, _timeStep);
+}
+
+void Joint::addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce, const Eigen::Vector6d& _childPartialAcc)
+{
+  addChildBiasForceFDTo(_parentBiasForce,
+                        _childArtInertia,
+                        _childBiasForce,
+                        _childPartialAcc);
+}
+
+void Joint::addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasImpulse)
+{
+  addChildBiasImpulseFDTo(_parentBiasImpulse,
+                          _childArtInertia,
+                          _childBiasImpulse);
+}
+
+void Joint::updateTotalForce(const Eigen::Vector6d& _bodyForce, double _timeStep)
+{
+  updateTotalForceFD(_bodyForce, _timeStep);
+}
+
+void Joint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
+{
+  updateTotalImpulseFD(_bodyImpulse);
+}
+
+void Joint::updateAcceleration(const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
+{
+  updateAccelerationFD(_artInertia, _spatialAcc);
+}
+
+void Joint::updateVelocityChange(const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _velocityChange)
+{
+  updateVelocityChangeFD(_artInertia, _velocityChange);
+}
+
+//==============================================================================
 //Eigen::VectorXd Joint::getDampingForces() const
 //{
 //  int numDofs = getNumDofs();

@@ -878,7 +878,7 @@ void SingleDofJoint::addChildArtInertiaImplicitFDTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  addChildArtInertiaImplicitToHDTorqueType(_parentArtInertia,
+  addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
                                             _childArtInertia);
 }
 
@@ -889,12 +889,12 @@ void SingleDofJoint::addChildArtInertiaImplicitHDTo(
   switch (mActuationType)
   {
     case TORQUE:
-      addChildArtInertiaImplicitToHDTorqueType(_parentArtInertia,
-                                                _childArtInertia);
+      addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
+                                               _childArtInertia);
       break;
     case ACCELERATION:
-      addChildArtInertiaImplicitToHDAccelerationType(_parentArtInertia,
-                                                _childArtInertia);
+      addChildArtInertiaImplicitHDToAccelerationType(_parentArtInertia,
+                                                     _childArtInertia);
       break;
     default:
       break;
@@ -902,7 +902,7 @@ void SingleDofJoint::addChildArtInertiaImplicitHDTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitToHDTorqueType(
+void SingleDofJoint::addChildArtInertiaImplicitHDToTorqueType(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
@@ -917,7 +917,7 @@ void SingleDofJoint::addChildArtInertiaImplicitToHDTorqueType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitToHDAccelerationType(
+void SingleDofJoint::addChildArtInertiaImplicitHDToAccelerationType(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
@@ -1029,7 +1029,7 @@ void SingleDofJoint::addChildBiasForceFDTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  addChildBiasForceToHDTorqueType(_parentBiasForce,
+  addChildBiasForceHDToTorqueType(_parentBiasForce,
                                    _childArtInertia,
                                    _childBiasForce,
                                    _childPartialAcc);
@@ -1045,13 +1045,13 @@ void SingleDofJoint::addChildBiasForceHDTo(
   switch (mActuationType)
   {
     case TORQUE:
-      addChildBiasForceToHDTorqueType(_parentBiasForce,
+      addChildBiasForceHDToTorqueType(_parentBiasForce,
                                        _childArtInertia,
                                        _childBiasForce,
                                        _childPartialAcc);
       break;
     case ACCELERATION:
-      addChildBiasForceToHDAccelerationType(_parentBiasForce,
+      addChildBiasForceHDToAccelerationType(_parentBiasForce,
                                              _childArtInertia,
                                              _childBiasForce,
                                              _childPartialAcc);
@@ -1062,7 +1062,7 @@ void SingleDofJoint::addChildBiasForceHDTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceToHDTorqueType(
+void SingleDofJoint::addChildBiasForceHDToTorqueType(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1082,7 +1082,7 @@ void SingleDofJoint::addChildBiasForceToHDTorqueType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceToHDAccelerationType(
+void SingleDofJoint::addChildBiasForceHDToAccelerationType(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1107,7 +1107,7 @@ void SingleDofJoint::addChildBiasImpulseFDTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  addChildBiasImpulseToHDTorqueType(_parentBiasImpulse,
+  addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                     _childArtInertia,
                                     _childBiasImpulse);
 }
@@ -1121,12 +1121,12 @@ void SingleDofJoint::addChildBiasImpulseHDTo(
   switch (mActuationType)
   {
     case TORQUE:
-      addChildBiasImpulseToHDTorqueType(_parentBiasImpulse,
+      addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                         _childArtInertia,
                                         _childBiasImpulse);
       break;
     case ACCELERATION:
-      addChildBiasImpulseToHDAccelerationType(_parentBiasImpulse,
+      addChildBiasImpulseHDToAccelerationType(_parentBiasImpulse,
                                               _childArtInertia,
                                               _childBiasImpulse);
       break;
@@ -1136,7 +1136,7 @@ void SingleDofJoint::addChildBiasImpulseHDTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseToHDTorqueType(
+void SingleDofJoint::addChildBiasImpulseHDToTorqueType(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1155,7 +1155,7 @@ void SingleDofJoint::addChildBiasImpulseToHDTorqueType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseToHDAccelerationType(
+void SingleDofJoint::addChildBiasImpulseHDToAccelerationType(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& /*_childArtInertia*/,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1415,8 +1415,8 @@ void SingleDofJoint::updateConstrainedTermsHDTorqueType(double _timeStep)
   const double invTimeStep = 1.0 / _timeStep;
 
   mVelocity     += mVelocityChange;
-  mAcceleration += mVelocityChange * invTimeStep;
-  mForce        += mConstraintImpulse * invTimeStep;
+  mAcceleration += mVelocityChange*invTimeStep;
+  mForce        += mConstraintImpulse*invTimeStep;
 }
 
 //==============================================================================

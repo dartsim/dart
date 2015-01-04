@@ -2163,7 +2163,7 @@ void Skeleton::computeImpulseForwardDynamics()
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
-    bodyNode->updateAccelerationFD();
+    bodyNode->updateVelocityChangeFD();
     bodyNode->updateTransmittedImpulse();
     bodyNode->updateConstrainedTermsFD(mTimeStep);
   }

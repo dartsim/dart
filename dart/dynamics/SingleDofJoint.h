@@ -621,14 +621,14 @@ private:
   /// \brief addChildArtInertiaImplicitToHDTorqueType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaImplicitToHDTorqueType(
+  void addChildArtInertiaImplicitHDToTorqueType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   /// \brief addChildArtInertiaImplicitToHDAccelerationType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaImplicitToHDAccelerationType(
+  void addChildArtInertiaImplicitHDToAccelerationType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
@@ -661,7 +661,7 @@ private:
   /// \param _childArtInertia
   /// \param _childBiasForce
   /// \param _childPartialAcc
-  void addChildBiasForceToHDTorqueType(
+  void addChildBiasForceHDToTorqueType(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
@@ -672,7 +672,7 @@ private:
   /// \param _childArtInertia
   /// \param _childBiasForce
   /// \param _childPartialAcc
-  void addChildBiasForceToHDAccelerationType(
+  void addChildBiasForceHDToAccelerationType(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
@@ -682,7 +682,7 @@ private:
   /// \param _parentBiasImpulse
   /// \param _childArtInertia
   /// \param _childBiasImpulse
-  void addChildBiasImpulseToHDTorqueType(
+  void addChildBiasImpulseHDToTorqueType(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
@@ -691,7 +691,7 @@ private:
   /// \param _parentBiasImpulse
   /// \param _childArtInertia
   /// \param _childBiasImpulse
-  void addChildBiasImpulseToHDAccelerationType(
+  void addChildBiasImpulseHDToAccelerationType(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
