@@ -850,8 +850,9 @@ void SingleDofJoint::addChildArtInertiaHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildArtInertiaToHDTorqueType(_parentArtInertia,
                                        _childArtInertia);
       break;
@@ -903,8 +904,9 @@ void SingleDofJoint::addChildArtInertiaImplicitHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
                                                _childArtInertia);
       break;
@@ -955,8 +957,9 @@ void SingleDofJoint::updateInvProjArtInertiaHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateInvProjArtInertiaHDTorqueType(_artInertia);
       break;
     case ACCELERATION:
@@ -1004,8 +1007,9 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateInvProjArtInertiaImplicitHDTorqueType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
@@ -1065,8 +1069,9 @@ void SingleDofJoint::addChildBiasForceHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildBiasForceHDToTorqueType(_parentBiasForce,
                                        _childArtInertia,
                                        _childBiasForce,
@@ -1143,8 +1148,9 @@ void SingleDofJoint::addChildBiasImpulseHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                         _childArtInertia,
                                         _childBiasImpulse);
@@ -1203,12 +1209,13 @@ void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
-      mForce = 0.0;
-      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
-      break;
     case TORQUE:
       mForce = mInput;
+      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      break;
+    case PASSIVE:
+    case SERVO:
+      mForce = 0.0;
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
@@ -1254,8 +1261,9 @@ void SingleDofJoint::updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateTotalImpulseHDTorqueType(_bodyImpulse);
       break;
     case ACCELERATION:
@@ -1300,8 +1308,9 @@ void SingleDofJoint::updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateAccelerationHDTorqueType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
@@ -1348,8 +1357,9 @@ void SingleDofJoint::updateVelocityChangeHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateVelocityChangeHDTorqueType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
@@ -1415,9 +1425,9 @@ void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
-      break;
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       break;
     case ACCELERATION:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
@@ -1440,9 +1450,9 @@ void SingleDofJoint::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
-      break;
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       break;
     case ACCELERATION:
       updateImpulseID(_bodyImpulse);
@@ -1464,8 +1474,9 @@ void SingleDofJoint::updateConstrainedTermsHD(double _timeStep)
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateConstrainedTermsHDTorqueType(_timeStep);
       break;
     case ACCELERATION:

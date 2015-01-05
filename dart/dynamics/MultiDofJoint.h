@@ -1580,8 +1580,9 @@ void MultiDofJoint<DOF>::addChildArtInertiaHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildArtInertiaHDToTorqueType(_parentArtInertia,
                                        _childArtInertia);
       break;
@@ -1641,8 +1642,9 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
                                                 _childArtInertia);
       break;
@@ -1699,8 +1701,9 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateInvProjArtInertiaHDTorqueType(_artInertia);
       break;
     case ACCELERATION:
@@ -1755,8 +1758,9 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateInvProjArtInertiaImplicitHDTorqueType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
@@ -1827,8 +1831,9 @@ void MultiDofJoint<DOF>::addChildBiasForceHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildBiasForceHDToTorqueType(_parentBiasForce,
                                        _childArtInertia,
                                        _childBiasForce,
@@ -1921,8 +1926,9 @@ void MultiDofJoint<DOF>::addChildBiasImpulseHDTo(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
                                         _childArtInertia,
                                         _childBiasImpulse);
@@ -1987,12 +1993,13 @@ void MultiDofJoint<DOF>::updateTotalForceHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
-      mForces.setZero();
-      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
-      break;
     case TORQUE:
       mForces = mInputs;
+      updateTotalForceHDTorqueType(_bodyForce, _timeStep);
+      break;
+    case PASSIVE:
+    case SERVO:
+      mForces.setZero();
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
@@ -2049,8 +2056,9 @@ void MultiDofJoint<DOF>::updateTotalImpulseHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateTotalImpulseHDTorqueType(_bodyImpulse);
       break;
     case ACCELERATION:
@@ -2104,8 +2112,9 @@ void MultiDofJoint<DOF>::updateAccelerationHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateAccelerationHDTorqueType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
@@ -2159,8 +2168,9 @@ void MultiDofJoint<DOF>::updateVelocityChangeHD(
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateVelocityChangeHDTorqueType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
@@ -2233,8 +2243,9 @@ void MultiDofJoint<DOF>::updateForceHD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       break;
     case ACCELERATION:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
@@ -2259,8 +2270,9 @@ void MultiDofJoint<DOF>::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       break;
     case ACCELERATION:
       updateImpulseID(_bodyImpulse);
@@ -2284,8 +2296,9 @@ void MultiDofJoint<DOF>::updateConstrainedTermsHD(double _timeStep)
 {
   switch (mActuatorType)
   {
-    case PASSIVE:
     case TORQUE:
+    case PASSIVE:
+    case SERVO:
       updateConstrainedTermsHDTorqueType(_timeStep);
       break;
     case ACCELERATION:

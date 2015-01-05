@@ -49,6 +49,7 @@ class Joint;
 namespace constraint {
 
 /// JointLimitConstraint handles joint position or velocity limits
+// TOOD: better naming
 class JointLimitConstraint : public Constraint
 {
 public:
