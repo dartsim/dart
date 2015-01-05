@@ -79,8 +79,16 @@ public:
     /// Command means joint force, and output is joint acceleration.
     TORQUE,
 
-    /// Command is joint acceleration, and output is joint force.
+    /// Command is desired joint acceleration, and output is joint force. The
+    /// desired joint acceleration is always satisfied without taking the joint
+    /// force limit into account.
     ACCELERATION,
+
+    /// Command is desired joint velocity, and output is joint force. The
+    /// desired joint velocity is always satisfied without taking the joint
+    /// force limit into account. If you want to consider the joint force limit,
+    /// use SERVO instead.
+    VELOCITY,
 
     /// Command is desired velocity, and output is joint acceleration. The
     /// constraint solver will trye to force the joint velocity to match the

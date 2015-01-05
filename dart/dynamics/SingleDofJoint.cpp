@@ -850,6 +850,7 @@ void SingleDofJoint::addChildArtInertiaTo(
                                        _childArtInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildArtInertiaToAccelerationType(_parentArtInertia,
                                              _childArtInertia);
       break;
@@ -895,6 +896,7 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
                                                _childArtInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildArtInertiaImplicitToAccelerationType(_parentArtInertia,
                                                      _childArtInertia);
       break;
@@ -940,6 +942,7 @@ void SingleDofJoint::updateInvProjArtInertia(
       updateInvProjArtInertiaTorqueType(_artInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateInvProjArtInertiaAccelerationType(_artInertia);
       break;
     default:
@@ -982,6 +985,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
       updateInvProjArtInertiaImplicitTorqueType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateInvProjArtInertiaImplicitAccelerationType(_artInertia, _timeStep);
       break;
     default:
@@ -1034,6 +1038,7 @@ void SingleDofJoint::addChildBiasForceTo(
                                        _childPartialAcc);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildBiasForceToAccelerationType(_parentBiasForce,
                                              _childArtInertia,
                                              _childBiasForce,
@@ -1101,6 +1106,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
                                         _childBiasImpulse);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildBiasImpulseToAccelerationType(_parentBiasImpulse,
                                               _childArtInertia,
                                               _childBiasImpulse);
@@ -1145,6 +1151,8 @@ void SingleDofJoint::addChildBiasImpulseToAccelerationType(
 void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
                                       double _timeStep)
 {
+  assert(_timeStep > 0.0);
+
   switch (mActuatorType)
   {
     case TORQUE:
@@ -1158,6 +1166,10 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
       break;
     case ACCELERATION:
       mAcceleration = mCommand;
+      updateTotalForceAccelerationType(_bodyForce, _timeStep);
+      break;
+    case VELOCITY:
+      mAcceleration = (mCommand - mVelocity) / _timeStep;
       updateTotalForceAccelerationType(_bodyForce, _timeStep);
       break;
     default:
@@ -1199,6 +1211,7 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
       updateTotalImpulseTorqueType(_bodyImpulse);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateTotalImpulseAccelerationType(_bodyImpulse);
       break;
     default:
@@ -1239,6 +1252,7 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
       updateAccelerationTorqueType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateAccelerationAccelerationType(_artInertia, _spatialAcc);
       break;
     default:
@@ -1280,6 +1294,7 @@ void SingleDofJoint::updateVelocityChange(
       updateVelocityChangeTorqueType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateVelocityChangeAccelerationType(_artInertia, _velocityChange);
       break;
     default:
@@ -1347,6 +1362,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
     case SERVO:
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
                     _withSpringForces);
       break;
@@ -1372,6 +1388,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
     case SERVO:
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateImpulseID(_bodyImpulse);
       break;
     default:
@@ -1391,6 +1408,7 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
       updateConstrainedTermsTorqueType(_timeStep);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateConstrainedTermsAccelerationType(_timeStep);
       break;
     default:

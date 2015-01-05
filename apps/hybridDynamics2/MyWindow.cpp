@@ -54,7 +54,7 @@ void MyWindow::timeStepping()
   for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skel->getJoint(i);
-//    joint->setCommand(0, -0.1*std::sin(mWorld->getTime()));  // Acceleration
+    joint->setCommand(0, -0.1*std::sin(mWorld->getTime()));  // Acceleration
   }
 
   mWorld->step();

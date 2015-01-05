@@ -1526,6 +1526,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
                                        _childArtInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildArtInertiaToAccelerationType(_parentArtInertia,
                                              _childArtInertia);
       break;
@@ -1578,6 +1579,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
                                                 _childArtInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildArtInertiaImplicitToAccelerationType(_parentArtInertia,
                                                 _childArtInertia);
       break;
@@ -1628,6 +1630,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertia(
       updateInvProjArtInertiaTorqueType(_artInertia);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateInvProjArtInertiaAccelerationType(_artInertia);
       break;
     default:
@@ -1676,6 +1679,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
       updateInvProjArtInertiaImplicitTorqueType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateInvProjArtInertiaImplicitAccelerationType(_artInertia, _timeStep);
       break;
     default:
@@ -1738,6 +1742,7 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
                                        _childPartialAcc);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildBiasForceToAccelerationType(_parentBiasForce,
                                              _childArtInertia,
                                              _childBiasForce,
@@ -1820,6 +1825,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
                                         _childBiasImpulse);
       break;
     case ACCELERATION:
+    case VELOCITY:
       addChildBiasImpulseToAccelerationType(_parentBiasImpulse,
                                               _childArtInertia,
                                               _childBiasImpulse);
@@ -1868,6 +1874,8 @@ void MultiDofJoint<DOF>::updateTotalForce(
     const Eigen::Vector6d& _bodyForce,
     double _timeStep)
 {
+  assert(_timeStep > 0.0);
+
   switch (mActuatorType)
   {
     case TORQUE:
@@ -1881,6 +1889,10 @@ void MultiDofJoint<DOF>::updateTotalForce(
       break;
     case ACCELERATION:
       mAccelerations = mCommands;
+      updateTotalForceAccelerationType(_bodyForce, _timeStep);
+      break;
+    case VELOCITY:
+      mAccelerations = (mCommands - mVelocities) / _timeStep;
       updateTotalForceAccelerationType(_bodyForce, _timeStep);
       break;
     default:
@@ -1931,6 +1943,7 @@ void MultiDofJoint<DOF>::updateTotalImpulse(
       updateTotalImpulseTorqueType(_bodyImpulse);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateTotalImpulseAccelerationType(_bodyImpulse);
       break;
     default:
@@ -1978,6 +1991,7 @@ void MultiDofJoint<DOF>::updateAcceleration(
       updateAccelerationTorqueType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateAccelerationAccelerationType(_artInertia, _spatialAcc);
       break;
     default:
@@ -2025,6 +2039,7 @@ void MultiDofJoint<DOF>::updateVelocityChange(
       updateVelocityChangeTorqueType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateVelocityChangeAccelerationType(_artInertia, _velocityChange);
       break;
     default:
@@ -2099,6 +2114,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
     case SERVO:
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
                     _withSpringForces);
       break;
@@ -2126,6 +2142,7 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
     case SERVO:
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateImpulseID(_bodyImpulse);
       break;
     default:
@@ -2146,6 +2163,7 @@ void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
       updateConstrainedTermsTorqueType(_timeStep);
       break;
     case ACCELERATION:
+    case VELOCITY:
       updateConstrainedTermsAccelerationType(_timeStep);
       break;
     default:

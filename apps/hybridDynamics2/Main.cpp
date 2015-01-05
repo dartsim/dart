@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
   for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skel->getJoint(i);
-    joint->setActuatorType(dart::dynamics::Joint::ACCELERATION);
+    joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
   }
 
   // create a window and link it to the world
