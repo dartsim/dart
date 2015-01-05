@@ -48,7 +48,7 @@ namespace dynamics {
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
     mIndexInSkeleton(0u),
-    mInput(0.0),
+    mCommand(0.0),
     mPosition(0.0),
     mPositionLowerLimit(-DART_DBL_INF),
     mPositionUpperLimit(DART_DBL_INF),
@@ -124,55 +124,55 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setInput(size_t _index, double _input)
+void SingleDofJoint::setCommand(size_t _index, double _command)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setInput]: index[" << _index << "] out of range"
+    dterr << "[SingleDofJoint::setCommand]: index[" << _index << "] out of range"
           << std::endl;
     return;
   }
 
-  mInput = _input;
+  mCommand = _command;
 }
 
 //==============================================================================
-double SingleDofJoint::getInput(size_t _index) const
+double SingleDofJoint::getCommand(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getInput]: index[" << _index << "] out of range"
+    dterr << "[SingleDofJoint::getCommand]: index[" << _index << "] out of range"
           << std::endl;
     return 0.0;
   }
 
-  return mInput;
+  return mCommand;
 }
 
 //==============================================================================
-void SingleDofJoint::setInputs(const Eigen::VectorXd& _inputs)
+void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
 {
-  if (static_cast<size_t>(_inputs.size()) != getNumDofs())
+  if (static_cast<size_t>(_commands.size()) != getNumDofs())
   {
-    dterr << "[SingleDofJoint::setInputs]: inputs's size["
-          << _inputs.size() << "] is different with the dof [" << getNumDofs()
+    dterr << "[SingleDofJoint::setCommands]: commands's size["
+          << _commands.size() << "] is different with the dof [" << getNumDofs()
           << "]" << std::endl;
     return;
   }
 
-  mInput = _inputs[0];
+  mCommand = _commands[0];
 }
 
 //==============================================================================
-Eigen::VectorXd SingleDofJoint::getInputs() const
+Eigen::VectorXd SingleDofJoint::getCommands() const
 {
-  return Eigen::Matrix<double, 1, 1>::Constant(mInput);
+  return Eigen::Matrix<double, 1, 1>::Constant(mCommand);
 }
 
 //==============================================================================
-void SingleDofJoint::resetInputs()
+void SingleDofJoint::resetCommands()
 {
-  mInput = 0.0;
+  mCommand = 0.0;
 }
 
 //==============================================================================
@@ -391,7 +391,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mInput = mAcceleration;
+    mCommand = mAcceleration;
 #endif
 }
 
@@ -422,7 +422,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mInput = mAcceleration;
+    mCommand = mAcceleration;
 #endif
 }
 
@@ -505,7 +505,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == TORQUE)
-    mInput = mForce;
+    mCommand = mForce;
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -536,7 +536,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == TORQUE)
-    mInput = mForce;
+    mCommand = mForce;
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -554,7 +554,7 @@ void SingleDofJoint::resetForces()
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == TORQUE)
-    mInput = mForce;
+    mCommand = mForce;
 #endif
 }
 
@@ -1210,7 +1210,7 @@ void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
   switch (mActuatorType)
   {
     case TORQUE:
-      mForce = mInput;
+      mForce = mCommand;
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case PASSIVE:
@@ -1219,7 +1219,7 @@ void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      mAcceleration = mInput;
+      mAcceleration = mCommand;
       updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:

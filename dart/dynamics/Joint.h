@@ -62,9 +62,9 @@ class Joint
 public:
   /// \brief Actuator type
   ///
-  /// The input is able to be taken by setInput() or setInputs(), and the
-  /// meaning of input is different depending on the actuator type. The default
-  /// is TORQUE.
+  /// The command is able to be taken by setCommand() or setCommands(), and the
+  /// meaning of command is different depending on the actuator type. The
+  /// default actuator type is TORQUE. (TODO: FreeJoint should be PASSIVE?)
   ///
   /// Note the presence of joint damping force and joint spring force for all
   /// the actuator types if the coefficients are not zero. The default
@@ -73,17 +73,16 @@ public:
   /// \sa setSpringStiffness(), setDampingCoefficient()
   enum ActuatorType
   {
-    /// Passive type does not take any input, output is joint acceleration.
+    /// Passive type does not take any command, output is joint acceleration.
     PASSIVE,
-    // TODO: Not implemented yet.
 
-    /// Input is joint torque (or effort), and output is joint acceleration.
+    /// Command means joint force, and output is joint acceleration.
     TORQUE,
 
-    /// Input is joint acceleration, and output is joint torque (or effort).
+    /// Command is joint acceleration, and output is joint force.
     ACCELERATION,
 
-    /// Input is desired velocity, and output is joint acceleration. The
+    /// Command is desired velocity, and output is joint acceleration. The
     /// constraint solver will trye to force the joint velocity to match the
     /// desired velocity, with a limited maximum force.
     /// \sa setForceLowerLimit() and setForceUpperLimit().
@@ -161,23 +160,23 @@ public:
   virtual size_t getNumDofs() const = 0;
 
   //----------------------------------------------------------------------------
-  // Input/output
+  // Command
   //----------------------------------------------------------------------------
 
-  /// \brief Set a single input
-  virtual void setInput(size_t _index, double _input) = 0;
+  /// \brief Set a single command
+  virtual void setCommand(size_t _index, double _command) = 0;
 
-  /// \brief Set a sinlge input
-  virtual double getInput(size_t _index) const = 0;
+  /// \brief Set a sinlge command
+  virtual double getCommand(size_t _index) const = 0;
 
-  /// \brief Set inputs
-  virtual void setInputs(const Eigen::VectorXd& _inputs) = 0;
+  /// \brief Set commands
+  virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
 
-  /// \brief Get inputs
-  virtual Eigen::VectorXd getInputs() const = 0;
+  /// \brief Get commands
+  virtual Eigen::VectorXd getCommands() const = 0;
 
   /// Set zero all the positions
-  virtual void resetInputs() = 0;
+  virtual void resetCommands() = 0;
 
   //----------------------------------------------------------------------------
   // Position

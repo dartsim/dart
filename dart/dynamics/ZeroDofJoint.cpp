@@ -84,34 +84,34 @@ size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setInput(size_t /*_index*/, double /*_input*/)
+void ZeroDofJoint::setCommand(size_t /*_index*/, double /*_command*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getInput(size_t _index) const
+double ZeroDofJoint::getCommand(size_t _index) const
 {
-  dterr << "[ZeroDofJoint::getInput]: index[" << _index << "] out of range"
+  dterr << "[ZeroDofJoint::getCommand]: index[" << _index << "] out of range"
         << std::endl;
 
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setInputs(const Eigen::VectorXd& /*_inputs*/)
+void ZeroDofJoint::setCommands(const Eigen::VectorXd& /*_commands*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-Eigen::VectorXd ZeroDofJoint::getInputs() const
+Eigen::VectorXd ZeroDofJoint::getCommands() const
 {
   return Eigen::Matrix<double, 0, 1>();
 }
 
 //==============================================================================
-void ZeroDofJoint::resetInputs()
+void ZeroDofJoint::resetCommands()
 {
   // Do nothing
 }

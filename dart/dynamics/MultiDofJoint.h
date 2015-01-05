@@ -81,23 +81,23 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const;
 
   //----------------------------------------------------------------------------
-  // Input/output
+  // Command
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setInput(size_t _index, double _input);
+  virtual void setCommand(size_t _index, double _command);
 
   // Documentation inherited
-  virtual double getInput(size_t _index) const;
+  virtual double getCommand(size_t _index) const;
 
   // Documentation inherited
-  virtual void setInputs(const Eigen::VectorXd& _inputs);
+  virtual void setCommands(const Eigen::VectorXd& _commands);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getInputs() const;
+  virtual Eigen::VectorXd getCommands() const;
 
   // Documentation inherited
-  virtual void resetInputs();
+  virtual void resetCommands();
 
   //----------------------------------------------------------------------------
   // Position
@@ -484,8 +484,8 @@ protected:
   ///
   Eigen::Matrix<size_t, DOF, 1> mIndexInSkeleton;
 
-  /// Input
-  Eigen::Matrix<double, DOF, 1> mInputs;
+  /// Command
+  Eigen::Matrix<double, DOF, 1> mCommands;
 
   //----------------------------------------------------------------------------
   // Configuration
@@ -705,7 +705,7 @@ template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
   : Joint(_name),
     mIndexInSkeleton(Eigen::Matrix<size_t, DOF, 1>::Constant(0u)),
-    mInputs(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mCommands(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositionLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
     mPositionUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
@@ -788,59 +788,59 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInput(size_t _index, double _position)
+void MultiDofJoint<DOF>::setCommand(size_t _index, double _position)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setInput]: index[" << _index << "] out of range"
+    dterr << "[MultiDofJoint::setCommand]: index[" << _index << "] out of range"
           << std::endl;
     return;
   }
 
-  mInputs[_index] = _position;
+  mCommands[_index] = _position;
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getInput(size_t _index) const
+double MultiDofJoint<DOF>::getCommand(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getInput]: index[" << _index << "] out of range"
+    dterr << "[MultiDofJoint::getCommand]: index[" << _index << "] out of range"
           << std::endl;
     return 0.0;
   }
 
-  return mInputs[_index];
+  return mCommands[_index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInputs(const Eigen::VectorXd& _inputs)
+void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
 {
-  if (static_cast<size_t>(_inputs.size()) != getNumDofs())
+  if (static_cast<size_t>(_commands.size()) != getNumDofs())
   {
-    dterr << "[MultiDofJoint::setInputs]: inputs's size["
-          << _inputs.size() << "] is different with the dof ["
+    dterr << "[MultiDofJoint::setCommands]: commands's size["
+          << _commands.size() << "] is different with the dof ["
           << getNumDofs() << "]" << std::endl;
     return;
   }
 
-  mInputs = _inputs;
+  mCommands = _commands;
 }
 
 //==============================================================================
 template <size_t DOF>
-Eigen::VectorXd MultiDofJoint<DOF>::getInputs() const
+Eigen::VectorXd MultiDofJoint<DOF>::getCommands() const
 {
-  return mInputs;
+  return mCommands;
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::resetInputs()
+void MultiDofJoint<DOF>::resetCommands()
 {
-  mInputs.setZero();
+  mCommands.setZero();
 }
 
 //==============================================================================
@@ -1078,7 +1078,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mInputs[_index] = mAccelerations[_index];
+    mCommands[_index] = mAccelerations[_index];
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1112,7 +1112,7 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mInputs = mAccelerations;
+    mCommands = mAccelerations;
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1203,7 +1203,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == TORQUE)
-    mInputs[_index] = mForces[_index];
+    mCommands[_index] = mForces[_index];
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1236,7 +1236,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == TORQUE)
-    mInputs = mForces;
+    mCommands = mForces;
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1994,7 +1994,7 @@ void MultiDofJoint<DOF>::updateTotalForceHD(
   switch (mActuatorType)
   {
     case TORQUE:
-      mForces = mInputs;
+      mForces = mCommands;
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case PASSIVE:
@@ -2003,7 +2003,7 @@ void MultiDofJoint<DOF>::updateTotalForceHD(
       updateTotalForceHDTorqueType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      mAccelerations = mInputs;
+      mAccelerations = mCommands;
       updateTotalForceHDAccelerationType(_bodyForce, _timeStep);
       break;
     default:
