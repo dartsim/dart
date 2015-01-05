@@ -44,11 +44,6 @@
 namespace dart {
 namespace dynamics {
 
-typedef std::set<Entity*> EntityPtrSet;
-typedef std::set<const Entity*> ConstEntityPtrSet;
-typedef std::set<Frame*> FramePtrSet;
-typedef std::set<const Frame*> ConstFramePtrSet;
-
 /// The Frame class serves as the backbone of DART's kinematic tree structure.
 ///
 /// Frame inherits Entity, so it exists within a reference Frame. This class
@@ -81,12 +76,12 @@ public:
   /// Get a container with the Entities that are children of this Frame.
   /// std::set is used because Entities may be arbitrarily added and removed
   /// from a parent Frame, and each entry should be unique.
-  const EntityPtrSet& getChildEntities();
+  const std::set<Entity*>& getChildEntities();
 
   /// Get a container with the Entities that are children of this Frame. Note
   /// that this is version is less efficient than the non-const version because
   /// it needs to rebuild a set so that the entries are const.
-  ConstEntityPtrSet getChildEntities() const;
+  std::set<const Entity*> getChildEntities() const;
 
   /// Get the number of Entities that are currently children of this Frame.
   size_t getNumChildEntities() const;
@@ -94,12 +89,12 @@ public:
   /// Get a container with the Frames that are children of this Frame.
   /// std::set is used because Frames may be arbitrarily added and removed
   /// from a parent Frame, and each entry should be unique.
-  const FramePtrSet& getChildFrames();
+  const std::set<Frame*>& getChildFrames();
 
   /// Get a container with the Frames that are children of this Frame. Note
   /// that this version is less efficient than the non-const version because
   /// it needs to rebuild a set so that the entries are const.
-  ConstFramePtrSet getChildFrames() const;
+  std::set<const Frame*> getChildFrames() const;
 
   /// Get the number of Frames that are currently children of this Frame.
   size_t getNumChildFrames() const;
@@ -137,12 +132,12 @@ protected:
   /// Container of this Frame's child Frames. This object is mutable to enable
   /// children to be added to const Frames. Receiving a new child does not
   /// affect any properties of the parent Frame.
-  mutable FramePtrSet mChildFrames;
+  mutable std::set<Frame*> mChildFrames;
 
   /// Container of this Frame's child Entities. This object is mutable to enable
   /// children to be added to const Frames. Receiving a new child does not
   /// affect any properties of the parent Frame.
-  mutable EntityPtrSet mChildEntities;
+  mutable std::set<Entity*> mChildEntities;
 
 private:
   /// Contains whether or not this is the World Frame
@@ -168,16 +163,16 @@ protected:
 
 };
 
-class PureFrame : public Frame, public Detachable
+class SimpleFrame : public Frame, public Detachable
 {
 public:
   /// Constructor
-  explicit PureFrame(const Frame* _refFrame, const std::string& _name,
+  explicit SimpleFrame(const Frame* _refFrame, const std::string& _name,
                      const Eigen::Isometry3d& _relativeTransform =
                                         Eigen::Isometry3d::Identity());
 
   /// Destructor
-  virtual ~PureFrame();
+  virtual ~SimpleFrame();
 
   /// Set the relative transform of this PureFrame
   void setRelativeTransform(const Eigen::Isometry3d& _newRelTransform);

@@ -42,6 +42,8 @@
 namespace dart {
 namespace dynamics {
 
+typedef std::set<Entity*> EntityPtrSet;
+
 Frame::Frame(const Frame *_refFrame, const std::string &_name) :
   Entity(_refFrame, _name),
   mWorldTransform(Eigen::Isometry3d::Identity()),
@@ -117,13 +119,13 @@ static std::set<const T*> convertToConstSet(const std::set<T*>& _set)
 }
 
 //==============================================================================
-const EntityPtrSet& Frame::getChildEntities()
+const std::set<Entity*>& Frame::getChildEntities()
 {
   return mChildEntities;
 }
 
 //==============================================================================
-ConstEntityPtrSet Frame::getChildEntities() const
+std::set<const Entity*> Frame::getChildEntities() const
 {
   return convertToConstSet<Entity>(mChildEntities);
 }
@@ -135,13 +137,13 @@ size_t Frame::getNumChildEntities() const
 }
 
 //==============================================================================
-const FramePtrSet& Frame::getChildFrames()
+const std::set<Frame*>& Frame::getChildFrames()
 {
   return mChildFrames;
 }
 
 //==============================================================================
-ConstFramePtrSet Frame::getChildFrames() const
+std::set<const Frame*> Frame::getChildFrames() const
 {
   return convertToConstSet<Frame>(mChildFrames);
 }
@@ -274,7 +276,7 @@ WorldFrame::WorldFrame() :
 }
 
 //==============================================================================
-PureFrame::PureFrame(const Frame* _refFrame, const std::string& _name,
+SimpleFrame::SimpleFrame(const Frame* _refFrame, const std::string& _name,
                      const Eigen::Isometry3d& _relativeTransform) :
   Entity(_refFrame, _name),
   Frame(_refFrame, _name),
@@ -285,20 +287,20 @@ PureFrame::PureFrame(const Frame* _refFrame, const std::string& _name,
 }
 
 //==============================================================================
-PureFrame::~PureFrame()
+SimpleFrame::~SimpleFrame()
 {
 
 }
 
 //==============================================================================
-void PureFrame::setRelativeTransform(const Eigen::Isometry3d &_newRelTransform)
+void SimpleFrame::setRelativeTransform(const Eigen::Isometry3d &_newRelTransform)
 {
   mRelativeTf = _newRelTransform;
   notifyTransformUpdate();
 }
 
 //==============================================================================
-const Eigen::Isometry3d& PureFrame::getRelativeTransform() const
+const Eigen::Isometry3d& SimpleFrame::getRelativeTransform() const
 {
   return mRelativeTf;
 }
