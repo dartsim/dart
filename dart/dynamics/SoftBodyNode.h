@@ -150,24 +150,14 @@ protected:
   virtual void updatePartialAcceleration() override;
 
   // Documentation inherited.
-  virtual void updateArtInertiaFD(double _timeStep) override;
+  virtual void updateArtInertia(double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateArtInertiaHD(double _timeStep) override;
+  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
+                               double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateBiasForceFD(const Eigen::Vector3d& _gravity,
-                                 double _timeStep) override;
-
-  // Documentation inherited.
-  virtual void updateBiasForceHD(const Eigen::Vector3d& _gravity,
-                                 double _timeStep) override;
-
-  // Documentation inherited.
-  virtual void updateBiasImpulseFD() override;
-
-  // Documentation inherited.
-  virtual void updateBiasImpulseHD() override;
+  virtual void updateBiasImpulse() override;
 
   // Documentation inherited.
   virtual void updateAccelerationID() override;
@@ -176,13 +166,7 @@ protected:
   virtual void updateAccelerationFD() override;
 
   // Documentation inherited.
-  virtual void updateAccelerationHD() override;
-
-  // Documentation inherited.
   virtual void updateVelocityChangeFD() override;
-
-  // Documentation inherited.
-  virtual void updateVelocityChangeHD() override;
 
   // Documentation inherited.
   virtual void updateTransmittedForceID(
@@ -190,7 +174,7 @@ protected:
       bool _withExternalForces = false) override;
 
   // Documentation inherited.
-  virtual void updateTransmittedForceFHD() override;
+  virtual void updateTransmittedForceFD() override;
 
   // Documentation inherited.
   virtual void updateTransmittedImpulse() override;
@@ -201,18 +185,15 @@ protected:
                                   double _withSpringForces) override;
 
   // Documentation inherited.
-  virtual void updateJointForceHD(double _timeStep,
+  virtual void updateJointForceFD(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces) override;
 
   // Documentation inherited.
-  virtual void updateJointImpulseHD() override;
+  virtual void updateJointImpulseFD() override;
 
   // Documentation inherited.
-  virtual void updateConstrainedTermsFD(double _timeStep) override;
-
-  // Documentation inherited.
-  virtual void updateConstrainedTermsHD(double _timeStep) override;
+  virtual void updateConstrainedTerms(double _timeStep) override;
 
   /// \}
 

@@ -63,10 +63,14 @@ Joint::Joint(const std::string& _name)
 {
 }
 
-Joint::~Joint() {
+//==============================================================================
+Joint::~Joint()
+{
 }
 
-const std::string& Joint::setName(const std::string& _name) {
+//==============================================================================
+const std::string& Joint::setName(const std::string& _name)
+{
 
   if(mName == _name)
     return mName;
@@ -85,7 +89,9 @@ const std::string& Joint::setName(const std::string& _name) {
   return mName;
 }
 
-const std::string& Joint::getName() const {
+//==============================================================================
+const std::string& Joint::getName() const
+{
   return mName;
 }
 
@@ -101,16 +107,19 @@ Joint::ActuatorType Joint::getActuatorType() const
   return mActuatorType;
 }
 
+//==============================================================================
 BodyNode* Joint::getChildBodyNode()
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 const BodyNode* Joint::getChildBodyNode() const
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 BodyNode* Joint::getParentBodyNode()
 {
   if(mChildBodyNode)
@@ -119,22 +128,27 @@ BodyNode* Joint::getParentBodyNode()
   return NULL;
 }
 
+//==============================================================================
 const BodyNode* Joint::getParentBodyNode() const
 {
   return const_cast<Joint*>(this)->getParentBodyNode();
 }
 
+//==============================================================================
 Skeleton* Joint::getSkeleton()
 {
   return mSkeleton;
 }
 
+//==============================================================================
 const Skeleton* Joint::getSkeleton() const
 {
   return mSkeleton;
 }
 
-const Eigen::Isometry3d& Joint::getLocalTransform() const {
+//==============================================================================
+const Eigen::Isometry3d& Joint::getLocalTransform() const
+{
   return mT;
 }
 
@@ -153,101 +167,54 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const {
 //  return -1;
 //}
 
-void Joint::setPositionLimited(bool _isPositionLimited) {
+//==============================================================================
+void Joint::setPositionLimited(bool _isPositionLimited)
+{
   mIsPositionLimited = _isPositionLimited;
 }
 
-bool Joint::isPositionLimited() const {
+//==============================================================================
+bool Joint::isPositionLimited() const
+{
   return mIsPositionLimited;
 }
 
-void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
+//==============================================================================
+void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+{
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
 }
 
-void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) {
+//==============================================================================
+void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+{
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const {
+//==============================================================================
+const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
+{
   return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const {
+//==============================================================================
+const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
+{
   return mT_ChildBodyToJoint;
 }
 
-void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
+//==============================================================================
+void Joint::applyGLTransform(renderer::RenderInterface* _ri)
+{
   _ri->transform(mT);
 }
 
+//==============================================================================
 void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;
-}
-
-//==============================================================================
-void Joint::addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                 const Eigen::Matrix6d& _childArtInertia)
-{
-  addChildArtInertiaFDTo(_parentArtInertia, _childArtInertia);
-}
-
-//==============================================================================
-void Joint::addChildArtInertiaImplicitTo(
-    Eigen::Matrix6d& _parentArtInertiaImplicit,
-    const Eigen::Matrix6d& _childArtInertiaImplicit)
-{
-  addChildArtInertiaImplicitFDTo(_parentArtInertiaImplicit,
-                                 _childArtInertiaImplicit);
-}
-
-//==============================================================================
-void Joint::updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia)
-{
-  updateInvProjArtInertiaFD(_artInertia);
-}
-
-void Joint::updateInvProjArtInertiaImplicit(const Eigen::Matrix6d& _artInertia, double _timeStep)
-{
-  updateInvProjArtInertiaImplicitFD(_artInertia, _timeStep);
-}
-
-void Joint::addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasForce, const Eigen::Vector6d& _childPartialAcc)
-{
-  addChildBiasForceFDTo(_parentBiasForce,
-                        _childArtInertia,
-                        _childBiasForce,
-                        _childPartialAcc);
-}
-
-void Joint::addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse, const Eigen::Matrix6d& _childArtInertia, const Eigen::Vector6d& _childBiasImpulse)
-{
-  addChildBiasImpulseFDTo(_parentBiasImpulse,
-                          _childArtInertia,
-                          _childBiasImpulse);
-}
-
-void Joint::updateTotalForce(const Eigen::Vector6d& _bodyForce, double _timeStep)
-{
-  updateTotalForceFD(_bodyForce, _timeStep);
-}
-
-void Joint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
-{
-  updateTotalImpulseFD(_bodyImpulse);
-}
-
-void Joint::updateAcceleration(const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
-{
-  updateAccelerationFD(_artInertia, _spatialAcc);
-}
-
-void Joint::updateVelocityChange(const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _velocityChange)
-{
-  updateVelocityChangeFD(_artInertia, _velocityChange);
 }
 
 //==============================================================================

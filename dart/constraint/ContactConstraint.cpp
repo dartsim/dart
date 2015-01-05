@@ -564,13 +564,13 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       // Both bodies are reactive
       if (mBodyNode2->isReactive())
       {
-        skel1->updateBiasImpulseHD(mBodyNode1, mJacobians1[_idx],
-                                   mBodyNode2, mJacobians2[_idx]);
+        skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx],
+                                 mBodyNode2, mJacobians2[_idx]);
       }
       // Only body1 is reactive
       else
       {
-        skel1->updateBiasImpulseHD(mBodyNode1, mJacobians1[_idx]);
+        skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx]);
       }
     }
     else
@@ -578,7 +578,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       // Only body2 is reactive
       if (mBodyNode2->isReactive())
       {
-        skel2->updateBiasImpulseHD(mBodyNode2, mJacobians2[_idx]);
+        skel2->updateBiasImpulse(mBodyNode2, mJacobians2[_idx]);
       }
       // Both bodies are not reactive
       else
@@ -588,7 +588,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       }
     }
 
-    skel1->updateVelocityChangeHD();
+    skel1->updateVelocityChange();
   }
   // Colliding two distinct skeletons
   else
@@ -596,15 +596,15 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
     if (mBodyNode1->isReactive())
     {
       skel1->clearConstraintImpulses();
-      skel1->updateBiasImpulseHD(mBodyNode1, mJacobians1[_idx]);
-      skel1->updateVelocityChangeHD();
+      skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx]);
+      skel1->updateVelocityChange();
     }
 
     if (mBodyNode2->isReactive())
     {
       skel2->clearConstraintImpulses();
-      skel2->updateBiasImpulseHD(mBodyNode2, mJacobians2[_idx]);
-      skel2->updateVelocityChangeHD();
+      skel2->updateBiasImpulse(mBodyNode2, mJacobians2[_idx]);
+      skel2->updateVelocityChange();
     }
   }
 

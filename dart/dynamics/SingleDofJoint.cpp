@@ -838,14 +838,7 @@ void SingleDofJoint::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaFDTo(
-    Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
-{
-  addChildArtInertiaToHDTorqueType(_parentArtInertia, _childArtInertia);
-}
-
-//==============================================================================
-void SingleDofJoint::addChildArtInertiaHDTo(
+void SingleDofJoint::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   switch (mActuatorType)
@@ -890,16 +883,7 @@ void SingleDofJoint::addChildArtInertiaToHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitFDTo(
-    Eigen::Matrix6d& _parentArtInertia,
-    const Eigen::Matrix6d& _childArtInertia)
-{
-  addChildArtInertiaImplicitHDToTorqueType(_parentArtInertia,
-                                            _childArtInertia);
-}
-
-//==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitHDTo(
+void SingleDofJoint::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   switch (mActuatorType)
@@ -945,14 +929,7 @@ void SingleDofJoint::addChildArtInertiaImplicitHDToAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaFD(
-    const Eigen::Matrix6d& _artInertia)
-{
-  updateInvProjArtInertiaHDTorqueType(_artInertia);
-}
-
-//==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaHD(
+void SingleDofJoint::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
   switch (mActuatorType)
@@ -993,15 +970,7 @@ void SingleDofJoint::updateInvProjArtInertiaHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaImplicitFD(
-    const Eigen::Matrix6d& _artInertia,
-    double _timeStep)
-{
-  updateInvProjArtInertiaImplicitHDTorqueType(_artInertia, _timeStep);
-}
-
-//==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaImplicitHD(
+void SingleDofJoint::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
@@ -1048,20 +1017,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceFDTo(
-    Eigen::Vector6d& _parentBiasForce,
-    const Eigen::Matrix6d& _childArtInertia,
-    const Eigen::Vector6d& _childBiasForce,
-    const Eigen::Vector6d& _childPartialAcc)
-{
-  addChildBiasForceHDToTorqueType(_parentBiasForce,
-                                   _childArtInertia,
-                                   _childBiasForce,
-                                   _childPartialAcc);
-}
-
-//==============================================================================
-void SingleDofJoint::addChildBiasForceHDTo(
+void SingleDofJoint::addChildBiasForceTo(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1130,18 +1086,7 @@ void SingleDofJoint::addChildBiasForceHDToAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseFDTo(
-    Eigen::Vector6d& _parentBiasImpulse,
-    const Eigen::Matrix6d& _childArtInertia,
-    const Eigen::Vector6d& _childBiasImpulse)
-{
-  addChildBiasImpulseHDToTorqueType(_parentBiasImpulse,
-                                    _childArtInertia,
-                                    _childBiasImpulse);
-}
-
-//==============================================================================
-void SingleDofJoint::addChildBiasImpulseHDTo(
+void SingleDofJoint::addChildBiasImpulseTo(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1197,15 +1142,8 @@ void SingleDofJoint::addChildBiasImpulseHDToAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalForceFD(const Eigen::Vector6d& _bodyForce,
-                                        double _timeStep)
-{
-  updateTotalForceHDTorqueType(_bodyForce, _timeStep);
-}
-
-//==============================================================================
-void SingleDofJoint::updateTotalForceHD(const Eigen::Vector6d& _bodyForce,
-                                        double _timeStep)
+void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
+                                      double _timeStep)
 {
   switch (mActuatorType)
   {
@@ -1251,13 +1189,7 @@ void SingleDofJoint::updateTotalForceHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalImpulseFD(const Eigen::Vector6d& _bodyImpulse)
-{
-  updateTotalImpulseHDTorqueType(_bodyImpulse);
-}
-
-//==============================================================================
-void SingleDofJoint::updateTotalImpulseHD(const Eigen::Vector6d& _bodyImpulse)
+void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
@@ -1296,15 +1228,8 @@ void SingleDofJoint::resetTotalImpulses()
 }
 
 //==============================================================================
-void SingleDofJoint::updateAccelerationFD(const Eigen::Matrix6d& _artInertia,
-                                          const Eigen::Vector6d& _spatialAcc)
-{
-  updateAccelerationHDTorqueType(_artInertia, _spatialAcc);
-}
-
-//==============================================================================
-void SingleDofJoint::updateAccelerationHD(const Eigen::Matrix6d& _artInertia,
-                                          const Eigen::Vector6d& _spatialAcc)
+void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
+                                        const Eigen::Vector6d& _spatialAcc)
 {
   switch (mActuatorType)
   {
@@ -1343,15 +1268,7 @@ void SingleDofJoint::updateAccelerationHDAccelerationType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateVelocityChangeFD(
-    const Eigen::Matrix6d& _artInertia,
-    const Eigen::Vector6d& _velocityChange)
-{
-  updateVelocityChangeHDTorqueType(_artInertia, _velocityChange);
-}
-
-//==============================================================================
-void SingleDofJoint::updateVelocityChangeHD(
+void SingleDofJoint::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
@@ -1418,7 +1335,7 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
 }
 
 //==============================================================================
-void SingleDofJoint::updateForceHD(const Eigen::Vector6d& _bodyForce,
+void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                    double _timeStep,
                                    bool _withDampingForces,
                                    bool _withSpringForces)
@@ -1446,7 +1363,7 @@ void SingleDofJoint::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 }
 
 //==============================================================================
-void SingleDofJoint::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
+void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
@@ -1464,13 +1381,7 @@ void SingleDofJoint::updateImpulseHD(const Eigen::Vector6d& _bodyImpulse)
 }
 
 //==============================================================================
-void SingleDofJoint::updateConstrainedTermsFD(double _timeStep)
-{
-  updateConstrainedTermsHDTorqueType(_timeStep);
-}
-
-//==============================================================================
-void SingleDofJoint::updateConstrainedTermsHD(double _timeStep)
+void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 {
   switch (mActuatorType)
   {

@@ -1071,12 +1071,6 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 //==============================================================================
 void BodyNode::updateArtInertia(double _timeStep)
 {
-  updateArtInertiaFD(_timeStep);
-}
-
-//==============================================================================
-void BodyNode::updateArtInertiaFD(double _timeStep)
-{
   // Set spatial inertia to the articulated body inertia
   mArtInertia = mI;
   mArtInertiaImplicit = mI;
@@ -1086,41 +1080,9 @@ void BodyNode::updateArtInertiaFD(double _timeStep)
   {
     Joint* childJoint = child->getParentJoint();
 
-    childJoint->addChildArtInertiaFDTo(mArtInertia,
-                                       child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitFDTo(mArtInertiaImplicit,
-                                               child->mArtInertiaImplicit);
-  }
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-
-  // Update parent joint's inverse of projected articulated body inertia
-  mParentJoint->updateInvProjArtInertiaFD(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicitFD(mArtInertiaImplicit,
-                                                  _timeStep);
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-}
-
-//==============================================================================
-void BodyNode::updateArtInertiaHD(double _timeStep)
-{
-  // Set spatial inertia to the articulated body inertia
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
-
-  // and add child articulated body inertia
-  for (const auto& child : mChildBodyNodes)
-  {
-    Joint* childJoint = child->getParentJoint();
-
-    childJoint->addChildArtInertiaHDTo(mArtInertia, child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitHDTo(mArtInertiaImplicit,
-                                               child->mArtInertiaImplicit);
+    childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
+    childJoint->addChildArtInertiaImplicitTo(mArtInertiaImplicit,
+                                             child->mArtInertiaImplicit);
   }
 
   // Verification
@@ -1128,9 +1090,8 @@ void BodyNode::updateArtInertiaHD(double _timeStep)
   assert(!math::isNan(mArtInertiaImplicit));
 
   // Update parent joint's inverse of projected articulated body inertia
-  mParentJoint->updateInvProjArtInertiaHD(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicitHD(mArtInertiaImplicit,
-                                                  _timeStep);
+  mParentJoint->updateInvProjArtInertia(mArtInertia);
+  mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
 
   // Verification
 //  assert(!math::isNan(mArtInertia));
@@ -1141,13 +1102,6 @@ void BodyNode::updateArtInertiaHD(double _timeStep)
 void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep)
 {
-  updateBiasForceFD(_gravity, _timeStep);
-}
-
-//==============================================================================
-void BodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
-                                 double _timeStep)
-{
   // Gravity force
   if (mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
@@ -1165,10 +1119,10 @@ void BodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
   {
     Joint* childJoint = childBodyNode->getParentJoint();
 
-    childJoint->addChildBiasForceFDTo(mBiasForce,
-                                      childBodyNode->mArtInertiaImplicit,
-                                      childBodyNode->mBiasForce,
-                                      childBodyNode->mPartialAcceleration);
+    childJoint->addChildBiasForceTo(mBiasForce,
+                                    childBodyNode->mArtInertiaImplicit,
+                                    childBodyNode->mBiasForce,
+                                    childBodyNode->mPartialAcceleration);
   }
 
   // Verification
@@ -1176,55 +1130,13 @@ void BodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
-  mParentJoint->updateTotalForceFD(
-        mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
-}
-
-//==============================================================================
-void BodyNode::updateBiasForceHD(const Eigen::Vector3d& _gravity,
-                                 double _timeStep)
-{
-  // Gravity force
-  if (mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
-  else
-    mFgravity.setZero();
-
-  // Set bias force
-  mBiasForce = -math::dad(mV, mI * mV) - mFext - mFgravity;
-
-  // Verifycation
-  assert(!math::isNan(mBiasForce));
-
-  // And add child bias force
-  for (const auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasForceHDTo(mBiasForce,
-                                      childBodyNode->mArtInertiaImplicit,
-                                      childBodyNode->mBiasForce,
-                                      childBodyNode->mPartialAcceleration);
-  }
-
-  // Verification
-  assert(!math::isNan(mBiasForce));
-
-  // Update parent joint's total force with implicit joint damping and spring
-  // forces
-  mParentJoint->updateTotalForceHD(
+  mParentJoint->updateTotalForce(
         mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
 }
 
 //==============================================================================
 void BodyNode::updateBiasImpulse()
 {
-  updateBiasImpulseFD();
-}
-
-//==============================================================================
-void BodyNode::updateBiasImpulseFD()
-{
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
 
@@ -1233,39 +1145,16 @@ void BodyNode::updateBiasImpulseFD()
   {
     Joint* childJoint = childBodyNode->getParentJoint();
 
-    childJoint->addChildBiasImpulseFDTo(mBiasImpulse,
-                                        childBodyNode->mArtInertia,
-                                        childBodyNode->mBiasImpulse);
+    childJoint->addChildBiasImpulseTo(mBiasImpulse,
+                                      childBodyNode->mArtInertia,
+                                      childBodyNode->mBiasImpulse);
   }
 
   // Verification
   assert(!math::isNan(mBiasImpulse));
 
   // Update parent joint's total force
-  mParentJoint->updateTotalImpulseFD(mBiasImpulse);
-}
-
-//==============================================================================
-void BodyNode::updateBiasImpulseHD()
-{
-  // Update impulsive bias force
-  mBiasImpulse = -mConstraintImpulse;
-
-  // And add child bias impulse
-  for (auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasImpulseHDTo(mBiasImpulse,
-                                        childBodyNode->mArtInertia,
-                                        childBodyNode->mBiasImpulse);
-  }
-
-  // Verification
-  assert(!math::isNan(mBiasImpulse));
-
-  // Update parent joint's total force
-  mParentJoint->updateTotalImpulseHD(mBiasImpulse);
+  mParentJoint->updateTotalImpulse(mBiasImpulse);
 }
 
 //==============================================================================
@@ -1275,13 +1164,19 @@ void BodyNode::updateJointAndBodyAcceleration()
 }
 
 //==============================================================================
-void BodyNode::updateTransmittedWrench()
+void BodyNode::updateJointVelocityChange()
 {
-  updateTransmittedForceFHD();
+  updateVelocityChangeFD();
 }
 
 //==============================================================================
-void BodyNode::updateTransmittedForceFHD()
+void BodyNode::updateTransmittedWrench()
+{
+  updateTransmittedForceFD();
+}
+
+//==============================================================================
+void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
   mF.noalias() += mArtInertiaImplicit * mA;
@@ -1313,8 +1208,7 @@ void BodyNode::updateAccelerationFD()
   if (mParentBodyNode)
   {
     // Update joint acceleration
-    mParentJoint->updateAccelerationFD(mArtInertiaImplicit,
-                                       mParentBodyNode->mA);
+    mParentJoint->updateAcceleration(mArtInertiaImplicit, mParentBodyNode->mA);
 
     // Transmit spatial acceleration of parent body to this body
     mA = math::AdInvT(mParentJoint->mT, mParentBodyNode->mA)
@@ -1323,8 +1217,8 @@ void BodyNode::updateAccelerationFD()
   else
   {
     // Update joint acceleration
-    mParentJoint->updateAccelerationFD(mArtInertiaImplicit,
-                                       Eigen::Vector6d::Zero());
+    mParentJoint->updateAcceleration(mArtInertiaImplicit,
+                                     Eigen::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body
     mA = mPartialAcceleration;
@@ -1335,42 +1229,6 @@ void BodyNode::updateAccelerationFD()
 
   // Verify the spatial acceleration of this body
   assert(!math::isNan(mA));
-}
-
-//==============================================================================
-void BodyNode::updateAccelerationHD()
-{
-  if (mParentBodyNode)
-  {
-    // Update joint acceleration
-    mParentJoint->updateAccelerationHD(mArtInertiaImplicit,
-                                       mParentBodyNode->mA);
-
-    // Transmit spatial acceleration of parent body to this body
-    mA = math::AdInvT(mParentJoint->mT, mParentBodyNode->mA)
-         + mPartialAcceleration;
-  }
-  else
-  {
-    // Update joint acceleration
-    mParentJoint->updateAccelerationHD(mArtInertiaImplicit,
-                                       Eigen::Vector6d::Zero());
-
-    // Transmit spatial acceleration of parent body to this body
-    mA = mPartialAcceleration;
-  }
-
-  // Add parent joint's acceleration to this body
-  mParentJoint->addAccelerationTo(mA);
-
-  // Verify the spatial acceleration of this body
-  assert(!math::isNan(mA));
-}
-
-//==============================================================================
-void BodyNode::updateJointVelocityChange()
-{
-  updateVelocityChangeFD();
 }
 
 //==============================================================================
@@ -1379,7 +1237,7 @@ void BodyNode::updateVelocityChangeFD()
   if (mParentBodyNode)
   {
     // Update joint velocity change
-    mParentJoint->updateVelocityChangeFD(mArtInertia, mParentBodyNode->mDelV);
+    mParentJoint->updateVelocityChange(mArtInertia, mParentBodyNode->mDelV);
 
     // Transmit spatial acceleration of parent body to this body
     mDelV = math::AdInvT(mParentJoint->mT, mParentBodyNode->mDelV);
@@ -1387,34 +1245,7 @@ void BodyNode::updateVelocityChangeFD()
   else
   {
     // Update joint velocity change
-    mParentJoint->updateVelocityChangeFD(mArtInertia, Eigen::Vector6d::Zero());
-
-    // Transmit spatial acceleration of parent body to this body
-    mDelV.setZero();
-  }
-
-  // Add parent joint's acceleration to this body
-  mParentJoint->addVelocityChangeTo(mDelV);
-
-  // Verify the spatial velocity change of this body
-  assert(!math::isNan(mDelV));
-}
-
-//==============================================================================
-void BodyNode::updateVelocityChangeHD()
-{
-  if (mParentBodyNode)
-  {
-    // Update joint velocity change
-    mParentJoint->updateVelocityChangeHD(mArtInertia, mParentBodyNode->mDelV);
-
-    // Transmit spatial acceleration of parent body to this body
-    mDelV = math::AdInvT(mParentJoint->mT, mParentBodyNode->mDelV);
-  }
-  else
-  {
-    // Update joint velocity change
-    mParentJoint->updateVelocityChangeHD(mArtInertia, Eigen::Vector6d::Zero());
+    mParentJoint->updateVelocityChange(mArtInertia, Eigen::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body
     mDelV.setZero();
@@ -1438,42 +1269,29 @@ void BodyNode::updateJointForceID(double _timeStep,
 }
 
 //==============================================================================
-void BodyNode::updateJointForceHD(double _timeStep,
+void BodyNode::updateJointForceFD(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces)
 {
   assert(mParentJoint != NULL);
-  mParentJoint->updateForceHD(mF, _timeStep,
+  mParentJoint->updateForceFD(mF, _timeStep,
                               _withDampingForces, _withSpringForces);
 }
 
 //==============================================================================
-void BodyNode::updateJointImpulseHD()
+void BodyNode::updateJointImpulseFD()
 {
   assert(mParentJoint != NULL);
-  mParentJoint->updateImpulseHD(mF);
+  mParentJoint->updateImpulseFD(mF);
 }
 
 //==============================================================================
-void BodyNode::updateConstrainedTermsFD(double _timeStep)
+void BodyNode::updateConstrainedTerms(double _timeStep)
 {
   // 1. dq = dq + del_dq
   // 2. ddq = ddq + del_dq / dt
   // 3. tau = tau + imp / dt
-  mParentJoint->updateConstrainedTermsFD(_timeStep);
-
-  /// 4. A(+)   = A(-) + del_V / dt
-  mA += mDelV / _timeStep;
-
-  /// 5. F(+)   = F(-) + ImpF / dt
-  mF += mImpF / _timeStep;
-}
-
-//==============================================================================
-void BodyNode::updateConstrainedTermsHD(double _timeStep)
-{
-  // tau = tau + imp / dt
-  mParentJoint->updateConstrainedTermsHD(_timeStep);
+  mParentJoint->updateConstrainedTerms(_timeStep);
 
   //
   mA += mDelV / _timeStep;

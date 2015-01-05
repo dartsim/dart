@@ -182,13 +182,13 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
       {
         if (mBodyNode2->isReactive())
         {
-          mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
                  mBodyNode1, mJacobian1.row(_index), 
                  mBodyNode2, -mJacobian2.row(_index));
         }
         else
         {
-          mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+          mBodyNode1->getSkeleton()->updateBiasImpulse(
                  mBodyNode1, mJacobian1.row(_index));
         }
       }
@@ -196,7 +196,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
       {
         if (mBodyNode2->isReactive())
         {
-          mBodyNode2->getSkeleton()->updateBiasImpulseHD(
+          mBodyNode2->getSkeleton()->updateBiasImpulse(
                  mBodyNode2, -mJacobian2.row(_index));
         }
         else
@@ -204,7 +204,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
           assert(0);
         }
       }
-      mBodyNode1->getSkeleton()->updateVelocityChangeHD();
+      mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     // Colliding two distinct skeletons
     else
@@ -212,17 +212,17 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
       if (mBodyNode1->isReactive())
       {
         mBodyNode1->getSkeleton()->clearConstraintImpulses();
-        mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+        mBodyNode1->getSkeleton()->updateBiasImpulse(
               mBodyNode1, mJacobian1.row(_index));
-        mBodyNode1->getSkeleton()->updateVelocityChangeHD();
+        mBodyNode1->getSkeleton()->updateVelocityChange();
       }
 
       if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->clearConstraintImpulses();
-        mBodyNode2->getSkeleton()->updateBiasImpulseHD(
+        mBodyNode2->getSkeleton()->updateBiasImpulse(
               mBodyNode2, -mJacobian2.row(_index));
-        mBodyNode2->getSkeleton()->updateVelocityChangeHD();
+        mBodyNode2->getSkeleton()->updateVelocityChange();
       }
     }
   }
@@ -231,9 +231,9 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
     assert(mBodyNode1->isReactive());
 
     mBodyNode1->getSkeleton()->clearConstraintImpulses();
-    mBodyNode1->getSkeleton()->updateBiasImpulseHD(
+    mBodyNode1->getSkeleton()->updateBiasImpulse(
          mBodyNode1, mJacobian1.row(_index));
-    mBodyNode1->getSkeleton()->updateVelocityChangeHD();
+    mBodyNode1->getSkeleton()->updateVelocityChange();
   }
 
   mAppliedImpulseIndex = _index;

@@ -103,13 +103,12 @@ double World::getTimeStep() const
   return mTimeStep;
 }
 
-
 //==============================================================================
-
-void World::reset() {
+void World::reset()
+{
   mTime = 0.0;
   mFrame = 0;
-  mRecording->clear();    
+  mRecording->clear();
 }
 
 //==============================================================================
@@ -121,8 +120,7 @@ void World::step()
     if (!skel->isMobile())
       continue;
 
-//    skel->computeForwardDynamicsRecursionPartB();
-    skel->computeHybridDynamicsRecursionB();
+    skel->computeForwardDynamicsRecursionPartB();
     skel->integrateVelocities(mTimeStep);
     skel->computeForwardKinematics(false, true, false);
   }
@@ -138,8 +136,7 @@ void World::step()
 
     if (skel->isImpulseApplied())
     {
-//      skel->computeImpulseForwardDynamics();
-      skel->computeImpulseHybridDynamics();
+      skel->computeImpulseForwardDynamics();
       skel->setImpulseApplied(false);
     }
 

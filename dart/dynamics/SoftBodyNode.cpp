@@ -350,23 +350,23 @@ void SoftBodyNode::updateJointForceID(double _timeStep,
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointForceHD(double _timeStep,
+void SoftBodyNode::updateJointForceFD(double _timeStep,
                                       double _withDampingForces,
                                       double _withSpringForces)
 {
-  BodyNode::updateJointForceHD(_timeStep,
+  BodyNode::updateJointForceFD(_timeStep,
                                _withDampingForces,
                                _withSpringForces);
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointImpulseHD()
+void SoftBodyNode::updateJointImpulseFD()
 {
-  BodyNode::updateJointImpulseHD();
+  BodyNode::updateJointImpulseFD();
 }
 
 //==============================================================================
-void SoftBodyNode::updateArtInertiaFD(double _timeStep)
+void SoftBodyNode::updateArtInertia(double _timeStep)
 {
   for (auto& pointMass : mPointMasses)
     pointMass->updateArtInertiaFD(_timeStep);
@@ -382,54 +382,9 @@ void SoftBodyNode::updateArtInertiaFD(double _timeStep)
   {
     Joint* childJoint = child->getParentJoint();
 
-    childJoint->addChildArtInertiaFDTo(mArtInertia,
-                                       child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitFDTo(mArtInertiaImplicit,
-                                               child->mArtInertiaImplicit);
-  }
-
-  //
-  for (size_t i = 0; i < mPointMasses.size(); i++)
-  {
-    _addPiToArtInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
-    _addPiToArtInertiaImplicit(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
-  }
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-
-  // Update parent joint's inverse of projected articulated body inertia
-  mParentJoint->updateInvProjArtInertiaFD(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicitFD(mArtInertiaImplicit,
-                                                  _timeStep);
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-}
-
-//==============================================================================
-void SoftBodyNode::updateArtInertiaHD(double _timeStep)
-{
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateArtInertiaFD(_timeStep);
-
-  assert(mParentJoint != NULL);
-
-  // Set spatial inertia to the articulated body inertia
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
-
-  // and add child articulated body inertia
-  for (const auto& child : mChildBodyNodes)
-  {
-    Joint* childJoint = child->getParentJoint();
-
-    childJoint->addChildArtInertiaHDTo(mArtInertia,
-                                       child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitHDTo(mArtInertiaImplicit,
-                                               child->mArtInertiaImplicit);
+    childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
+    childJoint->addChildArtInertiaImplicitTo(mArtInertiaImplicit,
+                                             child->mArtInertiaImplicit);
   }
 
   //
@@ -444,9 +399,8 @@ void SoftBodyNode::updateArtInertiaHD(double _timeStep)
   assert(!math::isNan(mArtInertiaImplicit));
 
   // Update parent joint's inverse of projected articulated body inertia
-  mParentJoint->updateInvProjArtInertiaHD(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicitHD(mArtInertiaImplicit,
-                                                  _timeStep);
+  mParentJoint->updateInvProjArtInertia(mArtInertia);
+  mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
 
   // Verification
   assert(!math::isNan(mArtInertia));
@@ -454,8 +408,8 @@ void SoftBodyNode::updateArtInertiaHD(double _timeStep)
 }
 
 //==============================================================================
-void SoftBodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
-                                     double _timeStep)
+void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
+                                   double _timeStep)
 {
   for (auto& pointMass : mPointMasses)
     pointMass->updateBiasForceFD(_timeStep, _gravity);
@@ -477,10 +431,10 @@ void SoftBodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
   {
     Joint* childJoint = childBodyNode->getParentJoint();
 
-    childJoint->addChildBiasForceFDTo(mBiasForce,
-                                      childBodyNode->mArtInertiaImplicit,
-                                      childBodyNode->mBiasForce,
-                                      childBodyNode->mPartialAcceleration);
+    childJoint->addChildBiasForceTo(mBiasForce,
+                                    childBodyNode->mArtInertiaImplicit,
+                                    childBodyNode->mBiasForce,
+                                    childBodyNode->mPartialAcceleration);
   }
 
   //
@@ -495,53 +449,7 @@ void SoftBodyNode::updateBiasForceFD(const Eigen::Vector3d& _gravity,
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
-  mParentJoint->updateTotalForceFD(
-        mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
-}
-
-//==============================================================================
-void SoftBodyNode::updateBiasForceHD(const Eigen::Vector3d& _gravity,
-                                     double _timeStep)
-{
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasForceFD(_timeStep, _gravity);
-
-  // Gravity force
-  if (mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
-  else
-    mFgravity.setZero();
-
-  // Set bias force
-  mBiasForce = -math::dad(mV, mI * mV) - mFext - mFgravity;
-
-  // Verifycation
-  assert(!math::isNan(mBiasForce));
-
-  // And add child bias force
-  for (const auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasForceHDTo(mBiasForce,
-                                      childBodyNode->mArtInertiaImplicit,
-                                      childBodyNode->mBiasForce,
-                                      childBodyNode->mPartialAcceleration);
-  }
-
-  //
-  for (const auto& pointMass : mPointMasses)
-  {
-    mBiasForce.head<3>() += pointMass->mX.cross(pointMass->mBeta);
-    mBiasForce.tail<3>() += pointMass->mBeta;
-  }
-
-  // Verifycation
-  assert(!math::isNan(mBiasForce));
-
-  // Update parent joint's total force with implicit joint damping and spring
-  // forces
-  mParentJoint->updateTotalForceHD(
+  mParentJoint->updateTotalForce(
         mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
 }
 
@@ -555,25 +463,16 @@ void SoftBodyNode::updateAccelerationFD()
 }
 
 //==============================================================================
-void SoftBodyNode::updateAccelerationHD()
+void SoftBodyNode::updateTransmittedForceFD()
 {
-  BodyNode::updateAccelerationHD();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateAccelerationFD();
-}
-
-//==============================================================================
-void SoftBodyNode::updateTransmittedForceFHD()
-{
-  BodyNode::updateTransmittedForceFHD();
+  BodyNode::updateTransmittedForceFD();
 
   for (auto& pointMass : mPointMasses)
     pointMass->updateTransmittedForce();
 }
 
 //==============================================================================
-void SoftBodyNode::updateBiasImpulseFD()
+void SoftBodyNode::updateBiasImpulse()
 {
   for (auto& pointMass : mPointMasses)
     pointMass->updateBiasImpulseFD();
@@ -586,9 +485,9 @@ void SoftBodyNode::updateBiasImpulseFD()
   {
     Joint* childJoint = childBodyNode->getParentJoint();
 
-    childJoint->addChildBiasImpulseFDTo(mBiasImpulse,
-                                        childBodyNode->mArtInertia,
-                                        childBodyNode->mBiasImpulse);
+    childJoint->addChildBiasImpulseTo(mBiasImpulse,
+                                      childBodyNode->mArtInertia,
+                                      childBodyNode->mBiasImpulse);
   }
 
   for (auto& pointMass : mPointMasses)
@@ -601,54 +500,13 @@ void SoftBodyNode::updateBiasImpulseFD()
   assert(!math::isNan(mBiasImpulse));
 
   // Update parent joint's total force
-  mParentJoint->updateTotalImpulseFD(mBiasImpulse);
-}
-
-//==============================================================================
-void SoftBodyNode::updateBiasImpulseHD()
-{
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasImpulseFD();
-
-  // Update impulsive bias force
-  mBiasImpulse = -mConstraintImpulse;
-
-  // And add child bias impulse
-  for (auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasImpulseHDTo(mBiasImpulse,
-                                        childBodyNode->mArtInertia,
-                                        childBodyNode->mBiasImpulse);
-  }
-
-  for (auto& pointMass : mPointMasses)
-  {
-    mBiasImpulse.head<3>() += pointMass->mX.cross(pointMass->mImpBeta);
-    mBiasImpulse.tail<3>() += pointMass->mImpBeta;
-  }
-
-  // Verification
-  assert(!math::isNan(mBiasImpulse));
-
-  // Update parent joint's total force
-  mParentJoint->updateTotalImpulseHD(mBiasImpulse);
+  mParentJoint->updateTotalImpulse(mBiasImpulse);
 }
 
 //==============================================================================
 void SoftBodyNode::updateVelocityChangeFD()
 {
   BodyNode::updateVelocityChangeFD();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateVelocityChangeFD();
-}
-
-//==============================================================================
-void SoftBodyNode::updateVelocityChangeHD()
-{
-  BodyNode::updateVelocityChangeHD();
 
   for (auto& pointMass : mPointMasses)
     pointMass->updateVelocityChangeFD();
@@ -664,18 +522,9 @@ void SoftBodyNode::updateTransmittedImpulse()
 }
 
 //==============================================================================
-void SoftBodyNode::updateConstrainedTermsFD(double _timeStep)
+void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
-  BodyNode::updateConstrainedTermsFD(_timeStep);
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateConstrainedTermsFD(_timeStep);
-}
-
-//==============================================================================
-void SoftBodyNode::updateConstrainedTermsHD(double _timeStep)
-{
-  BodyNode::updateConstrainedTermsHD(_timeStep);
+  BodyNode::updateConstrainedTerms(_timeStep);
 
   for (auto& pointMass : mPointMasses)
     pointMass->updateConstrainedTermsFD(_timeStep);

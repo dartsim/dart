@@ -408,9 +408,6 @@ public:
   void computeInverseDynamics(bool _withExternalForces = false,
                               bool _withDampingForces = false);
 
-  /// Compute hybrid dynamics
-  void computeHybridDynamics();
-
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
@@ -419,90 +416,34 @@ public:
   /// (b) generalized constraints on Joint
   void clearConstraintImpulses();
 
-  // TODO(JS): To be deprecated
   /// Set constraint force vector.
   DEPRECATED(4.2)
   void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   /// Update bias impulses
-  DEPRECATED(4.2)
   void updateBiasImpulse(BodyNode* _bodyNode);
-
-  /// \brief updateBiasImpulseFD
-  /// \param _bodyNode
-  void updateBiasImpulseFD(BodyNode* _bodyNode);
-
-  /// \brief updateBiasImpulseHD
-  /// \param _bodyNode
-  void updateBiasImpulseHD(BodyNode* _bodyNode);
 
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode Body node contraint impulse, _imp, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode
-  DEPRECATED(4.2)
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
   /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode
-  void updateBiasImpulseFD(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
-
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode
-  void updateBiasImpulseHD(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
-
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode Body node contraint impulse, _imp1, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
   /// \param _bodyNode Body node contraint impulse, _imp2, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
-  DEPRECATED(4.3)
   void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
                          BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
 
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
-  void updateBiasImpulseFD(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
-                           BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
-
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
-  void updateBiasImpulseHD(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
-                           BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
-
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  DEPRECATED(4.3)
   void updateBiasImpulse(SoftBodyNode* _softBodyNode,
                          PointMass* _pointMass,
                          const Eigen::Vector3d& _imp);
 
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  void updateBiasImpulseFD(SoftBodyNode* _softBodyNode,
-                           PointMass* _pointMass,
-                           const Eigen::Vector3d& _imp);
-
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  void updateBiasImpulseHD(SoftBodyNode* _softBodyNode,
-                           PointMass* _pointMass,
-                           const Eigen::Vector3d& _imp);
-
   /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
-  DEPRECATED(4.3)
   void updateVelocityChange();
-
-  /// \brief updateVelocityChangeFD
-  void updateVelocityChangeFD();
-
-  /// \brief updateVelocityChangeHD
-  void updateVelocityChangeHD();
 
   // TODO(JS): Better naming
   /// Set whether this skeleton is constrained. ConstraintSolver will
@@ -517,9 +458,6 @@ public:
 
   /// Compute impulse-based inverse dynamics
 //  void computeImpulseInverseDynamics() {}
-
-  /// Compute impulse-based hybrid dynamics
-  void computeImpulseHybridDynamics();
 
   //----------------------------------------------------------------------------
   // Equations of Motion
@@ -644,12 +582,6 @@ public:
   void computeInverseDynamicsRecursionB(bool _withExternalForces = false,
                                         bool _withDampingForces = false,
                                         bool _withSpringForces = false);
-
-  /// Compute recursion part A of hybrid dynamics
-  void computeHybridDynamicsRecursionA();
-
-  /// Compute recursion part B of hybrid dynamics
-  void computeHybridDynamicsRecursionB();
 
   //----------------------------------------------------------------------------
   // Friendship
