@@ -344,7 +344,7 @@ protected:
   void updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                                 bool _withExternalForces = false);
 
-  /// \brief Update body force. Forward and hybrid dynamics routine.
+  /// \brief Update body force. Forward dynamics routine.
   void updateTransmittedForce();
 
   /// \brief Update body force. Impulse-based forward dynamics routine.

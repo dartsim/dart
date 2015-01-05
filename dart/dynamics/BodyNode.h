@@ -430,6 +430,7 @@ public:
   /// the number of dependent generalized coordinates is non zero. The body
   /// should be initialized first by calling BodyNode::init().
   bool isReactive() const;
+  // TODO: Apply hybrid dynamics
 
   /// Set constraint impulse
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
@@ -564,7 +565,7 @@ protected:
                                   double _withDampingForces,
                                   double _withSpringForces);
 
-  /// \brief Update the joint force. Hybrid dynamics routine.
+  /// \brief Update the joint force. Forward dynamics routine.
   virtual void updateJointForceFD(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces);

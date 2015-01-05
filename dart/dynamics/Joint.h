@@ -531,7 +531,7 @@ protected:
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange) = 0;
 
-  /// \brief Forward dynamics routine. Update joint force for hybrid dynamics.
+  /// \brief Update joint force for inverse dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.
@@ -540,7 +540,7 @@ protected:
                              bool _withDampingForces,
                              bool _withSpringForces) = 0;
 
-  /// \brief Hybrid dynamics routine. Update joint force for hybrid dynamics.
+  /// \brief Update joint force for forward dynamics.
   /// \param[in] _bodyForce Transmitting spatial body force from the parent
   /// BodyNode to the child BodyNode. The spatial force is expressed in the
   /// child BodyNode's frame.

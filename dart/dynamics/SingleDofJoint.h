@@ -561,52 +561,52 @@ private:
   /// \brief addChildArtInertiaToHDTorqueType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaToHDTorqueType(
+  void addChildArtInertiaToTorqueType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   /// \brief addChildArtInertiaToHDAccelerationType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaToHDAccelerationType(
+  void addChildArtInertiaToAccelerationType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   /// \brief addChildArtInertiaImplicitToHDTorqueType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaImplicitHDToTorqueType(
+  void addChildArtInertiaImplicitToTorqueType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   /// \brief addChildArtInertiaImplicitToHDAccelerationType
   /// \param _parentArtInertia
   /// \param _childArtInertia
-  void addChildArtInertiaImplicitHDToAccelerationType(
+  void addChildArtInertiaImplicitToAccelerationType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
   /// \brief updateInvProjArtInertiaHDTorqueType
   /// \param _artInertia
-  void updateInvProjArtInertiaHDTorqueType(
+  void updateInvProjArtInertiaTorqueType(
       const Eigen::Matrix6d& _artInertia);
 
   /// \brief updateInvProjArtInertiaHDAccelerationType
   /// \param _artInertia
-  void updateInvProjArtInertiaHDAccelerationType(
+  void updateInvProjArtInertiaAccelerationType(
       const Eigen::Matrix6d& _artInertia);
 
   /// \brief updateInvProjArtInertiaImplicitHDTorqueType
   /// \param _artInertia
   /// \param _timeStep
-  void updateInvProjArtInertiaImplicitHDTorqueType(
+  void updateInvProjArtInertiaImplicitTorqueType(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep);
 
   /// \brief updateInvProjArtInertiaImplicitHDAccelerationType
   /// \param _artInertia
   /// \param _timeStep
-  void updateInvProjArtInertiaImplicitHDAccelerationType(
+  void updateInvProjArtInertiaImplicitAccelerationType(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep);
 
@@ -615,7 +615,7 @@ private:
   /// \param _childArtInertia
   /// \param _childBiasForce
   /// \param _childPartialAcc
-  void addChildBiasForceHDToTorqueType(
+  void addChildBiasForceToTorqueType(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
@@ -626,7 +626,7 @@ private:
   /// \param _childArtInertia
   /// \param _childBiasForce
   /// \param _childPartialAcc
-  void addChildBiasForceHDToAccelerationType(
+  void addChildBiasForceToAccelerationType(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
@@ -636,7 +636,7 @@ private:
   /// \param _parentBiasImpulse
   /// \param _childArtInertia
   /// \param _childBiasImpulse
-  void addChildBiasImpulseHDToTorqueType(
+  void addChildBiasImpulseToTorqueType(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
@@ -645,7 +645,7 @@ private:
   /// \param _parentBiasImpulse
   /// \param _childArtInertia
   /// \param _childBiasImpulse
-  void addChildBiasImpulseHDToAccelerationType(
+  void addChildBiasImpulseToAccelerationType(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
@@ -653,60 +653,60 @@ private:
   /// \brief updateTotalForceHDTorqueType
   /// \param _bodyForce
   /// \param _timeStep
-  void updateTotalForceHDTorqueType(const Eigen::Vector6d& _bodyForce,
-                                    double _timeStep);
+  void updateTotalForceTorqueType(const Eigen::Vector6d& _bodyForce,
+                                  double _timeStep);
 
   /// \brief updateTotalForceHDAccelerationType
   /// \param _bodyForce
   /// \param _timeStep
-  void updateTotalForceHDAccelerationType(const Eigen::Vector6d& _bodyForce,
-                                          double _timeStep);
+  void updateTotalForceAccelerationType(const Eigen::Vector6d& _bodyForce,
+                                        double _timeStep);
 
   /// \brief updateTotalImpulseHDTorqueType
   /// \param _bodyImpulse
-  void updateTotalImpulseHDTorqueType(
+  void updateTotalImpulseTorqueType(
       const Eigen::Vector6d& _bodyImpulse);
 
   /// \brief updateTotalImpulseHDAccelerationType
   /// \param _bodyImpulse
-  void updateTotalImpulseHDAccelerationType(
+  void updateTotalImpulseAccelerationType(
       const Eigen::Vector6d& _bodyImpulse);
 
   /// \brief updateAccelerationHDTorqueType
   /// \param _artInertia
   /// \param _spatialAcc
-  void updateAccelerationHDTorqueType(
+  void updateAccelerationTorqueType(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _spatialAcc);
 
   /// \brief updateAccelerationHDAccelerationType
   /// \param _artInertia
   /// \param _spatialAcc
-  void updateAccelerationHDAccelerationType(
+  void updateAccelerationAccelerationType(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _spatialAcc);
 
   /// \brief updateVelocityChangeHDTorqueType
   /// \param _artInertia
   /// \param _velocityChange
-  void updateVelocityChangeHDTorqueType(
+  void updateVelocityChangeTorqueType(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange);
 
   /// \brief updateVelocityChangeHDAccelerationType
   /// \param _artInertia
   /// \param _velocityChange
-  void updateVelocityChangeHDAccelerationType(
+  void updateVelocityChangeAccelerationType(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange);
 
   /// \brief updateConstrainedTermsHDTorqueType
   /// \param _timeStep
-  void updateConstrainedTermsHDTorqueType(double _timeStep);
+  void updateConstrainedTermsTorqueType(double _timeStep);
 
   /// \brief updateConstrainedTermsHDAccelerationType
   /// \param _timeStep
-  void updateConstrainedTermsHDAccelerationType(double _timeStep);
+  void updateConstrainedTermsAccelerationType(double _timeStep);
 
   /// \}
 };
