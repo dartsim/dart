@@ -55,10 +55,10 @@ class DegreeOfFreedom
 {
 public:
 
-  friend class dart::dynamics::Joint;
-  friend class dart::dynamics::SingleDofJoint;
-  template<size_t> friend class dart::dynamics::MultiDofJoint;
-  friend class dart::dynamics::Skeleton;
+  friend class Joint;
+  friend class SingleDofJoint;
+  template<size_t> friend class MultiDofJoint;
+  friend class Skeleton;
 
   /// Change the name of this DegreeOfFreedom
   ///
