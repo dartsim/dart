@@ -91,7 +91,6 @@ public:
   /// Get the parent (reference) frame of this Entity
   const Frame* getParentFrame() const;
 
-protected:
   /// Notify this Entity that its parent Frame's pose has changed
   virtual void notifyTransformUpdate();
 
@@ -101,6 +100,7 @@ protected:
   /// Notify this Entity that its parent Frame's acceleration has changed
   virtual void notifyAccelerationUpdate();
 
+protected:
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(const Frame* _newParentFrame);
 

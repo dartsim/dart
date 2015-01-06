@@ -47,6 +47,8 @@ typedef std::set<Entity*> EntityPtrSet;
 Frame::Frame(const Frame *_refFrame, const std::string &_name) :
   Entity(_refFrame, _name),
   mWorldTransform(Eigen::Isometry3d::Identity()),
+  mVelocity(Eigen::Vector6d::Zero()),
+  mAcceleration(Eigen::Vector6d::Zero()),
   mAmWorld(false)
 {
 
@@ -96,14 +98,104 @@ const Eigen::Isometry3d& Frame::getWorldTransform() const
 }
 
 //==============================================================================
-Eigen::Isometry3d Frame::getTransform(const Frame* withRespectTo) const
+Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 {
-  if(withRespectTo->isWorld())
+  if(_withRespectTo->isWorld())
     return getWorldTransform();
-  else if(withRespectTo == mParentFrame)
+  else if(_withRespectTo == mParentFrame)
     return getRelativeTransform();
 
-  return withRespectTo->getWorldTransform().inverse()*getWorldTransform();
+  return _withRespectTo->getWorldTransform().inverse()*getWorldTransform();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Frame::getSpatialVelocity() const
+{
+  if(mNeedVelocityUpdate)
+  {
+    mVelocity = math::AdInvT(getRelativeTransform(),
+                             getParentFrame()->getSpatialVelocity())
+                + getRelativeSpatialVelocity();
+    mNeedVelocityUpdate = false;
+  }
+
+  return mVelocity;
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinates) const
+{
+  if(this==_inCoordinates)
+    return getSpatialVelocity();
+
+  if(_inCoordinates->isWorld())
+    return math::AdInvT(getWorldTransform(), getSpatialVelocity());
+
+  return math::AdT(_inCoordinates->getTransform(this), getSpatialVelocity());
+}
+
+//==============================================================================
+Eigen::Vector3d Frame::getLinearVelocity(const Frame* _relativeTo,
+                                         const Frame* _inCoordinates) const
+{
+  return (getSpatialVelocity(_inCoordinates)
+            - _relativeTo->getSpatialVelocity(_inCoordinates)).tail<3>();
+}
+
+//==============================================================================
+Eigen::Vector3d Frame::getAngularVelocity(const Frame *_relativeTo,
+                                          const Frame *_inCoordinates) const
+{
+  return (getSpatialVelocity(_inCoordinates)
+          - _relativeTo->getSpatialVelocity(_inCoordinates)).head<3>();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Frame::getSpatialAcceleration() const
+{
+  if(mNeedAccelerationUpdate)
+  {
+    mAcceleration = math::AdInvT(getRelativeTransform(),
+                                 getParentFrame()->getSpatialAcceleration())
+                    + getRelativeSpatialAcceleration();
+    mNeedAccelerationUpdate = false;
+  }
+
+  return mAcceleration;
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialAcceleration(const Frame* _inCoordinates) const
+{
+  if(this==_inCoordinates)
+    return getSpatialAcceleration();
+
+  if(_inCoordinates->isWorld())
+    return math::AdInvT(getWorldTransform(), getSpatialAcceleration());
+
+  return math::AdT(_inCoordinates->getTransform(this),
+                   getSpatialAcceleration());
+}
+
+//==============================================================================
+Eigen::Vector3d Frame::getLinearAcceleration(const Frame *_relativeTo,
+                                             const Frame *_inCoordinates) const
+{
+  const Eigen::Vector6d& v_rel = getSpatialVelocity(_inCoordinates)
+                              - _relativeTo->getSpatialVelocity(_inCoordinates);
+
+  // r'' = a + w x v
+  return (getSpatialAcceleration(_inCoordinates)
+          - _relativeTo->getSpatialAcceleration(_inCoordinates)).tail<3>()
+         + v_rel.head<3>().cross(v_rel.tail<3>());
+}
+
+//==============================================================================
+Eigen::Vector3d Frame::getAngularAcceleration(const Frame *_relativeTo,
+                                              const Frame *_inCoordinates) const
+{
+  return (getSpatialAcceleration(_inCoordinates)
+          - _relativeTo->getSpatialAcceleration(_inCoordinates)).head<3>();
 }
 
 //==============================================================================
@@ -199,7 +291,7 @@ void Frame::notifyTransformUpdate()
   if(mNeedTransformUpdate)
     return;
 
-  Entity::notifyTransformUpdate();
+  mNeedTransformUpdate = true;
 
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
   for( ; it != end; ++it)
@@ -215,7 +307,7 @@ void Frame::notifyVelocityUpdate()
   if(mNeedVelocityUpdate)
     return;
 
-  Entity::notifyVelocityUpdate();
+  mNeedVelocityUpdate = true;
 
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
   for( ; it != end; ++it)
@@ -229,7 +321,7 @@ void Frame::notifyAccelerationUpdate()
   if(mNeedAccelerationUpdate)
     return;
 
-  Entity::notifyAccelerationUpdate();
+  mNeedAccelerationUpdate = true;
 
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
   for( ; it != end; ++it)
@@ -255,6 +347,8 @@ void Frame::changeParentFrame(const Frame* _newParentFrame)
 Frame::Frame() :
   Entity(this, "World"),
   mWorldTransform(Eigen::Isometry3d::Identity()),
+  mVelocity(Eigen::Vector6d::Zero()),
+  mAcceleration(Eigen::Vector6d::Zero()),
   mAmWorld(true)
 {
 
@@ -267,42 +361,26 @@ const Eigen::Isometry3d& WorldFrame::getRelativeTransform() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& WorldFrame::getRelativeSpatialVelocity() const
+{
+  return mRelativeVelocity;
+}
+
+//==============================================================================
+const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
+{
+  return mRelativeAcceleration;
+}
+
+//==============================================================================
 WorldFrame::WorldFrame() :
   Entity(this, "World"),
   Frame(),
-  mRelativeTf(Eigen::Isometry3d::Identity())
+  mRelativeTf(Eigen::Isometry3d::Identity()),
+  mRelativeVelocity(Eigen::Vector6d::Zero()),
+  mRelativeAcceleration(Eigen::Vector6d::Zero())
 {
 
-}
-
-//==============================================================================
-SimpleFrame::SimpleFrame(const Frame* _refFrame, const std::string& _name,
-                     const Eigen::Isometry3d& _relativeTransform) :
-  Entity(_refFrame, _name),
-  Frame(_refFrame, _name),
-  Detachable(_refFrame, _name),
-  mRelativeTf(_relativeTransform)
-{
-
-}
-
-//==============================================================================
-SimpleFrame::~SimpleFrame()
-{
-
-}
-
-//==============================================================================
-void SimpleFrame::setRelativeTransform(const Eigen::Isometry3d &_newRelTransform)
-{
-  mRelativeTf = _newRelTransform;
-  notifyTransformUpdate();
-}
-
-//==============================================================================
-const Eigen::Isometry3d& SimpleFrame::getRelativeTransform() const
-{
-  return mRelativeTf;
 }
 
 } // namespace dart

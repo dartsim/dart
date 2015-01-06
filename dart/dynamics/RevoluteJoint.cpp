@@ -85,6 +85,9 @@ void RevoluteJoint::updateLocalTransform()
 //==============================================================================
 void RevoluteJoint::updateLocalJacobian()
 {
+  // TODO(MXG): This is function is getting called from updateTransform, which
+  // I think is unnecessary
+
   // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
   mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
 

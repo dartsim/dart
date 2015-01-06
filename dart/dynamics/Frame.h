@@ -37,9 +37,12 @@
 #ifndef DART_DYNAMICS_FRAME_H_
 #define DART_DYNAMICS_FRAME_H_
 
-#include "dart/dynamics/Entity.h"
 #include <set>
-#include "Eigen/Geometry"
+
+#include <Eigen/Geometry>
+
+#include "dart/dynamics/Entity.h"
+#include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace dynamics {
@@ -63,6 +66,10 @@ public:
 
   static const Frame* World();
 
+  //--------------------------------------------------------------------------
+  // Transform
+  //--------------------------------------------------------------------------
+
   /// Get the transform of this Frame with respect to its parent Frame
   virtual const Eigen::Isometry3d& getRelativeTransform() const = 0;
 
@@ -70,8 +77,66 @@ public:
   const Eigen::Isometry3d& getWorldTransform() const;
 
   /// Get the transform of this Frame with respect to some other Frame
-  Eigen::Isometry3d getTransform(const Frame* withRespectTo =
-                                                  Frame::World()) const;
+  Eigen::Isometry3d getTransform(
+      const Frame* _withRespectTo = Frame::World()) const;
+
+  //-------------------------------------------------------------------------
+  // Velocity
+  //-------------------------------------------------------------------------
+
+  /// Get the spatial velocity of this Frame relative to its parent Frame, in
+  /// its own coordinates.
+  virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const = 0;
+
+  /// Get the total spatial velocity of this Frame in the coordinates of this
+  /// Frame.
+  const Eigen::Vector6d& getSpatialVelocity() const;
+
+  /// Get the total spatial velocity of this Frame. The velocity can be provided
+  /// in the coordinates of any Frame.
+  Eigen::Vector6d getSpatialVelocity(const Frame* _inCoordinates) const;
+
+  /// Get the linear portion of classical velocity of this Frame relative to
+  /// some other Frame. It can be expressed in the coordinates of any Frame.
+  Eigen::Vector3d getLinearVelocity(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinates = Frame::World()) const;
+
+  /// Get the angular portion of classical velocity of this Frame relative to
+  /// some other Frame. It can be expressed in the coordinates of any Frame.
+  Eigen::Vector3d getAngularVelocity(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinates = Frame::World()) const;
+
+  //--------------------------------------------------------------------------
+  // Acceleration
+  //--------------------------------------------------------------------------
+
+  /// Get the spatial acceleration of this Frame relative to its parent Frame,
+  /// in the coordinates of this Frame.
+  virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const = 0;
+
+  /// Get the total spatial acceleration of this Frame in the coordinates of
+  /// this Frame.
+  const Eigen::Vector6d& getSpatialAcceleration() const;
+
+  /// Get the total spatial acceleration of this Frame. The acceleration can be
+  /// provided in the coordinates of any Frame.
+  Eigen::Vector6d getSpatialAcceleration(const Frame* _inCoordinates) const;
+
+  /// Get the linear portion of classical acceleration of this Frame relative to
+  /// some other Frame. It can be expressed in the coordinates of any Frame.
+  Eigen::Vector3d getLinearAcceleration(
+      const Frame* _relativeTo=Frame::World(),
+      const Frame* _inCoordinates=Frame::World()) const;
+
+  Eigen::Vector3d getAngularAcceleration(
+      const Frame* _relativeTo=Frame::World(),
+      const Frame* _inCoordinates=Frame::World()) const;
+
+  //--------------------------------------------------------------------------
+  // Relationships
+  //--------------------------------------------------------------------------
 
   /// Get a container with the Entities that are children of this Frame.
   /// std::set is used because Entities may be arbitrarily added and removed
@@ -102,12 +167,15 @@ public:
   /// Returns true if this Frame is the World Frame
   bool isWorld() const;
 
+  //--------------------------------------------------------------------------
+  // Rendering
+  //--------------------------------------------------------------------------
+
   // Render this Frame as well as any Entities it contains
   virtual void draw(renderer::RenderInterface *_ri = NULL,
                     const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true, int _depth = 0) const;
 
-protected:
   /// Notify this Frame and all its children that its pose has changed
   virtual void notifyTransformUpdate();
 
@@ -117,6 +185,7 @@ protected:
   /// Notify this Frame and all its children that its acceleration has changed
   virtual void notifyAccelerationUpdate();
 
+protected:
   // Documentation inherited
   virtual void changeParentFrame(const Frame* _newParentFrame);
 
@@ -128,6 +197,12 @@ protected:
   /// World transform of this Frame. This object is mutable to enable
   /// auto-updating to happen in the const member getWorldTransform() function
   mutable Eigen::Isometry3d mWorldTransform;
+
+  /// Total velocity of this Frame, in the coordinates of this Frame
+  mutable Eigen::Vector6d mVelocity;
+
+  /// Total acceleration of this Frame, in the coordinates of this Frame
+  mutable Eigen::Vector6d mAcceleration;
 
   /// Container of this Frame's child Frames. This object is mutable to enable
   /// children to be added to const Frames. Receiving a new child does not
@@ -153,35 +228,25 @@ public:
   /// Always returns the Identity Transform
   const Eigen::Isometry3d& getRelativeTransform() const;
 
+  /// Always returns a zero vector
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+
+  /// Always returns a zero vector
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+
 private:
   /// This may only be constructed by the Frame class
   explicit WorldFrame();
 
-protected:
+private:
   /// This is set to Identity and never changes
   Eigen::Isometry3d mRelativeTf;
 
-};
+  /// This is set to a Zero vector and never changes
+  Eigen::Vector6d mRelativeVelocity;
 
-class SimpleFrame : public Frame, public Detachable
-{
-public:
-  /// Constructor
-  explicit SimpleFrame(const Frame* _refFrame, const std::string& _name,
-                     const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
-
-  /// Destructor
-  virtual ~SimpleFrame();
-
-  /// Set the relative transform of this PureFrame
-  void setRelativeTransform(const Eigen::Isometry3d& _newRelTransform);
-
-  const Eigen::Isometry3d& getRelativeTransform() const;
-
-protected:
-  /// Relative Transform of this Frame
-  Eigen::Isometry3d mRelativeTf;
+  /// This is set to a Zero vector and never changes
+  Eigen::Vector6d mRelativeAcceleration;
 
 };
 
