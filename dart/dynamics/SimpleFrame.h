@@ -46,6 +46,12 @@ namespace dynamics {
 /// Frames within the kinematic tree structure of DART. The user is free to
 /// specify the relative transform, relative velocity, and relative acceleration
 /// of this Frame.
+///
+/// While many classes (such as BodyNode and EndEffector) inherit the Frame
+/// class, they all have restrictions (constraints) on how their properties
+/// (such as position, velocity, and acceleration) can be modified. Conversely,
+/// the SimpleFrame class is nothing but a simple abstract Frame whose
+/// properties can be arbitrarily set and modified by the user.
 class SimpleFrame : public Frame, public Detachable
 {
 public:
@@ -87,7 +93,7 @@ public:
   /// Use setClassicDerivatives to set the velocity according to classic
   /// relative linear and angular velocity values.
   void setRelativeSpatialVelocity(const Eigen::Vector6d& _newSpatialVelocity,
-                                  const Frame* _inCoordinates);
+                                  const Frame* _inCoordinatesOf);
 
   // Documentation inherited
   virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const;
@@ -107,8 +113,8 @@ public:
   /// Set the spatial acceleration of this SimpleFrame relative to its parent
   /// Frame. Specify the coordinate Frame of _newSpatialAcceleration.
   void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d &_newSpatialAcceleration,
-      const Frame* _inCoordinates);
+      const Eigen::Vector6d& _newSpatialAcceleration,
+      const Frame* _inCoordinatesOf);
 
   // Documentation inherited
   virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
@@ -118,12 +124,18 @@ public:
   //--------------------------------------------------------------------------
 
   /// Set the relative velocity and acceleration of this Frame according to
-  /// classical (non-spatial) velocity and acceleration vectors. These values
-  /// must be given with respect to this Frame's parent (note: this is different
-  /// from setRelativeSpatialVelocity and setRelativeSpatialAcceleration).
+  /// classical (non-spatial) relative velocity and relative acceleration
+  /// vectors. These values must be given with respect to this Frame's parent
+  /// (note: this aspect is different from setRelativeSpatialVelocity and
+  /// setRelativeSpatialAcceleration which expect values in the Frame's own
+  /// coordinates).
   ///
   /// This method is slightly less computationally efficient than using
-  /// setRelativeSpatialVelocity and setRelativeSpatialAcceleration
+  /// setRelativeSpatialVelocity and setRelativeSpatialAcceleration, but offers
+  /// the most intuitive way of setting relative velocities and relative
+  /// accelerations.
+  ///
+  /// These values are equivalent to the terms in the Newton-Euler
   void setClassicDerivatives(
       const Eigen::Vector3d& _linearVelocity      = Eigen::Vector3d::Zero(),
       const Eigen::Vector3d& _angularVelocity     = Eigen::Vector3d::Zero(),

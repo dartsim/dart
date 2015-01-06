@@ -128,31 +128,37 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
 }
 
 //==============================================================================
-Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinates) const
+Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinatesOf) const
 {
-  if(this==_inCoordinates)
+  if(this==_inCoordinatesOf)
     return getSpatialVelocity();
 
-  if(_inCoordinates->isWorld())
+  if(_inCoordinatesOf->isWorld())
     return math::AdInvT(getWorldTransform(), getSpatialVelocity());
 
-  return math::AdT(_inCoordinates->getTransform(this), getSpatialVelocity());
+  return math::AdT(_inCoordinatesOf->getTransform(this), getSpatialVelocity());
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
+                                          const Frame* _inCoordinatesOf) const
+{
+  return getSpatialVelocity(_inCoordinatesOf)
+      - _relativeTo->getSpatialVelocity(_inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d Frame::getLinearVelocity(const Frame* _relativeTo,
-                                         const Frame* _inCoordinates) const
+                                         const Frame* _inCoordinatesOf) const
 {
-  return (getSpatialVelocity(_inCoordinates)
-            - _relativeTo->getSpatialVelocity(_inCoordinates)).tail<3>();
+  return getSpatialVelocity(_relativeTo,_inCoordinatesOf).tail<3>();
 }
 
 //==============================================================================
-Eigen::Vector3d Frame::getAngularVelocity(const Frame *_relativeTo,
-                                          const Frame *_inCoordinates) const
+Eigen::Vector3d Frame::getAngularVelocity(const Frame* _relativeTo,
+                                          const Frame* _inCoordinatesOf) const
 {
-  return (getSpatialVelocity(_inCoordinates)
-          - _relativeTo->getSpatialVelocity(_inCoordinates)).head<3>();
+  return getSpatialVelocity(_relativeTo,_inCoordinatesOf).head<3>();
 }
 
 //==============================================================================
@@ -173,37 +179,44 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
 }
 
 //==============================================================================
-Eigen::Vector6d Frame::getSpatialAcceleration(const Frame* _inCoordinates) const
+Eigen::Vector6d Frame::getSpatialAcceleration(
+    const Frame* _inCoordinatesOf) const
 {
-  if(this==_inCoordinates)
+  if(this==_inCoordinatesOf)
     return getSpatialAcceleration();
 
-  if(_inCoordinates->isWorld())
+  if(_inCoordinatesOf->isWorld())
     return math::AdInvT(getWorldTransform(), getSpatialAcceleration());
 
-  return math::AdT(_inCoordinates->getTransform(this),
+  return math::AdT(_inCoordinatesOf->getTransform(this),
                    getSpatialAcceleration());
 }
 
 //==============================================================================
-Eigen::Vector3d Frame::getLinearAcceleration(const Frame *_relativeTo,
-                                             const Frame *_inCoordinates) const
+Eigen::Vector6d Frame::getSpatialAcceleration(
+    const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  const Eigen::Vector6d& v_rel = getSpatialVelocity(_inCoordinates)
-                              - _relativeTo->getSpatialVelocity(_inCoordinates);
+  return getSpatialAcceleration(_inCoordinatesOf)
+      - _relativeTo->getSpatialAcceleration(_inCoordinatesOf);
+}
+
+//==============================================================================
+Eigen::Vector3d Frame::getLinearAcceleration(
+    const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
+{
+  const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo,
+                                                    _inCoordinatesOf);
 
   // r'' = a + w x v
-  return (getSpatialAcceleration(_inCoordinates)
-          - _relativeTo->getSpatialAcceleration(_inCoordinates)).tail<3>()
+  return getSpatialAcceleration(_relativeTo,_inCoordinatesOf).tail<3>()
          + v_rel.head<3>().cross(v_rel.tail<3>());
 }
 
 //==============================================================================
-Eigen::Vector3d Frame::getAngularAcceleration(const Frame *_relativeTo,
-                                              const Frame *_inCoordinates) const
+Eigen::Vector3d Frame::getAngularAcceleration(
+    const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return (getSpatialAcceleration(_inCoordinates)
-          - _relativeTo->getSpatialAcceleration(_inCoordinates)).head<3>();
+  return getSpatialAcceleration(_relativeTo, _inCoordinatesOf).head<3>();
 }
 
 //==============================================================================
@@ -261,7 +274,7 @@ bool Frame::isWorld() const
 }
 
 //==============================================================================
-void Frame::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
+void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
                  bool _useDefaultColor, int _depth) const
 {
   if(NULL == _ri)

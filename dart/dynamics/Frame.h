@@ -94,19 +94,24 @@ public:
 
   /// Get the total spatial velocity of this Frame. The velocity can be provided
   /// in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialVelocity(const Frame* _inCoordinates) const;
+  Eigen::Vector6d getSpatialVelocity(const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial velocity of this Frame relative to some other Frame. It
+  /// can be expressed in the coordinates of any Frame.
+  Eigen::Vector6d getSpatialVelocity(const Frame* _relativeTo,
+                                     const Frame* _inCoordinatesOf) const;
 
   /// Get the linear portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getLinearVelocity(
       const Frame* _relativeTo = Frame::World(),
-      const Frame* _inCoordinates = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get the angular portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getAngularVelocity(
       const Frame* _relativeTo = Frame::World(),
-      const Frame* _inCoordinates = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   //--------------------------------------------------------------------------
   // Acceleration
@@ -122,17 +127,22 @@ public:
 
   /// Get the total spatial acceleration of this Frame. The acceleration can be
   /// provided in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialAcceleration(const Frame* _inCoordinates) const;
+  Eigen::Vector6d getSpatialAcceleration(const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial acceleration of this Frame relative to some other Frame.
+  /// It can be expressed in the coordinates of any Frame.
+  Eigen::Vector6d getSpatialAcceleration(const Frame* _relativeTo,
+                                         const Frame* _inCoordinatesOf) const;
 
   /// Get the linear portion of classical acceleration of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getLinearAcceleration(
       const Frame* _relativeTo=Frame::World(),
-      const Frame* _inCoordinates=Frame::World()) const;
+      const Frame* _inCoordinatesOf=Frame::World()) const;
 
   Eigen::Vector3d getAngularAcceleration(
       const Frame* _relativeTo=Frame::World(),
-      const Frame* _inCoordinates=Frame::World()) const;
+      const Frame* _inCoordinatesOf=Frame::World()) const;
 
   //--------------------------------------------------------------------------
   // Relationships

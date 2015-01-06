@@ -81,14 +81,13 @@ void SimpleFrame::setRelativeSpatialVelocity(
 }
 
 //==============================================================================
-void SimpleFrame::setRelativeSpatialVelocity(
-    const Eigen::Vector6d& _newSpatialVelocity,
-    const Frame* _inCoordinates)
+void SimpleFrame::setRelativeSpatialVelocity(const Eigen::Vector6d& _newSpatialVelocity,
+    const Frame* _inCoordinatesOf)
 {
-  if(this == _inCoordinates)
+  if(this == _inCoordinatesOf)
     setRelativeSpatialVelocity(_newSpatialVelocity);
   else
-    setRelativeSpatialVelocity(math::AdT(this->getTransform(_inCoordinates),
+    setRelativeSpatialVelocity(math::AdT(this->getTransform(_inCoordinatesOf),
                                          _newSpatialVelocity));
 }
 
@@ -109,13 +108,13 @@ void SimpleFrame::setRelativeSpatialAcceleration(
 //==============================================================================
 void SimpleFrame::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& _newSpatialAcceleration,
-    const Frame* _inCoordinates)
+    const Frame* _inCoordinatesOf)
 {
-  if(this == _inCoordinates)
+  if(this == _inCoordinatesOf)
     setRelativeSpatialAcceleration(_newSpatialAcceleration);
   else
-    setRelativeSpatialAcceleration(math::AdT(this->getTransform(_inCoordinates),
-                                             _newSpatialAcceleration));
+    setRelativeSpatialAcceleration(
+      math::AdT(this->getTransform(_inCoordinatesOf), _newSpatialAcceleration));
 }
 
 //==============================================================================
