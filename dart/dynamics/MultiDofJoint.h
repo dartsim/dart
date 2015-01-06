@@ -1491,11 +1491,9 @@ void MultiDofJoint<DOF>::setPartialAccelerationTo(
     Eigen::Vector6d& _partialAcceleration,
     const Eigen::Vector6d& _childVelocity)
 {
-  // ad(V, S * dq)
-  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocities);
-
-  // Add joint acceleration
-  _partialAcceleration.noalias() += mJacobianDeriv * mVelocities;
+  // ad(V, S * dq) + dS * dq
+  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocities)
+                         + mJacobianDeriv * mVelocities;
 
   // Verification
   assert(!math::isNan(_partialAcceleration));

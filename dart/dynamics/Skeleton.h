@@ -218,6 +218,27 @@ public:
   GenCoordInfo getGenCoordInfo(size_t _index) const;
 
   //----------------------------------------------------------------------------
+  /// \{ \name Command
+  //----------------------------------------------------------------------------
+
+  /// Set a single command
+  virtual void setCommand(size_t _index, double _command);
+
+  /// Set a sinlge command
+  virtual double getCommand(size_t _index) const;
+
+  /// Set commands
+  virtual void setCommands(const Eigen::VectorXd& _commands);
+
+  /// Get commands
+  virtual Eigen::VectorXd getCommands() const;
+
+  /// Set zero all the positions
+  virtual void resetCommands();
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 

@@ -816,14 +816,9 @@ void SingleDofJoint::setPartialAccelerationTo(
     Eigen::Vector6d& _partialAcceleration,
     const Eigen::Vector6d& _childVelocity)
 {
-  // ad(V, S * dq)
-  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocity);
-
-  // Verification
-  assert(!math::isNan(_partialAcceleration));
-
-  // Add joint acceleration
-  _partialAcceleration.noalias() += mJacobianDeriv * mVelocity;
+  // ad(V, S * dq) + dS * dq
+  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocity)
+                         + mJacobianDeriv * mVelocity;
 
   // Verification
   assert(!math::isNan(_partialAcceleration));

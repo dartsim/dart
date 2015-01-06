@@ -474,6 +474,71 @@ GenCoordInfo Skeleton::getGenCoordInfo(size_t _index) const
 }
 
 //==============================================================================
+void Skeleton::setCommand(size_t _index, double _command)
+{
+  assert(_index < getNumDofs());
+
+  mGenCoordInfos[_index].joint->setCommand(mGenCoordInfos[_index].localIndex,
+                                           _command);
+}
+
+//==============================================================================
+double Skeleton::getCommand(size_t _index) const
+{
+  assert(_index <getNumDofs());
+
+  return mGenCoordInfos[_index].joint->getCommand(
+        mGenCoordInfos[_index].localIndex);
+}
+
+//==============================================================================
+void Skeleton::setCommands(const Eigen::VectorXd& _commands)
+{
+  size_t index = 0;
+  size_t dof = 0;
+  Joint* joint;
+
+  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  {
+    joint = mBodyNodes[i]->getParentJoint();
+
+    dof = joint->getNumDofs();
+
+    if (dof)
+    {
+      joint->setCommands(_commands.segment(index, dof));
+
+      index += dof;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getCommands() const
+{
+  size_t index = 0;
+  size_t dof = getNumDofs();
+  Eigen::VectorXd commands(dof);
+
+  for (size_t i = 0; i < dof; ++i)
+  {
+    commands[index++]
+        = mGenCoordInfos[i].joint->getCommand(mGenCoordInfos[i].localIndex);
+  }
+
+  assert(index == dof);
+
+  return commands;
+}
+
+//==============================================================================
+void Skeleton::resetCommands()
+{
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->getParentJoint()->resetCommands();
+}
+
+//==============================================================================
 void Skeleton::setPosition(size_t _index, double _position)
 {
   assert(_index < getNumDofs());

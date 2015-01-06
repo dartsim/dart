@@ -145,6 +145,7 @@ void World::step()
     skel->resetForces();
     skel->clearExternalForces();
 //    skel->clearConstraintImpulses();
+    skel->resetCommands();
   }
 
   mTime += mTimeStep;
