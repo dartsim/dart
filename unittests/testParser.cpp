@@ -183,18 +183,16 @@ TEST(Parser, RigidAndSoftBodies)
   using namespace utils;
 
   World* world = SkelParser::readWorld(
-          DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
+                   DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != NULL);
 
   Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  Skeleton* softSkel1 = dynamic_cast<Skeleton*>(skel1);
-  // TODO(MXG): ^This cast looks like it's outdated
-  EXPECT_TRUE(softSkel1 != NULL);
-  EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
-  EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);
-  EXPECT_EQ(softSkel1->getNumSoftBodyNodes(), 1);
+  EXPECT_TRUE(skel1 != NULL);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 2);
+  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
+  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
 
-  SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
+  SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
