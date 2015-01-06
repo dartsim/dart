@@ -327,9 +327,6 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     mF.tail<3>() += pointMass->mF;
   }
 
-  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
-  mParentJoint->mWrench = mF;
-
   // Verification
   assert(!math::isNan(mF));
 }

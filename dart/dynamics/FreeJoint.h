@@ -56,12 +56,6 @@ public:
   /// Destructor
   virtual ~FreeJoint();
 
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
-
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);

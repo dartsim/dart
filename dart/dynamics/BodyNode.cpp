@@ -1055,9 +1055,6 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                         childBodyNode->getBodyForce());
   }
 
-  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
-  mParentJoint->mWrench = mF;
-
   // Verification
   assert(!math::isNan(mF));
 }
@@ -1180,9 +1177,6 @@ void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
   mF.noalias() += mArtInertiaImplicit * mA;
-
-  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
-  mParentJoint->mWrench = mF;
 
   assert(!math::isNan(mF));
 }

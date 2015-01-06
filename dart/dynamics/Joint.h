@@ -407,6 +407,7 @@ public:
 
   /// Get constraint wrench expressed in body node frame
   virtual Eigen::Vector6d getBodyConstraintWrench() const = 0;
+  // TODO: Need more informative name.
 
   /// Get spring force
   ///
@@ -651,9 +652,8 @@ protected:
   /// velocity is expressed in child body frame
   Eigen::Vector6d mSpatialVelocity;
 
-  // TODO(JS): Temporary code
-public:
   /// Transmitting wrench from parent body to child body expressed in child body
+  DEPRECATED(4.3)
   Eigen::Vector6d mWrench;
 
 protected:

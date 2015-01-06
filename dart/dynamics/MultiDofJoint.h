@@ -43,6 +43,7 @@
 #include "dart/config.h"
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
+#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 
@@ -285,6 +286,9 @@ public:
 
   // Documentation inherited
   virtual double getPotentialEnergy() const;
+
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
   //----------------------------------------------------------------------------
@@ -1446,6 +1450,14 @@ double MultiDofJoint<DOF>::getPotentialEnergy() const
       = 0.5 * displacement.dot(mSpringStiffness.asDiagonal() * displacement);
 
   return pe;
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
+{
+  assert(mChildBodyNode);
+  return mChildBodyNode->getBodyForce() - mJacobian * mForces;
 }
 
 //==============================================================================

@@ -278,6 +278,9 @@ public:
   /// Get potential energy
   virtual double getPotentialEnergy() const;
 
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const override;
+
 protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

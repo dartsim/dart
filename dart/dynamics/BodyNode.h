@@ -412,7 +412,11 @@ public:
   ///
   Eigen::Vector6d getExternalForceGlobal() const;
 
+  /// \brief Get spatial body force transmitted from the parent joint.
   ///
+  /// The spatial body force is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
   const Eigen::Vector6d& getBodyForce() const;
 
   //----------------------------------------------------------------------------

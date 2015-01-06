@@ -58,7 +58,6 @@ Joint::Joint(const std::string& _name)
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mWrench(Eigen::Vector6d::Zero()),
     mIsPositionLimited(true)
 {
 }

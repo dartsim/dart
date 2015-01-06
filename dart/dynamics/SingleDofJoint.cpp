@@ -783,6 +783,13 @@ double SingleDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
+{
+  assert(mChildBodyNode);
+  return mChildBodyNode->getBodyForce() - mJacobian * mForce;
+}
+
+//==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
   return mJacobian;
@@ -893,12 +900,12 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
     case PASSIVE:
     case SERVO:
       addChildArtInertiaImplicitToTorqueType(_parentArtInertia,
-                                               _childArtInertia);
+                                             _childArtInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
       addChildArtInertiaImplicitToAccelerationType(_parentArtInertia,
-                                                     _childArtInertia);
+                                                   _childArtInertia);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1033,16 +1040,16 @@ void SingleDofJoint::addChildBiasForceTo(
     case PASSIVE:
     case SERVO:
       addChildBiasForceToTorqueType(_parentBiasForce,
-                                       _childArtInertia,
-                                       _childBiasForce,
-                                       _childPartialAcc);
+                                    _childArtInertia,
+                                    _childBiasForce,
+                                    _childPartialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
       addChildBiasForceToAccelerationType(_parentBiasForce,
-                                             _childArtInertia,
-                                             _childBiasForce,
-                                             _childPartialAcc);
+                                          _childArtInertia,
+                                          _childBiasForce,
+                                          _childPartialAcc);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1102,14 +1109,14 @@ void SingleDofJoint::addChildBiasImpulseTo(
     case PASSIVE:
     case SERVO:
       addChildBiasImpulseToTorqueType(_parentBiasImpulse,
-                                        _childArtInertia,
-                                        _childBiasImpulse);
+                                      _childArtInertia,
+                                      _childBiasImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
       addChildBiasImpulseToAccelerationType(_parentBiasImpulse,
-                                              _childArtInertia,
-                                              _childBiasImpulse);
+                                            _childArtInertia,
+                                            _childBiasImpulse);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;

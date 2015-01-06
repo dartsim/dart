@@ -429,6 +429,13 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
+{
+  assert(mChildBodyNode);
+  return mChildBodyNode->getBodyForce();
+}
+
+//==============================================================================
 const math::Jacobian ZeroDofJoint::getLocalJacobian() const
 {
   return Eigen::Matrix<double, 6, 0>();
