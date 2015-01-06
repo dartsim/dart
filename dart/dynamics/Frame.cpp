@@ -39,6 +39,8 @@
 
 #include "dart/renderer/RenderInterface.h"
 
+#include <iostream>
+
 namespace dart {
 namespace dynamics {
 
@@ -331,7 +333,12 @@ void Frame::notifyAccelerationUpdate()
 //==============================================================================
 void Frame::changeParentFrame(const Frame* _newParentFrame)
 {
-  mParentFrame->mChildFrames.erase(this);
+  if(mParentFrame)
+  {
+    if(mParentFrame->mChildFrames.find(this) !=
+       mParentFrame->mChildFrames.end())
+      mParentFrame->mChildFrames.erase(this);
+  }
 
   if(NULL==_newParentFrame)
   {
@@ -374,13 +381,13 @@ const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 
 //==============================================================================
 WorldFrame::WorldFrame() :
-  Entity(this, "World"),
+  Entity(NULL, "World"),
   Frame(),
   mRelativeTf(Eigen::Isometry3d::Identity()),
   mRelativeVelocity(Eigen::Vector6d::Zero()),
   mRelativeAcceleration(Eigen::Vector6d::Zero())
 {
-
+  changeParentFrame(this);
 }
 
 } // namespace dart

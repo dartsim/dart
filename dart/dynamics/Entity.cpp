@@ -48,8 +48,6 @@ Entity::Entity(const Frame* _refFrame, const std::string& _name) :
   mParentFrame(NULL),
   mName(_name)
 {
-  if(NULL == _refFrame)
-    _refFrame = Frame::World();
   changeParentFrame(_refFrame);
 }
 
@@ -125,7 +123,12 @@ void Entity::notifyAccelerationUpdate()
 //==============================================================================
 void Entity::changeParentFrame(const Frame* _newParentFrame)
 {
-  mParentFrame->mChildEntities.erase(this);
+  if(mParentFrame)
+  {
+    if(mParentFrame->mChildEntities.find(this) !=
+       mParentFrame->mChildEntities.end())
+      mParentFrame->mChildEntities.erase(this);
+  }
 
   if(NULL==_newParentFrame)
   {
