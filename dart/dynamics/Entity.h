@@ -67,7 +67,8 @@ public:
   friend class Frame;
 
   /// Constructor for typical usage
-  explicit Entity(const Frame* _refFrame, const std::string& _name);
+  explicit Entity(const Frame* _refFrame, const std::string& _name,
+                  bool _quiet);
 
   /// Destructor
   virtual ~Entity();
@@ -91,6 +92,15 @@ public:
   /// Get the parent (reference) frame of this Entity
   const Frame* getParentFrame() const;
 
+  /// Returns true if this Entity is set to be quiet.
+  ///
+  /// A quiet entity is unknown to its parent Frame. It will not be tracked by
+  /// its parent; it will not receive notifications from its parent, and it will
+  /// not be rendered. The advantage to a quiet Entity is that it has less
+  /// overhead when constructing and deconstructing, which makes it more
+  /// suitable for temporary objects.
+  bool isQuiet() const;
+
   /// Notify this Entity that its parent Frame's pose has changed
   virtual void notifyTransformUpdate();
 
@@ -110,6 +120,9 @@ protected:
 
   /// Name of this Entity
   std::string mName;
+
+  /// Whether or not this Entity is set to be quiet
+  bool mAmQuiet;
 
   /// Vector of visualization shapes
   std::vector<Shape*> mVizShapes;
@@ -131,7 +144,8 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(const Frame* _refFrame, const std::string& _name);
+  explicit Detachable(const Frame* _refFrame, const std::string& _name,
+                      bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(const Frame* _newParentFrame);

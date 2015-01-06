@@ -44,9 +44,10 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Entity::Entity(const Frame* _refFrame, const std::string& _name) :
+Entity::Entity(const Frame* _refFrame, const std::string& _name, bool _quiet) :
   mParentFrame(NULL),
-  mName(_name)
+  mName(_name),
+  mAmQuiet(_quiet)
 {
   changeParentFrame(_refFrame);
 }
@@ -79,6 +80,9 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
 
   _ri->pushMatrix();
   _ri->transform(mParentFrame->getTransform());
+  // ^ I am skeptical about this. Shouldn't the matrix be pushed by its parent
+  // frame? And then we're not popping this matrix at the end of this function.
+  // This all seems questionable to me.
 
   // _ri->pushName(???); TODO(MXG): How should this be handled for entities?
   for(size_t i=0; i < mVizShapes.size(); ++i)
@@ -123,11 +127,14 @@ void Entity::notifyAccelerationUpdate()
 //==============================================================================
 void Entity::changeParentFrame(const Frame* _newParentFrame)
 {
-  if(mParentFrame)
+  if(!mAmQuiet)
   {
-    if(mParentFrame->mChildEntities.find(this) !=
-       mParentFrame->mChildEntities.end())
-      mParentFrame->mChildEntities.erase(this);
+    if(mParentFrame)
+    {
+      if(mParentFrame->mChildEntities.find(this) !=
+         mParentFrame->mChildEntities.end())
+        mParentFrame->mChildEntities.erase(this);
+    }
   }
 
   if(NULL==_newParentFrame)
@@ -137,13 +144,17 @@ void Entity::changeParentFrame(const Frame* _newParentFrame)
   }
 
   mParentFrame = const_cast<Frame*>(_newParentFrame);
-  mParentFrame->mChildEntities.insert(this);
-  notifyTransformUpdate();
+  if(!mAmQuiet)
+  {
+    mParentFrame->mChildEntities.insert(this);
+    notifyTransformUpdate();
+  }
 }
 
 //==============================================================================
-Detachable::Detachable(const Frame *_refFrame, const std::string &_name) :
-  Entity(_refFrame, _name)
+Detachable::Detachable(const Frame *_refFrame, const std::string &_name,
+                       bool _quiet) :
+  Entity(_refFrame, _name, _quiet)
 {
 
 }

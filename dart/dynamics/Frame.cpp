@@ -47,7 +47,7 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 Frame::Frame(const Frame *_refFrame, const std::string &_name) :
-  Entity(_refFrame, _name),
+  Entity(_refFrame, _name, false),
   mWorldTransform(Eigen::Isometry3d::Identity()),
   mVelocity(Eigen::Vector6d::Zero()),
   mAcceleration(Eigen::Vector6d::Zero()),
@@ -358,7 +358,7 @@ void Frame::changeParentFrame(const Frame* _newParentFrame)
 
 //==============================================================================
 Frame::Frame() :
-  Entity(this, "World"),
+  Entity(this, "World", false),
   mWorldTransform(Eigen::Isometry3d::Identity()),
   mVelocity(Eigen::Vector6d::Zero()),
   mAcceleration(Eigen::Vector6d::Zero()),
@@ -387,7 +387,7 @@ const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 
 //==============================================================================
 WorldFrame::WorldFrame() :
-  Entity(NULL, "World"),
+  Entity(NULL, "World", false),
   Frame(),
   mRelativeTf(Eigen::Isometry3d::Identity()),
   mRelativeVelocity(Eigen::Vector6d::Zero()),
