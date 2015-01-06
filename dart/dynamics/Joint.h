@@ -110,6 +110,9 @@ public:
     VELOCITY
   };
 
+  /// Default actuator type
+  static const ActuatorType DefaultActuatorType;
+
   /// Constructor
   explicit Joint(const std::string& _name = "Joint");
 

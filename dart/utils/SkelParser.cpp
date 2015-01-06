@@ -885,6 +885,32 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setName(name);
 
   //--------------------------------------------------------------------------
+  // Actuator attribute
+  if (hasAttribute(_jointElement, "actuator"))
+  {
+    const std::string actuator = getAttribute(_jointElement, "actuator");
+
+    if (actuator == "torque")
+      newJoint->setActuatorType(dynamics::Joint::TORQUE);
+    else if (actuator == "passive")
+      newJoint->setActuatorType(dynamics::Joint::PASSIVE);
+    else if (actuator == "servo")
+      newJoint->setActuatorType(dynamics::Joint::SERVO);
+    else if (actuator == "acceleration")
+      newJoint->setActuatorType(dynamics::Joint::ACCELERATION);
+    else if (actuator == "velocity")
+      newJoint->setActuatorType(dynamics::Joint::VELOCITY);
+    else
+      dterr << "Joint named [" << newJoint->getName()
+            << "] contains invalid actuator attribute ["
+            << actuator << "]." << std::endl;
+  }
+  else
+  {
+    newJoint->setActuatorType(dynamics::Joint::DefaultActuatorType);
+  }
+
+  //--------------------------------------------------------------------------
   // parent
   SkelBodyNode softParentBodyNode;
   softParentBodyNode.bodyNode = NULL;

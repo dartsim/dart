@@ -49,6 +49,9 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+const Joint::ActuatorType Joint::DefaultActuatorType = Joint::TORQUE;
+
+//==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
     mActuatorType(TORQUE),
