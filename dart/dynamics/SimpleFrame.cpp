@@ -60,7 +60,7 @@ SimpleFrame::~SimpleFrame()
 
 //==============================================================================
 void SimpleFrame::setRelativeTransform(
-    const Eigen::Isometry3d &_newRelTransform)
+    const Eigen::Isometry3d& _newRelTransform)
 {
   mRelativeTf = _newRelTransform;
   notifyTransformUpdate();
