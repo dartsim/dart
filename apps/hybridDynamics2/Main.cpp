@@ -46,19 +46,24 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::World *myWorld
       = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"/skel/fullbody1.skel");
+          //DART_DATA_PATH"/skel/fullbody1.skel");
+          DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(1);
-  dart::dynamics::Joint*    joint0 = skel->getJoint(0);
-  joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
-  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
-  {
-    dart::dynamics::Joint* joint = skel->getJoint(i);
-    joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
-  }
+  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(0);
+  Eigen::VectorXd q = skel->getPositions();
+  q.setRandom();
+  skel->setPositions(q);
+  skel->computeForwardKinematics(true, true, true);
+//  dart::dynamics::Joint*    joint0 = skel->getJoint(0);
+//  joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
+//  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
+//  {
+//    dart::dynamics::Joint* joint = skel->getJoint(i);
+//    joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
+//  }
 
   // create a window and link it to the world
   MyWindow window;

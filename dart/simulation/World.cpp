@@ -112,7 +112,7 @@ void World::reset()
 }
 
 //==============================================================================
-void World::step()
+void World::step(bool _resetCommand)
 {
   // Integrate velocity for unconstrained skeletons
   for (auto& skel : mSkeletons)
@@ -142,10 +142,14 @@ void World::step()
 
     skel->integratePositions(mTimeStep);
     skel->computeForwardDynamicsRecursionPartA();
-    skel->resetForces();
-    skel->clearExternalForces();
+
+    if (_resetCommand)
+    {
+      skel->resetForces();
+      skel->clearExternalForces();
 //    skel->clearConstraintImpulses();
-    skel->resetCommands();
+      skel->resetCommands();
+    }
   }
 
   mTime += mTimeStep;

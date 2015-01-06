@@ -313,6 +313,40 @@ TEST(SKEL_PARSER, PLANAR_JOINT)
   delete world;
 }
 
+//==============================================================================
+TEST(SKEL_PARSER, JointActuatorType)
+{
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
+  EXPECT_TRUE(world != NULL);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel1 != NULL);
+
+  // Test for no actuator type attribute being specified
+  Joint* joint0 = skel1->getJoint("joint0");
+  EXPECT_EQ(joint0->getActuatorType(), Joint::DefaultActuatorType);
+  EXPECT_EQ(joint0->getActuatorType(), Joint::TORQUE);
+
+  // Test for when actuator type attribute are specified
+  Joint* joint1 = skel1->getJoint("joint1");
+  EXPECT_EQ(joint1->getActuatorType(), Joint::TORQUE);
+
+  // Test for only a dof name being changed
+  Joint* joint2 = skel1->getJoint("joint2");
+  EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
+  joint2->setActuatorType(Joint::TORQUE);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::TORQUE);
+
+  // Test for when actuator type attribute are specified
+  Joint* joint3 = skel1->getJoint("joint3");
+  EXPECT_EQ(joint3->getActuatorType(), Joint::ACCELERATION);
+
+  // Test for when actuator type attribute are specified
+  Joint* joint4 = skel1->getJoint("joint4");
+  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);
+}
+
 /******************************************************************************/
 int main(int argc, char* argv[])
 {

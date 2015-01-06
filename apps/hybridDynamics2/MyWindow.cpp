@@ -50,12 +50,12 @@ MyWindow::~MyWindow()
 //==============================================================================
 void MyWindow::timeStepping()
 {
-  dart::dynamics::Skeleton* skel  = mWorld->getSkeleton(1);
-  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
-  {
-    dart::dynamics::Joint* joint = skel->getJoint(i);
-    joint->setCommand(0, -0.1*std::sin(mWorld->getTime()));  // Acceleration
-  }
+//  dart::dynamics::Skeleton* skel  = mWorld->getSkeleton(1);
+//  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
+//  {
+//    dart::dynamics::Joint* joint = skel->getJoint(i);
+//    joint->setCommand(0, -0.1*std::sin(mWorld->getTime()));  // Acceleration
+//  }
 
   mWorld->step();
 }

@@ -1208,6 +1208,114 @@ TEST_F(DynamicsTest, testImpulseBasedDynamics)
 }
 
 //==============================================================================
+TEST_F(DynamicsTest, HybridDynamics)
+{
+  const double tol       = 1e-6;
+  const size_t numFrames = 1e+3;
+  const double timeStep  = 1e-3;  // 10 secs
+
+  // Load world and skeleton
+  World* world = utils::SkelParser::readWorld(
+                   DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
+  world->setTimeStep(timeStep);
+  EXPECT_TRUE(world != NULL);
+  EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
+
+  Skeleton* skel = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel != NULL);
+  EXPECT_NEAR(skel->getTimeStep(), timeStep, tol);
+
+  const size_t numDofs = skel->getNumDofs();
+
+  // Zero initial states
+  Eigen::VectorXd q0  = Eigen::VectorXd::Zero(numDofs);
+  Eigen::VectorXd dq0 = Eigen::VectorXd::Zero(numDofs);
+
+  // Initialize the skeleton with the zero initial states
+  skel->setPositions(q0);
+  skel->setVelocities(dq0);
+  skel->computeForwardKinematics(true, true, true);
+  EXPECT_TRUE(equals(skel->getPositions(), q0));
+  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+
+  // Make sure all the joint actuator types
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::ACCELERATION);
+  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::ACCELERATION);
+  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::VELOCITY);
+
+  // Prepare command for each joint types per simulation steps
+  Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
+  Eigen::VectorXd amp = Eigen::VectorXd::Zero(numDofs);
+  for (size_t i = 0; i < numDofs; ++i)
+    amp[i] = math::random(-2.0, 2.0);
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    for (size_t j = 0; j < numDofs; ++j)
+      command(i,j) = amp[j] * std::sin(i * timeStep);
+  }
+
+  // Record joint forces for joint[1~4]
+  Eigen::MatrixXd forces  = Eigen::MatrixXd::Zero(numFrames, numDofs);
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    skel->setCommands(command.row(i));
+
+    world->step(false);
+
+    forces.row(i) = skel->getForces();
+
+    EXPECT_NEAR(command(i,0), skel->getForce(0), tol);
+    EXPECT_NEAR(command(i,0), forces(i,0), tol);
+    EXPECT_NEAR(command(i,1), skel->getAcceleration(1), tol);
+    EXPECT_NEAR(command(i,2), skel->getVelocity(2), tol);
+    EXPECT_NEAR(command(i,3), skel->getAcceleration(3), tol);
+    EXPECT_NEAR(command(i,4), skel->getVelocity(4), tol);
+  }
+
+  // Restore the skeleton to the initial state
+  skel->setPositions(q0);
+  skel->setVelocities(dq0);
+  skel->computeForwardKinematics(true, true, true);
+  EXPECT_TRUE(equals(skel->getPositions(), q0));
+  EXPECT_TRUE(equals(skel->getVelocities(), dq0));
+
+  // Change all the actuator types to torque
+  skel->getJoint(0)->setActuatorType(Joint::TORQUE);
+  skel->getJoint(1)->setActuatorType(Joint::TORQUE);
+  skel->getJoint(2)->setActuatorType(Joint::TORQUE);
+  skel->getJoint(3)->setActuatorType(Joint::TORQUE);
+  skel->getJoint(4)->setActuatorType(Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::TORQUE);
+
+  // Test if the skeleton moves as the command with the joint forces
+  Eigen::MatrixXd output = Eigen::MatrixXd::Zero(numFrames, numDofs);
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    skel->setCommands(forces.row(i));
+
+    world->step(false);
+
+    output(i,0) = skel->getJoint(0)->getForce(0);
+    output(i,1) = skel->getJoint(1)->getAcceleration(0);
+    output(i,2) = skel->getJoint(2)->getVelocity(0);
+    output(i,3) = skel->getJoint(3)->getAcceleration(0);
+    output(i,4) = skel->getJoint(4)->getVelocity(0);
+
+    EXPECT_NEAR(command(i,0), output(i,0), tol);
+    EXPECT_NEAR(command(i,1), output(i,1), tol);
+    EXPECT_NEAR(command(i,2), output(i,2), tol);
+    EXPECT_NEAR(command(i,3), output(i,3), tol);
+    EXPECT_NEAR(command(i,4), output(i,4), tol);
+  }
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
