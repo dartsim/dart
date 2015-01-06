@@ -113,6 +113,9 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 //==============================================================================
 const Eigen::Vector6d& Frame::getSpatialVelocity() const
 {
+  if(mAmWorld)
+    return mVelocity;
+
   if(mNeedVelocityUpdate)
   {
     mVelocity = math::AdInvT(getRelativeTransform(),
@@ -155,6 +158,9 @@ Eigen::Vector3d Frame::getAngularVelocity(const Frame *_relativeTo,
 //==============================================================================
 const Eigen::Vector6d& Frame::getSpatialAcceleration() const
 {
+  if(mAmWorld)
+    return mAcceleration;
+
   if(mNeedAccelerationUpdate)
   {
     mAcceleration = math::AdInvT(getRelativeTransform(),

@@ -66,13 +66,24 @@ void randomize_transforms(std::vector<Eigen::Isometry3d>& tfs)
   }
 }
 
-Eigen::Vector3d random_vec()
+template<int N>
+Eigen::Matrix<double,N,1> random_vec()
 {
-  Eigen::Vector3d v;
-  for(size_t i=0; i<3; ++i)
+  Eigen::Matrix<double,N,1> v;
+  for(size_t i=0; i<N; ++i)
     v[i] = math::random(-100, 100);
+  return v;
 }
 
+void compute_spatial_velocity(const Eigen::Vector6d& v_parent,
+                              const Eigen::Vector6d& v_relative,
+                              const Eigen::Isometry3d& tf_rel,
+                              Eigen::Vector6d& v_child)
+{
+  v_child = math::AdInvT(tf_rel, v_parent) + v_relative;
+}
+
+// TODO: Consider reference frame
 void compute_velocity(const Eigen::Vector3d& v_parent,
                       const Eigen::Vector3d& w_parent,
                       const Eigen::Vector3d& v_rel,
@@ -165,13 +176,77 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
 
   // -- Test Velocity --------------------------------------------------------
-  std::vector<Eigen::Vector3d> v_rels;
-  std::vector<Eigen::Vector3d> w_rels;
+  std::vector<Eigen::Vector6d> v_rels(frames.size());
+  std::vector<Eigen::Vector6d> v_total(frames.size());
 
-  std::vector<Eigen::Vector3d> v_total;
-  std::vector<Eigen::Vector3d> w_total;
+  for(size_t i=0; i<frames.size(); ++i)
+  {
+    v_rels[i] = random_vec<6>();
 
+    SimpleFrame* F = frames[i];
+    F->setRelativeSpatialVelocity(v_rels[i]);
+  }
 
+  v_total[0] = v_rels[0];
+  for(size_t i=1; i<frames.size(); ++i)
+  {
+    SimpleFrame* F = frames[i];
+    compute_spatial_velocity(v_total[i-1], v_rels[i],
+        F->getRelativeTransform(), v_total[i]);
+  }
+
+  for(size_t i=0; i<frames.size(); ++i)
+  {
+    SimpleFrame* F = frames[i];
+
+    Eigen::Vector6d v_actual = F->getSpatialVelocity();
+
+    EXPECT_TRUE( equals(v_total[i], v_actual) );
+  }
+
+//  std::vector<Eigen::Vector3d> v_rels(frames.size());
+//  std::vector<Eigen::Vector3d> w_rels(frames.size());
+
+//  std::vector<Eigen::Vector3d> v_total(frames.size());
+//  std::vector<Eigen::Vector3d> w_total(frames.size());
+
+//  for(size_t i=0; i<frames.size(); ++i)
+//  {
+//    v_rels[i] = random_vec();
+//    w_rels[i] = random_vec();
+//    Eigen::Vector6d spatial_v;
+//    spatial_v << w_rels[i], v_rels[i];
+//    SimpleFrame* F = frames[i];
+//    F->setRelativeSpatialVelocity(spatial_v, F->getParentFrame());
+//  }
+
+//  v_total[0] = v_rels[0];
+//  w_total[0] = w_rels[0];
+//  for(size_t i=1; i<frames.size(); ++i)
+//  {
+//    SimpleFrame* F = frames[i];
+//    Eigen::Vector3d offset = F->getRelativeTransform().translation();
+//    compute_velocity(v_total[i-1], w_total[i-1], v_rels[i], w_rels[i],
+//        offset, v_total[i], w_total[i]);
+//  }
+
+//  for(size_t i=0; i<frames.size(); ++i)
+//  {
+//    std::cout << "Trial #" << i << "\n";
+//    SimpleFrame* F = frames[i];
+////    Eigen::Vector3d v_actual = F->getLinearVelocity();
+////    Eigen::Vector3d w_actual = F->getAngularVelocity();
+
+//    Eigen::Vector6d v = F->getSpatialVelocity(Frame::World());
+//    Eigen::Vector3d v_actual = v.tail<3>();
+//    Eigen::Vector3d w_actual = v.head<3>();
+
+//    EXPECT_TRUE( equals(v_total[i], v_actual, tolerance) );
+//    EXPECT_TRUE( equals(w_total[i], w_actual, tolerance) );
+
+//    std::cout << "expected: " << v_total[i].transpose()
+//              << "\nactual:   " << v_actual.transpose() << "\n";
+//  }
 
 }
 
