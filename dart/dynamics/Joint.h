@@ -74,39 +74,38 @@ public:
   /// setSpringStiffness(), setDampingCoefficient(),
   enum ActuatorType
   {
-    /// Command is joint force, and output is joint acceleration.
+    /// Command input is joint force, and the output is joint acceleration.
     ///
     /// If the command is zero, then it's identical to passive joint. The valid
     /// joint constraints are position limit, velocity limit, and Coulomb
     /// friction, and the invalid joint constraint is force limit.
     FORCE,
 
-    /// Passive joint doesn't take any command, output is joint acceleration.
+    /// Passive joint doesn't take any command input, and the output is joint
+    /// acceleration.
     ///
     /// The valid joint constraints are position limit, velocity limit, and
     /// Coulomb friction, and the invalid joint constraint is force limit.
     PASSIVE,
 
-    /// Command is desired velocity, and output is joint acceleration.
+    /// Command input is desired velocity, and the output is joint acceleration.
     ///
     /// The constraint solver will try to track the desired velocity within the
     /// joint force limit. All the joint constarints are valid.
     SERVO,
     // TODO: Not implemented yet.
 
-    /// Command is desired joint acceleration, and output is joint force.
+    /// Command input is joint acceleration, and the output is joint force.
     ///
-    /// The desired joint acceleration is always satisfied but it doesn't take
-    /// the joint force limit into account. All the joint constraints are
-    /// invalid.
+    /// The joint acceleration is always satisfied but it doesn't take the joint
+    /// force limit into account. All the joint constraints are invalid.
     ACCELERATION,
 
-    /// Command is desired joint velocity, and output is joint force.
+    /// Command input is joint velocity, and the output is joint force.
     ///
-    /// The desired joint velocity is always satisfied but it doesn't take
-    /// the joint force limit into account. If you want to consider the joint
-    /// force limit, should use SERVO instead. All the joint constraints are
-    /// invalid.
+    /// The joint velocity is always satisfied but it doesn't take the joint
+    /// force limit into account. If you want to consider the joint force limit,
+    /// should use SERVO instead. All the joint constraints are invalid.
     VELOCITY
   };
 
