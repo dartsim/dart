@@ -67,7 +67,6 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         btBoxShape* btBox = new btBoxShape(btVector3(box->getSize()[0]*0.5,
                                                      box->getSize()[1]*0.5,
                                                      box->getSize()[2]*0.5));
-        btBox->setMargin(0.0);
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btBox);
         BulletUserData* userData = new BulletUserData;
@@ -88,7 +87,6 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         {
           btSphereShape* btSphere = new btSphereShape(ellipsoid->getSize()[0] *
                                                       0.5);
-          btSphere->setMargin(0.0);
           btCollisionObject* btCollObj = new btCollisionObject();
           btCollObj->setCollisionShape(btSphere);
           BulletUserData* userData = new BulletUserData;
@@ -114,7 +112,6 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
             new btCylinderShapeZ(btVector3(cylinder->getRadius(),
                                            cylinder->getRadius(),
                                            cylinder->getHeight() * 0.5));
-        btCylinder->setMargin(0.0);
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btCylinder);
         BulletUserData* userData = new BulletUserData;
@@ -136,7 +133,6 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
 
         btStaticPlaneShape* btStaticPlane =
             new btStaticPlaneShape(convertVector3(plane->getNormal()), d);
-        btStaticPlane->setMargin(0.0);
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btStaticPlane);
         BulletUserData* userData = new BulletUserData;
@@ -154,7 +150,6 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
             = static_cast<dynamics::MeshShape*>(shape);
         btConvexTriangleMeshShape* btMesh = _createMesh(shapeMesh->getScale(),
                                                         shapeMesh->getMesh());
-        btMesh->setMargin(0.0);
         btCollisionObject* btCollObj = new btCollisionObject();
 
         // Add user data
