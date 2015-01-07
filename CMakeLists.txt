@@ -8,7 +8,7 @@ message(STATUS "Generate makefile/project file for DART")
 
 set(DART_MAJOR_VERSION "4")
 set(DART_MINOR_VERSION "2")
-set(DART_PATCH_VERSION "0")
+set(DART_PATCH_VERSION "1")
 set(PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(PKG_EXTERNAL_DEPS "flann, ccd, fcl")
