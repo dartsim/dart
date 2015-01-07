@@ -170,7 +170,9 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
   {
     mAcceleration = math::AdInvT(getRelativeTransform(),
                                  getParentFrame()->getSpatialAcceleration())
-                    + getRelativeSpatialAcceleration();
+                + getRelativeSpatialAcceleration()
+                + math::ad(getSpatialVelocity(), getRelativeSpatialVelocity());
+
     mNeedAccelerationUpdate = false;
   }
 
