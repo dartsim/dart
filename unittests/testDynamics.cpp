@@ -1239,7 +1239,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
   // Make sure all the joint actuator types
-  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
   EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::ACCELERATION);
   EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::VELOCITY);
   EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::ACCELERATION);
@@ -1280,17 +1280,17 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_TRUE(equals(skel->getPositions(), q0));
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
-  // Change all the actuator types to torque
-  skel->getJoint(0)->setActuatorType(Joint::TORQUE);
-  skel->getJoint(1)->setActuatorType(Joint::TORQUE);
-  skel->getJoint(2)->setActuatorType(Joint::TORQUE);
-  skel->getJoint(3)->setActuatorType(Joint::TORQUE);
-  skel->getJoint(4)->setActuatorType(Joint::TORQUE);
-  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::TORQUE);
-  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::TORQUE);
-  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::TORQUE);
-  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::TORQUE);
-  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::TORQUE);
+  // Change all the actuator types to force
+  skel->getJoint(0)->setActuatorType(Joint::FORCE);
+  skel->getJoint(1)->setActuatorType(Joint::FORCE);
+  skel->getJoint(2)->setActuatorType(Joint::FORCE);
+  skel->getJoint(3)->setActuatorType(Joint::FORCE);
+  skel->getJoint(4)->setActuatorType(Joint::FORCE);
+  EXPECT_EQ(skel->getJoint(0)->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(skel->getJoint(1)->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(skel->getJoint(2)->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(skel->getJoint(3)->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(skel->getJoint(4)->getActuatorType(), Joint::FORCE);
 
   // Test if the skeleton moves as the command with the joint forces
   Eigen::MatrixXd output = Eigen::MatrixXd::Zero(numFrames, numDofs);

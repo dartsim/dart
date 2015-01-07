@@ -135,7 +135,7 @@
                     <xyz>1 0 0</xyz>
                 </axis>
             </joint>
-            <joint type="revolute" name="joint1" actuator="torque">
+            <joint type="revolute" name="joint1" actuator="force">
                 <parent>link 1</parent>
                 <child>link 2</child>
                 <transformation>0 0.5 0 0 0 0</transformation>

@@ -647,13 +647,13 @@ protected:
   /// Update combined vector of the skeletong.
   void updateCoriolisAndGravityForces();
 
-  /// update external force vector to generalized torques.
+  /// update external force vector to generalized forces.
   /// \remarks Please use updateExternalForces() instead.
   DEPRECATED(4.2)
   virtual void updateExternalForceVector();
 
   // TODO(JS): Not implemented yet
-  /// update external force vector to generalized torques.
+  /// update external force vector to generalized forces.
   void updateExternalForces();
 
 //  /// Update damping force vector.

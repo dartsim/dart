@@ -567,7 +567,7 @@ private:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  void addChildArtInertiaToTorqueType(
+  void addChildArtInertiaToForceType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
@@ -575,7 +575,7 @@ private:
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void addChildArtInertiaImplicitToTorqueType(
+  void addChildArtInertiaImplicitToForceType(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
@@ -583,19 +583,19 @@ private:
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void updateInvProjArtInertiaTorqueType(
+  void updateInvProjArtInertiaForceType(
       const Eigen::Matrix6d& _artInertia);
 
   void updateInvProjArtInertiaAccelerationType(
       const Eigen::Matrix6d& _artInertia);
 
-  void updateInvProjArtInertiaImplicitTorqueType(
+  void updateInvProjArtInertiaImplicitForceType(
       const Eigen::Matrix6d& _artInertia, double _timeStep);
 
   void updateInvProjArtInertiaImplicitAccelerationType(
       const Eigen::Matrix6d& _artInertia, double _timeStep);
 
-  void addChildBiasForceToTorqueType(
+  void addChildBiasForceToForceType(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
@@ -607,7 +607,7 @@ private:
       const Eigen::Vector6d& _childBiasForce,
       const Eigen::Vector6d& _childPartialAcc);
 
-  void addChildBiasImpulseToTorqueType(
+  void addChildBiasImpulseToForceType(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
@@ -617,19 +617,19 @@ private:
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
 
-  void updateTotalForceTorqueType(const Eigen::Vector6d& _bodyForce,
+  void updateTotalForceForceType(const Eigen::Vector6d& _bodyForce,
                                     double _timeStep);
 
   void updateTotalForceAccelerationType(const Eigen::Vector6d& _bodyForce,
                                           double _timeStep);
 
-  void updateTotalImpulseTorqueType(
+  void updateTotalImpulseForceType(
         const Eigen::Vector6d& _bodyImpulse);
 
   void updateTotalImpulseAccelerationType(
         const Eigen::Vector6d& _bodyImpulse);
 
-  void updateAccelerationTorqueType(
+  void updateAccelerationForceType(
         const Eigen::Matrix6d& _artInertia,
         const Eigen::Vector6d& _spatialAcc);
 
@@ -637,7 +637,7 @@ private:
         const Eigen::Matrix6d& _artInertia,
         const Eigen::Vector6d& _spatialAcc);
 
-  void updateVelocityChangeTorqueType(
+  void updateVelocityChangeForceType(
         const Eigen::Matrix6d& _artInertia,
         const Eigen::Vector6d& _velocityChange);
 
@@ -645,7 +645,7 @@ private:
         const Eigen::Matrix6d& _artInertia,
         const Eigen::Vector6d& _velocityChange);
 
-  void updateConstrainedTermsTorqueType(double _timeStep);
+  void updateConstrainedTermsForceType(double _timeStep);
 
   void updateConstrainedTermsAccelerationType(double _timeStep);
 
@@ -1154,7 +1154,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
   mForces[_index] = _force;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == TORQUE)
+  if (mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
 #endif
   // TODO: Remove at DART 5.0.
@@ -1187,7 +1187,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
   mForces = _forces;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == TORQUE)
+  if (mActuatorType == FORCE)
     mCommands = mForces;
 #endif
   // TODO: Remove at DART 5.0.
@@ -1529,10 +1529,10 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaToTorqueType(_parentArtInertia,
+      addChildArtInertiaToForceType(_parentArtInertia,
                                        _childArtInertia);
       break;
     case ACCELERATION:
@@ -1548,7 +1548,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::addChildArtInertiaToTorqueType(
+void MultiDofJoint<DOF>::addChildArtInertiaToForceType(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
@@ -1582,10 +1582,10 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaImplicitToTorqueType(_parentArtInertia,
+      addChildArtInertiaImplicitToForceType(_parentArtInertia,
                                                 _childArtInertia);
       break;
     case ACCELERATION:
@@ -1601,7 +1601,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::addChildArtInertiaImplicitToTorqueType(
+void MultiDofJoint<DOF>::addChildArtInertiaImplicitToForceType(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
@@ -1634,10 +1634,10 @@ void MultiDofJoint<DOF>::updateInvProjArtInertia(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaTorqueType(_artInertia);
+      updateInvProjArtInertiaForceType(_artInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1651,7 +1651,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertia(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateInvProjArtInertiaTorqueType(
+void MultiDofJoint<DOF>::updateInvProjArtInertiaForceType(
     const Eigen::Matrix6d& _artInertia)
 {
   // Projected articulated inertia
@@ -1683,10 +1683,10 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaImplicitTorqueType(_artInertia, _timeStep);
+      updateInvProjArtInertiaImplicitForceType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1700,7 +1700,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitTorqueType(
+void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitForceType(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
@@ -1743,10 +1743,10 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasForceToTorqueType(_parentBiasForce,
+      addChildBiasForceToForceType(_parentBiasForce,
                                        _childArtInertia,
                                        _childBiasForce,
                                        _childPartialAcc);
@@ -1766,7 +1766,7 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::addChildBiasForceToTorqueType(
+void MultiDofJoint<DOF>::addChildBiasForceToForceType(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1827,10 +1827,10 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasImpulseToTorqueType(_parentBiasImpulse,
+      addChildBiasImpulseToForceType(_parentBiasImpulse,
                                         _childArtInertia,
                                         _childBiasImpulse);
       break;
@@ -1848,7 +1848,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::addChildBiasImpulseToTorqueType(
+void MultiDofJoint<DOF>::addChildBiasImpulseToForceType(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1888,14 +1888,14 @@ void MultiDofJoint<DOF>::updateTotalForce(
 
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
       mForces = mCommands;
-      updateTotalForceTorqueType(_bodyForce, _timeStep);
+      updateTotalForceForceType(_bodyForce, _timeStep);
       break;
     case PASSIVE:
     case SERVO:
       mForces.setZero();
-      updateTotalForceTorqueType(_bodyForce, _timeStep);
+      updateTotalForceForceType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
       mAccelerations = mCommands;
@@ -1913,7 +1913,7 @@ void MultiDofJoint<DOF>::updateTotalForce(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateTotalForceTorqueType(
+void MultiDofJoint<DOF>::updateTotalForceForceType(
     const Eigen::Vector6d& _bodyForce,
     double _timeStep)
 {
@@ -1947,10 +1947,10 @@ void MultiDofJoint<DOF>::updateTotalImpulse(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateTotalImpulseTorqueType(_bodyImpulse);
+      updateTotalImpulseForceType(_bodyImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1964,7 +1964,7 @@ void MultiDofJoint<DOF>::updateTotalImpulse(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateTotalImpulseTorqueType(
+void MultiDofJoint<DOF>::updateTotalImpulseForceType(
     const Eigen::Vector6d& _bodyImpulse)
 {
   //
@@ -1995,10 +1995,10 @@ void MultiDofJoint<DOF>::updateAcceleration(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateAccelerationTorqueType(_artInertia, _spatialAcc);
+      updateAccelerationForceType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -2012,7 +2012,7 @@ void MultiDofJoint<DOF>::updateAcceleration(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateAccelerationTorqueType(
+void MultiDofJoint<DOF>::updateAccelerationForceType(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _spatialAcc)
 {
@@ -2043,10 +2043,10 @@ void MultiDofJoint<DOF>::updateVelocityChange(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateVelocityChangeTorqueType(_artInertia, _velocityChange);
+      updateVelocityChangeForceType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -2060,7 +2060,7 @@ void MultiDofJoint<DOF>::updateVelocityChange(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateVelocityChangeTorqueType(
+void MultiDofJoint<DOF>::updateVelocityChangeForceType(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
@@ -2119,7 +2119,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
       break;
@@ -2147,7 +2147,7 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
       break;
@@ -2167,10 +2167,10 @@ void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateConstrainedTermsTorqueType(_timeStep);
+      updateConstrainedTermsForceType(_timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -2184,7 +2184,7 @@ void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::updateConstrainedTermsTorqueType(double _timeStep)
+void MultiDofJoint<DOF>::updateConstrainedTermsForceType(double _timeStep)
 {
   const double invTimeStep = 1.0 / _timeStep;
 

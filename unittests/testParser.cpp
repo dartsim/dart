@@ -326,17 +326,17 @@ TEST(SKEL_PARSER, JointActuatorType)
   // Test for no actuator type attribute being specified
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getActuatorType(), Joint::DefaultActuatorType);
-  EXPECT_EQ(joint0->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(joint0->getActuatorType(), Joint::FORCE);
 
   // Test for when actuator type attribute are specified
   Joint* joint1 = skel1->getJoint("joint1");
-  EXPECT_EQ(joint1->getActuatorType(), Joint::TORQUE);
+  EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
 
   // Test for only a dof name being changed
   Joint* joint2 = skel1->getJoint("joint2");
   EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
-  joint2->setActuatorType(Joint::TORQUE);
-  EXPECT_EQ(joint2->getActuatorType(), Joint::TORQUE);
+  joint2->setActuatorType(Joint::FORCE);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::FORCE);
 
   // Test for when actuator type attribute are specified
   Joint* joint3 = skel1->getJoint("joint3");

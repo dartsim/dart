@@ -890,8 +890,8 @@ dynamics::Joint* SkelParser::readJoint(
   {
     const std::string actuator = getAttribute(_jointElement, "actuator");
 
-    if (actuator == "torque")
-      newJoint->setActuatorType(dynamics::Joint::TORQUE);
+    if (actuator == "force")
+      newJoint->setActuatorType(dynamics::Joint::FORCE);
     else if (actuator == "passive")
       newJoint->setActuatorType(dynamics::Joint::PASSIVE);
     else if (actuator == "servo")

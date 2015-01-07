@@ -504,7 +504,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
   mForce = _force;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == TORQUE)
+  if (mActuatorType == FORCE)
     mCommand = mForce;
 #endif
   // TODO: Remove at DART 5.0.
@@ -535,7 +535,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
   mForce = _forces[0];
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == TORQUE)
+  if (mActuatorType == FORCE)
     mCommand = mForce;
 #endif
   // TODO: Remove at DART 5.0.
@@ -553,7 +553,7 @@ void SingleDofJoint::resetForces()
   mForce = 0.0;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == TORQUE)
+  if (mActuatorType == FORCE)
     mCommand = mForce;
 #endif
 }
@@ -845,10 +845,10 @@ void SingleDofJoint::addChildArtInertiaTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaToTorqueType(_parentArtInertia,
+      addChildArtInertiaToForceType(_parentArtInertia,
                                        _childArtInertia);
       break;
     case ACCELERATION:
@@ -863,7 +863,7 @@ void SingleDofJoint::addChildArtInertiaTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaToTorqueType(Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
+void SingleDofJoint::addChildArtInertiaToForceType(Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
   Eigen::Vector6d AIS = _childArtInertia * mJacobian;
@@ -891,10 +891,10 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaImplicitToTorqueType(_parentArtInertia,
+      addChildArtInertiaImplicitToForceType(_parentArtInertia,
                                              _childArtInertia);
       break;
     case ACCELERATION:
@@ -909,7 +909,7 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitToTorqueType(
+void SingleDofJoint::addChildArtInertiaImplicitToForceType(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
@@ -938,10 +938,10 @@ void SingleDofJoint::updateInvProjArtInertia(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaTorqueType(_artInertia);
+      updateInvProjArtInertiaForceType(_artInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -954,7 +954,7 @@ void SingleDofJoint::updateInvProjArtInertia(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaTorqueType(
+void SingleDofJoint::updateInvProjArtInertiaForceType(
     const Eigen::Matrix6d& _artInertia)
 {
   // Projected articulated inertia
@@ -981,10 +981,10 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaImplicitTorqueType(_artInertia, _timeStep);
+      updateInvProjArtInertiaImplicitForceType(_artInertia, _timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -997,7 +997,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaImplicitTorqueType(
+void SingleDofJoint::updateInvProjArtInertiaImplicitForceType(
     const Eigen::Matrix6d& _artInertia, double _timeStep)
 {
   // Projected articulated inertia
@@ -1031,10 +1031,10 @@ void SingleDofJoint::addChildBiasForceTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasForceToTorqueType(_parentBiasForce,
+      addChildBiasForceToForceType(_parentBiasForce,
                                     _childArtInertia,
                                     _childBiasForce,
                                     _childPartialAcc);
@@ -1053,7 +1053,7 @@ void SingleDofJoint::addChildBiasForceTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceToTorqueType(
+void SingleDofJoint::addChildBiasForceToForceType(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1100,10 +1100,10 @@ void SingleDofJoint::addChildBiasImpulseTo(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasImpulseToTorqueType(_parentBiasImpulse,
+      addChildBiasImpulseToForceType(_parentBiasImpulse,
                                       _childArtInertia,
                                       _childBiasImpulse);
       break;
@@ -1120,7 +1120,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseToTorqueType(
+void SingleDofJoint::addChildBiasImpulseToForceType(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1157,14 +1157,14 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
 
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
       mForce = mCommand;
-      updateTotalForceTorqueType(_bodyForce, _timeStep);
+      updateTotalForceForceType(_bodyForce, _timeStep);
       break;
     case PASSIVE:
     case SERVO:
       mForce = 0.0;
-      updateTotalForceTorqueType(_bodyForce, _timeStep);
+      updateTotalForceForceType(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
       mAcceleration = mCommand;
@@ -1181,7 +1181,7 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalForceTorqueType(
+void SingleDofJoint::updateTotalForceForceType(
     const Eigen::Vector6d& _bodyForce, double _timeStep)
 {
   // Spring force
@@ -1207,10 +1207,10 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateTotalImpulseTorqueType(_bodyImpulse);
+      updateTotalImpulseForceType(_bodyImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1223,7 +1223,7 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalImpulseTorqueType(
+void SingleDofJoint::updateTotalImpulseForceType(
     const Eigen::Vector6d& _bodyImpulse)
 {
   mTotalImpulse = mConstraintImpulse - mJacobian.dot(_bodyImpulse);
@@ -1248,10 +1248,10 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateAccelerationTorqueType(_artInertia, _spatialAcc);
+      updateAccelerationForceType(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1264,7 +1264,7 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
 }
 
 //==============================================================================
-void SingleDofJoint::updateAccelerationTorqueType(
+void SingleDofJoint::updateAccelerationForceType(
     const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
 {
   //
@@ -1290,10 +1290,10 @@ void SingleDofJoint::updateVelocityChange(
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateVelocityChangeTorqueType(_artInertia, _velocityChange);
+      updateVelocityChangeForceType(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1306,7 +1306,7 @@ void SingleDofJoint::updateVelocityChange(
 }
 
 //==============================================================================
-void SingleDofJoint::updateVelocityChangeTorqueType(
+void SingleDofJoint::updateVelocityChangeForceType(
     const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _velocityChange)
 {
   //
@@ -1359,7 +1359,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
       break;
@@ -1385,7 +1385,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
       break;
@@ -1404,10 +1404,10 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 {
   switch (mActuatorType)
   {
-    case TORQUE:
+    case FORCE:
     case PASSIVE:
     case SERVO:
-      updateConstrainedTermsTorqueType(_timeStep);
+      updateConstrainedTermsForceType(_timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
@@ -1420,7 +1420,7 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 }
 
 //==============================================================================
-void SingleDofJoint::updateConstrainedTermsTorqueType(double _timeStep)
+void SingleDofJoint::updateConstrainedTermsForceType(double _timeStep)
 {
   const double invTimeStep = 1.0 / _timeStep;
 

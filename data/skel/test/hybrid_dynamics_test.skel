@@ -127,7 +127,7 @@
                     </geometry>
                 </collision_shape>
             </body>
-            <joint type="revolute" name="joint0" actuator="torque">
+            <joint type="revolute" name="joint0" actuator="force">
                 <parent>world</parent>
                 <child>link 1</child>
                 <transformation>0 0.5 0 0 0 0</transformation>

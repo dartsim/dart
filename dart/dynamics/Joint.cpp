@@ -49,12 +49,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-const Joint::ActuatorType Joint::DefaultActuatorType = Joint::TORQUE;
+const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
 
 //==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
-    mActuatorType(TORQUE),
+    mActuatorType(FORCE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),

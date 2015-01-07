@@ -64,7 +64,7 @@ public:
   ///
   /// The command is taken by setCommand() or setCommands(), and the meaning of
   /// command is different depending on the actuator type. The default actuator
-  /// type is TORQUE. (TODO: FreeJoint should be PASSIVE?)
+  /// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
   ///
   /// Note the presence of joint damping force and joint spring force for all
   /// the actuator types if the coefficients are non-zero. The default
@@ -79,7 +79,7 @@ public:
     /// If the command is zero, then it's identical to passive joint. The valid
     /// joint constraints are position limit, velocity limit, and Coulomb
     /// friction, and the invalid joint constraint is force limit.
-    TORQUE,
+    FORCE,
 
     /// Passive joint doesn't take any command, output is joint acceleration.
     ///
@@ -164,7 +164,7 @@ public:
   /// Set to enforce joint position limit
   ///
   /// The joint position limit is valid when the actutor type is one of
-  /// PASSIVE/TORQUE.
+  /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
   void setPositionLimited(bool _isPositionLimited);
@@ -172,7 +172,7 @@ public:
   /// Get whether enforcing joint position limit
   ///
   /// The joint position limit is valid when the actutor type is one of
-  /// PASSIVE/TORQUE.
+  /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
   bool isPositionLimited() const;
