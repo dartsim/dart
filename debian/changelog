@@ -1,3 +1,10 @@
+dart (4.2.1) unstable; urgency=low
+
+  * Fixed version numbering of shared libraries in debian packages
+  * Fixed Jacobian and its derivatives of FreeJoint/BallJoint
+
+  -- Jeongseok Lee <jslee02@gmail.com>  Wed, 7 Jan 2015 02:00:00 -0500
+
 dart (4.2.0) unstable; urgency=low
 
   * Added reset functions for Simulation and Recording class

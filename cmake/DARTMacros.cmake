@@ -55,4 +55,3 @@ macro(dart_add_library _name)
     VERSION "${DART_VERSION}"
   )
 endmacro()
-
