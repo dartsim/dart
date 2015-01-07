@@ -36,9 +36,7 @@
  */
 
 #include <iostream>
-
 #include "dart/dart.h"
-
 #include "MyWindow.h"
 
 int main(int argc, char* argv[])
@@ -46,16 +44,34 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::World *myWorld
       = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"/skel/test/double_pendulum_with_ground.skel");
+          DART_DATA_PATH"/skel/fullbody1.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(0);
-  dart::dynamics::Joint*    joint0 = skel->getJoint(0);
-  dart::dynamics::Joint*    joint1 = skel->getJoint(1);
-  joint0->setActuatorType(dart::dynamics::Joint::ACCELERATION);
-  joint1->setActuatorType(dart::dynamics::Joint::PASSIVE);
+  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(1);
+
+  std::vector<size_t> genCoordIds;
+  genCoordIds.push_back(1);
+  genCoordIds.push_back(6);   // left hip
+  genCoordIds.push_back(14);  // left knee
+  genCoordIds.push_back(17);  // left ankle
+  genCoordIds.push_back(9);   // right hip
+  genCoordIds.push_back(15);  // right knee
+  genCoordIds.push_back(19);  // right ankle
+  genCoordIds.push_back(13);  // lower back
+  Eigen::VectorXd initConfig(8);
+  initConfig << -0.2, 0.15, -0.4, 0.275, 0.15, -0.4, 0.275, 0.0;
+  skel->setPositionSegment(genCoordIds, initConfig);
+  skel->computeForwardKinematics(true, true, false);
+
+  dart::dynamics::Joint* joint0 = skel->getJoint(0);
+  joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
+  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
+  {
+    dart::dynamics::Joint* joint = skel->getJoint(i);
+    joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
+  }
 
   // create a window and link it to the world
   MyWindow window;

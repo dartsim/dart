@@ -8,7 +8,6 @@ foreach(APPDIR
     bipedStand
     hardcodedDesign    
     hybridDynamics
-    hybridDynamics2
     jointConstraints
     mixedChain
     operationalSpaceControl
