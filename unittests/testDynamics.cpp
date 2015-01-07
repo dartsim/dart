@@ -1210,9 +1210,9 @@ TEST_F(DynamicsTest, testImpulseBasedDynamics)
 //==============================================================================
 TEST_F(DynamicsTest, HybridDynamics)
 {
-  const double tol       = 1e-6;
-  const size_t numFrames = 1e+3;
-  const double timeStep  = 1e-3;  // 10 secs
+  const double tol       = 1e-9;
+  const double timeStep  = 1e-3;
+  const size_t numFrames = 5e+3;  // 5 secs
 
   // Load world and skeleton
   World* world = utils::SkelParser::readWorld(
@@ -1266,12 +1266,11 @@ TEST_F(DynamicsTest, HybridDynamics)
 
     forces.row(i) = skel->getForces();
 
-    EXPECT_NEAR(command(i,0), skel->getForce(0), tol);
-    EXPECT_NEAR(command(i,0), forces(i,0), tol);
+    EXPECT_NEAR(command(i,0), skel->getForce(0),        tol);
     EXPECT_NEAR(command(i,1), skel->getAcceleration(1), tol);
-    EXPECT_NEAR(command(i,2), skel->getVelocity(2), tol);
+    EXPECT_NEAR(command(i,2), skel->getVelocity(2),     tol);
     EXPECT_NEAR(command(i,3), skel->getAcceleration(3), tol);
-    EXPECT_NEAR(command(i,4), skel->getVelocity(4), tol);
+    EXPECT_NEAR(command(i,4), skel->getVelocity(4),     tol);
   }
 
   // Restore the skeleton to the initial state
