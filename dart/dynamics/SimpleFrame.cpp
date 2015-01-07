@@ -81,13 +81,13 @@ void SimpleFrame::setRelativeSpatialVelocity(
 }
 
 //==============================================================================
-void SimpleFrame::setRelativeSpatialVelocity(const Eigen::Vector6d& _newSpatialVelocity,
-    const Frame* _inCoordinatesOf)
+void SimpleFrame::setRelativeSpatialVelocity(
+    const Eigen::Vector6d& _newSpatialVelocity, const Frame* _inCoordinatesOf)
 {
   if(this == _inCoordinatesOf)
     setRelativeSpatialVelocity(_newSpatialVelocity);
   else
-    setRelativeSpatialVelocity(math::AdT(this->getTransform(_inCoordinatesOf),
+    setRelativeSpatialVelocity(math::AdR(_inCoordinatesOf->getTransform(this),
                                          _newSpatialVelocity));
 }
 
@@ -114,7 +114,8 @@ void SimpleFrame::setRelativeSpatialAcceleration(
     setRelativeSpatialAcceleration(_newSpatialAcceleration);
   else
     setRelativeSpatialAcceleration(
-      math::AdT(this->getTransform(_inCoordinatesOf), _newSpatialAcceleration));
+          math::AdR(_inCoordinatesOf->getTransform(this),
+                    _newSpatialAcceleration) );
 }
 
 //==============================================================================
@@ -134,6 +135,8 @@ void SimpleFrame::setClassicDerivatives(
   v << _angularVelocity,
        _linearVelocity;
 
+  // a_spatial = |    a_angular     |
+  //             | a_linear - w x v |
   a << _angularAcceleration,
        _linearAcceleration - _angularVelocity.cross(_linearVelocity);
 

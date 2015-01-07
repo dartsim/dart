@@ -39,8 +39,6 @@
 
 #include "dart/renderer/RenderInterface.h"
 
-#include <iostream>
-
 namespace dart {
 namespace dynamics {
 
@@ -121,6 +119,7 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
     mVelocity = math::AdInvT(getRelativeTransform(),
                              getParentFrame()->getSpatialVelocity())
                 + getRelativeSpatialVelocity();
+
     mNeedVelocityUpdate = false;
   }
 
@@ -134,9 +133,9 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinatesOf) const
     return getSpatialVelocity();
 
   if(_inCoordinatesOf->isWorld())
-    return math::AdInvT(getWorldTransform(), getSpatialVelocity());
+    return math::AdR(getWorldTransform(), getSpatialVelocity());
 
-  return math::AdT(_inCoordinatesOf->getTransform(this), getSpatialVelocity());
+  return math::AdR(getTransform(_inCoordinatesOf), getSpatialVelocity());
 }
 
 //==============================================================================
@@ -186,10 +185,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
     return getSpatialAcceleration();
 
   if(_inCoordinatesOf->isWorld())
-    return math::AdInvT(getWorldTransform(), getSpatialAcceleration());
+    return math::AdR(getWorldTransform(), getSpatialAcceleration());
 
-  return math::AdT(_inCoordinatesOf->getTransform(this),
-                   getSpatialAcceleration());
+  return math::AdR(getTransform(_inCoordinatesOf), getSpatialAcceleration());
 }
 
 //==============================================================================

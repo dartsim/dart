@@ -126,7 +126,7 @@ public:
   /// Set the relative velocity and acceleration of this Frame according to
   /// classical (non-spatial) relative velocity and relative acceleration
   /// vectors. These values must be given with respect to this Frame's parent
-  /// (note: this aspect is different from setRelativeSpatialVelocity and
+  /// (note: this is unlike setRelativeSpatialVelocity and
   /// setRelativeSpatialAcceleration which expect values in the Frame's own
   /// coordinates).
   ///

@@ -121,9 +121,6 @@ protected:
   /// Name of this Entity
   std::string mName;
 
-  /// Whether or not this Entity is set to be quiet
-  bool mAmQuiet;
-
   /// Vector of visualization shapes
   std::vector<Shape*> mVizShapes;
 
@@ -135,6 +132,10 @@ protected:
 
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
+
+private:
+  /// Whether or not this Entity is set to be quiet
+  bool mAmQuiet;
 
 };
 
