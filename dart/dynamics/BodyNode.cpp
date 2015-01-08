@@ -1408,7 +1408,7 @@ bool BodyNode::isReactive() const
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
-    while (body != nullptr)
+    while (body != NULL)
     {
       if (!body->mParentJoint->isMotionPrescribed())
         return true;
