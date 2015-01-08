@@ -250,13 +250,13 @@ private:
 
 private:
   /// This is set to Identity and never changes
-  Eigen::Isometry3d mRelativeTf;
+  const Eigen::Isometry3d mRelativeTf;
 
   /// This is set to a Zero vector and never changes
-  Eigen::Vector6d mRelativeVelocity;
+  const Eigen::Vector6d mRelativeVelocity;
 
   /// This is set to a Zero vector and never changes
-  Eigen::Vector6d mRelativeAcceleration;
+  const Eigen::Vector6d mRelativeAcceleration;
 
 };
 
