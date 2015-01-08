@@ -46,11 +46,11 @@ using namespace dart;
 using namespace dynamics;
 
 template<int N>
-Eigen::Matrix<double,N,1> random_vec()
+Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
   Eigen::Matrix<double,N,1> v;
   for(size_t i=0; i<N; ++i)
-    v[i] = math::random(-100, 100);
+    v[i] = math::random(-fabs(limit), fabs(limit));
   return v;
 }
 
@@ -548,9 +548,10 @@ void RK4(const std::vector<SimpleFrame*>& targets,
   sv_followers = integrate(sv_followers, dx_followers);
 }
 
-TEST(FRAMES, INTEGRATION)
+TEST(FRAMES, SPATIAL_INTEGRATION)
 {
   const double dt = 0.001;
+  const double final_time = 0.5;
 
   // These frames will form a moving chain
   SimpleFrame A(Frame::World(), "A");
@@ -558,11 +559,11 @@ TEST(FRAMES, INTEGRATION)
   SimpleFrame C(&B, "C");
   SimpleFrame D(&C, "D");
 
-  std::vector<SimpleFrame*> frames;
-  frames.push_back(&A);
-  frames.push_back(&B);
-  frames.push_back(&C);
-  frames.push_back(&D);
+  std::vector<SimpleFrame*> targets;
+  targets.push_back(&A);
+  targets.push_back(&B);
+  targets.push_back(&C);
+  targets.push_back(&D);
 
   // R will be an arbitrary reference frame
   SimpleFrame R(Frame::World(), "R");
@@ -574,16 +575,62 @@ TEST(FRAMES, INTEGRATION)
   SimpleFrame RB(&R, "RB");
   SimpleFrame RC(&R, "RC");
   SimpleFrame RD(&R, "RD");
+  SimpleFrame RR(&R, "RR");
 
-  std::vector<SimpleFrame*> trackers;
-  trackers.push_back(&RA);
-  trackers.push_back(&RB);
-  trackers.push_back(&RC);
-  trackers.push_back(&RD);
+  targets.push_back(&R);
 
+  std::vector<SimpleFrame*> followers;
+  followers.push_back(&RA);
+  followers.push_back(&RB);
+  followers.push_back(&RC);
+  followers.push_back(&RD);
+  followers.push_back(&RR);
 
+  assert( targets.size() == followers.size() );
 
+  for(size_t i=0; i<targets.size(); ++i)
+  {
+    SimpleFrame* T = targets[i];
+    SimpleFrame* F = followers[i];
 
+    Eigen::Isometry3d tf;
+    randomize_transform(tf);
+
+    T->setRelativeTransform(tf);
+    T->setRelativeSpatialVelocity(random_vec<6>(1));
+    T->setRelativeSpatialAcceleration(random_vec<6>(1));
+
+    F->setRelativeTransform(T->getTransform(&R));
+    F->setRelativeSpatialVelocity(T->getSpatialVelocity(&R, F));
+    F->setRelativeSpatialAcceleration(T->getSpatialAcceleration(&R, F));
+  }
+
+  StateVector sv_targets(targets.size()), sv_followers(followers.size());
+  double elapsed_time = 0;
+  while(elapsed_time < final_time)
+  {
+    elapsed_time += dt;
+
+    getSpatialStates(targets, sv_targets);
+    getSpatialStates(followers, sv_followers);
+
+    RK4(targets, followers, sv_targets, sv_followers, &R, dt);
+
+    setSpatialStates(targets, sv_targets);
+    setSpatialStates(followers, sv_followers);
+  }
+
+  for(size_t i=0; i<targets.size(); ++i)
+  {
+    Frame* T = targets[i];
+    Frame* F = followers[i];
+//    EXPECT_TRUE( equals(T->getTransform().matrix(),
+//                        F->getTransform().matrix()) );
+
+    std::cout << "Trial " << T->getName() << "\n";
+    std::cout << T->getTransform().matrix() << "\n";
+    std::cout << F->getTransform().matrix() << "\n";
+  }
 }
 
 int main(int argc, char* argv[])
