@@ -67,7 +67,7 @@ public:
   friend class Frame;
 
   /// Constructor for typical usage
-  explicit Entity(const Frame* _refFrame, const std::string& _name,
+  explicit Entity(Frame* _refFrame, const std::string& _name,
                   bool _quiet);
 
   /// Destructor
@@ -112,7 +112,7 @@ public:
 
 protected:
   /// Used by derived classes to change their parent frames
-  virtual void changeParentFrame(const Frame* _newParentFrame);
+  virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
   /// Parent frame of this Entity
@@ -145,11 +145,11 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(const Frame* _refFrame, const std::string& _name,
+  explicit Detachable(Frame* _refFrame, const std::string& _name,
                       bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
-  virtual void setParentFrame(const Frame* _newParentFrame);
+  virtual void setParentFrame(Frame* _newParentFrame);
 
 };
 

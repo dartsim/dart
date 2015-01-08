@@ -46,7 +46,7 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-Entity::Entity(const Frame* _refFrame, const std::string& _name, bool _quiet) :
+Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet) :
   mParentFrame(NULL),
   mName(_name),
   mNeedTransformUpdate(true),
@@ -130,7 +130,7 @@ void Entity::notifyAccelerationUpdate()
 }
 
 //==============================================================================
-void Entity::changeParentFrame(const Frame* _newParentFrame)
+void Entity::changeParentFrame(Frame* _newParentFrame)
 {
   if(!mAmQuiet)
   {
@@ -148,7 +148,7 @@ void Entity::changeParentFrame(const Frame* _newParentFrame)
     return;
   }
 
-  mParentFrame = const_cast<Frame*>(_newParentFrame);
+  mParentFrame =_newParentFrame;
   if(!mAmQuiet)
   {
     mParentFrame->mChildEntities.insert(this);
@@ -157,15 +157,14 @@ void Entity::changeParentFrame(const Frame* _newParentFrame)
 }
 
 //==============================================================================
-Detachable::Detachable(const Frame *_refFrame, const std::string &_name,
-                       bool _quiet) :
-  Entity(_refFrame, _name, _quiet)
+Detachable::Detachable(Frame *_refFrame, const std::string &_name, bool _quiet)
+  : Entity(_refFrame, _name, _quiet)
 {
 
 }
 
 //==============================================================================
-void Detachable::setParentFrame(const Frame* _newParentFrame)
+void Detachable::setParentFrame(Frame* _newParentFrame)
 {
   changeParentFrame(_newParentFrame);
 }

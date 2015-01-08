@@ -45,7 +45,7 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
-Frame::Frame(const Frame *_refFrame, const std::string &_name) :
+Frame::Frame(Frame* _refFrame, const std::string &_name) :
   Entity(_refFrame, _name, false),
   mWorldTransform(Eigen::Isometry3d::Identity()),
   mVelocity(Eigen::Vector6d::Zero()),
@@ -61,7 +61,7 @@ Frame::~Frame()
   if(isWorld())
     return;
 
-//  changeParentFrame(NULL);
+  changeParentFrame(NULL);
 
   // Inform all child entities that this Frame is disappearing by setting their
   // reference frames to the World frame.
@@ -79,7 +79,7 @@ Frame::~Frame()
 }
 
 //==============================================================================
-const Frame* Frame::World()
+Frame* Frame::World()
 {
   static WorldFrame world;
   return &world;
@@ -353,7 +353,7 @@ void Frame::notifyAccelerationUpdate()
 }
 
 //==============================================================================
-void Frame::changeParentFrame(const Frame* _newParentFrame)
+void Frame::changeParentFrame(Frame* _newParentFrame)
 {
   if(mParentFrame)
   {
@@ -369,13 +369,13 @@ void Frame::changeParentFrame(const Frame* _newParentFrame)
   }
 
   Entity::changeParentFrame(_newParentFrame);
-//  if(!mAmQuiet)
+  if(!mAmQuiet)
     mParentFrame->mChildFrames.insert(this);
 }
 
 //==============================================================================
 Frame::Frame() :
-  Entity(this, "World", false),
+  Entity(this, "World", true),
   mWorldTransform(Eigen::Isometry3d::Identity()),
   mVelocity(Eigen::Vector6d::Zero()),
   mAcceleration(Eigen::Vector6d::Zero()),
@@ -404,8 +404,7 @@ const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 
 //==============================================================================
 WorldFrame::WorldFrame() :
-  Entity(NULL, "World", false),
-//  Entity(NULL, "World", true),
+  Entity(NULL, "World", true),
   Frame(),
   mRelativeTf(Eigen::Isometry3d::Identity()),
   mRelativeVelocity(Eigen::Vector6d::Zero()),

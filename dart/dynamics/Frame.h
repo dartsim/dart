@@ -59,12 +59,12 @@ public:
   friend class WorldFrame;
 
   /// Constructor for typical usage
-  explicit Frame(const Frame* _refFrame, const std::string& _name);
+  explicit Frame(Frame* _refFrame, const std::string& _name);
 
   /// Destructor
   virtual ~Frame();
 
-  static const Frame* World();
+  static Frame* World();
 
   //--------------------------------------------------------------------------
   // Transform
@@ -197,7 +197,7 @@ public:
 
 protected:
   // Documentation inherited
-  virtual void changeParentFrame(const Frame* _newParentFrame);
+  virtual void changeParentFrame(Frame* _newParentFrame);
 
 private:
   /// Constructor for World Frame
@@ -214,15 +214,11 @@ protected:
   /// Total acceleration of this Frame, in the coordinates of this Frame
   mutable Eigen::Vector6d mAcceleration;
 
-  /// Container of this Frame's child Frames. This object is mutable to enable
-  /// children to be added to const Frames. Receiving a new child does not
-  /// affect any properties of the parent Frame.
-  mutable std::set<Frame*> mChildFrames;
+  /// Container of this Frame's child Frames.
+  std::set<Frame*> mChildFrames;
 
-  /// Container of this Frame's child Entities. This object is mutable to enable
-  /// children to be added to const Frames. Receiving a new child does not
-  /// affect any properties of the parent Frame.
-  mutable std::set<Entity*> mChildEntities;
+  /// Container of this Frame's child Entities.
+  std::set<Entity*> mChildEntities;
 
 private:
   /// Contains whether or not this is the World Frame
