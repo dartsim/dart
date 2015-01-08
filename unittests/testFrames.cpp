@@ -54,10 +54,10 @@ Eigen::Matrix<double,N,1> random_vec(double limit=100)
   return v;
 }
 
-void randomize_transform(Eigen::Isometry3d& tf)
+void randomize_transform(Eigen::Isometry3d& tf, double limit=100)
 {
-  Eigen::Vector3d v = random_vec<3>();
-  Eigen::Vector3d theta = random_vec<3>();
+  Eigen::Vector3d v = random_vec<3>(limit);
+  Eigen::Vector3d theta = random_vec<3>(limit);
 
   tf.setIdentity();
   tf.translate(v);
@@ -382,15 +382,22 @@ public:
 
   FrameState& integrate(const FrameDerivative& f_dt)
   {
-    Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
-    xi.translate(x.translation());
-    xi.translate(f_dt.block<3,1>(3,0));
+//    Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
+//    xi.translate(x.translation());
+//    xi.translate(f_dt.block<3,1>(3,0));
+//    Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
+//    if(theta.norm() > 0)
+//      xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+//    xi.rotate(x.rotation());
+
+//    x = xi;
+
+    // TODO: Get f_dt in the correct frame before integrating
+
+    x.translate(f_dt.block<3,1>(3,0));
     Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
     if(theta.norm() > 0)
-      xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
-    xi.rotate(x.rotation());
-
-    x = xi;
+      x.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
 
     v += f_dt.block<6,1>(6,0);
 
@@ -476,10 +483,18 @@ DerivVector getRelativeSpatialDerivatives(
   for(size_t i=0; i<dv.size(); ++i)
   {
     Frame* F = followers[i];
-    dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, R);
     Frame* T = targets[i];
-    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, R);
+    dv[i].block<6,1>(0,0) = T->getSpatialVelocity(R, F);
+    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
   }
+
+//  for(size_t i=0; i<dv.size(); ++i)
+//  {
+//    Frame* F = followers[i];
+//    dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, F);
+//    Frame* T = targets[i];
+//    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
+//  }
 
   return dv;
 }
@@ -551,7 +566,7 @@ void RK4(const std::vector<SimpleFrame*>& targets,
 TEST(FRAMES, SPATIAL_INTEGRATION)
 {
   const double dt = 0.001;
-  const double final_time = 0.5;
+  const double final_time = 0.1;
 
   // These frames will form a moving chain
   SimpleFrame A(Frame::World(), "A");
@@ -593,17 +608,25 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
     SimpleFrame* T = targets[i];
     SimpleFrame* F = followers[i];
 
-    Eigen::Isometry3d tf;
-    randomize_transform(tf);
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    randomize_transform(tf, 1);
+//    tf.translate(Eigen::Vector3d(1,1,i));
+//    tf.rotate(Eigen::AngleAxisd(50*M_PI/180,Eigen::Vector3d(0,1,0)));
 
     T->setRelativeTransform(tf);
     T->setRelativeSpatialVelocity(random_vec<6>(1));
-    T->setRelativeSpatialAcceleration(random_vec<6>(1));
+//    T->setRelativeSpatialAcceleration(random_vec<6>(1));
+
+//    T->setClassicDerivatives(Eigen::Vector3d(0,0,1));
 
     F->setRelativeTransform(T->getTransform(&R));
     F->setRelativeSpatialVelocity(T->getSpatialVelocity(&R, F));
     F->setRelativeSpatialAcceleration(T->getSpatialAcceleration(&R, F));
   }
+
+  R.setRelativeTransform(Eigen::Isometry3d::Identity());
+  R.setRelativeSpatialVelocity(Eigen::Vector6d::Zero());
+  R.setRelativeSpatialAcceleration(Eigen::Vector6d::Zero());
 
   StateVector sv_targets(targets.size()), sv_followers(followers.size());
   double elapsed_time = 0;
@@ -624,12 +647,24 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
   {
     Frame* T = targets[i];
     Frame* F = followers[i];
+
 //    EXPECT_TRUE( equals(T->getTransform().matrix(),
 //                        F->getTransform().matrix()) );
 
-    std::cout << "Trial " << T->getName() << "\n";
-    std::cout << T->getTransform().matrix() << "\n";
-    std::cout << F->getTransform().matrix() << "\n";
+//    std::cout << "Trial " << T->getName() << "\n";
+//    std::cout << T->getTransform().matrix() << "\n--\n";
+//    std::cout << F->getTransform().matrix() << "\n\n";
+
+    const Eigen::Isometry3d& tf_error = T->getTransform(F);
+    Eigen::Vector6d error;
+    Eigen::AngleAxisd rot_error(tf_error.rotation());
+    error.block<3,1>(0,0) = rot_error.angle()*rot_error.axis();
+    error.block<3,1>(3,0) = tf_error.translation();
+
+    EXPECT_TRUE( error.norm() < 1e-3 );
+
+    std::cout << "Trial " << T->getName() << ": (" << error.norm() << ")\t"
+              << error.transpose() << "\n";
   }
 }
 
