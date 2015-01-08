@@ -38,7 +38,8 @@
 
 //==============================================================================
 MyWindow::MyWindow()
-  : SimWindow()
+  : SimWindow(),
+    mHarnessOn(false)
 {
 }
 
@@ -57,10 +58,16 @@ void MyWindow::timeStepping()
   size_t index2 = skel->getJoint("j_forearm_left")->getIndexInSkeleton(0);
   size_t index3 = skel->getJoint("j_forearm_right")->getIndexInSkeleton(0);
 
-  skel->setCommand(index0,  0.3 * std::sin(mWorld->getTime() * 4.0));
-  skel->setCommand(index1, -0.3 * std::sin(mWorld->getTime() * 4.0));
-  skel->setCommand(index2,  0.5 * std::sin(mWorld->getTime() * 4.0));
-  skel->setCommand(index3,  0.5 * std::sin(mWorld->getTime() * 4.0));
+  size_t index6 = skel->getJoint("j_shin_left")->getIndexInSkeleton(0);
+  size_t index7 = skel->getJoint("j_shin_right")->getIndexInSkeleton(0);
+
+  skel->setCommand(index0,  1.0 * std::sin(mWorld->getTime() * 4.0));
+  skel->setCommand(index1, -1.0 * std::sin(mWorld->getTime() * 4.0));
+  skel->setCommand(index2,  0.8 * std::sin(mWorld->getTime() * 4.0));
+  skel->setCommand(index3,  0.8 * std::sin(mWorld->getTime() * 4.0));
+
+  skel->setCommand(index6,  0.1 * std::sin(mWorld->getTime() * 2.0));
+  skel->setCommand(index7,  0.1 * std::sin(mWorld->getTime() * 2.0));
 
   mWorld->step();
 }
@@ -115,6 +122,23 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       break;
     case 'v':  // show or hide markers
       mShowMarkers = !mShowMarkers;
+      break;
+    case 'h':
+      mHarnessOn = !mHarnessOn;
+      if (mHarnessOn)
+      {
+        dart::dynamics::Joint* joint
+            = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
+        joint->setActuatorType(dart::dynamics::Joint::LOCKED);
+        std::cout << "The pelvis is locked." << std::endl;
+      }
+      else
+      {
+        dart::dynamics::Joint* joint
+            = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
+        joint->setActuatorType(dart::dynamics::Joint::PASSIVE);
+        std::cout << "The pelvis is unlocked." << std::endl;
+      }
       break;
     default:
       Win3D::keyboard(_key, _x, _y);

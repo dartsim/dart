@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
   genCoordIds.push_back(19);  // right ankle
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
-  initConfig << -0.2, 0.15, -0.4, 0.275, 0.15, -0.4, 0.275, 0.0;
+  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
   skel->setPositionSegment(genCoordIds, initConfig);
   skel->computeForwardKinematics(true, true, false);
 
@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
   std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
   std::cout << "'v': visualization on/off" << std::endl;
   std::cout << "'1'--'4': programmed interaction" << std::endl;
+  std::cout << "'h': harness on/off" << std::endl;
 
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Hybrid Dynamics");
