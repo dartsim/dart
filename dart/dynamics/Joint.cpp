@@ -110,6 +110,26 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
+bool Joint::isMotionPrescribed() const
+{
+  switch (mActuatorType)
+  {
+    case FORCE:
+    case PASSIVE:
+    case SERVO:
+      return false;
+    case ACCELERATION:
+    case VELOCITY:
+      return true;
+    default:
+    {
+      dterr << "Unsupported actuator type." << std::endl;
+      return false;
+    }
+  }
+}
+
+//==============================================================================
 BodyNode* Joint::getChildBodyNode()
 {
   return mChildBodyNode;

@@ -130,6 +130,13 @@ public:
   /// Get actuator type
   ActuatorType getActuatorType() const;
 
+  /// Return true if the motion of this joint is prescrbied, false otherwise.
+  ///
+  /// This is determined by the actuator type. The motion of FORCE/PASSIVE/SERVO
+  /// joint is prescribed while the motion of ACCELERATION/VELOCITY is not
+  /// prescribed.
+  bool isMotionPrescribed() const;
+
   /// Get the child BodyNode of this Joint
   BodyNode* getChildBodyNode();
 

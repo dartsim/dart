@@ -428,13 +428,12 @@ public:
   DEPRECATED(4.2)
   bool isImpulseReponsible() const;
 
-  /// Return true if the body can react on force or constraint impulse.
+  /// Return true if the body can react to force or constraint impulse.
   ///
-  /// A body node can be called reactive if the parent skeleton is mobile and
-  /// the number of dependent generalized coordinates is non zero. The body
-  /// should be initialized first by calling BodyNode::init().
+  /// A body node is reactive if the skeleton is mobile and the number of
+  /// dependent generalized coordinates is non zero. BodyNode::init() should be
+  /// called first to update the number of dependent generalized coordinates.
   bool isReactive() const;
-  // TODO: Apply hybrid dynamics
 
   /// Set constraint impulse
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame

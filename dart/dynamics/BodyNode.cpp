@@ -1404,12 +1404,27 @@ bool BodyNode::isImpulseReponsible() const
 //==============================================================================
 bool BodyNode::isReactive() const
 {
-  // TODO(JS): Once hybrid dynamics is implemented, we should consider joint
-  //           type of parent joint.
   if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
-    return true;
-  else
+  {
+    // Check if all the ancestor joints are motion prescribed.
+    const BodyNode* body = this;
+    while (body != nullptr)
+    {
+      if (!body->mParentJoint->isMotionPrescribed())
+        return true;
+
+      body = body->mParentBodyNode;
+    }
+    // TODO: Checking if all the ancestor joints are motion prescribed is
+    // expensive. It would be good to evaluate this in advance and update only
+    // when necessary.
+
     return false;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 //==============================================================================
