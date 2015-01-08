@@ -61,6 +61,8 @@ Frame::~Frame()
   if(isWorld())
     return;
 
+//  changeParentFrame(NULL);
+
   // Inform all child entities that this Frame is disappearing by setting their
   // reference frames to the World frame.
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
@@ -367,7 +369,8 @@ void Frame::changeParentFrame(const Frame* _newParentFrame)
   }
 
   Entity::changeParentFrame(_newParentFrame);
-  mParentFrame->mChildFrames.insert(this);
+//  if(!mAmQuiet)
+    mParentFrame->mChildFrames.insert(this);
 }
 
 //==============================================================================
@@ -402,6 +405,7 @@ const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 //==============================================================================
 WorldFrame::WorldFrame() :
   Entity(NULL, "World", false),
+//  Entity(NULL, "World", true),
   Frame(),
   mRelativeTf(Eigen::Isometry3d::Identity()),
   mRelativeVelocity(Eigen::Vector6d::Zero()),
