@@ -370,6 +370,219 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       EXPECT_TRUE( equals(alpha_total[i], alpha_actual, tolerance) );
     }
   }
+}
+
+typedef Eigen::Matrix<double,12,1> FrameDerivative;
+
+class FrameState
+{
+public:
+  Eigen::Isometry3d x;
+  Eigen::Vector6d v;
+
+  FrameState& integrate(const FrameDerivative& f_dt)
+  {
+    Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
+    xi.translate(x.translation());
+    xi.translate(f_dt.block<3,1>(3,0));
+    Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
+    if(theta.norm() > 0)
+      xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+    xi.rotate(x.rotation());
+
+    x = xi;
+
+    v += f_dt.block<6,1>(6,0);
+
+    return *this;
+  }
+};
+
+typedef std::vector<FrameState> StateVector;
+typedef std::vector<FrameDerivative> DerivVector;
+
+DerivVector operator+(const DerivVector& dv1, const DerivVector& dv2)
+{
+  assert( dv1.size() == dv2.size() );
+  DerivVector result(dv1.size());
+
+  for(size_t i=0; i<dv1.size(); ++i)
+    result[i] = dv1[i]+dv2[i];
+
+  return result;
+}
+
+DerivVector operator*(const DerivVector& dv, double dt)
+{
+  DerivVector result(dv.size());
+  for(size_t i=0; i<dv.size(); ++i)
+    result[i] = dv[i]*dt;
+
+  return result;
+}
+
+StateVector integrate(const StateVector& sv, const DerivVector& f_dt)
+{
+  assert( sv.size() == f_dt.size() );
+
+  StateVector result = sv;
+
+  for(size_t i=0; i<result.size(); ++i)
+    result[i].integrate(f_dt[i]);
+
+  return result;
+}
+
+void setSpatialStates(const std::vector<SimpleFrame*>& targets,
+                      const StateVector& sv)
+{
+  assert( targets.size() == sv.size() );
+  for(size_t i=0; i<sv.size(); ++i)
+  {
+    SimpleFrame* F = targets[i];
+    F->setRelativeTransform(sv[i].x);
+    F->setRelativeSpatialVelocity(sv[i].v);
+  }
+}
+
+void getSpatialStates(const std::vector<SimpleFrame*>& targets, StateVector& sv)
+{
+  assert( targets.size() == sv.size() );
+  for(size_t i=0; i<sv.size(); ++i)
+  {
+    Frame* F = targets[i];
+    sv[i].x = F->getRelativeTransform();
+    sv[i].v = F->getRelativeSpatialVelocity();
+  }
+}
+
+
+DerivVector getRelativeSpatialDerivatives(
+    const std::vector<SimpleFrame*>& targets,
+    const std::vector<SimpleFrame*>& followers,
+    const Frame* R,
+    const StateVector& sv_targets,
+    const StateVector& sv_followers)
+{
+  assert( followers.size() == targets.size() );
+  assert( sv_targets.size() == targets.size() );
+  assert( sv_followers.size() == targets.size() );
+
+  DerivVector dv(targets.size());
+
+  setSpatialStates(targets, sv_targets);
+  setSpatialStates(followers, sv_followers);
+
+  for(size_t i=0; i<dv.size(); ++i)
+  {
+    Frame* F = followers[i];
+    dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, R);
+    Frame* T = targets[i];
+    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, R);
+  }
+
+  return dv;
+}
+
+DerivVector getSpatialDerivatives(const std::vector<SimpleFrame*>& targets,
+                                  const StateVector& sv)
+{
+  assert( targets.size() == sv.size() );
+  DerivVector dv(sv.size());
+
+  setSpatialStates(targets, sv);
+
+  for(size_t i=0; i<dv.size(); ++i)
+  {
+    Frame* T = targets[i];
+    dv[i].block<6,1>(0,0) = T->getRelativeSpatialVelocity();
+    dv[i].block<6,1>(6,0) = T->getRelativeSpatialAcceleration();
+  }
+
+  return dv;
+}
+
+void RK4(const std::vector<SimpleFrame*>& targets,
+         const std::vector<SimpleFrame*>& followers,
+         StateVector& sv_targets, StateVector& sv_followers,
+         const Frame* R, double dt)
+{
+  DerivVector k_targets[4];
+  DerivVector k_followers[4];
+
+  k_targets[0] = getSpatialDerivatives(targets, sv_targets);
+  k_followers[0] = getRelativeSpatialDerivatives(
+        targets, followers, R, sv_targets, sv_followers);
+
+  k_targets[1] = getSpatialDerivatives(targets,
+        integrate(sv_targets, k_targets[0]*(dt/2)) );
+  k_followers[1] = getRelativeSpatialDerivatives(
+        targets, followers, R,
+        integrate(sv_targets, k_targets[0]*(dt/2)),
+        integrate(sv_followers, k_followers[0]*(dt/2)) );
+
+  k_targets[2] = getSpatialDerivatives(targets,
+        integrate(sv_targets, k_targets[1]*(dt/2)) );
+  k_followers[2] = getRelativeSpatialDerivatives(
+        targets, followers, R,
+        integrate(sv_targets, k_targets[1]*(dt/2)),
+        integrate(sv_followers, k_followers[1]*(dt/2)) );
+
+  k_targets[3] = getSpatialDerivatives(targets,
+        integrate(sv_targets, k_targets[2]*dt));
+  k_followers[3] = getRelativeSpatialDerivatives(
+        targets, followers, R,
+        integrate(sv_targets, k_targets[2]*dt),
+        integrate(sv_followers, k_followers[2]*dt) );
+
+  DerivVector dx_targets = ( k_targets[0]
+                           + k_targets[1]*2
+                           + k_targets[2]*2
+                           + k_targets[3] )*(dt/6);
+  DerivVector dx_followers = ( k_followers[0]
+                             + k_followers[1]*2
+                             + k_followers[2]*2
+                             + k_followers[3] )*(dt/6);
+
+  sv_targets = integrate(sv_targets, dx_targets);
+  sv_followers = integrate(sv_followers, dx_followers);
+}
+
+TEST(FRAMES, INTEGRATION)
+{
+  const double dt = 0.001;
+
+  // These frames will form a moving chain
+  SimpleFrame A(Frame::World(), "A");
+  SimpleFrame B(&A, "B");
+  SimpleFrame C(&B, "C");
+  SimpleFrame D(&C, "D");
+
+  std::vector<SimpleFrame*> frames;
+  frames.push_back(&A);
+  frames.push_back(&B);
+  frames.push_back(&C);
+  frames.push_back(&D);
+
+  // R will be an arbitrary reference frame
+  SimpleFrame R(Frame::World(), "R");
+  // Each of these frames will attempt to track one of the frames in the chain
+  // with respect to the frame R by mimicking their their accelerations. If they
+  // each end with the same world pose as the frame they are tracking, then our
+  // library's calculations for relative velocity and acceleration are correct.
+  SimpleFrame RA(&R, "RA");
+  SimpleFrame RB(&R, "RB");
+  SimpleFrame RC(&R, "RC");
+  SimpleFrame RD(&R, "RD");
+
+  std::vector<SimpleFrame*> trackers;
+  trackers.push_back(&RA);
+  trackers.push_back(&RB);
+  trackers.push_back(&RC);
+  trackers.push_back(&RD);
+
+
+
 
 }
 
