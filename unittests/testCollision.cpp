@@ -528,27 +528,32 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   Skeleton* skel3 = world->getSkeleton("skeleton 3");
   Skeleton* skel4 = world->getSkeleton("skeleton 4");
   Skeleton* skel5 = world->getSkeleton("skeleton 5");
+  Skeleton* skel6 = world->getSkeleton("skeleton 6");
   EXPECT_TRUE(skel1 != NULL);
   EXPECT_TRUE(skel2 != NULL);
   EXPECT_TRUE(skel3 != NULL);
   EXPECT_TRUE(skel4 != NULL);
   EXPECT_TRUE(skel5 != NULL);
+  EXPECT_TRUE(skel6 != NULL);
 
   Joint* joint1 = skel1->getJoint(0);
   Joint* joint2 = skel2->getJoint(0);
   Joint* joint3 = skel3->getJoint(0);
   Joint* joint4 = skel4->getJoint(0);
   Joint* joint5 = skel5->getJoint(0);
+  Joint* joint6 = skel6->getJoint(0);
   EXPECT_TRUE(joint1 != NULL);
   EXPECT_TRUE(joint2 != NULL);
   EXPECT_TRUE(joint3 != NULL);
   EXPECT_TRUE(joint4 != NULL);
   EXPECT_TRUE(joint5 != NULL);
+  EXPECT_TRUE(joint6 != NULL);
   EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
   EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
   EXPECT_EQ(joint3->getActuatorType(), Joint::SERVO);
   EXPECT_EQ(joint4->getActuatorType(), Joint::ACCELERATION);
   EXPECT_EQ(joint5->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(joint6->getActuatorType(), Joint::LOCKED);
 
   for (size_t i = 0; i < numFrames; ++i)
   {
@@ -559,15 +564,25 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
     joint3->setCommand(0, -0.5 * DART_PI * std::cos(time));
     joint4->setCommand(0, -0.5 * DART_PI * std::cos(time));
     joint5->setCommand(0, -0.5 * DART_PI * std::sin(time));
+    joint6->setCommand(0, -0.5 * DART_PI * std::sin(time));  // ignored
 
     world->step(false);
 
+    EXPECT_TRUE(joint1->isDynamic());
+    EXPECT_TRUE(joint2->isDynamic());
+    EXPECT_TRUE(joint3->isDynamic());
+
     // Check if the motion prescribed joints are following the prescribed motion
     // eventhough there is a collision with other objects
-    EXPECT_TRUE(joint4->isMotionPrescribed());
+    EXPECT_TRUE(joint4->isKinematic());
     EXPECT_NEAR(joint4->getAcceleration(0), joint4->getCommand(0), tol);
-    EXPECT_TRUE(joint5->isMotionPrescribed());
+    EXPECT_TRUE(joint5->isKinematic());
     EXPECT_NEAR(joint5->getVelocity(0), joint5->getCommand(0), tol);
+
+    // The velocity and acceleration of locked joint always must be zero.
+    EXPECT_TRUE(joint6->isKinematic());
+    EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
+    EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
 }
 

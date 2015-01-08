@@ -848,12 +848,13 @@ void SingleDofJoint::addChildArtInertiaTo(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaToForceType(_parentArtInertia,
+      addChildArtInertiaToDynamic(_parentArtInertia,
                                        _childArtInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
-      addChildArtInertiaToAccelerationType(_parentArtInertia,
+    case LOCKED:
+      addChildArtInertiaToKinematic(_parentArtInertia,
                                              _childArtInertia);
       break;
     default:
@@ -863,7 +864,7 @@ void SingleDofJoint::addChildArtInertiaTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaToForceType(Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
+void SingleDofJoint::addChildArtInertiaToDynamic(Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
   Eigen::Vector6d AIS = _childArtInertia * mJacobian;
@@ -877,7 +878,7 @@ void SingleDofJoint::addChildArtInertiaToForceType(Eigen::Matrix6d& _parentArtIn
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaToAccelerationType(
+void SingleDofJoint::addChildArtInertiaToKinematic(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
@@ -894,12 +895,13 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildArtInertiaImplicitToForceType(_parentArtInertia,
+      addChildArtInertiaImplicitToDynamic(_parentArtInertia,
                                              _childArtInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
-      addChildArtInertiaImplicitToAccelerationType(_parentArtInertia,
+    case LOCKED:
+      addChildArtInertiaImplicitToKinematic(_parentArtInertia,
                                                    _childArtInertia);
       break;
     default:
@@ -909,7 +911,7 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitToForceType(
+void SingleDofJoint::addChildArtInertiaImplicitToDynamic(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
@@ -924,7 +926,7 @@ void SingleDofJoint::addChildArtInertiaImplicitToForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaImplicitToAccelerationType(
+void SingleDofJoint::addChildArtInertiaImplicitToKinematic(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
@@ -941,11 +943,12 @@ void SingleDofJoint::updateInvProjArtInertia(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaForceType(_artInertia);
+      updateInvProjArtInertiaDynamic(_artInertia);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateInvProjArtInertiaAccelerationType(_artInertia);
+    case LOCKED:
+      updateInvProjArtInertiaKinematic(_artInertia);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -954,7 +957,7 @@ void SingleDofJoint::updateInvProjArtInertia(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaForceType(
+void SingleDofJoint::updateInvProjArtInertiaDynamic(
     const Eigen::Matrix6d& _artInertia)
 {
   // Projected articulated inertia
@@ -968,7 +971,7 @@ void SingleDofJoint::updateInvProjArtInertiaForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaAccelerationType(
+void SingleDofJoint::updateInvProjArtInertiaKinematic(
     const Eigen::Matrix6d& /*_artInertia*/)
 {
   // Do nothing
@@ -984,11 +987,12 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateInvProjArtInertiaImplicitForceType(_artInertia, _timeStep);
+      updateInvProjArtInertiaImplicitDynamic(_artInertia, _timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateInvProjArtInertiaImplicitAccelerationType(_artInertia, _timeStep);
+    case LOCKED:
+      updateInvProjArtInertiaImplicitKinematic(_artInertia, _timeStep);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -997,7 +1001,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaImplicitForceType(
+void SingleDofJoint::updateInvProjArtInertiaImplicitDynamic(
     const Eigen::Matrix6d& _artInertia, double _timeStep)
 {
   // Projected articulated inertia
@@ -1016,7 +1020,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateInvProjArtInertiaImplicitAccelerationType(
+void SingleDofJoint::updateInvProjArtInertiaImplicitKinematic(
     const Eigen::Matrix6d& /*_artInertia*/, double /*_timeStep*/)
 {
   // Do nothing
@@ -1034,14 +1038,15 @@ void SingleDofJoint::addChildBiasForceTo(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasForceToForceType(_parentBiasForce,
+      addChildBiasForceToDynamic(_parentBiasForce,
                                     _childArtInertia,
                                     _childBiasForce,
                                     _childPartialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
-      addChildBiasForceToAccelerationType(_parentBiasForce,
+    case LOCKED:
+      addChildBiasForceToKinematic(_parentBiasForce,
                                           _childArtInertia,
                                           _childBiasForce,
                                           _childPartialAcc);
@@ -1053,7 +1058,7 @@ void SingleDofJoint::addChildBiasForceTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceToForceType(
+void SingleDofJoint::addChildBiasForceToDynamic(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1073,7 +1078,7 @@ void SingleDofJoint::addChildBiasForceToForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasForceToAccelerationType(
+void SingleDofJoint::addChildBiasForceToKinematic(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasForce,
@@ -1103,13 +1108,14 @@ void SingleDofJoint::addChildBiasImpulseTo(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      addChildBiasImpulseToForceType(_parentBiasImpulse,
+      addChildBiasImpulseToDynamic(_parentBiasImpulse,
                                       _childArtInertia,
                                       _childBiasImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
-      addChildBiasImpulseToAccelerationType(_parentBiasImpulse,
+    case LOCKED:
+      addChildBiasImpulseToKinematic(_parentBiasImpulse,
                                             _childArtInertia,
                                             _childBiasImpulse);
       break;
@@ -1120,7 +1126,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseToForceType(
+void SingleDofJoint::addChildBiasImpulseToDynamic(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1139,7 +1145,7 @@ void SingleDofJoint::addChildBiasImpulseToForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildBiasImpulseToAccelerationType(
+void SingleDofJoint::addChildBiasImpulseToKinematic(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& /*_childArtInertia*/,
     const Eigen::Vector6d& _childBiasImpulse)
@@ -1159,20 +1165,25 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
   {
     case FORCE:
       mForce = mCommand;
-      updateTotalForceForceType(_bodyForce, _timeStep);
+      updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case PASSIVE:
     case SERVO:
       mForce = 0.0;
-      updateTotalForceForceType(_bodyForce, _timeStep);
+      updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
       mAcceleration = mCommand;
-      updateTotalForceAccelerationType(_bodyForce, _timeStep);
+      updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case VELOCITY:
       mAcceleration = (mCommand - mVelocity) / _timeStep;
-      updateTotalForceAccelerationType(_bodyForce, _timeStep);
+      updateTotalForceKinematic(_bodyForce, _timeStep);
+      break;
+    case LOCKED:
+      mVelocity = 0.0;
+      mAcceleration = 0.0;
+      updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1181,7 +1192,7 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalForceForceType(
+void SingleDofJoint::updateTotalForceDynamic(
     const Eigen::Vector6d& _bodyForce, double _timeStep)
 {
   // Spring force
@@ -1196,7 +1207,7 @@ void SingleDofJoint::updateTotalForceForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalForceAccelerationType(
+void SingleDofJoint::updateTotalForceKinematic(
     const Eigen::Vector6d& /*_bodyForce*/, double /*_timeStep*/)
 {
   // Do nothing
@@ -1210,11 +1221,12 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateTotalImpulseForceType(_bodyImpulse);
+      updateTotalImpulseDynamic(_bodyImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateTotalImpulseAccelerationType(_bodyImpulse);
+    case LOCKED:
+      updateTotalImpulseKinematic(_bodyImpulse);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1223,14 +1235,14 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalImpulseForceType(
+void SingleDofJoint::updateTotalImpulseDynamic(
     const Eigen::Vector6d& _bodyImpulse)
 {
   mTotalImpulse = mConstraintImpulse - mJacobian.dot(_bodyImpulse);
 }
 
 //==============================================================================
-void SingleDofJoint::updateTotalImpulseAccelerationType(
+void SingleDofJoint::updateTotalImpulseKinematic(
     const Eigen::Vector6d& /*_bodyImpulse*/)
 {
   // Do nothing
@@ -1251,11 +1263,12 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateAccelerationForceType(_artInertia, _spatialAcc);
+      updateAccelerationDynamic(_artInertia, _spatialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateAccelerationAccelerationType(_artInertia, _spatialAcc);
+    case LOCKED:
+      updateAccelerationKinematic(_artInertia, _spatialAcc);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1264,7 +1277,7 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
 }
 
 //==============================================================================
-void SingleDofJoint::updateAccelerationForceType(
+void SingleDofJoint::updateAccelerationDynamic(
     const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
 {
   //
@@ -1276,7 +1289,7 @@ void SingleDofJoint::updateAccelerationForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateAccelerationAccelerationType(
+void SingleDofJoint::updateAccelerationKinematic(
     const Eigen::Matrix6d& /*_artInertia*/,
     const Eigen::Vector6d& /*_spatialAcc*/)
 {
@@ -1293,11 +1306,12 @@ void SingleDofJoint::updateVelocityChange(
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateVelocityChangeForceType(_artInertia, _velocityChange);
+      updateVelocityChangeDynamic(_artInertia, _velocityChange);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateVelocityChangeAccelerationType(_artInertia, _velocityChange);
+    case LOCKED:
+      updateVelocityChangeKinematic(_artInertia, _velocityChange);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1306,7 +1320,7 @@ void SingleDofJoint::updateVelocityChange(
 }
 
 //==============================================================================
-void SingleDofJoint::updateVelocityChangeForceType(
+void SingleDofJoint::updateVelocityChangeDynamic(
     const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _velocityChange)
 {
   //
@@ -1320,7 +1334,7 @@ void SingleDofJoint::updateVelocityChangeForceType(
 }
 
 //==============================================================================
-void SingleDofJoint::updateVelocityChangeAccelerationType(
+void SingleDofJoint::updateVelocityChangeKinematic(
     const Eigen::Matrix6d& /*_artInertia*/,
     const Eigen::Vector6d& /*_velocityChange*/)
 {
@@ -1365,6 +1379,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
       break;
     case ACCELERATION:
     case VELOCITY:
+    case LOCKED:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
                     _withSpringForces);
       break;
@@ -1391,6 +1406,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
       break;
     case ACCELERATION:
     case VELOCITY:
+    case LOCKED:
       updateImpulseID(_bodyImpulse);
       break;
     default:
@@ -1407,11 +1423,12 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
     case FORCE:
     case PASSIVE:
     case SERVO:
-      updateConstrainedTermsForceType(_timeStep);
+      updateConstrainedTermsDynamic(_timeStep);
       break;
     case ACCELERATION:
     case VELOCITY:
-      updateConstrainedTermsAccelerationType(_timeStep);
+    case LOCKED:
+      updateConstrainedTermsKinematic(_timeStep);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -1420,7 +1437,7 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 }
 
 //==============================================================================
-void SingleDofJoint::updateConstrainedTermsForceType(double _timeStep)
+void SingleDofJoint::updateConstrainedTermsDynamic(double _timeStep)
 {
   const double invTimeStep = 1.0 / _timeStep;
 
@@ -1430,7 +1447,7 @@ void SingleDofJoint::updateConstrainedTermsForceType(double _timeStep)
 }
 
 //==============================================================================
-void SingleDofJoint::updateConstrainedTermsAccelerationType(double _timeStep)
+void SingleDofJoint::updateConstrainedTermsKinematic(double _timeStep)
 {
   mForce += mImpulse / _timeStep;
 }

@@ -561,89 +561,89 @@ private:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  void addChildArtInertiaToForceType(
+  void addChildArtInertiaToDynamic(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void addChildArtInertiaToAccelerationType(
+  void addChildArtInertiaToKinematic(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void addChildArtInertiaImplicitToForceType(
+  void addChildArtInertiaImplicitToDynamic(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void addChildArtInertiaImplicitToAccelerationType(
+  void addChildArtInertiaImplicitToKinematic(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia);
 
-  void updateInvProjArtInertiaForceType(
+  void updateInvProjArtInertiaDynamic(
       const Eigen::Matrix6d& _artInertia);
 
-  void updateInvProjArtInertiaAccelerationType(
+  void updateInvProjArtInertiaKinematic(
       const Eigen::Matrix6d& _artInertia);
 
-  void updateInvProjArtInertiaImplicitForceType(
+  void updateInvProjArtInertiaImplicitDynamic(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep);
 
-  void updateInvProjArtInertiaImplicitAccelerationType(
+  void updateInvProjArtInertiaImplicitKinematic(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep);
 
-  void addChildBiasForceToForceType(
+  void addChildBiasForceToDynamic(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
       const Eigen::Vector6d& _childPartialAcc);
 
-  void addChildBiasForceToAccelerationType(
+  void addChildBiasForceToKinematic(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
       const Eigen::Vector6d& _childPartialAcc);
 
-  void addChildBiasImpulseToForceType(
+  void addChildBiasImpulseToDynamic(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
 
-  void addChildBiasImpulseToAccelerationType(
+  void addChildBiasImpulseToKinematic(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse);
 
-  void updateTotalForceForceType(const Eigen::Vector6d& _bodyForce,
+  void updateTotalForceDynamic(const Eigen::Vector6d& _bodyForce,
                                   double _timeStep);
 
-  void updateTotalForceAccelerationType(const Eigen::Vector6d& _bodyForce,
+  void updateTotalForceKinematic(const Eigen::Vector6d& _bodyForce,
                                         double _timeStep);
 
-  void updateTotalImpulseForceType(
+  void updateTotalImpulseDynamic(
       const Eigen::Vector6d& _bodyImpulse);
 
-  void updateTotalImpulseAccelerationType(
+  void updateTotalImpulseKinematic(
       const Eigen::Vector6d& _bodyImpulse);
 
-  void updateAccelerationForceType(
+  void updateAccelerationDynamic(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _spatialAcc);
 
-  void updateAccelerationAccelerationType(
+  void updateAccelerationKinematic(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _spatialAcc);
 
-  void updateVelocityChangeForceType(
+  void updateVelocityChangeDynamic(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange);
 
-  void updateVelocityChangeAccelerationType(
+  void updateVelocityChangeKinematic(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange);
 
-  void updateConstrainedTermsForceType(double _timeStep);
+  void updateConstrainedTermsDynamic(double _timeStep);
 
-  void updateConstrainedTermsAccelerationType(double _timeStep);
+  void updateConstrainedTermsKinematic(double _timeStep);
 
   /// \}
 };

@@ -110,7 +110,7 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
-bool Joint::isMotionPrescribed() const
+bool Joint::isKinematic() const
 {
   switch (mActuatorType)
   {
@@ -120,6 +120,7 @@ bool Joint::isMotionPrescribed() const
       return false;
     case ACCELERATION:
     case VELOCITY:
+    case LOCKED:
       return true;
     default:
     {
@@ -127,6 +128,12 @@ bool Joint::isMotionPrescribed() const
       return false;
     }
   }
+}
+
+//==============================================================================
+bool Joint::isDynamic() const
+{
+  return !isKinematic();
 }
 
 //==============================================================================

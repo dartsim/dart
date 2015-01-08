@@ -407,7 +407,7 @@ void ConstraintSolver::updateConstraints()
     {
       dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
 
-      if (!joint->isMotionPrescribed() && joint->isPositionLimited())
+      if (joint->isDynamic() && joint->isPositionLimited())
         mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
     }
   }

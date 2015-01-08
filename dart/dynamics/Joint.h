@@ -66,6 +66,9 @@ public:
   /// command is different depending on the actuator type. The default actuator
   /// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
   ///
+  /// FORCE/PASSIVE/SERVO joints are dynamic joints while
+  /// ACCELERATION/VELOCITY/LOCKED joints are kinematic joints.
+  ///
   /// Note the presence of joint damping force and joint spring force for all
   /// the actuator types if the coefficients are non-zero. The default
   /// coefficients are zero.
@@ -106,7 +109,14 @@ public:
     /// The joint velocity is always satisfied but it doesn't take the joint
     /// force limit into account. If you want to consider the joint force limit,
     /// should use SERVO instead. All the joint constraints are invalid.
-    VELOCITY
+    VELOCITY,
+
+    /// Locked joint always set the velocity and acceleration to zero so that
+    /// the joint dosen't move at all (locked), and the output is joint force.
+    /// force.
+    ///
+    /// All the joint constraints are invalid.
+    LOCKED
   };
 
   /// Default actuator type
@@ -130,12 +140,16 @@ public:
   /// Get actuator type
   ActuatorType getActuatorType() const;
 
-  /// Return true if the motion of this joint is prescrbied, false otherwise.
+  /// Return true if this joint is kinematic joint.
   ///
-  /// This is determined by the actuator type. The motion of FORCE/PASSIVE/SERVO
-  /// joint is prescribed while the motion of ACCELERATION/VELOCITY is not
-  /// prescribed.
-  bool isMotionPrescribed() const;
+  /// Kinematic joint means the motion is prescribed by position or velocity or
+  /// acceleration, which is determined by the actuator type.
+  /// ACCELERATION/VELOCITY/LOCKED are kinematic joints while
+  /// FORCE/PASSIVE/SERVO are dynamic joints.
+  bool isKinematic() const;
+
+  /// Return true if this joint is dynamic joint.
+  bool isDynamic() const;
 
   /// Get the child BodyNode of this Joint
   BodyNode* getChildBodyNode();

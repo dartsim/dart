@@ -900,6 +900,8 @@ dynamics::Joint* SkelParser::readJoint(
       newJoint->setActuatorType(dynamics::Joint::ACCELERATION);
     else if (actuator == "velocity")
       newJoint->setActuatorType(dynamics::Joint::VELOCITY);
+    else if (actuator == "locked")
+      newJoint->setActuatorType(dynamics::Joint::LOCKED);
     else
       dterr << "Joint named [" << newJoint->getName()
             << "] contains invalid actuator attribute ["

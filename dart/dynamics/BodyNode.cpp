@@ -1410,7 +1410,7 @@ bool BodyNode::isReactive() const
     const BodyNode* body = this;
     while (body != NULL)
     {
-      if (!body->mParentJoint->isMotionPrescribed())
+      if (body->mParentJoint->isDynamic())
         return true;
 
       body = body->mParentBodyNode;
