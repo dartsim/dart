@@ -43,6 +43,7 @@ namespace dart {
 namespace dynamics {
 
 typedef std::set<Entity*> EntityPtrSet;
+typedef std::set<Frame*> FramePtrSet;
 
 Frame::Frame(const Frame *_refFrame, const std::string &_name) :
   Entity(_refFrame, _name, false),
@@ -354,9 +355,9 @@ void Frame::changeParentFrame(const Frame* _newParentFrame)
 {
   if(mParentFrame)
   {
-    if(mParentFrame->mChildFrames.find(this) !=
-       mParentFrame->mChildFrames.end())
-      mParentFrame->mChildFrames.erase(this);
+    FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
+    if(it != mParentFrame->mChildFrames.end())
+      mParentFrame->mChildFrames.erase(it);
   }
 
   if(NULL==_newParentFrame)
