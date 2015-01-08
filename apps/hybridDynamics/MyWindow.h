@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,51 +34,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FREEJOINT_H_
-#define DART_DYNAMICS_FREEJOINT_H_
+#ifndef APPS_HYBRIDDYNAMICS_MYWINDOW_H_
+#define APPS_HYBRIDDYNAMICS_MYWINDOW_H_
 
-#include <string>
+#include "dart/dart.h"
 
-#include <Eigen/Dense>
-
-#include "dart/dynamics/MultiDofJoint.h"
-
-namespace dart {
-namespace dynamics {
-
-/// class FreeJoint
-class FreeJoint : public MultiDofJoint<6>
+/// \brief
+class MyWindow : public dart::gui::SimWindow
 {
 public:
-  /// Constructor
-  explicit FreeJoint(const std::string& _name = "FreeJoint");
+  /// \brief
+  MyWindow();
 
-  /// Destructor
-  virtual ~FreeJoint();
+  /// \brief
+  virtual ~MyWindow();
 
-protected:
-  // Documentation inherited
-  virtual void integratePositions(double _dt);
+  /// \brief
+  virtual void timeStepping();
 
-  // Documentation inherited
-  virtual void updateLocalTransform();
+  /// \brief
+  virtual void drawSkels();
 
-  // Documentation inherited
-  virtual void updateLocalJacobian();
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-  // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
-
-protected:
-  /// Transformation matrix dependant on generalized coordinates
-  Eigen::Isometry3d mQ;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+private:
+  bool mHarnessOn;
 };
 
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_FREEJOINT_H_
+#endif  // APPS_HYBRIDDYNAMICS_MYWINDOW_H_

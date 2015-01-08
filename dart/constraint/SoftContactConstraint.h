@@ -63,8 +63,8 @@ class SoftContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  DEPRECATED(4.2) explicit SoftContactConstraint(
-      const collision::Contact& _contact);
+  DEPRECATED(4.2)
+  explicit SoftContactConstraint(const collision::Contact& _contact);
 
   /// Constructor
   SoftContactConstraint(collision::Contact& _contact, double _timeStep);

@@ -62,7 +62,8 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DEPRECATED(4.1) virtual size_t getDof() const;
+  DEPRECATED(4.1)
+  virtual size_t getDof() const;
 
   // Documentation inherited
   virtual size_t getNumDofs() const;
@@ -72,6 +73,25 @@ public:
 
   // Documentation inherited
   virtual size_t getIndexInSkeleton(size_t _index) const;
+
+  //----------------------------------------------------------------------------
+  // Command
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void setCommand(size_t _index, double _command);
+
+  // Documentation inherited
+  virtual double getCommand(size_t _index) const;
+
+  // Documentation inherited
+  virtual void setCommands(const Eigen::VectorXd& _commands);
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getCommands() const;
+
+  // Documentation inherited
+  virtual void resetCommands();
 
   //----------------------------------------------------------------------------
   // Position
@@ -260,87 +280,112 @@ public:
   /// Get potential energy
   virtual double getPotentialEnergy() const;
 
+  // Documentation inherited
+  virtual Eigen::Vector6d getBodyConstraintWrench() const override;
+
 protected:
   //----------------------------------------------------------------------------
-  // Recursive dynamics algorithms
+  /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual const math::Jacobian getLocalJacobian() const;
+  virtual const math::Jacobian getLocalJacobian() const override;
 
   // Documentation inherited
-  virtual const math::Jacobian getLocalJacobianTimeDeriv() const;
+  virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   // Documentation inherited
-  virtual void addVelocityTo(Eigen::Vector6d& _vel);
+  virtual void addVelocityTo(Eigen::Vector6d& _vel) override;
 
   // Documentation inherited
-  virtual void setPartialAccelerationTo(Eigen::Vector6d& _partialAcceleration,
-                                        const Eigen::Vector6d& _childVelocity);
+  virtual void setPartialAccelerationTo(
+      Eigen::Vector6d& _partialAcceleration,
+      const Eigen::Vector6d& _childVelocity) override;
 
   // Documentation inherited
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc);
+  virtual void addAccelerationTo(Eigen::Vector6d& _acc) override;
 
   // Documentation inherited
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange);
+  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                    const Eigen::Matrix6d& _childArtInertia);
+  virtual void addChildArtInertiaTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
   virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertia,
-      const Eigen::Matrix6d& _childArtInertia);
+      const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia);
+  virtual void updateInvProjArtInertia(
+      const Eigen::Matrix6d& _artInertia) override;
 
   // Documentation inherited
   virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia,
-      double _timeStep);
+      double _timeStep) override;
 
   // Documentation inherited
-  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
-                                   const Eigen::Matrix6d& _childArtInertia,
-                                   const Eigen::Vector6d& _childBiasForce,
-                                   const Eigen::Vector6d& _childPartialAcc);
+  virtual void addChildBiasForceTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) override;
 
   // Documentation inherited
-  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasImpulse);
+  virtual void addChildBiasImpulseTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) override;
 
   // Documentation inherited
   virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
-                                double _timeStep);
+                                  double _timeStep) override;
 
   // Documentation inherited
-  virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse);
+  virtual void updateTotalImpulse(
+      const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  virtual void resetTotalImpulses();
+  virtual void resetTotalImpulses() override;
 
   // Documentation inherited
-  virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc);
+  virtual void updateAcceleration(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange);
+  virtual void updateVelocityChange(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void updateVelocityWithVelocityChange();
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) override;
 
   // Documentation inherited
-  virtual void updateAccelerationWithVelocityChange(double _timeStep);
+  virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) override;
 
   // Documentation inherited
-  virtual void updateForceWithImpulse(double _timeStep);
+  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
+
+  // Documentation inherited
+  virtual void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) override;
+
+  // Documentation inherited
+  virtual void updateConstrainedTerms(double _timeStep) override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
-  // Recursive algorithms for equations of motion
+  /// \{ \name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   /// Add child's bias force to parent's one
@@ -377,6 +422,8 @@ protected:
   // Documentation inherited
   virtual Eigen::VectorXd getSpatialToGeneralized(
       const Eigen::Vector6d& _spatial);
+
+  /// \}
 
 private:
 };

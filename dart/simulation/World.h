@@ -142,7 +142,9 @@ public:
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
-  void step();
+  /// \param[in} _resetCommand True if you want to reset to zero the joint
+  /// command after simulation step.
+  void step(bool _resetCommand = true);
 
   /// Set current time
   void setTime(double _time);

@@ -102,64 +102,53 @@ double World::getTimeStep() const
   return mTimeStep;
 }
 
-
 //==============================================================================
-
-void World::reset() {
+void World::reset()
+{
   mTime = 0.0;
   mFrame = 0;
-  mRecording->clear();    
+  mRecording->clear();
 }
 
-
-void World::step()
+//==============================================================================
+void World::step(bool _resetCommand)
 {
-  // Integrate velocity unconstrained skeletons
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
+  // Integrate velocity for unconstrained skeletons
+  for (auto& skel : mSkeletons)
   {
-    if (!(*it)->isMobile())
+    if (!skel->isMobile())
       continue;
 
-    (*it)->computeForwardDynamicsRecursionPartB();
-    (*it)->integrateVelocities(mTimeStep);
-    (*it)->computeForwardKinematics(false, true, false);
+    skel->computeForwardDynamicsRecursionPartB();
+    skel->integrateVelocities(mTimeStep);
+    skel->computeForwardKinematics(false, true, false);
   }
 
-  // Detect active constraints and compute constraint impulses
+  // Detect activated constraints and compute constraint impulses
   mConstraintSolver->solve();
 
   // Compute velocity changes given constraint impulses
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
+  for (auto& skel : mSkeletons)
   {
-    if ((*it)->isImpulseApplied() && (*it)->isMobile())
+    if (!skel->isMobile())
+      continue;
+
+    if (skel->isImpulseApplied())
     {
-      (*it)->computeImpulseForwardDynamics();
-      (*it)->setImpulseApplied(false);
+      skel->computeImpulseForwardDynamics();
+      skel->setImpulseApplied(false);
     }
-  }
 
-  //
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if (!(*it)->isMobile())
-      continue;
+    skel->integratePositions(mTimeStep);
+    skel->computeForwardDynamicsRecursionPartA();
 
-    (*it)->integratePositions(mTimeStep);
-  }
-
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if (!(*it)->isMobile())
-      continue;
-
-    (*it)->computeForwardDynamicsRecursionPartA();
-    (*it)->resetForces();
-    (*it)->clearExternalForces();
-//    (*it)->clearConstraintImpulses();
+    if (_resetCommand)
+    {
+      skel->resetForces();
+      skel->clearExternalForces();
+//    skel->clearConstraintImpulses();
+      skel->resetCommands();
+    }
   }
 
   mTime += mTimeStep;

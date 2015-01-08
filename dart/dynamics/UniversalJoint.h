@@ -70,12 +70,6 @@ public:
   ///
   const Eigen::Vector3d& getAxis2() const;
 
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
-
 protected:
   // Documentation inherited
   virtual void updateLocalTransform();

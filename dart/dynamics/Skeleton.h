@@ -208,13 +208,35 @@ public:
   //----------------------------------------------------------------------------
 
   /// Return degrees of freedom of this skeleton
-  DEPRECATED(4.1) size_t getDof() const;
+  DEPRECATED(4.1)
+  size_t getDof() const;
 
   /// Return degrees of freedom of this skeleton
   size_t getNumDofs() const;
 
   ///
   GenCoordInfo getGenCoordInfo(size_t _index) const;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Command
+  //----------------------------------------------------------------------------
+
+  /// Set a single command
+  virtual void setCommand(size_t _index, double _command);
+
+  /// Set a sinlge command
+  virtual double getCommand(size_t _index) const;
+
+  /// Set commands
+  virtual void setCommands(const Eigen::VectorXd& _commands);
+
+  /// Get commands
+  virtual Eigen::VectorXd getCommands() const;
+
+  /// Set zero all the positions
+  virtual void resetCommands();
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Position
@@ -354,13 +376,15 @@ public:
   //----------------------------------------------------------------------------
 
   ///
-  DEPRECATED(4.2) void setConstraintImpulses(const Eigen::VectorXd& _impulses);
+  DEPRECATED(4.2)
+  void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   /// Set constraint impulses applying to joint
   void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   ///
-  DEPRECATED(4.2) Eigen::VectorXd getConstraintImpulses() const;
+  DEPRECATED(4.2)
+  Eigen::VectorXd getConstraintImpulses() const;
 
   /// Return constraint impulses applied to joint
   Eigen::VectorXd getJointConstraintImpulses() const;
@@ -405,9 +429,6 @@ public:
   void computeInverseDynamics(bool _withExternalForces = false,
                               bool _withDampingForces = false);
 
-  /// Compute hybrid dynamics
-//  void computeHybridDynamics();
-
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
@@ -416,19 +437,19 @@ public:
   /// (b) generalized constraints on Joint
   void clearConstraintImpulses();
 
-  // TODO(JS): To be deprecated
   /// Set constraint force vector.
-  DEPRECATED(4.2) void setConstraintForceVector(const Eigen::VectorXd& _Fc);
+  DEPRECATED(4.2)
+  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
 
-  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode Body node contraint impulse, _imp, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode
   void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
 
-  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
   /// \param _bodyNode Body node contraint impulse, _imp1, is applied
   /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
   /// \param _bodyNode Body node contraint impulse, _imp2, is applied
@@ -436,12 +457,12 @@ public:
   void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
                          BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
 
-  /// Update bias impulses due to impulse[_imp] on body node [_bodyNode]
+  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
   void updateBiasImpulse(SoftBodyNode* _softBodyNode,
                          PointMass* _pointMass,
                          const Eigen::Vector3d& _imp);
 
-  /// Update velocity changes in body nodes and joints due to applied
+  /// \brief Update velocity changes in body nodes and joints due to applied
   /// impulse
   void updateVelocityChange();
 
@@ -458,9 +479,6 @@ public:
 
   /// Compute impulse-based inverse dynamics
 //  void computeImpulseInverseDynamics() {}
-
-  /// Compute impulse-based hybrid dynamics
-//  void computeImpulseHybridDynamics() {}
 
   //----------------------------------------------------------------------------
   // Equations of Motion
@@ -483,28 +501,32 @@ public:
 
   /// Get Coriolis force vector of the skeleton.
   /// \remarks Please use getCoriolisForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getCoriolisForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getCoriolisForceVector();
 
   /// Get Coriolis force vector of the skeleton.
   const Eigen::VectorXd& getCoriolisForces();
 
   /// Get gravity force vector of the skeleton.
   /// \remarks Please use getGravityForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getGravityForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getGravityForceVector();
 
   /// Get gravity force vector of the skeleton.
   const Eigen::VectorXd& getGravityForces();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   /// \remarks Please use getCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getCombinedVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getCombinedVector();
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   const Eigen::VectorXd& getCoriolisAndGravityForces();
 
   /// Get external force vector of the skeleton.
   /// \remarks Please use getExternalForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getExternalForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getExternalForceVector();
 
   /// Get external force vector of the skeleton.
   const Eigen::VectorXd& getExternalForces();
@@ -514,7 +536,8 @@ public:
 
   /// Get constraint force vector.
   /// \remarks Please use getConstraintForces() instead.
-  DEPRECATED(4.2) const Eigen::VectorXd& getConstraintForceVector();
+  DEPRECATED(4.2)
+  const Eigen::VectorXd& getConstraintForceVector();
 
   /// Get constraint force vector.
   const Eigen::VectorXd& getConstraintForces();
@@ -578,13 +601,8 @@ public:
 
   /// Compute recursion part B of inverse dynamics
   void computeInverseDynamicsRecursionB(bool _withExternalForces = false,
-                                        bool _withDampingForces = false);
-
-  /// Compute recursion part A of hybrid dynamics
-//  void computeHybridDynamicsRecursionA();
-
-  /// Compute recursion part B of hybrid dynamics
-//  void computeHybridDynamicsRecursionB();
+                                        bool _withDampingForces = false,
+                                        bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -607,31 +625,35 @@ protected:
 
   /// Update Coriolis force vector of the skeleton.
   /// \remarks Please use updateCoriolisForces() instead.
-  DEPRECATED(4.2) virtual void updateCoriolisForceVector();
+  DEPRECATED(4.2)
+  virtual void updateCoriolisForceVector();
 
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces();
 
   /// Update gravity force vector of the skeleton.
   /// \remarks Please use updateGravityForces() instead.
-  DEPRECATED(4.2) virtual void updateGravityForceVector();
+  DEPRECATED(4.2)
+  virtual void updateGravityForceVector();
 
   /// Update gravity force vector of the skeleton.
   void updateGravityForces();
 
   /// Update combined vector of the skeletong.
   /// \remarks Please use updateCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2) virtual void updateCombinedVector();
+  DEPRECATED(4.2)
+  virtual void updateCombinedVector();
 
   /// Update combined vector of the skeletong.
   void updateCoriolisAndGravityForces();
 
-  /// update external force vector to generalized torques.
+  /// update external force vector to generalized forces.
   /// \remarks Please use updateExternalForces() instead.
-  DEPRECATED(4.2) virtual void updateExternalForceVector();
+  DEPRECATED(4.2)
+  virtual void updateExternalForceVector();
 
   // TODO(JS): Not implemented yet
-  /// update external force vector to generalized torques.
+  /// update external force vector to generalized forces.
   void updateExternalForces();
 
 //  /// Update damping force vector.

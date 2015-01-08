@@ -605,8 +605,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass1)
     {
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   mJacobians1[_idx].tail<3>());
+      mBodyNode1->getSkeleton()->updateBiasImpulse(
+            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
     }
     else
     {
@@ -619,15 +619,15 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 
     if (mPointMass2)
     {
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   mJacobians2[_idx].tail<3>());
+      mBodyNode2->getSkeleton()->updateBiasImpulse(
+            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
     }
     else
     {
       if (mBodyNode2->isReactive())
       {
         mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                     mJacobians2[_idx]);
+                                                       mJacobians2[_idx]);
       }
     }
 
@@ -639,8 +639,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     if (mPointMass1)
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mSoftBodyNode1, mPointMass1,
-                                                   mJacobians1[_idx].tail<3>());
+      mBodyNode1->getSkeleton()->updateBiasImpulse(
+            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     else
@@ -657,8 +657,8 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
     if (mPointMass2)
     {
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mSoftBodyNode2, mPointMass2,
-                                                   mJacobians2[_idx].tail<3>());
+      mBodyNode2->getSkeleton()->updateBiasImpulse(
+            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
       mBodyNode2->getSkeleton()->updateVelocityChange();
     }
     else

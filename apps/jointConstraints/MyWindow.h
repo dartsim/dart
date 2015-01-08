@@ -73,7 +73,6 @@ private:
   Controller* mController;
   dart::constraint::WeldJointConstraint* mWeldJoint;
   int mImpulseDuration;
-  void addWeldConstraint();
   bool mHarnessOn;
 
 };

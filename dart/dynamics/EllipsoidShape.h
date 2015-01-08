@@ -54,7 +54,8 @@ public:
 
   /// \brief Set size of this box.
   /// \warning Don't use me any more
-  DEPRECATED(4.0) void setDim(const Eigen::Vector3d& _size);
+  DEPRECATED(4.0)
+  void setDim(const Eigen::Vector3d& _size);
 
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);

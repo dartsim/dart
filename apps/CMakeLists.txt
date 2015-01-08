@@ -7,6 +7,7 @@ foreach(APPDIR
     atlasSimbicon
     bipedStand
     hardcodedDesign    
+    hybridDynamics
     jointConstraints
     mixedChain
     operationalSpaceControl

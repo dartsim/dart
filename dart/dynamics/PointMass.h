@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace renderer {
@@ -219,17 +220,6 @@ public:
 
   //----------------------------------------------------------------------------
 
-  ///
-  void updateVelocityWithVelocityChange();
-
-  ///
-  void updateAccelerationWithVelocityChange(double _timeStep);
-
-  ///
-  void updateForceWithImpulse(double _timeStep);
-
-  //----------------------------------------------------------------------------
-
   /// Add linear Cartesian force to this node.
   /// \param[in] _force External force.
   /// \param[in] _isForceLocal True if _force's reference frame is of the parent
@@ -313,64 +303,129 @@ protected:
   ///
   void init();
 
-  ///
+  //----------------------------------------------------------------------------
+  /// \{ \name Recursive dynamics routines
+  //----------------------------------------------------------------------------
+
+  /// \brief Update transformation.
   void updateTransform();
 
-  ///
+  /// \brief Update body velocity.
   void updateVelocity();
 
-  ///
+  /// \brief Update partial body acceleration due to parent joint's velocity.
   void updatePartialAcceleration();
 
-  ///
+  /// \brief Update articulated body inertia. Forward dynamics routine.
+  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  void updateArtInertiaFD(double _timeStep);
+
+  /// \brief Update bias force associated with the articulated body inertia.
+  /// Forward dynamics routine.
+  /// \param[in] _gravity Vector of gravitational acceleration
+  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
+  void updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity);
+
+  /// \brief Update bias impulse associated with the articulated body inertia.
+  /// Impulse-based forward dynamics routine.
+  void updateBiasImpulseFD();
+
+  /// \brief Update body acceleration with the partial body acceleration.
+  void updateAccelerationID();
+
+  /// \brief Update body acceleration. Forward dynamics routine.
+  void updateAccelerationFD();
+
+  /// \brief Update body velocity change. Impluse-based forward dynamics
+  /// routine.
+  void updateVelocityChangeFD();
+
+  /// \brief Update body force. Inverse dynamics routine.
+  void updateTransmittedForceID(const Eigen::Vector3d& _gravity,
+                                bool _withExternalForces = false);
+
+  /// \brief Update body force. Forward dynamics routine.
+  void updateTransmittedForce();
+
+  /// \brief Update body force. Impulse-based forward dynamics routine.
+  void updateTransmittedImpulse();
+
+  /// \brief Update the joint force. Inverse dynamics routine.
+  void updateJointForceID(double _timeStep,
+                          double _withDampingForces,
+                          double _withSpringForces);
+
+  /// \brief Update constrained terms due to the constraint impulses. Foward
+  /// dynamics routine.
+  void updateConstrainedTermsFD(double _timeStep);
+
+  //- DEPRECATED ---------------------------------------------------------------
+
+  /// \warning Please use updateAccelerationID().
+  DEPRECATED(4.3)
   void updateAcceleration();
 
-  ///
+  /// \warning Please use updateTransmittedForceID().
+  DEPRECATED(4.3)
   void updateBodyForce(const Eigen::Vector3d& _gravity,
                        bool _withExternalForces = false);
 
-  ///
+  /// \warning Please use updateArtInertiaFD().
+  DEPRECATED(4.3)
   void updateArticulatedInertia(double _dt);
 
-  ///
+  /// \warning Please use updateJointForceID().
+  DEPRECATED(4.3)
   void updateGeneralizedForce(bool _withDampingForces = false);
 
-  ///
-  void updateBiasForce(double _dt, const Eigen::Vector3d& _gravity);
-
-  ///
+  /// \warning Please use updateAccelerationFD().
+  DEPRECATED(4.3)
   void updateJointAndBodyAcceleration();
 
-  ///
-  void updateTransmittedForce();
+  /// \brief Update impulsive bias force for impulse-based forward dynamics
+  /// algorithm.
+  /// \warning Please use updateBiasImpulseFD().
+  DEPRECATED(4.3)
+  void updateBiasImpulse();
+
+  /// \brief Update joint velocity change for impulse-based forward dynamics
+  /// algorithm.
+  /// \warning Please use updateVelocityChangeFD().
+  DEPRECATED(4.3)
+  void updateJointVelocityChange();
+
+  /// \brief Update body velocity change for impulse-based forward dynamics
+  /// algorithm.
+  DEPRECATED(4.3)
+  void updateBodyVelocityChange();
+
+  /// \warning Please use updateTransmittedImpulse().
+  DEPRECATED(4.3)
+  void updateBodyImpForceFwdDyn();
+
+  DEPRECATED(4.3)
+  void updateConstrainedJointAndBodyAcceleration(double _timeStep);
+
+  DEPRECATED(4.3)
+  void updateConstrainedTransmittedForce(double _timeStep);
+
+  DEPRECATED(4.3)
+  void updateVelocityWithVelocityChange();
+
+  DEPRECATED(4.3)
+  void updateAccelerationWithVelocityChange(double _timeStep);
+
+  DEPRECATED(4.3)
+  void updateForceWithImpulse(double _timeStep);
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Equations of motion related routines
+  //----------------------------------------------------------------------------
 
   ///
   void updateMassMatrix();
-
-  //----------------------------------------------------------------------------
-
-  /// Update impulsive bias force for impulse-based forward dynamics
-  /// algorithm
-  void updateBiasImpulse();
-
-  /// Update joint velocity change for impulse-based forward dynamics
-  /// algorithm
-  void updateJointVelocityChange();
-
-  /// Update body velocity change for impulse-based forward dynamics
-  /// algorithm
-  void updateBodyVelocityChange();
-
-  ///
-  void updateBodyImpForceFwdDyn();
-
-  ///
-  void updateConstrainedJointAndBodyAcceleration(double _timeStep);
-
-  ///
-  void updateConstrainedTransmittedForce(double _timeStep);
-
-  //----------------------------------------------------------------------------
 
   ///
   void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
@@ -406,6 +461,8 @@ protected:
   /// Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
   void aggregateExternalForces(Eigen::VectorXd* _Fext);
+
+  /// \}
 
   //-------------------- Cache Data for Mass Matrix ----------------------------
   ///

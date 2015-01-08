@@ -545,6 +545,12 @@ void openXMLFile(tinyxml2::XMLDocument& doc,
     };
 }
 
+bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)
+{
+  const char* const result = element->Attribute(name);
+  return result != 0;
+}
+
 std::string getAttribute(tinyxml2::XMLElement * element,
                                 const char* const name)
 {
@@ -617,7 +623,7 @@ ElementEnumerator& ElementEnumerator::operator=(const ElementEnumerator& _rhs)
     this->m_name = _rhs.m_name;
     this->m_parent = _rhs.m_parent;
     this->m_current = _rhs.m_current;
-    return *this;
+  return *this;
 }
 
 } // namespace utils

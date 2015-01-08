@@ -84,6 +84,39 @@ size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setCommand(size_t /*_index*/, double /*_command*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+double ZeroDofJoint::getCommand(size_t _index) const
+{
+  dterr << "[ZeroDofJoint::getCommand]: index[" << _index << "] out of range"
+        << std::endl;
+
+  return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setCommands(const Eigen::VectorXd& /*_commands*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getCommands() const
+{
+  return Eigen::Matrix<double, 0, 1>();
+}
+
+//==============================================================================
+void ZeroDofJoint::resetCommands()
+{
+  // Do nothing
+}
+
+//==============================================================================
 void ZeroDofJoint::setPosition(size_t _index, double _position)
 {
   // Do nothing
@@ -396,6 +429,13 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
+{
+  assert(mChildBodyNode);
+  return mChildBodyNode->getBodyForce();
+}
+
+//==============================================================================
 const math::Jacobian ZeroDofJoint::getLocalJacobian() const
 {
   return Eigen::Matrix<double, 6, 0>();
@@ -434,16 +474,7 @@ void ZeroDofJoint::addAccelerationTo(Eigen::Vector6d& /*_acc*/)
 }
 
 //==============================================================================
-void ZeroDofJoint::addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                     const Eigen::Matrix6d& _childArtInertia)
-{
-  // Add child body's articulated inertia to parent body's articulated inertia.
-  // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
-}
-
-//==============================================================================
-void ZeroDofJoint::addChildArtInertiaImplicitTo(
+void ZeroDofJoint::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
@@ -453,7 +484,17 @@ void ZeroDofJoint::addChildArtInertiaImplicitTo(
 }
 
 //==============================================================================
-void ZeroDofJoint::updateInvProjArtInertia(const Eigen::Matrix6d& /*_artInertia*/)
+void ZeroDofJoint::addChildArtInertiaImplicitTo(
+    Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
+{
+  // Add child body's articulated inertia to parent body's articulated inertia.
+  // Note that mT should be updated.
+  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+}
+
+//==============================================================================
+void ZeroDofJoint::updateInvProjArtInertia(
+    const Eigen::Matrix6d& /*_artInertia*/)
 {
   // Do nothing
 }
@@ -467,15 +508,16 @@ void ZeroDofJoint::updateInvProjArtInertiaImplicit(
 }
 
 //==============================================================================
-void ZeroDofJoint::addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
-                                    const Eigen::Matrix6d& _childArtInertia,
-                                    const Eigen::Vector6d& _childBiasForce,
-                                    const Eigen::Vector6d& _childPartialAcc)
+void ZeroDofJoint::addChildBiasForceTo(
+    Eigen::Vector6d& _parentBiasForce,
+    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Vector6d& _childBiasForce,
+    const Eigen::Vector6d& _childPartialAcc)
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
   _parentBiasForce += math::dAdInvT(mT, _childBiasForce
-                                    + _childArtInertia * _childPartialAcc);
+                                    + _childArtInertia*_childPartialAcc);
 }
 
 //==============================================================================
@@ -491,7 +533,7 @@ void ZeroDofJoint::addChildBiasImpulseTo(
 
 //==============================================================================
 void ZeroDofJoint::updateTotalForce(const Eigen::Vector6d& /*_bodyForce*/,
-                                 double /*_timeStep*/)
+                                    double /*_timeStep*/)
 {
   // Do nothing
 }
@@ -510,32 +552,51 @@ void ZeroDofJoint::resetTotalImpulses()
 
 //==============================================================================
 void ZeroDofJoint::updateAcceleration(const Eigen::Matrix6d& /*_artInertia*/,
-                                   const Eigen::Vector6d& /*_spatialAcc*/)
+                                      const Eigen::Vector6d& /*_spatialAcc*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ZeroDofJoint::updateVelocityChange(const Eigen::Matrix6d& /*_artInertia*/,
-                                     const Eigen::Vector6d& /*_velocityChange*/)
+void ZeroDofJoint::updateVelocityChange(
+    const Eigen::Matrix6d& /*_artInertia*/,
+    const Eigen::Vector6d& /*_velocityChange*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ZeroDofJoint::updateVelocityWithVelocityChange()
+void ZeroDofJoint::updateForceID(const Eigen::Vector6d& /*_bodyForce*/,
+                                 double /*_timeStep*/,
+                                 bool /*_withDampingForces*/,
+                                 bool /*_withSpringForces*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ZeroDofJoint::updateAccelerationWithVelocityChange(double _timeStep)
+void ZeroDofJoint::updateForceFD(const Eigen::Vector6d& /*_bodyForce*/,
+                                 double /*_timeStep*/,
+                                 bool /*_withDampingForces*/,
+                                 bool /*_withSpringForces*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ZeroDofJoint::updateForceWithImpulse(double _timeStep)
+void ZeroDofJoint::updateImpulseID(const Eigen::Vector6d& /*_bodyImpulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::updateImpulseFD(const Eigen::Vector6d& /*_bodyImpulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::updateConstrainedTerms(double /*_timeStep*/)
 {
   // Do nothing
 }

@@ -219,9 +219,9 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
   assert(_face[0] != _face[1]);
   assert(_face[1] != _face[2]);
   assert(_face[2] != _face[0]);
-  assert(0 <= _face[0] && _face[0] < math::castUIntToInt(mPointMasses.size()));
-  assert(0 <= _face[1] && _face[1] < math::castUIntToInt(mPointMasses.size()));
-  assert(0 <= _face[2] && _face[2] < math::castUIntToInt(mPointMasses.size()));
+  assert(0 <= _face[0] && static_cast<size_t>(_face[0]) < mPointMasses.size());
+  assert(0 <= _face[1] && static_cast<size_t>(_face[1]) < mPointMasses.size());
+  assert(0 <= _face[2] && static_cast<size_t>(_face[2]) < mPointMasses.size());
   mFaces.push_back(_face);
 }
 
@@ -275,20 +275,20 @@ void SoftBodyNode::updatePartialAcceleration()
 }
 
 //==============================================================================
-void SoftBodyNode::updateAcceleration()
+void SoftBodyNode::updateAccelerationID()
 {
-  BodyNode::updateAcceleration();
+  BodyNode::updateAccelerationID();
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateAcceleration();
+    mPointMasses.at(i)->updateAccelerationID();
 }
 
 //==============================================================================
-void SoftBodyNode::updateBodyWrench(const Eigen::Vector3d& _gravity,
-                                   bool _withExternalForces)
+void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
+                                            bool _withExternalForces)
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateBodyForce(_gravity, _withExternalForces);
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
 
   // Gravity force
   if (mGravityMode == true)
@@ -313,42 +313,60 @@ void SoftBodyNode::updateBodyWrench(const Eigen::Vector3d& _gravity,
   mF -= math::dad(mV, mI * mV);
 
   //
-  for (std::vector<BodyNode*>::iterator iChildBody = mChildBodyNodes.begin();
-       iChildBody != mChildBodyNodes.end(); ++iChildBody)
+  for (const auto& childBodyNode : mChildBodyNodes)
   {
-    Joint* childJoint = (*iChildBody)->getParentJoint();
+    Joint* childJoint = childBodyNode->getParentJoint();
     assert(childJoint != NULL);
 
     mF += math::dAdInvT(childJoint->getLocalTransform(),
-                        (*iChildBody)->getBodyForce());
+                        childBodyNode->getBodyForce());
   }
-//  for (size_t i = 0; i < mPointMasses.size(); i++)
-//  {
-//    mF.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mF);
-//    mF.tail<3>() += mPointMasses[i]->mF;
-//  }
-
-  // TODO(JS): mWrench and mF are duplicated. Remove one of them.
-  mParentJoint->mWrench = mF;
+  for (auto& pointMass : mPointMasses)
+  {
+    mF.head<3>() += pointMass->mX.cross(pointMass->mF);
+    mF.tail<3>() += pointMass->mF;
+  }
 
   // Verification
   assert(!math::isNan(mF));
 }
 
 //==============================================================================
-void SoftBodyNode::updateGeneralizedForce(bool _withDampingForces)
+void SoftBodyNode::updateJointForceID(double _timeStep,
+                                      double _withDampingForces,
+                                      double _withSpringForces)
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateGeneralizedForce(_withDampingForces);
+    mPointMasses.at(i)->updateJointForceID(_timeStep,
+                                           _withDampingForces,
+                                           _withSpringForces);
 
-  BodyNode::updateGeneralizedForce(_withDampingForces);
+  BodyNode::updateJointForceID(_timeStep,
+                               _withDampingForces,
+                               _withSpringForces);
+}
+
+//==============================================================================
+void SoftBodyNode::updateJointForceFD(double _timeStep,
+                                      double _withDampingForces,
+                                      double _withSpringForces)
+{
+  BodyNode::updateJointForceFD(_timeStep,
+                               _withDampingForces,
+                               _withSpringForces);
+}
+
+//==============================================================================
+void SoftBodyNode::updateJointImpulseFD()
+{
+  BodyNode::updateJointImpulseFD();
 }
 
 //==============================================================================
 void SoftBodyNode::updateArtInertia(double _timeStep)
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateArticulatedInertia(_timeStep);
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateArtInertiaFD(_timeStep);
 
   assert(mParentJoint != NULL);
 
@@ -357,20 +375,20 @@ void SoftBodyNode::updateArtInertia(double _timeStep)
   mArtInertiaImplicit = mI;
 
   // and add child articulated body inertia
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
+  for (const auto& child : mChildBodyNodes)
   {
-    (*it)->getParentJoint()->addChildArtInertiaTo(
-          mArtInertia, (*it)->mArtInertia);
-    (*it)->getParentJoint()->addChildArtInertiaImplicitTo(
-          mArtInertiaImplicit, (*it)->mArtInertiaImplicit);
+    Joint* childJoint = child->getParentJoint();
+
+    childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
+    childJoint->addChildArtInertiaImplicitTo(mArtInertiaImplicit,
+                                             child->mArtInertiaImplicit);
   }
 
   //
-  for (size_t i = 0; i < mPointMasses.size(); i++)
+  for (const auto& pointMass : mPointMasses)
   {
-    _addPiToArtInertia(mPointMasses[i]->mX, mPointMasses[i]->mPi);
-    _addPiToArtInertiaImplicit(mPointMasses[i]->mX, mPointMasses[i]->mImplicitPi);
+    _addPiToArtInertia(pointMass->mX, pointMass->mPi);
+    _addPiToArtInertiaImplicit(pointMass->mX, pointMass->mImplicitPi);
   }
 
   // Verification
@@ -390,8 +408,8 @@ void SoftBodyNode::updateArtInertia(double _timeStep)
 void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
                                    double _timeStep)
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateBiasForce(_timeStep, _gravity);
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateBiasForceFD(_timeStep, _gravity);
 
   // Gravity force
   if (mGravityMode == true)
@@ -406,20 +424,21 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
   assert(!math::isNan(mBiasForce));
 
   // And add child bias force
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
+  for (const auto& childBodyNode : mChildBodyNodes)
   {
-    (*it)->getParentJoint()->addChildBiasForceTo(mBiasForce,
-                                                 (*it)->mArtInertiaImplicit,
-                                                 (*it)->mBiasForce,
-                                                 (*it)->mPartialAcceleration);
+    Joint* childJoint = childBodyNode->getParentJoint();
+
+    childJoint->addChildBiasForceTo(mBiasForce,
+                                    childBodyNode->mArtInertiaImplicit,
+                                    childBodyNode->mBiasForce,
+                                    childBodyNode->mPartialAcceleration);
   }
 
   //
-  for (size_t i = 0; i < mPointMasses.size(); i++)
+  for (const auto& pointMass : mPointMasses)
   {
-    mBiasForce.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mBeta);
-    mBiasForce.tail<3>() += mPointMasses[i]->mBeta;
+    mBiasForce.head<3>() += pointMass->mX.cross(pointMass->mBeta);
+    mBiasForce.tail<3>() += pointMass->mBeta;
   }
 
   // Verifycation
@@ -432,47 +451,46 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointAndBodyAcceleration()
+void SoftBodyNode::updateAccelerationFD()
 {
-  BodyNode::updateJointAndBodyAcceleration();
+  BodyNode::updateAccelerationFD();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointAndBodyAcceleration();
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateAccelerationFD();
 }
 
 //==============================================================================
-void SoftBodyNode::updateTransmittedWrench()
+void SoftBodyNode::updateTransmittedForceFD()
 {
-  BodyNode::updateTransmittedWrench();
+  BodyNode::updateTransmittedForceFD();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateTransmittedForce();
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateTransmittedForce();
 }
 
 //==============================================================================
 void SoftBodyNode::updateBiasImpulse()
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateBiasImpulse();
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateBiasImpulseFD();
 
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
-//  assert(mImpFext == Eigen::Vector6d::Zero());
 
   // And add child bias impulse
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
+  for (auto& childBodyNode : mChildBodyNodes)
   {
-    (*it)->getParentJoint()->addChildBiasImpulseTo(mBiasImpulse,
-                                                   (*it)->mArtInertia,
-                                                   (*it)->mBiasImpulse);
+    Joint* childJoint = childBodyNode->getParentJoint();
+
+    childJoint->addChildBiasImpulseTo(mBiasImpulse,
+                                      childBodyNode->mArtInertia,
+                                      childBodyNode->mBiasImpulse);
   }
 
-  // TODO(JS):
-  for (size_t i = 0; i < mPointMasses.size(); i++)
+  for (auto& pointMass : mPointMasses)
   {
-    mBiasImpulse.head<3>() += mPointMasses[i]->mX.cross(mPointMasses[i]->mImpBeta);
-    mBiasImpulse.tail<3>() += mPointMasses[i]->mImpBeta;
+    mBiasImpulse.head<3>() += pointMass->mX.cross(pointMass->mImpBeta);
+    mBiasImpulse.tail<3>() += pointMass->mImpBeta;
   }
 
   // Verification
@@ -483,45 +501,30 @@ void SoftBodyNode::updateBiasImpulse()
 }
 
 //==============================================================================
-void SoftBodyNode::updateJointVelocityChange()
+void SoftBodyNode::updateVelocityChangeFD()
 {
-  BodyNode::updateJointVelocityChange();
+  BodyNode::updateVelocityChangeFD();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointVelocityChange();
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateVelocityChangeFD();
 }
 
 //==============================================================================
-//void SoftBodyNode::updateBodyVelocityChange()
-//{
-//  BodyNode::updateBodyVelocityChange();
-
-//  for (size_t i = 0; i < mPointMasses.size(); ++i)
-//    mPointMasses.at(i)->updateBodyVelocityChange();
-//}
-
-//==============================================================================
-void SoftBodyNode::updateBodyImpForceFwdDyn()
+void SoftBodyNode::updateTransmittedImpulse()
 {
-  BodyNode::updateBodyImpForceFwdDyn();
+  BodyNode::updateTransmittedImpulse();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateBodyImpForceFwdDyn();
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateTransmittedImpulse();
 }
 
 //==============================================================================
-void SoftBodyNode::updateConstrainedJointAndBodyAcceleration(double _timeStep)
+void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
-  BodyNode::updateConstrainedJointAndBodyAcceleration(_timeStep);
+  BodyNode::updateConstrainedTerms(_timeStep);
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateConstrainedJointAndBodyAcceleration(_timeStep);
-}
-
-//==============================================================================
-void SoftBodyNode::updateConstrainedTransmittedForce(double _timeStep)
-{
-  BodyNode::updateConstrainedTransmittedForce(_timeStep);
+  for (auto& pointMass : mPointMasses)
+    pointMass->updateConstrainedTermsFD(_timeStep);
 }
 
 //==============================================================================
