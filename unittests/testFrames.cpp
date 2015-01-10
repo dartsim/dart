@@ -135,7 +135,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 {
   std::vector<SimpleFrame*> frames;
 
-  double tolerance = 1e-5;
+  double tolerance = 1e-6;
 
   SimpleFrame A(Frame::World(), "A");
   frames.push_back(&A);
@@ -307,6 +307,19 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
       EXPECT_TRUE( equals(a_total[i], a_actual) );
     }
+
+    // Test relative computations
+    for(size_t i=0; i<frames.size(); ++i)
+    {
+      Frame* F = frames[i];
+      Frame* P = F->getParentFrame();
+
+      Eigen::Vector6d v_rel = F->getSpatialVelocity(P, F);
+      Eigen::Vector6d a_rel = F->getSpatialAcceleration(P, F);
+
+      EXPECT_TRUE( equals(v_rels[i], v_rel, tolerance) );
+      EXPECT_TRUE( equals(a_rels[i], a_rel, tolerance) );
+    }
   }
 
   // Testing conversion between spatial and classical accelerations
@@ -329,6 +342,9 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       alpha_rels[i] = random_vec<3>();
 
       SimpleFrame* F = frames[i];
+      Eigen::Isometry3d rel_tf;
+      randomize_transform(rel_tf);
+      F->setRelativeTransform(rel_tf);
       F->setClassicDerivatives(v_rels[i], w_rels[i], a_rels[i], alpha_rels[i]);
 
       Eigen::Vector3d offset = F->getRelativeTransform().translation();
@@ -369,6 +385,22 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       EXPECT_TRUE( equals(a_total[i], a_actual, tolerance) );
       EXPECT_TRUE( equals(alpha_total[i], alpha_actual, tolerance) );
     }
+
+    // Test relative computations
+    for(size_t i=0; i<frames.size(); ++i)
+    {
+      SimpleFrame* F = frames[i];
+      Frame* P = F->getParentFrame();
+      Eigen::Vector3d v_rel = F->getLinearVelocity(P, P);
+      Eigen::Vector3d w_rel = F->getAngularVelocity(P, P);
+      Eigen::Vector3d a_rel = F->getLinearAcceleration(P, P);
+      Eigen::Vector3d alpha_rel = F->getAngularAcceleration(P, P);
+
+      EXPECT_TRUE( equals(v_rels[i], v_rel, tolerance) );
+      EXPECT_TRUE( equals(w_rels[i], w_rel, tolerance) );
+      EXPECT_TRUE( equals(a_rels[i], a_rel, tolerance) );
+      EXPECT_TRUE( equals(alpha_rels[i], alpha_rel, tolerance) );
+    }
   }
 }
 
@@ -380,24 +412,41 @@ public:
   Eigen::Isometry3d x;
   Eigen::Vector6d v;
 
-  FrameState& integrate(const FrameDerivative& f_dt)
+  FrameState& integrate(const FrameDerivative& f_dt, bool spatial)
   {
-//    Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
-//    xi.translate(x.translation());
-//    xi.translate(f_dt.block<3,1>(3,0));
-//    Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
-//    if(theta.norm() > 0)
-//      xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
-//    xi.rotate(x.rotation());
+    if(spatial)
+    {
+      x.translate(f_dt.block<3,1>(3,0));
+//      x.pretranslate(f_dt.block<3,1>(3,0));
+      Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
+      if(theta.norm() > 0)
+        x.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
 
-//    x = xi;
+//      x.linear() = x.linear() * math::expMapRot(f_dt.block<3,1>(0,0));
+//      x.translation() = x.translation() + f_dt.block<3,1>(3,0);
 
-    // TODO: Get f_dt in the correct frame before integrating
+//      Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
+//      xi.translate(x.translation());
+//      xi.translate(f_dt.block<3,1>(3,0));
+//      Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
+//      if(theta.norm() > 0)
+//        xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+//      xi.rotate(x.rotation());
 
-    x.translate(f_dt.block<3,1>(3,0));
-    Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
-    if(theta.norm() > 0)
-      x.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+//      x = xi;
+    }
+    else
+    {
+      Eigen::Isometry3d xi(Eigen::Isometry3d::Identity());
+      xi.translate(x.translation());
+      xi.translate(f_dt.block<3,1>(3,0));
+      Eigen::Vector3d theta = f_dt.block<3,1>(0,0);
+      if(theta.norm() > 0)
+        xi.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+      xi.rotate(x.rotation());
+
+      x = xi;
+    }
 
     v += f_dt.block<6,1>(6,0);
 
@@ -428,90 +477,201 @@ DerivVector operator*(const DerivVector& dv, double dt)
   return result;
 }
 
-StateVector integrate(const StateVector& sv, const DerivVector& f_dt)
+StateVector integrate(const StateVector& sv, const DerivVector& f_dt,
+                      bool spatial)
 {
   assert( sv.size() == f_dt.size() );
 
   StateVector result = sv;
 
   for(size_t i=0; i<result.size(); ++i)
-    result[i].integrate(f_dt[i]);
+    result[i].integrate(f_dt[i], spatial);
 
   return result;
 }
 
-void setSpatialStates(const std::vector<SimpleFrame*>& targets,
-                      const StateVector& sv)
+void setStates(const std::vector<SimpleFrame*>& targets,
+                      const StateVector& sv, bool spatial)
 {
   assert( targets.size() == sv.size() );
-  for(size_t i=0; i<sv.size(); ++i)
+
+  if(spatial)
   {
-    SimpleFrame* F = targets[i];
-    F->setRelativeTransform(sv[i].x);
-    F->setRelativeSpatialVelocity(sv[i].v);
+    for(size_t i=0; i<sv.size(); ++i)
+    {
+      SimpleFrame* F = targets[i];
+      F->setRelativeTransform(sv[i].x);
+      F->setRelativeSpatialVelocity(sv[i].v);
+    }
+
+//    for(size_t i=0; i<sv.size(); ++i)
+//    {
+//      SimpleFrame* F = targets[i];
+//      Frame* P = F->getParentFrame();
+//      F->setRelativeTransform(sv[i].x);
+//      F->setRelativeSpatialVelocity(sv[i].v, P);
+//    }
+  }
+  else
+  {
+    for(size_t i=0; i<sv.size(); ++i)
+    {
+      SimpleFrame* F = targets[i];
+      Frame* P = F->getParentFrame();
+
+      F->setRelativeTransform(sv[i].x);
+
+      F->setClassicDerivatives(sv[i].v.block<3,1>(3,0),
+                               sv[i].v.block<3,1>(0,0),
+                               F->getLinearAcceleration(P,P),
+                               F->getAngularAcceleration(P,P));
+    }
   }
 }
 
-void getSpatialStates(const std::vector<SimpleFrame*>& targets, StateVector& sv)
+void getStates(const std::vector<SimpleFrame*>& targets, StateVector& sv,
+               bool spatial)
 {
   assert( targets.size() == sv.size() );
-  for(size_t i=0; i<sv.size(); ++i)
+//  std::cout << "getStates\n";
+
+  if(spatial)
   {
-    Frame* F = targets[i];
-    sv[i].x = F->getRelativeTransform();
-    sv[i].v = F->getRelativeSpatialVelocity();
+    for(size_t i=0; i<sv.size(); ++i)
+    {
+      Frame* F = targets[i];
+      sv[i].x = F->getRelativeTransform();
+      sv[i].v = F->getRelativeSpatialVelocity();
+    }
+
+//    for(size_t i=0; i<sv.size(); ++i)
+//    {
+//      Frame* F = targets[i];
+//      Frame* P = F->getParentFrame();
+//      sv[i].x = F->getRelativeTransform();
+//      sv[i].v = F->getSpatialVelocity(P, P);
+//    }
+  }
+  else
+  {
+    for(size_t i=0; i<sv.size(); ++i)
+    {
+      Frame* F = targets[i];
+      Frame* P = F->getParentFrame();
+      sv[i].x = F->getRelativeTransform();
+      sv[i].v.block<3,1>(3,0) = F->getLinearVelocity(P,P);
+      sv[i].v.block<3,1>(0,0) = F->getAngularVelocity(P,P);
+    }
   }
 }
 
 
-DerivVector getRelativeSpatialDerivatives(
+DerivVector getFollowerDerivatives(
     const std::vector<SimpleFrame*>& targets,
     const std::vector<SimpleFrame*>& followers,
     const Frame* R,
     const StateVector& sv_targets,
-    const StateVector& sv_followers)
+    const StateVector& sv_followers,
+    bool targets_spatial, bool followers_spatial)
 {
   assert( followers.size() == targets.size() );
   assert( sv_targets.size() == targets.size() );
   assert( sv_followers.size() == targets.size() );
+//  std::cout << "getFollowerDerivatives\n";
 
   DerivVector dv(targets.size());
 
-  setSpatialStates(targets, sv_targets);
-  setSpatialStates(followers, sv_followers);
+  setStates(targets, sv_targets, targets_spatial);
+  setStates(followers, sv_followers, followers_spatial);
 
-  for(size_t i=0; i<dv.size(); ++i)
+  if(followers_spatial)
   {
-    Frame* F = followers[i];
-    Frame* T = targets[i];
-    dv[i].block<6,1>(0,0) = T->getSpatialVelocity(R, F);
-    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
-  }
+//    for(size_t i=0; i<dv.size(); ++i)
+//    {
+//      Frame* F = followers[i];
+//      Frame* T = targets[i];
+//      dv[i].block<6,1>(0,0) = T->getSpatialVelocity(R, F);
+//      dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
+//    }
 
-//  for(size_t i=0; i<dv.size(); ++i)
-//  {
-//    Frame* F = followers[i];
-//    dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, F);
-//    Frame* T = targets[i];
-//    dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
-//  }
+    for(size_t i=0; i<dv.size(); ++i)
+    {
+      Frame* F = followers[i];
+      dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, F);
+      Frame* T = targets[i];
+      dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, F);
+    }
+
+//    for(size_t i=0; i<dv.size(); ++i)
+//    {
+//      Frame* T = targets[i];
+//      Frame* F = followers[i];
+//      dv[i].block<6,1>(0,0) = F->getSpatialVelocity(R, R);
+//      dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(R, R);
+//    }
+  }
+  else
+  {
+//    for(size_t i=0; i<dv.size(); ++i)
+//    {
+//      Frame* T = targets[i];
+//      dv[i].block<3,1>(3,0) = T->getLinearVelocity(R, R);
+//      dv[i].block<3,1>(0,0) = T->getAngularVelocity(R, R);
+//      dv[i].block<3,1>(9,0) = T->getLinearAcceleration(R, R);
+//      dv[i].block<3,1>(6,0) = T->getAngularAcceleration(R, R);
+//    }
+
+    for(size_t i=0; i<dv.size(); ++i)
+    {
+      Frame* F = followers[i];
+      Frame* T = targets[i];
+      dv[i].block<3,1>(3,0) = F->getLinearVelocity(R, R);
+      dv[i].block<3,1>(0,0) = F->getAngularVelocity(R, R);
+      dv[i].block<3,1>(9,0) = T->getLinearAcceleration(R, R);
+      dv[i].block<3,1>(6,0) = T->getAngularAcceleration(R, R);
+    }
+  }
 
   return dv;
 }
 
-DerivVector getSpatialDerivatives(const std::vector<SimpleFrame*>& targets,
-                                  const StateVector& sv)
+DerivVector getDerivatives(const std::vector<SimpleFrame*>& targets,
+                                  const StateVector& sv, bool spatial)
 {
   assert( targets.size() == sv.size() );
   DerivVector dv(sv.size());
+//  std::cout << "getDerivatives\n";
 
-  setSpatialStates(targets, sv);
+  setStates(targets, sv, spatial);
 
-  for(size_t i=0; i<dv.size(); ++i)
+  if(spatial)
   {
-    Frame* T = targets[i];
-    dv[i].block<6,1>(0,0) = T->getRelativeSpatialVelocity();
-    dv[i].block<6,1>(6,0) = T->getRelativeSpatialAcceleration();
+    for(size_t i=0; i<dv.size(); ++i)
+    {
+      Frame* T = targets[i];
+      dv[i].block<6,1>(0,0) = T->getRelativeSpatialVelocity();
+      dv[i].block<6,1>(6,0) = T->getRelativeSpatialAcceleration();
+    }
+
+//    for(size_t i=0; i<dv.size(); ++i)
+//    {
+//      Frame* T = targets[i];
+//      Frame* P = T->getParentFrame();
+//      dv[i].block<6,1>(0,0) = T->getSpatialVelocity(P, P);
+//      dv[i].block<6,1>(6,0) = T->getSpatialAcceleration(P, P);
+//    }
+  }
+  else
+  {
+    for(size_t i=0; i<dv.size(); ++i)
+    {
+      Frame* T = targets[i];
+      Frame* P = T->getParentFrame();
+      dv[i].block<3,1>(3,0) = T->getLinearVelocity(P, P);
+      dv[i].block<3,1>(0,0) = T->getAngularVelocity(P, P);
+      dv[i].block<3,1>(9,0) = T->getLinearAcceleration(P, P);
+      dv[i].block<3,1>(6,0) = T->getAngularAcceleration(P, P);
+    }
   }
 
   return dv;
@@ -520,35 +680,43 @@ DerivVector getSpatialDerivatives(const std::vector<SimpleFrame*>& targets,
 void RK4(const std::vector<SimpleFrame*>& targets,
          const std::vector<SimpleFrame*>& followers,
          StateVector& sv_targets, StateVector& sv_followers,
-         const Frame* R, double dt)
+         const Frame* R, double dt,
+         bool targets_spatial, bool followers_spatial)
 {
   DerivVector k_targets[4];
   DerivVector k_followers[4];
 
-  k_targets[0] = getSpatialDerivatives(targets, sv_targets);
-  k_followers[0] = getRelativeSpatialDerivatives(
-        targets, followers, R, sv_targets, sv_followers);
+  k_targets[0] = getDerivatives(targets, sv_targets, targets_spatial);
+  k_followers[0] = getFollowerDerivatives(
+        targets, followers, R, sv_targets, sv_followers,
+        targets_spatial, followers_spatial);
 
-  k_targets[1] = getSpatialDerivatives(targets,
-        integrate(sv_targets, k_targets[0]*(dt/2)) );
-  k_followers[1] = getRelativeSpatialDerivatives(
+  k_targets[1] = getDerivatives(targets,
+        integrate(sv_targets, k_targets[0]*(dt/2), targets_spatial),
+      targets_spatial);
+  k_followers[1] = getFollowerDerivatives(
         targets, followers, R,
-        integrate(sv_targets, k_targets[0]*(dt/2)),
-        integrate(sv_followers, k_followers[0]*(dt/2)) );
+        integrate(sv_targets, k_targets[0]*(dt/2), targets_spatial),
+        integrate(sv_followers, k_followers[0]*(dt/2), followers_spatial),
+      targets_spatial, followers_spatial);
 
-  k_targets[2] = getSpatialDerivatives(targets,
-        integrate(sv_targets, k_targets[1]*(dt/2)) );
-  k_followers[2] = getRelativeSpatialDerivatives(
+  k_targets[2] = getDerivatives(targets,
+        integrate(sv_targets, k_targets[1]*(dt/2), targets_spatial),
+      targets_spatial);
+  k_followers[2] = getFollowerDerivatives(
         targets, followers, R,
-        integrate(sv_targets, k_targets[1]*(dt/2)),
-        integrate(sv_followers, k_followers[1]*(dt/2)) );
+        integrate(sv_targets, k_targets[1]*(dt/2), targets_spatial),
+        integrate(sv_followers, k_followers[1]*(dt/2), followers_spatial),
+      targets_spatial, followers_spatial);
 
-  k_targets[3] = getSpatialDerivatives(targets,
-        integrate(sv_targets, k_targets[2]*dt));
-  k_followers[3] = getRelativeSpatialDerivatives(
+  k_targets[3] = getDerivatives(targets,
+        integrate(sv_targets, k_targets[2]*dt, targets_spatial),
+      targets_spatial);
+  k_followers[3] = getFollowerDerivatives(
         targets, followers, R,
-        integrate(sv_targets, k_targets[2]*dt),
-        integrate(sv_followers, k_followers[2]*dt) );
+        integrate(sv_targets, k_targets[2]*dt, targets_spatial),
+        integrate(sv_followers, k_followers[2]*dt, followers_spatial),
+      targets_spatial, followers_spatial);
 
   DerivVector dx_targets = ( k_targets[0]
                            + k_targets[1]*2
@@ -559,14 +727,22 @@ void RK4(const std::vector<SimpleFrame*>& targets,
                              + k_followers[2]*2
                              + k_followers[3] )*(dt/6);
 
-  sv_targets = integrate(sv_targets, dx_targets);
-  sv_followers = integrate(sv_followers, dx_followers);
+  sv_targets = integrate(sv_targets, dx_targets, targets_spatial);
+  sv_followers = integrate(sv_followers, dx_followers, followers_spatial);
 }
 
-TEST(FRAMES, SPATIAL_INTEGRATION)
+TEST(FRAMES, CLASSIC_INTEGRATION)
 {
   const double dt = 0.001;
-  const double final_time = 0.1;
+  const double final_time = 0.5;
+  double tolerance = 1e-5;
+//  bool targets_spatial = true;
+  bool targets_spatial = false;
+  bool followers_spatial = false;
+//  bool followers_spatial = true;
+
+//  bool identity_reference_frame = true;
+  bool identity_reference_frame = false;
 
   // These frames will form a moving chain
   SimpleFrame A(Frame::World(), "A");
@@ -582,6 +758,8 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
 
   // R will be an arbitrary reference frame
   SimpleFrame R(Frame::World(), "R");
+  targets.push_back(&R);
+
   // Each of these frames will attempt to track one of the frames in the chain
   // with respect to the frame R by mimicking their their accelerations. If they
   // each end with the same world pose as the frame they are tracking, then our
@@ -591,8 +769,6 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
   SimpleFrame RC(&R, "RC");
   SimpleFrame RD(&R, "RD");
   SimpleFrame RR(&R, "RR");
-
-  targets.push_back(&R);
 
   std::vector<SimpleFrame*> followers;
   followers.push_back(&RA);
@@ -606,41 +782,49 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
   for(size_t i=0; i<targets.size(); ++i)
   {
     SimpleFrame* T = targets[i];
-    SimpleFrame* F = followers[i];
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     randomize_transform(tf, 1);
-//    tf.translate(Eigen::Vector3d(1,1,i));
-//    tf.rotate(Eigen::AngleAxisd(50*M_PI/180,Eigen::Vector3d(0,1,0)));
 
-    T->setRelativeTransform(tf);
-    T->setRelativeSpatialVelocity(random_vec<6>(1));
-//    T->setRelativeSpatialAcceleration(random_vec<6>(1));
-
-//    T->setClassicDerivatives(Eigen::Vector3d(0,0,1));
-
-    F->setRelativeTransform(T->getTransform(&R));
-    F->setRelativeSpatialVelocity(T->getSpatialVelocity(&R, F));
-    F->setRelativeSpatialAcceleration(T->getSpatialAcceleration(&R, F));
+    if(targets_spatial)
+    {
+      T->setRelativeTransform(tf);
+      T->setRelativeSpatialVelocity(random_vec<6>(1));
+      T->setRelativeSpatialAcceleration(random_vec<6>(1));
+    }
+    else
+    {
+      T->setRelativeTransform(tf);
+      T->setClassicDerivatives(random_vec<3>(1), random_vec<3>(1),
+                               random_vec<3>(1), random_vec<3>(1));
+    }
   }
 
-  R.setRelativeTransform(Eigen::Isometry3d::Identity());
-  R.setRelativeSpatialVelocity(Eigen::Vector6d::Zero());
-  R.setRelativeSpatialAcceleration(Eigen::Vector6d::Zero());
-
-  StateVector sv_targets(targets.size()), sv_followers(followers.size());
-  double elapsed_time = 0;
-  while(elapsed_time < final_time)
+  if(identity_reference_frame)
   {
-    elapsed_time += dt;
+    R.setRelativeTransform(Eigen::Isometry3d::Identity());
+    R.setClassicDerivatives();
+  }
 
-    getSpatialStates(targets, sv_targets);
-    getSpatialStates(followers, sv_followers);
+  for(size_t i=0; i<targets.size(); ++i)
+  {
+    SimpleFrame* T = targets[i];
+    SimpleFrame* F = followers[i];
 
-    RK4(targets, followers, sv_targets, sv_followers, &R, dt);
-
-    setSpatialStates(targets, sv_targets);
-    setSpatialStates(followers, sv_followers);
+    if(followers_spatial)
+    {
+      F->setRelativeTransform(T->getTransform(&R));
+      F->setRelativeSpatialVelocity(T->getSpatialVelocity(&R, F));
+      F->setRelativeSpatialAcceleration(T->getSpatialAcceleration(&R, F));
+    }
+    else
+    {
+      F->setRelativeTransform(T->getTransform(&R));
+      F->setClassicDerivatives(T->getLinearVelocity(&R, &R),
+                               T->getAngularVelocity(&R, &R),
+                               T->getLinearAcceleration(&R, &R),
+                               T->getAngularAcceleration(&R, &R));
+    }
   }
 
   for(size_t i=0; i<targets.size(); ++i)
@@ -648,12 +832,38 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
     Frame* T = targets[i];
     Frame* F = followers[i];
 
-//    EXPECT_TRUE( equals(T->getTransform().matrix(),
-//                        F->getTransform().matrix()) );
+    const Eigen::Isometry3d& tf_error = T->getTransform(F);
+    Eigen::Vector6d error;
+    Eigen::AngleAxisd rot_error(tf_error.rotation());
+    error.block<3,1>(0,0) = rot_error.angle()*rot_error.axis();
+    error.block<3,1>(3,0) = tf_error.translation();
 
-//    std::cout << "Trial " << T->getName() << "\n";
-//    std::cout << T->getTransform().matrix() << "\n--\n";
-//    std::cout << F->getTransform().matrix() << "\n\n";
+    EXPECT_TRUE( error.norm() < tolerance );
+  }
+
+  StateVector sv_targets(targets.size()), sv_followers(followers.size());
+  double elapsed_time = 0;
+  while(elapsed_time < final_time)
+  {
+    elapsed_time += dt;
+
+    getStates(targets, sv_targets, targets_spatial);
+    getStates(followers, sv_followers, followers_spatial);
+
+    RK4(targets, followers, sv_targets, sv_followers, &R, dt,
+        targets_spatial, followers_spatial);
+
+    setStates(targets, sv_targets, targets_spatial);
+    setStates(followers, sv_followers, followers_spatial);
+  }
+
+  std::cout << R.getWorldTransform().matrix() << std::endl;
+
+  std::cout << "Final trials\n";
+  for(size_t i=0; i<targets.size(); ++i)
+  {
+    Frame* T = targets[i];
+    Frame* F = followers[i];
 
     const Eigen::Isometry3d& tf_error = T->getTransform(F);
     Eigen::Vector6d error;
@@ -661,10 +871,21 @@ TEST(FRAMES, SPATIAL_INTEGRATION)
     error.block<3,1>(0,0) = rot_error.angle()*rot_error.axis();
     error.block<3,1>(3,0) = tf_error.translation();
 
-    EXPECT_TRUE( error.norm() < 1e-3 );
+    EXPECT_TRUE( error.norm() < tolerance );
+    EXPECT_TRUE( equals(T->getSpatialVelocity(),
+                        F->getSpatialVelocity(), tolerance) );
+
+    // Acceleration of the followers is never explicitly set, so there is no
+    // point in comparing their accelerations
 
     std::cout << "Trial " << T->getName() << ": (" << error.norm() << ")\t"
               << error.transpose() << "\n";
+
+    std::cout << T->getWorldTransform().matrix() << "\n--\n"
+              << F->getWorldTransform().matrix() << "\n\n";
+
+    std::cout << T->getSpatialVelocity().transpose() << "\n"
+              << F->getSpatialVelocity().transpose() << "\n\n";
   }
 }
 

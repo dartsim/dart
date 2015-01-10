@@ -145,8 +145,10 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinatesOf) const
 Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
                                           const Frame* _inCoordinatesOf) const
 {
-  return getSpatialVelocity(_inCoordinatesOf)
-      - _relativeTo->getSpatialVelocity(_inCoordinatesOf);
+  return math::AdR(getTransform(_inCoordinatesOf),
+                   getSpatialVelocity()
+                   - math::AdT(_relativeTo->getTransform(this),
+                               _relativeTo->getSpatialVelocity()) );
 }
 
 //==============================================================================
@@ -199,8 +201,19 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
 Eigen::Vector6d Frame::getSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  return getSpatialAcceleration(_inCoordinatesOf)
-      - _relativeTo->getSpatialAcceleration(_inCoordinatesOf);
+  // Frame 2: this, Frame 1: _relativeTo, Frame O: _inCoordinatesOf
+  // Acceleration of Frame 2 relative to Frame 1 in coordinates of O: a_21[O]
+  // Total acceleration of Frame 2 in coordinates of Frame 2: a_2[2]
+  // Velocity of Frame 2 relative to Frame 1 in coordinates of Frame 2: v_21[2]
+
+  // a_21[O] = R_O2*( a_2[2] - X_21*a_1[1] - v_2[2] x v_21[2] )
+
+  return math::AdR(getTransform(_inCoordinatesOf),
+                   getSpatialAcceleration()
+                   - math::AdT(_relativeTo->getTransform(this),
+                               _relativeTo->getSpatialAcceleration())
+                   - math::ad(getSpatialVelocity(),
+                              getSpatialVelocity(_relativeTo,this)));
 }
 
 //==============================================================================
