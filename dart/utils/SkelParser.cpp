@@ -1111,14 +1111,14 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                                            "acceleration");
   }
 
-  if(hasElement(_dofElement, "effort"))
+  if(hasElement(_dofElement, "force"))
   {
     setDofAttributes<
-        &dart::dynamics::DegreeOfFreedom::setEffortLimits,
-        &dart::dynamics::DegreeOfFreedom::getEffortLimits,
-        &dart::dynamics::DegreeOfFreedom::setEffort,
-        &dart::dynamics::DegreeOfFreedom::getEffort>(_dofElement, dof,
-                                                     "effort");
+        &dart::dynamics::DegreeOfFreedom::setForceLimits,
+        &dart::dynamics::DegreeOfFreedom::getForceLimits,
+        &dart::dynamics::DegreeOfFreedom::setForce,
+        &dart::dynamics::DegreeOfFreedom::getForce>(_dofElement, dof,
+                                                     "force");
   }
 }
 

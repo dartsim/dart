@@ -780,7 +780,7 @@ void Skeleton::setForce(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mDofs[_index]->setEffort(_force);
+  mDofs[_index]->setForce(_force);
 }
 
 //==============================================================================
@@ -788,7 +788,7 @@ double Skeleton::getForce(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mDofs[_index]->getEffort();
+  return mDofs[_index]->getForce();
 }
 
 //==============================================================================
@@ -846,7 +846,7 @@ void Skeleton::setForceLowerLimit(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mDofs[_index]->setEffortLowerLimit(_force);
+  mDofs[_index]->setForceLowerLimit(_force);
 }
 
 //==============================================================================
@@ -854,7 +854,7 @@ double Skeleton::getForceLowerLimit(size_t _index)
 {
   assert(_index <getNumDofs());
 
-  return mDofs[_index]->getEffortLowerLimit();
+  return mDofs[_index]->getForceLowerLimit();
 }
 
 //==============================================================================
@@ -862,7 +862,7 @@ void Skeleton::setForceUpperLimit(size_t _index, double _force)
 {
   assert(_index < getNumDofs());
 
-  mDofs[_index]->setEffortUpperLimit(_force);
+  mDofs[_index]->setForceUpperLimit(_force);
 }
 
 //==============================================================================

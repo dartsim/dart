@@ -173,39 +173,34 @@ public:
   /// Get the upper acceleration limit of this DegreeOfFreedom
   double getAccelerationUpperLimit() const;
 
-  // -- Effort/Force functions -------------------------------------------------
-  // Note: In these functions, the word "Effort" is being used instead of
-  // "Force". Currently "Force" is being used throughout DART to refer to the
-  // Generalized Force of a Generalized Coordinate, but I propose we use the
-  // word "Effort" instead. We can change the names of these functions later if
-  // it's decided that "Effort" is not a good word.
+  // -- Force functions --------------------------------------------------------
 
   /// Set the generalized force of this DegreeOfFreedom
-  void setEffort(double _effort);
+  void setForce(double _force);
 
   /// Get the generalized force of this DegreeOfFreedom
-  double getEffort() const;
+  double getForce() const;
 
   /// Set the generalized force limits of this DegreeOfFreedom
-  void setEffortLimits(double _lowerLimit, double _upperLimit);
+  void setForceLimits(double _lowerLimit, double _upperLimit);
 
   /// Set the generalized force limits of this DegreeOfFreedom
-  void setEffortLimits(const std::pair<double,double>& _limits);
+  void setForceLimits(const std::pair<double,double>& _limits);
 
   /// Get the generalized force limits of this DegreeOfFreedom
-  std::pair<double,double> getEffortLimits() const;
+  std::pair<double,double> getForceLimits() const;
 
   /// Set the lower generalized force limit of this DegreeOfFreedom
-  void setEffortLowerLimit(double _limit);
+  void setForceLowerLimit(double _limit);
 
   /// Get the lower generalized force limit of this DegreeOfFreedom
-  double getEffortLowerLimit() const;
+  double getForceLowerLimit() const;
 
   /// Set the upper generalized force limit of this DegreeOfFreedom
-  void setEffortUpperLimit(double _limit);
+  void setForceUpperLimit(double _limit);
 
   /// Get the upper generalized force limit of this DegreeOfFreedom
-  double getEffortUpperLimit() const;
+  double getForceUpperLimit() const;
 
   // -- Relationships ----------------------------------------------------------
 

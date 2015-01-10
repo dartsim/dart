@@ -159,7 +159,7 @@
                     <position lower="-1" upper="1" />
                     <velocity lower="-2" upper="2" />
                     <acceleration lower="-3" upper="3" />
-                    <effort lower="-4" upper="4" />
+                    <force lower="-4" upper="4" />
                 </dof>
             </joint>
             <joint type="universal" name="joint3">

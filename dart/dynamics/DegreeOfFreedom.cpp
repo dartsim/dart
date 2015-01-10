@@ -265,56 +265,56 @@ double DegreeOfFreedom::getAccelerationUpperLimit() const
 }
 
 //==============================================================================
-void DegreeOfFreedom::setEffort(double _effort)
+void DegreeOfFreedom::setForce(double _force)
 {
-  mJoint->setForce(mIndexInJoint, _effort);
+  mJoint->setForce(mIndexInJoint, _force);
 }
 
 //==============================================================================
-double DegreeOfFreedom::getEffort() const
+double DegreeOfFreedom::getForce() const
 {
   return mJoint->getForce(mIndexInJoint);
 }
 
 //==============================================================================
-void DegreeOfFreedom::setEffortLimits(double _lowerLimit, double _upperLimit)
+void DegreeOfFreedom::setForceLimits(double _lowerLimit, double _upperLimit)
 {
-  setEffortLowerLimit(_lowerLimit);
-  setEffortUpperLimit(_upperLimit);
+  setForceLowerLimit(_lowerLimit);
+  setForceUpperLimit(_upperLimit);
 }
 
 //==============================================================================
-void DegreeOfFreedom::setEffortLimits(const std::pair<double, double> &_limits)
+void DegreeOfFreedom::setForceLimits(const std::pair<double, double> &_limits)
 {
-  setEffortLimits(_limits.first, _limits.second);
+  setForceLimits(_limits.first, _limits.second);
 }
 
 //==============================================================================
-std::pair<double,double> DegreeOfFreedom::getEffortLimits() const
+std::pair<double,double> DegreeOfFreedom::getForceLimits() const
 {
-  return std::pair<double,double>(getEffortLowerLimit(), getEffortUpperLimit());
+  return std::pair<double,double>(getForceLowerLimit(), getForceUpperLimit());
 }
 
 //==============================================================================
-void DegreeOfFreedom::setEffortLowerLimit(double _limit)
+void DegreeOfFreedom::setForceLowerLimit(double _limit)
 {
   mJoint->setForceLowerLimit(mIndexInJoint, _limit);
 }
 
 //==============================================================================
-double DegreeOfFreedom::getEffortLowerLimit() const
+double DegreeOfFreedom::getForceLowerLimit() const
 {
   return mJoint->getForceLowerLimit(mIndexInJoint);
 }
 
 //==============================================================================
-void DegreeOfFreedom::setEffortUpperLimit(double _limit)
+void DegreeOfFreedom::setForceUpperLimit(double _limit)
 {
   mJoint->setForceUpperLimit(mIndexInJoint, _limit);
 }
 
 //==============================================================================
-double DegreeOfFreedom::getEffortUpperLimit() const
+double DegreeOfFreedom::getForceUpperLimit() const
 {
   return mJoint->getForceUpperLimit(mIndexInJoint);
 }
