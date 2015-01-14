@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -53,6 +53,7 @@
 #include <Eigen/Dense>
 // Local Headers
 #include "dart/common/Console.h"
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -222,17 +223,19 @@ inline double random(double _min, double _max) {
                 * (_max - _min));
 }
 
+DEPRECATED(4.3)
 inline int castUIntToInt(size_t _x)
 {
-  if (_x <= INT_MAX)
-    return static_cast<int>(_x);
+//  if (_x <= INT_MAX)
+//    return static_cast<int>(_x);
 
-  if (_x >= INT_MIN)
-    return static_cast<int>(_x - INT_MIN) + INT_MIN;
+//  if (_x >= INT_MIN)
+//    return static_cast<int>(_x - INT_MIN) + INT_MIN;
 
-  dterr << "x is out of range." << std::endl;
+//  dterr << "x is out of range." << std::endl;
 
-  throw _x; // Or whatever else you like
+//  throw _x; // Or whatever else you like
+  return static_cast<int>(_x);
 }
 
 }  // namespace math

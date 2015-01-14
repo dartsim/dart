@@ -22,6 +22,8 @@ print_valid_version_numbers()
     echo "    4.0.0"
     echo "    4.1.0"
     echo "    4.1.1"
+    echo "    4.2.0"
+    echo "    4.2.1"
     exit 1
 }
 
@@ -37,6 +39,12 @@ case "$VERSION_NUMBER" in
             break;;
         4.1.1)
             BRANCH_NAME="tags/v4.1.1"
+            break;;
+        4.2.0)
+            BRANCH_NAME="tags/v4.2.0"
+            break;;
+        4.2.1)
+            BRANCH_NAME="tags/v4.2.1"
             break;;
         *)
             echo "Invalid version number: ${VERSION_NUMBER}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -50,15 +50,18 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
+
+//==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    mActuatorType(FORCE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mWrench(Eigen::Vector6d::Zero()),
     mIsPositionLimited(true)
 {
 }
@@ -99,6 +102,45 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 const std::string& Joint::getName() const
 {
   return mName;
+}
+
+//==============================================================================
+void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
+{
+  mActuatorType = _actuatorType;
+}
+
+//==============================================================================
+Joint::ActuatorType Joint::getActuatorType() const
+{
+  return mActuatorType;
+}
+
+//==============================================================================
+bool Joint::isKinematic() const
+{
+  switch (mActuatorType)
+  {
+    case FORCE:
+    case PASSIVE:
+    case SERVO:
+      return false;
+    case ACCELERATION:
+    case VELOCITY:
+    case LOCKED:
+      return true;
+    default:
+    {
+      dterr << "Unsupported actuator type." << std::endl;
+      return false;
+    }
+  }
+}
+
+//==============================================================================
+bool Joint::isDynamic() const
+{
+  return !isKinematic();
 }
 
 //==============================================================================

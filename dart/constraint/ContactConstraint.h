@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -60,8 +60,8 @@ public:
   ///
   /// Do not use me anymore. This constructor is not possible to store contact
   /// force in _contact
-  DEPRECATED(4.2) explicit ContactConstraint(
-      const collision::Contact& _contact);
+  DEPRECATED(4.2)
+  explicit ContactConstraint(const collision::Contact& _contact);
 
   /// Constructor
   ContactConstraint(collision::Contact& _contact, double _timeStep);

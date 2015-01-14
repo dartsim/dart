@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -102,12 +102,6 @@ public:
 
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
-
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
 
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -412,7 +412,11 @@ public:
   ///
   Eigen::Vector6d getExternalForceGlobal() const;
 
+  /// Get spatial body force transmitted from the parent joint.
   ///
+  /// The spatial body force is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
   const Eigen::Vector6d& getBodyForce() const;
 
   //----------------------------------------------------------------------------
@@ -421,13 +425,14 @@ public:
   //----------------------------------------------------------------------------
 
   /// Deprecated in 4.2. Please use isReactive().
-  DEPRECATED(4.2) bool isImpulseReponsible() const;
+  DEPRECATED(4.2)
+  bool isImpulseReponsible() const;
 
-  /// Return true if the body can react on force or constraint impulse.
+  /// Return true if the body can react to force or constraint impulse.
   ///
-  /// A body node can be called reactive if the parent skeleton is mobile and
-  /// the number of dependent generalized coordinates is non zero. The body
-  /// should be initialized first by calling BodyNode::init().
+  /// A body node is reactive if the skeleton is mobile and the number of
+  /// dependent generalized coordinates is non zero. BodyNode::init() should be
+  /// called first to update the number of dependent generalized coordinates.
   bool isReactive() const;
 
   /// Set constraint impulse
@@ -494,69 +499,146 @@ protected:
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 
-  //--------------------------------------------------------------------------
-  // Recursive algorithms
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  /// \{ \name Recursive dynamics routines
+  //----------------------------------------------------------------------------
 
   /// Update transformation
   virtual void updateTransform();
 
-  /// Update spatial velocity
+  /// Update spatial body velocity.
   virtual void updateVelocity();
 
-  /// Update partial spatial acceleration due to parent joint's velocity
+  /// Update partial spatial body acceleration due to parent joint's velocity.
   virtual void updatePartialAcceleration();
 
-  /// Update spatial acceleration with the partial spatial acceleration
-  virtual void updateAcceleration();
-
-  // TODO(JS): Need revise
-  ///
-  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces = false);
-
-  // TODO(JS): Need revise
-  ///
-  virtual void updateGeneralizedForce(bool _withDampingForces = false);
-
-  /// Update articulated body inertia with implicit joint damping and spring
-  /// forces
+  /// Update articulated body inertia for forward dynamics.
+  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
   virtual void updateArtInertia(double _timeStep);
 
-  /// Update bias force with implicit joint damping and spring forces
+  /// Update bias force associated with the articulated body inertia for forward
+  /// dynamics.
+  /// \param[in] _gravity Vector of gravitational acceleration
+  /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
   virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep);
 
-  /// Update joint acceleration and body acceleration for forward dynamics
-  virtual void updateJointAndBodyAcceleration();
-
-  /// Update transmitted force from parent joint
-  virtual void updateTransmittedWrench();
-
-  //----------------------------------------------------------------------------
-  // Impulse based dynamics
-  //----------------------------------------------------------------------------
-
-  /// Update impulsive bias force for impulse-based forward dynamics
-  /// algorithm
+  /// Update bias impulse associated with the articulated body inertia for
+  /// impulse-based forward dynamics.
   virtual void updateBiasImpulse();
 
-  /// Update joint velocity change for impulse-based forward dynamics
-  /// algorithm
+  /// Update spatial body acceleration with the partial spatial body
+  /// acceleration for inverse dynamics.
+  virtual void updateAccelerationID();
+
+  /// Update spatial body acceleration for forward dynamics.
+  virtual void updateAccelerationFD();
+
+  /// Update spatical body velocity change for impluse-based forward dynamics.
+  virtual void updateVelocityChangeFD();
+
+  /// Update spatial body force for inverse dynamics.
+  ///
+  /// The spatial body force is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
+  virtual void updateTransmittedForceID(const Eigen::Vector3d& _gravity,
+                                        bool _withExternalForces = false);
+
+  /// Update spatial body force for forward dynamics.
+  ///
+  /// The spatial body force is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
+  virtual void updateTransmittedForceFD();
+
+  /// Update spatial body force for impulse-based forward dynamics.
+  ///
+  /// The spatial body impulse is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
+  virtual void updateTransmittedImpulse();
+  // TODO: Rename to updateTransmittedImpulseFD if impulse-based inverse
+  // dynamics is implemented.
+
+  /// Update the joint force for inverse dynamics.
+  virtual void updateJointForceID(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces);
+
+  /// Update the joint force for forward dynamics.
+  virtual void updateJointForceFD(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces);
+
+  /// Update the joint impulse for forward dynamics.
+  virtual void updateJointImpulseFD();
+
+  /// Update constrained terms due to the constraint impulses for foward
+  /// dynamics.
+  virtual void updateConstrainedTerms(double _timeStep);
+
+  //- DEPRECATED ---------------------------------------------------------------
+
+  /// Update spatial body acceleration with the partial spatial body
+  /// acceleration.
+  /// \warning Please use updateAccelerationID().
+  DEPRECATED(4.3)
+  virtual void updateAcceleration();
+
+  /// Update the joint acceleration and body acceleration
+  /// \warning Please use updateAccelerationFD().
+  DEPRECATED(4.3)
+  virtual void updateJointAndBodyAcceleration();
+
+  /// Update joint velocity change for impulse-based forward dynamics algorithm
+  /// \warning Please use updateVelocityChangeFD().
+  DEPRECATED(4.3)
   virtual void updateJointVelocityChange();
 
-  /// Update body velocity change for impulse-based forward dynamics
-  /// algorithm
-//  virtual void updateBodyVelocityChange();
+  /// Update the spatial body force transmitted to this BodyNode from the
+  /// parent body through the connecting joint. The spatial body force is
+  /// expressed in this BodyNode's frame.
+  /// \warning Please use updateTransmittedForceFD().
+  DEPRECATED(4.3)
+  virtual void updateTransmittedWrench();
 
+  /// Update spatial body force. Inverse dynamics routine.
   ///
+  /// The spatial body force is transmitted to this BodyNode from the parent
+  /// body through the connecting joint. It is expressed in this BodyNode's
+  /// frame.
+  ///
+  /// \warning Please use updateTransmittedForceID().
+  DEPRECATED(4.3)
+  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
+                                bool _withExternalForces = false);
+
+  /// updateBodyImpForceFwdDyn
+  /// \warning Please use updateTransmittedImpulse().
+  DEPRECATED(4.3)
   virtual void updateBodyImpForceFwdDyn();
 
-  ///
+  /// Update the joint force
+  /// \warning Please use updateJointForceID().
+  DEPRECATED(4.3)
+  virtual void updateGeneralizedForce(bool _withDampingForces = false);
+
+  /// updateConstrainedJointAndBodyAcceleration
+  /// \warning Deprecated. Please do not use.
+  DEPRECATED(4.3)
   virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
 
-  ///
+  /// updateConstrainedTransmittedForce
+  /// \warning Deprecated. Please do not use.
+  DEPRECATED(4.3)
   virtual void updateConstrainedTransmittedForce(double _timeStep);
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Equations of motion related routines
+  //----------------------------------------------------------------------------
 
   ///
   virtual void updateMassMatrix();
@@ -591,6 +673,8 @@ protected:
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
                                              const Eigen::Vector6d& _spatial);
 
+  /// \}
+
   //--------------------------------------------------------------------------
   // General properties
   //--------------------------------------------------------------------------
@@ -601,11 +685,11 @@ protected:
   /// Counts the number of nodes globally.
   static int msBodyNodeCount;
 
-  ///
+  /// Name
   std::string mName;
 
-  /// If the gravity mode is false, this body node does not
-  /// being affected by gravity.
+  /// If the gravity mode is false, this body node does not being affected by
+  /// gravity.
   bool mGravityMode;
 
   /// Generalized inertia.
@@ -627,10 +711,10 @@ protected:
   /// Coefficient of friction
   double mRestitutionCoeff;
 
-  ///
+  /// Array of visualization shpaes
   std::vector<Shape*> mVizShapes;
 
-  ///
+  /// Array of collision shpaes
   std::vector<Shape*> mColShapes;
 
   /// Indicating whether this node is collidable.
@@ -646,13 +730,13 @@ protected:
   /// Pointer to the model this body node belongs to.
   Skeleton* mSkeleton;
 
-  ///
+  /// Parent joint
   Joint* mParentJoint;
 
-  ///
+  /// Parent body node
   BodyNode* mParentBodyNode;
 
-  ///
+  /// Array of child body nodes
   std::vector<BodyNode*> mChildBodyNodes;
 
   /// List of markers associated
@@ -685,6 +769,7 @@ protected:
 
   /// Partial spatial body acceleration due to parent joint's velocity
   Eigen::Vector6d mPartialAcceleration;
+  // TODO(JS): Rename with more informative name
 
   /// Spatial body acceleration w.r.t. body frame
   Eigen::Vector6d mA;
@@ -699,7 +784,7 @@ protected:
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;
 
-  /// Articulated body inertia
+   /// Articulated body inertia
   math::Inertia mArtInertia;
 
   /// Articulated body inertia for implicit joing damping and spring forces
@@ -741,6 +826,7 @@ protected:
   /// Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;
 
+  // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector6d mImpF;
 

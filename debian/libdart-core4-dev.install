@@ -11,3 +11,4 @@ usr/include/dart/simulation/*
 usr/share/dartcore/DARTCoreConfig.cmake
 usr/share/dartcore/DARTCoreConfigVersion.cmake
 usr/share/dartcore/DARTCoreTargets*.cmake
+usr/lib/libdart-core.so

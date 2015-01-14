@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Chen Tang <ctang40@gatech.edu>,
@@ -177,7 +177,12 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
         collision = true;
 
       if (!_contactPoints)
-        return collision;
+      {
+        if (collision)
+          return true;
+        else
+          continue;
+      }
 
 
       int numCoplanarContacts = 0;

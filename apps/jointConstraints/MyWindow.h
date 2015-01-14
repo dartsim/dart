@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -73,7 +73,6 @@ private:
   Controller* mController;
   dart::constraint::WeldJointConstraint* mWeldJoint;
   int mImpulseDuration;
-  void addWeldConstraint();
   bool mHarnessOn;
 
 };

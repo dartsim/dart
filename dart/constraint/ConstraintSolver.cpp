@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -304,14 +304,9 @@ bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
 //==============================================================================
 bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 {
-  if (std::find(mManualConstraints.begin(), mManualConstraints.end(),
-                _constraint)
-      != mManualConstraints.end())
-  {
-    return true;
-  }
-
-  return false;
+  return std::find(mManualConstraints.begin(),
+                   mManualConstraints.end(),
+                   _constraint) != mManualConstraints.end();
 }
 
 //==============================================================================
@@ -338,13 +333,12 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update manual constraints
   //----------------------------------------------------------------------------
-  for (std::vector<Constraint*>::iterator it = mManualConstraints.begin();
-       it != mManualConstraints.end(); ++it)
+  for (auto& manualConstraint : mManualConstraints)
   {
-    (*it)->update();
+    manualConstraint->update();
 
-    if ((*it)->isActive())
-      mActiveConstraints.push_back(*it);
+    if (manualConstraint->isActive())
+      mActiveConstraints.push_back(manualConstraint);
   }
 
   //----------------------------------------------------------------------------
@@ -354,21 +348,13 @@ void ConstraintSolver::updateConstraints()
   mCollisionDetector->detectCollision(true, true);
 
   // Destroy previous contact constraints
-  for (std::vector<ContactConstraint*>::const_iterator it
-       = mContactConstraints.begin();
-       it != mContactConstraints.end(); ++it)
-  {
-    delete *it;
-  }
+  for (const auto& contactConstraint : mContactConstraints)
+    delete contactConstraint;
   mContactConstraints.clear();
 
   // Destroy previous soft contact constraints
-  for (std::vector<SoftContactConstraint*>::const_iterator it
-       = mSoftContactConstraints.begin();
-       it != mSoftContactConstraints.end(); ++it)
-  {
-    delete *it;
-  }
+  for (const auto& softContactConstraint : mSoftContactConstraints)
+    delete softContactConstraint;
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
@@ -388,60 +374,51 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (std::vector<ContactConstraint*>::const_iterator it
-       = mContactConstraints.begin();
-       it != mContactConstraints.end(); ++it)
+  for (const auto& contactConstraint : mContactConstraints)
   {
-    (*it)->update();
+    contactConstraint->update();
 
-    if ((*it)->isActive())
-      mActiveConstraints.push_back(*it);
+    if (contactConstraint->isActive())
+      mActiveConstraints.push_back(contactConstraint);
   }
 
   // Add the new soft contact constraints to dynamic constraint list
-  for (std::vector<SoftContactConstraint*>::const_iterator it
-       = mSoftContactConstraints.begin();
-       it != mSoftContactConstraints.end(); ++it)
+  for (const auto& softContactConstraint : mSoftContactConstraints)
   {
-    (*it)->update();
+    softContactConstraint->update();
 
-    if ((*it)->isActive())
-      mActiveConstraints.push_back(*it);
+    if (softContactConstraint->isActive())
+      mActiveConstraints.push_back(softContactConstraint);
   }
 
   //----------------------------------------------------------------------------
   // Update automatic constraints: joint limit constraints
   //----------------------------------------------------------------------------
   // Destroy previous joint limit constraints
-  for (std::vector<JointLimitConstraint*>::const_iterator it
-       = mJointLimitConstraints.begin();
-       it != mJointLimitConstraints.end(); ++it)
-  {
-    delete *it;
-  }
+  for (const auto& jointLimitConstraint : mJointLimitConstraints)
+    delete jointLimitConstraint;
   mJointLimitConstraints.clear();
 
   // Create new joint limit constraints
-  for (std::vector<Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
+  for (const auto& skel : mSkeletons)
   {
-    for (size_t i = 0; i < (*it)->getNumBodyNodes(); i++)
+    const size_t numBodyNodes = skel->getNumBodyNodes();
+    for (size_t i = 0; i < numBodyNodes; i++)
     {
-      dynamics::Joint* joint = (*it)->getBodyNode(i)->getParentJoint();
-      if (joint->isPositionLimited())
+      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+
+      if (joint->isDynamic() && joint->isPositionLimited())
         mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
     }
   }
 
   // Add active joint limit
-  for (std::vector<JointLimitConstraint*>::const_iterator it
-       = mJointLimitConstraints.begin();
-       it != mJointLimitConstraints.end(); ++it)
+  for (auto& jointLimitConstraint : mJointLimitConstraints)
   {
-    (*it)->update();
+    jointLimitConstraint->update();
 
-    if ((*it)->isActive())
-      mActiveConstraints.push_back(*it);
+    if (jointLimitConstraint->isActive())
+      mActiveConstraints.push_back(jointLimitConstraint);
   }
 }
 

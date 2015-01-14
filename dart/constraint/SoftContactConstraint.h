@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -63,8 +63,8 @@ class SoftContactConstraint : public Constraint
 {
 public:
   /// Constructor
-  DEPRECATED(4.2) explicit SoftContactConstraint(
-      const collision::Contact& _contact);
+  DEPRECATED(4.2)
+  explicit SoftContactConstraint(const collision::Contact& _contact);
 
   /// Constructor
   SoftContactConstraint(collision::Contact& _contact, double _timeStep);

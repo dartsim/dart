@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -41,13 +41,20 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
+#include "dart/config.h"
+#include "dart/common/common.h"
+#include "dart/math/math.h"
+#include "dart/dynamics/dynamics.h"
 //#include "dart/collision/unc/UNCCollisionDetector.h"
+#include "dart/simulation/simulation.h"
+#include "dart/utils/utils.h"
 
 using namespace dart;
 using namespace math;
 //using namespace collision;
+using namespace dynamics;
+using namespace simulation;
+using namespace utils;
 
 class COLLISION : public testing::Test
 {
@@ -497,10 +504,92 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 
 //}
 
-/* ********************************************************************************************* */
-int main(int argc, char* argv[]) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+//==============================================================================
+TEST_F(COLLISION, CollisionOfPrescribedJoints)
+{
+  // There are one red plate (static skeleton) and 5 pendulums with different
+  // actuator types. This test check if the motion prescribed joints are exactly
+  // tracking the prescribed motion eventhough there are collision with other
+  // objects.
+
+  const double tol       = 1e-9;
+  const double timeStep  = 1e-3;
+  const size_t numFrames = 5e+0;  // 5 secs
+
+  // Load world and skeleton
+  World* world = SkelParser::readWorld(
+      DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+  world->setTimeStep(timeStep);
+  EXPECT_TRUE(world != NULL);
+  EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  Skeleton* skel2 = world->getSkeleton("skeleton 2");
+  Skeleton* skel3 = world->getSkeleton("skeleton 3");
+  Skeleton* skel4 = world->getSkeleton("skeleton 4");
+  Skeleton* skel5 = world->getSkeleton("skeleton 5");
+  Skeleton* skel6 = world->getSkeleton("skeleton 6");
+  EXPECT_TRUE(skel1 != NULL);
+  EXPECT_TRUE(skel2 != NULL);
+  EXPECT_TRUE(skel3 != NULL);
+  EXPECT_TRUE(skel4 != NULL);
+  EXPECT_TRUE(skel5 != NULL);
+  EXPECT_TRUE(skel6 != NULL);
+
+  Joint* joint1 = skel1->getJoint(0);
+  Joint* joint2 = skel2->getJoint(0);
+  Joint* joint3 = skel3->getJoint(0);
+  Joint* joint4 = skel4->getJoint(0);
+  Joint* joint5 = skel5->getJoint(0);
+  Joint* joint6 = skel6->getJoint(0);
+  EXPECT_TRUE(joint1 != NULL);
+  EXPECT_TRUE(joint2 != NULL);
+  EXPECT_TRUE(joint3 != NULL);
+  EXPECT_TRUE(joint4 != NULL);
+  EXPECT_TRUE(joint5 != NULL);
+  EXPECT_TRUE(joint6 != NULL);
+  EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
+  EXPECT_EQ(joint3->getActuatorType(), Joint::SERVO);
+  EXPECT_EQ(joint4->getActuatorType(), Joint::ACCELERATION);
+  EXPECT_EQ(joint5->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(joint6->getActuatorType(), Joint::LOCKED);
+
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    const double time = world->getTime();
+
+    joint1->setCommand(0, -0.5 * DART_PI * std::cos(time));
+    joint2->setCommand(0, -0.5 * DART_PI * std::cos(time));
+    joint3->setCommand(0, -0.5 * DART_PI * std::cos(time));
+    joint4->setCommand(0, -0.5 * DART_PI * std::cos(time));
+    joint5->setCommand(0, -0.5 * DART_PI * std::sin(time));
+    joint6->setCommand(0, -0.5 * DART_PI * std::sin(time));  // ignored
+
+    world->step(false);
+
+    EXPECT_TRUE(joint1->isDynamic());
+    EXPECT_TRUE(joint2->isDynamic());
+    EXPECT_TRUE(joint3->isDynamic());
+
+    // Check if the motion prescribed joints are following the prescribed motion
+    // eventhough there is a collision with other objects
+    EXPECT_TRUE(joint4->isKinematic());
+    EXPECT_NEAR(joint4->getAcceleration(0), joint4->getCommand(0), tol);
+    EXPECT_TRUE(joint5->isKinematic());
+    EXPECT_NEAR(joint5->getVelocity(0), joint5->getCommand(0), tol);
+
+    // The velocity and acceleration of locked joint always must be zero.
+    EXPECT_TRUE(joint6->isKinematic());
+    EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
+    EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
+  }
 }
-/* ********************************************************************************************* */
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
 
