@@ -74,19 +74,13 @@ public:
   virtual size_t getDof() const;
 
   // Documentation inherited
-  virtual size_t getNumDofs() const;
+  virtual DegreeOfFreedom* getDof(size_t index);
 
   // Documentation inherited
   virtual const DegreeOfFreedom* getDof(size_t _index) const;
 
   // Documentation inherited
   virtual size_t getNumDofs() const;
-
-  // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
-
-  // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
 
   // Documentation inherited
   virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
