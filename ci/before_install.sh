@@ -7,6 +7,10 @@ before_install() {
   (cd nlopt-2.4.1/; sh autogen.sh; make CPPFLAGS='-fPIC' && sudo make install)
 }
 
+# Install eigen-3.2.1 (for unsupported/Eigen/Splines)
+wget --quiet -O libeigen3-dev_3.2.1-1~precise1_all.deb http://packages.yade-dem.org/precise/libeigen3-dev_3.2.1-1~precise1_all.deb
+sudo dpkg -i libeigen3-dev_3.2.1-1~precise1_all.deb
+
 sudo add-apt-repository --yes ppa:libccd-debs/ppa
 sudo add-apt-repository --yes ppa:fcl-debs/ppa
 sudo add-apt-repository --yes ppa:dartsim/ppa
@@ -18,7 +22,6 @@ freeglut3-dev
 libassimp-dev
 libboost-all-dev
 libccd-dev
-libeigen3-dev
 libfcl-dev
 libxi-dev
 libxmu-dev
