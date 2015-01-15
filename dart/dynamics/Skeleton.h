@@ -61,13 +61,14 @@ class SoftBodyNode;
 class PointMass;
 class Joint;
 class Marker;
+class DegreeOfFreedom;
 
 /// struct GenCoordInfo
 struct GenCoordInfo
 {
   Joint* joint;
   size_t localIndex;
-};
+} DEPRECATED(4.3);
 
 /// class Skeleton
 class Skeleton
@@ -187,6 +188,18 @@ public:
   /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name);
 
+  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
+  DegreeOfFreedom* getDof(size_t _idx);
+
+  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
+  const DegreeOfFreedom* getDof(size_t _idx) const;
+
+  /// Get degree of freedom (aka generalized coordinate) whose name is _name
+  DegreeOfFreedom* getDof(const std::string& _name);
+
+  /// Get degree of freedom (aka generalized coordinate) whose name is _name
+  const DegreeOfFreedom* getDof(const std::string& _name) const;
+
   /// Get const joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;
 
@@ -214,7 +227,12 @@ public:
   /// Return degrees of freedom of this skeleton
   size_t getNumDofs() const;
 
-  ///
+  /// \brief Return _index-th GenCoordInfo
+  /// \warning GenCoordInfo is deprecated so this function is not necessary
+  /// anymore. Please use DegreeOfFreedom by calling getDof(). We will keep this
+  /// function until the next major version up only for backward compatibility
+  /// in minor version ups.
+  DEPRECATED(4.3)
   GenCoordInfo getGenCoordInfo(size_t _index) const;
 
   //----------------------------------------------------------------------------
@@ -248,11 +266,10 @@ public:
   /// Get a single position
   double getPosition(size_t _index) const;
 
-  /// Set configurations defined in terms of generalized coordinates and update
-  /// Cartesian terms of body nodes using following parameters.
+  /// Set generalized positions
   void setPositions(const Eigen::VectorXd& _positions);
 
-  /// Get positions
+  /// Get generalized positions
   Eigen::VectorXd getPositions() const;
 
   /// Set the configuration of this skeleton described in generalized
@@ -291,11 +308,9 @@ public:
   double getVelocity(size_t _index) const;
 
   /// Set generalized velocities
-  /// \param[in] _updateVels True to update spacial velocities of body nodes
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  void setVelocities(const Eigen::VectorXd& _genVels);
+  void setVelocities(const Eigen::VectorXd& _velocities);
 
-  /// Get velocities
+  /// Get generalized velocities
   Eigen::VectorXd getVelocities() const;
 
   /// Set zero all the velocities
@@ -609,8 +624,15 @@ public:
   //----------------------------------------------------------------------------
   friend class BodyNode;
   friend class Joint;
+  friend class DegreeOfFreedom;
 
 protected:
+  /// Register a joint with the Skeleton. Internal use only.
+  void registerJoint(Joint* _newJoint);
+
+  /// Remove a joint from the Skeleton. Internal use only.
+  void unregisterJoint(Joint* _oldJoint);
+
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
 
@@ -665,6 +687,9 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint);
 
+  /// Add a DegreeOfFreedom to the Dof NameManager
+  const std::string& addEntryToDofNameMgr(DegreeOfFreedom* _newDof);
+
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
@@ -681,11 +706,17 @@ protected:
   /// Name
   std::string mName;
 
-  /// Degrees of freedom
-  size_t mDof;
+  /// Number of degrees of freedom (aka generalized coordinates)
+  size_t mNumDofs;
 
-  ///
+  /// \brief Array of GenCoordInfo objects
+  /// \warning GenCoordInfo is deprecated because the functionality is replaced
+  /// by DegreeOfFreedom.
+  DEPRECATED(4.3)
   std::vector<GenCoordInfo> mGenCoordInfos;
+
+  /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
+  std::vector<DegreeOfFreedom*> mDofs;
 
   /// True if self collision check is enabled
   bool mEnabledSelfCollisionCheck;
@@ -704,6 +735,9 @@ protected:
 
   /// NameManager for tracking Joints
   dart::common::NameManager<Joint> mNameMgrForJoints;
+
+  /// NameManager for tracking DegreesOfFreedom
+  dart::common::NameManager<DegreeOfFreedom> mNameMgrForDofs;
 
   /// NameManager for tracking SoftBodyNodes
   dart::common::NameManager<SoftBodyNode> mNameMgrForSoftBodyNodes;

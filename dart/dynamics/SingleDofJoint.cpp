@@ -40,6 +40,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,7 +48,7 @@ namespace dynamics {
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
-    mIndexInSkeleton(0u),
+    mDof(createDofPointer(_name, 0)),
     mCommand(0.0),
     mPosition(0.0),
     mPositionLowerLimit(-DART_DBL_INF),
@@ -83,6 +84,7 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
 //==============================================================================
 SingleDofJoint::~SingleDofJoint()
 {
+  delete mDof;
 }
 
 //==============================================================================
@@ -102,12 +104,12 @@ void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
 {
   if (_index != 0)
   {
-    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[SingleDofJoint::setIndexInSkeleton] index[" << _index
+          << "] out of range" << std::endl;
     return;
   }
 
-  mIndexInSkeleton = _indexInSkeleton;
+  mDof->mIndexInSkeleton = _indexInSkeleton;
 }
 
 //==============================================================================
@@ -120,7 +122,23 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
     return 0;
   }
 
-  return mIndexInSkeleton;
+  return mDof->mIndexInSkeleton;
+}
+
+//==============================================================================
+DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
+{
+  if (0 == _index)
+    return mDof;
+  return NULL;
+}
+
+//==============================================================================
+const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
+{
+  if (0 == _index)
+    return mDof;
+  return NULL;
 }
 
 //==============================================================================
@@ -780,6 +798,14 @@ double SingleDofJoint::getPotentialEnergy() const
        * (mPosition - mRestPosition);
 
   return pe;
+}
+
+//==============================================================================
+void SingleDofJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if(!mDof->isNamePreserved())
+    mDof->setName(mName, false);
 }
 
 //==============================================================================
@@ -1514,7 +1540,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -1537,7 +1563,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInSkeleton;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;

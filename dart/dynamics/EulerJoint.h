@@ -63,13 +63,19 @@ public:
   /// Destructor
   virtual ~EulerJoint();
 
-  ///
-  void setAxisOrder(AxisOrder _order);
+  /// \brief Set the axis order
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the axis order.
+  void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
   ///
   AxisOrder getAxisOrder() const;
 
 protected:
+  /// Set the names of this joint's DegreesOfFreedom. Used during construction
+  /// and when axis order is changed.
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

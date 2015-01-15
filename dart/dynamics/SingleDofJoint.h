@@ -46,6 +46,7 @@ namespace dynamics {
 
 class BodyNode;
 class Skeleton;
+class DegreeOfFreedom;
 
 /// class SingleDofJoint
 class SingleDofJoint : public Joint
@@ -94,6 +95,12 @@ public:
   //----------------------------------------------------------------------------
 
   // TODO(JS): Not to use Eigen::VectorXd
+
+  // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t _index);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t _index) const;
 
   // Documentation inherited
   virtual void setPosition(size_t _index, double _position);
@@ -282,6 +289,10 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
@@ -426,9 +437,8 @@ protected:
   /// \}
 
 protected:
-  // TODO(JS): Need?
-  ///
-  size_t mIndexInSkeleton;
+  /// \brief DegreeOfFreedom pointer
+  DegreeOfFreedom* mDof;
 
   /// Command
   double mCommand;

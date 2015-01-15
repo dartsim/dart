@@ -41,6 +41,7 @@
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,6 +51,7 @@ PlanarJoint::PlanarJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
   setXYPlane();
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -58,35 +60,45 @@ PlanarJoint::~PlanarJoint()
 }
 
 //==============================================================================
-void PlanarJoint::setXYPlane()
+void PlanarJoint::setXYPlane(bool _renameDofs)
 {
   mPlaneType = PT_XY;
   mRotAxis   = Eigen::Vector3d::UnitZ();
   mTransAxis1 = Eigen::Vector3d::UnitX();
   mTransAxis2 = Eigen::Vector3d::UnitY();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
-void PlanarJoint::setYZPlane()
+void PlanarJoint::setYZPlane(bool _renameDofs)
 {
   mPlaneType = PT_YZ;
   mRotAxis   = Eigen::Vector3d::UnitX();
   mTransAxis1 = Eigen::Vector3d::UnitY();
   mTransAxis2 = Eigen::Vector3d::UnitZ();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
-void PlanarJoint::setZXPlane()
+void PlanarJoint::setZXPlane(bool _renameDofs)
 {
   mPlaneType = PT_ZX;
   mRotAxis   = Eigen::Vector3d::UnitY();
   mTransAxis1 = Eigen::Vector3d::UnitZ();
   mTransAxis2 = Eigen::Vector3d::UnitX();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
 void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                                    const Eigen::Vector3d& _transAxis2)
+                                    const Eigen::Vector3d& _transAxis2,
+                                    bool _renameDofs)
 {
   // Set plane type as arbitrary plane
   mPlaneType = PT_ARBITRARY;
@@ -105,6 +117,9 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   // Rotational axis
   mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -129,6 +144,43 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
   return mTransAxis2;
+}
+
+//==============================================================================
+void PlanarJoint::updateDegreeOfFreedomNames()
+{
+  std::vector<std::string> affixes;
+  switch (mPlaneType)
+  {
+    case PT_XY:
+      affixes.push_back("_x");
+      affixes.push_back("_y");
+      break;
+    case PT_YZ:
+      affixes.push_back("_y");
+      affixes.push_back("_z");
+      break;
+    case PT_ZX:
+      affixes.push_back("_z");
+      affixes.push_back("_x");
+      break;
+    case PT_ARBITRARY:
+      affixes.push_back("_1");
+      affixes.push_back("_2");
+      break;
+    default:
+      dterr << "Unsupported plane type in PlanarJoint named '" << mName
+            << "' (" << mPlaneType << ")\n";
+  }
+
+  if (affixes.size() == 2)
+  {
+    for (size_t i = 0; i < 2; ++i)
+    {
+      if (!mDofs[i]->isNamePreserved())
+        mDofs[i]->setName(mName + affixes[i], false);
+    }
+  }
 }
 
 //==============================================================================

@@ -39,6 +39,7 @@
 #include <fstream>
 #include <string>
 
+#include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/Recording.h"
@@ -129,8 +130,11 @@ bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
 
   for (size_t i = 0; i < mSkel->getNumDofs(); i++)
   {
-    dynamics::GenCoordInfo info = mSkel->getGenCoordInfo(i);
-    outFile << info.joint->getName() << "." << info.localIndex << ' ';
+    const dynamics::DegreeOfFreedom* dof        = mSkel->getDof(i);
+    const dynamics::Joint*           joint      = dof->getJoint();
+    const size_t                     localIndex = dof->getIndexInJoint();
+
+    outFile << joint->getName() << "." << localIndex << ' ';
   }
 
   outFile << std::endl;
