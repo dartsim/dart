@@ -58,6 +58,8 @@ public:
   /// \brief
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
+private:
+  bool mHarnessOn;
 };
 
 #endif  // APPS_HYBRIDDYNAMICS_MYWINDOW_H_

@@ -138,17 +138,18 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
       break;
 
     case 'h':
+      mHarnessOn = !mHarnessOn;
       if (mHarnessOn)
       {
-        mWorld->getConstraintSolver()->removeConstraint(mWeldJoint);
-        mHarnessOn = false;
+        BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
+        mWeldJoint = new WeldJointConstraint(bd);
+        mWorld->getConstraintSolver()->addConstraint(mWeldJoint);
       }
       else
       {
-        addWeldConstraint();
+        mWorld->getConstraintSolver()->removeConstraint(mWeldJoint);
       }
       break;
-
     default:
       Win3D::keyboard(key,x,y);
 
@@ -156,11 +157,3 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
   glutPostRedisplay();
 }
 
-void MyWindow::addWeldConstraint()
-{
-  BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
-  mWeldJoint = new WeldJointConstraint(bd);
-  mWorld->getConstraintSolver()->addConstraint(mWeldJoint);
-
-  mHarnessOn = true;
-}
