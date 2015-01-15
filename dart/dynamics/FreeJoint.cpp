@@ -49,6 +49,7 @@ FreeJoint::FreeJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mQ(Eigen::Isometry3d::Identity())
 {
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -65,6 +66,23 @@ void FreeJoint::integratePositions(double _dt)
 
   mPositions.head<3>() = math::logMap(mQ.linear());
   mPositions.tail<3>() = mQ.translation();
+}
+
+//==============================================================================
+void FreeJoint::updateDegreeOfFreedomNames()
+{
+  if(!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(mName + "_rot_x", false);
+  if(!mDofs[1]->isNamePreserved())
+    mDofs[1]->setName(mName + "_rot_y", false);
+  if(!mDofs[2]->isNamePreserved())
+    mDofs[2]->setName(mName + "_rot_z", false);
+  if(!mDofs[3]->isNamePreserved())
+    mDofs[3]->setName(mName + "_pos_x", false);
+  if(!mDofs[4]->isNamePreserved())
+    mDofs[4]->setName(mName + "_pos_y", false);
+  if(!mDofs[5]->isNamePreserved())
+    mDofs[5]->setName(mName + "_pos_z", false);
 }
 
 //==============================================================================

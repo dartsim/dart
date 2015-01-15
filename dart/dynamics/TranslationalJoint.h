@@ -56,6 +56,9 @@ public:
 
 protected:
   // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
+  // Documentation inherited
   virtual void updateLocalTransform();
 
   // Documentation inherited

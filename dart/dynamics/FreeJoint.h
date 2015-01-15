@@ -61,6 +61,9 @@ protected:
   virtual void integratePositions(double _dt);
 
   // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
+  // Documentation inherited
   virtual void updateLocalTransform();
 
   // Documentation inherited

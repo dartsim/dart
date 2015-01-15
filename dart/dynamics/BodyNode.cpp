@@ -391,8 +391,8 @@ void BodyNode::setParentJoint(Joint* _joint)
 
   if (mSkeleton)
   {
-    mSkeleton->mNameMgrForJoints.removeName(mParentJoint->getName());
-    mSkeleton->addEntryToJointNameMgr(_joint);
+    mSkeleton->unregisterJoint(mParentJoint);
+    mSkeleton->registerJoint(_joint);
   }
 
   if (mParentJoint)
@@ -400,7 +400,7 @@ void BodyNode::setParentJoint(Joint* _joint)
 
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;
-  // TODO: Shouldn't we delete the original mParentJoint? Seems like the BodyNode
+  // TODO: Should we delete the original mParentJoint? Seems like the BodyNode
   // should be responsible for its parent joint
 }
 

@@ -51,8 +51,8 @@ class UniversalJoint : public MultiDofJoint<2>
 {
 public:
   /// Constructor
-  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d::UnitX(),
-                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitY(),
+  UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
+                 const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
                  const std::string& _name = "Universal joint");
 
   /// Destructor
@@ -71,6 +71,9 @@ public:
   const Eigen::Vector3d& getAxis2() const;
 
 protected:
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 
