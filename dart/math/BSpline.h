@@ -302,7 +302,8 @@ public:
   /// \f}
   /// for i raning between 0 and order.
   ///
-  /// \param[in] u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is
+  /// evaluated.
   /// \return The spline acceleration at the given location \f$u\f$.
   PointType getAcceleration(Scalar _u) const
   {
