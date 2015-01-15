@@ -46,34 +46,37 @@ namespace math {
 using namespace Eigen;
 
 /// BSpline is a wrapper class of Eigen::Spline with useful interface for DART.
-template <typename _Scalar, int _Dim, int _Degree>
-class BSpline : public Spline<_Scalar, _Dim, _Degree>
+///
+/// Degree of BSpline is always flexible by fixing the template class parameter
+/// _Degree to Eigen::Dynamic.
+template <typename _Scalar, int _Dim>
+class BSpline : public Spline<_Scalar, _Dim, Dynamic>
 {
 public:
   using Scalar = _Scalar; ///< The spline curve's scalar type.
   enum { Dimension = _Dim }; ///< The spline curve's dimension.
-  enum { Degree = _Degree }; ///< The spline curve's degree.
+  //enum { Degree = _Degree }; ///< The spline curve's degree.
 
   /// The point type the spline is representing.
   using PointType
-      = typename Spline<_Scalar, _Dim, _Degree>::PointType;
+      = typename Spline<_Scalar, _Dim, Dynamic>::PointType;
 
   /// The data type used to store knot vectors.
   using KnotVectorType
-      = typename Spline<_Scalar, _Dim, _Degree>::KnotVectorType;
+      = typename Spline<_Scalar, _Dim, Dynamic>::KnotVectorType;
 
   /// The data type used to store non-zero basis functions.
   using BasisVectorType
-      = typename Spline<_Scalar, _Dim, _Degree>::BasisVectorType;
+      = typename Spline<_Scalar, _Dim, Dynamic>::BasisVectorType;
 
   /// The data type representing the spline's control points.
   using ControlPointVectorType
-      = typename Spline<_Scalar, _Dim, _Degree>::ControlPointVectorType;
+      = typename Spline<_Scalar, _Dim, Dynamic>::ControlPointVectorType;
 
   /// Creates a (constant) zero spline.
   ///
   /// For Splines with dynamic degree, the resulting degree will be 0.
-  BSpline() : Spline<_Scalar, _Dim, _Degree>() {}
+  BSpline() : Spline<_Scalar, _Dim, Dynamic>() {}
 
   /// Creates a spline from degree, control points, knot range, and knot vector
   /// type.
@@ -85,12 +88,12 @@ public:
   {
     auto numCtrls = _ctrls.cols();
     auto& ctrls_ = const_cast<ControlPointVectorType&>(
-                     Spline<_Scalar, _Dim, _Degree>::ctrls());
+                     Spline<_Scalar, _Dim, Dynamic>::ctrls());
     ctrls_ = _ctrls;
 
     auto numKnots = _degree + numCtrls + 1;
     auto& knots_ = const_cast<KnotVectorType&>(
-                     Spline<_Scalar, _Dim, _Degree>::knots());
+                     Spline<_Scalar, _Dim, Dynamic>::knots());
     knots_.resize(numKnots);
     setUniformKnots(knots_, _firstKnot, _lastKnot, _isOpenKnots);
   }
@@ -113,21 +116,21 @@ public:
   /// \param[in] _ctrls The spline's control point vector.
   template <typename OtherVectorType, typename OtherArrayType>
   BSpline(const OtherVectorType& _knots, const OtherArrayType& _ctrls)
-    : Spline<_Scalar, _Dim, _Degree>(_knots, _ctrls) {}
+    : Spline<_Scalar, _Dim, Dynamic>(_knots, _ctrls) {}
 
   /// Copy constructor for splines.
   /// \param[in] _spline The input spline.
   template <int OtherDegree>
-  BSpline(const BSpline<Scalar, Dimension, OtherDegree>& _spline)
-    : Spline<_Scalar, _Dim, _Degree>(_spline) {}
+  BSpline(const BSpline<Scalar, Dimension>& _spline)
+    : Spline<_Scalar, _Dim, Dynamic>(_spline) {}
 
   /// Set an element of control points at (i, j) to val.
   void setControlPoint(DenseIndex _i, DenseIndex _j, Scalar _val)
   {
-    if (_i < 0 || _i >= Spline<_Scalar, _Dim, _Degree>::ctrls().rows())
+    if (_i < 0 || _i >= Spline<_Scalar, _Dim, Dynamic>::ctrls().rows())
       return;
 
-    if (_j < 0 || _j >= Spline<_Scalar, _Dim, _Degree>::ctrls().cols())
+    if (_j < 0 || _j >= Spline<_Scalar, _Dim, Dynamic>::ctrls().cols())
       return;
 
     auto& ctrls_ = getControlPoints();
@@ -152,32 +155,32 @@ public:
   /// Get an element of control points at (i, j) to val.
   Scalar getControlPoint(DenseIndex _i, DenseIndex _j) const
   {
-    return Spline<_Scalar, _Dim, _Degree>::ctrls()(_i, _j);
+    return Spline<_Scalar, _Dim, Dynamic>::ctrls()(_i, _j);
   }
 
   /// Get (const) control points.
   const ControlPointVectorType& getControlPoints() const
   {
-    return Spline<_Scalar, _Dim, _Degree>::ctrls();
+    return Spline<_Scalar, _Dim, Dynamic>::ctrls();
   }
 
   /// Get control points.
   ControlPointVectorType& getControlPoints()
   {
     return const_cast<ControlPointVectorType&>(
-          Spline<_Scalar, _Dim, _Degree>::ctrls());
+          Spline<_Scalar, _Dim, Dynamic>::ctrls());
   }
 
   /// Get number of elements of control points.
   DenseIndex getNumControlPoints() const
   {
-    return Spline<_Scalar, _Dim, _Degree>::ctrls().cols();
+    return Spline<_Scalar, _Dim, Dynamic>::ctrls().cols();
   }
 
   /// Set an element of knot vector at i to val.
   void setKnot(DenseIndex _i, Scalar _val)
   {
-    if (_i < 0 || _i >= Spline<_Scalar, _Dim, _Degree>::knots().size())
+    if (_i < 0 || _i >= Spline<_Scalar, _Dim, Dynamic>::knots().size())
       return;
 
     auto& knots_ = getKnots();
@@ -188,7 +191,7 @@ public:
   /// Set knot vector.
   void setKnots(const KnotVectorType& _knots)
   {
-    if (_knots.size() != Spline<_Scalar, _Dim, _Degree>::knots().size())
+    if (_knots.size() != Spline<_Scalar, _Dim, Dynamic>::knots().size())
       return;
 
     auto& knots_ = getKnots();
@@ -202,8 +205,8 @@ public:
                        Scalar _lastKnot,
                        bool _isOpenKnots)
   {
-    const auto degree_ = Spline<_Scalar, _Dim, _Degree>::degree();
-    const auto& ctrls_ = Spline<_Scalar, _Dim, _Degree>::ctrls();
+    const auto degree_ = Spline<_Scalar, _Dim, Dynamic>::degree();
+    const auto& ctrls_ = Spline<_Scalar, _Dim, Dynamic>::ctrls();
     const auto numCtrls = ctrls_.cols();
     const auto numKnots = _knots.size();
 
@@ -238,25 +241,25 @@ public:
   /// Get an element of knot vector given index.
   Scalar getKnot(DenseIndex _i) const
   {
-    return Spline<_Scalar, _Dim, _Degree>::knots()[_i];
+    return Spline<_Scalar, _Dim, Dynamic>::knots()[_i];
   }
 
   /// Get (const) knot vector.
   const KnotVectorType& getKnots() const
   {
-    return Spline<_Scalar, _Dim, _Degree>::knots();
+    return Spline<_Scalar, _Dim, Dynamic>::knots();
   }
 
   /// Get knot vector.
   KnotVectorType& getKnots()
   {
-    return const_cast<KnotVectorType&>(Spline<_Scalar, _Dim, _Degree>::knots());
+    return const_cast<KnotVectorType&>(Spline<_Scalar, _Dim, Dynamic>::knots());
   }
 
   /// Get number of elements of knot vector.
   DenseIndex getNumKnots() const
   {
-    return Spline<_Scalar, _Dim, _Degree>::knots().size();
+    return Spline<_Scalar, _Dim, Dynamic>::knots().size();
   }
 
   /// Returns the spline point at a given site \f$u\f$.
@@ -288,7 +291,7 @@ public:
   /// \return The spline velocity at the given location \f$u\f$.
   PointType getVelocity(Scalar _u) const
   {
-    return Spline<_Scalar, _Dim, _Degree>::derivatives(_u, 1);
+    return Spline<_Scalar, _Dim, Dynamic>::derivatives(_u, 1);
   }
 
   /// Returns the spline acceleration at a given site \f$u\f$.
@@ -303,27 +306,27 @@ public:
   /// \return The spline acceleration at the given location \f$u\f$.
   PointType getAcceleration(Scalar _u) const
   {
-    return Spline<_Scalar, _Dim, _Degree>::derivatives(_u, 2);
+    return Spline<_Scalar, _Dim, Dynamic>::derivatives(_u, 2);
   }
 };
 
 /// 1D float B-spline with dynamic degree.
-using BSpline1f = BSpline<float,1,Dynamic>;
+using BSpline1f = BSpline<float,1>;
 
 /// 2D float B-spline with dynamic degree.
-using BSpline2f = BSpline<float,2,Dynamic>;
+using BSpline2f = BSpline<float,2>;
 
 /// 3D float B-spline with dynamic degree.
-using BSpline3f = BSpline<float,3,Dynamic>;
+using BSpline3f = BSpline<float,3>;
 
 /// 1D double B-spline with dynamic degree.
-using BSpline1d = BSpline<double,1,Dynamic>;
+using BSpline1d = BSpline<double,1>;
 
 /// 2D double B-spline with dynamic degree.
-using BSpline2d = BSpline<double,2,Dynamic>;
+using BSpline2d = BSpline<double,2>;
 
 /// 3D double B-spline with dynamic degree.
-using BSpline3d = BSpline<double,3,Dynamic>;
+using BSpline3d = BSpline<double,3>;
 
 }  // namespace math
 }  // namespace dart
