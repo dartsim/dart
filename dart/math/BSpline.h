@@ -73,11 +73,6 @@ public:
   using ControlPointVectorType
       = typename Spline<_Scalar, _Dim, Dynamic>::ControlPointVectorType;
 
-  /// Creates a (constant) zero spline.
-  ///
-  /// For Splines with dynamic degree, the resulting degree will be 0.
-  BSpline() : Spline<_Scalar, _Dim, Dynamic>() {}
-
   /// Creates a spline from degree, control points, knot range, and knot vector
   /// type.
   BSpline(DenseIndex _degree,
@@ -94,8 +89,8 @@ public:
 
   /// Creates a spline from degree, number of control points, knot range, and
   /// knot vector type.
-  BSpline(DenseIndex _degree,
-          DenseIndex _numCtrlPts,
+  BSpline(DenseIndex _degree = 3,
+          DenseIndex _numCtrlPts = 4,
           Scalar _firstKnot = 0.0,
           Scalar _lastKnot = 1.0,
           bool _isOpenKnots = true)

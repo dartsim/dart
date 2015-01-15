@@ -52,6 +52,14 @@ using namespace math;
 //==============================================================================
 TEST(Curves, Basic)
 {
+  BSpline1f bs1f;
+  BSpline2f bs2f;
+  BSpline3f bs3f;
+
+  BSpline1d bs1d;
+  BSpline2d bs2d;
+  BSpline3d bs3d;
+
   BSpline2d bs(2, 3, 0.0, 6.0, false);
 
   Eigen::MatrixXd ctrlPts(2, 3);
