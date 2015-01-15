@@ -50,6 +50,7 @@
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/JointCoulombFrictionConstraint.h"
 #include "dart/constraint/DantzigLCPSolver.h"
 #include "dart/constraint/PGSLCPSolver.h"
 
@@ -419,6 +420,47 @@ void ConstraintSolver::updateConstraints()
 
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
+  }
+
+  //----------------------------------------------------------------------------
+  // Update automatic constraints: joint Coulomb friction constraints
+  //----------------------------------------------------------------------------
+  // Destroy previous joint limit constraints
+  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+    delete jointFrictionConstraint;
+  mJointCoulombFrictionConstraints.clear();
+
+  // Create new joint limit constraints
+  for (const auto& skel : mSkeletons)
+  {
+    const size_t numBodyNodes = skel->getNumBodyNodes();
+    for (size_t i = 0; i < numBodyNodes; i++)
+    {
+      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+
+      if (joint->isDynamic())
+      {
+        const size_t dof = joint->getNumDofs();
+        for (size_t i = 0; i < dof; ++i)
+        {
+          if (joint->getCoulombFriction(i) != 0.0)
+          {
+            mJointCoulombFrictionConstraints.push_back(
+                  new JointCoulombFrictionConstraint(joint));
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Add active joint limit
+  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+  {
+    jointFrictionConstraint->update();
+
+    if (jointFrictionConstraint->isActive())
+      mActiveConstraints.push_back(jointFrictionConstraint);
   }
 }
 

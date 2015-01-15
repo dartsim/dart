@@ -58,6 +58,7 @@ class ClosedLoopConstraint;
 class ContactConstraint;
 class SoftContactConstraint;
 class JointLimitConstraint;
+class JointCoulombFrictionConstraint;
 class JointConstraint;
 class LCPSolver;
 
@@ -161,6 +162,9 @@ private:
 
   /// Joint limit constraints those are automatically created
   std::vector<JointLimitConstraint*> mJointLimitConstraints;
+
+  /// Joint limit constraints those are automatically created
+  std::vector<JointCoulombFrictionConstraint*> mJointCoulombFrictionConstraints;
 
   /// Constraints that manually added
   std::vector<Constraint*> mManualConstraints;

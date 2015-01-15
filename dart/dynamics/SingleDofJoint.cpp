@@ -806,6 +806,8 @@ void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
     return;
   }
 
+  assert(_friction >= 0.0);
+
   mFriction = _friction;
 }
 

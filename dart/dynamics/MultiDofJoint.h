@@ -1497,6 +1497,8 @@ void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
     return;
   }
 
+  assert(_friction >= 0.0);
+
   mFrictions[_index] = _friction;
 }
 
