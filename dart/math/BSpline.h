@@ -85,17 +85,11 @@ public:
           Scalar _firstKnot = 0.0,
           Scalar _lastKnot = 1.0,
           bool _isOpenKnots = true)
+    : Spline<_Scalar, _Dim, Dynamic>(
+        KnotVectorType(_degree + _ctrls.size() + 1),
+        _ctrls)
   {
-    auto numCtrls = _ctrls.cols();
-    auto& ctrls_ = const_cast<ControlPointVectorType&>(
-                     Spline<_Scalar, _Dim, Dynamic>::ctrls());
-    ctrls_ = _ctrls;
-
-    auto numKnots = _degree + numCtrls + 1;
-    auto& knots_ = const_cast<KnotVectorType&>(
-                     Spline<_Scalar, _Dim, Dynamic>::knots());
-    knots_.resize(numKnots);
-    setUniformKnots(knots_, _firstKnot, _lastKnot, _isOpenKnots);
+    setUniformKnots(_firstKnot, _lastKnot, _isOpenKnots);
   }
 
   /// Creates a spline from degree, number of control points, knot range, and
@@ -105,16 +99,11 @@ public:
           Scalar _firstKnot = 0.0,
           Scalar _lastKnot = 1.0,
           bool _isOpenKnots = true)
+    : Spline<_Scalar, _Dim, Dynamic>(
+        KnotVectorType(_degree + _numCtrlPts + 1),
+        ControlPointVectorType(_Dim, _numCtrlPts))
   {
-    auto& ctrls_ = const_cast<ControlPointVectorType&>(
-                     Spline<_Scalar, _Dim, Dynamic>::ctrls());
-    ctrls_ = ControlPointVectorType(_Dim, _numCtrlPts);
-
-    auto numKnots = _degree + _numCtrlPts + 1;
-    auto& knots_ = const_cast<KnotVectorType&>(
-                     Spline<_Scalar, _Dim, Dynamic>::knots());
-    knots_.resize(numKnots);
-    setUniformKnots(knots_, _firstKnot, _lastKnot, _isOpenKnots);
+    setUniformKnots(_firstKnot, _lastKnot, _isOpenKnots);
 
     // TODO: Use delegating constructor when DART totally migrate to C++11
   }
@@ -208,15 +197,15 @@ public:
   }
 
   /// Set knot vector with evenly spaced values.
-  void setUniformKnots(KnotVectorType& _knots,
-                       Scalar _firstKnot,
+  void setUniformKnots(Scalar _firstKnot,
                        Scalar _lastKnot,
                        bool _isOpenKnots)
   {
     const auto degree_ = Spline<_Scalar, _Dim, Dynamic>::degree();
-    const auto& ctrls_ = Spline<_Scalar, _Dim, Dynamic>::ctrls();
+    const auto& ctrls_ = getControlPoints();
     const auto numCtrls = ctrls_.cols();
-    const auto numKnots = _knots.size();
+    auto& knots = getKnots();
+    const auto numKnots = knots.size();
 
     if (_isOpenKnots)
     {
@@ -226,21 +215,21 @@ public:
       const auto numMidKnots = numCtrls - degree_ + 1;
       eigen_assert(numMidKnots >= 2);
 
-      _knots.segment(0, degree_).setConstant(_firstKnot);
-      _knots.segment(degree_, numMidKnots).setLinSpaced(
+      knots.segment(0, degree_).setConstant(_firstKnot);
+      knots.segment(degree_, numMidKnots).setLinSpaced(
             numMidKnots, _firstKnot, _lastKnot);
 
-      _knots[numCtrls] = _lastKnot;
+      knots[numCtrls] = _lastKnot;
       // TODO: The last value of _knots is not always _endTime because
       // Eigen::VectorXd::setLinSpaced() doesn't do that.
 
-      _knots.segment(numCtrls + 1, degree_).setConstant(_lastKnot);
+      knots.segment(numCtrls + 1, degree_).setConstant(_lastKnot);
     }
     else
     {
-      _knots.setLinSpaced(numKnots, _firstKnot, _lastKnot);
+      knots.setLinSpaced(numKnots, _firstKnot, _lastKnot);
 
-      _knots[numKnots - 1] = _lastKnot;
+      knots[numKnots - 1] = _lastKnot;
       // TODO: The last value of _knots is not always _endTime because
       // Eigen::VectorXd::setLinSpaced() doesn't do that.
     }
