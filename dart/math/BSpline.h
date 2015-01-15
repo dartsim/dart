@@ -105,11 +105,19 @@ public:
           Scalar _firstKnot = 0.0,
           Scalar _lastKnot = 1.0,
           bool _isOpenKnots = true)
-    : BSpline(_degree,
-              ControlPointVectorType(_Dim, _numCtrlPts),
-              _firstKnot,
-              _lastKnot,
-              _isOpenKnots) {}
+  {
+    auto& ctrls_ = const_cast<ControlPointVectorType&>(
+                     Spline<_Scalar, _Dim, Dynamic>::ctrls());
+    ctrls_ = ControlPointVectorType(_Dim, _numCtrlPts);
+
+    auto numKnots = _degree + _numCtrlPts + 1;
+    auto& knots_ = const_cast<KnotVectorType&>(
+                     Spline<_Scalar, _Dim, Dynamic>::knots());
+    knots_.resize(numKnots);
+    setUniformKnots(knots_, _firstKnot, _lastKnot, _isOpenKnots);
+
+    // TODO: Use delegating constructor when DART totally migrate to C++11
+  }
 
   /// Creates a spline from a knot vector and control points.
   /// \param[in] _knots The spline's knot vector.
