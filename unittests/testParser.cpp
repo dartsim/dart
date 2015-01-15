@@ -53,121 +53,128 @@ using namespace dynamics;
 using namespace simulation;
 using namespace utils;
 
-/******************************************************************************/
-TEST(SKEL_PARSER, DATA_STRUCTUER)
+//==============================================================================
+TEST(Parser, DataStructure)
 {
-    bool v1 = true;
-    int v2 = -3;
-    unsigned int v3 = 1;
-    float v4 = -3.140f;
-    double v5 = 1.4576640;
-    char v6 = 'd';
-    Eigen::Vector2d v7 = Eigen::Vector2d::Ones();
-    Eigen::Vector3d v8 = Eigen::Vector3d::Ones();
-    //Eigen::Vector3d v9 = Eigen::Vector3d::Ones();
-    //math::SO3 v10;
-    Eigen::Isometry3d v11 = Eigen::Isometry3d::Identity();
+  bool v1 = true;
+  int v2 = -3;
+  unsigned int v3 = 1;
+  float v4 = -3.140f;
+  double v5 = 1.4576640;
+  char v6 = 'd';
+  Eigen::Vector2d v7 = Eigen::Vector2d::Ones();
+  Eigen::Vector3d v8 = Eigen::Vector3d::Ones();
+  //Eigen::Vector3d v9 = Eigen::Vector3d::Ones();
+  //math::SO3 v10;
+  Eigen::Isometry3d v11 = Eigen::Isometry3d::Identity();
 
-    std::string str1 = toString(v1);
-    std::string str2 = toString(v2);
-    std::string str3 = toString(v3);
-    std::string str4 = toString(v4);
-    std::string str5 = toString(v5);
-    std::string str6 = toString(v6);
-    std::string str7 = toString(v7);
-    std::string str8 = toString(v8);
-    //std::string str9 = toString(v9);
-    //std::string str10 = toString(v10);
-    std::string str11 = toString(v11);
+  std::string str1 = toString(v1);
+  std::string str2 = toString(v2);
+  std::string str3 = toString(v3);
+  std::string str4 = toString(v4);
+  std::string str5 = toString(v5);
+  std::string str6 = toString(v6);
+  std::string str7 = toString(v7);
+  std::string str8 = toString(v8);
+  //std::string str9 = toString(v9);
+  //std::string str10 = toString(v10);
+  std::string str11 = toString(v11);
 
-    bool b = toBool(str1);
-    int i = toInt(str2);
-    unsigned int ui = toUInt(str3);
-    float f = toFloat(str4);
-    double d = toDouble(str5);
-    char c = toChar(str6);
-    Eigen::Vector2d vec2 = toVector2d(str7);
-    Eigen::Vector3d vec3 = toVector3d(str8);
-    //Eigen::Vector3d valso3 = toVector3d(str9);
-    //math::SO3 valSO3 = toSO3(str10);
-    Eigen::Isometry3d valSE3 = toIsometry3d(str11);
+  bool b = toBool(str1);
+  int i = toInt(str2);
+  unsigned int ui = toUInt(str3);
+  float f = toFloat(str4);
+  double d = toDouble(str5);
+  char c = toChar(str6);
+  Eigen::Vector2d vec2 = toVector2d(str7);
+  Eigen::Vector3d vec3 = toVector3d(str8);
+  //Eigen::Vector3d valso3 = toVector3d(str9);
+  //math::SO3 valSO3 = toSO3(str10);
+  Eigen::Isometry3d valSE3 = toIsometry3d(str11);
 
-    EXPECT_EQ(b, v1);
-    EXPECT_EQ(i, v2);
-    EXPECT_EQ(ui, v3);
-    EXPECT_EQ(f, v4);
-    EXPECT_EQ(d, v5);
-    EXPECT_EQ(c, v6);
-    for (int i = 0; i < 2; i++) {
-        EXPECT_EQ(vec2[i], v7[i]);
-    }
-    EXPECT_EQ(vec3, v8);
-    //EXPECT_EQ(valso3, v9);
-    //EXPECT_EQ(valSO3, v10);
-    for (int i = 0; i < 4; ++i)
-        for (int j = 0; j < 4; ++j)
-            EXPECT_EQ(valSE3(i,j), v11(i,j));
+  EXPECT_EQ(b, v1);
+  EXPECT_EQ(i, v2);
+  EXPECT_EQ(ui, v3);
+  EXPECT_EQ(f, v4);
+  EXPECT_EQ(d, v5);
+  EXPECT_EQ(c, v6);
+  for (int i = 0; i < 2; i++)
+    EXPECT_EQ(vec2[i], v7[i]);
+  EXPECT_EQ(vec3, v8);
+  //EXPECT_EQ(valso3, v9);
+  //EXPECT_EQ(valSO3, v10);
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+      EXPECT_EQ(valSE3(i,j), v11(i,j));
+  }
 }
 
-TEST(SKEL_PARSER, EMPTY)
+//==============================================================================
+TEST(Parser, EmptyWorld)
 {
-    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
+  World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
-    EXPECT_TRUE(world != NULL);
-    EXPECT_EQ(world->getTimeStep(), 0.001);
-    EXPECT_EQ(world->getGravity()(0), 0);
-    EXPECT_EQ(world->getGravity()(1), 0);
-    EXPECT_EQ(world->getGravity()(2), -9.81);
-    EXPECT_EQ(world->getNumSkeletons(), 0);
+  EXPECT_TRUE(world != NULL);
+  EXPECT_EQ(world->getTimeStep(), 0.001);
+  EXPECT_EQ(world->getGravity()(0), 0);
+  EXPECT_EQ(world->getGravity()(1), 0);
+  EXPECT_EQ(world->getGravity()(2), -9.81);
+  EXPECT_EQ(world->getNumSkeletons(), 0);
 
-    EXPECT_EQ(world->getTime(), 0);
-    world->step();
-    EXPECT_EQ(world->getTime(), world->getTimeStep());
+  EXPECT_EQ(world->getTime(), 0);
+  world->step();
+  EXPECT_EQ(world->getTime(), world->getTimeStep());
 
-    delete world;
+  delete world;
 }
 
-TEST(SKEL_PARSER, PENDULUM)
+//==============================================================================
+TEST(Parser, SinglePendulum)
 {
-    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"skel/test/single_pendulum.skel");
 
-    EXPECT_TRUE(world != NULL);
-    EXPECT_EQ(world->getTimeStep(), 0.001);
-    EXPECT_EQ(world->getGravity()(0), 0);
-    EXPECT_EQ(world->getGravity()(1), -9.81);
-    EXPECT_EQ(world->getGravity()(2), 0);
-    EXPECT_EQ(world->getNumSkeletons(), 1);
+  EXPECT_TRUE(world != NULL);
+  EXPECT_EQ(world->getTimeStep(), 0.001);
+  EXPECT_EQ(world->getGravity()(0), 0);
+  EXPECT_EQ(world->getGravity()(1), -9.81);
+  EXPECT_EQ(world->getGravity()(2), 0);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
-    Skeleton* skel1 = world->getSkeleton("single_pendulum");
+  Skeleton* skel1 = world->getSkeleton("single_pendulum");
 
-    EXPECT_EQ(skel1->getNumBodyNodes(), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
-    world->step();
+  world->step();
 
-    delete world;
+  delete world;
 }
 
-TEST(SKEL_PARSER, SERIAL_CAHIN)
+//==============================================================================
+TEST(Parser, SerialChain)
 {
-    World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
-    EXPECT_TRUE(world != NULL);
-    EXPECT_EQ(world->getTimeStep(), 0.001);
-    EXPECT_EQ(world->getGravity()(0), 0);
-    EXPECT_EQ(world->getGravity()(1), -9.81);
-    EXPECT_EQ(world->getGravity()(2), 0);
-    EXPECT_EQ(world->getNumSkeletons(), 1);
+  EXPECT_TRUE(world != NULL);
+  EXPECT_EQ(world->getTimeStep(), 0.001);
+  EXPECT_EQ(world->getGravity()(0), 0);
+  EXPECT_EQ(world->getGravity()(1), -9.81);
+  EXPECT_EQ(world->getGravity()(2), 0);
+  EXPECT_EQ(world->getNumSkeletons(), 1);
 
-    Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
 
-    EXPECT_EQ(skel1->getNumBodyNodes(), 10);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 10);
 
-    world->step();
+  world->step();
 
-    delete world;
+  delete world;
 }
 
-TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
+//==============================================================================
+TEST(Parser, RigidAndSoftBodies)
 {
   using namespace dart;
   using namespace math;
@@ -175,19 +182,17 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
   using namespace simulation;
   using namespace utils;
 
-  World* world
-      = SkelParser::readWorld(
-          DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != NULL);
 
   Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  Skeleton* softSkel1 = dynamic_cast<Skeleton*>(skel1);
-  EXPECT_TRUE(softSkel1 != NULL);
-  EXPECT_EQ(softSkel1->getNumBodyNodes(), 2);
-  EXPECT_EQ(softSkel1->getNumRigidBodyNodes(), 1);
-  EXPECT_EQ(softSkel1->getNumSoftBodyNodes(), 1);
+  EXPECT_TRUE(skel1 != NULL);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 2);
+  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
+  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
 
-  SoftBodyNode* sbn = softSkel1->getSoftBodyNode(0);
+  SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
@@ -196,7 +201,7 @@ TEST(SKEL_PARSER, RIGID_SOFT_BODIES)
 }
 
 //==============================================================================
-TEST(SKEL_PARSER, PLANAR_JOINT)
+TEST(Parser, PlanarJoint)
 {
   using namespace dart;
   using namespace math;
@@ -344,12 +349,88 @@ TEST(SKEL_PARSER, JointActuatorType)
 
   // Test for when actuator type attribute are specified
   Joint* joint4 = skel1->getJoint("joint4");
-  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);
+  EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);}
+
+//==============================================================================
+TEST(Parser, DofAttributes)
+{
+  World* world = SkelParser::readWorld(
+                   DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
+  EXPECT_TRUE(world != NULL);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+
+  // Test for no dof elements being specified
+  Joint* joint0 = skel1->getJoint("joint0");
+  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
+
+  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
+
+  EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());
+
+  // Test for only a dof name being changed
+  Joint* joint1 = skel1->getJoint("joint1");
+  EXPECT_EQ(joint1->getDof(0)->getPositionLowerLimit(), -1.57);
+  EXPECT_EQ(joint1->getDof(0)->getPositionUpperLimit(),  1.57);
+  EXPECT_EQ(joint1->getDof(0)->getName(), "customJoint1");
+
+  // Test for when dof attributes (but not a name) are specified
+  Joint* joint2 = skel1->getJoint("joint2");
+  EXPECT_EQ(joint2->getDof(0)->getName(), joint2->getName());
+
+  EXPECT_EQ(joint2->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint2->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint2->getDof(0)->getPosition(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getVelocityLowerLimit(), -2);
+  EXPECT_EQ(joint2->getDof(0)->getVelocityUpperLimit(),  2);
+  EXPECT_EQ(joint2->getDof(0)->getVelocity(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getAccelerationLowerLimit(), -3);
+  EXPECT_EQ(joint2->getDof(0)->getAccelerationUpperLimit(),  3);
+  EXPECT_EQ(joint2->getDof(0)->getAcceleration(), 0);
+
+  EXPECT_EQ(joint2->getDof(0)->getForceLowerLimit(), -4);
+  EXPECT_EQ(joint2->getDof(0)->getForceUpperLimit(),  4);
+  EXPECT_EQ(joint2->getDof(0)->getForce(), 0);
+
+  // Test for mixture of old method and new method
+  // Note: If there is a conflict, the data given in the dof element will win
+  Joint* joint3 = skel1->getJoint("joint3");
+  EXPECT_EQ(joint3->getDof(0)->getName(), joint3->getName() + "_1");
+  EXPECT_EQ(joint3->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint3->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint3->getDof(0)->getPosition(), 5);
+
+  EXPECT_EQ(joint3->getDof(1)->getName(), joint3->getName() + "_2");
+  EXPECT_EQ(joint3->getDof(1)->getPositionLowerLimit(), -2);
+  EXPECT_EQ(joint3->getDof(1)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint3->getDof(1)->getPosition(), -5);
+
+  // Test for only some of the DOFs being specified
+  Joint* joint4 = skel1->getJoint("joint4");
+  EXPECT_EQ(joint4->getDof(0)->getName(), "joint4_1");
+  EXPECT_EQ(joint4->getDof(0)->getPositionLowerLimit(), -1);
+  EXPECT_EQ(joint4->getDof(0)->getPositionUpperLimit(),  1);
+  EXPECT_EQ(joint4->getDof(0)->getVelocityLowerLimit(), -10);
+  EXPECT_EQ(joint4->getDof(0)->getVelocityUpperLimit(),  10);
+
+  EXPECT_EQ(joint4->getDof(1)->getName(), joint4->getName() + "_y");
+
+  EXPECT_EQ(joint4->getDof(2)->getName(), "joint4_3");
+  EXPECT_EQ(joint4->getDof(2)->getPositionLowerLimit(), -2);
+  EXPECT_EQ(joint4->getDof(2)->getPositionUpperLimit(),  2);
+  EXPECT_EQ(joint4->getDof(2)->getVelocityLowerLimit(), -20);
+  EXPECT_EQ(joint4->getDof(2)->getVelocityUpperLimit(),  20);
 }
 
-/******************************************************************************/
+//==============================================================================
 int main(int argc, char* argv[])
 {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

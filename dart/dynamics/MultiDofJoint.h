@@ -46,6 +46,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -71,6 +72,12 @@ public:
   // Documentation inherited
   DEPRECATED(4.1)
   virtual size_t getDof() const;
+
+  // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t index);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t _index) const;
 
   // Documentation inherited
   virtual size_t getNumDofs() const;
@@ -432,9 +439,9 @@ protected:
   /// \}
 
 protected:
-  // TODO(JS): Need?
-  ///
-  Eigen::Matrix<size_t, DOF, 1> mIndexInSkeleton;
+  // TODO: Replace with std::array when we migrate to C++11
+  /// Array of DegreeOfFreedom objects
+  DegreeOfFreedom* mDofs[DOF];
 
   /// Command
   Eigen::Matrix<double, DOF, 1> mCommands;
@@ -656,7 +663,6 @@ private:
 template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
   : Joint(_name),
-    mIndexInSkeleton(Eigen::Matrix<size_t, DOF, 1>::Constant(0u)),
     mCommands(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositionLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
@@ -687,12 +693,16 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
+  for (size_t i = 0; i < DOF; ++i)
+    mDofs[i] = createDofPointer(mName, i);
 }
 
 //==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::~MultiDofJoint()
 {
+  for (size_t i = 0; i < DOF; ++i)
+    delete mDofs[i];
 }
 
 //==============================================================================
@@ -700,6 +710,24 @@ template <size_t DOF>
 size_t MultiDofJoint<DOF>::getDof() const
 {
   return getNumDofs();
+}
+
+//==============================================================================
+template <size_t DOF>
+DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
+{
+  if (_index < DOF)
+    return mDofs[_index];
+  return NULL;
+}
+
+//==============================================================================
+template <size_t DOF>
+const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
+{
+  if (_index < DOF)
+    return mDofs[_index];
+  return NULL;
 }
 
 //==============================================================================
@@ -716,12 +744,12 @@ void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[MultiDofJoint::setIndexInSkeleton] index[" << _index
+          << "] out of range" << std::endl;
     return;
   }
 
-  mIndexInSkeleton[_index] = _indexInSkeleton;
+  mDofs[_index]->mIndexInSkeleton = _indexInSkeleton;
 }
 
 //==============================================================================
@@ -735,7 +763,7 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
     return 0;
   }
 
-  return mIndexInSkeleton[_index];
+  return mDofs[_index]->mIndexInSkeleton;
 }
 
 //==============================================================================
@@ -2286,7 +2314,7 @@ void MultiDofJoint<DOF>::getInvMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton[0];
+  size_t iStart = mDofs[0]->mIndexInSkeleton;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;
@@ -2310,7 +2338,7 @@ void MultiDofJoint<DOF>::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mIndexInSkeleton[0];
+  size_t iStart = mDofs[0]->mIndexInSkeleton;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;

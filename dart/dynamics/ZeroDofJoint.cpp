@@ -62,16 +62,28 @@ size_t ZeroDofJoint::getDof() const
 }
 
 //==============================================================================
+DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
+{
+  return NULL;
+}
+
+//==============================================================================
+const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
+{
+  return NULL;
+}
+
+//==============================================================================
 size_t ZeroDofJoint::getNumDofs() const
 {
   return 0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t)
 {
-  dterr << "setIndexInSkeleton index[" << _index << "] out of range"
-        << std::endl;
+  dterr << "[ZeroDofJoint::setIndexInSkeleton] index[" << _index
+        << "] out of range" << std::endl;
 }
 
 //==============================================================================
@@ -426,6 +438,12 @@ double ZeroDofJoint::getDampingCoefficient(size_t _index) const
 double ZeroDofJoint::getPotentialEnergy() const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::updateDegreeOfFreedomNames()
+{
+  // Do nothing
 }
 
 //==============================================================================

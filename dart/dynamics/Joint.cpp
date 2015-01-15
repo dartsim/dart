@@ -43,6 +43,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
@@ -71,13 +72,16 @@ Joint::~Joint()
 }
 
 //==============================================================================
-const std::string& Joint::setName(const std::string& _name)
+const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 {
-
-  if(mName == _name)
+  if (mName == _name)
+  {
+    if (_renameDofs)
+      updateDegreeOfFreedomNames();
     return mName;
+  }
 
-  if(mSkeleton)
+  if (mSkeleton)
   {
     mSkeleton->mNameMgrForJoints.removeName(mName);
     mName = _name;
@@ -87,6 +91,9 @@ const std::string& Joint::setName(const std::string& _name)
   {
     mName = _name;
   }
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 
   return mName;
 }
@@ -151,7 +158,7 @@ const BodyNode* Joint::getChildBodyNode() const
 //==============================================================================
 BodyNode* Joint::getParentBodyNode()
 {
-  if(mChildBodyNode)
+  if (mChildBodyNode)
     return mChildBodyNode->getParentBodyNode();
 
   return NULL;
@@ -244,6 +251,13 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;
+}
+
+//==============================================================================
+DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
+                                         size_t _indexInJoint)
+{
+  return new DegreeOfFreedom(this, _name, _indexInJoint);
 }
 
 //==============================================================================

@@ -66,10 +66,16 @@ public:
   virtual size_t getDof() const;
 
   // Documentation inherited
+  virtual DegreeOfFreedom* getDof(size_t);
+
+  // Documentation inherited
+  virtual const DegreeOfFreedom* getDof(size_t) const;
+
+  // Documentation inherited
   virtual size_t getNumDofs() const;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+  virtual void setIndexInSkeleton(size_t _index, size_t);
 
   // Documentation inherited
   virtual size_t getIndexInSkeleton(size_t _index) const;
@@ -284,6 +290,10 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
