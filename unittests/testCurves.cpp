@@ -50,63 +50,67 @@ using namespace common;
 using namespace math;
 
 //==============================================================================
+TEST(Curves, Basic)
+{
+  BSpline2d bs(2, 3, 0.0, 6.0, false);
+
+  Eigen::MatrixXd ctrlPts(2, 3);
+  ctrlPts << 0, 8, 8, 0, 8, 0;
+
+  bs.setControlPoints(ctrlPts);
+  EXPECT_NEAR(bs(3.0)[0], 7.0, 1e-12);
+  EXPECT_NEAR(bs(3.0)[1], 6.0, 1e-12);
+
+  // Set control point
+  bs.setControlPoint(0, 0, 10.0);
+  EXPECT_EQ(bs.getControlPoint(0, 0), 10.0);
+
+  // Set knot
+  bs.setKnot(0, 10.0);
+  EXPECT_EQ(bs.getKnot(0), 10.0);
+}
+
+//==============================================================================
 TEST(Curves, UniformKnots)
 {
   Eigen::VectorXd knots;
   Eigen::VectorXd expectedKnots;
 
-  BSpline bs1(1, 5, 0.0, 4.0, true);
-  knots = bs1.getKnots();
+  BSpline1d bs1(1, 5, 0.0, 4.0, true);
+  knots = bs1.knots();
   expectedKnots.resize(7);
   expectedKnots << 0, 0, 1, 2, 3, 4, 4;
   EXPECT_EQ(knots, expectedKnots);
 
-  BSpline bs2(2, 5, 0.0, 3.0, true);
-  knots = bs2.getKnots();
+  BSpline1d bs2(2, 5, 0.0, 3.0, true);
+  knots = bs2.knots();
   expectedKnots.resize(8);
   expectedKnots << 0, 0, 0, 1, 2, 3, 3, 3;
   EXPECT_EQ(knots, expectedKnots);
 
-  BSpline bs3(3, 5, 0.0, 2.0, true);
-  knots = bs3.getKnots();
+  BSpline1d bs3(3, 5, 0.0, 2.0, true);
+  knots = bs3.knots();
   expectedKnots.resize(9);
   expectedKnots << 0, 0, 0, 0, 1, 2, 2, 2, 2;
   EXPECT_EQ(knots, expectedKnots);
 
-  BSpline bs4(1, 5, 0.0, 1.0, true);
-  knots = bs4.getKnots();
+  BSpline1d bs4(1, 5, 0.0, 1.0, true);
+  knots = bs4.knots();
   expectedKnots.resize(7);
   expectedKnots << 0, 0, 1.0/4.0, 2.0/4.0, 3.0/4.0, 1, 1;
   EXPECT_EQ(knots, expectedKnots);
 
-  BSpline bs5(2, 5, 0.0, 1.0, true);
-  knots = bs5.getKnots();
+  BSpline1d bs5(2, 5, 0.0, 1.0, true);
+  knots = bs5.knots();
   expectedKnots.resize(8);
   expectedKnots << 0, 0, 0, 1.0/3.0, 2.0/3.0, 1, 1, 1;
   EXPECT_EQ(knots, expectedKnots);
 
-  BSpline bs6(3, 5, 0.0, 1.0, true);
-  knots = bs6.getKnots();
+  BSpline1d bs6(3, 5, 0.0, 1.0, true);
+  knots = bs6.knots();
   expectedKnots.resize(9);
   expectedKnots << 0, 0, 0, 0, 1.0/2.0, 1, 1, 1, 1;
   EXPECT_EQ(knots, expectedKnots);
-}
-
-//==============================================================================
-TEST(Curves, BSplineBasic)
-{
-  BSpline bs(2, 3, 0.0, 6.0, false);
-
-  Eigen::VectorXd ctrlPts1(3);
-  Eigen::VectorXd ctrlPts2(3);
-  ctrlPts1 << 0, 8, 8;
-  ctrlPts2 << 0, 8, 0;
-
-  bs.setControlPoints(ctrlPts1);
-  EXPECT_NEAR(bs(3.0), 7.0, 1e-12);
-
-  bs.setControlPoints(ctrlPts2);
-  EXPECT_NEAR(bs(3.0), 6.0, 1e-12);
 }
 
 //==============================================================================

@@ -38,164 +38,290 @@
 #define DART_MATH_BSPLINE_H_
 
 #include <Eigen/Dense>
-
-#include "dart/math/MathTypes.h"
+#include <unsupported/Eigen/Splines>
 
 namespace dart {
 namespace math {
 
-/// BSpline represents non-uniform (non-rational) b-spline curve with arbitrary
-/// degree and control points.
-// TODO: remove unnecessary static member functions
-// - Implement getVelocity(), getAcceleration(), getDerivative(degree)
-// - Implement spline fitting
-// - Implement degree elevation/reduction
-// - Implement nun-uniform rational b-spline
-class BSpline
+using namespace Eigen;
+
+/// BSpline is a wrapper class of Eigen::Spline with useful interface for DART.
+template <typename _Scalar, int _Dim, int _Degree>
+class BSpline : public Spline<_Scalar, _Dim, _Degree>
 {
 public:
-  /// Constructor.
-  /// \param[in] _degree Degree of spline, should be eqaul or greater than 2
-  /// \param[in] _ctrlPts Control points of spline
-  /// \param[in]
-  BSpline(size_t _degree,
-          const Eigen::VectorXd& _ctrlPts,
-          double _firstKnot = 0.0,
-          double _lastKnot = 1.0,
-          bool _knotMultiplicity = true);
+  using Scalar = _Scalar; ///< The spline curve's scalar type.
+  enum { Dimension = _Dim }; ///< The spline curve's dimension.
+  enum { Degree = _Degree }; ///< The spline curve's degree.
 
-  /// Constructor.
-  /// \param[in] _degree Degree of spline, should be eqaul or greater than 2
-  /// \param[in] _ctrlPts Control points of spline
-  /// \param[in]
-  BSpline(size_t _degree,
-          size_t _numCtrlPts,
-          double _beginTime = 0.0,
-          double _endTime = 1.0,
-          bool _knotMultiplicity = true);
+  /// The point type the spline is representing.
+  using PointType
+      = typename Spline<_Scalar, _Dim, _Degree>::PointType;
 
-  /// Destructor.
-  ~BSpline();
+  /// The data type used to store knot vectors.
+  using KnotVectorType
+      = typename Spline<_Scalar, _Dim, _Degree>::KnotVectorType;
+
+  /// The data type used to store non-zero basis functions.
+  using BasisVectorType
+      = typename Spline<_Scalar, _Dim, _Degree>::BasisVectorType;
+
+  /// The data type representing the spline's control points.
+  using ControlPointVectorType
+      = typename Spline<_Scalar, _Dim, _Degree>::ControlPointVectorType;
+
+  /// Creates a (constant) zero spline.
+  ///
+  /// For Splines with dynamic degree, the resulting degree will be 0.
+  BSpline() : Spline<_Scalar, _Dim, _Degree>() {}
+
+  /// Creates a spline from degree, control points, knot range, and knot vector
+  /// type.
+  BSpline(DenseIndex _degree,
+          const ControlPointVectorType& _ctrls,
+          Scalar _firstKnot = 0.0,
+          Scalar _lastKnot = 1.0,
+          bool _isOpenKnots = true)
+  {
+    auto numCtrls = _ctrls.cols();
+    auto& ctrls_ = const_cast<ControlPointVectorType&>(
+                     Spline<_Scalar, _Dim, _Degree>::ctrls());
+    ctrls_ = _ctrls;
+
+    auto numKnots = _degree + numCtrls + 1;
+    auto& knots_ = const_cast<KnotVectorType&>(
+                     Spline<_Scalar, _Dim, _Degree>::knots());
+    knots_.resize(numKnots);
+    setUniformKnots(knots_, _firstKnot, _lastKnot, _isOpenKnots);
+  }
+
+  /// Creates a spline from degree, number of control points, knot range, and
+  /// knot vector type.
+  BSpline(DenseIndex _degree,
+          DenseIndex _numCtrlPts,
+          Scalar _firstKnot = 0.0,
+          Scalar _lastKnot = 1.0,
+          bool _isOpenKnots = true)
+    : BSpline(_degree,
+              ControlPointVectorType(_Dim, _numCtrlPts),
+              _firstKnot,
+              _lastKnot,
+              _isOpenKnots) {}
+
+  /// Creates a spline from a knot vector and control points.
+  /// \param[in] _knots The spline's knot vector.
+  /// \param[in] _ctrls The spline's control point vector.
+  template <typename OtherVectorType, typename OtherArrayType>
+  BSpline(const OtherVectorType& _knots, const OtherArrayType& _ctrls)
+    : Spline<_Scalar, _Dim, _Degree>(_knots, _ctrls) {}
+
+  /// Copy constructor for splines.
+  /// \param[in] _spline The input spline.
+  template <int OtherDegree>
+  BSpline(const BSpline<Scalar, Dimension, OtherDegree>& _spline)
+    : Spline<_Scalar, _Dim, _Degree>(_spline) {}
+
+  /// Set an element of control points at (i, j) to val.
+  void setControlPoint(DenseIndex _i, DenseIndex _j, Scalar _val)
+  {
+    if (_i < 0 || _i >= Spline<_Scalar, _Dim, _Degree>::ctrls().rows())
+      return;
+
+    if (_j < 0 || _j >= Spline<_Scalar, _Dim, _Degree>::ctrls().cols())
+      return;
+
+    auto& ctrls_ = getControlPoints();
+
+    ctrls_(_i,_j) = _val;
+  }
 
   /// Set control point.
-  void setControlPoint(size_t _index, double _point);
+  void setControlPoints(const ControlPointVectorType& _ctrls)
+  {
+    auto& ctrls_ = getControlPoints();
 
-  /// Set control points.
-  void setControlPoints(const Eigen::VectorXd& _controlPoints);
+    if (ctrls_.rows() != _ctrls.rows())
+      return;
 
-  /// Get control point.
-  double getControlPoint(size_t _index) const;
+    if (ctrls_.cols() != _ctrls.cols())
+      return;
+
+    ctrls_ = _ctrls;
+  }
+
+  /// Get an element of control points at (i, j) to val.
+  Scalar getControlPoint(DenseIndex _i, DenseIndex _j) const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::ctrls()(_i, _j);
+  }
+
+  /// Get (const) control points.
+  const ControlPointVectorType& getControlPoints() const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::ctrls();
+  }
 
   /// Get control points.
-  const Eigen::VectorXd& getControlPoints() const;
+  ControlPointVectorType& getControlPoints()
+  {
+    return const_cast<ControlPointVectorType&>(
+          Spline<_Scalar, _Dim, _Degree>::ctrls());
+  }
 
-  /// Get number of control points.
-  size_t getNumControlPoints() const;
+  /// Get number of elements of control points.
+  DenseIndex getNumControlPoints() const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::ctrls().cols();
+  }
 
-  /// Set knot.
-  void setKnot(size_t _index, double _value);
+  /// Set an element of knot vector at i to val.
+  void setKnot(DenseIndex _i, Scalar _val)
+  {
+    if (_i < 0 || _i >= Spline<_Scalar, _Dim, _Degree>::knots().size())
+      return;
+
+    auto& knots_ = getKnots();
+
+    knots_[_i] = _val;
+  }
 
   /// Set knot vector.
-  void setKnots(const Eigen::VectorXd& _knots);
+  void setKnots(const KnotVectorType& _knots)
+  {
+    if (_knots.size() != Spline<_Scalar, _Dim, _Degree>::knots().size())
+      return;
 
-  /// Set uniformly distributed knot vector.
-  void setUniformKnots(double _firstKnot,
-                       double _lastKnot,
-                       bool _isMultipleKnots = true);
+    auto& knots_ = getKnots();
 
-  /// Get knot.
-  double getKnot(size_t _index) const;
+    knots_ = _knots;
+  }
+
+  /// Set knot vector with evenly spaced values.
+  void setUniformKnots(KnotVectorType& _knots,
+                       Scalar _firstKnot,
+                       Scalar _lastKnot,
+                       bool _isOpenKnots)
+  {
+    const auto degree_ = Spline<_Scalar, _Dim, _Degree>::degree();
+    const auto& ctrls_ = Spline<_Scalar, _Dim, _Degree>::ctrls();
+    const auto numCtrls = ctrls_.cols();
+    const auto numKnots = _knots.size();
+
+    if (_isOpenKnots)
+    {
+      // Number of middle knots (not repeating knots), which should be always
+      // equal or greater than 2. If (2 <= order <= numCtrlPts) is satisfied, then
+      // it is always equal or greater than 2.
+      const auto numMidKnots = numCtrls - degree_ + 1;
+      eigen_assert(numMidKnots >= 2);
+
+      _knots.segment(0, degree_).setConstant(_firstKnot);
+      _knots.segment(degree_, numMidKnots).setLinSpaced(
+            numMidKnots, _firstKnot, _lastKnot);
+
+      _knots[numCtrls] = _lastKnot;
+      // TODO: The last value of _knots is not always _endTime because
+      // Eigen::VectorXd::setLinSpaced() doesn't do that.
+
+      _knots.segment(numCtrls + 1, degree_).setConstant(_lastKnot);
+    }
+    else
+    {
+      _knots.setLinSpaced(numKnots, _firstKnot, _lastKnot);
+
+      _knots[numKnots - 1] = _lastKnot;
+      // TODO: The last value of _knots is not always _endTime because
+      // Eigen::VectorXd::setLinSpaced() doesn't do that.
+    }
+  }
+
+  /// Get an element of knot vector given index.
+  Scalar getKnot(DenseIndex _i) const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::knots()[_i];
+  }
+
+  /// Get (const) knot vector.
+  const KnotVectorType& getKnots() const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::knots();
+  }
 
   /// Get knot vector.
-  const Eigen::VectorXd& getKnots() const;
+  KnotVectorType& getKnots()
+  {
+    return const_cast<KnotVectorType&>(Spline<_Scalar, _Dim, _Degree>::knots());
+  }
 
-  /// Get number of knots.
-  size_t getNumKnots() const;
+  /// Get number of elements of knot vector.
+  DenseIndex getNumKnots() const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::knots().size();
+  }
 
-  /// Get knot index \f$ I \f$ such that \f$ u_{I} <= t < u_{I+1} \f$ where
-  /// \f$u_i\f$ are knot elements and \f$t\f$ is parameter of curve.
-  size_t getKnotIndex(double _t);
-
-  /// Get point on the curve.
-  double getPoint(double _t);
-
-  /// Function call operator to get point on the curve.
-  double operator()(double _t);
-
-private:
-  /// Get number of knots given degree and number of control points.
-  int computeNumKnots(size_t _degree, size_t _numCtrlPts);
-
-  /// Find index of knots of _t when the knots are unformly distributed.
+  /// Returns the spline point at a given site \f$u\f$.
   ///
-  /// This function is usually faster than findKnotIndex.
+  /// The function returns
+  /// \f{align*}
+  ///   C(u) & = \sum_{i=0}^{n}N_{i,p}(u) P_i
+  /// \f}
+  /// for i raning between 0 and order.
   ///
-  /// \warning If the number of control points is too large compare to the range
-  /// of the parameter [_beginTime, _endTime], then it could cause numerical
-  /// error to find knot index.
-  size_t getUniformKnotIndex(double _t);
+  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \return The spline point at the given location \f$u\f$.
+  PointType getPosition(Scalar _u) const
+  {
+    return *this(_u);
+  }
 
-  /// Find the index of the range that contains _t using binary search
-  size_t getNonuniformKnotIndex(double _t);
-
-  /// Compute de Boor algorithm to get a point on curve.
-  double computeDeBoor(double _t);
-
-  /// Get segment from source vector to destination vector with given offset and
-  /// size.
+  /// Returns the spline velocity at a given site \f$u\f$.
   ///
-  /// If the indecies of elements of destination are out of source vector, the
-  /// element will be set to zero.
+  /// The function returns
+  /// \f{align*}
+  ///   C'(u) & = \sum_{i=0}^{n}N'_{i,p}(u) P_i
+  /// \f}
+  /// for i raning between 0 and order.
   ///
-  /// <pre>
-  /// Case 1:
-  ///          |---->|  offset: 2
-  ///              [ s2 s3 s4 s5 s6 s7 s8 ]
-  ///                |<--------------->|  size: 7
-  ///        [ s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 ]  <-- source vector
+  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \return The spline velocity at the given location \f$u\f$.
+  PointType getVelocity(Scalar _u) const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::derivatives(_u, 1);
+  }
+
+  /// Returns the spline acceleration at a given site \f$u\f$.
   ///
-  /// Case 2:
-  ///    |<----|  offset: -2
-  ///  [ 0  0  s0 s1 s2 s3 s4 ]
-  ///    |<--------------->|  size: 7
-  ///        [ s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 ]  <-- source vector
+  /// The function returns
+  /// \f{align*}
+  ///   C''(u) & = \sum_{i=0}^{n}N''_{i,p}(u) P_i
+  /// \f}
+  /// for i raning between 0 and order.
   ///
-  /// Case 3:
-  ///          |------------------------------>|  offset: 10
-  ///                                        [ 0  0  0  0  0  0  0  ]
-  ///                                          |<--------------->|  size: 7
-  ///        [ s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 ]  <-- source vector
-  /// </pre>
-  void segment(Eigen::VectorXd& _dest,
-               const Eigen::VectorXd& _src,
-               int _offset,
-               size_t _size);
-
-  /// Return tru if the knot vector is monotone increasing.
-  bool isMonoIncreasingVector(const Eigen::VectorXd& _val);
-
-  /// Degree of this B-spline
-  size_t mDegree;
-
-  /// B-Spline Control points, n + 1
-  Eigen::VectorXd mCtrlPts;
-
-  /// Knot, No. of Knot = 2(k - 1 - 1) + (n + 1) = n + 2k -3, order = degree + 1
-  Eigen::VectorXd mKnots;
-
-  /// True if the knot vector is uniformly distributed
-  bool mIsUniformKnots;
-
-  /// True if the knot elements at the boundaries are repeated with number of
-  /// degree + 1.
-  bool mIsMultipleKnots;
-
-  /// Local knots using in the computation of de Boor algorithm.
-  Eigen::VectorXd mLocalKnots;
-
-  /// Local control points using in the computation of de Boor algorithm.
-  Eigen::VectorXd mLocalCtrlPts;
+  /// \param[in] u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \return The spline acceleration at the given location \f$u\f$.
+  PointType getAcceleration(Scalar _u) const
+  {
+    return Spline<_Scalar, _Dim, _Degree>::derivatives(_u, 2);
+  }
 };
+
+/// 2D float B-spline with dynamic degree.
+using BSpline1f = BSpline<float,1,Dynamic>;
+
+/// 2D float B-spline with dynamic degree.
+using BSpline2f = BSpline<float,2,Dynamic>;
+
+/// 3D float B-spline with dynamic degree.
+using BSpline3f = BSpline<float,3,Dynamic>;
+
+/// 2D double B-spline with dynamic degree.
+using BSpline1d = BSpline<double,1,Dynamic>;
+
+/// 2D double B-spline with dynamic degree.
+using BSpline2d = BSpline<double,2,Dynamic>;
+
+/// 3D double B-spline with dynamic degree.
+using BSpline3d = BSpline<double,3,Dynamic>;
 
 }  // namespace math
 }  // namespace dart
