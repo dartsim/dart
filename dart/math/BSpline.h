@@ -210,8 +210,8 @@ public:
     if (_isOpenKnots)
     {
       // Number of middle knots (not repeating knots), which should be always
-      // equal or greater than 2. If (2 <= order <= numCtrlPts) is satisfied, then
-      // it is always equal or greater than 2.
+      // equal or greater than 2. If (2 <= order <= numCtrlPts) is satisfied,
+      // then it is always equal or greater than 2.
       const auto numMidKnots = numCtrls - degree_ + 1;
       eigen_assert(numMidKnots >= 2);
 
@@ -267,7 +267,8 @@ public:
   /// \f}
   /// for i raning between 0 and order.
   ///
-  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is
+  /// evaluated.
   /// \return The spline point at the given location \f$u\f$.
   PointType getPosition(Scalar _u) const
   {
@@ -282,7 +283,8 @@ public:
   /// \f}
   /// for i raning between 0 and order.
   ///
-  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is evaluated.
+  /// \param[in] _u Parameter \f$u \in [0;1]\f$ at which the spline is
+  /// evaluated.
   /// \return The spline velocity at the given location \f$u\f$.
   PointType getVelocity(Scalar _u) const
   {
@@ -305,7 +307,7 @@ public:
   }
 };
 
-/// 2D float B-spline with dynamic degree.
+/// 1D float B-spline with dynamic degree.
 using BSpline1f = BSpline<float,1,Dynamic>;
 
 /// 2D float B-spline with dynamic degree.
@@ -314,7 +316,7 @@ using BSpline2f = BSpline<float,2,Dynamic>;
 /// 3D float B-spline with dynamic degree.
 using BSpline3f = BSpline<float,3,Dynamic>;
 
-/// 2D double B-spline with dynamic degree.
+/// 1D double B-spline with dynamic degree.
 using BSpline1d = BSpline<double,1,Dynamic>;
 
 /// 2D double B-spline with dynamic degree.
