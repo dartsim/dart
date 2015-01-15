@@ -1,18 +1,19 @@
 # - Try to find Eigen3 lib
 #
 # This module supports requiring a minimum version, e.g. you can do
-#   find_package(Eigen3 3.1.2)
+#   find_package(Eigen 3.1.2)
 # to require version 3.1.2 or newer of Eigen3.
 #
 # Once done this will define
 #
 #  EIGEN_FOUND - system has eigen lib with correct version
-#  EIGEN_INCLUDE_DIR - the eigen include directory
+#  EIGEN_INCLUDE_DIRS - the eigen include directory
 #  EIGEN_VERSION - eigen version
 
 # Copyright (c) 2006, 2007 Montel Laurent, <montel@kde.org>
 # Copyright (c) 2008, 2009 Gael Guennebaud, <g.gael@free.fr>
 # Copyright (c) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
+# Copyright (c) 2015 Jeongseok Lee <jslee02@gmail.com>
 # Redistribution and use is allowed according to the terms of the 2-clause BSD license.
 
 if(NOT Eigen_FIND_VERSION)
