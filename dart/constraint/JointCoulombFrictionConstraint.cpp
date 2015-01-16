@@ -44,9 +44,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.0
-#define DART_MAX_ERV 0.0
 #define DART_CFM     1e-9
 
 namespace dart {
