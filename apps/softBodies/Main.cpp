@@ -42,7 +42,7 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 #include "apps/softBodies/MyWindow.h"
 

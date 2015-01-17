@@ -47,7 +47,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 class MyWindow : public dart::gui::Win3D {
 public:

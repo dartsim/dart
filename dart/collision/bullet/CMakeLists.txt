@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/bullet.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/bullet.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/bullet.in
+  ${CMAKE_CURRENT_BINARY_DIR}/bullet
 )
 
 # Install

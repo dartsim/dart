@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/lcpsolver.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/lcpsolver.in
+  ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver
 )
 
 # Install

@@ -37,7 +37,7 @@
 #ifndef APPS_OPERATIONALSPACECONTROL_MYWINDOW_H_
 #define APPS_OPERATIONALSPACECONTROL_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 #include "Controller.h"
 

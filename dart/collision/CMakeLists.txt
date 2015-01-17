@@ -33,12 +33,12 @@ dart_get_filename_components(header_names "collision headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  dart/dart.h
-  fcl/fcl.h
-  fcl_mesh/fcl_mesh.h
+  dart/dart
+  fcl/fcl
+  fcl_mesh/fcl_mesh
 )
 if(HAVE_BULLET_COLLISION)
-  set(header_names ${header_names} bullet/bullet.h)
+  set(header_names ${header_names} bullet/bullet)
 endif()
 dart_generate_include_header_list(
   collision_headers
@@ -47,8 +47,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/collision.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/collision.in
+  ${CMAKE_CURRENT_BINARY_DIR}/collision
 )
 
 # Install

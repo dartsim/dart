@@ -42,12 +42,12 @@
 #include <fcl/narrowphase/narrowphase.h>
 
 #include "dart/config.h"
-#include "dart/common/common.h"
-#include "dart/math/math.h"
-#include "dart/dynamics/dynamics.h"
+#include "dart/common/common"
+#include "dart/math/math"
+#include "dart/dynamics/dynamics"
 //#include "dart/collision/unc/UNCCollisionDetector.h"
-#include "dart/simulation/simulation.h"
-#include "dart/utils/utils.h"
+#include "dart/simulation/simulation"
+#include "dart/utils/utils"
 
 using namespace dart;
 using namespace math;

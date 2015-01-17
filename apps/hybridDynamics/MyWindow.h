@@ -37,7 +37,7 @@
 #ifndef APPS_HYBRIDDYNAMICS_MYWINDOW_H_
 #define APPS_HYBRIDDYNAMICS_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 /// \brief
 class MyWindow : public dart::gui::SimWindow

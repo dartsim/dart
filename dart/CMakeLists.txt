@@ -27,7 +27,7 @@ endif()
 
 # Set header and source files
 set(dart_core_hdrs
-  dart-core.h
+  dart-core
   ${dart_common_hdrs}
   ${dart_math_hdrs}
   ${dart_integration_hdrs}
@@ -49,7 +49,7 @@ set(dart_core_srcs
 )
 if(NOT BUILD_CORE_ONLY)
   set(dart_hdrs
-    dart.h
+    dart
     ${dart_gui_hdrs}
     ${dart_optimizer_hdrs}
     ${dart_planning_hdrs}

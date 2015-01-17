@@ -38,7 +38,7 @@
 #ifndef APPS_VEHICLE_MYWINDOW_H_
 #define APPS_VEHICLE_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 /// \brief
 class MyWindow : public dart::gui::SimWindow {

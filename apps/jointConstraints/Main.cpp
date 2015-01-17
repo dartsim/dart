@@ -38,7 +38,7 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 using namespace dart;
 using namespace dynamics;

@@ -37,7 +37,7 @@
 #ifndef APPS_CLOSEDLOOP_MYWINDOW_H_
 #define APPS_CLOSEDLOOP_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "dart/dart"
 
 class MyWindow : public dart::gui::SimWindow
 {

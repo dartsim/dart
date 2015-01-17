@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/fcl.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/fcl.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/fcl.in
+  ${CMAKE_CURRENT_BINARY_DIR}/fcl
 )
 
 # Install
