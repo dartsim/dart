@@ -8,11 +8,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-# Set header and source files
-set(corehdrs dart-core.h)
-set(hdrs dart.h ${corehdrs})
-set(srcs dart.cpp)
-
 # Add subdirectories
 add_subdirectory(collision)
 add_subdirectory(common)
@@ -30,34 +25,54 @@ if(NOT BUILD_CORE_ONLY)
   add_subdirectory(utils)
 endif()
 
-# Library: dart-core
-dart_add_library(dart-core ${corehdrs} ${srcs})
-target_link_libraries(
-  dart-core
-  dart_common
-  dart_math
-  dart_integration
-  dart_lcpsolver
-  dart_dynamics
-  dart_collision
-  dart_constraint
-  dart_simulation
-  ${DART_CORE_DEPENDENCIES}
+# Set header and source files
+set(dart_core_hdrs
+  dart-core.h
+  ${dart_common_hdrs}
+  ${dart_math_hdrs}
+  ${dart_integration_hdrs}
+  ${dart_lcpsolver_hdrs}
+  ${dart_dynamics_hdrs}
+  ${dart_collision_hdrs}
+  ${dart_constraint_hdrs}
+  ${dart_simulation_hdrs}
 )
+set(dart_core_srcs
+  ${dart_common_srcs}
+  ${dart_math_srcs}
+  ${dart_integration_srcs}
+  ${dart_lcpsolver_srcs}
+  ${dart_dynamics_srcs}
+  ${dart_collision_srcs}
+  ${dart_constraint_srcs}
+  ${dart_simulation_srcs}
+)
+if(NOT BUILD_CORE_ONLY)
+  set(dart_hdrs
+    dart.h
+    ${dart_gui_hdrs}
+    ${dart_optimizer_hdrs}
+    ${dart_planning_hdrs}
+    ${dart_renderer_hdrs}
+    ${dart_utils_hdrs}
+  )
+  set(dart_srcs
+    ${dart_gui_srcs}
+    ${dart_optimizer_srcs}
+    ${dart_planning_srcs}
+    ${dart_renderer_srcs}
+    ${dart_utils_srcs}
+  )
+endif()
+
+# Library: dart-core
+dart_add_library(dart-core ${dart_core_hdrs} ${dart_core_srcs})
+target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
 
 # Library: dart
 if(NOT BUILD_CORE_ONLY)
-  dart_add_library(dart ${hdrs} ${srcs})
-  target_link_libraries(
-    dart
-    dart-core
-    dart_gui
-    dart_optimizer
-    dart_planning
-    dart_renderer
-    dart_utils
-    ${DART_DEPENDENCIES}
-  )
+  dart_add_library(dart ${dart_hdrs} ${dart_srcs})
+  target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
 endif()
 
 if(MSVC)
@@ -67,10 +82,10 @@ if(MSVC)
   )
 endif()
 
-install(FILES ${corehdrs} DESTINATION include/dart/ COMPONENT headers)
+install(FILES ${dart_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
-  install(FILES ${hdrs} DESTINATION include/dart/ COMPONENT headers)
+  install(FILES ${dart_hdrs} DESTINATION include/dart/ COMPONENT headers)
   install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()
 
