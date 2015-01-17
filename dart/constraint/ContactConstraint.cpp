@@ -66,7 +66,7 @@ double ContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(const collision::Contact& _contact)
-  : Constraint(),
+  : ConstraintBase(),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
@@ -80,7 +80,7 @@ ContactConstraint::ContactConstraint(const collision::Contact& _contact)
 //==============================================================================
 ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
-  : Constraint(),
+  : ConstraintBase(),
     mTimeStep(_timeStep),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
@@ -837,9 +837,9 @@ void ContactConstraint::uniteSkeletons()
     return;
 
   dynamics::Skeleton* unionId1
-      = Constraint::compressPath(mBodyNode1->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   dynamics::Skeleton* unionId2
-      = Constraint::compressPath(mBodyNode2->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)
     return;

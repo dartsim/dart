@@ -49,7 +49,7 @@ class Skeleton;
 namespace constraint {
 
 class ConstraintInfo;
-class Constraint;
+class ConstraintBase;
 class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
@@ -73,16 +73,16 @@ public:
   //----------------------------------------------------------------------------
 
   /// Add constraint
-  void addConstraint(Constraint* _constraint);
+  void addConstraint(ConstraintBase* _constraint);
 
   /// Return number of constraints in this constrained group
   size_t getNumConstraints() const;
 
   /// Return a constraint
-  Constraint* getConstraint(size_t _index) const;
+  ConstraintBase* getConstraint(size_t _index) const;
 
   /// Remove constraint
-  void removeConstraint(Constraint* _constraint);
+  void removeConstraint(ConstraintBase* _constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
@@ -98,13 +98,13 @@ public:
 
 private:
   /// Return true if _constraint is contained
-  bool containConstraint(Constraint* _constraint) const;
+  bool containConstraint(ConstraintBase* _constraint) const;
 
   /// Return true and add the constraint if _constraint is contained
-  bool checkAndAddConstraint(Constraint* _constraint);
+  bool checkAndAddConstraint(ConstraintBase* _constraint);
 
   /// List of constraints
-  std::vector<Constraint*> mConstraints;
+  std::vector<ConstraintBase*> mConstraints;
 
   ///
   dynamics::Skeleton* mRootSkeleton;

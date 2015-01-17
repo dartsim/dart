@@ -59,7 +59,7 @@ double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
-  : Constraint(),
+  : ConstraintBase(),
     mJoint(_joint),
     mBodyNode(NULL),
     mAppliedImpulseIndex(0)
