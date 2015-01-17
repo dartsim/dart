@@ -23,8 +23,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/gui.in
-  ${CMAKE_CURRENT_BINARY_DIR}/gui
+  ${CMAKE_CURRENT_SOURCE_DIR}/gui.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/gui.h
 )
 
 # Install

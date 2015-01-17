@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/sdf.in
-  ${CMAKE_CURRENT_BINARY_DIR}/sdf
+  ${CMAKE_CURRENT_SOURCE_DIR}/sdf.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
 )
 
 # Install

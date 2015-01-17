@@ -23,8 +23,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/simulation.in
-  ${CMAKE_CURRENT_BINARY_DIR}/simulation
+  ${CMAKE_CURRENT_SOURCE_DIR}/simulation.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/simulation.h
 )
 
 # Install

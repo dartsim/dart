@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ipopt
+  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
 )
 
 # Install

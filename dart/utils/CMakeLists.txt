@@ -26,8 +26,8 @@ dart_get_filename_components(header_names "utils headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  sdf/sdf
-  urdf/urdf
+  sdf/sdf.h
+  urdf/urdf.h
 )
 dart_generate_include_header_list(
   utils_headers
@@ -36,8 +36,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils.in
-  ${CMAKE_CURRENT_BINARY_DIR}/utils
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/utils.h
 )
 
 # Install

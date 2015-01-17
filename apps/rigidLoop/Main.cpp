@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart"
+#include "dart/dart.h"
 
 #include "apps/rigidLoop/MyWindow.h"
 

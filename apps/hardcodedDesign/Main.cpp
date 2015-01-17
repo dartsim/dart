@@ -44,7 +44,7 @@
  * direction.
  */
 
-#include "dart/dart"
+#include "dart/dart.h"
 
 #include "apps/hardcodedDesign/MyWindow.h"
 

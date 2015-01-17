@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/dart.in
-  ${CMAKE_CURRENT_BINARY_DIR}/dart
+  ${CMAKE_CURRENT_SOURCE_DIR}/dart.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/dart.h
 )
 
 # Install

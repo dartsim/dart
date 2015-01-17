@@ -42,7 +42,7 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-#include "dart/dart"
+#include "dart/dart.h"
 
 class MyWindow : public dart::gui::SimWindow
 {

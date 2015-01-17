@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/planning.in
-  ${CMAKE_CURRENT_BINARY_DIR}/planning
+  ${CMAKE_CURRENT_SOURCE_DIR}/planning.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/planning.h
 )
 
 # Install

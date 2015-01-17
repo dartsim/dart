@@ -23,8 +23,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/constraint.in
-  ${CMAKE_CURRENT_BINARY_DIR}/constraint
+  ${CMAKE_CURRENT_SOURCE_DIR}/constraint.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/constraint.h
 )
 
 # Install

@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/urdf.in
-  ${CMAKE_CURRENT_BINARY_DIR}/urdf
+  ${CMAKE_CURRENT_SOURCE_DIR}/urdf.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/urdf.h
 )
 
 # Install

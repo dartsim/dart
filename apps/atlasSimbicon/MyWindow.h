@@ -38,7 +38,7 @@
 #ifndef APPS_ATLASROBOT_MYWINDOW_H_
 #define APPS_ATLASROBOT_MYWINDOW_H_
 
-#include "dart/dart"
+#include "dart/dart.h"
 
 #include "apps/atlasSimbicon/Controller.h"
 

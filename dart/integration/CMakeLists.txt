@@ -18,8 +18,8 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/integration.in
-  ${CMAKE_CURRENT_BINARY_DIR}/integration
+  ${CMAKE_CURRENT_SOURCE_DIR}/integration.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/integration.h
 )
 
 # Install

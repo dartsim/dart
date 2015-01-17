@@ -37,7 +37,7 @@
 
 #include <iostream>
 
-#include "dart/dart"
+#include "dart/dart.h"
 
 #include "apps/atlasSimbicon/MyWindow.h"
 #include "apps/atlasSimbicon/Controller.h"
