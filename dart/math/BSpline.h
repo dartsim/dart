@@ -267,7 +267,7 @@ public:
   /// \return The spline point at the given location \f$u\f$.
   PointType getPosition(Scalar _u) const
   {
-    return *this(_u);
+    return (*this)(_u);
   }
 
   /// Returns the spline velocity at a given site \f$u\f$.
