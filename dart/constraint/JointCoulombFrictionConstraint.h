@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 #define DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 
 namespace dart {
 
@@ -49,7 +49,7 @@ class Joint;
 namespace constraint {
 
 /// Joint Coulomb friction constraint
-class JointCoulombFrictionConstraint : public Constraint
+class JointCoulombFrictionConstraint : public ConstraintBase
 {
 public:
   /// Constructor
