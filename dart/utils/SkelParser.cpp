@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -885,6 +885,34 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setName(name);
 
   //--------------------------------------------------------------------------
+  // Actuator attribute
+  if (hasAttribute(_jointElement, "actuator"))
+  {
+    const std::string actuator = getAttribute(_jointElement, "actuator");
+
+    if (actuator == "force")
+      newJoint->setActuatorType(dynamics::Joint::FORCE);
+    else if (actuator == "passive")
+      newJoint->setActuatorType(dynamics::Joint::PASSIVE);
+    else if (actuator == "servo")
+      newJoint->setActuatorType(dynamics::Joint::SERVO);
+    else if (actuator == "acceleration")
+      newJoint->setActuatorType(dynamics::Joint::ACCELERATION);
+    else if (actuator == "velocity")
+      newJoint->setActuatorType(dynamics::Joint::VELOCITY);
+    else if (actuator == "locked")
+      newJoint->setActuatorType(dynamics::Joint::LOCKED);
+    else
+      dterr << "Joint named [" << newJoint->getName()
+            << "] contains invalid actuator attribute ["
+            << actuator << "]." << std::endl;
+  }
+  else
+  {
+    newJoint->setActuatorType(dynamics::Joint::DefaultActuatorType);
+  }
+
+  //--------------------------------------------------------------------------
   // parent
   SkelBodyNode softParentBodyNode;
   softParentBodyNode.bodyNode = NULL;
@@ -980,7 +1008,146 @@ dynamics::Joint* SkelParser::readJoint(
   newJoint->setTransformFromChildBodyNode(childToJoint);
   newJoint->setTransformFromParentBodyNode(parentToJoint);
 
+  //--------------------------------------------------------------------------
+  // Degrees of Freedom
+  ElementEnumerator DofElements(_jointElement, "dof");
+  while(DofElements.next())
+    readDegreeOfFreedom(DofElements.get(), newJoint);
+
   return newJoint;
+}
+
+static void getDofAttributeIfItExists(const std::string& attribute,
+                                    double& value,
+                                    const std::string& element_type,
+                                    const tinyxml2::XMLElement* xmlElement,
+                                    const dart::dynamics::DegreeOfFreedom* dof)
+{
+  if(xmlElement->QueryDoubleAttribute(attribute.c_str(), &value)==
+     tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
+  {
+    dterr << "Invalid type for '" << attribute << "' attribute of '"
+          << element_type << "' element in the '"
+          << dof->getName() << "' dof of '" << dof->getJoint()->getName()
+          << "'.\n";
+  }
+}
+
+template <void (dart::dynamics::DegreeOfFreedom::*setLimits)(double,double),
+ std::pair<double,double> (dart::dynamics::DegreeOfFreedom::*getLimits)() const,
+ void (dart::dynamics::DegreeOfFreedom::*setValue)(double),
+ double (dart::dynamics::DegreeOfFreedom::*getValue)() const>
+static void setDofAttributes(tinyxml2::XMLElement* _dofElement,
+                             dart::dynamics::DegreeOfFreedom* _dof,
+                             const std::string& _element_type)
+{
+  const tinyxml2::XMLElement* xmlElement =
+      getElement(_dofElement, _element_type);
+  std::pair<double,double> limit_vals = (_dof->*getLimits)();
+  double defaultLower = limit_vals.first,
+         defaultUpper = limit_vals.second,
+         defaultInitial = (_dof->*getValue)();
+
+  getDofAttributeIfItExists("lower", defaultLower,
+                            _element_type, xmlElement, _dof);
+  getDofAttributeIfItExists("upper", defaultUpper,
+                            _element_type, xmlElement, _dof);
+  getDofAttributeIfItExists("initial", defaultInitial,
+                            _element_type, xmlElement, _dof);
+
+  (_dof->*setLimits)(defaultLower, defaultUpper);
+  (_dof->*setValue)(defaultInitial);
+}
+
+void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
+                                     dynamics::Joint* _dartJoint)
+{
+  if(NULL==_dartJoint || NULL==_dofElement)
+    return;
+
+  int localIndex = -1;
+  int xml_err = _dofElement->QueryIntAttribute("local_index", &localIndex);
+
+  // If the localIndex is out of bounds, quit
+  if(localIndex >= (int)_dartJoint->getNumDofs())
+  {
+    dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
+          << _dartJoint->getName() << "' contains dof element with invalid "
+          << "number attribute [" << localIndex << "]. It must be less than "
+          << _dartJoint->getNumDofs() << ".\n";
+    return;
+  }
+
+  // If no localIndex was found, report an error and quit
+  if(localIndex == -1 && _dartJoint->getNumDofs() > 1)
+  {
+    if(tinyxml2::XML_NO_ATTRIBUTE == xml_err)
+    {
+      dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
+            << _dartJoint->getName() << "' has " << _dartJoint->getNumDofs()
+            << " DOFs, but the xml contains a dof element without its "
+            << "local_index specified. For Joints with multiple DOFs, all dof "
+            << "elements must specify their local_index attribute.\n";
+    }
+    else if(tinyxml2::XML_WRONG_ATTRIBUTE_TYPE == xml_err)
+    {
+      dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
+            << _dartJoint->getName() << "' has a dof element with a wrongly "
+            << "formatted local_index attribute.\n";
+    }
+
+    return;
+  }
+  // Unless the joint is a single-dof joint
+  else if(localIndex == -1 && _dartJoint->getNumDofs() == 1)
+    localIndex = 0;
+
+  dart::dynamics::DegreeOfFreedom* dof = _dartJoint->getDof(localIndex);
+  const char* name = _dofElement->Attribute("name");
+  if(name)
+  {
+    dof->setName(std::string(name));
+  }
+
+  if(hasElement(_dofElement, "position"))
+  {
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setPositionLimits,
+        &dart::dynamics::DegreeOfFreedom::getPositionLimits,
+        &dart::dynamics::DegreeOfFreedom::setPosition,
+        &dart::dynamics::DegreeOfFreedom::getPosition>(_dofElement, dof,
+                                                       "position");
+  }
+
+  if(hasElement(_dofElement, "velocity"))
+  {
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setVelocityLimits,
+        &dart::dynamics::DegreeOfFreedom::getVelocityLimits,
+        &dart::dynamics::DegreeOfFreedom::setVelocity,
+        &dart::dynamics::DegreeOfFreedom::getVelocity>(_dofElement, dof,
+                                                       "velocity");
+  }
+
+  if(hasElement(_dofElement, "acceleration"))
+  {
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setAccelerationLimits,
+        &dart::dynamics::DegreeOfFreedom::getAccelerationLimits,
+        &dart::dynamics::DegreeOfFreedom::setAcceleration,
+        &dart::dynamics::DegreeOfFreedom::getAcceleration>(_dofElement, dof,
+                                                           "acceleration");
+  }
+
+  if(hasElement(_dofElement, "force"))
+  {
+    setDofAttributes<
+        &dart::dynamics::DegreeOfFreedom::setForceLimits,
+        &dart::dynamics::DegreeOfFreedom::getForceLimits,
+        &dart::dynamics::DegreeOfFreedom::setForce,
+        &dart::dynamics::DegreeOfFreedom::getForce>(_dofElement, dof,
+                                                     "force");
+  }
 }
 
 dynamics::WeldJoint* SkelParser::readWeldJoint(

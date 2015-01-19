@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -524,9 +524,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
             bouncingVelocity = restitutionVel;
 
             if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
-            {
               bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
-            }
           }
         }
       }
@@ -553,25 +551,26 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   assert(isActive());
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
+  dynamics::Skeleton* skel1 = mBodyNode1->getSkeleton();
+  dynamics::Skeleton* skel2 = mBodyNode2->getSkeleton();
+
   // Self collision case
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+  if (skel1 == skel2)
   {
-    mBodyNode1->getSkeleton()->clearConstraintImpulses();
+    skel1->clearConstraintImpulses();
 
     if (mBodyNode1->isReactive())
     {
       // Both bodies are reactive
       if (mBodyNode2->isReactive())
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
-              mBodyNode1, mJacobians1[_idx],
-              mBodyNode2, mJacobians2[_idx]);
+        skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx],
+                                 mBodyNode2, mJacobians2[_idx]);
       }
       // Only body1 is reactive
       else
       {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                     mJacobians1[_idx]);
+        skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx]);
       }
     }
     else
@@ -579,8 +578,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       // Only body2 is reactive
       if (mBodyNode2->isReactive())
       {
-        mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                     mJacobians2[_idx]);
+        skel2->updateBiasImpulse(mBodyNode2, mJacobians2[_idx]);
       }
       // Both bodies are not reactive
       else
@@ -590,25 +588,23 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
       }
     }
 
-    mBodyNode1->getSkeleton()->updateVelocityChange();
+    skel1->updateVelocityChange();
   }
   // Colliding two distinct skeletons
   else
   {
     if (mBodyNode1->isReactive())
     {
-      mBodyNode1->getSkeleton()->clearConstraintImpulses();
-      mBodyNode1->getSkeleton()->updateBiasImpulse(mBodyNode1,
-                                                   mJacobians1[_idx]);
-      mBodyNode1->getSkeleton()->updateVelocityChange();
+      skel1->clearConstraintImpulses();
+      skel1->updateBiasImpulse(mBodyNode1, mJacobians1[_idx]);
+      skel1->updateVelocityChange();
     }
 
     if (mBodyNode2->isReactive())
     {
-      mBodyNode2->getSkeleton()->clearConstraintImpulses();
-      mBodyNode2->getSkeleton()->updateBiasImpulse(mBodyNode2,
-                                                   mJacobians2[_idx]);
-      mBodyNode2->getSkeleton()->updateVelocityChange();
+      skel2->clearConstraintImpulses();
+      skel2->updateBiasImpulse(mBodyNode2, mJacobians2[_idx]);
+      skel2->updateVelocityChange();
     }
   }
 
@@ -637,8 +633,8 @@ void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
     }
   }
 
-  // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // Add small values to the diagnal to keep it away from singular, similar to
+  // cfm variable in ODE
   if (_withCfm)
   {
     _vel[mAppliedImpulseIndex] += _vel[mAppliedImpulseIndex]

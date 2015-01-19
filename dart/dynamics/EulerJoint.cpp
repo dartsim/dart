@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -41,6 +41,7 @@
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,6 +51,7 @@ EulerJoint::EulerJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mAxisOrder(AO_XYZ)
 {
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -58,15 +60,58 @@ EulerJoint::~EulerJoint()
 }
 
 //==============================================================================
-void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order)
+void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
   mAxisOrder = _order;
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
 EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 {
   return mAxisOrder;
+}
+
+//==============================================================================
+void EulerJoint::updateDegreeOfFreedomNames()
+{
+  std::vector<std::string> affixes;
+  switch (mAxisOrder)
+  {
+    case AO_ZYX:
+      affixes.push_back("_z");
+      affixes.push_back("_y");
+      affixes.push_back("_x");
+      break;
+    case AO_ZYZ:
+      affixes.push_back("_z");
+      affixes.push_back("_y");
+      affixes.push_back("_z");
+      break;
+    case AO_XYZ:
+      affixes.push_back("_x");
+      affixes.push_back("_y");
+      affixes.push_back("_z");
+      break;
+    case AO_ZXY:
+      affixes.push_back("_z");
+      affixes.push_back("_x");
+      affixes.push_back("_y");
+      break;
+    default:
+      dterr << "Unsupported axis order in EulerJoint named '" << mName
+            << "' (" << mAxisOrder << ")\n";
+  }
+
+  if (affixes.size() == 3)
+  {
+    for (size_t i = 0; i < 3; ++i)
+    {
+      if(!mDofs[i]->isNamePreserved())
+        mDofs[i]->setName(mName + affixes[i], false);
+    }
+  }
 }
 
 //==============================================================================

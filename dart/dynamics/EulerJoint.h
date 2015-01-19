@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -63,19 +63,19 @@ public:
   /// Destructor
   virtual ~EulerJoint();
 
-  ///
-  void setAxisOrder(AxisOrder _order);
+  /// \brief Set the axis order
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the axis order.
+  void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
   ///
   AxisOrder getAxisOrder() const;
 
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
-
 protected:
+  /// Set the names of this joint's DegreesOfFreedom. Used during construction
+  /// and when axis order is changed.
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

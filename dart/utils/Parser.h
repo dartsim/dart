@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -89,6 +89,7 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* 
 void openXMLFile(tinyxml2::XMLDocument& doc, const char* const filename);
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
+bool hasAttribute(tinyxml2::XMLElement* element, const char* const name);
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 

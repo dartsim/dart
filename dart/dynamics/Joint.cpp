@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -43,34 +43,45 @@
 #include "dart/math/Helpers.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
+const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
+
+//==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    mActuatorType(FORCE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
     mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mWrench(Eigen::Vector6d::Zero()),
     mIsPositionLimited(true)
 {
 }
 
-Joint::~Joint() {
+//==============================================================================
+Joint::~Joint()
+{
 }
 
-const std::string& Joint::setName(const std::string& _name) {
-
-  if(mName == _name)
+//==============================================================================
+const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
+{
+  if (mName == _name)
+  {
+    if (_renameDofs)
+      updateDegreeOfFreedomNames();
     return mName;
+  }
 
-  if(mSkeleton)
+  if (mSkeleton)
   {
     mSkeleton->mNameMgrForJoints.removeName(mName);
     mName = _name;
@@ -81,47 +92,99 @@ const std::string& Joint::setName(const std::string& _name) {
     mName = _name;
   }
 
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
+
   return mName;
 }
 
-const std::string& Joint::getName() const {
+//==============================================================================
+const std::string& Joint::getName() const
+{
   return mName;
 }
 
+//==============================================================================
+void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
+{
+  mActuatorType = _actuatorType;
+}
+
+//==============================================================================
+Joint::ActuatorType Joint::getActuatorType() const
+{
+  return mActuatorType;
+}
+
+//==============================================================================
+bool Joint::isKinematic() const
+{
+  switch (mActuatorType)
+  {
+    case FORCE:
+    case PASSIVE:
+    case SERVO:
+      return false;
+    case ACCELERATION:
+    case VELOCITY:
+    case LOCKED:
+      return true;
+    default:
+    {
+      dterr << "Unsupported actuator type." << std::endl;
+      return false;
+    }
+  }
+}
+
+//==============================================================================
+bool Joint::isDynamic() const
+{
+  return !isKinematic();
+}
+
+//==============================================================================
 BodyNode* Joint::getChildBodyNode()
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 const BodyNode* Joint::getChildBodyNode() const
 {
   return mChildBodyNode;
 }
 
+//==============================================================================
 BodyNode* Joint::getParentBodyNode()
 {
-  if(mChildBodyNode)
+  if (mChildBodyNode)
     return mChildBodyNode->getParentBodyNode();
 
   return NULL;
 }
 
+//==============================================================================
 const BodyNode* Joint::getParentBodyNode() const
 {
   return const_cast<Joint*>(this)->getParentBodyNode();
 }
 
+//==============================================================================
 Skeleton* Joint::getSkeleton()
 {
   return mSkeleton;
 }
 
+//==============================================================================
 const Skeleton* Joint::getSkeleton() const
 {
   return mSkeleton;
 }
 
-const Eigen::Isometry3d& Joint::getLocalTransform() const {
+//==============================================================================
+const Eigen::Isometry3d& Joint::getLocalTransform() const
+{
   return mT;
 }
 
@@ -140,39 +203,61 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const {
 //  return -1;
 //}
 
-void Joint::setPositionLimited(bool _isPositionLimited) {
+//==============================================================================
+void Joint::setPositionLimited(bool _isPositionLimited)
+{
   mIsPositionLimited = _isPositionLimited;
 }
 
-bool Joint::isPositionLimited() const {
+//==============================================================================
+bool Joint::isPositionLimited() const
+{
   return mIsPositionLimited;
 }
 
-void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) {
+//==============================================================================
+void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
+{
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
 }
 
-void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) {
+//==============================================================================
+void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
+{
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const {
+//==============================================================================
+const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
+{
   return mT_ParentBodyToJoint;
 }
 
-const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const {
+//==============================================================================
+const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
+{
   return mT_ChildBodyToJoint;
 }
 
-void Joint::applyGLTransform(renderer::RenderInterface* _ri) {
+//==============================================================================
+void Joint::applyGLTransform(renderer::RenderInterface* _ri)
+{
   _ri->transform(mT);
 }
 
+//==============================================================================
 void Joint::init(Skeleton* _skel)
 {
   mSkeleton = _skel;
+}
+
+//==============================================================================
+DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
+                                         size_t _indexInJoint)
+{
+  return new DegreeOfFreedom(this, _name, _indexInJoint);
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -49,6 +49,7 @@ class Joint;
 namespace constraint {
 
 /// JointLimitConstraint handles joint position or velocity limits
+// TOOD: better naming
 class JointLimitConstraint : public Constraint
 {
 public:

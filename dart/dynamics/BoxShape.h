@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -54,7 +54,8 @@ public:
 
   /// \brief Set size of this box.
   /// \warning Don't use me any more
-  DEPRECATED(4.0) void setDim(const Eigen::Vector3d& _size);
+  DEPRECATED(4.0)
+  void setDim(const Eigen::Vector3d& _size);
 
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);

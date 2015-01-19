@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -51,8 +51,8 @@ class UniversalJoint : public MultiDofJoint<2>
 {
 public:
   /// Constructor
-  UniversalJoint(const Eigen::Vector3d& _axis0 = Eigen::Vector3d::UnitX(),
-                 const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitY(),
+  UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
+                 const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
                  const std::string& _name = "Universal joint");
 
   /// Destructor
@@ -70,13 +70,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis2() const;
 
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
-
 protected:
+  // Documentation inherited
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 

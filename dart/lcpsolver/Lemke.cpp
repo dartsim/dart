@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>,
@@ -167,16 +167,16 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
       break;
     }
 
-    int jSize = math::castUIntToInt(j.size());
+    size_t jSize = j.size();
     Eigen::VectorXd minRatio(jSize);
-    for (int i = 0; i < jSize; ++i) {
+    for (size_t i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
     double theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
     std::vector<double> tmpMinRatio;
-    for (int i = 0; i < jSize; ++i) {
+    for (size_t i = 0; i < jSize; ++i) {
       if (x[j[i]] / d[j[i]] <= theta) {
         tmpJ.push_back(j[i]);
         tmpMinRatio.push_back(minRatio[i]);
@@ -194,14 +194,14 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 //    }
 
     j = tmpJ;
-    jSize = math::castUIntToInt(j.size());
+    jSize = j.size();
     if (jSize == 0) {
       err = 4;
       break;
     }
     lvindex = -1;
 
-    for (int i = 0; i < jSize; ++i) {
+    for (size_t i = 0; i < jSize; ++i) {
       if (bas[j[i]] == t)
         lvindex = i;
     }
@@ -211,7 +211,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
       theta = tmpMinRatio[0];
       lvindex = 0;
 
-      for (int i = 0; i < jSize; ++i) {
+      for (size_t i = 0; i < jSize; ++i) {
         if (tmpMinRatio[i]-theta > piv_tol) {
           theta = tmpMinRatio[i];
           lvindex = i;

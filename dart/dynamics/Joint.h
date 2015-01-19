@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -55,22 +55,108 @@ namespace dynamics {
 
 class BodyNode;
 class Skeleton;
+class DegreeOfFreedom;
 
 /// class Joint
 class Joint
 {
 public:
+  /// Actuator type
+  ///
+  /// The command is taken by setCommand() or setCommands(), and the meaning of
+  /// command is different depending on the actuator type. The default actuator
+  /// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
+  ///
+  /// FORCE/PASSIVE/SERVO joints are dynamic joints while
+  /// ACCELERATION/VELOCITY/LOCKED joints are kinematic joints.
+  ///
+  /// Note the presence of joint damping force and joint spring force for all
+  /// the actuator types if the coefficients are non-zero. The default
+  /// coefficients are zero.
+  ///
+  /// \sa setActuatorType(), getActuatorType(),
+  /// setSpringStiffness(), setDampingCoefficient(),
+  enum ActuatorType
+  {
+    /// Command input is joint force, and the output is joint acceleration.
+    ///
+    /// If the command is zero, then it's identical to passive joint. The valid
+    /// joint constraints are position limit, velocity limit, and Coulomb
+    /// friction, and the invalid joint constraint is force limit.
+    FORCE,
+
+    /// Passive joint doesn't take any command input, and the output is joint
+    /// acceleration.
+    ///
+    /// The valid joint constraints are position limit, velocity limit, and
+    /// Coulomb friction, and the invalid joint constraint is force limit.
+    PASSIVE,
+
+    /// Command input is desired velocity, and the output is joint acceleration.
+    ///
+    /// The constraint solver will try to track the desired velocity within the
+    /// joint force limit. All the joint constarints are valid.
+    SERVO,
+    // TODO: Not implemented yet.
+
+    /// Command input is joint acceleration, and the output is joint force.
+    ///
+    /// The joint acceleration is always satisfied but it doesn't take the joint
+    /// force limit into account. All the joint constraints are invalid.
+    ACCELERATION,
+
+    /// Command input is joint velocity, and the output is joint force.
+    ///
+    /// The joint velocity is always satisfied but it doesn't take the joint
+    /// force limit into account. If you want to consider the joint force limit,
+    /// should use SERVO instead. All the joint constraints are invalid.
+    VELOCITY,
+
+    /// Locked joint always set the velocity and acceleration to zero so that
+    /// the joint dosen't move at all (locked), and the output is joint force.
+    /// force.
+    ///
+    /// All the joint constraints are invalid.
+    LOCKED
+  };
+
+  /// Default actuator type
+  static const ActuatorType DefaultActuatorType;
+
   /// Constructor
   explicit Joint(const std::string& _name = "Joint");
 
   /// Destructor
   virtual ~Joint();
 
-  /// Set joint name
-  const std::string& setName(const std::string& _name);
+  /// \brief Set joint name and return the name.
+  /// \param[in] _renameDofs If true, the names of the joint's degrees of
+  /// freedom will be updated by calling updateDegreeOfFreedomNames().
+  ///
+  /// If the name is already taken, this will return an altered version which
+  /// will be used by the Skeleton. Otherwise, return _name.
+  const std::string& setName(const std::string& _name,
+                             bool _renameDofs = true);
 
   /// Get joint name
   const std::string& getName() const;
+
+  /// Set actuator type
+  void setActuatorType(ActuatorType _actuatorType);
+
+  /// Get actuator type
+  ActuatorType getActuatorType() const;
+
+  /// Return true if this joint is kinematic joint.
+  ///
+  /// Kinematic joint means the motion is prescribed by position or velocity or
+  /// acceleration, which is determined by the actuator type.
+  /// ACCELERATION/VELOCITY/LOCKED are kinematic joints while
+  /// FORCE/PASSIVE/SERVO are dynamic joints.
+  bool isKinematic() const;
+
+  /// Return true if this joint is dynamic joint.
+  bool isDynamic() const;
 
   /// Get the child BodyNode of this Joint
   BodyNode* getChildBodyNode();
@@ -102,12 +188,20 @@ public:
   /// Get transformation from child body node to this joint
   const Eigen::Isometry3d& getTransformFromChildBodyNode() const;
 
-  // TODO(JS):
   /// Set to enforce joint position limit
+  ///
+  /// The joint position limit is valid when the actutor type is one of
+  /// PASSIVE/FORCE.
+  ///
+  /// \sa ActuatorType
   void setPositionLimited(bool _isPositionLimited);
 
-  // TODO(JS):
   /// Get whether enforcing joint position limit
+  ///
+  /// The joint position limit is valid when the actutor type is one of
+  /// PASSIVE/FORCE.
+  ///
+  /// \sa ActuatorType
   bool isPositionLimited() const;
 
   /// Set an unique index in skeleton of a generalized coordinate in this joint
@@ -117,13 +211,43 @@ public:
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
   /// Get number of generalized coordinates
-  DEPRECATED(4.1) virtual size_t getDof() const = 0;
+  DEPRECATED(4.1)
+  virtual size_t getDof() const = 0;
+
+  /// Get an object to access the _index-th degree of freedom (generalized
+  /// coordinate) of this Joint
+  virtual DegreeOfFreedom* getDof(size_t _index) = 0;
+
+  /// Get an object to access the _index-th degree of freedom (generalized
+  /// coordinate) of this Joint
+  virtual const DegreeOfFreedom* getDof(size_t _index) const = 0;
 
   /// Get number of generalized coordinates
   virtual size_t getNumDofs() const = 0;
 
   //----------------------------------------------------------------------------
-  // Position
+  /// \{ \name Command
+  //----------------------------------------------------------------------------
+
+  /// Set a single command
+  virtual void setCommand(size_t _index, double _command) = 0;
+
+  /// Set a sinlge command
+  virtual double getCommand(size_t _index) const = 0;
+
+  /// Set commands
+  virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
+
+  /// Get commands
+  virtual Eigen::VectorXd getCommands() const = 0;
+
+  /// Set zero all the positions
+  virtual void resetCommands() = 0;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Position
   //----------------------------------------------------------------------------
 
   /// Set a single position
@@ -153,8 +277,10 @@ public:
   /// Get upper limit for position
   virtual double getPositionUpperLimit(size_t _index) const = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Velocity
+  /// \{ \name Velocity
   //----------------------------------------------------------------------------
 
   /// Set a single velocity
@@ -184,8 +310,10 @@ public:
   /// Get upper limit of velocity
   virtual double getVelocityUpperLimit(size_t _index) const = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Acceleration
+  /// \{ \name Acceleration
   //----------------------------------------------------------------------------
 
   /// Set a single acceleration
@@ -215,8 +343,10 @@ public:
   /// Get upper limit of acceleration
   virtual double getAccelerationUpperLimit(size_t _index) const = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Force
+  /// \{ \name Force
   //----------------------------------------------------------------------------
 
   /// Set a single force
@@ -246,8 +376,10 @@ public:
   /// Get upper limit of position
   virtual double getForceUpperLimit(size_t _index) const = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Velocity change
+  /// \{ \name Velocity change
   //----------------------------------------------------------------------------
 
   /// Set a single velocity change
@@ -259,8 +391,10 @@ public:
   /// Set zero all the velocity change
   virtual void resetVelocityChanges() = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Constraint impulse
+  /// \{ \name Constraint impulse
   //----------------------------------------------------------------------------
 
   /// Set a single constraint impulse
@@ -272,8 +406,10 @@ public:
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Integration
+  /// \{ \name Integration
   //----------------------------------------------------------------------------
 
   /// Integrate positions using Euler method
@@ -282,8 +418,10 @@ public:
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Spring and damper
+  /// \{ \name Spring and damper
   //----------------------------------------------------------------------------
 
   /// Set spring stiffness for spring force
@@ -314,6 +452,8 @@ public:
   /// \param[in] _index Index of joint axis
   virtual double getDampingCoefficient(size_t _index) const = 0;
 
+  /// \}
+
   //----------------------------------------------------------------------------
 
   /// Get potential energy
@@ -343,6 +483,7 @@ public:
 
   /// Get constraint wrench expressed in body node frame
   virtual Eigen::Vector6d getBodyConstraintWrench() const = 0;
+  // TODO: Need more informative name.
 
   /// Get spring force
   ///
@@ -390,94 +531,152 @@ protected:
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
 
+  /// \brief Create a DegreeOfFreedom pointer.
+  /// \param[in] _name DegreeOfFreedom's name.
+  /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
+  /// that the index should be unique within the joint.
+  ///
+  /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
+  /// class has a protected constructor, and the Joint is responsible for memory
+  /// management of the pointer which is returned.
+  DegreeOfFreedom* createDofPointer(const std::string& _name,
+                                    size_t _indexInJoint);
+
+  /// Update the names of the joint's degrees of freedom. Used when setName() is
+  /// called with _rename_dofs set to true.
+  virtual void updateDegreeOfFreedomNames() = 0;
+
   //----------------------------------------------------------------------------
-  // Recursive algorithms
+  /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
   /// Update transformation from parent body node to child body node
   virtual void updateLocalTransform() = 0;
 
-  /// Update generalized Jacobian from parent body node to child body node
-  /// w.r.t. local generalized coordinate
+  /// Update generalized Jacobian from parent body node to child body
+  /// node w.r.t. local generalized coordinate
   virtual void updateLocalJacobian() = 0;
 
-  /// Update time derivative of generalized Jacobian from parent body node to
-  /// child body node w.r.t. local generalized coordinate
+  /// Update time derivative of generalized Jacobian from parent body
+  /// node to child body node w.r.t. local generalized coordinate
   virtual void updateLocalJacobianTimeDeriv() = 0;
 
-  ///
+  /// Add joint velocity to _vel
   virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
 
-  /// Set partial
+  /// Set joint partial acceleration to _partialAcceleration
   virtual void setPartialAccelerationTo(
       Eigen::Vector6d& _partialAcceleration,
       const Eigen::Vector6d& _childVelocity) = 0;
+  // TODO(JS): Rename with more informative name
 
-  ///
+  /// Add joint acceleration to _acc
   virtual void addAccelerationTo(Eigen::Vector6d& _acc) = 0;
 
-  ///
+  /// Add joint velocity change to _velocityChange
   virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) = 0;
 
   /// Add child's articulated inertia to parent's one
-  virtual void addChildArtInertiaTo(Eigen::Matrix6d& _parentArtInertia,
-                                    const Eigen::Matrix6d& _childArtInertia) = 0;
+  virtual void addChildArtInertiaTo(
+      Eigen::Matrix6d& _parentArtInertia,
+      const Eigen::Matrix6d& _childArtInertia) = 0;
 
-  /// Add child's articulated inertia to parent's one
+  /// Add child's articulated inertia to parent's one. Forward dynamics routine.
   virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertiaImplicit,
       const Eigen::Matrix6d& _childArtInertiaImplicit) = 0;
+  // TODO(JS): rename to updateAInertiaChildAInertia()
 
   /// Update inverse of projected articulated body inertia
   virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) = 0;
 
-  /// Update inverse of projected articulated body inertia with implicit damping
-  /// and spring forces
+  /// Forward dynamics routine.
   virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia,
       double _timeStep) = 0;
+  // TODO(JS): rename to updateAInertiaPsi()
 
   /// Add child's bias force to parent's one
-  virtual void addChildBiasForceTo(Eigen::Vector6d& _parentBiasForce,
-                                   const Eigen::Matrix6d& _childArtInertia,
-                                   const Eigen::Vector6d& _childBiasForce,
-                                   const Eigen::Vector6d& _childPartialAcc) = 0;
+  virtual void addChildBiasForceTo(
+      Eigen::Vector6d& _parentBiasForce,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasForce,
+      const Eigen::Vector6d& _childPartialAcc) = 0;
 
   /// Add child's bias impulse to parent's one
-  virtual void addChildBiasImpulseTo(Eigen::Vector6d& _parentBiasImpulse,
-                                     const Eigen::Matrix6d& _childArtInertia,
-                                     const Eigen::Vector6d& _childBiasImpulse)
-  = 0;
+  virtual void addChildBiasImpulseTo(
+      Eigen::Vector6d& _parentBiasImpulse,
+      const Eigen::Matrix6d& _childArtInertia,
+      const Eigen::Vector6d& _childBiasImpulse) = 0;
 
-  ///
+  /// Update joint total force
   virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
                                 double _timeStep) = 0;
+  // TODO: rename
 
-  ///
+  /// Update joint total impulse
   virtual void updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse) = 0;
+  // TODO: rename
 
-  ///
+  /// Set total impulses to zero
   virtual void resetTotalImpulses() = 0;
 
-  ///
+  /// Update joint acceleration
   virtual void updateAcceleration(const Eigen::Matrix6d& _artInertia,
                                   const Eigen::Vector6d& _spatialAcc) = 0;
 
-  ///
-  virtual void updateVelocityChange(const Eigen::Matrix6d& _artInertia,
-                                    const Eigen::Vector6d& _velocityChange) = 0;
+  /// Update joint velocity change
+  /// \param _artInertia
+  /// \param _velocityChange
+  virtual void updateVelocityChange(
+      const Eigen::Matrix6d& _artInertia,
+      const Eigen::Vector6d& _velocityChange) = 0;
 
-  ///
-  virtual void updateVelocityWithVelocityChange() = 0;
+  /// Update joint force for inverse dynamics.
+  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// BodyNode to the child BodyNode. The spatial force is expressed in the
+  /// child BodyNode's frame.
+  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForces,
+                             bool _withSpringForces) = 0;
 
-  ///
-  virtual void updateAccelerationWithVelocityChange(double _timeStep) = 0;
+  /// Update joint force for forward dynamics.
+  /// \param[in] _bodyForce Transmitting spatial body force from the parent
+  /// BodyNode to the child BodyNode. The spatial force is expressed in the
+  /// child BodyNode's frame.
+  virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
+                             double _timeStep,
+                             bool _withDampingForcese,
+                             bool _withSpringForces) = 0;
 
-  ///
-  virtual void updateForceWithImpulse(double _timeStep) = 0;
+  /// Update joint impulses for inverse dynamics
+  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  /// Update joint impulses for forward dynamics
+  virtual void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) = 0;
+
+  /// Update constrained terms for forward dynamics
+  virtual void updateConstrainedTerms(double _timeStep) = 0;
+
+  //- DEPRECATED ---------------------------------------------------------------
+
+  /// updateVelocityWithVelocityChange
+  DEPRECATED(4.3)
+  virtual void updateVelocityWithVelocityChange() {}
+
+  /// updateAccelerationWithVelocityChange
+  DEPRECATED(4.3)
+  virtual void updateAccelerationWithVelocityChange(double _timeStep) {}
+
+  /// updateForceWithImpulse
+  DEPRECATED(4.3)
+  virtual void updateForceWithImpulse(double _timeStep) {}
+
+  /// \}
 
   //----------------------------------------------------------------------------
-  // Recursive algorithms for equations of motion
+  /// \{ \name Recursive algorithm routines for equations of motion
   //----------------------------------------------------------------------------
 
   /// Add child's bias force to parent's one
@@ -515,9 +714,14 @@ protected:
   virtual Eigen::VectorXd getSpatialToGeneralized(
       const Eigen::Vector6d& _spatial) = 0;
 
+  /// \}
+
 protected:
   /// Joint name
   std::string mName;
+
+  /// Actuator type
+  ActuatorType mActuatorType;
 
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
@@ -538,9 +742,8 @@ protected:
   /// velocity is expressed in child body frame
   Eigen::Vector6d mSpatialVelocity;
 
-  // TODO(JS): Temporary code
-public:
   /// Transmitting wrench from parent body to child body expressed in child body
+  DEPRECATED(4.3)
   Eigen::Vector6d mWrench;
 
 protected:

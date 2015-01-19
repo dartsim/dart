@@ -5,3 +5,4 @@ usr/include/dart/gui/*
 usr/share/dart/DARTConfig.cmake
 usr/share/dart/DARTConfigVersion.cmake
 usr/share/dart/DARTTargets*.cmake
+usr/lib/libdart.so

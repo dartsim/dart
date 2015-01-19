@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -71,7 +71,7 @@ size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  assert(_initGuess.size() == math::castUIntToInt(mDimension)
+  assert(static_cast<size_t>(_initGuess.size()) == mDimension
          && "Invalid size.");
   mInitialGuess = _initGuess;
 }
@@ -85,7 +85,7 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  assert(_lb.size() == math::castUIntToInt(mDimension) && "Invalid size.");
+  assert(static_cast<size_t>(_lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -98,7 +98,7 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  assert(_ub.size() == math::castUIntToInt(mDimension) && "Invalid size.");
+  assert(static_cast<size_t>(_ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = _ub;
 }
 
@@ -210,7 +210,7 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  assert(_optParam.size() == math::castUIntToInt(mDimension)
+  assert(static_cast<size_t>(_optParam.size()) == mDimension
          && "Invalid size.");
   mOptimalSolution = _optParam;
 }

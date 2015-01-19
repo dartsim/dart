@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -48,11 +48,23 @@ namespace dynamics {
 TranslationalJoint::TranslationalJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
 TranslationalJoint::~TranslationalJoint()
 {
+}
+
+//==============================================================================
+void TranslationalJoint::updateDegreeOfFreedomNames()
+{
+  if(!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(mName + "_x", false);
+  if(!mDofs[1]->isNamePreserved())
+    mDofs[1]->setName(mName + "_y", false);
+  if(!mDofs[2]->isNamePreserved())
+    mDofs[2]->setName(mName + "_z", false);
 }
 
 //==============================================================================

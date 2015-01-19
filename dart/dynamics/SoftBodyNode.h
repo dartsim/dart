@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -136,60 +136,69 @@ protected:
   // Documentation inherited.
 //  virtual void aggregatePointMassGenCoords(std::vector<GenCoord*>* _genCoords);
 
-  // Documentation inherited.
-  virtual void updateTransform();
+  //----------------------------------------------------------------------------
+  /// \{ \name Recursive dynamics routines
+  //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateVelocity();
+  virtual void updateTransform() override;
 
   // Documentation inherited.
-  virtual void updatePartialAcceleration();
+  virtual void updateVelocity() override;
 
   // Documentation inherited.
-  virtual void updateAcceleration();
+  virtual void updatePartialAcceleration() override;
 
   // Documentation inherited.
-  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
-                               bool _withExternalForces = false);
-
-  // Documentation inherited.
-  virtual void updateGeneralizedForce(bool _withDampingForces = false);
-
-  // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep);
+  virtual void updateArtInertia(double _timeStep) override;
 
   // Documentation inherited.
   virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
-                               double _timeStep);
+                               double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateJointAndBodyAcceleration();
+  virtual void updateBiasImpulse() override;
 
   // Documentation inherited.
-  virtual void updateTransmittedWrench();
+  virtual void updateAccelerationID() override;
+
+  // Documentation inherited.
+  virtual void updateAccelerationFD() override;
+
+  // Documentation inherited.
+  virtual void updateVelocityChangeFD() override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedForceID(
+      const Eigen::Vector3d& _gravity,
+      bool _withExternalForces = false) override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedForceFD() override;
+
+  // Documentation inherited.
+  virtual void updateTransmittedImpulse() override;
+
+  // Documentation inherited.
+  virtual void updateJointForceID(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces) override;
+
+  // Documentation inherited.
+  virtual void updateJointForceFD(double _timeStep,
+                                  double _withDampingForces,
+                                  double _withSpringForces) override;
+
+  // Documentation inherited.
+  virtual void updateJointImpulseFD() override;
+
+  // Documentation inherited.
+  virtual void updateConstrainedTerms(double _timeStep) override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
-  // Impulse based dynamics
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited.
-  virtual void updateBiasImpulse();
-
-  // Documentation inherited.
-  virtual void updateJointVelocityChange();
-
-  // Documentation inherited.
-//  virtual void updateBodyVelocityChange();
-
-  // Documentation inherited.
-  virtual void updateBodyImpForceFwdDyn();
-
-  // Documentation inherited.
-  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
-
-  // Documentation inherited.
-  virtual void updateConstrainedTransmittedForce(double _timeStep);
-
+  /// \{ \name Equations of motion related routines
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
@@ -232,6 +241,8 @@ protected:
 
   // Documentation inherited.
   virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+
+  /// \}
 
   // Documentation inherited.
   virtual void clearExternalForces();

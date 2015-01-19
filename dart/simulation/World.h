@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -48,6 +48,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/common/Timer.h"
 #include "dart/common/NameManager.h"
 #include "dart/simulation/Recording.h"
@@ -141,7 +142,9 @@ public:
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
-  void step();
+  /// \param[in} _resetCommand True if you want to reset to zero the joint
+  /// command after simulation step.
+  void step(bool _resetCommand = true);
 
   /// Set current time
   void setTime(double _time);
@@ -191,6 +194,7 @@ protected:
   int mFrame;
 
   /// The integrator
+  DEPRECATED(4.3)
   integration::Integrator* mIntegrator;
 
   /// Constraint solver

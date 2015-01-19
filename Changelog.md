@@ -1,3 +1,10 @@
+### Version 4.2.1 (2015-01-07)
+
+1. Fixed version numbering of shared libraries in debian packages
+    * [Pull request #286](https://github.com/dartsim/dart/pull/286)
+1. Fixed Jacobian and its derivatives of FreeJoint/BallJoint
+    * [Pull request #284](https://github.com/dartsim/dart/pull/284)
+
 ### Version 4.2.0 (2014-11-22)
 
 1. Added reset functions for Simulation and Recording class

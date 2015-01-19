@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -45,13 +45,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis0,
-                               const Eigen::Vector3d& _axis1,
+UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2,
                                const std::string& _name)
   : MultiDofJoint(_name)
 {
-  mAxis[0] = _axis0.normalized();
+  mAxis[0] = _axis2.normalized();
   mAxis[1] = _axis1.normalized();
+
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -81,6 +82,15 @@ const Eigen::Vector3d& UniversalJoint::getAxis1() const
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
   return mAxis[1];
+}
+
+//==============================================================================
+void UniversalJoint::updateDegreeOfFreedomNames()
+{
+  if(!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(mName + "_1", false);
+  if(!mDofs[1]->isNamePreserved())
+    mDofs[1]->setName(mName + "_2", false);
 }
 
 //==============================================================================

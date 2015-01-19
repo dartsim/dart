@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -138,9 +138,9 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
 {
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
-  assert(n == math::castUIntToInt(mProblem->getDimension()));
-  assert(m == math::castUIntToInt(mProblem->getNumEqConstraints()
-              + mProblem->getNumIneqConstraints()));
+  assert(static_cast<size_t>(n) == mProblem->getDimension());
+  assert(static_cast<size_t>(m) == mProblem->getNumEqConstraints()
+         + mProblem->getNumIneqConstraints());
 
   // lower and upper bounds
   for (Ipopt::Index i = 0; i < n; i++)
@@ -249,8 +249,8 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
                       Ipopt::Index _m,
                       Ipopt::Number* _g)
 {
-  assert(_m == math::castUIntToInt(mProblem->getNumEqConstraints()
-                                   + mProblem->getNumIneqConstraints()));
+  assert(static_cast<size_t>(_m) == mProblem->getNumEqConstraints()
+                                    + mProblem->getNumIneqConstraints());
 
   // TODO(JS):
   if (_new_x)

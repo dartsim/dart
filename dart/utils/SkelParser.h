@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -127,6 +127,11 @@ protected:
       tinyxml2::XMLElement* _jointElement,
       const std::vector<SkelBodyNode,
       Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
+
+  ///
+  static void readDegreeOfFreedom(
+      tinyxml2::XMLElement* _dofElement,
+      dart::dynamics::Joint* _dartJoint);
 
   ///
   static dynamics::PrismaticJoint* readPrismaticJoint(

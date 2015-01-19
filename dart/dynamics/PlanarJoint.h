@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -68,18 +68,28 @@ public:
   /// Destructor
   virtual ~PlanarJoint();
 
-  /// Set plane type as XY-plane
-  void setXYPlane();
+  /// \brief Set plane type as XY-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setXYPlane(bool _renameDofs = true);
 
-  /// Set plane type as YZ-plane
-  void setYZPlane();
+  /// \brief Set plane type as YZ-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setYZPlane(bool _renameDofs = true);
 
-  /// Set plane type as ZX-plane
-  void setZXPlane();
+  /// \brief Set plane type as ZX-plane
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
+  void setZXPlane(bool _renameDofs = true);
 
-  /// Set plane type as arbitrary plane with two orthogonal translational axes
+  /// \brief Set plane type as arbitrary plane with two orthogonal translational
+  /// axes
+  /// \param[in] _renameDofs If true, the names of dofs in this joint will be
+  /// renmaed according to the plane type.
   void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                         const Eigen::Vector3d& _transAxis2);
+                         const Eigen::Vector3d& _transAxis2,
+                         bool _renameDofs = true);
 
   /// Return plane type
   PlaneType getPlaneType() const;
@@ -93,13 +103,11 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
-  // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const
-  {
-    return mWrench - mJacobian * mForces;
-  }
-
 protected:
+  /// Set the names of this joint's DegreesOfFreedom. Used during construction
+  /// and when the Plane type is changed.
+  virtual void updateDegreeOfFreedomNames();
+
   // Documentation inherited
   virtual void updateLocalTransform();
 
