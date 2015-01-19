@@ -54,7 +54,7 @@ double JointCoulombFrictionConstraint::mConstraintForceMixing = DART_CFM;
 //==============================================================================
 JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
     dynamics::Joint* _joint)
-  : Constraint(),
+  : ConstraintBase(),
     mJoint(_joint),
     mBodyNode(_joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
