@@ -421,36 +421,45 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Spring and damper
+  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
-  /// Set spring stiffness for spring force
-  /// \param[in] _index Index of joint axis
-  /// \param[in] _k Spring stiffness
+  /// Set stiffness of joint spring force.
+  /// \param[in] _index Index of joint axis.
+  /// \param[in] _k Spring stiffness.
   virtual void setSpringStiffness(size_t _index, double _k) = 0;
 
-  /// Get spring stiffnes for spring force
-  /// \param[in] _index Index of joint axis
+  /// Get stiffness of joint spring force.
+  /// \param[in] _index Index of joint axis.
   virtual double getSpringStiffness(size_t _index) const = 0;
 
-  /// Set rest position for spring force
-  /// \param[in] _index Index of joint axis
-  /// \param[in] _q0 Rest position
+  /// Set rest position of spring force.
+  /// \param[in] _index Index of joint axis.
+  /// \param[in] _q0 Rest position.
   virtual void setRestPosition(size_t _index, double _q0) = 0;
 
-  /// Get rest position for spring force
-  /// \param[in] _index Index of joint axis
-  /// \return Rest position
+  /// Get rest position of spring force.
+  /// \param[in] _index Index of joint axis.
+  /// \return Rest position.
   virtual double getRestPosition(size_t _index) const = 0;
 
-  /// Set damping coefficient for viscous force
-  /// \param[in] _index Index of joint axis
-  /// \param[in] _d Damping coefficient
-  virtual void setDampingCoefficient(size_t _index, double _d) = 0;
+  /// Set coefficient of joint damping (viscous friction) force.
+  /// \param[in] _index Index of joint axis.
+  /// \param[in] _coeff Damping coefficient.
+  virtual void setDampingCoefficient(size_t _index, double _coeff) = 0;
 
-  /// Get damping coefficient for viscous force
-  /// \param[in] _index Index of joint axis
+  /// Get coefficient of joint damping (viscous friction) force.
+  /// \param[in] _index Index of joint axis.
   virtual double getDampingCoefficient(size_t _index) const = 0;
+
+  /// Set joint Coulomb friction froce.
+  /// \param[in] _index Index of joint axis.
+  /// \param[in] _friction Joint Coulomb friction froce given index.
+  virtual void setCoulombFriction(size_t _index, double _friction) = 0;
+
+  /// Get joint Coulomb friction froce.
+  /// \param[in] _index Index of joint axis.
+  virtual double getCoulombFriction(size_t _index) const = 0;
 
   /// \}
 

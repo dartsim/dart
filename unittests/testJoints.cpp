@@ -383,6 +383,72 @@ TEST_F(JOINTS, POSITION_LIMIT)
 }
 
 //==============================================================================
+TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
+{
+  double tol = 1e-9;
+
+  simulation::World* myWorld
+      = utils::SkelParser::readWorld(
+          DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+  EXPECT_TRUE(myWorld != NULL);
+
+  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+
+  dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != NULL);
+  pendulum->disableSelfCollision();
+
+  dynamics::Joint* joint0 = pendulum->getJoint("joint0");
+  dynamics::Joint* joint1 = pendulum->getJoint("joint1");
+
+  EXPECT_TRUE(joint0 != NULL);
+  EXPECT_TRUE(joint1 != NULL);
+
+  double friction  = 5.0;
+
+  joint0->setPositionLimited(false);
+  joint1->setPositionLimited(false);
+
+  joint0->setCoulombFriction(0, friction);
+  joint1->setCoulombFriction(0, friction);
+
+  EXPECT_EQ(joint0->getCoulombFriction(0), friction);
+  EXPECT_EQ(joint1->getCoulombFriction(0), friction);
+
+  double simTime = 2.0;
+  double timeStep = myWorld->getTimeStep();
+  int nSteps = simTime / timeStep;
+
+  // Two seconds with lower control forces than the friction
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, 1.0);
+    joint1->setForce(0, 1.0);
+    myWorld->step();
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_NEAR(jointVel0, 0.0, tol);
+    EXPECT_NEAR(jointVel1, 0.0, tol);
+  }
+
+  // Another two seconds with higher control forces than the friction
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, 10.0);
+    joint1->setForce(0, 10.0);
+    myWorld->step();
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_GE(jointVel0, 0.0);
+    EXPECT_GE(jointVel1, 0.0);
+  }
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/JointCoulombFrictionConstraint.h"
 
 #include <iostream>
 
@@ -44,21 +44,16 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
-#define DART_MAX_ERV 1e+1
 #define DART_CFM     1e-9
 
 namespace dart {
 namespace constraint {
 
-double JointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double JointLimitConstraint::mErrorReductionParameter   = DART_ERP;
-double JointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
+double JointCoulombFrictionConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
-JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
+JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
+    dynamics::Joint* _joint)
   : Constraint(),
     mJoint(_joint),
     mBodyNode(_joint->getChildBodyNode()),
@@ -83,80 +78,12 @@ JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)
 }
 
 //==============================================================================
-JointLimitConstraint::~JointLimitConstraint()
+JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint()
 {
 }
 
 //==============================================================================
-void JointLimitConstraint::setErrorAllowance(double _allowance)
-{
-  // Clamp error reduction parameter if it is out of the range
-  if (_allowance < 0.0)
-  {
-    dtwarn << "Error reduction parameter[" << _allowance
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
-    mErrorAllowance = 0.0;
-  }
-
-  mErrorAllowance = _allowance;
-}
-
-//==============================================================================
-double JointLimitConstraint::getErrorAllowance()
-{
-  return mErrorAllowance;
-}
-
-//==============================================================================
-void JointLimitConstraint::setErrorReductionParameter(double _erp)
-{
-  // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (_erp < 0.0)
-  {
-    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
-    mErrorReductionParameter = 0.0;
-  }
-  if (_erp > 1.0)
-  {
-    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
-           << "It is set to 1.0." << std::endl;
-    mErrorReductionParameter = 1.0;
-  }
-
-  mErrorReductionParameter = _erp;
-}
-
-//==============================================================================
-double JointLimitConstraint::getErrorReductionParameter()
-{
-  return mErrorReductionParameter;
-}
-
-//==============================================================================
-void JointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
-{
-  // Clamp maximum error reduction velocity if it is out of the range
-  if (_erv < 0.0)
-  {
-    dtwarn << "Maximum error reduction velocity[" << _erv
-           << "] is lower than 0.0. "
-           << "It is set to 0.0." << std::endl;
-    mMaxErrorReductionVelocity = 0.0;
-  }
-
-  mMaxErrorReductionVelocity = _erv;
-}
-
-//==============================================================================
-double JointLimitConstraint::getMaxErrorReductionVelocity()
-{
-  return mMaxErrorReductionVelocity;
-}
-
-//==============================================================================
-void JointLimitConstraint::setConstraintForceMixing(double _cfm)
+void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (_cfm < 1e-9)
@@ -176,13 +103,13 @@ void JointLimitConstraint::setConstraintForceMixing(double _cfm)
 }
 
 //==============================================================================
-double JointLimitConstraint::getConstraintForceMixing()
+double JointCoulombFrictionConstraint::getConstraintForceMixing()
 {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void JointLimitConstraint::update()
+void JointCoulombFrictionConstraint::update()
 {
   // Reset dimention
   mDim = 0;
@@ -190,14 +117,12 @@ void JointLimitConstraint::update()
   size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)
   {
-    // Lower bound check
-    mViolation[i] = mJoint->getPosition(i) - mJoint->getPositionLowerLimit(i);
-    if (mViolation[i] <= 0.0)
-    {
-      mNegativeVel[i] = -mJoint->getVelocity(i);
+    mNegativeVel[i] = -mJoint->getVelocity(i);
 
-      mLowerBound[i] = 0.0;
-      mUpperBound[i] = dInfinity;
+    if (mNegativeVel[i] != 0.0)
+    {
+      mUpperBound[i] =  mJoint->getCoulombFriction(i);;
+      mLowerBound[i] = -mUpperBound[i];
 
       if (mActive[i])
       {
@@ -210,38 +135,16 @@ void JointLimitConstraint::update()
       }
 
       ++mDim;
-      continue;
     }
-
-    // Upper bound check
-    mViolation[i] = mJoint->getPosition(i) - mJoint->getPositionUpperLimit(i);
-    if (mViolation[i] >= 0.0)
+    else
     {
-      mNegativeVel[i] = -mJoint->getVelocity(i);
-
-      mLowerBound[i] = -dInfinity;
-      mUpperBound[i] = 0.0;
-
-      if (mActive[i])
-      {
-        ++(mLifeTime[i]);
-      }
-      else
-      {
-        mActive[i] = true;
-        mLifeTime[i] = 0;
-      }
-
-      ++mDim;
-      continue;
+      mActive[i] = false;
     }
-
-    mActive[i] = false;
   }
 }
 
 //==============================================================================
-void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
+void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 {
   size_t index = 0;
   size_t dof = mJoint->getNumDofs();
@@ -252,31 +155,9 @@ void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 
     assert(_lcp->w[index] == 0.0);
 
-    double bouncingVel = -mViolation[i];
-
-    if (bouncingVel > 0.0)
-      bouncingVel = -mErrorAllowance;
-    else
-      bouncingVel = +mErrorAllowance;
-
-    bouncingVel *= _lcp->invTimeStep * mErrorReductionParameter;
-
-    if (bouncingVel > mMaxErrorReductionVelocity)
-      bouncingVel = mMaxErrorReductionVelocity;
-
-    _lcp->b[index] = mNegativeVel[i] + bouncingVel;
-
+    _lcp->b[index] = mNegativeVel[i];
     _lcp->lo[index] = mLowerBound[i];
     _lcp->hi[index] = mUpperBound[i];
-
-    if (_lcp->lo[index] > _lcp->hi[index])
-    {
-      std::cout << "dim: " << mDim << std::endl;
-      std::cout << "lb: " << mLowerBound[i] << std::endl;
-      std::cout << "ub: " << mUpperBound[i] << std::endl;
-      std::cout << "lb: " << _lcp->lo[index] << std::endl;
-      std::cout << "ub: " << _lcp->hi[index] << std::endl;
-    }
 
     assert(_lcp->findex[index] == -1);
 
@@ -290,7 +171,7 @@ void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void JointLimitConstraint::applyUnitImpulse(size_t _index)
+void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
 {
   assert(_index < mDim && "Invalid Index.");
 
@@ -318,7 +199,8 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
 }
 
 //==============================================================================
-void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
+void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
+                                                       bool _withCfm)
 {
   assert(_delVel != NULL && "Null pointer is not allowed.");
 
@@ -349,19 +231,19 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 }
 
 //==============================================================================
-void JointLimitConstraint::excite()
+void JointCoulombFrictionConstraint::excite()
 {
   mJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void JointLimitConstraint::unexcite()
+void JointCoulombFrictionConstraint::unexcite()
 {
   mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void JointLimitConstraint::applyImpulse(double* _lambda)
+void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 {
   size_t localIndex = 0;
   size_t dof = mJoint->getNumDofs();
@@ -379,13 +261,13 @@ void JointLimitConstraint::applyImpulse(double* _lambda)
 }
 
 //==============================================================================
-dynamics::Skeleton* JointLimitConstraint::getRootSkeleton() const
+dynamics::Skeleton* JointCoulombFrictionConstraint::getRootSkeleton() const
 {
   return mJoint->getSkeleton()->mUnionRootSkeleton;
 }
 
 //==============================================================================
-bool JointLimitConstraint::isActive() const
+bool JointCoulombFrictionConstraint::isActive() const
 {
   for (size_t i = 0; i < 6; ++i)
   {
