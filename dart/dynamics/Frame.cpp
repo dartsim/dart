@@ -45,12 +45,12 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
-Frame::Frame(Frame* _refFrame, const std::string &_name) :
-  Entity(_refFrame, _name, false),
-  mWorldTransform(Eigen::Isometry3d::Identity()),
-  mVelocity(Eigen::Vector6d::Zero()),
-  mAcceleration(Eigen::Vector6d::Zero()),
-  mAmWorld(false)
+Frame::Frame(Frame* _refFrame, const std::string &_name)
+  : Entity(_refFrame, _name, false),
+    mWorldTransform(Eigen::Isometry3d::Identity()),
+    mVelocity(Eigen::Vector6d::Zero()),
+    mAcceleration(Eigen::Vector6d::Zero()),
+    mAmWorld(false)
 {
 
 }
@@ -387,12 +387,12 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
-Frame::Frame() :
-  Entity(this, "World", true),
-  mWorldTransform(Eigen::Isometry3d::Identity()),
-  mVelocity(Eigen::Vector6d::Zero()),
-  mAcceleration(Eigen::Vector6d::Zero()),
-  mAmWorld(true)
+Frame::Frame()
+  : Entity(this, "World", true),
+    mWorldTransform(Eigen::Isometry3d::Identity()),
+    mVelocity(Eigen::Vector6d::Zero()),
+    mAcceleration(Eigen::Vector6d::Zero()),
+    mAmWorld(true)
 {
 
 }
@@ -416,12 +416,12 @@ const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 }
 
 //==============================================================================
-WorldFrame::WorldFrame() :
-  Entity(NULL, "World", true),
-  Frame(),
-  mRelativeTf(Eigen::Isometry3d::Identity()),
-  mRelativeVelocity(Eigen::Vector6d::Zero()),
-  mRelativeAcceleration(Eigen::Vector6d::Zero())
+WorldFrame::WorldFrame()
+  : Entity(NULL, "World", true),
+    Frame(),
+    mRelativeTf(Eigen::Isometry3d::Identity()),
+    mRelativeVelocity(Eigen::Vector6d::Zero()),
+    mRelativeAcceleration(Eigen::Vector6d::Zero())
 {
   changeParentFrame(this);
 }

@@ -46,13 +46,13 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet) :
-  mParentFrame(NULL),
-  mName(_name),
-  mNeedTransformUpdate(true),
-  mNeedVelocityUpdate(true),
-  mNeedAccelerationUpdate(true),
-  mAmQuiet(_quiet)
+Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
+  : mParentFrame(NULL),
+    mName(_name),
+    mNeedTransformUpdate(true),
+    mNeedVelocityUpdate(true),
+    mNeedAccelerationUpdate(true),
+    mAmQuiet(_quiet)
 {
   changeParentFrame(_refFrame);
 }
