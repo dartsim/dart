@@ -2,9 +2,12 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_renderer_hdrs ${hdrs} PARENT_SCOPE)
+set(dart_renderer_srcs ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_renderer ${srcs} ${hdrs})
-target_link_libraries(dart_renderer ${DART_DEPENDENCIES})
+#dart_add_library(dart_renderer ${srcs} ${hdrs})
+#target_link_libraries(dart_renderer ${DART_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "renderer headers" ${hdrs})
@@ -20,10 +23,10 @@ configure_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/renderer.h
-  DESTINATION include/dart/renderer
-  COMPONENT headers
-)
-install(TARGETS dart_renderer EXPORT DARTTargets DESTINATION lib)
+#install(
+#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/renderer.h
+#  DESTINATION include/dart/renderer
+#  COMPONENT headers
+#)
+#install(TARGETS dart_renderer EXPORT DARTTargets DESTINATION lib)
 

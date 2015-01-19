@@ -179,7 +179,7 @@ void ConstraintSolver::removeAllSkeletons()
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraint(Constraint* _constraint)
+void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint);
 
@@ -194,7 +194,7 @@ void ConstraintSolver::addConstraint(Constraint* _constraint)
 }
 
 //==============================================================================
-void ConstraintSolver::removeConstraint(Constraint* _constraint)
+void ConstraintSolver::removeConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint);
 
@@ -303,7 +303,7 @@ bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
 }
 
 //==============================================================================
-bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
+bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) const
 {
   return std::find(mManualConstraints.begin(),
                    mManualConstraints.end(),
@@ -311,7 +311,7 @@ bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddConstraint(Constraint* _constraint)
+bool ConstraintSolver::checkAndAddConstraint(ConstraintBase* _constraint)
 {
   if (!containConstraint(_constraint))
   {
@@ -477,7 +477,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (std::vector<Constraint*>::iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     (*it)->uniteSkeletons();
@@ -486,7 +486,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
@@ -513,7 +513,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();

@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
@@ -53,7 +53,7 @@ class Skeleton;
 namespace constraint {
 
 class ConstrainedGroup;
-class Constraint;
+class ConstraintBase;
 class ClosedLoopConstraint;
 class ContactConstraint;
 class SoftContactConstraint;
@@ -91,13 +91,13 @@ public:
   void removeAllSkeletons();
 
   /// Add a constraint
-  void addConstraint(Constraint* _constraint);
+  void addConstraint(ConstraintBase* _constraint);
 
   /// Return the number of constraints
   size_t getNumConstraints() const;
 
   /// Remove a constraint
-  void removeConstraint(Constraint* _constraint);
+  void removeConstraint(ConstraintBase* _constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
@@ -125,10 +125,10 @@ private:
   bool checkAndAddSkeleton(dynamics::Skeleton* _skeleton);
 
   /// Check if the constraint is contained in this solver
-  bool containConstraint(const Constraint* _constraint) const;
+  bool containConstraint(const ConstraintBase* _constraint) const;
 
   /// Add constraint if the constraint is not contained in this solver
-  bool checkAndAddConstraint(Constraint* _constraint);
+  bool checkAndAddConstraint(ConstraintBase* _constraint);
 
   /// Update constraints
   void updateConstraints();
@@ -167,10 +167,10 @@ private:
   std::vector<JointCoulombFrictionConstraint*> mJointCoulombFrictionConstraints;
 
   /// Constraints that manually added
-  std::vector<Constraint*> mManualConstraints;
+  std::vector<ConstraintBase*> mManualConstraints;
 
   /// Active constraints
-  std::vector<Constraint*> mActiveConstraints;
+  std::vector<ConstraintBase*> mActiveConstraints;
 
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
