@@ -23,11 +23,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
-#  DESTINATION include/dart/lcpsolver
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
+  DESTINATION include/dart/lcpsolver
+  COMPONENT headers
+)
 #install(TARGETS dart_lcpsolver EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_lcpsolver EXPORT DARTTargets DESTINATION lib)
 

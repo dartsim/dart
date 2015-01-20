@@ -57,10 +57,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.h
-#  DESTINATION include/dart/optimizer
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.h
+  DESTINATION include/dart/optimizer
+  COMPONENT headers
+)
 #install(TARGETS dart_optimizer EXPORT DARTTargets DESTINATION lib)
 
