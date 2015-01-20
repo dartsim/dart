@@ -15,7 +15,7 @@
 1. Migrated to C++11
     * [Pull request #268](https://github.com/dartsim/dart/pull/268)
     * [Pull request #299](https://github.com/dartsim/dart/pull/299)
-1. Improved readability of CMake outp messages
+1. Improved readability of CMake output messages
     * [Pull request #272](https://github.com/dartsim/dart/pull/272)
 1. Fixed const-correctneess of member functions
     * [Pull request #277](https://github.com/dartsim/dart/pull/277)

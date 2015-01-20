@@ -7,7 +7,7 @@ dart (4.3.0) unstable; urgency=low
   * Added joint actuator types
   * Added Coulomb joint friction
   * Migrated to C++11
-  * Improved readability of CMake outp messages
+  * Improved readability of CMake output messages
   * Fixed const-correctneess of member functions
 
  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 19 Jan 2015 14:00:00 -0500
