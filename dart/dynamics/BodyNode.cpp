@@ -589,13 +589,17 @@ Eigen::Vector3d BodyNode::getWorldLinearAcceleration(
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
 
-  T.translation() = mW.linear() * -_offset;
+  Eigen::Isometry3d T = W;
 
-  Eigen::Vector6d dV = mA;
+  T.translation() = W.linear() * -_offset;
 
-  dV.tail<3>() += mV.head<3>().cross(mV.tail<3>());
+  Eigen::Vector6d dV = getSpatialAcceleration();
+
+  const Eigen::Vector6d& V = getSpatialVelocity();
+
+  dV.tail<3>() += V.head<3>().cross(V.tail<3>());
 
   return math::AdT(T, dV).tail<3>();
 }
@@ -605,11 +609,16 @@ Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
+  Eigen::Isometry3d T = W;
 
-  Eigen::Vector6d dV = mA;
+  Eigen::Vector6d dV = getSpatialAcceleration();
 
-  dV.tail<3>() += mV.head<3>().cross(mV.tail<3>());
+  const Eigen::Vector6& V = getSpatialVelocity();
+
+  dV.tail<3>() += V.head<3>().cross(V.tail<3>());
+  // TODO(MXG): This does not look right... I thought only linear acceleration
+  // needs to be adjusted by w x v
 
   return math::AdT(T, dV).head<3>();
 }
@@ -664,9 +673,10 @@ math::LinearJacobian BodyNode::getWorldLinearJacobian(
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
+  Eigen::Isometry3d T = W;
 
-  T.translation() = mW.linear() * -_offset;
+  T.translation() = W.linear() * -_offset;
 
   return math::AdTJac(T, getBodyJacobian()).bottomRows<3>();
 }
@@ -677,7 +687,7 @@ math::AngularJacobian BodyNode::getWorldAngularJacobian()
   if (mIsBodyJacobianDirty)
     _updateBodyJacobian();
 
-  return mW.linear() * mBodyJacobian.topRows<3>();
+  return getWorldTransform().linear() * mBodyJacobian.topRows<3>();
 }
 
 //==============================================================================
@@ -730,9 +740,10 @@ math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv(
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
+  Eigen::Isometry3d T = W;
 
-  T.translation() = mW.linear() * -_offset;
+  T.translation() = W.linear() * -_offset;
 
   math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
 
@@ -747,7 +758,8 @@ math::AngularJacobian BodyNode::getWorldAngularJacobianDeriv()
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
+  Eigen::Isometry3d T = W;
 
   math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
 
@@ -783,16 +795,17 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
     T.translation() = _offset;
   else
-    T.translation() = getTransform().inverse() * _offset;
+    T.translation() = W.inverse() * _offset;
 
   if (_isForceLocal)
     F.tail<3>() = _force;
   else
-    F.tail<3>() = mW.linear().transpose() * _force;
+    F.tail<3>() = W.linear().transpose() * _force;
 
   mFext += math::dAdInvT(T, F);
 }
@@ -804,16 +817,17 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
     T.translation() = _offset;
   else
-    T.translation() = getTransform().inverse() * _offset;
+    T.translation() = W.inverse() * _offset;
 
   if (_isForceLocal)
     F.tail<3>() = _force;
   else
-    F.tail<3>() = mW.linear().transpose() * _force;
+    F.tail<3>() = W.linear().transpose() * _force;
 
   mFext = math::dAdInvT(T, F);
 }
@@ -824,7 +838,7 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   if (_isLocal)
     mFext.head<3>() += _torque;
   else
-    mFext.head<3>() += mW.linear().transpose() * _torque;
+    mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
 }
 
 //==============================================================================
@@ -833,7 +847,7 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   if (_isLocal)
     mFext.head<3>() = _torque;
   else
-    mFext.head<3>() = mW.linear().transpose() * _torque;
+    mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
 }
 
 //==============================================================================
@@ -1019,7 +1033,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 {
   // Gravity force
   if (mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
+    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
 
@@ -1095,7 +1109,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 {
   // Gravity force
   if (mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
+    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
 
@@ -1297,7 +1311,7 @@ const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 //==============================================================================
 Eigen::Vector6d BodyNode::getExternalForceGlobal() const
 {
-  return math::dAdInvT(mW, mFext);
+  return math::dAdInvT(getWorldTransform(), mFext);
 }
 
 //==============================================================================
@@ -1310,16 +1324,17 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();
+  const Eigen::Isometry3d& W = getWorldTransform();
 
   if (_isOffsetLocal)
     T.translation() = _offset;
   else
-    T.translation() = getTransform().inverse() * _offset;
+    T.translation() = W.inverse() * _offset;
 
   if (_isImpulseLocal)
     F.tail<3>() = _constImp;
   else
-    F.tail<3>() = mW.linear().transpose() * _constImp;
+    F.tail<3>() = W.linear().transpose() * _constImp;
 
   mConstraintImpulse += math::dAdInvT(T, F);
 }
@@ -1372,7 +1387,7 @@ double BodyNode::getKineticEnergy() const
 //==============================================================================
 double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 {
-  return -mMass * mW.translation().dot(_gravity);
+  return -mMass * getWorldTransform().translation().dot(_gravity);
 }
 
 //==============================================================================
@@ -1455,7 +1470,7 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                                            const Eigen::Vector3d& _gravity)
 {
   if (mGravityMode == true)
-    mG_F = mI * math::AdInvRLinear(mW, _gravity);
+    mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mG_F.setZero();
 
@@ -1496,7 +1511,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
   if (mGravityMode == true)
-    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
+    mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mFgravity.setZero();
 
