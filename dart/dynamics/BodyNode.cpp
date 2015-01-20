@@ -91,7 +91,6 @@ BodyNode::BodyNode(const std::string& _name)
     mParentJoint(NULL),
     mParentBodyNode(NULL),
     mChildBodyNodes(std::vector<BodyNode*>(0)),
-    mW(Eigen::Isometry3d::Identity()),
     mIsBodyJacobianDirty(true),
     mIsBodyJacobianDerivDirty(true),
     mV(Eigen::Vector6d::Zero()),
@@ -276,7 +275,7 @@ const Eigen::Vector3d& BodyNode::getLocalCOM() const
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOM() const
 {
-  return mW * mCenterOfMass;
+  return getWorldTransform() * mCenterOfMass;
 }
 
 //==============================================================================
@@ -503,12 +502,6 @@ size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& BodyNode::getTransform() const
-{
-  return mW;
-}
-
-//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyVelocity() const
 {
   return mV;
@@ -545,29 +538,30 @@ Eigen::Vector3d BodyNode::getWorldLinearVelocity(
 {
   // TODO(JS): Optimize!
 
-  Eigen::Isometry3d T = mW;
+  const Eigen::Isometry3d& W = getWorldTransform();
+  Eigen::Isometry3d T = W;
 
-  T.translation() = mW.linear() * -_offset;
+  T.translation() = W.linear() * -_offset;
 
-  return math::AdT(T, mV).tail<3>();
+  return math::AdT(T, getSpatialVelocity()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldAngularVelocity() const
 {
-  return mW.linear() * mV.head<3>();
+  return getAngularVelocity();
 }
 
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
-  return mA;
+  return getSpatialAcceleration();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getBodyLinearAcceleration() const
 {
-  return mA.tail<3>();
+  return getSpatialAcceleration().tail<3>();
 }
 
 //==============================================================================

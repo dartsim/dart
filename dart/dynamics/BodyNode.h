@@ -48,6 +48,8 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 
+#include "dart/dynamics/Frame.h"
+
 namespace dart {
 namespace renderer {
 class RenderInterface;
@@ -67,7 +69,7 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
-class BodyNode
+class BodyNode : public Frame
 {
 public:
   /// Constructor
@@ -231,9 +233,6 @@ public:
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
   //--------------------------------------------------------------------------
-
-  /// Return the current position and orientation expressed in world frame
-  const Eigen::Isometry3d& getTransform() const;
 
   /// Return the spatial velocity at the origin of the bodynode expressed in
   /// the body-fixed frame
