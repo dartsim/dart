@@ -77,14 +77,20 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
+void Entity::addVisualizationShape(Shape* _p)
+{
+  mVizShapes.push_back(_p);
+}
+
+//==============================================================================
 void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
                   bool _useDefaultColor, int) const
 {
   if(NULL == _ri)
     return;
 
-  _ri->pushMatrix();
-  _ri->transform(mParentFrame->getTransform());
+//  _ri->pushMatrix();
+//  _ri->transform(mParentFrame->getTransform());
   // ^ I am skeptical about this. Shouldn't the matrix be pushed by its parent
   // frame? And then we're not popping this matrix at the end of this function.
   // This all seems questionable to me.

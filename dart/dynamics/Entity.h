@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "dart/dynamics/Shape.h"
+
 namespace dart {
 namespace renderer {
 class RenderInterface;
@@ -80,6 +82,9 @@ public:
 
   /// Return the name of this Entity
   virtual const std::string& getName() const;
+
+  /// Add a visualization shape for this Entity
+  virtual void addVisualizationShape(Shape* _p);
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,

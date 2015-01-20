@@ -298,8 +298,11 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
 
   _ri->pushMatrix();
 
-  // Use the world transform of this Frame
-  _ri->transform(getWorldTransform());
+  // Use the relative transform of this Frame. We assume that we are being
+  // called from the parent Frame's renderer.
+  // TODO(MXG): This can cause trouble if the draw function is originally called
+  // on an Entity or Frame which is not a child of the World Frame
+  _ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
   for(size_t i=0; i < mVizShapes.size(); ++i)

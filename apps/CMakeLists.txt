@@ -6,14 +6,15 @@ foreach(APPDIR
     addDeleteSkels
     atlasSimbicon
     bipedStand
-    hardcodedDesign    
+    hardcodedDesign
     hybridDynamics
     jointConstraints
     mixedChain
     operationalSpaceControl
     rigidChain
     rigidCubes
-    rigidLoop    
+    rigidLoop
+    simpleFrames
     softBodies
     vehicle
     )

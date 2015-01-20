@@ -83,6 +83,12 @@ void SimWindow::drawSkels() {
     mWorld->getSkeleton(i)->draw(mRI);
 }
 
+void SimWindow::drawEntities()
+{
+  for (size_t i = 0; i < mWorld->getNumEntities(); ++i)
+    mWorld->getEntity(i)->draw(mRI);
+}
+
 void SimWindow::displayTimer(int _val) {
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
   if (mPlay) {
@@ -150,6 +156,7 @@ void SimWindow::draw() {
     }
   }
   drawSkels();
+  drawEntities();
 
   // display the frame count in 2D text
   char buff[64];

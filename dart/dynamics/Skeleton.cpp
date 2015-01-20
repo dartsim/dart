@@ -1260,8 +1260,7 @@ const Eigen::VectorXd& Skeleton::getConstraintForceVector()
 }
 
 //==============================================================================
-void Skeleton::draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color,
+void Skeleton::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
                     bool _useDefaultColor) const
 {
   getRootBodyNode()->draw(_ri, _color, _useDefaultColor);
