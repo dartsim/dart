@@ -84,3 +84,4 @@ macro(dt_issue_303 _name _output_name)
     dt_install_includes(${nameLower} ${generated_file})
   endif()
 endmacro()
+
