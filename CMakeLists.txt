@@ -70,14 +70,14 @@ message(STATUS "")
 message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
-find_package(Eigen3 3.0.5 QUIET)
+find_package(EIGEN3 3.0.5 QUIET)
 if(EIGEN3_FOUND)
-  message(STATUS "Looking for Eigen3 - ${Eigen3_VERSION} found")
+  message(STATUS "Looking for EIGEN3 - ${EIGEN3_VERSION} found")
 else()
-  if(PC_Eigen3_VERSION)
-    message(SEND_ERROR "Looking for Eigen3 - ${Eigen3_VERSION} found, ${PROJECT_NAME} requires 3.0.5 or greater.")
+  if(PC_EIGEN3_VERSION)
+    message(SEND_ERROR "Looking for EIGEN3 - ${EIGEN3_VERSION} found, ${PROJECT_NAME} requires 3.0.5 or greater.")
   else()
-    message(SEND_ERROR "Looking for Eigen3 - NOT found, please install libeigen3-dev")
+    message(SEND_ERROR "Looking for EIGEN3 - NOT found, please install libeigen3-dev")
   endif()
 endif()
 
@@ -105,15 +105,15 @@ else()
   endif()
 endif()
 
-# Assimp
-find_package(Assimp 3.0.0 QUIET)
+# ASSIMP
+find_package(ASSIMP 3.0.0 QUIET)
 if(ASSIMP_FOUND)
-  message(STATUS "Looking for Assimp - ${Assimp_VERSION} found")
+  message(STATUS "Looking for ASSIMP - ${ASSIMP_VERSION} found")
 else()
-  if(Assimp_VERSION)
-    message(SEND_ERROR "Looking for Assimp - ${Assimp_VERSION} found, ${PROJECT_NAME} requires 3.0.0 or greater.")
+  if(ASSIMP_VERSION)
+    message(SEND_ERROR "Looking for ASSIMP - ${ASSIMP_VERSION} found, ${PROJECT_NAME} requires 3.0.0 or greater.")
   else()
-    message(SEND_ERROR "Looking for Assimp - NOT found, please install libassimp-dev")
+    message(SEND_ERROR "Looking for ASSIMP - NOT found, please install libassimp-dev")
   endif()
 endif()
 
@@ -168,27 +168,27 @@ if(NOT BUILD_CORE_ONLY)
     endif()
   endif()
 
-  # TinyXML
-  find_package(TinyXML 2.6.2 QUIET)
+  # TINYXML
+  find_package(TINYXML 2.6.2 QUIET)
   if(TINYXML_FOUND)
-    message(STATUS "Looking for TinyXML - ${TinyXML_VERSION} found")
+    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
   else()
-    if(TinyXML_VERSION)
-      message(SEND_ERROR "Looking for TinyXML - ${TinyXML_VERSION} found, ${PROJECT_NAME} requires 2.6.2 or greater.")
+    if(TINYXML_VERSION)
+      message(SEND_ERROR "Looking for TINYXML - ${TINYXML_VERSION} found, ${PROJECT_NAME} requires 2.6.2 or greater.")
     else()
-      message(SEND_ERROR "Looking for TinyXML - NOT found, please install libtinyxml-dev")
+      message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev")
     endif()
   endif()
 
-  # TinyXML2
-  find_package(TinyXML2 QUIET)
+  # TINYXML2
+  find_package(TINYXML2 QUIET)
   if(TINYXML2_FOUND)
-    message(STATUS "Looking for TinyXML2 - ${TinyXML2_VERSION} found")
+    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
   else()
-    if(TinyXML2_VERSION)
-      message(SEND_ERROR "Looking for TinyXML2 - ${TinyXML2_VERSION} found, ${PROJECT_NAME} requires 1.0.1 or greater.")
+    if(TINYXML2_VERSION)
+      message(SEND_ERROR "Looking for TINYXML2 - ${TINYXML2_VERSION} found, ${PROJECT_NAME} requires 1.0.1 or greater.")
     else()
-      message(SEND_ERROR "Looking for TinyXML2 - NOT found, please install libtinyxml2-dev")
+      message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev")
     endif()
   endif()
 
@@ -301,7 +301,7 @@ endif()
 # DART dependency variable settings
 #===============================================================================
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
-                           ${Assimp_LIBRARIES}
+                           ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
                            ${GLUT_LIBRARY}
@@ -313,8 +313,8 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
-                        ${TinyXML_LIBRARIES}
-                        ${TinyXML2_LIBRARIES}
+                        ${TINYXML_LIBRARIES}
+                        ${TINYXML2_LIBRARIES}
   )
   if(HAVE_NLOPT)
     set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${NLOPT_LIBRARIES})
@@ -331,9 +331,9 @@ endif()
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(${Eigen3_INCLUDE_DIRS})
+include_directories(${EIGEN3_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
-include_directories(${Assimp_INCLUDE_DIRS})
+include_directories(${ASSIMP_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
@@ -345,8 +345,8 @@ endif()
 if(NOT BUILD_CORE_ONLY)
   include_directories(${FLANN_INCLUDE_DIRS})
   include_directories(${urdfdom_INCLUDE_DIRS})
-  include_directories(${TinyXML_INCLUDE_DIRS})
-  include_directories(${TinyXML2_INCLUDE_DIRS})
+  include_directories(${TINYXML_INCLUDE_DIRS})
+  include_directories(${TINYXML2_INCLUDE_DIRS})
   if(HAVE_NLOPT)
     include_directories(${NLOPT_INCLUDE_DIRS})
   endif()

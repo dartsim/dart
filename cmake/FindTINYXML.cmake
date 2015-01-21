@@ -1,42 +1,41 @@
 # Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
 # This file is provided under the "BSD-style" License
 
-# Find TinyXML
+# Find TINYXML
 #
 # This sets the following variables:
 # TINYXML_FOUND
-# TinyXML_INCLUDE_DIRS
-# TinyXML_LIBRARIES
-# TinyXML_VERSION
+# TINYXML_INCLUDE_DIRS
+# TINYXML_LIBRARIES
+# TINYXML_VERSION
 
 find_package(PkgConfig QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_TinyXML tinyxml QUIET)
+pkg_check_modules(PC_TINYXML tinyxml QUIET)
 
 # Include directories
-find_path(TinyXML_INCLUDE_DIRS
+find_path(TINYXML_INCLUDE_DIRS
     NAMES tinyxml.h
-    HINTS ${PC_TinyXML_INCLUDEDIR}
+    HINTS ${PC_TINYXML_INCLUDEDIR}
     PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
-  set(TinyXML_LIBRARIES optimized tinyxml debug tinyxmld)
+  set(TINYXML_LIBRARIES optimized tinyxml debug tinyxmld)
 else()
-  find_library(TinyXML_LIBRARIES
+  find_library(TINYXML_LIBRARIES
       NAMES tinyxml
-      HINTS ${PC_TinyXML_LIBDIR})
+      HINTS ${PC_TINYXML_LIBDIR})
 endif()
 
 # Version
-set(TinyXML_VERSION ${PC_TinyXML_VERSION})
+set(TINYXML_VERSION ${PC_TINYXML_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(TinyXML
-    #FOUND_VAR     TinyXML_FOUND
+find_package_handle_standard_args(TINYXML
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS TinyXML_INCLUDE_DIRS TinyXML_LIBRARIES
-    VERSION_VAR   TinyXML_VERSION)
+    REQUIRED_VARS TINYXML_INCLUDE_DIRS TINYXML_LIBRARIES
+    VERSION_VAR   TINYXML_VERSION)
 
